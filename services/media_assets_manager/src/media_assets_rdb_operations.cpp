@@ -56,6 +56,8 @@
 #include "photo_asset_copy_operation.h"
 #include "medialibrary_photo_operations.h"
 #include "file_asset.h"
+#include "medialibrary_app_uri_sensitive_operations.h"
+#include "medialibrary_app_uri_permission_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -300,6 +302,31 @@ bool MediaAssetsRdbOperations::QueryAlbumIdIfExists(const std::string& albumId)
     return count == 1;
 }
 
+void MediaAssetsRdbOperations::QueryAssetsUri(const std::vector<std::string> &fileIds,
+    std::vector<std::string> &uris)
+{
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.In(MediaColumn::MEDIA_ID, fileIds);
+
+    std::vector<std::string> columns = {
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_NAME,
+        MediaColumn::MEDIA_FILE_PATH
+    };
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string fileId = GetStringVal(MediaColumn::MEDIA_ID, resultSet);
+        std::string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+        std::string assetPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+
+        string extrUri = MediaFileUtils::GetExtraUri(displayName, assetPath);
+        uris.push_back(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, fileId, extrUri));
+    }
+    resultSet->Close();
+}
+
 static bool CheckOprnObject(OperationObject object)
 {
     const set<OperationObject> validOprnObjectet = {
@@ -429,5 +456,39 @@ int32_t MediaAssetsRdbOperations::RevertToOrigin(const int32_t &fileId)
     int32_t errCode = MediaLibraryPhotoOperations::DoRevertEdit(fileAsset);
     PhotoEditingRecord::GetInstance()->EndRevert(fileId);
     return errCode;
+}
+
+int32_t MediaAssetsRdbOperations::GrantPhotoUriPermission(MediaLibraryCommand &cmd)
+{
+    int32_t ret = MediaLibraryAppUriSensitiveOperations::HandleInsertOperation(cmd);
+    CHECK_AND_RETURN_RET(ret == MediaLibraryAppUriSensitiveOperations::SUCCEED, ret);
+    return MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
+}
+
+int32_t MediaAssetsRdbOperations::GrantPhotoUrisPermission(
+    MediaLibraryCommand &cmd, const std::vector<DataShare::DataShareValuesBucket> &values)
+{
+    int32_t ret = MediaLibraryAppUriSensitiveOperations::BatchInsert(cmd, values);
+    CHECK_AND_RETURN_RET(ret == MediaLibraryAppUriSensitiveOperations::SUCCEED, ret);
+    CHECK_AND_RETURN_RET(!MediaLibraryAppUriSensitiveOperations::BeForceSensitive(cmd, values), ret);
+    return MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, values);
+}
+
+int32_t MediaAssetsRdbOperations::CancelPhotoUriPermission(NativeRdb::RdbPredicates &rdbPredicate)
+{
+    return MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
+}
+
+int32_t MediaAssetsRdbOperations::StartThumbnailCreationTask(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId)
+{
+    MEDIA_INFO_LOG("MediaAssetsRdbOperations::StartThumbnailCreationTask requestId:%{public}d", requestId);
+    return ThumbnailService::GetInstance()->CreateAstcBatchOnDemand(rdbPredicate, requestId);
+}
+
+int32_t MediaAssetsRdbOperations::StopThumbnailCreationTask(int32_t requestId)
+{
+    MEDIA_INFO_LOG("MediaAssetsRdbOperations::StopThumbnailCreationTask requestId:%{public}d", requestId);
+    ThumbnailService::GetInstance()->CancelAstcBatchTask(requestId);
+    return E_OK;
 }
 } // namespace OHOS::Media

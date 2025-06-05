@@ -99,6 +99,7 @@ public:
     EXPORT static int32_t ProcessCustomRestore(MediaLibraryCommand &cmd);
     EXPORT static int32_t CancelCustomRestore(MediaLibraryCommand &cmd);
     EXPORT static int32_t UpdateSupportedWatermarkType(MediaLibraryCommand &cmd);
+    EXPORT static int32_t BatchSetOwnerAlbumId(MediaLibraryCommand &cmd);
     static int32_t UpdateExtension(const int32_t &fileId, const int32_t &fileType, PhotoExtInfo &photoExtInfo,
         NativeRdb::ValuesBucket &updateValues);
     static int32_t LSMediaFiles(MediaLibraryCommand& cmd);
@@ -106,6 +107,9 @@ public:
         const std::string &editData);
     static int32_t DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t TrashPhotos(MediaLibraryCommand &cmd);
+    static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
+    static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
+    static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd);
 
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
@@ -146,13 +150,11 @@ private:
     static int32_t MoveCacheFile(MediaLibraryCommand &cmd, int32_t subtype,
         const std::string &cachePath, const std::string &destPath);
     static int32_t UpdateMovingPhotoSubtype(int32_t fileId, int32_t currentPhotoSubType);
-    static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
     static int32_t UpdateOrientationAllExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         std::string &currentOrientation);
     static int32_t UpdateOrientationExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &orientationUpdated, std::string &currentOrientation);
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
-    static int32_t BatchSetOwnerAlbumId(MediaLibraryCommand &cmd);
     static int32_t BatchSetRecentShow(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,
         const std::string &editdata, const std::string &photoStatus = "");
@@ -161,7 +163,6 @@ private:
     static bool IsNeedRevertEffectMode(MediaLibraryCommand& cmd, const std::shared_ptr<FileAsset>& fileAsset,
         int32_t& effectMode);
     static void ProcessEditedEffectMode(MediaLibraryCommand& cmd);
-    static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static std::shared_ptr<FileAsset> GetFileAsset(MediaLibraryCommand &cmd);
     static int32_t ForceSavePicture(MediaLibraryCommand& cmd);
     static int32_t SetVideoEnhancementAttr(MediaLibraryCommand &cmd);

@@ -1,0 +1,58 @@
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef OHOS_MEDIA_ASSETS_MANAGER_ASSET_CHANGE_VO_H
+#define OHOS_MEDIA_ASSETS_MANAGER_ASSET_CHANGE_VO_H
+
+#include "i_media_parcelable.h"
+#include "values_bucket.h"
+
+namespace OHOS::Media {
+class AssetChangeReqBody : public IPC::IMediaParcelable {
+public:
+    int32_t fileId{-1};
+    std::string photoId;
+    std::string uri;
+    std::string userComment;
+    std::string path;
+    std::string title;
+    bool favorite{false};
+    bool hidden{false};
+    int32_t effectMode{0};
+    int32_t orientation{INT32_MIN};
+    int32_t watermarkType{INT32_MIN};
+    double latitude{0};
+    double longitude{0};
+    std::string cameraShotKey;
+    NativeRdb::ValuesBucket values;
+
+public:  // functions of Parcelable.
+    bool Unmarshalling(MessageParcel &parcel) override;
+
+    bool Marshalling(MessageParcel &parcel) const override;
+};
+
+class AssetChangeRspBody : public IPC::IMediaParcelable {
+public:
+    int32_t fileId{-1};
+    std::string outUri;
+
+public:  // functions of Parcelable.
+    bool Unmarshalling(MessageParcel &parcel) override;
+
+    bool Marshalling(MessageParcel &parcel) const override;
+};
+}  // namespace OHOS::Media
+#endif  // OHOS_MEDIA_ASSETS_MANAGER_ASSET_CHANGE_VO_H

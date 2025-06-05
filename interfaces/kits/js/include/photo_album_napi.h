@@ -119,8 +119,10 @@ struct PhotoAlbumNapiAsyncContext : public NapiError {
     int32_t newCount;
     int32_t newImageCount;
     int32_t newVideoCount;
+    int32_t businessCode;
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;
+    std::vector<std::string> assetsArray;
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     std::vector<DataShare::DataShareValuesBucket> valuesBuckets;

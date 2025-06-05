@@ -41,14 +41,4 @@ bool CommitEditedAssetReqBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
- 
-string CommitEditedAssetReqBody::ToString() const
-{
-    std::stringstream ss;
-    ss << "{"
-       << "\"editData\": \"" << editData << "\","
-       << "\"fileId\": \"" << to_string(fileId)
-       << "}";
-    return ss.str();
-}
 } // namespace OHOS::Media

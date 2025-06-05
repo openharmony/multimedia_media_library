@@ -29,10 +29,33 @@ public:
     EXPORT void DeleteHighlightAlbums(MessageParcel &data, MessageParcel &reply);
     EXPORT void DeletePhotoAlbums(MessageParcel &data, MessageParcel &reply);
     EXPORT void CreatePhotoAlbum(MessageParcel &data, MessageParcel &reply);
+    void SetSubtitle(MessageParcel &data, MessageParcel &reply);
+    void SetHighlightUserActionData(MessageParcel &data, MessageParcel &reply);
+    void ChangeRequestSetAlbumName(MessageParcel &data, MessageParcel &reply);
+    void ChangeRequestSetCoverUri(MessageParcel &data, MessageParcel &reply);
+    void ChangeRequestSetIsMe(MessageParcel &data, MessageParcel &reply);
+    void ChangeRequestSetDisplayLevel(MessageParcel &data, MessageParcel &reply);
+    void ChangeRequestDismiss(MessageParcel &data, MessageParcel &reply);
+    EXPORT void AddAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT void RemoveAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT void MoveAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT void RecoverAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT void DeleteAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT void DismissAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT void MergeAlbum(MessageParcel &data, MessageParcel &reply);
+    EXPORT void PlaceBefore(MessageParcel &data, MessageParcel &reply);
+    EXPORT void SetOrderPosition(MessageParcel &data, MessageParcel &reply);
+    EXPORT void AlbumCommitModify(MessageParcel &data, MessageParcel &reply);
+    EXPORT void AlbumAddAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT void AlbumRemoveAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT void AlbumRecoverAssets(MessageParcel &data, MessageParcel &reply);
 public:
     virtual ~MediaAlbumsControllerService() = default;
     bool Accept(uint32_t code) override;
-    void OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
+    void OnRemoteRequest(
+        uint32_t code, MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context) override;
+    int32_t GetPermissionPolicy(
+        uint32_t code, std::vector<std::vector<PermissionType>> &permissionPolicy, bool &isBypass) override;
 };
 } // namespace OHOS::Media
 #endif  // OHOS_MEDIA_ALBUMS_CONTROLLER_SERVICE_H

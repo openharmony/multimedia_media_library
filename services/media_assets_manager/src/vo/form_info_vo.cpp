@@ -41,28 +41,4 @@ bool FormInfoReqBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
- 
-string FormInfoReqBody::ToString() const
-{
-    std::stringstream ss;
-    ss << "{";
-    ss << "[";
-    for (uint32_t i = 0; i < formIds.size(); i++) {
-        ss << formIds[i];
-        if (i != formIds.size() - 1) {
-            ss << ",";
-        }
-    }
-    ss << "], ";
-    ss << "[";
-    for (uint32_t i = 0; i < fileUris.size(); i++) {
-        ss << fileUris[i];
-        if (i != fileUris.size() - 1) {
-            ss << ",";
-        }
-    }
-    ss << "]"
-        << "}";
-    return ss.str();
-}
 } // namespace OHOS::Media

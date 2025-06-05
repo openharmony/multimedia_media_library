@@ -38,6 +38,9 @@
 #include "media_enhance_bundle_c_api.h"
 #endif
 #include "cloud_enhancement_uri.h"
+#include "cloud_enhancement_vo.h"
+#include "medialibrary_business_code.h"
+#include "user_define_ipc_client.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -480,17 +483,17 @@ static void SubmitCloudEnhancementTasksExecute(napi_env env, void* data)
     tracer.Start("SubmitCloudEnhancementTasksExecute");
 
     auto* context = static_cast<CloudEnhancementAsyncContext*>(data);
-    string uriStr = PAH_CLOUD_ENHANCEMENT_ADD;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, to_string(context->hasCloudWatermark_));
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, MEDIA_TRIGGER_MODE_KEYWORD, to_string(context->triggerMode_));
-    Uri addTaskUri(uriStr);
-    context->valuesBucket.Put(PhotoColumn::PHOTO_STRONG_ASSOCIATION, STRONG_ASSOCIATION);
-    int32_t changeRows = UserFileClient::Update(addTaskUri, context->predicates, context->valuesBucket);
-    if (changeRows < 0) {
-        context->SaveError(changeRows);
-        NAPI_ERR_LOG("Submit cloud enhancement tasks failed, err: %{public}d", changeRows);
+    CloudEnhancementReqBody reqBody;
+    reqBody.hasCloudWatermark = context->hasCloudWatermark_;
+    reqBody.triggerMode = context->triggerMode_;
+    reqBody.fileUris = context->uris;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SUBMIT_CLOUD_ENHANCEMENT_TASKS);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Submit cloud enhancement tasks failed, err: %{public}d", ret);
         return;
-    }
+     }
     NAPI_INFO_LOG("SubmitCloudEnhancementTasksExecute Success");
 }
 
@@ -556,14 +559,14 @@ static void PrioritizeCloudEnhancementTaskExecute(napi_env env, void* data)
     tracer.Start("PrioritizeCloudEnhancementTaskExecute");
 
     auto* context = static_cast<CloudEnhancementAsyncContext*>(data);
-    string uriStr = PAH_CLOUD_ENHANCEMENT_PRIORITIZE;
-    Uri prioritizeTaskUri(uriStr);
-    context->predicates.EqualTo(MediaColumn::MEDIA_ID, context->photoUri);
-    context->valuesBucket.Put(PhotoColumn::PHOTO_STRONG_ASSOCIATION, STRONG_ASSOCIATION);
-    int32_t changedRows = UserFileClient::Update(prioritizeTaskUri, context->predicates, context->valuesBucket);
-    if (changedRows < 0) {
-        context->SaveError(changedRows);
-        NAPI_ERR_LOG("Prioritize cloud enhancement task failed, err: %{public}d", changedRows);
+    CloudEnhancementReqBody reqBody;
+    reqBody.fileUris.emplace_back(context->photoUri);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PRIORITIZE_CLOUD_ENHANCEMENT_TASK);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Prioritize cloud enhancement task failed, err: %{public}d", ret);
+        return;
     }
     NAPI_INFO_LOG("PrioritizeCloudEnhancementTaskExecute Success");
 }
@@ -646,15 +649,17 @@ static void CancelCloudEnhancementTasksExecute(napi_env env, void* data)
     tracer.Start("CancelCloudEnhancementTasksExecute");
 
     auto* context = static_cast<CloudEnhancementAsyncContext*>(data);
-    string uriStr = PAH_CLOUD_ENHANCEMENT_CANCEL;
-    Uri cancelTaskUri(uriStr);
-    string fileUri = context->uris.front();
-    context->valuesBucket.Put(MediaColumn::MEDIA_ID, fileUri);
-    int32_t changeRows = UserFileClient::Update(cancelTaskUri, context->predicates, context->valuesBucket);
-    if (changeRows < 0) {
-        context->SaveError(changeRows);
-        NAPI_ERR_LOG("Cancel cloud enhancement tasks failed, err: %{public}d", changeRows);
-    }
+    CloudEnhancementReqBody reqBody;
+    reqBody.hasCloudWatermark = context->hasCloudWatermark_;
+    reqBody.triggerMode = context->triggerMode_;
+    reqBody.fileUris = context->uris;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CANCEL_CLOUD_ENHANCEMENT_TASKS);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("cancel cloud enhancement tasks failed, err: %{public}d", ret);
+        return;
+     }
     NAPI_INFO_LOG("CancelCloudEnhancementTasksExecute Success");
 }
 
@@ -700,13 +705,13 @@ static void CancelAllCloudEnhancementTasksExecute(napi_env env, void* data)
     tracer.Start("CancelAllCloudEnhancementTasksExecute");
 
     auto* context = static_cast<CloudEnhancementAsyncContext*>(data);
-    string uriStr = PAH_CLOUD_ENHANCEMENT_CANCEL_ALL;
-    Uri cancelAllTaskUri(uriStr);
-    context->valuesBucket.Put(PhotoColumn::PHOTO_STRONG_ASSOCIATION, STRONG_ASSOCIATION);
-    int32_t changeRows = UserFileClient::Update(cancelAllTaskUri, context->predicates, context->valuesBucket);
-    if (changeRows < 0) {
-        context->SaveError(changeRows);
-        NAPI_ERR_LOG("Cancel all cloud enhancement tasks failed, err: %{public}d", changeRows);
+    CloudEnhancementReqBody reqBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CANCEL_ALL_CLOUD_ENHANCEMENT_TASKS);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Cancel all cloud enhancement tasks failed, err: %{public}d", ret);
+        return;
     }
     NAPI_INFO_LOG("CancelAllCloudEnhancementTasksExecute Success");
 }

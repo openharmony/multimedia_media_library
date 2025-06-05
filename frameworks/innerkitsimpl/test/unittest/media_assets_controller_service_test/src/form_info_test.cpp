@@ -97,7 +97,7 @@ static void InsertAssetIntoPhotosTable()
     // data, size, title, display_name, media_type,
     // owner_package, package_name, date_added, date_modified, date_taken, duration, is_favorite, date_trashed, hidden
     // height, width, edit_time, shooting_mode
-    g_rdbStore->ExecuteSql(SQL_INSERT_PHOTO + + "VALUES (" +
+    g_rdbStore->ExecuteSql(SQL_INSERT_PHOTO + "VALUES (" +
         "'/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg', 175258, 'cam_pic', 'cam_pic.jpg', 1, " +
         "'com.ohos.camera', '相机', 1501924205218, 0, 1501924205, 0, 0, 0, 0, " +
         "1280, 960, 0, '1' )"); // cam, pic, shootingmode = 1
@@ -150,6 +150,19 @@ void FormInfoTest::TearDown(void)
     MEDIA_INFO_LOG("TearDown");
 }
 
+static void PrepareNormalFormInfoReq(FormInfoReqBody &reqBody)
+{
+    InsertAssetIntoPhotosTable();
+    vector<string> columns;
+    auto resultSet = QueryAsset("cam_pic.jpg", columns);
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    vector<string> formIds = { "1057934318" };
+    reqBody.formIds = formIds;
+    string uri = "file://media/Photo/" + to_string(fileId);
+    vector<string> fileUris = { uri };
+    reqBody.fileUris = fileUris;
+}
+
 HWTEST_F(FormInfoTest, Form_Util_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start Form_Util_Test_001");
@@ -171,18 +184,10 @@ HWTEST_F(FormInfoTest, Form_Util_Test_001, TestSize.Level0)
 HWTEST_F(FormInfoTest, Save_Form_Info_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start Save_Form_Info_Test_001");
-    InsertAssetIntoPhotosTable();
-    vector<string> columns;
-    auto resultSet = QueryAsset("cam_pic.jpg", columns);
-    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    FormInfoReqBody reqBody;
+    PrepareNormalFormInfoReq(reqBody);
     MessageParcel data;
     MessageParcel reply;
-    FormInfoReqBody reqBody;
-    vector<string> formIds = { "1057934318" };
-    reqBody.formIds = formIds;
-    string uri = "file://media/Photo/" + to_string(fileId);
-    vector<string> fileUris = { uri };
-    reqBody.fileUris = fileUris;
     bool errConn = !reqBody.Marshalling(data);
     ASSERT_EQ(errConn, false);
     auto service = make_shared<MediaAssetsControllerService>();
@@ -239,18 +244,10 @@ HWTEST_F(FormInfoTest, Save_Form_Info_Test_003, TestSize.Level0)
 HWTEST_F(FormInfoTest, Save_Form_Info_Test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start Save_Form_Info_Test_004");
-    InsertAssetIntoPhotosTable();
-    vector<string> columns;
-    auto resultSet = QueryAsset("cam_pic.jpg", columns);
-    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    FormInfoReqBody reqBody;
+    PrepareNormalFormInfoReq(reqBody);
     MessageParcel data;
     MessageParcel reply;
-    FormInfoReqBody reqBody;
-    vector<string> formIds = { "1057934318" };
-    reqBody.formIds = formIds;
-    string uri = "file://media/Photo/" + to_string(fileId);
-    vector<string> fileUris = { uri };
-    reqBody.fileUris = fileUris;
     bool errConn = !reqBody.Marshalling(data);
     ASSERT_EQ(errConn, false);
     auto service = make_shared<MediaAssetsControllerService>();
@@ -275,18 +272,10 @@ HWTEST_F(FormInfoTest, Save_Form_Info_Test_004, TestSize.Level0)
 HWTEST_F(FormInfoTest, Remove_Form_Info_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start Remove_Form_Info_Test_001");
-    InsertAssetIntoPhotosTable();
-    vector<string> columns;
-    auto resultSet = QueryAsset("cam_pic.jpg", columns);
-    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    FormInfoReqBody reqBody;
+    PrepareNormalFormInfoReq(reqBody);
     MessageParcel data;
     MessageParcel reply;
-    FormInfoReqBody reqBody;
-    vector<string> formIds = { "1057934318" };
-    reqBody.formIds = formIds;
-    string uri = "file://media/Photo/" + to_string(fileId);
-    vector<string> fileUris = { uri };
-    reqBody.fileUris = fileUris;
     bool errConn = !reqBody.Marshalling(data);
     ASSERT_EQ(errConn, false);
     auto service = make_shared<MediaAssetsControllerService>();
@@ -353,18 +342,10 @@ HWTEST_F(FormInfoTest, Save_Gallery_Form_Info_Test_002, TestSize.Level0)
 HWTEST_F(FormInfoTest, Remove_Gallery_Form_Info_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start Remove_Gallery_Form_Info_Test_001");
-    InsertAssetIntoPhotosTable();
-    vector<string> columns;
-    auto resultSet = QueryAsset("cam_pic.jpg", columns);
-    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    FormInfoReqBody reqBody;
+    PrepareNormalFormInfoReq(reqBody);
     MessageParcel data;
     MessageParcel reply;
-    FormInfoReqBody reqBody;
-    vector<string> formIds = { "1057934318" };
-    reqBody.formIds = formIds;
-    string uri = "file://media/Photo/" + to_string(fileId);
-    vector<string> fileUris = { uri };
-    reqBody.fileUris = fileUris;
     bool errConn = !reqBody.Marshalling(data);
     ASSERT_EQ(errConn, false);
     auto service = make_shared<MediaAssetsControllerService>();
@@ -384,5 +365,64 @@ HWTEST_F(FormInfoTest, Remove_Gallery_Form_Info_Test_001, TestSize.Level0)
     int32_t changedRows = resp.GetErrCode();
     EXPECT_GT(changedRows, 0);
     MEDIA_INFO_LOG("End Remove_Gallery_Form_Info_Test_001");
+}
+
+HWTEST_F(FormInfoTest, Update_Gallery_Form_Info_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start Update_Gallery_Form_Info_Test_001");
+    FormInfoReqBody reqBody;
+    PrepareNormalFormInfoReq(reqBody);
+    MessageParcel data;
+    MessageParcel reply;
+    bool errConn = !reqBody.Marshalling(data);
+    ASSERT_EQ(errConn, false);
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->SaveGalleryFormInfo(data, reply);
+    IPC::MediaEmptyObjVo respVo;
+    IPC::MediaRespVo<MediaEmptyObjVo> resp;
+    bool isValid = resp.Unmarshalling(reply);
+    ASSERT_EQ(isValid, true);
+    int32_t formId = resp.GetErrCode();
+    EXPECT_GT(formId, 0);
+
+    PrepareNormalFormInfoReq(reqBody);
+    errConn = !reqBody.Marshalling(data);
+    ASSERT_EQ(errConn, false);
+    service->UpdateGalleryFormInfo(data, reply);
+    isValid = resp.Unmarshalling(reply);
+    ASSERT_EQ(isValid, true);
+    int32_t changedRows = resp.GetErrCode();
+    EXPECT_GT(changedRows, 0);
+    MEDIA_INFO_LOG("End Update_Gallery_Form_Info_Test_001");
+}
+
+HWTEST_F(FormInfoTest, Update_Gallery_Form_Info_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start Update_Gallery_Form_Info_Test_002");
+    FormInfoReqBody reqBody;
+    PrepareNormalFormInfoReq(reqBody);
+    MessageParcel data;
+    MessageParcel reply;
+    bool errConn = !reqBody.Marshalling(data);
+    ASSERT_EQ(errConn, false);
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->SaveGalleryFormInfo(data, reply);
+    IPC::MediaEmptyObjVo respVo;
+    IPC::MediaRespVo<MediaEmptyObjVo> resp;
+    bool isValid = resp.Unmarshalling(reply);
+    ASSERT_EQ(isValid, true);
+    int32_t formId = resp.GetErrCode();
+    EXPECT_GT(formId, 0);
+
+    vector<string> fileUris;
+    reqBody.fileUris = fileUris;
+    errConn = !reqBody.Marshalling(data);
+    ASSERT_EQ(errConn, false);
+    service->UpdateGalleryFormInfo(data, reply);
+    isValid = resp.Unmarshalling(reply);
+    ASSERT_EQ(isValid, true);
+    int32_t changedRows = resp.GetErrCode();
+    EXPECT_EQ(changedRows, E_GET_PRAMS_FAIL);
+    MEDIA_INFO_LOG("End Update_Gallery_Form_Info_Test_002");
 }
 }  // namespace OHOS::Media

@@ -1041,7 +1041,7 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
         return E_INVALID_URI;
     }
-    
+
     int insertResult = BatchInsertMediaAnalysisData(cmd, values);
     if (insertResult > 0) {
         return insertResult;
@@ -1280,7 +1280,7 @@ static std::string BuildWhereClause(const std::vector<std::string>& dismissAsset
     return whereClause;
 }
 
-static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
+int MediaLibraryDataManager::HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
     const DataShare::DataSharePredicates &predicates)
 {
     string keyOperation = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
@@ -2478,7 +2478,7 @@ static void DealUpdateForDirty(const shared_ptr<NativeRdb::ResultSet> &resultSet
     int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
     int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
     int64_t editTime = GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet);
-    
+
     // position = 2：update dirty 0
     // position = 3: if edit, update dirty 3; else update dirty 0
     if (position == PHOTO_CLOUD_POSITION) {
@@ -2535,7 +2535,7 @@ static int32_t DoUpdateDirtyForCloudCloneOperationV2(const shared_ptr<MediaLibra
     int32_t ret = rdbStore->Update(changeRows, updatePostBucket, updatePredicates);
     CHECK_AND_RETURN_RET_LOG((ret == E_OK && changeRows > 0), E_FAIL,
         "Failed to UpdateDirtyForCloudClone, ret: %{public}d, updateRows: %{public}d", ret, changeRows);
-    
+
     string updateSql = "UPDATE " + PhotoColumn::TAB_OLD_PHOTOS_TABLE + " SET " +
         COLUMN_OLD_FILE_ID + " = (" + std::to_string(ERROR_OLD_FILE_ID_OFFSET) + " - " + MediaColumn::MEDIA_ID + ") "+
         "WHERE " +  MediaColumn::MEDIA_ID + " IN (";

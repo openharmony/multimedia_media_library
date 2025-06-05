@@ -30,9 +30,6 @@ public:
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
-
-public:  // basic functions
-    std::string ToString() const;
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIA_ASSETS_MANAGER_CLONE_VO_H
