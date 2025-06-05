@@ -109,8 +109,6 @@ std::string PhotosVo::ToString() const
        << "\"originalCloudId\": \"" << this->originalCloudId << "\", "
        << "\"size\": " << this->size << ", "
        << "\"modifiedTime\": " << this->modifiedTime << ", "
-       << "\"path\": \"" << this->path << "\", "
-       << "\"fileName\": \"" << this->fileName << "\", "
        << "\"type\": " << this->type << ", "
        << "\"attachment\": {" << this->ToString(this->attachment) << "}"
        << "}";

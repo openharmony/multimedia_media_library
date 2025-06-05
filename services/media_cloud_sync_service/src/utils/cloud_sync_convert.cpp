@@ -294,9 +294,9 @@ int32_t CloudSyncConvert::CompensatePropPosition(const CloudMediaPullDataDto &da
     if (std::regex_search(position, match, positionPattern)) {
         latitude = match[FIRST_MATCH_PARAM];
         longitude = match[SECOND_MATCH_PARAM];
-        MEDIA_ERR_LOG("position latitude: %{public}s, longitude: %{public}s", latitude.c_str(), longitude.c_str());
+        MEDIA_ERR_LOG("position latitude: %{private}s, longitude: %{private}s", latitude.c_str(), longitude.c_str());
     } else {
-        MEDIA_ERR_LOG("position %{public}s extract latitude or longitude error", position.c_str());
+        MEDIA_ERR_LOG("position %{private}s extract latitude or longitude error", position.c_str());
         return E_CLOUDSYNC_INVAL_ARG;
     }
     std::stringstream latitudestream(latitude);

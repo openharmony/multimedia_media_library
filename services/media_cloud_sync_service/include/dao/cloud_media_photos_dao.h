@@ -200,6 +200,8 @@ private:
             SELECT * \
             FROM Photos \
             WHERE dirty IN (2, 3) AND \
+                cloud_id <> '' AND \
+                cloud_id IS NOT NULL AND \
                 file_id NOT IN ({0}) \
             ORDER BY size ASC \
             LIMIT ? \
@@ -221,6 +223,8 @@ private:
                 dirty = 3 AND \
                 thumbnail_ready >= 3 AND \
                 lcd_visit_time >= 2 AND \
+                cloud_id <> '' AND \
+                cloud_id IS NOT NULL AND \
                 file_id NOT IN ({0}) \
             ORDER BY size ASC \
             LIMIT ? \

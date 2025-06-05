@@ -78,8 +78,6 @@ std::string OnFileDirtyRecord::ToString() const
        << "\"path\": \"" << path << "\","
        << "\"createTime\": \"" << createTime << "\","
        << "\"modifyTime\": \"" << modifyTime << "\","
-       << "\"fileName\": \"" << fileName << "\","
-       << "\"sourcePath\": \"" << sourcePath << "\","
        << "\"version\": \"" << version << "\","
        << "\"serverErrorCode\": \"" << serverErrorCode << "\","
        << "\"isSuccess\": \"" << isSuccess << "\","
