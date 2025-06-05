@@ -19,7 +19,6 @@
 #include <string>
 
 #include "backup_const.h"
-#include "nlohmann/json.hpp"
 #include "rdb_store.h"
 
 namespace OHOS::Media {
@@ -101,7 +100,6 @@ private:
         int64_t &rowNum);
 
     void GetMaxIds();
-    int32_t GetMaxIdByTableName(const std::string &tableName, const std::string &columnName);
     std::vector<int32_t> GetMinIdsOfAnalysisTotal();
     void RestoreBatch(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t minId);
     void GetAnalysisTotalInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t minId);

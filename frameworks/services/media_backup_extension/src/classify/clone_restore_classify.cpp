@@ -565,8 +565,8 @@ void CloneRestoreClassify::Restore(const std::unordered_map<int32_t, PhotoInfo> 
 
 void CloneRestoreClassify::GetMaxIds()
 {
-    maxIdOfLabel_ = BackupFileUtils::QueryMaxId(mediaLibraryRdb_, ANALYSIS_LABEL_TABLE, FILE_ID);
-    maxIdOfVideoLabel_ = BackupFileUtils::QueryMaxId(mediaLibraryRdb_, ANALYSIS_VIDEO_TABLE, FILE_ID);
+    maxIdOfLabel_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_, ANALYSIS_LABEL_TABLE, FILE_ID);
+    maxIdOfVideoLabel_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_, ANALYSIS_VIDEO_TABLE, FILE_ID);
 }
 
 std::vector<int32_t> CloneRestoreClassify::GetMinIdsOfAnalysisTotal()

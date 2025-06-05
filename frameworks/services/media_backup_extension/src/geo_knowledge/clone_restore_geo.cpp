@@ -414,7 +414,7 @@ void CloneRestoreGeo::Restore(const std::unordered_map<int32_t, PhotoInfo> &phot
 
 void CloneRestoreGeo::GetMaxIds()
 {
-    maxId_ = BackupFileUtils::QueryMaxId(mediaLibraryRdb_, GEO_KNOWLEDGE_TABLE, "rowid");
+    maxId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_, GEO_KNOWLEDGE_TABLE, "rowid");
 }
 
 std::vector<int32_t> CloneRestoreGeo::GetMinIdsOfAnalysisTotal()

@@ -115,7 +115,6 @@ private:
         int64_t &rowNum);
     
     void GetMaxIds();
-    int32_t GetMaxIdByTableName(const std::string &tableName);
     std::vector<int32_t> GetMinIdsOfAnalysisTotal();
     void RestoreBatch(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t minId);
     void GetAnalysisTotalInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t minId);
