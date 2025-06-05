@@ -287,7 +287,6 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     InitThumbnailStatus();
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
-    cloneRestoreGeo_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreGeoDictionary_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreHighlight_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
     cloneRestoreCVAnalysis_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
@@ -469,7 +468,6 @@ void CloneRestore::RestoreAlbum()
 
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
-    cloneRestoreGeo_.RestoreGeoKnowledgeInfos();
     cloneRestoreGeoDictionary_.RestoreAlbums();
     RestoreHighlightAlbums();
 }
@@ -1634,7 +1632,6 @@ void CloneRestore::RestoreGallery()
     BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
-    cloneRestoreGeo_.ReportGeoRestoreTask();
     cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
     cloneRestoreHighlight_.UpdateAlbums();
     cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
@@ -2050,7 +2047,6 @@ void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos, int32_t sourc
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("query new file_id cost %{public}ld, insert %{public}ld maps cost %{public}ld",
         (long)(startInsert - startQuery), (long)mapRowNum, (long)(end - startInsert));
-    cloneRestoreGeo_.RestoreMaps(fileInfos);
     cloneRestoreHighlight_.RestoreMaps(fileInfos);
 }
 
@@ -3004,6 +3000,13 @@ void CloneRestore::RestoreAnalysisClassify()
     CloneRestoreClassify cloneRestoreClassify;
     cloneRestoreClassify.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_);
     cloneRestoreClassify.Restore(photoInfoMap_);
+}
+
+void CloneRestore::RestoreAnalysisGeo()
+{
+    CloneRestoreGeo cloneRestoreGeo;
+    cloneRestoreGeo.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_);
+    cloneRestoreGeo.Restore(photoInfoMap_);
 }
 } // namespace Media
 } // namespace OHOS
