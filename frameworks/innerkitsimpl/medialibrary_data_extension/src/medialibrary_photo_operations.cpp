@@ -2578,6 +2578,22 @@ void ResetOcrInfo(const int32_t &fileId)
         "Update ocr info failed, ret = %{public}d, file id is %{public}d", ret, fileId);
 }
 
+static void RemoveMovingPhotoVideo(std::string &sourcePath, std::string &path)
+{
+    string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourcePath);
+    if (!MediaFileUtils::IsFileExists(sourceVideoPath)) {
+        MEDIA_ERR_LOG("source video path not exists");
+        return;
+    }
+    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
+    if (!MediaFileUtils::IsFileExists(videoPath)) {
+        MEDIA_ERR_LOG("video path not exists");
+        return;
+    }
+    CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(videoPath),
+        "Failed to delete video file, errno: %{public}d", errno);
+}
+
 int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset)
 {
     MEDIA_INFO_LOG("begin to do revertEdit");
@@ -2618,6 +2634,11 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     if (MediaFileUtils::IsFileExists(path)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFileWithRetry(path), E_HAS_FS_ERROR,
             "Failed to delete asset, path:%{private}s", path.c_str());
+    }
+
+    if (MovingPhotoFileUtils::IsMovingPhoto(subtype,
+        fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType())) {
+        RemoveMovingPhotoVideo(sourcePath, path);
     }
 
     CHECK_AND_RETURN_RET_LOG(DoRevertFilters(fileAsset, path, sourcePath) == E_OK, E_FAIL,
