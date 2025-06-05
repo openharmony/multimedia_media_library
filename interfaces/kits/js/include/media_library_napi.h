@@ -510,6 +510,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t taskId = -1;
     bool isFullAnalysis = false;
     uint32_t businessCode = 0;
+    int32_t userId = -1;
 };
 
 struct MediaLibraryInitContext : public NapiError  {
