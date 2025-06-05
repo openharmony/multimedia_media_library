@@ -408,6 +408,15 @@ MDKRecordPhotosData &MDKRecordPhotosData::SetCoverPosition(const int64_t coverPo
     this->attributes_[PhotoColumn::PHOTO_COVER_POSITION] = MDKRecordField(coverPosition);
     return *this;
 }
+std::optional<int32_t> MDKRecordPhotosData::GetIsRectificationCover() const
+{
+    return this->recordReader_.GetIntValue(this->attributes_, PhotoColumn::PHOTO_IS_RECTIFICATION_COVER);
+}
+MDKRecordPhotosData &MDKRecordPhotosData::SetIsRectificationCover(const int32_t isRectificationCover)
+{
+    this->attributes_[PhotoColumn::PHOTO_IS_RECTIFICATION_COVER] = MDKRecordField(isRectificationCover);
+    return *this;
+}
 std::optional<int32_t> MDKRecordPhotosData::GetMovingPhotoEffectMode() const
 {
     return this->recordReader_.GetIntValue(this->attributes_, PhotoColumn::MOVING_PHOTO_EFFECT_MODE);

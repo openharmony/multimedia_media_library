@@ -63,6 +63,7 @@ public:
     int64_t editTime;                  // PhotoColumn::PHOTO_EDIT_TIME;
     int32_t originalSubtype;           // PhotoColumn::PHOTO_ORIGINAL_SUBTYPE;
     int64_t coverPosition;             // PhotoColumn::PHOTO_COVER_POSITION;
+    int32_t isRectificationCover;      // PhotoColumn::PHOTO_IS_RECTIFICATION_COVER;
     int32_t movingPhotoEffectMode;     // PhotoColumn::MOVING_PHOTO_EFFECT_MODE;
     int32_t ownerAlbumId;              // PhotoColumn::PHOTO_OWNER_ALBUM_ID;
     std::string originalAssetCloudId;  // PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID;

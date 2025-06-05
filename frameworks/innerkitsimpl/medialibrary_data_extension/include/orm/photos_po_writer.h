@@ -93,6 +93,7 @@ private:
         {PhotoColumn::PHOTO_EDIT_TIME, &PhotosPoWriter::SetEditTime},
         {PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, &PhotosPoWriter::SetOriginalSubtype},
         {PhotoColumn::PHOTO_COVER_POSITION, &PhotosPoWriter::SetCoverPosition},
+        {PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, &PhotosPoWriter::SetIsRectificationCover},
         {PhotoColumn::MOVING_PHOTO_EFFECT_MODE, &PhotosPoWriter::SetPhotoEffectMode},
         {PhotoColumn::PHOTO_OWNER_ALBUM_ID, &PhotosPoWriter::SetOwnerAlbumId},
         {PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, &PhotosPoWriter::SetOriginalAssetCloudId},
@@ -348,6 +349,12 @@ private:
         bool errConn = !std::holds_alternative<int64_t>(val);
         CHECK_AND_RETURN(!errConn);
         this->photosPo_.coverPosition = std::get<int64_t>(val);
+    }
+    void SetIsRectificationCover(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool errConn = !std::holds_alternative<int32_t>(val);
+        CHECK_AND_RETURN(!errConn);
+        this->photosPo_.isRectificationCover = std::get<int32_t>(val);
     }
     void SetPhotoEffectMode(std::variant<int32_t, int64_t, double, std::string> &val)
     {

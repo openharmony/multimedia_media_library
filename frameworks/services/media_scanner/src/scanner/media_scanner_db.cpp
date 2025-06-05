@@ -231,6 +231,14 @@ static void HandleMovingPhotoDirty(const Metadata &metadata, ValuesBucket &value
     values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
 }
 
+static void HandleMovingPhoto(const Metadata &metadata, ValuesBucket &values)
+{
+    if (metadata.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        values.PutInt(PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, 1);
+    }
+    HandleMovingPhotoDirty(metadata, values);
+}
+
 static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &values, bool isInsert,
     bool skipPhoto = true)
 {
@@ -277,7 +285,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
 
         if (metadata.GetPhotoSubType() != 0) {
             values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
-            HandleMovingPhotoDirty(metadata, values);
+            HandleMovingPhoto(metadata, values);
         }
     } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
         values.PutString(AudioColumn::AUDIO_ALBUM, metadata.GetAlbum());
