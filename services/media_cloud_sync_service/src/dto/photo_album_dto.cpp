@@ -27,7 +27,6 @@ std::string PhotoAlbumDto::ToString()
        << "\"albumId\": \"" << this->albumId << "\", "
        << "\"albumType\": " << this->albumType << ", "
        << "\"albumSubType\": " << this->albumSubType << ","
-       << "\"albumName\": \"" << this->albumName << "\","
        << "\"lPath\": \"" << this->lPath << "\","
        << "\"bundleName\": \"" << this->bundleName << "\","
        << "\"priority\": " << this->priority << ","

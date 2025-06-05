@@ -111,10 +111,8 @@ std::string CheckDataAlbum::ToString() const
        << "\"cloudId\": \"" << this->cloudId << "\", "
        << "\"size\": " << this->size << ", "
        << "\"data\": \"" << this->data << "\", "
-       << "\"displayName\": \"" << this->displayName << "\", "
        << "\"mediaType\": " << this->mediaType << ", "
        << "\"cloudVersion\": " << this->cloudVersion << ", "
-       << "\"position\": " << this->position << ", "
        << "\"dateModified\": " << this->dateModified << ", "
        << "\"dirty\": " << this->dirty << "\""
        << "}";

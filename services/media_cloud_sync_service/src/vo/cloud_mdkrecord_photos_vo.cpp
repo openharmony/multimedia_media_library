@@ -167,8 +167,7 @@ void CloudMdkRecordPhotosVo::GetAlbumInfo(std::stringstream &ss) const
 
 void CloudMdkRecordPhotosVo::GetBasicInfo(std::stringstream &ss) const
 {
-    ss << "\"displayName\": \"" << displayName << "\","
-       << "\"orientation\": \"" << orientation << "\","
+    ss << "\"orientation\": \"" << orientation << "\","
        << "\"size\": " << size << ","
        << "\"hidden\": " << hidden << ","
        << "\"dirty\": " << dirty << ","
@@ -184,7 +183,6 @@ void CloudMdkRecordPhotosVo::GetPropertiesInfo(std::stringstream &ss) const
     ss << "\"editTime\": " << editTime << ","
        << "\"fileId\": " << fileId << ","
        << "\"cloudId\": \"" << cloudId << "\","
-       << "\"sourcePath\": \"" << sourcePath << "\","
        << "\"originalAssetCloudId\": \"" << originalAssetCloudId << "\","
        << "\"dateAdded\": " << dateAdded << ","
        << "\"dateModified\": " << dateModified << ","
@@ -208,8 +206,7 @@ void CloudMdkRecordPhotosVo::GetCloudInfo(std::stringstream &ss) const
 
 void CloudMdkRecordPhotosVo::GetAttributesInfo(std::stringstream &ss) const
 {
-    ss << "\": " << title << ","
-       << "\"duration\": " << duration << ","
+    ss << "\"duration\": " << duration << ","
        << "\"relativePath\": \"" << relativePath << "\","
        << "\"virtualPath\": \"" << virtualPath << "\","
        << "\"burstCoverLevel\": " << burstCoverLevel << ","
