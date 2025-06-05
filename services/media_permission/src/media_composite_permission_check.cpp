@@ -55,10 +55,10 @@ int32_t SinglePermissionCheck::CheckPermission(uint32_t businessCode, const Perm
     for (const auto& check : singlePermChecks_) {
         auto ret = check->CheckPermission(businessCode, data);
         if (ret != E_SUCCESS) {
-            return E_PERMISSION_DENIED;
+            return ret;
         }
     }
-    return ret;
+    return E_SUCCESS;
 }
 
 } // namespace OHOS::Media
