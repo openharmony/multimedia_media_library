@@ -219,6 +219,7 @@ private:
     void RestoreAnalysisData();
     void RestoreSearchIndexData();
     void RestoreAnalysisClassify();
+    void RestoreAnalysisGeo();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -262,7 +263,6 @@ private:
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
     std::vector<int> photosFailedOffsets_;
     ffrt::mutex photosFailedMutex_;
-    CloneRestoreGeo cloneRestoreGeo_;
     CloneRestoreHighlight cloneRestoreHighlight_;
     CloneRestoreCVAnalysis cloneRestoreCVAnalysis_;
     std::atomic<uint64_t> lcdMigrateFileNumber_{0};

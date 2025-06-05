@@ -110,10 +110,6 @@ void CloneRestoreClassify::Init(int32_t sceneCode, const std::string &taskId,
     taskId_ = taskId;
     mediaLibraryRdb_ = mediaLibraryRdb;
     mediaRdb_ = mediaRdb;
-    successInsertLabelCnt_ = 0;
-    successInsertVideoLabelCnt_ = 0;
-    failInsertLabelCnt_ = 0;
-    failInsertVideoLabelCnt_ = 0;
 }
 
 void CloneRestoreClassify::RestoreMaps()
@@ -537,8 +533,6 @@ int32_t CloneRestoreClassify::BatchInsertWithRetry(const std::string &tableName,
 void CloneRestoreClassify::ReportClassifyRestoreTask()
 {
     // TODO ADD TOTAL TIME COST & WRITE A FUNCTION
-    MEDIA_INFO_LOG("Classify label insert successInsertCnt_: %{public}d, failInsertCnt_: %{public}d",
-        successInsertLabelCnt_.load(), failInsertLabelCnt_.load());
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
         .Report("Classify label restore", std::to_string(CLASSIFY_STATUS_SUCCESS),
         "max_id: " + std::to_string(maxIdOfLabel_) +
@@ -547,8 +541,6 @@ void CloneRestoreClassify::ReportClassifyRestoreTask()
         ", duplicate: " + std::to_string(duplicateLabelCnt_) +
         ", timeCost: " + std::to_string(restoreLabelTimeCost_));
 
-    MEDIA_INFO_LOG("Classify video label insert successInsertCnt_: %{public}d, failInsertCnt_: %{public}d",
-        successInsertVideoLabelCnt_.load(), failInsertVideoLabelCnt_.load());
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
         .Report("Classify video label restore", std::to_string(CLASSIFY_STATUS_SUCCESS),
         "max_id: " + std::to_string(maxIdOfVideoLabel_) +
@@ -573,15 +565,8 @@ void CloneRestoreClassify::Restore(const std::unordered_map<int32_t, PhotoInfo> 
 
 void CloneRestoreClassify::GetMaxIds()
 {
-    maxIdOfLabel_ = GetMaxIdByTableName(ANALYSIS_LABEL_TABLE);
-    maxIdOfVideoLabel_ = GetMaxIdByTableName(ANALYSIS_VIDEO_TABLE);
-}
-
-int32_t CloneRestoreClassify::GetMaxIdByTableName(const std::string &tableName)
-{
-    const std::string QUERY_SQL = "SELECT max(id) FROM " + tableName;
-    const std::string COLUMN_NAME = "max(id)";
-    return BackupDatabaseUtils::QueryInt(mediaLibraryRdb_, QUERY_SQL, COLUMN_NAME);
+    maxIdOfLabel_ = BackupFileUtils::QueryMaxId(mediaLibraryRdb_, ANALYSIS_LABEL_TABLE, FILE_ID);
+    maxIdOfVideoLabel_ = BackupFileUtils::QueryMaxId(mediaLibraryRdb_, ANALYSIS_VIDEO_TABLE, FILE_ID);
 }
 
 std::vector<int32_t> CloneRestoreClassify::GetMinIdsOfAnalysisTotal()
