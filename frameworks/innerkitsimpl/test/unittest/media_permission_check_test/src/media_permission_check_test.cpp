@@ -158,6 +158,7 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_001, TestSize.Level0
     PermissionUtilsUnitTest::SetAccessTokenPermission("MediaPermissionCheckTest_001", perms, tokenId);
     ASSERT_TRUE(tokenId != 0);
     MEDIA_INFO_LOG("MediaPermissionCheckTest_001 tokenId=%{public}llu", static_cast<unsigned long long>(tokenId));
+
     uint32_t businessCode = 1;
     PermissionHeaderReq data;
     std::unordered_map<std::string, std::string> headerMap;
@@ -294,8 +295,8 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_010, TestSize.Level0
     };
     uint32_t businessCode = 3;
     PermissionHeaderReq data;
-    EXPECT_EQ(PreparePermissionParam(businessCode, 100, false, headerMap, data), E_SUCCESS);
-    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_SUCCESS);
+    EXPECT_EQ(PreparePermissionParam(businessCode, -1, false, headerMap, data), E_SUCCESS);
+    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_PERMISSION_DENIED);
     MEDIA_INFO_LOG("MediaPermissionCheckTest_010 end");
 }
 
@@ -310,6 +311,7 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_011, TestSize.Level0
     PermissionHeaderReq data;
     EXPECT_EQ(PreparePermissionParam(businessCode, 100, false, headerMap, data), E_SUCCESS);
     EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_PERMISSION_DENIED);
+
     businessCode = 4;
     data = PermissionHeaderReq();
     EXPECT_EQ(PreparePermissionParam(businessCode, 100, false, headerMap, data), E_SUCCESS);
@@ -320,7 +322,7 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_011, TestSize.Level0
 HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_012, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaPermissionCheckTest_012 begin");
-    //invalid api code
+    // invalid api code
     uint32_t businessCode = 1000000;
     PermissionHeaderReq data;
     std::unordered_map<std::string, std::string> headerMap;
@@ -346,15 +348,18 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_013, TestSize.Level0
 HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_014, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaPermissionCheckTest_014 begin");
+
     uint32_t businessCode = 1;
     PermissionHeaderReq data;
     std::unordered_map<std::string, std::string> headerMap;
     EXPECT_EQ(PreparePermissionParam(businessCode, -1, false, headerMap, data), E_SUCCESS);
     EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_PERMISSION_DENIED);
+
     businessCode = 2;
     data = PermissionHeaderReq();
     EXPECT_EQ(PreparePermissionParam(businessCode, -1, false, headerMap, data), E_SUCCESS);
     EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_PERMISSION_DENIED);
+
     businessCode = 4;
     data = PermissionHeaderReq();
     EXPECT_EQ(PreparePermissionParam(businessCode, -1, false, headerMap, data), E_SUCCESS);
@@ -366,11 +371,13 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_015, TestSize.Level0
 {
     MEDIA_INFO_LOG("MediaPermissionCheckTest_015 begin");
     getCallingUidPtr = IPCSkeleton::GetCallingUid;
+
     uint32_t businessCode = 3;
     PermissionHeaderReq data;
     std::unordered_map<std::string, std::string> headerMap;
     EXPECT_EQ(PreparePermissionParam(businessCode, -1, false, headerMap, data), E_SUCCESS);
     EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_PERMISSION_DENIED);
+
     isCalledBySelfPtr = MediaFileUtils::IsCalledBySelf;
     businessCode = 3;
     data = PermissionHeaderReq();
@@ -383,11 +390,13 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_016, TestSize.Level0
 {
     MEDIA_INFO_LOG("MediaPermissionCheckTest_016 begin");
     getCallingUidPtr = IPCSkeleton::GetCallingUid;
+
     uint32_t businessCode = 4;
     PermissionHeaderReq data;
     std::unordered_map<std::string, std::string> headerMap;
     EXPECT_EQ(PreparePermissionParam(businessCode, -1, false, headerMap, data), E_SUCCESS);
     EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_PERMISSION_DENIED);
+
     isCalledBySelfPtr = MediaFileUtils::IsCalledBySelf;
     businessCode = 4;
     data = PermissionHeaderReq();
@@ -423,7 +432,7 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_OPENFILE, TestSize.L
         {PermissionHeaderReq::URI_TYPE_KEY, "2"},
         {PermissionHeaderReq::OPEN_URI_KEY, "file://media/Photo/picture/?file_id=1"},
         {PermissionHeaderReq::OPEN_MODE_KEY, "rw"}};
-    };
+
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_OPEN);
     PermissionHeaderReq data;
     EXPECT_EQ(PreparePermissionParam(businessCode, 1, false, headerMap, data), E_SUCCESS);
@@ -451,8 +460,7 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_OPENFILE_3, TestSize
     MEDIA_INFO_LOG("MediaPermissionCheckTest_OPENFILE_3 begin");
     std::unordered_map<std::string, std::string> headerMap = {
         {PermissionHeaderReq::OPEN_URI_KEY, "file://media/Photo/picture/?file_id=1"},
-        {PermissionHeaderReq::OPEN_MODE_KEY, "rw"}
-    };
+        {PermissionHeaderReq::OPEN_MODE_KEY, "rw"}};
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_OPEN);
     PermissionHeaderReq data;
     EXPECT_EQ(PreparePermissionParam(businessCode, 1, false, headerMap, data), E_SUCCESS);
@@ -465,8 +473,7 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_OPENFILE_4, TestSize
     MEDIA_INFO_LOG("MediaPermissionCheckTest_OPENFILE_4 begin");
     std::unordered_map<std::string, std::string> headerMap = {
         {PermissionHeaderReq::OPEN_URI_KEY, "file:://media/photo_operation/query"},
-        {PermissionHeaderReq::OPEN_MODE_KEY, "rw"}
-    };
+        {PermissionHeaderReq::OPEN_MODE_KEY, "rw"}};
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_OPEN);
     PermissionHeaderReq data;
     EXPECT_EQ(PreparePermissionParam(businessCode, 1, false, headerMap, data), E_SUCCESS);
@@ -488,5 +495,5 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_OPENFILE_5, TestSize
     MEDIA_INFO_LOG("MediaPermissionCheckTest_OPENFILE_5 end");
 }
 
-} // namespace Media
-} // namespace OHOS
+}  // namespace Media
+}  // namespace OHOS
