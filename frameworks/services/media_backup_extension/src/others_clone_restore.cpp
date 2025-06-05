@@ -53,6 +53,7 @@ const int STRONG_ASSOCIATION_ENABLE = 1;
 constexpr int32_t MAX_CLONE_THREAD_NUM = 2;
 const int32_t I_PHONE_DYNAMIC_VIDEO_TYPE = 13;
 constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
+const size_t EXTRADATA_LEN = 60;
 const std::string I_PHONE_LPATH = "/Pictures/";
 const std::string PHONE_TYPE = "type";
 const std::string PHONE_DEVICE_TYPE = "deviceType";
@@ -947,6 +948,17 @@ void OthersCloneRestore::AnalyzeSource()
     MEDIA_INFO_LOG("analyze source later");
 }
 
+size_t GetIosMovingPhotoSize(const std::string iosMovingPhotoImagePath)
+{
+    std::string iosMovingPhotoVideoPath =
+        iosMovingPhotoImagePath.substr(0, iosMovingPhotoImagePath.find_last_of(".")) + ".MOV";
+    size_t imageSize = 0;
+    size_t videoSize = 0;
+    (void)MediaFileUtils::GetFileSize(iosMovingPhotoImagePath, imageSize);
+    (void)MediaFileUtils::GetFileSize(iosMovingPhotoVideoPath, videoSize);
+    return (videoSize == 0) ? 0 : imageSize + videoSize + EXTRADATA_LEN;
+}
+
 bool OthersCloneRestore::IsIosMovingPhotoVideo(FileInfo &fileInfo, int32_t sceneCode)
 {
     if (sceneCode != I_PHONE_CLONE_RESTORE || fileInfo.filePath.find(I_PHONE_DYNAMIC_IMAGE) == string::npos) {
@@ -958,6 +970,7 @@ bool OthersCloneRestore::IsIosMovingPhotoVideo(FileInfo &fileInfo, int32_t scene
         return true;
     } else {
         fileInfo.subtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+        fileInfo.fileSize = static_cast<int64_t>(GetIosMovingPhotoSize(fileInfo.filePath));
     }
     return false;
 }
