@@ -1204,8 +1204,15 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
         BackupDatabaseUtils::UpdateSelection(selection, std::to_string(fileInfo.fileIdOld), false);
     }
     std::unordered_set<std::string> needQuerySet;
-    std::string querySql = "SELECT DISTINCT " + GALLERY_MERGE_FACE_HASH + " FROM " + GALLERY_FACE_TABLE_JOIN_TAG +
-        " HAVING " + GALLERY_MEDIA_ID + " IN (" + selection + ") AND " + GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY;
+    std::string querySql = "SELECT DISTINCT mf.hash "
+        "FROM merge_face mf "
+        "INNER JOIN merge_tag mt ON mf.tag_id = mt.tag_id "
+        "WHERE" +
+        "COALESCE(gm.albumId, '') NOT IN ('default-album-3', 'default-album-4') "
+        "AND (mt.tag_name IS NOT NULL AND mt.tag_name != '') "
+        "GROUP BY mf.hash, mf.face_id "
+        " HAVING gm._id IN (" + selection + ")";
+        
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -1271,7 +1278,10 @@ void UpgradeRestore::SetHashReference(const std::vector<FileInfo> &fileInfos, co
 {
     auto needQuerySet = needQueryMap.at(PhotoRelatedType::PORTRAIT);
     for (const auto &fileInfo : fileInfos) {
-        bool cond = (needQuerySet.count(fileInfo.hashCode) == 0 || fileInfo.fileIdNew <= 0);
+        bool isInvalid = fileInfo.hidden || fileInfo.dateTrashed;
+        bool notInQuerySet = (needQuerySet.count(fileInfo.hashCode) == 0);
+        bool invalidFileId = (fileInfo.fileIdNew <= 0);
+        bool cond = isInvalid || notInQuerySet || invalidFileId;
         CHECK_AND_CONTINUE(!cond);
         // select the first one to build map
         CHECK_AND_CONTINUE(fileInfoMap.count(fileInfo.hashCode) <= 0);
