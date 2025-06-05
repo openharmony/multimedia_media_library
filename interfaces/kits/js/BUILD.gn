@@ -163,6 +163,7 @@ ohos_shared_library("medialibrary_nutils") {
   public_configs = [ ":public_napi_config" ]
   configs = [ ":napi_config" ]
   sources = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_define_ipc_client.cpp",
     "${MEDIALIB_JS_PATH}/src/album_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/cloud_enhancement_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/cloud_enhancement_task_state_napi.cpp",
@@ -199,7 +200,6 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/smart_album_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/thumbnail_manager.cpp",
     "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_define_ipc_client.cpp",
   ]
 
   media_asset_service_vo_source = [
@@ -225,7 +225,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/start_thumbnail_creation_task_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/stop_thumbnail_creation_task_vo.cpp",
   ]
- 
+
   media_album_service_vo_source = [
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/create_album_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/delete_albums_vo.cpp",
@@ -252,7 +252,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_recover_assets_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_photo_query_vo.cpp",
   ]
- 
+
   sources += media_asset_service_vo_source
   sources += media_album_service_vo_source
 
