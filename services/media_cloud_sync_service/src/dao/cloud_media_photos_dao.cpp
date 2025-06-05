@@ -1002,6 +1002,7 @@ int32_t CloudMediaPhotosDao::GetDeletedRecordsAsset(int32_t size, std::vector<Ph
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "GetDeletedRecordsAsset Failed to get rdbStore.");
     NativeRdb::AbsRdbPredicates queryPredicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     queryPredicates.EqualTo(PhotoColumn::PHOTO_DIRTY, to_string(static_cast<int32_t>(Media::DirtyType::TYPE_DELETED)));
+    queryPredicates.And()->NotEqualTo(PhotoColumn::PHOTO_CLOUD_ID, "");
     queryPredicates.And()->IsNotNull(PhotoColumn::PHOTO_CLOUD_ID);
     if (!photoModifyFailSet_.Empty()) {
         for (auto &cloudId : photoModifyFailSet_.ToVector()) {
