@@ -192,7 +192,7 @@ static int32_t QueryUriPermissionTableByFileId(int32_t fileId)
     int64_t srcToken = GetInt64Val(AppUriPermissionColumn::SOURCE_TOKENID, resultSet);
     int64_t targetToken = GetInt64Val(AppUriPermissionColumn::TARGET_TOKENID, resultSet);
     MEDIA_INFO_LOG("uriType: %{public}d, permType: %{public}d, srcToken: %{public}ld, targetToken: %{public}ld",
-            uriType, permType, srcToken, targetToken);
+        uriType, permType, srcToken, targetToken);
     return 0;
 }
 

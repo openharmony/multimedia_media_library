@@ -168,7 +168,7 @@ HWTEST_F(ChangeAssetsTest, AddAssets_Test_001, TestSize.Level0)
  * @tc.number: RemoveAssetsTest_001
  * @tc.desc  : 测试 isHiddenOnly, RemoveAssets 函数应正确处理隐藏仅标志
  */
-HWTEST_F(ChangeAssetsTest,RemoveAssetsTest_001, TestSize.Level0)
+HWTEST_F(ChangeAssetsTest, RemoveAssetsTest_001, TestSize.Level0)
 {
     int32_t result = ServiceRemoveAssets(0);
     ASSERT_LT(result, 0);
