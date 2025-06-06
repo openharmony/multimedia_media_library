@@ -49,7 +49,8 @@ static std::string EDITDATA_WATERMARK = "{\"imageEffect\":{\"filters\":[{\"name\
 static std::string EDITDATA_FILTER = "{\"imageEffect\":{\"filters\":[{\"name\":\"Moody\","
     "\"values\":{\"FILTER_PARA\":0}}],\"name\":\"imageEdit\"}}";
 static std::string EDITDATA_WATERMARK_AND_FILTER = "{\"imageEffect\":{\"filters\":[{\"name\":\"Moody\","
-    "\"values\":{\"FILTER_PARA\":0}},{\"name\":\"FrameSticker\",\"values\":{\"RESOURCE_DIRECTORY\":\"/sys_prod/resource/camera\"},"
+    "\"values\":{\"FILTER_PARA\":0}},{\"name\":\"FrameSticker\","
+    "\"values\":{\"RESOURCE_DIRECTORY\":\"/sys_prod/resource/camera\"},"
     "\"FILTER_CATEGORY\":\"BORDER_WATERMARK\"}],\"name\":\"imageEdit\"}}";
 static std::string EDITDATA_WITHOUT_WATERMARK = "{\"imageEffect\":{\"filters\":null,\"name\":\"imageEdit\"}}";
 
