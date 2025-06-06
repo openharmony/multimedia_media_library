@@ -53,6 +53,7 @@ ohos_unittest("media_library_helper_test") {
     "./src/native_album_asset_test.cpp",
     "./src/photo_album_asset_test.cpp",
     "./src/photo_album_column_test.cpp",
+    "./src/photo_asset_custom_record_test.cpp",
     "./src/photo_file_utils_test.cpp",
     "./src/photo_query_filter_test.cpp",
     "./src/smart_album_asset_test.cpp",
