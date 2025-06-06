@@ -215,5 +215,18 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_004, TestSize.Level1)
     EXPECT_FALSE(fileAsset.resultTypeMap_.empty());
     EXPECT_FALSE(fileAsset.resultTypeMap_.empty());
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_004, TestSize.Level1)
+{
+    FileAsset fileAsset;
+
+    const int32_t TEST_VISIT_COUNT = 1;
+    fileAsset.SetVisitCount(TEST_VISIT_COUNT);
+    EXPECT_EQ(fileAsset.GetVisitCount(), TEST_VISIT_COUNT);
+
+    const int32_t TEST_PARENT = 1;
+    fileAsset.SetLcdVisitCount(TEST_PARENT);
+    EXPECT_EQ(fileAsset.GetLcdVisitCount(), TEST_PARENT);
+}
 } // namespace Media
 } // namespace OHOS
