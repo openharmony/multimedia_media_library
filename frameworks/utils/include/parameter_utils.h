@@ -20,7 +20,9 @@
 
 #include "create_asset_vo.h"
 #include "create_album_vo.h"
+#include "modify_assets_vo.h"
 #include "delete_highlight_albums_vo.h"
+#include "asset_change_vo.h"
 
 namespace OHOS {
 namespace Media {
@@ -38,6 +40,12 @@ public:
     static int32_t CheckSystemCreateAssetForApp(const CreateAssetForAppReqBody &reqBody);
     static int32_t CheckCreateAssetForAppWithAlbum(const CreateAssetForAppReqBody &reqBody);
     static int32_t CheckCreatePhotoAlbum(const CreateAlbumReqBody &reqBody);
+    static int32_t CheckSetAssetTitle(const ModifyAssetsReqBody &reqBody);
+    static int32_t CheckSetAssetPending(const ModifyAssetsReqBody &reqBody);
+    static int32_t CheckSetAssetsFavorite(const ModifyAssetsReqBody &reqBody);
+    static int32_t CheckSetAssetsHiddenStatus(const ModifyAssetsReqBody &reqBody);
+    static int32_t CheckSetAssetsRecentShowStatus(const ModifyAssetsReqBody &reqBody);
+    static int32_t CheckSetAssetsUserComment(const ModifyAssetsReqBody &reqBody);
 
     static int32_t CheckCreateAssetSubtype(int32_t photoSubtype);
     static int32_t CheckCreateAssetTitle(const std::string &title, bool isSystem = false);
@@ -46,6 +54,12 @@ public:
     static int32_t GetTitleAndExtension(const std::string &displayName, std::string &title, std::string &ext);
     static int32_t CheckTrashPhotos(const std::vector<std::string> &uris);
     static int32_t CheckDeletePhotosCompleted(const std::vector<std::string> &fileIds);
+    static bool IsPhotoUri(const std::string& uri);
+    static int32_t CheckUserComment(const AssetChangeReqBody &reqBody);
+    static int32_t CheckCameraShotKey(const AssetChangeReqBody &reqBody);
+    static int32_t CheckOrientation(const AssetChangeReqBody &reqBody);
+    static int32_t CheckVideoEnhancementAttr(const AssetChangeReqBody &reqBody);
+    static int32_t CheckWatermarkType(const AssetChangeReqBody &reqBody);
 };
 }  // namespace Media
 }  // namespace OHOS

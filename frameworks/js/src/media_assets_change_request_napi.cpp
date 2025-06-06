@@ -27,6 +27,9 @@
 #include "medialibrary_tracer.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
+#include "user_define_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "modify_assets_vo.h"
 
 using namespace std;
 
@@ -128,6 +131,13 @@ vector<string> MediaAssetsChangeRequestNapi::GetFileAssetUriArray() const
         uriArray.push_back(fileAsset->GetUri());
     }
     return uriArray;
+}
+
+void MediaAssetsChangeRequestNapi::GetFileAssetIds(std::vector<int32_t> &fileIds) const
+{
+    for (const auto& fileAsset : fileAssets_) {
+        fileIds.push_back(fileAsset->GetId());
+    }
 }
 
 bool MediaAssetsChangeRequestNapi::GetFavoriteStatus() const
@@ -265,11 +275,55 @@ napi_value MediaAssetsChangeRequestNapi::JSSetIsRecentShow(napi_env env, napi_ca
     RETURN_NAPI_UNDEFINED(env);
 }
 
-static bool SetAssetsPropertyExecute(
-    MediaAssetsChangeRequestAsyncContext& context, const AssetsChangeOperation& changeOperation)
+static bool CallSetAssetProperty(MediaAssetsChangeRequestAsyncContext& context,
+    const AssetsChangeOperation& changeOperation)
+{
+    uint32_t businessCode = 0;
+    ModifyAssetsReqBody reqBody;
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    switch (changeOperation) {
+        case AssetsChangeOperation::BATCH_SET_FAVORITE:
+            reqBody.favorite = changeRequest->GetFavoriteStatus() ? YES : NO;
+            businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_BATCH_SET_FAVORITE);
+            break;
+        case AssetsChangeOperation::BATCH_SET_HIDDEN:
+            reqBody.hiddenStatus = changeRequest->GetHiddenStatus() ? YES : NO;
+            businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_BATCH_SET_HIDDEN);
+            break;
+        case AssetsChangeOperation::BATCH_SET_USER_COMMENT:
+            reqBody.userComment = changeRequest->GetUpdatedUserComment();
+            businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_BATCH_SET_USER_COMMENT);
+            break;
+        case AssetsChangeOperation::BATCH_SET_RECENT_SHOW:
+            reqBody.recentShowStatus = changeRequest->GetRecentShowStatus() ? YES : NO;
+            businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_BATCH_SET_RECENT_SHOW);
+            break;
+        default:
+            context.SaveError(E_FAIL);
+            NAPI_ERR_LOG("Unsupported assets change operation: %{public}d", changeOperation);
+            return false;
+    }
+
+    changeRequest->GetFileAssetIds(reqBody.fileIds);
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (result < 0) {
+        context.SaveError(result);
+        NAPI_ERR_LOG("Failed to set property, operation: %{public}d, err: %{public}d", changeOperation, result);
+        return false;
+    }
+    return true;
+}
+
+static bool SetAssetsPropertyExecute(MediaAssetsChangeRequestAsyncContext& context,
+    const AssetsChangeOperation& changeOperation, bool useCall)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SetAssetsPropertyExecute");
+
+    if (useCall) {
+        return CallSetAssetProperty(context, changeOperation);
+    }
 
     string uri;
     DataShare::DataSharePredicates predicates;
@@ -326,7 +380,7 @@ static void ApplyAssetsChangeRequestExecute(napi_env env, void* data)
             continue;
         }
 
-        bool valid = SetAssetsPropertyExecute(*context, changeOperation);
+        bool valid = SetAssetsPropertyExecute(*context, changeOperation, true);
         if (!valid) {
             NAPI_ERR_LOG("Failed to apply assets change request, operation: %{public}d", changeOperation);
             return;

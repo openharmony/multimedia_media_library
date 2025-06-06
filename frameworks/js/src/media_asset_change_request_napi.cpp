@@ -56,6 +56,12 @@
 #include "user_define_ipc_client.h"
 #include "medialibrary_business_code.h"
 #include "delete_photos_completed_vo.h"
+#include "trash_photos_vo.h"
+#include "asset_change_vo.h"
+#include "rdb_utils.h"
+#include "submit_cache_vo.h"
+#include "add_image_vo.h"
+#include "save_camera_photo_vo.h"
 
 using namespace std;
 using namespace OHOS::Security::AccessToken;
@@ -64,8 +70,6 @@ namespace OHOS::Media {
 static const string MEDIA_ASSET_CHANGE_REQUEST_CLASS = "MediaAssetChangeRequest";
 thread_local napi_ref MediaAssetChangeRequestNapi::constructor_ = nullptr;
 std::atomic<uint32_t> MediaAssetChangeRequestNapi::cacheFileId_ = 0;
-const std::string SET_LOCATION_KEY = "set_location";
-const std::string SET_LOCATION_VALUE = "1";
 const std::string SET_USER_ID_VALUE = "1";
 
 static const std::array<int, 4> ORIENTATION_ARRAY = {0, 90, 180, 270};
@@ -100,6 +104,8 @@ const std::string DEFAULT_TITLE_IMG_PREFIX = "IMG_";
 const std::string DEFAULT_TITLE_VIDEO_PREFIX = "VID_";
 const std::string MOVING_PHOTO_VIDEO_EXTENSION = "mp4";
 static const size_t BATCH_DELETE_MAX_NUMBER = 500;
+const std::string URI_TPYE = "uriType";
+const std::string TPYE_PHOTOS = "1";
 
 int32_t MediaDataSource::ReadData(const shared_ptr<AVSharedMemory>& mem, uint32_t length)
 {
@@ -938,9 +944,7 @@ static napi_value ParseArgsDeleteAssets(
     }
 
     NAPI_INFO_LOG("DeleteAssetsExecute size:%{public}zu", uris.size());
-    context->predicates.In(PhotoColumn::MEDIA_ID, uris);
-    context->valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
-    context->uris.assign(uris.begin(), uris.end());
+    context->uris = uris;
     RETURN_NAPI_TRUE(env);
 }
 
@@ -950,11 +954,13 @@ static void DeleteAssetsExecute(napi_env env, void* data)
     tracer.Start("DeleteAssetsExecute");
 
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
-    string trashUri = PAH_SYS_TRASH_PHOTO;
-    MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateAssetUri(trashUri);
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, context->predicates, context->valuesBucket,
-        context->userId_);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_IF_EQUAL(!context->uris.empty(), "uris is empty");
+
+    TrashPhotosReqBody reqBody;
+    reqBody.uris = context->uris;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYS_TRASH_PHOTOS);
+    int32_t changedRows = IPC::UserDefineIPCClient().SetUserId(context->userId_).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("Failed to delete assets, err: %{public}d", changedRows);
@@ -1400,6 +1406,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetSupportedWatermarkType(napi_env env
 static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& context, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, E_FAIL, "changeRequest is nullptr");
     auto fileAsset = changeRequest->GetFileAssetInstance();
     if (fileAsset == nullptr) {
         context.SaveError(E_FAIL);
@@ -1789,20 +1796,26 @@ int32_t MediaAssetChangeRequestNapi::CopyMovingPhotoVideo(const string& assetUri
     return ret;
 }
 
-int32_t MediaAssetChangeRequestNapi::CreateAssetBySecurityComponent(string& assetUri)
+int32_t MediaAssetChangeRequestNapi::CreateAssetBySecurityComponent(string &assetUri)
 {
     bool isValid = false;
     string title = creationValuesBucket_.Get(PhotoColumn::MEDIA_TITLE, isValid);
     CHECK_COND_RET(isValid, E_FAIL, "Failed to get title");
     string extension = creationValuesBucket_.Get(ASSET_EXTENTION, isValid);
-    CHECK_COND_RET(isValid && MediaFileUtils::CheckDisplayName(title + "." + extension) == E_OK, E_FAIL,
+    CHECK_COND_RET(isValid && MediaFileUtils::CheckDisplayName(title + "." + extension) == E_OK,
+        E_FAIL,
         "Failed to check displayName");
     creationValuesBucket_.valuesMap.erase(MEDIA_DATA_DB_NAME);
 
-    string uri = PAH_CREATE_PHOTO_COMPONENT; // create asset by security component
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri createAssetUri(uri);
-    return UserFileClient::InsertExt(createAssetUri, creationValuesBucket_, assetUri);
+    AssetChangeReqBody reqBody;
+    reqBody.values = RdbDataShareAdapter::RdbUtils::ToValuesBucket(creationValuesBucket_);
+    AssetChangeRspBody rspBody;
+    // create asset by security component
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_CREATE_ASSET);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    CHECK_COND_RET(ret == E_OK, ret, "createAssetUri failed");
+    assetUri = rspBody.outUri;
+    return rspBody.fileId;
 }
 
 int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(bool isCreation, AddResourceMode mode)
@@ -1858,6 +1871,7 @@ static bool WriteBySecurityComponent(MediaAssetChangeRequestAsyncContext& contex
     bool isCreateFromUri = std::find(assetChangeOperations.begin(), assetChangeOperations.end(),
                                      AssetChangeOperation::CREATE_FROM_URI) != assetChangeOperations.end();
     auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     if (isCreateFromUri) {
         ret = changeRequest->CopyToMediaLibrary(isCreation, AddResourceMode::FILE_URI);
     } else {
@@ -1905,23 +1919,20 @@ void HandleValueBucketForSetLocation(std::shared_ptr<FileAsset> fileAsset, DataS
     }
 }
 
-int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffectMode,
-    bool isWriteGpsAdvanced, const int32_t userId)
+int32_t MediaAssetChangeRequestNapi::SubmitCache(
+    bool isCreation, bool isSetEffectMode, bool isWriteGpsAdvanced, const int32_t userId)
 {
     CHECK_COND_RET(fileAsset_ != nullptr, E_FAIL, "Failed to check fileAsset_");
-    CHECK_COND_RET(!cacheFileName_.empty() || !cacheMovingPhotoVideoName_.empty(), E_FAIL,
-        "Failed to check cache file");
+    CHECK_COND_RET(
+        !cacheFileName_.empty() || !cacheMovingPhotoVideoName_.empty(), E_FAIL, "Failed to check cache file");
 
-    string uri = PAH_SUBMIT_CACHE;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    if (isWriteGpsAdvanced) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, SET_LOCATION_KEY, SET_LOCATION_VALUE);
-    }
     NAPI_INFO_LOG("Check SubmitCache isWriteGpsAdvanced: %{public}d", isWriteGpsAdvanced);
-    Uri submitCacheUri(uri);
 
-    string assetUri;
-    int32_t ret;
+    int32_t ret{E_FAIL};
+    SubmitCacheReqBody reqBody;
+    reqBody.isWriteGpsAdvanced = isWriteGpsAdvanced;
+    SubmitCacheRspBody rspBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SUBMIT_CACHE);
     if (isCreation) {
         bool isValid = false;
         string displayName = creationValuesBucket_.Get(MEDIA_DATA_DB_NAME, isValid);
@@ -1932,7 +1943,8 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
             creationValuesBucket_.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
         }
         HandleValueBucketForSetLocation(fileAsset_, creationValuesBucket_, isWriteGpsAdvanced);
-        ret = UserFileClient::InsertExt(submitCacheUri, creationValuesBucket_, assetUri, userId);
+        reqBody.values = RdbDataShareAdapter::RdbUtils::ToValuesBucket(creationValuesBucket_);
+        ret = IPC::UserDefineIPCClient().SetUserId(userId).Call(businessCode, reqBody, rspBody);
     } else {
         DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset_->GetId());
@@ -1947,14 +1959,17 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
             valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
         }
         HandleValueBucketForSetLocation(fileAsset_, valuesBucket, isWriteGpsAdvanced);
-        ret = UserFileClient::Insert(submitCacheUri, valuesBucket, userId);
+        reqBody.values = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
+        std::unordered_map<std::string, std::string> headerMap{
+            {MediaColumn::MEDIA_ID, to_string(fileAsset_->GetId())}, {URI_TPYE, TPYE_PHOTOS}};
+        ret = IPC::UserDefineIPCClient().SetUserId(userId).SetHeader(headerMap).Call(businessCode, reqBody, rspBody);
     }
-    if (ret > 0 && isCreation) {
-        SetNewFileAsset(ret, assetUri);
+    if (rspBody.fileId > 0 && isCreation) {
+        SetNewFileAsset(rspBody.fileId, rspBody.outUri);
     }
     cacheFileName_.clear();
     cacheMovingPhotoVideoName_.clear();
-    return ret;
+    return ret == E_OK ? rspBody.fileId : ret;
 }
 
 static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
@@ -1965,6 +1980,7 @@ static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
     bool isCreation = IsCreation(context);
     bool isSetEffectMode = IsSetEffectMode(context);
     auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     bool isWriteGpsAdvanced = changeRequest->GetIsWriteGpsAdvanced();
     int32_t ret = changeRequest->SubmitCache(isCreation, isSetEffectMode, isWriteGpsAdvanced,
         changeRequest->GetFileAssetInstance()->GetUserId());
@@ -1980,6 +1996,7 @@ static bool WriteCacheByArrayBuffer(MediaAssetChangeRequestAsyncContext& context
     const UniqueFd& destFd, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     size_t offset = 0;
     size_t length = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoSize() : changeRequest->GetDataBufferSize();
     void* dataBuffer = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoBuffer() : changeRequest->GetDataBuffer();
@@ -1999,6 +2016,7 @@ static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context,
     const UniqueFd& destFd, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     string realPath = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoPath() : changeRequest->GetFileRealPath();
 
     string absFilePath;
@@ -2046,32 +2064,34 @@ static bool CreateFromFileUriExecute(MediaAssetChangeRequestAsyncContext& contex
     return SubmitCacheExecute(context);
 }
 
-static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext& context, const UniqueFd& destFd)
+static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext &context, const UniqueFd &destFd)
 {
-    string uri = PAH_ADD_IMAGE;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateAssetUri(uri);
+    auto objInfo = context.objectInfo;
+    CHECK_COND_RET(objInfo != nullptr, false, "Failed to check objInfo");
 
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(PhotoColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({ to_string(fileAsset->GetId()) });
+    auto fileAsset = objInfo->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "Failed to check fileAsset");
 
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoColumn::PHOTO_ID, context.objectInfo->GetPhotoProxyObj()->GetPhotoId());
-    NAPI_INFO_LOG("photoId: %{public}s", context.objectInfo->GetPhotoProxyObj()->GetPhotoId().c_str());
-    valuesBucket.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE,
-        static_cast<int32_t>(context.objectInfo->GetPhotoProxyObj()->GetDeferredProcType()));
-    valuesBucket.Put(MediaColumn::MEDIA_ID, fileAsset->GetId());
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    auto photoProxyObj = objInfo->GetPhotoProxyObj();
+    CHECK_COND_RET(photoProxyObj != nullptr, false, "Failed to check photoProxyObj");
+
+    NAPI_INFO_LOG("photoId: %{public}s", photoProxyObj->GetPhotoId().c_str());
+
+    AddImageReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.photoId = photoProxyObj->GetPhotoId();
+    NAPI_INFO_LOG("photoId: %{public}s", photoProxyObj->GetPhotoId().c_str());
+    reqBody.deferredProcType = static_cast<int32_t>(photoProxyObj->GetDeferredProcType());
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_ADD_IMAGE);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to set, err: %{public}d", changedRows);
         return false;
     }
 
-    int err = SavePhotoProxyImage(destFd, context.objectInfo->GetPhotoProxyObj());
-    context.objectInfo->ReleasePhotoProxyObj();
+    int err = SavePhotoProxyImage(destFd, photoProxyObj);
+    objInfo->ReleasePhotoProxyObj();
     if (err < 0) {
         context.SaveError(err);
         NAPI_ERR_LOG("Failed to saveImage , err: %{public}d", err);
@@ -2133,6 +2153,7 @@ static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
     }
 
     auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     if (changeRequest->IsMovingPhoto() && HasAddResource(context, ResourceType::VIDEO_RESOURCE) &&
         !AddMovingPhotoVideoExecute(context)) {
         NAPI_ERR_LOG("Faild to write cache file for video of moving photo");
@@ -2177,33 +2198,53 @@ static bool UpdateAssetProperty(MediaAssetChangeRequestAsyncContext& context, st
     return true;
 }
 
-static bool SetFavoriteExecute(MediaAssetChangeRequestAsyncContext& context)
+static bool SetFavoriteExecute(MediaAssetChangeRequestAsyncContext &context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SetFavoriteExecute");
 
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    valuesBucket.Put(PhotoColumn::MEDIA_IS_FAV, fileAsset->IsFavorite() ? YES : NO);
-    NAPI_INFO_LOG("update asset %{public}d favorite to %{public}d", fileAsset->GetId(),
-        fileAsset->IsFavorite() ? YES : NO);
-    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+    NAPI_INFO_LOG(
+        "update asset %{public}d favorite to %{public}d", fileAsset->GetId(), fileAsset->IsFavorite() ? YES : NO);
+
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.favorite = fileAsset->IsFavorite();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_FAVORITE);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
 }
 
-static bool SetHiddenExecute(MediaAssetChangeRequestAsyncContext& context)
+static bool SetHiddenExecute(MediaAssetChangeRequestAsyncContext &context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SetHiddenExecute");
 
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    vector<string> assetUriArray(1, fileAsset->GetUri());
-    predicates.In(PhotoColumn::MEDIA_ID, assetUriArray);
-    valuesBucket.Put(PhotoColumn::MEDIA_HIDDEN, fileAsset->IsHidden() ? YES : NO);
-    return UpdateAssetProperty(context, PAH_HIDE_PHOTOS, predicates, valuesBucket);
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+
+    AssetChangeReqBody reqBody;
+    reqBody.uri = fileAsset->GetUri();
+    reqBody.hidden = fileAsset->IsHidden();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_HIDDEN);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
 }
 
 static bool SetTitleExecute(MediaAssetChangeRequestAsyncContext& context)
@@ -2218,29 +2259,45 @@ static bool SetTitleExecute(MediaAssetChangeRequestAsyncContext& context)
         return true;
     }
 
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    valuesBucket.Put(PhotoColumn::MEDIA_TITLE, fileAsset->GetTitle());
-    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.title = fileAsset->GetTitle();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_TITLE);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
 }
 
-static bool SetOrientationExecute(MediaAssetChangeRequestAsyncContext& context)
+static bool SetOrientationExecute(MediaAssetChangeRequestAsyncContext &context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SetOrientationExecute");
 
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    if (fileAsset == nullptr) {
-        NAPI_ERR_LOG("fileAsset is null");
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.orientation = fileAsset->GetOrientation();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_ORIENTATION);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
         return false;
     }
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    valuesBucket.Put(PhotoColumn::PHOTO_ORIENTATION, fileAsset->GetOrientation());
-    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+    return true;
 }
 
 static bool SetUserCommentExecute(MediaAssetChangeRequestAsyncContext& context)
@@ -2248,32 +2305,50 @@ static bool SetUserCommentExecute(MediaAssetChangeRequestAsyncContext& context)
     MediaLibraryTracer tracer;
     tracer.Start("SetUserCommentExecute");
 
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    valuesBucket.Put(PhotoColumn::PHOTO_USER_COMMENT, fileAsset->GetUserComment());
-    return UpdateAssetProperty(context, PAH_EDIT_USER_COMMENT_PHOTO, predicates, valuesBucket);
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.userComment = fileAsset->GetUserComment();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_USER_COMMENT);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
 }
 
-static bool SetEffectModeExecute(MediaAssetChangeRequestAsyncContext& context)
+static bool SetEffectModeExecute(MediaAssetChangeRequestAsyncContext &context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SetEffectModeExecute");
 
     // SET_MOVING_PHOTO_EFFECT_MODE will be applied together with ADD_RESOURCE
-    auto changeRequest = context.objectInfo;
     if (std::find(context.assetChangeOperations.begin(), context.assetChangeOperations.end(),
         AssetChangeOperation::ADD_RESOURCE) != context.assetChangeOperations.end()) {
         return true;
     }
 
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     auto fileAsset = changeRequest->GetFileAssetInstance();
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset->GetMovingPhotoEffectMode());
-    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.effectMode = fileAsset->GetMovingPhotoEffectMode();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_EFFECT_MODE);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to SetEffectModeExecute of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
 }
 
 static bool SetPhotoQualityExecute(MediaAssetChangeRequestAsyncContext& context)
@@ -2291,25 +2366,34 @@ static bool SetPhotoQualityExecute(MediaAssetChangeRequestAsyncContext& context)
     return UpdateAssetProperty(context, PAH_SET_PHOTO_QUALITY, predicates, valuesBucket);
 }
 
-static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
+static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext &context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SetLocationExecute");
-    if (context.objectInfo->GetIsWriteGpsAdvanced()) {
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    if (changeRequest->GetIsWriteGpsAdvanced()) {
         NAPI_INFO_LOG("SetLocation will execute by addResource.");
         return true;
     }
 
     NAPI_INFO_LOG("SetLocation begin.");
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset->GetId());
-    valuesBucket.Put(PhotoColumn::MEDIA_FILE_PATH, fileAsset->GetPath());
-    valuesBucket.Put(PhotoColumn::PHOTO_LATITUDE, fileAsset->GetLatitude());
-    valuesBucket.Put(PhotoColumn::PHOTO_LONGITUDE, fileAsset->GetLongitude());
-    return UpdateAssetProperty(context, PAH_SET_LOCATION, predicates, valuesBucket);
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.path = fileAsset->GetPath();
+    reqBody.latitude = fileAsset->GetLatitude();
+    reqBody.longitude = fileAsset->GetLongitude();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_LOCATION);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
 }
 
 static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context)
@@ -2324,27 +2408,24 @@ static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context
         return true;
     }
 
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    valuesBucket.Put(PhotoColumn::CAMERA_SHOT_KEY, fileAsset->GetCameraShotKey());
-    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.cameraShotKey = fileAsset->GetCameraShotKey();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_CAMERA_SHOT_KEY);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
 }
 
-static void DiscardHighQualityPhoto(const shared_ptr<FileAsset> fileAsset)
-{
-    CHECK_NULL_PTR_RETURN_VOID(fileAsset, "fileAsset is nullptr");
-    std::string uriStr = PAH_REMOVE_MSC_TASK;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri uri(uriStr);
-    DataShare::DataSharePredicates predicates;
-    int errCode = 0;
-    std::vector<std::string> columns { to_string(fileAsset->GetId()) };
-    UserFileClient::Query(uri, predicates, columns, errCode);
-}
-
-static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
+static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext &context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SaveCameraPhotoExecute");
@@ -2357,93 +2438,87 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     CHECK_COND_RET(fileAsset != nullptr, false, "Failed to check fileAsset");
 
     auto changeOpreations = context.assetChangeOperations;
-    bool containsAddResource = std::find(changeOpreations.begin(), changeOpreations.end(),
-        AssetChangeOperation::ADD_RESOURCE) != changeOpreations.end();
-    bool iscontainsSetSupportedWatermarkType = std::find(changeOpreations.begin(), changeOpreations.end(),
-        AssetChangeOperation::SET_SUPPORTED_WATERMARK_TYPE) != changeOpreations.end();
-    bool iscontainsSetCameraShotKey = std::find(changeOpreations.begin(), changeOpreations.end(),
-        AssetChangeOperation::SET_CAMERA_SHOT_KEY) != changeOpreations.end();
-    std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
+    bool containsAddResource =
+        std::find(changeOpreations.begin(), changeOpreations.end(), AssetChangeOperation::ADD_RESOURCE) !=
+        changeOpreations.end();
+    SaveCameraPhotoReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
     if (containsAddResource && !MediaLibraryNapiUtils::IsSystemApp()) {
         // remove high quality photo
-        NAPI_INFO_LOG("discard high quality photo because add resource by third app");
-        DiscardHighQualityPhoto(fileAsset);
-
         // set dirty flag when third-party hap calling addResource to save camera photo
-        MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_DIRTY,
-            to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)));
+        NAPI_INFO_LOG("discard high quality photo because add resource by third app");
+        reqBody.discardHighQualityPhoto = true;
     }
     // The watermark will trigger the scan. If the watermark is turned on, there is no need to trigger the scan again.
-    bool needScan = std::find(changeOpreations.begin(), changeOpreations.end(),
-        AssetChangeOperation::ADD_FILTERS) == changeOpreations.end();
+    reqBody.needScan = std::find(changeOpreations.begin(), changeOpreations.end(), AssetChangeOperation::ADD_FILTERS) ==
+                       changeOpreations.end();
 
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, to_string(needScan));
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_FILE_PATH, fileAsset->GetUri());
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_SUBTYPE,
-        to_string(fileAsset->GetPhotoSubType()));
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, IMAGE_FILE_TYPE, to_string(objInfo->GetImageFileType()));
-    Uri uri(uriStr);
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
+    reqBody.path = fileAsset->GetUri();
+    reqBody.photoSubType = fileAsset->GetPhotoSubType();
+    reqBody.imageFileType = objInfo->GetImageFileType();
+    bool iscontainsSetSupportedWatermarkType =
+        std::find(changeOpreations.begin(),
+            changeOpreations.end(),
+            AssetChangeOperation::SET_SUPPORTED_WATERMARK_TYPE) != changeOpreations.end();
     if (iscontainsSetSupportedWatermarkType) {
-        valuesBucket.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, fileAsset->GetSupportedWatermarkType());
+        reqBody.supportedWatermarkType = fileAsset->GetSupportedWatermarkType();
     }
+    bool iscontainsSetCameraShotKey =
+        std::find(changeOpreations.begin(), changeOpreations.end(), AssetChangeOperation::SET_CAMERA_SHOT_KEY) !=
+        changeOpreations.end();
     if (iscontainsSetCameraShotKey) {
-        valuesBucket.Put(PhotoColumn::CAMERA_SHOT_KEY, fileAsset->GetCameraShotKey());
+        reqBody.cameraShotKey = fileAsset->GetCameraShotKey();
     }
-    valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-    auto ret = UserFileClient::Update(uri, predicates, valuesBucket);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_CAMERA_PHOTO);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         NAPI_ERR_LOG("save camera photo fail");
     }
     return true;
 }
 
-static bool SetVideoEnhancementAttr(MediaAssetChangeRequestAsyncContext& context)
+static bool SetVideoEnhancementAttr(MediaAssetChangeRequestAsyncContext &context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("setVideoEnhancementAttr");
 
-    auto changeOpreations = context.assetChangeOperations;
-    DataShare::DataSharePredicates predicates;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
 
-    string uri = PAH_SET_VIDEO_ENHANCEMENT_ATTR;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, PhotoColumn::PHOTO_ID, fileAsset->GetPhotoId());
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_FILE_PATH, fileAsset->GetPath());
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateAssetUri(uri);
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.photoId = fileAsset->GetPhotoId();
+    reqBody.path = fileAsset->GetPath();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_VIDEO_ENHANCEMENT_ATTR);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
-        NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
+        NAPI_ERR_LOG("Failed to SetVideoEnhancementAttr of asset, err: %{public}d", changedRows);
         return false;
     }
     return true;
 }
 
-static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)
+static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext &context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("AddFiltersExecute");
 
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    CHECK_COND_RET(fileAsset != nullptr, false, "Failed to check fileAsset");
-    string uri = PAH_ADD_FILTERS;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri addFiltersUri(uri);
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
 
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset->GetId());
     int ret = context.objectInfo->PutMediaAssetEditData(valuesBucket);
     CHECK_COND_RET(ret == E_OK, false, "Failed to put editData");
-    ret = UserFileClient::Insert(addFiltersUri, valuesBucket);
+    AssetChangeReqBody reqBody;
+    reqBody.values = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_EDIT_DATA);
+    ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         context.SaveError(ret);
         NAPI_ERR_LOG("Failed to add filters, ret: %{public}d", ret);
@@ -2452,20 +2527,16 @@ static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)
     return true;
 }
 
-static bool DiscardCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
+static bool DiscardCameraPhotoExecute(MediaAssetChangeRequestAsyncContext &context)
 {
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, true);
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, "1"); // only temp camera photo can be discarded
-
-    string uri = PAH_DISCARD_CAMERA_PHOTO;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    Uri updateAssetUri(uri);
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::DISCARD_CAMERA_PHOTO);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
@@ -2474,33 +2545,30 @@ static bool DiscardCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& conte
     return true;
 }
 
-static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext& context)
+static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext &context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SetSupportedWatermarkTypeExecute");
     auto changeOperations = context.assetChangeOperations;
-    bool containsSaveCameraPhoto = std::find(changeOperations.begin(), changeOperations.end(),
-        AssetChangeOperation::SAVE_CAMERA_PHOTO) != changeOperations.end();
+    bool containsSaveCameraPhoto =
+        std::find(changeOperations.begin(), changeOperations.end(), AssetChangeOperation::SAVE_CAMERA_PHOTO) !=
+        changeOperations.end();
     if (containsSaveCameraPhoto) {
         NAPI_INFO_LOG("set supported watermark type will execute by save camera photo.");
         return true;
     }
 
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    if (fileAsset == nullptr) {
-        NAPI_ERR_LOG("Fail to get fileAsset");
-        return false;
-    }
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
     NAPI_INFO_LOG("enter SetSupportedWatermarkTypeExecute: %{public}d", fileAsset->GetSupportedWatermarkType());
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    valuesBucket.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, fileAsset->GetSupportedWatermarkType());
-    
-    string uri = PAH_UPDATE_PHOTO_SUPPORTED_WATERMARK_TYPE;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateAssetUri(uri);
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.watermarkType = fileAsset->GetSupportedWatermarkType();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUPPORTED_WATERMARK_TYPE);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to update supported_watermark_type of asset, err: %{public}d", changedRows);

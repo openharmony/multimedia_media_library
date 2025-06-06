@@ -42,6 +42,7 @@ public:
     EXPORT static napi_value Init(napi_env env, napi_value exports);
 
     std::vector<std::string> GetFileAssetUriArray() const;
+    void GetFileAssetIds(std::vector<int32_t> &fileIds) const;
     bool GetFavoriteStatus() const;
     bool GetHiddenStatus() const;
     std::string GetUpdatedUserComment() const;

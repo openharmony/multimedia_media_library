@@ -55,7 +55,8 @@ static bool CanConvertToInt32(const std::string &str)
 }
 
 PermissionHeaderReq PermissionHeaderReq::convertToPermissionHeaderReq(
-    const std::unordered_map<std::string, std::string>& header, int32_t userId)
+    const std::unordered_map<std::string, std::string> &header, int32_t userId,
+    std::vector<std::vector<PermissionType>> &permissionPolicy, bool isDBBypass)
 {
     PermissionHeaderReq permissionHeaderReq;
     int32_t uriType = -1;
@@ -76,6 +77,8 @@ PermissionHeaderReq PermissionHeaderReq::convertToPermissionHeaderReq(
         permissionHeaderReq = PermissionHeaderReq();
     }
     permissionHeaderReq.setUserId(userId);
+    permissionHeaderReq.setPermissionPolicy(permissionPolicy);
+    permissionHeaderReq.setDBBypass(isDBBypass);
     return permissionHeaderReq;
 }
 
@@ -109,4 +112,23 @@ void PermissionHeaderReq::setUserId(int32_t userId)
     userId_ = userId;
 }
 
+std::vector<std::vector<PermissionType>> PermissionHeaderReq::getPermissionPolicy() const
+{
+    return permissionPolicy_;
+}
+
+void PermissionHeaderReq::setPermissionPolicy(std::vector<std::vector<PermissionType>>& permissionPolicy)
+{
+    permissionPolicy_ = permissionPolicy;
+}
+
+bool PermissionHeaderReq::getIsDBBypass() const
+{
+    return isDBBypass_;
+}
+
+void PermissionHeaderReq::setDBBypass(bool isDBBypass)
+{
+    isDBBypass_ = isDBBypass;
+}
 } // namespace OHOS::Media

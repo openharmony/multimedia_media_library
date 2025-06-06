@@ -117,7 +117,8 @@ public:
     EXPORT int32_t UpdateDateTakenWhenZero();
     EXPORT int32_t UpdateDirtyForCloudClone(int32_t version);
     EXPORT int32_t ClearDirtyHdcData();
-
+    EXPORT int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
+                const DataShare::DataSharePredicates &predicates);
 private:
     int32_t InitMediaLibraryRdbStore();
     int32_t UpdateDirtyHdcDataStatus();

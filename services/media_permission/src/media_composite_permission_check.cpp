@@ -29,8 +29,9 @@ int32_t CompositePermissionCheck::CheckPermission(uint32_t businessCode, const P
 {
     std::lock_guard<std::mutex> lock(mutex_);
     MEDIA_INFO_LOG("CompositePermissionCheck API code=%{public}d", businessCode);
+    int32_t ret = E_SUCCESS;
     for (const auto& check : compositePermChecks_) {
-        auto ret = check->CheckPermission(businessCode, data);
+        ret = check->CheckPermission(businessCode, data);
         if (ret == E_SUCCESS) {
             MEDIA_INFO_LOG("CompositePermissionCheck API code=%{public}d success", businessCode);
             return E_SUCCESS;
@@ -39,7 +40,7 @@ int32_t CompositePermissionCheck::CheckPermission(uint32_t businessCode, const P
         }
     }
     MEDIA_INFO_LOG("CompositePermissionCheck API code=%{public}d fail", businessCode);
-    return E_PERMISSION_DENIED;
+    return ret;
 }
 
 void SinglePermissionCheck::AddCheck(std::shared_ptr<PermissionCheck> check)
@@ -54,7 +55,7 @@ int32_t SinglePermissionCheck::CheckPermission(uint32_t businessCode, const Perm
     for (const auto& check : singlePermChecks_) {
         auto ret = check->CheckPermission(businessCode, data);
         if (ret != E_SUCCESS) {
-            return E_PERMISSION_DENIED;
+            return ret;
         }
     }
     return E_SUCCESS;

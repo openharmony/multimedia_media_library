@@ -47,6 +47,7 @@ public:
     void RemoveImage(const std::string &photoId, bool isRestorable = true);
     void RestoreImage(const std::string &photoId);
     EXPORT void AddImage(int32_t fileId, const std::string &photoId, int32_t deferredProcType);
+    void AddImage(MediaLibraryCommand &cmd);
     void ProcessImage(int fileId, int deliveryMode);
 
     void AddImageInternal(int32_t fileId, const std::string &photoId, int32_t deferredProcType,
@@ -71,7 +72,6 @@ private:
     const MultiStagesPhotoCaptureManager &operator=(const MultiStagesPhotoCaptureManager &manager) = delete;
 
     void CancelRequestAndRemoveImage(const std::vector<std::string> &columns);
-    void AddImage(MediaLibraryCommand &cmd);
     int32_t UpdatePictureQuality(const std::string &photoId);
 
     std::unordered_set<int32_t> setOfDeleted_;

@@ -22,7 +22,7 @@ namespace OHOS::Media {
 int32_t SystemApiPermissionCheck::CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data)
 {
     MEDIA_INFO_LOG("SystemApiPermissionCheck enter, API code=%{public}d", businessCode);
-    CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsSystemApp(), E_PERMISSION_DENIED, "Not system api!");
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsSystemApp(), -E_CHECK_SYSTEMAPP_FAIL, "Not system api!");
     return E_SUCCESS;
 }
 } // namespace OHOS::Media

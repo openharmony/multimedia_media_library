@@ -90,6 +90,7 @@ using namespace OHOS::DistributedKv;
 using namespace OHOS::Media;
 using namespace OHOS::DataShare;
 using namespace OHOS::Security::AccessToken;
+using namespace OHOS::Media::IPC;
 
 namespace OHOS {
 namespace AbilityRuntime {
@@ -774,10 +775,10 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
 
     CHECK_AND_EXECUTE(command.GetUri().ToString().find(PhotoColumn::PHOTO_REQUEST_PICTURE) == string::npos,
         command.SetOprnObject(OperationObject::REQUEST_PICTURE));
-    
+
     CHECK_AND_EXECUTE(command.GetUri().ToString().find(PhotoColumn::PHOTO_REQUEST_PICTURE_BUFFER) == string::npos,
         command.SetOprnObject(OperationObject::PHOTO_REQUEST_PICTURE_BUFFER));
-    
+
     CHECK_AND_EXECUTE(command.GetUri().ToString().find(MEDIA_DATA_DB_KEY_FRAME) == string::npos,
         command.SetOprnObject(OperationObject::KEY_FRAME));
     return MediaLibraryDataManager::GetInstance()->OpenFile(command, unifyMode);
@@ -1062,18 +1063,23 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
             continue;
         }
 
-        // check permission
-        PermissionHeaderReq permHeaderReq = PermissionHeaderReq::convertToPermissionHeaderReq(reqVo.GetHeader(),
-            reqVo.GetUserId());
-        int32_t errCode = PermissionCheck::VerifyPermissions(operationCode, permHeaderReq);
-        if (errCode != E_SUCCESS) {
-            MEDIA_ERR_LOG("API code %{public}d verify permission fail", operationCode);
-            IPC::UserDefineIPC().WriteResponseBody(reply, errCode);
-            ret = E_OK;
+        ret = E_OK;
+        std::vector<std::vector<PermissionType>> permissionPolicy;
+        bool isDBBypass = false;
+        if (controllerService->GetPermissionPolicy(operationCode, permissionPolicy, isDBBypass)) {
+            IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
             break;
         }
-        controllerService->OnRemoteRequest(operationCode, data, reply, option);
-        ret = E_OK;
+        PermissionHeaderReq permHeaderReq = PermissionHeaderReq::convertToPermissionHeaderReq(reqVo.GetHeader(),
+            reqVo.GetUserId(), permissionPolicy, isDBBypass);
+        int32_t errCode = PermissionCheck::VerifyPermissions(operationCode, permHeaderReq);
+        if (errCode != E_SUCCESS && errCode != E_PERMISSION_DB_BYPASS) {
+            IPC::UserDefineIPC().WriteResponseBody(reply, errCode);
+            break;
+        }
+        MEDIA_INFO_LOG("API code %{public}d verify permission success", operationCode);
+        IPCContext context(option, errCode);
+        controllerService->OnRemoteRequest(operationCode, data, reply, context);
         break;
     }
     int32_t userId = reqVo.GetUserId();

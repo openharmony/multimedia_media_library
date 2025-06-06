@@ -21,9 +21,9 @@
 #include "sec_comp_kit.h"
 #endif
 #include "parameters.h"
+#include "media_app_uri_permission_column.h"
 
 namespace OHOS::Media {
-static std::set<int> readPermSet{0, 1, 2, 3, 4};
 static const int32_t GRANT_PERMISSION_CALLING_UID = 5523; // foundation调用方
 static const int32_t ROOT_UID = 0;
 static const int32_t HDC_SHELL_UID = 2000;
@@ -87,7 +87,7 @@ int32_t DbReadPermCheck::CheckPermission(uint32_t businessCode, const Permission
     if (ret != E_SUCCESS) {
         return ret;
     }
-    return (readPermSet.count(permissionType)) ? E_SUCCESS : E_PERMISSION_DENIED;
+    return (AppUriPermissionColumn::PERMISSION_TYPES_ALL.count(permissionType)) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 int32_t GrantReadPermCheck::CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data)

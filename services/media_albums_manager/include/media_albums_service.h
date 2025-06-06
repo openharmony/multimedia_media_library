@@ -20,6 +20,14 @@
 #include <string>
 
 #include "media_albums_rdb_operations.h"
+#include "change_request_set_album_name_dto.h"
+#include "change_request_set_cover_uri_dto.h"
+#include "set_highlight_user_action_data_dto.h"
+#include "album_commit_modify_dto.h"
+#include "album_add_assets_dto.h"
+#include "album_remove_assets_dto.h"
+#include "album_recover_assets_dto.h"
+#include "album_photo_query_vo.h"
 
 namespace OHOS::Media {
 class MediaAlbumsService {
@@ -29,8 +37,27 @@ public:
     int32_t DeleteHighlightAlbums(const std::vector<std::string>& albumIds);
     int32_t DeletePhotoAlbums(const std::vector<std::string> &albumIds);
     int32_t CreatePhotoAlbum(const std::string& albumName);
+    int32_t SetSubtitle(const std::string& highlightAlbumId, const std::string& albumSubtitle);
+    int32_t SetHighlightUserActionData(const SetHighlightUserActionDataDto& dto);
+    int32_t ChangeRequestSetAlbumName(const ChangeRequestSetAlbumNameDto& dto);
+    int32_t ChangeRequestSetCoverUri(const ChangeRequestSetCoverUriDto& dto);
+    int32_t ChangeRequestSetDisplayLevel(int32_t displayLevelValue, int32_t albumId);
+    int32_t ChangeRequestSetIsMe(int32_t albumId);
+    int32_t ChangeRequestDismiss(int32_t albumId);
+    int32_t AlbumCommitModify(const AlbumCommitModifyDto& commitModifyDto, int32_t businessCode);
+    int32_t AlbumAddAssets(const AlbumAddAssetsDto& addAssetsDto, AlbumPhotoQueryRespBody& respBody);
+    int32_t AlbumRemoveAssets(const AlbumRemoveAssetsDto& removeAssetsDto, AlbumPhotoQueryRespBody& respBody);
+    int32_t AlbumRecoverAssets(const AlbumRecoverAssetsDto& recoverAssetsDto);
 
 private:
+    int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);
+    int32_t SetGroupAlbumName(const ChangeRequestSetAlbumNameDto& dto);
+    int32_t SetHighlightAlbumName(const ChangeRequestSetAlbumNameDto& dto);
+    int32_t RenameUserAlbum(const std::string& oldAlbumId, const std::string& newAlbumName);
+    int32_t SetPortraitCoverUri(const ChangeRequestSetCoverUriDto& dto);
+    int32_t SetGroupAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto);
+    int32_t SetHighlightAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto);
+    int32_t SetUserAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto);
     MediaAlbumsRdbOperations rdbOperation_;
 };
 } // namespace OHOS::Media

@@ -450,15 +450,17 @@ bool MediaFileUtils::IsDirectory(const string &dirName, shared_ptr<int> errCodeP
 {
     struct stat statInfo {};
 
-    if (stat(dirName.c_str(), &statInfo) == E_SUCCESS) {
+    int32_t ret = stat(dirName.c_str(), &statInfo);
+    if (ret == E_SUCCESS) {
         if (statInfo.st_mode & S_IFDIR) {
             return true;
         }
     } else if (errCodePtr != nullptr) {
         *errCodePtr = errno;
+        MEDIA_ERR_LOG("ret: %{public}d, errno: %{public}d", ret, errno);
         return false;
     }
-
+    MEDIA_ERR_LOG("ret: %{public}d, errno: %{public}d", ret, errno);
     return false;
 }
 

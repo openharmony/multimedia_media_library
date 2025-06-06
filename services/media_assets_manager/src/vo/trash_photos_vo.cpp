@@ -31,20 +31,4 @@ bool TrashPhotosReqBody::Marshalling(MessageParcel &parcel) const
 {
     return ITypesUtil::Marshalling(this->uris, parcel);
 }
-
-std::string TrashPhotosReqBody::ToString() const
-{
-    std::stringstream ss;
-    ss << "{"
-       << "[";
-    for (size_t i = 0; i < this->uris.size(); i++) {
-        ss << this->uris[i];
-        if (i != this->uris.size() - 1) {
-            ss << ",";
-        }
-    }
-    ss << "]"
-       << "}";
-    return ss.str();
-}
 }  // namespace OHOS::Media

@@ -40,14 +40,4 @@ bool RevertToOriginalReqBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
- 
-string RevertToOriginalReqBody::ToString() const
-{
-    std::stringstream ss;
-    ss << "{"
-        << "\"fileId\": \"" << std::to_string(this->fileId) << "\", "
-        << "\"title\": " << this->fileUri
-        << "}";
-    return ss.str();
-}
 } // namespace OHOS::Media
