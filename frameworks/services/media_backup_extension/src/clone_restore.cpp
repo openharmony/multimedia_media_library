@@ -1640,23 +1640,18 @@ void CloneRestore::RestoreGallery()
     cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
     cloneRestoreHighlight_.UpdateAlbums();
     cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
-    RestoreAnalysisAlbumStatus();
+    RestoreAnalysisData();
     ReportPortraitCloneStat(sceneCode_);
 }
 
-void CloneRestore::RestoreAnalysisAlbumStatus()
+void CloneRestore::RestoreAnalysisData()
 {
-    if (!mediaRdb_ || !mediaLibraryRdb_) {
-        MEDIA_ERR_LOG("RDB stores are not initialized. Cannot clone search index.");
-        return;
-    }
-
     SearchIndexClone searchIndexClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_, maxSearchId_);
     if (searchIndexClone.Clone()) {
         migrateSearchIndexNumber_ = searchIndexClone.GetMigratedCount();
-        migrateSearchIndexTotalTimeCost_ = searchIndexClone.GetTotalTimeCost();
+        int64_t searchIndexTotalTimeCost = searchIndexClone.GetTotalTimeCost();
         MEDIA_INFO_LOG("Search index cloning successful. Migrated %{public}lld records in %{public}lld ms",
-                       (long long)migrateSearchIndexNumber_, (long long)migrateSearchIndexTotalTimeCost_);
+                       (long long)migrateSearchIndexNumber_, (long long)searchIndexTotalTimeCost);
     } else {
         MEDIA_ERR_LOG("Search index cloning failed.");
     }

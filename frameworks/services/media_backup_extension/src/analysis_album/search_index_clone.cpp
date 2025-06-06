@@ -211,8 +211,7 @@ void SearchIndexClone::InsertAnalysisSearchIndex(std::vector<AnalysisSearchIndex
     }
 }
 
-std::pair<std::unordered_set<int32_t>, std::unordered_set<int32_t>>
-    SearchIndexClone::QueryExistingIdsWithStrategy(const std::vector<int32_t>& fileIds)
+IdSetPair SearchIndexClone::QueryExistingIdsWithStrategy(const std::vector<int32_t>& fileIds)
 {
     std::unordered_set<int32_t> protectedIds;  // id <= maxSearchId_
     std::unordered_set<int32_t> overrideIds;   // id > maxSearchId_
