@@ -17,6 +17,7 @@
 
 #include "cloud_media_download_service.h"
 
+#include "cover_position_parser.h"
 #include "directory_ex.h"
 #include "parameters.h"
 #include "media_log.h"
@@ -275,6 +276,9 @@ CloudMediaDownloadService::OnDownloadAssetData CloudMediaDownloadService::GetOnD
     assetData.path = photosPo.data.value_or("");
     assetData.localPath = CloudMediaSyncUtils::GetLocalPath(assetData.path);
     assetData.dateModified = photosPo.dateModified.value_or(0);
+    std::string extraUri = MediaFileUtils::GetExtraUri(photosPo.displayName.value_or(""), photosPo.data.value_or(""));
+    assetData.fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
+                                                               std::to_string(photosPo.fileId.value_or(0)), extraUri);
     return assetData;
 }
 
@@ -358,13 +362,16 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
         bool isGraffiti = CloudMediaSyncUtils::IsGraffiti(photo);
         std::string videoPath = CloudMediaSyncUtils::GetMovingPhotoVideoPath(assetData.path);
         std::string extraDir = CloudMediaSyncUtils::GetMovingPhotoExtraDataDir(assetData.path);
-        std::string extraDataPath =
-            isGraffiti ? CloudMediaSyncUtils::GetMovingPhotoExtraDataPath(assetData.path) : "";
+        std::string extraDataPath = isGraffiti ? "" : CloudMediaSyncUtils::GetMovingPhotoExtraDataPath(assetData.path);
         if (!ForceCreateDirectory(extraDir)) {
             MEDIA_ERR_LOG("HandleAssetFile %{public}s error %{public}d", extraDir.c_str(), errno);
             return E_PATH;
         }
-        return SliceAssetFile(assetData.localPath, assetData.localPath, videoPath, extraDataPath);
+        int32_t ret = SliceAssetFile(assetData.localPath, assetData.localPath, videoPath, extraDataPath);
+        if (ret == E_OK) {
+            CoverPositionParser::GetInstance().AddTask(assetData.path, assetData.fileUri);
+        }
+        return ret;
     }
     return E_OK;
 }

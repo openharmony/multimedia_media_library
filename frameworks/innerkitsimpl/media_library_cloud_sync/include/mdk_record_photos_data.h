@@ -133,6 +133,8 @@ public:  // attributes getter & setter
     MDKRecordPhotosData &SetOriginalSubType(const int32_t originalSubType);
     std::optional<int64_t> GetCoverPosition() const;
     MDKRecordPhotosData &SetCoverPosition(const int64_t coverPosition);
+    std::optional<int32_t> GetIsRectificationCover() const;
+    MDKRecordPhotosData &SetIsRectificationCover(const int32_t isRectificationCover);
     std::optional<int32_t> GetMovingPhotoEffectMode() const;
     MDKRecordPhotosData &SetMovingPhotoEffectMode(const int32_t movingPhotoEffectMode);
     std::optional<int32_t> GetSupportedWatermarkType() const;

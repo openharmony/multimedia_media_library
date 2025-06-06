@@ -450,6 +450,21 @@ static void FixTabExtDirtyData(const shared_ptr<MediaLibraryRdbStore>& store)
     MEDIA_INFO_LOG("end fix tab ext dirty data");
 }
 
+static void UpdateIsRectificationCover(const shared_ptr<MediaLibraryRdbStore> rdbStore)
+{
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.NotEqualTo(PhotoColumn::PHOTO_COVER_POSITION, 0);
+
+    ValuesBucket values;
+    values.PutLong(PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, 1);
+
+    int32_t changedRows = 0;
+    int32_t err = rdbStore->Update(changedRows, values, predicates);
+    CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "RdbStore Update is_rectification_cover failed, err: %{public}d", err);
+}
+
 void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
@@ -467,6 +482,14 @@ void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_FIX_TAB_EXT_DIRTY_DATA) {
         FixTabExtDirtyData(rdbStore);
         rdbStore->SetOldVersion(VERSION_FIX_TAB_EXT_DIRTY_DATA);
+    }
+
+    if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
+        MEDIA_INFO_LOG("Start VERSION_ADD_IS_RECTIFICATION_COVER");
+        UpdateIsRectificationCover(rdbStore);
+        MEDIA_INFO_LOG("End VERSION_ADD_IS_RECTIFICATION_COVER");
+
+        rdbStore->SetOldVersion(VERSION_ADD_IS_RECTIFICATION_COVER);
     }
 }
 

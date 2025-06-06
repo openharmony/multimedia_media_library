@@ -60,6 +60,7 @@ void CloudMediaPullDataDto::GetAttributesInfo(std::stringstream &ss)
        << "\"attributesEditTime\": " << attributesEditTime << ","
        << "\"attributesOriginalSubtype\": " << attributesOriginalSubtype << ","
        << "\"attributesCoverPosition\": " << attributesCoverPosition << ","
+       << "\"attributesIsRectificationCover\": " << attributesIsRectificationCover << ","
        << "\"attributesMovingPhotoEffectMode\": " << attributesMovingPhotoEffectMode << ","
        << "\"attributesSupportedWatermarkType\": " << attributesSupportedWatermarkType << ","
        << "\"attributesStrongAssociation\": " << attributesStrongAssociation << ","

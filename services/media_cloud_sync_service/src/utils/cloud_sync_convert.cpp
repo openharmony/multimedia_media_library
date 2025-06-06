@@ -229,6 +229,16 @@ int32_t CloudSyncConvert::CompensateAttCoverPosition(const CloudMediaPullDataDto
     return E_OK;
 }
 
+int32_t CloudSyncConvert::CompensateAttIsRectificationCover(const CloudMediaPullDataDto &data,
+                                                            NativeRdb::ValuesBucket &values)
+{
+    int32_t isRectificationCover = data.attributesIsRectificationCover;
+    CHECK_AND_RETURN_RET_WARN_LOG(isRectificationCover != -1, E_CLOUDSYNC_INVAL_ARG,
+                                  "Cannot find attributes::isRectificationCover.");
+    values.PutLong(PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, isRectificationCover);
+    return E_OK;
+}
+
 int32_t CloudSyncConvert::CompensateAttMovingPhotoEffectMode(
     const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
@@ -594,6 +604,7 @@ int32_t CloudSyncConvert::ExtractAttributeValue(const CloudMediaPullDataDto &dat
     CompensateAttEditTime(data, values);
     CompensateAttOriginalSubtype(data, values);
     CompensateAttCoverPosition(data, values);
+    CompensateAttIsRectificationCover(data, values);
     CompensateAttMovingPhotoEffectMode(data, values);
     CompensateAttSupportedWatermarkType(data, values);
     CompensateAttStrongAssociation(data, values);

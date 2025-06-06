@@ -67,6 +67,7 @@ public:
     int64_t attributesEditTime{-1};               /* edit_time */
     int32_t attributesOriginalSubtype{-1};        /* original_subtype */
     int64_t attributesCoverPosition{-1};          /* cover_position */
+    int32_t attributesIsRectificationCover{-1};   /* is_rectification_cover */
     int32_t attributesMovingPhotoEffectMode{-1};  /* moving_photo_effect_mode */
     int32_t attributesSupportedWatermarkType{-1}; /* supported_watermark_type */
     int32_t attributesStrongAssociation{-1};      /* strong_association */

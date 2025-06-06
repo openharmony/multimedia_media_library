@@ -73,6 +73,8 @@ private:
         PhotoColumn::PHOTO_SUBTYPE,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
+        MediaColumn::MEDIA_NAME,
+        MediaColumn::MEDIA_ID,
     };
     const int32_t THM_TO_DOWNLOAD_MASK = 0x2;
     const int32_t LCD_TO_DOWNLOAD_MASK = 0x1;
