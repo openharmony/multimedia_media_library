@@ -372,6 +372,7 @@ private:
     EXPORT static napi_value PhotoAccessGetSupportedPhotoFormats(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSApplyChanges(napi_env env, napi_callback_info info);
+    EXPORT static napi_value GetPhotoPickerComponentDefaultAlbumName(napi_env env, napi_callback_info info);
 
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
