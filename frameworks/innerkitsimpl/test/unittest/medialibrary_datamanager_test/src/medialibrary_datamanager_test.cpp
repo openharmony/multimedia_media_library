@@ -2066,5 +2066,26 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, QueryActiveUserID_test_001, TestSize.L
     MEDIA_INFO_LOG("QueryActiveUserID_test_001::End");
 }
 
+HWTEST_F(MediaLibraryDataManagerUnitTest, AddToMediaVisitCount_test_001, TestSize.Level0)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+
+    MediaLibraryCommand cmdFile(OperationObject::FILESYSTEM_PHOTO,
+        OperationType::QUERY_ORDER, MediaLibraryApi::API_10);
+    int32_t ret = dataManager->OpenFile(cmdFile, "R");
+    EXPECT_EQ(ret, E_INVALID_URI);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, AddToMediaVisitCount_test_002, TestSize.Level0)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+
+    MediaLibraryCommand cmdCustom(OperationObject::CUSTOM_RECORDS_OPERATON,
+        OperationType::QUERY_ORDER, MediaLibraryApi::API_10);
+    int32_t ret = dataManager->OpenFile(cmdCustom, "R");
+    EXPECT_EQ(ret, E_INVALID_URI);
+}
 } // namespace Media
 } // namespace OHOS

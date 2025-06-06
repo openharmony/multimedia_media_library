@@ -910,5 +910,45 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_FlushAdaptationToMovingPhoto_test_001
     dfxAnalyzer.FlushAdaptationToMovingPhoto(newAdaptationInfo);
     EXPECT_EQ(newAdaptationInfo.unadaptedAppPackages.empty(), false);
 }
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_test_001, TestSize.Level0)
+{
+    std::string photoMimeType;
+    DfxDatabaseUtils::GetPhotoMimeType(photoMimeType);
+    QuerySizeAndResolution queySizeAndResolution;
+    DfxDatabaseUtils::GetSizeAndResolutionInfo(queySizeAndResolution);
+    bool ret = DfxDatabaseUtils::CheckChargingAndScreenOff(true);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_test_002, TestSize.Level0)
+{
+    QuerySizeAndResolution querySizeAndResolution;
+    querySizeAndResolution.localImageSize = "";
+    querySizeAndResolution.localVideoSize = "";
+    querySizeAndResolution.cloudImageSize = "";
+    querySizeAndResolution.cloudVideoSize = "";
+    querySizeAndResolution.localImageResolution = "";
+    querySizeAndResolution.localVideoResolution = "";
+    querySizeAndResolution.cloudImageResolution = "";
+    querySizeAndResolution.cloudVideoResolution = "";
+    std::string photoMimeType = "";
+    DfxReporter dfxReporter;
+    dfxReporter.ReportPhotoSizeAndResolutionInfo(querySizeAndResolution, photoMimeType);
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "PHOTO_INFO_EXT",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "LOCAL_IMAGE_SIZE", querySizeAndResolution.localImageSize,
+        "LOCAL_VIDEO_SIZE", querySizeAndResolution.localVideoSize,
+        "CLOUD_IMAGE_SIZE", querySizeAndResolution.cloudImageSize,
+        "CLOUD_VIDEO_SIZE", querySizeAndResolution.cloudVideoSize,
+        "PHOTO_MIMETYPE", photoMimeType,
+        "LOCAL_IMAGE_RESOLUTION", querySizeAndResolution.localImageResolution,
+        "LOCAL_VIDEO_RESOLUTION", querySizeAndResolution.localVideoResolution,
+        "CLOUD_IMAGE_RESOLUTION", querySizeAndResolution.cloudImageResolution,
+        "CLOUD_VIDEO_RESOLUTION", querySizeAndResolution.cloudVideoResolution);
+    EXPECT_EQ(ret, E_OK);
+}
 } // namespace Media
 } // namespace OHOS
