@@ -7169,6 +7169,12 @@ static napi_value ParseArgsStartAssetAnalysis(napi_env env, napi_callback_info i
         context->isFullAnalysis = true;
     }
 
+    if (context->objectInfo) {
+        context->userId = context->objectInfo->GetUserId();
+    } else {
+        NAPI_ERR_LOG("objectInfo is nullptr.");
+    }
+
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -9141,7 +9147,7 @@ static void JSStartAssetAnalysisExecute(napi_env env, void *data)
     }
     int errCode = E_OK;
     std::vector<std::string> columns;
-    auto result = UserFileClient::Query(uri, predicates, columns, errCode, GetUserIdFromContext(context));
+    auto result = UserFileClient::Query(uri, predicates, columns, errCode, context->userId);
     if (result != nullptr) {
         result->Close();
     }
