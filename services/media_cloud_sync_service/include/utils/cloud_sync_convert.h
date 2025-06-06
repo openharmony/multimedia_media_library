@@ -52,6 +52,8 @@ public:
     static int32_t CompensateAttEditTime(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateAttOriginalSubtype(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateAttCoverPosition(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
+    static int32_t CompensateAttIsRectificationCover(const CloudMediaPullDataDto &data,
+        NativeRdb::ValuesBucket &values);
     static int32_t CompensateAttMovingPhotoEffectMode(
         const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateAttSupportedWatermarkType(

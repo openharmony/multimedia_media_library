@@ -48,6 +48,7 @@ private:
         std::string localPath;
         int32_t err;
         std::string errorMsg;
+        std::string fileUri;
     };
 
 private:

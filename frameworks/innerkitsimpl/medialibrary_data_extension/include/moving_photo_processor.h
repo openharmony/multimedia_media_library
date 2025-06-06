@@ -77,6 +77,9 @@ private:
     static int32_t ProcessLocalCloudLivePhoto(LivePhotoData& data);
     static void UpdateLivePhotoData(const LivePhotoData& livePhotoData);
     static void StartProcessLivePhoto();
+    static void StartProcessCoverPosition();
+    static std::shared_ptr<NativeRdb::ResultSet> QueryInvalidCoverPosition();
+    static void ProcessCoverPosition(std::shared_ptr<NativeRdb::ResultSet> resultSet);
 
     static bool isProcessing_;
 };

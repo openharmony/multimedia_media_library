@@ -30,6 +30,7 @@
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
+#include "metadata_extractor.h"
 #include "mimetype_utils.h"
 #include "moving_photo_file_utils.h"
 #include "parameters.h"
@@ -111,6 +112,73 @@ void MovingPhotoProcessor::StartProcessLivePhoto()
     CompatLivePhoto(dataList);
 }
 
+void MovingPhotoProcessor::StartProcessCoverPosition()
+{
+    auto resultSet = QueryInvalidCoverPosition();
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query moving photo with invalid cover_position");
+
+    isProcessing_ = true;
+    ProcessCoverPosition(resultSet);
+}
+
+std::shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryInvalidCoverPosition()
+{
+    const vector<string> columns = {
+        MediaColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_ID,
+    };
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    predicates.EqualTo(PhotoColumn::PHOTO_COVER_POSITION, 0);
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, 0);
+    predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    predicates.Or();
+    predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+    predicates.EndWrap();
+
+    return MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
+}
+
+void MovingPhotoProcessor::ProcessCoverPosition(shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        if (!isProcessing_) {
+            MEDIA_INFO_LOG("Stop ProcessCoverPosition!");
+            return;
+        }
+
+        string filePath =
+            get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING));
+        int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_ID, resultSet, TYPE_INT32));
+
+        unique_ptr<Metadata> videoData = make_unique<Metadata>();
+        string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(filePath);
+        videoData->SetMovingPhotoImagePath(filePath);
+        videoData->SetFilePath(videoPath);
+        videoData->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+        int32_t err = MetadataExtractor::ExtractAVMetadata(videoData);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("Failed to extract metadata for moving photo: %{private}s", videoPath.c_str());
+            continue;
+        }
+
+        int64_t coverPosition = videoData->GetCoverPosition();
+        AbsRdbPredicates predicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+        ValuesBucket values;
+        values.PutLong(PhotoColumn::PHOTO_COVER_POSITION, coverPosition);
+        values.PutInt(PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, 1);
+
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is null");
+        int32_t changeRows = -1;
+        int32_t ret = rdbStore->Update(changeRows, values, predicates);
+        CHECK_AND_PRINT_LOG((ret == E_OK && changeRows > 0), "failed to update cover_position, ret = %{public}d", ret);
+        MEDIA_INFO_LOG("ProcessCoverPosition done: %{public}d %{public}s", fileId, filePath.c_str());
+    }
+}
+
 void MovingPhotoProcessor::StartProcess()
 {
     MEDIA_DEBUG_LOG("Start processing moving photo task");
@@ -129,6 +197,9 @@ void MovingPhotoProcessor::StartProcess()
         bool ret = system::SetParameter(REFRESH_CLOUD_LIVE_PHOTO_FLAG, CLOUD_LIVE_PHOTO_REFRESHED);
         MEDIA_INFO_LOG("Set parameter of isRefreshed to 1, ret: %{public}d", ret);
     }
+
+    // 4. refresh cover_position
+    StartProcessCoverPosition();
 
     isProcessing_ = false;
     MEDIA_DEBUG_LOG("Finsh processing moving photo task");

@@ -271,5 +271,23 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_UpdateLivePhotoData_Te
     MovingPhotoProcessor::UpdateLivePhotoData(livePhotoData);
     EXPECT_EQ(MovingPhotoProcessor::isProcessing_, true);
 }
+
+/*
+ * Feature : MoingPhotoProcessorTest
+ * Function : StartProcessCoverPosition
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_StartProcessCoverPosition_Test_001, TestSize.Level1)
+{
+    MovingPhotoProcessor::isProcessing_ = false;
+    MovingPhotoProcessor::StartProcessCoverPosition();
+    EXPECT_EQ(MovingPhotoProcessor::isProcessing_, true);
+    MovingPhotoProcessor::isProcessing_ = true;
+    MovingPhotoProcessor::StopProcess();
+    EXPECT_NE(MovingPhotoProcessor::isProcessing_, true);
+}
 } // namespace Media
 } // namespace OHOS
