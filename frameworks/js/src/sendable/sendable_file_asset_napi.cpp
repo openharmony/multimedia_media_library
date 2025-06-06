@@ -863,7 +863,7 @@ static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
         //Chinese and English supported. Other languages English default.
-        if (language == LANGUAGE_ZH || language == LANGUAGE_ZH_TR) {
+        if (language.find(LANGUAGE_ZH) == 0 || language.find(LANGUAGE_ZH_TR) == 0) {
             language = LANGUAGE_ZH;
         } else {
             language = LANGUAGE_EN;
