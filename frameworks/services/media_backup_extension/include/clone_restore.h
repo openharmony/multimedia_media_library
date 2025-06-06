@@ -217,6 +217,7 @@ private:
     void ProcessPhotosBatchFailedOffsets(int32_t isRelatedToPhotoMap = 0);
     void ProcessCloudPhotosFailedOffsets(int32_t isRelatedToPhotoMap = 0);
     void RestoreAnalysisData();
+    void RestoreSearchIndexData();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
