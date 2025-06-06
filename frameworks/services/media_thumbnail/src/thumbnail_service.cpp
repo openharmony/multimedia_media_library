@@ -285,9 +285,7 @@ int32_t ThumbnailService::CreateThumbnailPastDirtyDataFix(const std::string &fil
     ThumbnailData data;
 
     ThumbnailUtils::QueryThumbnailDataFromFileId(opts, fileId, data, err);
-    CHECK_AND_RETURN_RET_LOG(
-        err == E_OK, err,
-        "QueryThumbnailDataFromFileId failed, path: %{public}s",
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "QueryThumbnailDataFromFileId failed, path: %{public}s",
         DfxUtils::GetSafePath(data.path).c_str());
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
     data.isLocalFile = true;
@@ -296,7 +294,7 @@ int32_t ThumbnailService::CreateThumbnailPastDirtyDataFix(const std::string &fil
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateLcdPastDirtyDataFix(const std::string &fileId, const uint8_t quality)
+int32_t ThumbnailService::CreateLcdPastDirtyDataFix(const std::string &fileId)
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
@@ -305,12 +303,10 @@ int32_t ThumbnailService::CreateLcdPastDirtyDataFix(const std::string &fileId, c
     };
     int err = 0;
     ThumbnailData data;
-    data.thumbnailQuality = quality;
+    data.createLowQulityLcd = true;
 
     ThumbnailUtils::QueryThumbnailDataFromFileId(opts, fileId, data, err);
-    CHECK_AND_RETURN_RET_LOG(
-        err == E_OK, err,
-        "QueryThumbnailDataFromFileId failed, path: %{public}s",
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "QueryThumbnailDataFromFileId failed, path: %{public}s",
         DfxUtils::GetSafePath(data.path).c_str());
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
     data.isLocalFile = true;

@@ -386,12 +386,12 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, Size &desiredSize)
     return sourceLoader.RunLoading();
 }
 
-bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isAstc,
-    bool forceSdr, const uint8_t quality)
+bool ThumbnailUtils::CompressImage(const shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isAstc,
+    bool forceSdr, const ThumbnailQuality quality)
 {
     PackOption option = {
         .format = isAstc ? THUMBASTC_FORMAT : THUMBNAIL_FORMAT,
-        .quality = isAstc ? ASTC_LOW_QUALITY : quality,
+        .quality = static_cast<uint8_t>(isAstc ? ThumbnailQuality::ASTC_LOW_QUALITY : quality),
         .numberHint = NUMBER_HINT_1,
         .desiredDynamicRange = forceSdr ? EncodeDynamicRange::SDR :EncodeDynamicRange::AUTO
     };
@@ -427,22 +427,19 @@ bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_
     return true;
 }
 
-bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, string &tempOutputPath)
+bool ThumbnailUtils::CompressPicture(ThumbnailData &data, const std::shared_ptr<Picture>& picture,
+    const bool isSourceEx, string &tempOutputPath)
 {
     CHECK_AND_RETURN_RET_LOG(
         THUMBNAIL_QUALITY_SET.count(data.thumbnailQuality),
         false,
-        "compress thumbnail quality not in thumbnail quality set, quality: %{public}d",
-        data.thumbnailQuality);
+        "compress thumbnail quality not in thumbnail quality set, quality: %{public}u",
+        static_cast<uint8_t>(data.thumbnailQuality));
 
     MEDIA_INFO_LOG("CompressPicture %{public}s", DfxUtils::GetSafePath(data.path).c_str());
     auto outputPath = GetThumbnailPath(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX);
-    auto picture = isSourceEx ? data.source.GetPictureEx() : data.source.GetPicture();
-    if (picture == nullptr) {
-        MEDIA_ERR_LOG("CompressPicture failed, source is nullptr, path: %{public}s",
-            DfxUtils::GetSafePath(data.path).c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPictureValid(picture), false,
+        "Pictrue is invalid. path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
     int ret = SaveFileCreateDir(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX, outputPath);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, false,
         "CompressPicture failed, SaveFileCreateDir failed, path: %{public}s, isSourceEx: %{public}d",
@@ -462,7 +459,7 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, strin
     Media::ImagePacker imagePacker;
     PackOption option = {
         .format = THUMBNAIL_FORMAT,
-        .quality = data.thumbnailQuality,
+        .quality = static_cast<uint8_t>(data.thumbnailQuality),
         .numberHint = NUMBER_HINT_1,
         .desiredDynamicRange = EncodeDynamicRange::AUTO,
         .needsPackProperties = false
@@ -473,7 +470,7 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, strin
     return true;
 }
 
-bool ThumbnailUtils::SaveAfterPacking(ThumbnailData &data, bool isSourceEx, const string &tempOutputPath)
+bool ThumbnailUtils::SaveAfterPacking(ThumbnailData &data, const bool isSourceEx, const string &tempOutputPath)
 {
     size_t size = -1;
     MediaFileUtils::GetFileSize(tempOutputPath, size);
@@ -2053,7 +2050,7 @@ void ThumbnailUtils::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData)
     }
 }
 
-bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx)
+bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, const bool isSourceEx)
 {
     std::shared_ptr<PixelMap> dataSource = isSourceEx ? data.source.GetPixelMapEx() : data.source.GetPixelMap();
     if (dataSource == nullptr) {
@@ -2347,5 +2344,6 @@ void ThumbnailUtils::BatchDropThumbnailSize(const ThumbnailDataBatch& dataBatch)
     }
     MediaLibraryPhotoOperations::BatchDropThumbnailSize(photoIds);
 }
+
 } // namespace Media
 } // namespace OHOS

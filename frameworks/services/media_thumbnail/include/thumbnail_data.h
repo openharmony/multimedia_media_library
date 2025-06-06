@@ -173,7 +173,7 @@ public:
     EXPORT int32_t photoHeight {0};
     EXPORT int32_t photoWidth {0};
     EXPORT int32_t dirty {-1};
-    EXPORT uint8_t thumbnailQuality {THUMBNAIL_MID};
+    EXPORT ThumbnailQuality thumbnailQuality {ThumbnailQuality::DEFAULT};
 
     // Loaded lcd source can be resized to generate thumbnail in order
     EXPORT bool needResizeLcd {false};
@@ -183,6 +183,7 @@ public:
     EXPORT bool isRegenerateStage {false};
     EXPORT bool needCheckWaitStatus {false};
     EXPORT bool needUpdateDb {true};
+    EXPORT bool createLowQulityLcd {false};
     EXPORT ThumbnailSource source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;

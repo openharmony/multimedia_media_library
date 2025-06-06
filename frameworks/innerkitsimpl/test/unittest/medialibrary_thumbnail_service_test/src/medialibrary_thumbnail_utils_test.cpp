@@ -232,6 +232,7 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, GetLocalThumbSize_test_001, TestSize.Le
     res = ThumbnailUtils::GetLocalThumbSize(data, type, size);
     EXPECT_EQ(res, false);
 }
+
 HWTEST_F(MediaLibraryThumbnailUtilsTest, ConvertStrToInt32_test_001, TestSize.Level0)
 {
     string str = "123";
@@ -248,5 +249,6 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, ConvertStrToInt32_test_001, TestSize.Le
     res = ThumbnailUtils::ConvertStrToInt32(str, ret);
     EXPECT_EQ(res, false);
 }
+
 } // namespace Media
 } // namespace OHOS

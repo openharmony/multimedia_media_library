@@ -290,12 +290,12 @@ void CloudSyncNotifyHandler::HandleLCDSizeTooLarge(const std::list<Uri> &uris)
             continue;
         }
 
-        int32_t err = ThumbnailService::GetInstance()->CreateLcdPastDirtyDataFix(fileId, THUMBNAIL_EIGHTY);
+        int32_t err = ThumbnailService::GetInstance()->CreateLcdPastDirtyDataFix(fileId);
         if (err != E_SUCCESS) {
-            MEDIA_ERR_LOG("ThumbnailService CreateLcdPastDirtyDataFix to eighty quality failed : %{public}d", err);
+            MEDIA_ERR_LOG("ThumbnailService CreateLcdPastDirtyDataFix failed : %{public}d", err);
             continue;
         }
-        MEDIA_INFO_LOG("Regenerate Lcd %{public}s to eighty quality, success ", uriString.c_str());
+        MEDIA_INFO_LOG("Regenerate Lcd %{public}s success ", uriString.c_str());
     }
     return;
 }
