@@ -78,6 +78,8 @@ export class RecentPhotoComponent extends ViewPU {
                     filterMediaType: this.convertMIMETypeToFilterType(this.recentPhotoOptions?.MIMEType),
                     period: this.recentPhotoOptions?.period,
                     photoSource: this.recentPhotoOptions?.photoSource,
+                    isAutoRefreshSupported: this.recentPhotoOptions?.isAutoRefreshSupported,
+                    colorMode: this.recentPhotoOptions?.colorMode,
                     isFromPickerView: true,
                     isRecentPhotoCheckResultSet: this.onRecentPhotoCheckResult ? true : false
                 }
