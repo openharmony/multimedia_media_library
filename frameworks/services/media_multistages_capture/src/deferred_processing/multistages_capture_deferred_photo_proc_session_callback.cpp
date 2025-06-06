@@ -193,6 +193,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &i
             static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE);
         MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(error), mediaType);
     }
+    CallProcessImageDone(false, imageId);
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQualityImage(
@@ -301,6 +302,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
         return;
     }
     ProcessAndSaveHighQualityImage(imageId, picture, resultSet, cloudImageEnhanceFlag, modifyType);
+    CallProcessImageDone(true, imageId);
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::GetCommandByImageId(const std::string &imageId,
@@ -421,6 +423,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
     if (isMovingPhoto) {
         MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(imageId);
     }
+    CallProcessImageDone(true, imageId);
     MEDIA_INFO_LOG("success photoid: %{public}s", imageId.c_str());
 }
 
@@ -430,6 +433,18 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnStateChanged(const Dp
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().HandleStateChangedOperation(state == DpsStatusCode::SESSION_STATE_IDLE);
 #endif
+}
+
+void MultiStagesCaptureDeferredPhotoProcSessionCallback::SetProcessImageDoneCallback(const ProcessDoneHandler &func)
+{
+    processDoneCallback_ = func;
+}
+
+void MultiStagesCaptureDeferredPhotoProcSessionCallback::CallProcessImageDone(bool success, const std::string &photoId)
+{
+    if (processDoneCallback_ != nullptr) {
+        processDoneCallback_(success, photoId);
+    }
 }
 } // namespace Media
 } // namespace OHOS

@@ -219,4 +219,22 @@ int32_t CloudMediaDataClient::UpdateLocalFileDirty(std::vector<MDKRecord> &recor
     CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->UpdateLocalFileDirty(records);
 }
+
+int32_t CloudMediaDataClient::GetCloudSyncUnPreparedData(int32_t &result)
+{
+    if (this->dataHandler_ == nullptr) {
+        MEDIA_ERR_LOG("No data handler found!");
+        return E_IPC_INVAL_ARG;
+    }
+    return this->dataHandler_->GetCloudSyncUnPreparedData(result);
+}
+
+int32_t CloudMediaDataClient::SubmitCloudSyncPreparedDataTask()
+{
+    if (this->dataHandler_ == nullptr) {
+        MEDIA_ERR_LOG("No data handler found!");
+        return E_IPC_INVAL_ARG;
+    }
+    return this->dataHandler_->SubmitCloudSyncPreparedDataTask();
+}
 }  // namespace OHOS::Media::CloudSync

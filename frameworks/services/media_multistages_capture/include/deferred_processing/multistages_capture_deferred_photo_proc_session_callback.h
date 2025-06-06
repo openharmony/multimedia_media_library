@@ -28,6 +28,7 @@ namespace OHOS {
 namespace Media {
 class Picture;
 #define EXPORT __attribute__ ((visibility ("default")))
+using ProcessDoneHandler = std::function<void(bool, const std::string &)>;
 class MultiStagesCaptureDeferredPhotoProcSessionCallback : public CameraStandard::IDeferredPhotoProcSessionCallback {
 public:
     EXPORT MultiStagesCaptureDeferredPhotoProcSessionCallback();
@@ -42,6 +43,8 @@ public:
     EXPORT void OnError(const std::string &imageId, const CameraStandard::DpsErrorCode error) override;
     void OnStateChanged(const CameraStandard::DpsStatusCode state) override;
 
+    void SetProcessImageDoneCallback(const ProcessDoneHandler &func);
+
 private:
     EXPORT int32_t UpdatePhotoQuality(const std::string &photoId);
     EXPORT void UpdateCEAvailable(const std::string &photoId, uint32_t cloudImageEnhanceFlag, int32_t modifyType = 0);
@@ -51,6 +54,10 @@ private:
     EXPORT void NotifyIfTempFile(std::shared_ptr<NativeRdb::ResultSet> resultSet, bool isError = false);
     EXPORT void ProcessAndSaveHighQualityImage(const std::string& imageId, std::shared_ptr<Media::Picture> picture,
         std::shared_ptr<NativeRdb::ResultSet> resultSet, uint32_t cloudImageEnhanceFlag, int32_t modifyType = 0);
+    void CallProcessImageDone(bool success, const std::string &photoId);
+
+private:
+    ProcessDoneHandler processDoneCallback_;
 };
 } // namespace Media
 } // namespace OHOS
