@@ -48,6 +48,41 @@ void MediaLibraryIthumbnailHelperTest::SetUp() {}
     
 void MediaLibraryIthumbnailHelperTest::TearDown(void) {}
 
+const int32_t TEST_PIXELMAP_WIDTH_AND_HEIGHT = 100;
+
+static std::shared_ptr<PixelMap> CreateTestPixelMap(PixelFormat format, bool useDMA)
+{
+    InitializationOptions opts;
+    opts.size.width = TEST_PIXELMAP_WIDTH_AND_HEIGHT;
+    opts.size.height = TEST_PIXELMAP_WIDTH_AND_HEIGHT;
+    opts.srcPixelFormat = format;
+    opts.pixelFormat = format;
+    opts.useDMA = useDMA;
+    std::shared_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    return pixelMap;
+}
+
+static std::shared_ptr<Picture> CreateTestPicture(std::shared_ptr<PixelMap> pixelMap,
+    std::shared_ptr<PixelMap> gainMap)
+{
+    if (pixelMap == nullptr) {
+        return nullptr;
+    }
+
+    auto sourcePtr = Picture::Create(pixelMap);
+    std::shared_ptr<Picture> picture = std::move(sourcePtr);
+    if (gainMap == nullptr) {
+        return picture;
+    }
+
+    Size gainMapSize = {gainMap->GetWidth(), gainMap->GetHeight()};
+    auto auxiliaryPicturePtr = AuxiliaryPicture::Create(gainMap, AuxiliaryPictureType::GAINMAP, gainMapSize);
+    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = std::move(auxiliaryPicturePtr);
+    CHECK_AND_RETURN_RET_LOG(auxiliaryPicture != nullptr, nullptr, "Create auxiliaryPicture failed");
+    picture->SetAuxiliaryPicture(auxiliaryPicture);
+    return picture;
+}
+
 HWTEST_F(MediaLibraryIthumbnailHelperTest, TrySaveCurrentPixelMap_test_001, TestSize.Level0)
 {
     ThumbnailData data;
@@ -128,5 +163,40 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, CacheSuccessState_test_001, TestSize.
     res = IThumbnailHelper::CacheSuccessState(opts, data);
     EXPECT_EQ(res, false);
 }
+
+HWTEST_F(MediaLibraryIthumbnailHelperTest, StorePicture_test_001, TestSize.Level0)
+{
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
+    bool ret = IThumbnailHelper::StorePicture(data, picture, false);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryIthumbnailHelperTest, StorePictureLowQuality_test_001, TestSize.Level0)
+{
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
+    bool ret = IThumbnailHelper::StorePictureLowQuality(data, picture, false, LCD_UPLOAD_LIMIT_SIZE);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryIthumbnailHelperTest, GetLcdDesiredSize_test_001, TestSize.Level0)
+{
+    ThumbnailData data;
+    data.lcdDesiredSize.height = 1080;
+    data.lcdDesiredSize.width = 1920;
+    data.orientation = 90;
+    Size ret = IThumbnailHelper::GetLcdDesiredSize(data, false);
+    bool res = ret.width == data.lcdDesiredSize.height && ret.height == data.lcdDesiredSize.width;
+    EXPECT_EQ(res, true);
+    ret = IThumbnailHelper::GetLcdDesiredSize(data, true);
+    res = ret.width == data.lcdDesiredSize.width && ret.height == data.lcdDesiredSize.height;
+    EXPECT_EQ(res, true);
+}
+
 } // namespace Media
 } // namespace OHOS

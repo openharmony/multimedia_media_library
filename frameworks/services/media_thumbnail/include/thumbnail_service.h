@@ -57,7 +57,7 @@ public:
     EXPORT int32_t CreateThumbnailFileScanedWithPicture(const std::string &uri, const std::string &path,
         std::shared_ptr<Picture> originalPhotoPicture, bool isSync = false);
     EXPORT int32_t CreateThumbnailPastDirtyDataFix(const std::string &fileId);
-    EXPORT int32_t CreateLcdPastDirtyDataFix(const std::string &fileId, const uint8_t quality = THUMBNAIL_MID);
+    EXPORT int32_t CreateLcdPastDirtyDataFix(const std::string &fileId);
     bool HasInvalidateThumbnail(const std::string &id, const std::string &tableName,
         const std::string &path = "", const std::string &dateTaken = "");
     EXPORT bool DeleteThumbnailDirAndAstc(const std::string &id, const std::string &tableName,
