@@ -179,6 +179,7 @@ void CloudBackupRestore::SetTimeInfo(const std::unique_ptr<Metadata> &data, File
     value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, info.dateTaken);
     value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, info.dateModified);
     value.PutLong(MediaColumn::MEDIA_DATE_ADDED, info.firstUpdateTime);
+    InsertDetailTime(data, value, info);
 }
 
 void CloudBackupRestore::RestoreAnalysisAlbum()
