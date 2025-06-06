@@ -64,6 +64,9 @@ public:
     virtual int32_t GetDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat) = 0;
     virtual int32_t UpdateLocalFileDirty(std::vector<MDKRecord> &records) = 0;
     virtual int32_t UpdateSyncStatus(const std::string &cloudId, int32_t syncStatus) = 0;
+
+    virtual int32_t GetCloudSyncUnPreparedData(int32_t &result) = 0;
+    virtual int32_t SubmitCloudSyncPreparedDataTask() = 0;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_I_CLOUD_MEDIA_DATA_CLIENT_H

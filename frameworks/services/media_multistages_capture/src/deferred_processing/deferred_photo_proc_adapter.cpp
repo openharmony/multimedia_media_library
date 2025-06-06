@@ -22,9 +22,7 @@
 #endif
 #include "ipc_skeleton.h"
 #include "media_log.h"
-#ifdef ABILITY_CAMERA_SUPPORT
-#include "multistages_capture_deferred_photo_proc_session_callback.h"
-#endif
+
 using namespace std;
 #ifdef ABILITY_CAMERA_SUPPORT
 using namespace OHOS::CameraStandard;
@@ -43,8 +41,9 @@ DeferredPhotoProcessingAdapter::DeferredPhotoProcessingAdapter()
     CHECK_AND_RETURN_LOG(uid > INVALID_UID, "DeferredPhotoProcessingAdapter invalid uid: %{public}d", uid);
 
     int32_t userId = uid / BASE_USER_RANGE;
-    deferredPhotoProcSession_ = CameraManager::CreateDeferredPhotoProcessingSession(userId,
-        make_shared<MultiStagesCaptureDeferredPhotoProcSessionCallback>());
+    photoProcCallback_ = make_shared<MultiStagesCaptureDeferredPhotoProcSessionCallback>();
+    CHECK_AND_RETURN_LOG(photoProcCallback_ != nullptr, "make PhotoProcSessionCallback fail");
+    deferredPhotoProcSession_ = CameraManager::CreateDeferredPhotoProcessingSession(userId, photoProcCallback_);
     CHECK_AND_PRINT_LOG(deferredPhotoProcSession_ != nullptr, "CreateDeferredPhotoProcessingSession err");
 #endif
     MEDIA_INFO_LOG("DeferredPhotoProcessingAdapter init succ");
@@ -132,5 +131,11 @@ bool DeferredPhotoProcessingAdapter::CancelProcessImage(const std::string &image
 #endif
 }
 
+#ifdef ABILITY_CAMERA_SUPPORT
+void DeferredPhotoProcessingAdapter::SetProcessImageDoneCallback(const ProcessDoneHandler &func)
+{
+    photoProcCallback_->SetProcessImageDoneCallback(func);
+}
+#endif
 } // namespace Media
 } // namespace OHOS

@@ -20,6 +20,7 @@
 
 #ifdef ABILITY_CAMERA_SUPPORT
 #include "deferred_proc_session/deferred_photo_proc_session.h"
+#include "multistages_capture_deferred_photo_proc_session_callback.h"
 #endif
 namespace OHOS {
 namespace Media {
@@ -38,6 +39,7 @@ public:
     EXPORT virtual void EndSynchronize();
 #ifdef ABILITY_CAMERA_SUPPORT
     void AddImage(const std::string &imageId, CameraStandard::DpsMetadata &metadata, const bool isTrashed = false);
+    void SetProcessImageDoneCallback(const OHOS::Media::ProcessDoneHandler &func);
 #endif
     EXPORT virtual void RemoveImage(const std::string &imageId, const bool isRestorable = true);
     EXPORT void RestoreImage(const std::string &imageId);
@@ -46,6 +48,7 @@ public:
 private:
 #ifdef ABILITY_CAMERA_SUPPORT
     sptr<CameraStandard::DeferredPhotoProcSession> deferredPhotoProcSession_;
+    std::shared_ptr<MultiStagesCaptureDeferredPhotoProcSessionCallback> photoProcCallback_{nullptr};
 #endif
 };
 } // namespace Media
