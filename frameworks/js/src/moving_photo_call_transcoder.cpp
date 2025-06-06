@@ -62,6 +62,10 @@ bool MovingPhotoCallTranscoder::DoTranscode(const std::shared_ptr<MovingPhotoPro
         NAPI_ERR_LOG("Failed to SetOutputFormat");
         return false;
     }
+    if (transCoder->SetColorSpace(TRANSCODER_COLORSPACE_P3_FULL) != E_OK) {
+        NAPI_ERR_LOG("Failed to SetColorSpace");
+        return false;
+    }
     if (transCoder->Prepare() != E_OK) {
         NAPI_ERR_LOG("Failed to prepare TransCoder");
         transCoderCb->DoPrepareError();

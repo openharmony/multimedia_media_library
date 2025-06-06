@@ -72,6 +72,10 @@ bool MediaCallTranscode::DoTranscode(int srcFd, int destFd, int64_t &size, std::
         NAPI_ERR_LOG("Failed to SetOutputFormat");
         return false;
     }
+    if (transCoder->SetColorSpace(TRANSCODER_COLORSPACE_BT709_LIMIT) != E_OK) {
+        NAPI_ERR_LOG("Failed to SetColorSpace");
+        return false;
+    }
     if (transCoder->Prepare() != E_OK) {
         NAPI_ERR_LOG("Failed to prepare TransCoder");
         return false;
