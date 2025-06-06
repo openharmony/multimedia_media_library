@@ -21,6 +21,7 @@
 
 #include "cloud_data_convert_to_vo.h"
 #include "cloud_media_operation_code.h"
+#include "cloud_sync_unprepared_data_vo.h"
 #include "media_itypes_utils.h"
 #include "media_log.h"
 #include "message_parcel.h"
@@ -416,6 +417,32 @@ int32_t CloudMediaDataClientHandler::UpdateLocalFileDirty(std::vector<MDKRecord>
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, req);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to UpdateLocalFileDirty, ret: %{public}d", ret);
+    }
+    return ret;
+}
+
+int32_t CloudMediaDataClientHandler::GetCloudSyncUnPreparedData(int32_t &result)
+{
+    MEDIA_INFO_LOG("CloudMediaDataClientHandler::GetCloudSyncUnPreparedData begin");
+    // request info.
+    uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_CLOUD_SYNC_UNPREPARED_DATA);
+    CloudSyncUnPreparedDataRespBody respBody;
+    int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Get(operationCode, respBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to GetCloudSyncUnPreparedData, ret: %{public}d", ret);
+    }
+    result = respBody.count;
+    return ret;
+}
+
+int32_t CloudMediaDataClientHandler::SubmitCloudSyncPreparedDataTask()
+{
+    MEDIA_INFO_LOG("CloudMediaDataClientHandler::SubmitCloudSyncPreparedDataTask begin");
+    // request info.
+    uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_SUBMIT_CLOUD_SYNC_UNPREPARED_DATA_TASK);
+    int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to SubmitCloudSyncPreparedDataTask, ret: %{public}d", ret);
     }
     return ret;
 }

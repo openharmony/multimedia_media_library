@@ -61,6 +61,9 @@ public:
     int32_t UpdateLocalFileDirty(std::vector<MDKRecord> &records) override;
     int32_t UpdateSyncStatus(const std::string &cloudId, int32_t syncStatus) override;
 
+    int32_t GetCloudSyncUnPreparedData(int32_t &result) override;
+    int32_t SubmitCloudSyncPreparedDataTask() override;
+
 private:
     int32_t GetAgingFile(uint32_t operationCode, GetAgingFileReqBody &reqBody, std::vector<CloudMetaData> &metaData);
 
