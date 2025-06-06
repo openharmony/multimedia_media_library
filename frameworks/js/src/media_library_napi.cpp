@@ -27,6 +27,7 @@
 #include "ability_context.h"
 #include "confirm_callback.h"
 #include "context.h"
+#include "default_album_name_callback.h"
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "hitrace_meter.h"
@@ -172,6 +173,7 @@ const std::string SHORT_TERM_PHOTO_TYPE = "photoType";
 const std::string SHORT_TERM_PHOTO_SUB_TYPE = "photoSubType";
 const std::string CONFIRM_BOX_PACKAGE_NAME = "com.ohos.photos";
 const std::string CONFIRM_BOX_EXT_ABILITY_NAME = "SaveUIExtensionAbility";
+const std::string CONFIRM_BOX_EXT_DEFAULT_ALBUM_NAME_ABILITY_NAME = "DefaultAlbumNameUIExtensionAbility";
 const std::string CONFIRM_BOX_EXTENSION_TYPE = "ability.want.params.uiExtensionType";
 const std::string CONFIRM_BOX_REQUEST_TYPE = "sysDialog/common";
 const std::string CONFIRM_BOX_SRC_FILE_URIS = "ability.params.stream";
@@ -442,6 +444,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("CloudMediaRetainType", CreateCloudMediaRetainTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("CloudMediaAssetTaskStatus", CreateCloudMediaAssetTaskStatusEnum(env)),
         DECLARE_NAPI_PROPERTY("CloudMediaTaskPauseCause", CreateCloudMediaTaskPauseCauseEnum(env)),
+        DECLARE_NAPI_STATIC_FUNCTION("getPhotoPickerComponentDefaultAlbumName",
+            GetPhotoPickerComponentDefaultAlbumName),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -10525,6 +10529,58 @@ napi_value MediaLibraryNapi::PhotoAccessGetSharedPhotoAssets(napi_env env, napi_
     } while (!resultSet->GoToNextRow());
     resultSet->Close();
     return jsFileArray;
+}
+
+static bool InitDefaultAlbumNameRequest(OHOS::AAFwk::Want &want, shared_ptr<DefaultAlbumNameCallback> &callback,
+                                        napi_env env, napi_value args[], size_t argsLen)
+{
+    if (argsLen < ARGS_TWO) {
+        return false;
+    }
+
+    want.SetElementName(CONFIRM_BOX_PACKAGE_NAME, CONFIRM_BOX_EXT_DEFAULT_ALBUM_NAME_ABILITY_NAME);
+    want.SetParam(CONFIRM_BOX_EXTENSION_TYPE, CONFIRM_BOX_REQUEST_TYPE);
+
+    callback->SetFunc(args[PARAM1]);
+    return true;
+}
+
+napi_value MediaLibraryNapi::GetPhotoPickerComponentDefaultAlbumName(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("GetPhotoPickerComponentDefaultAlbumName enter");
+    size_t argc = ARGS_TWO;
+    napi_value args[ARGS_TWO] = {nullptr};
+    napi_value thisVar = nullptr;
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr), JS_ERR_PARAMETER_INVALID);
+    auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
+    NAPI_ASSERT(env, context != nullptr, "context == nullptr");
+
+    shared_ptr<OHOS::AbilityRuntime::AbilityContext> abilityContext =
+        OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
+    NAPI_ASSERT(env, abilityContext != nullptr, "abilityContext == nullptr");
+
+    auto uiContent = abilityContext->GetUIContent();
+    NAPI_ASSERT(env, uiContent != nullptr, "uiContent == nullptr");
+
+    OHOS::AAFwk::Want want;
+    shared_ptr<DefaultAlbumNameCallback> callback = make_shared<DefaultAlbumNameCallback>(env, uiContent);
+    NAPI_ASSERT(env, InitDefaultAlbumNameRequest(want, callback, env, args, sizeof(args)),
+        "parse default album name param fail");
+
+    OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
+        ([callback](auto arg) { callback->OnRelease(arg); }),
+        ([callback](auto arg1, auto arg2) { callback->OnResult(arg1, arg2); }),
+        ([callback](auto arg) { callback->OnReceive(arg); }),
+        ([callback](auto arg1, auto arg2, auto arg3) { callback->OnError(arg1, arg2, arg3); }),
+    };
+    OHOS::Ace::ModalUIExtensionConfig config;
+    config.isProhibitBack = true;
+    int32_t sessionId = uiContent->CreateModalUIExtension(want, extensionCallback, config);
+    NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");
+    callback->SetSessionId(sessionId);
+    return result;
 }
 
 int32_t MediaLibraryNapi::GetUserId()

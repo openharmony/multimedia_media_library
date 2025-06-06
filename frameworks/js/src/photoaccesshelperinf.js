@@ -482,6 +482,25 @@ function createAssetWithShortTermPermission(photoCreationConfig) {
   return createAssetWithShortTermPermissionOk(photoCreationConfig);
 }
 
+function getPhotoPickerComponentDefaultAlbumName() {
+  let bundleInfo = getBundleInfo();
+  if (bundleInfo === undefined) {
+    return new Promise((resolve, reject) => {
+      reject(new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID));
+    });
+  }
+  
+  try {
+    return new Promise((resolve, reject) => {
+      photoAccessHelper.getPhotoPickerComponentDefaultAlbumName(getContext(this), result => {
+          showAssetsCreationDialogResult(result, reject, resolve);
+        });
+    });
+  } catch (error) {
+    return errorResult(new BusinessError(ERROR_MSG_INNER_FAIL, error.code), null);
+  }
+}
+
 function getPhotoAccessHelper(context, userId = -1) {
   if (context === undefined) {
     console.log('photoAccessHelper gContext undefined');
@@ -495,6 +514,7 @@ function getPhotoAccessHelper(context, userId = -1) {
     helper.constructor.prototype.showAssetsCreationDialog = showAssetsCreationDialog;
     helper.constructor.prototype.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
     helper.constructor.prototype.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
+    helper.constructor.prototype.getPhotoPickerComponentDefaultAlbumName = getPhotoPickerComponentDefaultAlbumName;
   }
   return helper;
 }
@@ -533,6 +553,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
           helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
+          helper.getPhotoPickerComponentDefaultAlbumName = getPhotoPickerComponentDefaultAlbumName;
         }
         return helper;
       })
@@ -553,6 +574,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
           helper.showAssetsCreationDialog = showAssetsCreationDialog;
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
           helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
+          helper.getPhotoPickerComponentDefaultAlbumName = getPhotoPickerComponentDefaultAlbumName;
         }
         asyncCallback(err, helper);
       }
