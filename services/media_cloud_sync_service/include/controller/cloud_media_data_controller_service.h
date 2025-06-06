@@ -35,6 +35,7 @@
 #include "cloud_media_data_controller_processor.h"
 #include "cloud_media_data_service.h"
 #include "cloud_media_define.h"
+#include "cloud_media_enhance_service.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaDataControllerService : public IPC::IMediaControllerService {
@@ -50,6 +51,8 @@ private:
     void GetDirtyTypeStat(MessageParcel &data, MessageParcel &reply);
     void UpdateLocalFileDirty(MessageParcel &data, MessageParcel &reply);
     void UpdateSyncStatus(MessageParcel &data, MessageParcel &reply);
+    void GetCloudSyncUnPreparedData(MessageParcel &data, MessageParcel &reply);
+    void SubmitCloudSyncPreparedDataTask(MessageParcel &data, MessageParcel &reply);
 
 private:
     using RequestHandle = void (CloudMediaDataControllerService::*)(MessageParcel &, MessageParcel &);
@@ -76,6 +79,10 @@ private:
             &CloudMediaDataControllerService::UpdateLocalFileDirty},
         {static_cast<uint32_t>(CloudMediaOperationCode::CMD_UPDATE_SYNC_STATUS),
             &CloudMediaDataControllerService::UpdateSyncStatus},
+        {static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_CLOUD_SYNC_UNPREPARED_DATA),
+            &CloudMediaDataControllerService::GetCloudSyncUnPreparedData},
+        {static_cast<uint32_t>(CloudMediaOperationCode::CMD_SUBMIT_CLOUD_SYNC_UNPREPARED_DATA_TASK),
+            &CloudMediaDataControllerService::SubmitCloudSyncPreparedDataTask},
     };
 
 public:
@@ -103,6 +110,7 @@ public:
 private:
     CloudMediaDataControllerProcessor processor_;
     CloudMediaDataService dataService_;
+    CloudMediaEnhanceService enhanceService_;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DATA_CONTROLLER_SERVICE_H

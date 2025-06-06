@@ -64,6 +64,9 @@ public:
 
     EXPORT void SyncWithDeferredProcSession();
     EXPORT void SyncWithDeferredProcSessionInternal();
+#ifdef ABILITY_CAMERA_SUPPORT
+    void SetProcessImageDoneCallback(const OHOS::Media::ProcessDoneHandler &func);
+#endif
 
 private:
     MultiStagesPhotoCaptureManager();

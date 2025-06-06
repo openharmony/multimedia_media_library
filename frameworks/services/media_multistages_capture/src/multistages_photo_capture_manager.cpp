@@ -440,6 +440,15 @@ void MultiStagesPhotoCaptureManager::SyncWithDeferredProcSession()
     asyncWorker->AddTask(asyncTask, false);
 }
 
+#ifdef ABILITY_CAMERA_SUPPORT
+void MultiStagesPhotoCaptureManager::SetProcessImageDoneCallback(const ProcessDoneHandler &func)
+{
+    if (deferredProcSession_ != nullptr) {
+        deferredProcSession_->SetProcessImageDoneCallback(func);
+    }
+}
+#endif
+
 bool MultiStagesPhotoCaptureManager::CancelProcessRequest(const string &photoId)
 {
     CHECK_AND_RETURN_RET_LOG(MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(photoId), false,

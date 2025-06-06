@@ -17,6 +17,7 @@
 
 #include "cloud_media_data_controller_service.h"
 
+#include "cloud_sync_unprepared_data_vo.h"
 #include "media_log.h"
 #include "media_column.h"
 #include "user_define_ipc.h"
@@ -199,6 +200,21 @@ void CloudMediaDataControllerService::UpdateLocalFileDirty(MessageParcel &data, 
     }
     ret = this->dataService_.UpdateLocalFileDirty(req.cloudIds);
     MEDIA_INFO_LOG("UpdateLocalFileDirty %{public}zu, %{public}d", req.cloudIds.size(), ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+void CloudMediaDataControllerService::GetCloudSyncUnPreparedData(MessageParcel &data, MessageParcel &reply)
+{
+    CloudSyncUnPreparedDataRespBody respBody;
+    int32_t ret = this->enhanceService_.GetCloudSyncUnPreparedData(respBody.count);
+    MEDIA_INFO_LOG("GetCloudSyncUnPreparedData %{public}d, %{public}d", respBody.count, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+}
+
+void CloudMediaDataControllerService::SubmitCloudSyncPreparedDataTask(MessageParcel &data, MessageParcel &reply)
+{
+    int32_t ret = this->enhanceService_.SubmitCloudSyncPreparedDataTask();
+    MEDIA_INFO_LOG("SubmitCloudSyncPreparedDataTask, %{public}d", ret);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 }  // namespace OHOS::Media::CloudSync
