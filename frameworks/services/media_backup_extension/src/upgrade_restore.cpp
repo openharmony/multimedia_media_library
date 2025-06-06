@@ -1207,6 +1207,7 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
     std::string querySql = "SELECT DISTINCT mf.hash "
         "FROM merge_face mf "
         "INNER JOIN merge_tag mt ON mf.tag_id = mt.tag_id "
+        "INNER JOIN gallery_media gm ON mf.hash = gm.hash"
         "WHERE "
         "COALESCE(gm.albumId, '') NOT IN ('default-album-3', 'default-album-4') "
         "AND (mt.tag_name IS NOT NULL AND mt.tag_name != '') "
