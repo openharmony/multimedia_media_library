@@ -1205,13 +1205,14 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
     }
     std::unordered_set<std::string> needQuerySet;
     std::string querySql = "SELECT DISTINCT mf.hash "
-        "FROM merge_face mf "
-        "INNER JOIN merge_tag mt ON mf.tag_id = mt.tag_id "
-        "WHERE "
-        "COALESCE(gm.albumId, '') NOT IN ('default-album-3', 'default-album-4') "
-        "AND (mt.tag_name IS NOT NULL AND mt.tag_name != '') "
-        "GROUP BY mf.hash, mf.face_id "
-        "HAVING gm._id IN (" + selection + ")";
+        " FROM merge_face mf "
+        " INNER JOIN merge_tag mt ON mf.tag_id = mt.tag_id "
+        " INNER JOIN gallery_media gm ON mf.hash = gm.hash "
+        " WHERE "
+        " COALESCE(gm.albumId, '') NOT IN ('default-album-3', 'default-album-4') "
+        " AND (mt.tag_name IS NOT NULL AND mt.tag_name != '') "
+        " GROUP BY mf.hash, mf.face_id "
+        " HAVING gm._id IN (" + selection + ")";
         
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Query resultSql is null.");
