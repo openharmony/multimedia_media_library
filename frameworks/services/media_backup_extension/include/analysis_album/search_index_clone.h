@@ -114,7 +114,6 @@ private:
     int64_t maxSearchId_;
     int64_t migratedCount_ = 0;
     int64_t totalTimeCost_ = 0;
-
 };
 } // namespace OHOS::Media
 #endif // SEARCH_INDEX_CLONE_H

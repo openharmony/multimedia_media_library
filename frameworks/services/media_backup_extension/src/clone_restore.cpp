@@ -1646,15 +1646,13 @@ void CloneRestore::RestoreGallery()
 
 void CloneRestore::RestoreAnalysisData()
 {
+    RestoreSearchIndexData();
+}
+
+void CloneRestore::RestoreSearchIndexData()
+{
     SearchIndexClone searchIndexClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_, maxSearchId_);
-    if (searchIndexClone.Clone()) {
-        migrateSearchIndexNumber_ = searchIndexClone.GetMigratedCount();
-        int64_t searchIndexTotalTimeCost = searchIndexClone.GetTotalTimeCost();
-        MEDIA_INFO_LOG("Search index cloning successful. Migrated %{public}lld records in %{public}lld ms",
-                       (long long)migrateSearchIndexNumber_, (long long)searchIndexTotalTimeCost);
-    } else {
-        MEDIA_ERR_LOG("Search index cloning failed.");
-    }
+    searchIndexClone.Clone();
 }
 
 bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
