@@ -154,7 +154,6 @@ int32_t ServiceCreateAsset(CreateAssetReqBody &reqBody, ServiceCall call)
         return errCode;
     }
 
-    MEDIA_INFO_LOG("RspBody:%{public}s", respVo.GetBody().ToString().c_str());
     return respVo.GetBody().fileId;
 }
 
@@ -181,7 +180,6 @@ int32_t ServiceCreateAssetForApp(CreateAssetForAppReqBody &reqBody, ServiceCall 
         return errCode;
     }
 
-    MEDIA_INFO_LOG("RspBody:%{public}s", respVo.GetBody().ToString().c_str());
     return respVo.GetBody().fileId;
 }
 

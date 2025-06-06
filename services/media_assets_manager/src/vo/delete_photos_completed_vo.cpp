@@ -31,20 +31,4 @@ bool DeletePhotosCompletedReqBody::Marshalling(MessageParcel &parcel) const
 {
     return ITypesUtil::Marshalling(this->fileIds, parcel);
 }
-
-std::string DeletePhotosCompletedReqBody::ToString() const
-{
-    std::stringstream ss;
-    ss << "{"
-       << "[";
-    for (size_t i = 0; i < this->fileIds.size(); i++) {
-        ss << this->fileIds[i];
-        if (i != this->fileIds.size() - 1) {
-            ss << ",";
-        }
-    }
-    ss << "]"
-       << "}";
-    return ss.str();
-}
 }  // namespace OHOS::Media

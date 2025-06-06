@@ -25,6 +25,7 @@
 #include "medialibrary_rdb_transaction.h"
 #include "file_asset.h"
 #include "medialibrary_operation.h"
+#include "datashare_values_bucket.h"
 
 namespace OHOS::Media {
 
@@ -39,12 +40,20 @@ public:
         const std::vector<std::string>& fileUris);
     int32_t RevertToOrigin(const int32_t &fileId);
 
+    void QueryAssetsUri(const std::vector<std::string> &fileIds, std::vector<std::string> &uris);
+
     bool QueryAlbumIdIfExists(const std::string& albumId);
     bool QueryFileIdIfExists(const std::string& fileId);
     bool QueryFormIdIfExists(const std::string& formId);
     int32_t CommitEditInsert(const std::string& editData, int32_t fileId);
     static void DeleteFromVisionTables(const std::string& fileId);
 
+    int32_t GrantPhotoUriPermission(MediaLibraryCommand &cmd);
+    int32_t GrantPhotoUrisPermission(
+        MediaLibraryCommand &cmd, const std::vector<DataShare::DataShareValuesBucket> &values);
+    int32_t CancelPhotoUriPermission(NativeRdb::RdbPredicates &rdbPredicate);
+    int32_t StartThumbnailCreationTask(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
+    int32_t StopThumbnailCreationTask(int32_t requestId);
 private:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");

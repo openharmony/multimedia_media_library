@@ -21,6 +21,7 @@
 #include "media_file_utils.h"
 #include "photo_album.h"
 #include "userfile_manager_types.h"
+#include "media_file_uri.h"
 
 namespace OHOS {
 namespace Media {
@@ -30,6 +31,9 @@ static const int32_t FORMID_MAX_LEN = 19;
 static const int32_t EDIT_DATA_MAX_LENGTH = 5 * 1024 * 1024;
 constexpr size_t MAX_TRASH_PHOTOS_SIZE = 300;
 constexpr size_t MAX_DELETE_PHOTOS_COMPLETED_SIZE = 500;
+constexpr int32_t USER_COMMENT_MAX_LEN = 420;
+const std::unordered_set<int32_t> SUPPORTED_ORIENTATION{0, 90, 180, 270};
+const int32_t MAX_PHOTO_ID_LEN = 32;
 
 int32_t ParameterUtils::CheckFormIds(const vector<string> &formIds)
 {
@@ -240,6 +244,103 @@ int32_t ParameterUtils::CheckDeletePhotosCompleted(const std::vector<std::string
     CHECK_AND_RETURN_RET_LOG(!fileIds.empty(), -EINVAL, "fileIds is empty");
     auto size = fileIds.size();
     CHECK_AND_RETURN_RET_LOG(size <= MAX_DELETE_PHOTOS_COMPLETED_SIZE, -EINVAL, "Invalid fileIds size");
+
+    return E_OK;
+}
+
+bool ParameterUtils::IsPhotoUri(const string& uri)
+{
+    if (uri.find("../") != string::npos) {
+        return false;
+    }
+    string fileId = MediaFileUri::GetPhotoId(uri);
+    return MediaFileUtils::IsValidInteger(fileId);
+}
+
+int32_t ParameterUtils::CheckSetAssetTitle(const ModifyAssetsReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(reqBody.fileIds.size() == 1, -EINVAL, "Invalid fileIds");
+    CHECK_AND_RETURN_RET_LOG(!reqBody.title.empty(), E_INVALID_DISPLAY_NAME, "Invalid title");
+    int32_t errCode = MediaFileUtils::CheckTitleCompatible(reqBody.title);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_INVALID_DISPLAY_NAME, "Invalid title");
+    return E_OK;
+}
+
+int32_t ParameterUtils::CheckSetAssetPending(const ModifyAssetsReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(reqBody.fileIds.size() == 1, -EINVAL, "Invalid fileIds");
+    CHECK_AND_RETURN_RET_LOG(reqBody.pending >= 0 && reqBody.pending <= 1, -EINVAL, "Invalid pending");
+    return E_OK;
+}
+
+int32_t ParameterUtils::CheckSetAssetsFavorite(const ModifyAssetsReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(!reqBody.fileIds.empty(), -EINVAL, "Invalid fileIds");
+    CHECK_AND_RETURN_RET_LOG(reqBody.favorite >= 0 && reqBody.favorite <= 1, -EINVAL, "Invalid favorite");
+    return E_OK;
+}
+
+int32_t ParameterUtils::CheckSetAssetsHiddenStatus(const ModifyAssetsReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(!reqBody.fileIds.empty(), -EINVAL, "Invalid fileIds");
+    CHECK_AND_RETURN_RET_LOG(reqBody.hiddenStatus >= 0 && reqBody.hiddenStatus <= 1,
+        -EINVAL, "Invalid hiddenStatus");
+    return E_OK;
+}
+
+int32_t ParameterUtils::CheckSetAssetsRecentShowStatus(const ModifyAssetsReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(!reqBody.fileIds.empty(), -EINVAL, "Invalid fileIds");
+    CHECK_AND_RETURN_RET_LOG(reqBody.recentShowStatus >= 0 && reqBody.recentShowStatus <= 1,
+        -EINVAL, "Invalid recentShowStatus");
+    return E_OK;
+}
+
+int32_t ParameterUtils::CheckSetAssetsUserComment(const ModifyAssetsReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(!reqBody.fileIds.empty(), -EINVAL, "Invalid fileIds");
+    return E_OK;
+}
+
+int32_t ParameterUtils::CheckUserComment(const AssetChangeReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(reqBody.fileId > 0, -EINVAL, "fileId is invalid");
+    CHECK_AND_RETURN_RET_LOG(reqBody.userComment.length() <= USER_COMMENT_MAX_LEN, -EINVAL, "user comment too long");
+
+    return E_OK;
+}
+
+int32_t ParameterUtils::CheckCameraShotKey(const AssetChangeReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(reqBody.fileId > 0, -EINVAL, "fileId is invalid");
+    CHECK_AND_RETURN_RET_LOG(!reqBody.cameraShotKey.empty() && reqBody.cameraShotKey.size() >= CAMERA_SHOT_KEY_SIZE,
+        -EINVAL,
+        "Invalid cameraShotKey");
+
+    return E_OK;
+}
+
+int32_t ParameterUtils::CheckOrientation(const AssetChangeReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(reqBody.fileId > 0, -EINVAL, "fileId is invalid");
+    CHECK_AND_RETURN_RET_LOG(SUPPORTED_ORIENTATION.count(reqBody.orientation), -EINVAL, "Invalid orientation");
+
+    return E_OK;
+}
+
+int32_t ParameterUtils::CheckVideoEnhancementAttr(const AssetChangeReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(reqBody.fileId > 0, -EINVAL, "fileId is invalid");
+    CHECK_AND_RETURN_RET_LOG(reqBody.photoId.size() <= MAX_PHOTO_ID_LEN, -EINVAL, "Invalid photoId");
+
+    return E_OK;
+}
+
+int32_t ParameterUtils::CheckWatermarkType(const AssetChangeReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(reqBody.fileId > 0, -EINVAL, "fileId is invalid");
+    CHECK_AND_RETURN_RET_LOG(
+        MediaFileUtils::CheckSupportedWatermarkType(reqBody.watermarkType), -EINVAL, "Invalid watermarkType");
 
     return E_OK;
 }

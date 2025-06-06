@@ -43,6 +43,9 @@ enum class AlbumChangeOperation {
     SET_IS_ME,
     DISMISS,
     SET_ORDER_POSITION,
+    MOVE_ASSETS_WITH_URI,
+    RECOVER_ASSETS_WITH_URI,
+    DELETE_ASSETS_WITH_URI,
 };
 
 enum class ParameterType {

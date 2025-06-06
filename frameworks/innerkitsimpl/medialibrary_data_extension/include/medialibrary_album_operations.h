@@ -73,6 +73,29 @@ public:
     static int32_t GetLPathFromSourcePath(const string &sourcePath, string &lPath, int32_t mediaType);
     static int32_t RenewDeletedPhotoAlbum(int32_t id, const NativeRdb::ValuesBucket &albumValues,
         std::shared_ptr<TransactionOperations> trans);
+    static int32_t SetAlbumName(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
+    static int32_t SetHighlightAlbumName(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
+    static int32_t HandleSetAlbumNameRequest(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
+    static int32_t SetCoverUri(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
+    static int32_t SetHighlightCoverUri(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
+    static int32_t UpdatePhotoAlbum(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
+    static int32_t SetDisplayLevel(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
+    static int32_t SetHighlightSubtitle(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
+    static int32_t SetIsMe(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
+    static int32_t RecoverPhotoAssets(const DataShare::DataSharePredicates &predicates);
+    static int32_t DeletePhotoAssets(const DataShare::DataSharePredicates &predicates,
+        const bool isAging, const bool compatible);
+    static int32_t MergePortraitAlbums(const NativeRdb::ValuesBucket &values);
+    static int32_t OrderSingleAlbum(const NativeRdb::ValuesBucket &values);
 };
 } // namespace Media
 } // namespace OHOS

@@ -207,6 +207,7 @@ struct FileAssetAsyncContext : public NapiError {
     char* editDataBuffer;
 
     napi_ref napiArrayBufferRef;
+    uint32_t businessCode = 0;
 };
 } // namespace Media
 } // namespace OHOS

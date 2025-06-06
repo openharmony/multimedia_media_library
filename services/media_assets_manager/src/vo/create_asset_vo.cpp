@@ -59,20 +59,6 @@ void CreateAssetReqBody::Convert2Dto(CreateAssetDto &dto)
     dto.cameraShotKey = this->cameraShotKey;
 }
 
-std::string CreateAssetReqBody::ToString() const
-{
-    std::stringstream ss;
-    ss << "{"
-        << "\"mediaType\": \"" << this->mediaType << "\""
-        << ",\"photoSubtype\": \"" << this->photoSubtype << "\""
-        << ",\"title\": \"" << this->title << "\""
-        << ",\"extension\": \"" << this->extension << "\""
-        << ",\"displayName\": \"" << this->displayName << "\""
-        << ",\"cameraShotKey\": \"" << this->cameraShotKey << "\""
-        << "}";
-    return ss.str();
-}
-
 bool CreateAssetRspBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadInt32(this->fileId);
@@ -91,16 +77,6 @@ void CreateAssetRspBody::InitByDto(const CreateAssetDto &dto)
 {
     this->fileId = dto.fileId;
     this->outUri = dto.outUri;
-}
-
-std::string CreateAssetRspBody::ToString() const
-{
-    std::stringstream ss;
-    ss << "{"
-        << "\"fileId\": \"" << this->fileId << "\""
-        << ",\"outUri\": \"" << this->outUri << "\""
-        << "}";
-    return ss.str();
 }
 
 bool CreateAssetForAppReqBody::Unmarshalling(MessageParcel &parcel)
@@ -160,23 +136,5 @@ void CreateAssetForAppReqBody::Convert2Dto(CreateAssetDto &dto)
     dto.packageName = this->packageName;
     dto.appId = this->appId;
     dto.ownerAlbumId = this->ownerAlbumId;
-}
-
-std::string CreateAssetForAppReqBody::ToString() const
-{
-    std::stringstream ss;
-    ss << "{"
-        << "\"tokenId\": \"" << this->tokenId << "\""
-        << ",\"mediaType\": \"" << this->mediaType << "\""
-        << ",\"photoSubtype\": \"" << this->photoSubtype << "\""
-        << ",\"title\": \"" << this->title << "\""
-        << ",\"extension\": \"" << this->extension << "\""
-        << ",\"displayName\": \"" << this->displayName << "\""
-        << ",\"bundleName\": \"" << this->bundleName << "\""
-        << ",\"packageName\": \"" << this->packageName << "\""
-        << ",\"appId\": \"" << this->appId << "\""
-        << ",\"ownerAlbumId\": \"" << this->ownerAlbumId << "\""
-        << "}";
-    return ss.str();
 }
 } // namespace OHOS::Media

@@ -664,7 +664,8 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
     return UpdateForMergeGroupAlbums(uniStore, deleteId, updateMap);
 }
 
-static int32_t SetGroupAlbumName(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAnalysisAlbumOperations::SetGroupAlbumName(const ValuesBucket &values,
+    const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
     auto whereArgs = rdbPredicates.GetWhereArgs();
@@ -695,7 +696,8 @@ static int32_t SetGroupAlbumName(const ValuesBucket &values, const DataSharePred
     return err;
 }
 
-static int32_t SetGroupCoverUri(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAnalysisAlbumOperations::SetGroupCoverUri(const ValuesBucket &values,
+    const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
     auto whereArgs = rdbPredicates.GetWhereArgs();
@@ -728,7 +730,8 @@ static int32_t SetGroupCoverUri(const ValuesBucket &values, const DataSharePredi
     return err;
 }
 
-static int32_t DismissGroupPhotoAlbum(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAnalysisAlbumOperations::DismissGroupPhotoAlbum(const ValuesBucket &values,
+    const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
     auto whereArgs = rdbPredicates.GetWhereArgs();
@@ -807,6 +810,35 @@ void MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(int3
 
     int32_t ret = rdbStore->ExecuteSql(updateSql);
     CHECK_AND_RETURN_LOG(ret == E_OK, "ExecuteSql error, fileId: %{public}d, ret: %{public}d.", fileId, ret);
+}
+
+int32_t MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumPortraitsOrder(MediaLibraryCommand &cmd)
+{
+    // Build update column and values
+    const string orderColumn = RANK;
+
+    auto valueBucket = cmd.GetValueBucket();
+    ValueObject orderValue;
+    valueBucket.GetObject(orderColumn, orderValue);
+    string orderValueString;
+    orderValue.GetString(orderValueString);
+
+    // Build update sql
+    stringstream updateSql;
+    updateSql << "UPDATE " << cmd.GetTableName() << " SET " << orderColumn << " = " << orderValueString
+        << " WHERE " << cmd.GetAbsRdbPredicates()->GetWhereClause();
+
+    // Start update
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Get rdbStore fail");
+        return E_HAS_DB_ERROR;
+    }
+    std::string sqlStr = updateSql.str();
+    auto args = cmd.GetAbsRdbPredicates()->GetBindArgs();
+    int ret = rdbStore->ExecuteSql(sqlStr, args);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Update portraits order failed, error id: %{public}d", ret);
+    return ret;
 }
 
 int32_t MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(MediaLibraryCommand &cmd)

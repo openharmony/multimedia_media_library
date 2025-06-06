@@ -38,8 +38,6 @@ public:  // functions of Parcelable.
     bool Marshalling(MessageParcel &parcel) const override;
 public:
     void Convert2Dto(CreateAssetDto &dto);
-public:  // basic functions
-    std::string ToString() const;
 };
 
 class CreateAssetRspBody : public IPC::IMediaParcelable {
@@ -52,8 +50,6 @@ public:  // functions of Parcelable.
     bool Marshalling(MessageParcel &parcel) const override;
 public:
     void InitByDto(const CreateAssetDto &dto);
-public:  // basic functions
-    std::string ToString() const;
 };
 
 class CreateAssetForAppReqBody : public IPC::IMediaParcelable {
@@ -73,8 +69,6 @@ public:  // functions of Parcelable.
     bool Marshalling(MessageParcel &parcel) const override;
 public:
     void Convert2Dto(CreateAssetDto &dto);
-public:  // basic functions
-    std::string ToString() const;
 };
 
 using CreateAssetForAppRspBody = CreateAssetRspBody;

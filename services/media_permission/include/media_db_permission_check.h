@@ -25,7 +25,8 @@ class DbPermissionCheck {
 public:
     virtual ~DbPermissionCheck() = default;
     int32_t GetPermissionType(uint32_t code, const PermissionHeaderReq &request, int32_t &permissionType);
+    static int32_t CheckDBPermissionBypass(uint32_t code, const PermissionHeaderReq &request);
 };
 
 } // namespace OHOS::Media
-#endif  // OHOS_MEDIALIBRARY_DB_PERMISSION_CHECK_H
+#endif  // OHOS_MEDIALIBRARY_DB_PERMISSION_CHECK_H

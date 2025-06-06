@@ -41,6 +41,8 @@
 #include "user_define_ipc_client.h"
 #include "medialibrary_business_code.h"
 #include "delete_highlight_albums_vo.h"
+#include "set_subtitle_vo.h"
+#include "set_highlight_user_action_data_vo.h"
 
 using namespace std;
 
@@ -248,36 +250,18 @@ static void JSSetHighlightUserActionDataExecute(napi_env env, void *data)
     tracer.Start("JSSetHighlightUserActionDataExecute");
 
     auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
-    string userActionType;
-    if (HIGHLIGHT_USER_ACTION_MAP.find(context->highlightUserActionType) != HIGHLIGHT_USER_ACTION_MAP.end()) {
-        userActionType = HIGHLIGHT_USER_ACTION_MAP.at(context->highlightUserActionType);
-        context->fetchColumn.push_back(userActionType);
-    } else {
-        NAPI_ERR_LOG("Invalid highlightUserActionType");
-        return;
-    }
-    int albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
-    Uri uri(URI_HIGHLIGHT_ALBUM);
-    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
-    int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
-    if (resultSet != nullptr) {
-        auto count = 0;
-        auto ret = resultSet->GetRowCount(count);
-        if (ret != NativeRdb::E_OK || count == 0 || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-            NAPI_ERR_LOG("highlight user action data get rdbstore failed");
-            context->error = JS_INNER_FAIL;
-            return;
-        }
-        int64_t userActionDataCount = get<int64_t>(ResultSetUtils::GetValFromColumn(userActionType,
-            resultSet, TYPE_INT64));
-        context->valuesBucket.Put(userActionType, to_string(userActionDataCount + context->actionData));
-        int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
-        context->SaveError(changedRows);
-        context->changedRows = changedRows;
-    } else {
-        NAPI_ERR_LOG("highlight user action data resultSet is null");
-        context->error = JS_INNER_FAIL;
+    int32_t albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
+    SetHighlightUserActionDataReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.userActionType = context->highlightUserActionType;
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    reqBody.albumType = static_cast<int32_t>(photoAlbum->GetPhotoAlbumType());
+    reqBody.albumSubType = static_cast<int32_t>(photoAlbum->GetPhotoAlbumSubType());
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_HIGH_LIGHT_USER_ACTION_DATA);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Submit cloud enhancement tasks failed, err: %{public}d", ret);
         return;
     }
 }
@@ -313,13 +297,17 @@ static void JSSetHighlightSubtitleExecute(napi_env env, void *data)
 
     auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
     int albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
-    Uri uri(PAH_HIGHLIGHT_SUBTITLE);
-    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
-    context->valuesBucket.Put(SUB_TITLE, context->subtitle);
-    int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
-    if (changedRows < 0) {
-        context->SaveError(changedRows);
-        NAPI_ERR_LOG("Failed to set highlight subtitle, err: %{public}d", changedRows);
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    SetSubtitleReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.subtitle = context->subtitle;
+    reqBody.albumType = static_cast<int32_t>(photoAlbum->GetPhotoAlbumType());
+    reqBody.albumSubType = static_cast<int32_t>(photoAlbum->GetPhotoAlbumSubType());
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUBTITLE);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Failed to set highlight subtitle, err: %{public}d", ret);
         return;
     }
 }

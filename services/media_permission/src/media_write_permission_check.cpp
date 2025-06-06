@@ -22,10 +22,10 @@
 #endif
 #include "parameters.h"
 #include "access_token.h"
+#include "media_app_uri_permission_column.h"
 
 namespace OHOS::Media {
 using namespace OHOS::Security::AccessToken;
-static std::set<int> writePermSet{2, 3, 4};
 static const int32_t GRANT_PERMISSION_CALLING_UID = 5523; // foundation调用方
 static const int32_t ROOT_UID = 0;
 static const int32_t HDC_SHELL_UID = 2000;
@@ -96,7 +96,7 @@ int32_t DbWritePermCheck::CheckPermission(uint32_t businessCode, const Permissio
     if (ret != E_SUCCESS) {
         return ret;
     }
-    return (writePermSet.count(permissionType)) ? E_SUCCESS : E_PERMISSION_DENIED;
+    return (AppUriPermissionColumn::PERMISSION_TYPE_WRITE.count(permissionType)) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 int32_t GrantWritePermCheck::CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data)

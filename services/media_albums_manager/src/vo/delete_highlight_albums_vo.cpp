@@ -45,20 +45,4 @@ bool DeleteHighLightAlbumsReqBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
- 
-string DeleteHighLightAlbumsReqBody::ToString() const
-{
-    std::stringstream ss;
-    ss << "{"
-        << "[";
-    for (uint32_t i = 0; i < albumIds.size(); i++) {
-        ss << albumIds[i];
-        if (i != albumIds.size() - 1) {
-            ss << ",";
-        }
-    }
-    ss << "]"
-        << "}";
-    return ss.str();
-}
 } // namespace OHOS::Media

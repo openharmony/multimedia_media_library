@@ -30,16 +30,9 @@
 #include "media_permission_header_req.h"
 #include "media_file_utils.h"
 #include "ipc_skeleton.h"
+#include "media_permission_policy_type.h"
 
 namespace OHOS::Media {
-enum PermissionType {
-    SYSTEMAPI_PERM,
-    PRIVATE_PERM,
-    READ_PERM,
-    WRITE_PERM,
-    CLOUDFILE_SYNC
-};
-
 class PermissionCheck {
 protected:
     bool needPermissionCheck_ = true;
@@ -61,11 +54,10 @@ protected:
 public:
     virtual ~PermissionCheck() = default;
     virtual int32_t CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data) = 0;
-    EXPORT static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> businessCodeToPermissions;
     EXPORT static int32_t VerifyPermissions(uint32_t businessCode, const PermissionHeaderReq &data);
 };
 
 inline EXPORT bool (*isCalledBySelfPtr)() = MediaFileUtils::IsCalledBySelf;
 inline EXPORT pid_t (*getCallingUidPtr)() = IPCSkeleton::GetCallingUid;
 } // namespace OHOS::Media
-#endif  // OHOS_MEDIALIBRARY_PERMISSION_CHECK_H
+#endif  // OHOS_MEDIALIBRARY_PERMISSION_CHECK_H

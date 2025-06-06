@@ -1094,7 +1094,7 @@ static bool GetOldAlbumName(int32_t albumId, string &oldAlbumName)
     return true;
 }
 
-int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
     CHECK_AND_RETURN_RET_LOG(!rdbPredicates.GetWhereArgs().empty(), E_INVALID_ARGS,
@@ -1277,7 +1277,7 @@ static bool isRecoverToHiddenAlbum(const string& uri)
     return isHidden == 1;
 }
 
-int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
@@ -1379,7 +1379,7 @@ void DealWithHighlightSdTable(const DataSharePredicates &predicates)
     MEDIA_INFO_LOG("Deal with highlight video finished");
 }
 
-static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates,
+int32_t MediaLibraryAlbumOperations::DeletePhotoAssets(const DataSharePredicates &predicates,
     const bool isAging, const bool compatible)
 {
     DealWithHighlightSdTable(predicates);
@@ -1410,7 +1410,7 @@ int32_t AgingPhotoAssets(shared_ptr<int> countPtr)
     DataSharePredicates predicates;
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(time - AGING_TIME));
-    int32_t ret = DeletePhotoAssets(predicates, true, false);
+    int32_t ret = MediaLibraryAlbumOperations::DeletePhotoAssets(predicates, true, false);
     if (ret < 0) {
         return ret;
     }
@@ -1805,7 +1805,7 @@ int32_t OrderPortraitFavoriteAlbum(const int32_t currentAlbumId, const int32_t r
  * Place the current album before the reference album
  * @param values contains current and reference album_id
  */
-int32_t OrderSingleAlbum(const ValuesBucket &values)
+int32_t MediaLibraryAlbumOperations::OrderSingleAlbum(const ValuesBucket &values)
 {
     int32_t currentAlbumId;
     int32_t referenceAlbumId;
@@ -2134,7 +2134,7 @@ static int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInf
  * Merge album
  * @param values contains current and target album_id
  */
-static int32_t MergePortraitAlbums(const ValuesBucket &values)
+int32_t MediaLibraryAlbumOperations::MergePortraitAlbums(const ValuesBucket &values)
 {
     int32_t currentAlbumId;
     int32_t targetAlbumId;
@@ -2242,7 +2242,7 @@ static int32_t UpdateFavorites(int32_t value, const int32_t albumId)
     return UpdateDisplayLevel(value, albumId);
 }
 
-int32_t SetDisplayLevel(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::SetDisplayLevel(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
     int32_t displayLevelValue;
     int err = GetIntVal(values, USER_DISPLAY_LEVEL, displayLevelValue);
@@ -2320,7 +2320,8 @@ static void GetHighlightCoverStatus(const string &albumId, int32_t &currentCover
         currentCoverStatus = GetInt32Val(COVER_STATUS, resultSet));
 }
 
-int32_t SetHighlightCoverUri(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::SetHighlightCoverUri(const ValuesBucket &values,
+    const DataSharePredicates &predicates)
 {
     MEDIA_INFO_LOG("Start set highlight cover uri");
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
@@ -2356,7 +2357,8 @@ int32_t SetHighlightCoverUri(const ValuesBucket &values, const DataSharePredicat
     return err;
 }
 
-int32_t SetHighlightAlbumName(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::SetHighlightAlbumName(const ValuesBucket &values,
+    const DataSharePredicates &predicates)
 {
     MEDIA_INFO_LOG("Start set highlight album name");
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
@@ -2392,7 +2394,8 @@ int32_t SetHighlightAlbumName(const ValuesBucket &values, const DataSharePredica
     return err;
 }
 
-int32_t SetHighlightSubtitle(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::SetHighlightSubtitle(const ValuesBucket &values,
+    const DataSharePredicates &predicates)
 {
     MEDIA_INFO_LOG("Start set highlight subtitle");
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
@@ -2434,7 +2437,7 @@ int32_t SetHighlightSubtitle(const ValuesBucket &values, const DataSharePredicat
  * @param values is_me
  * @param predicates target album
  */
-int32_t SetIsMe(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::SetIsMe(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
     auto whereArgs = rdbPredicates.GetWhereArgs();
@@ -2483,7 +2486,7 @@ int32_t SetIsMe(const ValuesBucket &values, const DataSharePredicates &predicate
  * @param values album_name
  * @param predicates target album
  */
-int32_t SetAlbumName(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::SetAlbumName(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
     auto whereArgs = rdbPredicates.GetWhereArgs();
@@ -2542,7 +2545,7 @@ int32_t SetAlbumName(const ValuesBucket &values, const DataSharePredicates &pred
  * @param values cover_uri
  * @param predicates target album
  */
-int32_t SetCoverUri(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::SetCoverUri(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
     auto whereArgs = rdbPredicates.GetWhereArgs();
@@ -2593,7 +2596,8 @@ static bool GetArgsSetUserAlbumName(const ValuesBucket& values,
     return true;
 }
 
-static int32_t HandleSetAlbumNameRequest(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::HandleSetAlbumNameRequest(const ValuesBucket &values,
+    const DataSharePredicates &predicates)
 {
     int32_t oldAlbumId {};
     string newAlbumName {};
@@ -2640,7 +2644,7 @@ int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opTyp
         case OperationType::UPDATE:
             return UpdatePhotoAlbum(values, predicates);
         case OperationType::ALBUM_RECOVER_ASSETS:
-            return RecoverPhotoAssets(predicates);
+            return MediaLibraryAlbumOperations::RecoverPhotoAssets(predicates);
         case OperationType::ALBUM_DELETE_ASSETS:
             return DeletePhotoAssets(predicates, false, false);
         case OperationType::COMPAT_ALBUM_DELETE_ASSETS:

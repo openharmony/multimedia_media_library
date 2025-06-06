@@ -97,6 +97,11 @@
 #include "create_album_vo.h"
 #include "delete_albums_vo.h"
 #include "trash_photos_vo.h"
+#include "grant_photo_uri_permission_vo.h"
+#include "grant_photo_uris_permission_vo.h"
+#include "cancel_photo_uri_permission_vo.h"
+#include "start_thumbnail_creation_task_vo.h"
+#include "stop_thumbnail_creation_task_vo.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -5328,11 +5333,11 @@ static napi_value ParseArgsCancelPhotoUriPermission(napi_env env, napi_callback_
     uint32_t tokenId;
     NAPI_ASSERT(env, ParseTokenId(env, context->argv[ARGS_ZERO], tokenId) ==
         napi_ok, "Invalid args[0]");
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+    context->valuesBucket.Put(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
     
     //get caller tokenid
     uint32_t callerTokenId = IPCSkeleton::GetCallingTokenID();
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::SOURCE_TOKENID, static_cast<int64_t>(callerTokenId));
+    context->valuesBucket.Put(AppUriSensitiveColumn::SOURCE_TOKENID, static_cast<int64_t>(callerTokenId));
 
     // parse fileId
     string uri;
@@ -5342,16 +5347,16 @@ static napi_value ParseArgsCancelPhotoUriPermission(napi_env env, napi_callback_
     if (fileId < 0) {
         return nullptr;
     }
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::FILE_ID, fileId);
+    context->valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
 
     // parse permissionType
     int32_t permissionType;
     NAPI_ASSERT(env, ParsePermissionType(env, context->argv[ARGS_TWO], permissionType) ==
         napi_ok, "Invalid args[2]");
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
+    context->valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
     // parsing fileId ensured uri is photo.
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
+    context->valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
@@ -6361,6 +6366,39 @@ static napi_value ParseArgsRemoveFormInfo(napi_env env, napi_callback_info info,
     return result;
 }
 
+static void UpdateGalleryFormInfoExec(napi_env env, void *data, ResultNapiType type)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateGalleryFormInfoExec");
+ 
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    context->resultNapiType = type;
+    vector<string> formIds;
+    vector<string> fileUris;
+    bool isValid = false;
+    for (auto valueBucket : context->valuesBucketArray) {
+        formIds.emplace_back(valueBucket.Get(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, isValid));
+        fileUris.emplace_back(valueBucket.Get(TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI, isValid));
+    }
+    FormInfoReqBody reqBody;
+    reqBody.formIds = formIds;
+    reqBody.fileUris = fileUris;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::UPDATE_GALLERY_FORM_INFO);
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else if (ret == E_GET_PRAMS_FAIL) {
+            context->error = OHOS_INVALID_PARAM_CODE;
+        } else {
+            context->SaveError(ret);
+        }
+        NAPI_INFO_LOG("store formInfo failed, ret: %{public}d", ret);
+    }
+}
+
 static void RemoveGalleryFormInfoExec(napi_env env, void *data, ResultNapiType type)
 {
     MediaLibraryTracer tracer;
@@ -6474,8 +6512,7 @@ static void PhotoAccessRemoveGalleryFormInfoExec(napi_env env, void *data)
  
 static void PhotoAccessUpdateGalleryFormInfoExec(napi_env env, void *data)
 {
-    RemoveGalleryFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-    SaveGalleryFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    UpdateGalleryFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
 }
  
 napi_value MediaLibraryNapi::PhotoAccessRemoveGalleryFormInfo(napi_env env, napi_callback_info info)
@@ -6627,12 +6664,13 @@ napi_value MediaLibraryNapi::PhotoAccessStartCreateThumbnailTask(napi_env env, n
     RegisterThumbnailGenerateObserver(env, asyncContext, requestId);
     CreateThumbnailHandler(env, asyncContext, requestId);
 
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, requestId);
-    string updateUri = PAH_START_GENERATE_THUMBNAILS;
-    MediaLibraryNapiUtils::UriAppendKeyValue(updateUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri uri(updateUri);
-    int changedRows = UserFileClient::Update(uri, asyncContext->predicates, valuesBucket);
+    StartThumbnailCreationTaskReqBody reqBody;
+    reqBody.predicates = asyncContext->predicates;
+    reqBody.requestId = requestId;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_START_THUMBNAIL_CREATION_TASK);
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call, %{public}d", requestId);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
@@ -6714,12 +6752,12 @@ napi_value MediaLibraryNapi::PhotoAccessStopCreateThumbnailTask(napi_env env, na
     }
     ReleaseThumbnailTask(requestId);
 
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, requestId);
-    string updateUri = PAH_STOP_GENERATE_THUMBNAILS;
-    MediaLibraryNapiUtils::UriAppendKeyValue(updateUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri uri(updateUri);
-    int changedRows = UserFileClient::Update(uri, asyncContext->predicates, valuesBucket);
+    StopThumbnailCreationTaskReqBody reqBody;
+    reqBody.requestId = requestId;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_STOP_THUMBNAIL_CREATION_TASK);
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
     if (changedRows < 0) {
         asyncContext->SaveError(changedRows);
         NAPI_ERR_LOG("Stop create thumbnail task, update failed, err: %{public}d", changedRows);
@@ -8736,15 +8774,77 @@ static void PhotoAccessGrantPhotoUriPermissionExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Async context is null");
         return;
     }
+    GrantUriPermissionReqBody reqBody;
+    bool isValid = false;
+    reqBody.tokenId = context->valuesBucket.Get(AppUriPermissionColumn::TARGET_TOKENID, isValid);
+    CHECK_IF_EQUAL(isValid, "tokenId is empty");
+    reqBody.srcTokenId = context->valuesBucket.Get(AppUriPermissionColumn::SOURCE_TOKENID, isValid);
+    CHECK_IF_EQUAL(isValid, "srcTokenId is empty");
+    reqBody.fileId = context->valuesBucket.Get(AppUriPermissionColumn::FILE_ID, isValid);
+    CHECK_IF_EQUAL(isValid, "fileId is empty");
+    reqBody.permissionType = context->valuesBucket.Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
+    CHECK_IF_EQUAL(isValid, "permissionType is empty");
+    reqBody.hideSensitiveType = context->valuesBucket.Get(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, isValid);
+    CHECK_IF_EQUAL(isValid, "hideSensitiveType is empty");
+    reqBody.uriType = context->valuesBucket.Get(AppUriPermissionColumn::URI_TYPE, isValid);
+    CHECK_IF_EQUAL(isValid, "uriType is empty");
 
-    string uri = PAH_CREATE_APP_URI_PERMISSION;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri createUri(uri);
-    
-    int result = UserFileClient::Insert(createUri, context->valuesBucket);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GRANT_PHOTO_URI_PERMISSION);
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("GrantPhotoUriPermission ret:%{public}d", result);
     if (result < 0) {
         context->SaveError(result);
-        NAPI_ERR_LOG("Insert fail, result: %{public}d.", result);
+        NAPI_ERR_LOG("GrantPhotoUriPermission fail, result: %{public}d.", result);
+    } else {
+        context->retVal = result;
+    }
+}
+
+static void PhotoAccessGrantPhotoUrisPermissionExecuteEx(MediaLibraryAsyncContext *context)
+{
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Async context is null");
+        return;
+    }
+    GrantUrisPermissionReqBody reqBody;
+    bool isValid = false;
+    std::set<std::string> processedColumn;
+    for (const auto& valueBucket : context->valuesBucketArray) {
+        if (processedColumn.find(AppUriPermissionColumn::TARGET_TOKENID) == processedColumn.end()) {
+            reqBody.tokenId = context->valuesBucket.Get(AppUriPermissionColumn::TARGET_TOKENID, isValid);
+            CHECK_IF_EQUAL(isValid, "tokenId is empty");
+            processedColumn.insert(AppUriPermissionColumn::TARGET_TOKENID);
+        }
+        if (processedColumn.find(AppUriPermissionColumn::SOURCE_TOKENID) == processedColumn.end()) {
+            reqBody.srcTokenId = context->valuesBucket.Get(AppUriPermissionColumn::SOURCE_TOKENID, isValid);
+            CHECK_IF_EQUAL(isValid, "srcTokenId is empty");
+            processedColumn.insert(AppUriPermissionColumn::SOURCE_TOKENID);
+        }
+        if (processedColumn.find(AppUriPermissionColumn::PERMISSION_TYPE) == processedColumn.end()) {
+            reqBody.permissionType = context->valuesBucket.Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
+            CHECK_IF_EQUAL(isValid, "permissionType is empty");
+            processedColumn.insert(AppUriPermissionColumn::PERMISSION_TYPE);
+        }
+        if (processedColumn.find(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE) == processedColumn.end()) {
+            reqBody.hideSensitiveType = context->valuesBucket.Get(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, isValid);
+            CHECK_IF_EQUAL(isValid, "hideSensitiveType is empty");
+            processedColumn.insert(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
+        }
+        if (processedColumn.find(AppUriPermissionColumn::URI_TYPE) == processedColumn.end()) {
+            reqBody.uriType = context->valuesBucket.Get(AppUriPermissionColumn::URI_TYPE, isValid);
+            CHECK_IF_EQUAL(isValid, "uriType is empty");
+            processedColumn.insert(AppUriPermissionColumn::URI_TYPE);
+        }
+        reqBody.fileIds.emplace_back(valueBucket.Get(AppUriPermissionColumn::FILE_ID, isValid));
+    }
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GRANT_PHOTO_URIS_PERMISSION);
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("GrantPhotoUrisPermission ret:%{public}d", result);
+    if (result < 0) {
+        context->SaveError(result);
+        NAPI_ERR_LOG("GrantPhotoUrisPermission fail, result: %{public}d.", result);
     } else {
         context->retVal = result;
     }
@@ -8759,6 +8859,9 @@ static void PhotoAccessGrantPhotoUrisPermissionExecute(napi_env env, void *data)
     if (context == nullptr) {
         NAPI_ERR_LOG("Async context is null");
         return;
+    }
+    if (context->businessCode != 0) {
+        return PhotoAccessGrantPhotoUrisPermissionExecuteEx(context);
     }
 
     string uri = PAH_CREATE_APP_URI_PERMISSION;
@@ -8785,14 +8888,26 @@ static void PhotoAccessCancelPhotoUriPermissionExecute(napi_env env, void *data)
         return;
     }
 
-    string uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_APP_URI_PERMISSIONOPRN + "/" + OPRN_DELETE;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri deleteUri(uri);
-    
-    int result = UserFileClient::Delete(deleteUri, context->predicates);
+    CancelUriPermissionReqBody reqBody;
+    bool isValid = false;
+    reqBody.tokenId = context->valuesBucket.Get(AppUriPermissionColumn::TARGET_TOKENID, isValid);
+    CHECK_IF_EQUAL(isValid, "tokenId is empty");
+    reqBody.srcTokenId = context->valuesBucket.Get(AppUriPermissionColumn::SOURCE_TOKENID, isValid);
+    CHECK_IF_EQUAL(isValid, "srcTokenId is empty");
+    reqBody.fileId = context->valuesBucket.Get(AppUriPermissionColumn::FILE_ID, isValid);
+    CHECK_IF_EQUAL(isValid, "fileId is empty");
+    reqBody.permissionType = context->valuesBucket.Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
+    CHECK_IF_EQUAL(isValid, "permissionType is empty");
+    reqBody.uriType = context->valuesBucket.Get(AppUriPermissionColumn::URI_TYPE, isValid);
+    CHECK_IF_EQUAL(isValid, "uriType is empty");
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CANCEL_PHOTO_URI_PERMISSION);
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("CancelPhotoUriPermission ret:%{public}d", result);
     if (result < 0) {
         context->SaveError(result);
-        NAPI_ERR_LOG("delete fail, result: %{public}d.", result);
+        NAPI_ERR_LOG("CancelPhotoUriPermission fail, result: %{public}d.", result);
     } else {
         context->retVal = result;
     }
@@ -8843,6 +8958,7 @@ napi_value MediaLibraryNapi::PhotoAccessGrantPhotoUrisPermission(napi_env env, n
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->assetType = TYPE_PHOTO;
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GRANT_PHOTO_URIS_PERMISSION);
     NAPI_ASSERT(env, ParseArgsGrantPhotoUrisPermission(env, info, asyncContext), "Failed to parse js args");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessGrantPhotoUrisPermission",
@@ -9329,9 +9445,7 @@ static void PhotoAccessHelperTrashExecute(napi_env env, void *data)
     TrashPhotosReqBody reqBody;
     reqBody.uris = context->uris;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYS_TRASH_PHOTOS);
-    NAPI_INFO_LOG("test before IPC::UserDefineIPCClient().Call");
     int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    NAPI_INFO_LOG("test after IPC::UserDefineIPCClient().Call");
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("Media asset delete failed, err: %{public}d", changedRows);

@@ -1130,7 +1130,7 @@ int32_t GetPhotoIdByFileId(int32_t fileId, std::string &photoId)
     return E_OK;
 }
 
-static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd)
+int32_t MediaLibraryPhotoOperations::DiscardCameraPhoto(MediaLibraryCommand &cmd)
 {
     std::string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
     bool isClearCachedPicture = false;
@@ -4116,7 +4116,7 @@ int32_t MediaLibraryPhotoOperations::UpdateSupportedWatermarkType(MediaLibraryCo
 
 struct LSOperationFileInfo {
     std::string permissions;
-    nlink_t links;
+    int links;
     std::string owner;
     std::string group;
     long size;

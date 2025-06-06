@@ -42,6 +42,8 @@ public:
         const NativeRdb::ValuesBucket &value, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     EXPORT MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
         const std::string &networkId, MediaLibraryApi api = MediaLibraryApi::API_OLD);
+    MediaLibraryCommand(const std::string &tableName);
+    EXPORT MediaLibraryCommand(const NativeRdb::ValuesBucket &value) : insertValue_(value) {}
     EXPORT MediaLibraryCommand() = delete;
     EXPORT ~MediaLibraryCommand();
     EXPORT MediaLibraryCommand(const MediaLibraryCommand &) = delete;

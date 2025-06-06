@@ -279,7 +279,7 @@ static void CheckCloudSyncNotify(const std::string &uriPrefix, const std::string
     _cloudSyncNotifyInfo.type = changeType;
     CloudSyncNotifyHandler _cloudSyncNotifyHandler(_cloudSyncNotifyInfo);
     _cloudSyncNotifyHandler.MakeResponsibilityChain();
-    
+
     CheckInfo(obs, uriPrefix, uriPostfix, changeType);
     sDataShareHelper_->UnregisterObserverExt(uri2, obs);
     MediaLibraryUnistoreManager::GetInstance().Stop();
