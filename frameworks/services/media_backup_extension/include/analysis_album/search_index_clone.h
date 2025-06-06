@@ -24,7 +24,7 @@
 #include "rdb_store.h"
 
 namespace OHOS::Media {
-
+using IdSetPair = std::pair<std::unordered_set<int32_t>, std::unordered_set<int32_t>>;
 struct AnalysisSearchIndexTbl {
     std::optional<int64_t> id;
     std::optional<int32_t> fileId;
@@ -64,8 +64,7 @@ private:
         const std::vector<AnalysisSearchIndexTbl>& searchIndexTbls);
     void InsertAnalysisSearchIndex(std::vector<AnalysisSearchIndexTbl>& analysisSearchIndexTbl);
 
-    std::pair<std::unordered_set<int32_t>, std::unordered_set<int32_t>> QueryExistingIdsWithStrategy(const
-        std::vector<int32_t>& fileIds);
+    IdSetPair QueryExistingIdsWithStrategy(const std::vector<int32_t>& fileIds);
 
     std::unordered_set<int32_t> ExecuteIdQuery(const std::string& querySql);
     void DeleteOverrideRecords(const std::vector<int32_t>& fileIds);
@@ -113,7 +112,6 @@ private:
     std::shared_ptr<NativeRdb::RdbStore> destRdb_;
     const std::unordered_map<int32_t, PhotoInfo>& photoInfoMap_;
     int64_t maxSearchId_;
-
     int64_t migratedCount_ = 0;
     int64_t totalTimeCost_ = 0;
 

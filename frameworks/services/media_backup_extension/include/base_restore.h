@@ -201,7 +201,6 @@ protected:
     std::atomic<uint64_t> migratePortraitFaceNumber_{0};
     std::atomic<uint64_t> migratePortraitAlbumNumber_{0};
     std::atomic<uint64_t> migratePortraitTotalTimeCost_{0};
-    std::atomic<int64_t> migrateSearchIndexTotalTimeCost_ = 0;
     std::atomic<uint64_t> migrateSearchIndexNumber_ = 0;
     std::atomic<uint32_t> imageNumber_{0};
     std::atomic<uint32_t> videoNumber_{0};
