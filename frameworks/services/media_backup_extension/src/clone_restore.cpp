@@ -1634,6 +1634,8 @@ void CloneRestore::RestoreGallery()
     BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
+    RestoreAnalysisClassify();
+    RestoreAnalysisGeo();
     cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
     cloneRestoreHighlight_.UpdateAlbums();
     cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
@@ -1644,7 +1646,6 @@ void CloneRestore::RestoreGallery()
 void CloneRestore::RestoreAnalysisData()
 {
     RestoreSearchIndexData();
-    RestoreAnalysisClassify();
 }
 
 void CloneRestore::RestoreSearchIndexData()
