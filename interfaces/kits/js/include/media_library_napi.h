@@ -229,7 +229,6 @@ public:
     EXPORT MediaLibraryNapi();
     EXPORT ~MediaLibraryNapi();
     static std::mutex sUserFileClientMutex_;
-    static std::mutex objectinfoMutex_;
 
 private:
     EXPORT static void MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
@@ -452,7 +451,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     bool needSystemApp = false;
     NapiAssetType assetType;
     AlbumType albumType;
-    MediaLibraryNapi *objectInfo;
+    MediaLibraryNapi *objectInfo; // Cannot use objectInfo in async work
     std::string selection;
     std::vector<std::string> selectionArgs;
     std::string order;
