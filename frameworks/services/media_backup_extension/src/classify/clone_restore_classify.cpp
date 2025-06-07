@@ -125,9 +125,9 @@ void CloneRestoreClassify::Restore(const std::unordered_map<int32_t, PhotoInfo> 
     for (int32_t offset = 0; offset < totalNumber; offset += PAGE_SIZE) {
         RestoreBatch(photoInfoMap);
     }
-    ReportRestoreTask();
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    restoreTimeCost_ += end - start;
+    restoreTimeCost_ = end - start;
+    ReportRestoreTask();
     MEDIA_INFO_LOG("TimeCost: ClassifyRestore: %{public}" PRId64, end - start);
 }
 
