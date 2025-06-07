@@ -256,10 +256,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_001");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
 
     int ret = -1;
     OHOS::DataShare::DataShareValuesBucket dataShareValue;
@@ -268,7 +265,6 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
     ret = TestInsert(dataShareValue);
     EXPECT_EQ(ret, 0);
-
     MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_001");
 }
 
@@ -279,13 +275,9 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_002");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
 
     int ret = -1;
-
     OHOS::DataShare::DataShareValuesBucket dataShareValue;
     dataShareValue.Put(AppUriPermissionColumn::APP_ID, "appid01");
     dataShareValue.Put(AppUriPermissionColumn::FILE_ID, photoId);
@@ -303,10 +295,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_003");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
 
     int ret = -1;
     // step 1: insert a new temporary read data.
@@ -335,10 +324,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_004");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
 
     int ret = -1;
     int64_t sourceId = 21;
@@ -374,10 +360,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_005");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
 
     int ret = -1;
     int64_t sourceId = 21;
@@ -441,10 +424,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_007");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
 
     int ret = -1;
     // step 1: insert a new data.
@@ -484,12 +464,10 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_008");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
     int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId1 < E_OK || photoId2 < E_OK) {
-        MEDIA_ERR_LOG("create photos failed,photoId1=%{public}d,photoId2=%{public}d", photoId1, photoId2);
-        return;
-    }
-    std::vector<int32_t> photoIds = { photoId1, photoId2 };
+    ASSERT_GT(photoId1, 0);
+    ASSERT_GT(photoId2, 0);
 
+    std::vector<int32_t> photoIds = { photoId1, photoId2 };
     std::vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int i = 0; i < 2; ++i) {
         OHOS::DataShare::DataShareValuesBucket dataShareValue;
@@ -514,12 +492,10 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_009");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
     int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg");
-    if (photoId1 < E_OK || photoId2 < E_OK) {
-        MEDIA_ERR_LOG("create photos failed,photoId1=%{public}d,photoId2=%{public}d", photoId1, photoId2);
-        return;
-    }
-    std::vector<int32_t> photoIds = { photoId1, photoId2 };
+    ASSERT_GT(photoId1, 0);
+    ASSERT_GT(photoId2, 0);
 
+    std::vector<int32_t> photoIds = { photoId1, photoId2 };
     std::vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int i = 0; i < 2; ++i) {
         OHOS::DataShare::DataShareValuesBucket dataShareValue;
@@ -557,10 +533,9 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_010");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
     int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg");
-    if (photoId1 < E_OK || photoId2 < E_OK) {
-        MEDIA_ERR_LOG("create photos failed,photoId1=%{public}d,photoId2=%{public}d", photoId1, photoId2);
-        return;
-    }
+    ASSERT_GT(photoId1, 0);
+    ASSERT_GT(photoId2, 0);
+
     std::vector<int32_t> photoIds = { photoId1, photoId2 };
 
     std::vector<DataShare::DataShareValuesBucket> dataShareValues;
@@ -602,10 +577,8 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_011");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
     int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg");
-    if (photoId1 < E_OK || photoId2 < E_OK) {
-        MEDIA_ERR_LOG("create photos failed,photoId1=%{public}d,photoId2=%{public}d", photoId1, photoId2);
-        return;
-    }
+    ASSERT_GT(photoId1, 0);
+    ASSERT_GT(photoId2, 0);
 
     std::vector<DataShare::DataShareValuesBucket> dataShareValues;
     OHOS::DataShare::DataShareValuesBucket dataShareValue;
