@@ -28,6 +28,8 @@
 #include "rdb_store.h"
 #include "uri.h"
 #include "safe_map.h"
+#include "bundle_mgr_interface.h"
+#include <mutex>
 
 namespace OHOS {
 namespace Media {
@@ -71,13 +73,18 @@ public:
     EXPORT static void SetUserId(const int32_t userId);
     EXPORT static int32_t GetUserId();
     EXPORT static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelperByUser(const int32_t userId);
+    EXPORT static std::string GetBundleName();
 
 private:
     static inline std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info,
         const int32_t userId = -1);
     static int32_t userId_;
+    static std::string bundleName_;
     static SafeMap<int32_t, std::shared_ptr<DataShare::DataShareHelper>> dataShareHelperMap_;
+    static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
+    static sptr<AppExecFwk::IBundleMgr> bundleMgr_;
+    static std::mutex bundleMgrMutex_;
 };
 }
 }
