@@ -71,6 +71,8 @@ private:
     void RestoreBatch(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
     void RestoreMaps();
     void ReportRestoreTask();
+    void ReportRestoreTaskOfTotal();
+    void ReportRestoreTaskofData();
 
     void GetInfos(std::vector<GeoCloneInfo> &infos);
     void DeduplicateInfos(std::vector<GeoCloneInfo> &infos);

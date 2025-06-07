@@ -22,6 +22,8 @@
 #include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
+#include "clone_restore_classify.h"
+#include "clone_restore_geo.h"
 #include "cloud_sync_utils.h"
 #include "database_report.h"
 #include "media_column.h"

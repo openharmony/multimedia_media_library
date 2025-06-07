@@ -19,6 +19,7 @@
 #include <string>
 
 #include "backup_const.h"
+#include "media_backup_report_data_type.h"
 #include "rdb_store.h"
 
 namespace OHOS::Media {
@@ -35,6 +36,7 @@ public:
     void UpdateRestoreStatusAsDuplicateByIndex(size_t index);
     void UpdateRestoreStatusAsFailed();
     void UpdateDatabase();
+    void SetRestoreTaskInfo(RestoreTaskInfo &info);
 
 private:
     enum AnalysisStatus : int32_t {

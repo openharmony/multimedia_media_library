@@ -342,8 +342,6 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     UriSensitiveOperations::DeleteAllSensitiveAsync();
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "DataCallBackOnCreate failed, errCode=%{public}d", errCode);
 
-    MediaLibraryRdbStore::ResetAnalysisTables();
-    MediaLibraryRdbStore::ResetSearchTables();
     const static vector<string> DELETE_DIR_LIST = {
         ROOT_MEDIA_DIR + PHOTO_BUCKET,
         ROOT_MEDIA_DIR + AUDIO_BUCKET,

@@ -76,7 +76,10 @@ private:
     void RestoreBatch(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
     void RestoreMaps();
     void RestoreVideoMaps();
-    void ReportClassifyRestoreTask();
+    void ReportRestoreTask();
+    void ReportRestoreTaskOfTotal();
+    void ReportRestoreTaskofImage();
+    void ReportRestoreTaskofVideo();
 
     void GetClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfos);
     void GetClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos);
@@ -116,6 +119,7 @@ private:
     std::atomic<int32_t> failInsertVideoLabelCnt_{0};
     std::atomic<int32_t> duplicateLabelCnt_{0};
     std::atomic<int32_t> duplicateVideoLabelCnt_{0};
+    std::atomic<int64_t> restoreTimeCost_{0};
     std::atomic<int64_t> restoreLabelTimeCost_{0};
     std::atomic<int64_t> restoreVideoLabelTimeCost_{0};
     CloneRestoreAnalysisTotal cloneRestoreAnalysisTotal_;

@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "CloneRestoreGeo"
+
 #include "clone_restore_geo.h"
 
 #include "backup_database_utils.h"
@@ -119,6 +121,7 @@ void CloneRestoreGeo::Restore(const std::unordered_map<int32_t, PhotoInfo> &phot
     }
     ReportRestoreTask();
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    restoreTimeCost_ += end - start;
     MEDIA_INFO_LOG("TimeCost: Restore: %{public}" PRId64, end - start);
 }
 
@@ -155,13 +158,11 @@ void CloneRestoreGeo::RestoreMaps()
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("TimeCost: GetInfos: %{public}" PRId64 ", InsertIntoTable: %{public}" PRId64,
         startInsert - start, end - startInsert);
-    restoreTimeCost_ += end - start;
     MEDIA_INFO_LOG("restore geo knowledge end.");
 }
 
 void CloneRestoreGeo::GetInfos(std::vector<GeoCloneInfo> &infos)
 {
-    int64_t startCheck = MediaFileUtils::UTCTimeMilliSeconds();
     std::unordered_map<std::string, std::string> columns;
     columns[FILE_ID] = INTEGER;
     bool hasRequiredColumns = CheckTableColumns(GEO_KNOWLEDGE_TABLE, columns);
@@ -173,14 +174,12 @@ void CloneRestoreGeo::GetInfos(std::vector<GeoCloneInfo> &infos)
         return;
     }
 
-    int64_t startPrepare = MediaFileUtils::UTCTimeMilliSeconds();
     std::stringstream querySql;
     std::string placeHolders;
     std::vector<NativeRdb::ValueObject> params;
     cloneRestoreAnalysisTotal_.SetPlaceHoldersAndParamsByFileIdOld(placeHolders, params);
     querySql << "SELECT * FROM " + GEO_KNOWLEDGE_TABLE + " WHERE " + FILE_ID + " IN (" << placeHolders << ")";
 
-    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, querySql.str(), params);
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -189,9 +188,6 @@ void CloneRestoreGeo::GetInfos(std::vector<GeoCloneInfo> &infos)
         infos.emplace_back(info);
     }
     resultSet->Close();
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("TimeCost: CheckTableColumns: %{public}" PRId64 ", prepare: %{public}" PRId64
-        ", QuerySql: %{public}" PRId64, startPrepare - startCheck, startQuery - startPrepare, end - startQuery);
     MEDIA_INFO_LOG("query tab_analysis_geo_knowledge nums: %{public}zu", infos.size());
 }
 
@@ -199,9 +195,8 @@ void CloneRestoreGeo::DeduplicateInfos(std::vector<GeoCloneInfo> &infos)
 {
     CHECK_AND_RETURN(!infos.empty());
     std::unordered_set<int32_t> existingFileIds = GetExistingFileIds(GEO_KNOWLEDGE_TABLE);
-    MEDIA_INFO_LOG("@geo, before deduplicate existingFileIds: %{public}zu, infos: %{public}zu", existingFileIds.size(), infos.size());
     RemoveDuplicateInfos(infos, existingFileIds);
-    MEDIA_INFO_LOG("@geo, after deduplicate existingFileIds: %{public}zu, infos: %{public}zu", existingFileIds.size(), infos.size());
+    MEDIA_INFO_LOG("existing: %{public}zu, after deduplicate: %{public}zu", existingFileIds.size(), infos.size());
 }
 
 std::unordered_set<int32_t> CloneRestoreGeo::GetExistingFileIds(const std::string &tableName)
@@ -246,17 +241,15 @@ void CloneRestoreGeo::RemoveDuplicateInfos(std::vector<GeoCloneInfo> &infos,
         }
         cloneRestoreAnalysisTotal_.UpdateRestoreStatusAsDuplicateByIndex(index);
         duplicateCnt_++;
-        MEDIA_INFO_LOG("@geo, %{public}d is duplicate", fileIdNew);
         return true;
     }), infos.end());
 }
 
 void CloneRestoreGeo::InsertIntoTable(std::vector<GeoCloneInfo> &infos)
 {
-    int64_t startDeduplicate = MediaFileUtils::UTCTimeMilliSeconds();
     DeduplicateInfos(infos);
     CHECK_AND_RETURN(!infos.empty());
-    int64_t startGetCommonColumns = MediaFileUtils::UTCTimeMilliSeconds();
+
     std::unordered_set<std::string> intersection = GetCommonColumns(GEO_KNOWLEDGE_TABLE);
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     size_t offset = 0;
@@ -285,10 +278,6 @@ void CloneRestoreGeo::InsertIntoTable(std::vector<GeoCloneInfo> &infos)
         offset += PAGE_SIZE;
         successCnt_ += rowNum;
     } while (offset < infos.size());
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("TimeCost: DeduplicateInfos: %{public}" PRId64 ", GetCommonColumns: %{public}"
-        PRId64 ", Insert: %{public}" PRId64, startGetCommonColumns - startDeduplicate,
-        startInsert - startGetCommonColumns, end - startInsert);
 }
 
 void CloneRestoreGeo::GetInfo(GeoCloneInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet)
@@ -398,13 +387,29 @@ int32_t CloneRestoreGeo::BatchInsertWithRetry(const std::string &tableName,
 
 void CloneRestoreGeo::ReportRestoreTask()
 {
-    // TODO ADD TOTAL TIME COST & WRITE A FUNCTION
-    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
-        .Report("Geo knowledge restore", std::to_string(GEO_STATUS_SUCCESS),
-        "max_id: " + std::to_string(maxId_) +
-        ", success: " + std::to_string(successCnt_) +
-        ", fail: " + std::to_string(failedCnt_) +
-        ", duplicate: " + std::to_string(duplicateCnt_) +
-        ", timeCost: " + std::to_string(restoreTimeCost_));
+    ReportRestoreTaskOfTotal();
+    ReportRestoreTaskofData();
+}
+
+void CloneRestoreGeo::ReportRestoreTaskOfTotal()
+{
+    RestoreTaskInfo info;
+    cloneRestoreAnalysisTotal_.SetRestoreTaskInfo(info);
+    info.type = "CLONE_RESTORE_GEO_TOTAL";
+    info.errorCode = std::to_string(GEO_STATUS_SUCCESS);
+    info.errorInfo = "timeCost: " + std::to_string(restoreTimeCost_);
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).Report(info);
+}
+
+void CloneRestoreGeo::ReportRestoreTaskofData()
+{
+    RestoreTaskInfo info;
+    info.type = "CLONE_RESTORE_GEO_DATA";
+    info.errorCode = std::to_string(GEO_STATUS_SUCCESS);
+    info.errorInfo = "max_id: " + std::to_string(maxId_);
+    info.successCount = successCnt_;
+    info.failedCount = failedCnt_;
+    info.duplicateCount = duplicateCnt_;
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).Report(info);
 }
 } // namespace OHOS::Media
