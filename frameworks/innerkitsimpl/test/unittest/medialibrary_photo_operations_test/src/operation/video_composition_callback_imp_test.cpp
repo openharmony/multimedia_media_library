@@ -43,6 +43,16 @@ using OHOS::DataShare::DataSharePredicates;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static  std::string EDITDATA_VALUE = "{\"imageEffect\":{\"filters\":[{\"name\":\"InplaceSticker\","
     "\"values\":{\"RESOURCE_DIRECTORY\":\"/sys_prod/resource/camera\"}}],\"name\":\"brandWaterMark\"}}";
+static std::string EDITDATA_WATERMARK = "{\"imageEffect\":{\"filters\":[{\"name\":\"FrameSticker\","
+    "\"values\":{\"RESOURCE_DIRECTORY\":\"/sys_prod/resource/camera\"},"
+    "\"FILTER_CATEGORY\":\"BORDER_WATERMARK\"}],\"name\":\"imageEdit\"}}";
+static std::string EDITDATA_FILTER = "{\"imageEffect\":{\"filters\":[{\"name\":\"Moody\","
+    "\"values\":{\"FILTER_PARA\":0}}],\"name\":\"imageEdit\"}}";
+static std::string EDITDATA_WATERMARK_AND_FILTER = "{\"imageEffect\":{\"filters\":[{\"name\":\"Moody\","
+    "\"values\":{\"FILTER_PARA\":0}},{\"name\":\"FrameSticker\","
+    "\"values\":{\"RESOURCE_DIRECTORY\":\"/sys_prod/resource/camera\"},"
+    "\"FILTER_CATEGORY\":\"BORDER_WATERMARK\"}],\"name\":\"imageEdit\"}}";
+static std::string EDITDATA_WITHOUT_WATERMARK = "{\"imageEffect\":{\"filters\":null,\"name\":\"imageEdit\"}}";
 
 static void CleanTestTables()
 {
@@ -265,5 +275,26 @@ HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_AddCompositionT
 
     MEDIA_INFO_LOG("end VideoComposition_Test_AddCompositionTask");
 }
+
+HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_EraseWatermarkTag, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start VideoComposition_Test_EraseWatermarkTag");
+    auto imp = make_shared<VideoCompositionCallbackImpl>();
+    ASSERT_NE(imp, nullptr);
+    std::string editData = "";
+    imp->EraseWatermarkTag(editData);
+    EXPECT_EQ(editData, "");
+    editData = EDITDATA_WATERMARK;
+    imp->EraseWatermarkTag(editData);
+    EXPECT_EQ(editData, EDITDATA_WITHOUT_WATERMARK);
+    editData = EDITDATA_FILTER;
+    imp->EraseWatermarkTag(editData);
+    EXPECT_EQ(editData, EDITDATA_FILTER);
+    editData = EDITDATA_WATERMARK_AND_FILTER;
+    imp->EraseWatermarkTag(editData);
+    EXPECT_EQ(editData, EDITDATA_FILTER);
+    MEDIA_INFO_LOG("end VideoComposition_Test_EraseWatermarkTag");
+}
+
 } // namespace Media
 } // namespace OHOS
