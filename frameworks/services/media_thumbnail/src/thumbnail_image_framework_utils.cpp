@@ -350,8 +350,8 @@ std::shared_ptr<Picture> ThumbnailImageFrameWorkUtils::CopyAndScalePicture(const
 
     float widthScale = (1.0f * desiredSize.width) / picture->GetMainPixel()->GetWidth();
     float heightScale = (1.0f * desiredSize.height) / picture->GetMainPixel()->GetHeight();
-    picture->GetMainPixel()->scale(widthScale, heightScale);
-    picture->GetGainmapPixelMap()->scale(widthScale, heightScale);
+    copyPicture->GetMainPixel()->scale(widthScale, heightScale);
+    copyPicture->GetGainmapPixelMap()->scale(widthScale, heightScale);
     return copyPicture;
 }
 
@@ -364,7 +364,7 @@ std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(con
     auto copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
     float widthScale = (1.0f * desiredSize.width) / pixelMap->GetWidth();
     float heightScale = (1.0f * desiredSize.height) / pixelMap->GetHeight();
-    pixelMap->scale(widthScale, heightScale);
+    copySource->scale(widthScale, heightScale);
     return copySource;
 }
 
