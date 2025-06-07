@@ -16,6 +16,7 @@
 #include "userfile_client.h"
 
 #include "ability.h"
+#include "iservice_registry.h"
 
 #include "media_asset_rdbstore.h"
 #include "medialibrary_errno.h"
@@ -30,11 +31,15 @@ using namespace OHOS::AppExecFwk;
 namespace OHOS {
 namespace Media {
 
+constexpr int32_t BUNDLE_MGR_SERVICE_SYS_ABILITY_ID = 401;
 int32_t UserFileClient::userId_ = -1;
+string UserFileClient::bundleName_ = "";
 std::string MULTI_USER_URI_FLAG = "user=";
 std::string USER_STR = "user";
-SafeMap<int32_t, std::shared_ptr<DataShare::DataShareHelper>> UserFileClient::dataShareHelperMap_ = {};
 
+SafeMap<int32_t, std::shared_ptr<DataShare::DataShareHelper>> UserFileClient::dataShareHelperMap_ = {};
+sptr<AppExecFwk::IBundleMgr> UserFileClient::bundleMgr_ = nullptr;
+mutex UserFileClient::bundleMgrMutex_;
 static std::string GetMediaLibraryDataUri(const int32_t userId)
 {
     std::string mediaLibraryDataUri = MEDIALIBRARY_DATA_URI;
@@ -407,6 +412,56 @@ void UserFileClient::SetUserId(const int32_t userId)
 int32_t UserFileClient::GetUserId()
 {
     return userId_;
+}
+
+sptr<AppExecFwk::IBundleMgr> UserFileClient::GetSysBundleManager()
+{
+    if (bundleMgr_ != nullptr) {
+        return bundleMgr_;
+    }
+
+    lock_guard<mutex> lock(bundleMgrMutex_);
+    auto systemAbilityMgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (systemAbilityMgr == nullptr) {
+        NAPI_ERR_LOG("Failed to get SystemAbilityManager.");
+        return nullptr;
+    }
+
+    auto bundleObj = systemAbilityMgr->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+    if (bundleObj == nullptr) {
+        NAPI_ERR_LOG("Remote object is nullptr.");
+        return nullptr;
+    }
+
+    auto bundleMgr = iface_cast<AppExecFwk::IBundleMgr>(bundleObj);
+    if (bundleMgr == nullptr) {
+        NAPI_ERR_LOG("Failed to iface_cast");
+        return nullptr;
+    }
+
+    return bundleMgr;
+}
+
+string UserFileClient::GetBundleName()
+{
+    if (bundleName_ != "") {
+        return bundleName_;
+    }
+    bundleMgr_ = GetSysBundleManager();
+    if (bundleMgr_ == nullptr) {
+        NAPI_ERR_LOG("bundleMgr_ is null");
+        return bundleName_;
+    }
+    int32_t uid = static_cast<int32_t>(getuid());
+    string bundleName;
+    auto result = bundleMgr_->GetBundleNameForUid(uid, bundleName);
+    if (!result) {
+        NAPI_ERR_LOG("result is false");
+        return bundleName_;
+    }
+    NAPI_INFO_LOG("hap bundleName: %{public}s", bundleName.c_str());
+    bundleName_ = bundleName;
+    return bundleName_;
 }
 }
 }
