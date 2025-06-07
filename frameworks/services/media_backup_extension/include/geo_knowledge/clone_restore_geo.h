@@ -64,7 +64,6 @@ private:
         std::optional<int32_t> fileIdOld;
         std::optional<int32_t> fileIdNew;
         std::optional<std::string> locationType;
-        
     };
 
     void GetMaxIds();

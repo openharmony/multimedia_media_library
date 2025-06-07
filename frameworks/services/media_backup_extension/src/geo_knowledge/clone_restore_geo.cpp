@@ -239,7 +239,8 @@ void CloneRestoreGeo::RemoveDuplicateInfos(std::vector<GeoCloneInfo> &infos,
         cloneRestoreAnalysisTotal_.UpdateRestoreStatusAsDuplicateByIndex(index);
         duplicateCnt_++;
         return true;
-    }), infos.end());
+    }),
+        infos.end());
 }
 
 void CloneRestoreGeo::InsertIntoTable(std::vector<GeoCloneInfo> &infos)

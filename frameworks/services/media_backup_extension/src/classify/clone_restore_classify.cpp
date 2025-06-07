@@ -306,7 +306,8 @@ void CloneRestoreClassify::RemoveDuplicateClassifyInfos(std::vector<ClassifyClon
         cloneRestoreAnalysisTotal_.UpdateRestoreStatusAsDuplicateByIndex(index);
         duplicateLabelCnt_++;
         return true;
-    }), infos.end());
+    }),
+        infos.end());
 }
 
 void CloneRestoreClassify::RemoveDuplicateClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &infos,
@@ -330,7 +331,8 @@ void CloneRestoreClassify::RemoveDuplicateClassifyVideoInfos(std::vector<Classif
         cloneRestoreAnalysisTotal_.UpdateRestoreStatusAsDuplicateByIndex(index);
         duplicateVideoLabelCnt_++;
         return true;
-    }), infos.end());
+    }),
+        infos.end());
 }
 
 void CloneRestoreClassify::InsertClassifyAlbums(std::vector<ClassifyCloneInfo> &classifyInfos)

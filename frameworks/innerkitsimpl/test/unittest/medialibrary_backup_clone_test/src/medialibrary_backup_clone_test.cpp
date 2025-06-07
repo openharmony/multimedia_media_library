@@ -2015,14 +2015,14 @@ void InitCloneRestoreAnalysisTotal(shared_ptr<CloneRestoreClassify> cloneRestore
 {
     CloneRestoreAnalysisTotal::AnalysisTotalInfo info;
     info.fileIdOld = 1;
-    info.fileIdNew = fileId;
+    info.fileIdNew = fileIdNew;
     cloneRestoreClassify->cloneRestoreAnalysisTotal_.analysisTotalInfos_.push_back(info);
 }
 
 void InitPhotoInfoMap(unique_ptr<CloneRestore> &cloneRestoreService, int32_t fileIdNew)
 {
     PhotoInfo info;
-    info.fileIdNew = fileId;
+    info.fileIdNew = fileIdNew;
     cloneRestoreService->photoInfoMap_.insert({ 1, info });
 }
 
