@@ -275,12 +275,7 @@ HWTEST_F(MimeTypeTest, MimeTypeTest_InitMimeTypeMap_Test_001, TestSize.Level1)
 
 HWTEST_F(MimeTypeTest, MimeTypeTest_GetMimeTypeFromExtension_Test_001, TestSize.Level1)
 {
-    int32_t ret;
-    if (MimeTypeUtils::IsMimeTypeMapEmpty()) {
-        ret = MimeTypeUtils::InitMimeTypeMap();
-    } else {
-        ret = E_OK;
-    }
+    int32_t ret = MimeTypeUtils::InitMimeTypeMap();
     ASSERT_EQ(ret, E_OK);
     for (const auto& item : g_testExt2MimeType) {
         auto mimeType = MimeTypeUtils::GetMimeTypeFromExtension(item.first);
@@ -294,12 +289,7 @@ HWTEST_F(MimeTypeTest, MimeTypeTest_GetMimeTypeFromExtension_Test_001, TestSize.
 
 HWTEST_F(MimeTypeTest, MimeTypeTest_GetMediaTypeFromMimeType_Test_001, TestSize.Level1)
 {
-    int32_t ret;
-    if (MimeTypeUtils::IsMimeTypeMapEmpty()) {
-        ret = MimeTypeUtils::InitMimeTypeMap();
-    } else {
-        ret = E_OK;
-    }
+    int32_t ret = MimeTypeUtils::InitMimeTypeMap();
     ASSERT_EQ(ret, E_OK);
     for (const auto& item : g_testMimeType2MediaType) {
         auto mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(item.first);

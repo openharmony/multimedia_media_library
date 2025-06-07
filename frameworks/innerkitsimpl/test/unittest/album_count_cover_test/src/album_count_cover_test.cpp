@@ -679,10 +679,8 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level2)
     // 2. Create a photo, and then trash it.
     MEDIA_INFO_LOG("Step: Create a photo, and then trash it.");
     auto fileAsset = CreateImageAsset("Test_Trash_Image_001.jpg");
-    EXPECT_NE(fileAsset, nullptr);
-    if (fileAsset == nullptr) {
-        return;
-    }
+    ASSERT_NE(fileAsset, nullptr);
+
     TrashFileAsset(fileAsset, true);
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
 
@@ -690,10 +688,8 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level2)
     sleep(SLEEP_INTERVAL);
     MEDIA_INFO_LOG("Step: Create another photo, and then trash it.");
     auto fileAsset2 = CreateImageAsset("Test_Create_Image_002.jpg");
-    EXPECT_NE(fileAsset2, nullptr);
-    if (fileAsset2 == nullptr) {
-        return;
-    }
+    ASSERT_NE(fileAsset2, nullptr);
+
     TrashFileAsset(fileAsset2, true);
     AlbumInfo(2, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
 
@@ -875,10 +871,8 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_008, TestSize.Level2)
     // 2. Create a photo but not fresh.
     MEDIA_INFO_LOG("Step: Create a video but not fresh.");
     auto fileAsset = CreateVideoAsset("Test_Videos_001.mp4", false);
-    EXPECT_NE(fileAsset, nullptr);
-    if (fileAsset == nullptr) {
-        return;
-    }
+    ASSERT_NE(fileAsset, nullptr);
+
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
 
     // 3. Only set refresh table but not set flags.
