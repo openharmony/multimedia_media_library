@@ -958,6 +958,7 @@ void MedialibrarySubscriber::DelayTask::EndBackgroundOperationThread()
 #ifdef META_RECOVERY_SUPPORT
     MediaLibraryMetaRecovery::GetInstance().InterruptRecovery();
 #endif
+    MovingPhotoProcessor::StopProcess();
     cv.notify_all();
     if (!operationThread.joinable()) {
         return;

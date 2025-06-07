@@ -287,7 +287,7 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_StartProcessCoverPosit
     EXPECT_EQ(MovingPhotoProcessor::isProcessing_, true);
     MovingPhotoProcessor::isProcessing_ = true;
     MovingPhotoProcessor::StopProcess();
-    EXPECT_NE(MovingPhotoProcessor::isProcessing_, true);
+    EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false);
 }
 } // namespace Media
 } // namespace OHOS

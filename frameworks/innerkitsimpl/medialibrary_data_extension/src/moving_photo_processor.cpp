@@ -21,6 +21,7 @@
 
 #include "abs_rdb_predicates.h"
 #include "cloud_sync_helper.h"
+#include "dfx_utils.h"
 #include "directory_ex.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -51,6 +52,7 @@ static constexpr int32_t DIRTY_NOT_UPLOADING = -1;
 static constexpr int32_t DEFAULT_EXTRA_DATA_SIZE = MIN_STANDARD_SIZE;
 static constexpr int32_t LIVE_PHOTO_QUERY_NUM = 3000;
 static constexpr int32_t LIVE_PHOTO_PROCESS_NUM = 200;
+static constexpr int32_t COVER_POSITION_PROCESS_NUM = 500;
 
 static const string MOVING_PHOTO_PROCESS_FLAG = "multimedia.medialibrary.cloneFlag";
 static const string LIVE_PHOTO_COMPAT_DONE = "0";
@@ -65,6 +67,7 @@ static bool IsCloudLivePhotoRefreshed()
 
 void MovingPhotoProcessor::StartProcessMovingPhoto()
 {
+    CHECK_AND_RETURN_LOG(isProcessing_, "stop compating moving photo");
     auto resultSet = QueryMovingPhoto();
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query moving photo");
 
@@ -72,7 +75,6 @@ void MovingPhotoProcessor::StartProcessMovingPhoto()
     ParseMovingPhotoData(resultSet, dataList);
     CHECK_AND_RETURN_LOG(!dataList.movingPhotos.empty(), "No moving photo need to be processed");
 
-    isProcessing_ = true;
     CompatMovingPhoto(dataList);
 }
 
@@ -96,6 +98,7 @@ static void SetLivePhotoCompatId(string fileId)
 
 void MovingPhotoProcessor::StartProcessLivePhoto()
 {
+    CHECK_AND_RETURN_LOG(isProcessing_, "Stop compating live photo");
     CHECK_AND_RETURN_LOG(!IsLivePhotoCompatDone(), "Live photo compat done or no need to compat");
     auto resultSet = QueryCandidateLivePhoto();
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query candidate live photo");
@@ -108,16 +111,15 @@ void MovingPhotoProcessor::StartProcessLivePhoto()
         return;
     }
 
-    isProcessing_ = true;
     CompatLivePhoto(dataList);
 }
 
 void MovingPhotoProcessor::StartProcessCoverPosition()
 {
+    CHECK_AND_RETURN_LOG(isProcessing_, "Stop ProcessCoverPosition!");
     auto resultSet = QueryInvalidCoverPosition();
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query moving photo with invalid cover_position");
 
-    isProcessing_ = true;
     ProcessCoverPosition(resultSet);
 }
 
@@ -136,6 +138,7 @@ std::shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryInvalidCoverPos
     predicates.Or();
     predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
     predicates.EndWrap();
+    predicates.Limit(COVER_POSITION_PROCESS_NUM);
 
     return MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
 }
@@ -143,10 +146,7 @@ std::shared_ptr<NativeRdb::ResultSet> MovingPhotoProcessor::QueryInvalidCoverPos
 void MovingPhotoProcessor::ProcessCoverPosition(shared_ptr<NativeRdb::ResultSet> resultSet)
 {
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        if (!isProcessing_) {
-            MEDIA_INFO_LOG("Stop ProcessCoverPosition!");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(isProcessing_, "Stop ProcessCoverPosition!");
 
         string filePath =
             get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING));
@@ -159,7 +159,8 @@ void MovingPhotoProcessor::ProcessCoverPosition(shared_ptr<NativeRdb::ResultSet>
         videoData->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
         int32_t err = MetadataExtractor::ExtractAVMetadata(videoData);
         if (err != E_OK) {
-            MEDIA_ERR_LOG("Failed to extract metadata for moving photo: %{private}s", videoPath.c_str());
+            MEDIA_ERR_LOG("Failed to extract metadata for moving photo: %{public}s",
+                          DfxUtils::GetSafePath(videoPath).c_str());
             continue;
         }
 
@@ -175,13 +176,15 @@ void MovingPhotoProcessor::ProcessCoverPosition(shared_ptr<NativeRdb::ResultSet>
         int32_t changeRows = -1;
         int32_t ret = rdbStore->Update(changeRows, values, predicates);
         CHECK_AND_PRINT_LOG((ret == E_OK && changeRows > 0), "failed to update cover_position, ret = %{public}d", ret);
-        MEDIA_INFO_LOG("ProcessCoverPosition done: %{public}d %{public}s", fileId, filePath.c_str());
+        MEDIA_INFO_LOG("ProcessCoverPosition done: %{public}d %{public}s", fileId,
+                       DfxUtils::GetSafePath(filePath).c_str());
     }
 }
 
 void MovingPhotoProcessor::StartProcess()
 {
     MEDIA_DEBUG_LOG("Start processing moving photo task");
+    isProcessing_ = true;
 
     // 1. compat old moving photo
     StartProcessMovingPhoto();
