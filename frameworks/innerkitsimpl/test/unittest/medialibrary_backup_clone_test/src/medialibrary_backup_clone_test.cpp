@@ -2239,7 +2239,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     EXPECT_EQ(count, 0);
 
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
-    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_006");
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_classify_test_006");
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_007, TestSize.Level2)

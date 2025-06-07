@@ -148,7 +148,7 @@ void CloneRestoreClassify::RestoreBatch(const std::unordered_map<int32_t, PhotoI
     int64_t startUpdate = MediaFileUtils::UTCTimeMilliSeconds();
     cloneRestoreAnalysisTotal_.UpdateDatabase();
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("TimeCost: GetInfos: %{public}" PRId64 ", RestoreMaps: %{public}" PRId64
+    MEDIA_INFO_LOG("TimeCost: GetAnalysisTotalInfos: %{public}" PRId64 ", RestoreMaps: %{public}" PRId64
         ", RestoreVideoMaps: %{public}" PRId64 ", UpdateDatabase: %{public}" PRId64,
         startRestoreMaps - startGet, startRestoreVideoMaps - startRestoreMaps, startUpdate - startRestoreVideoMaps,
         end - startUpdate);
@@ -276,10 +276,7 @@ std::unordered_set<int32_t> CloneRestoreClassify::GetExistingFileIds(const std::
     querySql << "SELECT file_id FROM " + tableName + " WHERE " + FILE_ID + " IN (" << placeHolders << ")";
 
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql.str(), params);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return existingFileIds;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, existingFileIds, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = GetInt32Val("file_id", resultSet);
         existingFileIds.insert(fileId);
@@ -346,9 +343,7 @@ void CloneRestoreClassify::InsertClassifyAlbums(std::vector<ClassifyCloneInfo> &
     do {
         std::vector<NativeRdb::ValuesBucket> values;
         for (size_t index = 0; index < PAGE_SIZE && index + offset < classifyInfos.size(); index++) {
-            if (!classifyInfos[index + offset].fileIdNew.has_value()) {
-                continue;
-            }
+            CHECK_AND_CONTINUE(classifyInfos[index + offset].fileIdNew.has_value());
             NativeRdb::ValuesBucket value;
             GetMapInsertValue(value, classifyInfos[index + offset], intersection);
             values.emplace_back(value);
@@ -380,9 +375,7 @@ void CloneRestoreClassify::InsertClassifyVideoAlbums(std::vector<ClassifyVideoCl
     do {
         std::vector<NativeRdb::ValuesBucket> values;
         for (size_t index = 0; index < PAGE_SIZE && index + offset < classifyVideoInfos.size(); index++) {
-            if (!classifyVideoInfos[index + offset].fileIdNew.has_value()) {
-                continue;
-            }
+            CHECK_AND_CONTINUE(classifyVideoInfos[index + offset].fileIdNew.has_value());
             NativeRdb::ValuesBucket value;
             GetVideoMapInsertValue(value, classifyVideoInfos[index + offset], intersection);
             values.emplace_back(value);
@@ -483,9 +476,7 @@ bool CloneRestoreClassify::CheckTableColumns(const std::string& tableName,
     std::unordered_map<std::string, std::string> srcColumnInfoMap =
         BackupDatabaseUtils::GetColumnInfoMap(mediaRdb_, tableName);
     for (auto it = columns.begin(); it != columns.end(); ++it) {
-        if (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end()) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(srcColumnInfoMap.find(it->first) == srcColumnInfoMap.end());
         return false;
     }
     return true;
@@ -500,9 +491,8 @@ std::unordered_set<std::string> CloneRestoreClassify::GetCommonColumns(const str
     std::unordered_set<std::string> result;
     auto comparedColumns = GetValueFromMap(COMPARED_COLUMNS_MAP, tableName);
     for (auto it = dstColumnInfoMap.begin(); it != dstColumnInfoMap.end(); ++it) {
-        if (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() && comparedColumns.count(it->first) > 0) {
-            result.insert(it->first);
-        }
+        bool cond = srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() && comparedColumns.count(it->first) > 0;
+        CHECK_AND_EXECUTE(!cond, result.insert(it->first));
     }
     return result;
 }
