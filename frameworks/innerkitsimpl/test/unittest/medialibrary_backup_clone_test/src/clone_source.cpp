@@ -44,7 +44,9 @@ const unordered_map<string, string> TABLE_CREATE_MAP = {
     { GEO_DICTIONARY_TABLE, CREATE_GEO_DICTIONARY_TABLE },
     { VISION_LABEL_TABLE, CREATE_TAB_ANALYSIS_LABEL },
     { VISION_VIDEO_LABEL_TABLE, CREATE_TAB_ANALYSIS_VIDEO_LABEL },
-    {ANALYSIS_SEARCH_INDEX_TABLE, CREATE_SEARCH_INDEX_TBL},
+    { ANALYSIS_SEARCH_INDEX_TABLE, CREATE_SEARCH_INDEX_TBL },
+    { GEO_KNOWLEDGE_TABLE, CREATE_GEO_KNOWLEDGE_TABLE },
+    { VISION_TOTAL_TABLE, CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE },
 };
 const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { PhotoColumn::PHOTOS_TABLE, InsertType::PHOTOS },
@@ -58,6 +60,8 @@ const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { GEO_DICTIONARY_TABLE, InsertType::ANALYSIS_GEO_DICTIONARY },
     { VISION_LABEL_TABLE, InsertType::TAB_ANALYSIS_LABEL },
     { VISION_VIDEO_LABEL_TABLE, InsertType::TAB_ANALYSIS_VIDEO_LABEL },
+    { GEO_KNOWLEDGE_TABLE, InsertType::TAB_ANALYSIS_GEO_KNOWLEDGE },
+    { VISION_TOTAL_TABLE, InsertType::TAB_ANALYSIS_TOTAL },
 };
 const string VALUES_BEGIN = " VALUES (";
 const string VALUES_END = ") ";
@@ -96,6 +100,16 @@ const string INSERT_TAB_ANALYSIS_VIDEO_LABEL = "INSERT INTO " + VISION_VIDEO_LAB
     + SUB_CONFIDENCE_PROB + ", " + SUB_LABEL + ", " + SUB_LABEL_PROB + ", " + SUB_LABEL_TYPE + ", " + TRACKS +
     ", " + VIDEO_PART_FEATURE + ", " + FILTER_TAG + ", " + ALGO_VERSION + ", " + ANALYSIS_VERSION + ", "
     + TRIGGER_GENERATE_THUMBNAIL + ")";
+const string INSERT_TAB_ANALYSIS_GEO_KNOWLEDGE = "INSERT INTO " + GEO_KNOWLEDGE_TABLE + "(" +
+    FILE_ID + "," + LATITUDE + "," + LONGITUDE + "," + LOCATION_KEY + "," + CITY_ID + "," + LANGUAGE + "," +
+    COUNTRY + "," + ADMIN_AREA + "," + SUB_ADMIN_AREA + "," + LOCALITY + "," + SUB_LOCALITY + "," +
+    THOROUGHFARE + "," + SUB_THOROUGHFARE + "," + FEATURE_NAME + "," + CITY_NAME + "," + ADDRESS_DESCRIPTION + "," +
+    AOI + "," + POI + "," + FIRST_AOI + "," + FIRST_POI + "," + LOCATION_VERSION + "," +
+    FIRST_AOI_CATEGORY + "," + FIRST_POI_CATEGORY + "," + LOCATION_TYPE + ")";
+const string INSERT_TAB_ANALYSIS_TOTAL = "INSERT INTO " + VISION_TOTAL_TABLE + "(" +
+    ID + "," + FILE_ID + "," + STATUS + "," + OCR + "," + LABEL + "," + AESTHETICS_SCORE + "," +
+    FACE + "," + OBJECT + "," + RECOMMENDATION + "," + SEGMENTATION + "," + COMPOSITION + "," + SALIENCY + "," +
+    HEAD + "," + POSE + "," + GEO + ")";
 
 int32_t CloneOpenCall::OnCreate(NativeRdb::RdbStore &store)
 {
@@ -145,11 +159,12 @@ void CloneSource::Insert(const vector<string> &tableList)
             continue;
         }
         InsertType insertType = TABLE_INSERT_TYPE_MAP.at(tableName);
-        InsertByType(insertType);
+        InsertByTypeOne(insertType);
+        InsertByTypeTwo(insertType);
     }
 }
 
-void CloneSource::InsertByType(InsertType insertType)
+void CloneSource::InsertByTypeOne(InsertType insertType)
 {
     switch (insertType) {
         case InsertType::PHOTOS: {
@@ -197,7 +212,23 @@ void CloneSource::InsertByType(InsertType insertType)
             break;
         }
         default:
-            MEDIA_INFO_LOG("Invalid insert type");
+            MEDIA_INFO_LOG("Invalid insert type: %{public}d", static_cast<int32_t>(insertType));
+    }
+}
+
+void CloneSource::InsertByTypeTwo(InsertType insertType)
+{
+    switch (insertType) {
+        case InsertType::TAB_ANALYSIS_GEO_KNOWLEDGE: {
+            InsertTabAnalysisGeoKnowledge();
+            break;
+        }
+        case InsertType::TAB_ANALYSIS_TOTAL: {
+            InsertTabAnalysisTotal();
+            break;
+        }
+        default:
+            MEDIA_INFO_LOG("Invalid insert type: %{public}d", static_cast<int32_t>(insertType));
     }
 }
 
@@ -339,6 +370,32 @@ void CloneSource::InsertTabAnalysisVideoLabel()
     //analysis_version, trigger_generate_thumbnail
     cloneStorePtr_->ExecuteSql(INSERT_TAB_ANALYSIS_VIDEO_LABEL + VALUES_BEGIN + "1, 1, '2', 9827, '103', 9827, " +
         "'153', 9827, 0, 'beginFrame', '', '1', '1.5', '123', 1" + VALUES_END);
+}
+
+void CloneSource::InsertTabAnalysisGeoKnowledge()
+{
+    // file_id, latitude, longitude, location_key, city_id, language,
+    // country, admin_area, sub_admin_area, locality, sub_locality,
+    // thoroughfare, sub_thoroughfare, feature_name, city_name, address_description,
+    // aoi, poi, first_aoi, first_poi, location_version,
+    // first_aoi_category, first_poi_category, location_type
+    cloneStorePtr_->ExecuteSql(INSERT_TAB_ANALYSIS_GEO_KNOWLEDGE + VALUES_BEGIN +
+        "1, 31.2, 121.5, 141115170378, '271527323140241011', 'zh-Hans', "
+        "'C', 'AA', 'SAR', 'L', 'SL', "
+        "'TF', 'STF', 'FN', 'CN', 'AD', "
+        "'AOI', 'POI', 'FAOI', 'FPOI', 'LV', "
+        "'FAIOC', 'FPOIC', 'LT'" + VALUES_END);
+}
+
+void CloneSource::InsertTabAnalysisTotal()
+{
+    // id, file_id, status, ocr, label, aesthetics_score,
+    // face, object, recommendation, segmentation, composition, saliency,
+    // head, pose, geo
+    cloneStorePtr_->ExecuteSql(INSERT_TAB_ANALYSIS_TOTAL + VALUES_BEGIN +
+        "1, 1, 0, 0, 1, 0, "
+        "0, 0, 0, 0, 0, 0, "
+        "0, 0, 2" + VALUES_END);
 }
 } // namespace Media
 } // namespace OHOS

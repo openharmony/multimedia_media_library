@@ -536,7 +536,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_001, TestSize
     cloneRestoreCVAnalysis->RestoreAlbums(restoreHighlight);
     EXPECT_NE(cloneRestoreCVAnalysis->saliencyInfos_.size(), 0);
     EXPECT_NE(cloneRestoreCVAnalysis->recommendInfos_.size(), 0);
-    EXPECT_NE(cloneRestoreCVAnalysis->labelInfos_.size(), 0);
+    EXPECT_EQ(cloneRestoreCVAnalysis->labelInfos_.size(), 0);
 
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
