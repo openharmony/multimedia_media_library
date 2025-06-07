@@ -55,6 +55,21 @@ const std::string E_VERSION = "-1";
 const std::string TAG_ID_PREFIX = "ser_";
 const std::string TAG_ID_UNPROCESSED = "-1";
 
+/* AnalysisSearchIndex TBL COL_NAME */
+const std::string ANALYSIS_SEARCH_INDEX_TABLE = "tab_analysis_search_index";
+const std::string SEARCH_IDX_COL_ID = "id";                     // INTEGER
+const std::string SEARCH_IDX_COL_FILE_ID = "file_id";           // INT
+const std::string SEARCH_IDX_COL_DATA = "data";                 // TEXT
+const std::string SEARCH_IDX_COL_DISPLAY_NAME = "display_name"; // TEXT
+const std::string SEARCH_IDX_COL_LATITUDE = "latitude";         // DOUBLE
+const std::string SEARCH_IDX_COL_LONGITUDE = "longitude";       // DOUBLE
+const std::string SEARCH_IDX_COL_DATE_MODIFIED = "date_modified"; // BIGINT
+const std::string SEARCH_IDX_COL_PHOTO_STATUS = "photo_status"; // INT
+const std::string SEARCH_IDX_COL_CV_STATUS = "cv_status";       // INT
+const std::string SEARCH_IDX_COL_GEO_STATUS = "geo_status";     // INT
+const std::string SEARCH_IDX_COL_VERSION = "version";           // INT
+const std::string SEARCH_IDX_COL_SYSTEM_LANGUAGE = "system_language"; // TEXT
+
 /* AnalysisAlbum TBL COL_NAME */
 const std::string ANALYSIS_COL_ALBUM_ID = "album_id";
 const std::string ANALYSIS_COL_ALBUM_TYPE = "album_type";

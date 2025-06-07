@@ -221,6 +221,7 @@ protected:
     ffrt::mutex videoMutex_;
     ffrt::mutex audioMutex_;
     ffrt::mutex photoInfoMutex_;
+    ffrt::mutex photosInfoMutex_;
     std::mutex failedFilesMutex_;
     int32_t errorCode_{RestoreError::SUCCESS};
     std::string errorInfo_;

@@ -37,6 +37,7 @@ enum class InsertType {
     ANALYSIS_GEO_DICTIONARY,
     TAB_ANALYSIS_LABEL,
     TAB_ANALYSIS_VIDEO_LABEL,
+    ANALYSIS_SEARCH_INDEX,
 };
 
 const std::string CREATE_FACE_TAG_TBL_FOR_ONCREATE = "CREATE TABLE IF NOT EXISTS " + VISION_FACE_TAG_TABLE + " (" +
@@ -84,6 +85,21 @@ const std::string CREATE_IMG_FACE_TBL_FOR_ONCREATE = "CREATE TABLE IF NOT EXISTS
     IMAGE_FACE_COL_AESTHETICS_SCORE + " REAL, " +
     IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION + " TEXT, " +
     IMAGE_FACE_COL_IS_EXCLUDED + " INT)";
+
+const std::string CREATE_SEARCH_INDEX_TBL = "CREATE TABLE IF NOT EXISTS tab_analysis_search_index ( "
+    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+    "file_id INTEGER, "
+    "data TEXT, "
+    "display_name TEXT, "
+    "latitude REAL, "
+    "longitude REAL, "
+    "date_modified INTEGER, "
+    "photo_status INTEGER, "
+    "cv_status INTEGER, "
+    "geo_status INTEGER, "
+    "version INTEGER, "
+    "system_language TEXT "
+    ");";
 
 class CloneOpenCall;
 
