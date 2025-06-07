@@ -38,6 +38,8 @@ enum class InsertType {
     TAB_ANALYSIS_LABEL,
     TAB_ANALYSIS_VIDEO_LABEL,
     ANALYSIS_SEARCH_INDEX,
+    TAB_ANALYSIS_GEO_KNOWLEDGE,
+    TAB_ANALYSIS_TOTAL,
 };
 
 const std::string CREATE_FACE_TAG_TBL_FOR_ONCREATE = "CREATE TABLE IF NOT EXISTS " + VISION_FACE_TAG_TABLE + " (" +
@@ -107,7 +109,8 @@ class CloneSource {
 public:
     void Init(const std::string &path, const std::vector<std::string> &tableList);
     void Insert(const std::vector<std::string> &tableList);
-    void InsertByType(InsertType insertType);
+    void InsertByTypeOne(InsertType insertType);
+    void InsertByTypeTwo(InsertType insertType);
     void InsertPhoto();
     void InsertPhotoAlbum();
     void InsertPhotoMap();
@@ -119,6 +122,8 @@ public:
     void InsertAnalysisGeoDictionary();
     void InsertTabAnalysisLabel();
     void InsertTabAnalysisVideoLabel();
+    void InsertTabAnalysisGeoKnowledge();
+    void InsertTabAnalysisTotal();
     std::shared_ptr<NativeRdb::RdbStore> cloneStorePtr_;
 };
 

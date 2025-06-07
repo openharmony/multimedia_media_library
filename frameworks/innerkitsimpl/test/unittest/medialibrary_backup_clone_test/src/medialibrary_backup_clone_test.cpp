@@ -28,6 +28,8 @@
 #include "backup_restore_service.h"
 #include "base_restore.h"
 #include "clone_restore.h"
+#include "clone_restore_geo.h"
+#include "clone_restore_classify.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
@@ -36,8 +38,6 @@
 #include "photos_dao.h"
 #include "photos_data_handler.h"
 #include "burst_key_generator.h"
-#include "backup_const.h"
-#include "clone_restore_geo.h"
 #undef protected
 #undef private
 
@@ -86,6 +86,8 @@ const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + GEO_DICTIONARY_TABLE,
     "DELETE FROM " + VISION_LABEL_TABLE,
     "DELETE FROM " + VISION_VIDEO_LABEL_TABLE,
+    "DELETE FROM " + GEO_KNOWLEDGE_TABLE,
+    "DELETE FROM " + VISION_TOTAL_TABLE,
 };
 const vector<string> WHERE_CLAUSE_LIST_PHOTO = { WHERE_CLAUSE_SHOOTING_MODE, WHERE_CLAUSE_TRASHED,
     WHERE_CLAUSE_IS_FAVORITE, WHERE_CLAUSE_HIDDEN, WHERE_CLAUSE_EDIT,
@@ -2009,6 +2011,21 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dict
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
+void InitCloneRestoreAnalysisTotal(shared_ptr<CloneRestoreClassify> cloneRestoreClassify, int32_t fileIdNew)
+{
+    CloneRestoreAnalysisTotal::AnalysisTotalInfo info;
+    info.fileIdOld = 1;
+    info.fileIdNew = fileId;
+    cloneRestoreClassify->cloneRestoreAnalysisTotal_.analysisTotalInfos_.push_back(info);
+}
+
+void InitPhotoInfoMap(unique_ptr<CloneRestore> &cloneRestoreService, int32_t fileIdNew)
+{
+    PhotoInfo info;
+    info.fileIdNew = fileId;
+    cloneRestoreService->photoInfoMap_.insert({ 1, info });
+}
+
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_001");
@@ -2018,12 +2035,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
 
-    std::vector<FileInfo> fileInfos;
-    FileInfo fileInfo;
-    fileInfo.fileIdOld = 1;
-    fileInfo.fileIdNew = FILE_INFO_NEW_ID;
-    fileInfos.push_back(fileInfo);
-
     shared_ptr<CloneRestoreClassify> cloneRestoreClassify = make_shared<CloneRestoreClassify>();
     cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), cloneSource.cloneStorePtr_);
     EXPECT_EQ(cloneRestoreClassify->taskId_, TASK_ID);
@@ -2031,14 +2042,16 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     EXPECT_NE(cloneRestoreClassify->mediaRdb_, nullptr);
     EXPECT_NE(cloneRestoreClassify->mediaLibraryRdb_, nullptr);
 
-    cloneRestoreClassify->RestoreMaps(fileInfos);
+    InitCloneRestoreAnalysisTotal(cloneRestoreClassify, FILE_INFO_NEW_ID);
+    cloneRestoreClassify->RestoreMaps();
     EXPECT_EQ(cloneRestoreClassify->successInsertLabelCnt_, 1);
-    cloneRestoreClassify->RestoreVideoMaps(fileInfos);
+    cloneRestoreClassify->RestoreVideoMaps();
     EXPECT_EQ(cloneRestoreClassify->successInsertVideoLabelCnt_, 1);
     VerifyClassifyRestore(cloneRestoreClassify->mediaLibraryRdb_);
     VerifyClassifyVideoRestore(cloneRestoreClassify->mediaLibraryRdb_);
 
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_classify_test_001");
 }
 
 void MediaLibraryBackupCloneTest::VerifyClassifyRestore(const std::shared_ptr<NativeRdb::RdbStore>& db)
@@ -2101,28 +2114,29 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, nullptr, cloneSource.cloneStorePtr_);
     EXPECT_NE(cloneRestoreClassify->mediaRdb_, nullptr);
     EXPECT_EQ(cloneRestoreClassify->mediaLibraryRdb_, nullptr);
-    cloneRestoreClassify->RestoreMaps(fileInfos);
+    cloneRestoreClassify->RestoreMaps();
     EXPECT_EQ(cloneRestoreClassify->successInsertLabelCnt_.load(), 0);
-    cloneRestoreClassify->RestoreVideoMaps(fileInfos);
+    cloneRestoreClassify->RestoreVideoMaps();
     EXPECT_EQ(cloneRestoreClassify->successInsertVideoLabelCnt_.load(), 0);
 
     cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), nullptr);
     EXPECT_EQ(cloneRestoreClassify->mediaRdb_, nullptr);
     EXPECT_NE(cloneRestoreClassify->mediaLibraryRdb_, nullptr);
-    cloneRestoreClassify->RestoreMaps(fileInfos);
+    cloneRestoreClassify->RestoreMaps();
     EXPECT_EQ(cloneRestoreClassify->successInsertLabelCnt_.load(), 0);
-    cloneRestoreClassify->RestoreVideoMaps(fileInfos);
+    cloneRestoreClassify->RestoreVideoMaps();
     EXPECT_EQ(cloneRestoreClassify->successInsertVideoLabelCnt_.load(), 0);
 
     cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, nullptr, nullptr);
     EXPECT_EQ(cloneRestoreClassify->mediaRdb_, nullptr);
     EXPECT_EQ(cloneRestoreClassify->mediaLibraryRdb_, nullptr);
-    cloneRestoreClassify->RestoreMaps(fileInfos);
+    cloneRestoreClassify->RestoreMaps();
     EXPECT_EQ(cloneRestoreClassify->successInsertLabelCnt_.load(), 0);
-    cloneRestoreClassify->RestoreVideoMaps(fileInfos);
+    cloneRestoreClassify->RestoreVideoMaps();
     EXPECT_EQ(cloneRestoreClassify->successInsertVideoLabelCnt_.load(), 0);
 
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_classify_test_002");
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_003, TestSize.Level2)
@@ -2138,22 +2152,19 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), cloneSource.cloneStorePtr_);
     std::vector<CloneRestoreClassify::ClassifyCloneInfo> classifyInfo;
     std::vector<CloneRestoreClassify::ClassifyVideoCloneInfo> classifyVideoInfo;
-    std::vector<FileInfo> fileInfos;
-    FileInfo fileInfo;
-    cloneRestoreClassify->GetClassifyInfos(classifyInfo, fileInfos, 0);
-    cloneRestoreClassify->GetClassifyVideoInfos(classifyVideoInfo, fileInfos, 0);
+    cloneRestoreClassify->GetClassifyInfos(classifyInfo);
+    cloneRestoreClassify->GetClassifyVideoInfos(classifyVideoInfo);
     EXPECT_EQ(classifyInfo.size(), 0);
     EXPECT_EQ(classifyVideoInfo.size(), 0);
 
-    fileInfo.fileIdOld = 1;
-    fileInfo.fileIdNew = FILE_INFO_NEW_ID;
-    fileInfos.push_back(fileInfo);
-    cloneRestoreClassify->GetClassifyInfos(classifyInfo, fileInfos, 0);
-    cloneRestoreClassify->GetClassifyVideoInfos(classifyVideoInfo, fileInfos, 0);
+    InitCloneRestoreAnalysisTotal(cloneRestoreClassify, FILE_INFO_NEW_ID);
+    cloneRestoreClassify->GetClassifyInfos(classifyInfo);
+    cloneRestoreClassify->GetClassifyVideoInfos(classifyVideoInfo);
     EXPECT_EQ(classifyInfo.size(), 1);
     EXPECT_EQ(classifyVideoInfo.size(), 1);
 
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_classify_test_003");
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_004, TestSize.Level2)
@@ -2169,25 +2180,22 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), cloneSource.cloneStorePtr_);
     std::vector<CloneRestoreClassify::ClassifyCloneInfo> classifyInfo;
     std::vector<CloneRestoreClassify::ClassifyVideoCloneInfo> classifyVideoInfo;
-    std::vector<FileInfo> fileInfos;
-    FileInfo fileInfo;
-    fileInfo.fileIdOld = 1;
-    fileInfo.fileIdNew = FILE_INFO_NEW_ID;
-    fileInfos.push_back(fileInfo);
-    cloneRestoreClassify->GetClassifyInfos(classifyInfo, fileInfos, 0);
-    cloneRestoreClassify->InsertClassifyAlbums(classifyInfo, fileInfos);
+    InitCloneRestoreAnalysisTotal(cloneRestoreClassify, FILE_INFO_NEW_ID);
+    cloneRestoreClassify->GetClassifyInfos(classifyInfo);
+    cloneRestoreClassify->InsertClassifyAlbums(classifyInfo);
     EXPECT_EQ(classifyInfo.size(), 1);
-    cloneRestoreClassify->GetClassifyVideoInfos(classifyVideoInfo, fileInfos, 0);
-    cloneRestoreClassify->InsertClassifyVideoAlbums(classifyVideoInfo, fileInfos);
+    cloneRestoreClassify->GetClassifyVideoInfos(classifyVideoInfo);
+    cloneRestoreClassify->InsertClassifyVideoAlbums(classifyVideoInfo);
     EXPECT_EQ(classifyVideoInfo.size(), 1);
 
-    fileInfos.clear();
-    cloneRestoreClassify->DeduplicateClassifyInfos(classifyInfo, fileInfos);
+    cloneRestoreClassify->cloneRestoreAnalysisTotal_.analysisTotalInfos_.clear();
+    cloneRestoreClassify->DeduplicateClassifyInfos(classifyInfo);
     EXPECT_EQ(classifyInfo.size(), 0);
-    cloneRestoreClassify->DeduplicateClassifyVideoInfos(classifyVideoInfo, fileInfos);
+    cloneRestoreClassify->DeduplicateClassifyVideoInfos(classifyVideoInfo);
     EXPECT_EQ(classifyVideoInfo.size(), 0);
 
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_classify_test_004");
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_005, TestSize.Level2)
@@ -2211,6 +2219,92 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     EXPECT_FALSE(cloneRestoreClassify->CheckTableColumns(VISION_VIDEO_LABEL_TABLE, columns));
 
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_classify_test_005");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_006, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_006");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_LABEL_TABLE, VISION_TOTAL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    cloneRestoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+    cloneRestoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+
+    cloneRestoreService->RestoreAnalysisClassify();
+    int32_t count = GetCountByWhereClause(VISION_LABEL_TABLE, g_rdbStore->GetRaw());
+    EXPECT_EQ(count, 0);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_006");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_007, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_007");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE, VISION_TOTAL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    cloneRestoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+    cloneRestoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    InitPhotoInfoMap(cloneRestoreService, FILE_INFO_NEW_ID);
+
+    cloneRestoreService->RestoreAnalysisClassify();
+    int32_t count = GetCountByWhereClause(VISION_LABEL_TABLE, g_rdbStore->GetRaw());
+    EXPECT_GT(count, 0);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_classify_test_007");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_008, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_008");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList;
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    cloneRestoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+    cloneRestoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    InitPhotoInfoMap(cloneRestoreService, FILE_INFO_NEW_ID);
+
+    cloneRestoreService->RestoreAnalysisClassify();
+    int32_t count = GetCountByWhereClause(VISION_VIDEO_LABEL_TABLE, g_rdbStore->GetRaw());
+    EXPECT_EQ(count, 0);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_classify_test_008");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_009, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_009");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE, VISION_TOTAL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    cloneRestoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+    cloneRestoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    InitPhotoInfoMap(cloneRestoreService, FILE_INFO_NEW_ID);
+
+    cloneRestoreService->RestoreAnalysisClassify();
+    int32_t countBefore = GetCountByWhereClause(VISION_LABEL_TABLE, g_rdbStore->GetRaw());
+    cloneRestoreService->RestoreAnalysisClassify();
+    int32_t countAfter = GetCountByWhereClause(VISION_LABEL_TABLE, g_rdbStore->GetRaw());
+    EXPECT_EQ(countBefore, countAfter);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_classify_test_009");
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_dirty_count_test, TestSize.Level2)
@@ -2698,48 +2792,50 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_tes
     EXPECT_EQ(ret, MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR));
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test1, TestSize.Level2)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test_001, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test1 start");
+    MEDIA_INFO_LOG("Start medialibrary_backup_test_geo_knowledge_clone_test_001");
+
     ClearData();
     CloneSource cloneSource;
-    vector<string> tableList;
+    vector<string> tableList = { GEO_KNOWLEDGE_TABLE, VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
     cloneRestoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
     cloneRestoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
 
-    cloneRestoreService->cloneRestoreGeo_.GetGeoKnowledgeInfos();
-    cloneRestoreService->cloneRestoreGeo_.GetAnalysisGeoInfos();
-    EXPECT_EQ(cloneRestoreService->cloneRestoreGeo_.geoInfos_.size(), 0);
-    EXPECT_EQ(cloneRestoreService->cloneRestoreGeo_.anaTotalfos_.size(), 0);
+    cloneRestoreService->RestoreAnalysisGeo();
+    int32_t count = GetCountByWhereClause(GEO_KNOWLEDGE_TABLE, g_rdbStore->GetRaw());
+    EXPECT_EQ(count, 0);
+
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
-    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test1 end");
+    MEDIA_INFO_LOG("End medialibrary_backup_test_geo_knowledge_clone_test_001");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test2, TestSize.Level2)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test_002, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test2 start");
+    MEDIA_INFO_LOG("Start medialibrary_backup_test_geo_knowledge_clone_test_002");
+
     ClearData();
     CloneSource cloneSource;
-    vector<string> tableList;
+    vector<string> tableList = { GEO_KNOWLEDGE_TABLE, VISION_TOTAL_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
     cloneRestoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
     cloneRestoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
-    CloneRestoreGeo::GeoCloneInfo info;
-    cloneRestoreService->cloneRestoreGeo_.geoInfos_.emplace_back(info);
+    InitPhotoInfoMap(cloneRestoreService, FILE_INFO_NEW_ID);
 
-    std::vector<FileInfo> fileInfos;
-    cloneRestoreService->cloneRestoreGeo_.RestoreMaps(fileInfos);
-    EXPECT_EQ(cloneRestoreService->cloneRestoreGeo_.successUpdateCnt_, 0);
+    cloneRestoreService->RestoreAnalysisGeo();
+    int32_t count = GetCountByWhereClause(GEO_KNOWLEDGE_TABLE, g_rdbStore->GetRaw());
+    EXPECT_GT(count, 0);
+
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
-    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test2 end");
+    MEDIA_INFO_LOG("End medialibrary_backup_test_geo_knowledge_clone_test_002");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test3, TestSize.Level2)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test_003, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test3 start");
+    MEDIA_INFO_LOG("Start medialibrary_backup_test_geo_knowledge_clone_test_003");
     ClearData();
     CloneSource cloneSource;
     vector<string> tableList;
@@ -2747,23 +2843,37 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clo
     unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
     cloneRestoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
     cloneRestoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
-    CloneRestoreGeo::GeoCloneInfo info;
-    cloneRestoreService->cloneRestoreGeo_.geoInfos_.emplace_back(info);
+    InitPhotoInfoMap(cloneRestoreService, FILE_INFO_NEW_ID);
 
-    constexpr double DOUBLE_EPSILON = 1e-15;
-    std::vector<FileInfo> fileInfos;
-    FileInfo info1;
-    info1.fileIdNew = 0;
-    fileInfos.push_back(info1);
-    FileInfo info2;
-    info2.fileIdNew = 1;
-    info2.latitude = DOUBLE_EPSILON + 1.0;
-    info2.longitude = DOUBLE_EPSILON + 1.0;
-    fileInfos.push_back(info2);
-    cloneRestoreService->cloneRestoreGeo_.RestoreMaps(fileInfos);
-    EXPECT_EQ(cloneRestoreService->cloneRestoreGeo_.successUpdateCnt_, 0);
+    cloneRestoreService->RestoreAnalysisGeo();
+    int32_t count = GetCountByWhereClause(GEO_KNOWLEDGE_TABLE, g_rdbStore->GetRaw());
+    EXPECT_EQ(count, 0);
+
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
-    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test3 end");
+    MEDIA_INFO_LOG("End medialibrary_backup_test_geo_knowledge_clone_test_003");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test_004, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_test_geo_knowledge_clone_test_004");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { GEO_KNOWLEDGE_TABLE, VISION_TOTAL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    cloneRestoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+    cloneRestoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    InitPhotoInfoMap(cloneRestoreService, FILE_INFO_NEW_ID);
+
+    cloneRestoreService->RestoreAnalysisGeo();
+    int32_t countBefore = GetCountByWhereClause(GEO_KNOWLEDGE_TABLE, g_rdbStore->GetRaw());
+    cloneRestoreService->RestoreAnalysisGeo();
+    int32_t countAfter = GetCountByWhereClause(GEO_KNOWLEDGE_TABLE, g_rdbStore->GetRaw());
+    EXPECT_EQ(countBefore, countAfter);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_test_geo_knowledge_clone_test_004");
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_001, TestSize.Level2)

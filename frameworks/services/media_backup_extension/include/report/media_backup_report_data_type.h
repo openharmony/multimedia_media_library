@@ -335,5 +335,14 @@ struct FileDbCheckInfo {
     FileDbCheckInfo(int32_t dbType, int32_t dbStatus, int32_t fileStatus)
         : dbType(dbType), dbStatus(dbStatus), fileStatus(fileStatus) {}
 };
+
+struct RestoreTaskInfo {
+    std::string type;
+    std::string errorCode;
+    std::string errorInfo;
+    int32_t successCount{0};
+    int32_t failedCount{0};
+    int32_t duplicateCount{0};
+};
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_BACKUP_REPORT_DATA_TYPE_H

@@ -12,10 +12,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+#define MLOG_TAG "CloneRestoreClassify"
+
 #include "clone_restore_classify.h"
 
 #include "backup_database_utils.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -124,8 +125,9 @@ void CloneRestoreClassify::Restore(const std::unordered_map<int32_t, PhotoInfo> 
     for (int32_t offset = 0; offset < totalNumber; offset += PAGE_SIZE) {
         RestoreBatch(photoInfoMap);
     }
-    ReportClassifyRestoreTask();
+    ReportRestoreTask();
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    restoreTimeCost_ += end - start;
     MEDIA_INFO_LOG("TimeCost: ClassifyRestore: %{public}" PRId64, end - start);
 }
 
@@ -190,7 +192,6 @@ void CloneRestoreClassify::RestoreVideoMaps()
 
 void CloneRestoreClassify::GetClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfos)
 {
-    int64_t startCheck = MediaFileUtils::UTCTimeMilliSeconds();
     std::unordered_map<std::string, std::string> columns;
     columns[FILE_ID] = FIELD_TYPE_INT;
     bool hasRequiredColumns = CheckTableColumns(ANALYSIS_LABEL_TABLE, columns);
@@ -202,14 +203,12 @@ void CloneRestoreClassify::GetClassifyInfos(std::vector<ClassifyCloneInfo> &clas
         return;
     }
 
-    int64_t startPrepare = MediaFileUtils::UTCTimeMilliSeconds();
     std::stringstream querySql;
     std::string placeHolders;
     std::vector<NativeRdb::ValueObject> params;
     cloneRestoreAnalysisTotal_.SetPlaceHoldersAndParamsByFileIdOld(placeHolders, params);
     querySql << "SELECT * FROM " + ANALYSIS_LABEL_TABLE + " WHERE " + FILE_ID + " IN (" << placeHolders << ")";
 
-    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, querySql.str(), params);
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -218,9 +217,6 @@ void CloneRestoreClassify::GetClassifyInfos(std::vector<ClassifyCloneInfo> &clas
         classifyInfos.emplace_back(info);
     }
     resultSet->Close();
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("TimeCost: CheckTableColumns: %{public}" PRId64 ", prepare: %{public}" PRId64
-        ", QuerySql: %{public}" PRId64, startPrepare - startCheck, startQuery - startPrepare, end - startQuery);
     MEDIA_INFO_LOG("query tab_analysis_label nums: %{public}zu", classifyInfos.size());
 }
 
@@ -258,18 +254,16 @@ void CloneRestoreClassify::DeduplicateClassifyInfos(std::vector<ClassifyCloneInf
 {
     CHECK_AND_RETURN(!infos.empty());
     std::unordered_set<int32_t> existingFileIds = GetExistingFileIds(ANALYSIS_LABEL_TABLE);
-    MEDIA_INFO_LOG("@classify, before deduplicate existingFileIds: %{public}zu, infos: %{public}zu", existingFileIds.size(), infos.size());
     RemoveDuplicateClassifyInfos(infos, existingFileIds);
-    MEDIA_INFO_LOG("@classify, after deduplicate existingFileIds: %{public}zu, infos: %{public}zu", existingFileIds.size(), infos.size());
+    MEDIA_INFO_LOG("existing: %{public}zu, after deduplicate: %{public}zu", existingFileIds.size(), infos.size());
 }
 
 void CloneRestoreClassify::DeduplicateClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &infos)
 {
     CHECK_AND_RETURN(!infos.empty());
     std::unordered_set<int32_t> existingFileIds = GetExistingFileIds(ANALYSIS_VIDEO_TABLE);
-    MEDIA_INFO_LOG("@classify, before deduplicate existingFileIds: %{public}zu, infos: %{public}zu", existingFileIds.size(), infos.size());
     RemoveDuplicateClassifyVideoInfos(infos, existingFileIds);
-    MEDIA_INFO_LOG("@classify, after deduplicate existingFileIds: %{public}zu, infos: %{public}zu", existingFileIds.size(), infos.size());
+    MEDIA_INFO_LOG("existing: %{public}zu, after deduplicate: %{public}zu", existingFileIds.size(), infos.size());
 }
 
 std::unordered_set<int32_t> CloneRestoreClassify::GetExistingFileIds(const std::string &tableName)
@@ -314,7 +308,6 @@ void CloneRestoreClassify::RemoveDuplicateClassifyInfos(std::vector<ClassifyClon
         }
         cloneRestoreAnalysisTotal_.UpdateRestoreStatusAsDuplicateByIndex(index);
         duplicateLabelCnt_++;
-        MEDIA_INFO_LOG("@classify, %{public}d is duplicate", fileIdNew);
         return true;
     }), infos.end());
 }
@@ -339,19 +332,16 @@ void CloneRestoreClassify::RemoveDuplicateClassifyVideoInfos(std::vector<Classif
         }
         cloneRestoreAnalysisTotal_.UpdateRestoreStatusAsDuplicateByIndex(index);
         duplicateVideoLabelCnt_++;
-        MEDIA_INFO_LOG("@classify, %{public}d is duplicate", fileIdNew);
         return true;
     }), infos.end());
 }
 
 void CloneRestoreClassify::InsertClassifyAlbums(std::vector<ClassifyCloneInfo> &classifyInfos)
 {
-    int64_t startDeduplicate = MediaFileUtils::UTCTimeMilliSeconds();
     DeduplicateClassifyInfos(classifyInfos);
     CHECK_AND_RETURN(!classifyInfos.empty());
-    int64_t startGetCommonColumns = MediaFileUtils::UTCTimeMilliSeconds();
+
     std::unordered_set<std::string> intersection = GetCommonColumns(ANALYSIS_LABEL_TABLE);
-    int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     size_t offset = 0;
     do {
         std::vector<NativeRdb::ValuesBucket> values;
@@ -378,16 +368,13 @@ void CloneRestoreClassify::InsertClassifyAlbums(std::vector<ClassifyCloneInfo> &
         offset += PAGE_SIZE;
         successInsertLabelCnt_ += rowNum;
     } while (offset < classifyInfos.size());
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("TimeCost: DeduplicateClassifyInfos: %{public}" PRId64 ", GetCommonColumns: %{public}"
-        PRId64 ", Insert: %{public}" PRId64, startGetCommonColumns - startDeduplicate,
-        startInsert - startGetCommonColumns, end - startInsert);
 }
 
 void CloneRestoreClassify::InsertClassifyVideoAlbums(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos)
 {
     DeduplicateClassifyVideoInfos(classifyVideoInfos);
     CHECK_AND_RETURN(!classifyVideoInfos.empty());
+
     std::unordered_set<std::string> intersection = GetCommonColumns(ANALYSIS_VIDEO_TABLE);
     size_t offset = 0;
     do {
@@ -538,23 +525,48 @@ int32_t CloneRestoreClassify::BatchInsertWithRetry(const std::string &tableName,
     return errCode;
 }
 
-void CloneRestoreClassify::ReportClassifyRestoreTask()
+void CloneRestoreClassify::ReportRestoreTask()
 {
-    // TODO ADD TOTAL TIME COST & WRITE A FUNCTION
-    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
-        .Report("Classify label restore", std::to_string(CLASSIFY_STATUS_SUCCESS),
-        "max_id: " + std::to_string(maxIdOfLabel_) +
-        ", success: " + std::to_string(successInsertLabelCnt_) +
-        ", fail: " + std::to_string(failInsertLabelCnt_) +
-        ", duplicate: " + std::to_string(duplicateLabelCnt_) +
-        ", timeCost: " + std::to_string(restoreLabelTimeCost_));
+    ReportRestoreTaskOfTotal();
+    ReportRestoreTaskofImage();
+    ReportRestoreTaskofVideo();
+}
 
-    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
-        .Report("Classify video label restore", std::to_string(CLASSIFY_STATUS_SUCCESS),
+void CloneRestoreClassify::ReportRestoreTaskOfTotal()
+{
+    RestoreTaskInfo info;
+    cloneRestoreAnalysisTotal_.SetRestoreTaskInfo(info);
+    info.type = "CLONE_RESTORE_CLASSIFY_TOTAL";
+    info.errorCode = std::to_string(CLASSIFY_STATUS_SUCCESS);
+    info.errorInfo = "timeCost: " + std::to_string(restoreTimeCost_);
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).Report(info);
+}
+
+void CloneRestoreClassify::ReportRestoreTaskofImage()
+{
+    RestoreTaskInfo info;
+    info.type = "CLONE_RESTORE_CLASSIFY_IMAGE";
+    info.errorCode = std::to_string(CLASSIFY_STATUS_SUCCESS);
+    info.errorInfo =
+        "max_id: " + std::to_string(maxIdOfLabel_) +
+        ", timeCost: " + std::to_string(restoreLabelTimeCost_);
+    info.successCount = successInsertLabelCnt_;
+    info.failedCount = failInsertLabelCnt_;
+    info.duplicateCount = duplicateLabelCnt_;
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).Report(info);
+}
+
+void CloneRestoreClassify::ReportRestoreTaskofVideo()
+{
+    RestoreTaskInfo info;
+    info.type = "CLONE_RESTORE_CLASSIFY_VIDEO";
+    info.errorCode = std::to_string(CLASSIFY_STATUS_SUCCESS);
+    info.errorInfo =
         "max_id: " + std::to_string(maxIdOfVideoLabel_) +
-        ", success: " + std::to_string(successInsertVideoLabelCnt_) +
-        ", fail: " + std::to_string(failInsertVideoLabelCnt_) +
-        ", duplicate: " + std::to_string(duplicateVideoLabelCnt_) +
-        ", timeCost: " + std::to_string(restoreVideoLabelTimeCost_));
+        ", timeCost: " + std::to_string(restoreVideoLabelTimeCost_);
+    info.successCount = successInsertVideoLabelCnt_;
+    info.failedCount = failInsertVideoLabelCnt_;
+    info.duplicateCount = duplicateVideoLabelCnt_;
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).Report(info);
 }
 }

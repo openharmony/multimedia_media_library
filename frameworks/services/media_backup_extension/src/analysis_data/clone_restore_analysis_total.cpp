@@ -15,6 +15,7 @@
 #include "clone_restore_analysis_total.h"
 
 #include "backup_database_utils.h"
+#include "media_backup_report_data_type.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "result_set_utils.h"
@@ -153,5 +154,12 @@ int32_t CloneRestoreAnalysisTotal::UpdateDatabaseByStatus(int32_t status, const 
     int32_t errCode = BackupDatabaseUtils::Update(mediaLibraryRdb_, updatedRows, valuesBucket, updatePredicates);
     CHECK_AND_PRINT_LOG(errCode == E_OK, "UpdateDatabaseyStatus failed, errCode = %{public}d", errCode);
     return updatedRows;
+}
+
+void CloneRestoreAnalysisTotal::SetRestoreTaskInfo(RestoreTaskInfo &info)
+{
+    info.successCount = successCnt_;
+    info.failedCount = failedCnt_;
+    info.duplicateCount = duplicateCnt_;
 }
 }

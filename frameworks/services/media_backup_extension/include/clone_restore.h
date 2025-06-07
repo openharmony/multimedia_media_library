@@ -34,8 +34,6 @@
 #include "backup_database_utils.h"
 #include "photo_album_clone.h"
 #include "photos_clone.h"
-#include "clone_restore_classify.h"
-#include "clone_restore_geo.h"
 #include "clone_restore_geo_dictionary.h"
 #include "search_index_clone.h"
 #include "ffrt.h"
