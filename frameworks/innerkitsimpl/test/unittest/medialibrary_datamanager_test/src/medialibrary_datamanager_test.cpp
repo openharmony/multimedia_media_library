@@ -2029,8 +2029,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, LSMediaFiles_test_001, TestSize.Level0
     valuesBucket.Put(MediaColumn::MEDIA_FILE_PATH, examplePath);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::LS_MEDIA_FILES, MediaLibraryApi::API_10);
     int32_t ret = dataManager->InsertExt(cmd, valuesBucket, result);
-    EXPECT_EQ(ret, E_OK);
-    EXPECT_FALSE(result.empty());
+    EXPECT_EQ(ret, E_INVALID_PATH);
+    EXPECT_TRUE(result.empty());
     MEDIA_INFO_LOG("LSMediaFiles_test_001::End");
 }
 
@@ -2041,7 +2041,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, LSMediaFiles_test_002, TestSize.Level0
     ASSERT_NE(dataManager, nullptr);
     string result;
     DataShare::DataShareValuesBucket valuesBucket;
-    string invalidPath = "/storage/cloud/files/Photo/invalid";
+    string invalidPath = "/storage/media/local/files/Photo/invalid";
     valuesBucket.Put(MediaColumn::MEDIA_FILE_PATH, invalidPath);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::LS_MEDIA_FILES, MediaLibraryApi::API_10);
     int32_t ret = dataManager->InsertExt(cmd, valuesBucket, result);
