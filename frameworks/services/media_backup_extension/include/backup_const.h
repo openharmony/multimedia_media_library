@@ -625,6 +625,12 @@ struct AnalysisPhotoMapTbl {
     std::optional<int32_t> mapAsset;
 };
 
+struct AlbumCoverInfo {
+    int32_t albumId;
+    std::string lPath;
+    std::string coverUri;
+};
+
 using NeedQueryMap = std::unordered_map<PhotoRelatedType, std::unordered_set<std::string>>;
 
 // sql for external

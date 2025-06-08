@@ -83,6 +83,7 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("deleteAssetsWithUri", JSDeleteAssetsWithUri),
             DECLARE_NAPI_FUNCTION("setAlbumName", JSSetAlbumName),
             DECLARE_NAPI_FUNCTION("setCoverUri", JSSetCoverUri),
+            DECLARE_NAPI_FUNCTION("resetCoverUri", JSResetCoverUri),
             DECLARE_NAPI_FUNCTION("placeBefore", JSPlaceBefore),
             DECLARE_NAPI_FUNCTION("setDisplayLevel", JSSetDisplayLevel),
             DECLARE_NAPI_FUNCTION("mergeAlbum", JSMergeAlbum),
@@ -1112,12 +1113,37 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        (PhotoAlbum::IsSystemAlbum(photoAlbum->GetPhotoAlbumType()) &&
+        !PhotoAlbum::IsHiddenAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) ||
+        PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only user album, highlight, smart portrait album and group photo can set album name");
+        "Only user, source, system album, highlight, smart portrait album and group photo can set album cover");
     photoAlbum->SetCoverUri(coverUri);
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_COVER_URI);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSResetCoverUri(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(
+        env, info, asyncContext, ARGS_ZERO, ARGS_ZERO) == napi_ok, "Failed to get object info");
+
+    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
+    CHECK_COND_WITH_MESSAGE(env,
+        PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        (PhotoAlbum::IsSystemAlbum(photoAlbum->GetPhotoAlbumType()) &&
+        !PhotoAlbum::IsHiddenAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) ||
+        PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only user, source, system album need restore album cover");
+    asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::RESET_COVER_URI);
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -1782,7 +1808,8 @@ static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
                    changeOperation == AlbumChangeOperation::SET_COVER_URI ||
                    changeOperation == AlbumChangeOperation::SET_IS_ME ||
                    changeOperation == AlbumChangeOperation::SET_DISPLAY_LEVEL ||
-                   changeOperation == AlbumChangeOperation::DISMISS) {
+                   changeOperation == AlbumChangeOperation::DISMISS ||
+                   changeOperation == AlbumChangeOperation::RESET_COVER_URI) {
             valid = SetAlbumPropertyExecute(*context, changeOperation);
         } else {
             NAPI_ERR_LOG("Invalid album change operation: %{public}d", changeOperation);

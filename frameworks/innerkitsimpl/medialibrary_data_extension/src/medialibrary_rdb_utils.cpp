@@ -115,12 +115,13 @@ struct UpdateAlbumData {
     int32_t albumImageCount;
     int32_t albumVideoCount;
     string hiddenCover;
-    string  albumCoverUri;
+    string albumCoverUri;
     uint8_t isCoverSatisfied;
     int32_t newTotalCount { 0 };
     bool shouldNotify { false };
     bool hasChanged {false};
     bool shouldUpdateDateModified { false };
+    int32_t coverUriSource {0};
 };
 
 struct RefreshAlbumData {
@@ -189,6 +190,20 @@ static inline int32_t GetIntValFromColumn(const shared_ptr<ResultSet> &resultSet
     }
 
     return GetIntValFromColumn(resultSet, index);
+}
+
+static inline int64_t GetLongValFromColumn(const shared_ptr<ResultSet> &resultSet, const string &columnName)
+{
+    int32_t index = 0;
+    if (resultSet->GetColumnIndex(columnName, index)) {
+        return 0;
+    }
+
+    int64_t integer64Val;
+    if (resultSet->GetLong(index, integer64Val)) {
+        return 0;
+    }
+    return integer64Val;
 }
 
 static NotifyType GetTypeFromCountVariation(UpdateAlbumData &data)
@@ -1111,6 +1126,94 @@ static void RefreshHighlightAlbum(int32_t albumId)
         static_cast<int32_t>(Media::MediaAnalysisProxy::ActivateServiceType::HIGHLIGHT_COVER_GENERATE), albumIds);
 }
 
+static bool IsInSystemAlbum(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
+    RdbPredicates &predicates, PhotoAlbumSubType subtype)
+{
+    vector<string> columns = {PhotoColumn::MEDIA_IS_FAV, PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_DATE_TRASHED,
+    PhotoColumn::PHOTO_STRONG_ASSOCIATION};
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "failed to acquire result from visitor query.");
+    bool ret = false;
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        switch (subtype) {
+            case PhotoAlbumSubType::FAVORITE:
+                ret = GetIntValFromColumn(resultSet, PhotoColumn::MEDIA_IS_FAV) == 1;
+                break;
+            case PhotoAlbumSubType::VIDEO:
+                ret = GetIntValFromColumn(resultSet, PhotoColumn::MEDIA_TYPE) == MediaType::MEDIA_TYPE_VIDEO;
+                break;
+            case PhotoAlbumSubType::IMAGE:
+                ret = GetIntValFromColumn(resultSet, PhotoColumn::MEDIA_TYPE) == MediaType::MEDIA_TYPE_IMAGE;
+                break;
+            case PhotoAlbumSubType::TRASH:
+                ret = GetLongValFromColumn(resultSet, PhotoColumn::MEDIA_DATE_TRASHED) == 0;
+                break;
+            case PhotoAlbumSubType::CLOUD_ENHANCEMENT:
+                ret = GetIntValFromColumn(resultSet, PhotoColumn::PHOTO_STRONG_ASSOCIATION) ==
+                    static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT);
+                break;
+            default:
+                MEDIA_ERR_LOG("albumSubtype is invalid: %{public}d", subtype);
+                break;
+        }
+    }
+    return ret;
+}
+
+int32_t UpdateCoverUriSource(int32_t albumId)
+{
+    RdbPredicates newPredicates(PhotoAlbumColumns::TABLE);
+    ValuesBucket values;
+    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::DEFAULT_COVER);
+
+    string UPDATE_CONDITION = PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId) + " AND " +
+        PhotoAlbumColumns::COVER_URI_SOURCE + " = " + to_string(CoverUriSource::MANUAL_COVER);
+
+    newPredicates.SetWhereClause(UPDATE_CONDITION);
+    
+    int32_t changedRows = OHOS::Media::MediaLibraryRdbStore::UpdateWithDateTime(values, newPredicates);
+    CHECK_AND_PRINT_LOG(changedRows >= 0, "Update photo album failed: %{public}d", changedRows);
+
+    return changedRows;
+}
+
+static bool IsNeedSetCover(UpdateAlbumData &data, PhotoAlbumSubType subtype)
+{
+    // manual cover and cover in the album
+    if (data.coverUriSource == static_cast<int32_t>(CoverUriSource::DEFAULT_COVER)) {
+        return true;
+    }
+    string &coverUri = data.albumCoverUri;
+    string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(coverUri);
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore when query owner_album_id");
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+
+    if (subtype == PhotoAlbumSubType::USER_GENERIC || subtype == PhotoAlbumSubType::SOURCE_GENERIC) {
+        vector<string> columns = { PhotoColumn::PHOTO_OWNER_ALBUM_ID };
+        auto resultSet = rdbStore->Query(predicates, columns);
+        CHECK_AND_RETURN_RET_INFO_LOG(resultSet != nullptr, E_HAS_DB_ERROR,
+            "failed to acquire result from visitor query.");
+        int32_t ownerAlbumId = -1;
+        if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            ownerAlbumId = GetIntValFromColumn(resultSet, PhotoColumn::PHOTO_OWNER_ALBUM_ID);
+        }
+        auto isInAlbum = ownerAlbumId == data.albumId;
+        if (!isInAlbum) {
+            UpdateCoverUriSource(data.albumId);
+        }
+        return !isInAlbum;
+    }
+    auto isInAlbum = IsInSystemAlbum(rdbStore, predicates, subtype);
+    if (!isInAlbum) {
+        UpdateCoverUriSource(data.albumId);
+    }
+    return !isInAlbum;
+}
+
 static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     UpdateAlbumData &data, ValuesBucket &values, PhotoAlbumSubType subtype, const bool hiddenState)
 {
@@ -1137,7 +1240,8 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     CHECK_AND_RETURN_RET_LOG(fileResult != nullptr, E_HAS_DB_ERROR, "Failed to query fileResult");
     int32_t newCount = SetCount(fileResult, data, values, hiddenState, subtype);
     data.newTotalCount = newCount;
-    if (subtype != PhotoAlbumSubType::HIGHLIGHT && subtype != PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+    if (subtype != PhotoAlbumSubType::HIGHLIGHT && subtype != PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS &&
+        IsNeedSetCover(data, subtype)) {
         SetCover(fileResult, data, values, hiddenState);
     }
     if (hiddenState == 0 && (subtype < PhotoAlbumSubType::ANALYSIS_START ||
@@ -1498,6 +1602,7 @@ void MediaLibraryRdbUtils::UpdateUserAlbumInternal(shared_ptr<MediaLibraryRdbSto
         PhotoAlbumColumns::ALBUM_COUNT,
         PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
         PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
+        PhotoAlbumColumns::COVER_URI_SOURCE,
     };
     auto albumResult = GetUserAlbum(rdbStore, userAlbumIds, columns);
     CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
@@ -1513,6 +1618,7 @@ void MediaLibraryRdbUtils::UpdateUserAlbumInternal(shared_ptr<MediaLibraryRdbSto
         data.albumVideoCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
         data.shouldNotify = shouldNotify;
         data.shouldUpdateDateModified = shouldUpdateDateModified;
+        data.coverUriSource = GetIntValFromColumn(albumResult, PhotoAlbumColumns::COVER_URI_SOURCE);
         datas.push_back(data);
     }
     albumResult->Close();
@@ -1992,6 +2098,7 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumInternal(shared_ptr<MediaLibraryRdbS
         PhotoAlbumColumns::ALBUM_COUNT,
         PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
         PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
+        PhotoAlbumColumns::COVER_URI_SOURCE,
     };
     auto albumResult = GetSourceAlbum(rdbStore, sourceAlbumIds, columns);
     CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
@@ -2006,6 +2113,7 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumInternal(shared_ptr<MediaLibraryRdbS
         data.albumVideoCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
         data.shouldNotify = shouldNotify;
         data.shouldUpdateDateModified = shouldUpdateDateModified;
+        data.coverUriSource = GetIntValFromColumn(albumResult, PhotoAlbumColumns::COVER_URI_SOURCE);
         datas.push_back(data);
     }
     albumResult->Close();
@@ -2038,6 +2146,7 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumInternal(const shared_ptr<MediaLibra
         PhotoAlbumColumns::ALBUM_COUNT,
         PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
         PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
+        PhotoAlbumColumns::COVER_URI_SOURCE,
     };
     auto albumResult = GetSystemAlbum(rdbStore, subtypes, columns);
     CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
@@ -2051,6 +2160,7 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumInternal(const shared_ptr<MediaLibra
         data.albumImageCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
         data.albumVideoCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
         data.shouldNotify = shouldNotify;
+        data.coverUriSource = GetIntValFromColumn(albumResult, PhotoAlbumColumns::COVER_URI_SOURCE);
         datas.push_back(data);
     }
     albumResult->Close();

@@ -7591,9 +7591,11 @@ static void SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<DataShareResult
     string countColumn = PhotoAlbumColumns::ALBUM_COUNT;
     string coverColumn = PhotoAlbumColumns::ALBUM_COVER_URI;
     string albumUriPrefix = PhotoAlbumColumns::ALBUM_URI_PREFIX;
+    string coverUriSource = PhotoAlbumColumns::COVER_URI_SOURCE;
     photoAlbumData->SetAlbumUri(albumUriPrefix + to_string(albumId));
     photoAlbumData->SetCount(get<int32_t>(ResultSetUtils::GetValFromColumn(countColumn, resultSet, TYPE_INT32)));
     photoAlbumData->SetCoverUri(get<string>(ResultSetUtils::GetValFromColumn(coverColumn, resultSet, TYPE_STRING)));
+    photoAlbumData->SetCoverUriSource(get<int32_t>(ResultSetUtils::GetValFromColumn(coverUriSource, resultSet, TYPE_INT32)));
 
     // Albums of hidden types (except hidden album itself) don't support image count and video count,
     // return -1 instead

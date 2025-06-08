@@ -38,6 +38,7 @@ public:
     int64_t albumDateModified;
     bool isDelete;
     bool isSuccess;
+    int32_t coverUriSource;
 
 public:
     std::string ToString();
