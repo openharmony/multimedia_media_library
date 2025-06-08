@@ -43,6 +43,7 @@ public:
     std::string dualAlbumName;
     int32_t priority;
     bool isInWhiteList;
+    int32_t coverUriSource;
 
 public:
     virtual ~CloudMdkRecordPhotoAlbumVo() = default;

@@ -47,6 +47,7 @@ public:
     const std::string& GetCoverUri() const;
     int64_t GetDateModified() const;
     int64_t GetDateAdded() const;
+    int32_t GetCoverUriSource() const;
     double GetLatitude() const;
     double GetLongitude() const;
     const std::string& GetAlbumName() const;
@@ -72,6 +73,7 @@ private:
     EXPORT static napi_value JSGetDateModified(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetDateModifiedSystem(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetDateAdded(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetCoverUriSource(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetLatitude(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetLongitude(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetAlbumLPath(napi_env env, napi_callback_info info);

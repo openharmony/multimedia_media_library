@@ -1641,6 +1641,7 @@ void CloneRestore::RestoreGallery()
     cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
     RestoreAnalysisData();
     ReportPortraitCloneStat(sceneCode_);
+    InheritManualCover();
 }
 
 void CloneRestore::RestoreAnalysisData()
@@ -2884,6 +2885,33 @@ void CloneRestore::StartBackup()
     MEDIA_INFO_LOG("End clone backup");
 }
 
+void CloneRestore::InheritManualCover()
+{
+    std::string querySql = "SELECT album_id, cover_uri FROM PhotoAlbum WHERE cover_uri_source = 1";
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Query resultSql is null.");
+
+    vector<AlbumCoverInfo> albumCoverinfos;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        AlbumCoverInfo albumCoverInfo;
+        int32_t albumIdOld = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+        string coverUriOld = GetStringVal(PhotoAlbumColumns::ALBUM_COVER_URI, resultSet);
+        int32_t fileIdOld = atoi(MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(coverUriOld).c_str());
+        
+        int32_t albumIdNew = tableAlbumIdMap_[PhotoAlbumColumns::TABLE][albumIdOld];
+        auto photoInfo = photoInfoMap_[fileIdOld];
+        int32_t fileIdNew = photoInfo.fileIdNew;
+        string coverUriNew = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileIdNew),
+            MediaFileUtils::GetExtraUri(photoInfo.displayName, photoInfo.cloudPath));
+        albumCoverInfo.albumId = albumIdNew;
+        albumCoverInfo.coverUri = coverUriNew;
+        albumCoverinfos.emplace_back(albumCoverInfo);
+    }
+    resultSet->Close();
+
+    UpdatePhotoAlbumCoverUri(albumCoverinfos);
+}
+
 bool CloneRestore::BackupKvStore()
 {
     MEDIA_INFO_LOG("Start BackupKvstore");
@@ -2993,6 +3021,7 @@ int32_t CloneRestore::CheckLcdVisitTime(const CloudPhotoFileExistFlag &cloudPhot
     return RESTORE_LCD_VISIT_TIME_NO_LCD;
 }
 
+
 int32_t CloneRestore::GetNoNeedMigrateCount()
 {
     return this->photosClone_.GetNoNeedMigrateCount();
@@ -3010,6 +3039,23 @@ void CloneRestore::RestoreAnalysisGeo()
     CloneRestoreGeo cloneRestoreGeo;
     cloneRestoreGeo.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_);
     cloneRestoreGeo.Restore(photoInfoMap_);
+}
+
+void CloneRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverInfos)
+{
+    for (auto& albumCoverInfo : albumCoverInfos) {
+        int32_t changeRows = 0;
+        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+            make_unique<NativeRdb::AbsRdbPredicates>(PhotoAlbumColumns::TABLE);
+        predicates->EqualTo(PhotoAlbumColumns::ALBUM_ID, albumCoverInfo.albumId);
+        NativeRdb::ValuesBucket updateBucket;
+        updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, static_cast<int32_t>(CoverUriSource::MANUAL_COVER));
+        updateBucket.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, albumCoverInfo.coverUri);
+        BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, updateBucket, predicates);
+        if (changeRows != 1) {
+            MEDIA_ERR_LOG("UpdatePhotoAlbumCoverUri failed, expected count 1, but got %{public}d", changeRows);
+        }
+    }
 }
 } // namespace Media
 } // namespace OHOS

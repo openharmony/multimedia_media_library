@@ -63,7 +63,8 @@ public:
     std::string GetBackupInfo() override;
     void StartBackup() override;
     using CoverUriInfo = std::pair<std::string, std::pair<std::string, int32_t>>;
-
+    void InheritManualCover();
+    void UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverInfos);
 protected:
     void MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
         int32_t sceneCode) override;

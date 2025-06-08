@@ -113,6 +113,7 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("lpath", JSGetAlbumLPath),
             DECLARE_NAPI_GETTER("dateModified", JSGetDateModifiedSystem),
             DECLARE_NAPI_GETTER("dateAdded", JSGetDateAdded),
+            DECLARE_NAPI_GETTER("coverUriSource", JSGetCoverUriSource),
             DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
             DECLARE_NAPI_FUNCTION("addAssets", PhotoAccessHelperAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", PhotoAccessHelperRemoveAssets),
@@ -227,6 +228,10 @@ int64_t PhotoAlbumNapi::GetDateAdded() const
     return photoAlbumPtr->GetDateAdded();
 }
 
+int32_t PhotoAlbumNapi::GetCoverUriSource() const
+{
+    return photoAlbumPtr->GetCoverUriSource();
+}
 
 const string& PhotoAlbumNapi::GetAlbumName() const
 {
@@ -584,6 +589,19 @@ napi_value PhotoAlbumNapi::JSGetDateAdded(napi_env env, napi_callback_info info)
 
     napi_value jsResult = nullptr;
     CHECK_ARGS(env, napi_create_int64(env, obj->GetDateAdded(), &jsResult),
+        JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value PhotoAlbumNapi::JSGetCoverUriSource(napi_env env, napi_callback_info info)
+{
+    CHECK_COND_LOG_THROW_RETURN_RET(env, MediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED,
+        "Get dateAdded permission denied: not a system app", nullptr, "Get album dateAdded failed: not a system app");
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_int32(env, obj->GetCoverUriSource(), &jsResult),
         JS_INNER_FAIL);
     return jsResult;
 }

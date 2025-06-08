@@ -157,6 +157,7 @@ const std::vector<std::string> QUERY_ALBUM_COLUMNS = {
     PhotoAlbumColumns::ALBUM_DATE_MODIFIED,
     PhotoAlbumColumns::ALBUM_BUNDLE_NAME,
     PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE,
+    PhotoAlbumColumns::COVER_URI_SOURCE,
 };
 
 const std::vector<std::string> MEDIA_CLOUD_SYNC_COLUMNS = {

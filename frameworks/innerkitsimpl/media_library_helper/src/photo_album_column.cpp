@@ -50,6 +50,7 @@ const string PhotoAlbumColumns::ALBUM_DATE_ADDED = "date_added";
 const string PhotoAlbumColumns::ALBUM_PRIORITY = "priority";
 const string PhotoAlbumColumns::ALBUM_LPATH = "lpath";
 const string PhotoAlbumColumns::ALBUM_CHECK_FLAG = "check_flag";
+const string PhotoAlbumColumns::COVER_URI_SOURCE = "cover_uri_source";
 
 // For api9 compatibility
 const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
@@ -135,7 +136,8 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_DATE_ADDED + " BIGINT DEFAULT 0, " +
     ALBUM_LPATH + " TEXT, " +
     ALBUM_PRIORITY + " INT, " +
-    ALBUM_CHECK_FLAG + " INT DEFAULT 0)";
+    ALBUM_CHECK_FLAG + " INT DEFAULT 0, " +
+    PhotoAlbumColumns::COVER_URI_SOURCE + " INT DEFAULT 0)";
 
 // Create indexes
 const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +
@@ -188,7 +190,8 @@ bool PhotoAlbumColumns::IsPhotoAlbumColumn(const string &columnName)
     static const set<string> PHOTO_ALBUM_COLUMNS = {
         PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE,
         PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_COVER_URI, PhotoAlbumColumns::ALBUM_COUNT,
-        PhotoAlbumColumns::ALBUM_RELATIVE_PATH, CONTAINS_HIDDEN, HIDDEN_COUNT, HIDDEN_COVER, ALBUM_LPATH
+        PhotoAlbumColumns::ALBUM_RELATIVE_PATH, CONTAINS_HIDDEN, HIDDEN_COUNT, HIDDEN_COVER, ALBUM_LPATH,
+        PhotoAlbumColumns::COVER_URI_SOURCE,
     };
     return PHOTO_ALBUM_COLUMNS.find(columnName) != PHOTO_ALBUM_COLUMNS.end();
 }
