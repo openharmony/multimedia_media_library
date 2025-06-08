@@ -80,6 +80,7 @@ public:
     int32_t FindCeAvailable(const FileInfo &fileInfo);
     int32_t FindCeAvailableByDisplayName(const FileInfo &fileInfo);
     bool FindIsLivePhoto(const FileInfo &fileInfo);
+    PhotoAlbumDao::PhotoAlbumRowData GetPhotoAlbumDaoRowData(std::string& lPath);
 
 private:
     PhotosRestore &SetMediaLibraryRdb(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)

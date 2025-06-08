@@ -41,6 +41,7 @@ public:
         int64_t albumDateAdded;
         int64_t albumDateModified;
         bool isDelete;
+        int32_t coverUriSource;
 
     public:  // functions of Parcelable.
         virtual ~AlbumReqData() = default;

@@ -287,6 +287,7 @@ int32_t CloudMediaAlbumDao::UpdateCloudAlbumInner(
     values.PutString(PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE, record.localLanguage);
     values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     values.PutString(PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId);
+    values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, record.coverUriSource);
     ret = rdbStore->Update(changedRows, PhotoAlbumColumns::TABLE, values, field + " = ?", {value});
     CHECK_AND_RETURN_RET_LOG(
         ret == E_OK, E_CLOUDSYNC_RDB_UPDATE_FAILED, "Failed to UpdateCloudAlbumInner, ret: %{public}d", ret);

@@ -376,6 +376,10 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_QUERY_HIGHLIGHT_DIRECTORY_SIZE, OperationType::QUERY_HIGHLIGHT_DIRECTORY_SIZE },
         { OPRN_LS, OperationType::LS_MEDIA_FILES },
         { OPRN_QUERY_ACTIVE_USER_ID, OperationType::QUERY_ACTIVE_USER_ID },
+        { OPRN_USER_ALBUM_COVER_URI, OperationType::SET_USER_ALBUM_COVER_URI},
+        { OPRN_SOURCE_ALBUM_COVER_URI, OperationType::SET_SOURCE_ALBUM_COVER_URI},
+        { OPRN_SYSTEM_ALBUM_COVER_URI, OperationType::SET_SYSTEM_ALBUM_COVER_URI},
+        { OPRN_RESET_COVER_URI, OperationType::RESET_COVER_URI},
     };
     return oprnTypeMap;
 }

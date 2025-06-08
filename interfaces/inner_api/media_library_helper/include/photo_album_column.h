@@ -48,6 +48,7 @@ public:
     static const std::string ALBUM_PRIORITY EXPORT;
     static const std::string ALBUM_LPATH EXPORT;
     static const std::string ALBUM_CHECK_FLAG EXPORT;
+    static const std::string COVER_URI_SOURCE EXPORT;
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH EXPORT;
 

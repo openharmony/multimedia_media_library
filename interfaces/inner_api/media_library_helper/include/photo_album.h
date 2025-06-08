@@ -109,12 +109,16 @@ public:
     EXPORT static bool IsSmartGroupPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSmartClassifyAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSourceAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
+    EXPORT static bool IsSystemAlbum(const PhotoAlbumType albumType);
+    EXPORT static bool IsHiddenAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsHighlightAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsAnalysisAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
 
     EXPORT void SetUserId(int32_t userId);
     EXPORT int32_t GetUserId();
 
+    EXPORT void SetCoverUriSource(int32_t coverUriSource);
+    EXPORT int32_t GetCoverUriSource();
 private:
     int32_t albumId_;
     PhotoAlbumType type_;
@@ -143,6 +147,7 @@ private:
     bool hiddenOnly_ = false;
     bool locationOnly_ = false;
     int32_t targetUserId_;
+    int32_t coverUriSource_ = CoverUriSource::DEFAULT_COVER;
 };
 } // namespace Media
 } // namespace OHOS

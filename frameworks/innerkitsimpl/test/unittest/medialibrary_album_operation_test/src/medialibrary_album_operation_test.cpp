@@ -1446,5 +1446,16 @@ HWTEST_F(MediaLibraryAlbumOperationTest, Maot_RenewDeletedPhotoAlbum_test_002, T
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("Maot_RenewDeletedPhotoAlbum_test_002 End");
 }
+
+HWTEST_F(MediaLibraryAlbumOperationTest, IsCoverInAlbum_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("IsCoverInAlbum_test_001::Start");
+    string fileId = "1";
+    int32_t albumSubtype = 7;
+    int32_t albumId = 7;
+    bool ret = MediaLibraryAlbumOperations::IsCoverInAlbum(fileId, albumSubtype, albumId);
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("IsCoverInAlbum_test_001 End");
+}
 } // namespace Media
 } // namespace OHOS

@@ -128,6 +128,12 @@ private:
         CHECK_AND_RETURN(!errConn);
         this->objPo_.dirty = std::get<int32_t>(val);
     }
+    void SetCoverUriSource(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool errConn = !std::holds_alternative<int32_t>(val);
+        CHECK_AND_RETURN(!errConn);
+        this->objPo_.coverUriSource = std::get<int32_t>(val);
+    }
 
     using Handle = void (PhotoAlbumPoWriter::*)(std::variant<int32_t, int64_t, double, std::string> &);
     const std::map<std::string, Handle> HANDLERS = {

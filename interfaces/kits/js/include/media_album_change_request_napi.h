@@ -46,6 +46,7 @@ enum class AlbumChangeOperation {
     MOVE_ASSETS_WITH_URI,
     RECOVER_ASSETS_WITH_URI,
     DELETE_ASSETS_WITH_URI,
+    RESET_COVER_URI,
 };
 
 enum class ParameterType {
@@ -117,6 +118,7 @@ private:
     EXPORT static napi_value JSDeleteAssetsWithUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSResetCoverUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSPlaceBefore(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetDisplayLevel(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSMergeAlbum(napi_env env, napi_callback_info info);

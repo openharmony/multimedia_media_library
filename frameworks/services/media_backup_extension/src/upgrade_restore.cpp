@@ -394,6 +394,7 @@ void UpgradeRestore::RestorePhotoInner()
             rotateLcdMigrateFileNumber_.load(), rotateThmMigrateFileNumber_.load(),
             totalCloudMetaNumber_.load(), migrateDatabaseNumber_.load());
         }
+        InheritManualCover();
     } else {
         maxId_ = 0;
         SetErrorCode(RestoreError::GALLERY_DATABASE_CORRUPTION);
@@ -1577,6 +1578,83 @@ int32_t UpgradeRestore::InitDb(bool isUpgrade)
     }
 
     return E_OK;
+}
+
+void UpgradeRestore::InheritManualCover()
+{
+    std::string querySql = "SELECT gallery_cover_cache.*, gallery_album.* FROM gallery_cover_cache "
+        "LEFT JOIN gallery_album ON gallery_cover_cache.relative_bucket_id = gallery_album.relativeBucketId "
+        "WHERE gallery_cover_cache.column_name = 'relative_bucket_id' AND gallery_cover_cache.from_user = 1";
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Query resultSql is null.");
+
+    vector<AlbumCoverInfo> albumCoverinfos;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        AlbumCoverInfo albumCoverInfo;
+        if (RecordAlbumCoverInfo(resultSet, albumCoverInfo) != E_OK) {
+            continue;
+        }
+        albumCoverinfos.emplace_back(albumCoverInfo);
+    }
+    resultSet->Close();
+
+    UpdatePhotoAlbumCoverUri(albumCoverinfos);
+    return;
+}
+
+int32_t UpgradeRestore::RecordAlbumCoverInfo(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    AlbumCoverInfo& albumCoverInfo)
+{
+    const static string COLUMN_VALUE = "column_value";
+    const static string virtualPrefix = "/gallery/album/virtual/common/*/";
+    const static string COVER_ID = "cover_id";
+    const static unordered_map<string, int32_t> virtualAlbumIdMap = {
+        {"/gallery/album/virtual/common/*/0", 7},
+        {"/gallery/album/virtual/common/*/1", 2},
+        {"/gallery/album/virtual/common/*/2", 1},
+        {"/gallery/album/virtual/common/*/3", 8},
+    };
+    string lPath = GetStringVal(GALLERY_ALBUM_IPATH, resultSet);
+    if (lPath.empty()) { // virtual album
+        string columnValue = GetStringVal(COLUMN_VALUE, resultSet);
+        if (virtualAlbumIdMap.count(columnValue)) {
+            MEDIA_ERR_LOG("RecordAlbumCoverInfo columnValue:%{public}s not in map", columnValue.c_str());
+            return E_ERR;
+        }
+        int32_t albumId = virtualAlbumIdMap.at(columnValue);
+        albumCoverInfo.albumId = albumId;
+    } else {
+        albumCoverInfo.lPath = lPath;
+    }
+    int32_t coverId = GetInt32Val(COVER_ID, resultSet);
+    PhotoInfo photoInfo = photoInfoMap_[coverId];
+    int32_t newFileId = photoInfo.fileIdNew;
+    string displayName = photoInfo.displayName;
+    string coverUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(newFileId),
+        MediaFileUtils::GetExtraUri(displayName, photoInfo.cloudPath));
+    albumCoverInfo.coverUri = coverUri;
+    return E_OK;
+}
+
+void UpgradeRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverInfos)
+{
+    for (auto& albumCoverInfo : albumCoverInfos) {
+        if (!albumCoverInfo.lPath.empty()) { // virtual album
+            auto photoAlbumRowData = this->photosRestore_.GetPhotoAlbumDaoRowData(albumCoverInfo.lPath);
+            albumCoverInfo.albumId = photoAlbumRowData.albumId;
+        }
+        int32_t changeRows = 0;
+        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+            make_unique<NativeRdb::AbsRdbPredicates>(PhotoAlbumColumns::TABLE);
+        predicates->EqualTo(PhotoAlbumColumns::ALBUM_ID, albumCoverInfo.albumId);
+        NativeRdb::ValuesBucket updateBucket;
+        updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, static_cast<int32_t>(CoverUriSource::MANUAL_COVER));
+        updateBucket.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, albumCoverInfo.coverUri);
+        BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, updateBucket, predicates);
+        if (changeRows != 1) {
+            MEDIA_ERR_LOG("UpdatePhotoAlbumCoverUri failed, expected count 1, but got %{public}d", changeRows);
+        }
+    }
 }
 } // namespace Media
 } // namespace OHOS

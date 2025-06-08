@@ -43,6 +43,10 @@ public:
     std::vector<FileInfo> QueryAudioFileInfosFromAudio(int32_t offset);
     int32_t QueryNotSyncTotalNumber(int32_t offset, bool isCamera);
     void InitGarbageAlbum();
+    void InheritManualCover();
+    int32_t RecordAlbumCoverInfo(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        AlbumCoverInfo& albumCoverInfo);
+    void UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverInfos);
 
 protected:
     virtual void RestoreAnalysisAlbum();
