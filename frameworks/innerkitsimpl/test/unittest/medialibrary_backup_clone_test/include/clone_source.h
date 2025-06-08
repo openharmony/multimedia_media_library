@@ -167,7 +167,6 @@ public:
     void InsertTabSearchIndex();
     void InsertTabBeautyScore();
     void InsertTabVideoFace();
-    void InsertTabVideoFaces();
     std::shared_ptr<NativeRdb::RdbStore> cloneStorePtr_;
 };
 

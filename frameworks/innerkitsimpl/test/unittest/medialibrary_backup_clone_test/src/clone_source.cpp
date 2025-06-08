@@ -443,18 +443,5 @@ void CloneSource::InsertTabVideoFace()
         "'0.2', '0.3', '0.3', 'landmarks_src_1', '5.0', '10.0', '15.0', '0.95', 2, 5, 5000, 'tracks_src_1', "
         "'algo_v2', 'features_src_1', 'analysis_v2'" + VALUES_END);
 }
-
-void CloneSource::InsertTabVideoFaces()
-{
-    const std::string INSERT_TAB_VIDEO_FACE = "INSERT OR REPLACE INTO " + ANALYSIS_VIDEO_FACE_TABLE +
-        " (file_id, face_id, tag_id, scale_x, scale_y, scale_width, scale_height, landmarks, pitch, yaw, roll, " +
-        "prob, total_faces, frame_id, frame_timestamp, tracks, algo_version, features, analysis_version) ";
-
-    // old file id is 101111
-    cloneStorePtr_->ExecuteSql(INSERT_TAB_VIDEO_FACE + VALUES_BEGIN +
-        "10112, 'face_id_src_001', 'tag_id_src_B', '0.2', "
-        "'0.2', '0.3', '0.3', 'landmarks_src_1', '5.0', '10.0', '15.0', '0.95', 2, 5, 5000, 'tracks_src_1', "
-        "'algo_v2', 'features_src_1', 'analysis_v2'" + VALUES_END);
-}
 } // namespace Media
 } // namespace OHOS
