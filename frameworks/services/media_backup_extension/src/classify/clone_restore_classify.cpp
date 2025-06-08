@@ -438,12 +438,12 @@ void CloneRestoreClassify::GetClassifyVideoInfo(ClassifyVideoCloneInfo &info,
     info.id = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ID);
     info.fileIdOld = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, FILE_ID);
     info.categoryId = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, CATEGORY_ID);
-    info.confidenceProbability = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, CONFIDENCE_PROBABILITY);
+    info.confidenceProbability = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, CONFIDENCE_PROBABILITY);
     info.subCategory = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, SUB_CATEGORY);
-    info.subConfidenceProb = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, SUB_CONFIDENCE_PROB);
+    info.subConfidenceProb = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, SUB_CONFIDENCE_PROB);
     info.subLabel = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, SUB_LABEL);
-    info.subLabelProb = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, SUB_LABEL_PROB);
-    info.subLabelType = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, SUB_LABEL_TYPE);
+    info.subLabelProb = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, SUB_LABEL_PROB);
+    info.subLabelType = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, SUB_LABEL_TYPE);
     info.tracks = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, TRACKS);
     info.videoPartFeature = BackupDatabaseUtils::GetOptionalValue<std::vector<uint8_t>>(resultSet, VIDEO_PART_FEATURE);
     info.filterTag = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, FILTER_TAG);
