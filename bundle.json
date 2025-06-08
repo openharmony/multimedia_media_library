@@ -65,6 +65,7 @@
           "image_framework",
           "napi",
           "resource_management",
+          "runtime_core",
           "os_account",
           "player_framework",
           "power_manager",
@@ -110,7 +111,8 @@
             "//foundation/multimedia/media_library/interfaces/kits/js:albumpickercomponent_js",
             "//foundation/multimedia/media_library/interfaces/kits/js:sendablephotoaccesshelper",
             "//foundation/multimedia/media_library/interfaces/kits/js:recentphotocomponent",
-            "//foundation/multimedia/media_library/interfaces/kits/js:recentphotocomponent_js"
+            "//foundation/multimedia/media_library/interfaces/kits/js:recentphotocomponent_js",
+            "//foundation/multimedia/media_library/frameworks/ani:media_library_ani"
 
           ],
           "service_group": [
