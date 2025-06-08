@@ -40,6 +40,8 @@ enum class InsertType {
     ANALYSIS_SEARCH_INDEX,
     TAB_ANALYSIS_GEO_KNOWLEDGE,
     TAB_ANALYSIS_TOTAL,
+    BEAUTY_SCORE_TBL,
+    VIDEO_FACE_TBL,    
 };
 
 const std::string CREATE_FACE_TAG_TBL_FOR_ONCREATE = "CREATE TABLE IF NOT EXISTS " + VISION_FACE_TAG_TABLE + " (" +
@@ -103,6 +105,44 @@ const std::string CREATE_SEARCH_INDEX_TBL = "CREATE TABLE IF NOT EXISTS tab_anal
     "system_language TEXT "
     ");";
 
+const std::string CREATE_AESTHETICS_SCORE_TBL = "CREATE TABLE IF NOT EXISTS tab_analysis_aesthetics_score ( "
+    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+    "file_id INTEGER UNIQUE, "
+    "aesthetics_score INTEGER, "
+    "aesthetics_version TEXT, "
+    "prob REAL, "
+    "analysis_version TEXT, "
+    "selected_flag INTEGER, "
+    "selected_algo_version TEXT, "
+    "selected_status INTEGER, "
+    "negative_flag INTEGER, "
+    "negative_algo_version TEXT "
+    ");";
+
+const std::string CREATE_VIDEO_FACE_TBL = "CREATE TABLE IF NOT EXISTS tab_analysis_video_face ( "
+    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+    "file_id INTEGER, "
+    "face_id TEXT, "
+    "tag_id TEXT, "
+    "scale_x TEXT, "
+    "scale_y TEXT, "
+    "scale_width TEXT, "
+    "scale_height TEXT, "
+    "landmarks TEXT, "
+    "pitch TEXT, "
+    "yaw TEXT, "
+    "roll TEXT, "
+    "prob TEXT, "
+    "total_faces INTEGER, "
+    "frame_id INTEGER, "
+    "frame_timestamp INTEGER, "
+    "tracks TEXT, "
+    "algo_version TEXT, "
+    "features TEXT, "
+    "analysis_version TEXT, "
+    "UNIQUE(file_id, face_id) "
+    ");";
+    
 class CloneOpenCall;
 
 class CloneSource {
@@ -124,6 +164,10 @@ public:
     void InsertTabAnalysisVideoLabel();
     void InsertTabAnalysisGeoKnowledge();
     void InsertTabAnalysisTotal();
+    void InsertTabSearchIndex();
+    void InsertTabBeautyScore();
+    void InsertTabVideoFace();
+    void InsertTabVideoFaces();
     std::shared_ptr<NativeRdb::RdbStore> cloneStorePtr_;
 };
 

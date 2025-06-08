@@ -46,6 +46,8 @@ public:
         const std::string& systemLanguage);
     static void VerifySearchIndexRestore(const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
         const std::unordered_map<int32_t, PhotoInfo>& photoInfoMap);
+    static void VerifyBeautyScoreRestore(const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
+        const std::unordered_map<int32_t, OHOS::Media::PhotoInfo>& photoInfoMap);   
 };
 } // namespace Media
 } // namespace OHOS
