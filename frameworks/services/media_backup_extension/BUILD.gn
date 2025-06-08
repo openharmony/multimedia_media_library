@@ -51,7 +51,9 @@ ohos_shared_library("mediabackup") {
 
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/event_handler/album_plugin_table_event_handler.cpp",
+    "./src/analysis_album/beauty_score_clone.cpp",
     "./src/analysis_album/search_index_clone.cpp",
+    "./src/analysis_album/video_face_clone.cpp",
     "./src/analysis_data/clone_restore_analysis_total.cpp",
     "./src/backup_database_helper.cpp",
     "./src/backup_database_utils.cpp",

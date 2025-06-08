@@ -444,6 +444,7 @@ void CloneRestore::RestoreAlbum()
         ANALYSIS_SEARCH_INDEX_TABLE, SEARCH_IDX_COL_ID);
     maxAnalysisAlbumId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
         ANALYSIS_ALBUM_TABLE, ANALYSIS_COL_ALBUM_ID);
+
     for (const auto &tableName : CLONE_ALBUMS) {
         if (!IsReadyForRestore(tableName)) {
             MEDIA_ERR_LOG("Column status of %{public}s is not ready for restore album, quit",
@@ -1652,6 +1653,18 @@ void CloneRestore::RestoreSearchIndexData()
 {
     SearchIndexClone searchIndexClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_, maxSearchId_);
     searchIndexClone.Clone();
+}
+
+void CloneRestore::RestoreBeautyScoreData()
+{
+    BeautyScoreClone beautyScoreClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_);
+    beautyScoreClone.CloneBeautyScoreInfo();
+}
+
+void CloneRestore::RestoreVideoFaceData()
+{
+    VideoFaceClone videoFaceClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_);
+    videoFaceClone.CloneVideoFaceInfo();
 }
 
 bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)

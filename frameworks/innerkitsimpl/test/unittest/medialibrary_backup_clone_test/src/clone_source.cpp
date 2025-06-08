@@ -47,6 +47,8 @@ const unordered_map<string, string> TABLE_CREATE_MAP = {
     { ANALYSIS_SEARCH_INDEX_TABLE, CREATE_SEARCH_INDEX_TBL },
     { GEO_KNOWLEDGE_TABLE, CREATE_GEO_KNOWLEDGE_TABLE },
     { VISION_TOTAL_TABLE, CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE },
+    { ANALYSIS_BEAUTY_SCORE_TABLE, CREATE_AESTHETICS_SCORE_TBL },
+    { ANALYSIS_VIDEO_FACE_TABLE, CREATE_VIDEO_FACE_TBL },
 };
 const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { PhotoColumn::PHOTOS_TABLE, InsertType::PHOTOS },
@@ -62,6 +64,9 @@ const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { VISION_VIDEO_LABEL_TABLE, InsertType::TAB_ANALYSIS_VIDEO_LABEL },
     { GEO_KNOWLEDGE_TABLE, InsertType::TAB_ANALYSIS_GEO_KNOWLEDGE },
     { VISION_TOTAL_TABLE, InsertType::TAB_ANALYSIS_TOTAL },
+    { ANALYSIS_SEARCH_INDEX_TABLE, InsertType::ANALYSIS_SEARCH_INDEX },
+    { ANALYSIS_BEAUTY_SCORE_TABLE, InsertType::BEAUTY_SCORE_TBL },
+    { ANALYSIS_VIDEO_FACE_TABLE, InsertType::VIDEO_FACE_TBL },
 };
 const string VALUES_BEGIN = " VALUES (";
 const string VALUES_END = ") ";
@@ -225,6 +230,14 @@ void CloneSource::InsertByTypeTwo(InsertType insertType)
         }
         case InsertType::TAB_ANALYSIS_TOTAL: {
             InsertTabAnalysisTotal();
+            break;
+        }
+        case InsertType::BEAUTY_SCORE_TBL: {
+            InsertTabBeautyScore();
+            break;
+        }
+        case InsertType::VIDEO_FACE_TBL: {
+            InsertTabVideoFace();
             break;
         }
         default:
@@ -396,6 +409,30 @@ void CloneSource::InsertTabAnalysisTotal()
         "1, 1, 0, 0, 1, 0, "
         "0, 0, 0, 0, 0, 0, "
         "0, 0, 2" + VALUES_END);
+}
+
+void CloneSource::InsertTabBeautyScore()
+{
+    const std::string INSERT_TAB_BEAUTY_SCORE = "INSERT OR REPLACE INTO " + ANALYSIS_BEAUTY_SCORE_TABLE +
+        " (file_id, aesthetics_score, aesthetics_version, prob, analysis_version, " +
+        "selected_flag, selected_algo_version, selected_status, negative_flag, negative_algo_version) ";
+
+    // old file id is 101
+    cloneStorePtr_->ExecuteSql(INSERT_TAB_BEAUTY_SCORE + VALUES_BEGIN + "10112, 11190, 'v1.1', 0.98, 'analysis_v1', " +
+        "1, 'selected_v1', 0, 0, 'negative_v1'" + VALUES_END);
+}
+
+void CloneSource::InsertTabVideoFace()
+{
+    const std::string INSERT_TAB_VIDEO_FACE = "INSERT OR REPLACE INTO " + ANALYSIS_VIDEO_FACE_TABLE +
+        " (file_id, face_id, tag_id, scale_x, scale_y, scale_width, scale_height, landmarks, pitch, yaw, roll, " +
+        "prob, total_faces, frame_id, frame_timestamp, tracks, algo_version, features, analysis_version) ";
+
+    // old file id is 10111
+    cloneStorePtr_->ExecuteSql(INSERT_TAB_VIDEO_FACE + VALUES_BEGIN +
+        "10111, 'face_id_src_001', 'tag_id_src_B', '0.2', "
+        "'0.2', '0.3', '0.3', 'landmarks_src_1', '5.0', '10.0', '15.0', '0.95', 2, 5, 5000, 'tracks_src_1', "
+        "'algo_v2', 'features_src_1', 'analysis_v2'" + VALUES_END);
 }
 } // namespace Media
 } // namespace OHOS
