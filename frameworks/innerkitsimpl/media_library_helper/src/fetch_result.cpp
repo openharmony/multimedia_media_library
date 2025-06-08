@@ -591,6 +591,8 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
         PhotoAlbumColumns::ALBUM_DATE_MODIFIED, TYPE_INT64, resultSet)));
     photoAlbumData->SetResultNapiType(resultNapiType_);
     photoAlbumData->SetHiddenOnly(hiddenOnly_);
+    photoAlbumData->SetCoverUriSource(get<int32_t>(GetRowValFromColumn(
+        PhotoAlbumColumns::COVER_URI_SOURCE, TYPE_INT32, resultSet)));
 
     string countColumn = hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_COUNT : PhotoAlbumColumns::ALBUM_COUNT;
     string coverColumn = hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_COVER : PhotoAlbumColumns::ALBUM_COVER_URI;

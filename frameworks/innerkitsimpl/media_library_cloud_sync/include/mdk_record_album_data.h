@@ -88,6 +88,8 @@ public:  // getter & setter
     void SetAlbumOrder(const int32_t &albumOrder);
     std::optional<int32_t> GetPriority() const;
     void SetPriority(const int32_t &priority);
+    std::optional<int32_t> GetCoverUriSource() const;
+    void SetCoverUriSource(const int32_t &priority);
 
 private:
     const std::string VALUE_RECORD_TYPE = "album";
@@ -110,6 +112,7 @@ private:
     const std::string ALBUM_LOCAL_LANGUAGE = "local_language";
     const std::string ALBUM_ORDER = "album_order";
     const std::string ALBUM_PRIORITY = "priority";
+    const std::string COVER_URI_SOURCE = "cover_uri_source";
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_MDK_RECORD_ALBUM_DATA_H

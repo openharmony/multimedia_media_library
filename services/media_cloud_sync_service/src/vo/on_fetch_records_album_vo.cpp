@@ -38,6 +38,7 @@ bool OnFetchRecordsAlbumReqBody::AlbumReqData::Unmarshalling(MessageParcel &parc
     parcel.ReadInt64(this->albumDateAdded);
     parcel.ReadInt64(this->albumDateModified);
     parcel.ReadBool(this->isDelete);
+    parcel.ReadInt32(this->coverUriSource);
     return true;
 }
 bool OnFetchRecordsAlbumReqBody::AlbumReqData::Marshalling(MessageParcel &parcel) const
@@ -55,6 +56,7 @@ bool OnFetchRecordsAlbumReqBody::AlbumReqData::Marshalling(MessageParcel &parcel
     parcel.WriteInt64(this->albumDateAdded);
     parcel.WriteInt64(this->albumDateModified);
     parcel.WriteBool(this->isDelete);
+    parcel.WriteInt32(this->coverUriSource);
     return true;
 }
 
@@ -72,7 +74,8 @@ std::string OnFetchRecordsAlbumReqBody::AlbumReqData::ToString() const
        << "\"albumDateCreated\": \"" << albumDateCreated << "\","
        << "\"albumDateAdded\": \"" << albumDateAdded << "\","
        << "\"albumDateModified\": \"" << albumDateModified << "\","
-       << "\"isDelete\": \"" << isDelete << "\""
+       << "\"isDelete\": \"" << isDelete << "\","
+       << "\"coverUriSource\": \"" << coverUriSource << "\""
        << "}";
     return ss.str();
 }

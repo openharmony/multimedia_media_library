@@ -312,6 +312,16 @@ bool PhotoAlbum::IsSourceAlbum(const PhotoAlbumType albumType, const PhotoAlbumS
     return (albumType == PhotoAlbumType::SOURCE) && (albumSubType == PhotoAlbumSubType::SOURCE_GENERIC);
 }
 
+bool PhotoAlbum::IsSystemAlbum(const PhotoAlbumType albumType)
+{
+    return albumType == PhotoAlbumType::SYSTEM;
+}
+
+bool PhotoAlbum::IsHiddenAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
+{
+    return (albumType == PhotoAlbumType::SYSTEM) && (albumSubType == PhotoAlbumSubType::HIDDEN);
+}
+
 bool PhotoAlbum::CheckPhotoAlbumType(const PhotoAlbumType albumType)
 {
     return (albumType == PhotoAlbumType::USER) || (albumType == PhotoAlbumType::SYSTEM) ||
@@ -346,6 +356,16 @@ void PhotoAlbum::SetUserId(int32_t userId)
 int32_t PhotoAlbum::GetUserId()
 {
     return targetUserId_;
+}
+
+void PhotoAlbum::SetCoverUriSource(int32_t coverUriSource)
+{
+    coverUriSource_ = coverUriSource;
+}
+ 
+int32_t PhotoAlbum::GetCoverUriSource()
+{
+    return coverUriSource_;
 }
 }  // namespace Media
 }  // namespace OHOS

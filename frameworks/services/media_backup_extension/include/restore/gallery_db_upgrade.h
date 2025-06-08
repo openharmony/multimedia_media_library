@@ -37,6 +37,7 @@ private:
     int32_t AddIndexOfAlbumPlugin(NativeRdb::RdbStore &store);
     int32_t AddStoryChosenOfGalleryMedia(NativeRdb::RdbStore &store);
     int32_t CreateRelativeAlbumOfGalleryAlbum(NativeRdb::RdbStore &store);
+    int32_t AddRelativeBucketIdColumn(NativeRdb::RdbStore &store);
 
 private:
     // Note: The column photo_quality's default value is 0.

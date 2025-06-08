@@ -69,6 +69,7 @@ int32_t CloudAlbumDataConvert::HandleGeneral(
     map[PhotoAlbumColumns::ALBUM_DATE_ADDED] = MDKRecordField(albumData.dateAdded);
     map[PhotoAlbumColumns::ALBUM_BUNDLE_NAME] = MDKRecordField(albumData.bundleName);
     map[PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE] = MDKRecordField(albumData.localLanguage);
+    map[PhotoAlbumColumns::COVER_URI_SOURCE] = MDKRecordField(albumData.coverUriSource);
     return E_OK;
 }
 

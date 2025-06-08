@@ -228,4 +228,21 @@ void MDKRecordAlbumData::SetPriority(const int32_t &priority)
 {
     this->fields_[this->ALBUM_PRIORITY] = MDKRecordField(priority);
 }
+std::optional<int32_t> MDKRecordAlbumData::GetCoverUriSource() const
+{
+    std::optional<std::string> coverUriSource =
+        this->recordReader_.GetStringValue(this->properties_, this->COVER_URI_SOURCE);
+    if (coverUriSource.has_value()) {
+        std::stringstream ss(coverUriSource.value());
+        int32_t result = 0;
+        if (ss >> result) {
+            return result;
+        }
+    }
+    return 0;
+}
+void MDKRecordAlbumData::SetCoverUriSource(const int32_t &coverUriSource)
+{
+    this->properties_[this->COVER_URI_SOURCE] = MDKRecordField(coverUriSource);
+}
 }  // namespace OHOS::Media::CloudSync

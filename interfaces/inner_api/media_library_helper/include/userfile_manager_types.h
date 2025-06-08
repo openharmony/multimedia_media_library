@@ -240,6 +240,11 @@ enum class WatermarkType : int32_t {
     COMMON,
     BRAND
 };
+
+enum CoverUriSource : int32_t {
+    DEFAULT_COVER = 0,
+    MANUAL_COVER = 1
+};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_FILEMANAGEMENT_USERFILEMGR_TYPES_H

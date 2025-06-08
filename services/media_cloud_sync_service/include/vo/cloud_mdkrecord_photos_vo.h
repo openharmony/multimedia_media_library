@@ -83,6 +83,7 @@ public:
     // Photo Album
     std::string albumCloudId;
     std::string albumLPath;
+    int32_t coverUriSource;
 
     // Photo Map
     std::vector<std::string> removeAlbumCloudId;
