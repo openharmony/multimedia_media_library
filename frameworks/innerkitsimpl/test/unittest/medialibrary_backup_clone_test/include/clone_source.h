@@ -41,7 +41,7 @@ enum class InsertType {
     TAB_ANALYSIS_GEO_KNOWLEDGE,
     TAB_ANALYSIS_TOTAL,
     BEAUTY_SCORE_TBL,
-    VIDEO_FACE_TBL,    
+    VIDEO_FACE_TBL,
 };
 
 const std::string CREATE_FACE_TAG_TBL_FOR_ONCREATE = "CREATE TABLE IF NOT EXISTS " + VISION_FACE_TAG_TABLE + " (" +
@@ -142,7 +142,7 @@ const std::string CREATE_VIDEO_FACE_TBL = "CREATE TABLE IF NOT EXISTS tab_analys
     "analysis_version TEXT, "
     "UNIQUE(file_id, face_id) "
     ");";
-    
+
 class CloneOpenCall;
 
 class CloneSource {
@@ -164,7 +164,6 @@ public:
     void InsertTabAnalysisVideoLabel();
     void InsertTabAnalysisGeoKnowledge();
     void InsertTabAnalysisTotal();
-    void InsertTabSearchIndex();
     void InsertTabBeautyScore();
     void InsertTabVideoFace();
     std::shared_ptr<NativeRdb::RdbStore> cloneStorePtr_;

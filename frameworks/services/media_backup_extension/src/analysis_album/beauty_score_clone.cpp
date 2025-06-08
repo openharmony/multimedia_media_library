@@ -254,8 +254,6 @@ void BeautyScoreClone::UpdateTotalTblBeautyScoreStatus(
     std::shared_ptr<NativeRdb::RdbStore> rdbStore, std::vector<int32_t> newFileIds)
 {
     std::string fileIdNewFilterClause = "(" + BackupDatabaseUtils::JoinValues<int>(newFileIds, ", ") + ")";
-
-
     std::string updateSql = "UPDATE tab_analysis_total "
         "SET aesthetics_score = 1 "
         "WHERE EXISTS (SELECT 1 FROM tab_analysis_aesthetics_score "

@@ -48,7 +48,7 @@ const unordered_map<string, string> TABLE_CREATE_MAP = {
     { GEO_KNOWLEDGE_TABLE, CREATE_GEO_KNOWLEDGE_TABLE },
     { VISION_TOTAL_TABLE, CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE },
     { ANALYSIS_BEAUTY_SCORE_TABLE, CREATE_AESTHETICS_SCORE_TBL },
-    { ANALYSIS_VIDEO_FACE_TABLE, CREATE_VIDEO_FACE_TBL },    
+    { ANALYSIS_VIDEO_FACE_TABLE, CREATE_VIDEO_FACE_TBL },
 };
 const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { PhotoColumn::PHOTOS_TABLE, InsertType::PHOTOS },
@@ -216,18 +216,6 @@ void CloneSource::InsertByTypeOne(InsertType insertType)
             InsertTabAnalysisVideoLabel();
             break;
         }
-        case InsertType::ANALYSIS_SEARCH_INDEX: {
-            InsertTabSearchIndex();
-            break;
-        }
-        case InsertType::BEAUTY_SCORE_TBL: {
-            InsertTabBeautyScore();
-            break;
-        }
-        case InsertType::VIDEO_FACE_TBL: {
-            InsertTabVideoFace();
-            break;
-        }
         default:
             MEDIA_INFO_LOG("Invalid insert type: %{public}d", static_cast<int32_t>(insertType));
     }
@@ -242,6 +230,14 @@ void CloneSource::InsertByTypeTwo(InsertType insertType)
         }
         case InsertType::TAB_ANALYSIS_TOTAL: {
             InsertTabAnalysisTotal();
+            break;
+        }
+        case InsertType::BEAUTY_SCORE_TBL: {
+            InsertTabBeautyScore();
+            break;
+        }
+        case InsertType::VIDEO_FACE_TBL: {
+            InsertTabVideoFace();
             break;
         }
         default:
@@ -413,11 +409,6 @@ void CloneSource::InsertTabAnalysisTotal()
         "1, 1, 0, 0, 1, 0, "
         "0, 0, 0, 0, 0, 0, "
         "0, 0, 2" + VALUES_END);
-}
-
-void CloneSource::InsertTabSearchIndex()
-{
-
 }
 
 void CloneSource::InsertTabBeautyScore()
