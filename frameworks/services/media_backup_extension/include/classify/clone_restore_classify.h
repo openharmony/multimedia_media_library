@@ -58,12 +58,12 @@ private:
         std::optional<int32_t> fileIdOld;
         std::optional<int32_t> fileIdNew;
         std::optional<std::string> categoryId;
-        std::optional<double> confidenceProbability;
+        std::optional<std::string> confidenceProbability;
         std::optional<std::string> subCategory;
-        std::optional<double> subConfidenceProb;
+        std::optional<std::string> subConfidenceProb;
         std::optional<std::string> subLabel;
-        std::optional<double> subLabelProb;
-        std::optional<int32_t> subLabelType;
+        std::optional<std::string> subLabelProb;
+        std::optional<std::string> subLabelType;
         std::optional<std::string> tracks;
         std::optional<std::vector<uint8_t>> videoPartFeature;
         std::optional<std::string> filterTag;
