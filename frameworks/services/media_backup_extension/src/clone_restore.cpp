@@ -1648,6 +1648,8 @@ void CloneRestore::RestoreGallery()
 void CloneRestore::RestoreAnalysisData()
 {
     RestoreSearchIndexData();
+    RestoreBeautyScoreData();
+    RestoreVideoFaceData();
 }
 
 void CloneRestore::RestoreSearchIndexData()
