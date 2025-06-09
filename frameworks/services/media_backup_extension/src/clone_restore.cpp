@@ -2799,6 +2799,12 @@ NativeRdb::ValuesBucket CloneRestore::CreateValuesBucketFromImageFaceTbl(const I
     PutIfPresent(values, IMAGE_FACE_COL_AESTHETICS_SCORE, imageFaceTbl.aestheticsScore);
     PutIfPresent(values, IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION, imageFaceTbl.beautyBounderVersion);
     PutWithDefault<int>(values, IMAGE_FACE_COL_IS_EXCLUDED, imageFaceTbl.isExcluded, 0);
+    PutIfPresent(values, IMAGE_FACE_COL_FACE_CLARITY, imageFaceTbl.faceClarity);
+    PutIfPresent(values, IMAGE_FACE_COL_FACE_LUMINANCE, imageFaceTbl.faceLuminance);
+    PutIfPresent(values, IMAGE_FACE_COL_FACE_SATURATION, imageFaceTbl.faceSaturation);
+    PutIfPresent(values, IMAGE_FACE_COL_FACE_EYE_CLOSE, imageFaceTbl.faceEyeClose);
+    PutIfPresent(values, IMAGE_FACE_COL_FACE_EXPRESSION, imageFaceTbl.faceExpression);
+    PutIfPresent(values, IMAGE_FACE_COL_PREFERRED_GRADE, imageFaceTbl.preferredGrade);
 
     return values;
 }
@@ -2841,6 +2847,17 @@ void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::Resu
     imageFaceTbl.beautyBounderVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION);
     imageFaceTbl.isExcluded = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_IS_EXCLUDED);
+    imageFaceTbl.faceClarity = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_FACE_CLARITY);
+    imageFaceTbl.faceLuminance = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_FACE_LUMINANCE);
+    imageFaceTbl.faceSaturation = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_FACE_SATURATION);
+    imageFaceTbl.faceEyeClose = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+        IMAGE_FACE_COL_FACE_EYE_CLOSE);
+    imageFaceTbl.faceExpression = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_FACE_EXPRESSION);
+    imageFaceTbl.preferredGrade = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        IMAGE_FACE_COL_PREFERRED_GRADE);
 }
 
 void CloneRestore::ReportPortraitCloneStat(int32_t sceneCode)

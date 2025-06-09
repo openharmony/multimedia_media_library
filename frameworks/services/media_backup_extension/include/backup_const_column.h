@@ -136,6 +136,12 @@ const std::string IMAGE_FACE_COL_AESTHETICS_SCORE = "aesthetics_score";
 const std::string IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION = "beauty_bounder_version";
 const std::string IMAGE_FACE_COL_IS_EXCLUDED = "is_excluded";
 const std::string ANALYSIS_ALBUM_SUBTYPE = "album_subtype";
+const std::string IMAGE_FACE_COL_FACE_CLARITY = "face_clarity";
+const std::string IMAGE_FACE_COL_FACE_LUMINANCE = "face_luminance";
+const std::string IMAGE_FACE_COL_FACE_SATURATION = "face_saturation";
+const std::string IMAGE_FACE_COL_FACE_EYE_CLOSE = "face_eye_close";
+const std::string IMAGE_FACE_COL_FACE_EXPRESSION = "face_expression";
+const std::string IMAGE_FACE_COL_PREFERRED_GRADE = "preferred_grade";
 
 // video_face_tbl COL_NAME
 const std::string ANALYSIS_VIDEO_FACE_TABLE = "tab_analysis_video_face";
