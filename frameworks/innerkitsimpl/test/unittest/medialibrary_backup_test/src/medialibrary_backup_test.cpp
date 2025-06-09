@@ -2210,11 +2210,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_PreparePath, TestSize.Leve
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GarbleFilePath, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GarbleFilePath start");
-    string path = "/data/test/GYH/test.txt";
+    string path = "/storage/test/GYH/test.txt";
     string clonePath;
     // test case 1 invalid sceneCode
     string result = BackupFileUtils::GarbleFilePath(path, -1, clonePath);
-    EXPECT_EQ(result, path);
+    EXPECT_EQ(result, "***/test/GYH/test.txt");
 
     // test case 2 sceneCode = OTHERS_PHONE_CLONE_RESTORE
     result = BackupFileUtils::GarbleFilePath(path, OTHERS_PHONE_CLONE_RESTORE, clonePath);
