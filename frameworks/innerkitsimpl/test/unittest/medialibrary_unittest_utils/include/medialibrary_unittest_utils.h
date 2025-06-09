@@ -72,7 +72,7 @@ public:
     static int32_t GrantUriPermission(const int32_t fileId, const std::string &bundleName,
         const std::string &mode, const int32_t tableType);
     static bool writeBytesToFile(size_t numBytes, const char* path, size_t& resultFileSize);
-	static std::mutex Mutex_;
+    static std::mutex Mutex_;
 private:
     static inline bool isValid_ = false;
     static inline std::unordered_map<std::string, std::shared_ptr<FileAsset>> rootDirAssetMap_;
