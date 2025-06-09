@@ -45,8 +45,8 @@ struct VideoFaceTbl {
     std::optional<std::string> roll;
     std::optional<std::string> prob;
     std::optional<int32_t> total_faces;
-    std::optional<int32_t> frame_id;
-    std::optional<int32_t> frame_timestamp;
+    std::optional<std::string> frame_id;
+    std::optional<std::string> frame_timestamp;
     std::optional<std::string> tracks;
     std::optional<std::string> algo_version;
     std::optional<std::string> features;

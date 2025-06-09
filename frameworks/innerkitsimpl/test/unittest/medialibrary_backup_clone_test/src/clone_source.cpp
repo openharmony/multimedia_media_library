@@ -431,7 +431,7 @@ void CloneSource::InsertTabVideoFace()
     // old file id is 10111
     cloneStorePtr_->ExecuteSql(INSERT_TAB_VIDEO_FACE + VALUES_BEGIN +
         "10111, 'face_id_src_001', 'tag_id_src_B', '0.2', "
-        "'0.2', '0.3', '0.3', 'landmarks_src_1', '5.0', '10.0', '15.0', '0.95', 2, 5, 5000, 'tracks_src_1', "
+        "'0.2', '0.3', '0.3', 'landmarks_src_1', '5.0', '10.0', '15.0', '0.95', 2, '5', '5000', 'tracks_src_1', "
         "'algo_v2', 'features_src_1', 'analysis_v2'" + VALUES_END);
 }
 } // namespace Media
