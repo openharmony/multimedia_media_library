@@ -121,7 +121,11 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
         return E_ERR;
     }
     MessageParcel pictureParcel;
-    pictureParcel.ParseFrom(reinterpret_cast<uintptr_t>(pictureParcelData), dataSize);
+    if (!pictureParcel.ParseFrom(reinterpret_cast<uintptr_t>(pictureParcelData), dataSize)) {
+        MEDIA_ERR_LOG("pictureParcel parse failed!");
+        free(pictureParcelData);
+        return E_ERR;
+    }
 
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture read mainPixelMap");
     std::shared_ptr<PixelMap> mainPixelMap = ReadPixelMap(pictureParcel);
