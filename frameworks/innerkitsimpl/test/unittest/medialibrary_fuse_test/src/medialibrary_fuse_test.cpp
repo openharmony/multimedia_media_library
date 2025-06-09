@@ -379,10 +379,8 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_001");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
+
     MEDIA_INFO_LOG("creat photo succ");
     string fileId = to_string(photoId);
     string path;
@@ -396,10 +394,8 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_002");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
+
     MEDIA_INFO_LOG("creat photo succ");
     string fileId = to_string(photoId);
     string path;
@@ -414,10 +410,8 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_003");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
+
     MEDIA_INFO_LOG("creat photo succ");
     string fileId = to_string(photoId);
     string path;
@@ -439,10 +433,8 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_004");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
+
     MEDIA_INFO_LOG("creat photo succ");
     string fileId = to_string(photoId);
     string path;
@@ -465,10 +457,8 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_005");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
+
     MEDIA_INFO_LOG("creat photo succ");
     string fileId = to_string(photoId);
     string path;
@@ -491,10 +481,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_001, TestSize.Level1
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_close_test_001");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
 
     string path;
     string fileId = to_string(photoId);
@@ -520,10 +507,8 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_002, TestSize.Level1
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_close_test_002");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (photoId < E_OK) {
-        MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
-        return;
-    }
+    ASSERT_GT(photoId, 0);
+
     MEDIA_INFO_LOG("creat photo succ");
     string fileId = to_string(photoId);
     string path;

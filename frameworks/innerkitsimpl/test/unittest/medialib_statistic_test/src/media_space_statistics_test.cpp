@@ -439,9 +439,8 @@ string ReturnUri(string type)
 HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_001::Start");
-    if (sDataShareHelper_ == nullptr) {
-        return;
-    }
+    ASSERT_NE(sDataShareHelper_, nullptr);
+
     CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_FILE, 0);
     CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_IMAGE, 1);
     CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_VIDEO, 1);
@@ -459,9 +458,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_001, TestSize.Level
 HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_002::Start");
-    if (sDataShareHelper_ == nullptr) {
-        return;
-    }
+    ASSERT_NE(sDataShareHelper_, nullptr);
     CheckQuerySize("MediaSpaceStatistics_test_002", MEDIA_TYPE_VIDEO, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_002::End");
 }
@@ -476,9 +473,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_002, TestSize.Level
 HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_003::Start");
-    if (sDataShareHelper_ == nullptr) {
-        return;
-    }
+    ASSERT_NE(sDataShareHelper_, nullptr);
     CheckQuerySize("MediaSpaceStatistics_test_003", MEDIA_TYPE_AUDIO, 0);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_003::End");
 }
@@ -493,9 +488,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_003, TestSize.Level
 HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004::Start");
-    if (sDataShareHelper_ == nullptr) {
-        return;
-    }
+    ASSERT_NE(sDataShareHelper_, nullptr);
     CheckQuerySize("MediaSpaceStatistics_test_004", MEDIA_TYPE_FILE, 0);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004::End");
 }
