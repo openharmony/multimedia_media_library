@@ -3378,12 +3378,12 @@ static void VerifyVideoFaceRestore(const std::shared_ptr<NativeRdb::RdbStore>& d
         }
         if (frameIdIdx != -1) {
             int32_t val;
-            resultSet->GetInt(frameIdIdx, val);
+            resultSet->GetString(frameIdIdx, val);
             face.frame_id = val;
         }
         if (frameTimestampIdx != -1) {
             int32_t val;
-            resultSet->GetInt(frameTimestampIdx, val);
+            resultSet->GetString(frameTimestampIdx, val);
             face.frame_timestamp = val;
         }
         if (tracksIdx != -1) {
