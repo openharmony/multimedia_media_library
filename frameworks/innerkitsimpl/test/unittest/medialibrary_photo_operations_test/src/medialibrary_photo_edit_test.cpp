@@ -418,10 +418,8 @@ HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_002, TestSize.Level1)
 HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start common_photos_test_003");
-    if (!IsWaterMarkExists()) {
-        MEDIA_INFO_LOG("watermark resource is not exists, return");
-        return;
-    }
+    ASSERT_TRUE(IsWaterMarkExists());
+
     // 普通拍照有水印
     TakePhotoResult result = TakePhotoMock(true);
     // 只保存编辑后图片
@@ -435,10 +433,8 @@ HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_003, TestSize.Level1)
 HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start common_photos_test_004");
-    if (!IsWaterMarkExists()) {
-        MEDIA_INFO_LOG("watermark resource is not exists, return");
-        return;
-    }
+    ASSERT_TRUE(IsWaterMarkExists());
+
     // 普通拍照有水印
     TakePhotoResult result = TakePhotoMock(true);
     // 保存编辑后图片和编辑数据
@@ -465,10 +461,8 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_001, TestSize.Level1)
 HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start deferred_photos_test_002");
-    if (!IsWaterMarkExists()) {
-        MEDIA_INFO_LOG("watermark resource is not exists, return");
-        return;
-    }
+    ASSERT_TRUE(IsWaterMarkExists());
+
     // 一阶段拍照加水印
     TakePhotoResult result = TakePhotoMock(true);
     // 二阶段落盘
@@ -516,10 +510,8 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_004, TestSize.Level1)
 HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start deferred_photos_test_005");
-    if (!IsWaterMarkExists()) {
-        MEDIA_INFO_LOG("watermark resource is not exists, return");
-        return;
-    }
+    ASSERT_TRUE(IsWaterMarkExists());
+
     // 一阶段拍照有水印
     TakePhotoResult result = TakePhotoMock(true);
     // 只保存编辑后图片
@@ -537,10 +529,8 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_005, TestSize.Level1)
 HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start deferred_photos_test_006");
-    if (!IsWaterMarkExists()) {
-        MEDIA_INFO_LOG("watermark resource is not exists, return");
-        return;
-    }
+    ASSERT_TRUE(IsWaterMarkExists());
+
     // 一阶段拍照无水印
     TakePhotoResult result = TakePhotoMock(true);
     // 保存编辑后图片和编辑数据

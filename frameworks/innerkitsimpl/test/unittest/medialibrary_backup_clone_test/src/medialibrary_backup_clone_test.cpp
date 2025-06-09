@@ -1827,9 +1827,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_ast
 
     restoreService->oldMonthKvStorePtr_ = MediaLibraryKvStoreManager::GetInstance()
         .GetSingleKvStore(KvStoreRoleType::OWNER, testStoreId + "old_month", TEST_PATH);
-    if (restoreService->oldMonthKvStorePtr_ == nullptr) {
-        return;
-    }
+    ASSERT_NE(restoreService->oldMonthKvStorePtr_, nullptr);
+
     EXPECT_EQ(restoreService->oldMonthKvStorePtr_->Insert(testAstckey, testValue), E_OK);
     EXPECT_EQ(restoreService->MoveAstc(testFileInfo), E_FAIL);
 
