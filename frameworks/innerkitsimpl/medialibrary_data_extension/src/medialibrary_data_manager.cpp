@@ -2081,6 +2081,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::CUSTOM_RECORDS_OPERATON:
             return MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, cmd.GetTableName()),
                 columns);
+        case OperationObject::ANALYSIS_ASSET_SD_MAP:
+        case OperationObject::ANALYSIS_ALBUM_ASSET_MAP:
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()),columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
