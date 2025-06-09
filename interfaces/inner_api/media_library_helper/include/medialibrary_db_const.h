@@ -289,6 +289,9 @@ const std::string MEDIA_DATA_DB_SHOOTING_MODE = "shooting_mode";
 const std::string MEDIA_DATA_DB_SHOOTING_MODE_TAG = "shooting_mode_tag";
 const std::string MEDIA_DATA_DB_PHOTOS_LATITUDE = "photos." + MEDIA_DATA_DB_LATITUDE;
 const std::string MEDIA_DATA_DB_PHOTOS_LONGITUDE = "photos." + MEDIA_DATA_DB_LONGITUDE;
+const std::string MEDIA_DATA_DB_USER_OPERATION = "user_operation";
+const std::string MEDIA_DATA_DB_RENAME_OPERATION = "rename_operation";
+const std::string MEDIA_DATA_DB_COVER_SATISFIED = "is_cover_satisfied";
 
 const std::string MEDIA_DATA_DB_LCD = "lcd";
 const std::string MEDIA_DATA_DB_BUCKET_ID = "bucket_id";
