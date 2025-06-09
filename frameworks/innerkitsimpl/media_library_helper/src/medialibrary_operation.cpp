@@ -102,6 +102,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { TAB_FACARD_PHOTO, OperationObject::TAB_FACARD_PHOTO },
         { CLOUD_MEDIA_ASSET_OPERATE, OperationObject::CLOUD_MEDIA_ASSET_OPERATE},
         { ASSET_ALBUM_OPERATION, OperationObject::ASSET_ALBUM_OPERATION},
+        { MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY, OperationObject::MOVING_PHOTO_VIDEO_READY },
 
         // use in Vision
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
@@ -380,6 +381,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_SOURCE_ALBUM_COVER_URI, OperationType::SET_SOURCE_ALBUM_COVER_URI},
         { OPRN_SYSTEM_ALBUM_COVER_URI, OperationType::SET_SYSTEM_ALBUM_COVER_URI},
         { OPRN_RESET_COVER_URI, OperationType::RESET_COVER_URI},
+        { MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY, OperationType::MOVING_PHOTO_VIDEO_READY },
     };
     return oprnTypeMap;
 }

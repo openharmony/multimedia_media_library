@@ -172,6 +172,9 @@ const std::string MEDIA_QUERYOPRN_QUERYVOLUME = "query_media_volume";
 // Query editData exists
 const std::string MEDIA_QUERYOPRN_QUERYEDITDATA = "query_edit_data";
 
+// Query moving photo video ready
+const std::string MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY = "query_moving_photo_video_ready";
+
 // File operations constants
 const std::string MEDIA_FILEOPRN_COPYASSET = "copy_asset";
 

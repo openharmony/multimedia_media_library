@@ -23,6 +23,8 @@
 
 namespace OHOS {
 namespace Media {
+class MovingPhotoNapi;
+
 struct MovingPhotoAsyncContext : public NapiError {
     enum RequestContentMode {
         WRITE_TO_SANDBOX,
@@ -33,6 +35,7 @@ struct MovingPhotoAsyncContext : public NapiError {
     napi_async_work work;
     napi_deferred deferred;
     napi_ref callbackRef;
+    MovingPhotoNapi *objectInfo = nullptr;
 
     std::string movingPhotoUri;
     SourceMode sourceMode;
@@ -51,6 +54,9 @@ struct MovingPhotoAsyncContext : public NapiError {
     void* arrayBufferData = nullptr;
     size_t arrayBufferLength = 0;
     int32_t position = 0;
+    bool isVideoReady = false;
+    size_t argc;
+    napi_value argv[NAPI_ARGC_MAX];
 };
 
 struct MovingPhotoParam {
@@ -103,6 +109,7 @@ private:
 
     EXPORT static napi_value JSRequestContent(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSIsVideoReady(napi_env env, napi_callback_info info);
 
     static thread_local napi_ref constructor_;
     std::string photoUri_;

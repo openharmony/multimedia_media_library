@@ -141,6 +141,8 @@ public:
     EXPORT int ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
         const std::vector<NativeRdb::ValueObject> &args = {});
     EXPORT static void UpdateMediaTypeAndThumbnailReadyIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryMovingPhotoVideoReady(
+        const NativeRdb::AbsRdbPredicates &predicaties);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
