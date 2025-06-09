@@ -669,6 +669,12 @@ int32_t CloudFileDataConvert::SetSourceAlbum(MDKRecord &record, const CloudMdkRe
     std::string albumLPath = upLoadRecord.albumLPath;
     if (hidden == 1) {
         data["albumId"] = MDKRecordField("default-album-4");
+        // Upload: hidden === 0, Download: hidden = 1 when albumId default-album-4
+        if (data.find(FILE_ATTRIBUTES) != data.end()) {
+            std::map<std::string, MDKRecordField> attrs = data[FILE_ATTRIBUTES];
+            attrs[MediaColumn::MEDIA_HIDDEN] = MDKRecordField(0);
+            data[FILE_ATTRIBUTES] = MDKRecordField(attrs);
+        }
     } else if (!albumCloudId.empty()) {
         data["albumId"] = MDKRecordField(albumCloudId);
     }
