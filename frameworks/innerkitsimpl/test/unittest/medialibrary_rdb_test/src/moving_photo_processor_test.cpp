@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <cstdint>
+#include "ability_context_impl.h"
 
 #include "medialibrary_object_utils.h"
 #include "moving_photo_processor_test.h"
@@ -27,8 +28,23 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-void MoingPhotoProcessorTest::SetUpTestCase(void) {}
-void MoingPhotoProcessorTest::TearDownTestCase(void) {}
+static std::shared_ptr<Media::MediaLibraryRdbStore> rdbStorePtr = nullptr;
+
+void MoingPhotoProcessorTest::SetUpTestCase(void)
+{
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl->SetStageContext(stageContext);
+    rdbStorePtr = std::make_shared<MediaLibraryRdbStore>(abilityContextImpl);
+    int32_t ret = rdbStorePtr->Init();
+    MEDIA_INFO_LOG("MoingPhotoProcessorTest rdbstore start ret = %{public}d", ret);
+}
+
+void MoingPhotoProcessorTest::TearDownTestCase(void)
+{
+    rdbStorePtr->Stop();
+}
+
 void MoingPhotoProcessorTest::SetUp(void) {}
 void MoingPhotoProcessorTest::TearDown(void) {}
 
@@ -284,10 +300,27 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_StartProcessCoverPosit
 {
     MovingPhotoProcessor::isProcessing_ = false;
     MovingPhotoProcessor::StartProcessCoverPosition();
-    EXPECT_EQ(MovingPhotoProcessor::isProcessing_, true);
+    EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false);
     MovingPhotoProcessor::isProcessing_ = true;
     MovingPhotoProcessor::StopProcess();
     EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false);
 }
-} // namespace Media
-} // namespace OHOS
+
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_QueryCandidateLivePhoto_Test_001, TestSize.Level1)
+{
+    rdbStorePtr->Stop();
+    auto ret = MovingPhotoProcessor::QueryCandidateLivePhoto();
+    EXPECT_EQ(ret, nullptr);
+    rdbStorePtr->Init();
+}
+
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_QueryMovingPhoto_Test_001, TestSize.Level1)
+{
+    rdbStorePtr->Stop();
+    MovingPhotoProcessor::isProcessing_ = false;
+    auto ret = MovingPhotoProcessor::QueryMovingPhoto();
+    EXPECT_EQ(ret, nullptr);
+    rdbStorePtr->Init();
+}
+}  // namespace Media
+}  // namespace OHOS

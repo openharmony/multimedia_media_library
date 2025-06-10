@@ -52,7 +52,7 @@ const std::string QUERY_MEDIA_VOLUME = "SELECT sum(" + MEDIA_DATA_DB_SIZE + ") A
     MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_AUDIO) + " GROUP BY " +
     MEDIA_DATA_DB_MEDIA_TYPE;
 
-shared_ptr<MediaLibraryRdbStore> rdbStorePtr = nullptr;
+static shared_ptr<MediaLibraryRdbStore> rdbStorePtr = nullptr;
 
 void CleanTestTables()
 {
@@ -115,9 +115,11 @@ void MediaLibraryRdbTest::TearDown(void) {}
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_001, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
+    rdbStorePtr->Init();
+    string deleteSql = "DELETE FROM " + MEDIALIBRARY_TABLE +";";
+    int32_t ret = rdbStorePtr->ExecuteSql(deleteSql);
+    EXPECT_EQ(ret, E_OK);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     cmd.SetTableName(MEDIALIBRARY_TABLE);
     ValuesBucket values;
@@ -131,16 +133,13 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_001, TestSize.Level1)
     values.PutInt(MEDIA_DATA_DB_ID, fileId);
     cmd.SetValueBucket(values);
     int64_t rowId = 1;
-    rdbStorePtr->Init();
-    int32_t ret = rdbStorePtr->Insert(cmd, rowId);
+    ret = rdbStorePtr->Insert(cmd, rowId);
     EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_002, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     cmd.SetTableName(MEDIALIBRARY_TABLE);
     ValuesBucket values;
@@ -156,9 +155,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_002, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_003, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int64_t rowId = 1;
     int32_t ret = rdbStorePtr->Insert(cmd, rowId);
@@ -167,9 +164,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_003, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_004, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     cmd.SetTableName(MEDIALIBRARY_TABLE);
     ValuesBucket values;
@@ -184,9 +179,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_004, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Query_test_001, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     vector<string> columns;
     columns.push_back(MEDIA_DATA_DB_RECYCLE_PATH);
@@ -197,9 +190,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Query_test_001, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Query_test_002, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     vector<string> columns;
     columns.push_back(MEDIA_DATA_DB_DATE_TRASHED);
@@ -210,9 +201,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Query_test_002, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Delete_test_001, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     string selection = MEDIA_DATA_DB_ID + " = ? OR " + MEDIA_DATA_DB_PARENT_ID + " = ?";
     cmd.GetAbsRdbPredicates()->SetWhereClause(selection);
@@ -228,9 +217,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Delete_test_001, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Delete_test_002, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     rdbStorePtr->Stop();
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     int32_t rowId = 1;
@@ -240,9 +227,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Delete_test_002, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_001, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
     ValuesBucket valuesBucket;
     string title = "medialib_Update_test_001";
@@ -256,9 +241,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_001, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_002, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
     int32_t updatedRows = -1;
     int32_t ret = rdbStorePtr->Update(cmd, updatedRows);
@@ -267,9 +250,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_002, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_003, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     rdbStorePtr->Stop();
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
     int32_t updatedRows = E_HAS_DB_ERROR;
@@ -279,9 +260,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_003, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_QuerySql_test_001, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     rdbStorePtr->Init();
     auto queryResultSet = rdbStorePtr->QuerySql(QUERY_MEDIA_VOLUME);
     EXPECT_NE(queryResultSet, nullptr);
@@ -289,9 +268,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_QuerySql_test_001, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_QuerySql_test_002, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     rdbStorePtr->Stop();
     auto queryResultSet = rdbStorePtr->QuerySql(QUERY_MEDIA_VOLUME);
     EXPECT_EQ(queryResultSet, nullptr);
@@ -299,9 +276,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_QuerySql_test_002, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     rdbStorePtr->Init();
     TransactionOperations trans1{ __func__ };
     int32_t ret = trans1.Start();
@@ -326,9 +301,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_002, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     rdbStorePtr->Stop();
     TransactionOperations trans{ __func__ };
     int32_t ret = trans.Start();
@@ -337,9 +310,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_002, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_001, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     string modifySql = "UPDATE " + MEDIALIBRARY_TABLE + " SET ";
     int32_t ret = rdbStorePtr->ExecuteSql(modifySql);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
@@ -347,9 +318,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_001, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_002, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     rdbStorePtr->Stop();
     string modifySql = "UPDATE " + MEDIALIBRARY_TABLE + " SET ";
     int32_t ret = rdbStorePtr->ExecuteSql(modifySql);
@@ -358,9 +327,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_002, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_Stop_test_001, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     rdbStorePtr->Stop();
     EXPECT_NE(rdbStorePtr, nullptr);
 }
@@ -379,9 +346,7 @@ inline void PrepareUserAlbum(const string &albumName, const string &relativePath
 
 HWTEST_F(MediaLibraryRdbTest, medialib_BuildValuesSql_test_001, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     string sql;
     vector<ValueObject> bindArgs;
     sql.append("INSERT").append(" OR ROLLBACK").append(" INTO ").append(PhotoColumn::PHOTOS_TABLE).append(" ");
@@ -477,9 +442,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_003, TestSize.
 
 HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_001, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     string id = "1";
     rdbStorePtr->Init();
     int32_t ret = rdbStorePtr->UpdateLastVisitTime(id);
@@ -488,9 +451,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_001, TestSize.Le
 
 HWTEST_F(MediaLibraryRdbTest, medialib_ResetAnalysisTables_test, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     // normal rdbStore_ ResetAnalysisTables will success
     rdbStorePtr->Init();
     auto ret = MediaLibraryRdbStore::ResetAnalysisTables();
@@ -504,9 +465,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ResetAnalysisTables_test, TestSize.Level1
 
 HWTEST_F(MediaLibraryRdbTest, medialib_ResetSearchTables_test, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     // normal rdbStore_ ResetSearchTables will success
     rdbStorePtr->Init();
     auto ret = MediaLibraryRdbStore::ResetSearchTables();
@@ -520,9 +479,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ResetSearchTables_test, TestSize.Level1)
 
 HWTEST_F(MediaLibraryRdbTest, medialib_GenerateHighlightThumbnail_test, TestSize.Level1)
 {
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(rdbStorePtr, nullptr);
     rdbStorePtr->Init();
     vector<string> args = {"1", "tracks"};
     auto ret = MediaLibraryRdbStore::BeginGenerateHighlightThumbnail(args);
