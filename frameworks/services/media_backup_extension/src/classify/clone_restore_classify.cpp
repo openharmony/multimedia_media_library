@@ -133,8 +133,8 @@ void CloneRestoreClassify::Restore(const std::unordered_map<int32_t, PhotoInfo> 
 
 void CloneRestoreClassify::GetMaxIds()
 {
-    maxIdOfLabel_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_, ANALYSIS_LABEL_TABLE, FILE_ID);
-    maxIdOfVideoLabel_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_, ANALYSIS_VIDEO_TABLE, FILE_ID);
+    maxIdOfLabel_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_, ANALYSIS_LABEL_TABLE, ID);
+    maxIdOfVideoLabel_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_, ANALYSIS_VIDEO_TABLE, ID);
 }
 
 void CloneRestoreClassify::RestoreBatch(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
@@ -407,7 +407,7 @@ void CloneRestoreClassify::GetClassifyInfo(ClassifyCloneInfo &info,
     info.categoryId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, CATEGORY_ID);
     info.subLabel = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, SUB_LABEL);
     info.prob = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, PROB);
-    info.feature = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, FEATURE);
+    info.feature = BackupDatabaseUtils::GetOptionalValue<std::vector<uint8_t>>(resultSet, FEATURE);
     info.simResult = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, SIM_RESULT);
     info.labelVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, LABEL_VERSION);
     info.saliencySubProb = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, SALIENCY_SUB_PROB);
