@@ -37,13 +37,6 @@ const int32_t SUBMIT_TIMEOUT_SECONDS = 5;
 #ifdef ABILITY_CAMERA_SUPPORT
 const int32_t SUBMIT_MAX = 10;
 #endif
-CloudMediaEnhanceService::~CloudMediaEnhanceService()
-{
-    if (executor_ != nullptr) {
-        executor_->Stop();
-    }
-}
-
 int32_t CloudMediaEnhanceService::GetCloudSyncUnPreparedData(int32_t &result)
 {
     MEDIA_INFO_LOG("GetCloudSyncUnPreparedData begin");
