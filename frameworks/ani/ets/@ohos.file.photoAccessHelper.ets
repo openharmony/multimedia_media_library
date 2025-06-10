@@ -207,8 +207,8 @@ export namespace photoAccessHelper {
     static requestMovingPhoto(context: Context, asset: PhotoAsset, requestOptions: RequestOptions,
       dataHandler: MediaAssetDataHandler<MovingPhoto>): Promise<string> {
       return new Promise<string>((resolve: (v: string) => void, reject: RejectString) => {
-        let blockQueue: BlockingQueue<string | MediaLibraryAniError> =
-          new ArrayBlockingQueue<string | MediaLibraryAniError>(2);
+        let blockQueue: containers.BlockingQueue<string | MediaLibraryAniError> =
+          new containers.ArrayBlockingQueue<string | MediaLibraryAniError>(2);
         let cb = (): string | MediaLibraryAniError => {
           let result: string | MediaLibraryAniError;
           try {
@@ -416,8 +416,8 @@ export namespace photoAccessHelper {
     }
 
     getThumbnail(callback: AsyncCallback<image.PixelMap | undefined>): void {
-      let blockQueue: BlockingQueue<MediaLibraryAniError | image.PixelMap> =
-        new ArrayBlockingQueue<MediaLibraryAniError | image.PixelMap>(2);
+      let blockQueue: containers.BlockingQueue<MediaLibraryAniError | image.PixelMap> =
+        new containers.ArrayBlockingQueue<MediaLibraryAniError | image.PixelMap>(2);
       let cb = (): MediaLibraryAniError | image.PixelMap => {
         let result: MediaLibraryAniError | image.PixelMap;
         try {
@@ -444,8 +444,8 @@ export namespace photoAccessHelper {
     }
 
     getThumbnail(size: image.Size, callback: AsyncCallback<image.PixelMap | undefined>): void {
-      let blockQueue: BlockingQueue<MediaLibraryAniError | image.PixelMap> =
-        new ArrayBlockingQueue<MediaLibraryAniError | image.PixelMap>(2);
+      let blockQueue: containers.BlockingQueue<MediaLibraryAniError | image.PixelMap> =
+        new containers.ArrayBlockingQueue<MediaLibraryAniError | image.PixelMap>(2);
       let cb = (): MediaLibraryAniError | image.PixelMap => {
         let result: MediaLibraryAniError | image.PixelMap;
         try {
@@ -473,8 +473,8 @@ export namespace photoAccessHelper {
 
     getThumbnail(size?: image.Size): Promise<image.PixelMap> {
       return new Promise<image.PixelMap>((resolve: (v: image.PixelMap) => void, reject: RejectString) => {
-        let blockQueue: BlockingQueue<image.PixelMap | MediaLibraryAniError> =
-          new ArrayBlockingQueue<image.PixelMap | MediaLibraryAniError>(2);
+        let blockQueue: containers.BlockingQueue<image.PixelMap | MediaLibraryAniError> =
+          new containers.ArrayBlockingQueue<image.PixelMap | MediaLibraryAniError>(2);
         let cb = (): image.PixelMap | MediaLibraryAniError => {
           let result: image.PixelMap | MediaLibraryAniError;
           try {
@@ -766,7 +766,7 @@ export namespace photoAccessHelper {
       return false;
     }
     getFirstObject(callback: AsyncCallback<T | undefined, void>): void {
-      let blockQueue: BlockingQueue<T | MediaLibraryAniError> = new ArrayBlockingQueue<T | MediaLibraryAniError>(2);
+      let blockQueue: containers.BlockingQueue<T | MediaLibraryAniError> = new containers.ArrayBlockingQueue<T | MediaLibraryAniError>(2);
       let cb = (): T | MediaLibraryAniError => {
         let result: T | MediaLibraryAniError;
         try {
@@ -794,7 +794,7 @@ export namespace photoAccessHelper {
 
     getFirstObject(): Promise<T> {
       return new Promise<T>((resolve: (v: T) => void, reject: RejectString) => {
-        let blockQueue: BlockingQueue<T | MediaLibraryAniError> = new ArrayBlockingQueue<T | MediaLibraryAniError>(2);
+        let blockQueue: containers.BlockingQueue<T | MediaLibraryAniError> = new containers.ArrayBlockingQueue<T | MediaLibraryAniError>(2);
         let cb = (): T | MediaLibraryAniError => {
           let result: T | MediaLibraryAniError;
           try {
@@ -914,8 +914,8 @@ export namespace photoAccessHelper {
     }
 
     getAllObjects(callback: AsyncCallback<Array<T> | undefined, void>): void {
-      let blockQueue: BlockingQueue<Array<T> | MediaLibraryAniError> =
-        new ArrayBlockingQueue<Array<T> | MediaLibraryAniError>(2);
+      let blockQueue: containers.BlockingQueue<Array<T> | MediaLibraryAniError> =
+        new containers.ArrayBlockingQueue<Array<T> | MediaLibraryAniError>(2);
       let cb = (): Array<T> | MediaLibraryAniError => {
         let result: Array<T> | MediaLibraryAniError;
         try {
@@ -943,8 +943,8 @@ export namespace photoAccessHelper {
 
     getAllObjects(): Promise<Array<T>> {
       return new Promise<Array<T>>((resolve: (v: Array<T>) => void, reject: RejectString) => {
-        let blockQueue: BlockingQueue<Array<T> | MediaLibraryAniError> =
-          new ArrayBlockingQueue<Array<T> | MediaLibraryAniError>(2);
+        let blockQueue: containers.BlockingQueue<Array<T> | MediaLibraryAniError> =
+          new containers.ArrayBlockingQueue<Array<T> | MediaLibraryAniError>(2);
         let cb = (): Array<T> | MediaLibraryAniError => {
         let result: Array<T> | MediaLibraryAniError;
           try {
@@ -1066,8 +1066,8 @@ export namespace photoAccessHelper {
     }
 
     getAssets(options: FetchOptions, callback: AsyncCallback<FetchResult<PhotoAsset> | undefined>): void {
-      let blockQueue: BlockingQueue<MediaLibraryAniError | FetchResult<PhotoAsset>> =
-        new ArrayBlockingQueue<MediaLibraryAniError | FetchResult<PhotoAsset>>(2);
+      let blockQueue: containers.BlockingQueue<MediaLibraryAniError | FetchResult<PhotoAsset>> =
+        new containers.ArrayBlockingQueue<MediaLibraryAniError | FetchResult<PhotoAsset>>(2);
       let cb = (): MediaLibraryAniError | FetchResult<PhotoAsset> => {
         let result: MediaLibraryAniError | FetchResult<PhotoAsset>;
         try {
@@ -1096,8 +1096,8 @@ export namespace photoAccessHelper {
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
       return new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void,
         reject: RejectString) => {
-        let blockQueue: BlockingQueue<FetchResult<PhotoAsset> | MediaLibraryAniError> =
-          new ArrayBlockingQueue<FetchResult<PhotoAsset> | MediaLibraryAniError>(2);
+        let blockQueue: containers.BlockingQueue<FetchResult<PhotoAsset> | MediaLibraryAniError> =
+          new containers.ArrayBlockingQueue<FetchResult<PhotoAsset> | MediaLibraryAniError>(2);
         let cb = (): FetchResult<PhotoAsset> | MediaLibraryAniError => {
           let result: FetchResult<PhotoAsset> | MediaLibraryAniError;
           try {
@@ -1462,8 +1462,8 @@ export namespace photoAccessHelper {
     }
 
     getAssets(options: FetchOptions, callback: AsyncCallback<FetchResult<PhotoAsset> | undefined>): void {
-      let blockQueue: BlockingQueue<MediaLibraryAniError | FetchResult<PhotoAsset>> =
-        new ArrayBlockingQueue<MediaLibraryAniError | FetchResult<PhotoAsset>>(2);
+      let blockQueue: containers.BlockingQueue<MediaLibraryAniError | FetchResult<PhotoAsset>> =
+        new containers.ArrayBlockingQueue<MediaLibraryAniError | FetchResult<PhotoAsset>>(2);
       let cb = (): MediaLibraryAniError | FetchResult<PhotoAsset> => {
         let result: MediaLibraryAniError | FetchResult<PhotoAsset>;
         try {
@@ -1491,7 +1491,7 @@ export namespace photoAccessHelper {
 
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
       return new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void, reject: RejectString) => {
-        let blockQueue: BlockingQueue<FetchResult<PhotoAsset>> = new ArrayBlockingQueue<FetchResult<PhotoAsset>>(2);
+        let blockQueue: containers.BlockingQueue<FetchResult<PhotoAsset>> = new containers.ArrayBlockingQueue<FetchResult<PhotoAsset>>(2);
         let cb = (): FetchResult<PhotoAsset> => {
           let result = this.getAssetsInner(options)
           blockQueue.push(result)
@@ -1536,8 +1536,8 @@ export namespace photoAccessHelper {
     }
 
     createAsset(displayName: string, callback: AsyncCallback<PhotoAsset | undefined>): void {
-      let blockQueue: BlockingQueue<MediaLibraryAniError | PhotoAsset> =
-        new ArrayBlockingQueue<MediaLibraryAniError | PhotoAsset>(2);
+      let blockQueue: containers.BlockingQueue<MediaLibraryAniError | PhotoAsset> =
+        new containers.ArrayBlockingQueue<MediaLibraryAniError | PhotoAsset>(2);
       let cb = (): MediaLibraryAniError | PhotoAsset => {
         let result: MediaLibraryAniError | PhotoAsset;
         try {
@@ -1565,8 +1565,8 @@ export namespace photoAccessHelper {
 
     createAsset(displayName: string): Promise<PhotoAsset> {
       return new Promise<PhotoAsset>((resolve: (v: PhotoAsset) => void, reject: RejectString) => {
-        let blockQueue: BlockingQueue<PhotoAsset | MediaLibraryAniError> =
-          new ArrayBlockingQueue<PhotoAsset | MediaLibraryAniError>(2);
+        let blockQueue: containers.BlockingQueue<PhotoAsset | MediaLibraryAniError> =
+          new containers.ArrayBlockingQueue<PhotoAsset | MediaLibraryAniError>(2);
         let cb = (): PhotoAsset | MediaLibraryAniError => {
           let result: PhotoAsset | MediaLibraryAniError;
           try {
@@ -1595,8 +1595,8 @@ export namespace photoAccessHelper {
 
     createAsset(displayName: string, options: PhotoCreateOptions): Promise<PhotoAsset> {
       return new Promise<PhotoAsset>((resolve: (v: PhotoAsset) => void, reject: RejectString) => {
-        let blockQueue: BlockingQueue<PhotoAsset | MediaLibraryAniError> =
-          new ArrayBlockingQueue<PhotoAsset | MediaLibraryAniError>(2);
+        let blockQueue: containers.BlockingQueue<PhotoAsset | MediaLibraryAniError> =
+          new containers.ArrayBlockingQueue<PhotoAsset | MediaLibraryAniError>(2);
         let cb = (): PhotoAsset | MediaLibraryAniError => {
           let result: PhotoAsset | MediaLibraryAniError;
           try {
@@ -1625,8 +1625,8 @@ export namespace photoAccessHelper {
 
     createAsset(displayName: string, options: PhotoCreateOptions,
       callback: AsyncCallback<PhotoAsset | undefined>): void {
-      let blockQueue: BlockingQueue<MediaLibraryAniError | PhotoAsset> =
-        new ArrayBlockingQueue<MediaLibraryAniError | PhotoAsset>(2);
+      let blockQueue: containers.BlockingQueue<MediaLibraryAniError | PhotoAsset> =
+        new containers.ArrayBlockingQueue<MediaLibraryAniError | PhotoAsset>(2);
       let cb = (): MediaLibraryAniError | PhotoAsset => {
         let result: MediaLibraryAniError | PhotoAsset;
         try {
@@ -1654,8 +1654,8 @@ export namespace photoAccessHelper {
 
     createAsset(photoType: PhotoType, extension: string, options: CreateOptions,
       callback: AsyncCallback<string | undefined>): void {
-      let blockQueue: BlockingQueue<MediaLibraryAniError | string> =
-        new ArrayBlockingQueue<MediaLibraryAniError | string>(2);
+      let blockQueue: containers.BlockingQueue<MediaLibraryAniError | string> =
+        new containers.ArrayBlockingQueue<MediaLibraryAniError | string>(2);
       let cb = (): MediaLibraryAniError | string => {
         let result: MediaLibraryAniError | string;
         try {
@@ -1682,8 +1682,8 @@ export namespace photoAccessHelper {
     }
 
     createAsset(photoType: PhotoType, extension: string, callback: AsyncCallback<string | undefined>): void {
-      let blockQueue: BlockingQueue<MediaLibraryAniError | string> =
-        new ArrayBlockingQueue<MediaLibraryAniError | string>(2);
+      let blockQueue: containers.BlockingQueue<MediaLibraryAniError | string> =
+        new containers.ArrayBlockingQueue<MediaLibraryAniError | string>(2);
       let cb = (): MediaLibraryAniError | string => {
         let result: MediaLibraryAniError | string;
         try {
@@ -1711,8 +1711,8 @@ export namespace photoAccessHelper {
 
     createAsset(photoType: PhotoType, extension: string, options?: CreateOptions): Promise<string> {
       return new Promise<string>((resolve: (v: string) => void, reject: RejectString) => {
-        let blockQueue: BlockingQueue<string | MediaLibraryAniError> =
-          new ArrayBlockingQueue<string | MediaLibraryAniError>(2);
+        let blockQueue: containers.BlockingQueue<string | MediaLibraryAniError> =
+          new containers.ArrayBlockingQueue<string | MediaLibraryAniError>(2);
         let cb = (): string | MediaLibraryAniError => {
           let result: string | MediaLibraryAniError;
           try {
@@ -2538,8 +2538,8 @@ export namespace photoAccessHelper {
 
     requestContent(resourceType: ResourceType): Promise<ArrayBuffer> {
       return new Promise<ArrayBuffer>((resolve: (v: ArrayBuffer) => void, reject: RejectString): void => {
-        let blockQueue: BlockingQueue<ArrayBuffer | MediaLibraryAniError> =
-          new ArrayBlockingQueue<ArrayBuffer | MediaLibraryAniError>(2);
+        let blockQueue: containers.BlockingQueue<ArrayBuffer | MediaLibraryAniError> =
+          new containers.ArrayBlockingQueue<ArrayBuffer | MediaLibraryAniError>(2);
         let cb = (): ArrayBuffer | MediaLibraryAniError => {
           let result: ArrayBuffer | MediaLibraryAniError;
           try {
