@@ -38,7 +38,7 @@ public:
     bool CheckArgs();
     string ToString();
     string ErrorCodeToMsg(int32_t errorCode);
-    void PrintFileInfo(const std::string& fileInfoJSONString);
+    int32_t PrintFileInfo(const std::string& fileInfoJSONString);
     int32_t Execute();
 
 private:
