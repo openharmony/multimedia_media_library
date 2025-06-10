@@ -849,6 +849,16 @@ int32_t ThumbnailGenerateHelper::TriggerHighlightThumbnail(ThumbRdbOpt &opts, st
     return E_OK;
 }
 
+void UpgradeThumbnailBackgroundTask(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
+    auto &thumbnailData = data->thumbnailData_;
+    CHECK_AND_RETURN_INFO_LOG(thumbnailData.isLocalFile || ThumbnailFileUtils::IsWifiConnected(),
+        "Wifi is not connected, cloud thumbnail can not be generated, id:%{public}s, path:%{public}s",
+        thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str());
+    IThumbnailHelper::CreateLcdAndThumbnail(data);
+}
+
 int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts, bool isWifiConnected)
 {
     if (opts.store == nullptr) {
@@ -872,9 +882,8 @@ int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts, b
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
         ThumbnailUtils::RecordStartGenerateStats(infos[i].stats, GenerateScene::UPGRADE, LoadSourceType::LOCAL_PHOTO);
-        infos[i].loaderOpts.loadingStates = (infos[i].mediaType == MEDIA_TYPE_VIDEO) ?
-            SourceLoader::UPGRADE_VIDEO_SOURCE_LOADING_STATES : SourceLoader::UPGRADE_SOURCE_LOADING_STATES;
-        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
+        infos[i].loaderOpts.loadingStates = SourceLoader::UPGRADE_SOURCE_LOADING_STATES;
+        IThumbnailHelper::AddThumbnailGenerateTask(UpgradeThumbnailBackgroundTask,
             opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     }
     return E_OK;

@@ -1005,14 +1005,10 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
     bool isWifiConnected, int &err)
 {
     vector<string> column = {
-        MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_DATE_ADDED,
-        MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_DATE_TAKEN,
-        MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_DATE_TAKEN, MEDIA_DATA_DB_DATE_MODIFIED,
     };
+
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, std::to_string(
         static_cast<int32_t>(ThumbnailReady::THUMB_UPGRADE)));
