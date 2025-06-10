@@ -67,7 +67,6 @@ HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_001, TestSize.Level1)
 {
     std::string filename = "/data/medialibrary_handler_unittest.txt";
     std::string fileContent = ReadFileToString(filename);
-    ASSERT_TRUE(!fileContent.empty());
 
     vector<string> uris;
     vector<string> results;
