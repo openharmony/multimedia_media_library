@@ -614,7 +614,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_012, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_012");
-    int ret = -1;
+
     std::vector<DataShare::DataShareValuesBucket> values;
     MediaLibraryCommand cmd(OperationObject::MEDIA_APP_URI_PERMISSION, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -622,9 +622,9 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     std::function<int(void)> func = [&]()->int {
         return MediaLibraryAppUriPermissionOperations::BatchInsertInner(cmd, values, trans);
     };
-    ret = trans->RetryTrans(func);
-    // expected result: 0.
-    EXPECT_EQ(ret, 0);
+    auto ret = trans->RetryTrans(func);
+    // expected result: -1. empty buckets
+    EXPECT_EQ(ret, -1);
 
     MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_012");
 }

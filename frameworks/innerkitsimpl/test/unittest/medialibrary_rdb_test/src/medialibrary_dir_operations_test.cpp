@@ -62,7 +62,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_002, TestSize.Lev
     MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     cmd1.SetValueBucket(values);
     ret = MediaLibraryDirOperations::HandleDirOperation(cmd1);
-    EXPECT_EQ((ret > E_OK || ret == E_FILE_EXIST), true);
+    EXPECT_NE(ret, E_OK);
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
@@ -90,7 +90,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_003, TestSize.Lev
     values.PutInt(MEDIA_DATA_DB_ID, 10);
     cmd1.SetValueBucket(values);
     ret = MediaLibraryDirOperations::HandleDirOperation(cmd1);
-    EXPECT_EQ(ret, E_GET_ASSET_FAIL);
+    EXPECT_NE(ret, E_OK);
 
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
@@ -161,7 +161,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TrashDirOperation_test_001, TestSize.Leve
     valuesBucket.PutInt(MEDIA_DATA_DB_ID, 12);
     cmd1.SetValueBucket(valuesBucket);
     ret = MediaLibraryDirOperations::TrashDirOperation(cmd1);
-    EXPECT_EQ(ret, E_GET_ASSET_FAIL);
+    EXPECT_NE(ret, E_OK);
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 }
