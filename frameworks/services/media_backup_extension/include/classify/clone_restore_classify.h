@@ -45,7 +45,7 @@ private:
         std::optional<int32_t> categoryId;
         std::optional<std::string> subLabel;
         std::optional<double> prob;
-        std::optional<std::string> feature;
+        std::optional<std::vector<uint8_t>> feature;
         std::optional<std::string> simResult;
         std::optional<std::string> labelVersion;
         std::optional<std::string> saliencySubProb;
