@@ -37,6 +37,8 @@ using namespace OHOS::DataShare;
 using namespace OHOS::AppExecFwk;
 namespace OHOS {
 namespace Media {
+mutex MediaLibraryUnitTestUtils::Mutex_;
+
 bool MediaLibraryUnitTestUtils::IsValid()
 {
     return isValid_;
@@ -44,6 +46,7 @@ bool MediaLibraryUnitTestUtils::IsValid()
 
 void MediaLibraryUnitTestUtils::Init()
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
     auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     abilityContextImpl->SetStageContext(stageContext);
@@ -57,6 +60,7 @@ void MediaLibraryUnitTestUtils::Init()
 
 int32_t MediaLibraryUnitTestUtils::InitUnistore()
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
     auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     abilityContextImpl -> SetStageContext(stageContext);
@@ -70,6 +74,7 @@ int32_t MediaLibraryUnitTestUtils::InitUnistore()
 int32_t MediaLibraryUnitTestUtils::InitUnistore(const NativeRdb::RdbStoreConfig &config, int version,
     NativeRdb::RdbOpenCallback &openCallback)
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
     auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     abilityContextImpl->SetStageContext(stageContext);
@@ -83,12 +88,14 @@ int32_t MediaLibraryUnitTestUtils::InitUnistore(const NativeRdb::RdbStoreConfig 
 
 void MediaLibraryUnitTestUtils::StopUnistore()
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     MediaLibraryDataManager::GetInstance()->rdbStore_ = nullptr;
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 void MediaLibraryUnitTestUtils::InitRootDirs()
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     for (const auto &dir : TEST_ROOT_DIRS) {
         shared_ptr<FileAsset> dirAsset = nullptr;
         if (!CreateAlbum(dir, nullptr, dirAsset)) {
@@ -101,6 +108,7 @@ void MediaLibraryUnitTestUtils::InitRootDirs()
 
 void MediaLibraryUnitTestUtils::CleanTestFiles()
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     system("rm -rf /storage/cloud/files/Audio/*");
     system("rm -rf /storage/cloud/files/Audios/*");
     system("rm -rf /storage/cloud/files/Camera/*");
@@ -121,6 +129,7 @@ void MediaLibraryUnitTestUtils::CleanTestFiles()
 
 void MediaLibraryUnitTestUtils::CleanBundlePermission()
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
     NativeRdb::AbsRdbPredicates predicates(BUNDLE_PERMISSION_TABLE);
     predicates.GreaterThan(MEDIA_DATA_DB_ID, to_string(0));
@@ -131,6 +140,7 @@ void MediaLibraryUnitTestUtils::CleanBundlePermission()
 
 shared_ptr<FileAsset> MediaLibraryUnitTestUtils::GetRootAsset(const string &dir)
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     if (rootDirAssetMap_.find(dir) != rootDirAssetMap_.end()) {
         return rootDirAssetMap_[dir];
     }
@@ -139,6 +149,7 @@ shared_ptr<FileAsset> MediaLibraryUnitTestUtils::GetRootAsset(const string &dir)
 
 bool MediaLibraryUnitTestUtils::IsFileExists(const string filePath)
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     struct stat statInfo {};
     int errCode = stat(filePath.c_str(), &statInfo);
     return (errCode == 0);
@@ -211,6 +222,7 @@ bool MediaLibraryUnitTestUtils::CreateAlbum(string displayName, shared_ptr<FileA
 bool MediaLibraryUnitTestUtils::CreateFile(string displayName, shared_ptr<FileAsset> parentAlbumAsset,
     shared_ptr<FileAsset> &fileAsset)
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
@@ -240,6 +252,7 @@ bool MediaLibraryUnitTestUtils::CreateFile(string displayName, shared_ptr<FileAs
 
 bool MediaLibraryUnitTestUtils::CreateFileFS(const string &filePath)
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     bool errCode = false;
 
     if (filePath.empty()) {
@@ -264,6 +277,7 @@ bool MediaLibraryUnitTestUtils::CreateFileFS(const string &filePath)
 
 bool MediaLibraryUnitTestUtils::DeleteDir(const string &path, const string &dirId)
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     string cmd = "rm -rf " + path;
     system(cmd.c_str());
 
@@ -277,6 +291,7 @@ bool MediaLibraryUnitTestUtils::DeleteDir(const string &path, const string &dirI
 
 void MediaLibraryUnitTestUtils::TrashFile(shared_ptr<FileAsset> &fileAsset)
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
     valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileAsset->GetId());
@@ -289,6 +304,7 @@ void MediaLibraryUnitTestUtils::TrashFile(shared_ptr<FileAsset> &fileAsset)
 
 void MediaLibraryUnitTestUtils::RecoveryFile(shared_ptr<FileAsset> &fileAsset)
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
     valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileAsset->GetId());
@@ -310,6 +326,7 @@ void MediaLibraryUnitTestUtils::WaitForCallback(shared_ptr<TestScannerCallback> 
 int32_t MediaLibraryUnitTestUtils::GrantUriPermission(const int32_t fileId, const string &bundleName,
     const string &mode, const int32_t tableType)
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     Uri addPermission(MEDIALIBRARY_BUNDLEPERM_URI + "/" + BUNDLE_PERMISSION_INSERT);
     DataShareValuesBucket values;
     values.Put(PERMISSION_FILE_ID, fileId);
@@ -331,6 +348,7 @@ int32_t TestScannerCallback::OnScanFinished(const int32_t status, const std::str
 
 bool MediaLibraryUnitTestUtils::writeBytesToFile(size_t numBytes, const char* path, size_t& resultFileSize)
 {
+    std::lock_guard<std::mutex> lock(Mutex_);
     int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         MEDIA_ERR_LOG("Error: Unable to open file %{public}s for writing, errno: %{public}d", path, errno);
