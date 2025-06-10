@@ -465,6 +465,17 @@ static void UpdateIsRectificationCover(const shared_ptr<MediaLibraryRdbStore> rd
     CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "RdbStore Update is_rectification_cover failed, err: %{public}d", err);
 }
 
+static void FixOrientation180DirtyThumbnail(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("Start to fix dirty thumbnail");
+    std::string sql =
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_THUMBNAIL_READY + " = 6" +
+        " WHERE " + PhotoColumn::PHOTO_ORIENTATION + " = 180 AND " + MediaColumn::MEDIA_TYPE + " = 1";
+    int ret = store->ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End fix dirty thumbnail");
+}
+
 void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
@@ -490,6 +501,11 @@ void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         MEDIA_INFO_LOG("End VERSION_ADD_IS_RECTIFICATION_COVER");
 
         rdbStore->SetOldVersion(VERSION_ADD_IS_RECTIFICATION_COVER);
+    }
+
+    if (oldVersion < VERSION_FIX_ORIENTATION_180_DIRTY_THUMBNAIL) {
+        FixOrientation180DirtyThumbnail(rdbStore);
+        rdbStore->SetOldVersion(VERSION_FIX_ORIENTATION_180_DIRTY_THUMBNAIL);
     }
 }
 
