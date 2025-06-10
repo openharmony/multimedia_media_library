@@ -199,6 +199,10 @@ void FaCloudSyncSwitchObserver::OnChange()
 
 void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, const std::string &registerUri)
 {
+    if (formId.empty() || registerUri.empty()) {
+        MEDIA_ERR_LOG("parameter is null");
+        return;
+    }
     const std::string ASSET_URI_PREFIX = "file://media/";
     const std::string CLOUD_SYNC_SWITCH_URI_PREFIX = "datashareproxy://";
     MEDIA_DEBUG_LOG("registerUri = %{public}s", registerUri.c_str());
@@ -241,7 +245,7 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
 void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
 {
     if (formId.empty() || formAssetObserversMap.empty()) {
-        MEDIA_ERR_LOG("data is null");
+        MEDIA_ERR_LOG("parameter is null");
         return;
     }
     CreateOptions options;
