@@ -112,7 +112,7 @@ enum class EXPORT OperationObject : uint32_t {
     ANALYSIS_FOREGROUND,
     ASSET_ALBUM_OPERATION,
     PTP_ALBUM_OPERATION,
-    CUSTOM_RECORDS_OPERATON,
+    CUSTOM_RECORDS_OPERATION,
 };
 
 enum class EXPORT OperationType : uint32_t {

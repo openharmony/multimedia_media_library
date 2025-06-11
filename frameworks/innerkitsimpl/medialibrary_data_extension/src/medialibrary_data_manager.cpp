@@ -1057,7 +1057,7 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
         return MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, values);
     } else if (cmd.GetOprnObject() == OperationObject::MTH_AND_YEAR_ASTC) {
         return AstcMthAndYearInsert(cmd, values);
-    } else if (cmd.GetOprnObject() == OperationObject::CUSTOM_RECORDS_OPERATON) {
+    } else if (cmd.GetOprnObject() == OperationObject::CUSTOM_RECORDS_OPERATION) {
         return CustomRecordOperations::BatchAddCustomRecords(cmd, values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
@@ -2078,7 +2078,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
                 RdbUtils::ToPredicates(predicates, PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE), columns);
         case OperationObject::ANALYSIS_FOREGROUND:
             return MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(cmd);
-        case OperationObject::CUSTOM_RECORDS_OPERATON:
+        case OperationObject::CUSTOM_RECORDS_OPERATION:
             return MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, cmd.GetTableName()),
                 columns);
         default:
