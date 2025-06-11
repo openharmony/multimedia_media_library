@@ -2830,7 +2830,8 @@ void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::Resu
         IMAGE_FACE_COL_FACE_VERSION);
     imageFaceTbl.featuresVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         IMAGE_FACE_COL_FEATURES_VERSION);
-    imageFaceTbl.features = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_FEATURES);
+    imageFaceTbl.features = BackupDatabaseUtils::GetOptionalValue<std::vector<uint8_t>>(resultSet,
+        IMAGE_FACE_COL_FEATURES);
     imageFaceTbl.faceOcclusion = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         IMAGE_FACE_COL_FACE_OCCLUSION);
     imageFaceTbl.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
