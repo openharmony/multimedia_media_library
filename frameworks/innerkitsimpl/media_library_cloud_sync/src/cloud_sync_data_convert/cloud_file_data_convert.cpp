@@ -651,7 +651,9 @@ int32_t CloudFileDataConvert::HandleCompatibleFileds(
     HandleProperties(data, upLoadRecord);
 
     /* cloud sdk extra feature */
-    HandleAttachments(data, upLoadRecord);
+    if (type_ != CloudOperationType::FILE_METADATA_MODIFY) {
+        HandleAttachments(data, upLoadRecord);
+    }
 
     /* cloudsync-specific fields */
     data["mimeType"] = MDKRecordField(upLoadRecord.mimeType);
