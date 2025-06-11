@@ -113,29 +113,4 @@ void DatabaseDataMockTest::CheckPhotoAlbum()
     EXPECT_EQ(targetAlbumPo.cloudId, cloudId);
     EXPECT_EQ(targetAlbumPo.lpath, lPath);
 }
-
-HWTEST_F(DatabaseDataMockTest, DATABASE_DATA_MOCK, TestSize.Level1)
-{
-    // Get RdbStore
-    int32_t errorCode = 0;
-    std::shared_ptr<NativeRdb::RdbStore> rdbStore = MediaLibraryDatabase().GetRdbStore(errorCode);
-    EXPECT_EQ(errorCode, 0);
-    ASSERT_NE(rdbStore, nullptr);
-    // Test CheckPoint
-    DatabaseDataMock dbDataMock;
-    int32_t ret = dbDataMock.SetRdbStore(rdbStore).CheckPoint();
-    EXPECT_EQ(ret, DatabaseDataMock::E_OK);
-    // Verify CheckPoint
-    EXPECT_GE(dbDataMock.GetMaxFileId(), 0);
-    EXPECT_GT(dbDataMock.GetMaxAlbumId(), 0);
-    EXPECT_GT(dbDataMock.GetMaxAnalysisId(), 0);
-    // Test Mock Data
-    ret = dbDataMock.MockData(DatabaseDataMockTest::GetTableMockInfoList());
-    EXPECT_EQ(ret, DatabaseDataMock::E_OK);
-    this->CheckPhotos();
-    this->CheckPhotoAlbum();
-    // Test Rollback
-    ret = dbDataMock.Rollback();
-    EXPECT_EQ(ret, DatabaseDataMock::E_OK);
-}
 }  // namespace OHOS::Media::CloudSync

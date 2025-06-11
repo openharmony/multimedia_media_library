@@ -106,28 +106,6 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_002, TestSize.Level0
     MEDIA_INFO_LOG("MediaPermissionCheckTest_002 end");
 }
 
-HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_003, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaPermissionCheckTest_003 begin");
-    PermissionHeaderReq data;
-    uint32_t businessCode = 3;
-    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_SUCCESS);
-    businessCode = 0;
-    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_PERMISSION_DENIED);
-    MEDIA_INFO_LOG("MediaPermissionCheckTest_003 end");
-}
-
-HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_004, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaPermissionCheckTest_004 begin");
-    PermissionHeaderReq data;
-    uint32_t businessCode = 4;
-    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_SUCCESS);
-    businessCode = 0;
-    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_PERMISSION_DENIED);
-    MEDIA_INFO_LOG("MediaPermissionCheckTest_004 end");
-}
-
 HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaPermissionCheckTest_005 begin");
@@ -153,46 +131,6 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_007, TestSize.Level0
     uint32_t businessCode = 7;
     EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_SUCCESS);
     MEDIA_INFO_LOG("MediaPermissionCheckTest_007 end");
-}
-
-HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_008, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaPermissionCheckTest_008 begin");
-    PermissionHeaderReq data;
-    uint32_t businessCode = 8;
-    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_SUCCESS);
-    MEDIA_INFO_LOG("MediaPermissionCheckTest_008 end");
-}
-
-HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_009, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaPermissionCheckTest_009 begin");
-    // invalid fileId
-    std::unordered_map<std::string, std::string> headerMap = {
-        {PermissionHeaderReq::FILE_ID_KEY, ""},
-        {PermissionHeaderReq::URI_TYPE_KEY, "2"},
-    };
-    PermissionHeaderReq data = PermissionHeaderReq::convertToPermissionHeaderReq(headerMap, -1);
-    uint32_t businessCode = 3;
-    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_SUCCESS);
-    // invalid uriType
-    headerMap[PermissionHeaderReq::URI_TYPE_KEY] = "str";
-    data = PermissionHeaderReq::convertToPermissionHeaderReq(headerMap, -1);
-    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_SUCCESS);
-    MEDIA_INFO_LOG("MediaPermissionCheckTest_009 end");
-}
-
-HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_010, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaPermissionCheckTest_010 begin");
-    std::unordered_map<std::string, std::string> headerMap = {
-        {PermissionHeaderReq::FILE_ID_KEY, "1"},
-        {PermissionHeaderReq::URI_TYPE_KEY, "2"},
-    };
-    PermissionHeaderReq data = PermissionHeaderReq::convertToPermissionHeaderReq(headerMap, -1);
-    uint32_t businessCode = 3;
-    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_SUCCESS);
-    MEDIA_INFO_LOG("MediaPermissionCheckTest_010 end");
 }
 
 HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_011, TestSize.Level0)

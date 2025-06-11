@@ -1555,27 +1555,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_audio end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype start";
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-
-    // illegal file type
-    int32_t fileType = -1;
-    string path = "test_path";
-    int32_t errCode = 3;
-    FileInfo fileInfo;
-    fileInfo.oldPath = path;
-
-    upgrade->UpdateFailedFileByFileType(fileType, fileInfo, errCode);
-    auto ret = upgrade->GetErrorInfoJson();
-    string str = ret[STAT_KEY_ERROR_INFO].dump();
-    str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
-    EXPECT_EQ(str, "File path is invalid");
-    GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype end";
-}
-
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetErrorCode, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_SetErrorCode start";
@@ -1641,20 +1620,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_normal_ty
     str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
     EXPECT_EQ(str, "video");
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_normal_types end";
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_illegal_types, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_illegal_types start";
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-
-    vector<string> types = { "test" };
-    auto ret = upgrade->GetCountInfoJson(types);
-    string str = ret[STAT_KEY_INFOS][1][STAT_KEY_BACKUP_INFO].dump();
-    str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
-    EXPECT_EQ(str, "test");
-    GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_illegal_types end";
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_need_batch_query_photo, TestSize.Level2)

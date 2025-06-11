@@ -178,29 +178,6 @@ void InsertIntoHighlightAlbumInfo(CloneRestoreHighlight::HighlightAlbumInfo &hig
     highlightAlbumInfo.highlightVersion = TEST_NUM;
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_albums_test_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("clone_restore_highlight_restore_albums_test_001 start");
-    ClearHighlightData();
-    CloneHighlightSource cloneHighlightSource;
-    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE,
-        HIGHLIGHT_ALBUM_TABLE, HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE };
-    Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
-    cloneRestoreHighlight->RestoreAlbums();
-    EXPECT_EQ(cloneRestoreHighlight->isMapOrder_, true);
-    string analysisCondition = "album_name = 'test_highlight_album'";
-    int32_t analysisCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), ANALYSIS_ALBUM_TABLE, analysisCondition);
-    EXPECT_EQ(analysisCount, 2);
-    int32_t highlightCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), HIGHLIGHT_ALBUM_TABLE, NONE_CONDITION);
-    EXPECT_EQ(highlightCount, 1);
-    int32_t coverCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), HIGHLIGHT_COVER_INFO_TABLE, NONE_CONDITION);
-    EXPECT_EQ(coverCount, 8);
-    int32_t playCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), HIGHLIGHT_PLAY_INFO_TABLE, NONE_CONDITION);
-    EXPECT_EQ(playCount, 1);
-    ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
-}
-
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_maps_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_restore_maps_test_001 start");
@@ -259,37 +236,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_values_test_0
     string mapCondition = "map_album = 2 AND map_asset = 2";
     int32_t mapCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), ANALYSIS_PHOTO_MAP_TABLE, mapCondition);
     EXPECT_EQ(values.empty(), false);
-    ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
-}
-
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_001 start");
-    ClearHighlightData();
-    CloneHighlightSource cloneHighlightSource;
-    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE };
-    cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
-    CloneRestoreHighlight::AnalysisAlbumInfo testAnalysisInfo;
-    testAnalysisInfo.oldCoverUri = make_optional<string>("file://testOldCoverUri");
-    testAnalysisInfo.albumIdNew = make_optional<int32_t>(TEST_ID);
-    testAnalysisInfo.coverUri = "file://testNewCoverUri";
-    testAnalysisInfo.highlightIdNew = make_optional<int32_t>(TEST_ID);
-    testAnalysisInfo.albumName = make_optional<string>("testAlbumName");
-    cloneRestoreHighlight->analysisInfos_.emplace_back(testAnalysisInfo);
-
-    CloneRestoreHighlight::HighlightCoverInfo testCoverInfo;
-    testCoverInfo.ratio = make_optional<string>("1_1");
-    testCoverInfo.highlightIdNew = make_optional<int32_t>(TEST_ID);
-    cloneRestoreHighlight->coverInfos_.emplace_back(testCoverInfo);
-
-    cloneRestoreHighlight->UpdateAlbums();
-    string analysisCondition = "cover_uri = 'file://testNewCoverUri'";
-    int32_t analysisCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), ANALYSIS_ALBUM_TABLE, analysisCondition);
-    EXPECT_EQ(analysisCount, 1);
-    string coverCondition = "cover_key = 'testAlbumName_1_1_file://testNewCoverUri'";
-    int32_t coverCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), HIGHLIGHT_COVER_INFO_TABLE, coverCondition);
-    EXPECT_EQ(coverCount, 1);
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
 

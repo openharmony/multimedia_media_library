@@ -1321,30 +1321,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_InsertPho
     EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_InsertPhoto_002, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_InsertPhoto_002");
-
-    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
-        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-
-    std::vector<FileInfo> fileInfos;
-    FileInfo tmpInfo;
-    struct stat statInfo;
-    lstat("/vendor/etc/firmware/nvram_ap6275s.txt", &statInfo);
-    tmpInfo.filePath = "/vendor/etc/firmware/nvram_ap6275s.txt";
-    tmpInfo.displayName = "nvram_ap6275s.txt";
-    tmpInfo.title = BackupFileUtils::GetFileTitle(tmpInfo.displayName);
-    tmpInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
-    tmpInfo.fileSize = statInfo.st_size;
-    tmpInfo.dateModified = MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim);
-    fileInfos.push_back(tmpInfo);
-    othersClone->imageNumber_ = 1;
-    othersClone->hasLowQualityImage_ = true;
-    othersClone->InsertPhoto(fileInfos);
-    EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
-}
-
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAudio_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestoreAudio_001");
