@@ -1197,6 +1197,12 @@ bool ThumbnailUtils::CacheLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
+void ThumbnailUtils::CacheInvalidLcdInfo(ThumbnailData &data)
+{
+    ValuesBucket &values = data.rdbUpdateCache;
+    values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_TIME, static_cast<int64_t>(LcdReady::GENERATE_LCD_LATER));
+}
+
 bool ThumbnailUtils::UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
 {
     if (opts.store == nullptr) {
