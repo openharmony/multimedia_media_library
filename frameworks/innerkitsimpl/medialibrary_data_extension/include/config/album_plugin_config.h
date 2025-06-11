@@ -46,6 +46,8 @@ const std::string BRAND_NAME_UPPER_FIRST = std::string() + static_cast<char>(CHA
     static_cast<char>(CHAR_LOWCASE_I);
 const std::string LPATH_SCREEN_SHOTS = "/Pictures/Screenshots";
 const std::string LPATH_SCREEN_RECORDS = "/Pictures/Screenrecords";
+const std::string LPATH_HIDDEN_ALBUM = "/Pictures/hiddenAlbum";
+const std::string LPATH_RECOVER = "/Pictures/Recover";
 const std::string BUNDLE_NAME_SCREEN_RECORDS = "com." + BRAND_NAME + ".hmos.screenrecorder";
 const std::string ALBUM_NAME_SCREEN_RECORDS = "屏幕录制";
 const std::vector<AlbumPluginRowData> ALBUM_PLUGIN_DATA = {
