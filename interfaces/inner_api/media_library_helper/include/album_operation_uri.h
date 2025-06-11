@@ -60,6 +60,21 @@ const std::string PAH_GROUP_ANAALBUM_ALBUM_NAME = MEDIALIBRARY_DATA_URI + "/" + 
     OPRN_GROUP_ALBUM_NAME;
 const std::string PAH_GROUP_ANAALBUM_COVER_URI = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
     OPRN_GROUP_COVER_URI;
+
+// album cover uri
+const std::string OPRN_USER_ALBUM_COVER_URI = "user_album_cover_uri";
+const std::string OPRN_SOURCE_ALBUM_COVER_URI = "source_album_cover_uri";
+const std::string OPRN_SYSTEM_ALBUM_COVER_URI = "system_album_cover_uri";
+const std::string OPRN_RESET_COVER_URI = "RESET_COVER_URI";
+
+const std::string PAH_UPDATE_USER_ALBUM_COVER_URI = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM +
+    "/" + OPRN_USER_ALBUM_COVER_URI;
+const std::string PAH_UPDATE_SOURCE_ALBUM_COVER_URI = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM +
+    "/" + OPRN_SOURCE_ALBUM_COVER_URI;
+const std::string PAH_UPDATE_SYSTEM_ALBUM_COVER_URI = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM +
+    "/" + OPRN_SYSTEM_ALBUM_COVER_URI;
+const std::string PAH_RESET_ALBUM_COVER_URI = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM +
+    "/" + OPRN_RESET_COVER_URI;
 } // namespace Media
 } // namespace OHOS
 

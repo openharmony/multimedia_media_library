@@ -251,6 +251,23 @@ static bool RemoveAssetsExecute(MediaAlbumChangeRequestImpl* changeRequest)
     return true;
 }
 
+static void GetAlbumUpdateCoverUri(shared_ptr<PhotoAlbum>& photoAlbum, string& uri)
+{
+    if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
+        uri = PAH_PORTRAIT_ANAALBUM_COVER_URI;
+    } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO) {
+        uri = PAH_GROUP_ANAALBUM_COVER_URI;
+    } else if (PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        uri = PAH_UPDATE_USER_ALBUM_COVER_URI;
+    } else if (PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        uri = PAH_UPDATE_USER_ALBUM_COVER_URI;
+    } else if (PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        uri = PAH_UPDATE_SOURCE_ALBUM_COVER_URI;
+    } else {
+        uri = PAH_UPDATE_SYSTEM_ALBUM_COVER_URI;
+    }
+}
+
 static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumChangeOperation changeOperation,
     string& uri, DataShare::DataShareValuesBucket& valuesBucket, string& property)
 {
@@ -272,15 +289,12 @@ static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumC
             valuesBucket.Put(property, photoAlbum->GetAlbumName());
             break;
         case AlbumChangeOperation::SET_COVER_URI:
-            if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
-                uri = PAH_PORTRAIT_ANAALBUM_COVER_URI;
-            } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO) {
-                uri = PAH_GROUP_ANAALBUM_COVER_URI;
-            } else {
-                uri = PAH_UPDATE_PHOTO_ALBUM;
-            }
+            GetAlbumUpdateCoverUri(photoAlbum, uri);
             property = PhotoAlbumColumns::ALBUM_COVER_URI;
             valuesBucket.Put(property, photoAlbum->GetCoverUri());
+            break;
+        case AlbumChangeOperation::RESET_COVER_URI:
+            uri = PAH_RESET_ALBUM_COVER_URI;
             break;
         case AlbumChangeOperation::SET_DISPLAY_LEVEL:
             uri = PAH_PORTRAIT_DISPLAY_LEVLE;
@@ -358,7 +372,8 @@ int32_t MediaAlbumChangeRequestImpl::ApplyChanges()
                    changeOperation == AlbumChangeOperation::SET_COVER_URI ||
                    changeOperation == AlbumChangeOperation::SET_IS_ME ||
                    changeOperation == AlbumChangeOperation::SET_DISPLAY_LEVEL ||
-                   changeOperation == AlbumChangeOperation::DISMISS) {
+                   changeOperation == AlbumChangeOperation::DISMISS ||
+                   changeOperation == AlbumChangeOperation::RESET_COVER_URI) {
             valid = SetAlbumPropertyExecute(this, changeOperation);
         } else {
             LOGE("Invalid album change operation: %{public}d", changeOperation);

@@ -37,6 +37,7 @@ CloudMdkRecordPhotoAlbumVo CloudMediaAlbumControllerProcessor::ConvertRecordPoTo
     recordVo.dateModified = record.dateModified.value_or(0);
     recordVo.bundleName = record.bundleName.value_or("");
     recordVo.localLanguage = record.localLanguage.value_or("");
+    recordVo.coverUriSource = record.coverUriSource.value_or(0);
     /* album_plugin columns */
     recordVo.albumPluginCloudId = record.albumPluginCloudId.value_or("");
     recordVo.albumNameEn = record.albumNameEn.value_or("");

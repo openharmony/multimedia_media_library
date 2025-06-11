@@ -96,6 +96,7 @@ public:
         const bool isAging, const bool compatible);
     static int32_t MergePortraitAlbums(const NativeRdb::ValuesBucket &values);
     static int32_t OrderSingleAlbum(const NativeRdb::ValuesBucket &values);
+    static bool IsCoverInAlbum(const string &fileId, int32_t albumSubtype, int32_t albumId);
 };
 } // namespace Media
 } // namespace OHOS

@@ -34,10 +34,10 @@
 #include "backup_database_utils.h"
 #include "photo_album_clone.h"
 #include "photos_clone.h"
-#include "clone_restore_classify.h"
-#include "clone_restore_geo.h"
 #include "clone_restore_geo_dictionary.h"
 #include "search_index_clone.h"
+#include "video_face_clone.h"
+#include "beauty_score_clone.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
 
@@ -65,7 +65,8 @@ public:
     std::string GetBackupInfo() override;
     void StartBackup() override;
     using CoverUriInfo = std::pair<std::string, std::pair<std::string, int32_t>>;
-
+    void InheritManualCover();
+    void UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverInfos);
 protected:
     void MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
         int32_t sceneCode) override;
@@ -218,6 +219,10 @@ private:
     void ProcessCloudPhotosFailedOffsets(int32_t isRelatedToPhotoMap = 0);
     void RestoreAnalysisData();
     void RestoreSearchIndexData();
+    void RestoreAnalysisClassify();
+    void RestoreAnalysisGeo();
+    void RestoreBeautyScoreData();
+    void RestoreVideoFaceData();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -261,8 +266,6 @@ private:
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
     std::vector<int> photosFailedOffsets_;
     ffrt::mutex photosFailedMutex_;
-    CloneRestoreClassify cloneRestoreClassify_;
-    CloneRestoreGeo cloneRestoreGeo_;
     CloneRestoreHighlight cloneRestoreHighlight_;
     CloneRestoreCVAnalysis cloneRestoreCVAnalysis_;
     std::atomic<uint64_t> lcdMigrateFileNumber_{0};
@@ -287,6 +290,8 @@ void CloneRestore::PutIfPresent(NativeRdb::ValuesBucket& values, const std::stri
             values.PutString(columnName, optionalValue.value());
         } else if constexpr (std::is_same_v<std::decay_t<T>, double>) {
             values.PutDouble(columnName, optionalValue.value());
+        }  else if constexpr (std::is_same_v<std::decay_t<T>, std::vector<uint8_t>>) {
+            values.PutBlob(columnName, optionalValue.value());
         }
     }
 }

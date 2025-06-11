@@ -32,6 +32,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/analysis_album",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/analysis_data",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/classify",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/geo_dictionary",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/geo_knowledge",
@@ -48,7 +49,10 @@ ohos_unittest("medialibrary_backup_clone_test") {
 
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/event_handler/album_plugin_table_event_handler.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_album/beauty_score_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_album/search_index_clone.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_album/video_face_clone.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_data/clone_restore_analysis_total.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_database_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_database_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_dfx_utils.cpp",

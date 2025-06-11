@@ -17,6 +17,7 @@
 
 #include <fcntl.h>
 
+#include "dfx_utils.h"
 #include "directory_ex.h"
 #include "ffrt_inner.h"
 #include "media_column.h"
@@ -43,7 +44,8 @@ bool CoverPositionParser::AddTask(const string &path, const string &fileUri)
 {
     lock_guard<mutex> lock(mtx_);
     if (tasks_.size() >= MAX_TASK_NUM) {
-        MEDIA_INFO_LOG("The max queue length has been reached, ignore current task: %{public}s", path.c_str());
+        MEDIA_INFO_LOG("The max queue length has been reached, ignore current task: %{public}s",
+                       DfxUtils::GetSafePath(path).c_str());
         return false;
     }
     tasks_.push(make_pair(path, fileUri));
@@ -92,7 +94,8 @@ void CoverPositionParser::UpdateCoverPosition(const string &path)
     string extraDataPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(path);
     string absExtraDataPath;
     if (!PathToRealPath(extraDataPath, absExtraDataPath)) {
-        MEDIA_ERR_LOG("realpath fail: %{private}s, errno: %{public}d", extraDataPath.c_str(), errno);
+        MEDIA_ERR_LOG("realpath fail: %{public}s, errno: %{public}d", DfxUtils::GetSafePath(extraDataPath).c_str(),
+                      errno);
         return;
     }
 
@@ -102,8 +105,10 @@ void CoverPositionParser::UpdateCoverPosition(const string &path)
     bool hasCinemagraphInfo = false;
     UniqueFd extraDataFd(open(absExtraDataPath.c_str(), O_RDONLY));
     (void)MovingPhotoFileUtils::GetVersionAndFrameNum(extraDataFd.Get(), version, frameIndex, hasCinemagraphInfo);
-    string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
-    (void)MovingPhotoFileUtils::GetCoverPosition(videoPath, frameIndex, coverPosition);
+    if (frameIndex != 0) {
+        string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
+        (void)MovingPhotoFileUtils::GetCoverPosition(videoPath, frameIndex, coverPosition);
+    }
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr!");
@@ -116,7 +121,7 @@ void CoverPositionParser::UpdateCoverPosition(const string &path)
 
     int32_t changeRows = -1;
     int32_t ret = rdbStore->Update(changeRows, values, predicates);
-    CHECK_AND_PRINT_LOG((ret == E_OK && changeRows > 0), "execute update cover_position failed, ret = %{public}d", ret);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "execute update cover_position failed, ret = %{public}d", ret);
 }
 
 void CoverPositionParser::SendUpdateNotify(const string &fileUri)

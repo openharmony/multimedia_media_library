@@ -40,6 +40,7 @@ ohos_unittest("medialibrary_rdb_test") {
   sources = [
     "${MEDIALIB_CLOUD_SYNC_PATH}/src/cloud_sync_helper.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/moving_photo_processor.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/metadata.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/media_datashare_stub_impl_test.cpp",

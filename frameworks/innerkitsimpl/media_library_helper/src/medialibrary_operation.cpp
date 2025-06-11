@@ -156,7 +156,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { MISC_OPERATION, OperationObject::MISCELLANEOUS },
         { PTP_OPERATION, OperationObject::PTP_OPERATION },
         { PTP_ALBUM_OPERATION, OperationObject::PTP_ALBUM_OPERATION },
-        { CUSTOM_RECORDS_OPERATON, OperationObject::CUSTOM_RECORDS_OPERATON},
+        { CUSTOM_RECORDS_OPERATION, OperationObject::CUSTOM_RECORDS_OPERATION},
     };
     return oprnObjMap;
 }
@@ -249,7 +249,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::PTP_OPERATION, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } }},
         { OperationObject::HIGHLIGHT_DELETE, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_ALBUM_TABLE } }},
         { OperationObject::PTP_ALBUM_OPERATION, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
-        { OperationObject::CUSTOM_RECORDS_OPERATON, { { OperationType::UNKNOWN_TYPE, CustomRecordsColumns::TABLE } } },
+        { OperationObject::CUSTOM_RECORDS_OPERATION, { { OperationType::UNKNOWN_TYPE, CustomRecordsColumns::TABLE } } },
     };
     return tableNameMap;
 }
@@ -376,6 +376,10 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_QUERY_HIGHLIGHT_DIRECTORY_SIZE, OperationType::QUERY_HIGHLIGHT_DIRECTORY_SIZE },
         { OPRN_LS, OperationType::LS_MEDIA_FILES },
         { OPRN_QUERY_ACTIVE_USER_ID, OperationType::QUERY_ACTIVE_USER_ID },
+        { OPRN_USER_ALBUM_COVER_URI, OperationType::SET_USER_ALBUM_COVER_URI},
+        { OPRN_SOURCE_ALBUM_COVER_URI, OperationType::SET_SOURCE_ALBUM_COVER_URI},
+        { OPRN_SYSTEM_ALBUM_COVER_URI, OperationType::SET_SYSTEM_ALBUM_COVER_URI},
+        { OPRN_RESET_COVER_URI, OperationType::RESET_COVER_URI},
     };
     return oprnTypeMap;
 }

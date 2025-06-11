@@ -245,13 +245,6 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsInRefreshTask_test_001, t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_IsInRefreshTask_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_SetNeedRefreshAlbum_test_001, testing::ext::TestSize.Level1)
-{
-    MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_SetNeedRefreshAlbum_test_001:start");
-    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
-    MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_SetNeedRefreshAlbum_test_001:stop");
-}
-
 HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateUserAlbumInternal_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateUserAlbumInternal_test_001:start");

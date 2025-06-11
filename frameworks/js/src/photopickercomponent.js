@@ -261,6 +261,8 @@ export class PhotoPickerComponent extends ViewPU {
                     photoBrowserCheckboxPosition: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserCheckboxPosition,
                     gridMargin: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.gridMargin,
                     photoBrowserMargin: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.photoBrowserMargin,
+                    gridStartOffset: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.gridStartOffset,
+                    gridEndOffset: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.gridEndOffset,
                     singleLineConfig: null === (k = this.pickerOptions) || void 0 === k ? void 0 : this.getSingleLineConfig(k.singleLineConfig),
                     uiComponentColorMode: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.uiComponentColorMode,
                 }

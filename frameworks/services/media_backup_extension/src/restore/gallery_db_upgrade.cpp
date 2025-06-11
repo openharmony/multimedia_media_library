@@ -49,6 +49,7 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     this->AddIndexOfAlbumPlugin(store);
     this->AddStoryChosenOfGalleryMedia(store);
     this->CreateRelativeAlbumOfGalleryAlbum(store);
+    this->AddRelativeBucketIdColumn(store);
     return NativeRdb::E_OK;
 }
 
@@ -189,6 +190,38 @@ int32_t GalleryDbUpgrade::CreateRelativeAlbumOfGalleryAlbum(NativeRdb::RdbStore 
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Create RelativeAlbum Of Gallery Album failed,"
         "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
     MEDIA_INFO_LOG("Create Relative Album Of Gallery Album success");
+    return ret;
+}
+
+/**
+ * @brief Add relative_bucket_id column for gallery_cover_cache table in gallery.db.
+ */
+int32_t GalleryDbUpgrade::AddRelativeBucketIdColumn(NativeRdb::RdbStore &store)
+{
+    std::string sql = "ALTER TABLE gallery_cover_cache ADD COLUMN relative_bucket_id TEXT default ''";
+    int32_t ret = store.ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Add relative_bucket_id column for gallery_cover_cache table failed,"
+        "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+
+    std::string prefix = "/gallery/album/entity/preferential/*/%";
+    size_t prefixLen = prefix.size();
+    std::string updateSql = "UPDATE gallery_cover_cache SET relative_bucket_id = SUBSTR(column_value, " +
+        std::to_string(prefixLen) + ") where column_name = 'relative_bucket_id' AND from_user = 1 AND "
+        "column_value LIKE'" + prefix + "'";
+    ret = store.ExecuteSql(updateSql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "update gallery_cover_cache Album failed,"
+        "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+    
+    prefix = "/gallery/album/entity/common/1/%";
+    prefixLen = prefix.size();
+    updateSql = "UPDATE gallery_cover_cache SET relative_bucket_id = SUBSTR(column_value, " +
+        std::to_string(prefixLen) +
+        ") where column_name = 'relative_bucket_id' AND from_user = 1 AND column_value LIKE'" + prefix + "'";
+    ret = store.ExecuteSql(updateSql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "update gallery_cover_cache Album failed,"
+        "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+
+    MEDIA_INFO_LOG("Add and update relative_bucket_id column for gallery_cover_cache table success");
     return ret;
 }
 }  // namespace DataTransfer

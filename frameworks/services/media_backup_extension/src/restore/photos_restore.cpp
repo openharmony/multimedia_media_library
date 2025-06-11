@@ -344,4 +344,9 @@ bool PhotosRestore::IsEndWithEnhanced(const std::string &displayName)
     std::regex pattern(R"(.*_enhanced(\.[^.]+)$)");
     return std::regex_match(displayName, pattern);
 }
+
+PhotoAlbumDao::PhotoAlbumRowData PhotosRestore::GetPhotoAlbumDaoRowData(string& lPath)
+{
+    return this->photoAlbumDao_.GetPhotoAlbum(lPath);
+}
 }  // namespace OHOS::Media

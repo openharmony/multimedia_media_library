@@ -87,6 +87,10 @@ static void InitAlbumReqData(MDKRecordAlbumData &albumData, OnFetchRecordsAlbumR
     if (cloudIdOpt.has_value()) {
         data.cloudId = cloudIdOpt.value();
     }
+    auto albumsCoverUriSource = albumData.GetCoverUriSource();
+    if (albumsCoverUriSource.has_value()) {
+        data.coverUriSource = albumsCoverUriSource.value();
+    }
 }
 
 /**

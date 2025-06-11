@@ -1382,35 +1382,11 @@ int32_t CloudMediaPhotosDao::OnDeleteRecordsAsset(const PhotosDto &record)
     MEDIA_INFO_LOG("OnDeleteRecordsAsset");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "OnDeleteRecordsAsset Failed to get rdbStore.");
-
-    NativeRdb::AbsRdbPredicates predicates1 = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
-    std::shared_ptr<NativeRdb::ResultSet> resultSet1 = rdbStore->Query(predicates1, {"*"});
-    int32_t count;
-    resultSet1->GetRowCount(count);
-    while (resultSet1->GoToNextRow() == NativeRdb::E_OK) {
-        std::string keyData = "data";
-        std::string value = GetStringVal(keyData, resultSet1);
-        std::string cloudId = GetStringVal(PhotoColumn::PHOTO_CLOUD_ID, resultSet1);
-        MEDIA_DEBUG_LOG(
-            "OnDeleteRecordsAsset All before data: %{public}s, cloudId: %{public}s", value.c_str(), cloudId.c_str());
-    }
-    resultSet1->Close();
-
     string whereClause = PhotoColumn::PHOTO_CLOUD_ID + " = ?";
     std::vector<std::string> whereArgs = {record.dkRecordId};
     int32_t deletedRows = -1;
     int32_t ret = rdbStore->Delete(deletedRows, PhotoColumn::PHOTOS_TABLE, whereClause, whereArgs);
     MEDIA_INFO_LOG("OnDeleteRecordsAsset Result: %{public}d, delete rows: %{public}d", ret, deletedRows);
-    NativeRdb::AbsRdbPredicates predicates2 = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
-    std::shared_ptr<NativeRdb::ResultSet> resultSet2 = rdbStore->Query(predicates2, {"*"});
-    while (resultSet2->GoToNextRow() == NativeRdb::E_OK) {
-        std::string keyData = "data";
-        std::string value = GetStringVal(keyData, resultSet2);
-        std::string cloudId = GetStringVal(PhotoColumn::PHOTO_CLOUD_ID, resultSet2);
-        MEDIA_DEBUG_LOG(
-            "OnDeleteRecordsAsset All after data: %{public}s, cloudId: %{public}s", value.c_str(), cloudId.c_str());
-    }
-    resultSet2->Close();
     if (ret != E_OK || deletedRows <= 0) {
         MEDIA_ERR_LOG("OnDeleteRecordsAsset fail err %{public}d, delete rows: %{public}d", ret, deletedRows);
         return ret;

@@ -656,6 +656,9 @@ bool IThumbnailHelper::StorePictureLowQuality(ThumbnailData &data,
     }
     MEDIA_ERR_LOG("Can not generate demand lcd. sizeLimit: %{public}zu, lastGeneratedSize: %{public}zu",
         sizeLimit, lastGeneratedSize);
+    if (!isSourceEx) {
+        ThumbnailUtils::CacheInvalidLcdInfo(data);
+    }
     return false;
 }
 
@@ -720,6 +723,9 @@ bool IThumbnailHelper::StoreLcdPixelMapLowQuality(ThumbnailData& data, const std
     }
     MEDIA_ERR_LOG("Can not generate demand lcd. sizeLimit: %{public}zu, lastGeneratedSize: %{public}zu",
         sizeLimit, lastGeneratedSize);
+    if (!isSourceEx) {
+        ThumbnailUtils::CacheInvalidLcdInfo(data);
+    }
     return false;
 }
 

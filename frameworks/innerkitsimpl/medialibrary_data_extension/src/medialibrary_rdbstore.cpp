@@ -4333,6 +4333,17 @@ static void AddDcAnalysisIndexUpdateColumn(RdbStore &store)
     MEDIA_INFO_LOG("Add DC analysis index update column end");
 }
 
+static void AddCoverUriSourceColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " + PhotoAlbumColumns::COVER_URI_SOURCE +
+            " INT NOT NULL DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("add cover_uri_source column start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("add cover_uri_source column end");
+}
+
 static void FixSourceAlbumCreateTriggersToUseLPath(RdbStore& store)
 {
     const vector<string> sqls = {
@@ -4506,15 +4517,16 @@ static void CreateTabCustomRecords(RdbStore &store)
     MEDIA_INFO_LOG("create custom and records end");
 }
 
-static void AddIsRectificationCover(RdbStore &store)
+static int32_t AddIsRectificationCover(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_IS_RECTIFICATION_COVER +
             " INT NOT NULL DEFAULT 0",
     };
     MEDIA_INFO_LOG("start add is_rectification_cover column");
-    ExecSqls(sqls, store);
+    int32_t ret = ExecSqls(sqls, store);
     MEDIA_INFO_LOG("end add is_rectification_cover column");
+    return ret;
 }
 
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
@@ -4564,12 +4576,17 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
     }
 
     if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
-        AddIsRectificationCover(store);
-        UpdatePhotosMdirtyTrigger(store);
+        if (AddIsRectificationCover(store) == NativeRdb::E_OK) {
+            UpdatePhotosMdirtyTrigger(store);
+        }
     }
 
     TableEventHandler().OnUpgrade(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), oldVersion, MEDIA_RDB_VERSION);
+
+    if (oldVersion < VERSION_ADD_COVER_URI_SOURCE) {
+        AddCoverUriSourceColumn(store);
+    }
 }
 
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)

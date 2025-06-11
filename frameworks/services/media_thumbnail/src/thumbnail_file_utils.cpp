@@ -20,6 +20,10 @@
 #include <ftw.h>
 #include <unordered_map>
 
+#ifdef HAS_WIFI_MANAGER_PART
+#include "wifi_device.h"
+#endif
+
 #include "dfx_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
@@ -272,6 +276,18 @@ bool ThumbnailFileUtils::RemoveDirectoryAndFile(const std::string &path)
         "Remove path failed, errno:%{public}d, path:%{public}s, errCode:%{public}d",
         errno, DfxUtils::GetSafePath(path).c_str(), errCode.value());
     return true;
+}
+
+bool ThumbnailFileUtils::IsWifiConnected()
+{
+    bool isWifiConnected = false;
+#ifdef HAS_WIFI_MANAGER_PART
+    auto wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
+    CHECK_AND_RETURN_RET_LOG(wifiDevicePtr != nullptr, false, "WifiDevicePtr is nullptr");
+    int32_t ret = wifiDevicePtr->IsConnected(isWifiConnected);
+    CHECK_AND_RETURN_RET_LOG(ret == Wifi::WIFI_OPT_SUCCESS, false, "Get Is Connnected Fail: %{public}d", ret);
+#endif
+    return isWifiConnected;
 }
 } // namespace Media
 } // namespace OHOS

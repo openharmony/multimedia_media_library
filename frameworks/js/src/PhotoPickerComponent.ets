@@ -194,6 +194,8 @@ export struct PhotoPickerComponent {
             photoBrowserCheckboxPosition: this.pickerOptions?.photoBrowserCheckboxPosition as [number, number],
             gridMargin: this.pickerOptions?.gridMargin as Margin,
             photoBrowserMargin: this.pickerOptions?.photoBrowserMargin as Margin,
+            gridStartOffset: this.pickerOptions?.gridStartOffset as number,
+            gridEndOffset: this.pickerOptions?.gridEndOffset as number,
             singleLineConfig: this.getSingleLineConfig(this.pickerOptions?.singleLineConfig as SingleLineConfig),
             uiComponentColorMode: this.pickerOptions?.uiComponentColorMode as PickerColorMode,
           }

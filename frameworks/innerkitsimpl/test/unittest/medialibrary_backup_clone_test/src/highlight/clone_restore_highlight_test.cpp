@@ -54,6 +54,9 @@ const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + VISION_LABEL_TABLE,
     "DELETE FROM " + VISION_RECOMMENDATION_TABLE,
     "DELETE FROM " + VISION_SALIENCY_TABLE,
+    "DELETE FROM " + ANALYSIS_SEARCH_INDEX_TABLE,
+    "DELETE FROM " + ANALYSIS_VIDEO_FACE_TABLE,
+    "DELETE FROM " + ANALYSIS_BEAUTY_SCORE_TABLE,
 };
 
 const string TEST_BACKUP_PATH = "/data/test/backup/db";
@@ -536,7 +539,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_001, TestSize
     cloneRestoreCVAnalysis->RestoreAlbums(restoreHighlight);
     EXPECT_NE(cloneRestoreCVAnalysis->saliencyInfos_.size(), 0);
     EXPECT_NE(cloneRestoreCVAnalysis->recommendInfos_.size(), 0);
-    EXPECT_NE(cloneRestoreCVAnalysis->labelInfos_.size(), 0);
+    EXPECT_EQ(cloneRestoreCVAnalysis->labelInfos_.size(), 0);
 
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }

@@ -36,6 +36,7 @@ enum class AlbumChangeOperation {
     DISMISS_ASSET,
     SET_IS_ME,
     DISMISS,
+    RESET_COVER_URI,
 };
 
 class MediaAlbumChangeRequestImpl : public OHOS::FFI::FFIData, public MediaChangeRequestImpl {
