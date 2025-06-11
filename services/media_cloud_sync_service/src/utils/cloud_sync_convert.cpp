@@ -375,6 +375,11 @@ int32_t CloudSyncConvert::CompensatePropDataAdded(const CloudMediaPullDataDto &d
         MEDIA_ERR_LOG("The dataAdded createTime of record is incorrect");
     }
     values.PutLong(PhotoColumn::MEDIA_DATE_ADDED, dataAdded);
+    int64_t createTime = data.basicCreatedTime;
+    if (createTime <= 0) {
+        createTime = dataAdded;
+    }
+    values.PutLong(PhotoColumn::MEDIA_DATE_TAKEN, createTime);
     CompensateFormattedDate(dataAdded / MILLISECOND_TO_SECOND, values);
     return E_OK;
 }

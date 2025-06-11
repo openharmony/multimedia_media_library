@@ -150,7 +150,7 @@ int32_t CloudFileDataConvert::HandleFormattedDate(
     std::string day = upLoadRecord.dateDay;
     if (year.empty() || month.empty() || day.empty()) {
         MEDIA_INFO_LOG("HandleFormattedDate year month day is empty");
-        int64_t createTime = upLoadRecord.dateAdded;
+        int64_t createTime = upLoadRecord.dateTaken;
         createTime = createTime / MILLISECOND_TO_SECOND;
         year = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, createTime);
         month = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, createTime);
