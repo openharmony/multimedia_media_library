@@ -20,7 +20,7 @@
 
 #include "custom_records_column.h"
 namespace OHOS::Media {
-const std::string CUSTOM_RECORDS_OPERATON = "custom_records";
+const std::string CUSTOM_RECORDS_OPERATION = "custom_records";
 
 const std::string CUSTOM_RECORDS_CREATE_URI = CustomRecordsColumns::CUSTOM_RECORDS_URI_PREFIX + "/" + OPRN_CREATE;
 const std::string CUSTOM_RECORDS_QUERY_URI = CustomRecordsColumns::CUSTOM_RECORDS_URI_PREFIX + "/" + OPRN_QUERY;

@@ -34,5 +34,5 @@ public:
 
     static const std::string CUSTOM_RECORDS_URI_PREFIX EXPORT;
 };
-} // namespace OHOS::MEDIA
+} // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_CUSTOM_RECORDS_COLUMN_H

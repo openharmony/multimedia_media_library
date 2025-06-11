@@ -20,7 +20,7 @@
 
 namespace OHOS::Media {
 
-int32_t CustomRecordOperations::InsertCustomRescord(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
+int32_t CustomRecordOperations::InsertCustomRecord(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
     MediaLibraryCommand &cmd)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "custom record insert rdbStore is nullptr");
@@ -42,7 +42,7 @@ int32_t CustomRecordOperations::BatchAddCustomRecords(MediaLibraryCommand &cmd,
     for (auto &value : values) {
         NativeRdb::ValuesBucket rdbValue = RdbDataShareAdapter::RdbUtils::ToValuesBucket(value);
         cmd.SetValueBucket(rdbValue);
-        errCode = InsertCustomRescord(rdbStore, cmd);
+        errCode = InsertCustomRecord(rdbStore, cmd);
         CHECK_AND_RETURN_RET_LOG(errCode >= 0, E_HAS_DB_ERROR, "custom record insert fail");
     }
     return errCode;
