@@ -250,6 +250,16 @@ static int32_t WrCheckPermission(const string &filePath, const string &mode,
     return PermissionUtils::CheckPhotoCallerPermission(perms, uid, tokenCaller)? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
+static bool CheckPermissionType(const vector<int32_t> currentTypes, const set<int32_t> targetTypes)
+{
+    for (int32_t type : currentTypes) {
+        if (targetTypes.count(type) > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static int32_t DbCheckPermission(const string &filePath, const string &mode, const string &fileId,
     const string &appId, const AccessTokenID &tokenCaller)
 {
@@ -267,21 +277,18 @@ static int32_t DbCheckPermission(const string &filePath, const string &mode, con
     columns.push_back("appid");
     columns.push_back("target_tokenId");
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    int32_t permissionType = 0;
-    int32_t numRows = 0;
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_PERMISSION_DENIED, "Failed to get permission type");
-    int32_t ret = resultSet->GetRowCount(numRows);
-    bool cond = ((ret != NativeRdb::E_OK) || (numRows <= 0));
-    CHECK_AND_RETURN_RET_LOG(!cond, E_PERMISSION_DENIED, "Failed to get permission type");
-    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        permissionType = MediaLibraryRdbStore::GetInt(resultSet, FIELD_PERMISSION_TYPE);
+    vector<int32_t> permissionTypes;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t permissionType = MediaLibraryRdbStore::GetInt(resultSet, FIELD_PERMISSION_TYPE);
+        permissionTypes.push_back(permissionType);
         MEDIA_INFO_LOG("get permissionType %{public}d", permissionType);
     }
-    cond = ((mode.find("r") != string::npos) &&
-        (AppUriPermissionColumn::PERMISSION_TYPES_ALL.count(permissionType) == 0));
+    bool cond = ((mode.find("r") != string::npos) &&
+        (!CheckPermissionType(permissionTypes, AppUriPermissionColumn::PERMISSION_TYPE_READ)));
     CHECK_AND_RETURN_RET(!cond, E_PERMISSION_DENIED);
     cond = ((mode.find("w") != string::npos) &&
-        (AppUriPermissionColumn::PERMISSION_TYPE_WRITE.count(permissionType) == 0));
+        (!CheckPermissionType(permissionTypes, AppUriPermissionColumn::PERMISSION_TYPE_WRITE)));
     CHECK_AND_RETURN_RET(!cond, E_PERMISSION_DENIED);
     return E_SUCCESS;
 }
