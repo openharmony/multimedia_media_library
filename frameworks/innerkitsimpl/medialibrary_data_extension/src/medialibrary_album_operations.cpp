@@ -59,11 +59,13 @@
 #include "vision_total_column.h"
 #include "photo_owner_album_id_operation.h"
 #include "photo_storage_operation.h"
+#include "asset_accurate_refresh.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 using namespace OHOS::RdbDataShareAdapter;
+using namespace OHOS::Media::AccurateRefresh;
 
 namespace OHOS::Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -352,15 +354,18 @@ int DoCreatePhotoAlbum(const string &albumName, const string &relativePath, cons
     PrepareWhere(albumName, relativePath, wherePredicates);
     sql.append(" WHERE NOT EXISTS (");
     MediaLibraryRdbStore::BuildQuerySql(wherePredicates, { PhotoAlbumColumns::ALBUM_ID }, bindArgs, sql);
-    sql.append(");");
+    sql.append(")");
     MEDIA_DEBUG_LOG("DoCreatePhotoAlbum InsertSql: %{private}s", sql.c_str());
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     int64_t lastInsertRowId = 0;
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, lastInsertRowId, "RdbStore is nullptr!");
-    lastInsertRowId = rdbStore->ExecuteForLastInsertedRowId(sql, bindArgs);
+    AlbumAccurateRefresh albumRefresh;
+    albumRefresh.Init();
+    lastInsertRowId = albumRefresh.ExecuteForLastInsertedRowId(sql, bindArgs, RdbOperation::RDB_OPERATION_ADD);
     CHECK_AND_RETURN_RET_LOG(lastInsertRowId >= 0, lastInsertRowId, "insert fail and rollback");
     MEDIA_INFO_LOG("Create photo album success, id: %{public}" PRId64, lastInsertRowId);
+    if (lastInsertRowId > 0) {
+        albumRefresh.Notify();
+    }
     return lastInsertRowId;
 }
 
@@ -457,14 +462,19 @@ static unordered_map<string, pair<bool, string>> QueryPhotoAlbumSchema()
 }
 
 int32_t MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(int32_t id, const ValuesBucket& albumValues,
-    std::shared_ptr<TransactionOperations> trans)
+    std::shared_ptr<TransactionOperations> trans, AlbumAccurateRefresh *albumRefresh)
 {
     MEDIA_INFO_LOG("Renew deleted PhotoAlbum start, album id: %{public}d", id);
     unordered_map<string, pair<bool, string>> photoAlbumSchema = QueryPhotoAlbumSchema();
     vector<NativeRdb::ValueObject> bindArgs;
     string sql = BuildReuseSql(id, albumValues, photoAlbumSchema, bindArgs);
     int32_t ret {};
-    if (trans) {
+    if (albumRefresh) {
+        RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+        predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(id));
+        albumRefresh->Init(predicates);
+        ret = albumRefresh->ExecuteSql(sql, bindArgs, RdbOperation::RDB_OPERATION_UPDATE);
+    } else if (trans) {
         ret = trans->ExecuteSql(sql, bindArgs);
     } else {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -548,6 +558,7 @@ int CreatePhotoAlbum(const string &albumName)
     bool isDeleted = false;
     bool isSameName = false;
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    AlbumAccurateRefresh albumRefresh(trans);
     std::function<int(void)> tryReuseDeleted = [&]()->int {
         id = QueryExistingAlbumByLpath(albumName, isDeleted, isSameName);
         if (id <= 0) {
@@ -558,7 +569,7 @@ int CreatePhotoAlbum(const string &albumName)
         MEDIA_INFO_LOG("%{public}s photo album with the same lpath exists, reuse the record id %{public}d.",
             isDeleted ? "Deleted" : "Existing", id);
         if (isDeleted) {
-            int32_t ret = MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(id, albumValues, trans);
+            int32_t ret = MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(id, albumValues, trans, &albumRefresh);
             CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to update deleted album: %{public}s", albumName.c_str());
             return ret;
         }
@@ -567,6 +578,7 @@ int CreatePhotoAlbum(const string &albumName)
     int ret = trans->RetryTrans(tryReuseDeleted);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_DB_ERROR, "Try trans fail!, ret: %{public}d", ret);
     if (id > 0 && (!isSameName || isDeleted)) {
+        albumRefresh.Notify();
         return id;
     }
 
@@ -649,7 +661,12 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
         MEDIA_ERR_LOG("Update trashed asset failed");
         return E_HAS_DB_ERROR;
     }
-    int deleteRow = MediaLibraryRdbStore::Delete(predicates);
+    AlbumAccurateRefresh albumRefresh;
+    int deleteRow = -1;
+    albumRefresh.Delete(predicates, deleteRow);
+    if (deleteRow > 0) {
+        albumRefresh.Notify();
+    }
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     const vector<string> &notifyUris = predicates.GetWhereArgs();
@@ -1005,8 +1022,8 @@ static bool BuildNewNameValuesBucket(const shared_ptr<MediaLibraryRdbStore>& rdb
     return true;
 }
 
-static bool SetNewNameExecute(const shared_ptr<MediaLibraryRdbStore>& rdbStore, int32_t oldAlbumId, int64_t& newAlbumId,
-    NativeRdb::ValuesBucket& newNameValues, bool isCloudAlbum)
+static bool SetNewNameExecute(AlbumAccurateRefresh &albumRefresh, const shared_ptr<MediaLibraryRdbStore>& rdbStore,
+    int32_t oldAlbumId, int64_t& newAlbumId, NativeRdb::ValuesBucket& newNameValues, bool isCloudAlbum)
 {
     if (newAlbumId > 0) {
         // Deleted album with same lpath exists
@@ -1014,7 +1031,7 @@ static bool SetNewNameExecute(const shared_ptr<MediaLibraryRdbStore>& rdbStore, 
         newNameValues.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
         RdbPredicates rdbPredicatesNew(PhotoAlbumColumns::TABLE);
         rdbPredicatesNew.EqualTo(PhotoAlbumColumns::ALBUM_ID, newAlbumId);
-        CHECK_AND_RETURN_RET_LOG(rdbStore->Update(changeRows, newNameValues, rdbPredicatesNew) == NativeRdb::E_OK,
+        CHECK_AND_RETURN_RET_LOG(albumRefresh.Update(changeRows, newNameValues, rdbPredicatesNew) == NativeRdb::E_OK,
             false, "Failed to update deleted album with same name");
         CHECK_AND_RETURN_RET_LOG(MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(rdbStore, oldAlbumId,
             newAlbumId, false) == E_OK, false, "Failed to merge old name album with new name album");
@@ -1022,9 +1039,8 @@ static bool SetNewNameExecute(const shared_ptr<MediaLibraryRdbStore>& rdbStore, 
             "old album id: %{public}d, new album id: %{public}" PRId64, oldAlbumId, newAlbumId);
     } else {
         newNameValues.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
-        CHECK_AND_RETURN_RET_LOG(
-            rdbStore->Insert(newAlbumId, PhotoAlbumColumns::TABLE, newNameValues) == NativeRdb::E_OK,
-            false, "Failed to insert new name album");
+        CHECK_AND_RETURN_RET_LOG(albumRefresh.Insert(newAlbumId, PhotoAlbumColumns::TABLE,
+            newNameValues) == NativeRdb::E_OK, false, "Failed to insert new name album");
         CHECK_AND_RETURN_RET_LOG(MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(rdbStore, oldAlbumId,
             newAlbumId, isCloudAlbum) == E_OK, false, "Failed to merge old name album with new name album");
         MEDIA_INFO_LOG("Set photo album name: insert new name album success,"
@@ -1067,12 +1083,12 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckAlbumName(newAlbumName) == E_OK, E_INVALID_ARGS,
         "Check album name failed");
     MEDIA_INFO_LOG("Start to set user album name of id %{public}d", oldAlbumId);
-
     vector<string> fileIdsToUpdateIndex = GetAssetIdsFromOldAlbum(rdbStore, oldAlbumId);
-
     bool argInvalid { false };
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int64_t newAlbumId = -1;
+
+    AlbumAccurateRefresh albumRefresh;
     std::function<int(void)> trySetUserAlbumName = [&]()->int {
         newAlbumId = -1;
         int32_t ret = CheckConflictsWithExistingAlbum(newAlbumName, rdbStore);
@@ -1090,7 +1106,8 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
             argInvalid = true;
             return E_OK;
         }
-        CHECK_AND_RETURN_RET_LOG(SetNewNameExecute(rdbStore, oldAlbumId, newAlbumId, newNameValues, isCloudAlbum),
+        CHECK_AND_RETURN_RET_LOG(
+            SetNewNameExecute(albumRefresh, rdbStore, oldAlbumId, newAlbumId, newNameValues, isCloudAlbum),
             E_HAS_DB_ERROR, "Set new name execute failed");
         return E_OK;
     };
@@ -1102,9 +1119,9 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
         MEDIA_ERR_LOG("Try trans fail!, ret: %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-
     UpdateAnalysisIndexAfterRename(fileIdsToUpdateIndex);
 
+    albumRefresh.Notify();
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
@@ -1195,10 +1212,13 @@ int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbum(const ValuesBucket &values
     rdbPredicates.Or()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SMART));
     rdbPredicates.EndWrap();
 
-    int32_t changedRows = MediaLibraryRdbStore::UpdateWithDateTime(rdbValues, rdbPredicates);
-    CHECK_AND_PRINT_LOG(changedRows >= 0, "Update photo album failed: %{public}d", changedRows);
+    AlbumAccurateRefresh albumRefresh;
+    int32_t changedRows = -1;
+    err = albumRefresh.Update(changedRows, rdbValues, rdbPredicates);
+    CHECK_AND_PRINT_LOG(changedRows >= 0, "Update photo album failed: %{public}d", err);
 
     if (changedRows > 0 && !needRename) { // No need to notify if album is to be renamed. Rename process will notify
+        albumRefresh.Notify();
         const int32_t notIdArgs = 3;
         auto ret = NotifyAlbumUpdate(rdbPredicates, notIdArgs);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Notify album update failed");
@@ -1455,7 +1475,8 @@ int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicate
     ValuesBucket rdbValues;
     rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);
 
-    int32_t changedRows = MediaLibraryRdbStore::UpdateWithDateTime(rdbValues, rdbPredicates);
+    AssetAccurateRefresh assetRefresh;
+    int32_t changedRows = assetRefresh.UpdateWithDateTime(rdbValues, rdbPredicates);
     if (changedRows < 0) {
         return changedRows;
     }
@@ -1465,10 +1486,7 @@ int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicate
 #endif
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), whereArgs);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, whereArgs, { NotifyAlbumType::SYS_ALBUM, false,
-        AlbumOperationType::RECOVER_PHOTO, true});
+    assetRefresh.RefreshAlbum();
 
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
@@ -1489,6 +1507,7 @@ int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicate
             watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
         }
     }
+    assetRefresh.Notify();
     return changedRows;
 }
 
@@ -1613,6 +1632,19 @@ static int32_t ObtainAlbumOrders(const int32_t &currentAlbumId, const int32_t re
     return E_OK;
 }
 
+static int32_t ExecuteSqls(AlbumAccurateRefresh &albumRefresh, const vector<string> &sqls, RdbOperation operation)
+{
+    int32_t err = NativeRdb::E_OK;
+    for (const auto &sql : sqls) {
+        err = albumRefresh.ExecuteSql(sql, operation);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to exec: %{private}s", sql.c_str());
+            break;
+        }
+    }
+    return NativeRdb::E_OK;
+}
+
 static int32_t ExecSqls(const vector<string> &sqls, const shared_ptr<MediaLibraryRdbStore> store)
 {
     int32_t err = NativeRdb::E_OK;
@@ -1669,8 +1701,8 @@ static void NotifyOrderChange(vector<int32_t> &changedAlbumIds)
     }
 }
 
-static int32_t UpdateSortedOrder(const int32_t &currentAlbumId, const int32_t referenceAlbumId,
-    int32_t &currentAlbumOrder, int32_t &referenceAlbumOrder)
+static int32_t UpdateSortedOrder(AlbumAccurateRefresh &albumRefresh, const int32_t &currentAlbumId,
+    const int32_t referenceAlbumId, int32_t &currentAlbumOrder, int32_t &referenceAlbumOrder)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
@@ -1679,7 +1711,12 @@ static int32_t UpdateSortedOrder(const int32_t &currentAlbumId, const int32_t re
     }
     std::string updateOtherAlbumOrder = "";
     std::string updateCurrentAlbumOrder = "";
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     if (currentAlbumOrder < referenceAlbumOrder) {
+        predicates.BeginWrap();
+        predicates.GreaterThan(PhotoAlbumColumns::ALBUM_ORDER, to_string(currentAlbumOrder));
+        predicates.LessThan(PhotoAlbumColumns::ALBUM_ORDER, to_string(referenceAlbumOrder));
+        predicates.EndWrap();
         updateOtherAlbumOrder = "UPDATE " + PhotoAlbumColumns::TABLE +
             " SET " + PhotoAlbumColumns::ALBUM_ORDER + " = " +
             PhotoAlbumColumns::ALBUM_ORDER + " -1 WHERE " + PhotoAlbumColumns::ALBUM_ORDER +
@@ -1689,6 +1726,10 @@ static int32_t UpdateSortedOrder(const int32_t &currentAlbumId, const int32_t re
             " = " + to_string(referenceAlbumOrder) + " -1 WHERE " +
             PhotoAlbumColumns::ALBUM_ID + " = " + to_string(currentAlbumId);
     } else {
+        predicates.BeginWrap();
+        predicates.GreaterThanOrEqualTo(PhotoAlbumColumns::ALBUM_ORDER, to_string(referenceAlbumOrder));
+        predicates.LessThan(PhotoAlbumColumns::ALBUM_ORDER, to_string(currentAlbumOrder));
+        predicates.EndWrap();
         updateOtherAlbumOrder = "UPDATE " + PhotoAlbumColumns::TABLE +
             " SET " + PhotoAlbumColumns::ALBUM_ORDER + " = " +
             PhotoAlbumColumns::ALBUM_ORDER + " +1 WHERE " + PhotoAlbumColumns::ALBUM_ORDER + " >= " +
@@ -1699,8 +1740,11 @@ static int32_t UpdateSortedOrder(const int32_t &currentAlbumId, const int32_t re
             to_string(referenceAlbumOrder) + " WHERE " +
             PhotoAlbumColumns::ALBUM_ID + " = " + to_string(currentAlbumId);
     }
+    predicates.Or();
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(currentAlbumId));
+    albumRefresh.Init(predicates);
     vector<string> updateSortedAlbumsSqls = { updateOtherAlbumOrder, updateCurrentAlbumOrder};
-    return ExecSqls(updateSortedAlbumsSqls, uniStore);
+    return ExecuteSqls(albumRefresh, updateSortedAlbumsSqls, RdbOperation::RDB_OPERATION_UPDATE);
 }
 
 static int32_t ObtainCurrentAlbumOrder(const int32_t &albumId, int32_t &albumOrder)
@@ -2006,8 +2050,10 @@ int32_t MediaLibraryAlbumOperations::OrderSingleAlbum(const ValuesBucket &values
     }
     vector<int32_t> changedAlbumIds;
     ObtainNotifyAlbumIds(currentAlbumOrder, referenceAlbumOrder, changedAlbumIds);
-    err = UpdateSortedOrder(currentAlbumId, referenceAlbumId, currentAlbumOrder, referenceAlbumOrder);
+    AlbumAccurateRefresh albumRefresh;
+    err = UpdateSortedOrder(albumRefresh, currentAlbumId, referenceAlbumId, currentAlbumOrder, referenceAlbumOrder);
     if (err == E_OK) {
+        albumRefresh.Notify();
         NotifyOrderChange(changedAlbumIds);
     }
     return E_OK;

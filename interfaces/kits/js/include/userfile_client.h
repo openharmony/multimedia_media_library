@@ -74,6 +74,10 @@ public:
     EXPORT static int32_t GetUserId();
     EXPORT static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelperByUser(const int32_t userId);
     EXPORT static std::string GetBundleName();
+    EXPORT static int32_t RegisterObserverExtProvider(const Uri &uri,
+        std::shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants);
+    EXPORT static int32_t UnregisterObserverExtProvider(const Uri &uri,
+        std::shared_ptr<DataShare::DataShareObserver> dataObserver);
 
 private:
     static inline std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;

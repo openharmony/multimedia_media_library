@@ -35,6 +35,7 @@
 #include "value_object.h"
 #include "values_bucket.h"
 #include "medialibrary_rdb_transaction.h"
+#include "asset_accurate_refresh.h"
 
 namespace OHOS {
 namespace Media {
@@ -274,6 +275,42 @@ private:
         bool isInvalidateThumb = true;
         std::shared_ptr<Media::Picture> originalPhotoPicture = nullptr;
     };
+};
+
+class DeleteFilesTask : public AsyncTaskData {
+public:
+    DeleteFilesTask(const std::vector<std::string> &ids, const std::vector<std::string> &paths,
+        const std::vector<std::string> &notifyUris, const std::vector<std::string> &dateTakens,
+        const std::vector<int32_t> &subTypes, const std::string &table, int32_t deleteRows,
+        std::string bundleName, bool containsHidden)
+        : ids_(ids), paths_(paths), notifyUris_(notifyUris), dateTakens_(dateTakens), subTypes_(subTypes),
+        table_(table), deleteRows_(deleteRows), bundleName_(bundleName), containsHidden_(containsHidden) {}
+    virtual ~DeleteFilesTask() override = default;
+    void SetOtherInfos(const std::map<std::string, std::string> &displayNames,
+        const std::map<std::string, std::string> &albumNames, const std::map<std::string, std::string> &ownerAlbumIds)
+    {
+        displayNames_ = displayNames;
+        albumNames_ = albumNames;
+        ownerAlbumIds_ = ownerAlbumIds;
+    }
+    void SetAssetAccurateRefresh(std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh)
+    {
+        refresh_ = refresh;
+    }
+    std::vector<std::string> ids_;
+    std::vector<std::string> paths_;
+    std::vector<std::string> notifyUris_;
+    std::vector<std::string> dateTakens_;
+    std::vector<int32_t> subTypes_;
+    std::vector<int32_t> isTemps_;
+    std::string table_;
+    int32_t deleteRows_;
+    std::string bundleName_;
+    std::map<std::string, std::string> displayNames_;
+    std::map<std::string, std::string> albumNames_;
+    std::map<std::string, std::string> ownerAlbumIds_;
+    bool containsHidden_ = false;
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh_ = nullptr;
 };
 
 class DeleteNotifyAsyncTaskData : public AsyncTaskData {

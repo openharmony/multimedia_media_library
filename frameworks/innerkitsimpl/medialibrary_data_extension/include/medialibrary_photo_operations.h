@@ -26,6 +26,7 @@
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
 #include "picture.h"
+#include "asset_accurate_refresh.h"
 
 namespace OHOS {
 namespace Media {
@@ -83,8 +84,7 @@ public:
     EXPORT static int64_t CloneSingleAsset(MediaLibraryCommand &cmd);
     EXPORT static int32_t AddFiltersForCloudEnhancementPhoto(int32_t fileId, const std::string& assetPath,
         const std::string& editDataCameraSourcePath, const std::string& mimeType);
-    EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs,
-        std::shared_ptr<AlbumData> AlbumData = nullptr);
+    EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs);
     EXPORT static void TrashPhotosSendNotify(const std::vector<std::string> &notifyUris,
         std::shared_ptr<AlbumData> albumData = nullptr);
     EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto,

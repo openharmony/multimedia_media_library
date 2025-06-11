@@ -22,6 +22,7 @@
 #include "cloud_media_download_controller_service.h"
 #include "media_assets_controller_service.h"
 #include "media_albums_controller_service.h"
+#include "media_refresh_controller_service.h"
 
 namespace OHOS::Media::IPC {
 MediaControllerServiceFactory::MediaControllerServiceFactory()
@@ -33,6 +34,7 @@ MediaControllerServiceFactory::MediaControllerServiceFactory()
         std::make_shared<CloudSync::CloudMediaDownloadControllerService>(),
         std::make_shared<MediaAssetsControllerService>(),
         std::make_shared<MediaAlbumsControllerService>(),
+        std::make_shared<MediaRefreshControllerService>(),
     };
 }
 

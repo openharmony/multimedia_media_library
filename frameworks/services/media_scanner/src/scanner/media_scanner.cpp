@@ -35,6 +35,8 @@
 #include "photo_album_column.h"
 #include "vision_column.h"
 #include "moving_photo_file_utils.h"
+#include "medialibrary_notify_new.h"
+#include "asset_accurate_refresh.h"
 
 namespace OHOS {
 namespace Media {
@@ -266,10 +268,11 @@ int32_t MediaScannerObj::Commit()
     string tableName;
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
-        uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_);
+        uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_, true, assetRefresh);
         if (!isSkipAlbumUpdate_) {
-            mediaScannerDb_->UpdateAlbumInfoByMetaData(*data_);
+            assetRefresh->RefreshAlbum();
         }
         if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT && data_->GetBurstCoverLevel() == COVER) {
             if (data_->GetForAdd()) {
@@ -282,7 +285,8 @@ int32_t MediaScannerObj::Commit()
         }
     } else {
         MEDIA_INFO_LOG("insert new file: %{public}s", data_->GetFilePath().c_str());
-        uri_ = mediaScannerDb_->InsertMetadata(*data_, tableName, api_);
+        uri_ = mediaScannerDb_->InsertMetadata(*data_, tableName, api_, assetRefresh);
+        assetRefresh->RefreshAlbum();
         mediaScannerDb_->UpdateAlbumInfoByMetaData(*data_);
         if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT) {
             watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);

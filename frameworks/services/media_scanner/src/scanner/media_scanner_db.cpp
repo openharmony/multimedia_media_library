@@ -319,7 +319,8 @@ static void GetTableNameByPath(int32_t mediaType, string &tableName, const strin
     }
 }
 
-bool MediaScannerDb::InsertData(ValuesBucket values, const string &tableName, int64_t &rowNum)
+bool MediaScannerDb::InsertData(ValuesBucket values, const string &tableName, int64_t &rowNum,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -330,7 +331,13 @@ bool MediaScannerDb::InsertData(ValuesBucket values, const string &tableName, in
         return false;
     }
 
-    int32_t result = rdbStore->Insert(rowNum, tableName, values);
+    int32_t result = -1;
+    if (refresh != nullptr) {
+        refresh->Init();
+        result = refresh->Insert(rowNum, tableName, values);
+    } else {
+        result = rdbStore->Insert(rowNum, tableName, values);
+    }
     if (rowNum <= 0) {
         MEDIA_ERR_LOG("MediaDataAbility Insert functionality is failed, rowNum %{public}ld", (long)rowNum);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
@@ -350,7 +357,8 @@ bool MediaScannerDb::InsertData(ValuesBucket values, const string &tableName, in
     return true;
 }
 
-string MediaScannerDb::InsertMetadata(const Metadata &metadata, string &tableName, MediaLibraryApi api)
+string MediaScannerDb::InsertMetadata(const Metadata &metadata, string &tableName, MediaLibraryApi api,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh)
 {
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri;
@@ -381,7 +389,7 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata, string &tableNam
     }
 
     int64_t rowNum = 0;
-    if (!InsertData(values, tableName, rowNum)) {
+    if (!InsertData(values, tableName, rowNum, refresh)) {
         return "";
     }
 
@@ -419,8 +427,8 @@ static inline void GetUriStringInUpdate(MediaType mediaType, MediaLibraryApi api
  * @param metadata The metadata object which has the information about the file
  * @return string The mediatypeUri corresponding to the given metadata
  */
-string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableName, MediaLibraryApi api,
-    bool skipPhoto)
+string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableName, MediaLibraryApi api, bool skipPhoto,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh)
 {
     int32_t updateCount(0);
     ValuesBucket values;
@@ -442,12 +450,14 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableNam
     }
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return "";
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, "", "rdbStore is nullptr");
 
-    int32_t result = rdbStore->Update(updateCount, tableName, values, whereClause, whereArgs);
+    int32_t result = -1;
+    if (refresh != nullptr && tableName == PhotoColumn::PHOTOS_TABLE) {
+        result = refresh->Update(updateCount, tableName, values, whereClause, whereArgs);
+    } else {
+        result = rdbStore->Update(updateCount, tableName, values, whereClause, whereArgs);
+    }
     if (result != NativeRdb::E_OK || updateCount <= 0) {
         MEDIA_ERR_LOG("Update operation failed. Result %{public}d. Updated %{public}d", result, updateCount);
         if (result != NativeRdb::E_OK) {
@@ -463,12 +473,8 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableNam
         return "";
     }
 
-    if (mediaTypeUri.empty()) {
-        return "";
-    }
-    if (api == MediaLibraryApi::API_10) {
-        return MakeFileUri(mediaTypeUri, metadata);
-    }
+    CHECK_AND_RETURN_RET(!mediaTypeUri.empty(), "");
+    CHECK_AND_RETURN_RET(api != MediaLibraryApi::API_10, MakeFileUri(mediaTypeUri, metadata));
     return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(metadata.GetFileId()));
 }
 
