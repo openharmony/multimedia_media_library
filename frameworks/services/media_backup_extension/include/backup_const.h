@@ -608,7 +608,7 @@ struct ImageFaceTbl {
     std::optional<int32_t> totalFaces;
     std::optional<std::string> faceVersion;
     std::optional<std::string> featuresVersion;
-    std::optional<std::string> features;
+    std::optional<std::vector<uint8_t>> features;
     std::optional<int32_t> faceOcclusion;
     std::optional<std::string> analysisVersion;
     std::optional<double> beautyBounderX;
