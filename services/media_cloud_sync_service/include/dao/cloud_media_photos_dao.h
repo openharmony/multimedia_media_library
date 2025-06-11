@@ -199,7 +199,7 @@ private:
         ( \
             SELECT * \
             FROM Photos \
-            WHERE dirty IN (2, 3) AND \
+            WHERE dirty IN (2, 6) AND \
                 cloud_id <> '' AND \
                 cloud_id IS NOT NULL AND \
                 file_id NOT IN ({0}) \
