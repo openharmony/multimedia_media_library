@@ -63,12 +63,21 @@ bool PhotoDisplayNameOperation::IsDisplayNameExists(
         return false;
     }
     std::string querySql = this->SQL_PHOTOS_TABLE_QUERY_DISPLAY_NAME;
-    const std::vector<NativeRdb::ValueObject> bindArgs = {ownerAlbumId, displayName};
+    const std::vector<NativeRdb::ValueObject> bindArgs = {displayName};
     auto resultSet = rdbStore->QuerySql(querySql, bindArgs);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr) {
         return false;
     }
-    std::string displayNameInDb = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-    return displayNameInDb.size() > 0;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t albumIdInDb = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
+        if (albumIdInDb == ownerAlbumId) {
+            MEDIA_INFO_LOG("Media_Operation: the same displayName: %{public}s, ownerAlbumId: %{public}d",
+                displayName.c_str(), ownerAlbumId);
+            resultSet->Close();
+            return true;
+        }
+    }
+    resultSet->Close();
+    return false;
 }
 }  // namespace OHOS::Media

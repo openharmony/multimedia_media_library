@@ -29,6 +29,9 @@ static const std::string INPLACE_STICKER = "InplaceSticker";
 static const std::string TIMING_STICKER = "TimingSticker";
 static const std::string FESTIVAL_STICKER = "FestivalSticker";
 static const std::string FILTERS_FIELD = "filters";
+static const std::string IMAGE_EFFECT = "imageEffect";
+static const std::string FILTER_CATEGORY = "FILTER_CATEGORY";
+static const std::string BORDER_WATERMARK = "BORDER_WATERMARK";
 static const char FILTERS_END = ',';
 static const int32_t MAX_CONCURRENT_NUM = 5;
 static const int32_t START_DISTANCE = 10;
@@ -57,6 +60,7 @@ public:
         const std::string& effectDescription);
     static void AddCompositionTask(std::string& assetPath, std::string& editData);
     static void EraseStickerField(std::string& editData, size_t index, bool isTimingSticker);
+    static void EraseWatermarkTag(std::string& editData);
 
 private:
     static std::unordered_map<uint32_t, std::shared_ptr<VideoEditor>> editorMap_;
