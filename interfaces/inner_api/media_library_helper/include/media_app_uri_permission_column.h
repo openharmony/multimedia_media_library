@@ -48,6 +48,7 @@ public:
     static const int PERMISSION_PERSIST_WRITE EXPORT;
 
     static const std::set<int> PERMISSION_TYPE_WRITE EXPORT;
+    static const std::set<int> PERMISSION_TYPE_READ EXPORT;
     static const std::set<int> PERMISSION_TYPES_ALL EXPORT;
     static const std::set<int> PERMISSION_TYPES_PICKER EXPORT;
     static const std::set<int> PERMISSION_TYPES_TEMPORARY EXPORT;
