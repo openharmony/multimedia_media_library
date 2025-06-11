@@ -28,6 +28,7 @@
 #include "backup_const.h"
 #include "clone_restore_cv_analysis.h"
 #include "clone_restore_highlight.h"
+#include "clone_restore_analysis_data.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
@@ -217,6 +218,7 @@ private:
     void AddToPhotosFailedOffsets(int32_t offset);
     void ProcessPhotosBatchFailedOffsets(int32_t isRelatedToPhotoMap = 0);
     void ProcessCloudPhotosFailedOffsets(int32_t isRelatedToPhotoMap = 0);
+    void RestoreAnalysisTablesData();
     void RestoreAnalysisData();
     void RestoreSearchIndexData();
     void RestoreAnalysisClassify();
@@ -272,6 +274,7 @@ private:
     std::atomic<uint64_t> thumbMigrateFileNumber_{0};
     std::atomic<uint64_t> migrateCloudSuccessNumber_{0};
     CloneRestoreGeoDictionary cloneRestoreGeoDictionary_;
+    CloneRestoreAnalysisData cloneRestoreAnalysisData_;
     int64_t maxSearchId_ {0};
     int64_t maxAnalysisAlbumId_ {0};
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;

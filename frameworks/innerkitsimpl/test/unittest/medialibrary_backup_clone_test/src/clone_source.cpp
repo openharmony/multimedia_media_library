@@ -32,6 +32,7 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
+const std::string SEGMENTATION_ANALYSIS_TABLE = "tab_analysis_segmentation";
 const unordered_map<string, string> TABLE_CREATE_MAP = {
     { PhotoColumn::PHOTOS_TABLE, PhotoColumn::CREATE_PHOTO_TABLE },
     { PhotoAlbumColumns::TABLE, PhotoAlbumColumns::CREATE_TABLE },
@@ -42,6 +43,7 @@ const unordered_map<string, string> TABLE_CREATE_MAP = {
     { ANALYSIS_PHOTO_MAP_TABLE, CREATE_ANALYSIS_ALBUM_MAP },
     { AudioColumn::AUDIOS_TABLE, AudioColumn::CREATE_AUDIO_TABLE },
     { GEO_DICTIONARY_TABLE, CREATE_GEO_DICTIONARY_TABLE },
+    { SEGMENTATION_ANALYSIS_TABLE, CREATE_SEGMENTATION_ANALYSIS_TABLE },
     { VISION_LABEL_TABLE, CREATE_TAB_ANALYSIS_LABEL },
     { VISION_VIDEO_LABEL_TABLE, CREATE_TAB_ANALYSIS_VIDEO_LABEL },
     { ANALYSIS_SEARCH_INDEX_TABLE, CREATE_SEARCH_INDEX_TBL },
@@ -60,6 +62,7 @@ const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { ANALYSIS_PHOTO_MAP_TABLE, InsertType::ANALYSIS_PHOTO_MAP },
     { AudioColumn::AUDIOS_TABLE, InsertType::AUDIOS },
     { GEO_DICTIONARY_TABLE, InsertType::ANALYSIS_GEO_DICTIONARY },
+    { SEGMENTATION_ANALYSIS_TABLE, InsertType::ANALYSIS_SEGMENTATION },
     { VISION_LABEL_TABLE, InsertType::TAB_ANALYSIS_LABEL },
     { VISION_VIDEO_LABEL_TABLE, InsertType::TAB_ANALYSIS_VIDEO_LABEL },
     { GEO_KNOWLEDGE_TABLE, InsertType::TAB_ANALYSIS_GEO_KNOWLEDGE },
@@ -240,6 +243,10 @@ void CloneSource::InsertByTypeTwo(InsertType insertType)
             InsertTabVideoFace();
             break;
         }
+        case InsertType::ANALYSIS_SEGMENTATION: {
+            InsertAnalysisSegmentation();
+            break;
+        }
         default:
             MEDIA_INFO_LOG("Invalid insert type: %{public}d", static_cast<int32_t>(insertType));
     }
@@ -366,6 +373,13 @@ void CloneSource::InsertAnalysisGeoDictionary()
     //city_id, language, city_name,
     cloneStorePtr_->ExecuteSql(INSERT_ANALYSIS_GEO_DICTIONARY + VALUES_BEGIN + "'945032946426347352', " +
         "'zh-Hans', '武汉'" + VALUES_END);
+}
+
+void CloneSource::InsertAnalysisSegmentation()
+{
+    cloneStorePtr_->ExecuteSql("INSERT INTO tab_analysis_segmentation (file_id, segmentation_area, segmentation_name, "
+        "prob, segmentation_version, analysis_version) VALUES ("
+        "1, 'Lung', 1, 0.3349609375, '21', '1.1');");
 }
 
 void CloneSource::InsertTabAnalysisLabel()
