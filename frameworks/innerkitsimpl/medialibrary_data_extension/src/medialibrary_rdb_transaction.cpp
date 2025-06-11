@@ -21,6 +21,7 @@
 #include "photo_map_column.h"
 #include "medialibrary_rdbstore.h"
 #include "cloud_sync_helper.h"
+#include "values_buckets.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -30,8 +31,7 @@ constexpr int32_t E_OK = 0;
 constexpr int32_t RETRY_TRANS_MAX_TIMES = 2;
 constexpr int32_t RETRY_TRANS_MAX_TIMES_FOR_BACKUP = 10;
 
-TransactionOperations::TransactionOperations(std::string funcName)
-    : funcName_(funcName), reporter_(funcName)
+TransactionOperations::TransactionOperations(std::string funcName) : funcName_(funcName), reporter_(funcName)
 {}
 
 TransactionOperations::~TransactionOperations()
@@ -167,8 +167,8 @@ int32_t TransactionOperations::RetryTrans(std::function<int(void)> &func, bool i
             MEDIA_ERR_LOG("TryTrans busy, err:%{public}d", err);
 #ifdef CLOUD_SYNC_MANAGER
             MEDIA_INFO_LOG("Stop cloud sync");
-            FileManagement::CloudSync::CloudSyncManager::GetInstance()
-                .StopSync("com.ohos.medialibrary.medialibrarydata");
+            FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync(
+                "com.ohos.medialibrary.medialibrarydata");
             isSkipCloudSync_ = true;
 #endif
         }
@@ -228,8 +228,8 @@ int32_t TransactionOperations::Execute(const std::string &sql, const std::vector
     return ret;
 }
 
-int32_t TransactionOperations::ExecuteForLastInsertedRowId(const std::string &sql,
-    const std::vector<NativeRdb::ValueObject> &bindArgs)
+int32_t TransactionOperations::ExecuteForLastInsertedRowId(
+    const std::string &sql, const std::vector<NativeRdb::ValueObject> &bindArgs)
 {
     CHECK_AND_RETURN_RET_LOG(transaction_ != nullptr, E_HAS_DB_ERROR, "transaction_ is null");
     int64_t lastInsertRowId = 0;
@@ -268,7 +268,7 @@ int32_t TransactionOperations::Update(NativeRdb::ValuesBucket &values, const Nat
         MEDIA_ERR_LOG("transaction is null");
         return E_HAS_DB_ERROR;
     }
-        if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+    if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
         values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     }
@@ -281,14 +281,14 @@ int32_t TransactionOperations::Update(NativeRdb::ValuesBucket &values, const Nat
     return changedRows;
 }
 
-int32_t TransactionOperations::Update(int32_t &changedRows, NativeRdb::ValuesBucket &values,
-    const NativeRdb::AbsRdbPredicates &predicates)
+int32_t TransactionOperations::Update(
+    int32_t &changedRows, NativeRdb::ValuesBucket &values, const NativeRdb::AbsRdbPredicates &predicates)
 {
     if (transaction_ == nullptr) {
         MEDIA_ERR_LOG("transaction is null");
         return E_HAS_DB_ERROR;
     }
-        auto [err, rows] = transaction_->Update(values, predicates);
+    auto [err, rows] = transaction_->Update(values, predicates);
     changedRows = rows;
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to execute update, err: %{public}d", err);
@@ -302,15 +302,15 @@ int32_t TransactionOperations::Update(MediaLibraryCommand &cmd, int32_t &changed
 {
     CHECK_AND_RETURN_RET_LOG(transaction_ != nullptr, E_HAS_DB_ERROR, "transaction_ is null");
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
-            MediaFileUtils::UTCTimeMilliSeconds());
-        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME,
-            MediaFileUtils::UTCTimeMilliSeconds());
+        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     }
 
     int32_t ret = E_HAS_DB_ERROR;
-    auto res = transaction_->Update(cmd.GetTableName(), cmd.GetValueBucket(),
-        cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetBindArgs());
+    auto res = transaction_->Update(cmd.GetTableName(),
+        cmd.GetValueBucket(),
+        cmd.GetAbsRdbPredicates()->GetWhereClause(),
+        cmd.GetAbsRdbPredicates()->GetBindArgs());
     ret = res.first;
     changedRows = res.second;
 
@@ -322,8 +322,8 @@ int32_t TransactionOperations::Update(MediaLibraryCommand &cmd, int32_t &changed
     return ret;
 }
 
-int32_t TransactionOperations::BatchInsert(int64_t &outRowId, const std::string &table,
-    const std::vector<NativeRdb::ValuesBucket> &values)
+int32_t TransactionOperations::BatchInsert(
+    int64_t &outRowId, const std::string &table, const std::vector<NativeRdb::ValuesBucket> &values)
 {
     if (transaction_ == nullptr) {
         MEDIA_ERR_LOG("transaction_ is null");
@@ -341,8 +341,8 @@ int32_t TransactionOperations::BatchInsert(int64_t &outRowId, const std::string 
     return ret;
 }
 
-int32_t TransactionOperations::BatchInsert(MediaLibraryCommand &cmd, int64_t& outInsertNum,
-    const std::vector<ValuesBucket>& values)
+int32_t TransactionOperations::BatchInsert(
+    MediaLibraryCommand &cmd, int64_t &outInsertNum, const std::vector<ValuesBucket> &values)
 {
     if (transaction_ == nullptr) {
         MEDIA_ERR_LOG("transaction_ is null");
@@ -359,8 +359,8 @@ int32_t TransactionOperations::BatchInsert(MediaLibraryCommand &cmd, int64_t& ou
     return ret;
 }
 
-int32_t TransactionOperations::Insert(int64_t &rowId, const std::string tableName,
-    const NativeRdb::ValuesBucket &values)
+int32_t TransactionOperations::Insert(
+    int64_t &rowId, const std::string tableName, const NativeRdb::ValuesBucket &values)
 {
     CHECK_AND_RETURN_RET_LOG(transaction_ != nullptr, E_HAS_DB_ERROR, "transaction_ is null");
     auto [ret, rows] = transaction_->Insert(tableName, values);
@@ -375,8 +375,8 @@ int32_t TransactionOperations::Insert(int64_t &rowId, const std::string tableNam
     return ret;
 }
 
-static int32_t DoDeleteFromPredicates(const AbsRdbPredicates &predicates,
-    int32_t &deletedRows, std::shared_ptr<OHOS::NativeRdb::Transaction> transaction)
+static int32_t DoDeleteFromPredicates(
+    const AbsRdbPredicates &predicates, int32_t &deletedRows, std::shared_ptr<OHOS::NativeRdb::Transaction> transaction)
 {
     int32_t ret = NativeRdb::E_ERROR;
     string tableName = predicates.GetTableName();
@@ -418,5 +418,83 @@ int32_t TransactionOperations::Delete(MediaLibraryCommand &cmd, int32_t &deleted
         return E_HAS_DB_ERROR;
     }
     return ret;
+}
+
+pair<int32_t, NativeRdb::Results> TransactionOperations::BatchInsert(
+    const string &table, const vector<ValuesBucket> &values, const string &returningField)
+{
+    if (transaction_ == nullptr) {
+        MEDIA_ERR_LOG("transaction_ is null");
+        return {E_HAS_DB_ERROR, -1};
+    }
+    ValuesBuckets refRows;
+    for (auto &value : values) {
+        refRows.Put(value);
+    }
+
+    return transaction_->BatchInsert(table, refRows, { returningField });
+}
+
+pair<int32_t, NativeRdb::Results> TransactionOperations::Update(
+    const ValuesBucket &values, const AbsRdbPredicates &predicates, const string &returningField)
+{
+    if (transaction_ == nullptr) {
+        MEDIA_ERR_LOG("transaction_ is null");
+        return {E_HAS_DB_ERROR, -1};
+    }
+    ValuesBucket valuesSet(values);
+    if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        valuesSet.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+        valuesSet.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+    }
+
+    return transaction_->Update(valuesSet, predicates, { returningField });
+}
+
+pair<int32_t, NativeRdb::Results> TransactionOperations::Delete(const AbsRdbPredicates &predicates,
+    const string &returningField)
+{
+    if (transaction_ == nullptr) {
+        MEDIA_ERR_LOG("transaction_ is null");
+        return {E_HAS_DB_ERROR, -1};
+    }
+
+    return transaction_->Delete(predicates, { returningField });
+}
+
+pair<int32_t, NativeRdb::Results> TransactionOperations::Execute(const string &sql,
+    const vector<ValueObject> &args, const string &returningField)
+{
+    if (transaction_ == nullptr) {
+        MEDIA_ERR_LOG("transaction is null");
+        return {E_HAS_DB_ERROR, -1};
+    }
+    string execSql = sql;
+    execSql.append(" returning ").append(returningField);
+    MEDIA_INFO_LOG("AccurateRefresh, sql:%{public}s", execSql.c_str());
+    return transaction_->ExecuteExt(execSql, args);
+}
+
+shared_ptr<ResultSet> TransactionOperations::QueryByStep(const AbsRdbPredicates &predicates,
+    const vector<string> &columns)
+{
+    if (transaction_ == nullptr) {
+        MEDIA_ERR_LOG("transaction is null");
+        return nullptr;
+    }
+    auto resultSet = transaction_->QueryByStep(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "resultSet is null.");
+    return resultSet;
+}
+
+shared_ptr<ResultSet> TransactionOperations::QueryByStep(const string &sql, const vector<ValueObject> &args)
+{
+    if (transaction_ == nullptr) {
+        MEDIA_ERR_LOG("transaction is null");
+        return nullptr;
+    }
+    auto resultSet = transaction_->QueryByStep(sql, args);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "resultSet is null.");
+    return resultSet;
 }
 } // namespace OHOS::Media

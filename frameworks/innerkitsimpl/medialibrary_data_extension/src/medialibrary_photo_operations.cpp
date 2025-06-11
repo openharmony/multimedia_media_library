@@ -888,7 +888,7 @@ static void GetPhotoHiddenStatus(std::shared_ptr<AlbumData> data, const string& 
     data->isHidden.push_back(isHidden);
 }
 
-void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereArgs, std::shared_ptr<AlbumData> data)
+void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereArgs)
 {
     if (whereArgs.empty()) {
         MEDIA_WARN_LOG("whereArgs is empty");
@@ -1078,8 +1078,6 @@ static void HandleQualityAndHidden(NativeRdb::RdbPredicates predicates, const ve
 
 int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdb store.");
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(cmd.GetDataSharePred(),
         PhotoColumn::PHOTOS_TABLE);
     vector<string> notifyUris = rdbPredicate.GetWhereArgs();
@@ -1087,11 +1085,18 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     std::shared_ptr<AlbumData> albumData = std::make_shared<AlbumData>();
     vector<string> fileIds = rdbPredicate.GetWhereArgs();
     HandleQualityAndHidden(rdbPredicate, fileIds, albumData);
+
+    // 1、AssetRefresh -> Init(rdbPredicate)
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+
     UpdateSourcePath(fileIds);
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     cmd.SetValueBucket(values);
-    int32_t updatedRows = rdbStore->UpdateWithDateTime(values, rdbPredicate);
+     // 2、AssetRefresh -> Update()
+    int32_t updatedRows = assetRefresh.UpdateWithDateTime(values, rdbPredicate);
+    // 3、AssetRefresh -> RefreshAlbums()
+    assetRefresh.RefreshAlbum();
     CHECK_AND_RETURN_RET_LOG(updatedRows >= 0, E_HAS_DB_ERROR, "Trash photo failed. Result %{public}d.", updatedRows);
     // delete cloud enhanacement task
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -1100,10 +1105,10 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 #endif
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, { NotifyAlbumType::SYS_ALBUM, false,
-        AlbumOperationType::DELETE_PHOTO, true });
     CHECK_AND_WARN_LOG(static_cast<size_t>(updatedRows) == notifyUris.size(),
         "Try to notify %{public}zu items, but only %{public}d items updated.", notifyUris.size(), updatedRows);
+    // 4、AssetRefresh -> Notify()
+    assetRefresh.Notify();
     TrashPhotosSendNotify(notifyUris, albumData);
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, updatedRows, "Failed to get async worker instance!");
@@ -1417,6 +1422,8 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET(hiddenState >= 0, hiddenState);
 
     RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+
     vector<string> notifyUris = predicates.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
     if (hiddenState != 0) {
@@ -1430,15 +1437,13 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
         values.PutLong(PhotoColumn::PHOTO_HIDDEN_TIME,
             hiddenState ? MediaFileUtils::UTCTimeMilliSeconds() : 0);
     }
-    int32_t changedRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
+    int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicates);
     CHECK_AND_RETURN_RET(changedRows >= 0, changedRows);
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, { NotifyAlbumType::SYS_ALBUM, false,
-        hiddenState != 0 ? AlbumOperationType::HIDE_PHOTO : AlbumOperationType::UNHIDE_PHOTO, true });
+    assetRefresh.RefreshAlbum();
     SendHideNotify(notifyUris, hiddenState);
+    assetRefresh.Notify();
     return changedRows;
 }
 
@@ -1480,21 +1485,16 @@ static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
 {
     int32_t favoriteState = GetFavoriteState(cmd.GetValueBucket());
     CHECK_AND_RETURN_RET_LOG(favoriteState >= 0, favoriteState, "Failed to get favoriteState");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
 
     RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
     vector<string> notifyUris = predicates.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
     ValuesBucket values;
     values.Put(PhotoColumn::MEDIA_IS_FAV, favoriteState);
-    int32_t updatedRows = rdbStore->UpdateWithDateTime(values, predicates);
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    int32_t updatedRows = assetRefresh.UpdateWithDateTime(values, predicates);
     CHECK_AND_RETURN_RET_LOG(updatedRows >= 0, E_HAS_DB_ERROR, "Failed to set favorite, err: %{public}d", updatedRows);
-
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
-    if (CheckExistsHiddenPhoto(rdbStore, predicates)) {
-        MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
-    }
+    assetRefresh.RefreshAlbum();
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
@@ -1511,6 +1511,7 @@ static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
         watch->Notify(notifyUri, NotifyType::NOTIFY_UPDATE);
     }
 
+    assetRefresh.Notify();
     CHECK_AND_WARN_LOG(static_cast<size_t>(updatedRows) == notifyUris.size(),
         "Try to notify %{public}zu items, but only %{public}d items updated.", notifyUris.size(), updatedRows);
     return updatedRows;
@@ -1636,16 +1637,6 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationExif(MediaLibraryCommand &
     return errCode;
 }
 
-void UpdateAlbumOnSystemMoveAssets(const int32_t &oriAlbumId, const int32_t &targetAlbumId)
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        rdbStore, { to_string(oriAlbumId), to_string(targetAlbumId) }, false, true);
-    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        rdbStore, { to_string(oriAlbumId), to_string(targetAlbumId) }, false, true);
-}
-
 int32_t IsSystemAlbumMovement(MediaLibraryCommand &cmd, bool &isSystemAlbum)
 {
     static vector<int32_t> systemAlbumIds;
@@ -1721,7 +1712,8 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(targetAlbumId));
 
-    int32_t changedRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicates);
     CHECK_AND_RETURN_RET_LOG(changedRows >= 0, changedRows, "Update owner album id fail when move from system album");
     CHECK_AND_EXECUTE(assetString.empty(), MediaAnalysisHelper::AsyncStartMediaAnalysisService(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), assetString));
@@ -1729,7 +1721,6 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
     for (auto it = ownerAlbumIds.begin(); it != ownerAlbumIds.end(); it++) {
         MEDIA_INFO_LOG("System album move assets target album id is: %{public}s", to_string(it->first).c_str());
         int32_t oriAlbumId = it->first;
-        UpdateAlbumOnSystemMoveAssets(oriAlbumId, targetAlbumId);
         auto watch = MediaLibraryNotify::GetInstance();
         CHECK_AND_CONTINUE_ERR_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
         for (const auto &id : it->second) {
@@ -1739,6 +1730,8 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
                 NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
         }
     }
+    assetRefresh.RefreshAlbum();
+    assetRefresh.Notify();
     return changedRows;
 }
 
@@ -1767,13 +1760,16 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
         "Failed to query file asset vector from db, errCode=%{public}d, predicates=%{public}s",
         errCode, cmd.GetAbsRdbPredicates()->ToString().c_str());
 
-    int32_t updateRows = UpdateFileInDb(cmd);
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    int32_t updateRows = -1;
+    assetRefresh.Update(cmd, updateRows);
     CHECK_AND_RETURN_RET_LOG(updateRows >= 0, updateRows,
         "Update Photo in database failed, updateRows=%{public}d", updateRows);
     int32_t targetAlbumId = 0;
     int32_t oriAlbumId = 0;
     vector<string> idsToUpdateIndex;
     UpdateOwnerAlbumIdOnMove(cmd, targetAlbumId, oriAlbumId);
+    assetRefresh.RefreshAlbum();
     auto watch =  MediaLibraryNotify::GetInstance();
     for (const auto &fileAsset : fileAssetVector) {
         idsToUpdateIndex.push_back(to_string(fileAsset->GetId()));
@@ -1784,6 +1780,7 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
         watch->Notify(assetUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
         watch->Notify(assetUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, oriAlbumId);
     }
+    assetRefresh.Notify();
     if (!idsToUpdateIndex.empty()) {
         MediaAnalysisHelper::AsyncStartMediaAnalysisService(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), idsToUpdateIndex);
@@ -1929,7 +1926,9 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update allexif failed, allexif=%{private}s",
         fileAsset->GetAllExif().c_str());
 
-    int32_t rowId = UpdateFileInDb(cmd);
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    int32_t rowId = -1;
+    assetRefresh.Update(cmd, rowId);
     if (rowId < 0) {
         MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
         RevertOrientation(fileAsset, currentOrientation);
@@ -1941,6 +1940,7 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Edit user comment errCode = %{private}d", errCode);
     }
     HandleUpdateIndex(cmd, to_string(fileAsset->GetId()));
+    assetRefresh.Notify();
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
     errCode = SendTrashNotify(cmd, fileAsset->GetId(), extraUri);
     CHECK_AND_RETURN_RET(errCode != E_OK, rowId);

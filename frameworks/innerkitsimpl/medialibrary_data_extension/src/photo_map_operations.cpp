@@ -44,6 +44,7 @@
 #include "vision_photo_map_column.h"
 #include "dfx_manager.h"
 #include "dfx_const.h"
+#include "asset_accurate_refresh.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -350,21 +351,17 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
 
     MEDIA_INFO_LOG("Remove %{public}zu photo assets from album %{public}d", idWhereArgs.size(), albumId);
 
-    shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
-
+    RdbPredicates predicatesPhotos(PhotoColumn::PHOTOS_TABLE);
+    predicatesPhotos.In(MediaColumn::MEDIA_ID, idWhereArgs);
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
     MediaLibraryPhotoOperations::UpdateSourcePath(idWhereArgs);
-    // Assets that don't belong to any albums should be moved to trash
-    deleteRow = MediaLibraryRdbUtils::UpdateRemovedAssetToTrash(rdbStore, idWhereArgs);
+    ValuesBucket values;
+    values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
+    assetRefresh.Update(deleteRow, values, predicatesPhotos);
     CHECK_AND_RETURN_RET_LOG(deleteRow > 0, deleteRow,
         "Update Removed Asset to Trash failed, ret: %{public}d", deleteRow);
 
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { strAlbumId }, false, true);
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
-        to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
-        to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::TRASH),
-        to_string(PhotoAlbumSubType::HIDDEN), to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT)
-    });
+    assetRefresh.RefreshAlbum();
 
     uriWhereArgs.erase(uriWhereArgs.begin());
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
@@ -383,6 +380,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     } else {
         MEDIA_ERR_LOG("Failed to get notify instance, notification unavailable");
     }
+    assetRefresh.Notify();
 
     DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_REMOVE_PHOTOS, deleteRow, uriWhereArgs);
     return deleteRow;

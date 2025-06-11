@@ -54,6 +54,25 @@ struct AlbumCounts {
     int videoCount;
 };
 
+struct UpdateAlbumData {
+    int32_t albumId;
+    int32_t albumSubtype;
+    int32_t hiddenCount;
+    int32_t albumCount;
+    int32_t albumImageCount;
+    int32_t albumVideoCount;
+    std::string hiddenCover;
+    std::string albumCoverUri;
+    uint8_t isCoverSatisfied;
+    int32_t newTotalCount { 0 };
+    bool shouldNotify { false };
+    bool hasChanged {false};
+    bool shouldUpdateDateModified { false };
+    int32_t coverUriSource {0};
+    int64_t coverDateTime;
+    int64_t hiddenCoverDateTime;
+};
+
 struct UpdateAllAlbumsData {
     NotifyAlbumType type = NotifyAlbumType::NO_NOTIFY;
     bool isBackUpAndRestore = false;
@@ -141,6 +160,8 @@ public:
         const std::string &albumId);
     EXPORT static void UpdateShootingModeAlbum(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
     static bool AnalyzePhotosData();
+    EXPORT static int32_t GetUpdateValues(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        UpdateAlbumData &data, NativeRdb::ValuesBucket &values, PhotoAlbumSubType subtype, const bool hiddenState);
 
 private:
     static std::atomic<bool> isNeedRefreshAlbum;

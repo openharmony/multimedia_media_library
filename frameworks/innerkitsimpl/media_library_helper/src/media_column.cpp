@@ -171,6 +171,8 @@ const std::string PhotoColumn::PHOTO_CACHE_URI_PREFIX = "file://media/Photo/cach
 const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
 const std::string PhotoColumn::HIGHTLIGHT_COVER_URI = "/highlight";
 const std::string PhotoColumn::HIGHTLIGHT_URI = "/highlight/video";
+const std::string PhotoColumn::HIDDEN_PHOTO_URI_PREFIX = "file://media/hiddenPhoto/";
+const std::string PhotoColumn::TRASHED_PHOTO_URI_PREFIX = "file://media/trashedPhoto/";
 
 const std::string PhotoColumn::PHOTO_CLOUD_URI_PREFIX = "file://cloudsync/Photo/";
 const std::string PhotoColumn::PHOTO_CLOUD_TRIGGER_PREFIX = "file://cloudsync/triggerGeneration/";

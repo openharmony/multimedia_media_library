@@ -23,6 +23,7 @@
 #include "medialibrary_command.h"
 #include "rdb_predicates.h"
 #include "medialibrary_rdb_transaction.h"
+#include "asset_accurate_refresh.h"
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -32,7 +33,8 @@ public:
         NativeRdb::RdbPredicates &servicePredicates, const std::vector<std::string> &columns);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> BatchQuery(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns, std::unordered_map<int32_t, std::string> &fileId2Uri);
-    EXPORT static int32_t Update(NativeRdb::ValuesBucket &rdbValues, NativeRdb::AbsRdbPredicates &predicates);
+    EXPORT static int32_t Update(NativeRdb::ValuesBucket &rdbValues, NativeRdb::AbsRdbPredicates &predicates,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
     EXPORT static int32_t InsertCloudEnhancementImageInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset,
         int32_t sourceFileId, std::shared_ptr<CloudEnhancementFileInfo> info,
         std::shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<TransactionOperations> trans = nullptr);

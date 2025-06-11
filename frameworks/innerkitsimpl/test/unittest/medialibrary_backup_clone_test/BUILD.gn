@@ -101,9 +101,14 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./src/medialibrary_backup_clone_test.cpp",
   ]
 
+  source_ipc_client = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_define_ipc_client.cpp" ]
+
+  sources += source_ipc_client
+
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary_nutils",
   ]
 
   external_deps = [
@@ -113,6 +118,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
+    "ability_runtime:napi_base_context",
     "ability_runtime:runtime",
     "background_task_mgr:bgtaskmgr_innerkits",
     "bundle_framework:appexecfwk_core",
@@ -136,6 +142,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
+    "samgr:samgr_proxy",
     "zlib:shared_libz",
   ]
 

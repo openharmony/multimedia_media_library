@@ -21,6 +21,7 @@ MEDIALIB_UTILS_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/utils"
 MEDIALIB_TEST_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/innerkitsimpl/test"
 
 MEDIALIB_SERVICES_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/services"
+MEDIALIB_NEW_SERVICES_PATH = "${MEDIALIB_ROOT_PATH}/services"
 MEDIALIB_CLOUD_SYNC_PATH = "${MEDIALIB_SERVICES_PATH}/media_cloud_sync"
 MEDIALIB_MTP_PATH = "${MEDIALIB_SERVICES_PATH}/media_mtp"
 MEDIALIB_CAMERA_FRAMEWORK_PATH = "${MEDIALIB_ROOT_PATH}/../camera_framework"
@@ -39,6 +40,8 @@ MEDIALIB_CLOUD_ENHANCEMENT_SERVICE_PATH =
     "//vendor/huawei/domains/device_cloud_gateway/media_cloud_enhance_service"
 MEDIALIB_BUSINESS_PATH = "${MEDIALIB_ROOT_PATH}/services"
 MEDIALIB_CLOUD_SYNC_CLIENT = "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync"
+MEDIALIB_ACCURATE_REFRESH_PATH = "${MEDIALIB_ROOT_PATH}/services/media_refresh"
+MEDIALIB_NOTIFICATION_MERGING_PATH = "${MEDIALIB_ROOT_PATH}/services/media_notification"
 
 declare_args() {
   media_library_link_opt = false
