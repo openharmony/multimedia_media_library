@@ -104,7 +104,10 @@ void MovingPhotoNapi::Destructor(napi_env env, void* nativeObject, void* finaliz
         napi_delete_reference(env, movingPhotoNapi->progressHandlerRef_);
         movingPhotoNapi->progressHandlerRef_ = nullptr;
     }
-
+    if (env != nullptr && movingPhotoNapi->threadsafeFunction_ != nullptr) {
+        napi_release_threadsafe_function(movingPhotoNapi->threadsafeFunction_, napi_tsfn_release);
+        movingPhotoNapi->threadsafeFunction_ = nullptr;
+    }
     delete movingPhotoNapi;
     movingPhotoNapi = nullptr;
 }
@@ -996,7 +999,10 @@ void MovingPhotoNapi::CallRequestContentCallBack(napi_env env, void* context, in
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
     NAPI_CREATE_RESOURCE_NAME(env, resource, "CallRequestContentCallBack", asyncContext);
     status = napi_create_async_work(
-        env, nullptr, resource, [](napi_env env, void *data) {},
+        env, nullptr, resource, [](napi_env env, void *data) {
+            MovingPhotoAsyncContext* asyncWorkContext = static_cast<MovingPhotoAsyncContext*>(data);
+            CHECK_NULL_PTR_RETURN_VOID(asyncWorkContext, "Async work context is null");
+        },
         reinterpret_cast<napi_async_complete_callback>(RequestCompletCallback),
         context, &asyncContext->work);
     if (status != napi_ok) {
