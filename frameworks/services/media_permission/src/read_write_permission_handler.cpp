@@ -108,7 +108,7 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
         OperationObject::UFM_ALBUM,
         OperationObject::UFM_MAP,
         OperationObject::SMART_ALBUM,
-        OperationObject::CUSTOM_RECORDS_OPERATON,
+        OperationObject::CUSTOM_RECORDS_OPERATION,
 
         OperationObject::ALL_DEVICE,
         OperationObject::ACTIVE_DEVICE,
@@ -253,7 +253,7 @@ static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
         OperationObject::MISCELLANEOUS,
         OperationObject::TAB_OLD_PHOTO,
         OperationObject::CONVERT_PHOTO,
-        OperationObject::CUSTOM_RECORDS_OPERATON,
+        OperationObject::CUSTOM_RECORDS_OPERATION,
     };
 
     string uri = cmd.GetUri().ToString();

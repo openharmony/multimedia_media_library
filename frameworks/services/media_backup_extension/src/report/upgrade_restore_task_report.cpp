@@ -54,6 +54,18 @@ UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::Report(const std::string &ty
     return *this;
 }
 
+UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::Report(const RestoreTaskInfo &taskInfo)
+{
+    MediaRestoreResultInfo resultInfo = UpgradeRestoreGalleryMediaTask()
+                                            .SetSceneCode(this->sceneCode_)
+                                            .SetTaskId(this->taskId_)
+                                            .Load(taskInfo);
+    MEDIA_INFO_LOG("[%{public}s] %{public}s", taskInfo.type.c_str(), resultInfo.ToString().c_str());
+    PostInfoDfx(resultInfo);
+    PostInfoAuditLog(resultInfo);
+    return *this;
+}
+
 UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportInAudit(const std::string &type, const std::string &errorCode,
     const std::string &errorInfo)
 {

@@ -121,9 +121,6 @@ void CloneRestoreCVAnalysis::RestoreAlbums(CloneRestoreHighlight &cloneHighlight
     std::vector<int32_t> updateHighlightIds;
     UpdateHighlightPlayInfos(cloneHighlight, updateHighlightIds);
     cloneHighlight.UpdateHighlightStatus(updateHighlightIds);
-    int64_t startRestoreLabelTime = MediaFileUtils::UTCTimeMilliSeconds();
-    GetAnalysisLabelInfos(cloneHighlight);
-    InsertIntoAnalysisLabel();
     int64_t startRestoreSaliencyTime = MediaFileUtils::UTCTimeMilliSeconds();
     GetAnalysisSaliencyInfos(cloneHighlight);
     InsertIntoAnalysisSaliency();
@@ -132,10 +129,10 @@ void CloneRestoreCVAnalysis::RestoreAlbums(CloneRestoreHighlight &cloneHighlight
     InsertIntoAnalysisRecommendation();
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("RestoreAllCVAlbums cost %{public}" PRId64 ", RestoreAssetMaps cost %{public}" PRId64
-        ", UpdateHighlightPlayInfos cost %{public}" PRId64 ", RestoreLabel cost %{public}" PRId64
+        ", UpdateHighlightPlayInfos cost %{public}" PRId64
         ", RestoreSaliency cost %{public}" PRId64 ", RestoreRecommendation cost %{public}" PRId64,
         endTime - startRestoreMapTime, startUpdatePlayInfoTime - startRestoreMapTime,
-        startRestoreLabelTime - startUpdatePlayInfoTime, startRestoreSaliencyTime - startRestoreLabelTime,
+        startRestoreSaliencyTime - startUpdatePlayInfoTime,
         startRestoreRcmdTime - startRestoreSaliencyTime, endTime - startRestoreRcmdTime);
     ReportCloneRestoreCVAnalysisTask();
 }

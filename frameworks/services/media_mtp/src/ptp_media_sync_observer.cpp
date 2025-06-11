@@ -347,28 +347,39 @@ void MediaSyncObserver::GetAddEditPhotoHandles(int32_t handle)
         return;
     }
     vector<int32_t> handlesResult;
-    CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr,
-        "Mtp GetAddEditPhotoHandles fail to get datasharehelper");
+    CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "Mtp GetAddEditPhotoHandles fail to get datasharehelper");
     Uri uri(PAH_QUERY_PHOTO);
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
     columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
     columns.push_back(PhotoColumn::MOVING_PHOTO_EFFECT_MODE);
+    columns.push_back(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
     predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(handle));
+    predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
     shared_ptr<DataShare::DataShareResultSet> resultSet = dataShareHelper_->Query(uri, predicates, columns);
-    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Mtp GetAddEditPhotoHandles fail to get PHOTO_ALL_DELETE_KEY");
-    CHECK_AND_RETURN_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
-        "Mtp GetAddEditPhotoHandles have no PHOTO_ALL_DELETE_KEY");
-
-    do {
-        int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-        int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
-        if (MtpDataUtils::IsMtpMovingPhoto(subType, effectMode)) {
-            SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-        } else if (subType == static_cast<int32_t>(PhotoSubType::DEFAULT)) {
-            SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-        }
-    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Mtp GetAddEditPhotoHandles fail to get updated photo");
+    CHECK_AND_RETURN_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, "Mtp GetAddEditPhotoHandles have no photo");
+    SendEventPackets(handle + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
+    int32_t ownerAlbumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
+    int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
+    if (MtpDataUtils::IsMtpMovingPhoto(subType, effectMode)) {
+        SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
+        SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+    } else if (subType == static_cast<int32_t>(PhotoSubType::DEFAULT)) {
+        SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+    }
+    auto albumHandles = PtpAlbumHandles::GetInstance();
+    if (!albumHandles->FindHandle(ownerAlbumId)) {
+        albumHandles->AddHandle(ownerAlbumId);
+        SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_ADDED_CODE);
+        SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+        SendEventPacketAlbum(GetParentId(), MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+    }
 }
 
 int32_t MediaSyncObserver::GetAddEditAlbumHandle(int32_t handle)

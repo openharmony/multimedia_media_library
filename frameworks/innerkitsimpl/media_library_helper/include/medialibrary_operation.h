@@ -112,7 +112,7 @@ enum class EXPORT OperationObject : uint32_t {
     ANALYSIS_FOREGROUND,
     ASSET_ALBUM_OPERATION,
     PTP_ALBUM_OPERATION,
-    CUSTOM_RECORDS_OPERATON,
+    CUSTOM_RECORDS_OPERATION,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -218,6 +218,10 @@ enum class EXPORT OperationType : uint32_t {
     QUERY_HIGHLIGHT_DIRECTORY_SIZE,
     LS_MEDIA_FILES,
     QUERY_ACTIVE_USER_ID,
+    SET_USER_ALBUM_COVER_URI,
+    SET_SOURCE_ALBUM_COVER_URI,
+    SET_SYSTEM_ALBUM_COVER_URI,
+    RESET_COVER_URI,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

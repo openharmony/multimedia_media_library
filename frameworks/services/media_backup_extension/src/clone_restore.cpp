@@ -22,6 +22,8 @@
 #include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
+#include "clone_restore_classify.h"
+#include "clone_restore_geo.h"
 #include "cloud_sync_utils.h"
 #include "database_report.h"
 #include "media_column.h"
@@ -287,8 +289,6 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     InitThumbnailStatus();
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
-    cloneRestoreClassify_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
-    cloneRestoreGeo_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreGeoDictionary_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreHighlight_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
     cloneRestoreCVAnalysis_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
@@ -444,6 +444,7 @@ void CloneRestore::RestoreAlbum()
         ANALYSIS_SEARCH_INDEX_TABLE, SEARCH_IDX_COL_ID);
     maxAnalysisAlbumId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
         ANALYSIS_ALBUM_TABLE, ANALYSIS_COL_ALBUM_ID);
+
     for (const auto &tableName : CLONE_ALBUMS) {
         if (!IsReadyForRestore(tableName)) {
             MEDIA_ERR_LOG("Column status of %{public}s is not ready for restore album, quit",
@@ -470,7 +471,6 @@ void CloneRestore::RestoreAlbum()
 
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
-    cloneRestoreGeo_.RestoreGeoKnowledgeInfos();
     cloneRestoreGeoDictionary_.RestoreAlbums();
     RestoreHighlightAlbums();
 }
@@ -1635,24 +1635,39 @@ void CloneRestore::RestoreGallery()
     BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
-    cloneRestoreClassify_.ReportClassifyRestoreTask();
-    cloneRestoreGeo_.ReportGeoRestoreTask();
+    RestoreAnalysisClassify();
+    RestoreAnalysisGeo();
     cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
     cloneRestoreHighlight_.UpdateAlbums();
     cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
     RestoreAnalysisData();
     ReportPortraitCloneStat(sceneCode_);
+    InheritManualCover();
 }
 
 void CloneRestore::RestoreAnalysisData()
 {
     RestoreSearchIndexData();
+    RestoreBeautyScoreData();
+    RestoreVideoFaceData();
 }
 
 void CloneRestore::RestoreSearchIndexData()
 {
     SearchIndexClone searchIndexClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_, maxSearchId_);
     searchIndexClone.Clone();
+}
+
+void CloneRestore::RestoreBeautyScoreData()
+{
+    BeautyScoreClone beautyScoreClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_);
+    beautyScoreClone.CloneBeautyScoreInfo();
+}
+
+void CloneRestore::RestoreVideoFaceData()
+{
+    VideoFaceClone videoFaceClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_);
+    videoFaceClone.CloneVideoFaceInfo();
 }
 
 bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
@@ -2051,9 +2066,6 @@ void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos, int32_t sourc
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("query new file_id cost %{public}ld, insert %{public}ld maps cost %{public}ld",
         (long)(startInsert - startQuery), (long)mapRowNum, (long)(end - startInsert));
-    cloneRestoreClassify_.RestoreMaps(fileInfos);
-    cloneRestoreClassify_.RestoreVideoMaps(fileInfos);
-    cloneRestoreGeo_.RestoreMaps(fileInfos);
     cloneRestoreHighlight_.RestoreMaps(fileInfos);
 }
 
@@ -2788,6 +2800,12 @@ NativeRdb::ValuesBucket CloneRestore::CreateValuesBucketFromImageFaceTbl(const I
     PutIfPresent(values, IMAGE_FACE_COL_AESTHETICS_SCORE, imageFaceTbl.aestheticsScore);
     PutIfPresent(values, IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION, imageFaceTbl.beautyBounderVersion);
     PutWithDefault<int>(values, IMAGE_FACE_COL_IS_EXCLUDED, imageFaceTbl.isExcluded, 0);
+    PutIfPresent(values, IMAGE_FACE_COL_FACE_CLARITY, imageFaceTbl.faceClarity);
+    PutIfPresent(values, IMAGE_FACE_COL_FACE_LUMINANCE, imageFaceTbl.faceLuminance);
+    PutIfPresent(values, IMAGE_FACE_COL_FACE_SATURATION, imageFaceTbl.faceSaturation);
+    PutIfPresent(values, IMAGE_FACE_COL_FACE_EYE_CLOSE, imageFaceTbl.faceEyeClose);
+    PutIfPresent(values, IMAGE_FACE_COL_FACE_EXPRESSION, imageFaceTbl.faceExpression);
+    PutIfPresent(values, IMAGE_FACE_COL_PREFERRED_GRADE, imageFaceTbl.preferredGrade);
 
     return values;
 }
@@ -2812,7 +2830,8 @@ void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::Resu
         IMAGE_FACE_COL_FACE_VERSION);
     imageFaceTbl.featuresVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         IMAGE_FACE_COL_FEATURES_VERSION);
-    imageFaceTbl.features = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_FEATURES);
+    imageFaceTbl.features = BackupDatabaseUtils::GetOptionalValue<std::vector<uint8_t>>(resultSet,
+        IMAGE_FACE_COL_FEATURES);
     imageFaceTbl.faceOcclusion = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         IMAGE_FACE_COL_FACE_OCCLUSION);
     imageFaceTbl.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
@@ -2830,6 +2849,17 @@ void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::Resu
     imageFaceTbl.beautyBounderVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION);
     imageFaceTbl.isExcluded = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_IS_EXCLUDED);
+    imageFaceTbl.faceClarity = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_FACE_CLARITY);
+    imageFaceTbl.faceLuminance = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_FACE_LUMINANCE);
+    imageFaceTbl.faceSaturation = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_FACE_SATURATION);
+    imageFaceTbl.faceEyeClose = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+        IMAGE_FACE_COL_FACE_EYE_CLOSE);
+    imageFaceTbl.faceExpression = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_FACE_EXPRESSION);
+    imageFaceTbl.preferredGrade = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        IMAGE_FACE_COL_PREFERRED_GRADE);
 }
 
 void CloneRestore::ReportPortraitCloneStat(int32_t sceneCode)
@@ -2886,6 +2916,33 @@ void CloneRestore::StartBackup()
     bool cond = (!BackupKvStore() && !MediaFileUtils::DeleteDir(CLONE_KVDB_BACKUP_DIR));
     CHECK_AND_PRINT_LOG(!cond, "BackupKvStore failed and delete old backup kvdb failed, errno:%{public}d", errno);
     MEDIA_INFO_LOG("End clone backup");
+}
+
+void CloneRestore::InheritManualCover()
+{
+    std::string querySql = "SELECT album_id, cover_uri FROM PhotoAlbum WHERE cover_uri_source = 1";
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Query resultSql is null.");
+
+    vector<AlbumCoverInfo> albumCoverinfos;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        AlbumCoverInfo albumCoverInfo;
+        int32_t albumIdOld = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+        string coverUriOld = GetStringVal(PhotoAlbumColumns::ALBUM_COVER_URI, resultSet);
+        int32_t fileIdOld = atoi(MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(coverUriOld).c_str());
+        
+        int32_t albumIdNew = tableAlbumIdMap_[PhotoAlbumColumns::TABLE][albumIdOld];
+        auto photoInfo = photoInfoMap_[fileIdOld];
+        int32_t fileIdNew = photoInfo.fileIdNew;
+        string coverUriNew = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileIdNew),
+            MediaFileUtils::GetExtraUri(photoInfo.displayName, photoInfo.cloudPath));
+        albumCoverInfo.albumId = albumIdNew;
+        albumCoverInfo.coverUri = coverUriNew;
+        albumCoverinfos.emplace_back(albumCoverInfo);
+    }
+    resultSet->Close();
+
+    UpdatePhotoAlbumCoverUri(albumCoverinfos);
 }
 
 bool CloneRestore::BackupKvStore()
@@ -2996,9 +3053,42 @@ int32_t CloneRestore::CheckLcdVisitTime(const CloudPhotoFileExistFlag &cloudPhot
     CHECK_AND_RETURN_RET(!cloudPhotoFileExistFlag.isLcdExist, RESTORE_LCD_VISIT_TIME_SUCCESS);
     return RESTORE_LCD_VISIT_TIME_NO_LCD;
 }
+
+
 int32_t CloneRestore::GetNoNeedMigrateCount()
 {
     return this->photosClone_.GetNoNeedMigrateCount();
+}
+
+void CloneRestore::RestoreAnalysisClassify()
+{
+    CloneRestoreClassify cloneRestoreClassify;
+    cloneRestoreClassify.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_);
+    cloneRestoreClassify.Restore(photoInfoMap_);
+}
+
+void CloneRestore::RestoreAnalysisGeo()
+{
+    CloneRestoreGeo cloneRestoreGeo;
+    cloneRestoreGeo.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_);
+    cloneRestoreGeo.Restore(photoInfoMap_);
+}
+
+void CloneRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverInfos)
+{
+    for (auto& albumCoverInfo : albumCoverInfos) {
+        int32_t changeRows = 0;
+        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+            make_unique<NativeRdb::AbsRdbPredicates>(PhotoAlbumColumns::TABLE);
+        predicates->EqualTo(PhotoAlbumColumns::ALBUM_ID, albumCoverInfo.albumId);
+        NativeRdb::ValuesBucket updateBucket;
+        updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, static_cast<int32_t>(CoverUriSource::MANUAL_COVER));
+        updateBucket.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, albumCoverInfo.coverUri);
+        BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, updateBucket, predicates);
+        if (changeRows != 1) {
+            MEDIA_ERR_LOG("UpdatePhotoAlbumCoverUri failed, expected count 1, but got %{public}d", changeRows);
+        }
+    }
 }
 } // namespace Media
 } // namespace OHOS

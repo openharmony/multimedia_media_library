@@ -35,6 +35,7 @@ public:
     }
     std::vector<MediaRestoreResultInfo> LoadTask(const std::string &taskInfo);
     MediaRestoreResultInfo Load(const std::string &type, const std::string &errorCode, const std::string &errorInfo);
+    MediaRestoreResultInfo Load(const RestoreTaskInfo &taskInfo);
 
 private:
     CallbackResultData ParseFromJsonStr(const std::string &jsonStr);

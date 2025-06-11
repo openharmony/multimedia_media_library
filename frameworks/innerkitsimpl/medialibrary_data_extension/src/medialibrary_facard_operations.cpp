@@ -199,6 +199,10 @@ void FaCloudSyncSwitchObserver::OnChange()
 
 void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, const std::string &registerUri)
 {
+    if (formId.empty() || registerUri.empty()) {
+        MEDIA_ERR_LOG("parameter is null");
+        return;
+    }
     const std::string ASSET_URI_PREFIX = "file://media/";
     const std::string CLOUD_SYNC_SWITCH_URI_PREFIX = "datashareproxy://";
     MEDIA_DEBUG_LOG("registerUri = %{public}s", registerUri.c_str());
@@ -240,6 +244,10 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
 
 void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
 {
+    if (formId.empty() || formAssetObserversMap.empty()) {
+        MEDIA_ERR_LOG("parameter is null");
+        return;
+    }
     CreateOptions options;
     options.enabled_ = true;
     shared_ptr<DataShare::DataShareHelper> dataShareHelper;
@@ -254,13 +262,24 @@ void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
         return;
     }
     const std::vector<std::shared_ptr<CardAssetUriObserver>>& formAssetObservers = itAsset->second;
+    if (formAssetObservers.empty()) {
+        MEDIA_ERR_LOG("formAssetObservers is null");
+        return;
+    }
     for (const auto& observer : formAssetObservers) {
+        if (observer->assetChangeUri.empty()) {
+            MEDIA_ERR_LOG("observer->assetChangeUri is null");
+            return;
+        }
         Uri notifyUri(observer->assetChangeUri);
         dataShareHelper->UnregisterObserverExt(notifyUri,
             std::static_pointer_cast<DataShare::DataShareObserver>(observer));
     }
     formAssetObserversMap.erase(formId);
-
+    if (formCloudSyncObserversMap.empty()) {
+        MEDIA_ERR_LOG("formCloudSyncObserversMap is null");
+        return;
+    }
     dataShareHelper = DataShare::DataShareHelper::Creator(CLOUD_SYNC_PROXY_URI, options);
     if (dataShareHelper == nullptr) {
         MEDIA_ERR_LOG("dataShareHelper is nullptr");
@@ -272,7 +291,15 @@ void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
         return;
     }
     const std::vector<sptr<FaCloudSyncSwitchObserver>>& formCloudSyncObservers = cloudItAsset->second;
+    if (formCloudSyncObservers.empty()) {
+        MEDIA_ERR_LOG("formCloudSyncObservers is null");
+        return;
+    }
     for (const auto& observer : formCloudSyncObservers) {
+        if (observer->cloudSyncChangeUri.empty()) {
+            MEDIA_ERR_LOG("observer->cloudSyncChangeUri is null");
+            return;
+        }
         Uri notifyUri(observer->cloudSyncChangeUri);
         dataShareHelper->UnregisterObserver(notifyUri, observer);
     }

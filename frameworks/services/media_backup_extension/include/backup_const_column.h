@@ -136,9 +136,55 @@ const std::string IMAGE_FACE_COL_AESTHETICS_SCORE = "aesthetics_score";
 const std::string IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION = "beauty_bounder_version";
 const std::string IMAGE_FACE_COL_IS_EXCLUDED = "is_excluded";
 const std::string ANALYSIS_ALBUM_SUBTYPE = "album_subtype";
+const std::string IMAGE_FACE_COL_FACE_CLARITY = "face_clarity";
+const std::string IMAGE_FACE_COL_FACE_LUMINANCE = "face_luminance";
+const std::string IMAGE_FACE_COL_FACE_SATURATION = "face_saturation";
+const std::string IMAGE_FACE_COL_FACE_EYE_CLOSE = "face_eye_close";
+const std::string IMAGE_FACE_COL_FACE_EXPRESSION = "face_expression";
+const std::string IMAGE_FACE_COL_PREFERRED_GRADE = "preferred_grade";
+
+// video_face_tbl COL_NAME
+const std::string ANALYSIS_VIDEO_FACE_TABLE = "tab_analysis_video_face";
+const std::string VIDEO_FACE_COL_ID = "id";
+const std::string VIDEO_FACE_COL_FILE_ID = "file_id";
+const std::string VIDEO_FACE_COL_FACE_ID = "face_id";
+const std::string VIDEO_FACE_COL_TAG_ID = "tag_id";
+const std::string VIDEO_FACE_COL_SCALE_X = "scale_x";
+const std::string VIDEO_FACE_COL_SCALE_Y = "scale_y";
+const std::string VIDEO_FACE_COL_SCALE_WIDTH = "scale_width";
+const std::string VIDEO_FACE_COL_SCALE_HEIGHT = "scale_height";
+const std::string VIDEO_FACE_COL_LANDMARKS = "landmarks";
+const std::string VIDEO_FACE_COL_PITCH = "pitch";
+const std::string VIDEO_FACE_COL_YAW = "yaw";
+const std::string VIDEO_FACE_COL_ROLL = "roll";
+const std::string VIDEO_FACE_COL_PROB = "prob";
+const std::string VIDEO_FACE_COL_TOTAL_FACES = "total_faces";
+const std::string VIDEO_FACE_COL_FRAME_ID = "frame_id";
+const std::string VIDEO_FACE_COL_FRAME_TIMESTAMP = "frame_timestamp";
+const std::string VIDEO_FACE_COL_TRACKS = "tracks";
+const std::string VIDEO_FACE_COL_ALGO_VERSION = "algo_version";
+const std::string VIDEO_FACE_COL_FEATURES = "features";
+const std::string VIDEO_FACE_COL_ANALYSIS_VERSION = "analysis_version";
+
+// beauty_score_tbl COL_NAME
+const std::string ANALYSIS_BEAUTY_SCORE_TABLE = "tab_analysis_aesthetics_score";
+const std::string BEAUTY_SCORE_COL_ID = "id";
+const std::string BEAUTY_SCORE_COL_FILE_ID = "file_id";
+const std::string BEAUTY_SCORE_COL_AESTHETICS_SCORE = "aesthetics_score";
+const std::string BEAUTY_SCORE_COL_AESTHETICS_VERSION = "aesthetics_version";
+const std::string BEAUTY_SCORE_COL_PROB = "prob";
+const std::string BEAUTY_SCORE_COL_ANALYSIS_VERSION = "analysis_version";
+const std::string BEAUTY_SCORE_COL_SELECTED_FLAG = "selected_flag";
+const std::string BEAUTY_SCORE_COL_SELECTED_ALGO_VERSION = "selected_algo_version";
+const std::string BEAUTY_SCORE_COL_SELECTED_STATUS = "selected_status";
+const std::string BEAUTY_SCORE_COL_NEGATIVE_FLAG = "negative_flag";
+const std::string BEAUTY_SCORE_COL_NEGATIVE_ALGO_VERSION = "negative_algo_version";
 
 const std::string QUERY_FACE_TAG_COUNT = "SELECT count(1) AS count FROM " + VISION_FACE_TAG_TABLE;
 const std::string QUERY_IMAGE_FACE_COUNT = "SELECT count(1) AS count FROM " + VISION_IMAGE_FACE_TABLE;
+const std::string QUERY_VIDEO_FACE_COUNT = "SELECT count(1) AS count FROM " + VISION_VIDEO_FACE_TABLE;
+const std::string QUERY_BEAUTY_SCORE_COUNT = "SELECT count(1) AS count FROM " + VISION_AESTHETICS_TABLE;
+
 const std::string CREATE_FACE_TAG_INDEX =
     "CREATE INDEX IF NOT EXISTS face_clone_tag_index ON tab_analysis_face_tag (tag_id)";
 

@@ -772,20 +772,20 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeLcd_test_001, TestSize.Level1)
 
 HWTEST_F(MediaLibraryUtilsTest, PostErrorProcess_test_001, TestSize.Level1)
 {
-    PostEventUtils postEventUtils;
+    auto postEventUtils = make_shared<PostEventUtils>();
+    ASSERT_TRUE(postEventUtils);
     uint32_t errType = ErrType::DEFAULT_ERR;
     VariantMap error;
-    postEventUtils.PostErrorProcess(errType, error);
-    EXPECT_EQ(errType, ErrType::DEFAULT_ERR);
+    postEventUtils->PostErrorProcess(errType, error);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, PostStatProcess_test_002, TestSize.Level1)
 {
-    PostEventUtils postEventUtils;
+    auto postEventUtils = make_shared<PostEventUtils>();
+    ASSERT_TRUE(postEventUtils);
     uint32_t statType = StatType::DEFAULT_STAT;
     VariantMap stat;
-    postEventUtils.PostStatProcess(statType, stat);
-    EXPECT_EQ(statType, StatType::DEFAULT_STAT);
+    postEventUtils->PostStatProcess(statType, stat);
 }
 } // namespace Media
 } // namespace OHOS

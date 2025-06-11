@@ -62,6 +62,7 @@ void CloudMediaAlbumControllerService::OnFetchRecords(MessageParcel &data, Messa
         albumDto.albumDateAdded = album.albumDateAdded;
         albumDto.albumDateModified = album.albumDateModified;
         albumDto.isDelete = album.isDelete;
+        albumDto.coverUriSource = album.coverUriSource;
         albumDtoList.emplace_back(albumDto);
         MEDIA_DEBUG_LOG("OnFetchRecords albumDto: %{public}s", albumDto.ToString().c_str());
         MEDIA_DEBUG_LOG("OnFetchRecords album: %{public}s", album.ToString().c_str());

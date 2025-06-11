@@ -42,6 +42,20 @@ MediaRestoreResultInfo UpgradeRestoreGalleryMediaTask::Load(const std::string &t
     return info;
 }
 
+MediaRestoreResultInfo UpgradeRestoreGalleryMediaTask::Load(const RestoreTaskInfo &taskInfo)
+{
+    MediaRestoreResultInfo info;
+    info.sceneCode = this->sceneCode_;
+    info.taskId = this->taskId_;
+    info.errorCode = taskInfo.errorCode;
+    info.errorInfo = taskInfo.errorInfo;
+    info.successCount = taskInfo.successCount;
+    info.failedCount = taskInfo.failedCount;
+    info.duplicateCount = taskInfo.duplicateCount;
+    info.type = taskInfo.type;
+    return info;
+}
+
 CallbackResultData UpgradeRestoreGalleryMediaTask::ParseFromJsonStr(const std::string &jsonStr)
 {
     JsonUtils jsonUtils;

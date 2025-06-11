@@ -36,6 +36,7 @@ public:
     UpgradeRestoreTaskReport &ReportTask(const std::string &taskInfo);
     UpgradeRestoreTaskReport &Report(const std::string &type, const std::string &errorCode,
         const std::string &errorInfo);
+    UpgradeRestoreTaskReport &Report(const RestoreTaskInfo &taskInfo);
     UpgradeRestoreTaskReport &ReportInAudit(const std::string &type, const std::string &errorCode,
         const std::string &errorInfo);
     UpgradeRestoreTaskReport &ReportError(const ErrorInfo &info);

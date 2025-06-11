@@ -24,7 +24,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 261;
+const int32_t MEDIA_RDB_VERSION = 263;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -219,6 +219,8 @@ enum {
     VERSION_FIX_TAB_EXT_DIRTY_DATA = 259,
     VERSION_ADD_DC_ANALYSIS_INDEX_UPDATE = 260,
     VERSION_ADD_IS_RECTIFICATION_COVER = 261,
+    VERSION_ADD_COVER_URI_SOURCE = 262,
+    VERSION_FIX_ORIENTATION_180_DIRTY_THUMBNAIL = 263,
 };
 enum {
     MEDIA_API_VERSION_DEFAULT = 8,
@@ -288,6 +290,9 @@ const std::string MEDIA_DATA_DB_SHOOTING_MODE = "shooting_mode";
 const std::string MEDIA_DATA_DB_SHOOTING_MODE_TAG = "shooting_mode_tag";
 const std::string MEDIA_DATA_DB_PHOTOS_LATITUDE = "photos." + MEDIA_DATA_DB_LATITUDE;
 const std::string MEDIA_DATA_DB_PHOTOS_LONGITUDE = "photos." + MEDIA_DATA_DB_LONGITUDE;
+const std::string MEDIA_DATA_DB_USER_OPERATION = "user_operation";
+const std::string MEDIA_DATA_DB_RENAME_OPERATION = "rename_operation";
+const std::string MEDIA_DATA_DB_COVER_SATISFIED = "is_cover_satisfied";
 
 const std::string MEDIA_DATA_DB_LCD = "lcd";
 const std::string MEDIA_DATA_DB_BUCKET_ID = "bucket_id";
