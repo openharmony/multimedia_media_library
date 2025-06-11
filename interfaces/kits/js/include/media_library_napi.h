@@ -450,7 +450,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     bool needSystemApp = false;
     NapiAssetType assetType;
     AlbumType albumType;
-    MediaLibraryNapi *objectInfo;
+    MediaLibraryNapi *objectInfo; // Cannot use objectInfo in async work
     std::string selection;
     std::vector<std::string> selectionArgs;
     std::string order;
@@ -507,6 +507,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     bool isContainsAlbumUri = false;
     int32_t taskId = -1;
     bool isFullAnalysis = false;
+    int32_t userId = -1;
 };
 
 struct MediaLibraryInitContext : public NapiError  {
