@@ -38,7 +38,7 @@ thread_local napi_ref PhotoAssetCustomRecordNapi::constructor_ = nullptr;
 napi_value PhotoAssetCustomRecordNapi::Init(napi_env env, napi_value exports)
 {
     NapiClassInfo info = {
-        .name = PHOTO_ASSET_CURSTOM_RECORDS_NAPI_CLASS_NAME,
+        .name = PHOTO_ASSET_CUSTOM_RECORDS_NAPI_CLASS_NAME,
         .ref = &constructor_,
         .constructor = Constructor,
         .props = {
@@ -99,9 +99,9 @@ void PhotoAssetCustomRecordNapi::Destructor(napi_env env, void* nativeObject, vo
 }
 
 napi_value PhotoAssetCustomRecordNapi::CreateCustomRecordNapi(napi_env env,
-    unique_ptr<PhotoAssetCustomRecord> &cRecordata)
+    unique_ptr<PhotoAssetCustomRecord> &cRecord)
 {
-    if (cRecordata == nullptr) {
+    if (cRecord == nullptr) {
         return nullptr;
     }
 
@@ -109,7 +109,7 @@ napi_value PhotoAssetCustomRecordNapi::CreateCustomRecordNapi(napi_env env,
     napi_ref constructorRef = constructor_;
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
     napi_value result = nullptr;
-    cRecordData_ = cRecordata.release();
+    cRecordData_ = cRecord.release();
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
     cRecordData_ = nullptr;
     return result;

@@ -41,7 +41,7 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-static const std::string PHOTO_ASSET_CURSTOM_RECORDS_NAPI_CLASS_NAME = "PhotoAssetCustomRecord";
+static const std::string PHOTO_ASSET_CUSTOM_RECORDS_NAPI_CLASS_NAME = "PhotoAssetCustomRecord";
 class PhotoAssetCustomRecordNapi {
 public:
     EXPORT PhotoAssetCustomRecordNapi() = default;
@@ -49,7 +49,7 @@ public:
     EXPORT static napi_value Init(napi_env env, napi_value exports);
     EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);
     EXPORT static void Destructor(napi_env env, void* nativeObject, void* finalizeHint);
-    EXPORT static napi_value CreateCustomRecordNapi(napi_env env, std::unique_ptr<PhotoAssetCustomRecord> &cRecordata);
+    EXPORT static napi_value CreateCustomRecordNapi(napi_env env, std::unique_ptr<PhotoAssetCustomRecord> &cRecord);
 
     int32_t GetFileId() const;
     int32_t GetShareCount() const;

@@ -52,13 +52,13 @@ private:
     static bool InitUserFileClient(napi_env env, napi_callback_info info);
 };
 
-enum class NapiCustromRecordColumns {
+enum class NapiCustomRecordColumns {
     FILE_ID,
     SHARE_COUNT,
     LCD_JUMP_COUNT,
 };
 
-class NapiCustromRecordStr {
+class NapiCustomRecordStr {
 public:
     static const std::string FILE_ID;
     static const std::string SHARE_COUNT;

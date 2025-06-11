@@ -2082,7 +2082,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, AddToMediaVisitCount_test_002, TestSiz
     auto dataManager = MediaLibraryDataManager::GetInstance();
     ASSERT_NE(dataManager, nullptr);
 
-    MediaLibraryCommand cmdCustom(OperationObject::CUSTOM_RECORDS_OPERATON,
+    MediaLibraryCommand cmdCustom(OperationObject::CUSTOM_RECORDS_OPERATION,
         OperationType::QUERY_ORDER, MediaLibraryApi::API_10);
     int32_t ret = dataManager->OpenFile(cmdCustom, "R");
     EXPECT_EQ(ret, E_INVALID_URI);
