@@ -1853,7 +1853,7 @@ size_t CloneRestore::StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> med
     CHECK_AND_RETURN_RET_LOG(mediaRdb != nullptr, 0, "rdbStore is nullptr");
     // media asset size
     size_t thumbPhotoSize = QueryThumbPhotoSize(mediaRdb);
-    MEDIA_INFO_LOG("thumb asset size is: %{public}" PRId64, thumbPhotoSize);
+    MEDIA_INFO_LOG("thumb asset size is: %{public}zu", thumbPhotoSize);
     string querySizeSql = "SELECT cast(" + std::to_string(thumbPhotoSize) +
         " as bigint) as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE;
     string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " + AudioColumn::QUERY_MEDIA_VOLUME +
