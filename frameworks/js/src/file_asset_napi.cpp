@@ -2257,8 +2257,12 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
             MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn, analysisType);
     }
     if (context->analysisData == ANALYSIS_NO_RESULTS) {
-        resultSet = CallQueryAnalysisData(context, analysisInfo, true);
-        std::string value = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn, analysisType);
+        Uri uri(PAH_QUERY_ANA_TOTAL);
+        DataShare::DataSharePredicates predicates;
+        std::vector<std::string> fetchColumn = { analysisInfo.fieldStr };
+        predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+        auto fieldValue = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
+        string value = MediaLibraryNapiUtils::ParseResultSet2JsonStr(fieldValue, fetchColumn);
         if (strstr(value.c_str(), ANALYSIS_INIT_VALUE.c_str()) == NULL) {
             context->analysisData = ANALYSIS_STATUS_ANALYZED;
         }
