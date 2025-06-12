@@ -73,6 +73,7 @@ int MtpDriver::OpenDriver()
 int MtpDriver::CloseDriver()
 {
     usbOpenFlag = false;
+    usbfnMtpInterface = nullptr;
     return MTP_SUCCESS;
 }
 

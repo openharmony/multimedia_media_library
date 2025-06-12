@@ -160,7 +160,7 @@ bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, const ContextSptr &
 
     struct inotify_event *positionEvent = (struct inotify_event *)eventBuf;
     struct inotify_event *event;
-    while (ret >= static_cast<int>(sizeof(struct inotify_event))) {
+    while (ret >= static_cast<int>(sizeof(struct inotify_event)) && isRunning_) {
         event = positionEvent;
         if (event->len) {
             bool isFind;
@@ -170,7 +170,7 @@ bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, const ContextSptr &
                 iter = watchMap_.find(event->wd);
                 isFind = iter != watchMap_.end();
             }
-            if (isFind) {
+            if (isFind && isRunning_) {
                 string path = iter->second;
                 SendEvent(*event, path, context);
             }
