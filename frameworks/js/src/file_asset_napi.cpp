@@ -2185,7 +2185,7 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
     { ANALYSIS_MULTI_CROP, { RECOMMENDATION, PAH_QUERY_ANA_RECOMMENDATION, { MOVEMENT_CROP, MOVEMENT_VERSION } } },
 };
 
-static DataShare:::DataSharePredicates GetPredicatesHelper(FileAssetAsyncContext *context)
+static DataShare::DataSharePredicates GetPredicatesHelper(FileAssetAsyncContext *context)
 {
     DataShare::DataSharePredicates predicates;
     if (context->analysisType == ANALYSIS_HUMAN_FACE_TAG) {
@@ -2260,12 +2260,12 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
         context->analysisData = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn, analysisType);
     } else {
         context->analysisData = (analysisType == ANALYSIS_FACE) ?
-            MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(resultSet, fetchColumn, analysisType) :
-            MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn, analysisType);
+            MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(resultSet, fetchColumn) :
+            MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
     }
     if (context->analysisData == ANALYSIS_NO_RESULTS) {
         resultSet = CallQueryAnalysisData(context, analysisInfo, true);
-        std::string value = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn, analysisType);
+        std::string value = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
         if (strstr(value.c_str(), ANALYSIS_INIT_VALUE.c_str()) == NULL) {
             context->analysisData = ANALYSIS_STATUS_ANALYZED;
         }
