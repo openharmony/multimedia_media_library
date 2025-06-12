@@ -20,11 +20,7 @@
 #include <memory>
 #include <string>
 
-#define private public
-#define protected public
 #include "media_albums_controller_service.h"
-#undef private
-#undef protected
 
 #include "create_album_vo.h"
 #include "user_define_ipc_client.h"

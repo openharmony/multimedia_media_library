@@ -491,4 +491,26 @@ int32_t MediaAssetsRdbOperations::StopThumbnailCreationTask(int32_t requestId)
     ThumbnailService::GetInstance()->CancelAstcBatchTask(requestId);
     return E_OK;
 }
+
+int32_t MediaAssetsRdbOperations::QueryEnhancementTaskState(const string& photoUri,
+    QueryCloudEnhancementTaskStateDto& dto)
+{
+    vector<string> columns = {
+        MediaColumn::MEDIA_ID, PhotoColumn::PHOTO_ID,
+        PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_CE_STATUS_CODE
+    };
+    MediaLibraryCommand cmd(PhotoColumn::PHOTOS_TABLE);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, photoUri);
+    cmd.SetDataSharePred(predicates);
+    auto resultSet = EnhancementManager::GetInstance().HandleQueryOperation(cmd, columns);
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, -E_HAS_DB_ERROR, "Failed to query album!");
+    dto.fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    dto.photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+    dto.ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
+    dto.CEErrorCode = GetInt32Val(PhotoColumn::PHOTO_CE_STATUS_CODE, resultSet);
+    resultSet->Close();
+    return E_OK;
+}
 } // namespace OHOS::Media

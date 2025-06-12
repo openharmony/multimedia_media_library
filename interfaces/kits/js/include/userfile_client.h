@@ -48,6 +48,9 @@ public:
     EXPORT static std::shared_ptr<DataShare::DataShareResultSet> Query(Uri &uri,
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns,
         int &errCode, const int32_t userId = -1);
+    EXPORT static std::pair<bool, std::shared_ptr<DataShare::DataShareResultSet>> QueryAccessibleViaSandBox(Uri &uri,
+        const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns, int &errCode,
+        const int32_t userId = -1);
     EXPORT static int Insert(Uri &uri, const DataShare::DataShareValuesBucket &value, const int32_t userId = -1);
     EXPORT static int InsertExt(Uri &uri, const DataShare::DataShareValuesBucket &value, std::string &result,
         const int32_t userId = -1);

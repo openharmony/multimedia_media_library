@@ -55,6 +55,11 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_START_THUMBNAIL_CREATION_TASK),
         {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_STOP_THUMBNAIL_CREATION_TASK), {{SYSTEMAPI_PERM, WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_CLOUD_ENHANCEMENT_PAIR), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_CLOUD_ENHANCEMENT_TASK_STATE),
+        {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::SYNC_CLOUD_ENHANCEMENT_TASK_STATUS),
+        {{SYSTEMAPI_PERM, READ_PERM}}},
     // ASSETS_BUSINESS_CODE_START begin
     {static_cast<uint32_t>(MediaLibraryBusinessCode::COMMIT_EDITED_ASSET), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET), {{WRITE_PERM}}},
@@ -64,7 +69,8 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET_FOR_APP_WITH_MODE),
         {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET_FOR_APP_WITH_ALBUM),
-        {{SYSTEMAPI_PERM, WRITE_PERM, READ_PERM}}},
+        {{SYSTEMAPI_PERM, WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ASSET_ANALYSIS_DATA), {{SYSTEMAPI_PERM, READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYS_TRASH_PHOTOS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_TRASH_PHOTOS), {{WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_PHOTOS_COMPLETED), {{SYSTEMAPI_PERM, WRITE_PERM}}},
@@ -102,10 +108,25 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAUSE_DOWNLOAD_CLOUDMEDIA), {{SYSTEMAPI_PERM, CLOUDFILE_SYNC}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CANCEL_DOWNLOAD_CLOUDMEDIA), {{SYSTEMAPI_PERM, CLOUDFILE_SYNC}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::RETAIN_CLOUDMEDIA_ASSET), {{SYSTEMAPI_PERM, CLOUDFILE_SYNC}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_IS_EDITED), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_REQUEST_EDIT_DATA), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_GET_EDIT_DATA), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_GET_CLOUDMEDIA_ASSET_STATUS), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_START_ASSET_ANALYSIS), {{SYSTEMAPI_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_REQUEST_CONTENT), { {READ_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_PHOTO_STATUS), {{READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::LOG_MOVING_PHOTO), {{}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ASSETS), {{READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_BURST_ASSETS), {{READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::FIND_ALL_DUPLICATE_ASSETS), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::FIND_DUPLICATE_ASSETS_TO_DELETE), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_INDEX_CONSTRUCT_PROGRESS), {{SYSTEMAPI_PERM, READ_PERM}}},
 };
 
 static std::unordered_set<uint32_t> mediaAssetsPermissionDbBypass = {
-    static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_BUSINESS_CODE_START)};
+    static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ASSETS),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::GET_BURST_ASSETS),
+};
 
 int32_t MediaAssetsControllerService::GetPermissionPolicy(
     uint32_t code, std::vector<std::vector<PermissionType>> &permissionPolicy, bool &isBypass)

@@ -28,6 +28,14 @@
 #include "album_remove_assets_dto.h"
 #include "album_recover_assets_dto.h"
 #include "album_photo_query_vo.h"
+#include "album_get_assets_dto.h"
+#include "get_order_position_dto.h"
+#include "get_order_position_vo.h"
+#include "get_photo_index_vo.h"
+#include "query_result_vo.h"
+#include "get_analysis_process_vo.h"
+#include "get_highlight_album_info_vo.h"
+#include "query_albums_dto.h"
 
 namespace OHOS::Media {
 class MediaAlbumsService {
@@ -48,6 +56,15 @@ public:
     int32_t AlbumAddAssets(const AlbumAddAssetsDto& addAssetsDto, AlbumPhotoQueryRespBody& respBody);
     int32_t AlbumRemoveAssets(const AlbumRemoveAssetsDto& removeAssetsDto, AlbumPhotoQueryRespBody& respBody);
     int32_t AlbumRecoverAssets(const AlbumRecoverAssetsDto& recoverAssetsDto);
+    std::shared_ptr<DataShare::DataShareResultSet> AlbumGetAssets(const AlbumGetAssetsDto &dto);
+    int32_t QueryAlbums(QueryAlbumsDto &dto);
+    int32_t QueryHiddenAlbums(QueryAlbumsDto &dto);
+    int32_t GetOrderPosition(const GetOrderPositionDto& getOrderPositionDto, GetOrderPositionRespBody& resp);
+    int32_t GetFaceId(int32_t albumId, std::string& groupTag);
+    int32_t GetPhotoIndex(GetPhotoIndexReqBody &reqBody, QueryResultRspBody &rspBody);
+    int32_t GetMediaAnalysisServiceProcess(GetAnalysisProcessReqBody &reqBody, QueryResultRspBody &rspBody);
+    int32_t GetAnalysisProcess(GetAnalysisProcessReqBody &reqBody, QueryResultRspBody &rspBody);
+    int32_t GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqBody, QueryResultRspBody &rspBody);
 
 private:
     int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);

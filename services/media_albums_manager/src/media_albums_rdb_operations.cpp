@@ -30,6 +30,7 @@
 #include "medialibrary_rdb_utils.h"
 #include "media_file_utils.h"
 #include "result_set_utils.h"
+#include "vision_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -37,6 +38,7 @@ using namespace OHOS::NativeRdb;
 namespace OHOS::Media {
 static constexpr int32_t HIGHLIGHT_DELETED = -2;
 const std::string ALBUM_LPATH_PREFIX = "/Pictures/Users/";
+static const string GROUP_TAG = "group_tag";
 
 MediaAlbumsRdbOperations::MediaAlbumsRdbOperations() {}
 
@@ -92,5 +94,17 @@ int32_t MediaAlbumsRdbOperations::SetHighlightUserActionData(const SetHighlightU
         return E_HAS_DB_ERROR;
     }
     return static_cast<int32_t>(updateRows);
+}
+
+int32_t MediaAlbumsRdbOperations::GetFaceId(int32_t albumId, string& groupTag)
+{
+    NativeRdb::RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    vector<string> columns = { GROUP_TAG };
+    auto resultSet = MediaLibraryRdbStore::StepQueryWithoutCheck(predicates, columns);
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_HAS_DB_ERROR, "Failed to query group tag!");
+    groupTag = GetStringVal(GROUP_TAG, resultSet);
+    return E_OK;
 }
 } // namespace OHOS::Media

@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <string>
 
+#include "create_asset_vo.h"
+
 namespace OHOS::Media {
 class CreateAssetDto {
 public:
@@ -36,6 +38,11 @@ public:
 
     int32_t fileId{0};
     std::string outUri;
+
+public:
+    CreateAssetDto(const CreateAssetReqBody &reqBody);
+    CreateAssetDto(const CreateAssetForAppReqBody &reqBody);
+    CreateAssetRspBody GetRspBody();
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_ASSETS_MANAGER_CREATE_ASSET_DTO_H
