@@ -2185,6 +2185,28 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
     { ANALYSIS_MULTI_CROP, { RECOMMENDATION, PAH_QUERY_ANA_RECOMMENDATION, { MOVEMENT_CROP, MOVEMENT_VERSION } } },
 };
 
+static DataShare:::DataSharePredicates GetPredicatesHelper(FileAssetAsyncContext *context)
+{
+    DataShare::DataSharePredicates predicates;
+    if (context->analysisType == ANALYSIS_HUMAN_FACE_TAG) {
+        string onClause = VISION_IMAGE_FACE_TABLE + "." + TAG_ID + " = " + VISION_FACE_TAG_TABLE + "." + TAG_ID;
+        predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ onClause });
+    }
+    string fileId = to_string(context->objectInfo->GetFileId());
+    if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
+        string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+        language = (language.find(LANGUAGE_ZH) == 0 || language.find(LANGUAGE_ZH_TR) == 0) ? LANGUAGE_ZH : LANGUAGE_EN;
+        vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
+            GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
+            GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \'" + language + "\'" };
+        predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(onClause);
+        predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, fileId);
+    } else {
+        predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    }
+    return predicates;
+}
+
 static std::shared_ptr<DataShare::DataShareResultSet> CallQueryAnalysisData(
     FileAssetAsyncContext *context, const AnalysisSourceInfo &analysisInfo, bool analysisTotal)
 {
@@ -2230,22 +2252,7 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
         NAPI_ERR_LOG("Invalid analysisType");
         return;
     }
-    if (context->analysisType == ANALYSIS_HUMAN_FACE_TAG) {
-        string onClause = VISION_IMAGE_FACE_TABLE + "." + TAG_ID + " = " + VISION_FACE_TAG_TABLE + "." + TAG_ID;
-        predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ onClause });
-    }
-    string fileId = to_string(context->objectInfo->GetFileId());
-    if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
-        string language = Global::I18n::LocaleConfig::GetSystemLanguage();
-        language = (language.find(LANGUAGE_ZH) == 0 || language.find(LANGUAGE_ZH_TR) == 0) ? LANGUAGE_ZH : LANGUAGE_EN;
-        vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
-            GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
-            GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \'" + language + "\'" };
-        predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(onClause);
-        predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, fileId);
-    } else {
-        predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    }
+    
     const AnalysisSourceInfo &analysisInfo = it->second;
     const std::vector<std::string> &fetchColumn = analysisInfo.fetchColumn;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = CallQueryAnalysisData(context, analysisInfo, false);
@@ -2257,12 +2264,8 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
             MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn, analysisType);
     }
     if (context->analysisData == ANALYSIS_NO_RESULTS) {
-        Uri uri(PAH_QUERY_ANA_TOTAL);
-        DataShare::DataSharePredicates predicates;
-        std::vector<std::string> fetchColumn = { analysisInfo.fieldStr };
-        predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-        auto fieldValue = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
-        string value = MediaLibraryNapiUtils::ParseResultSet2JsonStr(fieldValue, fetchColumn);
+        resultSet = CallQueryAnalysisData(context, analysisInfo, true);
+        std::string value = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn, analysisType);
         if (strstr(value.c_str(), ANALYSIS_INIT_VALUE.c_str()) == NULL) {
             context->analysisData = ANALYSIS_STATUS_ANALYZED;
         }
