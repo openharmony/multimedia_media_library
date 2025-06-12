@@ -84,6 +84,8 @@
 #include "medialibrary_album_fusion_utils.h"
 #include "unique_fd.h"
 #include "data_secondary_directory_uri.h"
+#include "medialibrary_restore.h"
+#include "cloud_sync_helper.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1914,11 +1916,7 @@ void MediaLibraryAssetOperations::UpdateOwnerAlbumIdOnMove(MediaLibraryCommand &
     auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     oriAlbumId = GetAlbumIdByPredicates(whereClause, whereArgs);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
 
-    MediaLibraryRdbUtils::UpdateCommonAlbumInternal(
-        rdbStore, { to_string(targetAlbumId), to_string(oriAlbumId) }, false, true);
     MEDIA_INFO_LOG("Move Assets, ori album id is %{public}d, target album id is %{public}d", oriAlbumId, targetAlbumId);
 }
 
@@ -2500,13 +2498,8 @@ static void DeleteFiles(AsyncTaskData *data)
         return;
     }
     auto *taskData = static_cast<DeleteFilesTask *>(data);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
-    if (taskData->containsHidden_) {
-        MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
-            rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
+    if (taskData->refresh_ != nullptr) {
+        taskData->refresh_->RefreshAlbum();
     }
 
     DeleteBehaviorData dataInfo {taskData->displayNames_, taskData->albumNames_, taskData->ownerAlbumIds_};
@@ -2527,6 +2520,9 @@ static void DeleteFiles(AsyncTaskData *data)
         }
         watch->Notify(MediaFileUtils::Encode(taskData->notifyUris_[index]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET,
             trashAlbumId);
+    }
+    if (taskData->refresh_ != nullptr) {
+        taskData->refresh_->Notify();
     }
     TaskDataFileProccess(taskData);
 }
@@ -2826,14 +2822,23 @@ static int32_t DeleteLocalAndCloudPhotos(vector<shared_ptr<FileAsset>> &subFileA
     return E_OK;
 }
 
-static inline int32_t DeleteDbByIds(const string &table, vector<string> &ids, const bool compatible)
+static int32_t DeleteDbByIds(const string &table, vector<string> &ids, const bool compatible,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh)
 {
     AbsRdbPredicates predicates(table);
     predicates.In(MediaColumn::MEDIA_ID, ids);
     if (!compatible) {
         predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     }
-    return MediaLibraryRdbStore::Delete(predicates);
+    int32_t deletedRows = 0;
+    int32_t err = refresh->Delete(deletedRows, predicates);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to execute delete, err: %{public}d", err);
+        MediaLibraryRestore::GetInstance().CheckRestore(err);
+        return E_HAS_DB_ERROR;
+    }
+    CloudSyncHelper::GetInstance()->StartSync();
+    return deletedRows;
 }
 
 static void GetAlbumNamesById(DeletedFilesParams &filesParams)
@@ -2900,7 +2905,8 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     EnhancementManager::GetInstance().RemoveTasksInternal(fileParams.ids, photoIds);
 #endif
 
-    deletedRows = DeleteDbByIds(predicates.GetTableName(), fileParams.ids, compatible);
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    deletedRows = DeleteDbByIds(predicates.GetTableName(), fileParams.ids, compatible, assetRefresh);
     CHECK_AND_RETURN_RET_LOG(deletedRows > 0, deletedRows,
         "Failed to delete files in db, deletedRows: %{public}d, ids size: %{public}zu",
         deletedRows, fileParams.ids.size());
@@ -2917,6 +2923,7 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_ERR, "Failed to alloc async data for Delete From Disk!");
     taskData->SetOtherInfos(fileParams.displayNames, fileParams.albumNames, fileParams.ownerAlbumIds);
     taskData->isTemps_.swap(fileParams.isTemps);
+    taskData->SetAssetAccurateRefresh(assetRefresh);
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
     CHECK_AND_RETURN_RET_LOG(deleteFilesTask != nullptr, E_ERR, "Failed to create async task for deleting files.");
     asyncWorker->AddTask(deleteFilesTask, true);

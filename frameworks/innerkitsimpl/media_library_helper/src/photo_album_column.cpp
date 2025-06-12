@@ -63,6 +63,10 @@ const string PhotoAlbumColumns::HIDDEN_COVER = "hidden_cover";
 const string PhotoAlbumColumns::ALBUM_ORDER = "album_order";
 const string PhotoAlbumColumns::REFERENCE_ALBUM_ID = "reference_album_id";
 
+// For accurate refresh
+const string PhotoAlbumColumns::COVER_DATE_TIME = "cover_date_time";
+const string PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME = "hidden_cover_date_time";
+
 // location album result
 const std::string LOCATION_ALBUM_ID = MediaColumn::MEDIA_ID + " AS " + ALBUM_ID;
 const std::string LOCATION_ALBUM_TYPE = std::to_string(PhotoAlbumType::SMART) + " AS " + ALBUM_TYPE;
@@ -105,7 +109,7 @@ const string PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI = "file://media/PhotoAlb
 const string PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX = "file://media/HiddenAlbum/";
 const string PhotoAlbumColumns::DEFAULT_HIDDEN_ALBUM_URI = "file://media/HiddenAlbum";
 const string PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX = "file://media/AnalysisAlbum/";
-
+const string PhotoAlbumColumns::TRASHED_ALBUM_URI_PREFIX = "file://media/trashedAlbum/";
 const string PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX = "file://cloudsync/PhotoAlbum/";
 const string PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX = "file://cloudsync/gallery/PhotoAlbum/";
 const string PhotoAlbumColumns::PHOTO_GALLERY_CLOUD_SYNC_INFO_URI_PREFIX = "file://cloudsync/gallery/cloudSyncInfo/";
@@ -137,7 +141,9 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_LPATH + " TEXT, " +
     ALBUM_PRIORITY + " INT, " +
     ALBUM_CHECK_FLAG + " INT DEFAULT 0, " +
-    PhotoAlbumColumns::COVER_URI_SOURCE + " INT DEFAULT 0)";
+    PhotoAlbumColumns::COVER_URI_SOURCE + " INT DEFAULT 0, " +
+    COVER_DATE_TIME + " BIGINT DEFAULT 0, " +
+    HIDDEN_COVER_DATE_TIME + " BIGINT DEFAULT 0)";
 
 // Create indexes
 const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +

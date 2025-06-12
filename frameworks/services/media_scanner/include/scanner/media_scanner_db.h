@@ -34,6 +34,7 @@
 #include "values_bucket.h"
 #include "want.h"
 #include "datashare_result_set.h"
+#include "asset_accurate_refresh.h"
 
 namespace OHOS {
 namespace Media {
@@ -51,9 +52,11 @@ public:
     EXPORT void SetRdbHelper(void);
 
     EXPORT std::string InsertMetadata(const Metadata &metadata, std::string &tableName,
-        MediaLibraryApi api = MediaLibraryApi::API_OLD);
+        MediaLibraryApi api = MediaLibraryApi::API_OLD,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh = nullptr);
     EXPORT std::string UpdateMetadata(const Metadata &metadata, std::string &tableName,
-        MediaLibraryApi api = MediaLibraryApi::API_OLD, bool skipPhoto = true);
+        MediaLibraryApi api = MediaLibraryApi::API_OLD, bool skipPhoto = true,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh = nullptr);
     EXPORT std::string GetFileDBUriFromPath(const std::string &path);
     EXPORT int32_t InsertAlbum(const Metadata &metadata);
     EXPORT int32_t UpdateAlbum(const Metadata &metadata);
@@ -79,7 +82,8 @@ private:
         std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     void ExtractMetaFromColumn(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         std::unique_ptr<Metadata> &metadata, const std::string &col);
-    bool InsertData(const NativeRdb::ValuesBucket values, const std::string &tableName, int64_t &rowNum);
+    bool InsertData(const NativeRdb::ValuesBucket values, const std::string &tableName, int64_t &rowNum,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh = nullptr);
     std::string MakeFileUri(const std::string &mediaTypeUri, const Metadata &metadata);
 };
 } // namespace Media

@@ -1015,4 +1015,7 @@ export default {
   CloudMediaAssetStatus: photoAccessHelper.CloudMediaAssetStatus,
   PhotoAssetCustomRecordManager: photoAccessHelper.PhotoAssetCustomRecordManager,
   PhotoAssetCustomRecord: photoAccessHelper.PhotoAssetCustomRecord,
+  NotifyChangeType: photoAccessHelper.NotifyChangeType,
+  ThumbnailChangeStatus: photoAccessHelper.ThumbnailChangeStatus,
+  StrongAssociationType: photoAccessHelper.StrongAssociationType,
 };

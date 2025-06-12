@@ -283,6 +283,8 @@ public:
 
     static const std::string HIGHTLIGHT_COVER_URI EXPORT;
     static const std::string HIGHTLIGHT_URI EXPORT;
+    static const std::string HIDDEN_PHOTO_URI_PREFIX EXPORT;
+    static const std::string TRASHED_PHOTO_URI_PREFIX EXPORT;
 
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
     EXPORT static std::string CheckUploadPhotoColumns();

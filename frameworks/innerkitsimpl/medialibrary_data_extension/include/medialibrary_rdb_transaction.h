@@ -75,6 +75,18 @@ public:
     EXPORT int32_t Update(MediaLibraryCommand &cmd, int32_t &changedRows);
     EXPORT int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows);
 
+    EXPORT std::pair<int32_t, NativeRdb::Results> BatchInsert(const std::string &table,
+        const std::vector<NativeRdb::ValuesBucket> &values, const std::string &returningField);
+    EXPORT std::pair<int32_t, NativeRdb::Results> Update(const NativeRdb::ValuesBucket &values,
+        const NativeRdb::AbsRdbPredicates &predicates, const std::string &returningField);
+    EXPORT std::pair<int32_t, NativeRdb::Results> Delete(const NativeRdb::AbsRdbPredicates &predicates,
+        const std::string &returningField);
+    EXPORT std::pair<int32_t, NativeRdb::Results> Execute(const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &args, const std::string &returningField);
+    EXPORT std::shared_ptr<NativeRdb::ResultSet> QueryByStep(const NativeRdb::AbsRdbPredicates &predicates,
+        const std::vector<std::string> &columns);
+    EXPORT std::shared_ptr<NativeRdb::ResultSet> QueryByStep(const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &args = {});
 private:
     std::shared_ptr<OHOS::NativeRdb::Transaction> transaction_ = nullptr;
     std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore_;
