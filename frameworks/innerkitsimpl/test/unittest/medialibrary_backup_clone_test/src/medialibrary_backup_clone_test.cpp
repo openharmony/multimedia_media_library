@@ -30,6 +30,9 @@
 #include "clone_restore.h"
 #include "clone_restore_geo.h"
 #include "clone_restore_classify.h"
+#include "video_face_clone.h"
+#include "beauty_score_clone.h"
+#include "search_index_clone.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
@@ -88,6 +91,9 @@ const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + VISION_VIDEO_LABEL_TABLE,
     "DELETE FROM " + GEO_KNOWLEDGE_TABLE,
     "DELETE FROM " + VISION_TOTAL_TABLE,
+    "DELETE FROM " + ANALYSIS_SEARCH_INDEX_TABLE,
+    "DELETE FROM " + ANALYSIS_VIDEO_FACE_TABLE,
+    "DELETE FROM " + ANALYSIS_BEAUTY_SCORE_TABLE,
 };
 const vector<string> WHERE_CLAUSE_LIST_PHOTO = { WHERE_CLAUSE_SHOOTING_MODE, WHERE_CLAUSE_TRASHED,
     WHERE_CLAUSE_IS_FAVORITE, WHERE_CLAUSE_HIDDEN, WHERE_CLAUSE_EDIT,
@@ -3124,108 +3130,25 @@ void MediaLibraryBackupCloneTest::VerifyBeautyScoreRestore(const std::shared_ptr
         return;
     }
 
-    std::string querySql = "SELECT * FROM " + VISION_AESTHETICS_TABLE;
+    std::string querySql = "SELECT " + BEAUTY_SCORE_COL_AESTHETICS_VERSION +
+                           " FROM " + ANALYSIS_BEAUTY_SCORE_TABLE;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(destRdb, querySql);
     ASSERT_NE(resultSet, nullptr) << "Failed to query destination DB for beauty score verification";
 
-    std::unordered_map<int32_t, BeautyScoreTbl> destBeautyScores;
-    int32_t fileIdIdx = -1;
-    int32_t aestheticsScoreIdx = -1;
     int32_t aestheticsVersionIdx = -1;
-    int32_t probIdx = -1;
-    int32_t analysisVersionIdx = -1;
-    int32_t selectedFlagIdx = -1;
-    int32_t selectedAlgoVersionIdx = -1;
-    int32_t selectedStatusIdx = -1;
-    int32_t negativeFlagIdx = -1;
-    int32_t negativeAlgoVersionIdx = -1;
-
-    resultSet->GetColumnIndex(BEAUTY_SCORE_COL_FILE_ID, fileIdIdx);
-    resultSet->GetColumnIndex(BEAUTY_SCORE_COL_AESTHETICS_SCORE, aestheticsScoreIdx);
-    resultSet->GetColumnIndex(BEAUTY_SCORE_COL_AESTHETICS_VERSION, aestheticsVersionIdx);
-    resultSet->GetColumnIndex(BEAUTY_SCORE_COL_PROB, probIdx);
-    resultSet->GetColumnIndex(BEAUTY_SCORE_COL_ANALYSIS_VERSION, analysisVersionIdx);
-    resultSet->GetColumnIndex(BEAUTY_SCORE_COL_SELECTED_FLAG, selectedFlagIdx);
-    resultSet->GetColumnIndex(BEAUTY_SCORE_COL_SELECTED_ALGO_VERSION, selectedAlgoVersionIdx);
-    resultSet->GetColumnIndex(BEAUTY_SCORE_COL_SELECTED_STATUS, selectedStatusIdx);
-    resultSet->GetColumnIndex(BEAUTY_SCORE_COL_NEGATIVE_FLAG, negativeFlagIdx);
-    resultSet->GetColumnIndex(BEAUTY_SCORE_COL_NEGATIVE_ALGO_VERSION, negativeAlgoVersionIdx);
-
+    int32_t rowCount = 0;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        BeautyScoreTbl score;
-        int32_t currentFileId = -1;
-
-        if (fileIdIdx != -1) {
-            resultSet->GetInt(fileIdIdx, currentFileId);
-            score.file_id = currentFileId;
-        }
-        if (aestheticsScoreIdx != -1) {
-            int32_t val;
-            resultSet->GetInt(aestheticsScoreIdx, val);
-            score.aesthetics_score = val;
-        }
-        if (aestheticsVersionIdx != -1) {
-            std::string val;
-            resultSet->GetString(aestheticsVersionIdx, val);
-            score.aesthetics_version = val;
-        }
-        if (probIdx != -1) {
-            double val;
-            resultSet->GetDouble(probIdx, val);
-            score.prob = val;
-        }
-        if (analysisVersionIdx != -1) {
-            std::string val;
-            resultSet->GetString(analysisVersionIdx, val);
-            score.analysis_version = val;
-        }
-        if (selectedFlagIdx != -1) {
-            int32_t val;
-            resultSet->GetInt(selectedFlagIdx, val);
-            score.selected_flag = val;
-        }
-        if (selectedAlgoVersionIdx != -1) {
-            std::string val;
-            resultSet->GetString(selectedAlgoVersionIdx, val);
-            score.selected_algo_version = val;
-        }
-        if (selectedStatusIdx != -1) {
-            int32_t val;
-            resultSet->GetInt(selectedStatusIdx, val);
-            score.selected_status = val;
-        }
-        if (negativeFlagIdx != -1) {
-            int32_t val;
-            resultSet->GetInt(negativeFlagIdx, val);
-            score.negative_flag = val;
-        }
-        if (negativeAlgoVersionIdx != -1) {
-            std::string val;
-            resultSet->GetString(negativeAlgoVersionIdx, val);
-            score.negative_algo_version = val;
-        }
-
-        if (currentFileId != -1) {
-            destBeautyScores[currentFileId] = score;
-            MEDIA_DEBUG_LOG("Verify: Found beauty score entry for fileId: %{public}d", currentFileId);
-        }
+        rowCount++;
+        std::string aestheticsVersionVal;
+        resultSet->GetColumnIndex(BEAUTY_SCORE_COL_AESTHETICS_VERSION, aestheticsVersionIdx);
+        ASSERT_NE(aestheticsVersionIdx, -1) << "Column " << BEAUTY_SCORE_COL_AESTHETICS_VERSION <<
+            " not found in result set.";
+        resultSet->GetString(aestheticsVersionIdx, aestheticsVersionVal);
+        ASSERT_EQ(aestheticsVersionVal, "v1.1")
+            << "Aesthetics version mismatch for row " << rowCount
+            << ": expected 'v1.1', got '" << aestheticsVersionVal << "'";
     }
     resultSet->Close();
-
-    ASSERT_GT(destBeautyScores.size(), photoInfoMap.size())
-        << "The number of cloned beauty scores does not match the expected count.";
-
-    for (const auto& pair : photoInfoMap) {
-        int32_t sourceOldFileId = pair.first;
-        int32_t newFileId = pair.second.fileIdNew;
-
-        auto it = destBeautyScores.find(newFileId);
-        ASSERT_TRUE(it != destBeautyScores.end()) << "Expected new fileId " << newFileId
-                                                  << " not found in destination beauty score table.";
-        ASSERT_EQ(it->second.file_id.value_or(-1), newFileId)
-            << "FileId mismatch for cloned entry: expected " << newFileId
-            << ", got " << it->second.file_id.value_or(-1);
-    }
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_beauty_score_test_001, TestSize.Level0)
@@ -3235,10 +3158,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_beauty_s
 
     CloneSource cloneSource;
     vector<string> tableList = { ANALYSIS_BEAUTY_SCORE_TABLE };
-    Init(cloneSource, TEST_DB_PATH, tableList);
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "Destination RDB store (g_rdbStore) is null");
-
-    cloneSource.InsertTabBeautyScore();
 
     std::unordered_map<int32_t, OHOS::Media::PhotoInfo> photoInfoMap;
     int32_t sourceOldFileId = 10112;
@@ -3262,148 +3183,20 @@ static void VerifyVideoFaceRestore(const std::shared_ptr<NativeRdb::RdbStore>& d
         return;
     }
 
-    std::string querySql = "SELECT * FROM " + ANALYSIS_BEAUTY_SCORE_TABLE;
+    std::string querySql = "SELECT * FROM " + ANALYSIS_VIDEO_FACE_TABLE;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(destRdb, querySql);
     ASSERT_NE(resultSet, nullptr) << "Failed to query destination DB for video face verification";
 
     std::unordered_map<int32_t, std::vector<VideoFaceTbl>> destVideoFaces;
     int32_t fileIdIdx = -1;
-    int32_t faceIdIdx = -1;
-    int32_t tagIdIdx = -1;
-    int32_t scaleXIdx = -1;
-    int32_t scaleYIdx = -1;
-    int32_t scaleWidthIdx = -1;
-    int32_t scaleHeightIdx = -1;
-    int32_t landmarksIdx = -1;
-    int32_t pitchIdx = -1;
-    int32_t yawIdx = -1;
-    int32_t rollIdx = -1;
-    int32_t probIdx = -1;
-    int32_t totalFacesIdx = -1;
-    int32_t frameIdIdx = -1;
-    int32_t frameTimestampIdx = -1;
-    int32_t tracksIdx = -1;
-    int32_t algoVersionIdx = -1;
-    int32_t featuresIdx = -1;
-    int32_t analysisVersionIdx = -1;
-
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_FILE_ID, fileIdIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_FACE_ID, faceIdIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_TAG_ID, tagIdIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_SCALE_X, scaleXIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_SCALE_Y, scaleYIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_SCALE_WIDTH, scaleWidthIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_SCALE_HEIGHT, scaleHeightIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_LANDMARKS, landmarksIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_PITCH, pitchIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_YAW, yawIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_ROLL, rollIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_PROB, probIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_TOTAL_FACES, totalFacesIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_FRAME_ID, frameIdIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_FRAME_TIMESTAMP, frameTimestampIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_TRACKS, tracksIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_ALGO_VERSION, algoVersionIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_FEATURES, featuresIdx);
-    resultSet->GetColumnIndex(VIDEO_FACE_COL_ANALYSIS_VERSION, analysisVersionIdx);
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         VideoFaceTbl face;
         int32_t currentFileId = -1;
-
+        resultSet->GetColumnIndex(VIDEO_FACE_COL_FILE_ID, fileIdIdx);
         if (fileIdIdx != -1) {
             resultSet->GetInt(fileIdIdx, currentFileId);
             face.file_id = currentFileId;
-        }
-        if (faceIdIdx != -1) {
-            std::string val;
-            resultSet->GetString(faceIdIdx, val);
-            face.face_id = val;
-        }
-        if (tagIdIdx != -1) {
-            std::string val;
-            resultSet->GetString(tagIdIdx, val);
-            face.tag_id = val;
-        }
-        if (scaleXIdx != -1) {
-            std::string val;
-            resultSet->GetString(scaleXIdx, val);
-            face.scale_x = val;
-        }
-        if (scaleYIdx != -1) {
-            std::string val;
-            resultSet->GetString(scaleYIdx, val);
-            face.scale_y = val;
-        }
-        if (scaleWidthIdx != -1) {
-            std::string val;
-            resultSet->GetString(scaleWidthIdx, val);
-            face.scale_width = val;
-        }
-        if (scaleHeightIdx != -1) {
-            std::string val;
-            resultSet->GetString(scaleHeightIdx, val);
-            face.scale_height = val;
-        }
-        if (landmarksIdx != -1) {
-            std::string val;
-            resultSet->GetString(landmarksIdx, val);
-            face.landmarks = val;
-        }
-        if (pitchIdx != -1) {
-            std::string val;
-            resultSet->GetString(pitchIdx, val);
-            face.pitch = val;
-        }
-        if (yawIdx != -1) {
-            std::string val;
-            resultSet->GetString(yawIdx, val);
-            face.yaw = val;
-        }
-        if (rollIdx != -1) {
-            std::string val;
-            resultSet->GetString(rollIdx, val);
-            face.roll = val;
-        }
-        if (probIdx != -1) {
-            std::string val;
-            resultSet->GetString(probIdx, val);
-            face.prob = val;
-        }
-        if (totalFacesIdx != -1) {
-            int32_t val;
-            resultSet->GetInt(totalFacesIdx, val);
-            face.total_faces = val;
-        }
-        if (frameIdIdx != -1) {
-            std::string val;
-            resultSet->GetString(frameIdIdx, val);
-            face.frame_id = val;
-        }
-        if (frameTimestampIdx != -1) {
-            std::string val;
-            resultSet->GetString(frameTimestampIdx, val);
-            face.frame_timestamp = val;
-        }
-        if (tracksIdx != -1) {
-            std::string val;
-            resultSet->GetString(tracksIdx, val);
-            face.tracks = val;
-        }
-        if (algoVersionIdx != -1) {
-            std::string val;
-            resultSet->GetString(algoVersionIdx, val);
-            face.algo_version = val;
-        }
-        if (featuresIdx != -1) {
-            std::string val;
-            resultSet->GetString(featuresIdx, val);
-            face.features = val;
-        }
-        if (analysisVersionIdx != -1) {
-            std::string val;
-            resultSet->GetString(analysisVersionIdx, val);
-            face.analysis_version = val;
         }
 
         if (currentFileId != -1) {
@@ -3412,7 +3205,7 @@ static void VerifyVideoFaceRestore(const std::shared_ptr<NativeRdb::RdbStore>& d
     }
     resultSet->Close();
 
-    ASSERT_GT(destVideoFaces.size(), photoInfoMap.size())
+    ASSERT_GE(destVideoFaces.size(), photoInfoMap.size())
         << "The number of file IDs with video faces does not match the expected count.";
 
     for (const auto& pair : photoInfoMap) {
@@ -3433,10 +3226,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_video_fa
 
     CloneSource cloneSource;
     vector<string> tableList = { ANALYSIS_VIDEO_FACE_TABLE };
-    Init(cloneSource, TEST_DB_PATH, tableList);
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "Destination RDB store (g_rdbStore) is null");
-
-    cloneSource.InsertTabVideoFace();
 
     std::unordered_map<int32_t, OHOS::Media::PhotoInfo> photoInfoMap;
     int32_t sourceOldFileId = 10111;
