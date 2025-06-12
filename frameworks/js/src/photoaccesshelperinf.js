@@ -16,6 +16,7 @@
 const photoAccessHelper = requireNapi('file.photoAccessHelperNative');
 const bundleManager = requireNapi('bundle.bundleManager');
 const deviceinfo = requireInternal('deviceInfo');
+const rpc = requireInternal('rpc');
 
 const ARGS_ZERO = 0;
 const ARGS_ONE = 1;
@@ -37,6 +38,12 @@ const ERROR_MSG_USER_DENY = 'user deny';
 const ERROR_MSG_PARAMERTER_INVALID = 'input parmaeter invalid';
 const ERROR_MSG_INNER_FAIL = 'System inner fail';
 const ERROR_MSG_OHOS_INNER_FAIL = 'Internal system error';
+
+const SECONDS_OF_ONE_DAY = 24 * 60 * 60;
+const DELAY_MILLSECONDS = 33;
+const RETRY_COUNTER = 10;
+const RPC_TOKEN_RECENT_PHOTO_INFO = 'rpcRecentPhotoInfoServiceAbility';
+const RPC_MSGID_RECENT_PHOTO_INFO = 1;
 
 const MAX_DELETE_NUMBER = 300;
 const MIN_DELETE_NUMBER = 1;
@@ -501,6 +508,155 @@ function getPhotoPickerComponentDefaultAlbumName() {
   }
 }
 
+async function delayFunc() {
+  return new Promise(resolve => setTimeout(resolve, DELAY_MILLSECONDS));
+}
+
+function checkIsRecentPhotoOptionValid(option) {
+  if (!option) {
+    console.error('photoAccessHelper invalid, option is null.');
+    return false;
+  }
+  // check whether input type is object
+  if (typeof option !== 'object') {
+    console.error('photoAccessHelper invalid, option type is not object.');
+    return false;
+  }
+  // check whether period is number when it exist
+  if (!option.period) {
+    option.period = SECONDS_OF_ONE_DAY;
+  }
+  if (typeof option.period !== 'number') {
+    console.error('photoAccessHelper invalid, option.period type is not number.');
+    return false;
+  }
+  if (option.period <= 0 || option.period > SECONDS_OF_ONE_DAY) {
+    option.period = SECONDS_OF_ONE_DAY;
+  }
+  // check whether MIMEType is PhotoViewMIMETypes
+  if (!option.MIMEType) {
+    option.MIMEType = PhotoViewMIMETypes.IMAGE_VIDEO_TYPE;
+  }
+  if (typeof option.MIMEType !== 'string') {
+    console.error('photoAccessHelper invalid, option.MIMEType is not string.');
+    return false;
+  }
+  const PhotoSource = {
+    ALL: 0,
+    CAMERA: 1,
+    SCREENSHOT: 2
+  };
+  // check whether photoSource valid
+  if (!option.photoSource) {
+    option.photoSource = PhotoSource.ALL;
+  }
+  if (typeof option.photoSource !== 'number') {
+    console.error('photoAccessHelper invalid, option.photoSource is not number');
+    return false;
+  }
+  if (option.photoSource < PhotoSource.ALL || option.photoSource > PhotoSource.SCREENSHOT) {
+    option.photoSource = PhotoSource.ALL;
+  }
+  return true;
+}
+
+async function rpcGetRecentPhotoInfoGetProxy() {
+  let proxy = undefined;
+  let want = {
+    'bundleName': 'com.ohos.photos',
+    'abilityName': 'RecentPhotoInfoAbility'
+  };
+  let connect = {
+    onConnect: (elementName, remoteProxy) => {
+      console.info('RpcClient: js onConnect called');
+      proxy = remoteProxy;
+    },
+    onDisconnect: (elementName) => {
+      console.info('RpcClient: onDisconnect');
+    },
+    onFailed: () => {
+      console.info('RpcClient: onFailed');
+    }
+  };
+  let context = gContext;
+  if (context === undefined) {
+    console.info('photoAccessHelper gContext undefined.');
+    context = getContext(this);
+  }
+  try {
+    let connectId = context.connextServiceExtensionAbility(want, connect);
+    let retryConter = RETRY_COUNTER;
+    while (proxy === undefined) {
+      retryConter -= 1;
+      if (retryConter < 0) {
+        break;
+      }
+      await delayFunc();
+    }
+  } catch (error) {
+    console.error('rpcGetRecentPhotoInfo Error: ' + error);
+  }
+  return proxy;
+}
+
+async function rpcGetRecentPhotoInfo(recentPhotoOption) {
+  let proxy = await rpcGetRecentPhotoInfoGetProxy();
+  if (proxy === undefined) {
+    console.error('rpcGetRecentPhotoInfo proxy is undefined');
+    return undefined;
+  }
+  let option = new rpc.MessageOption();
+  let data = rpc.MessageSequence.create();
+  let reply = rpc.MessageSequence.create();
+  try { // rpc Request
+    data.writeInterfaceToken(RPC_TOKEN_RECENT_PHOTO_INFO);
+    data.writeInt(recentPhotoOption.period);
+    data.writeString(recentPhotoOption.MIMEType);
+    data.writeInt(recentPhotoOption.photoSrouce);
+    let result = await proxy.sendMessageRequest(RPC_MSGID_RECENT_PHOTO_INFO, data, reply, option);
+    if (result.errCode !== 0) {
+      console.error('rpcGetRecentPhotoInfo sendMessageRequest failed, errCode: ' + result.errCode);
+      return undefined;
+    }
+    let dateTaken = result.reply.readLong();
+    let identifier = result.reply.readString();
+    console.info('rpcGetRecentPhotoInfo sendMessageRequest succ, result: ' + dateTaken);
+    return {'dateTaken': dateTaken, 'identifier': identifier};
+  } catch (err) {
+    console.error('rpcGetRecentPhotoInfo sendMessageRequest failed: ' + err);
+    return undefined;
+  } finally {
+    data.reclaim();
+    reply.reclaim();
+  }
+}
+
+async function getRecentPhotoInfoOk(recentPhotoOption) {
+  try {
+    console.info('getRecentPhotoInfoOk enter');
+    let photoInfo = rpcGetRecentPhotoInfo(recentPhotoOption);
+    if (!photoInfo) {
+      photoInfo = { dateTaken: -1, identifier: '-1' };
+    }
+    if (photoInfo.dateTaken === 0) {
+      photoInfo.identifier = '0';
+    }
+    console.info('recentPhotoInfo result: ' + photoInfo.identifier);
+    return new Promise((resolve, reject) => {
+      resolve(photoInfo);
+    });
+  } catch (error) {
+    return errorResult(new BusinessError(ERROR_MSG_INNER_FAIL, error.code), null);
+  }
+}
+
+function getRecentPhotoInfo(recentPhotoOption) {
+  if (!checkIsRecentPhotoOptionValid(recentPhotoOption)) {
+    throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID);
+  }
+  return getRecentPhotoInfoOk(recentPhotoOption);
+}
+
 function getPhotoAccessHelper(context, userId = -1) {
   if (context === undefined) {
     console.log('photoAccessHelper gContext undefined');
@@ -515,6 +671,7 @@ function getPhotoAccessHelper(context, userId = -1) {
     helper.constructor.prototype.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
     helper.constructor.prototype.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
     helper.constructor.prototype.getPhotoPickerComponentDefaultAlbumName = getPhotoPickerComponentDefaultAlbumName;
+    helper.constructor.prototype.getRecentPhotoInfo = getRecentPhotoInfo;
   }
   return helper;
 }
@@ -554,6 +711,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
           helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
           helper.getPhotoPickerComponentDefaultAlbumName = getPhotoPickerComponentDefaultAlbumName;
+          helper.getRecentPhotoInfo = getRecentPhotoInfo;
         }
         return helper;
       })
@@ -575,6 +733,7 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
           helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
           helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
           helper.getPhotoPickerComponentDefaultAlbumName = getPhotoPickerComponentDefaultAlbumName;
+          helper.getRecentPhotoInfo = getRecentPhotoInfo;
         }
         asyncCallback(err, helper);
       }
