@@ -272,7 +272,7 @@ HWTEST_F(QueueEditAssetStatusTest, StartAssetAnalysisTest_002, TestSize.Level0) 
     MessageParcel data;
     MessageParcel reply;
     StartAssetAnalysisReqBody reqBody;
-    std::vector<std::string> fileIds{"111111","222222"};
+    std::vector<std::string> fileIds{"111111", "222222"};
 
     reqBody.predicates.In("Photos.file_id", fileIds);
     auto ret = reqBody.Marshalling(data);

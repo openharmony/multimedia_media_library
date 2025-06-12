@@ -240,7 +240,5 @@ HWTEST_F(StopThumbnailCreationTaskTest, StopThumbnailCreationTask_Test_003, Test
 
     result = StopThumCreationTask(requestId);
     ASSERT_EQ(result, 0);
-    // std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS * 3));
-    // ASSERT_EQ(CheckhumbnailReadyAllEnd(), 0);
 }
 }  // namespace OHOS::Media
