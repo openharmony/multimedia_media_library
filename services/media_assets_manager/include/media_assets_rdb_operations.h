@@ -26,6 +26,7 @@
 #include "file_asset.h"
 #include "medialibrary_operation.h"
 #include "datashare_values_bucket.h"
+#include "query_cloud_enhancement_task_state_dto.h"
 
 namespace OHOS::Media {
 
@@ -46,6 +47,7 @@ public:
     bool QueryFileIdIfExists(const std::string& fileId);
     bool QueryFormIdIfExists(const std::string& formId);
     int32_t CommitEditInsert(const std::string& editData, int32_t fileId);
+    int32_t QueryEnhancementTaskState(const std::string& photoUri, QueryCloudEnhancementTaskStateDto& dto);
     static void DeleteFromVisionTables(const std::string& fileId);
 
     int32_t GrantPhotoUriPermission(MediaLibraryCommand &cmd);

@@ -332,8 +332,8 @@ static shared_ptr<NativeRdb::ResultSet> HandleAlbumIndexOfUri(MediaLibraryComman
     return MediaLibraryRdbStore::GetIndexOfUri(predicates, columns, photoId);
 }
 
-static shared_ptr<NativeRdb::ResultSet> HandleIndexOfUri(MediaLibraryCommand &cmd, RdbPredicates &predicates,
-    const string &photoId, const string &albumId)
+shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::HandleIndexOfUri(
+    MediaLibraryCommand &cmd, RdbPredicates &predicates, const string &photoId, const string &albumId)
 {
     CHECK_AND_RETURN_RET(albumId.empty(), HandleAlbumIndexOfUri(cmd, photoId, albumId));
     string indexClause = " COUNT(*) as " + PHOTO_INDEX;
@@ -347,7 +347,7 @@ static shared_ptr<NativeRdb::ResultSet> HandleIndexOfUri(MediaLibraryCommand &cm
     return MediaLibraryRdbStore::GetIndexOfUriForPhotos(predicates, columns, photoId);
 }
 
-static shared_ptr<NativeRdb::ResultSet> HandleAnalysisIndex(MediaLibraryCommand &cmd,
+shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::HandleAnalysisIndex(MediaLibraryCommand &cmd,
     const string &photoId, const string &albumId)
 {
     string orderClause;
@@ -378,7 +378,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
         if (cmd.GetOprnType() == OperationType::ANALYSIS_INDEX) {
             return HandleAnalysisIndex(cmd, photoId, albumId);
         }
-        return HandleIndexOfUri(cmd, predicates, photoId, albumId);
+        return MediaLibraryPhotoOperations::HandleIndexOfUri(cmd, predicates, photoId, albumId);
     }
     CHECK_AND_RETURN_RET(cmd.GetOprnType() != OperationType::FIND_DUPLICATE_ASSETS,
         DuplicatePhotoOperation::GetAllDuplicateAssets(predicates, columns));

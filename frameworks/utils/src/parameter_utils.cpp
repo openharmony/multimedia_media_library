@@ -22,6 +22,8 @@
 #include "photo_album.h"
 #include "userfile_manager_types.h"
 #include "media_file_uri.h"
+#include "medialibrary_common_utils.h"
+#include "post_event_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -343,6 +345,21 @@ int32_t ParameterUtils::CheckWatermarkType(const AssetChangeReqBody &reqBody)
         MediaFileUtils::CheckSupportedWatermarkType(reqBody.watermarkType), -EINVAL, "Invalid watermarkType");
 
     return E_OK;
+}
+
+int32_t ParameterUtils::CheckWhereClause(const std::string &whereClause)
+{
+    int32_t ret = E_OK;
+    MEDIA_DEBUG_LOG("CheckWhereClause start");
+    if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
+        ret = E_INVALID_VALUES;
+        MEDIA_ERR_LOG("illegal query whereClause input %{private}s", whereClause.c_str());
+        VariantMap map = {
+            {KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret}, {KEY_OPT_TYPE, OptType::QUERY}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+    }
+    MEDIA_DEBUG_LOG("CheckWhereClause end");
+    return ret;
 }
 }  // namespace Media
 }  // namespace OHOS

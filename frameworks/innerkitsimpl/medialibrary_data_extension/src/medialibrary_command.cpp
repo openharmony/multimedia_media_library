@@ -85,6 +85,11 @@ MediaLibraryCommand::MediaLibraryCommand(const string& tableName)
     this->SetTableName(tableName);
 }
 
+MediaLibraryCommand::MediaLibraryCommand(const DataShare::DataSharePredicates &pred)
+{
+    this->SetDataSharePred(pred);
+}
+
 MediaLibraryCommand::~MediaLibraryCommand() {}
 
 // set functions

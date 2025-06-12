@@ -2205,7 +2205,6 @@ static bool SetFavoriteExecute(MediaAssetChangeRequestAsyncContext &context)
 
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
-    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
     NAPI_INFO_LOG(

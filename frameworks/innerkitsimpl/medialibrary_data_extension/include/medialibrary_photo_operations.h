@@ -27,6 +27,7 @@
 #include "medialibrary_command.h"
 #include "picture.h"
 #include "asset_accurate_refresh.h"
+#include "rdb_predicates.h"
 
 namespace OHOS {
 namespace Media {
@@ -111,6 +112,10 @@ public:
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd);
 
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> HandleIndexOfUri(MediaLibraryCommand &cmd,
+        NativeRdb::RdbPredicates &predicates, const std::string &photoId, const std::string &albumId);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> HandleAnalysisIndex(MediaLibraryCommand &cmd,
+        const std::string &photoId, const std::string &albumId);
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);

@@ -41,8 +41,8 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_HIGH_LIGHT_ALBUMS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ALBUM), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_COVER_URI), {{SYSTEMAPI_PERM}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ALBUM_NAME), {{SYSTEMAPI_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_COVER_URI), {{}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ALBUM_NAME), {{}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_IS_ME), {{SYSTEMAPI_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_DISPLAY_LEVEL), {{SYSTEMAPI_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS), {{SYSTEMAPI_PERM}}},
@@ -63,11 +63,29 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_REMOVE_ASSETS), { {WRITE_PERM} }},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_RECOVER_ASSETS), { {SYSTEMAPI_PERM, WRITE_PERM} }},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SET_COVER_URI), { {SYSTEMAPI_PERM, WRITE_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_PHOTO_ALBUMS), { {READ_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_HIDDEN_ALBUMS), { {SYSTEMAPI_PERM, READ_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUEUE_GET_ALBUMS_BY_IDS), { {SYSTEMAPI_PERM, READ_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ORDER_POSITION), { {SYSTEMAPI_PERM, READ_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_FACE_ID), { {SYSTEMAPI_PERM, READ_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), {{READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PHOTO_INDEX), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_SYS_GET_ASSETS), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_GET_ASSETS), {{READ_PERM}}},
+};
+
+static std::unordered_set<uint32_t> mediaAlbumsPermissionDbBypass = {
+    static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_SYS_GET_ASSETS),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_GET_ASSETS),
 };
 
 int32_t MediaAlbumsControllerService::GetPermissionPolicy(
     uint32_t code, std::vector<std::vector<PermissionType>> &permissionPolicy, bool &isBypass)
 {
+    if (mediaAlbumsPermissionDbBypass.find(code) != mediaAlbumsPermissionDbBypass.end()) {
+        isBypass = true;
+    }
     auto it = mediaAlbumsPermissionPolicy.find(code);
     if (it != mediaAlbumsPermissionPolicy.end()) {
         permissionPolicy = it->second;

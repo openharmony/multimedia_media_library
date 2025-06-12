@@ -35,6 +35,11 @@
 #include "userfile_manager_types.h"
 #include "moving_photo_call_transcoder.h"
 #include "permission_utils.h"
+#include "medialibrary_business_code.h"
+#include "request_content_vo.h"
+#include "user_define_ipc_client.h"
+#include "medialibrary_operation.h"
+#include "media_asset_rdbstore.h"
 
 using namespace std;
 using namespace OHOS::Security::AccessToken;
@@ -43,6 +48,9 @@ namespace OHOS {
 namespace Media {
 
 static const string MOVING_PHOTO_NAPI_CLASS = "MovingPhoto";
+static const string URI_TPYE = "uriType";
+static const string TPYE_PHOTOS = "1";
+
 thread_local napi_ref MovingPhotoNapi::constructor_ = nullptr;
 enum class MovingPhotoResourceType : int32_t {
     DEFAULT = 0,
@@ -527,6 +535,26 @@ static bool IsValidResourceType(int32_t resourceType)
                MediaLibraryNapiUtils::IsSystemApp());
 }
 
+static int32_t QueryPhotoPositionIPCExecute(const string &movingPhotoUri, int32_t userId, int32_t &position)
+{
+    RequestContentRespBody respBody;
+    RequestContentReqBody reqBody;
+    reqBody.mediaId = MediaFileUtils::GetIdFromUri(movingPhotoUri);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_REQUEST_CONTENT);
+
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, reqBody.mediaId}, {URI_TPYE, TPYE_PHOTOS}};
+    int32_t err =
+        IPC::UserDefineIPCClient().SetUserId(userId).SetHeader(headerMap).Call(businessCode, reqBody, respBody);
+    if (err != E_OK) {
+        NAPI_ERR_LOG("get position fail. err:%{public}d", err);
+        return E_ERR;
+    }
+
+    position = respBody.position;
+    return E_OK;
+}
+
 static int32_t QueryPhotoPosition(const string &movingPhotoUri, bool hasReadPermission, int32_t &position)
 {
     if (!MediaFileUtils::IsMediaLibraryUri(movingPhotoUri)) {
@@ -560,6 +588,11 @@ static int32_t QueryPhotoPosition(const string &movingPhotoUri, bool hasReadPerm
         MediaFileUri::RemoveAllFragment(queryUri);
     }
     Uri uri(queryUri);
+    OperationObject object = OperationObject::UNKNOWN_OBJECT;
+    if (!MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) || userId != -1) {
+        return QueryPhotoPositionIPCExecute(movingPhotoUri, userId, position);
+    }
+
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {

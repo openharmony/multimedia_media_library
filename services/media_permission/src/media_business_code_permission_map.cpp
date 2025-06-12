@@ -22,7 +22,18 @@
 using namespace std;
 namespace OHOS::Media {
 // API blacklist for deprecated read or write permission
-std::unordered_set<uint32_t> PermissionCheck::deprecatedReadPermissionSet = {};
+std::unordered_set<uint32_t> PermissionCheck::deprecatedReadPermissionSet = {
+    static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_PHOTO_STATUS),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PHOTO_INDEX),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_CLOUD_ENHANCEMENT_TASK_STATE),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::SYNC_CLOUD_ENHANCEMENT_TASK_STATUS),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::GET_CLOUD_ENHANCEMENT_PAIR),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::GET_FACE_ID),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_GET_CLOUDMEDIA_ASSET_STATUS),
+};
+
 std::unordered_set<uint32_t> PermissionCheck::deprecatedWritePermissionSet = {
     static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_ASSET),
     static_cast<uint32_t>(MediaLibraryBusinessCode::COMMIT_EDITED_ASSET),
@@ -33,15 +44,14 @@ std::unordered_set<uint32_t> PermissionCheck::deprecatedWritePermissionSet = {
     static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_GALLERY_FORM_INFO),
     static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_HIGH_LIGHT_ALBUMS),
     static_cast<uint32_t>(MediaLibraryBusinessCode::UPDATE_GALLERY_FORM_INFO),
-    static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_ADD_ASSETS),
-    static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_REMOVE_ASSETS),
-    static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_MOVE_ASSETS),
-    static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_RECOVER_ASSETS),
-    static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DELETE_ASSETS),
-    static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS_ASSETS),
-    static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_MERGE_ALBUM),
-    static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_PLACE_BEFORE),
     static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ORDER_POSITION),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ORDER_POSITION),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::SUBMIT_CLOUD_ENHANCEMENT_TASKS),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::PRIORITIZE_CLOUD_ENHANCEMENT_TASK),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::CANCEL_CLOUD_ENHANCEMENT_TASKS),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::CANCEL_ALL_CLOUD_ENHANCEMENT_TASKS),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::SET_HIGH_LIGHT_USER_ACTION_DATA),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUBTITLE),
 };
 // API whitelist for check grant operation permission
 std::unordered_set<uint32_t> PermissionCheck::grantOperationPermissionSet = {
