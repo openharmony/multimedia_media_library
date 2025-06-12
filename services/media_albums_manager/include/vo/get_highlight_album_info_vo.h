@@ -27,11 +27,10 @@ public:
     int32_t highlightAlbumInfoType = 0;
     int32_t albumId = 0;
     int32_t subType = 0;
- 
+
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
-
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIA_ASSETS_MANAGER_GET_HIGHLIGHT_ALBUM_INFO_VO_H

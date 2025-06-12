@@ -313,7 +313,4 @@ HWTEST_F(GetDataAnalysisProcessTest, GetHighlightAnalysisProgressTest_TEST_002, 
     }
     EXPECT_EQ(rowsCount, 1);
 }
-
-
- 
 }  // namespace OHOS::Media
