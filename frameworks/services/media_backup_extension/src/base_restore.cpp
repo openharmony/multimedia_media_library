@@ -34,6 +34,7 @@
 #include "media_file_utils.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_asset_operations.h"
+#include "medialibrary_business_code.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdb_utils.h"
@@ -46,6 +47,7 @@
 #include "result_set_utils.h"
 #include "resource_type.h"
 #include "userfilemgr_uri.h"
+#include "user_define_ipc_client.h"
 #include "medialibrary_notify.h"
 #include "upgrade_restore_task_report.h"
 #include "medialibrary_rdb_transaction.h"
@@ -1833,6 +1835,10 @@ void BaseRestore::NotifyAlbum()
 {
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::NOTIFY_FOR_RECHECK);
+    int ret = IPC::UserDefineIPCClient().Call(businessCode);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "Notify check refresh failed");
 
     watch->Notify(PhotoColumn::DEFAULT_PHOTO_URI, NotifyType::NOTIFY_ADD);
     watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);

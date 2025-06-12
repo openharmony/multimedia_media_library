@@ -160,6 +160,18 @@ const std::vector<std::string> cloudMediaTaskPauseCauseEnum {
     "POWER_LIMIT", "BACKGROUND_TASK_UNAVAILABLE", "FREQUENT_USER_REQUESTS", "CLOUD_ERROR", "USER_PAUSED",
 };
 
+const std::vector<std::string> notifyChangeTypeEnum {
+    "NOTIFY_CHANGE_ADD", "NOTIFY_CHANGE_UPDATE", "NOTIFY_CHANGE_REMOVE"
+};
+ 
+const std::vector<std::string> thumbnailChangeStatusEnum {
+    "THUMBNAIL_NOT_EXISTS", "THUMBNAIL_ADD", "THUMBNAIL_UPDATE", "THUMBNAIL_NOT_CHANGE"
+};
+ 
+const std::vector<std::string> strongAssociationTypeEnum {
+    "NORMAL", "CLOUD_ENHANCEMENT"
+};
+
 const std::vector<std::pair<std::string, std::string>> FILE_KEY_ENUM_PROPERTIES = {
     std::make_pair("ID",                        MEDIA_DATA_DB_ID),
     std::make_pair("RELATIVE_PATH",             MEDIA_DATA_DB_RELATIVE_PATH),

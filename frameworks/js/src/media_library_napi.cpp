@@ -104,6 +104,9 @@
 #include "start_thumbnail_creation_task_vo.h"
 #include "stop_thumbnail_creation_task_vo.h"
 
+#include "parcel.h"
+#include "medialibrary_notify_utils.h"
+
 using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::NativeRdb;
@@ -236,6 +239,9 @@ thread_local napi_ref MediaLibraryNapi::sCloudMediaDownloadTypeEnumRef_ = nullpt
 thread_local napi_ref MediaLibraryNapi::sCloudMediaRetainTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCloudMediaAssetTaskStatusEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCloudMediaTaskPauseCauseEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sNotifyChangeTypeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sThumbnailChangeStatusEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sStrongAssociationTypeEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -398,6 +404,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getAnalysisData", PhotoAccessHelperGetAnalysisData),
             DECLARE_NAPI_FUNCTION("createAssetsForAppWithAlbum", CreateAssetsForAppWithAlbum),
             DECLARE_NAPI_FUNCTION("startAssetAnalysis", PhotoAccessStartAssetAnalysis),
+            DECLARE_NAPI_FUNCTION("on", PhotoAccessRegisterCallback),
+            DECLARE_NAPI_FUNCTION("off", PhotoAccessUnregisterCallback),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -445,6 +453,9 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("CloudMediaTaskPauseCause", CreateCloudMediaTaskPauseCauseEnum(env)),
         DECLARE_NAPI_STATIC_FUNCTION("getPhotoPickerComponentDefaultAlbumName",
             GetPhotoPickerComponentDefaultAlbumName),
+        DECLARE_NAPI_PROPERTY("NotifyChangeType", CreateNotifyChangeTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("ThumbnailChangeStatus", CreateThumbnailChangeStatusEnum(env)),
+        DECLARE_NAPI_PROPERTY("StrongAssociationType", CreateStrongAssociationTypeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -2581,7 +2592,7 @@ static napi_status SetValueInt32(const napi_env& env, const char* fieldStr, cons
     }
     status = napi_set_named_property(env, result, fieldStr, value);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("Set int32 named property error! field: %{public}s", fieldStr);
+        NAPI_ERR_LOG("Set int32 named property error! field: %{public}s, status: %{public}d", fieldStr, status);
     }
     return status;
 }
@@ -8121,6 +8132,21 @@ napi_value MediaLibraryNapi::CreateCloudMediaTaskPauseCauseEnum(napi_env env)
     return CreateNumberEnumProperty(env, cloudMediaTaskPauseCauseEnum, sCloudMediaTaskPauseCauseEnumRef_);
 }
 
+napi_value MediaLibraryNapi::CreateNotifyChangeTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, notifyChangeTypeEnum, sNotifyChangeTypeEnumRef_);
+}
+ 
+napi_value MediaLibraryNapi::CreateThumbnailChangeStatusEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, thumbnailChangeStatusEnum, sThumbnailChangeStatusEnumRef_);
+}
+ 
+napi_value MediaLibraryNapi::CreateStrongAssociationTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, strongAssociationTypeEnum, sStrongAssociationTypeEnumRef_);
+}
+
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -9423,6 +9449,249 @@ napi_value MediaLibraryNapi::PhotoAccessHelperOnCallback(napi_env env, napi_call
             return undefinedResult;
         }
         tracer.Finish();
+    }
+    return undefinedResult;
+}
+
+int32_t MediaLibraryNapi::AddClientObserver(napi_env env, napi_ref ref,
+    std::map<Notification::NotifyUriType, std::vector<std::shared_ptr<ClientObserver>>> &clientObservers,
+    const Notification::NotifyUriType uriType)
+{
+    auto iter = clientObservers.find(uriType);
+    if (iter == clientObservers.end()) {
+        shared_ptr<ClientObserver> clientObserver = make_shared<ClientObserver>(uriType, ref);
+        clientObservers[uriType].push_back(clientObserver);
+        return E_OK;
+    }
+    napi_value callback = nullptr;
+    napi_status status = napi_get_reference_value(env, ref, &callback);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
+        return JS_INNER_FAIL;
+    }
+
+    bool hasRegister = false;
+    auto observers = iter->second;
+    for (auto &observer : observers) {
+        napi_value onCallback = nullptr;
+        status = napi_get_reference_value(env, observer->ref_, &onCallback);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
+            return JS_INNER_FAIL;
+        }
+        napi_strict_equals(env, callback, onCallback, &hasRegister);
+        if (hasRegister) {
+            NAPI_INFO_LOG("clientObserver hasRegister");
+            return JS_INNER_FAIL;
+        }
+    }
+    if (!hasRegister) {
+        shared_ptr<ClientObserver> clientObserver = make_shared<ClientObserver>(uriType, ref);
+        clientObservers[uriType].push_back(clientObserver);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryNapi::RegisterObserverExecute(napi_env env, napi_ref ref, ChangeListenerNapi &listObj,
+    const Notification::NotifyUriType uriType)
+{
+    // 根据uri获取对应的 注册uri
+    Notification::NotifyUriType registerUriType = Notification::NotifyUriType::INVALID;
+    std::string registerUri = "";
+    if (MediaLibraryNotifyUtils::GetNotifyTypeAndUri(uriType, registerUriType, registerUri) != E_OK) {
+        return JS_INNER_FAIL;
+    }
+
+    for (auto it = listObj.newObservers_.begin(); it != listObj.newObservers_.end(); it++) {
+        Notification::NotifyUriType observerUri = (*it)->uriType_;
+        if (observerUri == registerUriType) {
+            //判断是否已有callback，没有则加入，有则返回false
+            auto& clientObservers = (*it)->clientObservers_;
+            return AddClientObserver(env, ref, clientObservers, uriType);
+        }
+    }
+    // list 中没有，新建一个，并且服务端注册
+    shared_ptr<MediaOnNotifyNewObserver> observer =
+        make_shared<MediaOnNotifyNewObserver>(registerUriType, registerUri, env);
+    Uri notifyUri(registerUri);
+    int32_t ret = UserFileClient::RegisterObserverExtProvider(notifyUri,
+        static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), false);
+
+    shared_ptr<ClientObserver> clientObserver = make_shared<ClientObserver>(uriType, ref);
+    observer->clientObservers_[uriType].push_back(clientObserver);
+    listObj.newObservers_.push_back(observer);
+    return ret;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessRegisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter PhotoAccessRegisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessRegisterCallback");
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {nullptr};
+    napi_value thisVar = nullptr;
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameters");
+
+    napi_valuetype valueType = napi_undefined;
+    if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string ||
+        napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return undefinedResult;
+    }
+    char buffer[ARG_BUF_SIZE];
+    size_t res = 0;
+    if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return undefinedResult;
+    }
+    string type = string(buffer);
+    Notification::NotifyUriType uriType = Notification::NotifyUriType::INVALID;
+    if (MediaLibraryNotifyUtils::GetRegisterNotifyType(type, uriType) != E_OK) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return undefinedResult;
+    }
+
+    const int32_t refCount = 1;
+    napi_ref cbOnRef = nullptr;
+    napi_create_reference(env, argv[PARAM1], refCount, &cbOnRef);
+    int32_t ret = RegisterObserverExecute(env, cbOnRef, *g_listObj, uriType);
+    if (ret == E_OK) {
+        NAPI_INFO_LOG("PhotoAccessRegisterCallback success");
+    } else {
+        NapiError::ThrowError(env, ret);
+        napi_delete_reference(env, cbOnRef);
+        return undefinedResult;
+    }
+    return undefinedResult;
+}
+
+int32_t MediaLibraryNapi::RemoveClientObserver(napi_env env, napi_ref ref,
+    map<Notification::NotifyUriType, vector<shared_ptr<ClientObserver>>> &clientObservers,
+    const Notification::NotifyUriType uriType)
+{
+    if (clientObservers.find(uriType) == clientObservers.end()) {
+        NAPI_ERR_LOG("invalid register uriType");
+        return JS_INNER_FAIL;
+    }
+    if (ref == nullptr) {
+        NAPI_ERR_LOG("remove all client observers of uriType");
+        clientObservers.erase(uriType);
+        return E_OK;
+    }
+    napi_value offCallback = nullptr;
+    napi_status status = napi_get_reference_value(env, ref, &offCallback);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
+        return JS_INNER_FAIL;
+    }
+
+    bool hasRegister = false;
+    for (auto iter = clientObservers[uriType].begin(); iter != clientObservers[uriType].end(); iter++) {
+        napi_value onCallback = nullptr;
+        status = napi_get_reference_value(env, (*iter)->ref_, &onCallback);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
+            return JS_INNER_FAIL;
+        }
+        napi_strict_equals(env, offCallback, onCallback, &hasRegister);
+        if (!hasRegister) {
+            continue;
+        }
+
+        clientObservers[uriType].erase(iter);
+        if (clientObservers[uriType].empty()) {
+            clientObservers.erase(uriType);
+        }
+        return E_OK;
+    }
+    NAPI_ERR_LOG("failed to find observer");
+    return JS_INNER_FAIL;
+}
+
+int32_t MediaLibraryNapi::UnregisterObserverExecute(napi_env env,
+    const Notification::NotifyUriType uriType, napi_ref ref, ChangeListenerNapi &listObj)
+{
+    if (listObj.newObservers_.size() == 0) {
+        NAPI_ERR_LOG("listObj.newObservers_ size 0");
+        return JS_INNER_FAIL;
+    }
+
+    // 根据uri获取对应的 注册uri
+    Notification::NotifyUriType registerUriType = Notification::NotifyUriType::INVALID;
+    std::string registerUri = "";
+    if (MediaLibraryNotifyUtils::GetNotifyTypeAndUri(uriType, registerUriType, registerUri) != E_OK) {
+        return JS_INNER_FAIL;
+    }
+
+    // 如果注册uri对应的newObserver不存在，无需解注册
+    // 如果注册uri对应的newObserver存在
+    // 参数：对应的newObserver的clientobserver中是否存在对应callback，存在，删除并且看看是否删除为空的对应的newObserver
+    int32_t ret = JS_INNER_FAIL;
+    for (auto it = listObj.newObservers_.begin(); it != listObj.newObservers_.end(); it++) {
+        Notification::NotifyUriType observerUri = (*it)->uriType_;
+        if (observerUri != registerUriType) {
+            continue;
+        }
+        auto& clientObservers = (*it)->clientObservers_;
+
+        ret = RemoveClientObserver(env, ref, clientObservers, uriType);
+        if (ret == E_OK && clientObservers.empty()) {
+            ret = UserFileClient::UnregisterObserverExtProvider(Uri(registerUri),
+                static_cast<shared_ptr<DataShare::DataShareObserver>>(*it));
+            std::vector<shared_ptr<MediaOnNotifyNewObserver>>::iterator tmp = it;
+            listObj.newObservers_.erase(tmp);
+        }
+        return ret;
+    }
+    return ret;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessUnregisterCallback(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("ento PhotoAccessUnregisterCallback");
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessUnregisterCallback");
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+    if (g_listObj == nullptr) {
+        return undefinedResult;
+    }
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (UserFileMgrOffCheckArgs(env, info, context) == nullptr) {
+        return undefinedResult;
+    }
+    char buffer[ARG_BUF_SIZE];
+    size_t res = 0;
+    if (napi_get_value_string_utf8(env, context->argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return undefinedResult;
+    }
+    string type = string(buffer);
+    Notification::NotifyUriType uriType = Notification::NotifyUriType::INVALID;
+    if (MediaLibraryNotifyUtils::GetRegisterNotifyType(type, uriType) != E_OK) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return undefinedResult;
+    }
+    napi_valuetype valueType = napi_undefined;
+    napi_ref cbOffRef = nullptr;
+    if (context->argc == ARGS_TWO) {
+        if (napi_typeof(env, context->argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return undefinedResult;
+        }
+        const int32_t refCount = 1;
+        napi_create_reference(env, context->argv[PARAM1], refCount, &cbOffRef);
+    }
+    int32_t ret = UnregisterObserverExecute(env, uriType, cbOffRef, *g_listObj);
+    if (ret != E_OK) {
+        NapiError::ThrowError(env, ret);
+    }
+    if (cbOffRef != nullptr) {
+        napi_delete_reference(env, cbOffRef);
     }
     return undefinedResult;
 }

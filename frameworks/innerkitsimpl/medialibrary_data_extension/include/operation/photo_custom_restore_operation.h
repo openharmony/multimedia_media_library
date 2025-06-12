@@ -16,6 +16,7 @@
 #ifndef OHOS_MEDIA_PHOTO_CUSTOM_RESTORE_OPERATION_H
 #define OHOS_MEDIA_PHOTO_CUSTOM_RESTORE_OPERATION_H
 
+#include "asset_accurate_refresh.h"
 #include "medialibrary_custom_restore_notify.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_rdb_transaction.h"
@@ -114,7 +115,7 @@ private:
     int32_t FillMetadata(std::unique_ptr<Metadata> &data);
     int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
     int32_t RenameFiles(vector<FileInfo> &restoreFiles);
-    int32_t BatchUpdateTimePending(vector<FileInfo> &restoreFiles);
+    int32_t BatchUpdateTimePending(vector<FileInfo> &restoreFiles, AccurateRefresh::AssetAccurateRefresh &assetRefresh);
     int32_t UpdatePhotoAlbum(RestoreTaskInfo &restoreTaskInfo, FileInfo fileInfo);
     void SendNotifyMessage(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, int32_t errCode, int32_t fileNum,
         const UniqueNumber &uniqueNumber);

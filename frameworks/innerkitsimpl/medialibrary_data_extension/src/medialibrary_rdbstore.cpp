@@ -82,6 +82,7 @@
 #include "thumbnail_service.h"
 #include "medialibrary_rdb_transaction.h"
 #include "table_event_handler.h"
+#include "values_buckets.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -4529,6 +4530,20 @@ static int32_t AddIsRectificationCover(RdbStore &store)
     return ret;
 }
 
+void AddPhotoAlbumRefreshColumns(RdbStore &store)
+{
+    const vector<string> exeSqls = {
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+        PhotoAlbumColumns::COVER_DATE_TIME + " BIGINT DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+        PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME + " BIGINT DEFAULT 0",
+    };
+
+    MEDIA_INFO_LOG("start add photo album cover_date_time and hidden_cover_date_time for AccurateRefresh");
+    ExecSqls(exeSqls, store);
+    MEDIA_INFO_LOG("end add photo album cover_date_time and hidden_cover_date_time for AccurateRefresh");
+}
+
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
@@ -4579,6 +4594,10 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
         if (AddIsRectificationCover(store) == NativeRdb::E_OK) {
             UpdatePhotosMdirtyTrigger(store);
         }
+    }
+
+    if (oldVersion < VERSION_ADD_PHOTO_ALBUM_REFRESH_COLUMNS) {
+        AddPhotoAlbumRefreshColumns(store);
     }
 
     TableEventHandler().OnUpgrade(
@@ -5147,6 +5166,96 @@ int MediaLibraryRdbStore::Delete(int &deletedRows, const AbsRdbPredicates &predi
     CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), E_HAS_DB_ERROR,
         "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Delete(deletedRows, predicates); });
+}
+
+pair<int32_t, NativeRdb::Results> MediaLibraryRdbStore::BatchInsert(const string &table,
+    vector<ValuesBucket> &values, const string &returningField)
+{
+    DfxTimer dfxTimer(DfxType::RDB_BATCHINSERT, INVALID_DFX, RDB_TIME_OUT, false);
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::BatchInsert");
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return {E_HAS_DB_ERROR, -1};
+    }
+    if (table == PhotoColumn::PHOTOS_TABLE) {
+        for (auto& value : values) {
+            AddDefaultPhotoValues(value);
+        }
+    }
+
+    ValuesBuckets refRows;
+    for (auto &value : values) {
+        refRows.Put(value);
+    }
+    
+    pair<int32_t, NativeRdb::Results> retWithResults = {E_HAS_DB_ERROR, -1};
+    int32_t ret = ExecSqlWithRetry([&]() {
+        retWithResults = MediaLibraryRdbStore::GetRaw()->BatchInsert(table, values, { returningField });
+        return retWithResults.first;
+    });
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore_->BatchInsert failed, ret = %{public}d", ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
+        return {E_HAS_DB_ERROR, -1};
+    }
+
+    MEDIA_DEBUG_LOG("rdbStore_->BatchInsert end, ret = %{public}d", ret);
+    return retWithResults;
+}
+
+pair<int32_t, NativeRdb::Results> MediaLibraryRdbStore::Execute(const std::string &sql,
+    const std::vector<NativeRdb::ValueObject> &args, const std::string &returningField)
+{
+    pair<int32_t, NativeRdb::Results> retWithResults = {E_HAS_DB_ERROR, -1};
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), retWithResults,
+        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+    DfxTimer dfxTimer(RDB_EXECUTE_SQL, INVALID_DFX, RDB_TIME_OUT, false);
+    MediaLibraryTracer tracer;
+    tracer.Start("RdbStore->ExecuteSql");
+
+    string execSql = sql;
+    execSql.append(" returning ").append(returningField);
+    MEDIA_INFO_LOG("AccurateRefresh, sql:%{public}s", execSql.c_str());
+    int32_t ret = ExecSqlWithRetry([&]() {
+        retWithResults = MediaLibraryRdbStore::GetRaw()->ExecuteExt(execSql, args);
+        return retWithResults.first;
+    });
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore_->ExecuteSql failed, ret = %{public}d", ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
+        return {E_HAS_DB_ERROR, -1};
+    }
+    return retWithResults;
+}
+
+pair<int32_t, NativeRdb::Results> MediaLibraryRdbStore::Update(const ValuesBucket &row,
+    const AbsRdbPredicates &predicates, const string &returningField)
+{
+    pair<int32_t, NativeRdb::Results> retWithResults = {E_HAS_DB_ERROR, -1};
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), retWithResults,
+        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+
+    ExecSqlWithRetry([&]() {
+        retWithResults = MediaLibraryRdbStore::GetRaw()->Update(row, predicates, { returningField });
+        return retWithResults.first;
+    });
+
+    return retWithResults;
+}
+
+pair<int32_t, NativeRdb::Results> MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates,
+    const string &returningField)
+{
+    pair<int32_t, NativeRdb::Results> retWithResults = {E_HAS_DB_ERROR, -1};
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), retWithResults,
+        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+
+    ExecSqlWithRetry([&]() {
+        retWithResults = MediaLibraryRdbStore::GetRaw()->Delete(predicates, { returningField });
+        return retWithResults.first;
+    });
+    return retWithResults;
 }
 
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const NativeRdb::AbsRdbPredicates &predicates,

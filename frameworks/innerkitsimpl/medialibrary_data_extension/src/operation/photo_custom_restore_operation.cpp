@@ -287,8 +287,11 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     int32_t sameFileNum = 0;
     vector<FileInfo> insertRestoreFiles = BatchInsert(restoreTaskInfo, destRestoreFiles, sameFileNum, isFirst);
     int32_t successFileNum = RenameFiles(insertRestoreFiles);
-    errCode = BatchUpdateTimePending(insertRestoreFiles);
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    errCode = BatchUpdateTimePending(insertRestoreFiles, assetRefresh);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "BatchUpdateTimePending failed. errCode: %{public}d", errCode);
+    assetRefresh.RefreshAlbum();
+    assetRefresh.Notify();
     if (isFirst) {
         CHECK_AND_RETURN_RET(successFileNum != 0, E_ERR);
         CHECK_AND_RETURN_RET_LOG(UpdatePhotoAlbum(restoreTaskInfo, insertRestoreFiles[0]) == E_OK,
@@ -301,7 +304,8 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     return E_OK;
 }
 
-int32_t PhotoCustomRestoreOperation::BatchUpdateTimePending(vector<FileInfo> &restoreFiles)
+int32_t PhotoCustomRestoreOperation::BatchUpdateTimePending(vector<FileInfo> &restoreFiles,
+    AccurateRefresh::AssetAccurateRefresh &assetRefresh)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "BatchUpdateTimePending: get rdb store fail!");
@@ -318,7 +322,7 @@ int32_t PhotoCustomRestoreOperation::BatchUpdateTimePending(vector<FileInfo> &re
     predicates.In(PhotoColumn::MEDIA_FILE_PATH, filePahts);
     int32_t changeRows = -1;
 
-    int32_t errCode = rdbStore->Update(changeRows, values, predicates);
+    int32_t errCode = assetRefresh.Update(changeRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG((errCode == E_OK && changeRows > 0), E_HAS_DB_ERROR,
         "BatchUpdateTimePending: update time_pending failed. errCode: %{public}d, updateRows: %{public}d", errCode,
         changeRows);
@@ -360,16 +364,6 @@ int32_t PhotoCustomRestoreOperation::UpdatePhotoAlbum(RestoreTaskInfo &restoreTa
 void PhotoCustomRestoreOperation::SendPhotoAlbumNotify(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType,
     const UniqueNumber &uniqueNumber)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniqueNumber.imageTotalNumber > 0) {
-        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {to_string(PhotoAlbumSubType::IMAGE)});
-    }
-    if (uniqueNumber.videoTotalNumber > 0) {
-        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {to_string(PhotoAlbumSubType::VIDEO)});
-    }
-    std::string uri = PhotoColumn::PHOTO_URI_PREFIX + to_string(restoreTaskInfo.firstFileId);
-    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {uri});
-    MEDIA_DEBUG_LOG("UpdateSourceAlbumByUri finished.");
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     if (notifyType == NOTIFY_FIRST) {

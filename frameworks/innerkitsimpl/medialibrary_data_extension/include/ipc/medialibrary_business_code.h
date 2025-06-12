@@ -104,6 +104,9 @@ enum class MediaLibraryBusinessCode : uint32_t {
     PAH_SET_COVER_URI,
     MEDIA_CLOUD_CODE_START = 30000,
     MEDIA_CLOUD_CODE_END = 39999,
+    MEDIA_REFRESH_CODE_START = 40000,
+    NOTIFY_FOR_RECHECK,
+    MEDIA_REFRESH_CODE_END = 49999,
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_BUSINESS_CODE_H

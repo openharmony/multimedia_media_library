@@ -37,6 +37,7 @@
 #include "mimetype_utils.h"
 #include "securec.h"
 #include "moving_photo_file_utils.h"
+#include "asset_accurate_refresh.h"
 
 using namespace std;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
@@ -258,7 +259,8 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
     rdbValues.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
         static_cast<int32_t>(StrongAssociationType::NORMAL));
     rdbValues.PutInt(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, newFileId);
-    int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates, assetRefresh);
     CHECK_AND_PRINT_LOG(ret == E_OK, "update source photo failed. ret: %{public}d, photoId: %{public}s",
         ret, taskId.c_str());
     int32_t taskType = EnhancementTaskManager::QueryTaskTypeByPhotoId(taskId);
@@ -270,6 +272,7 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
     if (watch != nullptr) {
         watch->Notify(fileUri, NotifyType::NOTIFY_UPDATE);
     }
+    assetRefresh->Notify();
     MEDIA_INFO_LOG("DealWithSuccessedTask success, photo_id: %{public}s", taskId.c_str());
 }
 
@@ -307,7 +310,8 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
     valueBucket.Put(PhotoColumn::PHOTO_CE_STATUS_CODE, statusCode);
     servicePredicates.NotEqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
-    int32_t ret = EnhancementDatabaseOperations::Update(valueBucket, servicePredicates);
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    int32_t ret = EnhancementDatabaseOperations::Update(valueBucket, servicePredicates, assetRefresh);
     CHECK_AND_RETURN_LOG(ret == E_OK, "enhancement callback error: db CE_AVAILABLE status update failed");
     int32_t taskType = EnhancementTaskManager::QueryTaskTypeByPhotoId(taskId);
     EnhancementTaskManager::RemoveEnhancementTask(taskId);
@@ -318,6 +322,7 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
     if (watch != nullptr) {
         watch->Notify(fileUri, NotifyType::NOTIFY_UPDATE);
     }
+    assetRefresh->Notify();
     MEDIA_INFO_LOG("DealWithFailedTask success, photo_id: %{public}s", taskId.c_str());
 }
 
