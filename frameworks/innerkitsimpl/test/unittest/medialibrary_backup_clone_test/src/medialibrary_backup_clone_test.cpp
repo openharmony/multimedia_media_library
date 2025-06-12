@@ -3163,7 +3163,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_beauty_s
     CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "Destination RDB store (g_rdbStore) is null");
 
     std::unordered_map<int32_t, OHOS::Media::PhotoInfo> photoInfoMap;
-    int32_t sourceOldFileId = 10111;
+    int32_t sourceOldFileId = 10112;
     int32_t newFileId = 60005;
     photoInfoMap[sourceOldFileId] = { .fileIdNew = newFileId };
 
