@@ -49,6 +49,7 @@ private:
         int32_t err;
         std::string errorMsg;
         std::string fileUri;
+        bool needParseCover;
     };
 
 private:
