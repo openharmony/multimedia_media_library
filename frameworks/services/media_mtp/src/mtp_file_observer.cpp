@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include "media_log.h"
 #include "mtp_media_library.h"
+#include "mtp_packet_tools.h"
 
 using namespace std;
 namespace OHOS {
@@ -30,6 +31,12 @@ bool MtpFileObserver::isRunning_ = false;
 int MtpFileObserver::inotifyFd_ = 0;
 std::map<int, std::string> MtpFileObserver::watchMap_;
 std::mutex MtpFileObserver::eventLock_;
+std::queue<std::pair<uint16_t, uint32_t>> MtpFileObserver::eventQueue_;
+std::atomic<bool> MtpFileObserver::isEventThreadRunning_ = false;
+std::mutex MtpFileObserver::mutex_;
+std::condition_variable MtpFileObserver::cv_;
+constexpr uint16_t EVENT_CONTAINER_TYPE = 4;
+constexpr uint32_t EVENT_LENGTH = 16;
 const int BUF_SIZE = 1024;
 const int32_t SIZE_ONE = 1;
 #ifdef HAS_BATTERY_MANAGER_PART
@@ -110,20 +117,26 @@ void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &p
     string fileName = path + "/" + event.name;
     std::shared_ptr<MtpEvent> eventPtr = std::make_shared<OHOS::Media::MtpEvent>(context);
     CHECK_AND_RETURN_LOG(eventPtr != nullptr, "MtpFileObserver SendEvent eventPtr is null");
+    uint32_t handle = 0;
+    auto mtpMedialibrary = MtpMediaLibrary::GetInstance();
+    CHECK_AND_RETURN_LOG(mtpMedialibrary != nullptr, "MtpFileObserver SendEvent mtpMedialibrary is null");
     if ((event.mask & IN_CREATE) || (event.mask & IN_MOVED_TO)) {
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents create/MOVED_TO: path:%{private}s", fileName.c_str());
-        MtpMediaLibrary::GetInstance()->ObserverAddPathToMap(fileName);
-        eventPtr->SendObjectAdded(fileName);
+        if (mtpMedialibrary->GetIdByPath(fileName, handle) != 0) {
+            handle = mtpMedialibrary->ObserverAddPathToMap(fileName);
+            AddToQueue(MTP_EVENT_OBJECT_ADDED_CODE, handle);
+        }
     } else if ((event.mask & IN_DELETE) || (event.mask & IN_MOVED_FROM)) {
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents delete/MOVED_FROM: path:%{private}s", fileName.c_str());
-        uint32_t id = 0;
-        if (MtpMediaLibrary::GetInstance()->GetIdByPath(fileName, id) == 0) {
-            MtpMediaLibrary::GetInstance()->ObserverDeletePathToMap(fileName);
-            eventPtr->SendObjectRemovedByHandle(id);
+        if (mtpMedialibrary->GetIdByPath(fileName, handle) == 0) {
+            mtpMedialibrary->ObserverDeletePathToMap(fileName);
+            AddToQueue(MTP_EVENT_OBJECT_REMOVED_CODE, handle);
         }
     } else if (event.mask & IN_CLOSE_WRITE) {
         MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents IN_CLOSE_WRITE : path:%{private}s", fileName.c_str());
-        eventPtr->SendObjectInfoChanged(fileName);
+        if (mtpMedialibrary->GetIdByPath(fileName, handle) == 0) {
+            AddToQueue(MTP_EVENT_OBJECT_INFO_CHANGED_CODE, handle);
+        }
     }
     // if the path is a directory and it is moved or deleted, deal with the watchMap_
     if ((event.mask & IN_ISDIR) && (event.mask & (IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO))) {
@@ -182,6 +195,7 @@ void MtpFileObserver::SendBattery(const ContextSptr &context)
 bool MtpFileObserver::StopFileInotify()
 {
     CHECK_AND_RETURN_RET_LOG(isRunning_, false, "MtpFileObserver FileInotify is not running");
+    StopSendEventThread();
     isRunning_ = false;
     lock_guard<mutex> lock(eventLock_);
     for (auto ret : watchMap_) {
@@ -234,6 +248,7 @@ void MtpFileObserver::AddFileInotify(const std::string &path, const std::string 
             std::thread watchThread([&context] { WatchPathThread(context); });
             watchThread.detach();
             startThread_ = true;
+            StartSendEventThread(context);
         }
     }
 }
@@ -248,6 +263,77 @@ void MtpFileObserver::AddPathToWatchMap(const std::string &path)
         if (ret > 0) {
             watchMap_.insert(make_pair(ret, path));
         }
+    }
+}
+
+void MtpFileObserver::AddToQueue(uint16_t code, uint32_t handle)
+{
+    MEDIA_DEBUG_LOG("MtpFileObserver AddToQueue code[0x%{public}x] handle[%{public}d]", code, handle);
+    CHECK_AND_RETURN_LOG(isEventThreadRunning_.load(), "MTP:AddToQueue EventThread is not running.");
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        eventQueue_.push(std::make_pair(code, handle));
+        cv_.notify_all();
+    }
+}
+
+void MtpFileObserver::SendEventThread(const ContextSptr &context)
+{
+    MEDIA_DEBUG_LOG("MtpFileObserver:SendEventThread Start.");
+    while (isEventThreadRunning_.load()) {
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            cv_.wait(lock, [&] {
+                return !isEventThreadRunning_.load() || !eventQueue_.empty();
+            });
+        }
+        CHECK_AND_RETURN_LOG(isEventThreadRunning_.load(), "MTP:MtpFileObserver SendEventThread Exit.");
+
+        std::pair<uint16_t, uint32_t> event;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            event = eventQueue_.front();
+            eventQueue_.pop();
+        }
+        CHECK_AND_RETURN_LOG(context != nullptr, "MTP:SendEventThread eventPtr is null");
+        CHECK_AND_RETURN_LOG(context->mtpDriver != nullptr, "MTP:SendEventThread mtpDriver is null");
+        EventMtp eventMtp;
+        eventMtp.length = EVENT_LENGTH;
+        vector<uint8_t> outBuffer;
+        MtpPacketTool::PutUInt32(outBuffer, eventMtp.length);
+        MtpPacketTool::PutUInt16(outBuffer, EVENT_CONTAINER_TYPE);
+        MtpPacketTool::PutUInt16(outBuffer, event.first);
+        MtpPacketTool::PutUInt32(outBuffer, context->transactionID);
+        MtpPacketTool::PutUInt32(outBuffer, event.second);
+
+        eventMtp.data = std::move(outBuffer);
+        context->mtpDriver->WriteEvent(eventMtp);
+    }
+}
+
+void MtpFileObserver::StartSendEventThread(const ContextSptr &context)
+{
+    MEDIA_DEBUG_LOG("MTP:MtpFileObserver StartSendEventThread is called.");
+    CHECK_AND_RETURN_LOG(context != nullptr, "MTP:StartSendEventThread context is null");
+    if (isEventThreadRunning_.load()) {
+        StopSendEventThread();
+    }
+    isEventThreadRunning_.store(true);
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::queue<std::pair<uint16_t, uint32_t>>().swap(eventQueue_);
+    }
+    std::thread([&context] { SendEventThread(context); }).detach();
+}
+
+void MtpFileObserver::StopSendEventThread()
+{
+    MEDIA_DEBUG_LOG("MTP:MtpFileObserver StopSendEventThread is called.");
+    isEventThreadRunning_.store(false);
+    cv_.notify_all();
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::queue<std::pair<uint16_t, uint32_t>>().swap(eventQueue_);
     }
 }
 } // namespace Media

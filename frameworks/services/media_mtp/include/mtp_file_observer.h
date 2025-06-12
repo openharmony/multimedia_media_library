@@ -18,6 +18,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <queue>
 #include <sys/inotify.h>
 #include <thread>
 #include <vector>
@@ -46,6 +47,14 @@ private:
     static std::mutex eventLock_;
     bool startThread_;
     bool inotifySuccess_;
+    static void SendEventThread(const ContextSptr &context);
+    static void StartSendEventThread(const ContextSptr &context);
+    static void StopSendEventThread();
+    static void AddToQueue(uint16_t code, uint32_t handle);
+    static std::queue<std::pair<uint16_t, uint32_t>> eventQueue_;
+    static std::atomic<bool> isEventThreadRunning_;
+    static std::mutex mutex_;
+    static std::condition_variable cv_;
 };
 } // namespace Media
 } // namespace OHOS
