@@ -269,9 +269,11 @@ CloudMediaDownloadService::OnDownloadAssetData CloudMediaDownloadService::GetOnD
     bool isMovingPhoto = CloudMediaSyncUtils::IsMovingPhoto(photosPo);
     bool isGraffiti = CloudMediaSyncUtils::IsGraffiti(photosPo);
     bool isLivePhoto = CloudMediaSyncUtils::IsLivePhoto(photosPo);
+    bool isInvalidCover = photosPo.coverPosition.value_or(0) == 0 && photosPo.isRectificationCover.value_or(0) == 0;
     MEDIA_INFO_LOG("GetOnDownloadAssetData %{public}d,%{public}d,%{public}d", isMovingPhoto, isGraffiti, isLivePhoto);
     assetData.fixFileType = isMovingPhoto && !isGraffiti && !isLivePhoto;
     assetData.needSliceContent = (isMovingPhoto && !isGraffiti) && isLivePhoto;
+    assetData.needParseCover = isMovingPhoto && isInvalidCover;
     assetData.needSliceRaw = isMovingPhoto;
     assetData.path = photosPo.data.value_or("");
     assetData.localPath = CloudMediaSyncUtils::GetLocalPath(assetData.path);
@@ -368,7 +370,8 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
             return E_PATH;
         }
         int32_t ret = SliceAssetFile(assetData.localPath, assetData.localPath, videoPath, extraDataPath);
-        if (ret == E_OK) {
+        if (ret == E_OK && assetData.needParseCover) {
+            MEDIA_INFO_LOG("cover position is invalid, parse cover position from file");
             CoverPositionParser::GetInstance().AddTask(assetData.path, assetData.fileUri);
         }
         return ret;

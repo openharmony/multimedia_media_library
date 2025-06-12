@@ -855,8 +855,8 @@ static void UpdateCoverPosition(const string &filePath, int64_t coverPosition)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "UpdateCoverPosition: get rdb store fail!");
-    string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_COVER_POSITION +
-        " = ? WHERE " + PhotoColumn::MEDIA_FILE_PATH + " = ?;";
+    string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_COVER_POSITION + " = ?, " +
+        PhotoColumn::PHOTO_IS_RECTIFICATION_COVER + " = 1 WHERE " + PhotoColumn::MEDIA_FILE_PATH + " = ?;";
     std::vector<NativeRdb::ValueObject> params = {coverPosition, filePath};
     int32_t errCode = rdbStore->ExecuteSql(updateSql, params);
     CHECK_AND_PRINT_LOG(errCode >= 0, "UpdateCoverPosition: execute update cover_position failed,"

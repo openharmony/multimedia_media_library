@@ -75,6 +75,8 @@ private:
         PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         MediaColumn::MEDIA_NAME,
         MediaColumn::MEDIA_ID,
+        PhotoColumn::PHOTO_COVER_POSITION,
+        PhotoColumn::PHOTO_IS_RECTIFICATION_COVER,
     };
     const int32_t THM_TO_DOWNLOAD_MASK = 0x2;
     const int32_t LCD_TO_DOWNLOAD_MASK = 0x1;
