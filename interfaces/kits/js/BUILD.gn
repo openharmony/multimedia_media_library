@@ -11,13 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import("//build/config/components/ets_frontend/es2abc_config.gni")
+import("//build/config/components/memory_utils/purgeable_mem_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
 import("//build/templates/abc/ohos_abc.gni")
-import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
-import("//foundation/ability/ability_runtime/ability_runtime.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
-import("../../../../../../foundation/arkui/ace_engine/ace_config.gni")
 
 js_declaration("medialibrary_js") {
   part_name = "media_library"
@@ -393,6 +391,8 @@ ohos_shared_library("medialibrary") {
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "napi:ace_napi",
+    "i18n:intl_util",
+    "device_manager:devicemanagersdk",
   ]
 
   defines = []
@@ -458,6 +458,8 @@ ohos_shared_library("userfilemanager") {
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "napi:ace_napi",
+    "i18n:intl_util",
+    "device_manager:devicemanagersdk",
   ]
 
   defines = []

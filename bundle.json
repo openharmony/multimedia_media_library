@@ -85,9 +85,7 @@
           "zlib",
           "device_standby",
           "libfuse",
-          "netmanager_base"
-        ],
-        "third_party": [
+          "netmanager_base",
           "openssl"
         ]
       },

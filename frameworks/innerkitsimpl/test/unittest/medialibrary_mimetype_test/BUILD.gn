@@ -25,7 +25,6 @@ ohos_unittest("medialibrary_mimetype_test") {
 
   include_dirs = [
     "./include",
-    "//third_party/json/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_UTILS_PATH}/include",
@@ -42,5 +41,8 @@ ohos_unittest("medialibrary_mimetype_test") {
     debug = false
   }
 
-  external_deps = [ "hilog:libhilog" ]
+  external_deps = [
+    "hilog:libhilog",
+    "json:nlohmann_json_static",
+  ]
 }

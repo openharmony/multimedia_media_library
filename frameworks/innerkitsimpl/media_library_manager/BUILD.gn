@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//build/config/components/memory_utils/purgeable_mem_config.gni")
 import("//build/ohos.gni")
-import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
 config("media_library_manager_config") {
