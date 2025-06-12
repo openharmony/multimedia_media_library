@@ -134,8 +134,8 @@ const std::string CREATE_VIDEO_FACE_TBL = "CREATE TABLE IF NOT EXISTS tab_analys
     "roll TEXT, "
     "prob TEXT, "
     "total_faces INTEGER, "
-    "frame_id INTEGER, "
-    "frame_timestamp INTEGER, "
+    "frame_id TEXT, "
+    "frame_timestamp TEXT, "
     "tracks TEXT, "
     "algo_version TEXT, "
     "features TEXT, "
@@ -166,6 +166,7 @@ public:
     void InsertTabAnalysisTotal();
     void InsertTabBeautyScore();
     void InsertTabVideoFace();
+    void InsetTabSearchIndex();
     std::shared_ptr<NativeRdb::RdbStore> cloneStorePtr_;
 };
 
