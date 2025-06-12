@@ -549,8 +549,6 @@ void MediaAssetManagerImpl::SendFile(MediaObject &mediaObject, WriteData &writeD
         return;
     }
     if (sendfile(destFd, srcFd, nullptr, fileSize) == -1) {
-        close(srcFd);
-        close(destFd);
         mediaObject.videoFile = false;
         LOGE("send file failed, %{public}d", errno);
         return;
@@ -676,7 +674,9 @@ void MediaAssetManagerImpl::NotifyMediaDataPrepared(AssetHandler *assetHandler)
         return;
     }
     FreeArrAndMap(mediaObject.imageData, valueOfInfoMap);
-    DeleteDataHandler(assetHandler->notifyMode, assetHandler->requestUri, assetHandler->requestId);
+    if (assetHandler != nullptr) {
+        DeleteDataHandler(assetHandler->notifyMode, assetHandler->requestUri, assetHandler->requestId);
+    }
     DeleteAssetHandlerSafe(assetHandler);
 }
 
