@@ -2257,7 +2257,7 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
     const std::vector<std::string> &fetchColumn = analysisInfo.fetchColumn;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = CallQueryAnalysisData(context, analysisInfo, false);
     if (context->businessCode != 0) {
-        context->analysisData = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn, analysisType);
+        context->analysisData = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
     } else {
         context->analysisData = (analysisType == ANALYSIS_FACE) ?
             MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(resultSet, fetchColumn) :
