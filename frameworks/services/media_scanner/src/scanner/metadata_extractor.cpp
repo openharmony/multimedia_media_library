@@ -101,6 +101,23 @@ static time_t convertTimeStr2TimeStamp(string &timeStr)
     return timeStamp;
 }
 
+static time_t convertUTCTimeInformat(const string &timeStr, const string &format)
+{
+    MEDIA_DEBUG_LOG("convertUTCTimeInformat time:%{public}s format:%{public}s", timeStr.c_str(), format.c_str());
+    struct tm timeinfo;
+    strptime(timeStr.c_str(), format.c_str(), &timeinfo);
+    time_t convertOnceTime = mktime(&timeinfo);
+    time_t convertTwiceTime = mktime(gmtime(&convertOnceTime));
+
+    bool cond = (convertOnceTime == -1 || convertTwiceTime == -1);
+    CHECK_AND_RETURN_RET(!cond, 0);
+
+    time_t offset = convertOnceTime - convertTwiceTime;
+    time_t utcTimeStamp = convertOnceTime + offset;
+    MEDIA_DEBUG_LOG("convertUTCTimeInformat result utcTimeStamp:%{public}ld", static_cast<long>(utcTimeStamp));
+    return utcTimeStamp;
+}
+
 /* used for Image */
 static time_t convertTimeStrToTimeStamp(string &timeStr)
 {
@@ -112,17 +129,7 @@ static time_t convertTimeStrToTimeStamp(string &timeStr)
 
 static time_t convertUTCTimeStrToTimeStamp(string &timeStr)
 {
-    struct tm timeinfo;
-    strptime(timeStr.c_str(), "%Y:%m:%d %H:%M:%S", &timeinfo);
-    time_t convertOnceTime = mktime(&timeinfo);
-    time_t convertTwiceTime = mktime(gmtime(&convertOnceTime));
-
-    bool cond = (convertOnceTime == -1 || convertTwiceTime == -1);
-    CHECK_AND_RETURN_RET(!cond, 0);
-
-    time_t offset = convertOnceTime - convertTwiceTime;
-    time_t utcTimeStamp = convertOnceTime + offset;
-    return utcTimeStamp;
+    return convertUTCTimeInformat(timeStr, "%Y:%m:%d %H:%M:%S");
 }
 
 static int32_t offsetTimeToSeconds(const string& offsetStr, int32_t& offsetTime)
@@ -457,9 +464,9 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
 {
     int32_t intTempMeta;
 
-    string strTemp = resultMap.at(AV_KEY_DATE_TIME_FORMAT);
+    string strTemp = resultMap.at(AV_KEY_DATE_TIME_ISO8601);
     if (strTemp != "") {
-        int64_t int64TempMeta = convertTimeStr2TimeStamp(strTemp);
+        int64_t int64TempMeta = convertUTCTimeInformat(strTemp, "%Y-%m-%dT%H:%M:%S");
         if (int64TempMeta <= 0) {
             // use modified time as date taken time when get date_taken fails
             data->SetDateTaken(data->GetFileDateModified());
