@@ -155,7 +155,8 @@ void VideoFaceClone::ParseVideoFaceResultSet(const std::shared_ptr<NativeRdb::Re
     videoFaceTbl.tracks = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, VIDEO_FACE_COL_TRACKS);
     videoFaceTbl.algo_version = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         VIDEO_FACE_COL_ALGO_VERSION);
-    videoFaceTbl.features = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, VIDEO_FACE_COL_FEATURES);
+    videoFaceTbl.features = BackupDatabaseUtils::GetOptionalValue<std::vector<uint8_t>>(resultSet,
+        VIDEO_FACE_COL_FEATURES);
     videoFaceTbl.analysis_version = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         VIDEO_FACE_COL_ANALYSIS_VERSION);
 }
