@@ -26,7 +26,7 @@ public:
     int32_t fileId{0};
     std::string photoId;
     int32_t ceAvailable{0};
-    int32_t CEErrorCode{0};
+    int32_t ceErrorCode{0};
 public:
     std::string ToString() const;
 };

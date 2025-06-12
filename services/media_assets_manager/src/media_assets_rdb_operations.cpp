@@ -509,7 +509,7 @@ int32_t MediaAssetsRdbOperations::QueryEnhancementTaskState(const string& photoU
     dto.fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     dto.photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
     dto.ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
-    dto.CEErrorCode = GetInt32Val(PhotoColumn::PHOTO_CE_STATUS_CODE, resultSet);
+    dto.ceErrorCode = GetInt32Val(PhotoColumn::PHOTO_CE_STATUS_CODE, resultSet);
     resultSet->Close();
     return E_OK;
 }

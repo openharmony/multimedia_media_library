@@ -148,8 +148,8 @@ static int32_t QueryAlbumIdByAlbumName(const string &albumName)
         MEDIA_ERR_LOG("Can not get fileId");
         return -1;
     }
-    int32_t album_id = GetInt32Val("album_id", resultSet);
-    return album_id;
+    int32_t albumId = GetInt32Val("album_id", resultSet);
+    return albumId;
 }
 
 HWTEST_F(GetFaceIdTest, QueryCloudEnhancementTaskState_Test_001, TestSize.Level0)

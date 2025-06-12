@@ -55,7 +55,7 @@ bool QueryCloudEnhancementTaskStateRespBody::Unmarshalling(MessageParcel &parcel
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.ReadInt32(this->ceAvailable);
     CHECK_AND_RETURN_RET(status, status);
-    status = parcel.ReadInt32(this->CEErrorCode);
+    status = parcel.ReadInt32(this->ceErrorCode);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
@@ -68,7 +68,7 @@ bool QueryCloudEnhancementTaskStateRespBody::Marshalling(MessageParcel &parcel) 
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.WriteInt32(this->ceAvailable);
     CHECK_AND_RETURN_RET(status, status);
-    status = parcel.WriteInt32(this->CEErrorCode);
+    status = parcel.WriteInt32(this->ceErrorCode);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
@@ -80,7 +80,7 @@ string QueryCloudEnhancementTaskStateRespBody::ToString() const
         << "\"fileId\": \"" << to_string(this->fileId) << "\""
         << ",\"photoId\": \"" << this->photoId << "\""
         << ",\"ceAvailable\": \"" << to_string(this->ceAvailable) << "\""
-        << ",\"CEErrorCode\": \"" << to_string(this->CEErrorCode) << "\""
+        << ",\"ceErrorCode\": \"" << to_string(this->ceErrorCode) << "\""
         << "}";
     return ss.str();
 }

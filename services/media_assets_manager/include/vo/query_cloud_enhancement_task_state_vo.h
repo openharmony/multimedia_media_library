@@ -38,7 +38,7 @@ public:
     int32_t fileId;
     std::string photoId;
     int32_t ceAvailable;
-    int32_t CEErrorCode;
+    int32_t ceErrorCode;
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
