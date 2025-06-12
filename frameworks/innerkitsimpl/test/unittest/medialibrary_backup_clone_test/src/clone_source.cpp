@@ -413,11 +413,10 @@ void CloneSource::InsertTabAnalysisTotal()
 
 void CloneSource::InsertTabBeautyScore()
 {
-    const std::string INSERT_TAB_BEAUTY_SCORE = "INSERT OR REPLACE INTO " + ANALYSIS_BEAUTY_SCORE_TABLE +
+    const std::string INSERT_TAB_BEAUTY_SCORE = "INSERT INTO " + ANALYSIS_BEAUTY_SCORE_TABLE +
         " (file_id, aesthetics_score, aesthetics_version, prob, analysis_version, " +
         "selected_flag, selected_algo_version, selected_status, negative_flag, negative_algo_version) ";
 
-    // old file id is 101
     cloneStorePtr_->ExecuteSql(INSERT_TAB_BEAUTY_SCORE + VALUES_BEGIN + "10112, 11190, 'v1.1', 0.98, 'analysis_v1', " +
         "1, 'selected_v1', 0, 0, 'negative_v1'" + VALUES_END);
 }
