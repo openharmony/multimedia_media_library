@@ -1875,7 +1875,7 @@ void MediaAssetsControllerService::QueryCloudEnhancementTaskState(MessageParcel 
     respBody.fileId = dto.fileId;
     respBody.photoId = dto.photoId;
     respBody.ceAvailable = dto.ceAvailable;
-    respBody.CEErrorCode = dto.CEErrorCode;
+    respBody.ceErrorCode = dto.ceErrorCode;
     IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 

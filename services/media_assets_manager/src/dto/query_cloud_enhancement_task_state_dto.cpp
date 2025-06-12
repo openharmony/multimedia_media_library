@@ -29,7 +29,7 @@ std::string QueryCloudEnhancementTaskStateDto::ToString() const
        << "\"fileId\": \"" << to_string(fileId) << "\","
        << "\"photoId\": \"" << photoId << "\","
        << "\"ceAvailable\": \"" << to_string(ceAvailable) << "\","
-       << "\"CEErrorCode\": \"" << to_string(CEErrorCode)
+       << "\"ceErrorCode\": \"" << to_string(ceErrorCode)
        << "}";
     return ss.str();
 }

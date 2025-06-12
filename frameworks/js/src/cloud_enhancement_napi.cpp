@@ -839,7 +839,7 @@ static void QueryCloudEnhancementTaskStateExecute(napi_env env, void* data)
     int32_t fileId = respBody.fileId;
     string photoId = respBody.photoId;
     int32_t ceAvailable = respBody.ceAvailable;
-    int32_t CEErrorCode = respBody.CEErrorCode;
+    int32_t ceErrorCode = respBody.ceErrorCode;
     NAPI_INFO_LOG("query fileId: %{public}d, photoId: %{private}s, ceAvailable: %{public}d",
         fileId, photoId.c_str(), ceAvailable);
 
@@ -855,7 +855,7 @@ static void QueryCloudEnhancementTaskStateExecute(napi_env env, void* data)
     if (ceAvailable == static_cast<int32_t>(CE_AVAILABLE::FAILED_RETRY) ||
         ceAvailable == static_cast<int32_t>(CE_AVAILABLE::FAILED)) {
         context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_FAILED;
-        context->statusCode_ = CEErrorCode;
+        context->statusCode_ = ceErrorCode;
         NAPI_INFO_LOG("TASK_STAGE_FAILED, fileId: %{public}d, statusCode: %{public}d", fileId, ceAvailable);
         return;
     }
