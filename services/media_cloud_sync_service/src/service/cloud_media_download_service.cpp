@@ -371,7 +371,7 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
         }
         int32_t ret = SliceAssetFile(assetData.localPath, assetData.localPath, videoPath, extraDataPath);
         if (ret == E_OK && assetData.needParseCover) {
-            MEDIA_INFO_LOG("cover position is invalid, parse cover position from file");
+            MEDIA_DEBUG_LOG("cover position is invalid, parse cover position from file");
             CoverPositionParser::GetInstance().AddTask(assetData.path, assetData.fileUri);
         }
         return ret;
