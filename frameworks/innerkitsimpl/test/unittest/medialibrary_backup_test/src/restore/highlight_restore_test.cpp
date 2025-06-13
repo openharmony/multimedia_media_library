@@ -41,6 +41,8 @@ const std::string TEST_BACKUP_PATH = "/data/test/gallery1.db";
 const int32_t HIGHLIGHT_STATUS_SUCCESS = 1;
 const int32_t HIGHLIGHT_STATUS_FAIL = -2;
 const int32_t HIGHLIGHT_STATUS_DUPLICATE = -1;
+const int32_t TEST_FILE_ID_OLD = 10;
+const int32_t TEST_FILE_ID_NEW = 100;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
@@ -256,6 +258,31 @@ HWTEST_F(HighlightRestoreTest, highlight_restore_test_006, TestSize.Level0)
     highlightRestore->TransferClusterInfo(info2);
     EXPECT_FALSE(jsonObject2.contains("startDate"));
     EXPECT_FALSE(jsonObject2.contains("endDate"));
+}
+
+HWTEST_F(HighlightRestoreTest, highlight_restore_same_cover_album_udpate_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("highlight_restore_same_coverId_album_udpate_test_001 start");
+    HighlightRestore highlightRestore;
+    HighlightRestore::HighlightAlbumInfo albumInfoWithSameCover1;
+    albumInfoWithSameCover1.coverId = TEST_FILE_ID_OLD;
+    highlightRestore.albumInfos_.emplace_back(albumInfoWithSameCover1);
+    HighlightRestore::HighlightAlbumInfo albumInfoWithSameCover2;
+    albumInfoWithSameCover2.coverId = TEST_FILE_ID_OLD;
+    highlightRestore.albumInfos_.emplace_back(albumInfoWithSameCover2);
+    HighlightRestore::HighlightAlbumInfo albumInfoWithDifferentCover;
+    albumInfoWithDifferentCover.coverId = TEST_FILE_ID_NEW;
+    highlightRestore.albumInfos_.emplace_back(albumInfoWithDifferentCover);
+
+    HighlightRestore::HighlightPhotoInfo highlightPhoto;
+    highlightPhoto.fileIdOld = TEST_FILE_ID_OLD;
+    highlightPhoto.photoInfo.fileIdNew = TEST_FILE_ID_NEW;
+    highlightRestore.UpdateAlbumInfoCoverUris(highlightPhoto);
+
+    for (const auto &albumInfo : highlightRestore.albumInfos_) {
+        bool expectedResult = albumInfo.coverId == TEST_FILE_ID_OLD;
+        EXPECT_EQ(!albumInfo.coverUri.empty(), expectedResult); // albumInfo with TEST_FILE_ID_OLD get coverUri updated
+    }
 }
 }
 }
