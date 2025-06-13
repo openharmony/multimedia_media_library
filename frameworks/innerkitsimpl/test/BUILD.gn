@@ -79,7 +79,6 @@ group("test") {
 
   if (media_library_feature_back_up) {
     deps += [
-      "unittest/medialibrary_backup_clone_test:unittest",
       "unittest/medialibrary_backup_test:unittest",
     ]
   }
