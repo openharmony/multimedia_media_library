@@ -1650,8 +1650,9 @@ int32_t CloudMediaPhotosDao::UpdateFailRecordsCloudId(
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutString(PhotoColumn::PHOTO_CLOUD_ID, record.cloudId);
     int32_t changedRows;
-    std::string whereClause = PhotoColumn::MEDIA_ID + " = ? AND " + PhotoColumn::PHOTO_DIRTY + " = ?";
-    std::vector<std::string> whereArgs = {fileId, std::to_string(static_cast<int32_t>(DirtyType::TYPE_NEW))};
+    std::string whereClause = "file_id = ? AND dirty = ? AND COALESCE(cloud_id, '') <> ?";
+    std::vector<std::string> whereArgs = {
+        fileId, std::to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)), record.cloudId};
     int32_t ret = rdbStore->Update(changedRows, PhotoColumn::PHOTOS_TABLE, valuesBucket, whereClause, whereArgs);
     MEDIA_INFO_LOG("UpdateFailRecordsCloudId ret:%{public}d, changedRows:%{public}d, cloudId:%{public}s",
         ret,
