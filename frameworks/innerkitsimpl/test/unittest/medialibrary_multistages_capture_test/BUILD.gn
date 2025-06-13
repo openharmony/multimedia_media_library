@@ -26,7 +26,6 @@ ohos_unittest("medialibrary_multistages_capture_test") {
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
-    "${MEDIALIB_THIRD_PARTY_PATH}/googletest/googletest/include",
   ]
 
   sources = [
@@ -39,8 +38,6 @@ ohos_unittest("medialibrary_multistages_capture_test") {
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-    "${MEDIALIB_THIRD_PARTY_PATH}/googletest:gmock_main",
-    "${MEDIALIB_THIRD_PARTY_PATH}/googletest:gtest_main",
   ]
 
   external_deps = [
@@ -66,6 +63,8 @@ ohos_unittest("medialibrary_multistages_capture_test") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
+    "googletest:gtest_main",
+    "googletest:gmock_main",
   ]
 
   if (defined(global_parts_info) &&

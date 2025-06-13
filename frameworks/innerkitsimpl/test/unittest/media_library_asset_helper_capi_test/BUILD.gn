@@ -32,7 +32,6 @@ ohos_unittest("media_library_asset_helper_capi_test") {
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api",
     "${MEDIALIB_NATIVE_PATH}/c_api/common",
-    "${MEDIALIB_IMAGE_FRAMEWORK_PATH}/interfaces/kits/native/include/image",
   ]
 
   sources = [
@@ -71,6 +70,7 @@ ohos_unittest("media_library_asset_helper_capi_test") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
+    "image_framework:image",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",

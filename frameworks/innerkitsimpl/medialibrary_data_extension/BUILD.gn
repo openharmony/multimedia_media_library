@@ -123,7 +123,6 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_power_efficiency/include",
     "${MEDIALIB_SERVICES_PATH}/media_visit_count/include",
 
-    "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
   ]
   include_dirs += include_fuse
   include_dirs += include_scanner
