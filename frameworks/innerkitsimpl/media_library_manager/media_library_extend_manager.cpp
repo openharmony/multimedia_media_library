@@ -254,7 +254,7 @@ static bool CheckPermissionByMap(const string &fileId, uint32_t flag,
 
 static DataSharePredicates MakePredicatesForCheckPhotoUriPermission(uint32_t targetTokenId, TableType mediaType,
     const vector<string> &fileIds)
-{   
+{
     DataSharePredicates predicates;
     predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
     predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, to_string(static_cast<int32_t>(mediaType)));
@@ -639,7 +639,7 @@ int32_t MediaLibraryExtendManager::GetPhotoUrisPermission(uint32_t targetTokenId
 
     for (size_t i = 0; i < uris.size(); ++i) {
         string fileId = MediaFileUtils::GetIdFromUri(uris[i]);
-        result[i] = CheckPermissionType(fileId, permissionMap, photoPermissionType); 
+        result[i] = CheckPermissionType(fileId, permissionMap, photoPermissionType);
     }
     return E_SUCCESS;
 }

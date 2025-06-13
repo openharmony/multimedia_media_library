@@ -101,7 +101,8 @@ public:  // getter & setter
     }
     std::optional<int32_t> GetAlbumType()  const
     {
-        std::optional<std::string> albumTypeStr =  this->recordReader_.GetStringValue(this->properties_, this->ALBUM_TYPE);
+        std::optional<std::string> albumTypeStr =
+            this->recordReader_.GetStringValue(this->properties_, this->ALBUM_TYPE);
         if (albumTypeStr.has_value()) {
             std::stringstream ss(albumTypeStr.value());
             int32_t result = 0;
@@ -144,7 +145,6 @@ public:  // getter & setter
             }
         }
         return 0;
-        // return this->recordReader_.GetLongValue(this->properties_, this->ALBUM_DATE_ADDED);
     }
     void SetDateAdded(const int64_t &dateAdded)
     {
@@ -162,7 +162,6 @@ public:  // getter & setter
             }
         }
         return 0;
-        // return this->recordReader_.GetLongValue(this->properties_, this->ALBUM_DATE_MODIFIED);
     }
     void SetDateModified(const int64_t &dateModified)
     {

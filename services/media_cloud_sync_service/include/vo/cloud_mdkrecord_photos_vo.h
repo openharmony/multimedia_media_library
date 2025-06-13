@@ -48,6 +48,7 @@ public:
     int64_t editTime;
     int32_t originalSubtype;
     int64_t coverPosition;
+    int32_t isRectificationCover;
     int32_t movingPhotoEffectMode;
     int32_t supportedWatermarkType;
     int32_t strongAssociation;
@@ -82,6 +83,7 @@ public:
     // Photo Album
     std::string albumCloudId;
     std::string albumLPath;
+    int32_t coverUriSource;
 
     // Photo Map
     std::vector<std::string> removeAlbumCloudId;

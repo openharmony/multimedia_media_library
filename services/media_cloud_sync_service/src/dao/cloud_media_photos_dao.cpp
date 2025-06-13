@@ -170,7 +170,6 @@ int32_t CloudMediaPhotosDao::BatchInsertAssetAnalysisMaps(std::map<std::string, 
 int32_t CloudMediaPhotosDao::BatchInsertQuick(
     int64_t &outRowId, const std::string &table, std::vector<NativeRdb::ValuesBucket> &initialBatchValues)
 {
-    // RETURN_ON_ERR(IsStop());
     const uint32_t TRY_TIMES = 15;
     const uint32_t SLEEP_TIME = 100 * 1000;
     std::vector<NativeRdb::ValuesBucket> succeedValues;
@@ -210,7 +209,6 @@ int32_t CloudMediaPhotosDao::BatchInsert(
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
-    // RETURN_ON_ERR(IsStop());
     const uint32_t TRY_TIMES = 15;
     const uint32_t SLEEP_TIME = 100 * 1000;
     std::vector<NativeRdb::ValuesBucket> succeedValues;

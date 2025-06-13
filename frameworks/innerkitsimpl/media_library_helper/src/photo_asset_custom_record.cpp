@@ -76,4 +76,4 @@ int32_t PhotoAssetCustomRecord::GetCount() const
     return count_;
 }
 } // namespace Media
-} // namespace OHOS 
+} // namespace OHOS

@@ -1494,7 +1494,8 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         vector<string> fileAssetsIds, fileAssetsUri;
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t fileId = -1;
-            string assetData, displayName;
+            string assetData;
+            string displayName;
             GetIntFromResultSet(resultSet, MediaColumn::MEDIA_ID, fileId);
             GetStringFromResultSet(resultSet, MediaColumn::MEDIA_FILE_PATH, assetData);
             GetStringFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);

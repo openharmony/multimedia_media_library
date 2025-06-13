@@ -62,7 +62,8 @@ int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValue(const ThumbnailData
     MediaLibraryTracer tracer;
     tracer.Start("UpdateCachedRdbValue opts.store->Update");
     int32_t changedRows;
-    int32_t err = opts.store->Update(changedRows, photosTable, data.rdbUpdateCache, MEDIA_DATA_DB_ID + " = ?", { data.id });
+    int32_t err = opts.store->Update(
+        changedRows, photosTable, data.rdbUpdateCache, MEDIA_DATA_DB_ID + " = ?", { data.id });
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. table: %{public}s, err: %{public}d",
         photosTable.c_str(), err);
     CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_ERR, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",

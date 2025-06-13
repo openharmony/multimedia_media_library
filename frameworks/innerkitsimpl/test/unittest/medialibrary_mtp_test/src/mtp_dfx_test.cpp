@@ -83,7 +83,8 @@ HWTEST_F(MtpDfxTest, mtp_dfx_test_002, TestSize.Level1)
     int32_t operationResult = RESPONSE_CODE;
     uint64_t duration = MTP_PHOTO_COUNT;
     int32_t operationMode = OPERATION_READ_MODE;
-    MtpDfxReporter::GetInstance().DoSendResponseResultDfxReporter(operationCode, operationResult, duration, operationMode);
+    MtpDfxReporter::GetInstance().DoSendResponseResultDfxReporter(
+        operationCode, operationResult, duration, operationMode);
 }
 
 /*
