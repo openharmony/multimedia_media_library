@@ -63,8 +63,6 @@ ohos_unittest("media_library_helper_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
     "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
   external_deps = [
@@ -83,6 +81,8 @@ ohos_unittest("media_library_helper_test") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
+    "googletest:gtest_main",
+    "googletest:gmock_main",
   ]
 
   sanitize = {

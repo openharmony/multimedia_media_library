@@ -22,7 +22,6 @@ ohos_fuzztest("MediaLibraryMetaRecoverFuzzTest") {
     ".",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
-    "../../../../../../../../distributeddatamgr/relational_store/interfaces/inner_api/rdb/include",
   ]
 
   sources = [ "./medialibrarymetarecover_fuzzer.cpp" ]

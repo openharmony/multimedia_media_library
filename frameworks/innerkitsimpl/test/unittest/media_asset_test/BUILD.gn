@@ -34,9 +34,7 @@ ohos_unittest("media_asset_test") {
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
     "${MEDIALIB_INTERFACES_PATH}/kits/c",
-    "//third_party/json/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/native/include",
-    "${MEDIALIB_IMAGE_FRAMEWORK_PATH}/interfaces/kits/native/include/image",
     "${MEDIALIB_NATIVE_PATH}/c_api/common",
   ]
 
@@ -70,6 +68,7 @@ ohos_unittest("media_asset_test") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
+    "image_framework:image",
     "ipc:ipc_core",
     "napi:ace_napi",
     "relational_store:native_appdatafwk",
