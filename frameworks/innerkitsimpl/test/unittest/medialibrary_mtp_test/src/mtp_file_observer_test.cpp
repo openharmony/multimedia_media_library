@@ -437,7 +437,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0023, TestSize.Level1)
     inotify_event event;
     std::string path = "/file/Docs";
     ContextSptr context = std::make_shared<MtpOperationContext>();
-
+    MtpFileObserver::isEventThreadRunning_.store(false);
     ASSERT_NE(context, nullptr);
     event.mask = 0x00000100;
     MtpFileObserver::SendEvent(event, path, context);
@@ -447,16 +447,89 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0023, TestSize.Level1)
     MtpFileObserver::SendEvent(event, path, context);
 
     ASSERT_NE(context, nullptr);
+    event.mask = 0x00000008;
+    MtpFileObserver::SendEvent(event, path, context);
+
+    ASSERT_NE(context, nullptr);
     event.mask = 0x00000200;
     MtpFileObserver::SendEvent(event, path, context);
 
     ASSERT_NE(context, nullptr);
     event.mask = 0x00000040;
     MtpFileObserver::SendEvent(event, path, context);
+}
 
-    ASSERT_NE(context, nullptr);
-    event.mask = 0x00000008;
-    MtpFileObserver::SendEvent(event, path, context);
+/*
+ * Feature: MediaLibraryMTP
+ * Function: StopFileInotify
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: StopFileInotify success
+ */
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0024, TestSize.Level1)
+{
+    std::shared_ptr<MtpFileObserver> mtpFileObserver = make_shared<MtpFileObserver>();
+    ASSERT_NE(mtpFileObserver, nullptr);
+    MtpFileObserver::isRunning_ = true;
+    MtpFileObserver::watchMap_.clear();
+    EXPECT_TRUE(mtpFileObserver->StopFileInotify());
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function: AddToQueue
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: AddToQueue success
+ */
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0025, TestSize.Level1)
+{
+    MtpFileObserver::isEventThreadRunning_.store(true);
+    std::queue<std::pair<uint16_t, uint32_t>>().swap(MtpFileObserver::eventQueue_);
+    MtpFileObserver::AddToQueue(MTP_EVENT_OBJECT_ADDED_CODE, 0);
+    EXPECT_EQ(MtpFileObserver::eventQueue_.size(), 1);
+    std::queue<std::pair<uint16_t, uint32_t>>().swap(MtpFileObserver::eventQueue_);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function: StartSendEventThread
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: StartSendEventThread with isEventThreadRunning_ true
+ */
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0026, TestSize.Level1)
+{
+    MtpFileObserver::isEventThreadRunning_.store(true);
+    ContextSptr context = make_shared<MtpOperationContext>();
+    MtpFileObserver::StartSendEventThread(context);
+    MtpFileObserver::eventQueue_.push(std::make_pair(MTP_EVENT_OBJECT_ADDED_CODE, 0));
+    MtpFileObserver::cv_.notify_all();
+    // Allow time for the thread to finish processing
+    std::this_thread::sleep_for(chrono::milliseconds(100));
+    EXPECT_TRUE(MtpFileObserver::eventQueue_.empty());
+    MtpFileObserver::isEventThreadRunning_.store(false);
+    MtpFileObserver::cv_.notify_all();
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function: SendEventThread
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SendEventThread with isEventThreadRunning_ false
+ */
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0027, TestSize.Level1)
+{
+    MtpFileObserver::isEventThreadRunning_.store(false);
+    MtpFileObserver::eventQueue_.push(std::make_pair(MTP_EVENT_OBJECT_ADDED_CODE, 0));
+    ContextSptr context = make_shared<MtpOperationContext>();
+    MtpFileObserver::SendEventThread(context);
+    EXPECT_EQ(MtpFileObserver::eventQueue_.size(), 1);
 }
 } // namespace Media
 } // namespace OHOS
