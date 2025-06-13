@@ -122,7 +122,9 @@ string LSCommand::ErrorCodeToMsg(int32_t errorCode)
             return errMsgOss.str();
         }
         default:
+        {
             return "Unknown error";
+        }
     }
 }
 

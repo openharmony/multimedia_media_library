@@ -307,7 +307,6 @@ private:
         if (type == static_cast<int32_t>(MDKRecordFieldType::FIELD_TYPE_LIST)) {
             std::vector<ORIGIN_FIELD_TYPE> fieldListVal;
             field.GetRecordList(fieldListVal);
-            // dkField = CDKRecordField(fieldListVal);
             std::vector<TARGET_FIELD_TYPE> dkFieldList;
             for (auto &field : fieldListVal) {
                 TARGET_FIELD_TYPE dkField = CDKRecordField(field);

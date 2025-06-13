@@ -156,7 +156,7 @@ HWTEST_F(CommitEditedAssetTest, CommitEditedAsset_Test_001, TestSize.Level0)
     CommitEditedAssetReqBody reqBody;
     vector<string> columns = {
         MediaColumn::MEDIA_ID,
-        PhotoColumn::PHOTO_EDIT_TIME 
+        PhotoColumn::PHOTO_EDIT_TIME
     };
     auto resultSet = QueryAsset("cam_pic.jpg", columns);
     ASSERT_NE(resultSet, nullptr);

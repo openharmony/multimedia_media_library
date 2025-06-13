@@ -48,6 +48,7 @@ public:
     static const std::string ALBUM_PRIORITY EXPORT;
     static const std::string ALBUM_LPATH EXPORT;
     static const std::string ALBUM_CHECK_FLAG EXPORT;
+    static const std::string COVER_URI_SOURCE EXPORT;
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH EXPORT;
 
@@ -58,6 +59,11 @@ public:
     // For sorting albums
     static const std::string ALBUM_ORDER EXPORT;
     static const std::string REFERENCE_ALBUM_ID EXPORT;
+
+    // For accurate refresh
+    static const std::string COVER_DATE_TIME EXPORT;
+    static const std::string HIDDEN_COVER_DATE_TIME EXPORT;
+
     // default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
     static const std::vector<std::string> LOCATION_DEFAULT_FETCH_COLUMNS EXPORT;
@@ -84,6 +90,7 @@ public:
     static const std::string HIDDEN_ALBUM_URI_PREFIX EXPORT;
     static const std::string DEFAULT_HIDDEN_ALBUM_URI EXPORT;
     static const std::string ANALYSIS_ALBUM_URI_PREFIX EXPORT;
+    static const std::string TRASHED_ALBUM_URI_PREFIX EXPORT;
 
     // cloud sync uri
     static const std::string ALBUM_CLOUD_URI_PREFIX EXPORT;

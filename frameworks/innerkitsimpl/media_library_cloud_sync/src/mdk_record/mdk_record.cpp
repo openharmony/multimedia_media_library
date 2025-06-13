@@ -280,7 +280,6 @@ bool MDKRecord::ParseFromJsonValue(const MDKSchema &schema, const Json::Value &j
     type_ = JsonHelper::GetStringFromJson(jvData, "recordType");
     auto it = schema.recordTypes.find(type_);
     if (it == schema.recordTypes.end()) {
-        // DKLOG_ERROR("parse record failed, can not find schema record type:%{public}s", type_.c_str());
         return false;
     }
     const MDKSchemaNode &schemaNode = it->second;
@@ -300,7 +299,6 @@ bool MDKRecord::ParseFromJsonValue(const MDKSchema &schema, const Json::Value &j
             MDKRecordField field;
             auto it = schemaNode.fields.find(key);
             if (it == schemaNode.fields.end()) {
-                // DKLOG_DEBUG("can find field key %{public}s from schema node", key.c_str());
                 continue;
             }
             if (field.ParseFromJsonValue(it->second, jvRecordData[key])) {
