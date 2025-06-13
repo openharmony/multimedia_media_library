@@ -36,6 +36,8 @@
 #include "album_remove_assets_vo.h"
 #include "album_recover_assets_vo.h"
 #include "album_photo_query_vo.h"
+#include "album_get_assets_vo.h"
+#include "get_face_id_vo.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -1173,6 +1175,7 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
             NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
             return nullptr;
         }
+        context->isSystemApi = true;
         // sort by hidden time desc if is hidden asset
         context->predicates.IndexedBy(PhotoColumn::PHOTO_HIDDEN_TIME_INDEX);
     }
@@ -1239,6 +1242,7 @@ static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
     tracer.Start("JSPhotoAccessGetPhotoAssetsExecute");
 
     auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    CHECK_IF_EQUAL(context != nullptr, "context is nullptr");
     Uri uri(PAH_QUERY_PHOTO_MAP);
     ConvertColumnsForPortrait(context);
     int32_t errCode = 0;
@@ -1249,7 +1253,28 @@ static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
             userId = photoAlbum->GetUserId();
         }
     }
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode, userId);
+    auto [accessSandbox, resultSet] =
+        UserFileClient::QueryAccessibleViaSandBox(uri, context->predicates, context->fetchColumn, errCode, userId);
+    if (accessSandbox) {
+        if (resultSet == nullptr) {
+            NAPI_ERR_LOG("QueryAccessibleViaSandBox failed, resultSet is nullptr");
+        }
+    } else {
+        AlbumGetAssetsReqBody reqBody;
+        reqBody.predicates = context->predicates;
+        reqBody.columns = context->fetchColumn;
+        AlbumGetAssetsRespBody respBody;
+        uint32_t businessCode = context->isSystemApi
+                                    ? static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_SYS_GET_ASSETS)
+                                    : static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_GET_ASSETS);
+        errCode = IPC::UserDefineIPCClient().SetUserId(userId).Call(businessCode, reqBody, respBody);
+        if (errCode == E_OK) {
+            resultSet = respBody.resultSet;
+        } else {
+            NAPI_ERR_LOG("UserDefineIPCClient Call failed, errCode is %{public}d", errCode);
+        }
+    }
+
     if (resultSet == nullptr) {
         context->SaveError(E_HAS_DB_ERROR);
         return;
@@ -1708,24 +1733,23 @@ static void PhotoAccessHelperGetFaceIdExec(napi_env env, void *data)
         return;
     }
 
-    Uri uri(PAH_QUERY_ANA_PHOTO_ALBUM);
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, objectInfo->GetAlbumId());
-    vector<string> fetchColumn = { GROUP_TAG };
-    int errCode = 0;
-
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
-        if (errCode == E_PERMISSION_DENIED) {
+    GetFaceIdReqBody reqBody;
+    GetFaceIdRespBody respBody;
+    reqBody.albumId = objectInfo->GetAlbumId();
+    reqBody.albumSubType = static_cast<int32_t>(albumSubType);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_FACE_ID);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
         } else {
             context->SaveError(E_FAIL);
         }
-        NAPI_ERR_LOG("get face id failed, errCode is %{public}d", errCode);
+        NAPI_ERR_LOG("get face id failed, errCode is %{public}d", ret);
         return;
     }
-
-    context->faceTag = GetStringVal(GROUP_TAG, resultSet);
+    NAPI_INFO_LOG("respBody.groupTag: %{public}s", respBody.groupTag.c_str());
+    context->faceTag = respBody.groupTag;
 }
 
 static void GetFaceIdCompleteCallback(napi_env env, napi_status status, void *data)

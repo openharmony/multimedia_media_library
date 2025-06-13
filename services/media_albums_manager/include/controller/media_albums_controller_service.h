@@ -49,6 +49,15 @@ public:
     EXPORT void AlbumAddAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT void AlbumRemoveAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT void AlbumRecoverAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT void AlbumGetAssets(MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context);
+    EXPORT void QueryAlbums(MessageParcel &data, MessageParcel &reply);
+    EXPORT void QueryHiddenAlbums(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetAlbumsByIds(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetOrderPosition(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetFaceId(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetPhotoIndex(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetAnalysisProcess(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetHighlightAlbumInfo(MessageParcel &data, MessageParcel &reply);
 public:
     virtual ~MediaAlbumsControllerService() = default;
     bool Accept(uint32_t code) override;

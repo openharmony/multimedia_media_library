@@ -21,6 +21,7 @@
 #include "media_read_permission_check.h"
 #include "media_write_permission_check.h"
 #include "media_cloudfile_sync_permission_check.h"
+#include "media_cloud_permission_check.h"
 #include "media_file_utils.h"
 #include "permission_common.h"
 #include "medialibrary_data_manager.h"
@@ -38,7 +39,9 @@ std::unordered_map<PermissionType, std::shared_ptr<PermissionCheck>> PermissionC
     {PRIVATE_PERM, std::make_shared<PrivatePermissionCheck>()},
     {READ_PERM, std::make_shared<ReadCompositePermCheck>()},
     {WRITE_PERM, std::make_shared<WriteCompositePermCheck>()},
-    {CLOUDFILE_SYNC, std::make_shared<CloudFileSyncPermissionCheck>()}
+    {CLOUDFILE_SYNC, std::make_shared<CloudFileSyncPermissionCheck>()},
+    {CLOUD_READ, std::make_shared<CloudReadPermissionCheck>()},
+    {CLOUD_WRITE, std::make_shared<CloudWritePermissionCheck>()}
 };
 
 static void CollectPermissionInfo(MediaLibraryCommand &cmd, const string &mode,

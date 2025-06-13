@@ -122,6 +122,7 @@ struct PhotoAlbumNapiAsyncContext : public NapiError {
     int32_t newImageCount;
     int32_t newVideoCount;
     int32_t businessCode;
+    bool isSystemApi{false};
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;
     std::vector<std::string> assetsArray;

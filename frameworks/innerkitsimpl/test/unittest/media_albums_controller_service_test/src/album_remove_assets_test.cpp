@@ -225,4 +225,18 @@ HWTEST_F(AlbumRemoveAssetsTest, RemoveAssets_Test_001, TestSize.Level0)
     EXPECT_GT(changedRows, 0);
     MEDIA_INFO_LOG("end RemoveAssets_Test_001");
 }
+
+HWTEST_F(AlbumRemoveAssetsTest, RemoveAssets_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start RemoveAssets_Test_002");
+    MessageParcel data;
+    MessageParcel reply;
+    auto service = make_shared<MediaAlbumsControllerService>();
+    service->AlbumRemoveAssets(data, reply);
+
+    IPC::MediaRespVo<MediaEmptyObjVo> resp;
+    ASSERT_EQ(resp.Unmarshalling(reply), true);
+    ASSERT_LT(resp.GetErrCode(), 0);
+    MEDIA_INFO_LOG("end RemoveAssets_Test_002");
+}
 }  // namespace OHOS::Media

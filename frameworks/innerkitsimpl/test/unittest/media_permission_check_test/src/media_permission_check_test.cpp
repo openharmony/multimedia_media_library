@@ -125,6 +125,7 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> te
     {6, {{}, {SYSTEMAPI_PERM}}},
     {7, {}},
     {8, {{PRIVATE_PERM, CLOUDFILE_SYNC, READ_PERM, WRITE_PERM}}},
+    {9, {{CLOUD_READ}, {CLOUD_WRITE}}},
     {0, {{READ_PERM}, {WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_OPEN), {{READ_PERM, WRITE_PERM}}},  // openfile api
 };
@@ -423,6 +424,17 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_017, TestSize.Level0
     EXPECT_EQ(PreparePermissionParam(businessCode, -1, false, headerMap, data), E_SUCCESS);
     EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_SUCCESS);
     MEDIA_INFO_LOG("MediaPermissionCheckTest_017 end");
+}
+
+HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_018, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaPermissionCheckTest_018 begin");
+    uint32_t businessCode = 9;
+    PermissionHeaderReq data;
+    std::unordered_map<std::string, std::string> headerMap;
+    EXPECT_EQ(PreparePermissionParam(businessCode, -1, false, headerMap, data), E_SUCCESS);
+    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_PERMISSION_DENIED);
+    MEDIA_INFO_LOG("MediaPermissionCheckTest_018 end");
 }
 
 HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_OPENFILE, TestSize.Level0)

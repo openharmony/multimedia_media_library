@@ -41,6 +41,8 @@
 #include "cloud_enhancement_vo.h"
 #include "medialibrary_business_code.h"
 #include "user_define_ipc_client.h"
+#include "get_cloud_enhancement_pair_vo.h"
+#include "query_cloud_enhancement_task_state_vo.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -52,9 +54,6 @@ using namespace OHOS::MediaEnhance;
 namespace OHOS::Media {
 static const string CLOUD_ENHANCEMENT_CLASS = "CloudEnhancement";
 thread_local napi_ref CloudEnhancementNapi::constructor_ = nullptr;
-
-constexpr int32_t STRONG_ASSOCIATION = 1;
-
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 static void* dynamicHandler = nullptr;
 static MediaEnhanceClientHandle* clientWrapper = nullptr;
@@ -827,26 +826,20 @@ static void QueryCloudEnhancementTaskStateExecute(napi_env env, void* data)
     tracer.Start("QueryCloudEnhancementTaskStateExecute");
 
     auto* context = static_cast<CloudEnhancementAsyncContext*>(data);
-    string uriStr = PAH_CLOUD_ENHANCEMENT_QUERY;
-    Uri queryTaskUri(uriStr);
-    vector<string> columns = {
-        MediaColumn::MEDIA_ID, PhotoColumn::PHOTO_ID,
-        PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_CE_STATUS_CODE
-    };
-    int errCode = 0;
-    context->predicates.EqualTo(MediaColumn::MEDIA_ID, context->photoUri);
-    auto resultSet = UserFileClient::Query(queryTaskUri, context->predicates, columns, errCode);
-    if (resultSet == nullptr || resultSet->GoToNextRow() != E_OK) {
-        NAPI_ERR_LOG("ResultSet is nullptr, errCode is %{public}d", errCode);
+    QueryCloudEnhancementTaskStateReqBody reqBody;
+    QueryCloudEnhancementTaskStateRespBody respBody;
+    reqBody.photoUri = context->photoUri;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_CLOUD_ENHANCEMENT_TASK_STATE);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (ret < 0) {
         context->SaveError(JS_INNER_FAIL);
+        NAPI_ERR_LOG("Failed to query cloud enhancement task state, err: %{public}d", ret);
         return;
     }
-    int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
-    string photoId = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_ID, resultSet, TYPE_STRING));
-    int32_t ceAvailable =
-        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet, TYPE_INT32));
-    int32_t CEErrorCode = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_CE_STATUS_CODE,
-        resultSet, TYPE_INT32));
+    int32_t fileId = respBody.fileId;
+    string photoId = respBody.photoId;
+    int32_t ceAvailable = respBody.ceAvailable;
+    int32_t ceErrorCode = respBody.ceErrorCode;
     NAPI_INFO_LOG("query fileId: %{public}d, photoId: %{private}s, ceAvailable: %{public}d",
         fileId, photoId.c_str(), ceAvailable);
 
@@ -862,7 +855,7 @@ static void QueryCloudEnhancementTaskStateExecute(napi_env env, void* data)
     if (ceAvailable == static_cast<int32_t>(CE_AVAILABLE::FAILED_RETRY) ||
         ceAvailable == static_cast<int32_t>(CE_AVAILABLE::FAILED)) {
         context->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_FAILED;
-        context->statusCode_ = CEErrorCode;
+        context->statusCode_ = ceErrorCode;
         NAPI_INFO_LOG("TASK_STAGE_FAILED, fileId: %{public}d, statusCode: %{public}d", fileId, ceAvailable);
         return;
     }
@@ -916,10 +909,9 @@ static void SyncCloudEnhancementTaskStatusExecute(napi_env env, void* data)
     tracer.Start("SyncCloudEnhancementTaskStatusExecute");
 
     auto* context = static_cast<CloudEnhancementAsyncContext*>(data);
-    string uriStr = PAH_CLOUD_ENHANCEMENT_SYNC;
-    Uri syncUri(uriStr);
-    context->valuesBucket.Put(PhotoColumn::PHOTO_STRONG_ASSOCIATION, STRONG_ASSOCIATION);
-    int32_t changeRows = UserFileClient::Update(syncUri, context->predicates, context->valuesBucket);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SYNC_CLOUD_ENHANCEMENT_TASK_STATUS);
+    CloudEnhancementReqBody reqBody;
+    int32_t changeRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changeRows < 0) {
         context->SaveError(changeRows);
         NAPI_ERR_LOG("sync cloud enhancement failed, err: %{public}d", changeRows);
@@ -987,19 +979,17 @@ static void GetCloudEnhancementPairExecute(napi_env env, void* data)
 
     auto* context = static_cast<CloudEnhancementAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "AsyncContext is null");
-    std::string  uriStr = PAH_CLOUD_ENHANCEMENT_GET_PAIR;
-    Uri getPairUri(uriStr);
-    std::vector<std::string> columns;
-    int errCode = 0;
-    NAPI_INFO_LOG("CloudEnhancementNAPI context->photoUri is %{private}s", context->photoUri.c_str());
-    context->predicates.EqualTo(MediaColumn::MEDIA_ID, context->photoUri);
-    shared_ptr<DataShare::DataShareResultSet> resultSet =
-        UserFileClient::Query(getPairUri, context->predicates, columns, errCode);
-    if (resultSet == nullptr || resultSet->GoToNextRow() != E_OK) {
-        NAPI_ERR_LOG("Resultset is nullptr, errCode is %{public}d", errCode);
-        context->SaveError(JS_INNER_FAIL);
+    GetCloudEnhancementPairReqBody reqBody;
+    GetCloudEnhancementPairRespBody respBody;
+    reqBody.photoUri = context->photoUri;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_CLOUD_ENHANCEMENT_PAIR);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Failed to get cloud enhancement pair, err: %{public}d", ret);
         return;
     }
+    auto resultSet = respBody.resultSet;
     context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     if (!context->GetPairAsset()) {
         NAPI_ERR_LOG("Fail to getPairAsset");
