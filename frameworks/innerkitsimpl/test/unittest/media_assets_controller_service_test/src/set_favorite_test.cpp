@@ -167,4 +167,17 @@ HWTEST_F(SetFavoriteTest, SetFavoriteTest_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("end SetFavoriteTest_Test_001");
 }
 
+HWTEST_F(SetFavoriteTest, SetFavoriteTest_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start SetFavoriteTest_Test_002");
+    MessageParcel data;
+    MessageParcel reply;
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->AssetChangeSetFavorite(data, reply);
+
+    IPC::MediaRespVo<MediaEmptyObjVo> resp;
+    ASSERT_EQ(resp.Unmarshalling(reply), true);
+    ASSERT_LT(resp.GetErrCode(), 0);
+    MEDIA_INFO_LOG("end SetFavoriteTest_Test_002");
+}
 }  // namespace OHOS::Media

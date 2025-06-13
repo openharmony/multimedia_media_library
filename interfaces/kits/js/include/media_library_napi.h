@@ -244,6 +244,7 @@ private:
     EXPORT static napi_value JSGetPublicDirectory(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetFileAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PahGetAlbums(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSCreateAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteAsset(napi_env env, napi_callback_info info);
@@ -326,6 +327,7 @@ private:
     EXPORT static napi_value PhotoAccessCreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessDeletePhotoAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetPhotoAlbumsByIds(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbumsSync(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessSaveFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessSaveGalleryFormInfo(napi_env env, napi_callback_info info);
@@ -524,6 +526,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t hiddenAlbumFetchMode = -1;
     std::string formId;
     std::string indexProgress;
+    std::string burstKey;
     std::shared_ptr<PickerCallBack> pickerCallBack;
     std::vector<std::string> analysisDatas;
     uint32_t tokenId;
@@ -534,6 +537,8 @@ struct MediaLibraryAsyncContext : public NapiError {
     bool isFullAnalysis = false;
     uint32_t businessCode = 0;
     int32_t userId = -1;
+    int32_t photoAlbumType;
+    int32_t photoAlbumSubType;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

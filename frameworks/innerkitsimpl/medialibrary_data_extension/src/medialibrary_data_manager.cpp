@@ -1900,7 +1900,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     return QueryInternal(cmd, columns, predicates);
 }
 
-shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
+shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryAnalysisAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
     if (cmd.GetOprnType() == OperationType::QUERY_HIGHLIGHT_DIRECTORY_SIZE) {
@@ -1925,7 +1925,8 @@ inline bool CheckLatitudeAndLongitude(const string &latitude, const string &long
     return latitude != "" && longitude != "" && !(latitude == "0" && longitude == "0");
 }
 
-shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, const vector<string> &columns)
+shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryGeo(const RdbPredicates &rdbPredicates,
+    const vector<string> &columns)
 {
     auto queryResult = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
     CHECK_AND_RETURN_RET_LOG(queryResult != nullptr, queryResult,

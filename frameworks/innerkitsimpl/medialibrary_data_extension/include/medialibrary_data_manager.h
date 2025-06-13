@@ -75,7 +75,10 @@ public:
     EXPORT void NotifyChange(const Uri &uri);
     EXPORT int32_t GenerateThumbnailBackground();
     EXPORT int32_t GenerateHighlightThumbnailBackground();
-
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryGeo(const NativeRdb::RdbPredicates &rdbPredicates,
+        const std::vector<std::string> &columns);
     // upgrade existed thumbnails to fix such as size, rotation and quality etc. problems
     EXPORT int32_t UpgradeThumbnailBackground(bool isWifiConnected);
 

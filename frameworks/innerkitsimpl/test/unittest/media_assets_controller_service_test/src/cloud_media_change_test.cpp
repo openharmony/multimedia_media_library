@@ -94,7 +94,6 @@ HWTEST_F(CloudMediaChangeTest, StartDownloadCloudMedia_Test_001, TestSize.Level0
     auto ret = reqBody.Marshalling(data);
     EXPECT_EQ(ret, true);
 
-
     auto service = make_shared<MediaAssetsControllerService>();
     service->StartDownloadCloudMedia(data, reply);
 
@@ -113,13 +112,23 @@ HWTEST_F(CloudMediaChangeTest, StartDownloadCloudMedia_Test_002, TestSize.Level0
     auto ret = reqBody.Marshalling(data);
     EXPECT_EQ(ret, true);
 
-
     auto service = make_shared<MediaAssetsControllerService>();
     service->StartDownloadCloudMedia(data, reply);
 
     IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     ret = respVo.Unmarshalling(reply);
     EXPECT_EQ(true, ret);
+}
+
+HWTEST_F(CloudMediaChangeTest, StartDownloadCloudMedia_Test_003, TestSize.Level0) {
+    MessageParcel data;
+    MessageParcel reply;
+
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->StartDownloadCloudMedia(data, reply);
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    ASSERT_EQ(respVo.Unmarshalling(reply), true);
+    ASSERT_LT(respVo.GetErrCode(), 0);
 }
 
 HWTEST_F(CloudMediaChangeTest, PauseDownloadCloudMedia_Test_001, TestSize.Level0)
@@ -188,4 +197,14 @@ HWTEST_F(CloudMediaChangeTest, RetainCloudMediaAsset_Test_002, TestSize.Level0)
     EXPECT_EQ(true, ret);
 }
 
+HWTEST_F(CloudMediaChangeTest, RetainCloudMediaAsset_Test_003, TestSize.Level0) {
+    MessageParcel data;
+    MessageParcel reply;
+
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->RetainCloudMediaAsset(data, reply);
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    ASSERT_EQ(respVo.Unmarshalling(reply), true);
+    ASSERT_LT(respVo.GetErrCode(), 0);
+}
 }  // namespace OHOS::Media

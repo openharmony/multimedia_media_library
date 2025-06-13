@@ -20,11 +20,7 @@
 #include <string>
 #include <vector>
 
-#define private public
-#define protected public
 #include "media_assets_controller_service.h"
-#undef private
-#undef protected
 
 #include "create_asset_vo.h"
 #include "user_define_ipc_client.h"
@@ -38,7 +34,12 @@ using namespace testing::ext;
 using namespace OHOS::NativeRdb;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
-static constexpr int32_t SLEEP_SECONDS = 1;
+static constexpr int32_t SLEEP_SECONDS = 3;
+
+static std::string Quote(const std::string &str)
+{
+    return "'" + str + "'";
+}
 
 static int32_t ClearTable(const string &table)
 {
@@ -53,6 +54,86 @@ static int32_t ClearTable(const string &table)
     return E_OK;
 }
 
+static bool CheckAsset(int32_t assetId)
+{
+    int32_t count = 0;
+    vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::PHOTO_OWNER_ALBUM_ID };
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.EqualTo(PhotoColumn::MEDIA_ID, assetId);
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    if (resultSet != nullptr) {
+        resultSet->GetRowCount(count);
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            int32_t albumId = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_OWNER_ALBUM_ID);
+            MEDIA_INFO_LOG("assetId:%{public}d albumId:%{public}d", assetId, albumId);
+        }
+        resultSet->Close();
+    }
+    return count == 1;
+}
+
+static int32_t CreateAlbum(int32_t albumType, int32_t albumSubType, const std::string &albumName)
+{
+    int64_t now = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<std::pair<std::string, std::string>> items = {
+        {PhotoAlbumColumns::ALBUM_NAME, Quote(albumName)},
+        {PhotoAlbumColumns::ALBUM_TYPE, to_string(albumType)},
+        {PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType)},
+        {PhotoAlbumColumns::ALBUM_DATE_MODIFIED, to_string(now)},
+        {PhotoAlbumColumns::ALBUM_DATE_ADDED, to_string(now)},
+        {PhotoAlbumColumns::ALBUM_LPATH, Quote("/Pictures/" + albumName)},
+        {PhotoAlbumColumns::CONTAINS_HIDDEN, "0"},
+        {PhotoAlbumColumns::ALBUM_IS_LOCAL, "1"},
+        {PhotoAlbumColumns::ALBUM_PRIORITY, "1"},
+    };
+
+    std::string values;
+    std::string columns;
+    for (const auto &item : items) {
+        if (!columns.empty()) {
+            columns.append(",");
+            values.append(",");
+        }
+        columns.append(item.first);
+        values.append(item.second);
+    }
+    std::string sql = "INSERT INTO " + PhotoAlbumColumns::TABLE + "(" + columns + ") VALUES (" + values + ")";
+    return g_rdbStore->ExecuteSql(sql);
+}
+
+static int32_t GetAlbumId(const std::string &albumName)
+{
+    std::vector<std::string> columns = {
+        PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_NAME,
+        PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE
+    };
+    NativeRdb::RdbPredicates rdbPredicate(PhotoAlbumColumns::TABLE);
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query failed, albumName:%{public}s", albumName.c_str());
+        return 0;
+    }
+
+    int32_t retId = 0;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t albumId = MediaLibraryRdbStore::GetInt(resultSet, PhotoAlbumColumns::ALBUM_ID);
+        string name = MediaLibraryRdbStore::GetString(resultSet, PhotoAlbumColumns::ALBUM_NAME);
+        int32_t albumType = MediaLibraryRdbStore::GetInt(resultSet, PhotoAlbumColumns::ALBUM_TYPE);
+        int32_t albumSubType = MediaLibraryRdbStore::GetInt(resultSet, PhotoAlbumColumns::ALBUM_SUBTYPE);
+        MEDIA_INFO_LOG("albumId:%{public}d, albumName:%{public}s, albumType:%{public}d, albumSubType:%{public}d",
+            albumId, name.c_str(), albumType, albumSubType);
+        if (name == albumName) {
+            retId = albumId;
+        }
+    }
+    resultSet->Close();
+    if (retId == 0) {
+        MEDIA_ERR_LOG("Not Exists, albumName:%{public}s", albumName.c_str());
+        return 0;
+    }
+    return retId;
+}
+
 void CreateAssetTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
@@ -61,12 +142,15 @@ void CreateAssetTest::SetUpTestCase(void)
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
         exit(1);
     }
+    ClearTable(PhotoAlbumColumns::TABLE);
     ClearTable(PhotoColumn::PHOTOS_TABLE);
+    CreateAlbum(PhotoAlbumType::USER, PhotoAlbumSubType::USER_GENERIC, "TestUserAlbum");
     MEDIA_INFO_LOG("SetUpTestCase");
 }
 
 void CreateAssetTest::TearDownTestCase(void)
 {
+    ClearTable(PhotoAlbumColumns::TABLE);
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     MEDIA_INFO_LOG("TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
@@ -74,59 +158,13 @@ void CreateAssetTest::TearDownTestCase(void)
 
 void CreateAssetTest::SetUp()
 {
+    GetAlbumId("TestUserAlbum");
     MEDIA_INFO_LOG("SetUp");
 }
 
 void CreateAssetTest::TearDown(void)
 {
     MEDIA_INFO_LOG("TearDown");
-}
-
-static bool CheckAsset(int32_t assetId)
-{
-    int32_t count = 0;
-    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicate.EqualTo(PhotoColumn::MEDIA_ID, assetId);
-    vector<string> columns = { PhotoColumn::MEDIA_ID };
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    if (resultSet != nullptr) {
-        resultSet->GetRowCount(count);
-        resultSet->Close();
-    }
-    return count == 1;
-}
-
-static bool CheckAlbum(int32_t albumId)
-{
-    int32_t count = 0;
-    NativeRdb::RdbPredicates rdbPredicate(PhotoAlbumColumns::TABLE);
-    rdbPredicate.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
-    vector<string> columns = { PhotoAlbumColumns::ALBUM_ID };
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    if (resultSet != nullptr) {
-        resultSet->GetRowCount(count);
-        resultSet->Close();
-    }
-    return count == 1;
-}
-
-static int32_t GetAlbumId(const std::string &albumName)
-{
-    NativeRdb::RdbPredicates rdbPredicate(PhotoAlbumColumns::TABLE);
-    rdbPredicate.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
-    vector<string> columns = { PhotoAlbumColumns::ALBUM_ID };
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query failed, albumName:%{public}s", albumName.c_str());
-        return 0;
-    }
-    int32_t albumId = 0;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        albumId = MediaLibraryRdbStore::GetInt(resultSet, PhotoAlbumColumns::ALBUM_ID);
-        MEDIA_INFO_LOG("resultSet: albumId:%{public}d, albumName:%{public}s", albumId, albumName.c_str());
-    }
-    resultSet->Close();
-    return albumId;
 }
 
 using ServiceCall = std::function<void(MessageParcel &data, MessageParcel &reply)>;
@@ -405,7 +443,7 @@ HWTEST_F(CreateAssetTest, CreateAssetForAppWithAlbum_Test_001, TestSize.Level0)
 HWTEST_F(CreateAssetTest, CreateAssetForAppWithAlbum_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start CreateAssetForAppWithAlbum_Test_002");
-    int32_t albumId = GetAlbumId("media_assets_controler_service_test");
+    int32_t albumId = GetAlbumId("TestUserAlbum");
     ASSERT_GT(albumId, 0);
 
     int32_t fileId = CreateAssetForAppWithAlbum(0, albumId, "jpg");

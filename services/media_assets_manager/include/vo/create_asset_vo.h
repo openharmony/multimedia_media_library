@@ -18,10 +18,8 @@
 
 #include <stdint.h>
 #include <string>
-#include <sstream>
 
 #include "i_media_parcelable.h"
-#include "create_asset_dto.h"
 
 namespace OHOS::Media {
 class CreateAssetReqBody : public IPC::IMediaParcelable {
@@ -36,8 +34,6 @@ public:
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
-public:
-    void Convert2Dto(CreateAssetDto &dto);
 };
 
 class CreateAssetRspBody : public IPC::IMediaParcelable {
@@ -48,8 +44,6 @@ public:
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
-public:
-    void InitByDto(const CreateAssetDto &dto);
 };
 
 class CreateAssetForAppReqBody : public IPC::IMediaParcelable {
@@ -67,8 +61,6 @@ public:
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
-public:
-    void Convert2Dto(CreateAssetDto &dto);
 };
 
 using CreateAssetForAppRspBody = CreateAssetRspBody;

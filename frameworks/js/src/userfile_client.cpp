@@ -255,6 +255,16 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
     return resultSet;
 }
 
+std::pair<bool, shared_ptr<DataShareResultSet>> UserFileClient::QueryAccessibleViaSandBox(Uri &uri,
+    const DataSharePredicates &predicates, std::vector<std::string> &columns, int &errCode, const int32_t userId)
+{
+    OperationObject object = OperationObject::UNKNOWN_OBJECT;
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) && userId == -1) {
+        return {true, MediaAssetRdbStore::GetInstance()->Query(predicates, columns, object, errCode)};
+    }
+    return {false, nullptr};
+}
+
 std::shared_ptr<NativeRdb::ResultSet> UserFileClient::QueryRdb(Uri &uri,
     const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
