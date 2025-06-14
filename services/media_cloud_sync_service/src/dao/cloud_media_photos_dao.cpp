@@ -720,7 +720,7 @@ void CloudMediaPhotosDao::HandleShootingMode(const std::string &cloudId, const N
             MEDIA_ERR_LOG("shootingMode %{public}s convert to int failed", shootingMode.c_str());
             return;
         }
-        recordAnalysisAlbumMaps[cloudId] = std::stoi(shootingMode);
+        recordAnalysisAlbumMaps[cloudId] = CloudMediaDaoUtils::ToInt32(shootingMode);
     }
 }
 
@@ -1284,8 +1284,9 @@ int32_t CloudMediaPhotosDao::UpdatePhotoCreatedRecord(
     }
 
     int32_t changedRows;
-    std::string whereClause = PhotoColumn::MEDIA_ID + " = ? AND " + PhotoColumn::PHOTO_DIRTY + " = ?";
-    std::vector<std::string> whereArgs = {fileId, std::to_string(static_cast<int32_t>(DirtyType::TYPE_NEW))};
+    std::string whereClause = "file_id = ? AND dirty = ? AND COALESCE(cloud_id, '') <> ?";
+    std::vector<std::string> whereArgs = {
+        fileId, std::to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)), record.cloudId};
     int32_t ret = rdbStore->Update(changedRows, PhotoColumn::PHOTOS_TABLE, valuesBucket, whereClause, whereArgs);
     MEDIA_INFO_LOG("UpdatePhotoCreatedRecord ret:%{public}d, changedRows:%{public}d, cloudId:%{public}s",
         ret,

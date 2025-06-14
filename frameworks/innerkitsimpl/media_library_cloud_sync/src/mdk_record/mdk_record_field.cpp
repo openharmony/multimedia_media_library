@@ -458,7 +458,7 @@ MDKAsset MDKRecordField::ParseAssetFromJsonValue(const Json::Value &jvData)
         asset.operationType = static_cast<MDKAssetOperType>(value);
     }
     asset.hash = JsonHelper::GetStringFromJson(jvData, "sha256");
-    asset.version = JsonHelper::GetUInt64FromJson(jvData, "version");
+    asset.version = JsonHelper::GetInt64FromJson(jvData, "version");
     asset.assetId = JsonHelper::GetStringFromJson(jvData, "assetId");
     asset.subPath = JsonHelper::GetStringFromJson(jvData, "subPath");
     asset.exCheckInfo = JsonHelper::GetStringFromJson(jvData, "exCheckInfo");

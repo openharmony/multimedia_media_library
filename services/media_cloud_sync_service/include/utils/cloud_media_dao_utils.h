@@ -28,6 +28,7 @@ public:
     static std::string FillParams(const std::string &sql, const std::vector<std::string> &bindArgs);
     static std::vector<std::string> GetNumbers(const std::vector<std::string> &albumIds);
     static std::vector<std::string> GetStringVector(const std::vector<int32_t> &intVals);
+    static int32_t ToInt32(const std::string &str);
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_CLOUD_MEDIA_DAO_UTILS_H

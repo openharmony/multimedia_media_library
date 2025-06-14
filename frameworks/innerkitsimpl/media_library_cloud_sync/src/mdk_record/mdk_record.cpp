@@ -260,7 +260,8 @@ void MDKRecord::ParseRelationsFromJson(const Json::Value &jvData)
 {
     if (jvData.isMember("relations") && jvData["relations"].isArray()) {
         relations_.clear();
-        for (Json::ArrayIndex j = 0; j < jvData["relations"].size(); j++) {
+        int32_t maxCount = 500;
+        for (Json::ArrayIndex j = 0; j < jvData["relations"].size() && j < maxCount; j++) {
             const Json::Value jvRelation = jvData["relations"][j];
             MDKRelation relation;
             relation.relationName = JsonHelper::GetStringFromJson(jvRelation, "relationName");

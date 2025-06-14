@@ -400,6 +400,7 @@ int32_t CloudMediaPhotoHandler::OnCreateRecords(
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_CREATE_RECORDS);
     FailedSizeResp resp;
+    resp.failedSize = 0;
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, req,
         resp);
     failSize = resp.failedSize;
@@ -428,6 +429,7 @@ int32_t CloudMediaPhotoHandler::OnMdirtyRecords(
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_MDIRTY_RECORDS);
     FailedSizeResp resp;
+    resp.failedSize = 0;
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, req,
         resp);
     failSize = resp.failedSize;
@@ -452,6 +454,7 @@ int32_t CloudMediaPhotoHandler::OnFdirtyRecords(
         req.AddRecord(record);
     }
     FailedSizeResp resp;
+    resp.failedSize = 0;
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, req,
         resp);
     failSize = resp.failedSize;
@@ -469,6 +472,7 @@ int32_t CloudMediaPhotoHandler::OnDeleteRecords(
     }
     OnDeleteRecordsPhotosReqBody reqBody;
     OnDeleteRecordsPhotosRespBody resp;
+    resp.failSize = 0;
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_DATA_MODIFY, userId_};
     for (auto &entry : map) {
         const MDKRecordOperResult &result = entry.second;
@@ -506,6 +510,7 @@ int32_t CloudMediaPhotoHandler::OnCopyRecords(const std::map<std::string, MDKRec
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_COPY_RECORDS);
     FailedSizeResp resp;
+    resp.failedSize = 0;
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, req,
         resp);
     failSize = resp.failedSize;
