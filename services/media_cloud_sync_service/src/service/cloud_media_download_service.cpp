@@ -355,7 +355,10 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
         if (isLivePhoto) {
             std::string sourceImage = CloudMediaSyncUtils::GetSourceMovingPhotoImagePath(assetData.path);
             std::string sourceVideo = CloudMediaSyncUtils::GetSourceMovingPhotoVideoPath(assetData.path);
-            return SliceAssetFile(rawFilePath, sourceImage, sourceVideo, "");
+            int32_t ret = SliceAssetFile(rawFilePath, sourceImage, sourceVideo, "");
+            CHECK_AND_PRINT_LOG(ret == E_OK,
+                "SliceRawFile Failed. rawFilePath: %{public}s, sourceImage: %{public}s, sourceVideo: %{public}s",
+                rawFilePath.c_str(), sourceImage.c_str(), sourceVideo.c_str());
         } else {
             MEDIA_WARN_LOG("OnDownloadAsset need slice raw, but file is not live photo");
         }
