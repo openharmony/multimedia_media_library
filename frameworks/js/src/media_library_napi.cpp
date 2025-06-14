@@ -7654,7 +7654,7 @@ static void JSGetPhotoAlbumsByIdsExecute(napi_env env, void *data)
     shared_ptr<DataShareResultSet> resultSet;
     reqBody.predicates = context->predicates;
     reqBody.columns = context->fetchColumn;
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUEUE_GET_ALBUMS_BY_IDS);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_GET_ALBUMS_BY_IDS);
     int errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
     resultSet = rspBody.resultSet;
 
@@ -9404,7 +9404,7 @@ static void JSStartAssetAnalysisExecute(napi_env env, void *data)
     }
 
     context->taskId = ForegroundAnalysisMeta::GetIncTaskId();
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_START_ASSET_ANALYSIS);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS);
     StartAssetAnalysisReqBody reqBody;
     StartAssetAnalysisRspBody rspBody;
     std::vector<std::string> fileIds;

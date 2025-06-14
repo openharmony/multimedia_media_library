@@ -27,9 +27,11 @@ ohos_unittest("media_library_cloud_sync_test") {
     "../medialibrary_unittest_utils/include/database",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/orm",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/orm/po",
+    "${MEDIALIB_TEST_PATH}/unittest/get_self_permissions/include/",
   ]
 
   sources = [
+    "${MEDIALIB_TEST_PATH}/unittest/get_self_permissions/src/get_self_permissions.cpp",
     "./src/cloud_media_data_client_test.cpp",
     "./src/database_data_mock_test.cpp",
   ]
@@ -38,10 +40,14 @@ ohos_unittest("media_library_cloud_sync_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync:media_library_cloud_sync",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_NATIVE_PATH}/media_library_asset_manager:media_library_asset_manager",
   ]
 
   external_deps = [
     "ability_runtime:ability_manager",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken_shared",
+    "access_token:libtokensetproc_shared",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "data_share:datashare_provider",

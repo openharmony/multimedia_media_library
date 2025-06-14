@@ -444,7 +444,7 @@ static void GetCloudMediaAssetStatusExecute(napi_env env, void* data)
     auto* context = static_cast<CloudMediaAssetAsyncContext*>(data);
     GetCloudMediaAssetStatusReqBody reqBody;
     GetCloudMediaAssetStatusReqBody rspBody;
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_GET_CLOUDMEDIA_ASSET_STATUS);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_ASSET_STATUS);
     IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
 
     NAPI_INFO_LOG("Get cloud media asset, res: %{public}s.", rspBody.status.c_str());

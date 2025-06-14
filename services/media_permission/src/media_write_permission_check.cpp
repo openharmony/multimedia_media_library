@@ -167,8 +167,7 @@ int32_t ShortTermWritePermCheck::CheckPermission(uint32_t businessCode, const Pe
 int32_t DeprecatedWritePermCheck::CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data)
 {
     MEDIA_INFO_LOG("DeprecatedWritePermCheck enter, API code=%{public}d", businessCode);
-    if (!PermissionCheck::deprecatedWritePermissionSet.empty() &&
-        PermissionCheck::deprecatedWritePermissionSet.find(businessCode) !=
+    if (PermissionCheck::deprecatedWritePermissionSet.find(businessCode) ==
         PermissionCheck::deprecatedWritePermissionSet.end()) {
         MEDIA_INFO_LOG("Unable to use deprecated write permission");
         return E_PERMISSION_DENIED;

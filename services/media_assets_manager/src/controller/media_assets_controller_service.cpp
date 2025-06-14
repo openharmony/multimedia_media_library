@@ -336,23 +336,23 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAssetsControllerService::StopThumbnailCreationTask
     },
     {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_IS_EDITED),
+        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_IS_EDITED),
         &MediaAssetsControllerService::IsEdited
     },
     {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_REQUEST_EDIT_DATA),
+        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_REQUEST_EDIT_DATA),
         &MediaAssetsControllerService::RequestEditData
     },
     {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_GET_EDIT_DATA),
+        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_EDIT_DATA),
         &MediaAssetsControllerService::GetEditData
     },
     {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_GET_CLOUDMEDIA_ASSET_STATUS),
+        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_ASSET_STATUS),
         &MediaAssetsControllerService::GetCloudMediaAssetStatus
     },
     {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_START_ASSET_ANALYSIS),
+        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS),
         &MediaAssetsControllerService::StartAssetAnalysis
     },
     {
