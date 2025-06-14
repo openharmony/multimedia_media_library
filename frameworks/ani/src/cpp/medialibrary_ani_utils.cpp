@@ -723,18 +723,12 @@ ani_status MediaLibraryAniUtils::ToFileAssetAniArray(ani_env *env, std::vector<s
     CHECK_STATUS_RET(FileAssetAni::InitFileAssetAniMethod(env, ResultNapiType::TYPE_PHOTOACCESS_HELPER,
         photoAccessAniMethod), "Init photoAccessAniMethod failed");
 
-    FileAssetAniMethod userFileAniMethod;
-    CHECK_STATUS_RET(FileAssetAni::InitFileAssetAniMethod(env, ResultNapiType::TYPE_USERFILE_MGR,
-        userFileAniMethod), "Init userFileAniMethod failed");
-
     for (size_t i = 0; i < array.size(); ++i) {
         FileAssetAni* fileAssetAni = FileAssetAni::CreateFileAsset(env, array[i]);
         ani_object value = nullptr;
         if (fileAssetAni->GetFileAssetInstance()->GetResultNapiType() ==
             ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
             value = FileAssetAni::Wrap(env, fileAssetAni, photoAccessAniMethod);
-        } else {
-            value = FileAssetAni::Wrap(env, fileAssetAni, userFileAniMethod);
         }
         CHECK_COND_RET(value != nullptr, ANI_ERROR, "CreatePhotoAsset failed");
         CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, setMethod, (ani_int)i, value),
