@@ -184,6 +184,7 @@ static std::string GetVideoCachePath(const std::string &filePath)
     if (strncmp(resolvedPath, cachePath.c_str(), cachePath.size()) != 0) {
         MEDIA_ERR_LOG("GetVideoCachePath Invalid videoCachePath, path: %{public}s",
             MediaFileUtils::DesensitizePath(cachePath).c_str());
+        free(resolvedPath);
         return result;
     }
     free(resolvedPath);
