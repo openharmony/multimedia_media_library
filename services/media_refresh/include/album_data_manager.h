@@ -27,8 +27,9 @@
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
+#define EXPORT __attribute__ ((visibility ("default")))
 
-class AlbumDataManager : public AccurateRefreshDataManager<AlbumChangeInfo, AlbumChangeData> {
+class EXPORT AlbumDataManager : public AccurateRefreshDataManager<AlbumChangeInfo, AlbumChangeData> {
 public:
     AlbumDataManager() : AlbumDataManager(nullptr) {}
     AlbumDataManager(std::shared_ptr<TransactionOperations> trans)
@@ -37,6 +38,7 @@ public:
     // 增删场景下初始化数据
     int32_t InitAlbumInfos(const std::vector<PhotoAlbumSubType> &systemTypes, const std::vector<int> &albumIds);
     int32_t UpdateModifiedDatas() override;
+    int32_t UpdateCommonModifiedDatas(const std::vector<int32_t> &keys) override;
     std::map<int32_t, AlbumChangeInfo>  GetInitAlbumInfos();
     std::vector<int32_t> GetInitKeys() override;
 

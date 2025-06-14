@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#define MLOG_TAG "AccurateRefresh::ALbumChangeNotifyExecution"
+#define MLOG_TAG "AccurateRefresh::AlbumChangeNotifyExecution"
 
 #include "album_change_notify_execution.h"
 #include "accurate_debug_log.h"
@@ -24,7 +24,7 @@ using namespace OHOS::Media::Notification;
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
-void ALbumChangeNotifyExecution::Notify(vector<AlbumChangeData> changeDatas)
+void AlbumChangeNotifyExecution::Notify(vector<AlbumChangeData> changeDatas)
 {
     for (auto &changeData : changeDatas) {
         if (changeData.operation_ == RDB_OPERATION_ADD) {
@@ -44,7 +44,7 @@ void ALbumChangeNotifyExecution::Notify(vector<AlbumChangeData> changeDatas)
                 continue;
             }
 
-            // TOBE 确认逻辑
+            // 相册删除逻辑
             bool isDelete = changeData.infoAfterChange_.dirty_ == static_cast<int32_t>(DirtyType::TYPE_DELETED) &&
                 changeData.infoBeforeChange_.dirty_ != static_cast<int32_t>(DirtyType::TYPE_DELETED);
             if (isDelete) {
@@ -74,7 +74,7 @@ void ALbumChangeNotifyExecution::Notify(vector<AlbumChangeData> changeDatas)
     }
 }
 
-void ALbumChangeNotifyExecution::InsertNotifyInfo(AlbumRefreshOperation operation, const AlbumChangeData &changeData)
+void AlbumChangeNotifyExecution::InsertNotifyInfo(AlbumRefreshOperation operation, const AlbumChangeData &changeData)
 {
     auto iter = notifyInfos_.find(operation);
     if (iter == notifyInfos_.end()) {

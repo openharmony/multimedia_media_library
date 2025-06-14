@@ -32,6 +32,40 @@ int32_t AssetDataManager::UpdateModifiedDatas()
     return ACCURATE_REFRESH_RET_OK;
 }
 
+int32_t AssetDataManager::UpdateCommonModifiedDatas(const std::vector<int32_t> &keys)
+{
+    ACCURATE_DEBUG("keys size: %{public}zu", keys.size());
+    for (auto key : keys) {
+        auto iter = changeDatas_.find(key);
+        if (iter == changeDatas_.end()) {
+            MEDIA_WARN_LOG("not init info for update common modified data.");
+            continue;
+        }
+        PhotoAssetChangeData &assetChangeData = iter->second;
+        assetChangeData.thumbnailChangeStatus_ = UpdateThumbnailChangeStatus(assetChangeData);
+    }
+    return ACCURATE_REFRESH_RET_OK;
+}
+
+int32_t AssetDataManager::UpdateThumbnailChangeStatus(PhotoAssetChangeData &assetChangeData)
+{
+    int32_t visibleAfter = assetChangeData.infoAfterChange_.thumbnailVisible_;
+    if (visibleAfter == 0) {
+        return ThumbnailChangeStatus::THUMBNAIL_NOT_EXISTS;
+    }
+    int32_t visibleBefore = assetChangeData.infoBeforeChange_.thumbnailVisible_;
+    if (visibleBefore != visibleAfter) {
+        return ThumbnailChangeStatus::THUMBNAIL_ADD;
+    }
+    int64_t readyBefore = assetChangeData.infoBeforeChange_.thumbnailReady_;
+    int64_t readyAfter = assetChangeData.infoAfterChange_.thumbnailReady_;
+    if (readyBefore == readyAfter) {
+        return ThumbnailChangeStatus::THUMBNAIL_NOT_CHANGE;
+    } else {
+        return ThumbnailChangeStatus::THUMBNAIL_UPDATE;
+    }
+}
+
 int32_t AssetDataManager::GetChangeInfoKey(const PhotoAssetChangeInfo &changeInfo)
 {
     return changeInfo.fileId_;
@@ -43,7 +77,6 @@ std::vector<PhotoAssetChangeInfo> AssetDataManager::GetInfoByKeys(const std::vec
     vector<string> fileIdStrs;
     for (const auto &fileId : fileIds) {
         fileIdStrs.push_back(to_string(fileId));
-        ACCURATE_DEBUG("fileId: %{public}d", fileId);
     }
     rbdPredicates.In(PhotoColumn::MEDIA_ID, fileIdStrs);
     return GetInfosByPredicates(rbdPredicates);
@@ -60,10 +93,7 @@ vector<PhotoAssetChangeInfo> AssetDataManager::GetInfosByPredicates(const AbsRdb
         resultSet = rdbStore->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetClolumns());
     }
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, vector<PhotoAssetChangeInfo>(), "resultSet null");
-
-    ACCURATE_DEBUG("start");
     auto ret = GetInfosByResult(resultSet);
-    ACCURATE_DEBUG("end, size:%{public}zu", ret.size());
     resultSet->Close();
     return ret;
 }

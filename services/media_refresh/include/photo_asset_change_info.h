@@ -27,21 +27,22 @@
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
+#define EXPORT __attribute__ ((visibility ("default")))
 
-class PhotoAssetChangeInfo : public Parcelable {
+class EXPORT PhotoAssetChangeInfo : public Parcelable {
 public:
     PhotoAssetChangeInfo() { }
     PhotoAssetChangeInfo(int32_t fileId, std::string uri, std::string dateDay, std::string ownerAlbumUri,
         bool isFavorite, int32_t mediaType, bool isHidden, int64_t dateTrashedMs, int32_t strongAssociation,
-        int32_t thumbnailVisible, int64_t dateAddedMs, int64_t dateTakenMs,
-        int32_t subType, int32_t syncStatus, int32_t cleanFlag, int32_t timePending, bool isTemp,
-        int32_t burstCoverLevel, int32_t ownerAlbumId, int64_t hiddenTime, std::string displayName,
+        int32_t thumbnailVisible, int64_t dateAddedMs, int64_t dateTakenMs, int32_t subType,
+        int32_t syncStatus, int32_t cleanFlag, int32_t timePending, bool isTemp, int32_t burstCoverLevel,
+        int32_t ownerAlbumId, int64_t hiddenTime, int64_t thumbnailReady, std::string displayName,
         std::string path) : fileId_(fileId), uri_(uri), dateDay_(dateDay), ownerAlbumUri_(ownerAlbumUri),
         isFavorite_(isFavorite), mediaType_(mediaType), isHidden_(isHidden), dateTrashedMs_(dateTrashedMs),
         strongAssociation_(strongAssociation), thumbnailVisible_(thumbnailVisible), dateAddedMs_(dateAddedMs),
         dateTakenMs_(dateTakenMs), subType_(subType), syncStatus_(syncStatus), cleanFlag_(cleanFlag),
         timePending_(timePending), isTemp_(isTemp), burstCoverLevel_(burstCoverLevel), ownerAlbumId_(ownerAlbumId),
-        hiddenTime_(hiddenTime), displayName_(displayName), path_(path) {}
+        hiddenTime_(hiddenTime), thumbnailReady_(thumbnailReady), displayName_(displayName), path_(path) {}
         
 public:
     int32_t fileId_ = INVALID_INT32_VALUE;
@@ -50,9 +51,9 @@ public:
 
     // 相册相关
     std::string ownerAlbumUri_; // todo 或者使用ownerAlbumId
-    bool isFavorite_;
+    bool isFavorite_ = false;
     int32_t mediaType_ = INVALID_INT32_VALUE;
-    bool isHidden_;
+    bool isHidden_ = false;
     int64_t dateTrashedMs_ = INVALID_INT64_VALUE;
     int32_t strongAssociation_ = INVALID_INT32_VALUE;
     int32_t thumbnailVisible_ = INVALID_INT32_VALUE;
@@ -65,10 +66,11 @@ public:
     int32_t syncStatus_ = INVALID_INT32_VALUE;
     int32_t cleanFlag_ = INVALID_INT32_VALUE;
     int32_t timePending_ = INVALID_INT32_VALUE;
-    bool isTemp_;
+    bool isTemp_ = false;
     int32_t burstCoverLevel_ = INVALID_INT32_VALUE;
     int32_t ownerAlbumId_ = INVALID_INT32_VALUE;
     int64_t hiddenTime_ = INVALID_INT64_VALUE;
+    int64_t thumbnailReady_ = INVALID_INT64_VALUE;
     std::string displayName_ = EMPTY_STR;
     std::string path_ = EMPTY_STR;
 
@@ -101,12 +103,18 @@ enum ThumbnailChangeStatus : int32_t {
     THUMBNAIL_UPDATE,
 };
 
-class PhotoAssetChangeData : public AccurateRefreshChangeData<PhotoAssetChangeInfo> {
+class EXPORT PhotoAssetChangeData : public AccurateRefreshChangeData<PhotoAssetChangeInfo> {
 public:
     bool Marshalling(Parcel &parcel) const override;
     bool Marshalling(Parcel &parcel, bool isSystem) const;
     bool ReadFromParcel(Parcel &parcel) override;
     static std::shared_ptr<PhotoAssetChangeData> Unmarshalling(Parcel &parcel);
+    std::string ToString(bool isDetail = false) const override
+    {
+        return AccurateRefreshChangeData::ToString() + ", isContentChanged_: " + std::to_string(isContentChanged_) +
+            ", thumbnailChangeStatus_: " + std::to_string(thumbnailChangeStatus_);
+    }
+
 public:
     bool isContentChanged_ = false;
     int32_t thumbnailChangeStatus_ = 0;

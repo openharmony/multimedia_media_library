@@ -48,6 +48,9 @@
 #include "media_gallery_sync_notify.h"
 #include "cloud_media_sync_const.h"
 #include "cloud_media_dao_utils.h"
+#include "accurate_common_data.h"
+#include "asset_accurate_refresh.h"
+#include "album_accurate_refresh.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -73,16 +76,7 @@ int32_t CloudMediaPhotosDao::BatchInsertFile(std::map<std::string, int> &recordA
         int64_t rowId = 0;
         std::vector<NativeRdb::ValuesBucket> insertFilesTmp(insertFiles);
         ret = BatchInsertQuick(rowId, PhotoColumn::PHOTOS_TABLE, insertFiles);
-        if (ret != E_OK) {
-            MEDIA_INFO_LOG("BatchInsertFile failed, begin to call BatchInsert");
-            insertFiles.swap(insertFilesTmp);
-            rowId = 0;
-            ret = this->BatchInsert(rowId, PhotoColumn::PHOTOS_TABLE, insertFiles);
-        }
-        if (ret == E_STOP) {
-            MEDIA_ERR_LOG("BatchInsertFile E_STOP failed");
-            return ret;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret != E_STOP, ret, "BatchInsertFile E_STOP failed");
         if (ret != E_OK) {
             MEDIA_INFO_LOG("BatchInsertFile batch insert failed return %{public}d", ret);
             /* 打点 UpdateMetaStat(INDEX_DL_META_ERROR_RDB, records->size() - params.insertFiles.size()); */
@@ -170,44 +164,28 @@ int32_t CloudMediaPhotosDao::BatchInsertAssetAnalysisMaps(std::map<std::string, 
 int32_t CloudMediaPhotosDao::BatchInsertQuick(
     int64_t &outRowId, const std::string &table, std::vector<NativeRdb::ValuesBucket> &initialBatchValues)
 {
-    const uint32_t TRY_TIMES = 15;
     std::vector<NativeRdb::ValuesBucket> succeedValues;
     if (initialBatchValues.size() == 0) {
         return E_OK;
     }
-
-    uint32_t tryCount = 0;
-    int32_t ret = E_RDB;
-    while (tryCount <= TRY_TIMES && ret != E_OK) {
-        tryCount++;
-        if (tryCount > 1) {
-            MEDIA_INFO_LOG("batch insert fail try next time, retry time is tryCount %{public}d", tryCount);
-        }
-        TransactionOperations rdbTransaction(__func__);
-        int32_t rdbRet = rdbTransaction.Start();
-        if (rdbRet != E_OK) {
-            MEDIA_ERR_LOG("rdb create transaction failed !");
-            continue;
-        }
-        ret = rdbTransaction.BatchInsert(outRowId, table, initialBatchValues);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("execute transaction batch insert failed !");
-            continue;
-        }
-        rdbTransaction.Finish();
-    }
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("batch insert fail, try too many times, %{public}zu is not inserted", initialBatchValues.size());
-        initialBatchValues.clear();
-    }
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    AccurateRefresh::AssetAccurateRefresh photoRefresh(trans);
+    std::function<int(void)> transFunc = [&]()->int {
+        auto retInner = photoRefresh.BatchInsert(outRowId, PhotoColumn::PHOTOS_TABLE, initialBatchValues);
+        CHECK_AND_RETURN_RET_LOG(
+            retInner == E_OK, retInner, "Failed to BatchInsertQuick func, ret=%{public}d", retInner);
+        return retInner;
+    };
+    int32_t ret = trans->RetryTrans(transFunc);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to BatchInsertQuick, ret=%{public}d", ret);
+    photoRefresh.RefreshAlbum();
+    photoRefresh.Notify();
     return ret;
 }
 
 int32_t CloudMediaPhotosDao::BatchInsert(
     int64_t &outRowId, const std::string &table, std::vector<NativeRdb::ValuesBucket> &initialBatchValues)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
     const uint32_t TRY_TIMES = 15;
     std::vector<NativeRdb::ValuesBucket> succeedValues;
     int32_t ret = E_OK;
@@ -215,10 +193,11 @@ int32_t CloudMediaPhotosDao::BatchInsert(
     if (initialBatchValues.size() == 0) {
         return ret;
     }
+    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
     while (tryCount <= TRY_TIMES) {
         for (auto val = initialBatchValues.begin(); val != initialBatchValues.end();) {
             {
-                ret = rdbStore->Insert(outRowId, table, *val);
+                ret = albumRefresh.Insert(outRowId, table, *val);
             }
             if (ret == E_OK) {
                 succeedValues.push_back(*val);
@@ -238,6 +217,7 @@ int32_t CloudMediaPhotosDao::BatchInsert(
         MEDIA_ERR_LOG("batch insert fail, try too many times, %{public}zu is not inserted", initialBatchValues.size());
     }
     if (!succeedValues.empty()) {
+        albumRefresh.Notify();
         ret = E_OK;
     }
     initialBatchValues.swap(succeedValues);
@@ -246,9 +226,6 @@ int32_t CloudMediaPhotosDao::BatchInsert(
 
 int32_t CloudMediaPhotosDao::UpdateAssetInPhotoMap(const int32_t &fileId, set<int> cloudMapIds)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
-
     std::map<int32_t, int32_t> localMapIds;
     this->commonDao_.QueryLocalMap(fileId, localMapIds);
     std::vector<NativeRdb::ValuesBucket> pmList;
@@ -274,9 +251,12 @@ int32_t CloudMediaPhotosDao::UpdateAssetInPhotoMap(const int32_t &fileId, set<in
     }
     std::string deleteSql = "Delete FROM PhotoMap WHERE map_asset = " + to_string(fileId) +
                             " AND dirty != 0 AND map_album NOT IN ( " + ss.str() + " )";
-    if (rdbStore->ExecuteSql(deleteSql, bindArgs) != E_OK) {
-        MEDIA_ERR_LOG("photo %{public}d delete photomap failed", fileId);
-    }
+    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
+    int32_t ret = albumRefresh.Init(deleteSql, bindArgs);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_OK, "UpdateAssetInPhotoMap init ExecuteSql failed %{public}d", ret);
+    ret = albumRefresh.ExecuteSql(deleteSql, bindArgs, AccurateRefresh::RdbOperation::RDB_OPERATION_REMOVE);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_OK, "UpdateAssetInPhotoMap do ExecuteSql failed %{public}d", ret);
+    albumRefresh.Notify();
     return E_OK;
 }
 
@@ -319,42 +299,51 @@ int32_t CloudMediaPhotosDao::GetFieldIntValue(
 int CloudMediaPhotosDao::UpdateProxy(int &changedRows, const NativeRdb::ValuesBucket &row,
     const NativeRdb::AbsRdbPredicates &predicates, const std::string &cloudId)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    AccurateRefresh::AssetAccurateRefresh photoRefresh(trans);
     std::function<int(void)> func = [&]() -> int {
-        int32_t retInner = rdbStore->Update(changedRows, row, predicates);
+        int32_t retInner = photoRefresh.Update(changedRows, row, predicates);
         CHECK_AND_RETURN_RET_LOG(retInner == E_OK, retInner, "Failed to UpdateProxy func, ret=%{public}d", retInner);
         CHECK_AND_RETURN_RET_INFO_LOG(changedRows > 0, E_OK, "No photo need to update dirty.");
         // 获取 NativeRdb::ValuesBucket 的 dirty 值，重置该 dirty；需要根据入参，不能直接修改为 0/同步状态
         NativeRdb::AbsRdbPredicates dirtyPredicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
         dirtyPredicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
-        int32_t dirty =
+        int32_t dirtyValue =
             this->GetFieldIntValue(row, PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
-        return this->UpdatePhotosSynced(dirtyPredicates, dirty);
+        NativeRdb::ValuesBucket values;
+        // 根据调用方场景，重置脏状态；非恒定为 DirtyType::TYPE_SYNCED
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, dirtyValue);
+        int32_t dirtyChangedRows = DEFAULT_VALUE;
+        return photoRefresh.Update(dirtyChangedRows, values, dirtyPredicates);
     };
     int ret = trans->RetryTrans(func);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to UpdateProxy, ret=%{public}d", ret);
+    photoRefresh.RefreshAlbum();
+    photoRefresh.Notify();
     return E_OK;
 }
 
 int CloudMediaPhotosDao::UpdateProxy(int &changedRows, const std::string &table, const NativeRdb::ValuesBucket &row,
     const std::string &whereClause, const std::vector<std::string> &args)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    AccurateRefresh::AssetAccurateRefresh photoRefresh(trans);
     std::function<int(void)> func = [&]() -> int {
-        int32_t retInner = rdbStore->Update(changedRows, table, row, whereClause, args);
+        int32_t retInner = photoRefresh.Update(changedRows, table, row, whereClause, args);
         CHECK_AND_RETURN_RET_LOG(retInner == E_OK, retInner, "Failed to UpdateProxy func, ret=%{public}d", retInner);
         CHECK_AND_RETURN_RET_INFO_LOG(changedRows > 0, E_OK, "No photo need to update dirty.");
         // 获取 NativeRdb::ValuesBucket 的 dirty 值，重置该 dirty；需要根据入参，不能直接修改为 0/同步状态
-        int32_t dirty =
-            this->GetFieldIntValue(row, PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
-        return this->UpdatePhotosSynced(table, whereClause, args, dirty);
+        int32_t dirtyValue =
+                this->GetFieldIntValue(row, PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
+        NativeRdb::ValuesBucket values;
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, dirtyValue);
+        int32_t dirtyChangedRows = DEFAULT_VALUE;
+        return photoRefresh.Update(dirtyChangedRows, table, values, whereClause, args);
     };
     int ret = trans->RetryTrans(func);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to UpdateProxy, ret=%{public}d", ret);
+    photoRefresh.RefreshAlbum();
+    photoRefresh.Notify();
     return E_OK;
 }
 
@@ -1559,15 +1548,6 @@ void CloudMediaPhotosDao::UpdateAllAlbumsCountForCloud(const std::vector<std::st
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "UpdateAllAlbumsCountForCloud Failed to get rdbStore.");
 
-    std::vector<std::string> allRefreshAlbum = {ALL_SYSTEM_PHOTO_ALBUM};
-    if (albums.empty()) {
-        allRefreshAlbum.push_back(to_string(PhotoAlbumSubType::USER_GENERIC));
-        allRefreshAlbum.push_back(to_string(PhotoAlbumSubType::SOURCE_GENERIC));
-        UpdateAlbumCountInternal(allRefreshAlbum);
-    } else {
-        UpdateAlbumCountInternal(ALL_SYSTEM_PHOTO_ALBUM);
-        UpdateAlbumReplacedSignal(albums);
-    }
     std::vector<std::string> subtype = {"4101"};
     MediaLibraryRdbUtils::UpdateAnalysisAlbumCountInternal(rdbStore, subtype);
 }
@@ -1620,19 +1600,19 @@ int32_t CloudMediaPhotosDao::SetRetry(const std::string &cloudId)
 
 int32_t CloudMediaPhotosDao::DeleteLocalByCloudId(const std::string &cloudId)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
-
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
 
     int32_t deletedRows = DEFAULT_VALUE;
-    int32_t ret = rdbStore->Delete(deletedRows, predicates);
+    AccurateRefresh::AssetAccurateRefresh photoRefresh;
+    int32_t ret = photoRefresh.Delete(predicates, deletedRows);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK && deletedRows > 0,
         E_CLOUDSYNC_RDB_DELETE_FAILED,
         "Failed to DeleteLocalByCloudId, ret: %{public}d, deletedRows: %{public}d.",
         ret,
         deletedRows);
+    photoRefresh.RefreshAlbum();
+    photoRefresh.Notify();
     return ret;
 }
 

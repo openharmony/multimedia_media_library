@@ -47,6 +47,7 @@
 #include "media_refresh_album_column.h"
 #include "cloud_media_dao_const.h"
 #include "media_gallery_sync_notify.h"
+#include "accurate_common_data.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -133,10 +134,9 @@ int32_t CloudMediaAlbumDao::QuerySameNameAlbum(PhotoAlbumDto &record, int32_t &a
     return E_OK;
 }
 
-int32_t CloudMediaAlbumDao::ConflictWithPhysicalAlbum(PhotoAlbumDto &record)
+int32_t CloudMediaAlbumDao::ConflictWithPhysicalAlbum(PhotoAlbumDto &record,
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Conflict physical album Failed to get rdbStore.");
     int32_t albumId = -1;
     std::string newAlbumName;
     int ret = QuerySameNameAlbum(record, albumId, newAlbumName);
@@ -151,9 +151,9 @@ int32_t CloudMediaAlbumDao::ConflictWithPhysicalAlbum(PhotoAlbumDto &record)
     NativeRdb::ValuesBucket values;
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, newAlbumName);
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/Users/" + newAlbumName);
-    ret = rdbStore->Update(
+    ret = albumRefreshHandle->Update(
         changedRows, PhotoAlbumColumns::TABLE, values, PhotoAlbumColumns::ALBUM_ID + " = ?", {std::to_string(albumId)});
-    if (ret != E_OK) {
+    if (ret != AccurateRefresh::ACCURATE_REFRESH_RET_OK) {
         MEDIA_ERR_LOG("FixData: updata local album name fail");
         return E_RDB;
     } else if (changedRows == 0) {
@@ -164,14 +164,12 @@ int32_t CloudMediaAlbumDao::ConflictWithPhysicalAlbum(PhotoAlbumDto &record)
     return ret;
 }
 
-int32_t CloudMediaAlbumDao::InsertCloudByLPath(PhotoAlbumDto &record)
+int32_t CloudMediaAlbumDao::InsertCloudByLPath(PhotoAlbumDto &record,
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(
-        rdbStore != nullptr, E_RDB_STORE_NULL, "Insert Cloud LPath Album Record Failed to get rdbStore.");
     MEDIA_INFO_LOG("FixData: Insert Cloud By LPath of record %{public}s", record.cloudId.c_str());
     /* handle Physical album conflic, if same album name */
-    int32_t ret = ConflictWithPhysicalAlbum(record);
+    int32_t ret = ConflictWithPhysicalAlbum(record, albumRefreshHandle);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("rename fail ret is %{public}d", ret);
         return ret;
@@ -185,6 +183,10 @@ int32_t CloudMediaAlbumDao::InsertCloudByLPath(PhotoAlbumDto &record)
         }
         predicates.EqualTo(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, record.bundleName);
     }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(
+        rdbStore != nullptr, E_RDB_STORE_NULL, "Insert Cloud LPath Album Record Failed to get rdbStore.");
     auto resultSet = rdbStore->Query(predicates, {PhotoAlbumColumns::ALBUM_ID});
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "resultset is null");
     int rowCount = 0;
@@ -194,27 +196,29 @@ int32_t CloudMediaAlbumDao::InsertCloudByLPath(PhotoAlbumDto &record)
         return E_RDB;
     }
     if (rowCount == 0) {
-        return InsertAlbums(record);
+        return InsertAlbums(record, albumRefreshHandle);
     }
     resultSet->GoToNextRow();
     int albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
     if (albumId < 0) {
         return E_RDB;
     }
-    return UpdateCloudAlbum(record, PhotoAlbumColumns::ALBUM_ID, std::to_string(albumId));
+    return UpdateCloudAlbum(record, PhotoAlbumColumns::ALBUM_ID, std::to_string(albumId), albumRefreshHandle);
 }
 
-int32_t CloudMediaAlbumDao::InsertCloudByCloudId(PhotoAlbumDto &record)
+int32_t CloudMediaAlbumDao::InsertCloudByCloudId(PhotoAlbumDto &record,
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle)
 {
     MEDIA_INFO_LOG("insert of record %{public}s", record.cloudId.c_str());
     if (IsConflict(record)) {
-        int32_t ret = MergeAlbumOnConflict(record);
+        int32_t ret = MergeAlbumOnConflict(record, albumRefreshHandle);
         if (ret != E_OK) {
             MEDIA_ERR_LOG("merge album err %{public}d", ret);
         }
         return ret;
     }
-    return InsertAlbums(record);
+    int32_t ret = InsertAlbums(record, albumRefreshHandle);
+    return ret;
 }
 
 std::tuple<std::shared_ptr<NativeRdb::ResultSet>, int> CloudMediaAlbumDao::QueryLocalMatchAlbum(std::string &cloudId)
@@ -243,26 +247,23 @@ std::tuple<std::shared_ptr<NativeRdb::ResultSet>, int> CloudMediaAlbumDao::Query
     return {std::move(resultSet), rowCount};
 }
 
-int32_t CloudMediaAlbumDao::UpdateCloudAlbumSynced(const std::string &field, const std::string &value)
+int32_t CloudMediaAlbumDao::UpdateCloudAlbumSynced(const std::string &field, const std::string &value,
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle)
 {
     MEDIA_INFO_LOG("UpdateCloudAlbumDirty, field: %{public}s, value: %{public}s", field.c_str(), value.c_str());
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
     int32_t changedRows = DEFAULT_VALUE;
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
-    int32_t ret = rdbStore->Update(changedRows, PhotoAlbumColumns::TABLE, values, field + " = ?", {value});
-    CHECK_AND_RETURN_RET_LOG(
-        ret == E_OK, E_CLOUDSYNC_RDB_UPDATE_FAILED, "Failed to UpdateCloudAlbumDirty, ret: %{public}d", ret);
+    int32_t ret = albumRefreshHandle->Update(changedRows, PhotoAlbumColumns::TABLE, values, field + " = ?", {value});
+    CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_RDB,
+        "Insert pull record failed, rdb ret = %{public}d", ret);
     CHECK_AND_PRINT_LOG(changedRows > 0, "Check updateRows: %{public}d.", changedRows);
     return ret;
 }
 
-int32_t CloudMediaAlbumDao::UpdateCloudAlbumInner(
-    PhotoAlbumDto &record, const std::string &field, const std::string &value)
+int32_t CloudMediaAlbumDao::UpdateCloudAlbumInner(PhotoAlbumDto &record, const std::string &field,
+    const std::string &value, std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Update Cloud Album Failed to get rdbStore.");
     int32_t changedRows;
     NativeRdb::ValuesBucket values;
     if (!record.albumName.empty()) {
@@ -288,24 +289,36 @@ int32_t CloudMediaAlbumDao::UpdateCloudAlbumInner(
     values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     values.PutString(PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId);
     values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, record.coverUriSource);
-    ret = rdbStore->Update(changedRows, PhotoAlbumColumns::TABLE, values, field + " = ?", {value});
-    CHECK_AND_RETURN_RET_LOG(
-        ret == E_OK, E_CLOUDSYNC_RDB_UPDATE_FAILED, "Failed to UpdateCloudAlbumInner, ret: %{public}d", ret);
+    ret = albumRefreshHandle->Update(changedRows, PhotoAlbumColumns::TABLE, values, field + " = ?", {value});
+    CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_RDB,
+        "Insert pull record failed, rdb ret = %{public}d", ret);
     return E_OK;
 }
 
-int32_t CloudMediaAlbumDao::UpdateCloudAlbum(PhotoAlbumDto &record, const std::string &field, const std::string &value)
+int32_t CloudMediaAlbumDao::UpdateCloudAlbum(PhotoAlbumDto &record, const std::string &field, const std::string &value,
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle)
 {
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     std::function<int(void)> func = [&]() -> int {
-        int32_t retInner = this->UpdateCloudAlbumInner(record, field, value);
+        int32_t retInner = this->UpdateCloudAlbumInner(record, field, value, albumRefreshHandle);
         CHECK_AND_RETURN_RET(retInner == E_OK, retInner);
-        return this->UpdateCloudAlbumSynced(field, value);
+        return this->UpdateCloudAlbumSynced(field, value, albumRefreshHandle);
     };
-    int ret = trans->RetryTrans(func);
+    int32_t ret = trans->RetryTrans(func);
     CHECK_AND_RETURN_RET_LOG(
         ret == E_OK, E_CLOUDSYNC_RDB_UPDATE_FAILED, "Failed to UpdateCloudAlbum, ret: %{public}d", ret);
     return ret;
+}
+
+void CloudAlbumDeletedNotify(std::vector<AccurateRefresh::AlbumChangeData> &albumDatas)
+{
+    MEDIA_INFO_LOG("enter CloudAlbumDeletedNotify");
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh =
+        std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
+    CHECK_AND_RETURN_LOG(albumRefresh != nullptr, "Delete Cloud Album Failed to get albumRefresh.");
+    CHECK_AND_RETURN_LOG(albumRefresh->Init() == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
+        "fail to execute albumRefresh init");
+    albumRefresh->Notify(albumDatas);
 }
 
 int32_t CloudMediaAlbumDao::OnDeleteAlbums(std::vector<std::string> &failedAlbumIds)
@@ -316,7 +329,12 @@ int32_t CloudMediaAlbumDao::OnDeleteAlbums(std::vector<std::string> &failedAlbum
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_SDIRTY));
     vector<string> columns = {
-        PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_CLOUD_ID};
+        PhotoAlbumColumns::ALBUM_ID,
+        PhotoAlbumColumns::ALBUM_COUNT,
+        PhotoAlbumColumns::ALBUM_CLOUD_ID,
+        PhotoAlbumColumns::ALBUM_TYPE,
+        PhotoAlbumColumns::ALBUM_SUBTYPE
+    };
 
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "OnDeleteAlbums Failed to query.");
@@ -325,16 +343,30 @@ int32_t CloudMediaAlbumDao::OnDeleteAlbums(std::vector<std::string> &failedAlbum
         resultSet->GetRowCount(rowCount) == NativeRdb::E_OK, E_ERR, "OnDeleteAlbums Failed to get rowCount.");
     MEDIA_INFO_LOG("OnDeleteAlbums GetRowCount: %{public}d", rowCount);
     NativeRdb::AbsRdbPredicates update = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
+    std::vector<AccurateRefresh::AlbumChangeData> albumDatas;
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::shared_ptr<AccurateRefresh::AlbumChangeData> changeData = make_shared<AccurateRefresh::AlbumChangeData>();
         std::string cloudId = GetStringVal(PhotoAlbumColumns::ALBUM_CLOUD_ID, resultSet);
+        int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+        int32_t albumType = GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet);
+        int32_t albumSubType = GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet);
         if (cloudId.empty()) {
             continue;
         }
+        changeData->operation_ = AccurateRefresh::RdbOperation::RDB_OPERATION_REMOVE;
+        changeData->infoBeforeChange_.albumId_ = albumId;
+        changeData->infoBeforeChange_.albumType_ = albumType;
+        changeData->infoBeforeChange_.albumSubType_ = albumSubType;
+        changeData->infoAfterChange_.albumId_ = albumId;
+        changeData->infoAfterChange_.albumType_ = albumType;
+        changeData->infoAfterChange_.albumSubType_ = albumSubType;
+        albumDatas.push_back(*changeData);
         MEDIA_DEBUG_LOG("OnDeleteAlbums Notify Delete: %{public}s", cloudId.c_str());
         MediaGallerySyncNotify::GetInstance().AddNotify(
             PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX, ChangeType::DELETE, cloudId);
     }
+    CloudAlbumDeletedNotify(albumDatas);
     MediaGallerySyncNotify::GetInstance().FinalNotify();
     return E_OK;
 }
@@ -473,10 +505,9 @@ bool CloudMediaAlbumDao::IsConflict(PhotoAlbumDto &record)
     return false;
 }
 
-int32_t CloudMediaAlbumDao::MergeAlbumOnConflict(PhotoAlbumDto &record)
+int32_t CloudMediaAlbumDao::MergeAlbumOnConflict(PhotoAlbumDto &record,
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Merge Album Conflict Failed to get rdbStore.");
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     values.PutString(PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId);
@@ -488,12 +519,12 @@ int32_t CloudMediaAlbumDao::MergeAlbumOnConflict(PhotoAlbumDto &record)
     }
 
     int32_t changedRows;
-    int32_t ret = rdbStore->Update(changedRows,
+    int32_t ret = albumRefreshHandle->Update(changedRows,
         PhotoAlbumColumns::TABLE,
         values,
         PhotoAlbumColumns::ALBUM_ID + " = ?",
         {std::to_string(record.albumId)});
-    if (ret != E_OK) {
+    if (ret != AccurateRefresh::ACCURATE_REFRESH_RET_OK) {
         MEDIA_ERR_LOG("rdb update failed, err = %{public}d", ret);
         return E_RDB;
     }
@@ -531,10 +562,9 @@ int32_t CloudMediaAlbumDao::SetSourceValues(PhotoAlbumDto &record, NativeRdb::Va
     return E_OK;
 }
 
-int32_t CloudMediaAlbumDao::InsertAlbums(PhotoAlbumDto &record)
+int32_t CloudMediaAlbumDao::InsertAlbums(PhotoAlbumDto &record,
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Insert Album Record Failed to get rdbStore.");
     MEDIA_INFO_LOG("FixData: insert of album record %{public}s", record.cloudId.c_str());
     NativeRdb::ValuesBucket values;
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, record.albumName);
@@ -559,8 +589,9 @@ int32_t CloudMediaAlbumDao::InsertAlbums(PhotoAlbumDto &record)
     values.PutInt(PhotoAlbumColumns::ALBUM_IS_LOCAL, ALBUM_FROM_CLOUD);
     /* update if a album with the same name exists? */
     int64_t rowId;
-    ret = rdbStore->Insert(rowId, PhotoAlbumColumns::TABLE, values);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_RDB, "Insert pull record failed, rdb ret = %{public}d", ret);
+    ret = albumRefreshHandle->Insert(rowId, PhotoAlbumColumns::TABLE, values);
+    CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_RDB,
+        "Insert pull record failed, rdb ret = %{public}d", ret);
     return E_OK;
 }
 
@@ -858,11 +889,10 @@ std::tuple<std::shared_ptr<NativeRdb::ResultSet>, std::map<std::string, int>> Cl
     return {std::move(resultSet), std::move(lpathRowIdMap)};
 }
 
-int32_t CloudMediaAlbumDao::DeleteCloudAlbum(const std::string &field, const std::string &value)
+int32_t CloudMediaAlbumDao::DeleteCloudAlbum(const std::string &field, const std::string &value,
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle)
 {
     MEDIA_INFO_LOG("DeleteCloudAlbum Field: %{public}s, Value: %{public}s", field.c_str(), value.c_str());
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Delete Cloud Album Failed to get rdbStore.");
     int ret = E_OK;
     int32_t changedRows;
     NativeRdb::ValuesBucket values;
@@ -873,14 +903,11 @@ int32_t CloudMediaAlbumDao::DeleteCloudAlbum(const std::string &field, const std
         MEDIA_INFO_LOG("FixData: set sdirty");
         values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_SDIRTY));
     }
-    ret = rdbStore->Update(changedRows, PhotoAlbumColumns::TABLE, values, field + " = ?", {value});
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("delete in rdb failed, ret: %{public}d", ret);
-        return E_RDB;
-    } else {
-        MEDIA_INFO_LOG(" FixData: update success, changerow is %{public}d", changedRows);
-        return E_OK;
-    }
+    ret = albumRefreshHandle->Update(changedRows, PhotoAlbumColumns::TABLE, values, field + " = ?", {value});
+    CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_RDB,
+        "delete in rdb failed, ret: %{public}d", ret);
+    MEDIA_INFO_LOG(" FixData: update success, changerow is %{public}d", changedRows);
+    return E_OK;
 }
 
 void CloudMediaAlbumDao::InsertAlbumModifyFailedRecord(const std::string &cloudId)
