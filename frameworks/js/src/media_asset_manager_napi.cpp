@@ -70,6 +70,7 @@ const int32_t HIGH_QUALITY_IMAGE = 0;
 const int32_t UUID_STR_LENGTH = 37;
 const int32_t MAX_URI_SIZE = 384; // 256 for display name and 128 for relative path
 const int32_t REQUEST_ID_MAX_LEN = 64;
+const int32_t PROGRESS_MAX = 100;
 
 const std::string HIGH_TEMPERATURE = "high_temperature";
 
@@ -1371,19 +1372,27 @@ void CallPreparedCallbackAfterProgress(napi_env env, ProgressHandler *progressHa
     DeleteAssetHandlerSafe(assetHandler, env);
 }
 
-void CallProgressCallback(napi_env env, ProgressHandler &progressHandler, int32_t process)
+void CallProgressCallback(napi_env env, ProgressHandler* progressHandler, int32_t process)
 {
+    if (progressHandler == nullptr) {
+        NAPI_ERR_LOG("progressHandler is nullptr");
+        return;
+    }
     napi_value result;
     napi_status status = napi_create_int32(env, process, &result);
     if (status != napi_ok) {
         NAPI_ERR_LOG("OnProgress napi_create_int32 fail");
     }
     napi_value callback;
-    status = napi_get_reference_value(env, progressHandler.progressRef, &callback);
+    if (process < 0 || process > PROGRESS_MAX || progressHandler->progressRef == nullptr) {
+        NAPI_ERR_LOG("progressHandler->progressRef is nullptr or process out of range");
+        return;
+    }
+    status = napi_get_reference_value(env, progressHandler->progressRef, &callback);
     if (status != napi_ok) {
         NAPI_ERR_LOG("OnProgress napi_get_reference_value fail, napi status: %{public}d",
             static_cast<int>(status));
-        DeleteProcessHandlerSafe(&progressHandler, env);
+        DeleteProcessHandlerSafe(progressHandler, env);
         return;
     }
     napi_value jsOnProgress;
@@ -1391,7 +1400,7 @@ void CallProgressCallback(napi_env env, ProgressHandler &progressHandler, int32_
     if (status != napi_ok) {
         NAPI_ERR_LOG("jsOnProgress napi_get_named_property fail, napi status: %{public}d",
             static_cast<int>(status));
-        DeleteProcessHandlerSafe(&progressHandler, env);
+        DeleteProcessHandlerSafe(progressHandler, env);
         return;
     }
     constexpr size_t maxArgs = 1;
@@ -1440,7 +1449,7 @@ void MediaAssetManagerNapi::OnProgress(napi_env env, napi_value cb, void *contex
         NAPI_INFO_LOG("progressHandler->progressRef == nullptr");
         return;
     }
-    CallProgressCallback(env, *progressHandler, process);
+    CallProgressCallback(env, progressHandler, process);
 }
 
 void MediaAssetManagerNapi::NotifyMediaDataPrepared(AssetHandler *assetHandler)
