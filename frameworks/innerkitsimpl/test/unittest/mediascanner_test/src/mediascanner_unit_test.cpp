@@ -56,11 +56,7 @@ void MediaScannerUnitTest::TearDown(void) {}
  */
 HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanDir_test_001, TestSize.Level1)
 {
-    if (mediaScannerManager == nullptr) {
-        MEDIA_ERR_LOG("MediaScannerManager invalid");
-        exit(1);
-    }
-
+    ASSERT_NE(mediaScannerManager, nullptr);
     auto scannerCallback = make_shared<TestScannerCallback>();
     int result = mediaScannerManager->ScanDir(ROOT_MEDIA_DIR, scannerCallback);
     EXPECT_EQ(result, E_OK);
@@ -79,11 +75,7 @@ HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanDir_test_001, TestSize.Level1)
  */
 HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_001, TestSize.Level1)
 {
-    if (mediaScannerManager == nullptr) {
-        MEDIA_ERR_LOG("MediaScannerManager invalid");
-        exit(1);
-    }
-
+    ASSERT_NE(mediaScannerManager, nullptr);
     string path = ROOT_MEDIA_DIR + "Pictures/Scanner_Image1.jpg";
     EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
 
@@ -105,11 +97,7 @@ HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_001, TestSize.Level1)
  */
 HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_002, TestSize.Level1)
 {
-    if (mediaScannerManager == nullptr) {
-        MEDIA_ERR_LOG("MediaScannerManager invalid");
-        exit(1);
-    }
-
+    ASSERT_NE(mediaScannerManager, nullptr);
     string path = ROOT_MEDIA_DIR + "Pictures/Scanner_Image2.png";
     EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
 
@@ -131,11 +119,7 @@ HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_002, TestSize.Level1)
  */
 HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_003, TestSize.Level1)
 {
-    if (mediaScannerManager == nullptr) {
-        MEDIA_ERR_LOG("MediaScannerManager invalid");
-        exit(1);
-    }
-
+    ASSERT_NE(mediaScannerManager, nullptr);
     string path = ROOT_MEDIA_DIR + "Pictures/Scanner_Image3.jpeg";
     EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
 
@@ -157,10 +141,7 @@ HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_003, TestSize.Level1)
  */
 HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanTextFile_Test_001, TestSize.Level1)
 {
-    if (mediaScannerManager == nullptr) {
-        MEDIA_ERR_LOG("MediaScannerManager invalid");
-        exit(1);
-    }
+    ASSERT_NE(mediaScannerManager, nullptr);
 
     string path = ROOT_MEDIA_DIR + "Docs/Documents/Scanner_Text1.txt";
     EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
@@ -184,11 +165,7 @@ HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanTextFile_Test_001, TestSize.Leve
  */
 HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanHiddenFile_Test_001, TestSize.Level1)
 {
-    if (mediaScannerManager == nullptr) {
-        MEDIA_ERR_LOG("MediaScannerManager invalid");
-        exit(1);
-    }
-
+    ASSERT_NE(mediaScannerManager, nullptr);
     string path = ROOT_MEDIA_DIR + "Docs/Download/.HiddenFile";
     EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
 
@@ -209,13 +186,8 @@ HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanHiddenFile_Test_001, TestSize.Le
  */
 HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanDir_CanonicalPathtest_001, TestSize.Level1)
 {
-    if (mediaScannerManager == nullptr) {
-        MEDIA_ERR_LOG("MediaScannerManager invalid");
-        exit(1);
-    }
-
+    ASSERT_NE(mediaScannerManager, nullptr);
     string path = ROOT_MEDIA_DIR + "../files";
-
     auto scannerCallback = make_shared<TestScannerCallback>();
     int result = mediaScannerManager->ScanDir(path, scannerCallback);
     EXPECT_EQ(result, E_OK);
@@ -234,11 +206,7 @@ HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanDir_CanonicalPathtest_001, Test
  */
 HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanFile_CanonicalPathtest_001, TestSize.Level1)
 {
-    if (mediaScannerManager == nullptr) {
-        MEDIA_ERR_LOG("MediaScannerManager invalid");
-        exit(1);
-    }
-
+    ASSERT_NE(mediaScannerManager, nullptr);
     string path = ROOT_MEDIA_DIR + "../files/Pictures/Canonical1.jpg";
     EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
 
@@ -260,11 +228,7 @@ HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanFile_CanonicalPathtest_001, Tes
  */
 HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanFile_CanonicalPathtest_002, TestSize.Level1)
 {
-    if (mediaScannerManager == nullptr) {
-        MEDIA_ERR_LOG("MediaScannerManager invalid");
-        exit(1);
-    }
-
+    ASSERT_NE(mediaScannerManager, nullptr);
     string path = ROOT_MEDIA_DIR + "../files/Docs/Documents/Canonical2.txt";
     EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
 

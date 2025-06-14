@@ -268,7 +268,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_001, TestSize.Level1)
     MEDIA_INFO_LOG("MediaLibraryManager_test_001::Start");
     string displayName = "test.jpg";
     string uri =  mediaLibraryManager->CreateAsset(displayName);
-    EXPECT_NE(uri, "");
+    ASSERT_NE(uri, "");
     int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
     EXPECT_NE(destFd <= 0, true);
     int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
@@ -292,7 +292,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_002, TestSize.Level1)
     string displayName = "test2.jpg";
     string uri =  mediaLibraryManager->CreateAsset(displayName);
     MEDIA_INFO_LOG("createFile uri: %{public}s", uri.c_str());
-    EXPECT_NE(uri, "");
+    ASSERT_NE(uri, "");
     int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
     EXPECT_NE(destFd <= 0, true);
     int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
@@ -324,7 +324,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_003, TestSize.Level1)
     string displayName = "testVideo.mp4";
     string uri =  mediaLibraryManager->CreateAsset(displayName);
     MEDIA_INFO_LOG("createFile uri: %{public}s", uri.c_str());
-    EXPECT_NE(uri, "");
+    ASSERT_NE(uri, "");
     int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
     EXPECT_NE(destFd <= 0, true);
     int32_t resWrite = write(destFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
@@ -370,7 +370,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_005, TestSize.Level1)
     string displayName = "testPNG.png";
     string uri =  mediaLibraryManager->CreateAsset(displayName);
     MEDIA_INFO_LOG("createFile uri: %{public}s", uri.c_str());
-    EXPECT_NE(uri, "");
+    ASSERT_NE(uri, "");
     int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
     EXPECT_NE(destFd <= 0, true);
     int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
@@ -458,7 +458,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_008, TestSize.Level1)
     string displayName = "movingPhoto.jpg";
     string uri = mediaLibraryManager->CreateAsset(displayName);
     MEDIA_INFO_LOG("createFile uri: %{public}s", uri.c_str());
-    EXPECT_NE(uri, "");
+    ASSERT_NE(uri, "");
 
     int32_t fd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
     EXPECT_GE(fd, 0);
@@ -479,7 +479,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_009, TestSize.Level1)
     string displayName = "movingPhoto.jpg";
     string uri = mediaLibraryManager->CreateAsset(displayName);
     MEDIA_INFO_LOG("createFile uri: %{public}s", uri.c_str());
-    EXPECT_NE(uri, "");
+    ASSERT_NE(uri, "");
 
     int32_t fd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
     EXPECT_GE(fd, 0);

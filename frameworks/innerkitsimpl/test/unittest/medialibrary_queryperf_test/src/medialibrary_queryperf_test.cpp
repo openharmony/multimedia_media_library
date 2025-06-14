@@ -249,10 +249,10 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_004, TestSize.Lev
     tracer.Start("GetALLColumn");
     for (int i = 0; i < 50; i++) {
         auto result = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
-        EXPECT_NE(result, nullptr);
+        ASSERT_NE(result, nullptr);
         int count;
         result->GetRowCount(count);
-        EXPECT_TRUE(count >= DATA_COUNT);
+        ASSERT_TRUE(count >= DATA_COUNT);
         result->GoToFirstRow();
         do {
             mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
@@ -298,10 +298,10 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_005, TestSize.Lev
     tracer.Start("Get10Column");
     for (int i = 0; i < 50; i++) {
         auto result = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
-        EXPECT_NE(result, nullptr);
+        ASSERT_NE(result, nullptr);
         int count;
         result->GetRowCount(count);
-        EXPECT_TRUE(count >= DATA_COUNT);
+        ASSERT_TRUE(count >= DATA_COUNT);
         result->GoToFirstRow();
         do {
             mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
@@ -347,10 +347,10 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_006, TestSize.Lev
     tracer.Start("Get10Columnlimit50");
     for (int i = 0; i < 50; i++) {
         auto result = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
-        EXPECT_NE(result, nullptr);
+        ASSERT_NE(result, nullptr);
         int count;
         result->GetRowCount(count);
-        EXPECT_TRUE(count <= 50);
+        ASSERT_TRUE(count <= 50);
         result->GoToFirstRow();
         do {
             mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
@@ -382,7 +382,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_007, TestSi
     tracer.Start("DataShareQueryALLColumn");
     for (int i = 0; i < 50; i++) {
         auto result = sDataShareHelper_->Query(uri, predicates, columns);
-        EXPECT_NE(result, nullptr);
+        ASSERT_NE(result, nullptr);
     }
     tracer.Finish();
     int64_t end = UTCTimeSeconds();
@@ -412,7 +412,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_008, TestSi
     tracer.Start("DataShareQuery10Column");
     for (int i = 0; i < 50; i++) {
         auto result = sDataShareHelper_->Query(uri, predicates, columns);
-        EXPECT_NE(result, nullptr);
+        ASSERT_NE(result, nullptr);
     }
     tracer.Finish();
     int64_t end = UTCTimeSeconds();
@@ -447,7 +447,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_009, TestSi
     tracer.Start("DataShareQuery50-10Column");
     for (int i = 0; i < 50; i++) {
         auto result = sDataShareHelper_->Query(uri, predicates, columns);
-        EXPECT_NE(result, nullptr);
+        ASSERT_NE(result, nullptr);
     }
     tracer.Finish();
     int64_t end = UTCTimeSeconds();
@@ -477,7 +477,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_010, TestSi
     tracer.Start("DataShareGetALLColumn");
     for (int i = 0; i < 50; i++) {
         auto result = sDataShareHelper_->Query(uri, predicates, columns);
-        EXPECT_NE(result, nullptr);
+        ASSERT_NE(result, nullptr);
         int count;
         result->GetRowCount(count);
         result->GoToFirstRow();
@@ -526,7 +526,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_011, TestSi
     tracer.Start("DataShareGet10Column");
     for (int i = 0; i < 50; i++) {
         auto result = sDataShareHelper_->Query(uri, predicates, columns);
-        EXPECT_NE(result, nullptr);
+        ASSERT_NE(result, nullptr);
         int count;
         result->GetRowCount(count);
         result->GoToFirstRow();
@@ -576,10 +576,10 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_012, TestSi
     tracer.Start("DataShareGet10Columnlimit50");
     for (int i = 0; i < 50; i++) {
         auto result = sDataShareHelper_->Query(uri, predicates, columns);
-        EXPECT_NE(result, nullptr);
+        ASSERT_NE(result, nullptr);
         int count;
         result->GetRowCount(count);
-        EXPECT_TRUE(count <= 50);
+        ASSERT_TRUE(count <= 50);
         result->GoToFirstRow();
         do {
             mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
@@ -609,12 +609,12 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_013, TestSize.Lev
     int64_t timeSum = 0;
     for (int i = 0; i < 50; i++) {
         auto result = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
-        EXPECT_NE(result, nullptr);
+        ASSERT_NE(result, nullptr);
         int count;
         int64_t start = UTCTimeSeconds();
         result->GetRowCount(count);
         int64_t end = UTCTimeSeconds();
-        EXPECT_TRUE(count > 0);
+        ASSERT_TRUE(count > 0);
         timeSum += end - start;
     }
 
@@ -631,7 +631,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_014, TestSi
     int64_t timeSum = 0;
     for (int i = 0; i < 50; i++) {
         auto result = sDataShareHelper_->Query(uri, predicates, columns);
-        EXPECT_NE(result, nullptr);
+        ASSERT_NE(result, nullptr);
         int count;
         int64_t start = UTCTimeSeconds();
         result->GetRowCount(count);
