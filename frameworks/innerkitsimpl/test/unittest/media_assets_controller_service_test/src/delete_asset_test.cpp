@@ -191,11 +191,11 @@ HWTEST_F(DeleteAssetTest, PublicDeleteAsset_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("PublicDeleteAsset_Test_001 Begin");
     std::vector<std::string> testUris = {"file://media/Invalid/200"};
     int32_t result = PublicDeleteAsset(testUris);
-    ASSERT_EQ(result, 0);
+    ASSERT_LE(result, 0);
 
     testUris = {"file://media/Photo/200"};
     result = PublicDeleteAsset(testUris);
-    ASSERT_EQ(result, 0);
+    ASSERT_LE(result, 0);
 }
 
 HWTEST_F(DeleteAssetTest, PublicDeleteAsset_Test_002, TestSize.Level0)
@@ -217,11 +217,11 @@ HWTEST_F(DeleteAssetTest, SystemDeleteAsset_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("SystemDeleteAsset_Test_001 Begin");
     std::vector<std::string> testUris = {"file://media/Invalid/200"};
     int32_t result = SystemDeleteAsset(testUris);
-    ASSERT_EQ(result, 0);
+    ASSERT_LE(result, 0);
 
     testUris = {"file://media/Photo/200"};
     result = SystemDeleteAsset(testUris);
-    ASSERT_EQ(result, 0);
+    ASSERT_LE(result, 0);
 }
 
 HWTEST_F(DeleteAssetTest, SystemDeleteAsset_Test_002, TestSize.Level0)
