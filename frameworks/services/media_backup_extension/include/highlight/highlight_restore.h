@@ -91,6 +91,7 @@ private:
     void UpdateHighlightIds();
     void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values,
         const HighlightPhotoInfo &highlightPhoto);
+    void UpdateAlbumInfoCoverUris(const HighlightPhotoInfo &highlightPhoto);
     void UpdateMapInsertValuesByStoryId(std::vector<NativeRdb::ValuesBucket> &values,
         const HighlightPhotoInfo &highlightPhoto, const std::string &storyId);
     nlohmann::json GetEffectline(const HighlightPhotoInfo &highlightPhoto);
