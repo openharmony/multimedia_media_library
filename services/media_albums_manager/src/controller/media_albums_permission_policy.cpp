@@ -65,7 +65,7 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SET_COVER_URI), { {SYSTEMAPI_PERM, WRITE_PERM} }},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_PHOTO_ALBUMS), { {READ_PERM} }},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_HIDDEN_ALBUMS), { {SYSTEMAPI_PERM, READ_PERM} }},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUEUE_GET_ALBUMS_BY_IDS), { {SYSTEMAPI_PERM, READ_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_GET_ALBUMS_BY_IDS), { {SYSTEMAPI_PERM, READ_PERM} }},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ORDER_POSITION), { {SYSTEMAPI_PERM, READ_PERM} }},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_FACE_ID), { {SYSTEMAPI_PERM, READ_PERM} }},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), {{READ_PERM}}},
