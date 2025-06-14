@@ -305,6 +305,11 @@ ohos_shared_library("medialibrary_nutils") {
     defines += [ "USE_VIDEO_PROCESSING_ENGINE" ]
   }
 
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.multimedia_video_processing_engine_ext)) {
+    defines += [ "USE_VIDEO_PROCESSING_ENGINE_EXT" ]
+  }
+
   if (ability_runtime_graphics) {
     external_deps += [
       "ace_engine:ace_uicontent",
