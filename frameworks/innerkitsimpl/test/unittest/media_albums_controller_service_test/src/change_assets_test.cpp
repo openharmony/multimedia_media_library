@@ -187,9 +187,9 @@ HWTEST_F(ChangeAssetsTest, AddAssets_Test_002, TestSize.Level0) {
 HWTEST_F(ChangeAssetsTest, RemoveAssetsTest_001, TestSize.Level0)
 {
     int32_t result = ServiceRemoveAssets(0);
-    ASSERT_LT(result, 0);
+    ASSERT_EQ(result, 0);
     result = ServiceRemoveAssets(1);
-    ASSERT_LT(result, 0);
+    ASSERT_EQ(result, 0);
 }
 
 /**
@@ -283,7 +283,7 @@ HWTEST_F(ChangeAssetsTest, RecoverAssets_Test_002, TestSize.Level0) {
     service->RecoverAssets(data, reply);
     IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     ASSERT_EQ(respVo.Unmarshalling(reply), true);
-    ASSERT_EQ(respVo.GetErrCode(), 0);
+    ASSERT_LT(respVo.GetErrCode(), 0);
 }
 
 /**

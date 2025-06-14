@@ -15,7 +15,7 @@
 
 #define MLOG_TAG "MediaAssetsControllerServiceTest"
 
-#include "queue_edit_asset_status_test.h"
+#include "query_edit_asset_status_test.h"
 
 #include <string>
 #include <vector>
@@ -61,7 +61,7 @@ static int32_t ClearTable(const string &table)
     return E_OK;
 }
 
-void QueueEditAssetStatusTest::SetUpTestCase(void)
+void QueryEditAssetStatusTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -73,19 +73,19 @@ void QueueEditAssetStatusTest::SetUpTestCase(void)
     MEDIA_INFO_LOG("SetUpTestCase");
 }
 
-void QueueEditAssetStatusTest::TearDownTestCase(void)
+void QueryEditAssetStatusTest::TearDownTestCase(void)
 {
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     MEDIA_INFO_LOG("TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
-void QueueEditAssetStatusTest::SetUp()
+void QueryEditAssetStatusTest::SetUp()
 {
     MEDIA_INFO_LOG("SetUp");
 }
 
-void QueueEditAssetStatusTest::TearDown(void)
+void QueryEditAssetStatusTest::TearDown(void)
 {
     MEDIA_INFO_LOG("TearDown");
 }
@@ -96,7 +96,7 @@ void QueueEditAssetStatusTest::TearDown(void)
  * @tc.number: IsEditedTest_001
  * @tc.desc  : 测试当读取请求体失败时,IsEdited 函数应返回错误
  */
-HWTEST_F(QueueEditAssetStatusTest, IsEditedTest_001, TestSize.Level0) {
+HWTEST_F(QueryEditAssetStatusTest, IsEditedTest_001, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
 
@@ -113,7 +113,7 @@ HWTEST_F(QueueEditAssetStatusTest, IsEditedTest_001, TestSize.Level0) {
  * @tc.number: IsEditedTest_002
  * @tc.desc  : 测试当读取请求体成功时,IsEdited 函数应成功执行查询操作
  */
-HWTEST_F(QueueEditAssetStatusTest, IsEditedTest_002, TestSize.Level0) {
+HWTEST_F(QueryEditAssetStatusTest, IsEditedTest_002, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
     IsEditedReqBody reqBody;
@@ -135,7 +135,7 @@ HWTEST_F(QueueEditAssetStatusTest, IsEditedTest_002, TestSize.Level0) {
  * @tc.number: RequestEditDataTest_001
  * @tc.desc  : 测试当读取请求体失败时,RequestEditData 函数应返回错误
  */
-HWTEST_F(QueueEditAssetStatusTest, RequestEditDataTest_001, TestSize.Level0) {
+HWTEST_F(QueryEditAssetStatusTest, RequestEditDataTest_001, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
 
@@ -151,7 +151,7 @@ HWTEST_F(QueueEditAssetStatusTest, RequestEditDataTest_001, TestSize.Level0) {
  * @tc.number: RequestEditDataTest_002
  * @tc.desc  : 测试当查询编辑数据成功时,RequestEditData 函数应返回查询结果集
  */
-HWTEST_F(QueueEditAssetStatusTest, RequestEditDataTest_002, TestSize.Level0) {
+HWTEST_F(QueryEditAssetStatusTest, RequestEditDataTest_002, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
     RequestEditDataReqBody reqBody;
@@ -174,7 +174,7 @@ HWTEST_F(QueueEditAssetStatusTest, RequestEditDataTest_002, TestSize.Level0) {
  * @tc.number: GetEditDataTest_001
  * @tc.desc  : 测试当读取请求体失败时,GetEditData 函数应返回错误
  */
-HWTEST_F(QueueEditAssetStatusTest, GetEditDataTest_001, TestSize.Level0) {
+HWTEST_F(QueryEditAssetStatusTest, GetEditDataTest_001, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
 
@@ -190,7 +190,7 @@ HWTEST_F(QueueEditAssetStatusTest, GetEditDataTest_001, TestSize.Level0) {
  * @tc.number: GetEditDataTest_002
  * @tc.desc  : 测试当读取请求体成功时,GetEditData 函数应返回成功
  */
-HWTEST_F(QueueEditAssetStatusTest, GetEditDataTest_002, TestSize.Level0) {
+HWTEST_F(QueryEditAssetStatusTest, GetEditDataTest_002, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
     GetEditDataReqBody reqBody;
@@ -214,7 +214,7 @@ HWTEST_F(QueueEditAssetStatusTest, GetEditDataTest_002, TestSize.Level0) {
  * @tc.number: GetCloudMediaAssetStatusTest_001
  * @tc.desc  : 测试当读取请求体失败时,函数应返回错误信息
  */
-HWTEST_F(QueueEditAssetStatusTest, GetCloudMediaAssetStatusTest_001, TestSize.Level0) {
+HWTEST_F(QueryEditAssetStatusTest, GetCloudMediaAssetStatusTest_001, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
 
@@ -230,7 +230,7 @@ HWTEST_F(QueueEditAssetStatusTest, GetCloudMediaAssetStatusTest_001, TestSize.Le
  * @tc.number: GetCloudMediaAssetStatusTest_002
  * @tc.desc  : 测试当读取请求体成功时,函数应返回正确的任务状态
  */
-HWTEST_F(QueueEditAssetStatusTest, GetCloudMediaAssetStatusTest_002, TestSize.Level0) {
+HWTEST_F(QueryEditAssetStatusTest, GetCloudMediaAssetStatusTest_002, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
     GetCloudMediaAssetStatusReqBody reqBody;
@@ -252,7 +252,7 @@ HWTEST_F(QueueEditAssetStatusTest, GetCloudMediaAssetStatusTest_002, TestSize.Le
  * @tc.number: StartAssetAnalysisTest_001
  * @tc.desc  : 测试当读取请求体失败时,StartAssetAnalysis 函数应返回错误响应
  */
-HWTEST_F(QueueEditAssetStatusTest, StartAssetAnalysisTest_001, TestSize.Level0) {
+HWTEST_F(QueryEditAssetStatusTest, StartAssetAnalysisTest_001, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
 
@@ -268,7 +268,7 @@ HWTEST_F(QueueEditAssetStatusTest, StartAssetAnalysisTest_001, TestSize.Level0) 
  * @tc.number: StartAssetAnalysisTest_002
  * @tc.desc  : 测试当读取请求体成功时,StartAssetAnalysis 函数应返回成功响应
  */
-HWTEST_F(QueueEditAssetStatusTest, StartAssetAnalysisTest_002, TestSize.Level0) {
+HWTEST_F(QueryEditAssetStatusTest, StartAssetAnalysisTest_002, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
     StartAssetAnalysisReqBody reqBody;

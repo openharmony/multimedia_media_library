@@ -203,7 +203,7 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAlbumsControllerService::QueryHiddenAlbums
     },
     {
-        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUEUE_GET_ALBUMS_BY_IDS),
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_GET_ALBUMS_BY_IDS),
         &MediaAlbumsControllerService::GetAlbumsByIds
     },
     {
@@ -599,7 +599,7 @@ void MediaAlbumsControllerService::RemoveAssets(MessageParcel &data, MessageParc
     ChangeRequestRemoveAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("StartDownloadCloudMedia Read Request Error");
+        MEDIA_ERR_LOG("RemoveAssets Read Request Error");
         IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         return;
     }
@@ -1073,7 +1073,7 @@ void MediaAlbumsControllerService::GetAlbumsByIds(MessageParcel &data, MessagePa
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("QueueGetEditData Read Request Error");
+        MEDIA_ERR_LOG("GetAlbumsByIds Read Request Error");
         IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         return;
     }
