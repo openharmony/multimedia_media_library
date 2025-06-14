@@ -34,11 +34,9 @@ public:
     EXPORT ~NotificationDistribution();
     EXPORT static int32_t DistributeNotifyInfo(const std::vector<NotifyInfo>& notifyInfos);
 private:
-    static MediaChangeInfo ShouldIncludeChangeInfo(const MediaChangeInfo& changeInfo, NotifyUriType notifyUriType);
-    static MediaChangeInfo FilterNotifyInfoByPermission(const MediaChangeInfo& changeInfo,
-        NotifyUriType notifyUriType, bool flag);
-    static int32_t CallbackProcessing(MediaChangeInfo changeInfo, ObserverInfo observerInfo);
-    static MediaChangeInfo CreateRecheckChangeInfo(const MediaChangeInfo& changeInfo);
+    static MediaChangeInfo FilterNotifyInfoByPermission(const MediaChangeInfo& changeInfo, NotifyUriType notifyUriType);
+    static int32_t SendNotificationWithRecheckChangeInfo(const MediaChangeInfo& changeInfo,
+        const ObserverInfo& observerInfo);
     static int32_t ProcessMediaChangeInfos(const std::vector<Notification::MediaChangeInfo>& mediaChangeInfos,
         Notification::NotifyUriType notifyUriType, const ObserverInfo& observerInfo);
     static int32_t ProcessNotifyInfo(const NotifyInfo& notifyInfo);

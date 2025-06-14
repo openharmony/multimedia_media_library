@@ -55,7 +55,7 @@ public:
     // 根据传递的assetChangeDatas进行通知，不需要dataManager_处理
     int32_t Notify(std::vector<AlbumChangeData> albumChangeDatas);
 
-    std::map<int32_t, AlbumChangeInfo>  GetInitAlbumInfos();
+    std::map<int32_t, AlbumChangeInfo> GetInitAlbumInfos();
     
     using AccurateRefreshBase::Delete;
     int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
@@ -71,8 +71,8 @@ private:
     int32_t DeleteCommon(std::function<int32_t(NativeRdb::ValuesBucket &)> updateExe);
 
 private:
-    std::shared_ptr<AlbumDataManager> dataManager_ = nullptr;
-    std::shared_ptr<ALbumChangeNotifyExecution> notifyExe_ = nullptr;
+    AlbumDataManager dataManager_;
+    AlbumChangeNotifyExecution notifyExe_;
 };
 
 } // namespace Media

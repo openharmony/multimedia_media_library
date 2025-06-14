@@ -154,6 +154,12 @@ int32_t MediaObserverManager::RemoveObserverWithUri(const NotifyUriType &uri,
     const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
     MEDIA_INFO_LOG("enter removeObserverWithUri");
+    NotifyRegisterPermission permissionHandle;
+    int32_t ret = permissionHandle.ExecuteCheckPermission(uri);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Permission verification failed");
+        return ret;
+    }
     std::lock_guard<std::mutex> lock(mutex_);
     auto observersIter = observers_.find(uri);
     if (observersIter == observers_.end()) {

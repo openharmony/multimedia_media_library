@@ -33,18 +33,11 @@ namespace Media::AccurateRefresh {
 
 AlbumAccurateRefresh::AlbumAccurateRefresh(std::shared_ptr<TransactionOperations> trans) : AccurateRefreshBase(trans)
 {
-    ACCURATE_DEBUG("new AlbumAccurateRefresh");
+    dataManager_.SetTransaction(trans);
 }
 
 int32_t AlbumAccurateRefresh::Init()
 {
-    if (!dataManager_) {
-        ACCURATE_DEBUG("Init");
-        dataManager_ = make_shared<AlbumDataManager>(trans_);
-        notifyExe_ = make_shared<ALbumChangeNotifyExecution>();
-    } else {
-        ACCURATE_DEBUG("already init.");
-    }
     return ACCURATE_REFRESH_RET_OK;
 }
 
@@ -53,53 +46,28 @@ int32_t AlbumAccurateRefresh::Init(const AbsRdbPredicates &predicates)
     if (!IsValidTable(predicates.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-    if (!dataManager_) {
-        Init();
-        return dataManager_->Init(predicates);
-    }
-    ACCURATE_DEBUG("already init.");
-    return ACCURATE_REFRESH_RET_OK;
+
+    return dataManager_.Init(predicates);
 }
 
 int32_t AlbumAccurateRefresh::Init(const string &sql, const vector<ValueObject> bindArgs)
 {
-    if (!dataManager_) {
-        Init();
-        return dataManager_->Init(sql, bindArgs);
-    }
-    ACCURATE_DEBUG("already init.");
-    return ACCURATE_REFRESH_RET_OK;
+    return dataManager_.Init(sql, bindArgs);
 }
 
 int32_t AlbumAccurateRefresh::Init(const std::vector<PhotoAlbumSubType> &systemTypes, const vector<int32_t> &albumIds)
 {
-    if (!dataManager_) {
-        Init();
-        return dataManager_->InitAlbumInfos(systemTypes, albumIds);
-    }
-    ACCURATE_DEBUG("already init.");
-    return ACCURATE_REFRESH_RET_OK;
+    return dataManager_.InitAlbumInfos(systemTypes, albumIds);
 }
 
 int32_t AlbumAccurateRefresh::Init(const std::vector<int32_t> &albumIds)
 {
-    if (!dataManager_) {
-        Init();
-        return dataManager_->InitAlbumInfos(vector<PhotoAlbumSubType>(), albumIds);
-    }
-    ACCURATE_DEBUG("already init.");
-    return ACCURATE_REFRESH_RET_OK;
+    return dataManager_.InitAlbumInfos(vector<PhotoAlbumSubType>(), albumIds);
 }
 
 int32_t AlbumAccurateRefresh::Notify()
 {
-    ACCURATE_DEBUG("Notify");
-    if (!dataManager_) {
-        MEDIA_WARN_LOG("dataManager_ null.");
-        return ACCURATE_REFRESH_DATA_MGR_NULL;
-    }
-
-    return Notify(dataManager_->GetChangeDatas());
+    return Notify(dataManager_.GetChangeDatas());
 }
 
 int32_t AlbumAccurateRefresh::Notify(vector<AlbumChangeData> albumChangeDatas)
@@ -108,49 +76,34 @@ int32_t AlbumAccurateRefresh::Notify(vector<AlbumChangeData> albumChangeDatas)
         MEDIA_WARN_LOG("albumChangeDatas empty.");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
-    if (!notifyExe_) {
-        MEDIA_WARN_LOG("notifyExe_ null.");
-        return ACCURATE_REFRESH_NOTIFY_EXE_NULL;
-    }
-    notifyExe_->Notify(albumChangeDatas);
+    notifyExe_.Notify(albumChangeDatas);
     return ACCURATE_REFRESH_RET_OK;
 }
 
 int32_t AlbumAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &albumIds, RdbOperation operation)
 {
-    ACCURATE_DEBUG("UpdateModifiedDatasInner");
     auto modifiedAlbumIds = albumIds;
     if (modifiedAlbumIds.empty()) {
         MEDIA_WARN_LOG("modifiedAlbumIds empty.");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
-    if (!dataManager_) {
-        MEDIA_WARN_LOG("dataManager_ null.");
-        return ACCURATE_REFRESH_DATA_MGR_NULL;
+
+    if (dataManager_.UpdateCommonModifiedDatas(albumIds) != ACCURATE_REFRESH_RET_OK) {
+        MEDIA_WARN_LOG("update common data failed.");
+        return ACCURATE_REFRESH_COMMON_DATAS_FAILED;
     }
 
-    return dataManager_->UpdateModifiedDatasInner(modifiedAlbumIds, operation);
+    return dataManager_.UpdateModifiedDatasInner(modifiedAlbumIds, operation);
 }
 
 int32_t AlbumAccurateRefresh::UpdateModifiedDatas()
 {
-    if (!dataManager_) {
-        MEDIA_WARN_LOG("dataManager_ null.");
-        return ACCURATE_REFRESH_DATA_MGR_NULL;
-    }
-    
-    return dataManager_->UpdateModifiedDatas();
+    return dataManager_.UpdateModifiedDatas();
 }
 
 map<int32_t, AlbumChangeInfo> AlbumAccurateRefresh::GetInitAlbumInfos()
 {
-    map<int32_t, AlbumChangeInfo> initAlbumInfos;
-    if (!dataManager_) {
-        MEDIA_WARN_LOG("dataManager_ null.");
-        return initAlbumInfos;
-    }
-    
-    return dataManager_->GetInitAlbumInfos();
+    return dataManager_.GetInitAlbumInfos();
 }
 
 string AlbumAccurateRefresh::GetReturningKeyName()

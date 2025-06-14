@@ -165,7 +165,8 @@ public:
     EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
         const bool compatible = false);
     EXPORT static int32_t DeletePermanently(NativeRdb::AbsRdbPredicates &predicates, const bool isAging);
-    EXPORT static int32_t DeleteNormalPhotoPermanently(std::shared_ptr<FileAsset> &fileAsset);
+    EXPORT static int32_t DeleteNormalPhotoPermanently(std::shared_ptr<FileAsset> &fileAsset,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
     EXPORT static std::string GetEditDataSourcePath(const std::string &path);
     EXPORT static int32_t GetAlbumIdByPredicates(const std::string &whereClause,
         const std::vector<std::string> &whereArgs);
@@ -207,7 +208,8 @@ protected:
         std::shared_ptr<TransactionOperations> trans = nullptr);
     EXPORT static int32_t SetAssetPath(FileAsset &fileAsset, const std::string &extention,
         std::shared_ptr<TransactionOperations> trans = nullptr);
-    EXPORT static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd);
+    EXPORT static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
 
     EXPORT static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);

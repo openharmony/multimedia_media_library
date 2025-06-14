@@ -98,6 +98,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/register_manager",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/data",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/utils",
   ]
 
   include_accurate_refresh = [
@@ -611,6 +612,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/notification_classification.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/notification_merging.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/notification_distribution.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/utils/media_notification_utils.cpp",
   ]
 
   accurate_refresh_source = [
@@ -634,6 +636,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/video_asset_helper.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/asset_change_notify_execution.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_change_notify_execution.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_accurate_refresh_manager.cpp",
   ]
 
   accurate_refresh_server_source = [ "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/controller/media_refresh_controller_service.cpp" ]

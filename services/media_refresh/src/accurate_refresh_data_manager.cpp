@@ -31,20 +31,17 @@ namespace Media::AccurateRefresh {
 template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const AbsRdbPredicates &predicates)
 {
-    ACCURATE_DEBUG("Init");
     auto initDatas = GetInfosByPredicates(predicates);
     if (initDatas.empty()) {
         MEDIA_WARN_LOG("init data empty");
         return ACCURATE_REFRESH_INIT_EMPTY;
     }
-    ACCURATE_DEBUG("Init GetInfosByPredicates end");
     return InsertInitChangeInfos(initDatas);
 }
 
 template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const string sql, const vector<ValueObject> bindArgs)
 {
-    ACCURATE_DEBUG("Init");
     if (sql.empty()) {
         MEDIA_WARN_LOG("input sql empty");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
@@ -73,7 +70,6 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const string sq
 template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const vector<int32_t> &keys)
 {
-    ACCURATE_DEBUG("Init");
     if (keys.empty()) {
         MEDIA_WARN_LOG("input keys empty");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
@@ -92,7 +88,6 @@ template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasInner(const vector<int32_t> &keys,
     RdbOperation operation)
 {
-    ACCURATE_DEBUG("UpdateModifiedDatasInner");
     if (keys.empty() || operation == RDB_OPERATION_UNDEFINED) {
         MEDIA_WARN_LOG("input keys empty or operation error");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
@@ -117,7 +112,6 @@ template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::InsertInitChangeInfos(
     const vector<ChangeInfo> &changeInfos)
 {
-    ACCURATE_DEBUG("changInfos size: %{public}zu", changeInfos.size());
     for (auto const &changeInfo : changeInfos) {
         auto key = GetChangeInfoKey(changeInfo);
         if (changeDatas_.find(key) != changeDatas_.end()) {
@@ -128,7 +122,6 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::InsertInitChangeInfo
         ChangeData changeData;
         changeData.infoBeforeChange_ = changeInfo;
         changeDatas_.insert_or_assign(key, changeData); // 插入新值或者替换已有
-        ACCURATE_DEBUG("add init change info: %{public}s", changeInfo.ToString().c_str());
     }
 
     return ACCURATE_REFRESH_RET_OK;
@@ -163,7 +156,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::CheckAndUpdateOperat
 }
 
 template <typename ChangeInfo, typename ChangeData>
-int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForRemove(const vector<int32_t> keys)
+int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForRemove(const vector<int32_t> &keys)
 {
     ACCURATE_DEBUG("keys size: %{public}zu", keys.size());
     for (auto key : keys) {
@@ -186,10 +179,9 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
 }
 
 template <typename ChangeInfo, typename ChangeData>
-int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForUpdate(const vector<int32_t> keys)
+int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForUpdate(const vector<int32_t> &keys)
 {
     auto &modifiedKeys = keys;
-    ACCURATE_DEBUG("modifiedKeys size: %{public}zu", modifiedKeys.size());
     auto modifiedDatas = GetInfoByKeys(modifiedKeys);
     if (modifiedDatas.empty()) {
         MEDIA_WARN_LOG("modifiedDatas empty");
@@ -230,7 +222,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
 }
 
 template <typename ChangeInfo, typename ChangeData>
-int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForAdd(const vector<int32_t> keys)
+int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForAdd(const vector<int32_t> &keys)
 {
     ACCURATE_DEBUG("keys size: %{public}zu", keys.size());
     auto modifiedDatas = GetInfoByKeys(keys);
@@ -238,7 +230,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
         MEDIA_WARN_LOG("modifiedDatas empty");
         return ACCURATE_REFRESH_MODIFY_EMPTY;
     }
-    for (auto modifiedInfo : modifiedDatas) {
+    for (auto &modifiedInfo : modifiedDatas) {
         // 找到key
         auto key = GetChangeInfoKey(modifiedInfo);
         // 根据key值，找changeData
@@ -275,6 +267,11 @@ vector<ChangeData> AccurateRefreshDataManager<ChangeInfo, ChangeData>::GetChange
     return changeDatas;
 }
 
+template <typename ChangeInfo, typename ChangeData>
+void AccurateRefreshDataManager<ChangeInfo, ChangeData>::SetTransaction(std::shared_ptr<TransactionOperations> trans)
+{
+    trans_ = trans;
+}
 template class AccurateRefreshDataManager<PhotoAssetChangeInfo, PhotoAssetChangeData>;
 template class AccurateRefreshDataManager<AlbumChangeInfo, AlbumChangeData>;
 

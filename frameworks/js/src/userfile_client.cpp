@@ -477,25 +477,22 @@ string UserFileClient::GetBundleName()
 int32_t UserFileClient::RegisterObserverExtProvider(const Uri &uri,
     std::shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants)
 {
-    int32_t ret = E_OK; // JS_INNER_FAIL;
     if (!IsValid(GetUserId())) {
         NAPI_ERR_LOG("register observer fail, helper null, userId is %{public}d", GetUserId());
-        return ret;
+        return E_FAIL;
     }
-    GetDataShareHelperByUser(GetUserId())->RegisterObserverExtProvider(uri, std::move(dataObserver), isDescendants);
-    return ret;
+    return
+        GetDataShareHelperByUser(GetUserId())->RegisterObserverExtProvider(uri, std::move(dataObserver), isDescendants);
 }
 
 int32_t UserFileClient::UnregisterObserverExtProvider(const Uri &uri,
     std::shared_ptr<DataShare::DataShareObserver> dataObserver)
 {
-    int32_t ret = E_OK; // JS_INNER_FAIL;
     if (!IsValid(GetUserId())) {
         NAPI_ERR_LOG("unregister observer fail, helper null, userId is %{public}d", GetUserId());
-        return ret;
+        return E_FAIL;
     }
-    GetDataShareHelperByUser(GetUserId())->UnregisterObserverExtProvider(uri, std::move(dataObserver));
-    return ret;
+    return GetDataShareHelperByUser(GetUserId())->UnregisterObserverExtProvider(uri, std::move(dataObserver));
 }
 }
 }

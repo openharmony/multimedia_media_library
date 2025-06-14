@@ -145,7 +145,7 @@ bool CheckInsertChangeData(const map<int32_t, AlbumChangeData> albumChangeDatas,
 bool CheckInsertResult(const AlbumAccurateRefresh &albumRefresh, const AlbumChangeInfo &albumInfo)
 {
     auto dataManagerPtr = albumRefresh.dataManager_;
-    auto &albumChangeDatas = dataManagerPtr->changeDatas_;
+    auto &albumChangeDatas = dataManagerPtr.changeDatas_;
     if (albumChangeDatas.size() != 1) {
         MEDIA_ERR_LOG("data size error");
         return false;
@@ -159,7 +159,7 @@ bool CheckInsertResult(const AlbumAccurateRefresh &albumRefresh, const AlbumChan
 
 bool CheckInsertNotify(const AlbumAccurateRefresh &albumRefresh, const AlbumChangeInfo &albumInfo)
 {
-    auto notifyInfos = albumRefresh.notifyExe_->notifyInfos_;
+    auto notifyInfos = albumRefresh.notifyExe_.notifyInfos_;
     if (notifyInfos.size() != 1) {
         MEDIA_ERR_LOG("notify size error.");
         return false;
@@ -184,7 +184,7 @@ bool CheckBatchInsertResult(const AlbumAccurateRefresh &albumRefresh, const Albu
     const AlbumChangeInfo &trashAlbumInfo)
 {
     auto dataManagerPtr = albumRefresh.dataManager_;
-    auto &albumChangeDatas = dataManagerPtr->changeDatas_;
+    auto &albumChangeDatas = dataManagerPtr.changeDatas_;
     if (albumChangeDatas.size() != NUMBER_TWO) {
         MEDIA_ERR_LOG("data size error");
         return false;
@@ -206,7 +206,7 @@ bool CheckUpdateResult(const AlbumAccurateRefresh &albumRefresh, const AlbumChan
     const AlbumChangeInfo &infoAfter)
 {
     auto dataManagerPtr = albumRefresh.dataManager_;
-    auto &albumChangeDatas = dataManagerPtr->changeDatas_;
+    auto &albumChangeDatas = dataManagerPtr.changeDatas_;
     if (albumChangeDatas.size() != 1) {
         MEDIA_ERR_LOG("data size error");
         return false;
@@ -219,7 +219,7 @@ bool CheckDeleteResult(const AlbumAccurateRefresh &albumRefresh, RdbOperation op
     const AlbumChangeInfo &infoBefore, const AlbumChangeInfo &infoAfter)
 {
     auto dataManagerPtr = albumRefresh.dataManager_;
-    auto &albumChangeDatas = dataManagerPtr->changeDatas_;
+    auto &albumChangeDatas = dataManagerPtr.changeDatas_;
     if (albumChangeDatas.size() != 1) {
         MEDIA_ERR_LOG("data size error");
         return false;
@@ -231,7 +231,7 @@ bool CheckDeleteResult(const AlbumAccurateRefresh &albumRefresh, RdbOperation op
 bool CheckBatchInsertNotify(const AlbumAccurateRefresh &albumRefresh, const AlbumChangeInfo &favoriteAlbumInfo,
     const AlbumChangeInfo &trashAlbumInfo)
 {
-    auto notifyInfos = albumRefresh.notifyExe_->notifyInfos_;
+    auto notifyInfos = albumRefresh.notifyExe_.notifyInfos_;
     if (notifyInfos.size() != 1) {
         MEDIA_ERR_LOG("notify size error.");
         return false;
@@ -271,7 +271,7 @@ bool CheckBatchInsertNotify(const AlbumAccurateRefresh &albumRefresh, const Albu
 bool CheckUpdateNotify(const AlbumAccurateRefresh &albumRefresh, Notification::AlbumRefreshOperation operation,
     const AlbumChangeInfo &infoBefore, const AlbumChangeInfo &infoAfter)
 {
-    auto notifyInfos = albumRefresh.notifyExe_->notifyInfos_;
+    auto notifyInfos = albumRefresh.notifyExe_.notifyInfos_;
     if (notifyInfos.size() != 1) {
         MEDIA_ERR_LOG("notify size error.");
         return false;
@@ -295,7 +295,7 @@ bool CheckUpdateNotify(const AlbumAccurateRefresh &albumRefresh, Notification::A
 bool CheckDeleteNotify(const AlbumAccurateRefresh &albumRefresh, Notification::AlbumRefreshOperation operation,
     const AlbumChangeInfo &infoBefore, const AlbumChangeInfo &infoAfter)
 {
-    auto notifyInfos = albumRefresh.notifyExe_->notifyInfos_;
+    auto notifyInfos = albumRefresh.notifyExe_.notifyInfos_;
     if (notifyInfos.size() != 1) {
         MEDIA_ERR_LOG("notify size error.");
         return false;
@@ -407,10 +407,11 @@ void AlbumAccurateRefreshTest::TearDown()
 
 HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Init_001, TestSize.Level2)
 {
-    AlbumAccurateRefresh albumRefresh;
-    albumRefresh.Init();
-    EXPECT_TRUE(albumRefresh.dataManager_ != nullptr);
-    EXPECT_TRUE(albumRefresh.notifyExe_ != nullptr);
+    std::shared_ptr<TransactionOperations> trans =
+        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Init_001");
+    AlbumAccurateRefresh albumRefresh(trans);
+    EXPECT_TRUE(albumRefresh.trans_ != nullptr);
+    EXPECT_TRUE(albumRefresh.dataManager_.trans_ != nullptr);
 }
 
 // 测试用例初始化运行时，创建PhotoAlbum表，里面包含系统相册、用户相册、来源相册内容

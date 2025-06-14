@@ -27,8 +27,9 @@
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
+#define EXPORT __attribute__ ((visibility ("default")))
 
-class AlbumChangeInfo : public Parcelable {
+class EXPORT AlbumChangeInfo : public Parcelable {
 public:
     AlbumChangeInfo() {}
     AlbumChangeInfo(int32_t albumId, std::string lpath, int32_t imageCount, int32_t videoCount, int32_t albumType,
@@ -39,7 +40,7 @@ public:
         videoCount_(videoCount), albumType_(albumType), albumSubType_(albumSubType), albumName_(albumName),
         albumUri_(albumUri), count_(count), coverUri_(coverUri), hiddenCount_(hiddenCount),
         hiddenCoverUri_(hiddenCoverUri), isCoverChange_(isCoverChange), isHiddenCoverChange_(isHiddenCoverChange),
-        coverDateTime_(dateTimeForCover), hiddenCoverDateTime_(dateTimeForCover), dirty_(dirty) {}
+        coverDateTime_(dateTimeForCover), hiddenCoverDateTime_(dateTimeForHiddenCover), dirty_(dirty) {}
 
     int32_t albumId_ = INVALID_INT32_VALUE;
     std::string lpath_ = EMPTY_STR;
@@ -61,7 +62,7 @@ public:
     int64_t hiddenCoverDateTime_ = INVALID_INT64_VALUE;
     int32_t dirty_ = INVALID_INT32_VALUE;
 
-    NativeRdb::ValuesBucket GetUpdateValues(const AlbumChangeInfo &oldAlbumInfo);
+    NativeRdb::ValuesBucket GetUpdateValues(const AlbumChangeInfo &oldAlbumInfo, NotifyType &type);
     std::string ToString(bool isDetail = false) const;
 
     bool Marshalling(Parcel &parcel) const override;
@@ -95,6 +96,16 @@ public:
     PhotoAssetChangeInfo deltaAddHiddenCover_;
     PhotoAssetChangeInfo deltaRemoveHiddenCover_;
     std::string ToString() const;
+    bool IsAlbumInfoRefresh() const
+    {
+        return deltaCount_ != 0 || deltaVideoCount_ != 0 || deltaAddCover_.fileId_ != INVALID_INT32_VALUE ||
+            deltaRemoveCover_.fileId_ != INVALID_INT32_VALUE;
+    }
+    bool IsAlbumHiddenInfoRefresh() const
+    {
+        return deltaHiddenCount_ != 0 || deltaAddHiddenCover_.fileId_ != INVALID_INT32_VALUE ||
+            deltaRemoveHiddenCover_.fileId_ != INVALID_INT32_VALUE;
+    }
 };
 
 } // namespace Media

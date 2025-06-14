@@ -55,6 +55,7 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
 
     { PhotoColumn::PHOTO_OWNER_ALBUM_ID, TYPE_INT32 },
     { PhotoColumn::PHOTO_HIDDEN_TIME, TYPE_INT64 },
+    { PhotoColumn::PHOTO_THUMBNAIL_READY, TYPE_INT64 },
     { PhotoColumn::MEDIA_NAME, TYPE_STRING },
     { PhotoColumn::MEDIA_FILE_PATH, TYPE_STRING }
 };
@@ -112,6 +113,8 @@ vector<PhotoAssetChangeInfo> PhotoAssetChangeInfo::GetInfoFromResult(const share
             PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet, GetDataType(PhotoColumn::PHOTO_OWNER_ALBUM_ID)));
         assetChangeInfo.hiddenTime_ = get<int64_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_HIDDEN_TIME,
             resultSet, GetDataType(PhotoColumn::PHOTO_HIDDEN_TIME)));
+        assetChangeInfo.thumbnailReady_ = get<int64_t>(ResultSetUtils::GetValFromColumn(
+            PhotoColumn::PHOTO_THUMBNAIL_READY, resultSet, GetDataType(PhotoColumn::PHOTO_THUMBNAIL_READY)));
         assetChangeInfo.displayName_ = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_NAME, resultSet,
             GetDataType(PhotoColumn::MEDIA_NAME)));
         assetChangeInfo.path_ = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet,
@@ -123,10 +126,7 @@ vector<PhotoAssetChangeInfo> PhotoAssetChangeInfo::GetInfoFromResult(const share
         assetChangeInfo.ownerAlbumUri_ = MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
             to_string(assetChangeInfo.ownerAlbumId_));
         assetChangeInfos.push_back(assetChangeInfo);
-        MEDIA_INFO_LOG("assetChangeInfo: %{public}s", assetChangeInfo.ToString().c_str());
     }
-    ACCURATE_DEBUG("length:%{public}zu", assetChangeInfos.size());
-    
     return assetChangeInfos;
 }
 
@@ -153,7 +153,8 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
         ss << ", syncStatus_: " << syncStatus_ << ", cleanFlag_: " << cleanFlag_;
         ss << ", timePending_: " << timePending_ << ", isTemp_: " << isTemp_;
         ss << ", burstCoverLevel_: " << burstCoverLevel_;
-        ss << ", hiddenTime_: " << hiddenTime_ << ", displayName_: " << displayName_;
+        ss << ", hiddenTime_: " << hiddenTime_ << ", thumbnailReady_: " << thumbnailReady_;
+        ss << ", displayName_: " << displayName_;
         ss << ", path_: " << path_ << ", path_: " << path_;
     } else {
         ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_;
@@ -238,6 +239,7 @@ PhotoAssetChangeInfo& PhotoAssetChangeInfo::operator=(const PhotoAssetChangeInfo
         burstCoverLevel_ = info.burstCoverLevel_;
         ownerAlbumId_ = info.ownerAlbumId_;
         hiddenTime_ = info.hiddenTime_;
+        thumbnailReady_ = info.thumbnailReady_;
         displayName_ = info.displayName_;
         path_ = info.path_;
         uri_ = info.uri_;
@@ -265,6 +267,7 @@ bool PhotoAssetChangeInfo::operator==(const PhotoAssetChangeInfo &info) const
         burstCoverLevel_ == info.burstCoverLevel_ &&
         ownerAlbumId_ == info.ownerAlbumId_ &&
         hiddenTime_ == info.hiddenTime_ &&
+        thumbnailReady_ == info.thumbnailReady_ &&
         displayName_ == info.displayName_ &&
         path_ == info.path_ &&
         uri_ == info.uri_ &&

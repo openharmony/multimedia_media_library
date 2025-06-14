@@ -22,6 +22,7 @@
 
 #include "abs_rdb_predicates.h"
 
+#include "medialibrary_rdb_utils.h"
 #include "accurate_refresh_base.h"
 #include "photo_asset_change_info.h"
 #include "asset_data_manager.h"
@@ -30,6 +31,7 @@
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
+#define EXPORT __attribute__ ((visibility ("default")))
 
 class EXPORT AssetAccurateRefresh : public AccurateRefreshBase {
 public:
@@ -48,16 +50,17 @@ public:
     int32_t UpdateModifiedDatas();
 
     // refresh album based on init datas and modified datas.
-    int32_t RefreshAlbum();
+    int32_t RefreshAlbum(NotifyAlbumType notifyAlbumType = NO_NOTIFY);
     
     // 根据传递的assetChangeDatas更新相册，不需要dataManager_处理
-    int32_t RefreshAlbum(const std::vector<PhotoAssetChangeData> &assetChangeDatas);
+    int32_t RefreshAlbum(const std::vector<PhotoAssetChangeData> &assetChangeDatas,
+        NotifyAlbumType notifyAlbumType = NO_NOTIFY);
 
     // notify assest change infos based on init datas and modified datas.
     int32_t Notify();
 
     // 根据传递的assetChangeDatas进行通知，不需要dataManager_处理
-    int32_t Notify(std::vector<PhotoAssetChangeData> assetChangeDatas);
+    int32_t Notify(const std::vector<PhotoAssetChangeData> &assetChangeDatas);
     using AccurateRefreshBase::Delete;
     int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
     int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates, int32_t &deletedRows) override;
@@ -74,9 +77,9 @@ private:
     int32_t DeleteCommon(std::function<int32_t(NativeRdb::ValuesBucket &)> updateExe);
 
 private:
-    std::shared_ptr<AssetDataManager> dataManager_ = nullptr;
-    std::shared_ptr<AlbumRefreshExecution> albumRefreshExe_ = nullptr;
-    std::shared_ptr<AssetChangeNotifyExecution> notifyExe_ = nullptr;
+    AssetDataManager dataManager_;
+    AlbumRefreshExecution albumRefreshExe_;
+    AssetChangeNotifyExecution notifyExe_;
 };
 } // namespace Media
 } // namespace OHOS

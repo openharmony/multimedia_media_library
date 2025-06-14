@@ -2880,7 +2880,7 @@ void ChangeListenerNapi::QueryRdbAndNotifyChange(UvChangeMsg *msg)
     } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
         ret = ChangeListenerNapi::ParseSharedPhotoAssets(wrapper, true);
     } else {
-        NAPI_DEBUG_LOG("other albums notify");
+        NAPI_INFO_LOG("other albums notify");
     }
     if (ret != 0) {
         wrapper->sharedAssetsRowObjVector_.clear();
@@ -9701,10 +9701,15 @@ int32_t MediaLibraryNapi::RegisterObserverExecute(napi_env env, napi_ref ref, Ch
     Uri notifyUri(registerUri);
     int32_t ret = UserFileClient::RegisterObserverExtProvider(notifyUri,
         static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), false);
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("failed to register observer, ret: %{public}d, uri: %{public}s", ret, registerUri.c_str());
+        return ret;
+    }
 
     shared_ptr<ClientObserver> clientObserver = make_shared<ClientObserver>(uriType, ref);
     observer->clientObservers_[uriType].push_back(clientObserver);
     listObj.newObservers_.push_back(observer);
+    NAPI_INFO_LOG("success to register observer, ret: %{public}d, uri: %{public}s", ret, registerUri.c_str());
     return ret;
 }
 
@@ -9827,8 +9832,14 @@ int32_t MediaLibraryNapi::UnregisterObserverExecute(napi_env env,
         if (ret == E_OK && clientObservers.empty()) {
             ret = UserFileClient::UnregisterObserverExtProvider(Uri(registerUri),
                 static_cast<shared_ptr<DataShare::DataShareObserver>>(*it));
+            if (ret != E_OK) {
+                NAPI_ERR_LOG("failed to unregister observer, ret: %{public}d, uri: %{public}s",
+                    ret, registerUri.c_str());
+                return ret;
+            }
             std::vector<shared_ptr<MediaOnNotifyNewObserver>>::iterator tmp = it;
             listObj.newObservers_.erase(tmp);
+            NAPI_INFO_LOG("success to unregister observer, ret: %{public}d, uri: %{public}s", ret, registerUri.c_str());
         }
         return ret;
     }

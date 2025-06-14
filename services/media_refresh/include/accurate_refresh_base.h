@@ -79,7 +79,7 @@ protected:
     std::shared_ptr<TransactionOperations> trans_;
 private:
     std::vector<int32_t> GetReturningKeys(const std::pair<int32_t, NativeRdb::Results> &retWithResults);
-    std::mutex dbOperationMtx_;
+    static std::mutex dbOperationMtx_;
 };
 } // namespace Media
 } // namespace OHOS
