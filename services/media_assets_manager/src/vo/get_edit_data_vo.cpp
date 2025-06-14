@@ -49,20 +49,20 @@ bool GetEditDataRspBody::Unmarshalling(MessageParcel &parcel)
 {
     this->resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
     if (this->resultSet == nullptr) {
-        MEDIA_ERR_LOG("QueueEditDataRspBody ReadFromParcel failed");
+        MEDIA_ERR_LOG("GetEditDataRspBody ReadFromParcel failed");
         return false;
     }
-    MEDIA_INFO_LOG("QueueEditDataRspBody ReadFromParcel success");
+    MEDIA_INFO_LOG("GetEditDataRspBody ReadFromParcel success");
     return true;
 }
 
 bool GetEditDataRspBody::Marshalling(MessageParcel &parcel) const
 {
     if (this->resultSet == nullptr || !DataShare::DataShareResultSet::Marshal(this->resultSet, parcel)) {
-        MEDIA_ERR_LOG("QueueEditDataRspBody Marshalling failed");
+        MEDIA_ERR_LOG("GetEditDataRspBody Marshalling failed");
         return false;
     }
-    MEDIA_INFO_LOG("QueueEditDataRspBody Marshalling success");
+    MEDIA_INFO_LOG("GetEditDataRspBody Marshalling success");
     return true;
 }
 

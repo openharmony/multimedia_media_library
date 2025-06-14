@@ -104,7 +104,7 @@ ohos_unittest("media_assets_controller_service_test") {
     "./src/media_assets_controller_test.cpp",
     "./src/modify_assets_test.cpp",
     "./src/query_cloud_enhancement_task_state_test.cpp",
-    "./src/queue_edit_asset_status_test.cpp",
+    "./src/query_edit_asset_status_test.cpp",
     "./src/request_content_test.cpp",
     "./src/request_image_test.cpp",
     "./src/revert_to_original_test.cpp",

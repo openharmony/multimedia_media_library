@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef QUEUE_EDIT_ASSET_STATUS_TEST_H
-#define QUEUE_EDIT_ASSET_STATUS_TEST_H
+#ifndef QUERY_EDIT_ASSET_STATUS_TEST_H
+#define QUERY_EDIT_ASSET_STATUS_TEST_H
 
 #include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-class QueueEditAssetStatusTest : public testing::Test {
+class QueryEditAssetStatusTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -29,4 +29,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // QUEUE_EDIT_ASSET_STATUS_TEST_H
+#endif // QUERY_EDIT_ASSET_STATUS_TEST_H

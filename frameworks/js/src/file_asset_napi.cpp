@@ -4951,7 +4951,7 @@ static void PhotoAccessHelperIsEditedExecute(napi_env env, void *data)
         NAPI_INFO_LOG("PhotoAccessHelperIsEditedExecute need ipc");
         IsEditedReqBody reqBody;
         IsEditedRspBody rspBody;
-        uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_IS_EDITED);
+        uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_IS_EDITED);
         reqBody.fileId = fileId;
         errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
         finalResultSet = rspBody.resultSet;
@@ -5022,7 +5022,7 @@ static void QueryPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
 {
     RequestEditDataReqBody reqBody;
     RequestEditDataRspBody rspBody;
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_REQUEST_EDIT_DATA);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_REQUEST_EDIT_DATA);
     reqBody.predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
 
     NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
@@ -5042,7 +5042,7 @@ static void GetPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
 {
     GetEditDataReqBody reqBody;
     GetEditDataRspBody rspBody;
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUEUE_GET_EDIT_DATA);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_EDIT_DATA);
     reqBody.predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
 
     NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");

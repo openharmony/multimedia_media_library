@@ -55,20 +55,20 @@ bool GetAlbumsByIdsRspBody::Unmarshalling(MessageParcel &parcel)
 {
     this->resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
     if (this->resultSet == nullptr) {
-        MEDIA_ERR_LOG("QueueEditDataRspBody ReadFromParcel failed");
+        MEDIA_ERR_LOG("GetAlbumsByIdsRspBody ReadFromParcel failed");
         return false;
     }
-    MEDIA_INFO_LOG("QueueEditDataRspBody ReadFromParcel success");
+    MEDIA_INFO_LOG("GetAlbumsByIdsRspBody ReadFromParcel success");
     return true;
 }
 
 bool GetAlbumsByIdsRspBody::Marshalling(MessageParcel &parcel) const
 {
     if (this->resultSet == nullptr || !DataShare::DataShareResultSet::Marshal(this->resultSet, parcel)) {
-        MEDIA_ERR_LOG("QueueEditDataRspBody Marshalling failed");
+        MEDIA_ERR_LOG("GetAlbumsByIdsRspBody Marshalling failed");
         return false;
     }
-    MEDIA_INFO_LOG("QueueEditDataRspBody Marshalling success");
+    MEDIA_INFO_LOG("GetAlbumsByIdsRspBody Marshalling success");
     return true;
 }
 
