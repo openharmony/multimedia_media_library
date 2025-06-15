@@ -333,7 +333,7 @@ int32_t CommandLine::Parser(ExecEnv &env)
     } else if (cmd == OPT_STR_QUERY) {
         env.optArgs.cmdType = OptCmdType::TYPE_QUERY;
         PutExtraString(env, MEDIATOOL_ARG_FIRST);
-    } else if (cmd == OPT_STR_LS){
+    } else if (cmd == OPT_STR_LS) {
         env.optArgs.cmdType = OptCmdType::TYPE_LS;
     } else {
         ShowUsage(env.isRoot);

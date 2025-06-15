@@ -51,8 +51,8 @@ private:
 
 class FaCloudSyncSwitchObserver : public AAFwk::DataAbilityObserverStub {
 public:
-    explicit FaCloudSyncSwitchObserver(const std::string &cloudSyncChangeUri) :
-    cloudSyncChangeUri(cloudSyncChangeUri) {}
+    explicit FaCloudSyncSwitchObserver(
+        const std::string &cloudSyncChangeUri) : cloudSyncChangeUri(cloudSyncChangeUri) {}
     ~FaCloudSyncSwitchObserver() override = default;
     void PostAssetChangeTask();
     void OnChange() override;

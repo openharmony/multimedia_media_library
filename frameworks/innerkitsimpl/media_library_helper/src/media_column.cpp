@@ -103,6 +103,7 @@ const std::string PhotoColumn::PHOTO_FRONT_CAMERA = "front_camera";
 const std::string PhotoColumn::PHOTO_BURST_COVER_LEVEL = "burst_cover_level";
 const std::string PhotoColumn::PHOTO_BURST_KEY = "burst_key";
 const std::string PhotoColumn::PHOTO_COVER_POSITION = "cover_position";
+const std::string PhotoColumn::PHOTO_IS_RECTIFICATION_COVER = "is_rectification_cover";
 const std::string PhotoColumn::PHOTO_ORIGINAL_SUBTYPE = "original_subtype";
 const std::string PhotoColumn::PHOTO_DETAIL_TIME = "detail_time";
 const std::string PhotoColumn::PHOTO_OWNER_ALBUM_ID = "owner_album_id";
@@ -170,6 +171,8 @@ const std::string PhotoColumn::PHOTO_CACHE_URI_PREFIX = "file://media/Photo/cach
 const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
 const std::string PhotoColumn::HIGHTLIGHT_COVER_URI = "/highlight";
 const std::string PhotoColumn::HIGHTLIGHT_URI = "/highlight/video";
+const std::string PhotoColumn::HIDDEN_PHOTO_URI_PREFIX = "file://media/hiddenPhoto/";
+const std::string PhotoColumn::TRASHED_PHOTO_URI_PREFIX = "file://media/trashedPhoto/";
 
 const std::string PhotoColumn::PHOTO_CLOUD_URI_PREFIX = "file://cloudsync/Photo/";
 const std::string PhotoColumn::PHOTO_CLOUD_TRIGGER_PREFIX = "file://cloudsync/triggerGeneration/";
@@ -246,6 +249,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_DYNAMIC_RANGE_TYPE + " INT DEFAULT 0, " +
     MOVING_PHOTO_EFFECT_MODE + " INT DEFAULT 0, " +
     PHOTO_COVER_POSITION + " BIGINT DEFAULT 0, " +
+    PHOTO_IS_RECTIFICATION_COVER + " INT NOT NULL DEFAULT 0, " +
     PHOTO_THUMBNAIL_READY + " BIGINT DEFAULT 0, " +
     PHOTO_LCD_SIZE + " TEXT, " +
     PHOTO_THUMB_SIZE + " TEXT," +
@@ -523,7 +527,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::PHOTO_DETAIL_TIME,
     PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::SUPPORTED_WATERMARK_TYPE,
     PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_IS_AUTO,
-    PhotoColumn::PHOTO_MEDIA_SUFFIX, PhotoColumn::PHOTO_IS_RECENT_SHOW,
+    PhotoColumn::PHOTO_MEDIA_SUFFIX, PhotoColumn::PHOTO_IS_RECENT_SHOW, PhotoColumn::PHOTO_IS_RECTIFICATION_COVER,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
@@ -573,6 +577,7 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
         MOVING_PHOTO_EFFECT_MODE,
         PHOTO_COVER_POSITION,
         PHOTO_ORIGINAL_SUBTYPE,
+        PHOTO_IS_RECTIFICATION_COVER,
     };
 
     std::string result = "(";

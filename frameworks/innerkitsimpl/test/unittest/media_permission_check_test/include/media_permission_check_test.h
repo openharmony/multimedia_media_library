@@ -18,8 +18,6 @@
 
 #include "gtest/gtest.h"
 #include "media_permission_check.h"
-// #include "media_file_utils.h"
-// #include "media_dbperm_parser_req.h"
 namespace OHOS {
 namespace Media {
 class MediaPermissionCheckTest : public ::testing::Test {

@@ -567,15 +567,6 @@ int32_t CloudMediaAlbumDao::InsertAlbums(PhotoAlbumDto &record)
         MEDIA_ERR_LOG("Insert pull record failed, rdb ret = %{public}d", ret);
         return E_RDB;
     }
-    // if (values.HasColumn(PhotoAlbumColumns::ALBUM_BUNDLE_NAME)) {
-    //     NativeRdb::ValueObject obj;
-    //     values.GetObject(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, obj);
-    //     std::string b;
-    //     obj.GetString(b);
-    //     MEDIA_INFO_LOG("InsertAlbums bundle : %{public}s", b.c_str());
-    // } else {
-    //     MEDIA_INFO_LOG("InsertAlbums no bundle");
-    // }
     return E_OK;
 }
 

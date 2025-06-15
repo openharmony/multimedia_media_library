@@ -39,8 +39,10 @@ std::string CloudFileDataConvert::prefix_ = "/data/service/el2/";
 std::string CloudFileDataConvert::suffixLCD_ = "/account/device_view/local/files";
 std::string CloudFileDataConvert::suffix_ = "/hmdfs/account/files";
 const std::string CloudFileDataConvert::recordType_ = "media";
+constexpr off_t THUMB_LIMIT_SIZE = 2 * 1024 * 1024;
 
-CloudFileDataConvert::CloudFileDataConvert(CloudOperationType type, int32_t userId) : userId_(userId), type_(type) {}
+CloudFileDataConvert::CloudFileDataConvert(CloudOperationType type, int32_t userId) : userId_(userId), type_(type)
+{}
 
 static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)
 {
@@ -78,12 +80,24 @@ int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::st
     /* try get file size on xxxjpg/THM.jpg */
     thumbnailPath = GetThumbPath(path, thumbSuffix);
     err = stat(thumbnailPath.c_str(), &fileStat);
-    MEDIA_INFO_LOG("GetFileSize stat end %{public}s", thumbnailPath.c_str());
     if (err < 0) {
+        int32_t errNum = errno;
         MEDIA_ERR_LOG("get thumb size failed errno :%{public}d, %{public}s", errno, thumbnailPath.c_str());
-        return E_PATH_QUERY_FILED;
+        return ((thumbSuffix == THUMB_SUFFIX) ? E_THM_SOURCE_BASIC : E_LCD_SOURCE_BASIC) + errNum;
     }
     fileSize = fileStat.st_size;
+    if (fileStat.st_size <= 0) {
+        MEDIA_ERR_LOG("get size err");
+        return (thumbSuffix == THUMB_SUFFIX) ? E_THM_SIZE_IS_ZERO : E_LCD_SIZE_IS_ZERO;
+    }
+    if (fileStat.st_size >= THUMB_LIMIT_SIZE) {
+        MEDIA_ERR_LOG("ReportFailure: size is too large");
+        return (thumbSuffix == THUMB_SUFFIX) ? E_THM_IS_TOO_LARGE : E_LCD_IS_TOO_LARGE;
+    }
+    MEDIA_INFO_LOG("GetFileSize stat end thumbnailPath: %{public}s, err: %{public}d, size: %{public}" PRId64,
+        thumbnailPath.c_str(),
+        err,
+        fileSize);
     return E_OK;
 }
 
@@ -92,16 +106,10 @@ int32_t CloudFileDataConvert::HandleThumbSize(
 {
     MEDIA_INFO_LOG("enter HandleThumbSize");
     std::string path = upLoadRecord.data;
-    if (path.empty()) {
-        MEDIA_ERR_LOG("HandleThumbSize failed to get filepath");
-        return E_QUERY_CONTENT_IS_EMPTY;
-    }
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_QUERY_CONTENT_IS_EMPTY, "HandleThumbSize failed to get filepath");
     int64_t fileSize;
     int32_t ret = GetFileSize(path, THUMB_SUFFIX, fileSize);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("HandleThumbSize failed to get file size");
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "GetFileSize err: %{public}d", ret);
     map["thumb_size"] = MDKRecordField(fileSize);
     return E_OK;
 }
@@ -112,15 +120,10 @@ int32_t CloudFileDataConvert::HandleLcdSize(
     if (type_ != FILE_CREATE && type_ != FILE_DATA_MODIFY) {
         return E_OK;
     }
-
     std::string path = upLoadRecord.data;
-
     int64_t fileSize;
     int32_t ret = GetFileSize(path, LCD_SUFFIX, fileSize);
-    if (ret != E_OK) {
-        return ret;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "GetFileSize err: %{public}d", ret);
     map["lcd_size"] = MDKRecordField(fileSize);
     return E_OK;
 }
@@ -134,7 +137,7 @@ int32_t CloudFileDataConvert::HandleFormattedDate(
     std::string day = upLoadRecord.dateDay;
     if (year.empty() || month.empty() || day.empty()) {
         MEDIA_INFO_LOG("HandleFormattedDate year month day is empty");
-        int64_t createTime = upLoadRecord.dateAdded;
+        int64_t createTime = upLoadRecord.dateTaken;
         createTime = createTime / MILLISECOND_TO_SECOND;
         year = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, createTime);
         month = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, createTime);
@@ -172,7 +175,8 @@ int32_t CloudFileDataConvert::HandleUniqueFileds(
     map[PhotoColumn::PHOTO_FRONT_CAMERA] = MDKRecordField(upLoadRecord.frontCamera);
     map[PhotoColumn::PHOTO_EDIT_TIME] = MDKRecordField(upLoadRecord.editTime);
     map[PhotoColumn::PHOTO_ORIGINAL_SUBTYPE] = MDKRecordField(upLoadRecord.originalSubtype);
-    map[PhotoColumn::PHOTO_COVER_POSITION] = MDKRecordField(upLoadRecord.originalSubtype);
+    map[PhotoColumn::PHOTO_COVER_POSITION] = MDKRecordField(upLoadRecord.coverPosition);
+    map[PhotoColumn::PHOTO_IS_RECTIFICATION_COVER] = MDKRecordField(upLoadRecord.isRectificationCover);
     map[PhotoColumn::MOVING_PHOTO_EFFECT_MODE] = MDKRecordField(upLoadRecord.movingPhotoEffectMode);
     map[PhotoColumn::SUPPORTED_WATERMARK_TYPE] = MDKRecordField(upLoadRecord.supportedWatermarkType);
     map[PhotoColumn::PHOTO_STRONG_ASSOCIATION] = MDKRecordField(upLoadRecord.strongAssociation);
@@ -187,11 +191,14 @@ int32_t CloudFileDataConvert::HandleUniqueFileds(
     map[FILE_FIX_VERSION] = MDKRecordField(0);
     map["editedTime_ms"] = MDKRecordField(upLoadRecord.dateModified);
     int32_t ret = HandleThumbSize(map, upLoadRecord);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleThumbSize err: %{public}d", ret);
     ret = HandleLcdSize(map, upLoadRecord);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleLcdSize err: %{public}d", ret);
     ret = HandleFormattedDate(map, upLoadRecord);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleFormattedDate err: %{public}d", ret);
     data[FILE_ATTRIBUTES] = MDKRecordField(map);
     data[FILE_LOCAL_ID] = MDKRecordField(upLoadRecord.fileId);
-    return E_OK;
+    return ret;
 }
 
 int32_t CloudFileDataConvert::HandleFileType(
@@ -257,33 +264,30 @@ int32_t CloudFileDataConvert::HandleRotate(
     return E_OK;
 }
 
+int32_t CloudFileDataConvert::HandleSourcePath(
+    std::map<std::string, MDKRecordField> &properties, const CloudMdkRecordPhotosVo &upLoadRecord)
+{
+    if (!upLoadRecord.sourcePath.empty()) {
+        properties["sourcePath"] = MDKRecordField(upLoadRecord.sourcePath);
+    }
+    return E_OK;
+}
+
 int32_t CloudFileDataConvert::HandleProperties(
     std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
     MEDIA_INFO_LOG("enter HandleProperties source path:%{public}s", upLoadRecord.sourcePath.c_str());
-    std::map<std::string, MDKRecordField> map;
-    // 可以封装一个值为0或者为空的异常述职处理函数
-    if (upLoadRecord.sourcePath.empty()) {
-        MEDIA_ERR_LOG("Get local sourcePath is empty");
-    } else {
-        map["sourcePath"] = MDKRecordField(upLoadRecord.sourcePath);
-    }
-    map["sourceFileName"] = MDKRecordField(upLoadRecord.displayName);
-    map["first_update_time"] = MDKRecordField(std::to_string(upLoadRecord.dateAdded));
-    map["fileCreateTime"] = MDKRecordField(std::to_string(upLoadRecord.dateTaken));
-    map["detail_time"] = MDKRecordField(upLoadRecord.detailTime);
-    map["duration"] = MDKRecordField(upLoadRecord.duration);
-    /* Resolution is combined by cloud sdk, just upload height and width */
-    if (upLoadRecord.height == 0 || upLoadRecord.width == 0) {
-        MEDIA_ERR_LOG("Get local height or width is 0 ");
-        return E_QUERY_CONTENT_IS_EMPTY;
-    } else {
-        map["height"] = MDKRecordField(upLoadRecord.height);
-        map["width"] = MDKRecordField(upLoadRecord.width);
-    }
-    HandlePosition(map, upLoadRecord);
-    HandleRotate(map, upLoadRecord);
-    data[FILE_PROPERTIES] = MDKRecordField(map);
+    std::map<std::string, MDKRecordField> properties;
+    this->HandleSourcePath(properties, upLoadRecord);
+    properties["sourceFileName"] = MDKRecordField(upLoadRecord.displayName);
+    properties["first_update_time"] = MDKRecordField(std::to_string(upLoadRecord.dateAdded));
+    properties["fileCreateTime"] = MDKRecordField(std::to_string(upLoadRecord.dateTaken));
+    properties["detail_time"] = MDKRecordField(upLoadRecord.detailTime);
+    properties["duration"] = MDKRecordField(upLoadRecord.duration);
+    this->HandleWidthAndHeight(properties, upLoadRecord);
+    HandlePosition(properties, upLoadRecord);
+    HandleRotate(properties, upLoadRecord);
+    data[FILE_PROPERTIES] = MDKRecordField(properties);
     return E_OK;
 }
 
@@ -307,33 +311,47 @@ static void DeleteTmpFile(bool needDelete, const std::string &path)
     }
 }
 
-int32_t CloudFileDataConvert::HandleEditData(
+int32_t CloudFileDataConvert::HandleRawFile(
     std::map<std::string, MDKRecordField> &data, std::string &path, bool isMovingPhoto)
 {
-    MEDIA_INFO_LOG("enter HandleEditData editDataPath %{public}s, %{public}d", path.c_str(), isMovingPhoto);
-    std::string rawFilePath;
-    std::string editDataPath;
-    std::string editDataCameraPath;
-
-    rawFilePath = PhotoFileUtils::GetEditDataSourcePath(path, userId_);
-    editDataPath = PhotoFileUtils::GetEditDataPath(path, userId_);
-    editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(path, userId_);
-
+    std::string rawFilePath = PhotoFileUtils::GetEditDataSourcePath(path, userId_);
     MEDIA_INFO_LOG("HandleEditData rawFilePath %{public}s", rawFilePath.c_str());
-    if (!rawFilePath.empty() && access(rawFilePath.c_str(), F_OK) == 0) {
-        MEDIA_INFO_LOG("HandleEditData rawFilePath is not empty and access success");
-        if (isMovingPhoto) {
-            if (MovingPhotoFileUtils::ConvertToSourceLivePhoto(path, rawFilePath, userId_) != E_OK) {
-                MEDIA_ERR_LOG("HandleEditData ConvertToSourceLivePhoto failed %{public}s", path.c_str());
-                return E_PATH_QUERY_FILED;
-            }
-        }
-        MDKAsset content;
-        content.uri = move(rawFilePath);
-        content.assetName = FILE_RAW;
-        content.operationType = MDKAssetOperType::DK_ASSET_ADD;
-        data[FILE_RAW] = MDKRecordField(content);
+    if (rawFilePath.empty()) {
+        return E_OK;
     }
+    struct stat fileStat;
+    int err = stat(rawFilePath.c_str(), &fileStat);
+    if (err < 0 && errno == ENOENT) {
+        return E_OK;
+    }
+    if (err < 0 && errno != ENOENT) {
+        int errNum = errno;
+        MEDIA_ERR_LOG("get raw size failed errno: %{public}d", errNum);
+        return E_CONTENT_SOURCE_BASIC + errNum;
+    }
+
+    if (fileStat.st_size <= 0) {
+        MEDIA_ERR_LOG("raw size err");
+        return E_CONTENT_RAW_SIZE_IS_ZERO;
+    }
+    if (isMovingPhoto) {
+        if (MovingPhotoFileUtils::ConvertToSourceLivePhoto(path, rawFilePath, userId_) != E_OK) {
+            MEDIA_ERR_LOG("ConvertToSourceLivePhoto failed %{public}s", path.c_str());
+            return E_PATH;
+        }
+    }
+    MDKAsset content;
+    content.uri = move(rawFilePath);
+    content.assetName = FILE_RAW;
+    content.operationType = MDKAssetOperType::DK_ASSET_ADD;
+    data[FILE_RAW] = MDKRecordField(content);
+    return E_OK;
+}
+
+int32_t CloudFileDataConvert::HandleEditData(std::map<std::string, MDKRecordField> &data, std::string &path)
+{
+    MEDIA_INFO_LOG("enter HandleEditData editDataPath %{public}s", path.c_str());
+    std::string editDataPath = PhotoFileUtils::GetEditDataPath(path, userId_);
     MEDIA_INFO_LOG("HandleEditData editDataPath %{public}s", editDataPath.c_str());
     if (!editDataPath.empty()) {
         MDKAsset content;
@@ -346,6 +364,14 @@ int32_t CloudFileDataConvert::HandleEditData(
             data[FILE_EDIT_DATA] = MDKRecordField(content);
         }
     }
+    return E_OK;
+}
+
+int32_t CloudFileDataConvert::HandleEditDataCamera(std::map<std::string, MDKRecordField> &data, std::string &path)
+{
+    MEDIA_INFO_LOG("enter HandleEditData editDataPath %{public}s", path.c_str());
+    std::string editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(path, userId_);
+
     // -- editDataCamera as properties, append to FILE_ATTRIBUTES --
     MEDIA_INFO_LOG("HandleEditData editDataCameraPath %{public}s", editDataCameraPath.c_str());
     if (!editDataCameraPath.empty() && access(editDataCameraPath.c_str(), F_OK) == 0) {
@@ -364,7 +390,61 @@ int32_t CloudFileDataConvert::HandleEditData(
         map[FILE_EDIT_DATA_CAMERA] = MDKRecordField(buf);
         data[FILE_ATTRIBUTES] = MDKRecordField(map);
     }
+    return E_OK;
+}
 
+int32_t CloudFileDataConvert::HandleEditData(
+    std::map<std::string, MDKRecordField> &data, std::string &path, bool isMovingPhoto)
+{
+    MEDIA_INFO_LOG("enter HandleEditData editDataPath %{public}s, %{public}d", path.c_str(), isMovingPhoto);
+    int32_t ret = this->HandleRawFile(data, path, isMovingPhoto);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleEditData HandleRawFile err: %{public}d", ret);
+    this->HandleEditData(data, path);
+    this->HandleEditDataCamera(data, path);
+    return E_OK;
+}
+
+int32_t CloudFileDataConvert::CheckContentLivePhoto(const CloudMdkRecordPhotosVo &upLoadRecord, std::string &lowerPath)
+{
+    std::string path = upLoadRecord.data;
+    int64_t coverPosition = upLoadRecord.coverPosition;
+    bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(
+        upLoadRecord.subtype, upLoadRecord.movingPhotoEffectMode, upLoadRecord.originalSubtype);
+    bool isGraffiti = MovingPhotoFileUtils::IsGraffiti(upLoadRecord.subtype, upLoadRecord.originalSubtype);
+    MEDIA_INFO_LOG("HandleContent isMovingPhoto: %{public}d, isGraffiti: %{public}d", isMovingPhoto, isGraffiti);
+    if (isMovingPhoto && !isGraffiti) {
+        if (MovingPhotoFileUtils::ConvertToLivePhoto(path, coverPosition, lowerPath, userId_) != E_OK) {
+            MEDIA_ERR_LOG("covert to live photo fail");
+            return E_CONTENT_COVERT_LIVE_PHOTO;
+        }
+    } else {
+        lowerPath = GetLowerPath(path);
+    }
+    return E_OK;
+}
+
+int32_t CloudFileDataConvert::CheckContentFile(const CloudMdkRecordPhotosVo &upLoadRecord, const std::string &lowerPath)
+{
+    bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(
+        upLoadRecord.subtype, upLoadRecord.movingPhotoEffectMode, upLoadRecord.originalSubtype);
+    bool isGraffiti = MovingPhotoFileUtils::IsGraffiti(upLoadRecord.subtype, upLoadRecord.originalSubtype);
+    struct stat fileStat;
+    int err = stat(lowerPath.c_str(), &fileStat);
+    if (err < 0) {
+        int32_t errNum = errno;
+        MEDIA_ERR_LOG("HandleContent errno : %{public}d, path : %{public}s, %{public}d, %{public}d",
+            errno,
+            lowerPath.c_str(),
+            isMovingPhoto,
+            isGraffiti);
+        DeleteTmpFile(isMovingPhoto && !isGraffiti, lowerPath);
+        return E_CONTENT_SOURCE_BASIC + errNum;
+    }
+    if (fileStat.st_size <= 0) {
+        MEDIA_ERR_LOG("HandleContent content size err");
+        DeleteTmpFile(isMovingPhoto && !isGraffiti, lowerPath);
+        return E_CONTENT_SIZE_IS_ZERO;
+    }
     return E_OK;
 }
 
@@ -373,40 +453,22 @@ int32_t CloudFileDataConvert::HandleContent(
 {
     MEDIA_INFO_LOG("enter HandleContent");
     std::string path = upLoadRecord.data;
-    int64_t coverPosition = upLoadRecord.coverPosition;
     std::string lowerPath = "";
     bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(
         upLoadRecord.subtype, upLoadRecord.movingPhotoEffectMode, upLoadRecord.originalSubtype);
     bool isGraffiti = MovingPhotoFileUtils::IsGraffiti(upLoadRecord.subtype, upLoadRecord.originalSubtype);
     MEDIA_INFO_LOG("HandleContent isMovingPhoto: %{public}d, isGraffiti: %{public}d", isMovingPhoto, isGraffiti);
-    if (isMovingPhoto && !isGraffiti) {
-        if (MovingPhotoFileUtils::ConvertToLivePhoto(path, coverPosition, lowerPath, userId_) != E_OK) {
-            MEDIA_ERR_LOG("covert to live photo fail");
-            return E_PATH_QUERY_FILED;
-        }
-    } else {
-        lowerPath = GetLowerPath(path);
-    }
-    struct stat fileStat;
-    int err = stat(lowerPath.c_str(), &fileStat);
-    if (err < 0) {
-        MEDIA_ERR_LOG("HandleContent errno : %{public}d, path : %{public}s, %{public}d, %{public}d",
-            errno, lowerPath.c_str(), isMovingPhoto, isGraffiti);
-        DeleteTmpFile(isMovingPhoto && !isGraffiti, lowerPath);
-        return E_PATH_QUERY_FILED;
-    }
-    if (fileStat.st_size <= 0) {
-        MEDIA_ERR_LOG("HandleContent content size err");
-        DeleteTmpFile(isMovingPhoto && !isGraffiti, lowerPath);
-        return E_INVALID_ARGUMENTS;
-    }
+    int32_t ret = this->CheckContentLivePhoto(upLoadRecord, lowerPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleContent CheckContentLivePhoto err: %{public}d", ret);
+    ret = this->CheckContentFile(upLoadRecord, lowerPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleContent err: %{public}d", ret);
     /* asset */
     MDKAsset content;
     content.uri = move(lowerPath);
     content.assetName = FILE_CONTENT;
     content.operationType = MDKAssetOperType::DK_ASSET_ADD;
     data[FILE_CONTENT] = MDKRecordField(content);
-    int32_t ret = HandleEditData(data, path, isMovingPhoto);
+    ret = HandleEditData(data, path, isMovingPhoto);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("HandleContent handle EditData err %{public}d", ret);
         DeleteTmpFile(isMovingPhoto && !isGraffiti, lowerPath);
@@ -424,14 +486,14 @@ int32_t CloudFileDataConvert::HandleThumbnail(
     if (orientation == NO_ORIENTATION) {
         std::string thumbnailPath = GetThumbPath(path, THUMB_SUFFIX);
         if (access(thumbnailPath.c_str(), F_OK)) {
-            MEDIA_ERR_LOG("thumnail doesn't exist %{public}s", thumbnailPath.c_str());
-            return E_PATH_QUERY_FILED;
+            MEDIA_ERR_LOG("ReportFailure: thumnail doesn't exist %{public}s", thumbnailPath.c_str());
+            return E_THM_SOURCE_BASIC + ENOENT;
         }
         thumbnailUploadPath = thumbnailPath;
     } else {
         if (access(thumbnailExPath.c_str(), F_OK)) {
-            MEDIA_ERR_LOG("thumbnailEx doesn't exist %{public}s", thumbnailExPath.c_str());
-            return E_PATH_QUERY_FILED;
+            MEDIA_ERR_LOG("ReportFailure: thumbnailEx doesn't exist %{public}s", thumbnailExPath.c_str());
+            return E_THM_SOURCE_BASIC + ENOENT;
         }
         thumbnailUploadPath = thumbnailExPath;
     }
@@ -464,14 +526,14 @@ int32_t CloudFileDataConvert::HandleLcd(
     if (orientation == NO_ORIENTATION) {
         std::string lcdPath = GetThumbPath(path, LCD_SUFFIX);
         if (access(lcdPath.c_str(), F_OK)) {
-            MEDIA_ERR_LOG("HandleLcd lcd path doesn't exist %{public}s", lcdPath.c_str());
-            return E_PATH_QUERY_FILED;
+            MEDIA_ERR_LOG("ReportFailure: HandleLcd lcd path doesn't exist %{public}s", lcdPath.c_str());
+            return E_LCD_SOURCE_BASIC + ENOENT;
         }
         lcdUploadPath = lcdPath;
     } else {
         if (access(lcdExPath.c_str(), F_OK)) {
-            MEDIA_ERR_LOG("HandleLcd lcdEx path doesn't exist %{public}s", lcdExPath.c_str());
-            return E_PATH_QUERY_FILED;
+            MEDIA_ERR_LOG("ReportFailure: HandleLcd lcdEx path doesn't exist %{public}s", lcdExPath.c_str());
+            return E_LCD_SOURCE_BASIC + ENOENT;
         }
         lcdUploadPath = lcdExPath;
     }
@@ -504,6 +566,32 @@ int32_t CloudFileDataConvert::HandleAttachments(
     return ret;
 }
 
+int32_t CloudFileDataConvert::HandleSize(
+    std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &upLoadRecord)
+{
+    if (upLoadRecord.size <= 0) {
+        MEDIA_ERR_LOG("ReportFailure: size is invalid");
+        return E_DB_SIZE_IS_ZERO;
+    }
+    data["size"] = MDKRecordField(upLoadRecord.size);
+    return E_OK;
+}
+
+int32_t CloudFileDataConvert::HandleWidthAndHeight(
+    std::map<std::string, MDKRecordField> &properties, const CloudMdkRecordPhotosVo &upLoadRecord)
+{
+    /* Resolution is combined by cloud sdk, just upload height and width */
+    if (upLoadRecord.height != 0) {
+        MEDIA_WARN_LOG("Get local height is 0 ");
+        properties["height"] = MDKRecordField(upLoadRecord.height);
+    }
+    if (upLoadRecord.width != 0) {
+        MEDIA_WARN_LOG("Get local width is 0 ");
+        properties["width"] = MDKRecordField(upLoadRecord.width);
+    }
+    return E_OK;
+}
+
 int32_t CloudFileDataConvert::HandleCompatibleFileds(
     std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
@@ -512,7 +600,8 @@ int32_t CloudFileDataConvert::HandleCompatibleFileds(
     data["fileName"] = MDKRecordField(upLoadRecord.displayName);
     data["createdTime"] = MDKRecordField(upLoadRecord.dateTaken);
     data["hashId"] = MDKRecordField("Md5_default_hash");
-    data["size"] = MDKRecordField(upLoadRecord.size);
+    int32_t ret = this->HandleSize(data, upLoadRecord);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleSize failed, ret: %{public}d", ret);
     data["source"] = MDKRecordField(upLoadRecord.deviceName);
     data["recycled"] = MDKRecordField(!!(upLoadRecord.dateTrashed));
     data["recycledTime"] = MDKRecordField(std::to_string(upLoadRecord.dateTrashed));
@@ -524,7 +613,9 @@ int32_t CloudFileDataConvert::HandleCompatibleFileds(
     HandleProperties(data, upLoadRecord);
 
     /* cloud sdk extra feature */
-    HandleAttachments(data, upLoadRecord);
+    if (type_ != CloudOperationType::FILE_METADATA_MODIFY) {
+        HandleAttachments(data, upLoadRecord);
+    }
 
     /* cloudsync-specific fields */
     data["mimeType"] = MDKRecordField(upLoadRecord.mimeType);
@@ -532,29 +623,36 @@ int32_t CloudFileDataConvert::HandleCompatibleFileds(
     return E_OK;
 }
 
-int32_t CloudFileDataConvert::SetUpdateSourceAlbum(MDKRecord &record, const CloudMdkRecordPhotosVo &upLoadRecord)
+int32_t CloudFileDataConvert::SetSourceAlbum(MDKRecord &record, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
     std::map<std::string, MDKRecordField> data;
     record.GetRecordData(data);
     std::string displayName = upLoadRecord.displayName;
     int32_t hidden = upLoadRecord.hidden;
-    // int32_t albumId = upLoadRecord.ownerAlbumId;
     std::string albumCloudId = upLoadRecord.albumCloudId;
     std::string albumLPath = upLoadRecord.albumLPath;
     if (hidden == 1) {
         data["albumId"] = MDKRecordField("default-album-4");
+        // Upload: hidden === 0, Download: hidden = 1 when albumId default-album-4
+        if (data.find(FILE_ATTRIBUTES) != data.end()) {
+            std::map<std::string, MDKRecordField> attrs = data[FILE_ATTRIBUTES];
+            attrs[MediaColumn::MEDIA_HIDDEN] = MDKRecordField(0);
+            data[FILE_ATTRIBUTES] = MDKRecordField(attrs);
+        }
     } else if (!albumCloudId.empty()) {
         data["albumId"] = MDKRecordField(albumCloudId);
     }
-    MEDIA_INFO_LOG("SetUpdateSourceAlbum Hidden:%{public}d, albumCloudId:%{public}s, albumLPath::%{public}s",
+    MEDIA_INFO_LOG("SetSourceAlbum Hidden:%{public}d, albumCloudId:%{public}s, albumLPath::%{public}s",
         hidden,
         albumCloudId.c_str(),
         albumLPath.c_str());
     data["isLogic"] = MDKRecordField(false);
-    if (!hidden && albumCloudId.empty()) {
+    // pictures should be found an albumid except for hidden and recycle
+    bool isRecycle = upLoadRecord.dateTrashed != 0;
+    if (!isRecycle && !hidden && albumCloudId.empty()) {
         record.SetRecordData(data);
         MEDIA_ERR_LOG("visible media, but albumid is empty");
-        return E_CLOUD_SYNC_DATA;
+        return E_DB_ALBUM_NOT_FOUND;
     }
     if (!albumLPath.empty()) {
         if (data.find(FILE_PROPERTIES) == data.end()) {
@@ -577,22 +675,21 @@ int32_t CloudFileDataConvert::SetUpdateSourceAlbum(MDKRecord &record, const Clou
     return E_OK;
 }
 
-int32_t CloudFileDataConvert::InsertAlbumIdChanges(MDKRecord &record, std::vector<MDKRecord> &records,
-    const CloudMdkRecordPhotosVo &upLoadRecord)
+int32_t CloudFileDataConvert::InsertAlbumIdChanges(
+    MDKRecord &record, std::vector<MDKRecord> &records, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
     MDKRecord tmp = record;
     std::map<std::string, MDKRecordField> data;
     tmp.GetRecordData(data);
     std::string albumCloudId;
-    if (data.find("albumId") == data.end() ||
-        data["albumId"].GetString(albumCloudId) != MDKLocalErrorCode::NO_ERROR) {
+    if (data.find("albumId") == data.end() || data["albumId"].GetString(albumCloudId) != MDKLocalErrorCode::NO_ERROR) {
         MEDIA_ERR_LOG("get albumId failed");
     }
     std::vector<MDKRecordField> rmList;
     /* remove */
     std::vector<std::string> removeId = upLoadRecord.removeAlbumCloudId;
     for (auto &id : removeId) {
-            rmList.push_back(MDKRecordField(MDKReference{ id, "album" }));
+        rmList.push_back(MDKRecordField(MDKReference{id, "album"}));
     }
     if (!rmList.empty()) {
         data.erase("albumId");
@@ -607,7 +704,8 @@ int32_t CloudFileDataConvert::InsertAlbumIdChanges(MDKRecord &record, std::vecto
 int32_t CloudFileDataConvert::ConvertToMdkRecord(const CloudMdkRecordPhotosVo &upLoadRecord, MDKRecord &record)
 {
     MEDIA_INFO_LOG("CloudFileDataConvert::ConvertToMdkRecord type:%{public}d, cloudId: %{public}s",
-        static_cast<int32_t>(type_), upLoadRecord.cloudId.c_str());
+        static_cast<int32_t>(type_),
+        upLoadRecord.cloudId.c_str());
     record.SetRecordType(recordType_);
     if (type_ == CloudOperationType::FILE_CREATE) {
         record.SetNewCreate(true);
@@ -618,56 +716,18 @@ int32_t CloudFileDataConvert::ConvertToMdkRecord(const CloudMdkRecordPhotosVo &u
     }
     std::map<std::string, MDKRecordField> data;
     int32_t ret = HandleUniqueFileds(data, upLoadRecord);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("CloudFileDataConvert::ConvertToMdkRecord failed to handle HandleUniqueFileds");
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleUniqueFileds failed, ret: %{public}d", ret);
     ret = HandleCompatibleFileds(data, upLoadRecord);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("CloudFileDataConvert::ConvertToMdkRecord failed to handle CompatibleFileds");
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleCompatibleFileds failed, ret: %{public}d", ret);
     record.SetRecordData(data);
-    ret = SetUpdateSourceAlbum(record, upLoadRecord);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("CloudFileDataConvert::ConvertToMdkRecord failed to SetUpdateSourceAlbum");
-        return ret;
-    }
+    ret = SetSourceAlbum(record, upLoadRecord);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "SetSourceAlbum failed, ret: %{public}d", ret);
     return E_OK;
 }
 
-int32_t CloudFileDataConvert::BuildCopyRecord(const std::string &cloudId, const MDKRecordOperResult &result,
-    OnCopyRecord &record)
+int32_t CloudFileDataConvert::BuildCopyRecord(
+    const std::string &cloudId, const MDKRecordOperResult &result, OnCopyRecord &record)
 {
-    MDKRecordPhotosData photosData = MDKRecordPhotosData(result.GetDKRecord());
-    std::optional<std::string> optionalCloudId = photosData.GetCloudId();
-    record.cloudId = cloudId;
-    std::optional<std::string> optPath = photosData.GetFilePath();
-    record.path = optPath.value_or("");
-    std::optional<int32_t> optFileId = photosData.GetFileId();
-    record.fileId = optFileId.value_or(-1);
-    std::optional<std::string> optFileName = photosData.GetFileName();
-    record.fileName = optFileName.value_or("");
-    std::optional<int64_t> optSize = photosData.GetSize();
-    record.size = optSize.value_or(-1);
-    std::optional<int64_t> optSingleEditTime = photosData.GetDateModified().value_or(0);
-    int64_t singleEditTime = optSingleEditTime.value();
-    int64_t dualEditTime = static_cast<int64_t>(result.GetDKRecord().GetEditedTime());
-    record.modifyTime = dualEditTime > singleEditTime ? dualEditTime : singleEditTime;
-    record.createTime = static_cast<int64_t>(result.GetDKRecord().GetCreateTime());
-    int32_t rotate = photosData.GetRotate().value_or(ORIENTATION_NORMAL);
-    if (FILE_ROTATIONS.find(rotate) != FILE_ROTATIONS.end()) {
-        record.rotation = FILE_ROTATIONS.find(rotate)->second;
-    }
-    std::optional<int32_t> optFileType = photosData.GetFileType();
-    record.fileType = optFileType.value_or(-1);
-    std::optional<std::string> optSourcePath = photosData.GetSourcePath();
-    record.sourcePath = optSourcePath.value_or("");
-    record.version = result.GetDKRecord().GetVersion();
-    record.serverErrorCode = result.GetDKError().serverErrorCode;
-    record.errorType = static_cast<ErrorType>(static_cast<int32_t>(result.GetDKError().errorType));
-    record.isSuccess = result.IsSuccess();
-    ConvertErrorTypeDetails(result, record.errorDetails);
     return E_OK;
 }
 
@@ -691,130 +751,26 @@ void CloudFileDataConvert::ConvertErrorTypeDetails(
     }
 }
 
-int32_t CloudFileDataConvert::BuildModifyRecord(const std::string &cloudId, const MDKRecordOperResult &result,
-    OnModifyRecord &record)
+int32_t CloudFileDataConvert::BuildModifyRecord(
+    const std::string &cloudId, const MDKRecordOperResult &result, OnModifyRecord &record)
 {
-    MDKRecordPhotosData photosData = MDKRecordPhotosData(result.GetDKRecord());
-    std::optional<std::string> optionalCloudId = photosData.GetCloudId();
-    record.cloudId = cloudId;
-    std::optional<std::string> optPath = photosData.GetFilePath();
-    record.path = optPath.value_or("");
-    std::optional<int32_t> optFileId = photosData.GetFileId();
-    record.fileId = optFileId.value_or(-1);
-    std::optional<int64_t> optSingleEditTime = photosData.GetDateModified().value_or(0);
-    int64_t singleEditTime = optSingleEditTime.value();
-    int64_t dualEditTime = static_cast<int64_t>(result.GetDKRecord().GetEditedTime());
-    record.modifyTime = dualEditTime > singleEditTime ? dualEditTime : singleEditTime;
-    record.metaDateModified = photosData.GetPhotoMetaDateModified().value_or(-1);
-    record.version = result.GetDKRecord().GetVersion();
-    record.isSuccess = result.IsSuccess();
-    record.serverErrorCode = result.GetDKError().serverErrorCode;
-    ConvertErrorTypeDetails(result, record.errorDetails);
     return E_OK;
 }
 
-int32_t CloudFileDataConvert::ConvertFdirtyRecord(const std::string &cloudId, const MDKRecordOperResult &result,
-    OnFileDirtyRecord &record)
+int32_t CloudFileDataConvert::ConvertFdirtyRecord(
+    const std::string &cloudId, const MDKRecordOperResult &result, OnFileDirtyRecord &record)
 {
-    MDKRecordPhotosData photosData = MDKRecordPhotosData(result.GetDKRecord());
-    record.cloudId = cloudId;
-    auto metaDateModifiedOpt = photosData.GetPhotoMetaDateModified();
-    if (metaDateModifiedOpt.has_value()) {
-        record.metaDateModified = metaDateModifiedOpt.value();
-    } else {
-        record.metaDateModified = -1;
-    }
-    record.isSuccess = result.IsSuccess();
-    record.version = result.GetDKRecord().GetVersion();
-    record.serverErrorCode = result.GetDKError().serverErrorCode;
-    ConvertErrorTypeDetails(result, record.errorDetails);
     return E_OK;
 }
 
-int32_t CloudFileDataConvert::ConvertToOnCreateRecord(const std::string &cloudId, const MDKRecordOperResult &result,
-    OnCreateRecord &record)
+int32_t CloudFileDataConvert::ConvertToOnCreateRecord(
+    const std::string &cloudId, const MDKRecordOperResult &result, OnCreateRecord &record)
 {
-    MDKRecordPhotosData photosData = MDKRecordPhotosData(result.GetDKRecord());
-    record.cloudId = cloudId;
-    record.fileId = photosData.GetFileId().value_or(-1);
-    record.path = photosData.GetFilePath().value_or("");
-    record.fileName = photosData.GetFileName().value_or("");
-    record.localId = photosData.GetLocalId().value_or(-1);
-    record.fileType = photosData.GetFileType().value_or(-1);
-    record.size = photosData.GetSize().value_or(-1);
-    record.createTime = photosData.GetCreatedTime().value_or(-1);
-    record.editedTimeMs = photosData.GetEditTimeMs().value_or(-1);
-    record.metaDateModified = photosData.GetPhotoMetaDateModified().value_or(-1);
-    record.version = result.GetDKRecord().GetVersion();
-    record.isSuccess = result.IsSuccess();
-    record.livePhotoCachePath = MovingPhotoFileUtils::GetLivePhotoCachePath(record.path, userId_);
-    record.serverErrorCode = result.GetDKError().serverErrorCode;
-    ConvertErrorTypeDetails(result, record.errorDetails);
     return E_OK;
 }
 
-int32_t CloudFileDataConvert::ConverMDKRecordToOnFetchPhotosVo(const MDKRecord &mdkRecord,
-    OnFetchPhotosVo &onFetchPhotoVo)
+void CloudFileDataConvert::ConvertSourceAlbumIds(const MDKRecord &mdkRecord, OnFetchPhotosVo &onFetchPhotoVo)
 {
-    MDKRecordPhotosData photosData = MDKRecordPhotosData(mdkRecord);
-    onFetchPhotoVo.cloudId = mdkRecord.GetRecordId();
-    onFetchPhotoVo.fileId = photosData.GetCloudFileId().value_or(0L);
-    onFetchPhotoVo.fileName = photosData.GetFileName().value_or("");
-    onFetchPhotoVo.localPath = photosData.GetFilePath().value_or("");
-    onFetchPhotoVo.size = photosData.GetSize().value_or(0L);
-    onFetchPhotoVo.lcdSize = photosData.GetLcdSize().value_or(0L);
-    onFetchPhotoVo.thmSize = photosData.GetThmSize().value_or(0L);
-    onFetchPhotoVo.metaDateModified = photosData.GetPhotoMetaDateModified().value_or(0L);
-    onFetchPhotoVo.editedTimeMs = photosData.GetEditTimeMs().value_or(0L);
-    onFetchPhotoVo.dualEditTime = static_cast<int64_t>(mdkRecord.GetEditedTime());
-    onFetchPhotoVo.createTime = static_cast<int64_t>(mdkRecord.GetCreateTime());
-    int32_t rotate = photosData.GetRotate().value_or(ORIENTATION_NORMAL);
-    CHECK_AND_RETURN_RET_WARN_LOG(!(FILE_ROTATIONS.find(rotate) == FILE_ROTATIONS.end()), 9, "not find mdkRecord Rotate");
-    onFetchPhotoVo.rotation = FILE_ROTATIONS.find(rotate)->second;
-    onFetchPhotoVo.fileType = photosData.GetFileType().value_or(0L);
-    onFetchPhotoVo.fileSourcePath = photosData.GetSourcePath().value_or("");
-    onFetchPhotoVo.fixVersion = photosData.GetFixVersion().value_or(0);
-    onFetchPhotoVo.version = mdkRecord.GetVersion();
-    onFetchPhotoVo.isDelete = mdkRecord.GetIsDelete();
-    onFetchPhotoVo.hasAttributes = true;
-    onFetchPhotoVo.hasproperties = true;
-    onFetchPhotoVo.firstVisitTime = photosData.GetFirstUpdateTime().value_or("");
-    onFetchPhotoVo.mimeType = photosData.GetMimeType().value_or("");
-    onFetchPhotoVo.isFavorite = photosData.GetFavorite().value_or(false);
-    onFetchPhotoVo.isRecycle = photosData.GetRecycled().value_or(false);
-    if (onFetchPhotoVo.isRecycle) {
-        onFetchPhotoVo.recycledTime = photosData.GetRecycledTime().value_or(0L);
-    }
-    onFetchPhotoVo.photoHeight = photosData.GetHeight().value_or(0);
-    onFetchPhotoVo.photoWidth = photosData.GetWidth().value_or(0);
-    onFetchPhotoVo.detailTime = photosData.GetDetailTime().value_or("");
-    onFetchPhotoVo.frontCamera = photosData.GetFrontCamera().value_or("");
-    onFetchPhotoVo.editDataCamera = photosData.GetEditDataCamera().value_or("");
-    onFetchPhotoVo.title = photosData.GetTitle().value_or("");
-    onFetchPhotoVo.mediaType = photosData.GetMediaType().value_or(0);
-    onFetchPhotoVo.duration = photosData.GetDuration().value_or(0);
-    onFetchPhotoVo.hidden = photosData.GetHidden().value_or(0);
-    onFetchPhotoVo.hiddenTime = photosData.GetHiddenTime().value_or(0L);
-    onFetchPhotoVo.relativePath = photosData.GetRelativePath().value_or("");
-    onFetchPhotoVo.virtualPath = photosData.GetVirtualPath().value_or("");
-    onFetchPhotoVo.dateYear = photosData.GetDateYear().value_or("");
-    onFetchPhotoVo.dateMonth = photosData.GetDateMonth().value_or("");
-    onFetchPhotoVo.dateDay = photosData.GetDateDay().value_or("");
-    onFetchPhotoVo.shootingMode = photosData.GetShootingMode().value_or("");
-    onFetchPhotoVo.shootingModeTag = photosData.GetShootingModeTag().value_or("");
-    onFetchPhotoVo.burstKey = photosData.GetBurstKey().value_or("");
-    onFetchPhotoVo.burstCoverLevel = photosData.GetBurstCoverLevel().value_or(0L);
-    onFetchPhotoVo.subtype = photosData.GetSubType().value_or(0);
-    onFetchPhotoVo.originalSubtype = photosData.GetOriginalSubType().value_or(0);
-    onFetchPhotoVo.dynamicRangeType = photosData.GetDynamicRangeType().value_or(0);
-    onFetchPhotoVo.movingPhotoEffectMode = photosData.GetMovingPhotoEffectMode().value_or(0);
-    onFetchPhotoVo.editTime = photosData.GetEditTime().value_or(0);
-    onFetchPhotoVo.coverPosition = photosData.GetCoverPosition().value_or(0);
-    onFetchPhotoVo.position = photosData.GetPosition().value_or("");
-    onFetchPhotoVo.description = photosData.GetDescription().value_or("");
-    onFetchPhotoVo.source = photosData.GetSource().value_or("");
-    onFetchPhotoVo.supportedWatermarkType = photosData.GetSupportedWatermarkType().value_or(0);
-    onFetchPhotoVo.strongAssociation = photosData.GetStrongAssociation().value_or(0);
     std::map<std::string, MDKRecordField> data;
     std::vector<MDKRecordField> list;
     mdkRecord.GetRecordData(data);
@@ -836,6 +792,11 @@ int32_t CloudFileDataConvert::ConverMDKRecordToOnFetchPhotosVo(const MDKRecord &
     } else {
         MEDIA_WARN_LOG("albumIds list size is 0");
     }
+}
+
+int32_t CloudFileDataConvert::ConverMDKRecordToOnFetchPhotosVo(
+    const MDKRecord &mdkRecord, OnFetchPhotosVo &onFetchPhotoVo)
+{
     return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync

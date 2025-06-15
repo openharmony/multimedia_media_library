@@ -4175,7 +4175,8 @@ static bool QueryHiddenFilesList(set<string>& hiddenFiles)
     return true;
 }
 
-static int32_t ProcessFile(const std::string& dirPath, struct dirent* entry, std::vector<LSOperationFileInfo>& fileInfoList,
+static int32_t ProcessFile(const std::string& dirPath, struct dirent* entry,
+    std::vector<LSOperationFileInfo>& fileInfoList,
     bool excludeHiddenFiles, std::set<std::string>& hiddenFiles)
 {
     struct stat fileStat;

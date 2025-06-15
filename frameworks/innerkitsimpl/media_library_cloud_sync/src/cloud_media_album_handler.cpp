@@ -277,13 +277,7 @@ int32_t CloudMediaAlbumHandler::OnMdirtyRecords(
     OnMdirtyRecordsAlbumRespBody respBody;
     for (auto &entry : map) {
         const MDKRecordOperResult &result = entry.second;
-        // std::optional<std::string> cloudIdOpt = MDKRecordAlbumData(result.GetDKRecord()).GetCloudId();
-        // if (!cloudIdOpt.has_value()) {
-        //     MEDIA_INFO_LOG("album OnMdirtyRecords cloudId no value");
-        //     continue;
-        // }
         OnMdirtyAlbumRecord record;
-        // record.cloudId = cloudIdOpt.value();
         record.cloudId = entry.first;
         record.isSuccess = result.IsSuccess();
         reqBody.AddMdirtyRecord(record);
@@ -313,12 +307,7 @@ int32_t CloudMediaAlbumHandler::OnDeleteRecords(
     OnDeleteRecordsAlbumRespBody respBody;
     for (auto &entry : map) {
         const MDKRecordOperResult &result = entry.second;
-        // std::optional<std::string> cloudIdOpt = MDKRecordAlbumData(result.GetDKRecord()).GetCloudId();
-        // if (!cloudIdOpt.has_value()) {
-        //     continue;
-        // }
         OnDeleteAlbumData album;
-        // album.cloudId = cloudIdOpt.value();
         album.cloudId = entry.first;
         album.isSuccess = result.IsSuccess();
         reqBody.AddSuccessResult(album);

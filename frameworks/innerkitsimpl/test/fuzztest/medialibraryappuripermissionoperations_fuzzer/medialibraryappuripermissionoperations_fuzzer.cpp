@@ -43,7 +43,7 @@ using namespace std;
 using namespace DataShare;
 const int32_t PERMISSION_DEFAULT = -1;
 const int32_t URI_DEFAULT = 0;
-const int32_t BatchInsertNumber = 5;
+const int32_t BATCH_INSERT_NUMBER = 5;
 static const int32_t E_ERR = -1;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
@@ -151,7 +151,7 @@ static void DeleteOperationFuzzer(string appId, int32_t photoId, int32_t permiss
 static void BatchInsertFuzzer(const uint8_t* data, size_t size)
 {
     vector<DataShare::DataShareValuesBucket> dataShareValues;
-    for (int32_t i = 0; i < BatchInsertNumber; i++) {
+    for (int32_t i = 0; i < BATCH_INSERT_NUMBER; i++) {
         DataShareValuesBucket value;
         int32_t photoId = FuzzInt32(data, size);
         int32_t fileId = InsertPhotoAsset(data, size, photoId);
@@ -172,7 +172,7 @@ static void BatchInsertFuzzer(const uint8_t* data, size_t size)
 static void BatchInsertInnerFuzzer(const uint8_t* data, size_t size)
 {
     vector<DataShare::DataShareValuesBucket> dataShareValues;
-    for (int32_t i = 0; i < BatchInsertNumber; i++) {
+    for (int32_t i = 0; i < BATCH_INSERT_NUMBER; i++) {
         DataShareValuesBucket value;
         int32_t photoId = FuzzInt32(data, size);
         int32_t fileId = InsertPhotoAsset(data, size, photoId);

@@ -71,7 +71,8 @@ int32_t CloudAlbumDataConvert::HandleGeneral(std::map<std::string, MDKRecordFiel
     return E_OK;
 }
 
-int32_t CloudAlbumDataConvert::HandleProperties(std::shared_ptr<MDKRecord> &record, std::map<std::string, MDKRecordField> &data,
+int32_t CloudAlbumDataConvert::HandleProperties(
+    std::shared_ptr<MDKRecord> &record, std::map<std::string, MDKRecordField> &data,
     const CloudMdkRecordPhotoAlbumVo& albumData)
 {
     std::map<std::string, MDKRecordField> map;
@@ -113,7 +114,8 @@ int32_t HandleHashCode(const std::string &str) __attribute__((no_sanitize("signe
     return hash;
 }
 
-int32_t CloudAlbumDataConvert::HandleRecordId(std::shared_ptr<MDKRecord> record, const CloudMdkRecordPhotoAlbumVo& albumData)
+int32_t CloudAlbumDataConvert::HandleRecordId(
+    std::shared_ptr<MDKRecord> record, const CloudMdkRecordPhotoAlbumVo& albumData)
 {
     std::map<std::string, MDKRecordField> data;
     record->GetRecordData(data);
@@ -156,7 +158,8 @@ int32_t CloudAlbumDataConvert::HandlePath(std::map<std::string, MDKRecordField> 
 }
 
 /* record id */
-int32_t CloudAlbumDataConvert::FillRecordId(std::shared_ptr<MDKRecord> record, const CloudMdkRecordPhotoAlbumVo& albumData)
+int32_t CloudAlbumDataConvert::FillRecordId(
+    std::shared_ptr<MDKRecord> record, const CloudMdkRecordPhotoAlbumVo& albumData)
 {
     std::string val = albumData.cloudId;
     record->SetRecordId(val);

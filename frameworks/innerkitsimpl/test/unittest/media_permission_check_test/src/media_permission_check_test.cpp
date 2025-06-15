@@ -32,30 +32,34 @@ using namespace OHOS::Security::AccessToken;
 namespace OHOS {
 namespace Media {
 extern bool (*isCalledBySelfPtr)();
-std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> MediaPermissionCheckTest::originalBusinessCodeToPermissions;
+std::unordered_map<uint32_t,
+    std::vector<std::vector<PermissionType>>> MediaPermissionCheckTest::originalBusinessCodeToPermissions;
 
-void MediaPermissionCheckTest::SetUpTestCase(void) {
+void MediaPermissionCheckTest::SetUpTestCase(void)
+{
     originalBusinessCodeToPermissions = PermissionCheck::businessCodeToPermissions;
     std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> testMap = {
-        {1, { {PRIVATE_PERM} }},
-        {2, { {CLOUDFILE_SYNC} }},
-        {3, { {READ_PERM} }},
-        {4, { {WRITE_PERM} }},
-        {5, { {SYSTEMAPI_PERM}, {} }},
-        {6, { {}, {SYSTEMAPI_PERM}  }},
+        {1, {{PRIVATE_PERM}}},
+        {2, {{CLOUDFILE_SYNC}}},
+        {3, {{READ_PERM}}},
+        {4, {{WRITE_PERM} }},
+        {5, {{SYSTEMAPI_PERM}, {}}},
+        {6, {{}, {SYSTEMAPI_PERM}}},
         {7, {}},
-        {8, { {PRIVATE_PERM, CLOUDFILE_SYNC, READ_PERM, WRITE_PERM} }},
-        {0, { {READ_PERM}, {WRITE_PERM} }}, 
+        {8, {{PRIVATE_PERM, CLOUDFILE_SYNC, READ_PERM, WRITE_PERM}}},
+        {0, {{READ_PERM}, {WRITE_PERM}}},
         {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_OPEN), { {READ_PERM, WRITE_PERM} }}, //openfile api
     };
     PermissionCheck::businessCodeToPermissions = testMap;
 }
 
-void MediaPermissionCheckTest::TearDownTestCase(void) {
+void MediaPermissionCheckTest::TearDownTestCase(void)
+{
     PermissionCheck::businessCodeToPermissions = originalBusinessCodeToPermissions;
 }
 
-bool mockIsCalledBySelf() {
+bool MockIsCalledBySelf()
+{
     return E_FAIL;
 }
 
@@ -69,12 +73,14 @@ pid_t mockGetCallingUidShell()
     return 2000;
 }
 
-void MediaPermissionCheckTest::SetUp(void) {
-    isCalledBySelfPtr = mockIsCalledBySelf;
+void MediaPermissionCheckTest::SetUp(void)
+{
+    isCalledBySelfPtr = MockIsCalledBySelf;
     getCallingUidPtr = mockGetCallingUid;
 }
 
-void MediaPermissionCheckTest::TearDown(void) {
+void MediaPermissionCheckTest::TearDown(void)
+{
     isCalledBySelfPtr = MediaFileUtils::IsCalledBySelf;
     getCallingUidPtr = IPCSkeleton::GetCallingUid;
 }
@@ -237,7 +243,9 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_OPENFILE_2, TestSize
 {
     MEDIA_INFO_LOG("MediaPermissionCheckTest_OPENFILE_2 begin");
     std::unordered_map<std::string, std::string> headerMap = {
-        {PermissionHeaderReq::OPEN_URI_KEY, "file://media/Photo/6/1/1.jpg?operation=thumbnail&width=720&height=720&path=/storage/cloud/files/Photo/1/1.jpg"},
+        {PermissionHeaderReq::OPEN_URI_KEY,
+            "file://media/Photo/6/1/1.jpg?operation=thumbnail&width=720&height=720&path=/storage/cloud/files/Photo/1/"
+            "1.jpg"},
         {PermissionHeaderReq::OPEN_MODE_KEY, "r"}
     };
     PermissionHeaderReq data = PermissionHeaderReq::convertToPermissionHeaderReq(headerMap, 1);
@@ -276,7 +284,8 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_OPENFILE_5, TestSize
 {
     MEDIA_INFO_LOG("MediaPermissionCheckTest_OPENFILE_5 begin");
     std::unordered_map<std::string, std::string> headerMap = {
-        {PermissionHeaderReq::OPEN_URI_KEY, "file://media/Photo/6/1/1.jpg?operation=astc&width=720&height=720&path=/storage/cloud/files/Photo/1/1.jpg"},
+        {PermissionHeaderReq::OPEN_URI_KEY,
+            "file://media/Photo/6/1/1.jpg?operation=astc&width=720&height=720&path=/storage/cloud/files/Photo/1/1.jpg"},
         {PermissionHeaderReq::OPEN_MODE_KEY, "rw"}
     };
     PermissionHeaderReq data = PermissionHeaderReq::convertToPermissionHeaderReq(headerMap, 1);
