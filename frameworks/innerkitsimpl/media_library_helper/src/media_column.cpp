@@ -681,6 +681,7 @@ const std::string PhotoExtColumn::PHOTOS_EXT_TABLE = "tab_photos_ext";
 
 const std::string PhotoExtColumn::PHOTO_ID = "photo_id";
 const std::string PhotoExtColumn::THUMBNAIL_SIZE = "thumbnail_size";
+const std::string PhotoExtColumn::EDITDATA_SIZE = "editdata_size";
 
 const std::string PhotoExtColumn::CREATE_PHOTO_EXT_TABLE =
     "CREATE TABLE IF NOT EXISTS " +

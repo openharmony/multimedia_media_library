@@ -1048,7 +1048,6 @@ int32_t CloneRestore::MoveThumbnail(FileInfo &fileInfo)
         return E_FAIL;
     }
 
-    MediaLibraryPhotoOperations::StoreThumbnailSize(to_string(fileInfo.fileIdNew), fileInfo.cloudPath);
     return E_OK;
 }
 
@@ -1065,6 +1064,8 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
     CHECK_AND_RETURN_RET(optRet == E_OK, E_FAIL);
     // Thumbnail of photos.
     this->MoveThumbnail(fileInfo);
+
+    MediaLibraryPhotoOperations::StoreThumbnailAndEditSize(to_string(fileInfo.fileIdNew), fileInfo.cloudPath);
     return E_OK;
 }
 

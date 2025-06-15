@@ -120,6 +120,8 @@ public:
     EXPORT int32_t UpdateDateTakenWhenZero();
     EXPORT int32_t UpdateDirtyForCloudClone(int32_t version);
     EXPORT int32_t ClearDirtyHdcData();
+    EXPORT int32_t ClearDirtyDiskData();
+    EXPORT int32_t UpdateMediaSizeFromStorage();
     EXPORT int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
                 const DataShare::DataSharePredicates &predicates);
 private:

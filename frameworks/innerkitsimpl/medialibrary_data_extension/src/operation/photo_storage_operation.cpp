@@ -29,12 +29,39 @@ std::shared_ptr<NativeRdb::ResultSet> PhotoStorageOperation::FindStorage(std::sh
     tracer.Start("PhotoStorageOperation::FindStorage");
     bool conn = rdbStore == nullptr;
     CHECK_AND_RETURN_RET_LOG(!conn, nullptr, "rdbStore is null");
+
+    std::string statsSql = "SELECT "
+                           "SUM(thumbnail_size) AS total_thumbnail_size, "
+                           "COUNT(thumbnail_size) AS thumbnail_count, "
+                           "SUM(editdata_size) AS total_editdata_size, "
+                           "COUNT(editdata_size) AS editdata_count "
+                           "FROM tab_photos_ext";
+
+    auto statsResult = rdbStore->QuerySql(statsSql);
+    int64_t totalThumbnailSize = 0;
+    int32_t thumbnailCount = 0;
+    int64_t totalEditdataSize = 0;
+    int32_t editdataCount = 0;
+    if (statsResult && (statsResult->GoToFirstRow() == NativeRdb::E_OK)) {
+        statsResult->GetLong(0, totalThumbnailSize);
+        statsResult->GetInt(1, thumbnailCount);
+        // 2为索引
+        statsResult->GetLong(2, totalEditdataSize);
+        // 3为索引
+        statsResult->GetInt(3, editdataCount);
+
+        MEDIA_INFO_LOG("Thumbnail stats: total_size = %{public}" PRId64 " bytes, count = %{public}d",
+                       totalThumbnailSize, thumbnailCount);
+        MEDIA_INFO_LOG("Editdata stats: total_size = %{public}" PRId64 " bytes, count = %{public}d",
+                       totalEditdataSize, editdataCount);
+    }
+
     std::string sql = this->SQL_DB_STORAGE_QUERY;
     int64_t cacheSize = this->GetCacheSize();
     int64_t highlightSize = this->GetHighlightSizeFromPreferences();
     MEDIA_INFO_LOG("Media_Storage: cacheSize = %{public}" PRId64 ", highlightSize = %{public}" PRId64 "",
         cacheSize, highlightSize);
-    std::vector<NativeRdb::ValueObject> params = {cacheSize + highlightSize};
+    std::vector<NativeRdb::ValueObject> params = {cacheSize + highlightSize + totalThumbnailSize + totalEditdataSize};
     return rdbStore->QuerySql(sql, params);
 }
 

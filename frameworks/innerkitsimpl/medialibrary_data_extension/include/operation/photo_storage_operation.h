@@ -46,7 +46,7 @@ private:
         UNION \
         SELECT \
             -1 AS media_type, \
-            SUM(thumbnail_size) + ? AS size \
+            ? AS size \
         FROM tab_photos_ext \
         ;";
 };
