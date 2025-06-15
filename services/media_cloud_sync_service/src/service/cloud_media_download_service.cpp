@@ -84,11 +84,11 @@ std::vector<PhotosDto> CloudMediaDownloadService::GetDownloadThmsByUri(
         photosDto.originalCloudId = downloadAssetData.originalCloudId;
         int32_t retThm = E_OK;
         int32_t retLcd = E_OK;
-        if (type & TYPE_THM) {
+        if (static_cast<uint32_t>(type) & TYPE_THM_MASK) {
             retThm = CloudMediaAttachmentUtils::GetThumbnail("thumbnail", downloadAssetData, photosDto);
             CHECK_AND_PRINT_LOG(retThm == E_OK, "GetDownloadThmsByUri GetAttachment thm fail");
         }
-        if (type & TYPE_LCD) {
+        if (static_cast<uint32_t>(type) & TYPE_LCD_MASK) {
             retLcd = CloudMediaAttachmentUtils::GetLcdThumbnail("lcd", downloadAssetData, photosDto);
             CHECK_AND_PRINT_LOG(retLcd == E_OK, "GetDownloadThmsByUri GetAttachment lcd fail");
         }

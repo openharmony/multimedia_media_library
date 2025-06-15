@@ -42,6 +42,7 @@ public:
         if (iter != this->DATA_HANDLER.end()) {
             handler = iter->second;
         }
+        CHECK_AND_RETURN_RET_LOG(handler != nullptr, handler, "handler is null");
         handler->SetUserId(userId);
         return handler;
     }

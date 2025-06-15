@@ -20,6 +20,7 @@
 #include <sstream>
 
 #include "medialibrary_data_manager_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 std::string CloudMediaDaoUtils::ToStringWithCommaAndQuote(const std::vector<std::string> &values)
@@ -82,6 +83,20 @@ std::vector<std::string> CloudMediaDaoUtils::GetNumbers(const std::vector<std::s
         numbers.emplace_back(albumId);
     }
     return numbers;
+}
+
+int32_t CloudMediaDaoUtils::ToInt32(const std::string &str)
+{
+    char *end;
+    long number = std::strtol(str.c_str(), &end, 10);
+    if (*end != '\0') {
+        MEDIA_ERR_LOG("ToNumber failed, has invalid char. str: %{public}s", str.c_str());
+        return 0;
+    } else if (number < INT_MIN || number > INT_MAX) {
+        MEDIA_ERR_LOG("ToNumber failed, number overflow. str: %{public}s", str.c_str());
+        return 0;
+    }
+    return static_cast<int32_t>(number);
 }
 
 std::vector<std::string> CloudMediaDaoUtils::GetStringVector(const std::vector<int32_t> &intVals)

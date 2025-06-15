@@ -387,6 +387,7 @@ int32_t CloudMediaDataClientHandler::GetDownloadThmNum(int32_t &totalNum, int32_
     GetDownloadThmNumReqBody req;
     req.type = type;
     GetDownloadThmNumRespBody respBody;
+    respBody.totalNum = 0;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_DOWNLOAD_THM_NUM);
     int32_t ret =
         IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, req, respBody);
