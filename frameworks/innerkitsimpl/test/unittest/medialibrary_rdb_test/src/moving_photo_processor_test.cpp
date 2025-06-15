@@ -19,7 +19,6 @@
 #include "moving_photo_processor_test.h"
 #include "medialibrary_subscriber.h"
 #include "moving_photo_processor.h"
-#include "medialibrary_subscriber_database_utils.h"
 
 using namespace std;
 using namespace OHOS;

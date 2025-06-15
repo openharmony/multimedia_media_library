@@ -17,6 +17,7 @@
 #define OHOS_MEDIALIBRARY_MOVING_PHOTO_PROCESSOR_H
 
 #include "abs_shared_result_set.h"
+#include "medialibrary_base_bg_processor.h"
 #include "values_bucket.h"
 
 namespace OHOS {
@@ -28,10 +29,14 @@ EXPORT const std::string CLOUD_LIVE_PHOTO_REFRESHED = "1";
 EXPORT const std::string CLOUD_LIVE_PHOTO_NOT_REFRESHED = "0";
 EXPORT const std::string COMPAT_LIVE_PHOTO_FILE_ID = "persist.multimedia.medialibrary.compatLivePhoto.fileId";
 
-class MovingPhotoProcessor {
+class EXPORT MovingPhotoProcessor : public MediaLibraryBaseBgProcessor {
 public:
+    virtual ~MovingPhotoProcessor();
     EXPORT static void StartProcess();
     EXPORT static void StopProcess();
+
+    virtual int32_t Start(const std::string &taskExtra) override;
+    virtual int32_t Stop(const std::string &taskExtra) override;
 
 private:
     typedef struct {
@@ -82,6 +87,7 @@ private:
     static void ProcessCoverPosition(std::shared_ptr<NativeRdb::ResultSet> resultSet);
 
     static bool isProcessing_;
+    const std::string taskName_ = COMPAT_OLD_VERSION_MOVING_PHOTO;
 };
 } // namespace Media
 } // namespace OHOS

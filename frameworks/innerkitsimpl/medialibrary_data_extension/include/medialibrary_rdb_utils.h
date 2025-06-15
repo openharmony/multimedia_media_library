@@ -159,7 +159,7 @@ public:
     EXPORT static int32_t UpdateHighlightPlayInfo(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::string &albumId);
     EXPORT static void UpdateShootingModeAlbum(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
-    static bool AnalyzePhotosData();
+    EXPORT static bool AnalyzePhotosData();
     EXPORT static int32_t GetUpdateValues(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         UpdateAlbumData &data, NativeRdb::ValuesBucket &values, PhotoAlbumSubType subtype, const bool hiddenState);
 

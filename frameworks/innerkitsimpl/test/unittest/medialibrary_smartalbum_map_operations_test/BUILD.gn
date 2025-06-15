@@ -31,7 +31,6 @@ ohos_unittest("medialibrary_smartalbum_map_operations_test") {
     "./src/medialibrary_file_opertions_test.cpp",
     "./src/medialibrary_smartalbum_map_operations_test.cpp",
     "./src/medialibrary_uripermission_operations_test.cpp",
-    "./src/trash_async_worker_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",

@@ -34,6 +34,8 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
+
 constexpr int32_t NULL_REFERENCE_ALBUM_ID = -1;
 struct MergeAlbumInfo {
     int albumId;
@@ -63,7 +65,7 @@ public:
     static int32_t DeletePhotoAssetsCompleted(const DataShare::DataSharePredicates &predicates, const bool isAging);
     static int32_t DeleteHighlightAlbums(NativeRdb::RdbPredicates &predicates);
     static int32_t AddPhotoAssets(const vector<DataShare::DataShareValuesBucket> &values);
-    static int32_t HandlePhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
+    EXPORT static int32_t HandlePhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates, std::shared_ptr<int> countPtr = nullptr);
     static int32_t HandleAnalysisPhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates, std::shared_ptr<int> countPtr = nullptr);

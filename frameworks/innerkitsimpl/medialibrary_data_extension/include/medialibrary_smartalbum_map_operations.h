@@ -46,7 +46,7 @@ public:
     EXPORT static int32_t HandleRemoveAssetOperation(const int32_t albumId, const int32_t childFileAssetId,
         MediaLibraryCommand &cmd);
     EXPORT static int32_t HandleAgingOperation(std::shared_ptr<int> countPtr = nullptr);
-    static void SetInterrupt(bool interrupt);
+    EXPORT static void SetInterrupt(bool interrupt);
 
 private:
     static bool GetInterrupt();

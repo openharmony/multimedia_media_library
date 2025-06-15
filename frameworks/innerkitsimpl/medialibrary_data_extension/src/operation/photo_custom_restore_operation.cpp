@@ -941,7 +941,7 @@ void PhotoCustomRestoreOperation::DeleteDatabaseRecord(const string &filePath)
 
 void PhotoCustomRestoreOperation::CleanTimeoutCustomRestoreTaskDir()
 {
-    MEDIA_INFO_LOG("CleanTimeoutCustomRestoreTaskDir");
+    MEDIA_INFO_LOG("Begin CleanTimeoutCustomRestoreTaskDir");
     auto timestampNow = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
     DIR* dir = opendir(CUSTOM_RESTORE_DIR.c_str());

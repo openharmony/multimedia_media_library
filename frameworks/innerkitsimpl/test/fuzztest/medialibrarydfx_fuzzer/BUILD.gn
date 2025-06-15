@@ -22,9 +22,11 @@ ohos_fuzztest("MediaLibraryDfxFuzzTest") {
     "./include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
+    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/include/bg_task_processor",
   ]
 
   sources = [
+    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/medialibrary_base_bg_processor.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_analyzer.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_collector.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_manager.cpp",
@@ -36,6 +38,7 @@ ohos_fuzztest("MediaLibraryDfxFuzzTest") {
   ]
 
   deps = [
+    "${MEDIALIB_BUSINESS_PATH}/media_bgtask_mgr:media_bgtask_mgr_client",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
     "${MEDIALIB_UTILS_PATH}:medialibrary_common_utils",
@@ -63,6 +66,7 @@ ohos_fuzztest("MediaLibraryDfxFuzzTest") {
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
     "dfs_service:cloudsync_kit_inner",
+    "ffrt:libffrt",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
