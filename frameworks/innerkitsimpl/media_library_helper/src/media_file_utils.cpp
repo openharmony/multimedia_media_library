@@ -506,7 +506,8 @@ bool MediaFileUtils::DeleteFileWithRetry(const string &fileName)
     bool isRemoved = false;
     bool isExists = false;
     bool isDeleted = false;
-    while (!isDeleted && retryCount++ < maxRetryCount) {
+    while (!isDeleted && retryCount < maxRetryCount) {
+        retryCount++;
         isRemoved = DeleteFile(fileName);
         isExists = IsFileExists(fileName);
         isDeleted = isRemoved && !isExists;

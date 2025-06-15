@@ -116,7 +116,7 @@ int32_t CloudMediaAlbumHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
         data.cloudId = cloudId;
         MDKRecordAlbumData albumData = MDKRecordAlbumData(record);
         InitAlbumReqData(albumData, data);
-        data.albumDateCreated = record.GetCreateTime();
+        data.albumDateCreated = static_cast<int64_t>(record.GetCreateTime());
         data.isDelete = record.GetIsDelete();
         req.albums.emplace_back(data);
         MEDIA_INFO_LOG("OnFetchRecords AlbumReqData:%{public}s", data.ToString().c_str());
@@ -277,6 +277,7 @@ int32_t CloudMediaAlbumHandler::OnCreateRecords(
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_CREATE_RECORDS);
     FailedSizeResp resp;
+    resp.failedSize = 0;
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
         .Post(operationCode, reqBody, resp);
     failSize = resp.failedSize;
@@ -289,6 +290,7 @@ int32_t CloudMediaAlbumHandler::OnMdirtyRecords(
     MEDIA_INFO_LOG("enter CloudMediaAlbumHandler::OnMdirtyRecords %{public}zu", map.size());
     OnMdirtyRecordsAlbumReqBody reqBody;
     OnMdirtyRecordsAlbumRespBody respBody;
+    respBody.failSize = 0;
     for (auto &entry : map) {
         const MDKRecordOperResult &result = entry.second;
         OnMdirtyAlbumRecord record;
@@ -320,6 +322,7 @@ int32_t CloudMediaAlbumHandler::OnDeleteRecords(
     }
     OnDeleteRecordsAlbumReqBody reqBody;
     OnDeleteRecordsAlbumRespBody respBody;
+    respBody.failSize = 0;
     for (auto &entry : map) {
         const MDKRecordOperResult &result = entry.second;
         OnDeleteAlbumData album;
