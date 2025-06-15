@@ -83,6 +83,9 @@ const int32_t ACCURATE_REFRESH_NOTIFY_EXE_NULL = ACCURATE_REFRESH_DATA_MGR_BASE 
 // ForceUpdateAlbumInfo更新找不到数据
 const int32_t ACCURATE_REFRESH_ALBUM_INFO_NULL = ACCURATE_REFRESH_DATA_MGR_BASE + 15;
 
+// 根据查询得到的前后数据更新公共参数失败
+const int32_t ACCURATE_REFRESH_COMMON_DATAS_FAILED = ACCURATE_REFRESH_DATA_MGR_BASE + 16;
+
 // 数据库类异常返回值
 const int32_t ACCURATE_REFRESH_RDB_BASE = 0x40000;
 const int32_t ACCURATE_REFRESH_RDB_INSERT_ERR = ACCURATE_REFRESH_RDB_BASE + 1;
@@ -99,10 +102,10 @@ enum RdbOperation {
 template <typename ChangeInfo>
 class AccurateRefreshChangeData : public Parcelable {
 public:
-    std::string ToString() const
+    virtual std::string ToString(bool isDetail = false) const
     {
-        return "info before: " + infoBeforeChange_.ToString(true) + "; info after: " +
-        infoAfterChange_.ToString((true)) + ", isDelete_: " + std::to_string(isDelete_) +
+        return "info before: " + infoBeforeChange_.ToString(isDetail) + "; info after: " +
+        infoAfterChange_.ToString((isDetail)) + ", isDelete_: " + std::to_string(isDelete_) +
         ", operation_: " + std::to_string(operation_) + ", version_: " + std::to_string(version_);
     }
     bool Marshalling(Parcel &parcel) const override
@@ -128,7 +131,7 @@ public:
         ret = ret && infoAfterChange_.ReadFromParcel(parcel);
         ret = ret && parcel.ReadBool(isDelete_);
         int32_t operationNum;
-        if (parcel.ReadInt32(operationNum)) {
+        if (ret && parcel.ReadInt32(operationNum)) {
             operation_ = static_cast<RdbOperation>(operationNum);
         } else {
             return false;

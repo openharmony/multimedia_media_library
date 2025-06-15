@@ -103,10 +103,14 @@ int32_t CloudMediaAlbumService::HandleLPathRecords(PhotoAlbumDto &record,
     ChangeType &changeType, OnFetchRecordsAlbumRespBody &resp)
 {
     MEDIA_INFO_LOG("HandleLPathRecords enter");
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh =
+        std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
+    CHECK_AND_RETURN_RET_LOG(albumRefresh != nullptr, E_RDB_STORE_NULL,
+        "Delete Cloud Album Failed to get albumRefresh.");
     int ret = E_OK;
     if ((lpathRowIdMap.find(record.lPath) == lpathRowIdMap.end()) && !record.isDelete) {
         changeType = ChangeType::INSERT;
-        ret = this->albumDao_.InsertCloudByLPath(record);
+        ret = this->albumDao_.InsertCloudByLPath(record, albumRefresh);
         MEDIA_INFO_LOG("HandleLPathRecords insert %{public}s, %{public}d", record.cloudId.c_str(), ret);
         if (ret != E_OK) {
             MEDIA_ERR_LOG("HandleLPathRecords InsertCloudByLPath error");
@@ -123,7 +127,7 @@ int32_t CloudMediaAlbumService::HandleLPathRecords(PhotoAlbumDto &record,
             return E_OK;
         } else if (record.isDelete) {
             /* delete */
-            ret = this->albumDao_.DeleteCloudAlbum(PhotoAlbumColumns::ALBUM_LPATH, record.lPath);
+            ret = this->albumDao_.DeleteCloudAlbum(PhotoAlbumColumns::ALBUM_LPATH, record.lPath, albumRefresh);
             MEDIA_INFO_LOG("HandleLPathRecords lpath delete %{public}s, %{public}d", record.cloudId.c_str(), ret);
             if (ret != E_OK) {
                 resp.failedRecords.emplace_back(record.cloudId);
@@ -132,7 +136,7 @@ int32_t CloudMediaAlbumService::HandleLPathRecords(PhotoAlbumDto &record,
         } else {
             /* update */
             changeType = ChangeType::UPDATE;
-            ret = this->albumDao_.UpdateCloudAlbum(record, PhotoAlbumColumns::ALBUM_LPATH, record.lPath);
+            ret = this->albumDao_.UpdateCloudAlbum(record, PhotoAlbumColumns::ALBUM_LPATH, record.lPath, albumRefresh);
             MEDIA_INFO_LOG("HandleLPathRecords lpath update %{public}s, %{public}d", record.cloudId.c_str(), ret);
             if (ret != E_OK) {
                 resp.failedRecords.emplace_back(record.cloudId);
@@ -142,6 +146,11 @@ int32_t CloudMediaAlbumService::HandleLPathRecords(PhotoAlbumDto &record,
     } else {
         MEDIA_ERR_LOG("album sync lpath recordId %s has multiple file in db!", record.cloudId.c_str());
     }
+    if (ret == E_OK && changeType != ChangeType::INVAILD) {
+        int32_t notifyRet = albumRefresh->Notify();
+        CHECK_AND_RETURN_RET_LOG(notifyRet == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_ERR,
+            "fail to notify, ret = %{public}d", notifyRet);
+    }
     return ret;
 }
 
@@ -150,11 +159,20 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecordNew(
 {
     if (!record.isDelete) {
         /* insert */
-        int32_t ret = this->albumDao_.InsertCloudByCloudId(record);
+        std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh =
+            std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
+        CHECK_AND_RETURN_RET_LOG(albumRefresh != nullptr, E_RDB_STORE_NULL,
+            "Delete Cloud Album Failed to get albumRefresh.");
+        int32_t ret = this->albumDao_.InsertCloudByCloudId(record, albumRefresh);
         if (ret != E_OK) {
             MEDIA_ERR_LOG(
                 "HandleFetchOldRecord InsertCloudByCloudId error %{public}s, %{public}d", record.cloudId.c_str(), ret);
             resp.failedRecords.emplace_back(record.cloudId);
+        } else {
+            /* notify */
+            ret = albumRefresh->Notify();
+            CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_ERR,
+                "fail to notify, ret = %{public}d", ret);
         }
         MEDIA_INFO_LOG("HandleFetchOldRecord insert %{public}s, %{public}d", record.cloudId.c_str(), ret);
         resp.stats[StatsIndex::NEW_RECORDS_COUNT]++;
@@ -181,6 +199,10 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecord(
     } else if (rowCount == 1) {
         resultSet->GoToNextRow();
         int32_t dirty = GetLocalMatchDirty(*resultSet);
+        std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh =
+            std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
+        CHECK_AND_RETURN_RET_LOG(albumRefresh != nullptr, E_RDB_STORE_NULL,
+            "Delete Cloud Album Failed to get albumRefresh.");
         if (dirty != static_cast<int32_t>(Media::DirtyType::TYPE_SYNCED)) {
             /* local dirty */
             MEDIA_INFO_LOG("HandleFetchOldRecord is dirty skip %{public}s", record.cloudId.c_str());
@@ -188,7 +210,7 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecord(
             return ret;
         } else if (record.isDelete) {
             /* delete */
-            ret = this->albumDao_.DeleteCloudAlbum(PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId);
+            ret = this->albumDao_.DeleteCloudAlbum(PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId, albumRefresh);
             MEDIA_INFO_LOG("HandleFetchOldRecorddelete %{public}s, %{public}d", record.cloudId.c_str(), ret);
             if (ret != E_OK) {
                 MEDIA_ERR_LOG("HandleFetchOldRecord DeleteCloudAlbum error %{public}s", record.cloudId.c_str());
@@ -197,7 +219,8 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecord(
             resp.stats[StatsIndex::DELETE_RECORDS_COUNT]++;
         } else {
             /* update */
-            ret = this->albumDao_.UpdateCloudAlbum(record, PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId);
+            ret = this->albumDao_.UpdateCloudAlbum(record, PhotoAlbumColumns::ALBUM_CLOUD_ID,
+                record.cloudId, albumRefresh);
             MEDIA_INFO_LOG("HandleFetchOldRecord update %{public}s, %{public}d", record.cloudId.c_str(), ret);
             changeType = ChangeType::UPDATE;
             if (ret != E_OK) {
@@ -205,6 +228,11 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecord(
                 resp.failedRecords.emplace_back(record.cloudId);
             }
             resp.stats[StatsIndex::META_MODIFY_RECORDS_COUNT]++;
+        }
+        if (ret == E_OK && changeType != ChangeType::INVAILD) {
+            int32_t notifyRet = albumRefresh->Notify();
+            CHECK_AND_RETURN_RET_LOG(notifyRet == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_ERR,
+                "fail to notify, ret = %{public}d", notifyRet);
         }
     } else {
         /* invalid cases */

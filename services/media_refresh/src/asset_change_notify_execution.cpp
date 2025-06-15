@@ -90,7 +90,7 @@ const std::vector<std::pair<std::function<bool(std::pair<AssetType, AssetType>)>
     },
 };
 
-void AssetChangeNotifyExecution::Notify(vector<PhotoAssetChangeData> changeDatas)
+void AssetChangeNotifyExecution::Notify(const vector<PhotoAssetChangeData> &changeDatas)
 {
     // 轮询所有的changeDatas
     for (auto &changeData : changeDatas) {

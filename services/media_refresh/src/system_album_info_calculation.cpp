@@ -53,14 +53,6 @@ bool SystemAlbumInfoCalculation::CalAlbumRefreshInfo(const PhotoAssetChangeData 
         refreshInfo.deltaRemoveHiddenCover_)) {
         ret = true;
     }
-
-    if (ret) {
-        ACCURATE_INFO("system album refreshInfo[%{public}d] before: %{public}s", subType_,
-            beforeRefreshInfo.ToString().c_str());
-        ACCURATE_INFO("system album refreshInfo[%{public}d] after: %{public}s", subType_,
-            refreshInfo.ToString().c_str());
-    }
-    
     return ret;
 }
 

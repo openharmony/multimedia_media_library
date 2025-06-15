@@ -72,7 +72,7 @@ public:
 
     static std::shared_ptr<NotifyDetailInfo> Unmarshalling(Parcel &parcel)
     {
-        MEDIA_INFO_LOG("unmarshalling debug: std::shared_ptr<NotifyDetailInfo> Unmarshalling");
+        MEDIA_DEBUG_LOG("unmarshalling debug: std::shared_ptr<NotifyDetailInfo> Unmarshalling");
         NotifyDetailInfo* info = new (std::nothrow)NotifyDetailInfo();
         if ((info != nullptr) && (!info->ReadFromParcel(parcel))) {
             delete info;
@@ -114,13 +114,14 @@ struct MarshallingVisitor {
 };
 
 struct ToStringVisitor {
+    bool isDetail = false;
     std::string operator()(const PhotoAssetChangeData &data) const
     {
-        return data.ToString();
+        return data.ToString(isDetail);
     }
     std::string operator()(const AlbumChangeData &data) const
     {
-        return data.ToString();
+        return data.ToString(isDetail);
     }
 };
 
@@ -133,13 +134,13 @@ public:
     bool isSystem;
  
 public:
-    std::string ToString() const
+    std::string ToString(bool isDetail = false) const
     {
         std::stringstream ss;
         ss << "isForRecheck: " << isForRecheck <<", notifyUri:" << static_cast<uint16_t>(notifyUri)
             << ", notifyType:" << static_cast<uint16_t>(notifyType) << ", isSystem:" << isSystem <<".";
         for (size_t i = 0; i < changeInfos.size(); ++i) {
-            ss << "changeInfo[" << i << "]: " << std::visit(ToStringVisitor{}, changeInfos[i]) << ", ";
+            ss << "changeInfo[" << i << "]: " << std::visit(ToStringVisitor{isDetail}, changeInfos[i]) << ", ";
         }
         return ss.str();
     }
@@ -199,9 +200,17 @@ public:
             bool type = parcel.ReadBool();
             if (type) {
                 std::shared_ptr<PhotoAssetChangeData> item = PhotoAssetChangeData::Unmarshalling(parcel);
+                if (item == nullptr) {
+                    MEDIA_ERR_LOG("item is nullptr");
+                    return false;
+                }
                 this->changeInfos.push_back(*item);
             } else {
                 std::shared_ptr<AlbumChangeData> item = AlbumChangeData::Unmarshalling(parcel);
+                if (item == nullptr) {
+                    MEDIA_ERR_LOG("item is nullptr");
+                    return false;
+                }
                 this->changeInfos.push_back(*item);
             }
             validFlag = parcel.ReadBool();
@@ -223,10 +232,17 @@ private:
             bool type = parcel.ReadBool();
             if (type) {
                 std::shared_ptr<PhotoAssetChangeData> item = PhotoAssetChangeData::Unmarshalling(parcel);
+                if (item == nullptr) {
+                    MEDIA_ERR_LOG("item is nullptr");
+                    return false;
+                }
                 this->changeInfos.push_back(*item);
             } else {
                 std::shared_ptr<AlbumChangeData> item = AlbumChangeData::Unmarshalling(parcel);
-
+                if (item == nullptr) {
+                    MEDIA_ERR_LOG("item is nullptr");
+                    return false;
+                }
                 this->changeInfos.push_back(*item);
             }
         }

@@ -16,6 +16,7 @@
 #include "medialibrary_notify_new_observer.h"
 
 #include "media_file_utils.h"
+#include "media_notification_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
@@ -57,7 +58,7 @@ void MediaOnNotifyNewObserver::OnChange(const ChangeInfo &changeInfo)
         return;
     }
     NewJsOnChangeCallbackWrapper callbackWrapper;
-    callbackWrapper.mediaChangeInfo_ = Notification::MediaChangeInfo::Unmarshalling(*parcel);
+    callbackWrapper.mediaChangeInfo_ = NotificationUtils::UnmarshalInMultiMode(*parcel);
     CHECK_AND_RETURN_LOG(callbackWrapper.mediaChangeInfo_ != nullptr, "invalid mediaChangeInfo");
     Notification::NotifyUriType infoUriType = callbackWrapper.mediaChangeInfo_->notifyUri;
     if (clientObservers_.find(infoUriType) == clientObservers_.end()) {
@@ -111,7 +112,7 @@ void MediaOnNotifyNewObserver::ReadyForUvWork(const NewJsOnChangeCallbackWrapper
     }
     wrapper->observerUriType_ = callbackWrapper.observerUriType_;
     wrapper->mediaChangeInfo_ = callbackWrapper.mediaChangeInfo_;
-    NAPI_INFO_LOG("mediaChangeInfo_ is: %{public}s", wrapper->mediaChangeInfo_->ToString().c_str());
+    NAPI_INFO_LOG("mediaChangeInfo_ is: %{public}s", wrapper->mediaChangeInfo_->ToString(true).c_str());
     work->data = reinterpret_cast<void *>(wrapper);
     UvQueueWork(loop, work);
 }

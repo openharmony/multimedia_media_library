@@ -31,23 +31,13 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
-extern bool IS_ACCURATE_REFRESH_DEBUG;
-
 AssetAccurateRefresh::AssetAccurateRefresh(std::shared_ptr<TransactionOperations> trans) : AccurateRefreshBase(trans)
 {
-    ACCURATE_DEBUG("new AssetAccurateRefresh");
+    dataManager_.SetTransaction(trans);
 }
 
 int32_t AssetAccurateRefresh::Init()
 {
-    if (!dataManager_) {
-        ACCURATE_DEBUG("Init");
-        dataManager_ = make_shared<AssetDataManager>(trans_);
-        notifyExe_ = make_shared<AssetChangeNotifyExecution>();
-    } else {
-        ACCURATE_DEBUG("already init.");
-    }
-
     return ACCURATE_REFRESH_RET_OK;
 }
 
@@ -56,54 +46,35 @@ int32_t AssetAccurateRefresh::Init(const AbsRdbPredicates &predicates)
     if (!IsValidTable(predicates.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-    if (!dataManager_) {
-        Init();
-        return dataManager_->Init(predicates);
-    }
-    ACCURATE_DEBUG("already init.");
-    return ACCURATE_REFRESH_RET_OK;
+
+    return dataManager_.Init(predicates);
 }
 
 int32_t AssetAccurateRefresh::Init(const string &sql, const vector<ValueObject> bindArgs)
 {
-    if (!dataManager_) {
-        Init();
-        return dataManager_->Init(sql, bindArgs);
-    }
-    ACCURATE_DEBUG("already init.");
-    return ACCURATE_REFRESH_RET_OK;
+    return dataManager_.Init(sql, bindArgs);
 }
 
 // 增删场景下初始化数据
 int32_t AssetAccurateRefresh::Init(const vector<int32_t> &fileIds)
 {
-    if (!dataManager_) {
-        Init();
-        return dataManager_->Init(fileIds);
-    }
-    ACCURATE_DEBUG("already init.");
-    return ACCURATE_REFRESH_RET_OK;
+    return dataManager_.Init(fileIds);
 }
 
 // refresh album based on init datas and modified datas.
-int32_t AssetAccurateRefresh::RefreshAlbum()
+int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType)
 {
-    ACCURATE_DEBUG("RefreshAlbum");
-    if (!dataManager_) {
-        MEDIA_WARN_LOG("no Init.");
-        return ACCURATE_REFRESH_DATA_MGR_NULL;
-    }
-
-    auto assetChangeDatas = dataManager_->GetChangeDatas();
+    auto assetChangeDatas = dataManager_.GetChangeDatas();
     if (assetChangeDatas.empty()) {
         MEDIA_WARN_LOG("change data empty.");
         return ACCURATE_REFRESH_CHANGE_DATA_EMPTY;
     }
-    return RefreshAlbum(assetChangeDatas);
+    return RefreshAlbum(assetChangeDatas, notifyAlbumType);
 }
 
 // 根据传递的assetChangeDatas更新相册，不需要dataManager_处理
-int32_t AssetAccurateRefresh::RefreshAlbum(const vector<PhotoAssetChangeData> &assetChangeDatas)
+int32_t AssetAccurateRefresh::RefreshAlbum(const vector<PhotoAssetChangeData> &assetChangeDatas,
+    NotifyAlbumType notifyAlbumType)
 {
     if (assetChangeDatas.empty()) {
         MEDIA_WARN_LOG("input asset change datas empty.");
@@ -120,73 +91,51 @@ int32_t AssetAccurateRefresh::RefreshAlbum(const vector<PhotoAssetChangeData> &a
         MEDIA_WARN_LOG("asset change datas are same, no need refresh album.");
         return ACCURATE_REFRESH_RET_OK;
     }
-    if (!albumRefreshExe_) {
-        albumRefreshExe_ = make_shared<AlbumRefreshExecution>();
-    }
-    return albumRefreshExe_->RefreshAlbum(assetChangeDatas);
+
+    return albumRefreshExe_.RefreshAlbum(assetChangeDatas, notifyAlbumType);
 }
 
 // notify assest change infos based on init datas and modified datas.
 int32_t AssetAccurateRefresh::Notify()
 {
-    ACCURATE_DEBUG("Notify");
     // 相册通知
-    if (albumRefreshExe_) {
-        albumRefreshExe_->Notify();
-    }
+    albumRefreshExe_.Notify();
 
     // 资产通知
-    if (!dataManager_) {
-        MEDIA_WARN_LOG("dataManager_ null.");
-        return ACCURATE_REFRESH_DATA_MGR_NULL;
-    }
-
-    return Notify(dataManager_->GetChangeDatas());
+    return Notify(dataManager_.GetChangeDatas());
 }
 
 // 根据传递的assetChangeDatas进行通知，不需要dataManager_处理
-int32_t AssetAccurateRefresh::Notify(std::vector<PhotoAssetChangeData> assetChangeDatas)
+int32_t AssetAccurateRefresh::Notify(const std::vector<PhotoAssetChangeData> &assetChangeDatas)
 {
     if (assetChangeDatas.empty()) {
         MEDIA_WARN_LOG("assetChangeDatas empty.");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
 
-    if (!notifyExe_) {
-        MEDIA_WARN_LOG("notifyExe_ null.");
-        return ACCURATE_REFRESH_NOTIFY_EXE_NULL;
-    }
-
-    notifyExe_->Notify(assetChangeDatas);
+    notifyExe_.Notify(assetChangeDatas);
     return ACCURATE_REFRESH_RET_OK;
 }
 
 int32_t AssetAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &fileIds, RdbOperation operation)
 {
-    ACCURATE_DEBUG("UpdateModifiedDatasInner");
-
     auto modifiedFileIds = fileIds;
     if (modifiedFileIds.empty()) {
         MEDIA_WARN_LOG("input modifiedFileIds empty.");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
 
-    if (!dataManager_) {
-        MEDIA_WARN_LOG("dataManager_ null.");
-        return ACCURATE_REFRESH_DATA_MGR_NULL;
+    if (dataManager_.UpdateCommonModifiedDatas(fileIds) != ACCURATE_REFRESH_RET_OK) {
+        MEDIA_WARN_LOG("update common data failed.");
+        return ACCURATE_REFRESH_COMMON_DATAS_FAILED;
     }
 
-    return dataManager_->UpdateModifiedDatasInner(modifiedFileIds, operation);
+    return dataManager_.UpdateModifiedDatasInner(modifiedFileIds, operation);
 }
 
 int32_t AssetAccurateRefresh::UpdateModifiedDatas()
 {
-    if (!dataManager_) {
-        MEDIA_WARN_LOG("dataManager_ null.");
-        return ACCURATE_REFRESH_DATA_MGR_NULL;
-    }
-
-    return dataManager_->UpdateModifiedDatas();
+    return dataManager_.UpdateModifiedDatas();
 }
 
 string AssetAccurateRefresh::GetReturningKeyName()
@@ -240,12 +189,13 @@ bool AssetAccurateRefresh::IsValidTable(std::string tableName)
 
 int32_t AssetAccurateRefresh::SetContentChanged(int32_t fileId, bool isChanged)
 {
-    return dataManager_->SetContentChanged(fileId, isChanged);
+    return dataManager_.SetContentChanged(fileId, isChanged);
 }
 
 int32_t AssetAccurateRefresh::SetThumbnailStatus(int32_t fileId, int32_t status)
 {
-    return dataManager_->SetContentChanged(fileId, status);
+    // 函数调用错误
+    return dataManager_.SetThumbnailStatus(fileId, status);
 }
 
 int32_t AssetAccurateRefresh::NotifyForReCheck()

@@ -148,12 +148,6 @@ bool OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(const PhotoAssetChangeData &as
         refreshInfo.deltaAddHiddenCover_, refreshInfo.deltaRemoveHiddenCover_)) {
         ret = true;
     }
-    
-    if (ret) {
-        ACCURATE_DEBUG("owner refreshInfo[%{public}d] before: %{public}s ", albumId,
-            beforeRefreshInfo.ToString().c_str());
-        ACCURATE_DEBUG("owner refreshInfo[%{public}d] after: %{public}s", albumId, refreshInfo.ToString().c_str());
-    }
     return ret;
 }
 

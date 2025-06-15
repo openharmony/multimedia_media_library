@@ -15,19 +15,17 @@
 
 #include "media_notification_utils.h"
 
-#include <cstring>
 #include <thread>
-#include "medialibrary_errno.h"
+#include <securec.h>
 #include "media_log.h"
 #include "parcel.h"
-#include "securec.h"
-
 #include "media_change_info.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS::Media {
 using namespace Notification;
-size_t maxParcelSize = 200 * 1024 * 0.95;
-uint64_t INTERVAL_TIME_MS = 10;
+const size_t MAX_PARCEL_SIZE = 200 * 1024 * 0.95;
+const uint64_t INTERVAL_TIME_MS = 10;
 
 struct MarshallingPtrVisitor {
     std::shared_ptr<Parcel> &parcel;
@@ -67,7 +65,7 @@ bool NotificationUtils::Marshalling(const std::shared_ptr<MediaChangeInfo> &medi
 
         for (size_t i = index; i < mediaChangeInfo->changeInfos.size(); i++) {
             size_t currentDataSize = parcel->GetDataSize();
-            if (currentDataSize > maxParcelSize) { // 待补充,动态内存大小难以确定
+            if (currentDataSize > MAX_PARCEL_SIZE) { // 待补充,动态内存大小难以确定
                 validFlag = false;
                 parcel->WriteBool(validFlag);
                 MEDIA_WARN_LOG("assetChangeData or lbumChangeData size exceeds the maximum limit.");
@@ -117,6 +115,10 @@ bool NotificationUtils::WriteToChangeInfo(const std::shared_ptr<MediaChangeInfo>
         int ret = memcpy_s(uBuf, item->GetDataSize(), reinterpret_cast<uint8_t *>(buf), item->GetDataSize());
         if (ret != 0) {
             MEDIA_ERR_LOG("Parcel data copy failed, err = %{public}d", ret);
+            if (uBuf != nullptr) {
+                delete[] uBuf;
+                uBuf = nullptr;
+            }
             return false;
         }
         std::shared_ptr<AAFwk::ChangeInfo> serverChangeInfo = std::make_shared<AAFwk::ChangeInfo>();
@@ -124,6 +126,10 @@ bool NotificationUtils::WriteToChangeInfo(const std::shared_ptr<MediaChangeInfo>
         serverChangeInfo->size_ = item->GetDataSize();
         MEDIA_INFO_LOG("serverChangeInfo->size_ is: %{public}d", (int)item->GetDataSize());
         changeInfos.push_back(serverChangeInfo);
+        if (uBuf != nullptr) {
+            delete[] uBuf;
+            uBuf = nullptr;
+        }
     }
     return true;
 }

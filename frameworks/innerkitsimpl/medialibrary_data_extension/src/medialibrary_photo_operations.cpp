@@ -806,7 +806,8 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand &cmd)
     return outRow;
 }
 
-int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fileAsset, MediaLibraryApi api)
+int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fileAsset, MediaLibraryApi api,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     string filePath = fileAsset->GetPath();
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
@@ -821,7 +822,7 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     // delete file in db
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::DELETE);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    int32_t deleteRows = DeleteAssetInDb(cmd);
+    int32_t deleteRows = DeleteAssetInDb(cmd, assetRefresh);
     CHECK_AND_RETURN_RET_LOG(deleteRows > 0, E_HAS_DB_ERROR,
         "Delete photo in database failed, errCode=%{public}d", deleteRows);
 
@@ -831,7 +832,7 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
         MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(deleteRows),
         (api == MediaLibraryApi::API_10 ? MediaFileUtils::GetExtraUri(displayName, filePath) : ""));
     watch->Notify(notifyDeleteUri, NotifyType::NOTIFY_REMOVE);
-
+    assetRefresh->Notify();
     DeleteRevertMessage(filePath);
     return deleteRows;
 }
@@ -1096,7 +1097,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
      // 2、AssetRefresh -> Update()
     int32_t updatedRows = assetRefresh.UpdateWithDateTime(values, rdbPredicate);
     // 3、AssetRefresh -> RefreshAlbums()
-    assetRefresh.RefreshAlbum();
+    assetRefresh.RefreshAlbum(NotifyAlbumType::SYS_ALBUM);
     CHECK_AND_RETURN_RET_LOG(updatedRows >= 0, E_HAS_DB_ERROR, "Trash photo failed. Result %{public}d.", updatedRows);
     // delete cloud enhanacement task
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -1105,6 +1106,9 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 #endif
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, notifyUris);
     CHECK_AND_WARN_LOG(static_cast<size_t>(updatedRows) == notifyUris.size(),
         "Try to notify %{public}zu items, but only %{public}d items updated.", notifyUris.size(), updatedRows);
     // 4、AssetRefresh -> Notify()
@@ -1441,7 +1445,10 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET(changedRows >= 0, changedRows);
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
-    assetRefresh.RefreshAlbum();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, notifyUris);
+    assetRefresh.RefreshAlbum(NotifyAlbumType::SYS_ALBUM);
     SendHideNotify(notifyUris, hiddenState);
     assetRefresh.Notify();
     return changedRows;

@@ -25,7 +25,7 @@
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
-class ALbumChangeNotifyExecution {
+class AlbumChangeNotifyExecution {
 public:
     void Notify(std::vector<AlbumChangeData> changeDatas);
 

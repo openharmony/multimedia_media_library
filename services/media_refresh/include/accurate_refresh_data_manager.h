@@ -26,9 +26,10 @@
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
+#define EXPORT __attribute__ ((visibility ("default")))
 
 template <typename ChangeInfo, typename ChangeData>
-class AccurateRefreshDataManager {
+class EXPORT AccurateRefreshDataManager {
 public:
     AccurateRefreshDataManager(std::shared_ptr<TransactionOperations> trans): trans_(trans) {}
     // init的查询语句，Init只需要执行一次
@@ -38,18 +39,20 @@ public:
     int32_t Init(const std::vector<int32_t> &keys);
 
     virtual int32_t UpdateModifiedDatas() = 0;
+    virtual int32_t UpdateCommonModifiedDatas(const std::vector<int32_t> &keys) = 0;
     int32_t UpdateModifiedDatasInner(const std::vector<int32_t> &keys, RdbOperation operation);
     std::vector<ChangeData> GetChangeDatas();
     virtual std::vector<int32_t> GetInitKeys() = 0;
+    void SetTransaction(std::shared_ptr<TransactionOperations> trans);
  
 protected:
     int32_t InsertInitChangeInfos(const std::vector<ChangeInfo> &changeInfos);
 
 private:
     int32_t CheckAndUpdateOperation(RdbOperation &newOperation, RdbOperation oldOperation);
-    virtual int32_t UpdateModifiedDatasForRemove(const std::vector<int32_t> keys);
-    virtual int32_t UpdateModifiedDatasForUpdate(const std::vector<int32_t> keys);
-    virtual int32_t UpdateModifiedDatasForAdd(const std::vector<int32_t> keys);
+    int32_t UpdateModifiedDatasForRemove(const std::vector<int32_t> &keys);
+    int32_t UpdateModifiedDatasForUpdate(const std::vector<int32_t> &keys);
+    int32_t UpdateModifiedDatasForAdd(const std::vector<int32_t> &keys);
     bool IsValidChangeInfo(const ChangeInfo &changeInfo);
 
     virtual int32_t GetChangeInfoKey(const ChangeInfo &changeInfo) = 0;

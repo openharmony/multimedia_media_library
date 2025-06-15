@@ -28,12 +28,16 @@
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "accurate_debug_log.h"
+#include "medialibrary_notify.h"
+#include "album_accurate_refresh_manager.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
+
+mutex AlbumRefreshExecution::albumRefreshMtx_;
 
 std::map<PhotoAlbumSubType, SystemAlbumInfoCalculation> AlbumRefreshExecution::systemAlbumCalculations_ = {
     { PhotoAlbumSubType::FAVORITE, { FavoriteAssetHelper::IsAsset, FavoriteAssetHelper::IsVideoAsset,
@@ -57,28 +61,25 @@ std::map<PhotoAlbumSubType, SystemAlbumInfoCalculation> AlbumRefreshExecution::s
         PhotoAlbumSubType::CLOUD_ENHANCEMENT }}
 };
 
-int32_t AlbumRefreshExecution::RefreshAlbum(const vector<PhotoAssetChangeData> &assetChangeDatas)
+int32_t AlbumRefreshExecution::RefreshAlbum(const vector<PhotoAssetChangeData> &assetChangeDatas,
+    NotifyAlbumType notifyAlbumType)
 {
-    // 初始化
-    if (!albumRefresh_) {
-        albumRefresh_ = make_shared<AlbumAccurateRefresh>();
-    }
     // 计算影响相册和refresh info，结果放入systemAlbumInfos_和ownerAlbumInfos_
-    CalAlbumsRefreshInfo(assetChangeDatas);
+    CalRefreshInfos(assetChangeDatas);
 
     // 相册执行逻辑只能串行执行
     lock_guard<mutex> lock(albumRefreshMtx_);
 
     // 计算相册信息
-    CalRefreshAlbumInfos();
+    CalAlbumsInfos();
 
     // 更新相册
-    RefreshAlbumInfos();
+    UpdateAllAlbums(notifyAlbumType);
 
     return ACCURATE_REFRESH_RET_OK;
 }
 
-int32_t AlbumRefreshExecution::CalAlbumsRefreshInfo(const vector<PhotoAssetChangeData> &assetChangeDatas)
+int32_t AlbumRefreshExecution::CalRefreshInfos(const vector<PhotoAssetChangeData> &assetChangeDatas)
 {
     // 计算系统相册信息
     for (auto &item : systemAlbumCalculations_) {
@@ -93,15 +94,11 @@ int32_t AlbumRefreshExecution::CalAlbumsRefreshInfo(const vector<PhotoAssetChang
             AlbumRefreshInfo refreshInfo;
             if (calculation.CalAlbumRefreshInfo(assetChangeData, refreshInfo)) {
                 systemAlbumInfos_.emplace(subType, refreshInfo);
-                ACCURATE_DEBUG("add new subType: %{public}d, assetInfo before:%{public}s, after:%{public}s",
-                    static_cast<int32_t> (subType), assetChangeData.infoBeforeChange_.ToString().c_str(),
-                    assetChangeData.infoAfterChange_.ToString().c_str());
             }
         }
     }
     // 计算用户和来源相册
     ownerAlbumInfos_ = OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(assetChangeDatas);
-    ACCURATE_DEBUG("owner albums size: %{public}zu", ownerAlbumInfos_.size());
     if (IS_ACCURATE_DEBUG) {
         for (auto const &systemInfo : systemAlbumInfos_) {
             ACCURATE_INFO("subType: %{public}d, refreshInfo: %{public}s", systemInfo.first,
@@ -116,11 +113,11 @@ int32_t AlbumRefreshExecution::CalAlbumsRefreshInfo(const vector<PhotoAssetChang
     return ACCURATE_REFRESH_RET_OK;
 }
 
-int32_t AlbumRefreshExecution::CalRefreshAlbumInfos()
+int32_t AlbumRefreshExecution::CalAlbumsInfos()
 {
     // 查询相册数据
-    albumRefresh_->Init(GetAlbumSubTypes(), GetOwnerAlbumIds());
-    initAlbumInfos_ = albumRefresh_->GetInitAlbumInfos();
+    albumRefresh_.Init(GetAlbumSubTypes(), GetOwnerAlbumIds());
+    initAlbumInfos_ = albumRefresh_.GetInitAlbumInfos();
     if (initAlbumInfos_.empty()) {
         ACCURATE_DEBUG("empty album Info, insert.");
         return ACCURATE_REFRESH_RET_OK;
@@ -132,7 +129,6 @@ int32_t AlbumRefreshExecution::CalRefreshAlbumInfos()
         auto subType = albumInfo.albumSubType_;
         auto calAlbumInfoIter = systemAlbumInfos_.find(static_cast<PhotoAlbumSubType>(subType));
         AlbumRefreshInfo refreshInfo;
-        
         if (calAlbumInfoIter == systemAlbumInfos_.end()) {
             auto albumId = albumInfo.albumId_;
             auto calOwnerAlbumInfoIter = ownerAlbumInfos_.find(albumId);
@@ -145,7 +141,7 @@ int32_t AlbumRefreshExecution::CalRefreshAlbumInfos()
             refreshInfo = calAlbumInfoIter->second;
         }
         auto albumInfoBefore = albumInfo;
-        UpdateRefreshAlbumInfo(albumInfo, refreshInfo, subType);
+        CalAlbumInfos(albumInfo, refreshInfo, subType);
         ACCURATE_INFO("before albumInfo: %{public}s", albumInfoBefore.ToString(true).c_str());
         ACCURATE_INFO("refresh info: %{public}s", refreshInfo.ToString().c_str());
         ACCURATE_INFO("after albumInfo: %{public}s", albumInfo.ToString(true).c_str());
@@ -156,54 +152,45 @@ int32_t AlbumRefreshExecution::CalRefreshAlbumInfos()
 
 int32_t AlbumRefreshExecution::Notify()
 {
-    albumRefresh_->Notify();
+    albumRefresh_.Notify();
     return ACCURATE_REFRESH_RET_OK;
 }
 
 vector<PhotoAlbumSubType> AlbumRefreshExecution::GetAlbumSubTypes()
 {
-    stringstream ss;
-    ss << "GetAlbumSubTypes:";
     vector<PhotoAlbumSubType> systemTypes;
     for (auto const &item : systemAlbumInfos_) {
         systemTypes.push_back(item.first);
-        ss << " " << item.first;
     }
-    ACCURATE_DEBUG("%{public}s", ss.str().c_str());
     return systemTypes;
 }
 
 vector<int32_t> AlbumRefreshExecution::GetOwnerAlbumIds()
 {
-    stringstream ss;
-    ss << "GetOwnerAlbumIds:";
     vector<int32_t> albumIds;
     for (auto const &item : ownerAlbumInfos_) {
         albumIds.push_back(item.first);
-        ss << " " << item.first;
     }
-    ACCURATE_DEBUG("%{public}s", ss.str().c_str());
     return albumIds;
 }
 
-int32_t AlbumRefreshExecution::RefreshAlbumInfos()
+int32_t AlbumRefreshExecution::UpdateAllAlbums(NotifyAlbumType notifyAlbumType)
 {
     for (auto &albumId : forceRefreshAlbums_) {
         // 封装刷新处理；全量刷新指定的相册（系统相册、用户相册、来源相册）
-        ForceRefreshAlbumInfo(albumId, false);
+        ForceUpdateAlbums(albumId, false, notifyAlbumType);
     }
 
     for (auto &albumId : forceRefreshHiddenAlbums_) {
         // 封装刷新处理；全量刷新指定的隐藏相册
-        ForceRefreshAlbumInfo(albumId, true);
+        ForceUpdateAlbums(albumId, true, notifyAlbumType);
     }
 
-    RefreshAlbumInfo();
-    
+    AccurateUpdateAlbums(notifyAlbumType);
     return ACCURATE_REFRESH_RET_OK;
 }
 
-int32_t AlbumRefreshExecution::ForceRefreshAlbumInfo(int32_t albumId, bool isHidden)
+int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden, NotifyAlbumType notifyAlbumType)
 {
     const auto &iter = initAlbumInfos_.find(albumId);
     if (iter == initAlbumInfos_.end()) {
@@ -214,9 +201,11 @@ int32_t AlbumRefreshExecution::ForceRefreshAlbumInfo(int32_t albumId, bool isHid
     auto &albumInfo = iter->second;
     PhotoAlbumSubType subtype = static_cast<PhotoAlbumSubType>(albumInfo.albumSubType_);
     ValuesBucket values;
-    GetUpdateValues(values, albumInfo, isHidden);
+    NotifyType type = NOTIFY_INVALID;
+    GetUpdateValues(values, albumInfo, isHidden, type);
     if (values.IsEmpty()) {
-        MEDIA_ERR_LOG("no need update.");
+        MEDIA_ERR_LOG("albumId[%{public}d], subType[%{public}d], hidden[%{public}d] no need update.", albumId, subtype,
+            isHidden);
         return ACCURATE_REFRESH_RET_OK;
     }
 
@@ -224,14 +213,21 @@ int32_t AlbumRefreshExecution::ForceRefreshAlbumInfo(int32_t albumId, bool isHid
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subtype));
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumInfo.albumId_));
     int32_t changedRows = 0;
+    auto ret = albumRefresh_.Update(changedRows, values, predicates);
+    ACCURATE_DEBUG("Update[%{public}d, %{public}d] type: %{public}d, albumId: %{public}d, isHidden: %{public}d", ret,
+        changedRows, albumInfo.albumSubType_, albumInfo.albumId_, isHidden);
+    if (ret == ACCURATE_REFRESH_RET_OK) {
+        CheckNotifyOldNotification(notifyAlbumType, albumInfo, type);
+        AlbumAccurateRefreshManager::GetInstance().SetAlbumAccurateRefresh(albumInfo.albumId_, isHidden);
+    } else {
+        AlbumAccurateRefreshManager::GetInstance().RemoveAccurateRefreshAlbum(albumInfo.albumId_, isHidden);
+    }
 
-    albumRefresh_->Update(changedRows, values, predicates);
-    ACCURATE_DEBUG("Update type: %{public}d, albumId: %{public}d, isHidden: %{public}d", albumInfo.albumSubType_,
-        albumInfo.albumId_, isHidden);
     return ACCURATE_REFRESH_RET_OK;
 }
 
-int32_t AlbumRefreshExecution::GetUpdateValues(ValuesBucket &values, const AlbumChangeInfo &albumInfo, bool isHidden)
+int32_t AlbumRefreshExecution::GetUpdateValues(ValuesBucket &values, const AlbumChangeInfo &albumInfo,
+    bool isHidden, NotifyType &type)
 {
     PhotoAlbumSubType subtype = static_cast<PhotoAlbumSubType>(albumInfo.albumSubType_);
     struct UpdateAlbumData data;
@@ -244,17 +240,17 @@ int32_t AlbumRefreshExecution::GetUpdateValues(ValuesBucket &values, const Album
     data.albumCoverUri = albumInfo.coverUri_;
     data.coverDateTime = albumInfo.coverDateTime_;
     data.hiddenCoverDateTime = albumInfo.hiddenCoverDateTime_;
-    ACCURATE_DEBUG("init albumInfo:%{public}s", albumInfo.ToString().c_str());
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore null");
         return ACCURATE_REFRESH_RDB_NULL;
     }
-
+    type = data.albumCount < data.newTotalCount ? NOTIFY_ALBUM_ADD_ASSET :
+        (data.albumCount > data.newTotalCount ? NOTIFY_ALBUM_REMOVE_ASSET : NOTIFY_UPDATE);
     return MediaLibraryRdbUtils::GetUpdateValues(rdbStore, data, values, subtype, isHidden);
 }
 
-int32_t AlbumRefreshExecution::RefreshAlbumInfo()
+int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumType)
 {
     for (auto &iter : refreshAlbums_) {
         auto &albumInfo = iter.second;
@@ -267,7 +263,8 @@ int32_t AlbumRefreshExecution::RefreshAlbumInfo()
         }
 
         auto &initAlbumInfo = initIter->second;
-        ValuesBucket values = albumInfo.GetUpdateValues(initAlbumInfo);
+        NotifyType type = NOTIFY_INVALID;
+        ValuesBucket values = albumInfo.GetUpdateValues(initAlbumInfo, type);
 
         /***************************************************************************/
         if (forceRefreshAlbums_.find(albumInfo.albumId_) == forceRefreshAlbums_.end()) {
@@ -286,72 +283,85 @@ int32_t AlbumRefreshExecution::RefreshAlbumInfo()
         predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumInfo.albumId_));
         int32_t changedRows = 0;
         
-        albumRefresh_->Update(changedRows, values, predicates);
+        albumRefresh_.Update(changedRows, values, predicates);
+        CheckNotifyOldNotification(notifyAlbumType, albumInfo, type);
         ACCURATE_DEBUG("## Update type: %{public}d, albumId: %{public}d end", albumInfo.albumSubType_,
             albumInfo.albumId_);
     }
     return ACCURATE_REFRESH_RET_OK;
 }
 
+void AlbumRefreshExecution::CheckHiddenAlbumInfo(ValuesBucket &values, stringstream &ss)
+{
+    int32_t hiddenCount;
+    ValueObject value;
+    if (values.GetObject(PhotoAlbumColumns::HIDDEN_COUNT, value)) {
+        value.GetInt(hiddenCount);
+        ss << " hiddenCount: " << hiddenCount;
+    }
+    string hiddenCover;
+    if (values.GetObject(PhotoAlbumColumns::HIDDEN_COVER, value)) {
+        value.GetString(hiddenCover);
+        ss << " hiddenCover: " << hiddenCover;
+    }
+    int64_t hiddenCoverDateTime;
+    if (values.GetObject(PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME, value)) {
+        value.GetLong(hiddenCoverDateTime);
+        ss << " hiddenCoverDateTime: " << hiddenCoverDateTime;
+    }
+    int32_t containHidden;
+    if (values.GetObject(PhotoAlbumColumns::CONTAINS_HIDDEN, value)) {
+        value.GetInt(containHidden);
+        ss << " containHidden: " << containHidden;
+    }
+}
+
+void AlbumRefreshExecution::CheckAlbumInfo(ValuesBucket &values, stringstream &ss)
+{
+    int32_t count;
+    ValueObject value;
+    if (values.GetObject(PhotoAlbumColumns::ALBUM_COUNT, value)) {
+        value.GetInt(count);
+        ss << " count: " << count;
+    }
+    string cover;
+    if (values.GetObject(PhotoAlbumColumns::ALBUM_COVER_URI, value)) {
+        value.GetString(cover);
+        ss << " cover: " << cover;
+    }
+    int64_t coverDateTime;
+    if (values.GetObject(PhotoAlbumColumns::COVER_DATE_TIME, value)) {
+        value.GetLong(coverDateTime);
+        ss << " coverDateTime: " << coverDateTime;
+    }
+
+    int32_t videoCount;
+    if (values.GetObject(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, value)) {
+        value.GetInt(videoCount);
+        ss << " videoCount: " << videoCount;
+    }
+
+    int32_t imageCount;
+    if (values.GetObject(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, value)) {
+        value.GetInt(imageCount);
+        ss << " imageCount: " << imageCount;
+    }
+}
+
 void AlbumRefreshExecution::CheckUpdateAlbumInfo(const AlbumChangeInfo &albumInfo, bool isHidden)
 {
     ValuesBucket values;
-    GetUpdateValues(values, albumInfo, isHidden);
+    NotifyType type;
+    GetUpdateValues(values, albumInfo, isHidden, type);
     if (values.IsEmpty()) {
-        ACCURATE_INFO("album info success albumId[%{public}d], isHiden[%{public}d].", albumInfo.albumId_, isHidden);
         return;
     }
     stringstream ss;
     ValueObject value;
     if (isHidden) {
-        int32_t hiddenCount;
-        if (values.GetObject(PhotoAlbumColumns::HIDDEN_COUNT, value)) {
-            value.GetInt(hiddenCount);
-            ss << " hiddenCount: " << hiddenCount;
-        }
-        string hiddenCover;
-        if (values.GetObject(PhotoAlbumColumns::HIDDEN_COVER, value)) {
-            value.GetString(hiddenCover);
-            ss << " hiddenCover: " << hiddenCover;
-        }
-        int64_t hiddenCoverDateTime;
-        if (values.GetObject(PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME, value)) {
-            value.GetLong(hiddenCoverDateTime);
-            ss << " hiddenCoverDateTime: " << hiddenCoverDateTime;
-        }
-        int32_t containHidden;
-        if (values.GetObject(PhotoAlbumColumns::CONTAINS_HIDDEN, value)) {
-            value.GetInt(containHidden);
-            ss << " containHidden: " << containHidden;
-        }
+        CheckHiddenAlbumInfo(values, ss);
     } else {
-        int32_t count;
-        if (values.GetObject(PhotoAlbumColumns::ALBUM_COUNT, value)) {
-            value.GetInt(count);
-            ss << " count: " << count;
-        }
-        string cover;
-        if (values.GetObject(PhotoAlbumColumns::ALBUM_COVER_URI, value)) {
-            value.GetString(cover);
-            ss << " cover: " << cover;
-        }
-        int64_t coverDateTime;
-        if (values.GetObject(PhotoAlbumColumns::COVER_DATE_TIME, value)) {
-            value.GetLong(coverDateTime);
-            ss << " coverDateTime: " << coverDateTime;
-        }
-
-        int32_t videoCount;
-        if (values.GetObject(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, value)) {
-            value.GetInt(videoCount);
-            ss << " videoCount: " << videoCount;
-        }
-
-        int32_t imageCount;
-        if (values.GetObject(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, value)) {
-            value.GetInt(imageCount);
-            ss << " imageCount: " << imageCount;
-        }
+        CheckAlbumInfo(values, ss);
     }
 
     int64_t dateModified;
@@ -364,13 +374,19 @@ void AlbumRefreshExecution::CheckUpdateAlbumInfo(const AlbumChangeInfo &albumInf
         isHidden, ss.str().c_str());
 }
 
-void AlbumRefreshExecution::UpdateAlbumCount(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo)
+bool AlbumRefreshExecution::CalAlbumHiddenCount(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo)
+{
+    albumInfo.hiddenCount_ += refreshInfo.deltaHiddenCount_;
+    return refreshInfo.deltaHiddenCount_ != 0;
+}
+
+bool AlbumRefreshExecution::CalAlbumCount(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo)
 {
     // count 更新
     albumInfo.count_ += refreshInfo.deltaCount_;
     albumInfo.videoCount_ += refreshInfo.deltaVideoCount_;
     albumInfo.imageCount_ += (refreshInfo.deltaCount_ - refreshInfo.deltaVideoCount_);
-    albumInfo.hiddenCount_ += refreshInfo.deltaHiddenCount_;
+    return refreshInfo.deltaCount_ != 0 || refreshInfo.deltaVideoCount_ != 0;
 }
 
 bool AlbumRefreshExecution::IsValidCover(const PhotoAssetChangeInfo &assetInfo)
@@ -378,31 +394,62 @@ bool AlbumRefreshExecution::IsValidCover(const PhotoAssetChangeInfo &assetInfo)
     return assetInfo.fileId_ != INVALID_INT32_VALUE;
 }
 
-int32_t AlbumRefreshExecution::UpdateRefreshAlbumInfo(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
+bool AlbumRefreshExecution::CalAlbumInfos(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
     int32_t subType)
 {
-    // 更新count
-    UpdateAlbumCount(albumInfo, refreshInfo);
-    // 更新uri、dateTimeForCover
-    bool isRefreshAlbumCover = UpdateAlbumCover(albumInfo, refreshInfo, subType);
-    bool isRefreshAlbumCount = refreshInfo.deltaCount_ != 0 || refreshInfo.deltaVideoCount_ !=0;
-    bool needRefreshAblum = isRefreshAlbumCover ||
-        (forceRefreshAlbums_.find(albumInfo.albumId_) == forceRefreshAlbums_.end() && isRefreshAlbumCount);
-
-    // 更新hiddenCoverUri、dateTimeForHiddenCover
-    bool isRefreshHiddenAlbumCover = UpdateAlbumHiddenCover(albumInfo, refreshInfo);
-    bool isRefreshHiddenAlbumCount = refreshInfo.deltaHiddenCount_ != 0;
-    bool needRefreshHiddenAlbum = isRefreshHiddenAlbumCover ||
-        (forceRefreshHiddenAlbums_.find(albumInfo.albumId_) == forceRefreshHiddenAlbums_.end() &&
-        isRefreshHiddenAlbumCount);
+    bool needRefreshAblum = CalAlbumInfo(albumInfo, refreshInfo, subType);
+    bool needRefreshHiddenAlbum = CalHiddenAlbumInfo(albumInfo, refreshInfo, subType);
+    // 相册的普通信息和隐藏信息在同一个albumInfo中，只刷新其中一类信息时，另一类信息为无效值
     if (needRefreshAblum || needRefreshHiddenAlbum) {
         refreshAlbums_.emplace(albumInfo.albumId_, albumInfo);
+        return true;
     }
-
-    return ACCURATE_REFRESH_RET_OK;
+    return false;
 }
 
-bool AlbumRefreshExecution::UpdateAlbumCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
+bool AlbumRefreshExecution::CalAlbumInfo(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
+    int32_t subType)
+{
+    // 普通信息需要刷新 && 不能增量刷新
+    if (refreshInfo.IsAlbumInfoRefresh() &&
+        !AlbumAccurateRefreshManager::GetInstance().IsAlbumAccurateRefresh(albumInfo.albumId_, false)) {
+        forceRefreshAlbums_.insert(albumInfo.albumId_);
+        ClearAlbumInfo(albumInfo);
+        ACCURATE_DEBUG("force update album[%{public}d] info", albumInfo.albumId_);
+        return false;
+    }
+
+    // 更新count
+    bool isRefreshAlbumCount = CalAlbumCount(albumInfo, refreshInfo);
+    // 更新uri、dateTimeForCover
+    bool isRefreshAlbumCover = CalAlbumCover(albumInfo, refreshInfo, subType);
+
+    // 增量刷新场景：不强制刷新 && count/video count/cover无变化
+    return forceRefreshAlbums_.find(albumInfo.albumId_) == forceRefreshAlbums_.end() &&
+        (isRefreshAlbumCover || isRefreshAlbumCount);
+}
+
+bool AlbumRefreshExecution::CalHiddenAlbumInfo(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
+    int32_t subType)
+{
+    // 隐藏信息需要刷新 && 不能增量刷新
+    if (refreshInfo.IsAlbumHiddenInfoRefresh() &&
+        !AlbumAccurateRefreshManager::GetInstance().IsAlbumAccurateRefresh(albumInfo.albumId_, true)) {
+        forceRefreshHiddenAlbums_.insert(albumInfo.albumId_);
+        ClearHiddenAlbumInfo(albumInfo);
+        ACCURATE_DEBUG("force update album[%{public}d] hidden info", albumInfo.albumId_);
+        return false;
+    }
+    bool isRefreshHiddenAlbumCount = CalAlbumHiddenCount(albumInfo, refreshInfo);
+    // 更新hiddenCoverUri、dateTimeForHiddenCover
+    bool isRefreshHiddenAlbumCover = CalAlbumHiddenCover(albumInfo, refreshInfo);
+    
+    // 增量刷新场景：不强制刷新 && hidden count/cover无变化
+    return forceRefreshHiddenAlbums_.find(albumInfo.albumId_) ==
+        forceRefreshHiddenAlbums_.end() && (isRefreshHiddenAlbumCover || isRefreshHiddenAlbumCount);
+}
+
+bool AlbumRefreshExecution::CalAlbumCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
     int32_t subType)
 {
     bool isRefreshAlbum = false;
@@ -440,8 +487,8 @@ bool AlbumRefreshExecution::UpdateAlbumCover(AlbumChangeInfo &albumInfo, const A
             ClearAlbumInfo(albumInfo);
         }
         ACCURATE_DEBUG(
-            "Del[%{public}d], forceRefresh[%{public}d], time[%{public}" PRId64 ", %{public}" PRId64 "], \
-            removeCover id:%{public}d", albumInfo.albumId_, isForceRefresh, dateTimeForRemoveCover,
+            "Del[%{public}d], forceRefresh[%{public}d], time[%{public}" PRId64 ", %{public}" PRId64 "]," \
+            "removeCover id:%{public}d", albumInfo.albumId_, isForceRefresh, dateTimeForRemoveCover,
             albumInfo.coverDateTime_, refreshInfo.deltaRemoveCover_.fileId_);
     } else if (IsValidCover(refreshInfo.deltaAddCover_) && IsValidCover(refreshInfo.deltaRemoveCover_)) {
         // 异常场景：同一个相册中cover既有新增又有删除;同一个相册中没有新增也没有删除
@@ -455,7 +502,7 @@ bool AlbumRefreshExecution::UpdateAlbumCover(AlbumChangeInfo &albumInfo, const A
     return isRefreshAlbum;
 }
 
-bool AlbumRefreshExecution::UpdateAlbumHiddenCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo)
+bool AlbumRefreshExecution::CalAlbumHiddenCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo)
 {
     ACCURATE_DEBUG("albumInfo: %{public}s, hiddenCover: %{public}s, removeHiddenCover: %{public}s",
         albumInfo.ToString().c_str(), refreshInfo.deltaAddHiddenCover_.ToString().c_str(),
@@ -511,5 +558,54 @@ void AlbumRefreshExecution::ClearHiddenAlbumInfo(AlbumChangeInfo &albumInfo)
     albumInfo.hiddenCoverDateTime_ = INVALID_INT64_VALUE;
 }
 
+void AlbumRefreshExecution::CheckNotifyOldNotification(NotifyAlbumType notifyAlbumType,
+    const AlbumChangeInfo &albumInfo, NotifyType type)
+{
+    if (notifyAlbumType == NotifyAlbumType::NO_NOTIFY || notifyAlbumType == NotifyAlbumType::ANA_ALBUM) {
+        ACCURATE_DEBUG("no need old notification");
+        return;
+    }
+    if (type == NotifyType::NOTIFY_INVALID) {
+        ACCURATE_ERR("invalid notify type.");
+        return;
+    }
+
+    if (albumInfo.albumSubType_ == static_cast<int32_t>(PhotoAlbumSubType::TRASH) ||
+        albumInfo.albumSubType_ == static_cast<int32_t>(PhotoAlbumSubType::HIDDEN)) {
+        ACCURATE_DEBUG("subtype[%{public}d] no need old notification.", albumInfo.albumId_);
+        return;
+    }
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        ACCURATE_ERR("watch nullptr no old notification");
+        return;
+    }
+    bool needSystemNotify = notifyAlbumType & NotifyAlbumType::SYS_ALBUM;
+    bool isSystemAlbum = albumInfo.albumType_ == static_cast<int32_t>(PhotoAlbumType::SYSTEM) &&
+        (albumInfo.albumSubType_ == static_cast<int32_t>(PhotoAlbumSubType::FAVORITE) ||
+        albumInfo.albumSubType_ == static_cast<int32_t>(PhotoAlbumSubType::VIDEO) ||
+        albumInfo.albumSubType_ == static_cast<int32_t>(PhotoAlbumSubType::IMAGE) ||
+        albumInfo.albumSubType_ == static_cast<int32_t>(PhotoAlbumSubType::CLOUD_ENHANCEMENT));
+
+    bool needUserNotify = notifyAlbumType & NotifyAlbumType::USER_ALBUM;
+    bool isUserAlbum = albumInfo.albumType_ == static_cast<int32_t>(PhotoAlbumType::USER) &&
+        albumInfo.albumSubType_ == static_cast<int32_t>(PhotoAlbumSubType::USER_GENERIC);
+
+    bool needSourceNotify = notifyAlbumType & NotifyAlbumType::SOURCE_ALBUM;
+    bool isSourceAlbum = albumInfo.albumType_ == static_cast<int32_t>(PhotoAlbumType::SOURCE) &&
+        albumInfo.albumSubType_ == static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC);
+
+    bool needNotify = (needSystemNotify && isSystemAlbum) || (needUserNotify && isUserAlbum)
+        || (needSourceNotify && isSourceAlbum);
+    if (needNotify) {
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, type, albumInfo.albumId_);
+        ACCURATE_DEBUG("old notification: type[%{public}d], albumId[%{public}d], notifyAlbumType[0x%{public}x]",
+            type, albumInfo.albumId_, notifyAlbumType);
+    } else {
+        ACCURATE_DEBUG("no notification albumType[%{public}d], subType[%{public}d], notifyAlbumType[0x%{public}x]",
+            albumInfo.albumType_, albumInfo.albumSubType_, notifyAlbumType);
+    }
+}
 } // namespace Media
 } // namespace OHOS

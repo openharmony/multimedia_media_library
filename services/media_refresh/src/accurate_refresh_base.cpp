@@ -28,6 +28,8 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
+mutex AccurateRefreshBase::dbOperationMtx_;
+
 int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
 {
     if (!IsValidTable(cmd.GetTableName())) {
@@ -47,12 +49,14 @@ int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
         vector<ValuesBucket> values = { cmd.GetValueBucket() };
         if (trans_) {
             retWithResults = trans_->BatchInsert(cmd.GetTableName(), values, GetReturningKeyName());
-            CHECK_AND_RETURN_RET_LOG(ret != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb trans BatchInsert error.");
+            CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+                "rdb trans BatchInsert error.");
         } else {
             auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
             CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
             retWithResults = rdbStore->BatchInsert(cmd.GetTableName(), values, GetReturningKeyName());
-            CHECK_AND_RETURN_RET_LOG(ret != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb BatchInsert error.");
+            CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+                "rdb BatchInsert error.");
         }
         keys = GetReturningKeys(retWithResults);
         outRowId = keys[0];
@@ -63,7 +67,7 @@ int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
             auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
             CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
             auto ret = rdbStore->Insert(cmd, outRowId);
-            CHECK_AND_RETURN_RET_LOG(ret != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb insert error.");
+            CHECK_AND_RETURN_RET_LOG(ret == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR, "rdb insert error.");
         }
         keys.push_back(static_cast<int32_t> (outRowId));
         ACCURATE_DEBUG("Insert key: %{public}" PRId64, outRowId);
@@ -90,24 +94,26 @@ int32_t AccurateRefreshBase::Insert(int64_t &outRowId, const string &table, Valu
         vector<ValuesBucket> values = { value };
         if (trans_) {
             retWithResults = trans_->BatchInsert(table, values, GetReturningKeyName());
-            CHECK_AND_RETURN_RET_LOG(ret != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb trans BatchInsert error.");
+            CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+                "rdb trans BatchInsert error.");
         } else {
             auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
             CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
             retWithResults = rdbStore->BatchInsert(table, values, GetReturningKeyName());
-            CHECK_AND_RETURN_RET_LOG(ret != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb BatchInsert error.");
+            CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+                "rdb BatchInsert error.");
         }
         keys = GetReturningKeys(retWithResults);
         outRowId = keys[0];
     #else
         if (trans_) {
             auto ret = trans_->Insert(outRowId, table, value);
-            CHECK_AND_RETURN_RET_LOG(ret != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb trans insert error.");
+            CHECK_AND_RETURN_RET_LOG(ret == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR, "rdb trans insert error.");
         } else {
             auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
             CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
             auto ret = rdbStore->Insert(outRowId, table, value);
-            CHECK_AND_RETURN_RET_LOG(ret != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb insert error.");
+            CHECK_AND_RETURN_RET_LOG(ret == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR, "rdb insert error.");
         }
         
         keys.push_back(static_cast<int32_t> (outRowId));
@@ -140,13 +146,14 @@ int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &tab
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->BatchInsert(table, values, GetReturningKeyName());
-        CHECK_AND_RETURN_RET_LOG(retWithResults.first != E_HAS_DB_ERROR, E_HAS_DB_ERROR,
+        CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
             "rdb trans BatchInsert error.");
     } else {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
         retWithResults = rdbStore->BatchInsert(table, values, GetReturningKeyName());
-        CHECK_AND_RETURN_RET_LOG(retWithResults.first != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb BatchInsert error.");
+        CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+            "rdb BatchInsert error.");
     }
     changedRows = retWithResults.second.changed;
     vector<int32_t> keys = GetReturningKeys(retWithResults);
@@ -190,17 +197,18 @@ int32_t AccurateRefreshBase::Update(int32_t &changedRows, const ValuesBucket &va
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->Update(value, predicates, GetReturningKeyName());
-        CHECK_AND_RETURN_RET_LOG(retWithResults.first != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb trans Update error.");
+        CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+            "rdb trans Update error.");
     } else {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
         retWithResults = rdbStore->Update(value, predicates, GetReturningKeyName());
-        CHECK_AND_RETURN_RET_LOG(retWithResults.first != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb Update error.");
+        CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+            "rdb Update error.");
     }
 
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     changedRows = retWithResults.second.changed;
-    ACCURATE_DEBUG("ret: %{public}d", ret);
     return UpdateModifiedDatasInner(keys, operation);
 }
 
@@ -246,12 +254,14 @@ int32_t AccurateRefreshBase::Delete(int32_t &deletedRows, const AbsRdbPredicates
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->Delete(predicates, GetReturningKeyName());
-        CHECK_AND_RETURN_RET_LOG(ret != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb Delete error.");
+        CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+            "rdb Delete error.");
     } else {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
         retWithResults = rdbStore->Delete(predicates, GetReturningKeyName());
-        CHECK_AND_RETURN_RET_LOG(ret != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb Delete error.");
+        CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+            "rdb Delete error.");
     }
     
     vector<int32_t> keys = GetReturningKeys(retWithResults);
@@ -274,6 +284,14 @@ vector<int32_t> AccurateRefreshBase::GetReturningKeys(const pair<int32_t, Result
         MEDIA_ERR_LOG("ret err: %{publid}d", retWithResults.first);
         return keys;
     }
+
+    int32_t count = 0;
+    auto ret = resultSet->GetRowCount(count);
+    if (ret != NativeRdb::E_OK || count <= 0) {
+        MEDIA_ERR_LOG("Failed to get resultset row count, ret[%{public}d], count[%{public}d]", ret, count);
+        return keys;
+    }
+
     do {
         int32_t key = get<int32_t>(ResultSetUtils::GetValFromColumn(GetReturningKeyName(), resultSet, TYPE_INT32));
         keys.push_back(key);
@@ -293,7 +311,6 @@ int32_t AccurateRefreshBase::ExecuteForLastInsertedRowId(const string &sql, cons
 {
     lock_guard<mutex> lock(dbOperationMtx_);
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
-    int32_t ret = 0;
     if (trans_) {
         retWithResults = trans_->Execute(sql, bindArgs, GetReturningKeyName());
     } else {
@@ -304,7 +321,8 @@ int32_t AccurateRefreshBase::ExecuteForLastInsertedRowId(const string &sql, cons
 
     ACCURATE_DEBUG("sql:%{public}s", sql.c_str());
     
-    CHECK_AND_RETURN_RET_LOG(ret != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb ExecuteForLastInsertedRowId error.");
+    CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+        "rdb ExecuteForLastInsertedRowId error.");
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     UpdateModifiedDatasInner(keys, operation);
     auto rowId = -1;
@@ -319,7 +337,6 @@ int32_t AccurateRefreshBase::ExecuteSql(const string &sql, const vector<ValueObj
 {
     lock_guard<mutex> lock(dbOperationMtx_);
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
-    int32_t ret = 0;
     if (trans_) {
         retWithResults = trans_->Execute(sql, bindArgs, GetReturningKeyName());
     } else {
@@ -327,7 +344,7 @@ int32_t AccurateRefreshBase::ExecuteSql(const string &sql, const vector<ValueObj
         CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
         retWithResults = rdbStore->Execute(sql, bindArgs, GetReturningKeyName());
     }
-    CHECK_AND_RETURN_RET_LOG(ret != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb ExecuteSql error.");
+    CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR, "rdb ExecuteSql error.");
     
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     ACCURATE_DEBUG("ExecuteSql: %{public}d", retWithResults.second.changed);
@@ -339,7 +356,6 @@ int32_t AccurateRefreshBase::ExecuteForChangedRowCount(int64_t &outValue, const 
 {
     lock_guard<mutex> lock(dbOperationMtx_);
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
-    int32_t ret = 0;
     if (trans_) {
         retWithResults = trans_->Execute(sql, bindArgs, GetReturningKeyName());
     } else {
@@ -348,7 +364,8 @@ int32_t AccurateRefreshBase::ExecuteForChangedRowCount(int64_t &outValue, const 
         retWithResults = rdbStore->Execute(sql, bindArgs, GetReturningKeyName());
     }
     
-    CHECK_AND_RETURN_RET_LOG(ret != E_HAS_DB_ERROR, E_HAS_DB_ERROR, "rdb ExecuteForChangedRowCount error.");
+    CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+        "rdb ExecuteForChangedRowCount error.");
     outValue = retWithResults.second.changed;
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     ACCURATE_DEBUG("ExecuteForChangedRowCount: %{public}" PRId64, outValue);
