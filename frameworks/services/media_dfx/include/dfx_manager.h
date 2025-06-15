@@ -26,9 +26,11 @@
 #include "ipc_skeleton.h"
 #include "dfx_worker.h"
 #include "dfx_cloud_const.h"
+#include "medialibrary_base_bg_processor.h"
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 
 struct DeleteBehaviorData {
     std::map<std::string, std::string> displayNames;
@@ -58,11 +60,11 @@ public:
     std::shared_ptr<DfxReporter> dfxReporter_;
 };
 
-class DfxManager {
+class DfxManager : public MediaLibraryBaseBgProcessor {
 public:
     DfxManager();
     ~DfxManager();
-    static std::shared_ptr<DfxManager> GetInstance();
+    EXPORT static std::shared_ptr<DfxManager> GetInstance();
     void HandleTimeOutOperation(std::string &bundleName, int32_t type, int32_t object, int32_t time);
     int32_t HandleHighMemoryThumbnail(std::string &path, int32_t mediaType, int32_t width, int32_t height);
     void HandleThumbnailError(const std::string &path, int32_t method, int32_t errCode);
@@ -75,8 +77,8 @@ public:
         const DeleteBehaviorData &deleteBehaviorData = {});
     void HandleDeleteBehaviors();
     void HandleNoPermmison(int32_t type, int32_t object, int32_t error);
-    void HandleHalfDayMissions();
-    void HandleTwoDayMissions();
+    bool HandleHalfDayMissions();
+    bool HandleTwoDayMissions();
     void HandleAdaptationToMovingPhoto(const std::string &appName, bool adapted);
     void IsDirectoryExist(const std::string &dirName);
     void CheckStatus();
@@ -88,7 +90,12 @@ public:
     void HandleUpdateUploadDetailError(int32_t error);
     void HandleSyncEnd(const int32_t stopReason = 0);
     void HandleReportSyncFault(const std::string& position, const SyncFaultEvent& event);
-    void HandleOneWeekMissions();
+    bool HandleOneWeekMissions();
+
+    bool HandleReportTaskCompleteMissions();
+
+    int32_t Start(const std::string &taskExtra) override;
+    int32_t Stop(const std::string &taskExtra) override;
 
 private:
     void Init();
@@ -115,6 +122,8 @@ private:
     std::vector<std::atomic<uint64_t>> uploadMetaErr_;
     CloudSyncInfo syncInfo_;
     std::string taskId_;
+
+    const std::string taskName_ = DFX_HANDLE_HALF_DAY_MISSIONS;
 };
 } // namespace Media
 } // namespace OHOS

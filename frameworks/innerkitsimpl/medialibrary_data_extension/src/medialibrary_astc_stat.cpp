@@ -107,7 +107,7 @@ static bool ConvertSceneStatToStruct(const nlohmann::json &jsonSceneStat, SceneS
     if (jsonSceneStat.contains("astc") && jsonSceneStat["astc"].is_number_integer()) {
         sceneStat.astcCount_ = static_cast<uint32_t>(jsonSceneStat["astc"].get<int32_t>());
     }
-
+ 
     return true;
 }
 
@@ -202,7 +202,7 @@ bool MediaLibraryAstcStat::WriteJsonFile(const std::string &filePath, const nloh
         MEDIA_ERR_LOG("CreateDirectory failed, dir = %{public}s", DfxUtils::GetSafePath(parentDir).c_str());
         return false;
     }
-
+ 
     std::ofstream outFile(filePath, std::ofstream::out | std::ofstream::trunc);
     CHECK_AND_RETURN_RET_LOG(outFile.is_open(), false, "open filePath: %{private}s failed", filePath.c_str());
     outFile << j << std::endl;
@@ -248,7 +248,7 @@ AstcPhase MediaLibraryAstcStat::GetAstcPhase(int32_t totalAstcCount, GenerateSce
     return phaseKey;
 }
 
-static bool IsBackupGroundTaskEmpty()
+bool MediaLibraryAstcStat::IsBackupGroundTaskEmpty()
 {
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::BACKGROUND);
