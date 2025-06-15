@@ -62,7 +62,8 @@ static bool GetWriteFilePath(const ExecEnv& env, const string& displayName, std:
     return true;
 }
 
-static int32_t RecvFile(const ExecEnv &env, const FileAsset &fileAsset, bool isRecvMovingPhotoVideo=false)
+static int32_t RecvFile(
+    const ExecEnv &env, const FileAsset &fileAsset, bool isRecvMovingPhotoVideo = false)
 {
     std::string wFilePath;
     string displayName = fileAsset.GetDisplayName();
@@ -110,7 +111,8 @@ static bool IsRoot()
     return getuid() == rootUid;
 }
 
-int32_t RecvCommandV10::QueryAssets(std::shared_ptr<DataShare::DataShareResultSet>& resultSet, const std::string& tableName)
+int32_t RecvCommandV10::QueryAssets(
+    std::shared_ptr<DataShare::DataShareResultSet>& resultSet, const std::string& tableName)
 {
     if (!UserFileClientEx::CheckTableName(tableName)) {
         MEDIA_ERR_LOG("tableName %{public}s is Invalid", tableName.c_str());
@@ -170,11 +172,11 @@ bool RecvCommandV10::QueryMovingPhotoAsset(const string& movingPhotoImagePath, u
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
     }
 
-
     Uri queryUri(queryUriStr);
     std::vector<std::string> columns;
     int errCode = 0;
-    std::shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(queryUri, predicates, columns, errCode);
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet =
+        UserFileClient::Query(queryUri, predicates, columns, errCode);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("query failed. resultSet:null, errCode:%{public}d.", errCode);
         return false;
@@ -236,7 +238,8 @@ int32_t RecvCommandV10::RecvAssets(const ExecEnv& env, const std::string& tableN
         }
         MEDIA_ERR_LOG("No valid media asset found. uri: %{public}s, path: %{public}s",
             uri_.c_str(), srcPath_.c_str());
-        printf("%s This %s does not refer to a valid media asset \n", STR_FAIL.c_str(), srcPath_.empty() ? "uri" : "path");
+        printf("%s This %s does not refer to a valid media asset \n",
+            STR_FAIL.c_str(), srcPath_.empty() ? "uri" : "path");
         return Media::E_ERR;
     }
     for (int32_t index = 0; index < count; index++) {

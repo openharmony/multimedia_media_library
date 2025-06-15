@@ -77,6 +77,7 @@ public:
     int64_t recycledTime;
     int64_t hiddenTime;
     int64_t coverPosition;
+    int32_t isRectificationCover;
     bool isDelete;
     bool hasAttributes;
     bool hasproperties;

@@ -2059,7 +2059,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, QueryActiveUserID_test_001, TestSize.L
     DataShare::DataShareValuesBucket valuesBucket;
     const string stubValue = "stub";
     valuesBucket.Put(stubValue, 0);
-    MediaLibraryCommand cmd(OperationObject::MISCELLANEOUS, OperationType::QUERY_ACTIVE_USER_ID, MediaLibraryApi::API_10);
+    MediaLibraryCommand cmd(OperationObject::MISCELLANEOUS,
+        OperationType::QUERY_ACTIVE_USER_ID, MediaLibraryApi::API_10);
     int32_t ret = dataManager->InsertExt(cmd, valuesBucket, result);
     EXPECT_EQ(ret, E_OK);
     EXPECT_FALSE(result.empty());

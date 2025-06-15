@@ -26,7 +26,8 @@
 namespace OHOS::Media::CloudSync {
 class MDKRecordReader {
 public:
-    std::optional<MDKAsset> GetAssetValue(const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
+    std::optional<MDKAsset> GetAssetValue(
+        const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
     {
         std::optional<MDKAsset> valueOpt;
         auto it = fields.find(key);
@@ -40,7 +41,8 @@ public:
         }
         return value;
     }
-    std::optional<std::string> GetStringValue(const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
+    std::optional<std::string> GetStringValue(
+        const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
     {
         std::optional<std::string> valueOpt;
         auto it = fields.find(key);
@@ -54,7 +56,8 @@ public:
         }
         return value;
     }
-    std::optional<int64_t> GetLongValue(const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
+    std::optional<int64_t> GetLongValue(
+        const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
     {
         std::optional<int64_t> valueOpt;
         auto it = fields.find(key);
@@ -68,7 +71,8 @@ public:
         }
         return value;
     }
-    std::optional<int32_t> GetIntValue(const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
+    std::optional<int32_t> GetIntValue(
+        const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
     {
         std::optional<int32_t> resultOpt;
         std::optional<int64_t> valueOpt = this->GetLongValue(fields, key);

@@ -106,7 +106,7 @@ const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_43 = 3;
 const int32_t WIFI_STATE_CONNECTED = 4;
 const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
-const int32_t MegaByte = 1024*1024;
+const int32_t MegaByte = 1024 * 1024;
 const int32_t MAX_FILE_SIZE_MB = 10240;
 const int32_t UPDATE_DIRTY_CLOUD_CLONE_V1 = 1;
 const int32_t UPDATE_DIRTY_CLOUD_CLONE_V2 = 2;
@@ -287,8 +287,8 @@ static void UploadDBFile()
     }
     dataManager->UploadDBFileInner(totalFileSize);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("Handle %{public}ld MB DBFile success, cost %{public}ld ms", (long)(totalFileSize),
-        (long)(end - begin));
+    MEDIA_INFO_LOG("Handle %{public}ld MB DBFile success, cost %{public}ld ms", static_cast<long>(totalFileSize),
+        static_cast<long>(end - begin));
     uploadDBFlag.store(true);
 }
 

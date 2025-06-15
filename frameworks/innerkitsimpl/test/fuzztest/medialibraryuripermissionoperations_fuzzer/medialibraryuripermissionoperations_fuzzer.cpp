@@ -43,7 +43,7 @@ using namespace std;
 using namespace DataShare;
 const int32_t PERMISSION_DEFAULT = -1;
 const int32_t URI_DEFAULT = 0;
-const int32_t BatchInsertNumber = 5;
+const int32_t BATCH_INSERT_NUMBER = 5;
 const int32_t EVEN = 2;
 const std::string MEDIA_FILEMODE_READWRITE = "rw";
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
@@ -127,7 +127,7 @@ static void DeleteOperationFuzzer(string appId, int32_t photoId)
 static void BatchInsertFuzzer(const uint8_t* data, size_t size)
 {
     vector<DataShare::DataShareValuesBucket> dataShareValues;
-    for (int32_t i = 0; i < BatchInsertNumber; i++) {
+    for (int32_t i = 0; i < BATCH_INSERT_NUMBER; i++) {
         DataShareValuesBucket value;
         int32_t photoId = FuzzInt32(data, size);
         value.Put(Media::AppUriPermissionColumn::APP_ID, FuzzString(data, size));

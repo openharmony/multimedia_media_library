@@ -130,6 +130,7 @@ public:
     static const std::string PHOTO_BURST_COVER_LEVEL EXPORT;
     static const std::string PHOTO_BURST_KEY EXPORT;
     static const std::string PHOTO_COVER_POSITION EXPORT;
+    static const std::string PHOTO_IS_RECTIFICATION_COVER EXPORT;
     static const std::string PHOTO_OWNER_ALBUM_ID EXPORT;
     static const std::string PHOTO_ORIGINAL_ASSET_CLOUD_ID EXPORT;
     static const std::string PHOTO_SOURCE_PATH EXPORT;
@@ -282,6 +283,8 @@ public:
 
     static const std::string HIGHTLIGHT_COVER_URI EXPORT;
     static const std::string HIGHTLIGHT_URI EXPORT;
+    static const std::string HIDDEN_PHOTO_URI_PREFIX EXPORT;
+    static const std::string TRASHED_PHOTO_URI_PREFIX EXPORT;
 
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
     EXPORT static std::string CheckUploadPhotoColumns();
