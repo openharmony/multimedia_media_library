@@ -28,6 +28,7 @@
 #include "picture.h"
 #include "asset_accurate_refresh.h"
 #include "rdb_predicates.h"
+#include "medialibrary_rdbstore.h"
 
 namespace OHOS {
 namespace Media {
@@ -67,6 +68,7 @@ public:
     EXPORT static int32_t ProcessMultistagesPhoto(bool isEdited, const std::string &path,
         const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
+    EXPORT static void StoreThumbnailAndEditSize(const std::string& photoId, const std::string& photoPath);
     EXPORT static bool HasDroppedThumbnailSize(const std::string& photoId);
     EXPORT static bool BatchDropThumbnailSize(const std::vector<std::string>& photoIds);
     EXPORT static int32_t ScanFileWithoutAlbumUpdate(MediaLibraryCommand &cmd);
@@ -111,6 +113,14 @@ public:
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd);
+    EXPORT static int32_t Get500FileIdsAndPathS(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        std::vector<std::string> &fileIds, std::vector<std::string> &filePaths, std::string startFileId, bool &hasMore);
+    EXPORT static int32_t ConvertPhotoCloudPathToLocalData(std::string retrievedPath,
+        std::string &filePath);
+    EXPORT static int32_t GetFilePathById(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const std::string &fileId, std::string &filePath);
+    EXPORT static void Update500EditDataSize(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        std::string startFileId, bool &hasMore);
 
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> HandleIndexOfUri(MediaLibraryCommand &cmd,
         NativeRdb::RdbPredicates &predicates, const std::string &photoId, const std::string &albumId);

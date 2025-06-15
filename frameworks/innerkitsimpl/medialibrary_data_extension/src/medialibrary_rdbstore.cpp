@@ -83,6 +83,7 @@
 #include "medialibrary_rdb_transaction.h"
 #include "table_event_handler.h"
 #include "values_buckets.h"
+#include "medialibrary_data_manager.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -370,6 +371,24 @@ void MediaLibraryRdbStore::UpdateDateTakenIndex(const shared_ptr<MediaLibraryRdb
     MEDIA_INFO_LOG("update index for datetaken change start");
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("update index for datetaken change end");
+}
+
+// 更新单条编辑数据大小
+int32_t MediaLibraryRdbStore::UpdateEditDataSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const std::string &photoId, const std::string &editDataDir)
+{
+    size_t size = 0;
+    MediaFileUtils::StatDirSize(editDataDir, size);
+    std::string sql = "UPDATE " + PhotoExtColumn::PHOTOS_EXT_TABLE + " "
+                    "SET " + PhotoExtColumn::EDITDATA_SIZE + " = " + std::to_string(size) + " "
+                    "WHERE " + PhotoExtColumn::PHOTO_ID + " = '" + photoId + "'";
+
+    int32_t ret = rdbStore->ExecuteSql(sql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Execute SQL failed: %{public}d", ret);
+        return E_DB_FAIL;
+    }
+    return E_OK;
 }
 
 void MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(const shared_ptr<MediaLibraryRdbStore> store)
@@ -4324,6 +4343,17 @@ static void AddDcAnalysisColumn(RdbStore &store)
     MEDIA_INFO_LOG("Add DC analysis column end");
 }
 
+static void AddEditDataSizeColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoExtColumn::PHOTOS_EXT_TABLE + " ADD COLUMN " + PhotoExtColumn::EDITDATA_SIZE +
+        " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add editdata size column start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("Add editdata size column end");
+}
+
 static void AddDcAnalysisIndexUpdateColumn(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4544,6 +4574,30 @@ void AddPhotoAlbumRefreshColumns(RdbStore &store)
     MEDIA_INFO_LOG("end add photo album cover_date_time and hidden_cover_date_time for AccurateRefresh");
 }
 
+static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
+        if (AddIsRectificationCover(store) == NativeRdb::E_OK) {
+            UpdatePhotosMdirtyTrigger(store);
+        }
+    }
+
+    if (oldVersion < VERSION_ADD_PHOTO_ALBUM_REFRESH_COLUMNS) {
+        AddPhotoAlbumRefreshColumns(store);
+    }
+
+    TableEventHandler().OnUpgrade(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), oldVersion, MEDIA_RDB_VERSION);
+
+    if (oldVersion < VERSION_ADD_COVER_URI_SOURCE) {
+        AddCoverUriSourceColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_EDITDATA_SIZE_COLUMN) {
+        AddEditDataSizeColumn(store);
+    }
+}
+
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
@@ -4590,22 +4644,7 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
         AddDcAnalysisIndexUpdateColumn(store);
     }
 
-    if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
-        if (AddIsRectificationCover(store) == NativeRdb::E_OK) {
-            UpdatePhotosMdirtyTrigger(store);
-        }
-    }
-
-    if (oldVersion < VERSION_ADD_PHOTO_ALBUM_REFRESH_COLUMNS) {
-        AddPhotoAlbumRefreshColumns(store);
-    }
-
-    TableEventHandler().OnUpgrade(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), oldVersion, MEDIA_RDB_VERSION);
-
-    if (oldVersion < VERSION_ADD_COVER_URI_SOURCE) {
-        AddCoverUriSourceColumn(store);
-    }
+    UpgradeExtensionPart7(store, oldVersion);
 }
 
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
