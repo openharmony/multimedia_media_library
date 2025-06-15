@@ -20,7 +20,9 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <sstream>
 
+#include "medialibrary_rdb_utils.h"
 #include "photo_asset_change_info.h"
 #include "album_change_info.h"
 #include "userfile_manager_types.h"
@@ -32,40 +34,70 @@ namespace Media::AccurateRefresh {
 
 class AlbumRefreshExecution {
 public:
-    int32_t RefreshAlbum(const std::vector<PhotoAssetChangeData> &assetChangeDatas);
+    int32_t RefreshAlbum(const std::vector<PhotoAssetChangeData> &assetChangeDatas,
+        NotifyAlbumType notifyAlbumType = NO_NOTIFY);
     int32_t Notify();
 
 private:
     std::vector<PhotoAlbumSubType> GetAlbumSubTypes();
     std::vector<int32_t> GetOwnerAlbumIds();
-    int32_t CalAlbumsRefreshInfo(const std::vector<PhotoAssetChangeData> &assetChangeDatas);
-    int32_t CalRefreshAlbumInfos();
-    int32_t RefreshAlbumInfos();
-    int32_t ForceRefreshAlbumInfo(int32_t albumId, bool isHidden);
-    int32_t RefreshAlbumInfo();
-    void UpdateAlbumCount(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo);
+    // 计算相册增量信息
+    int32_t CalRefreshInfos(const std::vector<PhotoAssetChangeData> &assetChangeDatas);
+
+    // 计算修改后相册信息
+    int32_t CalAlbumsInfos();
+    // 计算相册普通和隐藏信息
+    bool CalAlbumInfos(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo, int32_t subType);
+    // 计算相册信息
+    bool CalAlbumInfo(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo, int32_t subType);
+    // 计算相册隐藏信息
+    bool CalHiddenAlbumInfo(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo, int32_t subType);
+    // 计算相册count
+    bool CalAlbumCount(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo);
+    // 计算相册hidden count
+    bool CalAlbumHiddenCount(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo);
+    // 计算相册的封面
+    bool CalAlbumCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo, int32_t subType);
+    // 计算相册的隐藏封面
+    bool CalAlbumHiddenCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo);
+
+    // 更新所有相册
+    int32_t UpdateAllAlbums(NotifyAlbumType notifyAlbumType);
+    // 相册增量更新，从refresh info中增量更新
+    int32_t AccurateUpdateAlbums(NotifyAlbumType notifyAlbumType);
+    // 相册强制更新，从Photos表查询获取
+    int32_t ForceUpdateAlbums(int32_t albumId, bool isHidden, NotifyAlbumType notifyAlbumType);
+    // 从Photos表中获取相册信息
+    int32_t GetUpdateValues(NativeRdb::ValuesBucket &values, const AlbumChangeInfo &albumInfo, bool isHidden,
+        NotifyType &type);
+
     bool IsValidCover(const PhotoAssetChangeInfo &assetInfo);
 
-    int32_t UpdateRefreshAlbumInfo(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo, int32_t subType);
-    bool UpdateAlbumCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo, int32_t subType);
-    bool UpdateAlbumHiddenCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo);
+    // 清空albumInfo中普通信息，执行后增量刷新不刷新普通信息字段
     void ClearAlbumInfo(AlbumChangeInfo &albumInfo);
+    // 清空albumInfo中隐藏信息，执行后增量刷新不刷新隐藏信息字段
     void ClearHiddenAlbumInfo(AlbumChangeInfo &albumInfo);
-    int32_t GetUpdateValues(NativeRdb::ValuesBucket &values, const AlbumChangeInfo &albumInfo, bool isHidden);
 
+    // 老通知发送
+    void CheckNotifyOldNotification(NotifyAlbumType notifyAlbumType, const AlbumChangeInfo &albumInfo,
+        NotifyType type);
+
+    // 测试增量数据和强制数据是否一致
+    void CheckHiddenAlbumInfo(NativeRdb::ValuesBucket &values, std::stringstream &ss);
+    void CheckAlbumInfo(NativeRdb::ValuesBucket &values, std::stringstream &ss);
     void CheckUpdateAlbumInfo(const AlbumChangeInfo &albumInfo, bool isHidden);
 
 private:
     // 系统相册
     static std::map<PhotoAlbumSubType, SystemAlbumInfoCalculation> systemAlbumCalculations_;
     std::map<PhotoAlbumSubType, AlbumRefreshInfo> systemAlbumInfos_;
-    
+
     // 用户相册和来源相册
     std::map<int32_t, AlbumRefreshInfo> ownerAlbumInfos_;
     // 修改前相册信息
     std::map<int32_t, AlbumChangeInfo> initAlbumInfos_;
 
-    std::shared_ptr<AlbumAccurateRefresh> albumRefresh_;
+    AlbumAccurateRefresh albumRefresh_;
 
     // 需要刷新的相册信息
     std::map<int32_t, AlbumChangeInfo> refreshAlbums_;
@@ -74,7 +106,7 @@ private:
     std::set<int32_t> forceRefreshAlbums_;
     std::set<int32_t> forceRefreshHiddenAlbums_;
 
-    std::mutex albumRefreshMtx_;
+    static std::mutex albumRefreshMtx_;
 };
 
 } // namespace Media

@@ -27,14 +27,14 @@ __attribute__ ((visibility ("default"))) extern int32_t accurateDebugLevel;
 #define ACCURATE_DEBUG(fmt, ...)            \
     do {                                               \
         if (AccurateRefresh::accurateDebugLevel >= 3) {                                 \
-            MEDIA_INFO_LOG("refresh debug: " fmt, ##__VA_ARGS__);         \
+            MEDIA_INFO_LOG(fmt, ##__VA_ARGS__);         \
         }                                              \
     } while (0)
 
 #define ACCURATE_INFO(fmt, ...)            \
     do {                                               \
         if (AccurateRefresh::accurateDebugLevel >= 2) {                                 \
-            MEDIA_INFO_LOG("refresh info##: " fmt, ##__VA_ARGS__);         \
+            MEDIA_INFO_LOG("##: " fmt, ##__VA_ARGS__);         \
         }                                              \
     } while (0)
 

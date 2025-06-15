@@ -50,17 +50,17 @@ void NotificationClassificationTest::TearDown(void)
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test001, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test001");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test001");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     std::vector<Notification::NotifyInfoInner> notifyInfoInners;
     Media::Notification::NotificationClassification::ConvertNotification(notifyInfoInners, mediaChangeInfos);
     EXPECT_TRUE(mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test001");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test001");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test002, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test002");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test002");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -72,12 +72,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test002");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test002");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test003, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test003");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test003");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -89,12 +89,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test003");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test003");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test004, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test004");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test004");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -106,12 +106,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test004");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test004");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test005, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test005");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test005");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -123,12 +123,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test005");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test005");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test006, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test006");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test006");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -140,12 +140,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test006");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test006");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test007, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test007");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test007");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -157,12 +157,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test007");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test007");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test008, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test008");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test008");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -174,12 +174,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test008");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test008");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test009, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test009");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test009");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -191,12 +191,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test009");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test009");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test010, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test010");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test010");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -208,12 +208,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test010");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test010");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test011, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test011");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test011");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -225,12 +225,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test011");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test011");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test012, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test012");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test012");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -242,12 +242,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test012");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test012");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test013, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test013");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test013");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -259,12 +259,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test013");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test013");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test014, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test014");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test014");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -276,12 +276,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test014");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test014");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test015, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test015");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test015");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -293,12 +293,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test015");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test015");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test016, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test016");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test016");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -310,12 +310,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test016");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test016");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test017, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test017");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test017");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -327,12 +327,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test017");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test017");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test018, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test018");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test018");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -344,12 +344,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test018");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test018");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test019, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test019");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test019");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -361,12 +361,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test019");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test019");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test020, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test020");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test020");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -378,12 +378,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test020");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test020");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test021, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test021");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test021");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
     const auto& deletePhotoData2 = OHOS::Media::Notification::deletePhotoData2;
@@ -395,12 +395,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test021");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test021");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test022, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test022");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test022");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& albumChangeData1 = OHOS::Media::Notification::albumChangeData1;
     const auto& albumChangeData2 = OHOS::Media::Notification::albumChangeData2;
@@ -412,12 +412,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test022");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test022");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test023, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test023");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test023");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& albumChangeData1 = OHOS::Media::Notification::albumChangeData1;
     const auto& albumChangeData2 = OHOS::Media::Notification::albumChangeData2;
@@ -429,12 +429,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test023");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test023");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test024, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test024");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test024");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& albumChangeData1 = OHOS::Media::Notification::albumChangeData1;
     const auto& albumChangeData2 = OHOS::Media::Notification::albumChangeData2;
@@ -446,12 +446,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test024");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test024");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test025, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test025");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test025");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& albumChangeData1 = OHOS::Media::Notification::albumChangeData1;
     const auto& albumChangeData2 = OHOS::Media::Notification::albumChangeData2;
@@ -463,12 +463,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test025");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test025");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test026, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test026");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test026");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& albumChangeData1 = OHOS::Media::Notification::albumChangeData1;
     const auto& albumChangeData2 = OHOS::Media::Notification::albumChangeData2;
@@ -480,12 +480,12 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test026");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test026");
 }
 
 HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test027, TestSize.Level1)
 {
-    MEDIA_ERR_LOG("yzh enter medialib_notification_classification_test027");
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test027");
     std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
     const auto& albumChangeData1 = OHOS::Media::Notification::albumChangeData1;
     const auto& albumChangeData2 = OHOS::Media::Notification::albumChangeData2;
@@ -497,7 +497,7 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     );
     Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
     EXPECT_TRUE(!mediaChangeInfos.empty());
-    MEDIA_ERR_LOG("yzh end medialib_notification_classification_test027");
+    MEDIA_INFO_LOG("end medialib_notification_classification_test027");
 }
 
 } // namespace Media

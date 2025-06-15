@@ -56,6 +56,7 @@
 #include "power_efficiency_manager.h"
 #include "rdb_sql_utils.h"
 #include "medialibrary_restore.h"
+#include "album_accurate_refresh_manager.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -147,7 +148,7 @@ using UpdateHandler = std::function<int32_t(
     const shared_ptr<MediaLibraryRdbStore> &rdbStore,
     UpdateAlbumData &data,
     const bool hiddenState,
-    std::shared_ptr<TransactionOperations> trans)>;
+    AccurateRefresh::AlbumAccurateRefresh &albumRefresh)>;
 
 atomic<bool> MediaLibraryRdbUtils::isNeedRefreshAlbum = false;
 atomic<bool> MediaLibraryRdbUtils::isInRefreshTask = false;
@@ -391,14 +392,18 @@ static int32_t ForEachRow(const shared_ptr<MediaLibraryRdbStore> rdbStore, std::
     int32_t err = NativeRdb::E_OK;
     for (auto data : datas) {
         std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+        AccurateRefresh::AlbumAccurateRefresh albumRefresh(trans);
         std::function<int(void)> transFunc = [&]()->int {
             // Ignore failure here, try to iterate rows as much as possible.
-            func(rdbStore, data, hiddenState, trans);
+            func(rdbStore, data, hiddenState, albumRefresh);
             return err;
         };
         err = trans->RetryTrans(transFunc);
         CHECK_AND_PRINT_LOG(err == E_OK, "ForEachRow: trans retry fail!, ret:%{public}d", err);
         SendAlbumIdNotify(data);
+        if (data.hasChanged) {
+            albumRefresh.Notify();
+        }
     }
     return E_SUCCESS;
 }
@@ -576,8 +581,8 @@ static void SetCoverDateTime(const shared_ptr<ResultSet> &fileResult, const Upda
         if (coverDateTime != oldCoverDateTime) {
             values.PutLong(PhotoAlbumColumns::COVER_DATE_TIME, coverDateTime);
         }
-        MEDIA_INFO_LOG("AccurateRefresh Update album %{public}d, old coverDateTime(%{public}" PRId64 "), \
-            coverDateTime(%{public}" PRId64 ")", data.albumId, oldCoverDateTime, coverDateTime);
+        MEDIA_INFO_LOG("AccurateRefresh Update album %{public}d, old coverDateTime(%{public}" PRId64 ")," \
+            "coverDateTime(%{public}" PRId64 ")", data.albumId, oldCoverDateTime, coverDateTime);
     }
 }
 
@@ -1409,11 +1414,11 @@ static vector<string> QueryAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbSto
 }
 
 static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore> rdbStore, UpdateAlbumData &data,
-    const bool hiddenState, std::shared_ptr<TransactionOperations> trans)
+    const bool hiddenState, AccurateRefresh::AlbumAccurateRefresh &albumRefresh)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateUserAlbumIfNeeded");
-    CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
+
     ValuesBucket values;
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
     int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
@@ -1428,11 +1433,12 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore> rd
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(data.albumId));
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
     int32_t changedRows = 0;
-    err = trans->Update(changedRows, values, predicates);
+    err = albumRefresh.Update(changedRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
         "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
     data.hasChanged = true;
+    AccurateRefresh::AlbumAccurateRefreshManager::GetInstance().SetAlbumAccurateRefresh(data.albumId, hiddenState);
     return E_SUCCESS;
 }
 
@@ -1505,9 +1511,8 @@ static int32_t UpdateAnalysisAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore
 }
 
 static int32_t UpdateCommonAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-    UpdateAlbumData &data, const bool hiddenState, std::shared_ptr<TransactionOperations> trans)
+    UpdateAlbumData &data, const bool hiddenState, AccurateRefresh::AlbumAccurateRefresh &albumRefresh)
 {
-    CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     MediaLibraryTracer tracer;
     tracer.Start("UpdateCommonAlbumIfNeeded");
     ValuesBucket values;
@@ -1528,18 +1533,18 @@ static int32_t UpdateCommonAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbSt
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC));
     predicates.EndWrap();
     int32_t changedRows = 0;
-    err = trans->Update(changedRows, values, predicates);
+    err = albumRefresh.Update(changedRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
         "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
     data.hasChanged = true;
+    AccurateRefresh::AlbumAccurateRefreshManager::GetInstance().SetAlbumAccurateRefresh(data.albumId, hiddenState);
     return E_SUCCESS;
 }
 
 static int32_t UpdateSourceAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-    UpdateAlbumData &data, const bool hiddenState, std::shared_ptr<TransactionOperations> trans)
+    UpdateAlbumData &data, const bool hiddenState, AccurateRefresh::AlbumAccurateRefresh &albumRefresh)
 {
-    CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSourceAlbumIfNeeded");
     ValuesBucket values;
@@ -1556,18 +1561,18 @@ static int32_t UpdateSourceAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbSt
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(data.albumId));
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC));
     int32_t changedRows = 0;
-    err = trans->Update(changedRows, values, predicates);
+    err = albumRefresh.Update(changedRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
         "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
     data.hasChanged = true;
+    AccurateRefresh::AlbumAccurateRefreshManager::GetInstance().SetAlbumAccurateRefresh(data.albumId, hiddenState);
     return E_SUCCESS;
 }
 
 static int32_t UpdateSysAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore> rdbStore, UpdateAlbumData &data,
-    const bool hiddenState, std::shared_ptr<TransactionOperations> trans)
+    const bool hiddenState, AccurateRefresh::AlbumAccurateRefresh &albumRefresh)
 {
-    CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSysAlbum: " + to_string(subtype));
@@ -1584,10 +1589,11 @@ static int32_t UpdateSysAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subtype));
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(data.albumId));
     int32_t changedRows = 0;
-    err = trans->Update(changedRows, values, predicates);
+    err = albumRefresh.Update(changedRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err,
         "Failed to update album count and cover! album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
+    AccurateRefresh::AlbumAccurateRefreshManager::GetInstance().SetAlbumAccurateRefresh(data.albumId, hiddenState);
     data.hasChanged = true;
     return E_SUCCESS;
 }
@@ -1696,7 +1702,7 @@ void MediaLibraryRdbUtils::UpdateUserAlbumInternal(shared_ptr<MediaLibraryRdbSto
         CHECK_AND_RETURN_LOG(rdbStore != nullptr,
             "Fatal error! Failed to get rdbstore, new cloud data is not processed!!");
     }
-    
+
     auto albumResult = GetUserAlbum(rdbStore, userAlbumIds, PHOTO_ALBUM_INFO_COLUMNS);
     CHECK_AND_RETURN_LOG(albumResult != nullptr, "album result is null");
     vector<UpdateAlbumData> datas = GetPhotoAlbumDataInfo(albumResult, shouldNotify, shouldUpdateDateModified);
@@ -1759,18 +1765,16 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         predicatesPhotos.And()->In(MediaColumn::MEDIA_ID, fileAssetsIds);
         ValuesBucket values;
         values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
-        int changedRows = rdbStore->UpdateWithDateTime(values, predicatesPhotos);
+        AccurateRefresh::AssetAccurateRefresh assetRefresh;
+        int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicatesPhotos);
         CHECK_AND_CONTINUE_ERR_LOG(changedRows >= 0,
             "Update failed on trashed, album id is: %{public}s", albumId.c_str());
-        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
-            to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
-            to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::TRASH),
-            to_string(PhotoAlbumSubType::HIDDEN), to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT)
-        });
         MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, fileAssetsUri);
+        assetRefresh.RefreshAlbum();
         MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
             static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), fileAssetsUri);
         MediaLibraryPhotoOperations::TrashPhotosSendNotify(fileAssetsUri);
+        assetRefresh.Notify();
     }
     predicates.SetWhereArgs(newWhereIdArgs);
     return newWhereIdArgs.size();

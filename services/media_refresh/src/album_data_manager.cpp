@@ -27,7 +27,6 @@ namespace Media::AccurateRefresh {
 
 int32_t AlbumDataManager::InitAlbumInfos(const std::vector<PhotoAlbumSubType> &systemTypes, const vector<int> &albumIds)
 {
-    ACCURATE_DEBUG("InitAlbumInfos");
     if (systemTypes.empty() && albumIds.empty()) {
         MEDIA_WARN_LOG("systemTypes and albumIds empty.");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
@@ -50,6 +49,11 @@ int32_t AlbumDataManager::InitAlbumInfos(const std::vector<PhotoAlbumSubType> &s
 
 
 int32_t AlbumDataManager::UpdateModifiedDatas()
+{
+    return ACCURATE_REFRESH_RET_OK;
+}
+
+int32_t AlbumDataManager::UpdateCommonModifiedDatas(const std::vector<int32_t> &keys)
 {
     return ACCURATE_REFRESH_RET_OK;
 }
@@ -113,7 +117,6 @@ vector<AlbumChangeInfo> AlbumDataManager::GetAlbumInfos(const vector<int32_t> &a
         albumIdInfos = GetInfosByPredicates(predicates);
         albumInfos.insert(albumInfos.end(), albumIdInfos.begin(), albumIdInfos.end());
     }
-    ACCURATE_DEBUG("GetAlbumInfos size: %{public}zu", albumInfos.size());
     return albumInfos;
 }
 

@@ -913,7 +913,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyCloudSingleFile(const std::shared_ptr<
 void SendNewAssetNotify(string newFileAssetUri, const shared_ptr<MediaLibraryRdbStore> rdbStore,
     shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
-    assetRefresh->RefreshAlbum();
+    assetRefresh->RefreshAlbum(NotifyAlbumType::SYS_ALBUM);
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
         MEDIA_ERR_LOG("Can not get MediaLibraryNotify, fail to send new asset notify.");

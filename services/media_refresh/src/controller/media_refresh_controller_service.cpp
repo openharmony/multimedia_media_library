@@ -25,6 +25,10 @@
 
 namespace OHOS::Media {
 
+const std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> mediaRefreshPermissionPolicy = {
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::NOTIFY_FOR_RECHECK), {{SYSTEMAPI_PERM, READ_PERM}}},
+};
+
 bool MediaRefreshControllerService::Accept(uint32_t code)
 {
     return HANDLERS.find(code) != HANDLERS.end();
@@ -50,6 +54,11 @@ void MediaRefreshControllerService::NotifyForReCheck(MessageParcel &data, Messag
 int32_t MediaRefreshControllerService::GetPermissionPolicy(
     uint32_t code, std::vector<std::vector<PermissionType>> &permissionPolicy, bool &isBypass)
 {
-    return 0;
+    auto it = mediaRefreshPermissionPolicy.find(code);
+    if (it != mediaRefreshPermissionPolicy.end()) {
+        permissionPolicy = it->second;
+        return E_SUCCESS;
+    }
+    return E_FAIL;
 }
 } // namespace OHOS::Media

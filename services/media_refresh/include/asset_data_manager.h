@@ -27,8 +27,9 @@
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
+#define EXPORT __attribute__ ((visibility ("default")))
 
-class AssetDataManager : public AccurateRefreshDataManager<PhotoAssetChangeInfo, PhotoAssetChangeData> {
+class EXPORT AssetDataManager : public AccurateRefreshDataManager<PhotoAssetChangeInfo, PhotoAssetChangeData> {
 public:
     AssetDataManager() : AssetDataManager(nullptr)
     {}
@@ -38,12 +39,14 @@ public:
     virtual ~AssetDataManager()
     {}
     int32_t UpdateModifiedDatas() override;
+    int32_t UpdateCommonModifiedDatas(const std::vector<int32_t> &keys) override;
     std::vector<int32_t> GetInitKeys() override;
     int32_t SetContentChanged(int32_t fileId, bool isChanged);
     int32_t SetThumbnailStatus(int32_t fileId, int32_t status);
     int32_t UpdateNotifyInfo();
 
 private:
+    int32_t UpdateThumbnailChangeStatus(PhotoAssetChangeData &assetChangeData);
     int32_t GetChangeInfoKey(const PhotoAssetChangeInfo &changeInfo) override;
     std::vector<PhotoAssetChangeInfo> GetInfoByKeys(const std::vector<int32_t> &fileIds) override;
     std::vector<PhotoAssetChangeInfo> GetInfosByPredicates(const NativeRdb::AbsRdbPredicates &predicates) override;

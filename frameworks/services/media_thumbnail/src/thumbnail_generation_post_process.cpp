@@ -16,6 +16,7 @@
 
 #include "thumbnail_generation_post_process.h"
 
+#include "asset_accurate_refresh.h"
 #include "dfx_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
@@ -40,13 +41,18 @@ int32_t ThumbnailGenerationPostProcess::PostProcess(const ThumbnailData& data, c
         CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
         return E_OK;
     }
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    int32_t changedRows;
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, data.id);
+    auto ret = assetRefresh.Update(changedRows, data.rdbUpdateCache, predicates);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "UpdateCachedRdbValue failed. err: %{public}d", ret);
+    ret = assetRefresh.Notify();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Notify failed. err: %{public}d", ret);
 
     NotifyType notifyType;
     err = GetNotifyType(data, opts, notifyType);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GetNotifyType failed. err: %{public}d", err);
-
-    err = UpdateCachedRdbValue(data, opts);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
 
     err = Notify(data, notifyType);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Notify failed. err: %{public}d", err);

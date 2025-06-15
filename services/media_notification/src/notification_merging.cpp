@@ -39,11 +39,9 @@ namespace OHOS {
 namespace Media {
 namespace Notification {
 
-NotificationMerging::NotificationMerging()
-{}
+NotificationMerging::NotificationMerging() {}
 
-NotificationMerging::~NotificationMerging()
-{}
+NotificationMerging::~NotificationMerging() {}
 
 std::vector<ObserverInfo> NotificationMerging::findObservers(NotifyUriType notifyUriType)
 {
@@ -76,8 +74,12 @@ std::vector<NotifyInfo> NotificationMerging::ProcessNotifyInfos(const std::vecto
         if (mergedChanges.find(key) == mergedChanges.end()) {
             mergedChanges[key] = info;
         } else {
-            auto &existing = mergedChanges[key];
-            existing.changeInfos.insert(existing.changeInfos.end(), info.changeInfos.begin(), info.changeInfos.end());
+            auto& existing = mergedChanges[key];
+            existing.changeInfos.insert(
+                existing.changeInfos.end(),
+                info.changeInfos.begin(),
+                info.changeInfos.end()
+            );
         }
     }
 
@@ -89,8 +91,8 @@ std::vector<NotifyInfo> NotificationMerging::ProcessNotifyInfos(const std::vecto
             NotifyInfo notifyInfo;
             const std::vector<ObserverInfo> observerInfos = findObservers(notifyUri);
             if (!observerInfos.empty()) {
-                notifyInfo.observerInfos.insert(
-                    notifyInfo.observerInfos.end(), observerInfos.begin(), observerInfos.end());
+                notifyInfo.observerInfos.insert(notifyInfo.observerInfos.end(),
+                    observerInfos.begin(), observerInfos.end());
             }
             uriToNotifyInfoMap[notifyUri] = notifyInfo;
         }

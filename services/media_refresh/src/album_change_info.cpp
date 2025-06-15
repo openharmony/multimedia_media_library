@@ -95,7 +95,6 @@ vector<AlbumChangeInfo> AlbumChangeInfo::GetInfoFromResult(
         albumChangeInfo.dirty_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_DIRTY,
             resultSet, GetDataType(PhotoAlbumColumns::ALBUM_DIRTY)));
         albumChangeInfos.push_back(albumChangeInfo);
-        MEDIA_INFO_LOG("albumInfo: %{public}s", albumChangeInfo.ToString().c_str());
     }
 
     return albumChangeInfos;
@@ -129,7 +128,7 @@ ResultSetDataType AlbumChangeInfo::GetDataType(const std::string &column)
     return item->second;
 }
 
-ValuesBucket AlbumChangeInfo::GetUpdateValues(const AlbumChangeInfo &oldAlbumInfo)
+ValuesBucket AlbumChangeInfo::GetUpdateValues(const AlbumChangeInfo &oldAlbumInfo, NotifyType &type)
 {
     stringstream ss;
     ValuesBucket values;
@@ -167,7 +166,10 @@ ValuesBucket AlbumChangeInfo::GetUpdateValues(const AlbumChangeInfo &oldAlbumInf
         values.PutLong(PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME, hiddenCoverDateTime_);
         ss << "hiddenCoverDateTime_: " << oldAlbumInfo.hiddenCoverDateTime_ << " -> " << hiddenCoverDateTime_;
     }
-    ACCURATE_INFO("Update albumInfo[%{public}d]: %{public}s", oldAlbumInfo.albumId_, ss.str().c_str());
+    type = oldAlbumInfo.count_ < count_ ? NOTIFY_ALBUM_ADD_ASSET :
+        (oldAlbumInfo.count_ > count_ ? NOTIFY_ALBUM_REMOVE_ASSET : NOTIFY_UPDATE);
+    ACCURATE_INFO("Update albumInfo[%{public}d], notifyType[%{public}d]: %{public}s", oldAlbumInfo.albumId_,
+        static_cast<int32_t>(type), ss.str().c_str());
     return values;
 }
 
