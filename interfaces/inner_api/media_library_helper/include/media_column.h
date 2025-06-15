@@ -326,6 +326,7 @@ public:
     // column name
     static const std::string PHOTO_ID EXPORT;
     static const std::string THUMBNAIL_SIZE EXPORT;
+    static const std::string EDITDATA_SIZE EXPORT;
 
     // create table sql
     static const std::string CREATE_PHOTO_EXT_TABLE EXPORT;

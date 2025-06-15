@@ -91,6 +91,7 @@
 #include "moving_photo_file_utils.h"
 #include "hi_audit.h"
 #include "video_composition_callback_imp.h"
+#include "medialibrary_data_manager.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -1273,6 +1274,147 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
         CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR, "update dirty flag fail.");
     }
     return updateDirtyRows;
+}
+
+static int32_t CalSingleEditDataSize(const std::string &fileId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return E_DB_FAIL;
+    }
+
+    std::string filePath;
+    int ret = MediaLibraryPhotoOperations::GetFilePathById(rdbStore, fileId, filePath);
+    if (ret != E_OK) {
+        MEDIA_WARN_LOG("Skip invalid file ID: %{public}s (error code: %{public}d)",
+            fileId.c_str(), ret);
+        return ret;
+    }
+
+    return MediaLibraryRdbStore::UpdateEditDataSize(rdbStore, fileId, filePath);
+}
+
+int32_t MediaLibraryPhotoOperations::Get500FileIdsAndPathS(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+    std::vector<std::string> &fileIds, std::vector<std::string> &filePaths, std::string startFileId, bool &hasMore)
+{
+    fileIds.clear();
+    filePaths.clear();
+
+    MediaLibraryCommand queryCmd(OperationObject::UFM_PHOTO, OperationType::QUERY);
+    queryCmd.GetAbsRdbPredicates()
+        ->IsNotNull(MediaColumn::MEDIA_ID)
+        ->And()
+        ->IsNotNull(MediaColumn::MEDIA_FILE_PATH);
+
+    if (!startFileId.empty()) {
+        queryCmd.GetAbsRdbPredicates()->Offset(std::stoi(startFileId));
+    }
+    // 一次查取500个
+    queryCmd.GetAbsRdbPredicates()->Limit(500);
+        
+    std::vector<std::string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH};
+
+    auto result = rdbStore->Query(queryCmd, columns);
+    if (!result || result->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Query files failed");
+        return E_GET_PRAMS_FAIL;
+    }
+
+    std::string fileId;
+    std::string filePath;
+    int count = 0;
+    do {
+        fileId = GetStringVal(MediaColumn::MEDIA_ID, result);
+        filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, result);
+        if (!fileId.empty() && !filePath.empty()) {
+            fileIds.push_back(fileId);
+            filePaths.push_back(filePath);
+            count++;
+        }
+    } while (result->GoToNextRow() == NativeRdb::E_OK);
+
+    // 没有取到500个，认为已经取完了所有的数据
+    if (count < 500) {
+        hasMore = false;
+    }
+
+    return E_OK;
+}
+
+static int32_t ConvertPhotoPathToEditDataDirPath(const std::string &sourcePath, std::string &editDataDir)
+{
+    if (sourcePath.empty()) {
+        return E_INVALID_PATH;
+    }
+
+    editDataDir = MediaLibraryAssetOperations::GetEditDataDirPath(sourcePath);
+    if (editDataDir.empty()) {
+        MEDIA_ERR_LOG("Failed to convert path: %{public}s", sourcePath.c_str());
+        return E_INVALID_PATH;
+    }
+    return E_OK;
+}
+
+static int32_t GetCloudFilePath(const shared_ptr<MediaLibraryRdbStore> rdbStore, const std::string &fileId,
+    std::string &filePath)
+{
+    std::string sql = "SELECT " + MediaColumn::MEDIA_FILE_PATH +
+                     " FROM " + PhotoColumn::PHOTOS_TABLE +
+                     " WHERE " + MediaColumn::MEDIA_ID + " = ?";
+    
+    std::vector<NativeRdb::ValueObject> params = {fileId};
+    auto result = rdbStore->QuerySql(sql, params);
+    if (!result) {
+        MEDIA_ERR_LOG("Query failed for fileId: %{public}s", fileId.c_str());
+        return E_HAS_DB_ERROR;
+    }
+
+    if (result->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_WARN_LOG("File not found for ID: %{public}s", fileId.c_str());
+        return E_INVALID_FILEID;
+    }
+
+    if (result->GetString(0, filePath) != NativeRdb::E_OK || filePath.empty()) {
+        MEDIA_ERR_LOG("Failed to retrieve file path for ID: %{public}s", fileId.c_str());
+        return E_INVALID_FILEID;
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::ConvertPhotoCloudPathToLocalData(std::string retrievedPath, std::string &filePath)
+{
+    static const std::string OLD_PREFIX = "/storage/cloud/";
+    static const std::string NEW_PREFIX = "/storage/media/local/";
+    if (retrievedPath.compare(0, OLD_PREFIX.length(), OLD_PREFIX) == 0) {
+        std::string editDataDir;
+        int32_t ret = ConvertPhotoPathToEditDataDirPath(retrievedPath, editDataDir);
+        if (ret != E_OK) {
+            return ret;
+        }
+        filePath = NEW_PREFIX + editDataDir.substr(OLD_PREFIX.length());
+        MEDIA_INFO_LOG("Converted to local path: %{private}s", filePath.c_str());
+    } else {
+        filePath = std::move(retrievedPath);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::GetFilePathById(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const std::string &fileId, std::string &filePath)
+{
+    std::string retrievedPath;
+    if (GetCloudFilePath(rdbStore, fileId, retrievedPath) != E_OK) {
+        MEDIA_ERR_LOG("Failed to retrieve file path for ID: %{public}s", fileId.c_str());
+        return E_INVALID_FILEID;
+    }
+
+    if (ConvertPhotoCloudPathToLocalData(retrievedPath, filePath) != E_OK) {
+        MEDIA_ERR_LOG("Failed to Convert cloue path: %{public}s to local path", retrievedPath.c_str());
+        return E_INVALID_FILEID;
+    }
+
+    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
@@ -2657,6 +2799,11 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
 #endif
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
+    errCode = CalSingleEditDataSize(std::to_string(fileId));
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("CalSingleEditDataSize failed for fileId: %{public}d (ret code: %{public}d)",
+            fileId, errCode);
+    }
     MEDIA_INFO_LOG("end to do revertEdit");
     return E_OK;
 }
@@ -2905,6 +3052,56 @@ void MediaLibraryPhotoOperations::ParseCloudEnhancementEditData(string& editData
         string editDataStr = editDataJson.dump();
         editData = editDataStr;
     }
+}
+
+static bool ConvertPhotoPathToThumbnailDirPath(std::string& path)
+{
+    const std::string photoRelativePath = "/Photo/";
+    const std::string thumbRelativePath = "/.thumbs/Photo/";
+    size_t pos = path.find(photoRelativePath);
+    CHECK_AND_RETURN_RET_LOG(pos != string::npos, false, "source file invalid! path is %{public}s", path.c_str());
+    path.replace(pos, photoRelativePath.length(), thumbRelativePath);
+    return true;
+}
+
+void MediaLibraryPhotoOperations::StoreThumbnailAndEditSize(const string& photoId, const string& photoPath)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is nullptr!");
+
+    string thumbnailDir {photoPath};
+    CHECK_AND_RETURN_LOG(ConvertPhotoPathToThumbnailDirPath(thumbnailDir),
+        "Failed to get thumbnail dir path from photo path! file id: %{public}s", photoId.c_str());
+    uint64_t photoThumbnailSize = GetFolderSize(thumbnailDir);
+
+    uint64_t editDataSize = 0;
+    string editDataDir;
+    if (MediaLibraryPhotoOperations::ConvertPhotoCloudPathToLocalData(photoPath, editDataDir) != E_OK) {
+        MEDIA_ERR_LOG("Failed to Convert cloue path: %{public}s to local path", photoPath.c_str());
+        return;
+    }
+    size_t editDataSizeCast = static_cast<size_t>(editDataSize);
+    MediaFileUtils::StatDirSize(editDataDir, editDataSizeCast);
+    editDataSize = editDataSizeCast;
+
+    string sql = "INSERT OR REPLACE INTO " + PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
+                 PhotoExtColumn::PHOTO_ID + ", " +
+                 PhotoExtColumn::THUMBNAIL_SIZE + ", " +
+                 PhotoExtColumn::EDITDATA_SIZE + ") VALUES (?, ?, ?)";
+
+    vector<NativeRdb::ValueObject> values = {
+        NativeRdb::ValueObject(photoId),
+        NativeRdb::ValueObject(to_string(photoThumbnailSize)),
+        NativeRdb::ValueObject(to_string(editDataSize))
+    };
+
+    int32_t ret = rdbStore->ExecuteSql(sql, values);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK,
+        "Failed to store sizes for photoId: %{public}s", photoId.c_str());
+
+    MEDIA_INFO_LOG("Successfully stored thumbnail size: %{public}llu", photoThumbnailSize);
+    MEDIA_INFO_LOG("Edit data size: %{public}llu", editDataSize);
+    MEDIA_INFO_LOG("For photo ID: %{public}s", photoId.c_str());
 }
 
 bool MediaLibraryPhotoOperations::IsSetEffectMode(MediaLibraryCommand &cmd)
@@ -3174,6 +3371,11 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         MediaFileUtils::CopyFileUtil(assetPath, GetEditDataSourcePath(assetPath));
         int32_t ret = MediaChangeEffect::TakeEffectForPicture(picture, editData);
         FileUtils::DealPicture(photoExtInfo.format, assetPath, picture, isHighQualityPicture);
+        ret = CalSingleEditDataSize(std::to_string(fileId));
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("CalSingleEditDataSize failed for fileId: %{public}d (ret code: %{public}d)",
+                fileId, ret);
+        }
     }
     isHighQualityPicture = (picture == nullptr) ? photoExtInfo.isHighQualityPicture : isHighQualityPicture;
     if (isHighQualityPicture) {
@@ -3237,6 +3439,11 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     std::string photoId;
     bool isHighQualityPicture = false;
     CHECK_AND_RETURN_RET(GetPicture(fileId, picture, true, photoId, isHighQualityPicture) != E_OK, E_OK);
+    ret = CalSingleEditDataSize(std::to_string(fileId));
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CalSingleEditDataSize failed for ID: %{public}d (ret code: %{public}d)",
+                      fileId, ret);
+    }
     return ret;
 }
 
@@ -3390,7 +3597,12 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     NotifyFormMap(id, assetPath, false);
     MediaLibraryVisionOperations::EditCommitOperation(cmd);
     MEDIA_INFO_LOG("SubmitEditCacheExecute success, isWriteGpsAdvanced: %{public}d.", isWriteGpsAdvanced);
-    return E_OK;
+    errCode = CalSingleEditDataSize(std::to_string(id));
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("CalSingleEditDataSize failed for ID: %{public}d (error code: %{public}d)",
+            id, errCode);
+    }
+    return errCode;
 }
 
 int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd,
@@ -3867,16 +4079,6 @@ bool PhotoEditingRecord::IsInEditOperation(int32_t fileId)
     return false;
 }
 
-static bool ConvertPhotoPathToThumbnailDirPath(std::string& path)
-{
-    const std::string photoRelativePath = "/Photo/";
-    const std::string thumbRelativePath = "/.thumbs/Photo/";
-    size_t pos = path.find(photoRelativePath);
-    CHECK_AND_RETURN_RET_LOG(pos != string::npos, false, "source file invalid! path is %{public}s", path.c_str());
-    path.replace(pos, photoRelativePath.length(), thumbRelativePath);
-    return true;
-}
-
 void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, const string& photoPath)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -3886,9 +4088,11 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
     CHECK_AND_RETURN_LOG(ConvertPhotoPathToThumbnailDirPath(thumbnailDir),
         "Failed to get thumbnail dir path from photo path! file id: %{public}s", photoId.c_str());
     uint64_t photoThumbnailSize = GetFolderSize(thumbnailDir);
-    string sql = "INSERT OR REPLACE INTO " + PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
+    string sql = "INSERT INTO " + PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
         PhotoExtColumn::PHOTO_ID + ", " + PhotoExtColumn::THUMBNAIL_SIZE +
-        ") VALUES (" + photoId + ", " + to_string(photoThumbnailSize) + ")";
+        ") VALUES (" + photoId + ", " + to_string(photoThumbnailSize) + ")" +
+        " ON CONFLICT(" + PhotoExtColumn::PHOTO_ID + ")" + " DO UPDATE SET " +
+        PhotoExtColumn::THUMBNAIL_SIZE + " = " + to_string(photoThumbnailSize);
     int32_t ret = rdbStore->ExecuteSql(sql);
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK,
         "Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
@@ -3900,8 +4104,8 @@ bool MediaLibraryPhotoOperations::HasDroppedThumbnailSize(const string& photoId)
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false,
         "Medialibrary rdbStore is nullptr!");
 
-    string sql = "DELETE FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE +
-        " WHERE " + PhotoExtColumn::PHOTO_ID + " = " + photoId + ";";
+    string sql = "UPDATE " + PhotoExtColumn::PHOTOS_EXT_TABLE + " SET " + PhotoExtColumn::THUMBNAIL_SIZE +
+        " = 0 WHERE " + PhotoExtColumn::PHOTO_ID + " = " + photoId + ";";
     int32_t ret = rdbStore->ExecuteSql(sql);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false,
         "Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);

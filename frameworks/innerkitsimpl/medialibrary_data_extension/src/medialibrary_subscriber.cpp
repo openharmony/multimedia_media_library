@@ -116,6 +116,8 @@ static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences
 static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
 static const std::string NO_UPDATE_DIRTY_CLOUD_CLONE_V2 = "no_update_dirty_cloud_clone_v2";
 static const std::string NO_DELETE_DIRTY_HDC_DATA = "no_delete_dirty_hdc_data";
+static const std::string NO_UPDATE_EDITDATA_SIZE = "no_update_editdata_size";
+static const std::string UPDATE_EDITDATA_SIZE_COUNT = "update_editdata_size_count";
 
 // The network should be available in this state
 const int32_t NET_CONN_STATE_CONNECTED = 3;
@@ -567,6 +569,40 @@ static int32_t DoUpdateBurstFromGallery()
     return E_SUCCESS;
 }
 
+static void QueryUpdateSize(AsyncTaskData *data)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    CHECK_AND_RETURN_LOG(dataManager != nullptr,  "dataManager is nullptr");
+
+    int32_t result = dataManager->UpdateMediaSizeFromStorage();
+    CHECK_AND_PRINT_LOG(result == E_OK, "UpdateMediaSizeFromStorage failed");
+}
+
+static int32_t UpdateAllEditDataSize()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
+    if (prefs == nullptr) {
+        MEDIA_ERR_LOG("Get preferences error: %{public}d", errCode);
+        return E_ERR;
+    }
+    if (prefs->GetInt(NO_UPDATE_EDITDATA_SIZE, 0) == 1) {
+        return E_SUCCESS;
+    }
+
+    MEDIA_INFO_LOG("Begin DoUpdateAllEditDataSize");
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL, "Failed to get async worker instance!");
+
+    shared_ptr<MediaLibraryAsyncTask> updateSizeTask =
+        make_shared<MediaLibraryAsyncTask>(QueryUpdateSize, nullptr);
+    CHECK_AND_RETURN_RET_LOG(updateSizeTask != nullptr, E_FAIL,
+        "Failed to create async task for updateBurstTask!");
+    asyncWorker->AddTask(updateSizeTask, false);
+    return E_SUCCESS;
+}
+
 static void UpdateDirtyForCloudClone(AsyncTaskData *data)
 {
     auto *taskData = static_cast<UpdateDirtyDataAsyncTaskData *>(data);
@@ -698,6 +734,46 @@ static void ClearDirtyHdcData(const shared_ptr<NativePreferences::Preferences>& 
     return;
 }
 
+static void ClearDirtyDiskData(AsyncTaskData *data)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    CHECK_AND_RETURN_LOG(dataManager != nullptr, "Failed to MediaLibraryDataManager instance!");
+
+    int32_t result = dataManager->ClearDirtyDiskData();
+    CHECK_AND_PRINT_LOG(result == E_OK, "ClearDirtyDiskData faild, result = %{public}d", result);
+}
+
+static int32_t DoClearDirtyDiskData()
+{
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
+        "Failed to get async worker instance");
+    shared_ptr<MediaLibraryAsyncTask> clearDirtyDiskDataTask =
+        make_shared<MediaLibraryAsyncTask>(ClearDirtyDiskData, nullptr);
+    CHECK_AND_RETURN_RET_LOG(clearDirtyDiskDataTask != nullptr, E_FAIL,
+        "Failed to create async task for clearDirtyDiskDataTask");
+    asyncWorker->AddTask(clearDirtyDiskDataTask, false);
+    return E_SUCCESS;
+}
+
+static void ClearDirtyDiskData()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
+    if (prefs == nullptr) {
+        MEDIA_ERR_LOG("Get preferences error: %{public}d", errCode);
+        return;
+    }
+
+    int64_t lastClearTime = prefs->GetLong(LAST_CLEAR_DISK_DIRTY_DATA_TIME, 0);
+    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    if (currentTime - lastClearTime > THIRTY_DAYS) {
+        int32_t ret = DoClearDirtyDiskData();
+        CHECK_AND_PRINT_LOG(ret == E_OK, "DoClearDirtyDiskData failed");
+    }
+}
+
 static void ClearDirtyData()
 {
     int32_t errCode;
@@ -706,6 +782,7 @@ static void ClearDirtyData()
     CHECK_AND_RETURN_LOG(prefs, "Get preferences error: %{public}d", errCode);
     UpdateDirtyForBeta(prefs);
     ClearDirtyHdcData(prefs);
+    ClearDirtyDiskData();
     return;
 }
 
@@ -741,6 +818,10 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     // update burst from gallery
     int32_t ret = DoUpdateBurstFromGallery();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstFromGallery faild");
+    // update all editdata size
+    ret = UpdateAllEditDataSize();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateAllEditDataSize faild");
+
     CloudUploadChecker::RepairNoOriginPhoto();
 
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT

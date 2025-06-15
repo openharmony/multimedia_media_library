@@ -22,6 +22,7 @@
 #include <shared_mutex>
 #include <unordered_set>
 #include <sstream>
+#include <regex>
 
 #include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
@@ -131,6 +132,7 @@
 #include "cloud_media_asset_uri.h"
 #include "album_operation_uri.h"
 #include "custom_record_operations.h"
+#include "medialibrary_photo_operations.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -171,6 +173,9 @@ static const std::string NO_DELETE_DIRTY_HDC_DATA = "no_delete_dirty_hdc_data";
 static const std::string CLOUD_PREFIX_PATH = "/storage/cloud/files";
 static const std::string THUMB_PREFIX_PATH = "/storage/cloud/files/.thumbs";
 static const std::string COLUMN_OLD_FILE_ID = "old_file_id";
+static const std::string NO_DELETE_DISK_DATA_INDEX = "no_delete_disk_data_index";
+static const std::string NO_UPDATE_EDITDATA_SIZE = "no_update_editdata_size";
+static const std::string UPDATE_EDITDATA_SIZE_COUNT = "update_editdata_size_count";
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -2791,6 +2796,282 @@ int32_t MediaLibraryDataManager::ClearDirtyHdcData()
     }
 
     CHECK_AND_RETURN_RET(nextDelete, UpdateDirtyHdcDataStatus());
+    return E_OK;
+}
+
+static bool IsPathInRdbStore(const std::string& path)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (!rdbStore) {
+        MEDIA_ERR_LOG("Failed to get RdbStore instance");
+        return true;
+    }
+
+    std::string sql = "SELECT " + MediaColumn::MEDIA_ID +
+                     " FROM " + PhotoColumn::PHOTOS_TABLE +
+                     " WHERE " + MediaColumn::MEDIA_FILE_PATH + " = ?";
+
+    std::vector<NativeRdb::ValueObject> params = {path};
+    auto result = rdbStore->QuerySql(sql, params);
+    if (!result || (result->GoToFirstRow() != NativeRdb::E_OK)) {
+        MEDIA_ERR_LOG("Query path existence failed: %{public}s", path.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+static void ScanAndCleanDirectory(const std::string& directoryPath, const std::string& cloudPath)
+{
+    if (!std::filesystem::exists(directoryPath) || !std::filesystem::is_directory(directoryPath)) {
+        MEDIA_INFO_LOG("Directory not found or invalid: %{public}s", directoryPath.c_str());
+        return;
+    }
+
+    for (const auto& entry : std::filesystem::directory_iterator(directoryPath,
+        std::filesystem::directory_options::skip_permission_denied)) {
+        const auto& entryPath = entry.path();
+        const std::string entryName = entryPath.filename().string();
+        std::string entryCloudPath = cloudPath + "/" + entryName;
+        if (!IsPathInRdbStore(entryCloudPath)) {
+            const bool isDir = entry.is_directory();
+            const std::string pathStr = entryPath.string();
+            if (isDir) {
+                std::filesystem::remove_all(entryPath);
+                MEDIA_INFO_LOG("Deleted invalid directory: %{public}s", pathStr.c_str());
+            } else {
+                std::filesystem::remove(entryPath);
+                MEDIA_INFO_LOG("Deleted invalid file: %{public}s", pathStr.c_str());
+            }
+        }
+        if (!MedialibrarySubscriber::IsCurrentStatusOn()) {
+            MEDIA_INFO_LOG("Current status is off, skip disk cleanup");
+            break;
+        }
+    }
+}
+
+static std::vector<int32_t> GetAllPhotoDirectoryIndices()
+{
+    static const std::vector<std::string> BASE_DIRS = {
+        "/storage/media/local/files/Photo",
+        "/storage/media/local/files/.editData/Photo",
+        "/storage/media/local/files/.thumbs/Photo"
+    };
+
+    std::vector<int32_t> indices;
+    for (const auto& baseDir : BASE_DIRS) {
+        if (!std::filesystem::exists(baseDir) || !std::filesystem::is_directory(baseDir)) {
+            MEDIA_INFO_LOG("Directory not found or invalid: %{public}s", baseDir.c_str());
+            continue;
+        }
+        for (const auto& entry : std::filesystem::directory_iterator(baseDir,
+            std::filesystem::directory_options::skip_permission_denied)) {
+            if (!entry.is_directory()) {
+                continue;
+            }
+            std::string dirName = entry.path().filename().string();
+            std::regex numRegex(R"(\d+)");
+            std::smatch match;
+
+            if (std::regex_search(dirName, match, numRegex)) {
+                int32_t index = std::stoi(match.str());
+                indices.push_back(index);
+            }
+        }
+    }
+    return indices;
+}
+
+static void ClearCategoryDirtyDiskData(const std::string& categoryDirTemplate, int32_t& dirIndex)
+{
+    char fullPath[256];
+    if (sprintf_s(fullPath, sizeof(fullPath), categoryDirTemplate.c_str(), dirIndex) <= 0) {
+        MEDIA_ERR_LOG("Sprintf_s fullPath failed, dirIndex: %{public}d", dirIndex);
+        return;
+    }
+
+    char cloudPath[256];
+    static const std::string cloudDir = "/storage/cloud/files/Photo/%d";
+    if (sprintf_s(cloudPath, sizeof(cloudPath), cloudDir.c_str(), dirIndex) <= 0) {
+        MEDIA_ERR_LOG("Sprintf_s cloudPath failed, dirIndex: %{public}d", dirIndex);
+        return;
+    }
+
+    ScanAndCleanDirectory(fullPath, cloudPath);
+}
+
+static void CleanEndHandler(shared_ptr<NativePreferences::Preferences> prefsProgress)
+{
+    MEDIA_INFO_LOG("All directories cleaned, resetting index to 1");
+    prefsProgress->PutInt(NO_DELETE_DISK_DATA_INDEX, 1);
+    prefsProgress->FlushSync();
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefsTime =
+        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
+    if (prefsTime == nullptr) {
+        MEDIA_ERR_LOG("Get preferences error: %{public}d", errCode);
+        return;
+    }
+    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    prefsTime->PutLong(LAST_CLEAR_DISK_DIRTY_DATA_TIME, currentTime);
+    prefsTime->FlushSync();
+}
+
+static void GetIndicesHandler(std::vector<int32_t> &indices, shared_ptr<NativePreferences::Preferences> prefsProgress)
+{
+    indices = GetAllPhotoDirectoryIndices();
+    if (indices.empty()) {
+        MEDIA_INFO_LOG("No photo directories to clean, resetting index to 1");
+        prefsProgress->PutInt(NO_DELETE_DISK_DATA_INDEX, 1);
+        prefsProgress->FlushSync();
+        return;
+    }
+
+    std::sort(indices.begin(), indices.end());
+    auto last = std::unique(indices.begin(), indices.end());
+    indices.erase(last, indices.end());
+}
+
+int32_t MediaLibraryDataManager::ClearDirtyDiskData()
+{
+    if (!MedialibrarySubscriber::IsCurrentStatusOn()) {
+        MEDIA_INFO_LOG("Current status is off, skip disk cleanup");
+        return E_OK;
+    }
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefsProgress =
+        NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
+    if (prefsProgress == nullptr) {
+        MEDIA_ERR_LOG("Get preferences error: %{public}d", errCode);
+        return errCode;
+    }
+    int32_t currentIndex = prefsProgress->GetInt(NO_DELETE_DISK_DATA_INDEX, 0);
+    std::vector<int32_t> indices;
+    GetIndicesHandler(indices, prefsProgress);
+
+    auto it = std::lower_bound(indices.begin(), indices.end(), currentIndex);
+    if ((it == indices.end()) || (*it > indices.back())) {
+        MEDIA_INFO_LOG("Cleanup completed for all directories, resetting index to 1");
+        prefsProgress->PutInt(NO_DELETE_DISK_DATA_INDEX, 1);
+        prefsProgress->FlushSync();
+        return E_OK;
+    }
+
+    static const std::vector<std::string> CLEAN_DIR_TEMPLATES = {
+        "/storage/media/local/files/Photo/%d",
+        "/storage/media/local/files/.editData/Photo/%d",
+        "/storage/media/local/files/.thumbs/Photo/%d"
+    };
+
+    for (; it != indices.end(); ++it) {
+        int32_t dirIndex = *it;
+
+        for (const auto& dirTemplate : CLEAN_DIR_TEMPLATES) {
+            ClearCategoryDirtyDiskData(dirTemplate, dirIndex);
+        }
+        if (!MedialibrarySubscriber::IsCurrentStatusOn()) {
+            MEDIA_INFO_LOG("Current status is off, skip disk cleanup");
+            break;
+        }
+    }
+    prefsProgress->PutInt(NO_DELETE_DISK_DATA_INDEX, *it);
+    prefsProgress->FlushSync();
+
+    if (it == indices.end()) {
+        CleanEndHandler(prefsProgress);
+    }
+    return E_OK;
+}
+
+static void Update500EditDataSize(const shared_ptr<MediaLibraryRdbStore> rdbStore, std::string startFileId,
+    bool &hasMore)
+{
+    std::vector<std::string> filePaths;
+    std::vector<std::string> fileIds;
+    int32_t ret = MediaLibraryPhotoOperations::Get500FileIdsAndPathS(rdbStore, fileIds, filePaths,
+        startFileId, hasMore);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to get filePaths and IDs, error code: %{public}d", ret);
+        return;
+    }
+
+    if (filePaths.empty() || fileIds.empty()) {
+        MEDIA_INFO_LOG("No files need to update edit data size");
+        return;
+    }
+
+    MEDIA_INFO_LOG("Start to update edit data size for %{public}zu files", fileIds.size());
+    int32_t successCount = 0;
+    int32_t failedCount = 0;
+
+    for (size_t i = 0; i < fileIds.size(); ++i) {
+        const auto &fileId = fileIds[i];
+        const auto &filePath = filePaths[i];
+
+        std::string editDataFilePath;
+        ret = MediaLibraryPhotoOperations::ConvertPhotoCloudPathToLocalData(filePath, editDataFilePath);
+        if (ret != E_OK) {
+            MEDIA_WARN_LOG("Skip invalid file ID: %{public}s (error code: %{public}d)",
+                fileId.c_str(), ret);
+            failedCount++;
+            continue;
+        }
+
+        ret = MediaLibraryRdbStore::UpdateEditDataSize(rdbStore, fileId, editDataFilePath);
+        if (ret == E_OK) {
+            successCount++;
+        } else {
+            MEDIA_ERR_LOG("Update failed for ID: %{public}s, Path: %{public}s (error code: %{public}d)",
+                fileId.c_str(), editDataFilePath.c_str(), ret);
+            failedCount++;
+        }
+    }
+
+    MEDIA_INFO_LOG("Edit data size update completed: success=%{public}d, failed=%{public}d",
+                   successCount, failedCount);
+    if (failedCount > 0) {
+        MEDIA_WARN_LOG("%{public}d files failed to update, check above logs for details", failedCount);
+    }
+}
+
+int32_t MediaLibraryDataManager::UpdateMediaSizeFromStorage()
+{
+    if (!MedialibrarySubscriber::IsCurrentStatusOn()) {
+        MEDIA_INFO_LOG("Current status is off, skip disk cleanup");
+        return E_OK;
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (!rdbStore) {
+        MEDIA_ERR_LOG("RdbStore is null");
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
+    if (prefs == nullptr) {
+        MEDIA_ERR_LOG("Get preferences error: %{public}d", errCode);
+        return errCode;
+    }
+
+    int32_t startFileId = prefs->GetInt(UPDATE_EDITDATA_SIZE_COUNT, 0);
+    bool hasMore = true;
+    while (hasMore) {
+        if (!MedialibrarySubscriber::IsCurrentStatusOn()) {
+            MEDIA_INFO_LOG("Current status is off, skip disk cleanup");
+            return E_OK;
+        }
+        Update500EditDataSize(rdbStore, std::to_string(startFileId), hasMore);
+        // 一次500张图片
+        startFileId += 500;
+        prefs->PutInt(UPDATE_EDITDATA_SIZE_COUNT, startFileId);
+        prefs->FlushSync();
+    }
+
+    prefs->PutInt(NO_UPDATE_EDITDATA_SIZE, 1);
+    prefs->FlushSync();
     return E_OK;
 }
 

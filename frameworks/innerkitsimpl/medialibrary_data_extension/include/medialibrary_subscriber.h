@@ -63,6 +63,7 @@ public:
     EXPORT static bool IsWifiConnected();
     EXPORT static bool IsCurrentStatusOn();
     EXPORT static void RefreshCellularNetStatus();
+    EXPORT static void ClearDirtyDiskData();
 private:
     static const std::vector<std::string> events_;
     bool isScreenOff_ {false};
