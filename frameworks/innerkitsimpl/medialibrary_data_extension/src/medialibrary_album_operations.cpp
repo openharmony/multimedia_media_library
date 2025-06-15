@@ -1350,7 +1350,7 @@ int32_t ResetCoverUri(const ValuesBucket &values, const DataSharePredicates &pre
     updateValues.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::DEFAULT_COVER);
 
     string UPDATE_CONDITION = PhotoAlbumColumns::ALBUM_ID + " = " + albumId + " AND " +
-        PhotoAlbumColumns::COVER_URI_SOURCE + " = " + to_string(CoverUriSource::MANUAL_COVER);
+        PhotoAlbumColumns::COVER_URI_SOURCE + " > " + to_string(CoverUriSource::DEFAULT_COVER);
 
     newPredicates.SetWhereClause(UPDATE_CONDITION);
     
