@@ -39,6 +39,7 @@ public:
     bool isDelete;
     bool isSuccess;
     int32_t coverUriSource;
+    std::string coverCloudId;
 
 public:
     std::string ToString();

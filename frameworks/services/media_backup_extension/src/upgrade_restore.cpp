@@ -54,6 +54,10 @@ constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t RESTORE_CLOUD_QUERY_COUNT = 200;
 const std::string DB_INTEGRITY_CHECK = "ok";
+const int32_t IMAGE_ALBUM_ID = 7;
+const int32_t VIDEO_ALBUM_ID = 2;
+const int32_t FAVORITE_ALBUM_ID = 1;
+const int32_t CLOUD_ENHANCEMENT_ALBUM_ID = 8;
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -1609,10 +1613,10 @@ int32_t UpgradeRestore::RecordAlbumCoverInfo(const std::shared_ptr<NativeRdb::Re
     const static string virtualPrefix = "/gallery/album/virtual/common/*/";
     const static string COVER_ID = "cover_id";
     const static unordered_map<string, int32_t> virtualAlbumIdMap = {
-        {"/gallery/album/virtual/common/*/0", 7},
-        {"/gallery/album/virtual/common/*/1", 2},
-        {"/gallery/album/virtual/common/*/2", 1},
-        {"/gallery/album/virtual/common/*/3", 8},
+        {"/gallery/album/virtual/common/*/0", IMAGE_ALBUM_ID},
+        {"/gallery/album/virtual/common/*/1", VIDEO_ALBUM_ID},
+        {"/gallery/album/virtual/common/*/2", FAVORITE_ALBUM_ID},
+        {"/gallery/album/virtual/common/*/3", CLOUD_ENHANCEMENT_ALBUM_ID},
     };
     string lPath = GetStringVal(GALLERY_ALBUM_IPATH, resultSet);
     if (lPath.empty()) { // virtual album
@@ -1648,7 +1652,8 @@ void UpgradeRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCover
             make_unique<NativeRdb::AbsRdbPredicates>(PhotoAlbumColumns::TABLE);
         predicates->EqualTo(PhotoAlbumColumns::ALBUM_ID, albumCoverInfo.albumId);
         NativeRdb::ValuesBucket updateBucket;
-        updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, static_cast<int32_t>(CoverUriSource::MANUAL_COVER));
+        updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE,
+            static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER));
         updateBucket.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, albumCoverInfo.coverUri);
         BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, updateBucket, predicates);
         if (changeRows != 1) {

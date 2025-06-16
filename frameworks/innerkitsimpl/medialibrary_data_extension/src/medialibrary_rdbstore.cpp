@@ -4364,15 +4364,17 @@ static void AddDcAnalysisIndexUpdateColumn(RdbStore &store)
     MEDIA_INFO_LOG("Add DC analysis index update column end");
 }
 
-static void AddCoverUriSourceColumn(RdbStore &store)
+static void AddCoverColumns(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " + PhotoAlbumColumns::COVER_URI_SOURCE +
             " INT NOT NULL DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " + PhotoAlbumColumns::COVER_CLOUD_ID +
+            " TEXT",
     };
-    MEDIA_INFO_LOG("add cover_uri_source column start");
+    MEDIA_INFO_LOG("add cover columns start");
     ExecSqls(sqls, store);
-    MEDIA_INFO_LOG("add cover_uri_source column end");
+    MEDIA_INFO_LOG("add cover columns end");
 }
 
 static void FixSourceAlbumCreateTriggersToUseLPath(RdbStore& store)
@@ -4590,7 +4592,7 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
         MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), oldVersion, MEDIA_RDB_VERSION);
 
     if (oldVersion < VERSION_ADD_COVER_URI_SOURCE) {
-        AddCoverUriSourceColumn(store);
+        AddCoverColumns(store);
     }
 
     if (oldVersion < VERSION_ADD_EDITDATA_SIZE_COLUMN) {

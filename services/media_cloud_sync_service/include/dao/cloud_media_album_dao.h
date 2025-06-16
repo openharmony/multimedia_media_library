@@ -79,7 +79,9 @@ public:
     void RemoveAlbumCreateFailedRecord(const std::string &cloudId);
     void RemoveAlbumModifyFailedRecord(const std::string &cloudId);
     int32_t ClearAlbumFailedRecords();
-
+    bool IsCoverIdExist(std::string &cloudId);
+    bool IsNeedPullCoverByDateModified(std::string &lPath, std::string &coverCloudId);
+    bool GetCoverUriFromCoverCloudId(std::string &coverCloudId, std::string &coverUri);
 private:
     int32_t InsertAlbums(PhotoAlbumDto &record,
         std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle);

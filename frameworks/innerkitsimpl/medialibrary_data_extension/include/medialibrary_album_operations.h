@@ -97,7 +97,14 @@ public:
         const bool isAging, const bool compatible);
     static int32_t MergePortraitAlbums(const NativeRdb::ValuesBucket &values);
     static int32_t OrderSingleAlbum(const NativeRdb::ValuesBucket &values);
+    static int32_t UpdateAlbumCoverUri(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates, bool isSystemAlbum);
+    static int32_t ResetCoverUri(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
     static bool IsCoverInAlbum(const string &fileId, int32_t albumSubtype, int32_t albumId);
+    static bool IsCoverInSystemAlbum(NativeRdb::RdbPredicates &predicates, int32_t albumSubtype);
+    static bool IsManunalCloudCover(const std::string &fileId, std::string &coverCloudId);
+    static int32_t UpdateCoverUriExecute(int32_t albumId, const std::string &coverUri, const std::string &fileId);
 };
 } // namespace Media
 } // namespace OHOS

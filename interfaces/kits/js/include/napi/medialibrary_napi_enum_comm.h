@@ -277,7 +277,7 @@ const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES 
     std::make_pair("DATE_ADDED",                MEDIA_DATA_DB_DATE_ADDED),
     std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED),
     std::make_pair("BUNDLE_NAME",               PhotoAlbumColumns::ALBUM_BUNDLE_NAME),
-    std::make_pair("COVER_URI_SOURCE",               PhotoAlbumColumns::COVER_URI_SOURCE),
+    std::make_pair("COVER_URI_SOURCE",          PhotoAlbumColumns::COVER_URI_SOURCE),
 };
 
 const std::vector<std::pair<std::string, std::string>> DEFAULT_URI_ENUM_PROPERTIES = {

@@ -30,7 +30,7 @@ public:
     EXPORT ~MediaLibraryDataManagerUtils();
 
     EXPORT static bool IsNumber(const std::string &str);
-    EXPORT static std::string GetFileIdFromPhotoUri(std::string &uri);
+    EXPORT static std::string GetFileIdFromPhotoUri(const std::string &uri);
     EXPORT static std::string GetOperationType(const std::string &uri);
     EXPORT static std::string GetDisPlayNameFromPath(const std::string &path);
     EXPORT static std::string ObtionCondition(std::string &strQueryCondition,

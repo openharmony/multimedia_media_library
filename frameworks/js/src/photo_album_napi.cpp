@@ -598,7 +598,7 @@ napi_value PhotoAlbumNapi::JSGetDateAdded(napi_env env, napi_callback_info info)
 napi_value PhotoAlbumNapi::JSGetCoverUriSource(napi_env env, napi_callback_info info)
 {
     CHECK_COND_LOG_THROW_RETURN_RET(env, MediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED,
-        "Get dateAdded permission denied: not a system app", nullptr, "Get album dateAdded failed: not a system app");
+        "GetCoverUriSource permission denied: not a system app", nullptr, "GetCoverUriSource failed: not a system app");
     PhotoAlbumNapi *obj = nullptr;
     CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
 
