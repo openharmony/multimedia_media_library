@@ -2924,7 +2924,7 @@ void CloneRestore::StartBackup()
 
 void CloneRestore::InheritManualCover()
 {
-    std::string querySql = "SELECT album_id, cover_uri FROM PhotoAlbum WHERE cover_uri_source = 1";
+    std::string querySql = "SELECT album_id, cover_uri FROM PhotoAlbum WHERE cover_uri_source > 0";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "Query resultSql is null.");
 
@@ -3086,7 +3086,8 @@ void CloneRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverIn
             make_unique<NativeRdb::AbsRdbPredicates>(PhotoAlbumColumns::TABLE);
         predicates->EqualTo(PhotoAlbumColumns::ALBUM_ID, albumCoverInfo.albumId);
         NativeRdb::ValuesBucket updateBucket;
-        updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, static_cast<int32_t>(CoverUriSource::MANUAL_COVER));
+        updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE,
+            static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER));
         updateBucket.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, albumCoverInfo.coverUri);
         BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, updateBucket, predicates);
         if (changeRows != 1) {

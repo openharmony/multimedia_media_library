@@ -136,6 +136,8 @@ static const std::map<std::string, DataType> PHOTO_ALBUM_COLUMNS = {
     {PhotoAlbumColumns::ALBUM_LPATH, DataType::STRING},
     {PhotoAlbumColumns::ALBUM_PRIORITY, DataType::INT},
     {PhotoAlbumColumns::ALBUM_CHECK_FLAG, DataType::INT},
+    {PhotoAlbumColumns::COVER_URI_SOURCE, DataType::INT},
+    {PhotoAlbumColumns::COVER_CLOUD_ID, DataType::STRING},
 };
 }  // namespace MediaColumnType
 }  // namespace OHOS::Media::ORM

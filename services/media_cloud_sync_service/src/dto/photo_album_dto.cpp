@@ -36,7 +36,9 @@ std::string PhotoAlbumDto::ToString()
        << "\"albumDateCreated\": " << this->albumDateCreated << ","
        << "\"albumDateModified\": " << this->albumDateModified << ","
        << "\"isDelete\": " << std::to_string(this->isDelete) << ","
-       << "\"isSuccess\": " << std::to_string(this->isSuccess) << "}";
+       << "\"isSuccess\": " << std::to_string(this->isSuccess) << ","
+       << "\"coverUriSource\": " << std::to_string(this->coverUriSource) << ","
+       << "\"coverCloudId\": " << this->coverCloudId << "}";
     return ss.str();
 }
 }  // namespace OHOS::Media::CloudSync
