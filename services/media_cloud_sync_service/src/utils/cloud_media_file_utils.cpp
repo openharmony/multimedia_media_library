@@ -68,20 +68,16 @@ bool CloudMediaFileUtils::GetFileSizeV2(const std::string &filePath, size_t &siz
 
 bool CloudMediaFileUtils::LocalWriteOpen(const std::string &dfsPath)
 {
-    std::unique_ptr<char[]> absPath = std::make_unique<char[]>(PATH_MAX + 1);
-    if (realpath(dfsPath.c_str(), absPath.get()) == nullptr) {
-        return false;
-    }
-    std::string realPath = absPath.get();
     char resolvedPath[PATH_MAX] = {'\0'};
-    char *realPaths = realpath(realPath.c_str(), resolvedPath);
-    if (realPaths == NULL) {
-        MEDIA_ERR_LOG("realpath failed");
+    if (realpath(dfsPath.c_str(), resolvedPath) == nullptr) {
+        MEDIA_ERR_LOG("realpath failed for dfsPath: %{public}s, errno: %{public}d",
+            MediaFileUtils::DesensitizePath(dfsPath).c_str(), errno);
         return false;
     }
-    int fd = open(realPaths, O_RDONLY);
+    int fd = open(resolvedPath, O_RDONLY);
     if (fd < 0) {
-        MEDIA_ERR_LOG("open failed, errno:%{public}d", errno);
+        MEDIA_ERR_LOG("open failed for path: %{public}s, errno: %{public}d",
+            MediaFileUtils::DesensitizePath(resolvedPath).c_str(), errno);
         return false;
     }
     uint32_t writeOpenCnt = 0;
