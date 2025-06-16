@@ -875,6 +875,15 @@ int32_t MediaAssetsService::CloneAsset(const CloneAssetDto& cloneAssetDto)
     return MediaLibraryAlbumFusionUtils::CloneSingleAsset(fileId, title);
 }
 
+int32_t MediaAssetsService::ConvertFormat(const ConvertFormatDto& convertFormatDto)
+{
+    MEDIA_INFO_LOG("ConvertFormat: %{public}s", convertFormatDto.ToString().c_str());
+    int32_t fileId = convertFormatDto.fileId;
+    std::string title = convertFormatDto.title;
+    std::string extension = convertFormatDto.extension;
+    return MediaLibraryAlbumFusionUtils::ConvertFormatAsset(fileId, title, extension);
+}
+
 int32_t MediaAssetsService::RevertToOriginal(const RevertToOriginalDto& revertToOriginalDto)
 {
     int32_t fileId = revertToOriginalDto.fileId;
