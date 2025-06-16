@@ -3064,6 +3064,25 @@ void AddHighlightChangeFunction(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddAestheicsScoreFileds(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + AESTHETICS_ALL_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + AESTHETICS_SCORE_ALL + " INT ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_FILTERED_HARD + " BOOLEAN ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + CLARITY_SCORE_ALL + " DOUBLE ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + SATURATION_SCORE_ALL + " DOUBLE ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + LUMINANCE_SCORE_ALL + " DOUBLE ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + SEMANTICS_SCORE + " DOUBLE ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_BLACK_WHITE_STRIPE + " BOOLEAN ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_BLURRY + " BOOLEAN ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_MOSAIC + " BOOLEAN ",
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + AESTHETICS_SCORE_ALL + " INT ",
+    };
+    MEDIA_INFO_LOG("start add aestheics score fields");
+    ExecSqls(sqls, store);
+}
+
 void AddStoryTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -4595,6 +4614,10 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_EDITDATA_SIZE_COLUMN) {
         AddEditDataSizeColumn(store);
+    }
+    
+    if (oldVersion < VERSION_ADD_AESTHETICS_SCORE_FIELDS) {
+        AddAestheicsScoreFileds(store);
     }
 }
 
