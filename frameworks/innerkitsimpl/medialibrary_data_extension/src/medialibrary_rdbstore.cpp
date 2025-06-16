@@ -563,6 +563,19 @@ void MediaLibraryRdbStore::AddPhotoDateAddedIndex(const shared_ptr<MediaLibraryR
     MEDIA_INFO_LOG("end AddPhotoDateAddedIndex");
 }
 
+void MediaLibraryRdbStore::AddPhotoSortIndex(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start AddPhotoSortIndex");
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_DATE_ADDED_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_DATE_TAKEN_INDEX,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("End AddPhotoSortIndex");
+}
+
 void MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store)
 {
     MEDIA_INFO_LOG("start Update LatitudeAndLongitude Default Null");
