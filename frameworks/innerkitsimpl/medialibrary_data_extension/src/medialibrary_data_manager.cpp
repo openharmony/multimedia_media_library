@@ -512,6 +512,11 @@ void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         FixOrientation180DirtyThumbnail(rdbStore);
         rdbStore->SetOldVersion(VERSION_FIX_ORIENTATION_180_DIRTY_THUMBNAIL);
     }
+
+    if (oldVersion < VERSION_ADD_INDEX_FOR_PHOTO_SORT) {
+        MediaLibraryRdbStore::AddPhotoSortIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_INDEX_FOR_PHOTO_SORT);
+    }
 }
 
 void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
