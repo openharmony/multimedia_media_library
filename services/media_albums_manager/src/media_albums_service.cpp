@@ -547,11 +547,21 @@ static void AddHighlightAlbumPredicates(DataShare::DataSharePredicates& predicat
     ReplacePredicatesColumn(predicates, PhotoAlbumColumns::ALBUM_ID, analysisAlbumId);
 }
 
+static void GenerateAnalysisCmd(MediaLibraryCommand &cmd,
+    DataShare::DataSharePredicates &predicates)
+{
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, MEDIALIBRARY_TABLE);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+}
+
 int32_t MediaAlbumsService::QueryAlbums(QueryAlbumsDto &dto)
 {
     std::shared_ptr<NativeRdb::ResultSet> resultSet;
     std::vector<std::string> &columns = dto.columns;
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY);
     if (dto.albumType == PhotoAlbumType::SMART) {
         if (dto.albumSubType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
             NativeRdb::RdbPredicates rdbPredicate = GetAllLocationPredicates(dto.predicates);
@@ -564,7 +574,7 @@ int32_t MediaAlbumsService::QueryAlbums(QueryAlbumsDto &dto)
             dto.predicates.InnerJoin(GEO_DICTIONARY_TABLE)->On({ onClause });
             dto.predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_COUNT, to_string(0));
             AddPhotoAlbumTypeFilter(dto.predicates, dto.albumType, dto.albumSubType);
-            MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY);
+            GenerateAnalysisCmd(cmd, dto.predicates);
             resultSet = MediaLibraryDataManager::QueryAnalysisAlbum(cmd, columns, dto.predicates);
         } else {
             AddDefaultPhotoAlbumColumns(columns);
@@ -576,7 +586,7 @@ int32_t MediaAlbumsService::QueryAlbums(QueryAlbumsDto &dto)
                 ReplaceFetchColumn(columns, PhotoAlbumColumns::ALBUM_ID, analysisAlbumId);
             }
             AddPhotoAlbumTypeFilter(dto.predicates, dto.albumType, dto.albumSubType);
-            MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY);
+            GenerateAnalysisCmd(cmd, dto.predicates);
             resultSet = MediaLibraryDataManager::QueryAnalysisAlbum(cmd, columns, dto.predicates);
         }
     } else {
