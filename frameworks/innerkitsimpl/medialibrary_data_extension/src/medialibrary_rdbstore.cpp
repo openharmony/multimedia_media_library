@@ -3064,7 +3064,7 @@ void AddHighlightChangeFunction(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void AddAestheicsScoreFileds(RdbStore &store)
+void AddAestheticsScoreFileds(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + AESTHETICS_ALL_VERSION + " TEXT ",
@@ -3079,7 +3079,7 @@ void AddAestheicsScoreFileds(RdbStore &store)
         "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_MOSAIC + " BOOLEAN ",
         "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + AESTHETICS_SCORE_ALL_STATUS + " INT ",
     };
-    MEDIA_INFO_LOG("start add aestheics score fields");
+    MEDIA_INFO_LOG("start add aesthetics score fields");
     ExecSqls(sqls, store);
 }
 
@@ -4617,7 +4617,7 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
     }
 
     if (oldVersion < VERSION_ADD_AESTHETICS_SCORE_FIELDS) {
-        AddAestheicsScoreFileds(store);
+        AddAestheticsScoreFileds(store);
     }
 }
 
