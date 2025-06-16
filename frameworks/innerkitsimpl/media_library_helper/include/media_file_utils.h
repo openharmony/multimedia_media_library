@@ -208,6 +208,11 @@ public:
     EXPORT static bool DeleteFileOrFolder(const std::string &path, bool isFile);
     EXPORT static std::string GetReplacedPathByPrefix(const std::string srcPrefix, const std::string dstPrefix,
         const std::string &path);
+    EXPORT static bool ConvertFormatCopy(const std::string &srcFile, const std::string &dstFile,
+        const std::string &extension);
+    EXPORT static bool ConvertFormatExtraDataDirectory(const std::string &srcDir, const std::string &dstDir,
+        const std::string &extension);
+
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
     static int32_t RemoveDirectory(const std::string &path);
