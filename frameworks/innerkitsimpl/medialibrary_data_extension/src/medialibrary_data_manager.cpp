@@ -481,17 +481,6 @@ static void FixOrientation180DirtyThumbnail(const shared_ptr<MediaLibraryRdbStor
     MEDIA_INFO_LOG("End fix dirty thumbnail");
 }
 
-static void AddIndexForPhotoSort(const shared_ptr<MediaLibraryRdbStore>& store)
-{
-    MEDIA_INFO_LOG("Start to add index for photo sort");
-    std::string sql =
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_THUMBNAIL_READY + " = 6" +
-        " WHERE " + PhotoColumn::PHOTO_ORIENTATION + " = 180 AND " + MediaColumn::MEDIA_TYPE + " = 1";
-    int32_t ret = store->ExecuteSql(sql);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
-    MEDIA_INFO_LOG("End adding index for photo sort");
-}
-
 void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {

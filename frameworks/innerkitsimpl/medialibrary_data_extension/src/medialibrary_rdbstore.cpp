@@ -1755,6 +1755,10 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INDEX_LONGITUDE,
     CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
     CustomRecordsColumns::CREATE_TABLE,
+    PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
+    PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
+    PhotoColumn::CREATE_PHOTO_SORT_DATE_ADDED_INDEX,
+    PhotoColumn::CREATE_PHOTO_SORT_DATE_TAKEN_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
