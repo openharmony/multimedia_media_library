@@ -1851,42 +1851,44 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
     MEDIA_INFO_LOG("move %{public}ld files cost %{public}ld.", (long)fileMoveCount, (long)(end - startMove));
 }
 
-static size_t QueryThumbPhotoSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
-{
-    CHECK_AND_RETURN_RET_LOG(mediaRdb != nullptr, 0, "rdbStore is nullptr");
-    const string sql = "SELECT SUM(" + PhotoExtColumn::THUMBNAIL_SIZE + ")" + " as " + MEDIA_DATA_DB_SIZE +
-                       " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE;
-    auto resultSet = mediaRdb->QuerySql(sql);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "resultSet is null!");
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, 0, "go to first row failed");
-    int64_t size = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE, resultSet, TYPE_INT64));
-    CHECK_AND_RETURN_RET_LOG(size >= 0, 0, "Invalid thumPhoto size from db: %{public}" PRId64, size);
-    resultSet->Close();
-    return static_cast<size_t>(size);
-}
-
 size_t CloneRestore::StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
 {
     CHECK_AND_RETURN_RET_LOG(mediaRdb != nullptr, 0, "rdbStore is nullptr");
-    // media asset size
-    size_t thumbPhotoSize = QueryThumbPhotoSize(mediaRdb);
-    MEDIA_INFO_LOG("thumb asset size is: %{public}zu", thumbPhotoSize);
-    string querySizeSql = "SELECT cast(" + std::to_string(thumbPhotoSize) +
-        " as bigint) as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE;
-    string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " + AudioColumn::QUERY_MEDIA_VOLUME +
-        " UNION " + querySizeSql;
+
+    string thumbSizeSql {};
+    thumbSizeSql = "SELECT SUM(CAST(" + PhotoExtColumn::THUMBNAIL_SIZE + " AS BIGINT)) AS " + MEDIA_DATA_DB_SIZE +
+                          ", -1 AS " + MediaColumn::MEDIA_TYPE +
+                          " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE;
+
+    string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION ALL " +
+                              AudioColumn::QUERY_MEDIA_VOLUME + " UNION ALL " +
+                              thumbSizeSql;
 
     auto resultSet = mediaRdb->QuerySql(mediaVolumeQuery);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "Failed to execute media volume query");
 
     int64_t totalVolume = 0;
+    MEDIA_INFO_LOG("Initial totalVolume: %{public}" PRId64, totalVolume);
+
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int64_t mediaSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
-        MEDIA_INFO_LOG("media asset size is: %{public}" PRId64, mediaSize);
+        int32_t mediatype = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+        MEDIA_INFO_LOG("mediatype is %{public}d, current media asset size is: %{public}" PRId64, mediatype, mediaSize);
+        if (mediaSize < 0) {
+            MEDIA_ERR_LOG("ill mediaSize: %{public}" PRId64 " for mediatype: %{public}d", mediaSize, mediatype);
+        }
+
         totalVolume += mediaSize;
+        MEDIA_INFO_LOG("current totalVolume: %{public}" PRId64, totalVolume);
     }
-    MEDIA_INFO_LOG("db media asset size is: %{public}" PRId64, totalVolume);
     resultSet->Close();
+    MEDIA_INFO_LOG("media db media asset size is: %{public}" PRId64, totalVolume);
+
+    if (totalVolume < 0) {
+        MEDIA_ERR_LOG("totalVolume is negative: %{public}" PRId64 ". Returning 0.", totalVolume);
+        return 0;
+    }
+
     size_t totalAssetSize = static_cast<size_t>(totalVolume);
     // other meta data dir size
     size_t editDataTotalSize {0};
