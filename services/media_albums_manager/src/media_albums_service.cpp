@@ -216,7 +216,28 @@ int32_t MediaAlbumsService::SetUserAlbumCoverUri(const ChangeRequestSetCoverUriD
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, dto.albumId);
     values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, dto.coverUri);
-    return MediaLibraryAlbumOperations::UpdatePhotoAlbum(values, predicates);
+    values.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, dto.albumSubtype);
+    return MediaLibraryAlbumOperations::UpdateAlbumCoverUri(values, predicates, false);
+}
+
+int32_t MediaAlbumsService::SetSourceAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto)
+{
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, dto.albumId);
+    values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, dto.coverUri);
+    values.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, dto.albumSubtype);
+    return MediaLibraryAlbumOperations::UpdateAlbumCoverUri(values, predicates, false);
+}
+
+int32_t MediaAlbumsService::SetSystemAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto)
+{
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, dto.albumId);
+    values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, dto.coverUri);
+    values.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, dto.albumSubtype);
+    return MediaLibraryAlbumOperations::UpdateAlbumCoverUri(values, predicates, true);
 }
 
 int32_t MediaAlbumsService::ChangeRequestSetCoverUri(const ChangeRequestSetCoverUriDto& dto)
@@ -259,6 +280,15 @@ int32_t MediaAlbumsService::ChangeRequestDismiss(int32_t albumId)
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
     return MediaLibraryAnalysisAlbumOperations::DismissGroupPhotoAlbum(values, predicates);
+}
+
+int32_t MediaAlbumsService::ChangeRequestResetCoverUri(int32_t albumId, PhotoAlbumSubType albumSubType)
+{
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    values.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, albumSubType);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    return MediaLibraryAlbumOperations::ResetCoverUri(values, predicates);
 }
 
 int32_t MediaAlbumsService::AlbumCommitModify(const AlbumCommitModifyDto& commitModifyDto, int32_t businessCode)

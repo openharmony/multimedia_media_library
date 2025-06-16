@@ -86,7 +86,7 @@ std::string MediaLibraryDataManagerUtils::GetTypeUriByUri(std::string &uri)
     return typeUri;
 }
 
-std::string MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(std::string &uri)
+std::string MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(const std::string &uri)
 {
     auto startIndex = uri.find(PhotoColumn::PHOTO_URI_PREFIX);
     if (startIndex == std::string::npos) {

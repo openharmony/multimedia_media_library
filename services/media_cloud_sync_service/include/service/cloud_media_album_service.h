@@ -50,6 +50,8 @@ public:
     int32_t OnCompletePull();
     int32_t OnCompletePush();
     int32_t OnCompleteCheck();
+    void CheckAlbumManualCover();
+    bool GetCoverUriFromCoverCloudId(std::string &coverCloudId, std::string &coverUri);
 
 private:
     int32_t OnDeleteAlbums(std::vector<std::string> &failedAlbumIds);

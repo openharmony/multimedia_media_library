@@ -139,6 +139,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAlbumsControllerService::ChangeRequestDismiss
     },
     {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_RESET_COVER_URI),
+        &MediaAlbumsControllerService::ChangeRequestResetCoverUri
+    },
+    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_ADD_ASSETS),
         &MediaAlbumsControllerService::AddAssets
     },
@@ -518,6 +522,32 @@ void MediaAlbumsControllerService::ChangeRequestDismiss(MessageParcel &data, Mes
     }
 
     ret = MediaAlbumsService::GetInstance().ChangeRequestDismiss(albumId);
+    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+void MediaAlbumsControllerService::ChangeRequestResetCoverUri(MessageParcel &data, MessageParcel &reply)
+{
+    ChangeRequesDismissReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+        MEDIA_ERR_LOG("ChangeRequestResetCoverUri Read Request Error");
+        return;
+    }
+    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
+    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
+    int32_t albumId = atoi(reqBody.albumId.c_str());
+    bool cond = PhotoAlbum::IsUserPhotoAlbum(albumType, albumSubtype) ||
+        (PhotoAlbum::IsSystemAlbum(albumType) && !PhotoAlbum::IsHiddenAlbum(albumType, albumSubtype)) ||
+        PhotoAlbum::IsSourceAlbum(albumType, albumSubtype);
+    cond = cond && !reqBody.albumId.empty() && MediaLibraryDataManagerUtils::IsNumber(reqBody.albumId);
+    if (!cond) {
+        MEDIA_ERR_LOG("params is invalid");
+        IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+        return;
+    }
+
+    ret = MediaAlbumsService::GetInstance().ChangeRequestResetCoverUri(albumId, albumSubtype);
     IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 

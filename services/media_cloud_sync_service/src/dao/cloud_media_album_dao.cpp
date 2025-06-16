@@ -48,6 +48,7 @@
 #include "cloud_media_dao_const.h"
 #include "media_gallery_sync_notify.h"
 #include "accurate_common_data.h"
+#include "media_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -288,6 +289,21 @@ int32_t CloudMediaAlbumDao::UpdateCloudAlbumInner(PhotoAlbumDto &record, const s
     values.PutString(PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE, record.localLanguage);
     values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     values.PutString(PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId);
+    if (record.coverUriSource == CoverUriSource::MANUAL_CLOUD_COVER &&
+        IsNeedPullCoverByDateModified(record.lPath, record.coverCloudId)) {
+        MEDIA_DEBUG_LOG("IsNeedPullCover:lPath:%{public}s, coverCloudId:%{public}s",
+            record.lPath.c_str(), record.coverCloudId.c_str());
+        string coverUri;
+        if (IsCoverIdExist(record.coverCloudId) && GetCoverUriFromCoverCloudId(record.coverCloudId, coverUri)) {
+            values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, record.coverUriSource);
+            values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, record.coverCloudId);
+            values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
+            MEDIA_DEBUG_LOG("IsCoverIdExist:coverUri:%{public}s", coverUri.c_str());
+        } else {
+            MEDIA_DEBUG_LOG("cloud cover need pull");
+            values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::MANUAL_WAIT_PULL_COVER);
+        }
+    }
     values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, record.coverUriSource);
     ret = albumRefreshHandle->Update(changedRows, PhotoAlbumColumns::TABLE, values, field + " = ?", {value});
     CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_RDB,
@@ -587,6 +603,22 @@ int32_t CloudMediaAlbumDao::InsertAlbums(PhotoAlbumDto &record,
     values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     values.PutString(PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId);
     values.PutInt(PhotoAlbumColumns::ALBUM_IS_LOCAL, ALBUM_FROM_CLOUD);
+    if (record.coverUriSource == CoverUriSource::MANUAL_CLOUD_COVER &&
+        IsNeedPullCoverByDateModified(record.lPath, record.coverCloudId)) {
+        MEDIA_DEBUG_LOG("IsNeedPullCover:lPath:%{public}s, coverCloudId:%{public}s",
+            record.lPath.c_str(), record.coverCloudId.c_str());
+        string coverUri;
+        if (IsCoverIdExist(record.coverCloudId) && GetCoverUriFromCoverCloudId(record.coverCloudId, coverUri)) {
+            values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, record.coverUriSource);
+            values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, record.coverCloudId);
+            values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
+            MEDIA_DEBUG_LOG("IsCoverIdExist:coverUri:%{public}s", coverUri.c_str());
+        } else {
+            MEDIA_DEBUG_LOG("cloud cover need pull");
+            values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::MANUAL_WAIT_PULL_COVER);
+            values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, record.coverCloudId);
+        }
+    }
     /* update if a album with the same name exists? */
     int64_t rowId;
     ret = albumRefreshHandle->Insert(rowId, PhotoAlbumColumns::TABLE, values);
@@ -1027,5 +1059,106 @@ std::unordered_map<std::string, std::string> CloudMediaAlbumDao::GetLocalAlbumMa
     }
     resultSet->Close();
     return localAlbumMap;
+}
+
+bool CloudMediaAlbumDao::IsCoverIdExist(std::string &coverCloudId)
+{
+    auto index = coverCloudId.find(',');
+    if (index == string::npos) {
+        MEDIA_ERR_LOG("IsCoverIdExist can not find split, coverCloudId:%{public}s",
+            coverCloudId.c_str());
+        return false;
+    }
+    string cloudId = coverCloudId.substr(index + 1);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Query fileId Failed to get rdbStore.");
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
+    std::vector<std::string> queryColumns = { MediaColumn::MEDIA_ID };
+    auto resultSet = rdbStore->Query(predicates, queryColumns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "QueryCoverId get nullptr created result.");
+    int32_t fileId = 0;
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
+    }
+    return fileId > 0;
+}
+
+static int64_t GetDateModified(string &coverCloudId)
+{
+    int64_t dateModified = 0;
+    auto index = coverCloudId.find(',');
+    if (index == string::npos) {
+        MEDIA_ERR_LOG("GetDateModified err coverCloudId:%{public}s", coverCloudId.c_str());
+        return dateModified;
+    }
+    auto dateModifiedStr = coverCloudId.substr(0, index);
+    if (dateModifiedStr.empty()) {
+        MEDIA_ERR_LOG("GetDateModified err coverCloudId:%{public}s", coverCloudId.c_str());
+    }
+    dateModified = static_cast<int64_t>(atoll(dateModifiedStr.c_str()));
+    return dateModified;
+}
+
+bool CloudMediaAlbumDao::IsNeedPullCoverByDateModified(string &lPath, string &coverCloudId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "QueryCoverCloudId Failed to get rdbStore.");
+    NativeRdb::RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_LPATH, lPath);
+    std::vector<std::string> queryColumns = { PhotoAlbumColumns::COVER_CLOUD_ID };
+    auto resultSet = rdbStore->Query(predicates, queryColumns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "QueryCoverCloudId get nullptr created result.");
+    string coverCloudIdLocal;
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        coverCloudIdLocal = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::COVER_CLOUD_ID,
+            resultSet, TYPE_STRING));
+    }
+
+    int64_t dateModifiedCloud = GetDateModified(coverCloudId);
+    int64_t dateModifiedLocal = GetDateModified(coverCloudIdLocal);
+
+    MEDIA_INFO_LOG("IsNeedPullCoverByDateModified:lPath:%{public}s,Cloud:%{public}lld,Local:%{public}lld",
+        lPath.c_str(), static_cast<long long>(dateModifiedCloud), static_cast<long long>(dateModifiedLocal));
+    return dateModifiedCloud > dateModifiedLocal;
+}
+
+static inline string GetCover(const shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    string coverUri;
+    int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_ID, resultSet, TYPE_INT32));
+    if (fileId <= 0) {
+        return coverUri;
+    }
+
+    string extrUri = MediaFileUtils::GetExtraUri(
+        get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_NAME, resultSet, TYPE_STRING)),
+        get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING)));
+    return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId), extrUri);
+}
+
+bool CloudMediaAlbumDao::GetCoverUriFromCoverCloudId(string &coverCloudId, string &coverUri)
+{
+    auto index = coverCloudId.find(',');
+    if (index == string::npos) {
+        MEDIA_ERR_LOG("GetCoverUriFromCoverCloudId can not find split, coverCloudId:%{public}s",
+            coverCloudId.c_str());
+        return false;
+    }
+    string cloudId = coverCloudId.substr(index + 1);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "GetCoverUriFromCoverCloudId Failed to get rdbStore.");
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
+
+    vector<string> queryColumns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME };
+    auto resultSet = rdbStore->Query(predicates, queryColumns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultset is null");
+
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        coverUri = GetCover(resultSet);
+    }
+    resultSet->Close();
+    return coverUri != "";
 }
 }  // namespace OHOS::Media::CloudSync

@@ -130,9 +130,17 @@ private:
     }
     void SetCoverUriSource(std::variant<int32_t, int64_t, double, std::string> &val)
     {
-        bool errConn = !std::holds_alternative<int32_t>(val);
-        CHECK_AND_RETURN(!errConn);
+        bool conn = std::holds_alternative<int32_t>(val);
+        CHECK_AND_RETURN(conn);
         this->objPo_.coverUriSource = std::get<int32_t>(val);
+        MEDIA_DEBUG_LOG("SetCoverUriSource, %{public}d", this->objPo_.coverUriSource.value_or(0));
+    }
+    void SetCoverCloudId(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool conn = std::holds_alternative<std::string>(val);
+        CHECK_AND_RETURN(conn);
+        this->objPo_.coverCloudId = std::get<std::string>(val);
+        MEDIA_DEBUG_LOG("SetCoverCloudId, %{public}s", this->objPo_.coverCloudId.value_or("").c_str());
     }
 
     using Handle = void (PhotoAlbumPoWriter::*)(std::variant<int32_t, int64_t, double, std::string> &);

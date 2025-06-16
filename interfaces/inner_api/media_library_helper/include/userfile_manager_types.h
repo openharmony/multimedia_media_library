@@ -243,7 +243,9 @@ enum class WatermarkType : int32_t {
 
 enum CoverUriSource : int32_t {
     DEFAULT_COVER = 0,
-    MANUAL_COVER = 1
+    MANUAL_CLOUD_COVER = 1,
+    MANUAL_LOCAL_COVER = 2,
+    MANUAL_WAIT_PULL_COVER = 3,
 };
 } // namespace Media
 } // namespace OHOS

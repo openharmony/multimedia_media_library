@@ -487,6 +487,47 @@ int32_t MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(int32_t id, const Va
     return E_OK;
 }
 
+bool MediaLibraryAlbumOperations::IsCoverInSystemAlbum(RdbPredicates &predicates, int32_t albumSubtype)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore when query");
+    vector<string> columns = {PhotoColumn::MEDIA_IS_FAV, PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_DATE_TRASHED,
+        PhotoColumn::PHOTO_STRONG_ASSOCIATION};
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "failed to acquire result from visitor query.");
+    bool ret = false;
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        switch (albumSubtype) {
+            case PhotoAlbumSubType::FAVORITE:
+                ret = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_IS_FAV,
+                    resultSet, TYPE_INT32)) == 1;
+                break;
+            case PhotoAlbumSubType::VIDEO:
+                ret = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_TYPE,
+                    resultSet, TYPE_INT32)) == MediaType::MEDIA_TYPE_VIDEO;
+                break;
+            case PhotoAlbumSubType::IMAGE:
+                ret = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_TYPE,
+                    resultSet, TYPE_INT32)) == MediaType::MEDIA_TYPE_IMAGE;
+                break;
+            case PhotoAlbumSubType::TRASH:
+                ret = get<int64_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_DATE_TRASHED,
+                    resultSet, TYPE_INT64)) == 0;
+                break;
+            case PhotoAlbumSubType::CLOUD_ENHANCEMENT:
+                ret = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
+                    resultSet, TYPE_INT32)) == static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT);
+                break;
+            default:
+                MEDIA_ERR_LOG("albumSubtype is invalid: %{public}d", albumSubtype);
+                break;
+        }
+    } else {
+        MEDIA_ERR_LOG("resultSet GoToNextRow failed, albumSubtype: %{public}d", albumSubtype);
+    }
+    return ret;
+}
+
 bool MediaLibraryAlbumOperations::IsCoverInAlbum(const string &fileId, int32_t albumSubtype, int32_t albumId)
 {
     // determine if the cover belongs to the album
@@ -497,39 +538,7 @@ bool MediaLibraryAlbumOperations::IsCoverInAlbum(const string &fileId, int32_t a
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
 
     if (albumSubtype != -1) { // system album
-        vector<string> columns = {PhotoColumn::MEDIA_IS_FAV, PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_DATE_TRASHED,
-            PhotoColumn::PHOTO_STRONG_ASSOCIATION};
-        auto resultSet = rdbStore->Query(predicates, columns);
-        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "failed to acquire result from visitor query.");
-        bool ret = false;
-        if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            switch (albumSubtype) {
-                case PhotoAlbumSubType::FAVORITE:
-                    ret = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_IS_FAV,
-                        resultSet, TYPE_INT32)) == 1;
-                    break;
-                case PhotoAlbumSubType::VIDEO:
-                    ret = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_TYPE,
-                        resultSet, TYPE_INT32)) == MediaType::MEDIA_TYPE_VIDEO;
-                    break;
-                case PhotoAlbumSubType::IMAGE:
-                    ret = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_TYPE,
-                        resultSet, TYPE_INT32)) == MediaType::MEDIA_TYPE_IMAGE;
-                    break;
-                case PhotoAlbumSubType::TRASH:
-                    ret = get<int64_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_DATE_TRASHED,
-                        resultSet, TYPE_INT64)) == 0;
-                    break;
-                case PhotoAlbumSubType::CLOUD_ENHANCEMENT:
-                    ret = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
-                        resultSet, TYPE_INT32)) == static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT);
-                    break;
-                default:
-                    MEDIA_ERR_LOG("albumSubtype is invalid: %{public}d", albumSubtype);
-                    break;
-            }
-        }
-        return ret;
+        return IsCoverInSystemAlbum(predicates, albumSubtype);
     }
     // user album or source album
     vector<string> columns = {PhotoColumn::PHOTO_OWNER_ALBUM_ID};
@@ -1260,7 +1269,7 @@ int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbum(const ValuesBucket &values
             albumRefresh.Notify();
             const int32_t notIdArgs = 3;
             auto ret = NotifyAlbumUpdate(rdbPredicates, notIdArgs);
-            CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Notify album update failed");
+            CHECK_AND_PRINT_LOG(ret == E_OK, "Notify album update failed, ret:%{public}d", ret);
         }
     } else {
         changedRows = (IsAlbumExist(albumId) ? 1 : 0);
@@ -1275,18 +1284,54 @@ int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbum(const ValuesBucket &values
     return changedRows;
 }
 
-int32_t UpdateCoverUriExecute(int32_t albumId, const string &coverUri, const string &fileId)
+bool MediaLibraryAlbumOperations::IsManunalCloudCover(const string &fileId, string &coverCloudId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore when query");
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+
+    vector<string> columns = {PhotoColumn::PHOTO_CLOUD_ID};
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "failed to acquire result from visitor query.");
+    bool ret = false;
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        coverCloudId = get<std::string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_CLOUD_ID,
+            resultSet, TYPE_STRING));
+        ret = coverCloudId != "";
+    } else {
+        MEDIA_ERR_LOG("resultSet GoToNextRow failed, fileId:%{public}s, coverCloudId:%{public}s",
+            fileId.c_str(), coverCloudId.c_str());
+    }
+    resultSet->Close();
+    return ret;
+}
+
+int32_t MediaLibraryAlbumOperations::UpdateCoverUriExecute(int32_t albumId,
+    const string &coverUri, const string &fileId)
 {
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     ValuesBucket values;
     values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
-    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
-    values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::MANUAL_COVER);
+    auto dateModified = MediaFileUtils::UTCTimeMilliSeconds();
+    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, dateModified);
+    string cloudId;
+    bool isManunalCloudCover = IsManunalCloudCover(fileId, cloudId);
+    MEDIA_INFO_LOG("albumId:%{public}d, coverUri:%{public}s, isManunalCloudCover:%{public}d",
+        albumId, coverUri.c_str(), isManunalCloudCover);
+    if (isManunalCloudCover) {
+        values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::MANUAL_CLOUD_COVER);
+        values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, to_string(dateModified) + "," + cloudId);
+        values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
+    } else {
+        values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::MANUAL_LOCAL_COVER);
+        values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, to_string(dateModified) + ",");
+    }
 
     string CHECK_COVER_VALID =
         PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId) + " AND EXISTS (SELECT 1 FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + fileId + " AND " +
-        MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " + MediaColumn::MEDIA_HIDDEN + " = 0 AND " +
+        MediaColumn::MEDIA_DATE_TRASHED + " >= 0 AND " + MediaColumn::MEDIA_HIDDEN + " = 0 AND " +
         MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " + PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
         PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) +
         " AND " + PhotoColumn::PHOTO_SYNC_STATUS + " = 0 AND " + PhotoColumn::PHOTO_CLEAN_FLAG + " = 0)";
@@ -1298,8 +1343,8 @@ int32_t UpdateCoverUriExecute(int32_t albumId, const string &coverUri, const str
     return changedRows;
 }
 
-int32_t UpdateAlbumCoverUri(const ValuesBucket &values, const DataSharePredicates &predicates,
-    bool isSystemAlbum)
+int32_t MediaLibraryAlbumOperations::UpdateAlbumCoverUri(const ValuesBucket &values,
+    const DataSharePredicates &predicates, bool isSystemAlbum)
 {
     // 1.get album id
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
@@ -1320,8 +1365,6 @@ int32_t UpdateAlbumCoverUri(const ValuesBucket &values, const DataSharePredicate
         CHECK_AND_RETURN_RET_LOG((ret == E_OK), ret, "GetIntVal error");
     }
     string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(coverUri);
-    CHECK_AND_RETURN_RET_LOG(MediaLibraryAlbumOperations::IsCoverInAlbum(fileId, albumSubtype, albumId),
-        E_ERR, "The set cover does not belongs to the corresponding album");
 
     // 3.update cover uri
     auto updateRows = UpdateCoverUriExecute(albumId, coverUri, fileId);
@@ -1335,7 +1378,7 @@ int32_t UpdateAlbumCoverUri(const ValuesBucket &values, const DataSharePredicate
     return updateRows;
 }
 
-int32_t ResetCoverUri(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAlbumOperations::ResetCoverUri(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
     CHECK_AND_RETURN_RET_LOG(!rdbPredicates.GetWhereArgs().empty(), E_INVALID_ARGS,

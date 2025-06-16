@@ -51,6 +51,7 @@ const string PhotoAlbumColumns::ALBUM_PRIORITY = "priority";
 const string PhotoAlbumColumns::ALBUM_LPATH = "lpath";
 const string PhotoAlbumColumns::ALBUM_CHECK_FLAG = "check_flag";
 const string PhotoAlbumColumns::COVER_URI_SOURCE = "cover_uri_source";
+const string PhotoAlbumColumns::COVER_CLOUD_ID = "cover_cloud_id";
 
 // For api9 compatibility
 const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
