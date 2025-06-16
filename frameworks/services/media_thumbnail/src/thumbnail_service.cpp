@@ -173,7 +173,7 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
     }
     ThumbnailData data;
     int fd = ThumbnailGenerateHelper::GetThumbnailPixelMap(data, opts, thumbType);
-    CHECK_AND_PRINT_LOG(fd < 0, "GetThumbnailPixelMap failed : %{public}d", fd);
+    CHECK_AND_PRINT_LOG(fd >= 0, "GetThumbnailPixelMap failed : %{public}d", fd);
     int32_t err = ThumbnailGenerationPostProcess::PostProcess(data, opts);
     CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed! err %{public}d", err);
     return fd;
