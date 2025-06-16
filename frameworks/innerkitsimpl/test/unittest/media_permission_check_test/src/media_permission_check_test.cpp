@@ -65,12 +65,14 @@ bool MockIsCalledBySelf()
 
 pid_t mockGetCallingUid()
 {
-    return 123456;
+    const pid_t DEFAULT_UID = 123456;
+    return DEFAULT_UID;
 }
 
 pid_t mockGetCallingUidShell()
 {
-    return 2000;
+    const pid_t SHELL_UID = 2000;
+    return SHELL_UID;
 }
 
 void MediaPermissionCheckTest::SetUp(void)
