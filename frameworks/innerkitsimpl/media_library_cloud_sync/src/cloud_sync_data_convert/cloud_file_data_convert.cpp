@@ -598,7 +598,7 @@ int32_t CloudFileDataConvert::HandleAttachments(
     /* thumb */
     std::string path = upLoadRecord.data;
     ret = HandleThumbnail(recordData, path, orientation);
-
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleThumbnail failed. ret: %{public}d.", ret);
     /* lcd */
     ret = HandleLcd(recordData, path, orientation);
     return ret;
@@ -652,7 +652,8 @@ int32_t CloudFileDataConvert::HandleCompatibleFileds(
 
     /* cloud sdk extra feature */
     if (type_ != CloudOperationType::FILE_METADATA_MODIFY) {
-        HandleAttachments(data, upLoadRecord);
+        ret = HandleAttachments(data, upLoadRecord);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleAttachments failed, ret: %{public}d.", ret);
     }
 
     /* cloudsync-specific fields */
