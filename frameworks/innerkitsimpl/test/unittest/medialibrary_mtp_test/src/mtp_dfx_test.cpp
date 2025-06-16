@@ -39,7 +39,8 @@ namespace Media {
 const uint32_t MTP_PHOTO_COUNT = 20;
 const int32_t RESPONSE_CODE = -200;
 const int32_t OPERATION_READ_MODE = 1;
-const int32_t MTP_MODE = 2;
+const int32_t MTP_MODE = 1;
+const int32_t PTP_MODE = 2;
 void MtpDfxTest::SetUpTestCase(void) {}
 void MtpDfxTest::TearDownTestCase(void) {}
 void MtpDfxTest::SetUp() {}
@@ -97,7 +98,7 @@ HWTEST_F(MtpDfxTest, mtp_dfx_test_002, TestSize.Level1)
 HWTEST_F(MtpDfxTest, mtp_dfx_test_003, TestSize.Level1)
 {
     MtpDfxReporter::GetInstance().Init();
-    int32_t mtpMode = MTP_MODE;
+    int32_t mtpMode = PTP_MODE;
     FileCountInfo fileCountInfo;
     fileCountInfo.burstCount = MTP_PHOTO_COUNT;
     fileCountInfo.livePhotoCount = MTP_PHOTO_COUNT;
@@ -117,6 +118,8 @@ HWTEST_F(MtpDfxTest, mtp_dfx_test_003, TestSize.Level1)
     MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_SET_OBJECT_PROP_VALUE_CODE, RESPONSE_CODE);
     MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_MOVE_OBJECT_CODE, RESPONSE_CODE);
     MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_COPY_OBJECT_CODE, RESPONSE_CODE);
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_GET_OBJECT_CODE, MTP_OK_CODE);
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_GET_PARTIAL_OBJECT_CODE, MTP_OK_CODE);
     MtpDfxReporter::GetInstance().NotifyDoDfXReporter(mtpMode);
 }
 
@@ -143,7 +146,7 @@ HWTEST_F(MtpDfxTest, mtp_dfx_test_004, TestSize.Level1)
     mtpOperation.mtpDriver_->usbfnMtpInterface = usbfnMtpInterface;
     errorCode = MTP_ERROR_INVALID_OBJECTHANDLE;
     mtpOperation.SendMakeResponsePacket(errorCode);
-    int32_t mtpMode = MTP_MODE;
+    int32_t mtpMode = PTP_MODE;
     MtpDfxReporter::GetInstance().NotifyDoDfXReporter(mtpMode);
 }
 
@@ -172,6 +175,42 @@ HWTEST_F(MtpDfxTest, mtp_dfx_test_005, TestSize.Level1)
     mediaSyncObserver->context_->mtpDriver->usbfnMtpInterface = usbfnMtpInterface;
     mediaSyncObserver->SendEventPackets(MTP_EVENT_OBJECT_ADDED_CODE, MTP_OPERATION_MOVE_OBJECT_CODE);
     mediaSyncObserver->SendEventPacketAlbum(MTP_EVENT_OBJECT_ADDED_CODE, MTP_OPERATION_MOVE_OBJECT_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: NotifyDoDfXReporter
+ */
+HWTEST_F(MtpDfxTest, mtp_dfx_test_006, TestSize.Level1)
+{
+    MtpDfxReporter::GetInstance().Init();
+    int32_t mtpMode = MTP_MODE;
+    FileCountInfo fileCountInfo;
+    fileCountInfo.burstCount = MTP_PHOTO_COUNT;
+    fileCountInfo.livePhotoCount = MTP_PHOTO_COUNT;
+    fileCountInfo.burstCount = MTP_PHOTO_COUNT;
+    fileCountInfo.burstTotalCount = MTP_PHOTO_COUNT;
+    fileCountInfo.onlyInCloudPhotoCount = MTP_PHOTO_COUNT;
+    fileCountInfo.normalCount = MTP_PHOTO_COUNT;
+    fileCountInfo.pictureCount = MTP_PHOTO_COUNT;
+    fileCountInfo.videoCount = MTP_PHOTO_COUNT;
+    fileCountInfo.albumName = "这是个测试相册";
+    MtpDfxReporter::GetInstance().DoFileCountInfoStatistics(fileCountInfo);
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_GET_OBJECT_HANDLES_CODE, MTP_OK_CODE);
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_GET_OBJECT_HANDLES_CODE, RESPONSE_CODE);
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_GET_OBJECT_CODE, RESPONSE_CODE);
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_GET_PARTIAL_OBJECT_CODE, RESPONSE_CODE);
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_SEND_OBJECT_CODE, RESPONSE_CODE);
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_SET_OBJECT_PROP_VALUE_CODE, RESPONSE_CODE);
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_MOVE_OBJECT_CODE, RESPONSE_CODE);
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_COPY_OBJECT_CODE, RESPONSE_CODE);
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_GET_OBJECT_CODE, MTP_OK_CODE);
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(MTP_OPERATION_GET_PARTIAL_OBJECT_CODE, MTP_OK_CODE);
+    MtpDfxReporter::GetInstance().NotifyDoDfXReporter(mtpMode);
 }
 } // namespace Media
 } // namespace OHOS
