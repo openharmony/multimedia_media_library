@@ -3077,7 +3077,7 @@ void AddAestheicsScoreFileds(RdbStore &store)
         "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_BLACK_WHITE_STRIPE + " BOOLEAN ",
         "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_BLURRY + " BOOLEAN ",
         "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_MOSAIC + " BOOLEAN ",
-        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + AESTHETICS_SCORE_ALL + " INT ",
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + AESTHETICS_SCORE_ALL_STATUS + " INT ",
     };
     MEDIA_INFO_LOG("start add aestheics score fields");
     ExecSqls(sqls, store);
@@ -4615,7 +4615,7 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_EDITDATA_SIZE_COLUMN) {
         AddEditDataSizeColumn(store);
     }
-    
+
     if (oldVersion < VERSION_ADD_AESTHETICS_SCORE_FIELDS) {
         AddAestheicsScoreFileds(store);
     }
