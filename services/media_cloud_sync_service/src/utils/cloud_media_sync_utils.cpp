@@ -163,30 +163,28 @@ void CloudMediaSyncUtils::RemoveMetaDataPath(const std::string &path, const std:
 
 static std::string GetVideoCachePath(const std::string &filePath)
 {
-    std::string result = "";
     const std::string sandboxPrefix = "/storage/cloud";
     const std::string cachePathPrefix = "/data/service/el2/hmdfs/cache/cloud_cache/pread_cache";
-    size_t pos = filePath.find(sandboxPrefix);
-    if (pos != 0 || pos == std::string::npos) {
+    if (filePath.find(sandboxPrefix) != 0) {
         MEDIA_ERR_LOG(
-            "GetVideoCachePath Invalid filePath, path: %{public}s", MediaFileUtils::DesensitizePath(filePath).c_str());
-        return result;
+            "GetVideoCachePath Invalid filePath, path: %{public}s",
+            MediaFileUtils::DesensitizePath(filePath).c_str());
+        return "";
     }
     std::string cachePath = cachePathPrefix + filePath.substr(sandboxPrefix.length());
-    auto resolvedPath = realpath(cachePath.c_str(), nullptr);
-    if (resolvedPath == nullptr) {
+    char resolvedPath[PATH_MAX] = {'\0'};
+    if (realpath(cachePath.c_str(), resolvedPath) == nullptr) {
         if (errno != ENOENT) {
             MEDIA_ERR_LOG("GetVideoCachePath realpath failed, path: %{public}s",
                 MediaFileUtils::DesensitizePath(filePath).c_str());
         }
-        return result;
+        return "";
     }
     if (strncmp(resolvedPath, cachePath.c_str(), cachePath.size()) != 0) {
         MEDIA_ERR_LOG("GetVideoCachePath Invalid videoCachePath, path: %{public}s",
             MediaFileUtils::DesensitizePath(cachePath).c_str());
-        return result;
+        return "";
     }
-    free(resolvedPath);
     return cachePath;
 }
 
