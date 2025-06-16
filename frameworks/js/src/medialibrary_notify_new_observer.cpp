@@ -62,7 +62,10 @@ void MediaOnNotifyNewObserver::OnChange(const ChangeInfo &changeInfo)
     CHECK_AND_RETURN_LOG(callbackWrapper.mediaChangeInfo_ != nullptr, "invalid mediaChangeInfo");
     Notification::NotifyUriType infoUriType = callbackWrapper.mediaChangeInfo_->notifyUri;
     if (clientObservers_.find(infoUriType) == clientObservers_.end()) {
-        NAPI_ERR_LOG("invalid infoUriType");
+        NAPI_ERR_LOG("invalid mediaChangeInfo_->notifyUri: %{public}d", static_cast<int32_t>(infoUriType));
+        for (const auto& pair : clientObservers_) {
+            NAPI_ERR_LOG("invalid clientObservers_ infoUriType: %{public}d", static_cast<int32_t>(pair.first));
+        }
         return;
     }
     callbackWrapper.env_ = env_;

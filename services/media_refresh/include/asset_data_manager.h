@@ -39,7 +39,7 @@ public:
     virtual ~AssetDataManager()
     {}
     int32_t UpdateModifiedDatas() override;
-    int32_t UpdateCommonModifiedDatas(const std::vector<int32_t> &keys) override;
+    int32_t PostProcessModifiedDatas(const std::vector<int32_t> &keys) override;
     std::vector<int32_t> GetInitKeys() override;
     int32_t SetContentChanged(int32_t fileId, bool isChanged);
     int32_t SetThumbnailStatus(int32_t fileId, int32_t status);

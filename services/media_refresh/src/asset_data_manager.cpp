@@ -32,7 +32,7 @@ int32_t AssetDataManager::UpdateModifiedDatas()
     return ACCURATE_REFRESH_RET_OK;
 }
 
-int32_t AssetDataManager::UpdateCommonModifiedDatas(const std::vector<int32_t> &keys)
+int32_t AssetDataManager::PostProcessModifiedDatas(const std::vector<int32_t> &keys)
 {
     ACCURATE_DEBUG("keys size: %{public}zu", keys.size());
     for (auto key : keys) {
@@ -43,6 +43,8 @@ int32_t AssetDataManager::UpdateCommonModifiedDatas(const std::vector<int32_t> &
         }
         PhotoAssetChangeData &assetChangeData = iter->second;
         assetChangeData.thumbnailChangeStatus_ = UpdateThumbnailChangeStatus(assetChangeData);
+        assetChangeData.isContentChanged_ =
+            assetChangeData.thumbnailChangeStatus_ == ThumbnailChangeStatus::THUMBNAIL_UPDATE;
     }
     return ACCURATE_REFRESH_RET_OK;
 }
@@ -50,15 +52,18 @@ int32_t AssetDataManager::UpdateCommonModifiedDatas(const std::vector<int32_t> &
 int32_t AssetDataManager::UpdateThumbnailChangeStatus(PhotoAssetChangeData &assetChangeData)
 {
     int32_t visibleAfter = assetChangeData.infoAfterChange_.thumbnailVisible_;
+    int32_t visibleBefore = assetChangeData.infoBeforeChange_.thumbnailVisible_;
+    int64_t readyBefore = assetChangeData.infoBeforeChange_.thumbnailReady_;
+    int64_t readyAfter = assetChangeData.infoAfterChange_.thumbnailReady_;
+    MEDIA_DEBUG_LOG("UpdateThumbnailChangeStatus visibleBefore: %{public}d, visibleAfter: %{public}d, "
+        "readyBefore: %{public}" PRId64 ", readyAfter: %{public}" PRId64,
+        visibleBefore, visibleAfter, readyBefore, readyAfter);
     if (visibleAfter == 0) {
         return ThumbnailChangeStatus::THUMBNAIL_NOT_EXISTS;
     }
-    int32_t visibleBefore = assetChangeData.infoBeforeChange_.thumbnailVisible_;
     if (visibleBefore != visibleAfter) {
         return ThumbnailChangeStatus::THUMBNAIL_ADD;
     }
-    int64_t readyBefore = assetChangeData.infoBeforeChange_.thumbnailReady_;
-    int64_t readyAfter = assetChangeData.infoAfterChange_.thumbnailReady_;
     if (readyBefore == readyAfter) {
         return ThumbnailChangeStatus::THUMBNAIL_NOT_CHANGE;
     } else {
