@@ -35,12 +35,12 @@ MediaLibraryNotifyNew::~MediaLibraryNotifyNew() {}
 
 void MediaLibraryNotifyNew::NotifyInner(NotifyInfoInner notifyInfoInner)
 {
-    MEDIA_ERR_LOG("NotifyInner");
+    MEDIA_INFO_LOG("NotifyInner");
 }
 
 void MediaLibraryNotifyNew::UpdateItem(NotifyInfoInner notifyInfoInner)
 {
-    MEDIA_ERR_LOG("UpdateItem");
+    MEDIA_INFO_LOG("UpdateItem");
 }
 
 void MediaLibraryNotifyNew::AddItem(NotifyInfoInner notifyInfoInner)
@@ -50,12 +50,12 @@ void MediaLibraryNotifyNew::AddItem(NotifyInfoInner notifyInfoInner)
     if (!worker->IsRunning()) {
         worker->StartWorker();
     }
-    MEDIA_ERR_LOG("AddItem");
+    MEDIA_INFO_LOG("AddItem");
 }
 
 void MediaLibraryNotifyNew::DeleteItem(NotifyInfoInner notifyInfoInner)
 {
-    MEDIA_ERR_LOG("DeleteItem");
+    MEDIA_INFO_LOG("DeleteItem");
 }
 } // Notification
 } // Media

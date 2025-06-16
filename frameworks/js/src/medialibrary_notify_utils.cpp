@@ -61,6 +61,15 @@ const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils
     { Notification::NotifyUriType::TRASH_ALBUM_URI, RegisterNotifyType::TRASHED_ALBUM_CHANGE },
 };
 
+const std::map<Notification::NotifyType, NotifyChangeType> MediaLibraryNotifyUtils::NOTIFY_CHANGE_TYPE_MAP = {
+    { Notification::NotifyType::NOTIFY_ASSET_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
+    { Notification::NotifyType::NOTIFY_ASSET_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
+    { Notification::NotifyType::NOTIFY_ASSET_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
+    { Notification::NotifyType::NOTIFY_ALBUM_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
+    { Notification::NotifyType::NOTIFY_ALBUM_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
+    { Notification::NotifyType::NOTIFY_ALBUM_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
+};
+
 int32_t MediaLibraryNotifyUtils::GetRegisterNotifyType(const string &type, Notification::NotifyUriType &uriType)
 {
     if (REGISTER_NOTIFY_TYPE_MAP.find(type) == REGISTER_NOTIFY_TYPE_MAP.end()) {
@@ -85,6 +94,15 @@ int32_t MediaLibraryNotifyUtils::GetNotifyTypeAndUri(const Notification::NotifyU
     }
     uri = REGISTER_URI_MAP.at(uriType);
     return E_OK;
+}
+
+int32_t MediaLibraryNotifyUtils::GetNotifyChangeType(const Notification::NotifyType &notifyType)
+{
+    if (NOTIFY_CHANGE_TYPE_MAP.find(notifyType) == NOTIFY_CHANGE_TYPE_MAP.end()) {
+        NAPI_ERR_LOG("notifyType is invalid");
+        return E_ERR;
+    }
+    return static_cast<int32_t>(NOTIFY_CHANGE_TYPE_MAP.at(notifyType));
 }
 
 napi_status MediaLibraryNotifyUtils::SetValueInt32(const napi_env& env, const char* name, const int32_t intValue,
@@ -298,7 +316,7 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfos(napi_env env,
     napi_create_object(env, &result);
     napi_status status = napi_ok;
 
-    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type", changeInfo->notifyType, result);
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type", GetNotifyChangeType(changeInfo->notifyType), result);
     if (status != napi_ok) {
         NAPI_ERR_LOG("set array named property error: type");
         return nullptr;
@@ -452,7 +470,7 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumAlbumChangeInfos(napi_env env,
     napi_create_object(env, &result);
     napi_status status = napi_ok;
 
-    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type", changeInfo->notifyType, result);
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type", GetNotifyChangeType(changeInfo->notifyType), result);
     if (status != napi_ok) {
         NAPI_ERR_LOG("set array named property error: type");
         return nullptr;

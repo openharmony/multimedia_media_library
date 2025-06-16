@@ -53,7 +53,7 @@ int32_t AlbumDataManager::UpdateModifiedDatas()
     return ACCURATE_REFRESH_RET_OK;
 }
 
-int32_t AlbumDataManager::UpdateCommonModifiedDatas(const std::vector<int32_t> &keys)
+int32_t AlbumDataManager::PostProcessModifiedDatas(const std::vector<int32_t> &keys)
 {
     return ACCURATE_REFRESH_RET_OK;
 }

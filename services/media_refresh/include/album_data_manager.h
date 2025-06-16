@@ -38,7 +38,7 @@ public:
     // 增删场景下初始化数据
     int32_t InitAlbumInfos(const std::vector<PhotoAlbumSubType> &systemTypes, const std::vector<int> &albumIds);
     int32_t UpdateModifiedDatas() override;
-    int32_t UpdateCommonModifiedDatas(const std::vector<int32_t> &keys) override;
+    int32_t PostProcessModifiedDatas(const std::vector<int32_t> &keys) override;
     std::map<int32_t, AlbumChangeInfo>  GetInitAlbumInfos();
     std::vector<int32_t> GetInitKeys() override;
 

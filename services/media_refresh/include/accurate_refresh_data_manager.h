@@ -39,8 +39,8 @@ public:
     int32_t Init(const std::vector<int32_t> &keys);
 
     virtual int32_t UpdateModifiedDatas() = 0;
-    virtual int32_t UpdateCommonModifiedDatas(const std::vector<int32_t> &keys) = 0;
     int32_t UpdateModifiedDatasInner(const std::vector<int32_t> &keys, RdbOperation operation);
+    virtual int32_t PostProcessModifiedDatas(const std::vector<int32_t> &keys) = 0;
     std::vector<ChangeData> GetChangeDatas();
     virtual std::vector<int32_t> GetInitKeys() = 0;
     void SetTransaction(std::shared_ptr<TransactionOperations> trans);

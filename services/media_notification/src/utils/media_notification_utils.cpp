@@ -126,10 +126,6 @@ bool NotificationUtils::WriteToChangeInfo(const std::shared_ptr<MediaChangeInfo>
         serverChangeInfo->size_ = item->GetDataSize();
         MEDIA_INFO_LOG("serverChangeInfo->size_ is: %{public}d", (int)item->GetDataSize());
         changeInfos.push_back(serverChangeInfo);
-        if (uBuf != nullptr) {
-            delete[] uBuf;
-            uBuf = nullptr;
-        }
     }
     return true;
 }

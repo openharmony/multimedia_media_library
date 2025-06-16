@@ -113,6 +113,7 @@ int32_t NotificationDistribution::ProcessMediaChangeInfos(
         shared_ptr<MediaChangeInfo> sharedChangeInfo = make_shared<MediaChangeInfo>(filteredInfo);
         int32_t ret = NotificationUtils::SendNotification(observerInfo.observer, sharedChangeInfo);
         CHECK_AND_RETURN_RET_LOG(ret != E_OK, ret, "CallbackProcessing fail err:%{public}d", ret);
+        MEDIA_INFO_LOG("CallbackProcessing ret:%{public}d", ret);
     }
     return E_OK;
 }
