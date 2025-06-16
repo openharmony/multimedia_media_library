@@ -733,9 +733,34 @@ static int32_t SetAlbumCounts(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     return E_SUCCESS;
 }
 
+static bool IsManualCover(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t albumId, string&uri)
+{
+    MEDIA_DEBUG_LOG("IsManualCover: albumId:%{public}d, coverUri:%{public}s", albumId, uri.c_str());
+
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    string updateCondition = PhotoAlbumColumns::ALBUM_ID + "=" + to_string(albumId);
+    predicates.SetWhereClause(updateCondition);
+
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_COVER_URI, PhotoAlbumColumns::COVER_URI_SOURCE };
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "failed to acquire result from visitor query.");
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t coverUriSource = GetIntValFromColumn(resultSet, PhotoAlbumColumns::COVER_URI_SOURCE);
+        if (coverUriSource == static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER)) {
+            uri = GetStringValFromColumn(resultSet, PhotoAlbumColumns::ALBUM_COVER_URI);
+            MEDIA_INFO_LOG("IsManualCover: albumId:%{public}d, coverUri:%{public}s", albumId, uri.c_str());
+            return true;
+        }
+    }
+    return false;
+}
+
 static int32_t SetAlbumCoverUri(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     int32_t albumId, PhotoAlbumSubType subtype, string &uri)
 {
+    if (IsManualCover(rdbStore, albumId, uri)) {
+        return E_SUCCESS;
+    }
     const vector<string> columns = {
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,
@@ -1236,19 +1261,22 @@ static bool IsInSystemAlbum(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
                 MEDIA_ERR_LOG("albumSubtype is invalid: %{public}d", subtype);
                 break;
         }
+    } else {
+        MEDIA_ERR_LOG("resultSet GoToNextRow failed");
     }
     return ret;
 }
 
-int32_t UpdateCoverUriSource(int32_t albumId)
+int32_t UpdateCoverUriSourceToDefault(int32_t albumId)
 {
+    MEDIA_DEBUG_LOG("UpdateCoverUriSourceToDefault enter, albumId:%{public}d", albumId);
     RdbPredicates newPredicates(PhotoAlbumColumns::TABLE);
     ValuesBucket values;
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::DEFAULT_COVER);
 
     string UPDATE_CONDITION = PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId) + " AND " +
-        PhotoAlbumColumns::COVER_URI_SOURCE + " = " + to_string(CoverUriSource::MANUAL_COVER);
+        PhotoAlbumColumns::COVER_URI_SOURCE + " > " + to_string(CoverUriSource::DEFAULT_COVER);
 
     newPredicates.SetWhereClause(UPDATE_CONDITION);
     
@@ -1260,6 +1288,8 @@ int32_t UpdateCoverUriSource(int32_t albumId)
 
 static bool IsNeedSetCover(UpdateAlbumData &data, PhotoAlbumSubType subtype)
 {
+    MEDIA_DEBUG_LOG("IsNeedSetCover enter, albumId:%{public}d, coverUri:%{public}s, subtype:%{public}d",
+        data.albumId, data.albumCoverUri.c_str(), static_cast<int32_t>(subtype));
     // manual cover and cover in the album
     if (data.coverUriSource == static_cast<int32_t>(CoverUriSource::DEFAULT_COVER)) {
         return true;
@@ -1273,23 +1303,28 @@ static bool IsNeedSetCover(UpdateAlbumData &data, PhotoAlbumSubType subtype)
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
 
     if (subtype == PhotoAlbumSubType::USER_GENERIC || subtype == PhotoAlbumSubType::SOURCE_GENERIC) {
-        vector<string> columns = { PhotoColumn::PHOTO_OWNER_ALBUM_ID };
+        vector<string> columns = { PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+            MediaColumn::MEDIA_DATE_TRASHED, MediaColumn::MEDIA_HIDDEN };
         auto resultSet = rdbStore->Query(predicates, columns);
         CHECK_AND_RETURN_RET_INFO_LOG(resultSet != nullptr, E_HAS_DB_ERROR,
             "failed to acquire result from visitor query.");
         int32_t ownerAlbumId = -1;
+        bool isHidden = false;
+        bool isTrashed = false;
         if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             ownerAlbumId = GetIntValFromColumn(resultSet, PhotoColumn::PHOTO_OWNER_ALBUM_ID);
+            isHidden = GetIntValFromColumn(resultSet, MediaColumn::MEDIA_HIDDEN) == 1;
+            isTrashed = GetInt64ValFromColumn(resultSet, MediaColumn::MEDIA_DATE_TRASHED) > 0;
         }
-        auto isInAlbum = ownerAlbumId == data.albumId;
+        auto isInAlbum = (ownerAlbumId == data.albumId) && !isHidden && !isTrashed;
         if (!isInAlbum) {
-            UpdateCoverUriSource(data.albumId);
+            UpdateCoverUriSourceToDefault(data.albumId);
         }
         return !isInAlbum;
     }
     auto isInAlbum = IsInSystemAlbum(rdbStore, predicates, subtype);
     if (!isInAlbum) {
-        UpdateCoverUriSource(data.albumId);
+        UpdateCoverUriSourceToDefault(data.albumId);
     }
     return !isInAlbum;
 }
@@ -1323,6 +1358,7 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     CHECK_AND_RETURN_RET_LOG(fileResult != nullptr, E_HAS_DB_ERROR, "Failed to query fileResult");
     int32_t newCount = SetCount(fileResult, data, values, hiddenState, subtype);
     data.newTotalCount = newCount;
+
     if (subtype != PhotoAlbumSubType::HIGHLIGHT && subtype != PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS &&
         IsNeedSetCover(data, subtype)) {
         SetCover(fileResult, data, values, hiddenState);

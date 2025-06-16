@@ -52,6 +52,7 @@ public:
     int32_t ChangeRequestSetDisplayLevel(int32_t displayLevelValue, int32_t albumId);
     int32_t ChangeRequestSetIsMe(int32_t albumId);
     int32_t ChangeRequestDismiss(int32_t albumId);
+    int32_t ChangeRequestResetCoverUri(int32_t albumId, PhotoAlbumSubType albumSubtype);
     int32_t AlbumCommitModify(const AlbumCommitModifyDto& commitModifyDto, int32_t businessCode);
     int32_t AlbumAddAssets(const AlbumAddAssetsDto& addAssetsDto, AlbumPhotoQueryRespBody& respBody);
     int32_t AlbumRemoveAssets(const AlbumRemoveAssetsDto& removeAssetsDto, AlbumPhotoQueryRespBody& respBody);
@@ -75,6 +76,8 @@ private:
     int32_t SetGroupAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto);
     int32_t SetHighlightAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto);
     int32_t SetUserAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto);
+    int32_t SetSourceAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto);
+    int32_t SetSystemAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto);
     MediaAlbumsRdbOperations rdbOperation_;
 };
 } // namespace OHOS::Media

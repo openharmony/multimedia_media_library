@@ -147,7 +147,7 @@ private:
     bool hiddenOnly_ = false;
     bool locationOnly_ = false;
     int32_t targetUserId_;
-    int32_t coverUriSource_ = CoverUriSource::DEFAULT_COVER;
+    int32_t coverUriSource_ = static_cast<int32_t>(CoverUriSource::DEFAULT_COVER);
 };
 } // namespace Media
 } // namespace OHOS

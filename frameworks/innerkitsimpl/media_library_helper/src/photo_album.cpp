@@ -365,8 +365,8 @@ void PhotoAlbum::SetCoverUriSource(int32_t coverUriSource)
  
 int32_t PhotoAlbum::GetCoverUriSource()
 {
-    return coverUriSource_ > 0 ?
-        static_cast<int32_t>(CoverUriSource::MANUAL_COVER) : static_cast<int32_t>(CoverUriSource::DEFAULT_COVER);
+    return coverUriSource_ > 0 ? static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER) :
+        static_cast<int32_t>(CoverUriSource::DEFAULT_COVER);
 }
 }  // namespace Media
 }  // namespace OHOS

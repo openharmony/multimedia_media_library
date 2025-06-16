@@ -37,13 +37,14 @@ public:
     int64_t dateModified;
     std::string bundleName;
     std::string localLanguage;
+    int32_t coverUriSource;
+    std::string coverCloudId;
     /* album_plugin columns */
     std::string albumPluginCloudId;
     std::string albumNameEn;
     std::string dualAlbumName;
     int32_t priority;
     bool isInWhiteList;
-    int32_t coverUriSource;
 
 public:
     virtual ~CloudMdkRecordPhotoAlbumVo() = default;

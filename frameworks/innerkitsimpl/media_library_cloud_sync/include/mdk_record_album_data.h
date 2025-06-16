@@ -34,6 +34,7 @@ private:  // data member
     MDKRecord record_;
     std::map<std::string, MDKRecordField> fields_;
     std::map<std::string, MDKRecordField> properties_;
+    std::map<std::string, MDKRecordField> attributes_;
 
 private:  // composited class
     MDKRecordReader recordReader_;
@@ -89,7 +90,9 @@ public:  // getter & setter
     std::optional<int32_t> GetPriority() const;
     void SetPriority(const int32_t &priority);
     std::optional<int32_t> GetCoverUriSource() const;
-    void SetCoverUriSource(const int32_t &priority);
+    void SetCoverUriSource(const int32_t &coverUrisource);
+    std::optional<std::string> GetCoverCloudId() const;
+    void SetCoverCloudId(const std::string &coverCloudId);
 
 private:
     const std::string VALUE_RECORD_TYPE = "album";
@@ -100,6 +103,7 @@ private:
     const std::string ALBUM_IS_LOGIC = "isLogic";
     const std::string KEY_TYPE = "type";
     const std::string KEY_PROPERTIES = "properties";
+    const std::string KEY_ATTRIBUTES = "attributes";
 
     /* properties */
     const std::string ALBUM_BUNDLE_NAME = "bundle_name";
@@ -112,7 +116,10 @@ private:
     const std::string ALBUM_LOCAL_LANGUAGE = "local_language";
     const std::string ALBUM_ORDER = "album_order";
     const std::string ALBUM_PRIORITY = "priority";
+
+    /* attributes */
     const std::string COVER_URI_SOURCE = "cover_uri_source";
+    const std::string COVER_CLOUD_ID = "cover_cloud_id";
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_MDK_RECORD_ALBUM_DATA_H

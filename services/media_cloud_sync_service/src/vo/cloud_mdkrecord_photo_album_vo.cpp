@@ -41,6 +41,7 @@ bool CloudMdkRecordPhotoAlbumVo::Marshalling(MessageParcel &parcel) const
     parcel.WriteInt32(priority);
     parcel.WriteBool(isInWhiteList);
     parcel.WriteInt32(coverUriSource);
+    parcel.WriteString(coverCloudId);
     return true;
 }
 
@@ -62,6 +63,7 @@ bool CloudMdkRecordPhotoAlbumVo::Unmarshalling(MessageParcel &parcel)
     parcel.ReadInt32(priority);
     parcel.ReadBool(isInWhiteList);
     parcel.ReadInt32(coverUriSource);
+    parcel.ReadString(coverCloudId);
     return true;
 }
 

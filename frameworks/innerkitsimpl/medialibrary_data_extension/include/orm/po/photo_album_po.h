@@ -36,6 +36,7 @@ public:
     std::optional<int32_t> albumOrder;
     std::optional<int32_t> dirty;
     std::optional<int32_t> coverUriSource;
+    std::optional<std::string> coverCloudId;
 
     /* album_plugin columns */
     std::optional<std::string> albumPluginCloudId;
@@ -66,7 +67,8 @@ public:
            << "\"priority\": " << priority.value_or(-1) << ","
            << "\"dirty\": " << dirty.value_or(-1) << ","
            << "\"isInWhiteList\": " << isInWhiteList.value_or(false) << ","
-           << "\"coverUriSource\": " << coverUriSource.value_or(-1) << "," << "}";
+           << "\"coverUriSource\": " << coverUriSource.value_or(-1) << ","
+           << "\"coverCloudId\": " << coverCloudId.value_or("") << "," << "}";
         return ss.str();
     }
 };

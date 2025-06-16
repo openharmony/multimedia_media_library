@@ -84,6 +84,19 @@ int32_t CloudAlbumDataConvert::HandleProperties(std::shared_ptr<MDKRecord> &reco
     return E_OK;
 }
 
+int32_t CloudAlbumDataConvert::HandleAttributes(std::map<std::string, MDKRecordField> &data,
+    const CloudMdkRecordPhotoAlbumVo &albumData)
+{
+    std::map<std::string, MDKRecordField> map;
+    if (albumData.coverUriSource == CoverUriSource::MANUAL_CLOUD_COVER) {
+        map[PhotoAlbumColumns::COVER_URI_SOURCE] = MDKRecordField(albumData.coverUriSource);
+        map[PhotoAlbumColumns::COVER_CLOUD_ID] = MDKRecordField(albumData.coverCloudId);
+    }
+    /* set map */
+    data["attributes"] = MDKRecordField(map);
+    return E_OK;
+}
+
 int32_t CloudAlbumDataConvert::HandleAlbumLogicType(
     std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotoAlbumVo &albumData)
 {

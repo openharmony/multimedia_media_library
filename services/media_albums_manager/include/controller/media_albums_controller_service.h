@@ -36,6 +36,7 @@ public:
     void ChangeRequestSetIsMe(MessageParcel &data, MessageParcel &reply);
     void ChangeRequestSetDisplayLevel(MessageParcel &data, MessageParcel &reply);
     void ChangeRequestDismiss(MessageParcel &data, MessageParcel &reply);
+    void ChangeRequestResetCoverUri(MessageParcel &data, MessageParcel &reply);
     EXPORT void AddAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT void RemoveAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT void MoveAssets(MessageParcel &data, MessageParcel &reply);
