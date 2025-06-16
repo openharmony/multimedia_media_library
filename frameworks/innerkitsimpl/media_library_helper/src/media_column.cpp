@@ -433,25 +433,25 @@ const std::string PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX = B
     PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
     "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + MEDIA_TYPE + "," + PHOTO_BURST_COVER_LEVEL +
-    "," + MEDIA_DATE_ADDED + " DESC," + DISPLAY_NAME + " DESC);";
+    "," + MEDIA_DATE_ADDED + " DESC," + MEDIA_NAME + " DESC);";
 
 const std::string PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX = BaseColumn::CreateIndex() +
     PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
     "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + MEDIA_TYPE + "," + PHOTO_BURST_COVER_LEVEL +
-    "," + MEDIA_DATE_TAKEN + " DESC," + DISPLAY_NAME + " DESC);";
+    "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC);";
 
 const std::string PhotoColumn::CREATE_PHOTO_SORT_DATE_ADDED_INDEX = BaseColumn::CreateIndex() +
     PHOTO_SORT_DATE_ADDED_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
     "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
-    "," + MEDIA_DATE_ADDED + " DESC," + DISPLAY_NAME + " DESC);";
+    "," + MEDIA_DATE_ADDED + " DESC," + MEDIA_NAME + " DESC);";
 
 const std::string PhotoColumn::CREATE_PHOTO_SORT_DATE_TAKEN_INDEX = BaseColumn::CreateIndex() +
     PHOTO_SORT_DATE_TAKEN_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
     "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
-    "," + MEDIA_DATE_TAKEN + " DESC," + DISPLAY_NAME + " DESC);";
+    "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC);";
 
 const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         "CREATE TRIGGER IF NOT EXISTS photos_delete_trigger AFTER UPDATE ON " +
