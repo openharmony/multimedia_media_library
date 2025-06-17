@@ -4615,7 +4615,7 @@ void AddPhotoAlbumRefreshColumns(RdbStore &store)
 void AddHighlightLocation(RdbStore &store)
 {
     const vector<string> sql = {
-        " ALTER TABEL " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " + HIGHLIGHT_LOCATION + " TEXT ",
+        " ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " + HIGHLIGHT_LOCATION + " TEXT ",
     };
 
     MEDIA_INFO_LOG("start add highlight location column");
