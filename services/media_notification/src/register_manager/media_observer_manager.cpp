@@ -55,7 +55,7 @@ int32_t MediaObserverManager::AddObserver(const NotifyUriType &uri,
     int32_t ret = permissionHandle.ExecuteCheckPermission(uri);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Permission verification failed");
-        return E_PERMISSION_DENIED;
+        return ret;
     }
     ObserverInfo obsInfo;
     obsInfo.observer = dataObserver;

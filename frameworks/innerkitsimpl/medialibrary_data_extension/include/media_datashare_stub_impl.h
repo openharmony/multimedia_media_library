@@ -62,10 +62,10 @@ public:
 
     EXPORT bool UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
 
-    EXPORT bool RegisterObserverExtProvider(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver,
+    EXPORT int RegisterObserverExtProvider(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver,
         bool isDescendants) override;
 
-    EXPORT bool UnregisterObserverExtProvider(const Uri &uri,
+    EXPORT int UnregisterObserverExtProvider(const Uri &uri,
         const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
 
     EXPORT bool NotifyChange(const Uri &uri) override;

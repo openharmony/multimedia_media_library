@@ -79,6 +79,7 @@ public:
         &changeInfos);
     static napi_value BuildAlbumAlbumChangeInfos(napi_env env,
         const std::shared_ptr<Notification::MediaChangeInfo> &changeInfo);
+    static int32_t ConvertToJsError(int32_t innerErr);
 };
 }
 }
