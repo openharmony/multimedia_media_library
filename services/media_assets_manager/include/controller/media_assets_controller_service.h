@@ -97,6 +97,7 @@ public:
     EXPORT void SyncCloudEnhancementTaskStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT void QueryPhotoStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT void LogMovingPhoto(MessageParcel &data, MessageParcel &reply);
+    EXPORT void ConvertFormat(MessageParcel &data, MessageParcel &reply);
 public:
     virtual ~MediaAssetsControllerService() = default;
     bool Accept(uint32_t code) override;

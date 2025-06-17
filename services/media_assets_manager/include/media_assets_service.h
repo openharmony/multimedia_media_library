@@ -41,6 +41,7 @@
 #include "query_cloud_enhancement_task_state_dto.h"
 #include "query_photo_vo.h"
 #include "adapted_vo.h"
+#include "convert_format_dto.h"
 
 namespace OHOS::Media {
 class MediaAssetsService {
@@ -102,6 +103,7 @@ public:
     int32_t SyncCloudEnhancementTaskStatus();
     int32_t QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRspBody &rsp);
     int32_t LogMovingPhoto(const AdaptedReqBody &req);
+    int32_t ConvertFormat(const ConvertFormatDto &convertFormatDto);
 
 private:
     MediaAssetsRdbOperations rdbOperation_;

@@ -38,6 +38,8 @@ public:
     int32_t CopyPhoto(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath);
     int32_t CopyThumbnail(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath,
         int64_t &newAssetId);
+    int32_t ConvertFormatPhoto(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath,
+        const std::string &extension);
 
 private:
     std::string GetVideoFilePath(const PhotoAssetInfo &photoInfo);
@@ -61,6 +63,12 @@ private:
     std::string ToString(const PhotoAssetInfo &photoInfo);
     int32_t HandleThumbnailAstcData(const std::string &dateTaken, const std::string &oldAssetId,
         const std::string &newAssetId);
+    int32_t ConvertFormatPhoto(const PhotoAssetInfo &sourcePhotoInfo, const PhotoAssetInfo &targetPhotoInfo,
+        const std::string &extension);
+    int32_t ConvertFormatFile(const std::string &srcFilePath, const std::string &dstFilePath,
+        const int64_t dateModified, const std::string &extension);
+    int32_t ConvertFormatPhotoExtraData(const std::string &srcPath, const std::string &dstPath,
+        const std::string &extension);
 };
 }  // namespace OHOS::Media
 #endif  // FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_PHOTO_FILE_H_
