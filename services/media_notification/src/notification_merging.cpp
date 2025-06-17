@@ -45,7 +45,7 @@ NotificationMerging::~NotificationMerging() {}
 
 std::vector<ObserverInfo> NotificationMerging::findObservers(NotifyUriType notifyUriType)
 {
-    MEDIA_INFO_LOG("enter findObservers,notifyUriType:%{public}d", (int)notifyUriType);
+    MEDIA_INFO_LOG("enter findObservers,notifyUriType:%{public}d", static_cast<int32_t>(notifyUriType));
     static auto manager = MediaObserverManager::GetObserverManager();
     if (manager == nullptr) {
         manager = MediaObserverManager::GetObserverManager();
@@ -101,7 +101,7 @@ std::vector<NotifyInfo> NotificationMerging::ProcessNotifyInfos(const std::vecto
 
     // 将分组后的结果转移到notifyInfos中
     for (auto &[notifyUri, notifyInfo] : uriToNotifyInfoMap) {
-        MEDIA_INFO_LOG("notifyUri is:%{public}d, and observerInfos is null", (int)notifyUri);
+        MEDIA_INFO_LOG("notifyUri is:%{public}d", static_cast<int32_t>(notifyUri));
         notifyInfos.push_back(std::move(notifyInfo));
     }
 
