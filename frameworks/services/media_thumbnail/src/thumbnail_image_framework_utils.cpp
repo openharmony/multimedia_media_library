@@ -346,7 +346,7 @@ std::shared_ptr<Picture> ThumbnailImageFrameWorkUtils::CopyAndScalePicture(const
     CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPictureValid(picture), nullptr, "picture is invalid");
 
     copyPicture = ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
-    CHECK_AND_RETURN_RET_LOG(copyPicture != nullptr, nullptr, "CopyPictureSource failed");
+    CHECK_AND_RETURN_RET_LOG(IsPictureValid(copyPicture), nullptr, "CopyPictureSource failed");
 
     float widthScale = (1.0f * desiredSize.width) / picture->GetMainPixel()->GetWidth();
     float heightScale = (1.0f * desiredSize.height) / picture->GetMainPixel()->GetHeight();
