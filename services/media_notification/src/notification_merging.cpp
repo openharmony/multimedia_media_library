@@ -45,7 +45,7 @@ NotificationMerging::~NotificationMerging() {}
 
 std::vector<ObserverInfo> NotificationMerging::findObservers(NotifyUriType notifyUriType)
 {
-    MEDIA_ERR_LOG("enter findObservers,notifyUriType:%{public}d", (int)notifyUriType);
+    MEDIA_INFO_LOG("enter findObservers,notifyUriType:%{public}d", (int)notifyUriType);
     static auto manager = MediaObserverManager::GetObserverManager();
     if (manager == nullptr) {
         manager = MediaObserverManager::GetObserverManager();

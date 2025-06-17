@@ -178,7 +178,6 @@ int32_t CloudMediaPhotosDao::BatchInsertQuick(
     };
     int32_t ret = trans->RetryTrans(transFunc);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to BatchInsertQuick, ret=%{public}d", ret);
-    photoRefresh.RefreshAlbum();
     photoRefresh.Notify();
     return ret;
 }
@@ -226,6 +225,9 @@ int32_t CloudMediaPhotosDao::BatchInsert(
 
 int32_t CloudMediaPhotosDao::UpdateAssetInPhotoMap(const int32_t &fileId, set<int> cloudMapIds)
 {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
+
     std::map<int32_t, int32_t> localMapIds;
     this->commonDao_.QueryLocalMap(fileId, localMapIds);
     std::vector<NativeRdb::ValuesBucket> pmList;
@@ -251,12 +253,9 @@ int32_t CloudMediaPhotosDao::UpdateAssetInPhotoMap(const int32_t &fileId, set<in
     }
     std::string deleteSql = "Delete FROM PhotoMap WHERE map_asset = " + to_string(fileId) +
                             " AND dirty != 0 AND map_album NOT IN ( " + ss.str() + " )";
-    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
-    int32_t ret = albumRefresh.Init(deleteSql, bindArgs);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_OK, "UpdateAssetInPhotoMap init ExecuteSql failed %{public}d", ret);
-    ret = albumRefresh.ExecuteSql(deleteSql, bindArgs, AccurateRefresh::RdbOperation::RDB_OPERATION_REMOVE);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_OK, "UpdateAssetInPhotoMap do ExecuteSql failed %{public}d", ret);
-    albumRefresh.Notify();
+    if (rdbStore->ExecuteSql(deleteSql, bindArgs) != E_OK) {
+        MEDIA_ERR_LOG("photo %{public}d delete photomap failed", fileId);
+    }
     return E_OK;
 }
 
@@ -318,7 +317,6 @@ int CloudMediaPhotosDao::UpdateProxy(int &changedRows, const NativeRdb::ValuesBu
     };
     int ret = trans->RetryTrans(func);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to UpdateProxy, ret=%{public}d", ret);
-    photoRefresh.RefreshAlbum();
     photoRefresh.Notify();
     return E_OK;
 }
@@ -342,7 +340,6 @@ int CloudMediaPhotosDao::UpdateProxy(int &changedRows, const std::string &table,
     };
     int ret = trans->RetryTrans(func);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to UpdateProxy, ret=%{public}d", ret);
-    photoRefresh.RefreshAlbum();
     photoRefresh.Notify();
     return E_OK;
 }
@@ -1549,6 +1546,15 @@ void CloudMediaPhotosDao::UpdateAllAlbumsCountForCloud(const std::vector<std::st
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "UpdateAllAlbumsCountForCloud Failed to get rdbStore.");
 
+    std::vector<std::string> allRefreshAlbum = {ALL_SYSTEM_PHOTO_ALBUM};
+    if (albums.empty()) {
+        allRefreshAlbum.push_back(to_string(PhotoAlbumSubType::USER_GENERIC));
+        allRefreshAlbum.push_back(to_string(PhotoAlbumSubType::SOURCE_GENERIC));
+        UpdateAlbumCountInternal(allRefreshAlbum);
+    } else {
+        UpdateAlbumCountInternal(ALL_SYSTEM_PHOTO_ALBUM);
+        UpdateAlbumReplacedSignal(albums);
+    }
     std::vector<std::string> subtype = {"4101"};
     MediaLibraryRdbUtils::UpdateAnalysisAlbumCountInternal(rdbStore, subtype);
 }
@@ -1612,7 +1618,6 @@ int32_t CloudMediaPhotosDao::DeleteLocalByCloudId(const std::string &cloudId)
         "Failed to DeleteLocalByCloudId, ret: %{public}d, deletedRows: %{public}d.",
         ret,
         deletedRows);
-    photoRefresh.RefreshAlbum();
     photoRefresh.Notify();
     return ret;
 }

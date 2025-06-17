@@ -66,7 +66,7 @@ NotificationClassification::~NotificationClassification()
 void NotificationClassification::ConvertNotification(
     std::vector<NotifyInfoInner> &notifyInfos, std::vector<MediaChangeInfo> &mediaChangeInfos)
 {
-    MEDIA_ERR_LOG("ConvertNotification");
+    MEDIA_INFO_LOG("ConvertNotification");
     for (NotifyInfoInner notifyInfoInner : notifyInfos) {
         std::vector<MediaChangeInfo> infos = classificationMap[notifyInfoInner.operationType](notifyInfoInner);
         mediaChangeInfos.insert(mediaChangeInfos.end(), infos.begin(), infos.end());
@@ -87,92 +87,92 @@ MediaChangeInfo NotificationClassification::BuildMediaChangeInfo(
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetAdd(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetAdd");
+    MEDIA_INFO_LOG("HandleAssetAdd");
     return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetAddHidden(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetAddHidden");
+    MEDIA_INFO_LOG("HandleAssetAddHidden");
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::HIDDEN_PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetAddTrash(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetAddTrash");
+    MEDIA_INFO_LOG("HandleAssetAddTrash");
     return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::TRASH_PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUpdateNormal(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetUpdateNormal");
+    MEDIA_INFO_LOG("HandleAssetUpdateNormal");
     return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_UPDATE, NotifyUriType::PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUpdateRemoveNormal(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetUpdateRemoveNormal");
+    MEDIA_INFO_LOG("HandleAssetUpdateRemoveNormal");
     return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_REMOVE, NotifyUriType::PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUpdateAddNormal(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetUpdateAddNormal");
+    MEDIA_INFO_LOG("HandleAssetUpdateAddNormal");
     return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUpdateHidden(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetUpdateHidden");
+    MEDIA_INFO_LOG("HandleAssetUpdateHidden");
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_UPDATE, NotifyUriType::HIDDEN_PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUpdateRemoveHidden(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetUpdateRemoveHidden");
+    MEDIA_INFO_LOG("HandleAssetUpdateRemoveHidden");
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_REMOVE, NotifyUriType::HIDDEN_PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUpdateAddHidden(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetUpdateAddHidden");
+    MEDIA_INFO_LOG("HandleAssetUpdateAddHidden");
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::HIDDEN_PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUpdateTrash(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetUpdateTrash");
+    MEDIA_INFO_LOG("HandleAssetUpdateTrash");
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_UPDATE, NotifyUriType::TRASH_PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUpdateRemoveTrash(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetUpdateRemoveTrash");
+    MEDIA_INFO_LOG("HandleAssetUpdateRemoveTrash");
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_REMOVE, NotifyUriType::TRASH_PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUpdateAddTrash(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetUpdateAddTrash");
+    MEDIA_INFO_LOG("HandleAssetUpdateAddTrash");
     return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::TRASH_PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetTrash(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetTrash");
+    MEDIA_INFO_LOG("HandleAssetTrash");
     return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_REMOVE, NotifyUriType::PHOTO_URI),
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::TRASH_PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUntrash(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetUntrash");
+    MEDIA_INFO_LOG("HandleAssetUntrash");
     std::vector<NotifyDetailInfo> notifyDetails;
     return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::PHOTO_URI),
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_REMOVE, NotifyUriType::TRASH_PHOTO_URI)};
@@ -180,80 +180,80 @@ std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUntrash(Noti
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetRemove(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetRemove");
+    MEDIA_INFO_LOG("HandleAssetRemove");
     return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_REMOVE, NotifyUriType::PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetRemoveHidden(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetRemoveHidden");
+    MEDIA_INFO_LOG("HandleAssetRemoveHidden");
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_REMOVE, NotifyUriType::HIDDEN_PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetRemoveTrash(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetRemoveTrash");
+    MEDIA_INFO_LOG("HandleAssetRemoveTrash");
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_REMOVE, NotifyUriType::TRASH_PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetHidden(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetHidden");
+    MEDIA_INFO_LOG("HandleAssetHidden");
     return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_REMOVE, NotifyUriType::PHOTO_URI),
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_REMOVE, NotifyUriType::HIDDEN_PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetUnhidden(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetUnhidden");
+    MEDIA_INFO_LOG("HandleAssetUnhidden");
     return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::PHOTO_URI),
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ASSET_REMOVE, NotifyUriType::HIDDEN_PHOTO_URI)};
 }
 std::vector<MediaChangeInfo> NotificationClassification::HandleAssetRecheck(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAssetRecheck");
+    MEDIA_INFO_LOG("HandleAssetRecheck");
     return {BuildMediaChangeInfo(notifyInfoInner, true, NotifyType::NOTIFY_ASSET_ADD, NotifyUriType::PHOTO_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumAdd(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAlbumAdd");
+    MEDIA_INFO_LOG("HandleAlbumAdd");
     return {BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ALBUM_ADD, NotifyUriType::PHOTO_ALBUM_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumRemove(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAlbumRemove");
+    MEDIA_INFO_LOG("HandleAlbumRemove");
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ALBUM_REMOVE, NotifyUriType::PHOTO_ALBUM_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumUpdate(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAlbumUpdate");
+    MEDIA_INFO_LOG("HandleAlbumUpdate");
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ALBUM_UPDATE, NotifyUriType::PHOTO_ALBUM_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumUpdateHidden(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAlbumHidden");
+    MEDIA_INFO_LOG("HandleAlbumHidden");
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ALBUM_UPDATE, NotifyUriType::HIDDEN_ALBUM_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumUpdateTrash(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAlbumTrash");
+    MEDIA_INFO_LOG("HandleAlbumTrash");
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ALBUM_UPDATE, NotifyUriType::TRASH_ALBUM_URI)};
 }
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumRecheck(NotifyInfoInner &notifyInfoInner)
 {
-    MEDIA_ERR_LOG("HandleAlbumRecheck");
+    MEDIA_INFO_LOG("HandleAlbumRecheck");
     return {BuildMediaChangeInfo(notifyInfoInner, true, NotifyType::NOTIFY_ALBUM_ADD, NotifyUriType::PHOTO_ALBUM_URI)};
 }
 }  // namespace Notification

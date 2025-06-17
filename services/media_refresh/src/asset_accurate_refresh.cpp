@@ -125,12 +125,13 @@ int32_t AssetAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &f
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
 
-    if (dataManager_.UpdateCommonModifiedDatas(fileIds) != ACCURATE_REFRESH_RET_OK) {
-        MEDIA_WARN_LOG("update common data failed.");
-        return ACCURATE_REFRESH_COMMON_DATAS_FAILED;
-    }
-
-    return dataManager_.UpdateModifiedDatasInner(modifiedFileIds, operation);
+    int32_t err = dataManager_.UpdateModifiedDatasInner(modifiedFileIds, operation);
+    CHECK_AND_RETURN_RET_LOG(err == ACCURATE_REFRESH_RET_OK, err,
+        "UpdateModifiedDatasInner failed, err:%{public}d", err);
+    err = dataManager_.PostProcessModifiedDatas(modifiedFileIds);
+    CHECK_AND_RETURN_RET_LOG(err == ACCURATE_REFRESH_RET_OK, err,
+        "PostProcessModifiedDatas failed, err:%{public}d", err);
+    return ACCURATE_REFRESH_RET_OK;
 }
 
 int32_t AssetAccurateRefresh::UpdateModifiedDatas()
