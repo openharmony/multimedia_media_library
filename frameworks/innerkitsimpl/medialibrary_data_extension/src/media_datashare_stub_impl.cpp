@@ -173,38 +173,38 @@ bool MediaDataShareStubImpl::UnregisterObserver(const Uri &uri, const sptr<AAFwk
     return ret;
 }
 
-bool MediaDataShareStubImpl::RegisterObserverExtProvider(const Uri &uri,
+int MediaDataShareStubImpl::RegisterObserverExtProvider(const Uri &uri,
     const sptr<AAFwk::IDataAbilityObserver> &dataObserver, bool isDescendants)
 {
     MEDIA_INFO_LOG("enter MediaDataShareStubImpl::RegisterObserver, uri:%{public}s", uri.ToString().c_str());
     std::string uriType = uri.ToString();
     if (NOTIFY_URI_MAP.find(uriType) == NOTIFY_URI_MAP.end()) {
         MEDIA_ERR_LOG("registerType is invalid");
-        return false;
+        return E_URI_IS_INVALID;
     }
     Notification::NotifyUriType registerUriType = NOTIFY_URI_MAP.at(uriType);
     auto observerManager = Media::Notification::MediaObserverManager::GetObserverManager();
-    CHECK_AND_RETURN_RET_LOG(observerManager != nullptr, false, "observerManager is nullptr");
+    CHECK_AND_RETURN_RET_LOG(observerManager != nullptr, E_OBSERVER_MANAGER_IS_NULL, "observerManager is nullptr");
     int32_t ret = observerManager->AddObserver(registerUriType, dataObserver);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "failed to add observer, error is %{public}d", ret);
-    return true;
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to add observer, error is %{public}d", ret);
+    return E_SUCCESS;
 }
 
-bool MediaDataShareStubImpl::UnregisterObserverExtProvider(const Uri &uri,
+int MediaDataShareStubImpl::UnregisterObserverExtProvider(const Uri &uri,
     const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
     MEDIA_INFO_LOG("enter MediaDataShareStubImpl::UnregisterObserver, uri:%{public}s", uri.ToString().c_str());
     std::string uriType = uri.ToString();
     if (NOTIFY_URI_MAP.find(uriType) == NOTIFY_URI_MAP.end()) {
         MEDIA_ERR_LOG("registerType is invalid");
-        return false;
+        return E_URI_IS_INVALID;
     }
     Notification::NotifyUriType registerUriType = NOTIFY_URI_MAP.at(uriType);
     auto observerManager = Media::Notification::MediaObserverManager::GetObserverManager();
-    CHECK_AND_RETURN_RET_LOG(observerManager != nullptr, false, "observerManager is nullptr");
+    CHECK_AND_RETURN_RET_LOG(observerManager != nullptr, E_OBSERVER_MANAGER_IS_NULL, "observerManager is nullptr");
     int32_t ret = observerManager->RemoveObserverWithUri(registerUriType, dataObserver);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "failed to remove observer, error is %{public}d", ret);
-    return true;
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to remove observer, error is %{public}d", ret);
+    return E_SUCCESS;
 }
 
 bool MediaDataShareStubImpl::NotifyChange(const Uri &uri)

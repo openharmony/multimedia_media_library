@@ -70,6 +70,11 @@ const std::map<Notification::NotifyType, NotifyChangeType> MediaLibraryNotifyUti
     { Notification::NotifyType::NOTIFY_ALBUM_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
 };
 
+const std::unordered_map<int32_t, int32_t> ERROR_MAP = {
+    { E_PERMISSION_DENIED,     OHOS_PERMISSION_DENIED_CODE },
+    { -E_CHECK_SYSTEMAPP_FAIL, E_CHECK_SYSTEMAPP_FAIL },
+};
+
 int32_t MediaLibraryNotifyUtils::GetRegisterNotifyType(const string &type, Notification::NotifyUriType &uriType)
 {
     if (REGISTER_NOTIFY_TYPE_MAP.find(type) == REGISTER_NOTIFY_TYPE_MAP.end()) {
@@ -494,6 +499,15 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumAlbumChangeInfos(napi_env env,
     }
 
     return result;
+}
+
+int32_t MediaLibraryNotifyUtils::ConvertToJsError(int32_t innerErr)
+{
+    int32_t err = JS_INNER_FAIL;
+    if (ERROR_MAP.find(innerErr) != ERROR_MAP.end()) {
+        err = ERROR_MAP.at(innerErr);
+    }
+    return err;
 }
 }  // namespace Media
 }  // namespace OHOS
