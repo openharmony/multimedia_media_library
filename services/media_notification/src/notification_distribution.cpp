@@ -73,7 +73,6 @@ int32_t NotificationDistribution::SendNotificationWithRecheckChangeInfo(
 {
     MediaChangeInfo recheckChangeInfo = changeInfo;
     recheckChangeInfo.changeInfos.clear();
-    recheckChangeInfo.notifyUri = NotifyUriType::INVALID;
     recheckChangeInfo.isForRecheck = true;
     recheckChangeInfo.isSystem = observerInfo.isSystem;
     if (changeInfo.notifyType == NotifyType::NOTIFY_ASSET_ADD ||
