@@ -457,7 +457,7 @@ int32_t CloudMediaAlbumService::OnCompleteCheck()
     return 0;
 }
 
-void PrepareForNextCloud(const shared_ptr<MediaLibraryRdbStore>rdbStore,
+void PrepareForNextCloud(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     NativeRdb::ValuesBucket &values, int32_t albumId)
 {
     NativeRdb::RdbPredicates predicates(PhotoAlbumColumns::TABLE);
@@ -522,7 +522,8 @@ void CloudMediaAlbumService::CheckAlbumManualCover()
             resultSet, TYPE_INT32));
         NativeRdb::ValuesBucket values;
         if (coverUriSource == static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER)) {
-            string coverCloudId;
+            string coverCloudId = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::COVER_CLOUD_ID,
+                resultSet, TYPE_STRING));
             string coverUri = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COVER_URI,
                 resultSet, TYPE_STRING));
             string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(coverUri);

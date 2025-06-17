@@ -1112,7 +1112,7 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
 
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
-    auto subtype = static_cast<int32_t>(photoAlbum->GetPhotoAlbumType());
+    auto subtype = static_cast<int32_t>(photoAlbum->GetPhotoAlbumSubType());
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         (PhotoAlbum::IsSystemAlbum(photoAlbum->GetPhotoAlbumType()) &&
@@ -1123,6 +1123,7 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
         PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         "can't set album cover of album subtype:" + to_string(subtype));
     photoAlbum->SetCoverUri(coverUri);
+    photoAlbum->SetCoverUriSource(static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER));
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_COVER_URI);
     RETURN_NAPI_UNDEFINED(env);
 }
@@ -1141,7 +1142,7 @@ napi_value MediaAlbumChangeRequestNapi::JSResetCoverUri(napi_env env, napi_callb
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_ERR_MESSAGE(env, photoAlbum != nullptr,
         MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "photoAlbum is null");
-    auto subtype = static_cast<int32_t>(photoAlbum->GetPhotoAlbumType());
+    auto subtype = static_cast<int32_t>(photoAlbum->GetPhotoAlbumSubType());
     CHECK_COND_WITH_ERR_MESSAGE(env,
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         (PhotoAlbum::IsSystemAlbum(photoAlbum->GetPhotoAlbumType()) &&
@@ -1149,7 +1150,7 @@ napi_value MediaAlbumChangeRequestNapi::JSResetCoverUri(napi_env env, napi_callb
         PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
         "can't reset album cover of album subtype:" + to_string(subtype));
-
+    photoAlbum->SetCoverUriSource(static_cast<int32_t>(CoverUriSource::DEFAULT_COVER));
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::RESET_COVER_URI);
     RETURN_NAPI_UNDEFINED(env);
 }
