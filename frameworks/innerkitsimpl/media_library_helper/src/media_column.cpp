@@ -153,7 +153,7 @@ const std::string PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX = "idx_pho
 const std::string PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX = "idx_photo_sort_media_type_date_taken";
 const std::string PhotoColumn::PHOTO_SORT_DATE_ADDED_INDEX = "idx_photo_sort_date_added";
 const std::string PhotoColumn::PHOTO_SORT_DATE_TAKEN_INDEX = "idx_photo_sort_date_taken";
-const std::string PhotoColumn::PHOTO_SCHPT_WHITE_BLOCKS_INDEX = "idx_schpt_white_blocks";
+const std::string PhotoColumn::PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX = "idx_query_thumbnail_white_blocks_num";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -411,8 +411,8 @@ const std::string PhotoColumn::UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL =
     " = NULL, " + PhotoColumn::PHOTO_LONGITUDE + " = NULL " + " WHERE " +
     PhotoColumn::PHOTO_LATITUDE + " = 0 AND " + PhotoColumn::PHOTO_LONGITUDE + " = 0;";
 
-const std::string PhotoColumn::INDEX_SCHPT_WHITE_BLOCKS =
-    BaseColumn::CreateIndex() + PHOTO_SCHPT_WHITE_BLOCKS_INDEX + " ON " + PHOTOS_TABLE +
+const std::string PhotoColumn::INDEX_QUERY_THUMBNAIL_WHITE_BLOCKS =
+    BaseColumn::CreateIndex() + PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX + " ON " + PHOTOS_TABLE +
     " (" + MEDIA_TYPE + "," + PHOTO_SYNC_STATUS + "," + PHOTO_LCD_VISIT_TIME + "," + PHOTO_POSITION + "," +
     PHOTO_THUMB_STATUS + "," + PHOTO_CLEAN_FLAG + "," + PHOTO_THUMBNAIL_VISIBLE + " );";
 

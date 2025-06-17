@@ -173,7 +173,7 @@ public:
     static const std::string PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX EXPORT;
     static const std::string PHOTO_SORT_DATE_ADDED_INDEX EXPORT;
     static const std::string PHOTO_SORT_DATE_TAKEN_INDEX EXPORT;
-    static const std::string PHOTO_SCHPT_WHITE_BLOCKS_INDEX EXPORT;
+    static const std::string PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX EXPORT;
     // for clone query
     static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // for burst query
@@ -252,7 +252,7 @@ public:
     static const std::string CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX;
     static const std::string CREATE_PHOTO_SORT_DATE_ADDED_INDEX;
     static const std::string CREATE_PHOTO_SORT_DATE_TAKEN_INDEX;
-    static const std::string INDEX_SCHPT_WHITE_BLOCKS;
+    static const std::string INDEX_QUERY_THUMBNAIL_WHITE_BLOCKS;
 
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER EXPORT;
