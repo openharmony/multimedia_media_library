@@ -78,7 +78,7 @@ void NotifyTaskWorker::AddTaskInfo(NotifyInfoInner notifyInfoInner)
         NotifyTaskInfo notifyTaskInfo = taskInfos_[waitLoopCnt];
         notifyTaskInfo.notifyInfos.push_back(notifyInfoInner);
         taskInfos_[waitLoopCnt] = notifyTaskInfo;
-        MEDIA_ERR_LOG("notifyInfos size: %{public}d, waitLoopCnt: %{public}d",
+        MEDIA_INFO_LOG("notifyInfos size: %{public}d, waitLoopCnt: %{public}d",
             (int32_t)notifyTaskInfo.notifyInfos.size(), waitLoopCnt);
     }
 }
@@ -96,14 +96,14 @@ bool NotifyTaskWorker::IsRunning()
 std::vector<NotifyTaskInfo> NotifyTaskWorker::GetCurrentNotifyMap()
 {
     lock_guard<mutex> lock(mapMutex_);
-    MEDIA_ERR_LOG("taskInfos_: %{public}d", (int32_t)taskInfos_.size());
+    MEDIA_INFO_LOG("taskInfos_: %{public}d", (int32_t)taskInfos_.size());
     std::vector<NotifyTaskInfo> notifyTaskInfos;
     for (auto it = taskInfos_.begin(); it != taskInfos_.end();) {
         NotifyTaskInfo notifyTaskInfo = it->second;
         int32_t count = (int32_t)it->first;
         notifyTaskInfo.loopedCnt_++;
         if (count == notifyTaskInfo.loopedCnt_) {
-            MEDIA_ERR_LOG("same");
+            MEDIA_INFO_LOG("same");
             notifyTaskInfos.push_back(notifyTaskInfo);
             it = taskInfos_.erase(it);
         } else {
@@ -112,7 +112,7 @@ std::vector<NotifyTaskInfo> NotifyTaskWorker::GetCurrentNotifyMap()
         }
     }
     
-    MEDIA_ERR_LOG("notifyTaskInfos size: %{public}d", (int32_t)notifyTaskInfos.size());
+    MEDIA_INFO_LOG("notifyTaskInfos size: %{public}d", (int32_t)notifyTaskInfos.size());
     return notifyTaskInfos;
 }
 
@@ -136,23 +136,23 @@ void NotifyTaskWorker::HandleNotifyTask()
     std::vector<NotifyTaskInfo> notifyTaskInfos = GetCurrentNotifyMap();
     auto changeInfos = ClassifyNotifyInfo(notifyTaskInfos);
     if (changeInfos.empty()) {
-        MEDIA_ERR_LOG("changeInfos is empty");
+        MEDIA_INFO_LOG("changeInfos is empty");
     }
     auto notifyInfos = MergeNotifyInfo(changeInfos);
     if (notifyInfos.empty()) {
-        MEDIA_ERR_LOG("notifyInfos is empty");
+        MEDIA_INFO_LOG("notifyInfos is empty");
     }
     DistributeNotifyInfo(notifyInfos);
 }
 
 std::vector<MediaChangeInfo> NotifyTaskWorker::ClassifyNotifyInfo(std::vector<NotifyTaskInfo> &notifyTaskInfos)
 {
-    MEDIA_ERR_LOG("ClassifyNotifyInfo");
-    MEDIA_ERR_LOG("notifyInfos size: %{public}d", (int32_t)notifyTaskInfos.size());
+    MEDIA_INFO_LOG("ClassifyNotifyInfo");
+    MEDIA_INFO_LOG("notifyInfos size: %{public}d", (int32_t)notifyTaskInfos.size());
     std::vector<MediaChangeInfo> mediaChangeInfos;
     for (NotifyTaskInfo notifyTaskInfo: notifyTaskInfos) {
         int32_t size = notifyTaskInfo.notifyInfos.size();
-        MEDIA_ERR_LOG("notifyInfo size: %{public}d", size);
+        MEDIA_INFO_LOG("notifyInfo size: %{public}d", size);
         NotificationClassification::ConvertNotification(notifyTaskInfo.notifyInfos, mediaChangeInfos);
     }
     return mediaChangeInfos;

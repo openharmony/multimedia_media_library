@@ -88,12 +88,13 @@ int32_t AlbumAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &a
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
 
-    if (dataManager_.UpdateCommonModifiedDatas(albumIds) != ACCURATE_REFRESH_RET_OK) {
-        MEDIA_WARN_LOG("update common data failed.");
-        return ACCURATE_REFRESH_COMMON_DATAS_FAILED;
-    }
-
-    return dataManager_.UpdateModifiedDatasInner(modifiedAlbumIds, operation);
+    int32_t err = dataManager_.UpdateModifiedDatasInner(modifiedAlbumIds, operation);
+    CHECK_AND_RETURN_RET_LOG(err == ACCURATE_REFRESH_RET_OK, err,
+        "UpdateModifiedDatasInner failed, err:%{public}d", err);
+    err = dataManager_.PostProcessModifiedDatas(modifiedAlbumIds);
+    CHECK_AND_RETURN_RET_LOG(err == ACCURATE_REFRESH_RET_OK, err,
+        "PostProcessModifiedDatas failed, err:%{public}d", err);
+    return ACCURATE_REFRESH_RET_OK;
 }
 
 int32_t AlbumAccurateRefresh::UpdateModifiedDatas()

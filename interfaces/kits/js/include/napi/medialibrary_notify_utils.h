@@ -28,6 +28,12 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
+enum NotifyChangeType {
+    NOTIFY_CHANGE_ADD,
+    NOTIFY_CHANGE_UPDATE,
+    NOTIFY_CHANGE_REMOVE,
+};
+
 class RegisterNotifyType {
 public:
     static const std::string PHOTO_CHANGE EXPORT;
@@ -43,10 +49,12 @@ public:
     static const std::map<std::string, Notification::NotifyUriType> REGISTER_NOTIFY_TYPE_MAP;
     static const std::map<Notification::NotifyUriType, Notification::NotifyUriType> REGISTER_TYPE_MAP;
     static const std::map<Notification::NotifyUriType, std::string> REGISTER_URI_MAP;
+    static const std::map<Notification::NotifyType, NotifyChangeType> NOTIFY_CHANGE_TYPE_MAP;
 
     static int32_t GetRegisterNotifyType(const std::string &type, Notification::NotifyUriType &uriType);
     static int32_t GetNotifyTypeAndUri(const Notification::NotifyUriType type,
         Notification::NotifyUriType &uriType, std::string &uri);
+    static int32_t GetNotifyChangeType(const Notification::NotifyType &notifyType);
 
     static napi_status SetValueInt32(const napi_env& env, const char* name, const int32_t intValue, napi_value& result);
     static napi_status SetValueInt64(const napi_env& env, const char* name, const int64_t intValue, napi_value& result);
