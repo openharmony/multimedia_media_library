@@ -462,7 +462,7 @@ napi_status GetCompatibleMode(napi_env env, const napi_value arg, const string &
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "invalid compatible mode value");
         return napi_invalid_arg;
     }
-#ifndef USE_VIDEO_PROCESSING_ENGINE
+#if !defined(USE_VIDEO_PROCESSING_ENGINE) || !defined(USE_VIDEO_PROCESSING_ENGINE_EXT)
     if (static_cast<CompatibleMode>(mode) == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
         NAPI_ERR_LOG("current environment not support transcoder");
         NapiError::ThrowError(env, OHOS_NOT_SUPPORT_TRANSCODER_CODE, "not support transcoder");
