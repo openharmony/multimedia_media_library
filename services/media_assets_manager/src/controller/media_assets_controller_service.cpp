@@ -77,6 +77,8 @@
 #include "get_index_construct_progress_vo.h"
 #include "medialibrary_rdb_utils.h"
 #include "permission_common.h"
+#include "convert_format_vo.h"
+#include "convert_format_dto.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -378,6 +380,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::LOG_MOVING_PHOTO),
         &MediaAssetsControllerService::LogMovingPhoto
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT),
+        &MediaAssetsControllerService::ConvertFormat
     },
 };
 
@@ -1404,6 +1410,35 @@ void MediaAssetsControllerService::CloneAsset(MessageParcel &data, MessageParcel
     cloneAssetDto.title = reqBody.title;
     int32_t newAssetId = MediaAssetsService::GetInstance().CloneAsset(cloneAssetDto);
     IPC::UserDefineIPC().WriteResponseBody(reply, newAssetId);
+}
+
+void MediaAssetsControllerService::ConvertFormat(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter ConvertFormat");
+    ConvertFormatReqBody reqBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ConvertFormat Read Request Error");
+        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+        return;
+    }
+
+    ConvertFormatDto convertFormatDto;
+    convertFormatDto.fileId = reqBody.fileId;
+    convertFormatDto.title = reqBody.title;
+    convertFormatDto.extension = reqBody.extension;
+    int32_t newAssetId = MediaAssetsService::GetInstance().ConvertFormat(convertFormatDto);
+    if (newAssetId < 0) {
+        MEDIA_ERR_LOG("ConvertFormat failed, ret: %{public}d", newAssetId);
+        if (newAssetId == E_INVALID_VALUES) {
+            IPC::UserDefineIPC().WriteResponseBody(reply, E_PARAM_CONVERT_FORMAT);
+        } else {
+            IPC::UserDefineIPC().WriteResponseBody(reply, E_INNER_CONVERT_FORMAT);
+        }
+    } else {
+        IPC::UserDefineIPC().WriteResponseBody(reply, newAssetId);
+    }
 }
 
 void MediaAssetsControllerService::RevertToOriginal(MessageParcel &data, MessageParcel &reply)

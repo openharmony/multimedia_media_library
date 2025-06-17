@@ -96,6 +96,8 @@ const std::unordered_map<int, std::string> jsErrMap = {
     { OHOS_PERMISSION_DENIED_CODE, "Permission denied" },
     { OHOS_INVALID_PARAM_CODE,  "invalid parameter" },
     { E_CHECK_SYSTEMAPP_FAIL,   "This interface can be called only by system apps" },
+    { JS_E_PARAM_INVALID,       "invalid parameter" },
+    { JS_E_INNER_FAIL,          "medialibrary inner fail" },
 };
 
 const std::unordered_map<int32_t, int32_t> ClientErrTable {

@@ -748,7 +748,15 @@ int MediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
     NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
     // Transfer Server error to napi error code
     if (error <= E_COMMON_START && error >= E_COMMON_END) {
-        error = (error == -E_CHECK_SYSTEMAPP_FAIL) ? E_CHECK_SYSTEMAPP_FAIL : JS_INNER_FAIL;
+        if (error == -E_CHECK_SYSTEMAPP_FAIL) {
+            error = E_CHECK_SYSTEMAPP_FAIL;
+        } else if (error == E_PARAM_CONVERT_FORMAT) {
+            error = JS_E_PARAM_INVALID;
+        } else if (error == E_INNER_CONVERT_FORMAT) {
+            error = JS_E_INNER_FAIL;
+        } else {
+            error = JS_INNER_FAIL;
+        }
     } else if (error == E_PERMISSION_DENIED) {
         error = OHOS_PERMISSION_DENIED_CODE;
     } else if (trans2JsError.count(error)) {
