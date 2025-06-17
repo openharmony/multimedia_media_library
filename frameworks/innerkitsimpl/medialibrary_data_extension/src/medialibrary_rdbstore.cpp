@@ -4612,6 +4612,16 @@ void AddPhotoAlbumRefreshColumns(RdbStore &store)
     MEDIA_INFO_LOG("end add photo album cover_date_time and hidden_cover_date_time for AccurateRefresh");
 }
 
+void AddHighlightLocation(RdbStore &store)
+{
+    const vector<string> sql = {
+        " ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " + HIGHLIGHT_LOCATION + " TEXT ",
+    };
+
+    MEDIA_INFO_LOG("start add highlight location column");
+    ExecSqls(sql, store);
+}
+
 static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
@@ -4637,6 +4647,10 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_AESTHETICS_SCORE_FIELDS) {
         AddAestheticsScoreFileds(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_LOCATION) {
+        AddHighlightLocation(store);
     }
 }
 
