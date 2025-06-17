@@ -3002,6 +3002,7 @@ static void Update500EditDataSize(const shared_ptr<MediaLibraryRdbStore> rdbStor
     }
 
     if (filePaths.empty() || fileIds.empty()) {
+        hasMore = false;
         MEDIA_INFO_LOG("No files need to update edit data size");
         return;
     }
@@ -3068,11 +3069,11 @@ int32_t MediaLibraryDataManager::UpdateMediaSizeFromStorage()
             MEDIA_INFO_LOG("Current status is off, skip disk cleanup");
             return E_OK;
         }
+        prefs->PutInt(UPDATE_EDITDATA_SIZE_COUNT, startFileId);
+        prefs->FlushSync();
         Update500EditDataSize(rdbStore, std::to_string(startFileId), hasMore);
         // 一次500张图片
         startFileId += 500;
-        prefs->PutInt(UPDATE_EDITDATA_SIZE_COUNT, startFileId);
-        prefs->FlushSync();
     }
 
     prefs->PutInt(NO_UPDATE_EDITDATA_SIZE, 1);

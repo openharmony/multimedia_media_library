@@ -1317,6 +1317,7 @@ int32_t MediaLibraryPhotoOperations::Get500FileIdsAndPathS(const std::shared_ptr
 
     auto result = rdbStore->Query(queryCmd, columns);
     if (!result || result->GoToFirstRow() != NativeRdb::E_OK) {
+        hasMore = false;
         MEDIA_ERR_LOG("Query files failed");
         return E_GET_PRAMS_FAIL;
     }
