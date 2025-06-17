@@ -733,7 +733,7 @@ static int32_t SetAlbumCounts(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     return E_SUCCESS;
 }
 
-static bool IsManualCover(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t albumId, string&uri)
+static bool IsManualCover(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t albumId, string &uri)
 {
     MEDIA_DEBUG_LOG("IsManualCover: albumId:%{public}d, coverUri:%{public}s", albumId, uri.c_str());
 
@@ -1288,8 +1288,9 @@ int32_t UpdateCoverUriSourceToDefault(int32_t albumId)
 
 static bool IsNeedSetCover(UpdateAlbumData &data, PhotoAlbumSubType subtype)
 {
-    MEDIA_DEBUG_LOG("IsNeedSetCover enter, albumId:%{public}d, coverUri:%{public}s, subtype:%{public}d",
-        data.albumId, data.albumCoverUri.c_str(), static_cast<int32_t>(subtype));
+    MEDIA_DEBUG_LOG(
+        "IsNeedSetCover enter, albumId:%{public}d, coverUri:%{public}s, subtype:%{public}d, coverUriSource:%{public}d",
+        data.albumId, data.albumCoverUri.c_str(), static_cast<int32_t>(subtype), data.coverUriSource);
     // manual cover and cover in the album
     if (data.coverUriSource == static_cast<int32_t>(CoverUriSource::DEFAULT_COVER)) {
         return true;
@@ -1320,6 +1321,8 @@ static bool IsNeedSetCover(UpdateAlbumData &data, PhotoAlbumSubType subtype)
         if (!isInAlbum) {
             UpdateCoverUriSourceToDefault(data.albumId);
         }
+        MEDIA_DEBUG_LOG("IsNeedSetCover: ownerAlbumId:%{public}d, isHidden:%{public}d, isTrashed:%{public}d",
+            ownerAlbumId, isHidden, isTrashed);
         return !isInAlbum;
     }
     auto isInAlbum = IsInSystemAlbum(rdbStore, predicates, subtype);
