@@ -563,6 +563,16 @@ void MediaLibraryRdbStore::AddPhotoDateAddedIndex(const shared_ptr<MediaLibraryR
     MEDIA_INFO_LOG("end AddPhotoDateAddedIndex");
 }
 
+void MediaLibraryRdbStore::AddPhotoWhiteBlocksIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start AddPhotoWhiteBlocksIndex");
+    const vector<string> sqls = {
+        PhotoColumn::INDEX_SCHPT_WHITE_BLOCKS,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end AddPhotoWhiteBlocksIndex");
+}
+
 void MediaLibraryRdbStore::AddPhotoSortIndex(const std::shared_ptr<MediaLibraryRdbStore> store)
 {
     MEDIA_INFO_LOG("start AddPhotoSortIndex");
@@ -1612,6 +1622,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INDEX_SCHPT_ALBUM_GENERAL,
     PhotoColumn::INDEX_SCHPT_ALBUM,
     PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED,
+    PhotoColumn::INDEX_SCHPT_WHITE_BLOCKS,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::INDEX_SCHPT_READY,
     PhotoColumn::CREATE_YEAR_INDEX,
