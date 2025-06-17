@@ -784,24 +784,25 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
     if (value == FIRST_PAGE) {
         string relatedMeFirstPage = ALBUM_ID + " IN " + whereClauseRelatedMe;
         string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 1";
+        string whereClauseIsMe = IS_ME + " = 1";
         string whereClauseSatifyCount = COUNT + " >= " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND (" +
             USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (((" + USER_DISPLAY_LEVEL + " != 3 AND " +
-            USER_DISPLAY_LEVEL + " !=2) OR " + USER_DISPLAY_LEVEL + " IS NULL) AND ((" +
-            whereClauseDisplay + ") OR (" + relatedMeFirstPage + ") OR (" + whereClauseSatifyCount + ") OR (" +
-            whereClauseAlbumName + "))) GROUP BY " + GROUP_TAG +
-            " ORDER BY CASE WHEN " + IS_ME + " != 0 THEN 0 ELSE 1 END, CASE WHEN " +
-            RENAME_OPERATION + " != 0 THEN 0 ELSE 1 END, " + COUNT + " DESC";
+                      USER_DISPLAY_LEVEL + " !=2) OR " + USER_DISPLAY_LEVEL + " IS NULL) AND ((" + whereClauseDisplay +
+                      ") OR (" + whereClauseIsMe + ") OR (" + relatedMeFirstPage + ") OR (" + whereClauseSatifyCount +
+                      ") OR (" + whereClauseAlbumName + "))) GROUP BY " + GROUP_TAG + " ORDER BY CASE WHEN " + IS_ME +
+                      " != 0 THEN 0 ELSE 1 END, CASE WHEN " + RENAME_OPERATION + " != 0 THEN 0 ELSE 1 END, " + COUNT +
+                      " DESC";
     } else if (value == SECOND_PAGE) {
-        whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 2 OR (" +
-            COUNT + " < " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND " + COUNT + " >= " +
-            to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " AND (" + USER_DISPLAY_LEVEL + " != 1 OR " +
-            USER_DISPLAY_LEVEL + " IS NULL) AND (" + USER_DISPLAY_LEVEL + " != 3 OR " + USER_DISPLAY_LEVEL +
-            " IS NULL) " + " AND NOT (" + whereClauseAlbumName + ") AND (" +
-            ALBUM_ID + " NOT IN " + whereClauseRelatedMe + ")))" +
-            " GROUP BY " + GROUP_TAG +
-            " ORDER BY CASE WHEN " + IS_ME + " != 0 THEN 0 ELSE 1 END, CASE WHEN " +
-            RENAME_OPERATION + " != 0 THEN 0 ELSE 1 END, " + COUNT + " DESC";
+        string whereClauseIsNotMe = IS_ME + " != 1 OR " + IS_ME + " IS NULL";
+        whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 2 OR ((" +
+                      whereClauseIsNotMe + ") AND " + COUNT + " < " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) +
+                      " AND " + COUNT + " >= " + to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " AND (" +
+                      USER_DISPLAY_LEVEL + " != 1 OR " + USER_DISPLAY_LEVEL + " IS NULL) AND (" + USER_DISPLAY_LEVEL +
+                      " != 3 OR " + USER_DISPLAY_LEVEL + " IS NULL) " + " AND NOT (" + whereClauseAlbumName +
+                      ") AND (" + ALBUM_ID + " NOT IN " + whereClauseRelatedMe + ")))" + " GROUP BY " + GROUP_TAG +
+                      " ORDER BY CASE WHEN " + IS_ME + " != 0 THEN 0 ELSE 1 END, CASE WHEN " + RENAME_OPERATION +
+                      " != 0 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == FAVORITE_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 3 )GROUP BY " +
             GROUP_TAG + " ORDER BY " + RANK;
@@ -2579,7 +2580,7 @@ int32_t MediaLibraryAlbumOperations::SetDisplayLevel(const ValuesBucket &values,
 
 void SetMyOldAlbum(vector<string>& updateSqls, shared_ptr<MediaLibraryRdbStore> uniStore)
 {
-    std::string queryIsMe = "SELECT COUNT(DISTINCT album_id)," + ALBUM_NAME + "," + USER_DISPLAY_LEVEL +
+    std::string queryIsMe = "SELECT COUNT(DISTINCT album_id)," + ALBUM_NAME +
         " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + IS_ME + " = 1 ";
     auto resultSet = uniStore->QuerySql(queryIsMe);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -2593,15 +2594,10 @@ void SetMyOldAlbum(vector<string>& updateSqls, shared_ptr<MediaLibraryRdbStore> 
     std::string clearIsMeAlbum = "";
     if (count > 0) {
         string albumName = "";
-        int userDisplayLevel = 0;
         GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumName);
-        GetIntValueFromResultSet(resultSet, USER_DISPLAY_LEVEL, userDisplayLevel);
         int renameOperation = albumName != "" ? 1 : 0;
-        int updateDisplayLevel = (userDisplayLevel != FAVORITE_PAGE &&
-            userDisplayLevel != FIRST_PAGE) ? 0 : userDisplayLevel;
         clearIsMeAlbum= "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 0, " + RENAME_OPERATION +
-            " = " + to_string(renameOperation) + ", " + USER_DISPLAY_LEVEL + " = " + to_string(updateDisplayLevel) +
-            " WHERE " + IS_ME + " = 1";
+            " = " + to_string(renameOperation) + " WHERE " + IS_ME + " = 1";
         updateSqls.push_back(clearIsMeAlbum);
     }
 }
@@ -2754,23 +2750,11 @@ int32_t MediaLibraryAlbumOperations::SetIsMe(const ValuesBucket &values, const D
     }
     vector<string> updateSqls;
     SetMyOldAlbum(updateSqls, uniStore);
-    std::string queryTargetIsMe = "SELECT " + USER_DISPLAY_LEVEL + " FROM " + ANALYSIS_ALBUM_TABLE +
-        " WHERE " + ALBUM_ID + " = " + targetAlbumId;
-    auto tartGetResultSet = uniStore->QuerySql(queryTargetIsMe);
-    if (tartGetResultSet == nullptr || tartGetResultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to query isMe!");
-        return -E_HAS_DB_ERROR;
-    }
-    int tartgetUserDisplayLevel;
-    GetIntValueFromResultSet(tartGetResultSet, USER_DISPLAY_LEVEL, tartgetUserDisplayLevel);
-    int updateTargetDisplayLevel = (tartgetUserDisplayLevel != FAVORITE_PAGE) ? 1 : tartgetUserDisplayLevel;
-    MEDIA_INFO_LOG("Start set is me, album id: %{public}s, target user display level: %{public}d",
-        targetAlbumId.c_str(), updateTargetDisplayLevel);
 
+    MEDIA_INFO_LOG("Start set is me, album id: %{public}s", targetAlbumId.c_str());
     std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " + RENAME_OPERATION +
-        " = 1, " + USER_DISPLAY_LEVEL + " = " + to_string(updateTargetDisplayLevel) + " WHERE " + GROUP_TAG +
-        " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
-        " = " + targetAlbumId + ")";
+        " = 1 WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
+        ALBUM_ID + " = " + targetAlbumId + ")";
     updateSqls.push_back(updateForSetIsMe);
     int32_t err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
