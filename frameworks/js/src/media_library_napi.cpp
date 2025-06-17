@@ -9752,7 +9752,7 @@ napi_value MediaLibraryNapi::PhotoAccessRegisterCallback(napi_env env, napi_call
     if (ret == E_OK) {
         NAPI_INFO_LOG("PhotoAccessRegisterCallback success");
     } else {
-        NapiError::ThrowError(env, ret);
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
         napi_delete_reference(env, cbOnRef);
         return undefinedResult;
     }
@@ -9884,7 +9884,7 @@ napi_value MediaLibraryNapi::PhotoAccessUnregisterCallback(napi_env env, napi_ca
     }
     int32_t ret = UnregisterObserverExecute(env, uriType, cbOffRef, *g_listObj);
     if (ret != E_OK) {
-        NapiError::ThrowError(env, ret);
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
     }
     if (cbOffRef != nullptr) {
         napi_delete_reference(env, cbOffRef);
