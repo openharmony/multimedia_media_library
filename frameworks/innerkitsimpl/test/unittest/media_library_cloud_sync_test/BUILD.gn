@@ -52,6 +52,7 @@ ohos_unittest("media_library_cloud_sync_test") {
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
     "hilog:libhilog",
+    "jsoncpp:jsoncpp",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
   ]
