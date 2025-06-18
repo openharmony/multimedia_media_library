@@ -69,7 +69,7 @@ public:
         const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns);
     EXPORT static int32_t UpdateWithDateTime(NativeRdb::ValuesBucket &values,
         const NativeRdb::AbsRdbPredicates &predicates);
-    static void ReplacePredicatesUriToId(NativeRdb::AbsRdbPredicates &predicates);
+    EXPORT static void ReplacePredicatesUriToId(NativeRdb::AbsRdbPredicates &predicates);
     static std::shared_ptr<NativeRdb::ResultSet> GetIndexOfUri(const NativeRdb::AbsRdbPredicates &predicates,
         const std::vector<std::string> &columns, const std::string &id);
     static std::shared_ptr<NativeRdb::ResultSet> GetIndexOfUriForPhotos(const NativeRdb::AbsRdbPredicates &predicates,
@@ -148,7 +148,6 @@ public:
     EXPORT std::pair<int32_t, NativeRdb::Results> Execute(const std::string &sql,
         const std::vector<NativeRdb::ValueObject> &args, const std::string &returningField);
 
-    static void WalCheckPoint();
     EXPORT int ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
         const std::vector<NativeRdb::ValueObject> &args = {});
     EXPORT static void UpdateMediaTypeAndThumbnailReadyIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
@@ -167,7 +166,6 @@ private:
     EXPORT static const std::string BeginGenerateHighlightThumbnail(const std::vector<std::string>& args);
     EXPORT static const std::string PhotoAlbumNotifyFunc(const std::vector<std::string>& args);
     static std::mutex reconstructLock_;
-    static std::mutex walCheckPointMutex_;
     NativeRdb::RdbStoreConfig config_ {""};
 };
 
