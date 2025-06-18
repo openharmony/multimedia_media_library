@@ -904,7 +904,7 @@ void CloudFileDataConvert::ConvertAttributes(MDKRecordPhotosData &data, OnFetchP
     onFetchPhotoVo.thmSize = data.GetThmSize().value_or(0L);
     onFetchPhotoVo.metaDateModified = data.GetPhotoMetaDateModified().value_or(0L);
     onFetchPhotoVo.editedTimeMs = data.GetEditTimeMs().value_or(0L);
-    onFetchPhotoVo.fixVersion = data.GetFixVersion().value_or(0);
+    onFetchPhotoVo.fixVersion = data.GetFixVersion().value_or(-1);
     onFetchPhotoVo.frontCamera = data.GetFrontCamera().value_or("");
     onFetchPhotoVo.editDataCamera = data.GetEditDataCamera().value_or("");
     onFetchPhotoVo.title = data.GetTitle().value_or("");
