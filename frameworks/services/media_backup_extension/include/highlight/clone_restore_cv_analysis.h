@@ -16,10 +16,8 @@
 #ifndef CLONE_RESTORE_CV_ANALYSIS_H
 #define CLONE_RESTORE_CV_ANALYSIS_H
 
-#include <sstream>
 #include <string>
 
-#include "backup_const.h"
 #include "clone_restore_highlight.h"
 #include "media_log.h"
 #include "nlohmann/json.hpp"
@@ -34,84 +32,6 @@ public:
     void RestoreAlbums(CloneRestoreHighlight &cloneHighlight);
 
 private:
-    struct AnalysisLabelInfo {
-        std::optional<int32_t> id;
-        std::optional<int32_t> fileId;
-        std::optional<int32_t> fileIdNew;
-        std::optional<int32_t> categoryId;
-        std::optional<std::string> subLabel;
-        std::optional<double> prob;
-        std::optional<std::string> feature;
-        std::optional<std::string> simResult;
-        std::optional<std::string> labelVersion;
-        std::optional<std::string> saliencySubprob;
-        std::optional<std::string> analysisVersion;
-        std::optional<int32_t> duplicateChecking;
-
-        std::string ToString() const
-        {
-            std::stringstream outputStr;
-            outputStr << "AnalysisLabelInfo[" << "id: ";
-            if (id.has_value()) { outputStr << id.value(); }
-            outputStr << ", fileId: ";
-            if (fileId.has_value()) { outputStr << fileId.value(); }
-            outputStr << "]";
-            return outputStr.str();
-        }
-    };
-
-    struct AnalysisSaliencyInfo {
-        std::optional<int32_t> id;
-        std::optional<int32_t> fileId;
-        std::optional<int32_t> fileIdNew;
-        std::optional<double> saliencyX;
-        std::optional<double> saliencyY;
-        std::optional<std::string> saliencyVersion;
-        std::optional<std::string> analysisVersion;
-
-        std::string ToString() const
-        {
-            std::stringstream outputStr;
-            outputStr << "AnalysisSaliencyInfo[" << "id: ";
-            if (id.has_value()) { outputStr << id.value(); }
-            outputStr << ", fileId: ";
-            if (fileId.has_value()) { outputStr << fileId.value(); }
-            outputStr << "]";
-            return outputStr.str();
-        }
-    };
-
-    struct AnalysisRecommendationInfo {
-        std::optional<int32_t> id;
-        std::optional<int32_t> fileId;
-        std::optional<int32_t> fileIdNew;
-        std::optional<int32_t> rcmdId;
-        std::optional<std::string> rcmdResolution;
-        std::optional<int32_t> rcmdScaleX;
-        std::optional<int32_t> rcmdScaleY;
-        std::optional<int32_t> rcmdScaleWidth;
-        std::optional<int32_t> rcmdScaleHeight;
-        std::optional<std::string> rcmdVersion;
-        std::optional<double> scaleX;
-        std::optional<double> scaleY;
-        std::optional<double> scaleWidth;
-        std::optional<double> scaleHeight;
-        std::optional<std::string> analysisVersion;
-        std::optional<std::string> movementCrop;
-        std::optional<std::string> movementVersion;
-
-        std::string ToString() const
-        {
-            std::stringstream outputStr;
-            outputStr << "AnalysisRecommendationInfo[" << "id: ";
-            if (id.has_value()) { outputStr << id.value(); }
-            outputStr << ", fileId: ";
-            if (fileId.has_value()) { outputStr << fileId.value(); }
-            outputStr << "]";
-            return outputStr.str();
-        }
-    };
-
     void RestoreAssetSdMap(CloneRestoreHighlight &cloneHighlight);
     void RestoreAlbumAssetMap(CloneRestoreHighlight &cloneHighlight);
     void InsertIntoAssetSdMap(std::vector<NativeRdb::ValuesBucket> &values);
@@ -119,19 +39,6 @@ private:
     void MoveAnalysisAssets(const std::string &srcPath, const std::string &dstPath);
     int32_t BatchInsertWithRetry(const std::string &tableName,
         const std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum);
-    void GetAnalysisLabelInfos(CloneRestoreHighlight &cloneHighlight);
-    void GetLabelRowInfo(AnalysisLabelInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
-    void InsertIntoAnalysisLabel();
-    void GetLabelInsertValue(NativeRdb::ValuesBucket &value, const AnalysisLabelInfo &info);
-    std::unordered_set<std::string> GetCommonColumns(const std::string &tableName);
-    void GetAnalysisSaliencyInfos(CloneRestoreHighlight &cloneHighlight);
-    void GetSaliencyRowInfo(AnalysisSaliencyInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
-    void InsertIntoAnalysisSaliency();
-    void GetSaliencyInsertValue(NativeRdb::ValuesBucket &value, const AnalysisSaliencyInfo &info);
-    void GetAnalysisRecommendationInfos(CloneRestoreHighlight &cloneHighlight);
-    void GetRecommendationRowInfo(AnalysisRecommendationInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
-    void InsertIntoAnalysisRecommendation();
-    void GetRecommendationInsertValue(NativeRdb::ValuesBucket &value, const AnalysisRecommendationInfo &info);
     std::string ParsePlayInfo(const std::string &oldPlayInfo, CloneRestoreHighlight &cloneHighlight);
     void ParseEffectline(nlohmann::json &newPlayInfo, size_t effectlineIndex, CloneRestoreHighlight &cloneHighlight);
     void ParseEffectlineFileData(nlohmann::json &newPlayInfo, size_t effectlineIndex,
@@ -152,10 +59,6 @@ private:
     std::string assetPath_;
     std::string garblePath_;
     std::unordered_map<std::string, std::string> assetUriMap_;
-    std::unordered_map<std::string, std::unordered_set<std::string>> intersectionMap_;
-    std::vector<AnalysisLabelInfo> labelInfos_;
-    std::vector<AnalysisSaliencyInfo> saliencyInfos_;
-    std::vector<AnalysisRecommendationInfo> recommendInfos_;
     int64_t failCnt_{0};
 };
 } // namespace OHOS::Media
