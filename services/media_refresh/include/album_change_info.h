@@ -76,7 +76,7 @@ public:
     static ResultSetDataType GetDataType(const std::string &column);
 
 private:
-    static std::vector<std::string> albumInfoColumns_;
+    static const std::vector<std::string> albumInfoColumns_;
     static const std::map<std::string, ResultSetDataType> albumInfoCloumnTypes_;
     bool isSystem_ = false;
 };

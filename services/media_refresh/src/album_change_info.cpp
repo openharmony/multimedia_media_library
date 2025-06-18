@@ -45,15 +45,16 @@ const map<std::string, ResultSetDataType> AlbumChangeInfo::albumInfoCloumnTypes_
     { PhotoAlbumColumns::ALBUM_DIRTY, TYPE_INT32 },
 };
 
-vector<std::string> AlbumChangeInfo::albumInfoColumns_;
+const vector<std::string> AlbumChangeInfo::albumInfoColumns_ = []() {
+    vector<string> result;
+    for (const auto &item : albumInfoCloumnTypes_) {
+        result.push_back(item.first);
+    }
+    return result;
+}();
 
 const std::vector<std::string>& AlbumChangeInfo::GetAlbumInfoColumns()
 {
-    if (albumInfoColumns_.empty()) {
-        for (const auto &item : albumInfoCloumnTypes_) {
-            albumInfoColumns_.push_back(item.first);
-        }
-    }
     return albumInfoColumns_;
 }
 
