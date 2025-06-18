@@ -90,7 +90,7 @@ public:  // getter & setter
     std::optional<int32_t> GetPriority() const;
     void SetPriority(const int32_t &priority);
     std::optional<int32_t> GetCoverUriSource() const;
-    void SetCoverUriSource(const int32_t &coverUrisource);
+    void SetCoverUriSource(const int32_t &coverUriSource);
     std::optional<std::string> GetCoverCloudId() const;
     void SetCoverCloudId(const std::string &coverCloudId);
 

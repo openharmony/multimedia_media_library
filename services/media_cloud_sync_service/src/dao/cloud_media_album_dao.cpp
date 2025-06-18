@@ -302,9 +302,9 @@ int32_t CloudMediaAlbumDao::UpdateCloudAlbumInner(PhotoAlbumDto &record, const s
         } else {
             MEDIA_DEBUG_LOG("cloud cover need pull");
             values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::MANUAL_WAIT_PULL_COVER);
+            values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, record.coverCloudId);
         }
     }
-    values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, record.coverUriSource);
     ret = albumRefreshHandle->Update(changedRows, PhotoAlbumColumns::TABLE, values, field + " = ?", {value});
     CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_RDB,
         "Insert pull record failed, rdb ret = %{public}d", ret);
@@ -1095,6 +1095,7 @@ static int64_t GetDateModified(string &coverCloudId)
     auto dateModifiedStr = coverCloudId.substr(0, index);
     if (dateModifiedStr.empty()) {
         MEDIA_ERR_LOG("GetDateModified err coverCloudId:%{public}s", coverCloudId.c_str());
+        return dateModified;
     }
     dateModified = static_cast<int64_t>(atoll(dateModifiedStr.c_str()));
     return dateModified;
@@ -1118,8 +1119,8 @@ bool CloudMediaAlbumDao::IsNeedPullCoverByDateModified(string &lPath, string &co
     int64_t dateModifiedCloud = GetDateModified(coverCloudId);
     int64_t dateModifiedLocal = GetDateModified(coverCloudIdLocal);
 
-    MEDIA_INFO_LOG("IsNeedPullCoverByDateModified:lPath:%{public}s,Cloud:%{public}lld,Local:%{public}lld",
-        lPath.c_str(), static_cast<long long>(dateModifiedCloud), static_cast<long long>(dateModifiedLocal));
+    MEDIA_INFO_LOG("IsNeedPullCoverByDateModified:lPath:%{public}s, Cloud:%{public}s, Local:%{public}s",
+        lPath.c_str(), to_string(dateModifiedCloud).c_str(), to_string(dateModifiedLocal).c_str());
     return dateModifiedCloud > dateModifiedLocal;
 }
 
