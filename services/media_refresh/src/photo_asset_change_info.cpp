@@ -60,14 +60,16 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
     { PhotoColumn::MEDIA_FILE_PATH, TYPE_STRING }
 };
 
-vector<std::string> PhotoAssetChangeInfo::photoAssetColumns_;
+const vector<std::string> PhotoAssetChangeInfo::photoAssetColumns_ = []() {
+    vector<string> result;
+    for (const auto &item : photoAssetCloumnTypes_) {
+        result.push_back(item.first);
+    }
+    return result;
+}();
+
 const vector<string>& PhotoAssetChangeInfo::GetPhotoAssetClolumns()
 {
-    if (photoAssetColumns_.empty()) {
-        for (const auto &item : photoAssetCloumnTypes_) {
-            photoAssetColumns_.push_back(item.first);
-        }
-    }
     return photoAssetColumns_;
 }
 

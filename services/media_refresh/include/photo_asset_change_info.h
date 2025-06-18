@@ -91,7 +91,7 @@ public:
     bool operator!=(const PhotoAssetChangeInfo &info) const;
 
 private:
-    static std::vector<std::string> photoAssetColumns_;
+    static const std::vector<std::string> photoAssetColumns_;
     static const std::map<std::string, ResultSetDataType> photoAssetCloumnTypes_;
     bool isSystem_ = false;
 };
