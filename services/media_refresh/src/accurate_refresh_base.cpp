@@ -21,6 +21,9 @@
 #include "medialibrary_unistore_manager.h"
 #include "accurate_debug_log.h"
 #include "result_set_utils.h"
+#include "dfx_timer.h"
+#include "dfx_const.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -34,12 +37,6 @@ int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
 {
     if (!IsValidTable(cmd.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
-    }
-
-    auto ret = Init();
-    if (ret != ACCURATE_REFRESH_RET_OK) {
-        MEDIA_WARN_LOG("no Init.");
-        return ret;
     }
 
     lock_guard<mutex> lock(dbOperationMtx_);
@@ -72,19 +69,14 @@ int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
         keys.push_back(static_cast<int32_t> (outRowId));
         ACCURATE_DEBUG("Insert key: %{public}" PRId64, outRowId);
     #endif
-    return UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD);
+    UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD);
+    return ACCURATE_REFRESH_RET_OK;
 }
 
 int32_t AccurateRefreshBase::Insert(int64_t &outRowId, const string &table, ValuesBucket &value)
 {
     if (!IsValidTable(table)) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
-    }
-
-    auto ret = Init();
-    if (ret != ACCURATE_REFRESH_RET_OK) {
-        MEDIA_WARN_LOG("no Init.");
-        return ret;
     }
 
     lock_guard<mutex> lock(dbOperationMtx_);
@@ -119,7 +111,8 @@ int32_t AccurateRefreshBase::Insert(int64_t &outRowId, const string &table, Valu
         keys.push_back(static_cast<int32_t> (outRowId));
         ACCURATE_DEBUG("Insert key: %{public}" PRId64, outRowId);
     #endif
-    return UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD);
+    UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD);
+    return ACCURATE_REFRESH_RET_OK;
 }
 
 int32_t AccurateRefreshBase::BatchInsert(MediaLibraryCommand &cmd, int64_t& changedRows, vector<ValuesBucket>& values)
@@ -137,11 +130,6 @@ int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &tab
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
 
-    auto ret = Init();
-    if (ret != ACCURATE_REFRESH_RET_OK) {
-        MEDIA_WARN_LOG("no Init.");
-        return ret;
-    }
     lock_guard<mutex> lock(dbOperationMtx_);
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
@@ -157,22 +145,30 @@ int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &tab
     }
     changedRows = retWithResults.second.changed;
     vector<int32_t> keys = GetReturningKeys(retWithResults);
-    return UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD);
+    UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD);
+    return ACCURATE_REFRESH_RET_OK;
 }
 int32_t AccurateRefreshBase::Update(MediaLibraryCommand &cmd, int32_t &changedRows)
 {
-    if (!IsValidTable(cmd.GetTableName())) {
-        return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
+    // 保持和 medialibrary_rdbstore.cpp 处理一致
+    if (!trans_) {
+        if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+            cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
+                MediaFileUtils::UTCTimeMilliSeconds());
+            cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME,
+                MediaFileUtils::UTCTimeMilliSeconds());
+        }
     }
+
+    DfxTimer dfxTimer(DfxType::RDB_UPDATE_BY_CMD, INVALID_DFX, RDB_TIME_OUT, false);
+    MediaLibraryTracer tracer;
+    tracer.Start("RdbStore->UpdateByCmd");
     return Update(changedRows, cmd.GetValueBucket(), *(cmd.GetAbsRdbPredicates()));
 }
 
 int32_t AccurateRefreshBase::Update(int32_t &changedRows, const string &table, const ValuesBucket &value,
     const string &whereClause, const vector<string> &args)
 {
-    if (!IsValidTable(table)) {
-        return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
-    }
     AbsRdbPredicates predicates(table);
     predicates.SetWhereClause(whereClause);
     predicates.SetWhereArgs(args);
@@ -191,12 +187,16 @@ int32_t AccurateRefreshBase::Update(int32_t &changedRows, const ValuesBucket &va
     auto ret = Init(predicates);
     if (ret != ACCURATE_REFRESH_RET_OK) {
         MEDIA_WARN_LOG("no Init.");
-        return ret;
     }
 
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
-        retWithResults = trans_->Update(value, predicates, GetReturningKeyName());
+        ValuesBucket checkValue = value;
+        if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+            checkValue.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+            checkValue.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+        }
+        retWithResults = trans_->Update(checkValue, predicates, GetReturningKeyName());
         CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
             "rdb trans Update error.");
     } else {
@@ -209,7 +209,8 @@ int32_t AccurateRefreshBase::Update(int32_t &changedRows, const ValuesBucket &va
 
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     changedRows = retWithResults.second.changed;
-    return UpdateModifiedDatasInner(keys, operation);
+    UpdateModifiedDatasInner(keys, operation);
+    return ACCURATE_REFRESH_RET_OK;
 }
 
 // Files表和Photos表，执行Update；PhotosAlbum表，执行Update；PhotoTable，执行Update；其它执行Delete
@@ -249,25 +250,25 @@ int32_t AccurateRefreshBase::Delete(int32_t &deletedRows, const AbsRdbPredicates
     auto ret = Init(predicates);
     if (ret != ACCURATE_REFRESH_RET_OK) {
         MEDIA_WARN_LOG("no Init.");
-        return ret;
     }
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->Delete(predicates, GetReturningKeyName());
-        CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+        CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, retWithResults.first,
             "rdb Delete error.");
     } else {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
         retWithResults = rdbStore->Delete(predicates, GetReturningKeyName());
-        CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
+        CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, retWithResults.first,
             "rdb Delete error.");
     }
     
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     deletedRows = retWithResults.second.changed;
     ACCURATE_DEBUG("deletedRows: %{public}d", deletedRows);
-    return UpdateModifiedDatasInner(keys, RDB_OPERATION_REMOVE);
+    UpdateModifiedDatasInner(keys, RDB_OPERATION_REMOVE);
+    return ACCURATE_REFRESH_RET_OK;
 }
 
 int32_t AccurateRefreshBase::UpdateModifiedDatasInner(const vector<int32_t> &keys, RdbOperation operation)
@@ -315,7 +316,7 @@ int32_t AccurateRefreshBase::ExecuteForLastInsertedRowId(const string &sql, cons
         retWithResults = trans_->Execute(sql, bindArgs, GetReturningKeyName());
     } else {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
+        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore null.");
         retWithResults = rdbStore->Execute(sql, bindArgs, GetReturningKeyName());
     }
 
@@ -348,7 +349,8 @@ int32_t AccurateRefreshBase::ExecuteSql(const string &sql, const vector<ValueObj
     
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     ACCURATE_DEBUG("ExecuteSql: %{public}d", retWithResults.second.changed);
-    return UpdateModifiedDatasInner(keys, operation);
+    UpdateModifiedDatasInner(keys, operation);
+    return ACCURATE_REFRESH_RET_OK;
 }
 
 int32_t AccurateRefreshBase::ExecuteForChangedRowCount(int64_t &outValue, const string &sql,
@@ -369,7 +371,8 @@ int32_t AccurateRefreshBase::ExecuteForChangedRowCount(int64_t &outValue, const 
     outValue = retWithResults.second.changed;
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     ACCURATE_DEBUG("ExecuteForChangedRowCount: %{public}" PRId64, outValue);
-    return UpdateModifiedDatasInner(keys, operation);
+    UpdateModifiedDatasInner(keys, operation);
+    return ACCURATE_REFRESH_RET_OK;
 }
 
 int32_t AccurateRefreshBase::UpdateWithDateTime(ValuesBucket &values, const AbsRdbPredicates &predicates)
