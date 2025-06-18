@@ -58,7 +58,7 @@ int32_t AssetDataManager::UpdateThumbnailChangeStatus(PhotoAssetChangeData &asse
     MEDIA_DEBUG_LOG("UpdateThumbnailChangeStatus visibleBefore: %{public}d, visibleAfter: %{public}d, "
         "readyBefore: %{public}" PRId64 ", readyAfter: %{public}" PRId64,
         visibleBefore, visibleAfter, readyBefore, readyAfter);
-    if (visibleAfter == 0) {
+    if (visibleAfter == 0 || visibleAfter == INVALID_INT32_VALUE) {
         return ThumbnailChangeStatus::THUMBNAIL_NOT_EXISTS;
     }
     if (visibleBefore != visibleAfter) {
