@@ -30,13 +30,17 @@ namespace OHOS::Media {
 class CloneRestoreHighlight {
 public:
     void Init(int32_t sceneCode, const std::string &taskId, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
-        std::shared_ptr<NativeRdb::RdbStore> mediaRdb, const std::string &backupRestoreDir);
+        std::shared_ptr<NativeRdb::RdbStore> mediaRdb, const std::string &backupRestoreDir,
+        const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void Restore();
     void RestoreAlbums();
-    void RestoreMaps(std::vector<FileInfo> &fileInfos);
+    void RestoreMaps();
+    int32_t GetTotalNumberOfMaps();
+    void RestoreMapsBatch();
     void UpdateAlbums();
     int32_t GetNewHighlightAlbumId(int32_t oldId);
     int32_t GetNewHighlightPhotoId(int32_t oldId);
-    std::string GetNewHighlightPhotoUri(int32_t newId);
+    std::string GetNewHighlightPhotoUri(int32_t oldId);
     bool IsCloneHighlight();
     std::string GetDefaultPlayInfo();
     void UpdateHighlightStatus(const std::vector<int32_t> &highlightIds);
@@ -74,6 +78,7 @@ private:
         std::optional<int32_t> renameOperation;
         std::optional<int32_t> isLocal;
         std::optional<int32_t> isCoverSatisfied;
+        std::optional<std::string> relationship;
 
         std::optional<int32_t> highlightIdOld;
         std::optional<int32_t> highlightIdNew;
@@ -129,6 +134,7 @@ private:
         std::optional<int32_t> isMuted;
         std::optional<int32_t> isFavorite;
         std::optional<std::string> theme;
+        std::optional<int64_t> pinTime;
         std::optional<int32_t> useSubtitle;
 
         std::string ToString() const
@@ -223,10 +229,9 @@ private:
     void InsertIntoAnalysisAlbum();
     void GetAnalysisInsertValue(NativeRdb::ValuesBucket &value, const AnalysisAlbumInfo &info);
     int32_t GetMaxAlbumId(const std::string &tableName, const std::string &idName);
-    void GetPhotoMapInfos(const std::vector<FileInfo> &fileInfos);
-    void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const std::vector<FileInfo> &fileInfos);
+    void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values);
     void UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb::ValuesBucket> &values,
-        std::shared_ptr<NativeRdb::ResultSet> resultSet, std::unordered_map<int32_t, FileInfo> &fileInfoMap);
+        std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void InsertAnalysisPhotoMap(std::vector<NativeRdb::ValuesBucket> &values);
     int32_t BatchInsertWithRetry(const std::string &tableName, const std::vector<NativeRdb::ValuesBucket> &values,
         int64_t &rowNum);
@@ -275,14 +280,14 @@ private:
     std::string coverPath_;
     std::string musicDir_;
     std::string garblePath_;
-    SafeMap<int32_t, int32_t> photoIdMap_;
-    SafeMap<int32_t, std::string> photoUriMap_;
     std::mutex counterMutex_;
     std::unordered_map<std::string, int32_t> albumPhotoCounter_;
     std::unordered_map<std::string, std::unordered_set<std::string>> intersectionMap_;
     int64_t failCnt_{0};
     bool isMapOrder_{false};
     bool isCloneHighlight_{false};
+    int32_t lastIdOfMap_{0};
+    std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
 };
 
 template<typename T>

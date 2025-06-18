@@ -23,6 +23,8 @@
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
 #include "clone_restore_classify.h"
+#include "clone_restore_cv_analysis.h"
+#include "clone_restore_highlight.h"
 #include "clone_restore_geo.h"
 #include "cloud_sync_utils.h"
 #include "database_report.h"
@@ -292,8 +294,6 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreGeoDictionary_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
-    cloneRestoreHighlight_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
-    cloneRestoreCVAnalysis_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -474,7 +474,6 @@ void CloneRestore::RestoreAlbum()
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
     cloneRestoreGeoDictionary_.RestoreAlbums();
-    RestoreHighlightAlbums();
 }
 
 int32_t CloneRestore::GetHighlightCloudMediaCnt()
@@ -501,13 +500,19 @@ void CloneRestore::RestoreHighlightAlbums()
     int32_t highlightCloudMediaCnt = GetHighlightCloudMediaCnt();
     UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
         .Report("Highlight Restore", "",
-            "sceneCode_: " + std::to_string(this->sceneCode_) +
-            ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
-            ", isAccountValid_: " + std::to_string(isAccountValid_) +
-            ", syncSwitchType_: " + std::to_string(syncSwitchType_) +
-            ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOn_));
-    bool cond = (highlightCloudMediaCnt == 0 || IsCloudRestoreSatisfied());
-    CHECK_AND_EXECUTE(!cond, cloneRestoreHighlight_.RestoreAlbums());
+            "highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
+            ", isCloudRestoreSatisfied: " + std::to_string(IsCloudRestoreSatisfied()));
+    if (highlightCloudMediaCnt > 0 && !IsCloudRestoreSatisfied()) {
+        return;
+    }
+
+    CloneRestoreHighlight cloneRestoreHighlight;
+    cloneRestoreHighlight.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir_, photoInfoMap_);
+    cloneRestoreHighlight.Restore();
+
+    CloneRestoreCVAnalysis cloneRestoreCVAnalysis;
+    cloneRestoreCVAnalysis.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir_);
+    cloneRestoreCVAnalysis.RestoreAlbums(cloneRestoreHighlight); // TODO
 }
 
 void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount,
@@ -1619,11 +1624,14 @@ void CloneRestore::RestoreGallery()
         .SetTaskId(this->taskId_)
         .ReportMedia(this->mediaRdb_, DatabaseReport::PERIOD_OLD)
         .ReportMedia(this->mediaLibraryRdb_, DatabaseReport::PERIOD_BEFORE);
+    UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
+        .Report("RESTORE_CLOUD_STATUS", "",
+            "isAccountValid_: " + std::to_string(isAccountValid_) +
+            ", syncSwitchType_: " + std::to_string(syncSwitchType_) +
+            ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOn_));
     // Restore the backup db info.
     RestoreAlbum();
     RestorePhoto();
-    MEDIA_INFO_LOG("the isAccountValid_ is %{public}d, sync switch open is %{public}d", isAccountValid_,
-        isSyncSwitchOn_);
     if (IsCloudRestoreSatisfied()) {
         MEDIA_INFO_LOG("singlCloud cloud clone");
         RestorePhotoForCloud();
@@ -1641,8 +1649,6 @@ void CloneRestore::RestoreGallery()
     RestoreAnalysisClassify();
     RestoreAnalysisGeo();
     cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
-    cloneRestoreHighlight_.UpdateAlbums();
-    cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
     RestoreAnalysisData();
     ReportPortraitCloneStat(sceneCode_);
     InheritManualCover();
@@ -1683,6 +1689,7 @@ void CloneRestore::RestoreAnalysisData()
     RestoreBeautyScoreData();
     RestoreVideoFaceData();
     RestoreAnalysisTablesData();
+    RestoreHighlightAlbums();
 }
 
 void CloneRestore::RestoreSearchIndexData()
@@ -2104,7 +2111,6 @@ void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos, int32_t sourc
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("query new file_id cost %{public}ld, insert %{public}ld maps cost %{public}ld",
         (long)(startInsert - startQuery), (long)mapRowNum, (long)(end - startInsert));
-    cloneRestoreHighlight_.RestoreMaps(fileInfos);
 }
 
 void CloneRestore::SetFileIdReference(const vector<FileInfo> &fileInfos, string &selection,
