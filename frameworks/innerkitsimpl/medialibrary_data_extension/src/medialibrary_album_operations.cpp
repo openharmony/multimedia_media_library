@@ -490,7 +490,7 @@ int32_t MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(int32_t id, const Va
 bool MediaLibraryAlbumOperations::IsCoverInSystemAlbum(RdbPredicates &predicates, int32_t albumSubtype)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore when query");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Failed to get rdbStore when query");
     vector<string> columns = {PhotoColumn::MEDIA_IS_FAV, PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_DATE_TRASHED,
         PhotoColumn::PHOTO_STRONG_ASSOCIATION};
     auto resultSet = rdbStore->Query(predicates, columns);
@@ -1288,13 +1288,13 @@ int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbum(const ValuesBucket &values
 bool MediaLibraryAlbumOperations::IsManunalCloudCover(const string &fileId, string &coverCloudId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore when query");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Failed to get rdbStore when query");
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
 
     vector<string> columns = {PhotoColumn::PHOTO_CLOUD_ID};
     auto resultSet = rdbStore->Query(predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "failed to acquire result from visitor query.");
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "failed to acquire result from visitor query.");
     bool ret = false;
     if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         coverCloudId = get<std::string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_CLOUD_ID,
