@@ -373,23 +373,6 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_GetDownloadNum_Test_001, TestSi
     MEDIA_INFO_LOG("Bcfpt_CheckAndUpdateDownloadCnt_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_UpdateAbnormalDayMonthYearExecutor_Test_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("Bcfpt_UpdateAbnormalDayMonthYearExecutor_Test_001 Start");
-    BackgroundCloudFileProcessor::DownloadLatestFinished();
-    BackgroundCloudFileProcessor::ProcessCloudData();
-    std::vector<std::string> fileIds = { "file1", "file2", "file3" };
-    BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYearData *data =
-        new BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYearData(fileIds);
-    data->fileIds_ = { "file1", "file2", "file3" };
-    BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYearExecutor(data);
-    delete data;
-    int64_t downloadNum = 30;
-    BackgroundCloudFileProcessor::GetDownloadNum(downloadNum);
-    EXPECT_EQ(downloadNum, 30);
-    MEDIA_INFO_LOG("Bcfpt_UpdateAbnormalDayMonthYearExecutor_Test_001 End");
-}
-
 HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_removeFinishedResult_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_removeFinishedResult_Test_001 Start");

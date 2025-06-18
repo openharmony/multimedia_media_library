@@ -57,6 +57,7 @@ public:
     EXPORT static void StopDeleteCloudMediaAssets();
     EXPORT int32_t CheckCloudSyncStatus();
     EXPORT void RestartForceRetainCloudAssets();
+    EXPORT static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
 
 private:
     CloudMediaAssetManager() {}
@@ -68,7 +69,6 @@ private:
     EXPORT static int32_t DeleteBatchCloudFile(const std::vector<std::string> &fileIds);
     EXPORT static int32_t ReadyDataForDelete(std::vector<std::string> &fileIds, std::vector<std::string> &paths,
         std::vector<std::string> &dateTakens);
-    static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
     EXPORT int32_t UpdateCloudMediaAssets();
     EXPORT int32_t DeleteEmptyCloudAlbums();
     EXPORT int32_t UpdateLocalAlbums();

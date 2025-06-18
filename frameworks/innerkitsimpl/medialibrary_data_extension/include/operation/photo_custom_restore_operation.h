@@ -24,6 +24,7 @@
 #include "metadata.h"
 
 namespace OHOS::Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 struct RestoreTaskInfo {
     std::string albumLpath;
     std::string keyPath;
@@ -89,11 +90,11 @@ const std::string ALBUM_PATH_PREFIX = "/Pictures/";
 
 class PhotoCustomRestoreOperation {
 public:
-    static PhotoCustomRestoreOperation &GetInstance();
+    EXPORT static PhotoCustomRestoreOperation &GetInstance();
     PhotoCustomRestoreOperation &AddTask(RestoreTaskInfo restoreTaskInfo);
     PhotoCustomRestoreOperation &Start();
     void CancelTask(RestoreTaskInfo restoreTaskInfo);
-    void CleanTimeoutCustomRestoreTaskDir();
+    EXPORT void CleanTimeoutCustomRestoreTaskDir();
 
 private:
     void DoCustomRestore(RestoreTaskInfo &restoreTaskInfo);

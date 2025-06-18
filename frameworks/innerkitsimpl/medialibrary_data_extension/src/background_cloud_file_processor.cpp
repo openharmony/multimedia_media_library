@@ -22,6 +22,8 @@
 #include "abs_rdb_predicates.h"
 #include "cloud_sync_manager.h"
 #include "common_timer_errors.h"
+#include "ffrt.h"
+#include "ffrt_inner.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -65,12 +67,10 @@ static constexpr int64_t DOWNLOAD_DAY_FREE_RATIO_LOW = 7;
 
 static const int64_t DOWNLOAD_ID_DEFAULT = -1;
 
-int32_t BackgroundCloudFileProcessor::processInterval_ = PROCESS_INTERVAL;  // 5 minute
 int32_t BackgroundCloudFileProcessor::downloadInterval_ = DOWNLOAD_INTERVAL;  // 1 minute
 int32_t BackgroundCloudFileProcessor::downloadDuration_ = DOWNLOAD_DURATION; // 10 seconds
 recursive_mutex BackgroundCloudFileProcessor::mutex_;
 Utils::Timer BackgroundCloudFileProcessor::timer_("background_cloud_file_processor");
-uint32_t BackgroundCloudFileProcessor::cloudDataTimerId_ = 0;
 uint32_t BackgroundCloudFileProcessor::startTimerId_ = 0;
 uint32_t BackgroundCloudFileProcessor::stopTimerId_ = 0;
 bool BackgroundCloudFileProcessor::isUpdating_ = true;
@@ -92,6 +92,10 @@ const std::string LAST_DOWNLOAD_MILLISECOND = "last_download_millisecond";
 const int32_t MIN_DOWNLOAD_NUM = 1;
 const int32_t MAX_DOWNLOAD_NUM = 30;
 const double HALF = 0.5;
+
+const std::string BackgroundCloudFileProcessor::taskName_ = DOWNLOAD_ORIGIN_CLOUD_FILES_FOR_LOGIN;
+static const std::string REMOVE_KEY = "taskRun";
+static const std::string REMOVE_VALUE = "false";
 
 void BackgroundCloudFileProcessor::SetDownloadLatestFinished(bool downloadLatestFinished)
 {
@@ -168,28 +172,38 @@ int64_t BackgroundCloudFileProcessor::GetDownloadCnt(std::string uri)
     return prefs->GetLong(uri, defaultCnt);
 }
 
-void BackgroundCloudFileProcessor::DownloadCloudFiles()
+bool BackgroundCloudFileProcessor::DownloadCloudFilesSync()
 {
-    CHECK_AND_RETURN_LOG(CloudSyncUtils::IsCloudSyncSwitchOn(),
+    CHECK_AND_RETURN_RET_LOG(CloudSyncUtils::IsCloudSyncSwitchOn(), false,
         "Cloud sync switch off, skip DownloadCloudFiles");
     MEDIA_DEBUG_LOG("Start downloading cloud files task");
 
     double freeRatio = 0.0;
-    CHECK_AND_RETURN_LOG(GetStorageFreeRatio(freeRatio),
+    CHECK_AND_RETURN_RET_LOG(GetStorageFreeRatio(freeRatio), false,
         "GetStorageFreeRatio failed, stop downloading cloud files");
     auto resultSet = QueryCloudFiles(freeRatio);
-    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query cloud files!");
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Failed to query cloud files!");
 
     DownloadFiles downloadFiles;
     ParseDownloadFiles(resultSet, downloadFiles);
-    CHECK_AND_RETURN_LOG(!downloadFiles.uris.empty(), "No cloud files need to be downloaded");
+    CHECK_AND_RETURN_RET_LOG(!downloadFiles.uris.empty(), true, "No cloud files need to be downloaded");
     int32_t ret = AddDownloadTask(downloadFiles);
     CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to add download task! err: %{public}d", ret);
+    return true;
+}
+
+void BackgroundCloudFileProcessor::DownloadCloudFiles()
+{
+    if (!DownloadCloudFilesSync()) {
+        std::thread([]() {
+            StopTimer(true);
+        }).detach();
+    }
 }
 
 void BackgroundCloudFileProcessor::UpdateCloudData()
 {
-    MEDIA_DEBUG_LOG("Start update cloud data task");
+    MEDIA_INFO_LOG("Start update cloud data task");
     std::vector<QueryOption> queryList = {{false, true}, {false, false}, {true, true}};
     int32_t count = 0;
     UpdateData updateData;
@@ -208,29 +222,15 @@ void BackgroundCloudFileProcessor::UpdateCloudData()
     }
 
     if (updateData.abnormalData.empty()) {
-        MEDIA_DEBUG_LOG("No data need to update");
+        MEDIA_INFO_LOG("No data need to update");
         return;
     }
-    int32_t ret = AddUpdateDataTask(updateData);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to add update task! err: %{public}d", ret);
-    }
-}
-
-void BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYearExecutor(AsyncTaskData *data)
-{
-    auto *taskData = static_cast<UpdateAbnormalDayMonthYearData *>(data);
-    CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is nullptr!");
-
-    std::vector<std::string> fileIds = taskData->fileIds_;
-    auto ret = PhotoDayMonthYearOperation::UpdateAbnormalDayMonthYear(fileIds);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
-        "Failed to update abnormal day month year data task! err: %{public}d", ret);
+    UpdateCloudDataExecutor(updateData);
 }
 
 void BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYear()
 {
-    MEDIA_DEBUG_LOG("Start update abnormal day month year data task");
+    MEDIA_INFO_LOG("Start update abnormal day month year data task");
 
     auto [ret, needUpdateFileIds] =
         PhotoDayMonthYearOperation::QueryNeedUpdateFileIds(UPDATE_DAY_MONTH_YEAR_BATCH_SIZE);
@@ -241,18 +241,14 @@ void BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYear()
         return;
     }
 
-    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "Failed to get async worker instance!");
-
-    auto *taskData = new (std::nothrow) UpdateAbnormalDayMonthYearData(needUpdateFileIds);
-    CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to alloc async data for update abnormal day month year data!");
-
-    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(UpdateAbnormalDayMonthYearExecutor, taskData);
-    asyncWorker->AddTask(asyncTask, false);
+    ret = PhotoDayMonthYearOperation::UpdateAbnormalDayMonthYear(needUpdateFileIds);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Failed to update abnormal day month year data task! err: %{public}d", ret);
 }
 
 void BackgroundCloudFileProcessor::ProcessCloudData()
 {
+    isUpdating_ = true;
     UpdateCloudData();
     UpdateAbnormalDayMonthYear();
 }
@@ -345,6 +341,13 @@ void BackgroundCloudFileProcessor::DownloadLatestFinished()
 {
     SetDownloadLatestFinished(true);
     ClearDownloadCnt();
+
+    std::string modifyInfo;
+    WriteModifyInfo(REMOVE_KEY, REMOVE_VALUE, modifyInfo);
+    ModifyTask(taskName_, modifyInfo);
+
+    RemoveTaskName(taskName_);
+    ReportTaskComplete(taskName_);
 
     unique_lock<mutex> downloadLock(downloadResultMutex_);
     downloadResult_.clear();
@@ -675,19 +678,6 @@ void BackgroundCloudFileProcessor::ParseUpdateData(std::shared_ptr<NativeRdb::Re
     }
 }
 
-int32_t BackgroundCloudFileProcessor::AddUpdateDataTask(const UpdateData &updateData)
-{
-    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL, "Failed to get async worker instance!");
-
-    auto *taskData = new (std::nothrow) UpdateAbnormalData(updateData);
-    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_NO_MEMORY, "Failed to alloc async data for update cloud data!");
-
-    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(UpdateCloudDataExecutor, taskData);
-    asyncWorker->AddTask(asyncTask, false);
-    return E_OK;
-}
-
 void BackgroundCloudFileProcessor::UpdateCurrentOffset(bool isCloud, bool isVideo)
 {
     if (isCloud) {
@@ -710,11 +700,8 @@ void BackgroundCloudFileProcessor::UpdateCurrentOffset(bool isCloud, bool isVide
     }
 }
 
-void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
+void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(const UpdateData &updateData)
 {
-    auto *taskData = static_cast<UpdateAbnormalData *>(data);
-    auto updateData = taskData->updateData_;
-
     MEDIA_INFO_LOG("start update %{public}zu cloud files.", updateData.abnormalData.size());
     for (const auto &abnormalData : updateData.abnormalData) {
         CHECK_AND_RETURN_LOG(isUpdating_, "stop update data, isUpdating_ is %{public}d.", isUpdating_);
@@ -823,34 +810,60 @@ void BackgroundCloudFileProcessor::StartTimer()
 {
     lock_guard<recursive_mutex> lock(mutex_);
     MEDIA_INFO_LOG("Turn on the background download cloud file timer");
-    CHECK_AND_EXECUTE(cloudDataTimerId_ <= 0, timer_.Unregister(cloudDataTimerId_));
     CHECK_AND_EXECUTE(startTimerId_ <= 0, timer_.Unregister(startTimerId_));
     uint32_t ret = timer_.Setup();
     CHECK_AND_PRINT_LOG(ret == Utils::TIMER_ERR_OK,
         "Failed to start background download cloud files timer, err: %{public}d", ret);
     isUpdating_ = true;
-    cloudDataTimerId_ = timer_.Register(ProcessCloudData, processInterval_);
     if (!GetDownloadLatestFinished()) {
         auto currentMilliSecond = MediaFileUtils::UTCTimeMilliSeconds();
         SetLastDownloadMilliSecond(currentMilliSecond);
         startTimerId_ = timer_.Register(DownloadCloudFiles, downloadInterval_);
+    } else {
+        std::string modifyInfo;
+        WriteModifyInfo(REMOVE_KEY, REMOVE_VALUE, modifyInfo);
+        ModifyTask(taskName_, modifyInfo);
+
+        RemoveTaskName(taskName_);
+        ReportTaskComplete(taskName_);
     }
 }
 
-void BackgroundCloudFileProcessor::StopTimer()
+void BackgroundCloudFileProcessor::StopTimer(bool isReportSchedule)
 {
     lock_guard<recursive_mutex> lock(mutex_);
-    MEDIA_INFO_LOG("Turn off the background download cloud file timer");
+    MEDIA_INFO_LOG("Turn off the background download cloud file timer, isReportSchedule: %{public}d.",
+        isReportSchedule);
+    if (isReportSchedule) {
+        MEDIA_INFO_LOG("BackgroundCloudFileProcessor isReportSchedule");
+        RemoveTaskName(taskName_);
+        ReportTaskComplete(taskName_);
+    }
 
-    timer_.Unregister(cloudDataTimerId_);
     timer_.Unregister(startTimerId_);
     timer_.Unregister(stopTimerId_);
     timer_.Shutdown();
-    cloudDataTimerId_ = 0;
     startTimerId_ = 0;
     stopTimerId_ = 0;
-    StopUpdateData();
     StopDownloadFiles();
+    MEDIA_INFO_LOG("success StopTimer.");
+}
+
+int32_t BackgroundCloudFileProcessor::Start(const std::string &taskExtra)
+{
+    MEDIA_INFO_LOG("Start begin");
+    ffrt::submit([this]() {
+        StartTimer();
+    });
+    return E_OK;
+}
+
+int32_t BackgroundCloudFileProcessor::Stop(const std::string &taskExtra)
+{
+    ffrt::submit([this]() {
+        StopTimer();
+    });
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS
