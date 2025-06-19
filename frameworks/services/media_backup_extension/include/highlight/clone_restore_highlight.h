@@ -34,8 +34,8 @@ public:
         std::string taskId;
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb;
         std::shared_ptr<NativeRdb::RdbStore> mediaRdb;
-        std::string &backupRestoreDir;
-        std::unordered_map<int32_t, PhotoInfo> &photoInfoMap;
+        std::string backupRestoreDir;
+        std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
     };
 
     void Init(const InitInfo &info);
