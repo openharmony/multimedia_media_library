@@ -125,7 +125,7 @@ int32_t AlbumAccurateRefresh::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
 int32_t AlbumAccurateRefresh::Delete(const AbsRdbPredicates &predicates, int &deletedRows)
 {
     if (!IsValidTable(predicates.GetTableName())) {
-        return E_HAS_DB_ERROR;
+        return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
     return DeleteCommon([&](ValuesBucket& values) {
         return Update(deletedRows, values, predicates, RDB_OPERATION_REMOVE);
@@ -149,7 +149,7 @@ int32_t AlbumAccurateRefresh::DeleteCommon(function<int32_t(ValuesBucket&)> upda
         }
     #endif
     
-    return ret;
+    return ACCURATE_REFRESH_RET_OK;
 }
 
 bool AlbumAccurateRefresh::IsValidTable(std::string tableName)

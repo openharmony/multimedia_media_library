@@ -176,11 +176,13 @@ int32_t AssetAccurateRefresh::DeleteCommon(function<int32_t(ValuesBucket &)> upd
     }
 
 #ifndef MEDIA_REFRESH_TEST
-    CloudSyncHelper::GetInstance()->StartSync();
-    ACCURATE_DEBUG("Delete update done, start sync.");
+    if (!trans_) {
+        CloudSyncHelper::GetInstance()->StartSync();
+        ACCURATE_DEBUG("Delete update done, start sync.");
+    }
 #endif
 
-    return ret;
+    return ACCURATE_REFRESH_RET_OK;
 }
 
 bool AssetAccurateRefresh::IsValidTable(std::string tableName)
