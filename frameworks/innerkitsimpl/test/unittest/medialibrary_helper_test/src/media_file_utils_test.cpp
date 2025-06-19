@@ -1056,5 +1056,27 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaTypeUri_Test_01, Tes
     res = MediaFileUtils::GetMediaTypeUri(mediaType);
     EXPECT_EQ(res, "datashare:///media/device");
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileModificationTime_Test_01, TestSize.Level1)
+{
+    int64_t res = MediaFileUtils::GetFileModificationTime("");
+    EXPECT_EQ(res, 0);
+    res = MediaFileUtils::GetFileModificationTime("/data/CreateImageThumbnailTest_001.jpg");
+    EXPECT_NE(res, 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_StrToInt64_Test_01, TestSize.Level1)
+{
+    int64_t res = MediaFileUtils::StrToInt64("");
+    EXPECT_EQ(res, 0);
+    res = MediaFileUtils::StrToInt64("1");
+    EXPECT_EQ(res, 1);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsDirExists_Test_01, TestSize.Level1)
+{
+    EXPECT_FALSE(MediaFileUtils::IsDirExists(""));
+    EXPECT_TRUE(MediaFileUtils::IsDirExists("/data"));
+}
 } // namespace Media
 } // namespace OHOS

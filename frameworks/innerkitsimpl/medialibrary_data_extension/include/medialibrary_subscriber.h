@@ -22,6 +22,7 @@
 #include "common_event_subscriber.h"
 #include "common_event_support.h"
 #include "matching_skills.h"
+#include "medialibrary_async_worker.h"
 
 namespace OHOS {
 namespace Media {
@@ -85,10 +86,14 @@ private:
     int64_t lockTime_ {0};
 
     DelayTask backgroundDelayTask_{"backgroundTask"};
-
+    EXPORT void ClearDirtyData();
     EXPORT void DoBackgroundOperation();
     EXPORT void StopBackgroundOperation();
     EXPORT void StartAnalysisService();
+    EXPORT static void ClearContinueCloneData(AsyncTaskData *data);
+    EXPORT int32_t DoClearContinueCloneData();
+    EXPORT bool IsClearContinueCloneData(const std::string &path);
+    EXPORT bool TryClearContinueCloneData();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();

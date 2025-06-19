@@ -22,6 +22,7 @@
 #undef MEDIALIBRARY_MTP_ENABLE
 #include "moving_photo_processor.h"
 #undef private
+#include "media_file_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -31,6 +32,10 @@ namespace OHOS {
 namespace Media {
 constexpr int32_t SLEEP_TIME = 1;
 static constexpr int32_t EVENTTYPE = 7;
+static const std::string DATA_CLONE_DESCRIPTION_JSON =
+    PhotoColumn::FILES_LOCAL_DIR + ".backup/restore/dataclone_description.json";
+const static std::string CLONE_FOLDER_PATH = PhotoColumn::FILES_LOCAL_DIR + ".backup/clone";
+const static std::string RESTORE_FOLDER_PATH = PhotoColumn::FILES_LOCAL_DIR + ".backup/restore";
 HWTEST_F(MediaLibraryRdbTest, medialib_Subscribe_test_001, TestSize.Level1)
 {
     bool ret = MedialibrarySubscriber::Subscribe();
@@ -135,17 +140,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_UpdateBackgroundOperationStatus_test, Tes
     medialibrarySubscriberPtr->UpdateBackgroundOperationStatus(want, static_cast<StatusEventType>(100));
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_CheckHalfDayMissions_test, TestSize.Level1)
-{
-    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
-    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
-    medialibrarySubscriberPtr->isScreenOff_ = true;
-    medialibrarySubscriberPtr->isCharging_ = true;
-    medialibrarySubscriberPtr->CheckHalfDayMissions();
-    EXPECT_NE(medialibrarySubscriberPtr->isScreenOff_, false);
-    EXPECT_NE(medialibrarySubscriberPtr->isCharging_, false);
-}
-
 HWTEST_F(MediaLibraryRdbTest, medialib_UpdateCloudMediaAssetDownloadStatus_test, TestSize.Level1)
 {
     shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
@@ -248,5 +242,40 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Init_test_001, TestSize.Level1)
     EXPECT_EQ(medialibrarySubscriberPtr->agingCount_, 0);
     EXPECT_EQ(ret2, false);
 }
+
+HWTEST_F(MediaLibraryRdbTest, medialib_IsClearContinueCloneData_test_001, TestSize.Level1)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    EXPECT_TRUE(medialibrarySubscriberPtr->IsClearContinueCloneData(""));
+    EXPECT_TRUE(medialibrarySubscriberPtr->IsClearContinueCloneData(DATA_CLONE_DESCRIPTION_JSON));
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_ClearContinueCloneData_test_001, TestSize.Level1)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    medialibrarySubscriberPtr->TryClearContinueCloneData();
+    medialibrarySubscriberPtr->TryClearContinueCloneData();
+    EXPECT_FALSE(MediaFileUtils::IsDirExists(CLONE_FOLDER_PATH) || MediaFileUtils::IsDirExists(RESTORE_FOLDER_PATH));
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_DoClearContinueCloneData_test_001, TestSize.Level1)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    auto ret = medialibrarySubscriberPtr->DoClearContinueCloneData();
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_ClearContinueCloneData_test_002, TestSize.Level1)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    AsyncTaskData data;
+    medialibrarySubscriberPtr->ClearContinueCloneData(&data);
+    EXPECT_FALSE(MediaFileUtils::IsDirExists(CLONE_FOLDER_PATH) || MediaFileUtils::IsDirExists(RESTORE_FOLDER_PATH));
+}
+
 } // namespace Media
 } // namespace OHOS

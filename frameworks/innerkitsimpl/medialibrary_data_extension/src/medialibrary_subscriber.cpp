@@ -494,7 +494,7 @@ static int32_t DoClearDirtyDiskData()
     return E_SUCCESS;
 }
 
-static void ClearDirtyDiskData()
+void MedialibrarySubscriber::ClearDirtyDiskData()
 {
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
@@ -512,13 +512,14 @@ static void ClearDirtyDiskData()
     }
 }
 
-static void ClearDirtyData()
+ void MedialibrarySubscriber::ClearDirtyData()
 {
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
     CHECK_AND_RETURN_LOG(prefs, "Get preferences error: %{public}d", errCode);
     ClearDirtyDiskData();
+    TryClearContinueCloneData();
     return;
 }
 
