@@ -212,6 +212,9 @@ public:
         const std::string &extension);
     EXPORT static bool ConvertFormatExtraDataDirectory(const std::string &srcDir, const std::string &dstDir,
         const std::string &extension);
+    EXPORT static int64_t GetFileModificationTime(const std::string &path);
+    EXPORT static int64_t StrToInt64(const std::string &value);
+    EXPORT static bool IsDirExists(const std::string &path);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
