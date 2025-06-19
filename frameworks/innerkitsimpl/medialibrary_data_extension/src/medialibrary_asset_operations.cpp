@@ -2984,6 +2984,7 @@ static void NotifyPhotoAlbum(const vector<int32_t> &changedAlbumIds,
     assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM | NotifyAlbumType::USER_ALBUM |
         NotifyAlbumType::SOURCE_ALBUM));
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
+    assetRefresh->Notify();
 }
 
 int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
@@ -3019,7 +3020,6 @@ int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<Fil
         MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
             MediaFileUtils::GetExtraUri(displayName, filePath));
     watch->Notify(notifyDeleteUri, NotifyType::NOTIFY_REMOVE);
-    assetRefresh->Notify();
     std::vector<std::string> notifyDeleteUris;
     notifyDeleteUris.push_back(notifyDeleteUri);
     auto dfxManager = DfxManager::GetInstance();
