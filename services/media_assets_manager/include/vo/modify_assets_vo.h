@@ -18,7 +18,6 @@
 
 #include <stdint.h>
 #include <string>
-#include <sstream>
 #include <vector>
 
 #include "i_media_parcelable.h"

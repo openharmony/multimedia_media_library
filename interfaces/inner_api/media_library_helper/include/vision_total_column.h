@@ -35,6 +35,7 @@ const std::string HEAD = "head";
 const std::string POSE = "pose";
 const std::string DETAIL_ADDRESS = "detail_address";
 const std::string GEO = "geo";
+const std::string AESTHETICS_SCORE_ALL_STATUS = "aesthetics_score_all";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_TOTAL_COLUMN_H

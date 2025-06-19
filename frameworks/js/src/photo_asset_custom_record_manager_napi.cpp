@@ -34,9 +34,9 @@ thread_local napi_ref PhotoAssetCustomRecordManager::constructor_ = nullptr;
 
 const int32_t OPERATION_MAX_LEN = 200;
 const int32_t OPERATION_MAX_FILE_IDS_LEN = 500;
-const std::string NapiCustromRecordStr::FILE_ID = "fileId";
-const std::string NapiCustromRecordStr::SHARE_COUNT = "shareCount";
-const std::string NapiCustromRecordStr::LCD_JUMP_COUNT = "lcdJumpCount";
+const std::string NapiCustomRecordStr::FILE_ID = "fileId";
+const std::string NapiCustomRecordStr::SHARE_COUNT = "shareCount";
+const std::string NapiCustomRecordStr::LCD_JUMP_COUNT = "lcdJumpCount";
 
 napi_value PhotoAssetCustomRecordManager::Init(napi_env env, napi_value exports)
 {

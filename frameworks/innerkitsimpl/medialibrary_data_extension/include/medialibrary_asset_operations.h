@@ -35,6 +35,7 @@
 #include "value_object.h"
 #include "values_bucket.h"
 #include "medialibrary_rdb_transaction.h"
+#include "asset_accurate_refresh.h"
 
 namespace OHOS {
 namespace Media {
@@ -164,7 +165,8 @@ public:
     EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
         const bool compatible = false);
     EXPORT static int32_t DeletePermanently(NativeRdb::AbsRdbPredicates &predicates, const bool isAging);
-    EXPORT static int32_t DeleteNormalPhotoPermanently(std::shared_ptr<FileAsset> &fileAsset);
+    EXPORT static int32_t DeleteNormalPhotoPermanently(std::shared_ptr<FileAsset> &fileAsset,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
     EXPORT static std::string GetEditDataSourcePath(const std::string &path);
     EXPORT static int32_t GetAlbumIdByPredicates(const std::string &whereClause,
         const std::vector<std::string> &whereArgs);
@@ -178,6 +180,7 @@ public:
         int32_t &value);
     EXPORT static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         std::string &value);
+    EXPORT static std::string GetEditDataDirPath(const std::string &path);
     static std::shared_ptr<FileAsset> GetAssetFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::vector<std::string> &columns);
 
@@ -206,7 +209,8 @@ protected:
         std::shared_ptr<TransactionOperations> trans = nullptr);
     EXPORT static int32_t SetAssetPath(FileAsset &fileAsset, const std::string &extention,
         std::shared_ptr<TransactionOperations> trans = nullptr);
-    EXPORT static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd);
+    EXPORT static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
 
     EXPORT static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
@@ -239,7 +243,6 @@ protected:
     static void ScanFileWithoutAlbumUpdate(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
 
-    EXPORT static std::string GetEditDataDirPath(const std::string &path);
     EXPORT static std::string GetEditDataPath(const std::string &path);
     EXPORT static std::string GetEditDataCameraPath(const std::string &path);
     static std::string GetAssetCacheDir();
@@ -274,6 +277,42 @@ private:
         bool isInvalidateThumb = true;
         std::shared_ptr<Media::Picture> originalPhotoPicture = nullptr;
     };
+};
+
+class DeleteFilesTask : public AsyncTaskData {
+public:
+    DeleteFilesTask(const std::vector<std::string> &ids, const std::vector<std::string> &paths,
+        const std::vector<std::string> &notifyUris, const std::vector<std::string> &dateTakens,
+        const std::vector<int32_t> &subTypes, const std::string &table, int32_t deleteRows,
+        std::string bundleName, bool containsHidden)
+        : ids_(ids), paths_(paths), notifyUris_(notifyUris), dateTakens_(dateTakens), subTypes_(subTypes),
+        table_(table), deleteRows_(deleteRows), bundleName_(bundleName), containsHidden_(containsHidden) {}
+    virtual ~DeleteFilesTask() override = default;
+    void SetOtherInfos(const std::map<std::string, std::string> &displayNames,
+        const std::map<std::string, std::string> &albumNames, const std::map<std::string, std::string> &ownerAlbumIds)
+    {
+        displayNames_ = displayNames;
+        albumNames_ = albumNames;
+        ownerAlbumIds_ = ownerAlbumIds;
+    }
+    void SetAssetAccurateRefresh(std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh)
+    {
+        refresh_ = refresh;
+    }
+    std::vector<std::string> ids_;
+    std::vector<std::string> paths_;
+    std::vector<std::string> notifyUris_;
+    std::vector<std::string> dateTakens_;
+    std::vector<int32_t> subTypes_;
+    std::vector<int32_t> isTemps_;
+    std::string table_;
+    int32_t deleteRows_;
+    std::string bundleName_;
+    std::map<std::string, std::string> displayNames_;
+    std::map<std::string, std::string> albumNames_;
+    std::map<std::string, std::string> ownerAlbumIds_;
+    bool containsHidden_ = false;
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh_ = nullptr;
 };
 
 class DeleteNotifyAsyncTaskData : public AsyncTaskData {

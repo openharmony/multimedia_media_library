@@ -26,6 +26,9 @@
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
 #include "picture.h"
+#include "asset_accurate_refresh.h"
+#include "rdb_predicates.h"
+#include "medialibrary_rdbstore.h"
 
 namespace OHOS {
 namespace Media {
@@ -65,6 +68,7 @@ public:
     EXPORT static int32_t ProcessMultistagesPhoto(bool isEdited, const std::string &path,
         const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
+    EXPORT static void StoreThumbnailAndEditSize(const std::string& photoId, const std::string& photoPath);
     EXPORT static bool HasDroppedThumbnailSize(const std::string& photoId);
     EXPORT static bool BatchDropThumbnailSize(const std::vector<std::string>& photoIds);
     EXPORT static int32_t ScanFileWithoutAlbumUpdate(MediaLibraryCommand &cmd);
@@ -83,8 +87,7 @@ public:
     EXPORT static int64_t CloneSingleAsset(MediaLibraryCommand &cmd);
     EXPORT static int32_t AddFiltersForCloudEnhancementPhoto(int32_t fileId, const std::string& assetPath,
         const std::string& editDataCameraSourcePath, const std::string& mimeType);
-    EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs,
-        std::shared_ptr<AlbumData> AlbumData = nullptr);
+    EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs);
     EXPORT static void TrashPhotosSendNotify(const std::vector<std::string> &notifyUris,
         std::shared_ptr<AlbumData> albumData = nullptr);
     EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto,
@@ -109,12 +112,25 @@ public:
     static int32_t TrashPhotos(MediaLibraryCommand &cmd);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
-    static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd);
+    EXPORT static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd);
+    EXPORT static int32_t Get500FileIdsAndPathS(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        std::vector<std::string> &fileIds, std::vector<std::string> &filePaths, std::string startFileId, bool &hasMore);
+    EXPORT static int32_t ConvertPhotoCloudPathToLocalData(std::string retrievedPath,
+        std::string &filePath);
+    EXPORT static int32_t GetFilePathById(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const std::string &fileId, std::string &filePath);
+    EXPORT static void Update500EditDataSize(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        std::string startFileId, bool &hasMore);
 
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> HandleIndexOfUri(MediaLibraryCommand &cmd,
+        NativeRdb::RdbPredicates &predicates, const std::string &photoId, const std::string &albumId);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> HandleAnalysisIndex(MediaLibraryCommand &cmd,
+        const std::string &photoId, const std::string &albumId);
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);
-    static int32_t DeletePhoto(const std::shared_ptr<FileAsset> &fileAsset, MediaLibraryApi api);
+    static int32_t DeletePhoto(const std::shared_ptr<FileAsset> &fileAsset, MediaLibraryApi api,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
     static int32_t UpdateV9(MediaLibraryCommand &cmd);
     static int32_t UpdateV10(MediaLibraryCommand &cmd);
     static void SolvePhotoAlbumInCreate(MediaLibraryCommand &cmd, FileAsset &fileAsset);

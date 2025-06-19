@@ -25,6 +25,7 @@
 
 #include "access_token.h"
 #include "accesstoken_kit.h"
+#include "adapted_vo.h"
 #include "dataobs_mgr_client.h"
 #include "directory_ex.h"
 #include "file_asset_napi.h"
@@ -35,6 +36,7 @@
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
+#include "medialibrary_business_code.h"
 #include "medialibrary_client_errno.h"
 #include "media_library_napi.h"
 #include "medialibrary_errno.h"
@@ -46,9 +48,13 @@
 #include "moving_photo_call_transcoder.h"
 #include "permission_utils.h"
 #include "picture_handle_client.h"
+#include "query_photo_vo.h"
 #include "ui_extension_context.h"
+#include "user_define_ipc_client.h"
 #include "userfile_client.h"
 #include "media_call_transcode.h"
+#include "medialibrary_operation.h"
+#include "media_asset_rdbstore.h"
 
 using namespace OHOS::Security::AccessToken;
 
@@ -64,8 +70,12 @@ const int32_t HIGH_QUALITY_IMAGE = 0;
 const int32_t UUID_STR_LENGTH = 37;
 const int32_t MAX_URI_SIZE = 384; // 256 for display name and 128 for relative path
 const int32_t REQUEST_ID_MAX_LEN = 64;
+const int32_t PROGRESS_MAX = 100;
 
 const std::string HIGH_TEMPERATURE = "high_temperature";
+
+static const std::string URI_TPYE = "uriType";
+static const std::string TPYE_PHOTOS = "1";
 
 thread_local unique_ptr<ChangeListenerNapi> g_multiStagesRequestListObj = nullptr;
 thread_local napi_ref constructor_ = nullptr;
@@ -312,7 +322,7 @@ static void DeleteDataHandler(NotifyMode notifyMode, const std::string &requestU
     inProcessFastRequests.Erase(requestId);
 }
 
-MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId,
+static MultiStagesCapturePhotoStatus QueryViaSandBox(int fileId,
     const string& photoUri, std::string &photoId, bool hasReadPermission, int32_t userId)
 {
     photoId = "";
@@ -328,24 +338,57 @@ MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId
     }
     Uri uri(queryUri);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-        NAPI_ERR_LOG("query resultSet is nullptr");
+    OperationObject object = OperationObject::UNKNOWN_OBJECT;
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) && userId == -1) {
+        shared_ptr<DataShare::DataShareResultSet> resultSet = MediaAssetRdbStore::GetInstance()->Query(
+            predicates, fetchColumn, object, errCode);
+        if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+            NAPI_ERR_LOG("query resultSet is nullptr");
+            return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+        }
+        int indexOfPhotoId = -1;
+        resultSet->GetColumnIndex(PhotoColumn::PHOTO_ID, indexOfPhotoId);
+        resultSet->GetString(indexOfPhotoId, photoId);
+
+        int columnIndexQuality = -1;
+        resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
+        int currentPhotoQuality = HIGH_QUALITY_IMAGE;
+        resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
+        if (currentPhotoQuality == LOW_QUALITY_IMAGE) {
+            NAPI_INFO_LOG("query photo status : lowQuality");
+            return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
+        }
+        NAPI_INFO_LOG("query photo status quality: %{public}d", currentPhotoQuality);
+        return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+    } else {
+        return MultiStagesCapturePhotoStatus::QUERY_INNER_FAIL;
+    }
+}
+
+MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId,
+    const string& photoUri, std::string &photoId, bool hasReadPermission, int32_t userId)
+{
+    MultiStagesCapturePhotoStatus status = QueryViaSandBox(fileId, photoUri, photoId, hasReadPermission, userId);
+    if (status != MultiStagesCapturePhotoStatus::QUERY_INNER_FAIL) {
+        return status;
+    }
+    QueryPhotoReqBody reqBody;
+    reqBody.fileId = std::to_string(fileId);
+    QueryPhotoRspBody rspBody;
+    std::unordered_map<std::string, std::string> headerMap {
+        {MediaColumn::MEDIA_ID, reqBody.fileId }, {URI_TPYE, TPYE_PHOTOS}};
+    int ret = IPC::UserDefineIPCClient().SetUserId(userId).SetHeader(headerMap).Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_PHOTO_STATUS), reqBody, rspBody);
+    if (ret < 0) {
+        NAPI_ERR_LOG("ret = %{public}d", ret);
         return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     }
-    int indexOfPhotoId = -1;
-    resultSet->GetColumnIndex(PhotoColumn::PHOTO_ID, indexOfPhotoId);
-    resultSet->GetString(indexOfPhotoId, photoId);
-
-    int columnIndexQuality = -1;
-    resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
-    int currentPhotoQuality = HIGH_QUALITY_IMAGE;
-    resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
-    if (currentPhotoQuality == LOW_QUALITY_IMAGE) {
+    photoId = rspBody.photoId;
+    if (rspBody.photoQuality == LOW_QUALITY_IMAGE) {
         NAPI_INFO_LOG("query photo status : lowQuality");
         return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
     }
-    NAPI_INFO_LOG("query photo status quality: %{public}d", currentPhotoQuality);
+    NAPI_INFO_LOG("query photo status quality: %{public}d", rspBody.photoQuality);
     return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
 }
 
@@ -464,7 +507,7 @@ napi_status GetCompatibleMode(napi_env env, const napi_value arg, const string &
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "invalid compatible mode value");
         return napi_invalid_arg;
     }
-#ifndef USE_VIDEO_PROCESSING_ENGINE
+#if !defined(USE_VIDEO_PROCESSING_ENGINE) || !defined(USE_VIDEO_PROCESSING_ENGINE_EXT)
     if (static_cast<CompatibleMode>(mode) == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
         NAPI_ERR_LOG("current environment not support transcoder");
         NapiError::ThrowError(env, OHOS_NOT_SUPPORT_TRANSCODER_CODE, "not support transcoder");
@@ -1329,19 +1372,27 @@ void CallPreparedCallbackAfterProgress(napi_env env, ProgressHandler *progressHa
     DeleteAssetHandlerSafe(assetHandler, env);
 }
 
-void CallProgressCallback(napi_env env, ProgressHandler &progressHandler, int32_t process)
+void CallProgressCallback(napi_env env, ProgressHandler* progressHandler, int32_t process)
 {
+    if (progressHandler == nullptr) {
+        NAPI_ERR_LOG("progressHandler is nullptr");
+        return;
+    }
     napi_value result;
     napi_status status = napi_create_int32(env, process, &result);
     if (status != napi_ok) {
         NAPI_ERR_LOG("OnProgress napi_create_int32 fail");
     }
     napi_value callback;
-    status = napi_get_reference_value(env, progressHandler.progressRef, &callback);
+    if (process < 0 || process > PROGRESS_MAX || progressHandler->progressRef == nullptr) {
+        NAPI_ERR_LOG("progressHandler->progressRef is nullptr or process out of range");
+        return;
+    }
+    status = napi_get_reference_value(env, progressHandler->progressRef, &callback);
     if (status != napi_ok) {
         NAPI_ERR_LOG("OnProgress napi_get_reference_value fail, napi status: %{public}d",
             static_cast<int>(status));
-        DeleteProcessHandlerSafe(&progressHandler, env);
+        DeleteProcessHandlerSafe(progressHandler, env);
         return;
     }
     napi_value jsOnProgress;
@@ -1349,7 +1400,7 @@ void CallProgressCallback(napi_env env, ProgressHandler &progressHandler, int32_
     if (status != napi_ok) {
         NAPI_ERR_LOG("jsOnProgress napi_get_named_property fail, napi status: %{public}d",
             static_cast<int>(status));
-        DeleteProcessHandlerSafe(&progressHandler, env);
+        DeleteProcessHandlerSafe(progressHandler, env);
         return;
     }
     constexpr size_t maxArgs = 1;
@@ -1398,7 +1449,7 @@ void MediaAssetManagerNapi::OnProgress(napi_env env, napi_value cb, void *contex
         NAPI_INFO_LOG("progressHandler->progressRef == nullptr");
         return;
     }
-    CallProgressCallback(env, *progressHandler, process);
+    CallProgressCallback(env, progressHandler, process);
 }
 
 void MediaAssetManagerNapi::NotifyMediaDataPrepared(AssetHandler *assetHandler)
@@ -1986,7 +2037,10 @@ void MediaAssetManagerNapi::JSRequestExecute(napi_env env, void *data)
         DataShare::DataShareValuesBucket valuesBucket;
         string result;
         valuesBucket.Put("adapted", context->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO);
-        UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result, context->userId);
+        AdaptedReqBody reqBody;
+        reqBody.adapted = context->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO;
+        IPC::UserDefineIPCClient().SetUserId(context->userId).Call(
+            static_cast<uint32_t>(MediaLibraryBusinessCode::LOG_MOVING_PHOTO), reqBody);
     }
 }
 

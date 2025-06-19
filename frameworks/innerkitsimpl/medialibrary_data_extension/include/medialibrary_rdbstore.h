@@ -69,7 +69,7 @@ public:
         const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns);
     EXPORT static int32_t UpdateWithDateTime(NativeRdb::ValuesBucket &values,
         const NativeRdb::AbsRdbPredicates &predicates);
-    static void ReplacePredicatesUriToId(NativeRdb::AbsRdbPredicates &predicates);
+    EXPORT static void ReplacePredicatesUriToId(NativeRdb::AbsRdbPredicates &predicates);
     static std::shared_ptr<NativeRdb::ResultSet> GetIndexOfUri(const NativeRdb::AbsRdbPredicates &predicates,
         const std::vector<std::string> &columns, const std::string &id);
     static std::shared_ptr<NativeRdb::ResultSet> GetIndexOfUriForPhotos(const NativeRdb::AbsRdbPredicates &predicates,
@@ -103,6 +103,7 @@ public:
     EXPORT static void AddAlbumSubtypeAndNameIdx(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddCloudEnhancementAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddPhotoDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddPhotoSortIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdatePhotoQualityCloned(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateMdirtyTriggerForTdirty(const std::shared_ptr<MediaLibraryRdbStore> store);
@@ -137,24 +138,36 @@ public:
     {
         return MediaLibraryRdbStore::GetRaw()->ExecuteSql(sql, args);
     }
-    static void WalCheckPoint();
+
+    EXPORT static std::pair<int32_t, NativeRdb::Results> BatchInsert(const std::string &table,
+        std::vector<NativeRdb::ValuesBucket> &values, const std::string &returningField);
+    EXPORT std::pair<int32_t, NativeRdb::Results> Update(const NativeRdb::ValuesBucket &row,
+        const NativeRdb::AbsRdbPredicates &predicates, const std::string &returningField);
+    EXPORT std::pair<int32_t, NativeRdb::Results> Delete(const NativeRdb::AbsRdbPredicates &predicates,
+        const std::string &returningField);
+    EXPORT std::pair<int32_t, NativeRdb::Results> Execute(const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &args, const std::string &returningField);
+
     EXPORT int ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
         const std::vector<NativeRdb::ValueObject> &args = {});
     EXPORT static void UpdateMediaTypeAndThumbnailReadyIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryMovingPhotoVideoReady(
         const NativeRdb::AbsRdbPredicates &predicaties);
+    EXPORT static int32_t UpdateEditDataSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const std::string &photoId, const std::string &photoPath);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     EXPORT static const std::string RegexReplaceFunc(const std::vector<std::string> &args);
+    static int32_t BatchInsertCommon(int64_t &outRowCount, const std::string &table,
+        std::vector<NativeRdb::ValuesBucket> &values, std::function<int32_t()> execBatchInsert);
     friend class TransactionOperations;
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     EXPORT static const std::string BeginGenerateHighlightThumbnail(const std::vector<std::string>& args);
     EXPORT static const std::string PhotoAlbumNotifyFunc(const std::vector<std::string>& args);
     static std::mutex reconstructLock_;
-    static std::mutex walCheckPointMutex_;
     NativeRdb::RdbStoreConfig config_ {""};
 };
 
@@ -192,39 +205,6 @@ private:
     int32_t InsertDirValues(const DirValuesBucket &dirValuesBucket, NativeRdb::RdbStore &store);
     int32_t InsertSmartAlbumValues(const SmartAlbumValuesBucket &smartAlbum, NativeRdb::RdbStore &store);
 };
-
-class DeleteFilesTask : public AsyncTaskData {
-public:
-    DeleteFilesTask(const std::vector<std::string> &ids, const std::vector<std::string> &paths,
-        const std::vector<std::string> &notifyUris, const std::vector<std::string> &dateTakens,
-        const std::vector<int32_t> &subTypes, const std::string &table, int32_t deleteRows,
-        std::string bundleName, bool containsHidden)
-        : ids_(ids), paths_(paths), notifyUris_(notifyUris), dateTakens_(dateTakens), subTypes_(subTypes),
-        table_(table), deleteRows_(deleteRows), bundleName_(bundleName), containsHidden_(containsHidden) {}
-    virtual ~DeleteFilesTask() override = default;
-
-    void SetOtherInfos(const std::map<std::string, std::string> &displayNames,
-        const std::map<std::string, std::string> &albumNames, const std::map<std::string, std::string> &ownerAlbumIds)
-    {
-        displayNames_ = displayNames;
-        albumNames_ = albumNames;
-        ownerAlbumIds_ = ownerAlbumIds;
-    }
-    std::vector<std::string> ids_;
-    std::vector<std::string> paths_;
-    std::vector<std::string> notifyUris_;
-    std::vector<std::string> dateTakens_;
-    std::vector<int32_t> subTypes_;
-    std::vector<int32_t> isTemps_;
-    std::string table_;
-    int32_t deleteRows_;
-    std::string bundleName_;
-    std::map<std::string, std::string> displayNames_;
-    std::map<std::string, std::string> albumNames_;
-    std::map<std::string, std::string> ownerAlbumIds_;
-    bool containsHidden_ = false;
-};
-
 } // namespace Media
 } // namespace OHOS
 

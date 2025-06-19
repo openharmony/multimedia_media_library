@@ -36,6 +36,9 @@
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
 #include "uv.h"
+#include "parcel.h"
+#include "media_change_info.h"
+#include "medialibrary_notify_new_observer.h"
 
 namespace OHOS {
 namespace Media {
@@ -143,6 +146,7 @@ public:
     sptr<AAFwk::IDataAbilityObserver> remoteFileDataObserver_ = nullptr;
     sptr<AAFwk::IDataAbilityObserver> albumDataObserver_ = nullptr;
     std::vector<std::shared_ptr<MediaOnNotifyObserver>> observers_;
+    std::vector<std::shared_ptr<MediaOnNotifyNewObserver>> newObservers_;
 private:
     napi_env env_ = nullptr;
 
@@ -240,6 +244,7 @@ private:
     EXPORT static napi_value JSGetPublicDirectory(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetFileAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PahGetAlbums(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSCreateAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteAsset(napi_env env, napi_callback_info info);
@@ -322,6 +327,7 @@ private:
     EXPORT static napi_value PhotoAccessCreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessDeletePhotoAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetPhotoAlbumsByIds(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbumsSync(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessSaveFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessSaveGalleryFormInfo(napi_env env, napi_callback_info info);
@@ -340,6 +346,8 @@ private:
     
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessRegisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessUnregisterCallback(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value CreateAlbumTypeEnum(napi_env env);
     EXPORT static napi_value CreateAlbumSubTypeEnum(napi_env env);
@@ -361,6 +369,9 @@ private:
     EXPORT static napi_value CreateCloudMediaRetainTypeEnum(napi_env env);
     EXPORT static napi_value CreateCloudMediaAssetTaskStatusEnum(napi_env env);
     EXPORT static napi_value CreateCloudMediaTaskPauseCauseEnum(napi_env env);
+    EXPORT static napi_value CreateNotifyChangeTypeEnum(napi_env env);
+    EXPORT static napi_value CreateThumbnailChangeStatusEnum(napi_env env);
+    EXPORT static napi_value CreateStrongAssociationTypeEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
@@ -381,6 +392,17 @@ private:
     void UnRegisterNotifyChange(napi_env env, const std::string &uri, napi_ref ref, ChangeListenerNapi &listObj);
     static bool CheckRef(napi_env env,
         napi_ref ref, ChangeListenerNapi &listObj, bool isOff, const std::string &uri);
+    static int32_t RegisterObserverExecute(napi_env env, napi_ref ref, ChangeListenerNapi &listObj,
+        const Notification::NotifyUriType uriType);
+    static int32_t UnregisterObserverExecute(napi_env env,
+        const Notification::NotifyUriType uriType, napi_ref ref, ChangeListenerNapi &listObj);
+    static int32_t AddClientObserver(napi_env env, napi_ref ref,
+        std::map<Notification::NotifyUriType, std::vector<std::shared_ptr<ClientObserver>>> &clientObservers,
+        const Notification::NotifyUriType uriType);
+    static int32_t RemoveClientObserver(napi_env env, napi_ref ref,
+        map<Notification::NotifyUriType, vector<shared_ptr<ClientObserver>>> &clientObservers,
+        const Notification::NotifyUriType uriType);
+
     napi_env env_;
     int32_t userId_ = -1;
 
@@ -428,6 +450,9 @@ private:
     static thread_local napi_ref sCloudMediaRetainTypeEnumRef_;
     static thread_local napi_ref sCloudMediaAssetTaskStatusEnumRef_;
     static thread_local napi_ref sCloudMediaTaskPauseCauseEnumRef_;
+    static thread_local napi_ref sNotifyChangeTypeEnumRef_;
+    static thread_local napi_ref sThumbnailChangeStatusEnumRef_;
+    static thread_local napi_ref sStrongAssociationTypeEnumRef_;
 
     static std::mutex sOnOffMutex_;
 };
@@ -501,6 +526,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t hiddenAlbumFetchMode = -1;
     std::string formId;
     std::string indexProgress;
+    std::string burstKey;
     std::shared_ptr<PickerCallBack> pickerCallBack;
     std::vector<std::string> analysisDatas;
     uint32_t tokenId;
@@ -511,6 +537,8 @@ struct MediaLibraryAsyncContext : public NapiError {
     bool isFullAnalysis = false;
     uint32_t businessCode = 0;
     int32_t userId = -1;
+    int32_t photoAlbumType;
+    int32_t photoAlbumSubType;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

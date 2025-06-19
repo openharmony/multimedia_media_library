@@ -84,6 +84,8 @@
 #include "medialibrary_album_fusion_utils.h"
 #include "unique_fd.h"
 #include "data_secondary_directory_uri.h"
+#include "medialibrary_restore.h"
+#include "cloud_sync_helper.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1233,7 +1235,8 @@ int32_t MediaLibraryAssetOperations::SetAssetPath(FileAsset &fileAsset, const st
     return E_OK;
 }
 
-int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
+int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -1252,7 +1255,12 @@ int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
     }
 
     int32_t deletedRows = E_HAS_DB_ERROR;
-    int32_t result = rdbStore->Delete(cmd, deletedRows);
+    int32_t result = -1;
+    if (assetRefresh == nullptr) {
+        result = rdbStore->Delete(cmd, deletedRows);
+    } else {
+        result = assetRefresh->Delete(cmd, deletedRows);
+    }
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete operation failed. Result %{public}d.", result);
     }
@@ -1915,11 +1923,7 @@ void MediaLibraryAssetOperations::UpdateOwnerAlbumIdOnMove(MediaLibraryCommand &
     auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     oriAlbumId = GetAlbumIdByPredicates(whereClause, whereArgs);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
 
-    MediaLibraryRdbUtils::UpdateCommonAlbumInternal(
-        rdbStore, { to_string(targetAlbumId), to_string(oriAlbumId) }, false, true);
     MEDIA_INFO_LOG("Move Assets, ori album id is %{public}d, target album id is %{public}d", oriAlbumId, targetAlbumId);
 }
 
@@ -2501,13 +2505,8 @@ static void DeleteFiles(AsyncTaskData *data)
         return;
     }
     auto *taskData = static_cast<DeleteFilesTask *>(data);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
-    if (taskData->containsHidden_) {
-        MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
-            rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
+    if (taskData->refresh_ != nullptr) {
+        taskData->refresh_->RefreshAlbum();
     }
 
     DeleteBehaviorData dataInfo {taskData->displayNames_, taskData->albumNames_, taskData->ownerAlbumIds_};
@@ -2528,6 +2527,9 @@ static void DeleteFiles(AsyncTaskData *data)
         }
         watch->Notify(MediaFileUtils::Encode(taskData->notifyUris_[index]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET,
             trashAlbumId);
+    }
+    if (taskData->refresh_ != nullptr) {
+        taskData->refresh_->Notify();
     }
     TaskDataFileProccess(taskData);
 }
@@ -2827,14 +2829,23 @@ static int32_t DeleteLocalAndCloudPhotos(vector<shared_ptr<FileAsset>> &subFileA
     return E_OK;
 }
 
-static inline int32_t DeleteDbByIds(const string &table, vector<string> &ids, const bool compatible)
+static int32_t DeleteDbByIds(const string &table, vector<string> &ids, const bool compatible,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh)
 {
     AbsRdbPredicates predicates(table);
     predicates.In(MediaColumn::MEDIA_ID, ids);
     if (!compatible) {
         predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     }
-    return MediaLibraryRdbStore::Delete(predicates);
+    int32_t deletedRows = 0;
+    int32_t err = refresh->Delete(deletedRows, predicates);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to execute delete, err: %{public}d", err);
+        MediaLibraryRestore::GetInstance().CheckRestore(err);
+        return E_HAS_DB_ERROR;
+    }
+    CloudSyncHelper::GetInstance()->StartSync();
+    return deletedRows;
 }
 
 static void GetAlbumNamesById(DeletedFilesParams &filesParams)
@@ -2901,7 +2912,8 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     EnhancementManager::GetInstance().RemoveTasksInternal(fileParams.ids, photoIds);
 #endif
 
-    deletedRows = DeleteDbByIds(predicates.GetTableName(), fileParams.ids, compatible);
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    deletedRows = DeleteDbByIds(predicates.GetTableName(), fileParams.ids, compatible, assetRefresh);
     CHECK_AND_RETURN_RET_LOG(deletedRows > 0, deletedRows,
         "Failed to delete files in db, deletedRows: %{public}d, ids size: %{public}zu",
         deletedRows, fileParams.ids.size());
@@ -2918,6 +2930,7 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_ERR, "Failed to alloc async data for Delete From Disk!");
     taskData->SetOtherInfos(fileParams.displayNames, fileParams.albumNames, fileParams.ownerAlbumIds);
     taskData->isTemps_.swap(fileParams.isTemps);
+    taskData->SetAssetAccurateRefresh(assetRefresh);
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
     CHECK_AND_RETURN_RET_LOG(deleteFilesTask != nullptr, E_ERR, "Failed to create async task for deleting files.");
     asyncWorker->AddTask(deleteFilesTask, true);
@@ -2944,7 +2957,8 @@ static int32_t GetAlbumTypeSubTypeById(const string &albumId, PhotoAlbumType &ty
     return E_SUCCESS;
 }
 
-static void NotifyPhotoAlbum(const vector<int32_t> &changedAlbumIds)
+static void NotifyPhotoAlbum(const vector<int32_t> &changedAlbumIds,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     if (changedAlbumIds.size() <= 0) {
         return;
@@ -2963,22 +2977,18 @@ static void NotifyPhotoAlbum(const vector<int32_t> &changedAlbumIds)
             MEDIA_ERR_LOG("Get album type and subType by album id failed");
             continue;
         }
-
-        if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
-            MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-                rdbStore, { to_string(albumId) }, true);
-        } else if (PhotoAlbum::IsSourceAlbum(type, subType)) {
-            MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-                rdbStore, { to_string(albumId) }, true);
-        } else {
-            MEDIA_WARN_LOG("Can't find album id %{public}d in User and Source Album", albumId);
-        }
     }
-    MediaLibraryRdbUtils::UpdateSystemAlbumExcludeSource(true);
+    if (assetRefresh == nullptr) {
+        MEDIA_ERR_LOG("assetRefresh is nullptr");
+        return;
+    }
+    assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM | NotifyAlbumType::USER_ALBUM |
+        NotifyAlbumType::SOURCE_ALBUM));
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
 }
 
-int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
+int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     MediaLibraryTracer tracer;
     tracer.Start("DeleteNormalPhotoPermanently");
@@ -2999,7 +3009,7 @@ int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<Fil
     // delete file in db
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::DELETE);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    int32_t deleteRows = DeleteAssetInDb(cmd);
+    int32_t deleteRows = DeleteAssetInDb(cmd, assetRefresh);
     MEDIA_DEBUG_LOG("Total delete row in db is %{public}d", deleteRows);
     CHECK_AND_RETURN_RET_LOG(deleteRows > 0, E_HAS_DB_ERROR,
         "Delete photo in database failed, errCode=%{public}d", deleteRows);
@@ -3010,6 +3020,7 @@ int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<Fil
         MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
             MediaFileUtils::GetExtraUri(displayName, filePath));
     watch->Notify(notifyDeleteUri, NotifyType::NOTIFY_REMOVE);
+    assetRefresh->Notify();
     std::vector<std::string> notifyDeleteUris;
     notifyDeleteUris.push_back(notifyDeleteUri);
     auto dfxManager = DfxManager::GetInstance();
@@ -3120,7 +3131,8 @@ static int32_t DeleteEditPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
 }
 
 static int32_t DeleteLocalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
-    vector<shared_ptr<FileAsset>> &subFileAssetVector)
+    vector<shared_ptr<FileAsset>> &subFileAssetVector,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_HAS_DB_ERROR,
         "Photo Asset is nullptr");
@@ -3137,7 +3149,7 @@ static int32_t DeleteLocalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
         CHECK_AND_PRINT_LOG(DeleteBurstPhotoPermanently(fileAsset) == E_OK,
             "Delete moving photo file failed id %{public}d", id);
 
-        CHECK_AND_PRINT_LOG(MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(fileAsset) == E_OK,
+        CHECK_AND_PRINT_LOG(MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(fileAsset, assetRefresh) == E_OK,
             "Delete moving photo file failed id %{public}d", id);
     }
     if (position == CLOUD_PHOTO_POSITION) {
@@ -3151,6 +3163,7 @@ static int32_t DeleteLocalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
 
 int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predicates, const bool isAging)
 {
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
     MEDIA_DEBUG_LOG("DeletePermanently begin");
     MediaLibraryTracer tracer;
     tracer.Start("DeletePermanently");
@@ -3184,13 +3197,13 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     std::set<int32_t> changedAlbumIds;
     GetAssetVectorFromResultSet(resultSet, columns, fileAssetVector);
     for (auto& fileAssetPtr : fileAssetVector) {
-        DeleteLocalPhotoPermanently(fileAssetPtr, subFileAssetVector);
+        DeleteLocalPhotoPermanently(fileAssetPtr, subFileAssetVector, assetRefresh);
         changedAlbumIds.insert(fileAssetPtr->GetOwnerAlbumId());
     }
 
     //delete both local and cloud image
     DeleteLocalAndCloudPhotos(subFileAssetVector);
-    NotifyPhotoAlbum(std::vector<int32_t>(changedAlbumIds.begin(), changedAlbumIds.end()));
+    NotifyPhotoAlbum(std::vector<int32_t>(changedAlbumIds.begin(), changedAlbumIds.end()), assetRefresh);
     return E_OK;
 }
 } // namespace Media

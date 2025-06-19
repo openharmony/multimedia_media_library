@@ -67,10 +67,35 @@
 #include "album_recover_assets_vo.h"
 #include "album_recover_assets_dto.h"
 #include "album_photo_query_vo.h"
+#include "query_albums_vo.h"
+#include "query_albums_dto.h"
+#include "get_order_position_dto.h"
+#include "get_order_position_vo.h"
+#include "get_face_id_vo.h"
+#include "permission_common.h"
+#include "photo_album_column.h"
+#include "medialibrary_rdb_utils.h"
+#include "medialibrary_vision_operations.h"
+#include "get_albums_by_ids_vo.h"
+#include "rdb_utils.h"
 
 namespace OHOS::Media {
 using namespace std;
+using SpecialRequestHandle = void (MediaAlbumsControllerService::*)(
+    MessageParcel &, MessageParcel &, OHOS::Media::IPC::IPCContext &);
+
 using RequestHandle = void (MediaAlbumsControllerService::*)(MessageParcel &, MessageParcel &);
+
+const std::map<uint32_t, SpecialRequestHandle> SPECIAL_HANDLERS = {
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_SYS_GET_ASSETS),
+        &MediaAlbumsControllerService::AlbumGetAssets
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_GET_ASSETS),
+        &MediaAlbumsControllerService::AlbumGetAssets
+    },
+};
 
 const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
@@ -112,6 +137,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS),
         &MediaAlbumsControllerService::ChangeRequestDismiss
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_RESET_COVER_URI),
+        &MediaAlbumsControllerService::ChangeRequestResetCoverUri
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_ADD_ASSETS),
@@ -169,21 +198,57 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SET_COVER_URI),
         &MediaAlbumsControllerService::AlbumCommitModify
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_PHOTO_ALBUMS),
+        &MediaAlbumsControllerService::QueryAlbums
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_HIDDEN_ALBUMS),
+        &MediaAlbumsControllerService::QueryHiddenAlbums
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_GET_ALBUMS_BY_IDS),
+        &MediaAlbumsControllerService::GetAlbumsByIds
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ORDER_POSITION),
+        &MediaAlbumsControllerService::GetOrderPosition
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_FACE_ID),
+        &MediaAlbumsControllerService::GetFaceId
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PHOTO_INDEX),
+        &MediaAlbumsControllerService::GetPhotoIndex
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS),
+        &MediaAlbumsControllerService::GetAnalysisProcess
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO),
+        &MediaAlbumsControllerService::GetHighlightAlbumInfo
+    },
 };
 
 bool MediaAlbumsControllerService::Accept(uint32_t code)
 {
-    return HANDLERS.find(code) != HANDLERS.end();
+    return HANDLERS.find(code) != HANDLERS.end() || SPECIAL_HANDLERS.find(code) != SPECIAL_HANDLERS.end();
 }
 
-void MediaAlbumsControllerService::OnRemoteRequest(uint32_t code, MessageParcel &data,
-    MessageParcel &reply, OHOS::Media::IPC::IPCContext &context)
+void MediaAlbumsControllerService::OnRemoteRequest(
+    uint32_t code, MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context)
 {
-    auto it = HANDLERS.find(code);
-    if (it == HANDLERS.end()) {
-        return IPC::UserDefineIPC().WriteResponseBody(reply, E_IPC_SEVICE_NOT_FOUND);
+    auto handlersIt = HANDLERS.find(code);
+    if (handlersIt != HANDLERS.end()) {
+        return (this->*(handlersIt->second))(data, reply);
     }
-    return (this->*(it->second))(data, reply);
+    auto specialHandlersIt = SPECIAL_HANDLERS.find(code);
+    if (specialHandlersIt != SPECIAL_HANDLERS.end()) {
+        return (this->*(specialHandlersIt->second))(data, reply, context);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, E_IPC_SEVICE_NOT_FOUND);
 }
 
 static const map<int32_t, std::string> HIGHLIGHT_USER_ACTION_MAP = {
@@ -460,6 +525,32 @@ void MediaAlbumsControllerService::ChangeRequestDismiss(MessageParcel &data, Mes
     IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
+void MediaAlbumsControllerService::ChangeRequestResetCoverUri(MessageParcel &data, MessageParcel &reply)
+{
+    ChangeRequesDismissReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+        MEDIA_ERR_LOG("ChangeRequestResetCoverUri Read Request Error");
+        return;
+    }
+    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
+    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
+    int32_t albumId = atoi(reqBody.albumId.c_str());
+    bool cond = PhotoAlbum::IsUserPhotoAlbum(albumType, albumSubtype) ||
+        (PhotoAlbum::IsSystemAlbum(albumType) && !PhotoAlbum::IsHiddenAlbum(albumType, albumSubtype)) ||
+        PhotoAlbum::IsSourceAlbum(albumType, albumSubtype);
+    cond = cond && !reqBody.albumId.empty() && MediaLibraryDataManagerUtils::IsNumber(reqBody.albumId);
+    if (!cond) {
+        MEDIA_ERR_LOG("params is invalid");
+        IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+        return;
+    }
+
+    ret = MediaAlbumsService::GetInstance().ChangeRequestResetCoverUri(albumId, albumSubtype);
+    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
 std::shared_ptr<OHOS::NativeRdb::ResultSet>  QueryOperation(
     DataShare::DataSharePredicates &predicates, std::vector<std::string> &fetchColumns)
 {
@@ -538,7 +629,7 @@ void MediaAlbumsControllerService::RemoveAssets(MessageParcel &data, MessageParc
     ChangeRequestRemoveAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("StartDownloadCloudMedia Read Request Error");
+        MEDIA_ERR_LOG("RemoveAssets Read Request Error");
         IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         return;
     }
@@ -947,5 +1038,235 @@ void MediaAlbumsControllerService::AlbumRecoverAssets(MessageParcel &data, Messa
     ret = MediaAlbumsService::GetInstance().AlbumRecoverAssets(recoverAssetsDto);
     IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     return;
+}
+
+void MediaAlbumsControllerService::QueryAlbums(MessageParcel &data, MessageParcel &reply)
+{
+    QueryAlbumsReqBody reqBody;
+    QueryAlbumsRspBody rspBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+        MEDIA_ERR_LOG("CreateAssetForApp Read Request Error");
+        return;
+    }
+
+    QueryAlbumsDto dto;
+    dto.albumType = reqBody.albumType;
+    dto.albumSubType = reqBody.albumSubType;
+    dto.columns = reqBody.columns;
+    dto.predicates = reqBody.predicates;
+    ret = MediaAlbumsService::GetInstance().QueryAlbums(dto);
+    if (ret != E_OK) {
+        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+        MEDIA_ERR_LOG("QueryAlbums failed, ret:%{public}d", ret);
+        return;
+    }
+
+    rspBody.resultSet = dto.resultSet;
+    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody);
+}
+
+void MediaAlbumsControllerService::QueryHiddenAlbums(MessageParcel &data, MessageParcel &reply)
+{
+    QueryAlbumsReqBody reqBody;
+    QueryAlbumsRspBody rspBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+        MEDIA_ERR_LOG("CreateAssetForApp Read Request Error");
+        return;
+    }
+
+    QueryAlbumsDto dto;
+    dto.columns = reqBody.columns;
+    dto.predicates = reqBody.predicates;
+    dto.hiddenAlbumFetchMode = reqBody.hiddenAlbumFetchMode;
+    ret = MediaAlbumsService::GetInstance().QueryHiddenAlbums(dto);
+    if (ret != E_OK) {
+        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+        MEDIA_ERR_LOG("QueryHiddenAlbums failed, ret:%{public}d", ret);
+        return;
+    }
+
+    rspBody.resultSet = dto.resultSet;
+    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody);
+}
+
+void MediaAlbumsControllerService::GetAlbumsByIds(MessageParcel &data, MessageParcel &reply)
+{
+    GetAlbumsByIdsReqBody reqBody;
+    GetAlbumsByIdsRspBody rspBody;
+    std::shared_ptr<NativeRdb::ResultSet> resultSet;
+    std::vector<std::string> columns = reqBody.columns;
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetAlbumsByIds Read Request Error");
+        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+        return;
+    }
+
+    NativeRdb::RdbPredicates rdbPredicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(reqBody.predicates, PhotoAlbumColumns::TABLE);
+    if (rdbPredicates.GetOrder().empty()) {
+        rdbPredicates.OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
+    }
+    resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+    if (resultSet != nullptr) {
+        auto bridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+        rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
+    }
+
+    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+}
+
+void MediaAlbumsControllerService::GetOrderPosition(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter GetOrderPosition");
+    GetOrderPositionReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetOrderPosition Read Request Error");
+        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+        return;
+    }
+
+    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
+    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
+    if (!PhotoAlbum::IsAnalysisAlbum(albumType, albumSubtype)) {
+        MEDIA_ERR_LOG("Only analysis album can get asset order positions");
+        IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+        return;
+    }
+
+    if (reqBody.assetIdArray.size() <= 0) {
+        MEDIA_ERR_LOG("needs at least one asset id");
+        IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+        return;
+    }
+    std::set<std::string> idSet(reqBody.assetIdArray.begin(), reqBody.assetIdArray.end());
+    if (reqBody.assetIdArray.size() != idSet.size()) {
+        MEDIA_ERR_LOG("has same assets");
+        IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+        return;
+    }
+
+    GetOrderPositionRespBody respBody;
+    GetOrderPositionDto getOrderPositionDto;
+    getOrderPositionDto.albumId = reqBody.albumId;
+    getOrderPositionDto.assetIdArray = reqBody.assetIdArray;
+
+    ret = MediaAlbumsService::GetInstance().GetOrderPosition(getOrderPositionDto, respBody);
+    IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+    return;
+}
+
+void MediaAlbumsControllerService::GetFaceId(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter GetFaceId");
+    GetFaceIdReqBody reqBody;
+    GetFaceIdRespBody respBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetFaceId Read Request Error");
+        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+        return;
+    }
+
+    if (reqBody.albumSubType != PhotoAlbumSubType::PORTRAIT && reqBody.albumSubType != PhotoAlbumSubType::GROUP_PHOTO) {
+        MEDIA_WARN_LOG("albumSubType: %{public}d, not support getFaceId", reqBody.albumSubType);
+        IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+        return;
+    }
+
+    string groupTag;
+    ret = MediaAlbumsService::GetInstance().GetFaceId(reqBody.albumId, groupTag);
+    respBody.groupTag = groupTag;
+    IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+void MediaAlbumsControllerService::GetPhotoIndex(MessageParcel &data, MessageParcel &reply)
+{
+    GetPhotoIndexReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetPhotoIndex Read Request Error");
+        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+        return;
+    }
+    QueryResultRspBody rspBody;
+    ret = MediaAlbumsService::GetInstance().GetPhotoIndex(reqBody, rspBody);
+    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+}
+
+void MediaAlbumsControllerService::GetAnalysisProcess(MessageParcel &data, MessageParcel &reply)
+{
+    GetAnalysisProcessReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetAnalysisProcess Read Request Error");
+        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+        return;
+    }
+    QueryResultRspBody rspBody;
+    ret = MediaAlbumsService::GetInstance().GetAnalysisProcess(reqBody, rspBody);
+    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+}
+
+void MediaAlbumsControllerService::GetHighlightAlbumInfo(MessageParcel &data, MessageParcel &reply)
+{
+    GetHighlightAlbumReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetHighlightAlbumInfo Read Request Error");
+        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+        return;
+    }
+    QueryResultRspBody rspBody;
+    ret = MediaAlbumsService::GetInstance().GetHighlightAlbumInfo(reqBody, rspBody);
+    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+}
+
+void MediaAlbumsControllerService::AlbumGetAssets(
+    MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context)
+{
+    MEDIA_INFO_LOG("enter");
+    AlbumGetAssetsReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Read Request Error");
+        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+        return;
+    }
+
+    ret = ParameterUtils::CheckWhereClause(reqBody.predicates.GetWhereClause());
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CheckWhereClause fialed");
+        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+        return;
+    }
+    AlbumGetAssetsDto dto = AlbumGetAssetsDto::Create(reqBody);
+    if (context.GetByPassCode() == E_PERMISSION_DB_BYPASS) {
+        string clientAppId = GetClientAppId();
+        if (clientAppId.empty()) {
+            MEDIA_ERR_LOG("clientAppId is empty");
+            IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
+            return;
+        }
+        dto.predicates.And()->EqualTo("owner_appid", clientAppId);
+    }
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
+    auto resultSet = MediaAlbumsService::GetInstance().AlbumGetAssets(dto);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null");
+        IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
+        return;
+    }
+    AlbumGetAssetsRespBody respBody;
+    respBody.resultSet = resultSet;
+    IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 } // namespace OHOS::Media

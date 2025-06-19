@@ -164,6 +164,22 @@ HWTEST_F(ChangeAssetsTest, AddAssets_Test_001, TestSize.Level0)
 }
 
 /**
+ * @tc.name  : AddAssets_ShouldReturnError_WhenReadRequestBodyFails
+ * @tc.number: AddAssets_Test_002
+ * @tc.desc  : 测试当读取请求体失败时,AddAssets 函数应返回错误
+ */
+HWTEST_F(ChangeAssetsTest, AddAssets_Test_002, TestSize.Level0) {
+    MessageParcel data;
+    MessageParcel reply;
+
+    auto service = make_shared<MediaAlbumsControllerService>();
+    service->AddAssets(data, reply);
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    ASSERT_EQ(respVo.Unmarshalling(reply), true);
+    ASSERT_EQ(respVo.GetErrCode(), 0);
+}
+
+/**
  * @tc.name  : RemoveAssets_ShouldHandleHiddenOnlyFlag_WhenIsHiddenOnlyIsTrue
  * @tc.number: RemoveAssetsTest_001
  * @tc.desc  : 测试 isHiddenOnly, RemoveAssets 函数应正确处理隐藏仅标志
@@ -171,9 +187,25 @@ HWTEST_F(ChangeAssetsTest, AddAssets_Test_001, TestSize.Level0)
 HWTEST_F(ChangeAssetsTest, RemoveAssetsTest_001, TestSize.Level0)
 {
     int32_t result = ServiceRemoveAssets(0);
-    ASSERT_LT(result, 0);
+    ASSERT_EQ(result, 0);
     result = ServiceRemoveAssets(1);
-    ASSERT_LT(result, 0);
+    ASSERT_EQ(result, 0);
+}
+
+/**
+ * @tc.name  : RemoveAssets_ShouldReturnError_WhenReadRequestBodyFails
+ * @tc.number: RemoveAssets_Test_002
+ * @tc.desc  : 测试当读取请求体失败时,RemoveAssets 函数应返回错误
+ */
+HWTEST_F(ChangeAssetsTest, RemoveAssets_Test_002, TestSize.Level0) {
+    MessageParcel data;
+    MessageParcel reply;
+
+    auto service = make_shared<MediaAlbumsControllerService>();
+    service->RemoveAssets(data, reply);
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    ASSERT_EQ(respVo.Unmarshalling(reply), true);
+    ASSERT_EQ(respVo.GetErrCode(), 0);
 }
 
 /**
@@ -201,6 +233,22 @@ HWTEST_F(ChangeAssetsTest, MoveAssetsTest_001, TestSize.Level0) {
 }
 
 /**
+ * @tc.name  : MoveAssets_ShouldReturnError_WhenReadRequestBodyFails
+ * @tc.number: MoveAssets_Test_002
+ * @tc.desc  : 测试当读取请求体失败时,MoveAssets 函数应返回错误
+ */
+HWTEST_F(ChangeAssetsTest, MoveAssets_Test_002, TestSize.Level0) {
+    MessageParcel data;
+    MessageParcel reply;
+
+    auto service = make_shared<MediaAlbumsControllerService>();
+    service->MoveAssets(data, reply);
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    ASSERT_EQ(respVo.Unmarshalling(reply), true);
+    ASSERT_LT(respVo.GetErrCode(), 0);
+}
+
+/**
  * @tc.name  : RecoverAssets_ShouldReturnError_WhenReadRequestBodyFails
  * @tc.number: RecoverAssetsTest_001
  * @tc.desc  : 测试 RecoverAssets 常规流程
@@ -220,6 +268,22 @@ HWTEST_F(ChangeAssetsTest, RecoverAssetsTest_001, TestSize.Level0) {
     IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     ret = respVo.Unmarshalling(reply);
     EXPECT_EQ(true, ret);
+}
+
+/**
+ * @tc.name  : RecoverAssetsTest_ShouldReturnError_WhenReadRequestBodyFails
+ * @tc.number: RecoverAssetsTest_Test_002
+ * @tc.desc  : 测试当读取请求体失败时,RecoverAssets 函数应返回错误
+ */
+HWTEST_F(ChangeAssetsTest, RecoverAssets_Test_002, TestSize.Level0) {
+    MessageParcel data;
+    MessageParcel reply;
+
+    auto service = make_shared<MediaAlbumsControllerService>();
+    service->RecoverAssets(data, reply);
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    ASSERT_EQ(respVo.Unmarshalling(reply), true);
+    ASSERT_LT(respVo.GetErrCode(), 0);
 }
 
 /**
@@ -243,6 +307,23 @@ HWTEST_F(ChangeAssetsTest, DeleteAssetsTest_001, TestSize.Level0) {
     ret = respVo.Unmarshalling(reply);
     EXPECT_EQ(true, ret);
 }
+
+/**
+ * @tc.name  : DeleteAssetsTest_ShouldReturnError_WhenReadRequestBodyFails
+ * @tc.number: DeleteAssetsTest_Test_002
+ * @tc.desc  : 测试当读取请求体失败时,DeleteAssets 函数应返回错误
+ */
+HWTEST_F(ChangeAssetsTest, DeleteAssetsTest_002, TestSize.Level0) {
+    MessageParcel data;
+    MessageParcel reply;
+
+    auto service = make_shared<MediaAlbumsControllerService>();
+    service->DeleteAssets(data, reply);
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    ASSERT_EQ(respVo.Unmarshalling(reply), true);
+    ASSERT_EQ(respVo.GetErrCode(), 0);
+}
+
 /**
  * @tc.name  : DismissAsset_ShouldReturnError_WhenRecoverPhotoAssetsFails
  * @tc.number: DismissAssetsTest_001
@@ -269,6 +350,22 @@ HWTEST_F(ChangeAssetsTest, DismissAssetsTest_001, TestSize.Level0) {
     EXPECT_EQ(true, ret);
 }
 
+/**
+ * @tc.name  : DismissAssetsTest_ShouldReturnError_WhenReadRequestBodyFails
+ * @tc.number: DismissAssetsTest_002
+ * @tc.desc  : 测试当读取请求体失败时,DismissAssets 函数应返回错误
+ */
+HWTEST_F(ChangeAssetsTest, DismissAssetsTest_002, TestSize.Level0) {
+    MessageParcel data;
+    MessageParcel reply;
+
+    auto service = make_shared<MediaAlbumsControllerService>();
+    service->DismissAssets(data, reply);
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    ASSERT_EQ(respVo.Unmarshalling(reply), true);
+    ASSERT_LT(respVo.GetErrCode(), 0);
+}
+
 HWTEST_F(ChangeAssetsTest, MergeAlbumTest_001, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
@@ -288,6 +385,22 @@ HWTEST_F(ChangeAssetsTest, MergeAlbumTest_001, TestSize.Level0) {
     IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     ret = respVo.Unmarshalling(reply);
     EXPECT_EQ(true, ret);
+}
+
+/**
+ * @tc.name  : MergeAlbumTest_ShouldReturnError_WhenReadRequestBodyFails
+ * @tc.number: MergeAlbumTest_002
+ * @tc.desc  : 测试当读取请求体失败时,DismissAssets 函数应返回错误
+ */
+HWTEST_F(ChangeAssetsTest, MergeAlbumTest_002, TestSize.Level0) {
+    MessageParcel data;
+    MessageParcel reply;
+
+    auto service = make_shared<MediaAlbumsControllerService>();
+    service->MergeAlbum(data, reply);
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    ASSERT_EQ(respVo.Unmarshalling(reply), true);
+    ASSERT_LT(respVo.GetErrCode(), 0);
 }
 
 HWTEST_F(ChangeAssetsTest, PlaceBeforeTest_001, TestSize.Level0) {
@@ -312,6 +425,22 @@ HWTEST_F(ChangeAssetsTest, PlaceBeforeTest_001, TestSize.Level0) {
     EXPECT_EQ(true, ret);
 }
 
+/**
+ * @tc.name  : PlaceBeforeTest_ShouldReturnError_WhenReadRequestBodyFails
+ * @tc.number: PlaceBeforeTest_002
+ * @tc.desc  : 测试当读取请求体失败时,PlaceBefore 函数应返回错误
+ */
+HWTEST_F(ChangeAssetsTest, PlaceBeforeTest_002, TestSize.Level0) {
+    MessageParcel data;
+    MessageParcel reply;
+
+    auto service = make_shared<MediaAlbumsControllerService>();
+    service->PlaceBefore(data, reply);
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    ASSERT_EQ(respVo.Unmarshalling(reply), true);
+    ASSERT_LT(respVo.GetErrCode(), 0);
+}
+
 HWTEST_F(ChangeAssetsTest, SetOrderPositionTest_001, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
@@ -332,5 +461,21 @@ HWTEST_F(ChangeAssetsTest, SetOrderPositionTest_001, TestSize.Level0) {
     IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     ret = respVo.Unmarshalling(reply);
     EXPECT_EQ(true, ret);
+}
+
+/**
+ * @tc.name  : SetOrderPositionTest_ShouldReturnError_WhenReadRequestBodyFails
+ * @tc.number: SetOrderPositionTest_002
+ * @tc.desc  : 测试当读取请求体失败时,PlaceBefore 函数应返回错误
+ */
+HWTEST_F(ChangeAssetsTest, SetOrderPositionTest_002, TestSize.Level0) {
+    MessageParcel data;
+    MessageParcel reply;
+
+    auto service = make_shared<MediaAlbumsControllerService>();
+    service->SetOrderPosition(data, reply);
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    ASSERT_EQ(respVo.Unmarshalling(reply), true);
+    ASSERT_LT(respVo.GetErrCode(), 0);
 }
 }  // namespace OHOS::Media

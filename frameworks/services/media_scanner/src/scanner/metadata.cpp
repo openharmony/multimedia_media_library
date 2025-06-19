@@ -56,7 +56,8 @@ Metadata::Metadata()
     timePending_(FILE_TIME_PENDING_DEFAULT),
     isTemp_(FILE_IS_TEMP_DEFAULT),
     frontcamera_(FILE_FRONT_CAMERA_DEFAULT),
-    detailTime_(FILE_DETAIL_TIME_DEFAULT), burstCoverLevel_(BURST_COVER_LEVEL_DEFAULT)
+    detailTime_(FILE_DETAIL_TIME_DEFAULT), burstCoverLevel_(BURST_COVER_LEVEL_DEFAULT),
+    stageVideoTaskStatus_(STAGE_VIDEO_TASK_STATUS)
 {
     Init();
 }

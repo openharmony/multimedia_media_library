@@ -22,12 +22,15 @@
 #include "medialibrary_album_operations.h"
 #include "media_albums_rdb_operations.h"
 #include "media_log.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
+#include "medialibrary_rdbstore.h"
+#include "location_column.h"
 #include "photo_album_column.h"
+#include "story_album_column.h"
 #include "media_file_utils.h"
 #include "result_set_utils.h"
-#include "medialibrary_album_operations.h"
 #include "medialibrary_analysis_album_operations.h"
 #include "photo_map_operations.h"
 #include "medialibrary_common_utils.h"
@@ -37,12 +40,40 @@
 #include "rdb_utils.h"
 #include "medialibrary_rdb_utils.h"
 #include "photo_map_column.h"
+#include "permission_utils.h"
+#include "album_operation_uri.h"
+#include "datashare_result_set.h"
+#include "user_photography_info_column.h"
+#include "story_album_column.h"
+#include "userfile_manager_types.h"
+#include "story_cover_info_column.h"
+#include "story_play_info_column.h"
+#include "vision_column_comm.h"
+#include "medialibrary_photo_operations.h"
+#include "rdb_predicates.h"
 
 using namespace std;
+using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
-static const string USER_DISPLAY_LEVEL = "user_display_level";
-static const string SUB_TITLE = "sub_title";
+
+struct HighlightAlbumInfo {
+    std::string uriStr;
+    std::vector<std::string> fetchColumn;
+};
+
+static const std::map<int32_t, struct HighlightAlbumInfo> HIGHLIGHT_ALBUM_INFO_MAP = {
+    { COVER_INFO, { PAH_QUERY_HIGHLIGHT_COVER, { ID, HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
+        AI_ALBUM_ID, SUB_TITLE, CLUSTER_TYPE, CLUSTER_SUB_TYPE,
+        CLUSTER_CONDITION, MIN_DATE_ADDED, MAX_DATE_ADDED, GENERATE_TIME, HIGHLIGHT_VERSION,
+        REMARKS, HIGHLIGHT_STATUS, RATIO, BACKGROUND, FOREGROUND, WORDART, IS_COVERED, COLOR,
+        RADIUS, SATURATION, BRIGHTNESS, BACKGROUND_COLOR_TYPE, SHADOW_LEVEL, TITLE_SCALE_X,
+        TITLE_SCALE_Y, TITLE_RECT_WIDTH, TITLE_RECT_HEIGHT, BACKGROUND_SCALE_X, BACKGROUND_SCALE_Y,
+        BACKGROUND_RECT_WIDTH, BACKGROUND_RECT_HEIGHT, LAYOUT_INDEX, COVER_ALGO_VERSION, COVER_KEY, COVER_STATUS,
+        HIGHLIGHT_IS_MUTED, HIGHLIGHT_IS_FAVORITE, HIGHLIGHT_THEME, HIGHLIGHT_PIN_TIME, HIGHLIGHT_USE_SUBTITLE } } },
+    { PLAY_INFO, { PAH_QUERY_HIGHLIGHT_PLAY, { ID, HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
+        MUSIC, FILTER, HIGHLIGHT_PLAY_INFO, IS_CHOSEN, PLAY_INFO_VERSION, PLAY_INFO_ID } } },
+};
 
 MediaAlbumsService &MediaAlbumsService::GetInstance()
 {
@@ -185,7 +216,28 @@ int32_t MediaAlbumsService::SetUserAlbumCoverUri(const ChangeRequestSetCoverUriD
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, dto.albumId);
     values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, dto.coverUri);
-    return MediaLibraryAlbumOperations::UpdatePhotoAlbum(values, predicates);
+    values.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, dto.albumSubtype);
+    return MediaLibraryAlbumOperations::UpdateAlbumCoverUri(values, predicates, false);
+}
+
+int32_t MediaAlbumsService::SetSourceAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto)
+{
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, dto.albumId);
+    values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, dto.coverUri);
+    values.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, dto.albumSubtype);
+    return MediaLibraryAlbumOperations::UpdateAlbumCoverUri(values, predicates, false);
+}
+
+int32_t MediaAlbumsService::SetSystemAlbumCoverUri(const ChangeRequestSetCoverUriDto& dto)
+{
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, dto.albumId);
+    values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, dto.coverUri);
+    values.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, dto.albumSubtype);
+    return MediaLibraryAlbumOperations::UpdateAlbumCoverUri(values, predicates, true);
 }
 
 int32_t MediaAlbumsService::ChangeRequestSetCoverUri(const ChangeRequestSetCoverUriDto& dto)
@@ -228,6 +280,15 @@ int32_t MediaAlbumsService::ChangeRequestDismiss(int32_t albumId)
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
     return MediaLibraryAnalysisAlbumOperations::DismissGroupPhotoAlbum(values, predicates);
+}
+
+int32_t MediaAlbumsService::ChangeRequestResetCoverUri(int32_t albumId, PhotoAlbumSubType albumSubType)
+{
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    values.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, albumSubType);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    return MediaLibraryAlbumOperations::ResetCoverUri(values, predicates);
 }
 
 int32_t MediaAlbumsService::AlbumCommitModify(const AlbumCommitModifyDto& commitModifyDto, int32_t businessCode)
@@ -339,5 +400,410 @@ int32_t MediaAlbumsService::AlbumRecoverAssets(const AlbumRecoverAssetsDto& reco
     predicates.In(MediaColumn::MEDIA_ID, recoverAssetsDto.uris);
 
     return MediaLibraryAlbumOperations::RecoverPhotoAssets(predicates);
+}
+
+std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetAssets(const AlbumGetAssetsDto &dto)
+{
+    NativeRdb::RdbPredicates predicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
+    auto resultSet = PhotoMapOperations::QueryPhotoAssets(predicates, dto.columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to query album assets");
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+    return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+}
+
+static void LogQueryParams(const DataShare::DataSharePredicates &predicates, const vector<string> &fetchColumn)
+{
+    std::string sqlColumns;
+    for (const auto &column : fetchColumn) {
+        if (!sqlColumns.empty()) {
+            sqlColumns += ",";
+        }
+        sqlColumns += column;
+    }
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
+    std::string sqlWhere = rdbPredicate.GetWhereClause();
+    for (const auto &whereArg : rdbPredicate.GetWhereArgs()) {
+        sqlWhere.replace(sqlWhere.find("?"), 1, whereArg);
+    }
+    std::string sqlOrder = rdbPredicate.GetOrder();
+    MEDIA_INFO_LOG("sqlColumns: %{public}s", sqlColumns.c_str());
+    MEDIA_INFO_LOG("sqlWhere: %{public}s", sqlWhere.c_str());
+    MEDIA_INFO_LOG("sqlOrder: %{public}s", sqlOrder.c_str());
+}
+
+static bool CheckAlbumFetchColumns(const vector<string> &fetchColumn)
+{
+    for (const auto &column : fetchColumn) {
+        if (!PhotoAlbumColumns::IsPhotoAlbumColumn(column)) {
+            MEDIA_ERR_LOG("Invalid columns:%{public}s", column.c_str());
+            return false;
+        }
+    }
+    return true;
+}
+
+static void ReplaceFetchColumn(std::vector<std::string> &fetchColumn,
+    const std::string &oldColumn, const std::string &newColumn)
+{
+    auto it = std::find(fetchColumn.begin(), fetchColumn.end(), oldColumn);
+    if (it != fetchColumn.end()) {
+        it->assign(newColumn);
+    }
+}
+
+static void AddDefaultPhotoAlbumColumns(vector<string> &fetchColumn)
+{
+    auto columns = PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS;
+    for (const auto &column : fetchColumn) {
+        if (columns.count(column) == 0) {
+            columns.insert(column);
+        }
+    }
+    fetchColumn.assign(columns.begin(), columns.end());
+}
+
+static void AddNoSmartFetchColumns(std::vector<std::string> &fetchColumn)
+{
+    AddDefaultPhotoAlbumColumns(fetchColumn);
+    fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
+    fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
+    fetchColumn.push_back(PhotoAlbumColumns::ALBUM_LPATH);
+    fetchColumn.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
+}
+
+static void AddPhotoAlbumTypeFilter(DataShare::DataSharePredicates &predicates,
+    int32_t albumType, int32_t albumSubType)
+{
+    if (albumType != PhotoAlbumType::INVALID) {
+        predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(albumType));
+    }
+    if (albumSubType != PhotoAlbumSubType::ANY) {
+        predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType));
+        if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE || albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
+            predicates.OrderByDesc(PhotoAlbumColumns::ALBUM_COUNT);
+        }
+    }
+    if (PermissionUtils::IsSystemApp()) {
+        predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
+    } else {
+        predicates.And()->In(PhotoAlbumColumns::ALBUM_SUBTYPE, vector<string>({
+            to_string(PhotoAlbumSubType::USER_GENERIC),
+            to_string(PhotoAlbumSubType::FAVORITE),
+            to_string(PhotoAlbumSubType::VIDEO),
+            to_string(PhotoAlbumSubType::IMAGE),
+        }));
+    }
+}
+
+static NativeRdb::RdbPredicates GetAllLocationPredicates(DataShare::DataSharePredicates &predicates)
+{
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
+    predicates.And()->NotEqualTo(PhotoColumn::PHOTO_LATITUDE, to_string(0));
+    predicates.And()->NotEqualTo(PhotoColumn::PHOTO_LONGITUDE, to_string(0));
+    return RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+}
+
+static void ReplacePredicatesColumn(DataShare::DataSharePredicates& predicates,
+    const std::string &oldColumn, const std::string &newColumn)
+{
+    constexpr int32_t fieldIdx = 0;
+    auto& items = predicates.GetOperationList();
+    std::vector<DataShare::OperationItem> tmpOperations = {};
+    for (const DataShare::OperationItem& item : items) {
+        if (item.singleParams.empty()) {
+            tmpOperations.push_back(item);
+            continue;
+        }
+        if (static_cast<string>(item.GetSingle(fieldIdx)) == oldColumn) {
+            DataShare::OperationItem tmpItem = item;
+            tmpItem.singleParams[fieldIdx] = newColumn;
+            tmpOperations.push_back(tmpItem);
+            continue;
+        }
+        tmpOperations.push_back(item);
+    }
+    predicates = DataShare::DataSharePredicates(move(tmpOperations));
+}
+
+static void AddHighlightAlbumPredicates(DataShare::DataSharePredicates& predicates, int32_t albumSubType)
+{
+    std::string analysisAlbumId = ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID;
+    vector<string> onClause = {
+        analysisAlbumId + " = " + HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
+    };
+    if (albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+        onClause = {
+            analysisAlbumId + " = " + HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID,
+        };
+    }
+    predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
+    predicates.OrderByDesc(MAX_DATE_ADDED + ", " + GENERATE_TIME);
+    ReplacePredicatesColumn(predicates, PhotoAlbumColumns::ALBUM_ID, analysisAlbumId);
+}
+
+static void GenerateAnalysisCmd(MediaLibraryCommand &cmd,
+    DataShare::DataSharePredicates &predicates)
+{
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, MEDIALIBRARY_TABLE);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+}
+
+int32_t MediaAlbumsService::QueryAlbums(QueryAlbumsDto &dto)
+{
+    std::shared_ptr<NativeRdb::ResultSet> resultSet;
+    std::vector<std::string> &columns = dto.columns;
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY);
+    if (dto.albumType == PhotoAlbumType::SMART) {
+        if (dto.albumSubType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
+            NativeRdb::RdbPredicates rdbPredicate = GetAllLocationPredicates(dto.predicates);
+            const auto &locations = PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS;
+            columns.insert(columns.end(), locations.begin(), locations.end());
+            resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
+        } else if (dto.albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
+            columns = PhotoAlbumColumns::CITY_DEFAULT_FETCH_COLUMNS;
+            std::string onClause = PhotoAlbumColumns::ALBUM_NAME  + " = " + CITY_ID;
+            dto.predicates.InnerJoin(GEO_DICTIONARY_TABLE)->On({ onClause });
+            dto.predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_COUNT, to_string(0));
+            AddPhotoAlbumTypeFilter(dto.predicates, dto.albumType, dto.albumSubType);
+            GenerateAnalysisCmd(cmd, dto.predicates);
+            resultSet = MediaLibraryDataManager::QueryAnalysisAlbum(cmd, columns, dto.predicates);
+        } else {
+            AddDefaultPhotoAlbumColumns(columns);
+            if (dto.albumSubType == PhotoAlbumSubType::HIGHLIGHT ||
+                dto.albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+                AddHighlightAlbumPredicates(dto.predicates, dto.albumSubType);
+                std::string analysisAlbumId = ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID +
+                    " AS " + PhotoAlbumColumns::ALBUM_ID;
+                ReplaceFetchColumn(columns, PhotoAlbumColumns::ALBUM_ID, analysisAlbumId);
+            }
+            AddPhotoAlbumTypeFilter(dto.predicates, dto.albumType, dto.albumSubType);
+            GenerateAnalysisCmd(cmd, dto.predicates);
+            resultSet = MediaLibraryDataManager::QueryAnalysisAlbum(cmd, columns, dto.predicates);
+        }
+    } else {
+        AddNoSmartFetchColumns(columns);
+        AddPhotoAlbumTypeFilter(dto.predicates, dto.albumType, dto.albumSubType);
+        NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(dto.predicates, PhotoAlbumColumns::TABLE);
+        if (rdbPredicate.GetOrder().empty()) {
+            rdbPredicate.OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
+        }
+        resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
+    }
+
+    LogQueryParams(dto.predicates, columns);
+
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet nullptr");
+    auto bridge = RdbUtils::ToResultSetBridge(resultSet);
+    dto.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
+    return E_OK;
+}
+
+int32_t MediaAlbumsService::QueryHiddenAlbums(QueryAlbumsDto &dto)
+{
+    std::vector<std::string> &columns = dto.columns;
+    if (!CheckAlbumFetchColumns(columns)) {
+        return E_INVALID_VALUES;
+    }
+
+    AddDefaultPhotoAlbumColumns(columns);
+    if (dto.hiddenAlbumFetchMode == 1) {
+        columns.push_back(PhotoAlbumColumns::HIDDEN_COUNT);
+        columns.push_back(PhotoAlbumColumns::HIDDEN_COVER);
+        dto.predicates.And()->EqualTo(PhotoAlbumColumns::CONTAINS_HIDDEN, to_string(1));
+    } else {
+        dto.predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::HIDDEN);
+    }
+
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(dto.predicates, PhotoAlbumColumns::TABLE);
+    if (rdbPredicate.GetOrder().empty()) {
+        rdbPredicate.OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
+    }
+
+    std::shared_ptr<NativeRdb::ResultSet> resultSet;
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
+    resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
+
+    LogQueryParams(dto.predicates, columns);
+
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet nullptr");
+    auto bridge = RdbUtils::ToResultSetBridge(resultSet);
+    dto.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
+    return E_OK;
+}
+
+int32_t MediaAlbumsService::GetOrderPosition(const GetOrderPositionDto& getOrderPositionDto,
+    GetOrderPositionRespBody& resp)
+{
+    NativeRdb::RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
+    const string mapTable = ANALYSIS_PHOTO_MAP_TABLE;
+    predicates.EqualTo(mapTable + "." + MAP_ALBUM, getOrderPositionDto.albumId)->
+        And()->In(mapTable + "." + MAP_ASSET, getOrderPositionDto.assetIdArray);
+    std::vector<std::string> fetchColumn{MAP_ASSET, ORDER_POSITION};
+
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, fetchColumn);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+
+    int count = 0;
+    int ret = resultSet->GetRowCount(count);
+    if (ret != NativeRdb::E_OK || count <= 0) {
+        MEDIA_ERR_LOG("GetRowCount failed, error code: %{public}d, count: %{public}d", ret, count);
+        return JS_INNER_FAIL;
+    }
+    unordered_map<std::string, int32_t> idOrderMap;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t mapAsset = get<int32_t>(ResultSetUtils::GetValFromColumn(MAP_ASSET, resultSet, TYPE_INT32));
+        int32_t orderPosition = get<int32_t>(ResultSetUtils::GetValFromColumn(ORDER_POSITION, resultSet, TYPE_INT32));
+        idOrderMap[std::to_string(mapAsset)] = orderPosition;
+    }
+    resp.orderPositionArray.clear();
+    for (const string& assetId : getOrderPositionDto.assetIdArray) {
+        resp.orderPositionArray.push_back(idOrderMap[assetId]);
+    }
+    return E_OK;
+}
+
+int32_t MediaAlbumsService::GetFaceId(int32_t albumId, string& groupTag)
+{
+    return this->rdbOperation_.GetFaceId(albumId, groupTag);
+}
+
+int32_t MediaAlbumsService::GetPhotoIndex(GetPhotoIndexReqBody &reqBody, QueryResultRspBody &rspBody)
+{
+    DataShare::DataSharePredicates &predicates = reqBody.predicates;
+    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
+    predicates.And()->EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
+    const string &photoId = reqBody.photoId;
+    const string &albumId = reqBody.albumId;
+
+    MediaLibraryCommand cmd(predicates);
+    shared_ptr<NativeRdb::ResultSet> resSet = nullptr;
+    if (reqBody.isAnalysisAlbum) {
+        resSet = MediaLibraryPhotoOperations::HandleAnalysisIndex(cmd, photoId, albumId);
+    } else {
+        NativeRdb::RdbPredicates predicates =
+            RdbDataShareAdapter::RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
+        resSet = MediaLibraryPhotoOperations::HandleIndexOfUri(cmd, predicates, photoId, albumId);
+    }
+    if (resSet == nullptr) {
+        return E_FAIL;
+    }
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resSet);
+    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_SUCCESS;
+}
+
+int32_t MediaAlbumsService::GetAnalysisProcess(GetAnalysisProcessReqBody &reqBody, QueryResultRspBody &rspBody)
+{
+    std::string tableName;
+    DataShare::DataSharePredicates predicates;
+    std::vector<std::string> columns;
+    if (reqBody.analysisType == static_cast<int32_t>(AnalysisType::ANALYSIS_LABEL)) {
+        tableName = VISION_TOTAL_TABLE;
+        columns = {
+            "COUNT(*) AS totalCount",
+            "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 "
+                "AND face != 2 "
+                "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
+                "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount",
+            "SUM(CASE WHEN label != 0 THEN 1 ELSE 0 END) AS LabelCount"
+        };
+        string clause = VISION_TOTAL_TABLE + "." + MediaColumn::MEDIA_ID + " = " + PhotoColumn::PHOTOS_TABLE+ "." +
+            MediaColumn::MEDIA_ID;
+        predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ clause });
+        predicates.EqualTo(PhotoColumn::PHOTO_HIDDEN_TIME, 0)->And()
+            ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0)->And()
+            ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
+    } else if (reqBody.analysisType == static_cast<int32_t>(AnalysisType::ANALYSIS_FACE)) {
+        tableName = USER_PHOTOGRAPHY_INFO_TABLE;
+        std::vector<std::string> columns = {
+            HIGHLIGHT_ANALYSIS_PROGRESS
+        };
+    } else if (reqBody.analysisType == static_cast<int32_t>(AnalysisType::ANALYSIS_HIGHLIGHT)) {
+        tableName = HIGHLIGHT_ALBUM_TABLE;
+        columns = {
+            "SUM(CASE WHEN highlight_status = -3 THEN 1 ELSE 0 END) AS ClearCount",
+            "SUM(CASE WHEN highlight_status = -2 THEN 1 ELSE 0 END) AS DeleteCount",
+            "SUM(CASE WHEN highlight_status = -1 THEN 1 ELSE 0 END) AS NotProduceCount",
+            "SUM(CASE WHEN highlight_status > 0 THEN 1 ELSE 0 END) AS ProduceCount",
+            "SUM(CASE WHEN highlight_status = 1 THEN 1 ELSE 0 END) AS PushCount",
+        };
+    }
+    shared_ptr<NativeRdb::ResultSet> resSet = MediaLibraryRdbStore::QueryWithFilter(
+        RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, tableName), columns);
+    if (resSet == nullptr) {
+        return E_FAIL;
+    }
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resSet);
+    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_SUCCESS;
+}
+
+int32_t MediaAlbumsService::GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqBody, QueryResultRspBody &rspBody)
+{
+    std::vector<std::string> columns;
+    DataShare::DataSharePredicates predicates;
+                                       
+    if (HIGHLIGHT_ALBUM_INFO_MAP.find(reqBody.highlightAlbumInfoType) != HIGHLIGHT_ALBUM_INFO_MAP.end()) {
+        columns = HIGHLIGHT_ALBUM_INFO_MAP.at(reqBody.highlightAlbumInfoType).fetchColumn;
+        string tabStr;
+        if (reqBody.highlightAlbumInfoType == COVER_INFO) {
+            tabStr = HIGHLIGHT_COVER_INFO_TABLE;
+        } else {
+            tabStr = HIGHLIGHT_PLAY_INFO_TABLE;
+        }
+        vector<string> onClause = {
+            tabStr + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
+            HIGHLIGHT_ALBUM_TABLE + "." + ID
+        };
+        predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
+    } else {
+        MEDIA_ERR_LOG("Invalid highlightAlbumInfoType");
+        return E_ERR;
+    }
+    int32_t albumId = reqBody.albumId;
+    int32_t subType = reqBody.subType;
+    if (subType == static_cast<int32_t>(PhotoAlbumSubType::HIGHLIGHT)) {
+        predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    } else if (subType == static_cast<int32_t>(PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS)) {
+        predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID, to_string(albumId));
+    } else {
+        MEDIA_ERR_LOG("Invalid highlight album subType");
+        return E_ERR;
+    }
+
+    std::string tableName = "";
+    if (reqBody.highlightAlbumInfoType == static_cast<int32_t>(HighlightAlbumInfoType::COVER_INFO)) {
+        tableName = HIGHLIGHT_COVER_INFO_TABLE;
+    } else if (reqBody.highlightAlbumInfoType == static_cast<int32_t>(HighlightAlbumInfoType::PLAY_INFO)) {
+        tableName = HIGHLIGHT_PLAY_INFO_TABLE;
+    } else {
+        MEDIA_ERR_LOG("highlightAlbumInfoType not valid");
+        return E_ERR;
+    }
+
+    shared_ptr<NativeRdb::ResultSet> resSet = MediaLibraryRdbStore::QueryWithFilter(
+        RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, tableName), columns);
+    if (resSet == nullptr) {
+        return E_FAIL;
+    }
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resSet);
+    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_SUCCESS;
 }
 } // namespace OHOS::Media

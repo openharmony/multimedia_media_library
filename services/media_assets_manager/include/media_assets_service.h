@@ -23,6 +23,7 @@
 #include "form_info_dto.h"
 #include "commit_edited_asset_dto.h"
 #include "create_asset_dto.h"
+#include "get_asset_analysis_data_dto.h"
 #include "clone_asset_dto.h"
 #include "revert_to_original_dto.h"
 #include "cloud_enhancement_dto.h"
@@ -36,6 +37,11 @@
 #include "asset_change_create_asset_dto.h"
 #include "add_image_dto.h"
 #include "save_camera_photo_dto.h"
+#include "get_assets_dto.h"
+#include "query_cloud_enhancement_task_state_dto.h"
+#include "query_photo_vo.h"
+#include "adapted_vo.h"
+#include "convert_format_dto.h"
 
 namespace OHOS::Media {
 class MediaAssetsService {
@@ -66,6 +72,10 @@ public:
     int32_t SetOrientation(const int32_t fileId, const int32_t orientation);
     int32_t SetVideoEnhancementAttr(const int32_t fileId, const std::string &photoId, const std::string &path);
     int32_t SetSupportedWatermarkType(const int32_t fileId, const int32_t watermarkType);
+    std::shared_ptr<DataShare::DataShareResultSet> GetAssets(const GetAssetsDto &dto);
+    std::shared_ptr<DataShare::DataShareResultSet> GetAllDuplicateAssets(const GetAssetsDto &dto);
+    std::shared_ptr<DataShare::DataShareResultSet> GetDuplicateAssetsToDelete(const GetAssetsDto &dto);
+    int32_t GetIndexConstructProgress(std::string &indexProgress);
     int32_t CreateAsset(CreateAssetDto &dto);
     int32_t CreateAssetForApp(CreateAssetDto &dto);
     int32_t CreateAssetForAppWithAlbum(CreateAssetDto &dto);
@@ -75,6 +85,7 @@ public:
     int32_t SetAssetsHiddenStatus(const std::vector<int32_t> &fileIds, int32_t hiddenStatus);
     int32_t SetAssetsRecentShowStatus(const std::vector<int32_t> &fileIds, int32_t recentShowStatus);
     int32_t SetAssetsUserComment(const std::vector<int32_t> &fileIds, const std::string &userComment);
+    int32_t GetAssetAnalysisData(GetAssetAnalysisDataDto &dto);
     int32_t CloneAsset(const CloneAssetDto& cloneAssetDto);
     int32_t RevertToOriginal(const RevertToOriginalDto& revertToOriginalDto);
     int32_t SubmitCloudEnhancementTasks(const CloudEnhancementDto& cloudEnhancementDto);
@@ -86,6 +97,14 @@ public:
     int32_t CancelPhotoUriPermission(const CancelUriPermissionDto& cancelUriPermissionDto);
     int32_t StartThumbnailCreationTask(const StartThumbnailCreationTaskDto& startThumbnailCreationTaskDto);
     int32_t StopThumbnailCreationTask(const StopThumbnailCreationTaskDto& stopThumbnailCreationTaskDto);
+    int32_t RequestContent(const std::string& mediaId, int32_t& position);
+    int32_t QueryCloudEnhancementTaskState(const std::string& photoUri, QueryCloudEnhancementTaskStateDto& dto);
+    std::shared_ptr<NativeRdb::ResultSet> GetCloudEnhancementPair(const std::string& photoUri);
+    int32_t SyncCloudEnhancementTaskStatus();
+    int32_t QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRspBody &rsp);
+    int32_t LogMovingPhoto(const AdaptedReqBody &req);
+    int32_t ConvertFormat(const ConvertFormatDto &convertFormatDto);
+
 private:
     MediaAssetsRdbOperations rdbOperation_;
 };

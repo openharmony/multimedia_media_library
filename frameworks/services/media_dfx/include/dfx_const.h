@@ -40,6 +40,7 @@ constexpr int32_t HALF_DAY = 12 * 60 * 60;
 constexpr int32_t ONE_DAY = 24 * 60 * 60;
 constexpr int32_t TWO_DAY = 48 * 60 * 60;
 constexpr int32_t ONE_WEEK = 7 * 24 * 60 * 60;
+constexpr int64_t THIRTY_DAYS = 30 * 24 * 60 * 60;
 
 constexpr int32_t NOT_INIT = -1;
 constexpr int32_t COMMON_IMAGE = 0;
@@ -123,6 +124,7 @@ const std::string MOVING_PHOTO_KEY_ADAPTED_PACKAGE = "adapted_app_package";
 const std::string CLOUD_SYNC_START_TIME = "cloud_sync_start_time";
 const std::string CLOUDSYNC_STATUS_KEY = "persist.kernel.cloudsync.status";
 const std::string IS_REPORTED = "is_reported";
+const std::string LAST_CLEAR_DISK_DIRTY_DATA_TIME = "last_clear_disk_dirty_data_time";
 
 const std::string CLOUD_PHOTO_PATH = "/storage/cloud/files/Photo/";
 const std::string CLOUD_FILE_PATH = "/storage/cloud/files/";

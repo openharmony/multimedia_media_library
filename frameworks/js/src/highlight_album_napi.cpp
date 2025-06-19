@@ -43,6 +43,9 @@
 #include "delete_highlight_albums_vo.h"
 #include "set_subtitle_vo.h"
 #include "set_highlight_user_action_data_vo.h"
+#include "get_order_position_vo.h"
+#include "get_highlight_album_info_vo.h"
+#include "query_result_vo.h"
 
 using namespace std;
 
@@ -176,40 +179,23 @@ static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
     tracer.Start("JSGetHighlightAlbumInfoExecute");
 
     auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
-    string uriStr;
     std::vector<std::string> fetchColumn;
     DataShare::DataSharePredicates predicates;
     if (HIGHLIGHT_ALBUM_INFO_MAP.find(context->highlightAlbumInfoType) != HIGHLIGHT_ALBUM_INFO_MAP.end()) {
-        uriStr = HIGHLIGHT_ALBUM_INFO_MAP.at(context->highlightAlbumInfoType).uriStr;
         fetchColumn = HIGHLIGHT_ALBUM_INFO_MAP.at(context->highlightAlbumInfoType).fetchColumn;
-        string tabStr;
-        if (context->highlightAlbumInfoType == COVER_INFO) {
-            tabStr = HIGHLIGHT_COVER_INFO_TABLE;
-        } else {
-            tabStr = HIGHLIGHT_PLAY_INFO_TABLE;
-        }
-        vector<string> onClause = {
-            tabStr + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
-            HIGHLIGHT_ALBUM_TABLE + "." + ID
-        };
-        predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
     } else {
         NAPI_ERR_LOG("Invalid highlightAlbumInfoType");
         return;
     }
-    int32_t albumId = context->albumId;
-    PhotoAlbumSubType subType = context->subType;
-    Uri uri (uriStr);
-    if (subType == PhotoAlbumSubType::HIGHLIGHT) {
-        predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
-    } else if (subType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
-        predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID, to_string(albumId));
-    } else {
-        NAPI_ERR_LOG("Invalid highlight album subType");
-        return;
-    }
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    GetHighlightAlbumReqBody reqBody;
+    reqBody.highlightAlbumInfoType = context->highlightAlbumInfoType;
+    reqBody.albumId = context->albumId;
+    reqBody.subType = static_cast<int32_t>(context->subType);
+    QueryResultRspBody rspBody;
+    errCode = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO), reqBody, rspBody);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = rspBody.resultSet;
     if (resultSet != nullptr) {
         context->highlightAlbumInfo = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
     }
@@ -429,49 +415,23 @@ static void JSGetOrderPositionExecute(napi_env env, void *data)
     auto *context = static_cast<HighlightAlbumNapiAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    // make fetch column
-    std::vector<std::string> fetchColumn{MAP_ASSET, ORDER_POSITION};
-
-    // make where predicates
-    DataShare::DataSharePredicates predicates;
-    const std::vector<std::string> &assetIdArray = context->assetIdArray;
-    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "objectInfo is null");
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
-    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
-    int albumId = photoAlbum->GetAlbumId();
-    const string mapTable = ANALYSIS_PHOTO_MAP_TABLE;
-    predicates.EqualTo(mapTable + "." + MAP_ALBUM, albumId)->And()->In(mapTable + "." + MAP_ASSET, assetIdArray);
 
-    // start query, deal with result
-    Uri uri(PAH_QUERY_ORDER_ANA_ALBUM);
-    int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
-    if (resultSet == nullptr) {
-        NAPI_ERR_LOG("Query failed, error code: %{public}d", errCode);
-        context->error = JS_INNER_FAIL;
-        return;
+    GetOrderPositionRespBody respBody;
+    GetOrderPositionReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+    reqBody.assetIdArray = context->assetIdArray;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ORDER_POSITION);
+
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (ret == E_OK) {
+        context->orderPositionArray.clear();
+        context->orderPositionArray = respBody.orderPositionArray;
     }
-    int count = 0;
-    int ret = resultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK || count <= 0) {
-        NAPI_ERR_LOG("GetRowCount failed, error code: %{public}d, count: %{public}d", ret, count);
-        context->error = JS_INNER_FAIL;
-        return;
-    }
-    unordered_map<std::string, int32_t> idOrderMap;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t mapAsset = get<int32_t>(ResultSetUtils::GetValFromColumn(MAP_ASSET, resultSet, TYPE_INT32));
-        int32_t orderPosition = get<int32_t>(ResultSetUtils::GetValFromColumn(ORDER_POSITION, resultSet, TYPE_INT32));
-        idOrderMap[std::to_string(mapAsset)] = orderPosition;
-    }
-    context->orderPositionArray.clear();
-    for (string& assetId : context->assetIdArray) {
-        context->orderPositionArray.push_back(idOrderMap[assetId]);
-    }
-    NAPI_INFO_LOG("GetOrderPosition: result size: %{public}d, orderPositionArray size: %{public}d",
-                  count,
-                  static_cast<int>(context->orderPositionArray.size())
-                  );
+    NAPI_INFO_LOG("GetOrderPosition: orderPositionArray size: %{public}d",
+                  static_cast<int>(context->orderPositionArray.size()));
 }
 
 static void JSGetOrderPositionCompleteCallback(napi_env env, napi_status status, void *data)

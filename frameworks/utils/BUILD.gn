@@ -17,17 +17,15 @@ import("//foundation/multimedia/media_library/media_library.gni")
 ohos_static_library("medialibrary_common_utils") {
   include_dirs = [
     "./include/",
-    "//third_party/openssl/include/",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
   ]
 
   sources = [ "src/medialibrary_common_utils.cpp" ]
 
-  deps = [ "//third_party/openssl:libcrypto_shared" ]
-
   external_deps = [
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "openssl:libcrypto_shared",
   ]
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
   if (!media_library_link_opt) {
@@ -52,7 +50,6 @@ ohos_static_library("permission_utils") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
 
-    "//third_party/json/include",
   ]
 
   deps = []

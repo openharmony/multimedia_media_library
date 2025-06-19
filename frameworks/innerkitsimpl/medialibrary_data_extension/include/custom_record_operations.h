@@ -28,7 +28,7 @@ namespace OHOS::Media {
 
 class CustomRecordOperations {
 public:
-    EXPORT static int32_t InsertCustomRescord(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
+    EXPORT static int32_t InsertCustomRecord(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
         MediaLibraryCommand &cmd);
     EXPORT static int32_t BatchAddCustomRecords(MediaLibraryCommand &cmd,
         const std::vector<DataShare::DataShareValuesBucket> &values);

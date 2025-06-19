@@ -23,16 +23,18 @@
 #include "photo_album_info_po.h"
 
 namespace OHOS::Media {
+#define EXPORT __attribute__ ((visibility ("default")))
+
 class PhotoAlbumLPathOperation {
 public:
-    static PhotoAlbumLPathOperation &GetInstance();
+    EXPORT static PhotoAlbumLPathOperation &GetInstance();
     PhotoAlbumLPathOperation &SetRdbStore(const std::shared_ptr<MediaLibraryRdbStore> &rdbStorePtr);
     PhotoAlbumLPathOperation &CleanInvalidPhotoAlbums();
     PhotoAlbumLPathOperation &CleanDuplicatePhotoAlbums();
     PhotoAlbumLPathOperation &CleanEmptylPathPhotoAlbums();
     int32_t GetAlbumAffectedCount() const;
     PhotoAlbumLPathOperation &Start();
-    void Stop();
+    EXPORT void Stop();
 
 private:
     std::string ToString(const std::vector<NativeRdb::ValueObject> &values);

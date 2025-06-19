@@ -83,6 +83,8 @@
 #include "thumbnail_service.h"
 #include "medialibrary_rdb_transaction.h"
 #include "table_event_handler.h"
+#include "values_buckets.h"
+#include "medialibrary_data_manager.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -131,8 +133,6 @@ const std::string RDB_CONFIG = "/data/storage/el2/base/preferences/rdb_config.xm
 const std::string RDB_OLD_VERSION = "rdb_old_version";
 
 constexpr ssize_t RDB_WAL_LIMIT_SIZE = 1024 * 1024 * 1024; /* default wal file maximum size : 1GB */
-constexpr ssize_t RDB_CHECK_WAL_SIZE = 50 * 1024 * 1024;   /* check wal file size : 50MB */
-std::mutex MediaLibraryRdbStore::walCheckPointMutex_;
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
 
@@ -372,6 +372,24 @@ void MediaLibraryRdbStore::UpdateDateTakenIndex(const shared_ptr<MediaLibraryRdb
     MEDIA_INFO_LOG("update index for datetaken change end");
 }
 
+// 更新单条编辑数据大小
+int32_t MediaLibraryRdbStore::UpdateEditDataSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const std::string &photoId, const std::string &editDataDir)
+{
+    size_t size = 0;
+    MediaFileUtils::StatDirSize(editDataDir, size);
+    std::string sql = "UPDATE " + PhotoExtColumn::PHOTOS_EXT_TABLE + " "
+                    "SET " + PhotoExtColumn::EDITDATA_SIZE + " = " + std::to_string(size) + " "
+                    "WHERE " + PhotoExtColumn::PHOTO_ID + " = '" + photoId + "'";
+
+    int32_t ret = rdbStore->ExecuteSql(sql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Execute SQL failed: %{public}d", ret);
+        return E_DB_FAIL;
+    }
+    return E_OK;
+}
+
 void MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(const shared_ptr<MediaLibraryRdbStore> store)
 {
     MEDIA_INFO_LOG("UpdateDateTakenAndDetalTime start");
@@ -542,6 +560,19 @@ void MediaLibraryRdbStore::AddPhotoDateAddedIndex(const shared_ptr<MediaLibraryR
     };
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("end AddPhotoDateAddedIndex");
+}
+
+void MediaLibraryRdbStore::AddPhotoSortIndex(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start AddPhotoSortIndex");
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_DATE_ADDED_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_DATE_TAKEN_INDEX,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("End AddPhotoSortIndex");
 }
 
 void MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store)
@@ -1741,6 +1772,10 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INDEX_LONGITUDE,
     CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
     CustomRecordsColumns::CREATE_TABLE,
+    PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
+    PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
+    PhotoColumn::CREATE_PHOTO_SORT_DATE_ADDED_INDEX,
+    PhotoColumn::CREATE_PHOTO_SORT_DATE_TAKEN_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -3063,6 +3098,25 @@ void AddHighlightChangeFunction(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddAestheticsScoreFileds(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + AESTHETICS_ALL_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + AESTHETICS_SCORE_ALL + " INT ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_FILTERED_HARD + " BOOLEAN ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + CLARITY_SCORE_ALL + " DOUBLE ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + SATURATION_SCORE_ALL + " DOUBLE ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + LUMINANCE_SCORE_ALL + " DOUBLE ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + SEMANTICS_SCORE + " DOUBLE ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_BLACK_WHITE_STRIPE + " BOOLEAN ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_BLURRY + " BOOLEAN ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_MOSAIC + " BOOLEAN ",
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + AESTHETICS_SCORE_ALL_STATUS + " INT ",
+    };
+    MEDIA_INFO_LOG("start add aesthetics score fields");
+    ExecSqls(sqls, store);
+}
+
 void AddStoryTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -4342,6 +4396,17 @@ static void AddDcAnalysisColumn(RdbStore &store)
     MEDIA_INFO_LOG("Add DC analysis column end");
 }
 
+static void AddEditDataSizeColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoExtColumn::PHOTOS_EXT_TABLE + " ADD COLUMN " + PhotoExtColumn::EDITDATA_SIZE +
+        " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add editdata size column start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("Add editdata size column end");
+}
+
 static void AddDcAnalysisIndexUpdateColumn(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4352,15 +4417,17 @@ static void AddDcAnalysisIndexUpdateColumn(RdbStore &store)
     MEDIA_INFO_LOG("Add DC analysis index update column end");
 }
 
-static void AddCoverUriSourceColumn(RdbStore &store)
+static void AddCoverColumns(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " + PhotoAlbumColumns::COVER_URI_SOURCE +
             " INT NOT NULL DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " + PhotoAlbumColumns::COVER_CLOUD_ID +
+            " TEXT",
     };
-    MEDIA_INFO_LOG("add cover_uri_source column start");
+    MEDIA_INFO_LOG("add cover columns start");
     ExecSqls(sqls, store);
-    MEDIA_INFO_LOG("add cover_uri_source column end");
+    MEDIA_INFO_LOG("add cover columns end");
 }
 
 static void FixSourceAlbumCreateTriggersToUseLPath(RdbStore& store)
@@ -4548,6 +4615,62 @@ static int32_t AddIsRectificationCover(RdbStore &store)
     return ret;
 }
 
+void AddPhotoAlbumRefreshColumns(RdbStore &store)
+{
+    const vector<string> exeSqls = {
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+        PhotoAlbumColumns::COVER_DATE_TIME + " BIGINT DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+        PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME + " BIGINT DEFAULT 0",
+    };
+
+    MEDIA_INFO_LOG("start add photo album cover_date_time and hidden_cover_date_time for AccurateRefresh");
+    ExecSqls(exeSqls, store);
+    MEDIA_INFO_LOG("end add photo album cover_date_time and hidden_cover_date_time for AccurateRefresh");
+}
+
+void AddHighlightLocation(RdbStore &store)
+{
+    const vector<string> sql = {
+        " ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " + HIGHLIGHT_LOCATION + " TEXT ",
+    };
+
+    MEDIA_INFO_LOG("start add highlight location column");
+    ExecSqls(sql, store);
+}
+
+static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
+        if (AddIsRectificationCover(store) == NativeRdb::E_OK) {
+            UpdatePhotosMdirtyTrigger(store);
+        }
+    }
+
+    if (oldVersion < VERSION_ADD_PHOTO_ALBUM_REFRESH_COLUMNS) {
+        AddPhotoAlbumRefreshColumns(store);
+    }
+
+    TableEventHandler().OnUpgrade(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), oldVersion, MEDIA_RDB_VERSION);
+
+    if (oldVersion < VERSION_ADD_COVER_URI_SOURCE) {
+        AddCoverColumns(store);
+    }
+
+    if (oldVersion < VERSION_ADD_EDITDATA_SIZE_COLUMN) {
+        AddEditDataSizeColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_AESTHETICS_SCORE_FIELDS) {
+        AddAestheticsScoreFileds(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_LOCATION) {
+        AddHighlightLocation(store);
+    }
+}
+
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
@@ -4594,18 +4717,7 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
         AddDcAnalysisIndexUpdateColumn(store);
     }
 
-    if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
-        if (AddIsRectificationCover(store) == NativeRdb::E_OK) {
-            UpdatePhotosMdirtyTrigger(store);
-        }
-    }
-
-    TableEventHandler().OnUpgrade(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), oldVersion, MEDIA_RDB_VERSION);
-
-    if (oldVersion < VERSION_ADD_COVER_URI_SOURCE) {
-        AddCoverUriSourceColumn(store);
-    }
+    UpgradeExtensionPart7(store, oldVersion);
 }
 
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
@@ -5168,6 +5280,96 @@ int MediaLibraryRdbStore::Delete(int &deletedRows, const AbsRdbPredicates &predi
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Delete(deletedRows, predicates); });
 }
 
+pair<int32_t, NativeRdb::Results> MediaLibraryRdbStore::BatchInsert(const string &table,
+    vector<ValuesBucket> &values, const string &returningField)
+{
+    DfxTimer dfxTimer(DfxType::RDB_BATCHINSERT, INVALID_DFX, RDB_TIME_OUT, false);
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::BatchInsert");
+    if (!MediaLibraryRdbStore::CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return {E_HAS_DB_ERROR, -1};
+    }
+    if (table == PhotoColumn::PHOTOS_TABLE) {
+        for (auto& value : values) {
+            AddDefaultPhotoValues(value);
+        }
+    }
+
+    ValuesBuckets refRows;
+    for (auto &value : values) {
+        refRows.Put(value);
+    }
+    
+    pair<int32_t, NativeRdb::Results> retWithResults = {E_HAS_DB_ERROR, -1};
+    int32_t ret = ExecSqlWithRetry([&]() {
+        retWithResults = MediaLibraryRdbStore::GetRaw()->BatchInsert(table, values, { returningField });
+        return retWithResults.first;
+    });
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore_->BatchInsert failed, ret = %{public}d", ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
+        return {E_HAS_DB_ERROR, -1};
+    }
+
+    MEDIA_DEBUG_LOG("rdbStore_->BatchInsert end, ret = %{public}d", ret);
+    return retWithResults;
+}
+
+pair<int32_t, NativeRdb::Results> MediaLibraryRdbStore::Execute(const std::string &sql,
+    const std::vector<NativeRdb::ValueObject> &args, const std::string &returningField)
+{
+    pair<int32_t, NativeRdb::Results> retWithResults = {E_HAS_DB_ERROR, -1};
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), retWithResults,
+        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+    DfxTimer dfxTimer(RDB_EXECUTE_SQL, INVALID_DFX, RDB_TIME_OUT, false);
+    MediaLibraryTracer tracer;
+    tracer.Start("RdbStore->ExecuteSql");
+
+    string execSql = sql;
+    execSql.append(" returning ").append(returningField);
+    MEDIA_INFO_LOG("AccurateRefresh, sql:%{public}s", execSql.c_str());
+    int32_t ret = ExecSqlWithRetry([&]() {
+        retWithResults = MediaLibraryRdbStore::GetRaw()->ExecuteExt(execSql, args);
+        return retWithResults.first;
+    });
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore_->ExecuteSql failed, ret = %{public}d", ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
+        return {E_HAS_DB_ERROR, -1};
+    }
+    return retWithResults;
+}
+
+pair<int32_t, NativeRdb::Results> MediaLibraryRdbStore::Update(const ValuesBucket &row,
+    const AbsRdbPredicates &predicates, const string &returningField)
+{
+    pair<int32_t, NativeRdb::Results> retWithResults = {E_HAS_DB_ERROR, -1};
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), retWithResults,
+        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+
+    ExecSqlWithRetry([&]() {
+        retWithResults = MediaLibraryRdbStore::GetRaw()->Update(row, predicates, { returningField });
+        return retWithResults.first;
+    });
+
+    return retWithResults;
+}
+
+pair<int32_t, NativeRdb::Results> MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates,
+    const string &returningField)
+{
+    pair<int32_t, NativeRdb::Results> retWithResults = {E_HAS_DB_ERROR, -1};
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), retWithResults,
+        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+
+    ExecSqlWithRetry([&]() {
+        retWithResults = MediaLibraryRdbStore::GetRaw()->Delete(predicates, { returningField });
+        return retWithResults.first;
+    });
+    return retWithResults;
+}
+
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const NativeRdb::AbsRdbPredicates &predicates,
     const std::vector<std::string> &columns)
 {
@@ -5212,31 +5414,6 @@ int32_t MediaLibraryRdbStore::DataCallBackOnCreate()
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
         "MediaLibraryDataCallBack OnCreate error, ret: %{public}d", ret);
     return ret;
-}
-
-void MediaLibraryRdbStore::WalCheckPoint()
-{
-    std::unique_lock<std::mutex> lock(walCheckPointMutex_, std::defer_lock);
-    if (!lock.try_lock()) {
-        MEDIA_WARN_LOG("wal_checkpoint in progress, skip this operation");
-        return;
-    }
-
-    struct stat fileStat;
-    const std::string walFile = MEDIA_DB_DIR + "/rdb/media_library.db-wal";
-    if (stat(walFile.c_str(), &fileStat) < 0) {
-        CHECK_AND_PRINT_LOG(errno == ENOENT, "wal_checkpoint stat failed, errno: %{public}d", errno);
-        return;
-    }
-    ssize_t size = fileStat.st_size;
-    CHECK_AND_RETURN_LOG(size >= 0, "Invalid size for wal_checkpoint, size: %{public}zd", size);
-    CHECK_AND_RETURN(size > RDB_CHECK_WAL_SIZE);
-
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "wal_checkpoint rdbStore is nullptr!");
-
-    auto errCode = rdbStore->ExecuteSql("PRAGMA wal_checkpoint(TRUNCATE)");
-    CHECK_AND_PRINT_LOG(errCode == NativeRdb::E_OK, "wal_checkpoint ExecuteSql failed, errCode: %{public}d", errCode);
 }
 
 int MediaLibraryRdbStore::ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,

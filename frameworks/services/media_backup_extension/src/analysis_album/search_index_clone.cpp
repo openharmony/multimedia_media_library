@@ -186,14 +186,12 @@ void SearchIndexClone::InsertAnalysisSearchIndex(std::vector<AnalysisSearchIndex
         if (!entry.fileId.has_value()) continue;
         const int32_t fileId = entry.fileId.value();
         if (protectedIds.count(fileId)) {
-            MEDIA_INFO_LOG("APPEND skip existing file_id:%{public}d", fileId);
             continue;
         }
 
         if (overrideIds.count(fileId)) {
             overrideDeleteIds.push_back(fileId);
             overrideEntries.push_back(entry);
-            MEDIA_INFO_LOG("OVERRIDE process file_id:%{public}d", fileId);
         }
     }
 

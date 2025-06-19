@@ -106,6 +106,7 @@ public:
     EXPORT void TryToReadAstcInfoFromJsonFile();
     EXPORT bool ReadAstcInfoFromJsonFile(PhasesStat& phasesStat, int32_t& totalAstcCount);
     EXPORT bool WriteAstcInfoToJsonFile(const PhasesStat& phasesStat, int32_t totalAstcCount);
+    EXPORT bool IsBackupGroundTaskEmpty();
 private:
     std::string GetJsonStr();
     bool CheckId(const std::string& id);

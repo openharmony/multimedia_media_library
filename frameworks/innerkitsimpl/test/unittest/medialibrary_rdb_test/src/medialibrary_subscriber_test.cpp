@@ -21,7 +21,6 @@
 #include "medialibrary_subscriber.h"
 #undef MEDIALIBRARY_MTP_ENABLE
 #include "moving_photo_processor.h"
-#include "medialibrary_subscriber_database_utils.h"
 #undef private
 
 using namespace std;
@@ -114,18 +113,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_MovingPhotoProcessor_test_001, TestSize.L
     EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_QueryThumbAstc_test, TestSize.Level1)
-{
-    int count = 0;
-    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
-    EXPECT_NE(medialibrarySubscriberPtr, nullptr);
-
-    medialibrarySubscriberPtr->DoThumbnailBgOperation();
-    medialibrarySubscriberPtr->WalCheckPointAsync();
-    MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(count);
-    MedialibrarySubscriberDatabaseUtils::QueryThumbTotal(count);
-}
-
 HWTEST_F(MediaLibraryRdbTest, medialib_UpdateBackgroundOperationStatus_test, TestSize.Level1)
 {
     shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
@@ -155,17 +142,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_CheckHalfDayMissions_test, TestSize.Level
     medialibrarySubscriberPtr->isScreenOff_ = true;
     medialibrarySubscriberPtr->isCharging_ = true;
     medialibrarySubscriberPtr->CheckHalfDayMissions();
-    EXPECT_NE(medialibrarySubscriberPtr->isScreenOff_, false);
-    EXPECT_NE(medialibrarySubscriberPtr->isCharging_, false);
-}
-
-HWTEST_F(MediaLibraryRdbTest, medialib_WalCheckPointAsync_test, TestSize.Level1)
-{
-    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
-    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
-    medialibrarySubscriberPtr->isScreenOff_ = true;
-    medialibrarySubscriberPtr->isCharging_ = true;
-    medialibrarySubscriberPtr->WalCheckPointAsync();
     EXPECT_NE(medialibrarySubscriberPtr->isScreenOff_, false);
     EXPECT_NE(medialibrarySubscriberPtr->isCharging_, false);
 }
@@ -271,25 +247,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Init_test_001, TestSize.Level1)
     bool ret2 = (ret > medialibrarySubscriberPtr->lockTime_);
     EXPECT_EQ(medialibrarySubscriberPtr->agingCount_, 0);
     EXPECT_EQ(ret2, false);
-}
-
-HWTEST_F(MediaLibraryRdbTest, medialib_DoAgingOperation_test_001, TestSize.Level1)
-{
-    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
-    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
-    medialibrarySubscriberPtr->DoAgingOperation();
-    int64_t ret = -1;
-    ret = medialibrarySubscriberPtr->GetNowTime();
-    EXPECT_NE(ret, -1);
-}
-
-HWTEST_F(MediaLibraryRdbTest, medialib_StopThumbnailBgOperation_test_001, TestSize.Level1)
-{
-    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
-    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
-    medialibrarySubscriberPtr->StopThumbnailBgOperation();
-    medialibrarySubscriberPtr->GetNowTime();
-    EXPECT_EQ(medialibrarySubscriberPtr->agingCount_, 0);
 }
 } // namespace Media
 } // namespace OHOS

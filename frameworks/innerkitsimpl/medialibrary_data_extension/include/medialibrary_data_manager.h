@@ -75,27 +75,23 @@ public:
     EXPORT void NotifyChange(const Uri &uri);
     EXPORT int32_t GenerateThumbnailBackground();
     EXPORT int32_t GenerateHighlightThumbnailBackground();
-
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryGeo(const NativeRdb::RdbPredicates &rdbPredicates,
+        const std::vector<std::string> &columns);
     // upgrade existed thumbnails to fix such as size, rotation and quality etc. problems
     EXPORT int32_t UpgradeThumbnailBackground(bool isWifiConnected);
 
     // restore thumbnail for date fronted 2000 photos from dual framework upgrade or clone
     EXPORT int32_t RestoreThumbnailDualFrame();
     void InterruptBgworker();
-    void InterruptThumbnailBgWorker();
-    EXPORT int32_t DoAging();
-    EXPORT int32_t DoTrashAging(std::shared_ptr<int> countPtr = nullptr);
+    EXPORT void InterruptThumbnailBgWorker();
     /**
      * @brief Revert the pending state through the package name
      * @param bundleName packageName
      * @return revert result
      */
     EXPORT int32_t RevertPendingByPackage(const std::string &bundleName);
-
-    // update burst photo from gallery
-    EXPORT int32_t UpdateBurstFromGallery();
-    // update burst_cover_level from gallery
-    EXPORT int32_t UpdateBurstCoverLevelFromGallery();
 
     EXPORT std::shared_ptr<MediaLibraryRdbStore> rdbStore_;
 
@@ -117,13 +113,13 @@ public:
     EXPORT int32_t UpdateDateTakenWhenZero();
     EXPORT int32_t UpdateDirtyForCloudClone(int32_t version);
     EXPORT int32_t ClearDirtyHdcData();
+    EXPORT int32_t ClearDirtyDiskData();
+    EXPORT int32_t UpdateMediaSizeFromStorage();
     EXPORT int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
                 const DataShare::DataSharePredicates &predicates);
 private:
     int32_t InitMediaLibraryRdbStore();
     int32_t UpdateDirtyHdcDataStatus();
-    int32_t UpdateDirtyForCloudClone();
-    int32_t UpdateDirtyForCloudCloneV2();
     void InitResourceInfo();
     void DeleteDirtyFileAndDir(const std::vector<std::string>& deleteFilePaths);
     void HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart);

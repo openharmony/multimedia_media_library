@@ -104,6 +104,7 @@ public:
     int32_t GetPermissionPolicy(
         uint32_t code, std::vector<std::vector<PermissionType>> &permissionPolicy, bool &isBypass) override
     {
+        permissionPolicy = {{CLOUD_READ, CLOUD_WRITE}};
         return E_SUCCESS;
     }
 

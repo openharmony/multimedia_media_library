@@ -169,6 +169,10 @@ public:
     static const std::string PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX EXPORT;
     static const std::string LATITUDE_INDEX EXPORT;
     static const std::string LONGITUDE_INDEX EXPORT;
+    static const std::string PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX EXPORT;
+    static const std::string PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX EXPORT;
+    static const std::string PHOTO_SORT_DATE_ADDED_INDEX EXPORT;
+    static const std::string PHOTO_SORT_DATE_TAKEN_INDEX EXPORT;
     // for clone query
     static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // for burst query
@@ -243,6 +247,10 @@ public:
     static const std::string INDEX_SCTHP_PHOTO_DATEADDED;
     static const std::string INDEX_LATITUDE;
     static const std::string INDEX_LONGITUDE;
+    static const std::string CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX;
+    static const std::string CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX;
+    static const std::string CREATE_PHOTO_SORT_DATE_ADDED_INDEX;
+    static const std::string CREATE_PHOTO_SORT_DATE_TAKEN_INDEX;
 
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER EXPORT;
@@ -283,6 +291,8 @@ public:
 
     static const std::string HIGHTLIGHT_COVER_URI EXPORT;
     static const std::string HIGHTLIGHT_URI EXPORT;
+    static const std::string HIDDEN_PHOTO_URI_PREFIX EXPORT;
+    static const std::string TRASHED_PHOTO_URI_PREFIX EXPORT;
 
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
     EXPORT static std::string CheckUploadPhotoColumns();
@@ -324,6 +334,7 @@ public:
     // column name
     static const std::string PHOTO_ID EXPORT;
     static const std::string THUMBNAIL_SIZE EXPORT;
+    static const std::string EDITDATA_SIZE EXPORT;
 
     // create table sql
     static const std::string CREATE_PHOTO_EXT_TABLE EXPORT;

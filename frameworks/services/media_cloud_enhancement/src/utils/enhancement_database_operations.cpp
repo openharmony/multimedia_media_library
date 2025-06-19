@@ -80,11 +80,16 @@ std::shared_ptr<NativeRdb::ResultSet> EnhancementDatabaseOperations::BatchQuery(
     return MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
 }
 
-int32_t EnhancementDatabaseOperations::Update(ValuesBucket &rdbValues, AbsRdbPredicates &predicates)
+int32_t EnhancementDatabaseOperations::Update(ValuesBucket &rdbValues, AbsRdbPredicates &predicates,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     int32_t changedRows = -1;
     for (int32_t i = 0; i < MAX_UPDATE_RETRY_TIMES; i++) {
-        changedRows = MediaLibraryRdbStore::UpdateWithDateTime(rdbValues, predicates);
+        if (assetRefresh != nullptr) {
+            changedRows = assetRefresh->UpdateWithDateTime(rdbValues, predicates);
+        } else {
+            changedRows = MediaLibraryRdbStore::UpdateWithDateTime(rdbValues, predicates);
+        }
         if (changedRows >= 0) {
             break;
         }

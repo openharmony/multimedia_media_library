@@ -34,7 +34,7 @@ std::string PhotoFileOperation::ToString(const PhotoAssetInfo &photoInfo)
     ss << "PhotoAssetInfo[displayName: " << photoInfo.displayName << ", filePath: " << photoInfo.filePath
        << ", dateModified: " << photoInfo.dateModified << ", subtype: " << photoInfo.subtype
        << ", videoFilePath: " << photoInfo.videoFilePath << ", editDataFolder: " << photoInfo.editDataFolder
-       << ", thumbnailFolder: " << photoInfo.thumbnailFolder << "]";
+       << ", thumbnailFolder: " << photoInfo.thumbnailFolder << ", isMovingPhoto: " << photoInfo.isMovingPhoto << "]";
     return ss.str();
 }
 
@@ -440,6 +440,8 @@ int32_t PhotoFileOperation::CopyPhotoRelatedThumbnail(const PhotoFileOperation::
     CHECK_AND_RETURN_RET_LOG(opRet == E_OK, opRet,
         "Media_Operation: CopyPhoto thumbnail failed, srcPath: %{public}s, targetPath: %{public}s",
         srcThumbnailFolder.c_str(), targetThumbnailFolder.c_str());
+    MEDIA_INFO_LOG("Media_Operation: CopyPhotoThumbnail success, srcThumbDir: %{public}s, targetThumbDir: %{public}s",
+        srcThumbnailFolder.c_str(), targetThumbnailFolder.c_str());
 
     return E_OK;
 }
@@ -467,6 +469,122 @@ int32_t PhotoFileOperation::CopyFile(const std::string &srcPath, std::string &ta
             srcPath.c_str(),
             strerror(errno));
         return E_FILE_OPER_FAIL;
+    }
+    return E_OK;
+}
+
+/**
+ * @brief ConvertFormat Photo File, include photo file, video file and edit data folder.
+ */
+int32_t PhotoFileOperation::ConvertFormatPhoto(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    const std::string &targetPath, const std::string &extension)
+{
+    bool cond = (resultSet == nullptr || targetPath.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, E_FAIL,
+        "Media_Operation: ConvertFormatPhoto failed, resultSet is null or targetPath is empty");
+
+    // Build the Original Photo Asset Info
+    PhotoFileOperation::PhotoAssetInfo sourcePhotoInfo;
+    sourcePhotoInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    sourcePhotoInfo.filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    sourcePhotoInfo.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
+    sourcePhotoInfo.isMovingPhoto = ((sourcePhotoInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) ||
+        (effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)));
+    sourcePhotoInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
+    sourcePhotoInfo.videoFilePath = this->FindVideoFilePath(sourcePhotoInfo);
+    sourcePhotoInfo.editDataFolder = this->FindEditDataFolder(sourcePhotoInfo);
+    // Build the Target Photo Asset Info
+    PhotoFileOperation::PhotoAssetInfo targetPhotoInfo;
+    targetPhotoInfo.displayName = sourcePhotoInfo.displayName;
+    targetPhotoInfo.filePath = targetPath;
+    targetPhotoInfo.subtype = sourcePhotoInfo.subtype;
+    targetPhotoInfo.dateModified = sourcePhotoInfo.dateModified;
+    // No need to copy video file if the Original Photo is not a moving photo.
+    if (!sourcePhotoInfo.videoFilePath.empty()) {
+        targetPhotoInfo.videoFilePath = this->GetVideoFilePath(targetPhotoInfo);
+    }
+    // No need to copy edit data folder if the Original Photo is not edited.
+    if (!sourcePhotoInfo.editDataFolder.empty()) {
+        targetPhotoInfo.editDataFolder = this->BuildEditDataFolder(targetPhotoInfo);
+    }
+    MEDIA_INFO_LOG("Media_Operation: sourcePhotoInfo: %{public}s, targetPhotoInfo: %{public}s, extension: %{public}s",
+        this->ToString(sourcePhotoInfo).c_str(), this->ToString(targetPhotoInfo).c_str(), extension.c_str());
+    return this->ConvertFormatPhoto(sourcePhotoInfo, targetPhotoInfo, extension);
+}
+
+int32_t PhotoFileOperation::ConvertFormatPhoto(const PhotoAssetInfo &sourcePhotoInfo,
+    const PhotoAssetInfo &targetPhotoInfo, const std::string &extension)
+{
+    // copy renderings, need convert format
+    int32_t opRet = this->ConvertFormatFile(sourcePhotoInfo.filePath, targetPhotoInfo.filePath,
+        targetPhotoInfo.dateModified, extension);
+    CHECK_AND_RETURN_RET_LOG(opRet == E_OK, opRet, "ConvertFormat File failed");
+    MEDIA_INFO_LOG("ConvertFormat File success, srcFile: %{public}s, dstFile: %{public}s, extension: %{public}s",
+        sourcePhotoInfo.filePath.c_str(), targetPhotoInfo.filePath.c_str(), extension.c_str());
+
+    // copy moving photo
+    if (sourcePhotoInfo.isMovingPhoto) {
+        opRet = this->ConvertFormatFile(sourcePhotoInfo.videoFilePath, targetPhotoInfo.videoFilePath,
+            targetPhotoInfo.dateModified, "");
+        CHECK_AND_RETURN_RET_LOG(opRet == E_OK, opRet, "ConvertFormat Video failed");
+        MEDIA_INFO_LOG("ConvertFormat Video success, srcVideo: %{public}s, dstVideo: %{public}s",
+            sourcePhotoInfo.videoFilePath.c_str(), targetPhotoInfo.videoFilePath.c_str());
+    }
+
+    // copy editData folder, source.heic need convert format, other copy
+    opRet = this->ConvertFormatPhotoExtraData(sourcePhotoInfo.editDataFolder, targetPhotoInfo.editDataFolder,
+        extension);
+    CHECK_AND_RETURN_RET_LOG(opRet == E_OK, opRet, "ConvertFormat PhotoExtraData failed");
+    MEDIA_INFO_LOG("ConvertFormat ExtraData success, srcExtraData: %{public}s, dstExtraData: %{public}s, "
+        "extension: %{public}s", sourcePhotoInfo.editDataFolder.c_str(), targetPhotoInfo.editDataFolder.c_str(),
+        extension.c_str());
+
+    return E_OK;
+}
+
+int32_t PhotoFileOperation::ConvertFormatFile(const std::string &srcFilePath, const std::string &dstFilePath,
+    const int64_t dateModified, const std::string &extension)
+{
+    // If File Path is empty, return E_INVALID_PATH.
+    if (srcFilePath.empty() || dstFilePath.empty() || !MediaFileUtils::IsFileExists(srcFilePath) ||
+        !MediaFileUtils::IsFileValid(srcFilePath)) {
+        MEDIA_ERR_LOG("Media_Operation: check srcPath or targetPath failed");
+        return E_INVALID_PATH;
+    }
+
+    bool ret = false;
+    if (!extension.empty()) {
+        ret = MediaFileUtils::ConvertFormatCopy(srcFilePath, dstFilePath, extension);
+    } else {
+        ret = MediaFileUtils::CopyFileUtil(srcFilePath, dstFilePath);
+    }
+    if (!ret || !MediaFileUtils::IsFileExists(dstFilePath)) {
+        MEDIA_INFO_LOG("Media_Operation: ConvertFormatFile failed, srcFilePath: %{public}s, dstFilePath: %{public}s, "
+            "extension: %{public}s", srcFilePath.c_str(), dstFilePath.c_str(), extension.c_str());
+        return E_FILE_OPER_FAIL;
+    }
+
+    MediaFileUtils::ModifyFile(dstFilePath, dateModified / MSEC_TO_SEC);
+    return E_OK;
+}
+
+int32_t PhotoFileOperation::ConvertFormatPhotoExtraData(const std::string &srcPath, const std::string &dstPath,
+    const std::string &extension)
+{
+    if (srcPath.empty() || dstPath.empty()) {
+        return E_OK;
+    }
+    if (!MediaFileUtils::IsFileExists(srcPath)) {
+        MEDIA_ERR_LOG("Media_Operation: %{public}s doesn't exist", srcPath.c_str());
+        return E_NO_SUCH_FILE;
+    }
+
+    int32_t ret = MediaFileUtils::ConvertFormatExtraDataDirectory(srcPath, dstPath, extension);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ConvertFormatExtraDataDirectory failed, srcPath: %{public}s, dstPath: %{public}s, "
+            "extension: %{public}s", srcPath.c_str(), dstPath.c_str(), extension.c_str());
+        return ret;
     }
     return E_OK;
 }

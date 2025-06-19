@@ -20,6 +20,8 @@
 #include "datashare_stub.h"
 #include "media_datashare_ext_ability.h"
 #include "native_engine/native_value.h"
+#include "i_observer_manager_interface.h"
+#include "media_observer_manager.h"
 
 namespace OHOS {
 namespace DataShare {
@@ -59,6 +61,12 @@ public:
     EXPORT bool RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
 
     EXPORT bool UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
+
+    EXPORT int RegisterObserverExtProvider(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver,
+        bool isDescendants) override;
+
+    EXPORT int UnregisterObserverExtProvider(const Uri &uri,
+        const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
 
     EXPORT bool NotifyChange(const Uri &uri) override;
 

@@ -60,6 +60,7 @@ public:
     static int32_t CheckOrientation(const AssetChangeReqBody &reqBody);
     static int32_t CheckVideoEnhancementAttr(const AssetChangeReqBody &reqBody);
     static int32_t CheckWatermarkType(const AssetChangeReqBody &reqBody);
+    static int32_t CheckWhereClause(const std::string &whereClause);
 };
 }  // namespace Media
 }  // namespace OHOS

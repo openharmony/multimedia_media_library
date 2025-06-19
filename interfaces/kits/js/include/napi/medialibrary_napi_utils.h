@@ -52,6 +52,14 @@
         }                                                           \
     } while (0)
 
+#define CHECK_COND_WITH_ERR_MESSAGE(env, cond, err, msg)                                           \
+    do {                                                                                      \
+        if (!(cond)) {                                                                        \
+            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, msg); \
+            return nullptr;                                                                   \
+        }                                                                                     \
+    } while (0)
+
 #define NAPI_ASSERT(env, cond, msg) CHECK_ARGS_WITH_MESSAGE(env, cond, msg)
 
 #define GET_JS_ARGS(env, info, argc, argv, thisVar)                         \

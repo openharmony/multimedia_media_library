@@ -52,6 +52,11 @@ public:
     EXPORT void SetOrientation(MessageParcel &data, MessageParcel &reply);
     EXPORT void SetVideoEnhancementAttr(MessageParcel &data, MessageParcel &reply);
     EXPORT void SetSupportedWatermarkType(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetAssets(MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context);
+    EXPORT void GetBurstAssets(MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context);
+    EXPORT void GetAllDuplicateAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetDuplicateAssetsToDelete(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetIndexConstructProgress(MessageParcel &data, MessageParcel &reply);
     EXPORT void PublicCreateAsset(MessageParcel &data, MessageParcel &reply);
     EXPORT void SystemCreateAsset(MessageParcel &data, MessageParcel &reply);
     EXPORT void PublicCreateAssetForApp(MessageParcel &data, MessageParcel &reply);
@@ -63,6 +68,7 @@ public:
     EXPORT void SetAssetsHiddenStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT void SetAssetsRecentShowStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT void SetAssetsUserComment(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetAssetAnalysisData(MessageParcel &data, MessageParcel &reply);
     EXPORT void CloneAsset(MessageParcel &data, MessageParcel &reply);
     EXPORT void RevertToOriginal(MessageParcel &data, MessageParcel &reply);
     EXPORT void UpdateGalleryFormInfo(MessageParcel &data, MessageParcel &reply);
@@ -70,7 +76,6 @@ public:
     EXPORT void PrioritizeCloudEnhancementTask(MessageParcel &data, MessageParcel &reply);
     EXPORT void CancelCloudEnhancementTasks(MessageParcel &data, MessageParcel &reply);
     EXPORT void CancelAllCloudEnhancementTasks(MessageParcel &data, MessageParcel &reply);
-
     EXPORT void StartDownloadCloudMedia(MessageParcel &data, MessageParcel &reply);
     EXPORT void PauseDownloadCloudMedia(MessageParcel &data, MessageParcel &reply);
     EXPORT void CancelDownloadCloudMedia(MessageParcel &data, MessageParcel &reply);
@@ -86,6 +91,13 @@ public:
     EXPORT void CancelPhotoUriPermission(MessageParcel &data, MessageParcel &reply);
     EXPORT void StartThumbnailCreationTask(MessageParcel &data, MessageParcel &reply);
     EXPORT void StopThumbnailCreationTask(MessageParcel &data, MessageParcel &reply);
+    EXPORT void RequestContent(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetCloudEnhancementPair(MessageParcel &data, MessageParcel &reply);
+    EXPORT void QueryCloudEnhancementTaskState(MessageParcel &data, MessageParcel &reply);
+    EXPORT void SyncCloudEnhancementTaskStatus(MessageParcel &data, MessageParcel &reply);
+    EXPORT void QueryPhotoStatus(MessageParcel &data, MessageParcel &reply);
+    EXPORT void LogMovingPhoto(MessageParcel &data, MessageParcel &reply);
+    EXPORT void ConvertFormat(MessageParcel &data, MessageParcel &reply);
 public:
     virtual ~MediaAssetsControllerService() = default;
     bool Accept(uint32_t code) override;

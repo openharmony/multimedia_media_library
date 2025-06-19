@@ -150,7 +150,7 @@ int32_t CloudFileDataConvert::HandleFormattedDate(
     std::string day = upLoadRecord.dateDay;
     if (year.empty() || month.empty() || day.empty()) {
         MEDIA_INFO_LOG("HandleFormattedDate year month day is empty");
-        int64_t createTime = upLoadRecord.dateAdded;
+        int64_t createTime = upLoadRecord.dateTaken;
         createTime = createTime / MILLISECOND_TO_SECOND;
         year = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, createTime);
         month = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, createTime);
@@ -598,7 +598,7 @@ int32_t CloudFileDataConvert::HandleAttachments(
     /* thumb */
     std::string path = upLoadRecord.data;
     ret = HandleThumbnail(recordData, path, orientation);
-
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleThumbnail failed. ret: %{public}d.", ret);
     /* lcd */
     ret = HandleLcd(recordData, path, orientation);
     return ret;
@@ -651,7 +651,10 @@ int32_t CloudFileDataConvert::HandleCompatibleFileds(
     HandleProperties(data, upLoadRecord);
 
     /* cloud sdk extra feature */
-    HandleAttachments(data, upLoadRecord);
+    if (type_ != CloudOperationType::FILE_METADATA_MODIFY) {
+        ret = HandleAttachments(data, upLoadRecord);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleAttachments failed, ret: %{public}d.", ret);
+    }
 
     /* cloudsync-specific fields */
     data["mimeType"] = MDKRecordField(upLoadRecord.mimeType);
@@ -669,6 +672,12 @@ int32_t CloudFileDataConvert::SetSourceAlbum(MDKRecord &record, const CloudMdkRe
     std::string albumLPath = upLoadRecord.albumLPath;
     if (hidden == 1) {
         data["albumId"] = MDKRecordField("default-album-4");
+        // Upload: hidden === 0, Download: hidden = 1 when albumId default-album-4
+        if (data.find(FILE_ATTRIBUTES) != data.end()) {
+            std::map<std::string, MDKRecordField> attrs = data[FILE_ATTRIBUTES];
+            attrs[MediaColumn::MEDIA_HIDDEN] = MDKRecordField(0);
+            data[FILE_ATTRIBUTES] = MDKRecordField(attrs);
+        }
     } else if (!albumCloudId.empty()) {
         data["albumId"] = MDKRecordField(albumCloudId);
     }
@@ -895,7 +904,7 @@ void CloudFileDataConvert::ConvertAttributes(MDKRecordPhotosData &data, OnFetchP
     onFetchPhotoVo.thmSize = data.GetThmSize().value_or(0L);
     onFetchPhotoVo.metaDateModified = data.GetPhotoMetaDateModified().value_or(0L);
     onFetchPhotoVo.editedTimeMs = data.GetEditTimeMs().value_or(0L);
-    onFetchPhotoVo.fixVersion = data.GetFixVersion().value_or(0);
+    onFetchPhotoVo.fixVersion = data.GetFixVersion().value_or(-1);
     onFetchPhotoVo.frontCamera = data.GetFrontCamera().value_or("");
     onFetchPhotoVo.editDataCamera = data.GetEditDataCamera().value_or("");
     onFetchPhotoVo.title = data.GetTitle().value_or("");

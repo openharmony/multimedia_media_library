@@ -49,6 +49,7 @@ private:
         int32_t err;
         std::string errorMsg;
         std::string fileUri;
+        bool needParseCover;
     };
 
 private:
@@ -68,6 +69,8 @@ private:
     void NotifyDownloadLcd(const std::vector<std::string> &cloudIds);
 
 private:
+    const uint32_t TYPE_THM_MASK = 0x1;
+    const uint32_t TYPE_LCD_MASK = 0x2;
     enum {
         // Index of Download Thumbnail Type Statistic Info.
         TYPE_THM = 1,

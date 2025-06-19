@@ -74,6 +74,7 @@ const std::string FILE_FRONT_CAMERA_DEFAULT = "";
 const std::string FILE_DETAIL_TIME_DEFAULT = "";
 const int32_t COVER = 1;
 const int32_t BURST_COVER_LEVEL_DEFAULT = COVER;
+const int32_t STAGE_VIDEO_TASK_STATUS = 0;
 
 const std::string DEFAULT_AUDIO_MIME_TYPE = "audio/*";
 const std::string DEFAULT_VIDEO_MIME_TYPE = "video/*";

@@ -34,6 +34,7 @@
 #include "userfilemgr_uri.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_subscriber.h"
+#include "asset_accurate_refresh.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -490,7 +491,8 @@ int32_t EnhancementManager::AddServiceTask(MediaEnhanceBundleHandle* mediaEnhanc
         isAuto ? static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO) :
         static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL));
     rdbValues.PutInt(PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, hasCloudWatermark ? YES : NO);
-    int32_t errCode = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    int32_t errCode = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates, assetRefresh);
     if (errCode != E_OK) {
         EnhancementTaskManager::RemoveEnhancementTask(photoId);
         enhancementService_->DestroyBundle(mediaEnhanceBundle);
@@ -509,6 +511,7 @@ int32_t EnhancementManager::AddServiceTask(MediaEnhanceBundleHandle* mediaEnhanc
             static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
         EnhancementDatabaseOperations::Update(values, predicates);
         EnhancementTaskManager::RemoveEnhancementTask(photoId);
+        assetRefresh->Notify();
         return E_ERR;
     }
     enhancementService_->DestroyBundle(mediaEnhanceBundle);
@@ -939,7 +942,8 @@ int32_t EnhancementManager::HandleCancelAllOperation()
         GenerateCancelAllUpdatePredicates(fileId, updatePredicates);
         ValuesBucket rdbValues;
         rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
-        int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, updatePredicates);
+        auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+        int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, updatePredicates, assetRefresh);
         if (ret != E_OK) {
             MEDIA_ERR_LOG("update ce_available error, photoId: %{public}s", photoId.c_str());
             continue;
@@ -949,6 +953,7 @@ int32_t EnhancementManager::HandleCancelAllOperation()
         if (watch != nullptr) {
             watch->Notify(uri, NotifyType::NOTIFY_UPDATE);
         }
+        assetRefresh->Notify();
     }
     return E_OK;
 #else
