@@ -30,6 +30,9 @@
 #include "result_set_utils.h"
 #include "media_gallery_sync_notify.h"
 #include "cloud_media_sync_const.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager_utils.h"
+#include "media_file_utils.h"
 
 using ChangeType = OHOS::AAFwk::ChangeInfo::ChangeType;
 namespace OHOS::Media::CloudSync {
@@ -103,10 +106,14 @@ int32_t CloudMediaAlbumService::HandleLPathRecords(PhotoAlbumDto &record,
     ChangeType &changeType, OnFetchRecordsAlbumRespBody &resp)
 {
     MEDIA_INFO_LOG("HandleLPathRecords enter");
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh =
+        std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
+    CHECK_AND_RETURN_RET_LOG(albumRefresh != nullptr, E_RDB_STORE_NULL,
+        "Delete Cloud Album Failed to get albumRefresh.");
     int ret = E_OK;
     if ((lpathRowIdMap.find(record.lPath) == lpathRowIdMap.end()) && !record.isDelete) {
         changeType = ChangeType::INSERT;
-        ret = this->albumDao_.InsertCloudByLPath(record);
+        ret = this->albumDao_.InsertCloudByLPath(record, albumRefresh);
         MEDIA_INFO_LOG("HandleLPathRecords insert %{public}s, %{public}d", record.cloudId.c_str(), ret);
         if (ret != E_OK) {
             MEDIA_ERR_LOG("HandleLPathRecords InsertCloudByLPath error");
@@ -123,7 +130,7 @@ int32_t CloudMediaAlbumService::HandleLPathRecords(PhotoAlbumDto &record,
             return E_OK;
         } else if (record.isDelete) {
             /* delete */
-            ret = this->albumDao_.DeleteCloudAlbum(PhotoAlbumColumns::ALBUM_LPATH, record.lPath);
+            ret = this->albumDao_.DeleteCloudAlbum(PhotoAlbumColumns::ALBUM_LPATH, record.lPath, albumRefresh);
             MEDIA_INFO_LOG("HandleLPathRecords lpath delete %{public}s, %{public}d", record.cloudId.c_str(), ret);
             if (ret != E_OK) {
                 resp.failedRecords.emplace_back(record.cloudId);
@@ -132,7 +139,7 @@ int32_t CloudMediaAlbumService::HandleLPathRecords(PhotoAlbumDto &record,
         } else {
             /* update */
             changeType = ChangeType::UPDATE;
-            ret = this->albumDao_.UpdateCloudAlbum(record, PhotoAlbumColumns::ALBUM_LPATH, record.lPath);
+            ret = this->albumDao_.UpdateCloudAlbum(record, PhotoAlbumColumns::ALBUM_LPATH, record.lPath, albumRefresh);
             MEDIA_INFO_LOG("HandleLPathRecords lpath update %{public}s, %{public}d", record.cloudId.c_str(), ret);
             if (ret != E_OK) {
                 resp.failedRecords.emplace_back(record.cloudId);
@@ -142,6 +149,11 @@ int32_t CloudMediaAlbumService::HandleLPathRecords(PhotoAlbumDto &record,
     } else {
         MEDIA_ERR_LOG("album sync lpath recordId %s has multiple file in db!", record.cloudId.c_str());
     }
+    if (ret == E_OK && changeType != ChangeType::INVAILD) {
+        int32_t notifyRet = albumRefresh->Notify();
+        CHECK_AND_RETURN_RET_LOG(notifyRet == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_ERR,
+            "fail to notify, ret = %{public}d", notifyRet);
+    }
     return ret;
 }
 
@@ -150,11 +162,20 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecordNew(
 {
     if (!record.isDelete) {
         /* insert */
-        int32_t ret = this->albumDao_.InsertCloudByCloudId(record);
+        std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh =
+            std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
+        CHECK_AND_RETURN_RET_LOG(albumRefresh != nullptr, E_RDB_STORE_NULL,
+            "Delete Cloud Album Failed to get albumRefresh.");
+        int32_t ret = this->albumDao_.InsertCloudByCloudId(record, albumRefresh);
         if (ret != E_OK) {
             MEDIA_ERR_LOG(
                 "HandleFetchOldRecord InsertCloudByCloudId error %{public}s, %{public}d", record.cloudId.c_str(), ret);
             resp.failedRecords.emplace_back(record.cloudId);
+        } else {
+            /* notify */
+            ret = albumRefresh->Notify();
+            CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_ERR,
+                "fail to notify, ret = %{public}d", ret);
         }
         MEDIA_INFO_LOG("HandleFetchOldRecord insert %{public}s, %{public}d", record.cloudId.c_str(), ret);
         resp.stats[StatsIndex::NEW_RECORDS_COUNT]++;
@@ -181,6 +202,10 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecord(
     } else if (rowCount == 1) {
         resultSet->GoToNextRow();
         int32_t dirty = GetLocalMatchDirty(*resultSet);
+        std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh =
+            std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
+        CHECK_AND_RETURN_RET_LOG(albumRefresh != nullptr, E_RDB_STORE_NULL,
+            "Delete Cloud Album Failed to get albumRefresh.");
         if (dirty != static_cast<int32_t>(Media::DirtyType::TYPE_SYNCED)) {
             /* local dirty */
             MEDIA_INFO_LOG("HandleFetchOldRecord is dirty skip %{public}s", record.cloudId.c_str());
@@ -188,7 +213,7 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecord(
             return ret;
         } else if (record.isDelete) {
             /* delete */
-            ret = this->albumDao_.DeleteCloudAlbum(PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId);
+            ret = this->albumDao_.DeleteCloudAlbum(PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId, albumRefresh);
             MEDIA_INFO_LOG("HandleFetchOldRecorddelete %{public}s, %{public}d", record.cloudId.c_str(), ret);
             if (ret != E_OK) {
                 MEDIA_ERR_LOG("HandleFetchOldRecord DeleteCloudAlbum error %{public}s", record.cloudId.c_str());
@@ -197,7 +222,8 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecord(
             resp.stats[StatsIndex::DELETE_RECORDS_COUNT]++;
         } else {
             /* update */
-            ret = this->albumDao_.UpdateCloudAlbum(record, PhotoAlbumColumns::ALBUM_CLOUD_ID, record.cloudId);
+            ret = this->albumDao_.UpdateCloudAlbum(record, PhotoAlbumColumns::ALBUM_CLOUD_ID,
+                record.cloudId, albumRefresh);
             MEDIA_INFO_LOG("HandleFetchOldRecord update %{public}s, %{public}d", record.cloudId.c_str(), ret);
             changeType = ChangeType::UPDATE;
             if (ret != E_OK) {
@@ -205,6 +231,11 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecord(
                 resp.failedRecords.emplace_back(record.cloudId);
             }
             resp.stats[StatsIndex::META_MODIFY_RECORDS_COUNT]++;
+        }
+        if (ret == E_OK && changeType != ChangeType::INVAILD) {
+            int32_t notifyRet = albumRefresh->Notify();
+            CHECK_AND_RETURN_RET_LOG(notifyRet == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_ERR,
+                "fail to notify, ret = %{public}d", notifyRet);
         }
     } else {
         /* invalid cases */
@@ -404,6 +435,7 @@ int32_t CloudMediaAlbumService::OnStartSync()
 
 int32_t CloudMediaAlbumService::OnCompleteSync()
 {
+    CheckAlbumManualCover();
     return 0;
 }
 
@@ -423,5 +455,134 @@ int32_t CloudMediaAlbumService::OnCompleteCheck()
 {
     MEDIA_INFO_LOG("enter CloudMediaAlbumService::OnCompleteCheck");
     return 0;
+}
+
+void PrepareForNextCloud(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    NativeRdb::ValuesBucket &values, int32_t albumId)
+{
+    NativeRdb::RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+
+    values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER));
+    values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_MDIRTY));
+
+    string updateCondition = PhotoAlbumColumns::ALBUM_ID + "=" + to_string(albumId);
+    predicates.SetWhereClause(updateCondition);
+    int32_t changeRows = -1;
+    int32_t ret = rdbStore->Update(changeRows, values, predicates);
+    CHECK_AND_RETURN_LOG((ret == E_OK && changeRows > 0),
+        "Failed to UpdateDirtyForCloudClone, ret:%{public}d, updateRow:%{public}d", ret, changeRows);
+    MEDIA_DEBUG_LOG("PrepareForNextCloud: albumId:%{public}d", albumId);
+    CHECK_AND_PRINT_LOG(changeRows >= 0, "PrepareForNextCloud failed:%{public}d", changeRows);
+}
+
+bool IsCoverUriExistCloudId(string &coverUri, string &coverCloudId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "QueryCoverCloudId Failed to get rdbStore.");
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(coverUri);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    std::vector<std::string> queryColumns = { PhotoColumn::PHOTO_CLOUD_ID };
+    auto resultSet = rdbStore->Query(predicates, queryColumns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "QueryCloudId get nullptr created result.");
+    string cloudId;
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        cloudId = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_CLOUD_ID,
+            resultSet, TYPE_STRING));
+    }
+    coverCloudId += cloudId;
+    return cloudId != "";
+}
+
+void CloudMediaAlbumService::CheckAlbumManualCover()
+{
+    MEDIA_DEBUG_LOG("CheckAlbumManualCover enter");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "CheckAlbumManualCover Failed to get rdbStore.");
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::COVER_URI_SOURCE,
+        to_string(static_cast<int32_t>(CoverUriSource::MANUAL_LOCAL_COVER)))
+        ->Or()
+        ->EqualTo(PhotoAlbumColumns::COVER_URI_SOURCE,
+        to_string(static_cast<int32_t>(CoverUriSource::MANUAL_WAIT_PULL_COVER)))
+        ->BeginWrap()
+        ->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC))
+        ->Or()
+        ->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC))
+        ->EndWrap();
+    vector<string> queryColumns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COVER_URI,
+        PhotoAlbumColumns::COVER_URI_SOURCE, PhotoAlbumColumns::COVER_CLOUD_ID };
+    auto resultSet = rdbStore->Query(predicates, queryColumns);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is null");
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID,
+            resultSet, TYPE_INT32));
+        int32_t coverUriSource = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::COVER_URI_SOURCE,
+            resultSet, TYPE_INT32));
+        NativeRdb::ValuesBucket values;
+        if (coverUriSource == static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER)) {
+            string coverCloudId = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::COVER_CLOUD_ID,
+                resultSet, TYPE_STRING));
+            string coverUri = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COVER_URI,
+                resultSet, TYPE_STRING));
+            string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(coverUri);
+            if (IsCoverUriExistCloudId(coverUri, coverCloudId)) {
+                MEDIA_DEBUG_LOG("CheckAlbumManualCover IsCoverUriExistCloudId");
+                values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, coverCloudId);
+                PrepareForNextCloud(rdbStore, values, albumId);
+            }
+        } else if (coverUriSource == static_cast<int32_t>(CoverUriSource::MANUAL_WAIT_PULL_COVER)) {
+            string coverCloudId = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::COVER_CLOUD_ID,
+                resultSet, TYPE_STRING));
+            string coverUri;
+            bool isCloudIdExist = GetCoverUriFromCoverCloudId(coverCloudId, coverUri);
+            if (isCloudIdExist) {
+                MEDIA_DEBUG_LOG("CheckAlbumManualCover isCloudIdExist");
+                values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
+                PrepareForNextCloud(rdbStore, values, albumId);
+            }
+        }
+    }
+    resultSet->Close();
+}
+
+static inline string GetCover(const shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    string coverUri;
+    int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_ID, resultSet, TYPE_INT32));
+    if (fileId <= 0) {
+        return coverUri;
+    }
+
+    string extrUri = MediaFileUtils::GetExtraUri(
+        get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_NAME, resultSet, TYPE_STRING)),
+        get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING)));
+    return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId), extrUri);
+}
+
+bool CloudMediaAlbumService::GetCoverUriFromCoverCloudId(string &coverCloudId, string &coverUri)
+{
+    auto index = coverCloudId.find(',');
+    if (index == string::npos) {
+        MEDIA_ERR_LOG("GetCoverUriFromCoverCloudId can not find split, coverCloudId:%{public}s",
+            coverCloudId.c_str());
+        return false;
+    }
+    string cloudId = coverCloudId.substr(index + 1);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "GetCoverUriFromCoverCloudId Failed to get rdbStore.");
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
+
+    vector<string> queryColumns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME };
+    auto resultSet = rdbStore->Query(predicates, queryColumns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultset is null");
+
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        coverUri = GetCover(resultSet);
+    }
+    resultSet->Close();
+    return coverUri != "";
 }
 }  // namespace OHOS::Media::CloudSync

@@ -27,8 +27,6 @@ ohos_unittest("Notifytest") {
     "../get_self_permissions/include",
     "./include",
     "../medialibrary_unittest_utils/include",
-    "../../../../../../../ability/ability_runtime/interfaces/kits/native/appkit/app",
-    "../../../../../../../ability/ability_runtime/interfaces/kits/native/ability/ability_runtime",
   ]
 
   sources = [
@@ -44,7 +42,6 @@ ohos_unittest("Notifytest") {
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-    "../../../../../../../ability/ability_runtime/interfaces/inner_api/dataobs_manager:dataobs_manager",
   ]
 
   external_deps = [

@@ -49,7 +49,7 @@ struct VideoFaceTbl {
     std::optional<std::string> frame_timestamp;
     std::optional<std::string> tracks;
     std::optional<std::string> algo_version;
-    std::optional<std::string> features;
+    std::optional<std::vector<uint8_t>> features;
     std::optional<std::string> analysis_version;
 };
 
@@ -93,6 +93,8 @@ private:
                 values.PutString(columnName, optionalValue.value());
             } else if constexpr (std::is_same_v<std::decay_t<T>, double>) {
                 values.PutDouble(columnName, optionalValue.value());
+            } else if constexpr (std::is_same_v<std::decay_t<T>, std::vector<uint8_t>>) {
+                values.PutBlob(columnName, optionalValue.value());
             }
         }
     }

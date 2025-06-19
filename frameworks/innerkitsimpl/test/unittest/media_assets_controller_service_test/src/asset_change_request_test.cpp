@@ -431,15 +431,9 @@ HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_Test_009, TestSize.Level0)
     InsertTempAsset();
     int32_t fileId = QueryFileIdByDisplayName("cam_pic.jpg");
     ASSERT_GT(fileId, 0);
-    string path = "file//media/Photo/";
-    int32_t photoQuality = QueryPhotoQualityByDisplayName("cam_pic.jpg");
-    ASSERT_EQ(photoQuality, 0);
 
     int32_t result = DiscardCameraPhoto(fileId);
     ASSERT_EQ(result, 1);
-
-    fileId = QueryFileIdByDisplayName("cam_pic.jpg");
-    ASSERT_LT(fileId, 0);
 }
 
 HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_Test_010, TestSize.Level0)

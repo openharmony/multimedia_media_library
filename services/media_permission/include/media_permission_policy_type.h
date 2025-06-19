@@ -21,7 +21,9 @@ enum PermissionType {
     PRIVATE_PERM,
     READ_PERM,
     WRITE_PERM,
-    CLOUDFILE_SYNC
+    CLOUDFILE_SYNC,
+    CLOUD_READ,
+    CLOUD_WRITE
 };
 } // namespace OHOS::Media
 #endif  // OHOS_MEDIALIBRARY_PERMISSION_POLICY_TYPE_H

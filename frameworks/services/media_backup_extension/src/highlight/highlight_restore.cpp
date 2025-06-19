@@ -397,15 +397,7 @@ void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket
     const HighlightPhotoInfo &highlightPhoto)
 {
     CHECK_AND_RETURN(highlightPhoto.photoInfo.fileIdNew > 0);
-    int32_t fileIdOld = highlightPhoto.fileIdOld;
-    auto it = std::find_if(albumInfos_.begin(), albumInfos_.end(),
-        [fileIdOld](const HighlightAlbumInfo &info) { return info.coverId == fileIdOld; });
-    if (it != albumInfos_.end()) {
-        it->coverUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-            std::to_string(highlightPhoto.photoInfo.fileIdNew),
-            MediaFileUtils::GetExtraUri(highlightPhoto.photoInfo.displayName, highlightPhoto.photoInfo.cloudPath));
-        MEDIA_INFO_LOG("album %{public}s get coverUri %{public}s.", it->albumName.c_str(), it->coverUri.c_str());
-    }
+    UpdateAlbumInfoCoverUris(highlightPhoto);
 
     std::stringstream storyIdss(highlightPhoto.storyIds);
     std::string storyId;
@@ -420,10 +412,23 @@ void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket
     }
 }
 
+void HighlightRestore::UpdateAlbumInfoCoverUris(const HighlightPhotoInfo &highlightPhoto)
+{
+    for (auto &info : albumInfos_) {
+        if (info.coverId != highlightPhoto.fileIdOld) {
+            continue;
+        }
+        info.coverUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
+            std::to_string(highlightPhoto.photoInfo.fileIdNew),
+            MediaFileUtils::GetExtraUri(highlightPhoto.photoInfo.displayName, highlightPhoto.photoInfo.cloudPath));
+        MEDIA_INFO_LOG("album %{public}s get coverUri %{public}s.", info.albumName.c_str(), info.coverUri.c_str());
+    }
+}
+
 void HighlightRestore::UpdateMapInsertValuesByStoryId(std::vector<NativeRdb::ValuesBucket> &values,
     const HighlightPhotoInfo &highlightPhoto, const std::string &storyId)
 {
-    CHECK_AND_RETURN(MediaLibraryDataManagerUtils::IsNumber(storyId));
+    CHECK_AND_RETURN(!storyId.empty() && MediaLibraryDataManagerUtils::IsNumber(storyId));
     int32_t albumIdOld = std::atoi(storyId.c_str());
     auto it = std::find_if(albumInfos_.begin(), albumInfos_.end(),
         [albumIdOld](const HighlightAlbumInfo &info) { return info.albumIdOld == albumIdOld; });

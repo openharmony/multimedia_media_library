@@ -129,8 +129,7 @@ int32_t MediaToolReadPermCheck::CheckPermission(uint32_t businessCode, const Per
 int32_t DeprecatedReadPermCheck::CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data)
 {
     MEDIA_INFO_LOG("DeprecatedReadPermCheck enter, API code=%{public}d", businessCode);
-    if (!PermissionCheck::deprecatedReadPermissionSet.empty() &&
-        PermissionCheck::deprecatedReadPermissionSet.find(businessCode) !=
+    if (PermissionCheck::deprecatedReadPermissionSet.find(businessCode) ==
         PermissionCheck::deprecatedReadPermissionSet.end()) {
         MEDIA_INFO_LOG("Unable to use deprecated read permission");
         return E_PERMISSION_DENIED;

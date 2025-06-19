@@ -21,12 +21,11 @@
 #include <thread_pool.h>
 
 #include "cloud_media_enhance_dao.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaEnhanceService {
+class EXPORT CloudMediaEnhanceService {
 public:
-    ~CloudMediaEnhanceService();
-
     int32_t GetCloudSyncUnPreparedData(int32_t &result);
     int32_t SubmitCloudSyncPreparedDataTask();
 private:

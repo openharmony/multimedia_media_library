@@ -25,6 +25,7 @@
 #include "database_data_mock.h"
 #include "cloud_media_data_client.h"
 #include "photos_dao.h"
+#include "get_self_permissions.h"
 
 using namespace testing::ext;
 
@@ -53,6 +54,12 @@ void CloudMediaDataClientTest::TearDownTestCase(void)
 void CloudMediaDataClientTest::SetUp()
 {
     MEDIA_INFO_LOG("SetUp");
+    std::vector<std::string> perms;
+    perms.push_back("ohos.permission.READ_ALL_PHOTO");
+    perms.push_back("ohos.permission.WRITE_ALL_PHOTO");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("CloudMediaDataClientTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
 }
 
 void CloudMediaDataClientTest::TearDown(void)

@@ -149,6 +149,10 @@ const std::string PhotoColumn::PHOTO_SCHPT_DATE_MONTH_COUNT_READY_INDEX = "idx_s
 const std::string PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX = "idx_schpt_cloud_enhancement_album_index";
 const std::string PhotoColumn::LATITUDE_INDEX = "idx_latitude";
 const std::string PhotoColumn::LONGITUDE_INDEX = "idx_longtitude";
+const std::string PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX = "idx_photo_sort_media_type_date_added";
+const std::string PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX = "idx_photo_sort_media_type_date_taken";
+const std::string PhotoColumn::PHOTO_SORT_DATE_ADDED_INDEX = "idx_photo_sort_date_added";
+const std::string PhotoColumn::PHOTO_SORT_DATE_TAKEN_INDEX = "idx_photo_sort_date_taken";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -171,6 +175,8 @@ const std::string PhotoColumn::PHOTO_CACHE_URI_PREFIX = "file://media/Photo/cach
 const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
 const std::string PhotoColumn::HIGHTLIGHT_COVER_URI = "/highlight";
 const std::string PhotoColumn::HIGHTLIGHT_URI = "/highlight/video";
+const std::string PhotoColumn::HIDDEN_PHOTO_URI_PREFIX = "file://media/hiddenPhoto/";
+const std::string PhotoColumn::TRASHED_PHOTO_URI_PREFIX = "file://media/trashedPhoto/";
 
 const std::string PhotoColumn::PHOTO_CLOUD_URI_PREFIX = "file://cloudsync/Photo/";
 const std::string PhotoColumn::PHOTO_CLOUD_TRIGGER_PREFIX = "file://cloudsync/triggerGeneration/";
@@ -422,6 +428,30 @@ const std::string PhotoColumn::INDEX_SCHPT_READY = BaseColumn::CreateIndex() + P
     MEDIA_DATE_TAKEN + " DESC, " + MEDIA_ID + " DESC, " + PHOTO_THUMBNAIL_VISIBLE + ");";
 
 const std::string PhotoColumn::DROP_INDEX_SCHPT_READY = BaseColumn::DropIndex() + PHOTO_SCHPT_READY_INDEX;
+
+const std::string PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + MEDIA_TYPE + "," + PHOTO_BURST_COVER_LEVEL +
+    "," + MEDIA_DATE_ADDED + " DESC," + MEDIA_NAME + " DESC);";
+
+const std::string PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + MEDIA_TYPE + "," + PHOTO_BURST_COVER_LEVEL +
+    "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC);";
+
+const std::string PhotoColumn::CREATE_PHOTO_SORT_DATE_ADDED_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SORT_DATE_ADDED_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
+    "," + MEDIA_DATE_ADDED + " DESC," + MEDIA_NAME + " DESC);";
+
+const std::string PhotoColumn::CREATE_PHOTO_SORT_DATE_TAKEN_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SORT_DATE_TAKEN_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
+    "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC);";
 
 const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         "CREATE TRIGGER IF NOT EXISTS photos_delete_trigger AFTER UPDATE ON " +
@@ -679,6 +709,7 @@ const std::string PhotoExtColumn::PHOTOS_EXT_TABLE = "tab_photos_ext";
 
 const std::string PhotoExtColumn::PHOTO_ID = "photo_id";
 const std::string PhotoExtColumn::THUMBNAIL_SIZE = "thumbnail_size";
+const std::string PhotoExtColumn::EDITDATA_SIZE = "editdata_size";
 
 const std::string PhotoExtColumn::CREATE_PHOTO_EXT_TABLE =
     "CREATE TABLE IF NOT EXISTS " +

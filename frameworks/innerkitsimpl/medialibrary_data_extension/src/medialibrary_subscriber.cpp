@@ -27,7 +27,6 @@
 #include "cloud_media_asset_manager.h"
 #include "cloud_media_asset_types.h"
 #include "cloud_sync_utils.h"
-#include "cloud_upload_checker.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
 #include "common_event_utils.h"
@@ -44,6 +43,7 @@
 
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_all_album_refresh_processor.h"
+#include "medialibrary_base_bg_processor.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
@@ -52,7 +52,6 @@
 #include "medialibrary_meta_recovery.h"
 #endif
 #include "medialibrary_restore.h"
-#include "medialibrary_subscriber_database_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
@@ -61,10 +60,7 @@
 #include "resource_type.h"
 #include "dfx_manager.h"
 #include "medialibrary_unistore_manager.h"
-#include "medialibrary_update_dirty_data_task_data.h"
-#include "medialibrary_rdb_utils.h"
 #include "medialibrary_type_const.h"
-#include "moving_photo_processor.h"
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "userfilemgr_uri.h"
@@ -76,14 +72,12 @@
 #include "net_conn_client.h"
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
-#include "medialibrary_astc_stat.h"
-#include "photo_mimetype_operation.h"
 #include "preferences.h"
 #include "preferences_helper.h"
+#include "medialibrary_astc_stat.h"
 #include "background_cloud_file_processor.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
-#include "cloud_enhancement_checker.h"
 #endif
 
 using namespace OHOS::AAFwk;
@@ -92,7 +86,6 @@ namespace OHOS {
 namespace Media {
 // The task can be performed when the battery level reaches the value
 const int32_t PROPER_DEVICE_BATTERY_CAPACITY = 50;
-const int32_t PROPER_DEVICE_BATTERY_CAPACITY_THUMBNAIL = 20;
 
 const int TIME_START_RELEASE_TEMPERATURE_LIMIT = 1;
 const int TIME_STOP_RELEASE_TEMPERATURE_LIMIT = 6;
@@ -106,16 +99,14 @@ const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_43 = 3;
 const int32_t WIFI_STATE_CONNECTED = 4;
 const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
-const int32_t MegaByte = 1024*1024;
-const int32_t MAX_FILE_SIZE_MB = 10240;
-const int32_t UPDATE_DIRTY_CLOUD_CLONE_V1 = 1;
-const int32_t UPDATE_DIRTY_CLOUD_CLONE_V2 = 2;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
 static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
-static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
-static const std::string NO_UPDATE_DIRTY_CLOUD_CLONE_V2 = "no_update_dirty_cloud_clone_v2";
-static const std::string NO_DELETE_DIRTY_HDC_DATA = "no_delete_dirty_hdc_data";
+static const std::string NO_UPDATE_EDITDATA_SIZE = "no_update_editdata_size";
+static const std::string UPDATE_EDITDATA_SIZE_COUNT = "update_editdata_size_count";
+
+static const std::string ENABLE_KEY = "taskRun";
+static const std::string ENABLE_VALUE = "true";
 
 // The network should be available in this state
 const int32_t NET_CONN_STATE_CONNECTED = 3;
@@ -125,11 +116,10 @@ const int32_t THUMB_ASTC_ENOUGH = 20000;
 bool MedialibrarySubscriber::isCellularNetConnected_ = false;
 bool MedialibrarySubscriber::isWifiConnected_ = false;
 bool MedialibrarySubscriber::currentStatus_ = false;
-// BetaVersion will upload the DB, and the true uploadDBFlag indicates that uploading is enabled.
-const std::string KEY_HIVIEW_VERSION_TYPE = "const.logsystem.versiontype";
-std::atomic<bool> uploadDBFlag(true);
-int64_t g_lastTime = MediaFileUtils::UTCTimeMilliSeconds();
-const int32_t HALF_HOUR_MS = 1800000;
+bool MedialibrarySubscriber::isScreenOff_ = false;
+bool MedialibrarySubscriber::isCharging_ = false;
+int32_t MedialibrarySubscriber::newTemperatureLevel_ = 0;
+int32_t MedialibrarySubscriber::batteryCapacity_ = 0;
 
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
@@ -232,84 +222,6 @@ bool MedialibrarySubscriber::Subscribe(void)
     return EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber);
 }
 
-static bool IsBetaVersion()
-{
-    static const string versionType = system::GetParameter(KEY_HIVIEW_VERSION_TYPE, "unknown");
-    static bool isBetaVersion = versionType.find("beta") != std::string::npos;
-    return isBetaVersion;
-}
-
-static bool IsLastHalfHourDb()
-{
-    int64_t curTime = MediaFileUtils::UTCTimeMilliSeconds();
-    if (curTime - g_lastTime >= HALF_HOUR_MS) {
-        g_lastTime = curTime;
-        return true;
-    }
-    return false;
-}
-
-static void UploadDBFile()
-{
-    uploadDBFlag.store(false);
-    int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
-    static const std::string databaseDir = MEDIA_DB_DIR + "/rdb";
-    static const std::vector<std::string> dbFileName = { "/media_library.db",
-                                                         "/media_library.db-shm",
-                                                         "/media_library.db-wal" };
-    static const std::string destPath = "/data/storage/el2/log/logpack";
-    int64_t totalFileSize = 0;
-    for (auto &dbName : dbFileName) {
-        string dbPath = databaseDir + dbName;
-        struct stat statInfo {};
-        if (stat(dbPath.c_str(), &statInfo) != 0) {
-            continue;
-        }
-        totalFileSize += statInfo.st_size;
-    }
-    totalFileSize /= MegaByte; // Convert bytes to MB
-    if (totalFileSize > MAX_FILE_SIZE_MB) {
-        MEDIA_WARN_LOG("DB file over 10GB are not uploaded, totalFileSize is %{public}ld MB",
-            static_cast<long>(totalFileSize));
-        uploadDBFlag.store(true);
-        return ;
-    }
-    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateDirectory(destPath)) {
-        MEDIA_ERR_LOG("Create dir failed, dir=%{private}s", destPath.c_str());
-        uploadDBFlag.store(true);
-        return ;
-    }
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    if (dataManager == nullptr) {
-        MEDIA_ERR_LOG("dataManager is nullptr");
-        uploadDBFlag.store(true);
-        return;
-    }
-    dataManager->UploadDBFileInner(totalFileSize);
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("Handle %{public}ld MB DBFile success, cost %{public}ld ms", (long)(totalFileSize),
-        (long)(end - begin));
-    uploadDBFlag.store(true);
-}
-
-void MedialibrarySubscriber::CheckHalfDayMissions()
-{
-    if (isScreenOff_ && isCharging_) {
-        if (IsBetaVersion() && uploadDBFlag.load() && IsLastHalfHourDb()) {
-            MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile");
-            UploadDBFile();
-        }
-        DfxManager::GetInstance()->HandleHalfDayMissions();
-        MediaLibraryRestore::GetInstance().CheckBackup();
-    }
-    if (!isScreenOff_ || !isCharging_) {
-        MediaLibraryRestore::GetInstance().InterruptBackup();
-    }
-#ifdef META_RECOVERY_SUPPORT
-    MediaLibraryMetaRecovery::GetInstance().StatisticSave();
-#endif
-}
-
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -339,14 +251,6 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         StopBackgroundOperation();
     }
     MediaLibraryAllAlbumRefreshProcessor::GetInstance()->OnCurrentStatusChanged(currentStatus_);
-}
-
-void MedialibrarySubscriber::WalCheckPointAsync()
-{
-    if (!isScreenOff_ || !isCharging_) {
-        return;
-    }
-    std::thread(MediaLibraryRdbStore::WalCheckPoint).detach();
 }
 
 void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
@@ -383,7 +287,6 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
     }
 
     UpdateCurrentStatus();
-    UpdateThumbnailBgGenerationStatus();
     UpdateBackgroundTimer();
     DealWithEventsAfterUpdateStatus(statusEventType);
 }
@@ -423,6 +326,26 @@ bool MedialibrarySubscriber::IsCurrentStatusOn()
     return currentStatus_;
 }
 
+bool MedialibrarySubscriber::IsCharging()
+{
+    return isCharging_;
+}
+
+bool MedialibrarySubscriber::IsScreenOff()
+{
+    return isScreenOff_;
+}
+
+int32_t MedialibrarySubscriber::GetNewTemperatureLevel()
+{
+    return newTemperatureLevel_;
+}
+
+int32_t MedialibrarySubscriber::GetBatteryCapacity()
+{
+    return batteryCapacity_;
+}
+
 void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadTaskStatus()
 {
     if (!isCellularNetConnected_) {
@@ -438,6 +361,13 @@ void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadTaskStatus()
     } else if (!isWifiConnected_) {
         CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::WIFI_UNAVAILABLE);
     }
+}
+
+static void ReportDownloadOriginCloudFilesRun()
+{
+    std::string modifyInfo;
+    MediaLibraryBaseBgProcessor::WriteModifyInfo(ENABLE_KEY, ENABLE_VALUE, modifyInfo);
+    MediaLibraryBaseBgProcessor::ModifyTask(DOWNLOAD_ORIGIN_CLOUD_FILES_FOR_LOGIN, modifyInfo);
 }
 
 void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
@@ -472,6 +402,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         // when turn off gallery switch or quit account, clear the download lastest finished flag,
         // so we can download lastest images for the subsequent login new account
         BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
+        ReportDownloadOriginCloudFilesRun();
     }
 
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -497,123 +428,37 @@ void MedialibrarySubscriber::Init()
     agingCount_ = 0;
 }
 
-void DeleteTemporaryPhotos()
-{
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    if (dataManager == nullptr) {
-        return;
-    }
-
-    string UriString = PAH_DISCARD_CAMERA_PHOTO;
-    MediaFileUtils::UriAppendKeyValue(UriString, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri uri(UriString);
-    MediaLibraryCommand cmd(uri);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, true);
-    DataShare::DataSharePredicates predicates;
-
-    // 24H之前的数据
-    int64_t current = MediaFileUtils::UTCTimeMilliSeconds();
-    int64_t timeBefore24Hours = current - 24 * 60 * 60 * 1000;
-    string where = PhotoColumn::PHOTO_IS_TEMP + " = 1 AND (" + PhotoColumn::MEDIA_DATE_ADDED + " <= " +
-        to_string(timeBefore24Hours) + " OR " + MediaColumn::MEDIA_ID + " NOT IN (SELECT " + MediaColumn::MEDIA_ID +
-        " FROM (SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
-        PhotoColumn::PHOTO_IS_TEMP + " = 1 " + "ORDER BY " + MediaColumn::MEDIA_ID +
-        " DESC LIMIT 50)) AND (select COUNT(1) from " + PhotoColumn::PHOTOS_TABLE +
-        " where " + PhotoColumn::PHOTO_IS_TEMP + " = 1) > 100) ";
-    predicates.SetWhereClause(where);
-
-    auto changedRows = dataManager->Update(cmd, valuesBucket, predicates);
-    CHECK_AND_RETURN_LOG(changedRows >= 0, "Failed to update property of asset, err: %{public}d", changedRows);
-    MEDIA_INFO_LOG("delete %{public}d temp files exceeding 24 hous or exceed maximum quantity.", changedRows);
-}
-
-void MedialibrarySubscriber::DoAgingOperation()
-{
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    CHECK_AND_RETURN_LOG(dataManager != nullptr, "dataManager is nullptr");
-
-    int32_t result = dataManager->DoAging();
-    CHECK_AND_PRINT_LOG(result == E_OK, "DoAging faild");
-
-    shared_ptr<int> trashCountPtr = make_shared<int>();
-    result = dataManager->DoTrashAging(trashCountPtr);
-    CHECK_AND_PRINT_LOG(result == E_OK, "DoTrashAging faild");
-
-    VariantMap map = {{KEY_COUNT, *trashCountPtr}};
-    PostEventUtils::GetInstance().PostStatProcess(StatType::AGING_STAT, map);
-}
-
-static void QueryBurstNeedUpdate(AsyncTaskData *data)
+static void QueryUpdateSize(AsyncTaskData *data)
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
     CHECK_AND_RETURN_LOG(dataManager != nullptr,  "dataManager is nullptr");
 
-    int32_t result = dataManager->UpdateBurstFromGallery();
-    CHECK_AND_PRINT_LOG(result == E_OK, "UpdateBurstFromGallery faild");
+    int32_t result = dataManager->UpdateMediaSizeFromStorage();
+    CHECK_AND_PRINT_LOG(result == E_OK, "UpdateMediaSizeFromStorage failed");
 }
 
-static int32_t DoUpdateBurstFromGallery()
+static int32_t UpdateAllEditDataSize()
 {
-    MEDIA_INFO_LOG("Begin DoUpdateBurstFromGallery");
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
+    if (prefs == nullptr) {
+        MEDIA_ERR_LOG("Get preferences error: %{public}d", errCode);
+        return E_ERR;
+    }
+    if (prefs->GetInt(NO_UPDATE_EDITDATA_SIZE, 0) == 1) {
+        return E_SUCCESS;
+    }
+
+    MEDIA_INFO_LOG("Begin DoUpdateAllEditDataSize");
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL, "Failed to get async worker instance!");
 
-    shared_ptr<MediaLibraryAsyncTask> updateBurstTask =
-        make_shared<MediaLibraryAsyncTask>(QueryBurstNeedUpdate, nullptr);
-    CHECK_AND_RETURN_RET_LOG(updateBurstTask != nullptr, E_FAIL,
+    shared_ptr<MediaLibraryAsyncTask> updateSizeTask =
+        make_shared<MediaLibraryAsyncTask>(QueryUpdateSize, nullptr);
+    CHECK_AND_RETURN_RET_LOG(updateSizeTask != nullptr, E_FAIL,
         "Failed to create async task for updateBurstTask!");
-    asyncWorker->AddTask(updateBurstTask, false);
-    return E_SUCCESS;
-}
-
-static void UpdateDirtyForCloudClone(AsyncTaskData *data)
-{
-    auto *taskData = static_cast<UpdateDirtyDataAsyncTaskData *>(data);
-    CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is nullptr!");
-    int32_t taskVersion = taskData->taskVersion_;
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    CHECK_AND_RETURN_LOG(dataManager != nullptr, "Failed to MediaLibraryDataManager instance!");
-
-    int32_t result = dataManager->UpdateDirtyForCloudClone(taskVersion);
-    CHECK_AND_PRINT_LOG(result == E_OK, "UpdateDirtyForCloudClone faild, result = %{public}d", result);
-}
-
-static void ClearDirtyHdcData(AsyncTaskData *data)
-{
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    CHECK_AND_RETURN_LOG(dataManager != nullptr, "Failed to MediaLibraryDataManager instance!");
-
-    int32_t result = dataManager->ClearDirtyHdcData();
-    CHECK_AND_PRINT_LOG(result == E_OK, "ClearDirtyHdcData faild, result = %{public}d", result);
-}
-
-
-static int32_t DoUpdateDirtyForCloudClone(int32_t taskVersion)
-{
-    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
-        "Failed to get async worker instance!");
-    auto *taskData = new (std::nothrow) UpdateDirtyDataAsyncTaskData(taskVersion);
-    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_FAIL, "Failed to alloc async data for update dirty data!");
-    shared_ptr<MediaLibraryAsyncTask> updateDirtyForCloudTask =
-        make_shared<MediaLibraryAsyncTask>(UpdateDirtyForCloudClone, taskData);
-    CHECK_AND_RETURN_RET_LOG(updateDirtyForCloudTask != nullptr, E_FAIL,
-        "Failed to create async task for updateDirtyForCloudTask !");
-    asyncWorker->AddTask(updateDirtyForCloudTask, false);
-    return E_SUCCESS;
-}
-
-static int32_t DoClearDirtyHdcData()
-{
-    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
-        "Failed to get async worker instance!");
-    shared_ptr<MediaLibraryAsyncTask> clearDirtyHdcDataTask =
-        make_shared<MediaLibraryAsyncTask>(ClearDirtyHdcData, nullptr);
-    CHECK_AND_RETURN_RET_LOG(clearDirtyHdcDataTask != nullptr, E_FAIL,
-        "Failed to create async task for clearDirtyHdcDataTask !");
-    asyncWorker->AddTask(clearDirtyHdcDataTask, false);
+    asyncWorker->AddTask(updateSizeTask, false);
     return E_SUCCESS;
 }
 
@@ -627,75 +472,44 @@ static void RecoverBackgroundDownloadCloudMediaAsset()
     CHECK_AND_PRINT_LOG(ret == E_OK, "RecoverDownloadCloudAsset faild");
 }
 
-static void UpdateDateTakenWhenZero(AsyncTaskData *data)
+static void ClearDirtyDiskData(AsyncTaskData *data)
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
     CHECK_AND_RETURN_LOG(dataManager != nullptr, "Failed to MediaLibraryDataManager instance!");
 
-    int32_t result = dataManager->UpdateDateTakenWhenZero();
-    CHECK_AND_PRINT_LOG(result == E_OK, "UpdateDateTakenWhenZero faild, result = %{public}d", result);
+    int32_t result = dataManager->ClearDirtyDiskData();
+    CHECK_AND_PRINT_LOG(result == E_OK, "ClearDirtyDiskData faild, result = %{public}d", result);
 }
 
-static int32_t DoUpdateDateTakenWhenZero()
+static int32_t DoClearDirtyDiskData()
 {
-    MEDIA_DEBUG_LOG("Begin DoUpdateDateTakenWhenZero");
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
-        "Failed to get async worker instance!");
-
-    shared_ptr<MediaLibraryAsyncTask> UpdateDateTakenWhenZeroTask =
-        make_shared<MediaLibraryAsyncTask>(UpdateDateTakenWhenZero, nullptr);
-    CHECK_AND_RETURN_RET_LOG(UpdateDateTakenWhenZeroTask != nullptr, E_FAIL,
-        "Failed to create async task for UpdateDateTakenWhenZeroTask !");
-    asyncWorker->AddTask(UpdateDateTakenWhenZeroTask, false);
+        "Failed to get async worker instance");
+    shared_ptr<MediaLibraryAsyncTask> clearDirtyDiskDataTask =
+        make_shared<MediaLibraryAsyncTask>(ClearDirtyDiskData, nullptr);
+    CHECK_AND_RETURN_RET_LOG(clearDirtyDiskDataTask != nullptr, E_FAIL,
+        "Failed to create async task for clearDirtyDiskDataTask");
+    asyncWorker->AddTask(clearDirtyDiskDataTask, false);
     return E_SUCCESS;
 }
 
-static void UpdateBurstCoverLevelFromGallery(AsyncTaskData *data)
+static void ClearDirtyDiskData()
 {
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    CHECK_AND_RETURN_LOG(dataManager != nullptr, "dataManager is nullptr");
-
-    int32_t result = dataManager->UpdateBurstCoverLevelFromGallery();
-    CHECK_AND_PRINT_LOG(result == E_OK, "UpdateBurstCoverLevelFromGallery faild");
-}
-
-static int32_t DoUpdateBurstCoverLevelFromGallery()
-{
-    MEDIA_INFO_LOG("Begin DoUpdateBurstCoverLevelFromGallery");
-    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
-        "Failed to get async worker instance!");
-
-    shared_ptr<MediaLibraryAsyncTask> updateBurstCoverLevelTask =
-        make_shared<MediaLibraryAsyncTask>(UpdateBurstCoverLevelFromGallery, nullptr);
-    CHECK_AND_RETURN_RET_LOG(updateBurstCoverLevelTask != nullptr, E_FAIL,
-        "Failed to create async task for updateBurstCoverLevelTask!");
-    asyncWorker->AddTask(updateBurstCoverLevelTask, false);
-    return E_SUCCESS;
-}
-
-static void UpdateDirtyForBeta(const shared_ptr<NativePreferences::Preferences>& prefs)
-{
-    CHECK_AND_RETURN_LOG((IsBetaVersion() && prefs != nullptr), "not need UpdateDirtyForBeta");
-    if (prefs->GetInt(NO_UPDATE_DIRTY, 0) != 1) {
-        int32_t ret = DoUpdateDirtyForCloudClone(UPDATE_DIRTY_CLOUD_CLONE_V1);
-        CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateDirtyForCloudClone failed");
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
+    if (prefs == nullptr) {
+        MEDIA_ERR_LOG("Get preferences error: %{public}d", errCode);
+        return;
     }
-    if (prefs->GetInt(NO_UPDATE_DIRTY_CLOUD_CLONE_V2, 0) != 1) {
-        int32_t ret = DoUpdateDirtyForCloudClone(UPDATE_DIRTY_CLOUD_CLONE_V2);
-        CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateDirtyForCloudClone failed");
-    }
-    return;
-}
 
-static void ClearDirtyHdcData(const shared_ptr<NativePreferences::Preferences>& prefs)
-{
-    if (prefs != nullptr && (prefs->GetInt(NO_DELETE_DIRTY_HDC_DATA, 0) != 1)) {
-        int32_t ret = DoClearDirtyHdcData();
-        CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateDirtyForCloudClone failed");
+    int64_t lastClearTime = prefs->GetLong(LAST_CLEAR_DISK_DIRTY_DATA_TIME, 0);
+    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    if (currentTime - lastClearTime > THIRTY_DAYS) {
+        int32_t ret = DoClearDirtyDiskData();
+        CHECK_AND_PRINT_LOG(ret == E_OK, "DoClearDirtyDiskData failed");
     }
-    return;
 }
 
 static void ClearDirtyData()
@@ -704,20 +518,8 @@ static void ClearDirtyData()
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
     CHECK_AND_RETURN_LOG(prefs, "Get preferences error: %{public}d", errCode);
-    UpdateDirtyForBeta(prefs);
-    ClearDirtyHdcData(prefs);
+    ClearDirtyDiskData();
     return;
-}
-
-static void PeriodicAnalyzePhotosData()
-{
-    constexpr int64_t analyzeIntervalMillisecond = 24 * 60 * 60 * 1000;
-    static int64_t lastAnalyzeTime {0};
-    if (MediaFileUtils::UTCTimeMilliSeconds() - lastAnalyzeTime >= analyzeIntervalMillisecond) {
-        MediaLibraryRdbUtils::AnalyzePhotosData();
-        lastAnalyzeTime = MediaFileUtils::UTCTimeMilliSeconds();
-        return;
-    }
 }
 
 void MedialibrarySubscriber::DoBackgroundOperation()
@@ -728,55 +530,20 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     // check metadata recovery state
     MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();
 #endif
-    // delete temporary photos
-    DeleteTemporaryPhotos();
-    // clear dirty data
     ClearDirtyData();
     BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
         BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
     Init();
-    DoAgingOperation();
-    PeriodicAnalyzePhotosData();
-    // update burst from gallery
-    int32_t ret = DoUpdateBurstFromGallery();
-    CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstFromGallery faild");
-    CloudUploadChecker::RepairNoOriginPhoto();
+    // update all editdata size
+    auto ret = UpdateAllEditDataSize();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateAllEditDataSize faild");
 
-#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
-    // add permission for cloud enhancement photo
-    CloudEnhancementChecker::AddPermissionForCloudEnhancement();
-#endif
-    // migration highlight info to new path
-    if (MediaFileUtils::IsFileExists(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD)) {
-        MEDIA_INFO_LOG("Migration highlight info to new path");
-        bool retMigration = MediaFileUtils::CopyDirAndDelSrc(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD,
-            ROOT_MEDIA_DIR + HIGHLIGHT_INFO_NEW);
-        if (retMigration) {
-            bool retDelete = MediaFileUtils::DeleteDir(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD);
-            if (!retDelete) {
-                MEDIA_ERR_LOG("Delete old highlight path fail");
-            }
-        }
-    }
-    ret = DoUpdateDateTakenWhenZero();
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("DoUpdateDateTakenWhenZero faild");
-    }
-    ret = DoUpdateBurstCoverLevelFromGallery();
-    CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstCoverLevelFromGallery faild");
     RecoverBackgroundDownloadCloudMediaAsset();
-    CloudMediaAssetManager::GetInstance().StartDeleteCloudMediaAssets();
-    // compat old-version moving photo
-    MovingPhotoProcessor::StartProcess();
-    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {
         watch->DoAging();
     }
-    PhotoMimetypeOperation::UpdateInvalidMimeType();
-    DfxManager::GetInstance()->HandleTwoDayMissions();
-    DfxManager::GetInstance()->HandleOneWeekMissions();
 }
 
 static void PauseBackgroundDownloadCloudMedia()
@@ -798,76 +565,8 @@ void MedialibrarySubscriber::StopBackgroundOperation()
 #ifdef META_RECOVERY_SUPPORT
     MediaLibraryMetaRecovery::GetInstance().InterruptRecovery();
 #endif
-    MovingPhotoProcessor::StopProcess();
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
     PauseBackgroundDownloadCloudMedia();
-    PhotoAlbumLPathOperation::GetInstance().Stop();
-    CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
-}
-
-void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    bool isPowerSufficientForThumbnail = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY_THUMBNAIL;
-    bool newStatus = false;
-    if (isCharging_) {
-        newStatus = isScreenOff_ && isPowerSufficientForThumbnail &&
-            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_43;
-    } else if (isScreenOff_ && newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_37 &&
-        batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY) {
-        int32_t thumbAstcCount = 0;
-        int32_t thumbTotalCount = 0;
-        MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(thumbAstcCount);
-        MedialibrarySubscriberDatabaseUtils::QueryThumbTotal(thumbTotalCount);
-        bool isThumbAstcEnough = thumbAstcCount > THUMB_ASTC_ENOUGH || thumbAstcCount == thumbTotalCount;
-        newStatus = !isThumbAstcEnough;
-        CHECK_AND_PRINT_LOG(isThumbAstcEnough,
-            "ThumbnailBg generate status: isThumbAstcEnough:%{public}d,"
-            " thumbAstcCount:%{public}d, thumbTotalCount:%{public}d",
-            isThumbAstcEnough, thumbAstcCount, thumbTotalCount);
-    }
-
-    if (thumbnailBgGenerationStatus_ == newStatus) {
-        return;
-    }
-    MEDIA_INFO_LOG("update status thumbnailBg:%{public}d, new:%{public}d, "
-        "%{public}d, %{public}d, %{public}d, %{public}d",
-        thumbnailBgGenerationStatus_, newStatus, isScreenOff_,
-        isCharging_, batteryCapacity_, newTemperatureLevel_);
-    thumbnailBgGenerationStatus_ = newStatus;
-
-    thumbnailBgDelayTask_.EndBackgroundOperationThread();
-    if (thumbnailBgGenerationStatus_) {
-        thumbnailBgDelayTask_.SetOperationThread([this] { this->DoThumbnailBgOperation(); });
-    } else {
-        MediaLibraryAstcStat::GetInstance().GetInterruptInfo(isScreenOff_, isCharging_,
-            isPowerSufficientForThumbnail,
-            newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_40);
-        StopThumbnailBgOperation();
-    }
-}
-
-void MedialibrarySubscriber::DoThumbnailBgOperation()
-{
-    bool cond = (!thumbnailBgDelayTask_.IsDelayTaskTimeOut() || !thumbnailBgGenerationStatus_);
-    CHECK_AND_RETURN_LOG(!cond, "The conditions for DoThumbnailBgOperation are not met, will return.");
-
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    CHECK_AND_RETURN_LOG(dataManager != nullptr, "dataManager is nullptr");
-
-    auto result = dataManager->GenerateThumbnailBackground();
-    CHECK_AND_PRINT_LOG(result == E_OK, "GenerateThumbnailBackground faild");
-
-    result = dataManager->UpgradeThumbnailBackground(isWifiConnected_);
-    CHECK_AND_PRINT_LOG(result == E_OK, "UpgradeThumbnailBackground faild");
-
-    result = dataManager->GenerateHighlightThumbnailBackground();
-    CHECK_AND_PRINT_LOG(result == E_OK, "GenerateHighlightThumbnailBackground failed %{public}d", result);
-}
-
-void MedialibrarySubscriber::StopThumbnailBgOperation()
-{
-    MediaLibraryDataManager::GetInstance()->InterruptThumbnailBgWorker();
 }
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
@@ -903,11 +602,6 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
         isWifiConnected_);
 
     timerStatus_ = newStatus;
-    if (timerStatus_) {
-        BackgroundCloudFileProcessor::StartTimer();
-    } else {
-        BackgroundCloudFileProcessor::StopTimer();
-    }
 }
 
 void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType)
@@ -919,20 +613,8 @@ void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventTy
     }
 
     CloudSyncDfxManager::GetInstance().RunDfx();
-    ThumbnailService::GetInstance()->UpdateCurrentStatusForTask(thumbnailBgGenerationStatus_);
     ThumbnailGenerateWorkerManager::GetInstance().TryCloseThumbnailWorkerTimer();
     PowerEfficiencyManager::SetSubscriberStatus(isCharging_, isScreenOff_);
-
-    if (statusEventType == StatusEventType::SCREEN_OFF || statusEventType == StatusEventType::CHARGING) {
-        WalCheckPointAsync();
-        CheckHalfDayMissions();
-        return;
-    }
-
-    if (statusEventType == StatusEventType::SCREEN_ON || statusEventType == StatusEventType::DISCHARGING) {
-        CheckHalfDayMissions();
-        return;
-    }
 
     if (statusEventType == StatusEventType::THERMAL_LEVEL_CHANGED) {
         MEDIA_INFO_LOG("Current temperature level is %{public}d", newTemperatureLevel_);
@@ -958,7 +640,6 @@ void MedialibrarySubscriber::DelayTask::EndBackgroundOperationThread()
 #ifdef META_RECOVERY_SUPPORT
     MediaLibraryMetaRecovery::GetInstance().InterruptRecovery();
 #endif
-    MovingPhotoProcessor::StopProcess();
     cv.notify_all();
     if (!operationThread.joinable()) {
         return;
@@ -976,38 +657,6 @@ void MedialibrarySubscriber::DelayTask::SetOperationThread(std::function<void()>
         isTaskWaiting = true;
     }
     this->operationThread = std::thread(operationTask);
-}
-
-int32_t MedialibrarySubscriberDatabaseUtils::QueryThumbAstc(int32_t& thumbAstcCount)
-{
-    std::vector<std::string> columns = { "count(1) AS count" };
-    std::string queryColumn = "count";
-    NativeRdb::RdbPredicates astcPredicates(PhotoColumn::PHOTOS_TABLE);
-    astcPredicates.GreaterThanOrEqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY,
-        static_cast<int32_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
-    int32_t errCode = QueryInt(astcPredicates, columns, queryColumn, thumbAstcCount);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Query thumbAstcCount fail: %{public}d", errCode);
-    return E_OK;
-}
-
-int32_t MedialibrarySubscriberDatabaseUtils::QueryThumbTotal(int32_t& thumbTotalCount)
-{
-    std::vector<std::string> columns = { "count(1) AS count" };
-    std::string queryColumn = "count";
-    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    int32_t errCode = QueryInt(predicates, columns, queryColumn, thumbTotalCount);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Query thumbTotalCount fail: %{public}d", errCode);
-    return E_OK;
-}
-
-int32_t MedialibrarySubscriberDatabaseUtils::QueryInt(const NativeRdb::AbsRdbPredicates &predicates,
-    const std::vector<std::string> &columns, const std::string &queryColumn, int32_t &value)
-{
-    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, E_DB_FAIL);
-    value = GetInt32Val(queryColumn, resultSet);
-    return E_OK;
 }
 }  // namespace Media
 }  // namespace OHOS

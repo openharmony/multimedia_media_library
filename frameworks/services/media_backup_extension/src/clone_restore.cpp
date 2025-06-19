@@ -1048,7 +1048,6 @@ int32_t CloneRestore::MoveThumbnail(FileInfo &fileInfo)
         return E_FAIL;
     }
 
-    MediaLibraryPhotoOperations::StoreThumbnailSize(to_string(fileInfo.fileIdNew), fileInfo.cloudPath);
     return E_OK;
 }
 
@@ -1065,6 +1064,8 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
     CHECK_AND_RETURN_RET(optRet == E_OK, E_FAIL);
     // Thumbnail of photos.
     this->MoveThumbnail(fileInfo);
+
+    MediaLibraryPhotoOperations::StoreThumbnailAndEditSize(to_string(fileInfo.fileIdNew), fileInfo.cloudPath);
     return E_OK;
 }
 
@@ -1850,39 +1851,44 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
     MEDIA_INFO_LOG("move %{public}ld files cost %{public}ld.", (long)fileMoveCount, (long)(end - startMove));
 }
 
-static size_t QueryThumbPhotoSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
-{
-    CHECK_AND_RETURN_RET_LOG(mediaRdb != nullptr, 0, "rdbStore is nullptr");
-    const string sql = "SELECT SUM(" + PhotoExtColumn::THUMBNAIL_SIZE + ")" + " as " + MEDIA_DATA_DB_SIZE +
-                       " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE;
-    auto resultSet = mediaRdb->QuerySql(sql);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "resultSet is null!");
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, 0, "go to first row failed");
-    int64_t size = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE, resultSet, TYPE_INT64));
-    CHECK_AND_RETURN_RET_LOG(size >= 0, 0, "Invalid thumPhoto size from db: %{public}" PRId64, size);
-    resultSet->Close();
-    return static_cast<size_t>(size);
-}
-
 size_t CloneRestore::StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
 {
     CHECK_AND_RETURN_RET_LOG(mediaRdb != nullptr, 0, "rdbStore is nullptr");
-    // media asset size
-    size_t thumbPhotoSize = QueryThumbPhotoSize(mediaRdb);
-    string querySizeSql = "SELECT cast(" + std::to_string(thumbPhotoSize) +
-        " as bigint) as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE;
-    string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " + AudioColumn::QUERY_MEDIA_VOLUME +
-        " UNION " + querySizeSql;
+
+    string thumbSizeSql {};
+    thumbSizeSql = "SELECT SUM(CAST(" + PhotoExtColumn::THUMBNAIL_SIZE + " AS BIGINT)) AS " + MEDIA_DATA_DB_SIZE +
+                          ", -1 AS " + MediaColumn::MEDIA_TYPE +
+                          " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE;
+
+    string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION ALL " +
+                              AudioColumn::QUERY_MEDIA_VOLUME + " UNION ALL " +
+                              thumbSizeSql;
 
     auto resultSet = mediaRdb->QuerySql(mediaVolumeQuery);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "Failed to execute media volume query");
 
     int64_t totalVolume = 0;
+    MEDIA_INFO_LOG("Initial totalVolume: %{public}" PRId64, totalVolume);
+
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int64_t mediaSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
+        int32_t mediatype = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+        MEDIA_INFO_LOG("mediatype is %{public}d, current media asset size is: %{public}" PRId64, mediatype, mediaSize);
+        if (mediaSize < 0) {
+            MEDIA_ERR_LOG("ill mediaSize: %{public}" PRId64 " for mediatype: %{public}d", mediaSize, mediatype);
+        }
+
         totalVolume += mediaSize;
+        MEDIA_INFO_LOG("current totalVolume: %{public}" PRId64, totalVolume);
     }
     resultSet->Close();
+    MEDIA_INFO_LOG("media db media asset size is: %{public}" PRId64, totalVolume);
+
+    if (totalVolume < 0) {
+        MEDIA_ERR_LOG("totalVolume is negative: %{public}" PRId64 ". Returning 0.", totalVolume);
+        return 0;
+    }
+
     size_t totalAssetSize = static_cast<size_t>(totalVolume);
     // other meta data dir size
     size_t editDataTotalSize {0};
@@ -2830,7 +2836,8 @@ void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::Resu
         IMAGE_FACE_COL_FACE_VERSION);
     imageFaceTbl.featuresVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         IMAGE_FACE_COL_FEATURES_VERSION);
-    imageFaceTbl.features = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_FEATURES);
+    imageFaceTbl.features = BackupDatabaseUtils::GetOptionalValue<std::vector<uint8_t>>(resultSet,
+        IMAGE_FACE_COL_FEATURES);
     imageFaceTbl.faceOcclusion = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         IMAGE_FACE_COL_FACE_OCCLUSION);
     imageFaceTbl.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
@@ -2919,7 +2926,7 @@ void CloneRestore::StartBackup()
 
 void CloneRestore::InheritManualCover()
 {
-    std::string querySql = "SELECT album_id, cover_uri FROM PhotoAlbum WHERE cover_uri_source = 1";
+    std::string querySql = "SELECT album_id, cover_uri FROM PhotoAlbum WHERE cover_uri_source > 0";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "Query resultSql is null.");
 
@@ -3081,7 +3088,8 @@ void CloneRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverIn
             make_unique<NativeRdb::AbsRdbPredicates>(PhotoAlbumColumns::TABLE);
         predicates->EqualTo(PhotoAlbumColumns::ALBUM_ID, albumCoverInfo.albumId);
         NativeRdb::ValuesBucket updateBucket;
-        updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, static_cast<int32_t>(CoverUriSource::MANUAL_COVER));
+        updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE,
+            static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER));
         updateBucket.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, albumCoverInfo.coverUri);
         BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, updateBucket, predicates);
         if (changeRows != 1) {

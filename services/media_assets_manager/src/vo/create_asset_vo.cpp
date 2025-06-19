@@ -49,16 +49,6 @@ bool CreateAssetReqBody::Marshalling(MessageParcel &parcel) const
     return parcel.WriteString(this->cameraShotKey);
 }
 
-void CreateAssetReqBody::Convert2Dto(CreateAssetDto &dto)
-{
-    dto.mediaType = this->mediaType;
-    dto.photoSubtype = this->photoSubtype;
-    dto.title = this->title;
-    dto.extension = this->extension;
-    dto.displayName = this->displayName;
-    dto.cameraShotKey = this->cameraShotKey;
-}
-
 bool CreateAssetRspBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadInt32(this->fileId);
@@ -71,12 +61,6 @@ bool CreateAssetRspBody::Marshalling(MessageParcel &parcel) const
     bool status = parcel.WriteInt32(this->fileId);
     CHECK_AND_RETURN_RET(status, status);
     return parcel.WriteString(this->outUri);
-}
-
-void CreateAssetRspBody::InitByDto(const CreateAssetDto &dto)
-{
-    this->fileId = dto.fileId;
-    this->outUri = dto.outUri;
 }
 
 bool CreateAssetForAppReqBody::Unmarshalling(MessageParcel &parcel)
@@ -123,18 +107,5 @@ bool CreateAssetForAppReqBody::Marshalling(MessageParcel &parcel) const
     status = parcel.WriteString(this->appId);
     CHECK_AND_RETURN_RET(status, status);
     return parcel.WriteString(this->ownerAlbumId);
-}
-
-void CreateAssetForAppReqBody::Convert2Dto(CreateAssetDto &dto)
-{
-    dto.tokenId = this->tokenId;
-    dto.mediaType = this->mediaType;
-    dto.photoSubtype = this->photoSubtype;
-    dto.title = this->title;
-    dto.extension = this->extension;
-    dto.bundleName = this->bundleName;
-    dto.packageName = this->packageName;
-    dto.appId = this->appId;
-    dto.ownerAlbumId = this->ownerAlbumId;
 }
 } // namespace OHOS::Media

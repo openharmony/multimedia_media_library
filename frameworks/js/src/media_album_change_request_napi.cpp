@@ -62,6 +62,7 @@ thread_local napi_ref MediaAlbumChangeRequestNapi::constructor_ = nullptr;
 thread_local napi_ref MediaAlbumChangeRequestNapi::mediaAnalysisAlbumChangeRequestConstructor_ = nullptr;
 static const int32_t VALUE_IS_ME = 1;
 static const int32_t VALUE_IS_REMOVED = 1;
+static const int32_t MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR = 23800301;
 
 napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
 {
@@ -1111,6 +1112,7 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
 
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
+    auto subtype = static_cast<int32_t>(photoAlbum->GetPhotoAlbumSubType());
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         (PhotoAlbum::IsSystemAlbum(photoAlbum->GetPhotoAlbumType()) &&
@@ -1119,8 +1121,9 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
         PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only user, source, system album, highlight, smart portrait album and group photo can set album cover");
+        "can't set album cover of album subtype:" + to_string(subtype));
     photoAlbum->SetCoverUri(coverUri);
+    photoAlbum->SetCoverUriSource(static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER));
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_COVER_URI);
     RETURN_NAPI_UNDEFINED(env);
 }
@@ -1132,17 +1135,22 @@ napi_value MediaAlbumChangeRequestNapi::JSResetCoverUri(napi_env env, napi_callb
         return nullptr;
     }
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
-    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(
-        env, info, asyncContext, ARGS_ZERO, ARGS_ZERO) == napi_ok, "Failed to get object info");
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ZERO) == napi_ok,
+        MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "Failed to get object info");
 
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
-    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
-    CHECK_COND_WITH_MESSAGE(env,
+    CHECK_COND_WITH_ERR_MESSAGE(env, photoAlbum != nullptr,
+        MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "photoAlbum is null");
+    auto subtype = static_cast<int32_t>(photoAlbum->GetPhotoAlbumSubType());
+    CHECK_COND_WITH_ERR_MESSAGE(env,
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         (PhotoAlbum::IsSystemAlbum(photoAlbum->GetPhotoAlbumType()) &&
         !PhotoAlbum::IsHiddenAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) ||
         PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only user, source, system album need restore album cover");
+        MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
+        "can't reset album cover of album subtype:" + to_string(subtype));
+    photoAlbum->SetCoverUriSource(static_cast<int32_t>(CoverUriSource::DEFAULT_COVER));
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::RESET_COVER_URI);
     RETURN_NAPI_UNDEFINED(env);
 }
@@ -1739,6 +1747,29 @@ static bool DismissExecute(MediaAlbumChangeRequestAsyncContext& context)
     return true;
 }
 
+static bool ResetCoverUriExecute(MediaAlbumChangeRequestAsyncContext& context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ResetCoverUriExecute");
+
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+    ChangeRequesDismissReqBody reqBody;
+    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_RESET_COVER_URI);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        NAPI_ERR_LOG("Failed to reset cover uri, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
+}
+
 static const unordered_map<AlbumChangeOperation,
     bool (*)(MediaAlbumChangeRequestAsyncContext&)> PROPERTY_EXECUTE_MAP = {
     { AlbumChangeOperation::SET_ALBUM_NAME, SetAlbumNameExecute },
@@ -1746,6 +1777,7 @@ static const unordered_map<AlbumChangeOperation,
     { AlbumChangeOperation::SET_DISPLAY_LEVEL, SetDisplayLevelExecute },
     { AlbumChangeOperation::SET_IS_ME, SetIsMeExecute },
     { AlbumChangeOperation::DISMISS, DismissExecute },
+    { AlbumChangeOperation::RESET_COVER_URI, ResetCoverUriExecute },
 };
 
 static bool SetAlbumPropertyExecute(

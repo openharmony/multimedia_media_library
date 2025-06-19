@@ -35,6 +35,9 @@
 #include "retain_cloud_media_asset_vo.h"
 #include "medialibrary_business_code.h"
 #include "user_define_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "get_cloudmedia_asset_status_vo.h"
+#include "user_define_ipc_client.h"
 
 using namespace std;
 namespace OHOS::Media {
@@ -439,11 +442,14 @@ static void GetCloudMediaAssetStatusExecute(napi_env env, void* data)
     NAPI_INFO_LOG("enter GetCloudMediaAssetStatusExecute");
 
     auto* context = static_cast<CloudMediaAssetAsyncContext*>(data);
-    Uri getUri(CMAM_CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY);
-    string result = UserFileClient::GetType(getUri);
-    NAPI_INFO_LOG("Get cloud media asset, res: %{public}s.", result.c_str());
+    GetCloudMediaAssetStatusReqBody reqBody;
+    GetCloudMediaAssetStatusReqBody rspBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_ASSET_STATUS);
+    IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+
+    NAPI_INFO_LOG("Get cloud media asset, res: %{public}s.", rspBody.status.c_str());
     std::vector<std::string> type;
-    if (!SplitUriString(result, type)) {
+    if (!SplitUriString(rspBody.status, type)) {
         NAPI_ERR_LOG("GetType failed");
         return;
     }

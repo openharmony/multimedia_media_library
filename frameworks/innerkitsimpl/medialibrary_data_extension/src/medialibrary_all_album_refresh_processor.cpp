@@ -34,6 +34,7 @@ namespace Media {
 using namespace std;
 namespace {
 const int64_t REFRESH_ALL_ALBUMS_INTERVAL = 86400000000;  // 24 hours
+static const std::string ALL_ALBUM_REFRESH = "AllAlbumRefresh";
 }
 
 shared_ptr<MediaLibraryAllAlbumRefreshProcessor> MediaLibraryAllAlbumRefreshProcessor::instance_ = nullptr;
@@ -68,13 +69,18 @@ int64_t MediaLibraryAllAlbumRefreshProcessor::GetNowTimeUs()
     return t.tv_sec * SEC_TO_USEC + t.tv_nsec / NSEC_TO_USEC;
 }
 
-void MediaLibraryAllAlbumRefreshProcessor::OnCurrentStatusChanged(bool currentStatus)
+void MediaLibraryAllAlbumRefreshProcessor::OnCurrentStatusChanged(bool currentStatus, bool needReport)
 {
     std::lock_guard<std::mutex> lock(refreshAllAlbumsLock_);
     currentStatus_ = currentStatus;
     MEDIA_INFO_LOG("OnCurrentStatusChanged! %{public}d", currentStatus_);
     if (currentStatus_) {
         PostRefreshAllAlbumsTask();
+    } else {
+        if (needReport) {
+            RemoveTaskName(taskName_);
+            ReportTaskComplete(taskName_);
+        }
     }
 }
 
@@ -232,6 +238,7 @@ int32_t MediaLibraryAllAlbumRefreshProcessor::RefreshAlbums(AlbumRefreshStatus a
 
 void MediaLibraryAllAlbumRefreshProcessor::TryRefreshAllAlbums()
 {
+    MEDIA_INFO_LOG("Begin TryRefreshAllAlbums.");
     {
         std::lock_guard<std::mutex> lock(refreshAllAlbumsLock_);
         if (!CheckRefreshConditionLocked()) {
@@ -268,7 +275,23 @@ void MediaLibraryAllAlbumRefreshProcessor::TryRefreshAllAlbums()
 
 void MediaLibraryAllAlbumRefreshProcessor::PostRefreshAllAlbumsTask()
 {
-    ffrt::submit([this]() { TryRefreshAllAlbums(); });
+    ffrt::submit([this]() {
+        TryRefreshAllAlbums();
+        RemoveTaskName(taskName_);
+        ReportTaskComplete(taskName_);
+    });
+}
+
+int32_t MediaLibraryAllAlbumRefreshProcessor::Start(const std::string &taskExtra)
+{
+    MEDIA_INFO_LOG("Start begin");
+    OnCurrentStatusChanged(true, true);
+    return E_OK;
+}
+
+int32_t MediaLibraryAllAlbumRefreshProcessor::Stop(const std::string &taskExtra)
+{
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

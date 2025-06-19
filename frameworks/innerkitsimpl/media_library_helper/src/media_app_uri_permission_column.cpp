@@ -44,6 +44,10 @@ const std::set<int> AppUriPermissionColumn::PERMISSION_TYPES_ALL = {
     AppUriPermissionColumn::PERMISSION_TEMPORARY_READ, AppUriPermissionColumn::PERMISSION_PERSIST_READ,
     AppUriPermissionColumn::PERMISSION_TEMPORARY_WRITE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ_WRITE,
     AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE, AppUriPermissionColumn::PERMISSION_PERSIST_WRITE};
+const std::set<int> AppUriPermissionColumn::PERMISSION_TYPE_READ = {
+    AppUriPermissionColumn::PERMISSION_TEMPORARY_READ, AppUriPermissionColumn::PERMISSION_PERSIST_READ,
+    AppUriPermissionColumn::PERMISSION_TEMPORARY_WRITE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ_WRITE,
+    AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE};
 const std::set<int> AppUriPermissionColumn::PERMISSION_TYPE_WRITE = {
     AppUriPermissionColumn::PERMISSION_TEMPORARY_WRITE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ_WRITE,
     AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE, AppUriPermissionColumn::PERMISSION_PERSIST_WRITE};

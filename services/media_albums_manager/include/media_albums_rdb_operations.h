@@ -33,6 +33,7 @@ public:
     
     int32_t DeleteHighlightAlbums(const std::vector<std::string>& albumIds);
     int32_t SetHighlightUserActionData(const SetHighlightUserActionDataDto& dto);
+    int32_t GetFaceId(int32_t albumId, std::string& groupTag);
 };
 
 } // namespace OHOS::Media

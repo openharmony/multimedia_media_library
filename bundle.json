@@ -42,6 +42,7 @@
           "camera_framework",
           "common_event_service",
           "data_share",
+          "device_manager",
           "dfs_service",
           "drivers_interface_display",
           "drivers_interface_usb",
@@ -85,10 +86,13 @@
           "zlib",
           "device_standby",
           "libfuse",
-          "netmanager_base"
-        ],
-        "third_party": [
-          "openssl"
+          "netmanager_base",
+          "openssl",
+          "resource_schedule_service",
+          "json",
+          "cJSON",
+          "config_policy",
+          "config_policy_ext"
         ]
       },
       "build": {
@@ -126,7 +130,9 @@
             "//foundation/multimedia/media_library/MediaLibraryExt:medialibrary_ext_hap",
             "//foundation/multimedia/media_library/frameworks/services/media_backup_extension:media_backup_package",
             "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp_package",
-            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_cloud_sync:media_library_cloud_sync"
+            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_cloud_sync:media_library_cloud_sync",
+            "//foundation/multimedia/media_library/services/media_bgtask_mgr:media_bgtask_mgr_grp",
+            "//foundation/multimedia/media_library/services/media_service_extension:mediaserviceext"
           ]
         },
         "inner_kits": [
@@ -191,6 +197,14 @@
                 ]
               },
               "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/media_bgtask_mgr/include",
+                "header_files": [
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/services/media_bgtask_mgr:media_bgtask_mgr_client"
             },
             {
               "header": {

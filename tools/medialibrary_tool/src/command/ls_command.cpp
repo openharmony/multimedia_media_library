@@ -124,19 +124,43 @@ string LSCommand::ErrorCodeToMsg(int32_t errorCode)
     }
 }
 
-void LSCommand::PrintFileInfo(const string& fileInfoJSONString)
+static void PrintEachFile(const nlohmann::json& file)
 {
+    string permissions = (file.contains("permissions") && file["permissions"].is_string()) ?
+        file["permissions"].get<std::string>() : "unknown";
+    std::cout << permissions << " ";
+    nlink_t links = (file.contains("links") && file["links"].is_number()) ? file["links"].get<nlink_t>() : 0;
+    std::cout << links << " ";
+    string owner = (file.contains("owner") && file["owner"].is_string()) ? file["owner"].get<std::string>() : "unknown";
+    std::cout << owner << " ";
+    string group = (file.contains("group") && file["group"].is_string()) ? file["group"].get<std::string>() : "unknown";
+    std::cout << group << " ";
+    long size = (file.contains("size") && file["size"].is_number()) ? file["size"].get<long>() : 0;
+    std::cout << size << " ";
+    string modTime = (file.contains("modTime") && file["modTime"].is_string()) ?
+        file["modTime"].get<std::string>() : "unknown";
+    std::cout << modTime << " ";
+    string fileName = (file.contains("fileName") && file["fileName"].is_string()) ?
+        file["fileName"].get<std::string>() : "unknown";
+    std::cout << fileName << "\n";
+}
+
+int32_t LSCommand::PrintFileInfo(const string& fileInfoJSONString)
+{
+    if (fileInfoJSONString.empty() || !nlohmann::json::accept(fileInfoJSONString)) {
+        MEDIA_ERR_LOG("File Info JSON invalid");
+        return E_FAIL;
+    }
+
     nlohmann::json jsonObj = nlohmann::json::parse(fileInfoJSONString);
+    if (!jsonObj.contains("files")) {
+        return E_OK;
+    }
 
     for (const auto& file : jsonObj["files"]) {
-        std::cout << file["permissions"].get<std::string>() << " ";
-        std::cout << file["links"].get<nlink_t>() << " ";
-        std::cout << file["owner"].get<std::string>() << " ";
-        std::cout << file["group"].get<std::string>() << " ";
-        std::cout << file["size"].get<long>() << " ";
-        std::cout << file["modTime"].get<std::string>() << " ";
-        std::cout << file["fileName"].get<std::string>() << "\n";
+        PrintEachFile(file);
     }
+    return E_OK;
 }
 
 int32_t LSCommand::Execute()
@@ -152,7 +176,11 @@ int32_t LSCommand::Execute()
         MEDIA_ERR_LOG("mediatool ls execute failed. ret:%{public}d", ret);
         return ret;
     }
-    PrintFileInfo(outString);
+    ret = PrintFileInfo(outString);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("print ls info failed. ret:%{public}d", ret);
+        return ret;
+    }
     return E_OK;
 }
 

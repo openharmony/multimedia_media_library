@@ -34,6 +34,9 @@ void MDKRecordAlbumData::UnMarshalling(const MDKRecord &record)
         this->fields_[this->KEY_PROPERTIES].GetRecordMap(this->properties_);
     }
     this->record_.SetRecordData(this->fields_);
+    if (this->fields_.find(this->KEY_ATTRIBUTES) != this->fields_.end()) {
+        this->fields_[this->KEY_ATTRIBUTES].GetRecordMap(this->attributes_);
+    }
 }
 void MDKRecordAlbumData::Marshalling()
 {
@@ -230,19 +233,18 @@ void MDKRecordAlbumData::SetPriority(const int32_t &priority)
 }
 std::optional<int32_t> MDKRecordAlbumData::GetCoverUriSource() const
 {
-    std::optional<std::string> coverUriSource =
-        this->recordReader_.GetStringValue(this->properties_, this->COVER_URI_SOURCE);
-    if (coverUriSource.has_value()) {
-        std::stringstream ss(coverUriSource.value());
-        int32_t result = 0;
-        if (ss >> result) {
-            return result;
-        }
-    }
-    return 0;
+    return this->recordReader_.GetIntValue(this->attributes_, this->COVER_URI_SOURCE);
 }
 void MDKRecordAlbumData::SetCoverUriSource(const int32_t &coverUriSource)
 {
-    this->properties_[this->COVER_URI_SOURCE] = MDKRecordField(coverUriSource);
+    this->attributes_[this->COVER_URI_SOURCE] = MDKRecordField(coverUriSource);
+}
+std::optional<std::string> MDKRecordAlbumData::GetCoverCloudId() const
+{
+    return this->recordReader_.GetStringValue(this->attributes_, this->COVER_CLOUD_ID);
+}
+void MDKRecordAlbumData::SetCoverCloudId(const std::string &coverCloudId)
+{
+    this->attributes_[this->COVER_CLOUD_ID] = MDKRecordField(coverCloudId);
 }
 }  // namespace OHOS::Media::CloudSync

@@ -75,9 +75,11 @@ private:
         PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         MediaColumn::MEDIA_NAME,
         MediaColumn::MEDIA_ID,
+        PhotoColumn::PHOTO_COVER_POSITION,
+        PhotoColumn::PHOTO_IS_RECTIFICATION_COVER,
     };
-    const int32_t THM_TO_DOWNLOAD_MASK = 0x2;
-    const int32_t LCD_TO_DOWNLOAD_MASK = 0x1;
+    const uint32_t THM_TO_DOWNLOAD_MASK = 0x2;
+    const uint32_t LCD_TO_DOWNLOAD_MASK = 0x1;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DOWNLOAD_DAO_H

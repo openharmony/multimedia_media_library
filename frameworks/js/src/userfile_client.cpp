@@ -255,6 +255,16 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
     return resultSet;
 }
 
+std::pair<bool, shared_ptr<DataShareResultSet>> UserFileClient::QueryAccessibleViaSandBox(Uri &uri,
+    const DataSharePredicates &predicates, std::vector<std::string> &columns, int &errCode, const int32_t userId)
+{
+    OperationObject object = OperationObject::UNKNOWN_OBJECT;
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) && userId == -1) {
+        return {true, MediaAssetRdbStore::GetInstance()->Query(predicates, columns, object, errCode)};
+    }
+    return {false, nullptr};
+}
+
 std::shared_ptr<NativeRdb::ResultSet> UserFileClient::QueryRdb(Uri &uri,
     const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
@@ -462,6 +472,27 @@ string UserFileClient::GetBundleName()
     NAPI_INFO_LOG("hap bundleName: %{public}s", bundleName.c_str());
     bundleName_ = bundleName;
     return bundleName_;
+}
+
+int32_t UserFileClient::RegisterObserverExtProvider(const Uri &uri,
+    std::shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants)
+{
+    if (!IsValid(GetUserId())) {
+        NAPI_ERR_LOG("register observer fail, helper null, userId is %{public}d", GetUserId());
+        return E_FAIL;
+    }
+    return
+        GetDataShareHelperByUser(GetUserId())->RegisterObserverExtProvider(uri, std::move(dataObserver), isDescendants);
+}
+
+int32_t UserFileClient::UnregisterObserverExtProvider(const Uri &uri,
+    std::shared_ptr<DataShare::DataShareObserver> dataObserver)
+{
+    if (!IsValid(GetUserId())) {
+        NAPI_ERR_LOG("unregister observer fail, helper null, userId is %{public}d", GetUserId());
+        return E_FAIL;
+    }
+    return GetDataShareHelperByUser(GetUserId())->UnregisterObserverExtProvider(uri, std::move(dataObserver));
 }
 }
 }

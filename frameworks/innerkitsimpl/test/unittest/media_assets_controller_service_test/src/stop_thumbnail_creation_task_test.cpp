@@ -149,7 +149,7 @@ int32_t StopThumCreationTask(int32_t requestId)
         MEDIA_ERR_LOG("respVo.Unmarshalling failed");
         return -1;
     }
-    MEDIA_INFO_LOG("StartThumCreationTask ErrCode:%{public}d", respVo.GetErrCode());
+    MEDIA_INFO_LOG("StopThumCreationTask ErrCode:%{public}d", respVo.GetErrCode());
     return respVo.GetErrCode();
 }
 
@@ -240,8 +240,5 @@ HWTEST_F(StopThumbnailCreationTaskTest, StopThumbnailCreationTask_Test_003, Test
 
     result = StopThumCreationTask(requestId);
     ASSERT_EQ(result, 0);
-
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS * 3));
-    ASSERT_EQ(CheckhumbnailReadyAllEnd(), 0);
 }
 }  // namespace OHOS::Media

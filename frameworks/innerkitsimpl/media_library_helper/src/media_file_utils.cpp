@@ -49,6 +49,8 @@
 #include "string_ex.h"
 #include "userfilemgr_uri.h"
 #include "data_secondary_directory_uri.h"
+#include "image_source.h"
+#include "image_packer.h"
 
 using namespace std;
 
@@ -506,7 +508,8 @@ bool MediaFileUtils::DeleteFileWithRetry(const string &fileName)
     bool isRemoved = false;
     bool isExists = false;
     bool isDeleted = false;
-    while (!isDeleted && retryCount++ < maxRetryCount) {
+    while (!isDeleted && retryCount < maxRetryCount) {
+        retryCount++;
         isRemoved = DeleteFile(fileName);
         isExists = IsFileExists(fileName);
         isDeleted = isRemoved && !isExists;
@@ -714,6 +717,167 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
     close(dest);
 
     return errCode;
+}
+
+static std::unique_ptr<Picture> DecodeAsset(int32_t fd)
+{
+    if (fd < 0) {
+        MEDIA_ERR_LOG("fd = %{public}d is invalid", fd);
+        return nullptr;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("DecodeAsset");
+
+    SourceOptions opts;
+    uint32_t err = E_OK;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, err);
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, nullptr, "CreateImageSource failed, err: %{public}u", err);
+
+    DecodingOptionsForPicture decodeOptions;
+    std::unique_ptr<Picture> picturePtr = imageSource->CreatePicture(decodeOptions, err);
+    CHECK_AND_RETURN_RET_LOG(picturePtr != nullptr, nullptr, "CreatePicture failed, err: %{public}u", err);
+    return picturePtr;
+}
+
+static bool EncodeSaveAsset(std::unique_ptr<Picture> picturePtr, const std::string &mimeType, int32_t dstFd)
+{
+    if (picturePtr == nullptr) {
+        MEDIA_ERR_LOG("picturePtr is nullptr");
+        return false;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("EncodeSaveAsset");
+
+    Media::ImagePacker imagePacker;
+    Media::PackOption packOption;
+    packOption.format = mimeType;
+    packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
+    packOption.needsPackProperties = true;
+
+    int32_t ret = imagePacker.StartPacking(dstFd, packOption);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, false, "StartPacking failed, ret: %{public}d", ret);
+    ret = imagePacker.AddPicture(*(picturePtr));
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, false, "AddPicture failed, ret: %{public}d", ret);
+    ret = imagePacker.FinalizePacking();
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, false, "FinalizePacking failed, ret: %{public}d", ret);
+    return true;
+}
+
+static bool DecodeEncodeSaveAsset(int32_t srcFd, int32_t dstFd, const std::string &extension)
+{
+    std::unique_ptr<Picture> picturePtr = DecodeAsset(srcFd);
+    if (picturePtr == nullptr) {
+        MEDIA_ERR_LOG("DecodeAsset failed");
+        return false;
+    }
+
+    std::string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP);
+    if (!EncodeSaveAsset(std::move(picturePtr), mimeType, dstFd)) {
+        MEDIA_ERR_LOG("EncodeAsset mimeType: %{public}s failed", mimeType.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+bool MediaFileUtils::ConvertFormatCopy(const std::string &srcFile, const std::string &dstFile,
+    const std::string &extension)
+{
+    MEDIA_DEBUG_LOG("ConvertFormatCopy srcFile: %{public}s, dstFile: %{public}s, extension: %{public}s",
+        srcFile.c_str(), dstFile.c_str(), extension.c_str());
+    if (srcFile.size() >= PATH_MAX) {
+        MEDIA_ERR_LOG("File path too long %{public}d", static_cast<int>(srcFile.size()));
+        return false;
+    }
+    string absFilePath;
+    if (!PathToRealPath(srcFile, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", srcFile.c_str());
+        return false;
+    }
+    if (absFilePath.empty()) {
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path:%{public}s %{public}d",
+                      srcFile.c_str(), errno);
+        return false;
+    }
+
+    UniqueFd srcFd(open(absFilePath.c_str(), O_RDONLY));
+    if (srcFd.Get() == E_ERR) {
+        MEDIA_ERR_LOG("Open failed for source file, errno: %{public}d", errno);
+        return false;
+    }
+    UniqueFd dstFd(open(dstFile.c_str(), O_WRONLY | O_CREAT, CHOWN_RO_USR_GRP));
+    if (dstFd.Get() == E_ERR) {
+        MEDIA_ERR_LOG("Open failed for destination file %{public}d", errno);
+        return false;
+    }
+
+    if (!DecodeEncodeSaveAsset(srcFd.Get(), dstFd.Get(), extension)) {
+        MEDIA_ERR_LOG("DecodeEncodeSaveAsset failed");
+        return false;
+    }
+
+    bool errCode = false;
+    struct stat fst{};
+    if (fstat(srcFd.Get(), &fst) == E_SUCCESS) {
+        // Copy ownership and mode of source file
+        if (fchown(dstFd.Get(), fst.st_uid, fst.st_gid) == E_SUCCESS && fchmod(dstFd.Get(), fst.st_mode) == E_SUCCESS) {
+            errCode = true;
+        }
+    }
+
+    return errCode;
+}
+
+bool MediaFileUtils::ConvertFormatExtraDataDirectory(const std::string &srcDir, const std::string &dstDir,
+    const std::string &extension)
+{
+    if (srcDir.empty() || dstDir.empty()) {
+        MEDIA_ERR_LOG("srcDir or dstDir is empty");
+        return E_MODIFY_DATA_FAIL;
+    }
+    if (!IsFileExists(srcDir)) {
+        MEDIA_ERR_LOG("SrcDir: %{public}s is not exist", srcDir.c_str());
+        return E_NO_SUCH_FILE;
+    }
+    if (IsFileExists(dstDir)) {
+        MEDIA_ERR_LOG("DstDir: %{public}s exists", dstDir.c_str());
+        return E_FILE_EXIST;
+    }
+    if (!IsDirectory(srcDir) || !CreateDirectory(dstDir)) {
+        MEDIA_ERR_LOG("srcDir is not directory or Create dstDir failed");
+        return E_FAIL;
+    }
+
+    std::string sourceFilePath = srcDir + "/source." + GetExtensionFromPath(srcDir);
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(srcDir)) {
+        std::string srcFilePath = entry.path();
+        std::string tmpFilePath = srcFilePath;
+        std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
+        if (entry.is_directory()) {
+            if (!CreateDirectory(dstFilePath)) {
+                MEDIA_ERR_LOG("Create dir:%{public}s failed", DesensitizePath(dstFilePath).c_str());
+                return E_FAIL;
+            }
+        } else if (entry.is_regular_file()) {
+            error_code ec;
+            bool ret = false;
+            bool isEqual = std::filesystem::equivalent(srcFilePath, sourceFilePath, ec);
+            if (isEqual) {
+                dstFilePath = dstDir + "/source." + extension;
+                ret = ConvertFormatCopy(srcFilePath, dstFilePath, extension);
+            } else {
+                ret = CopyFileUtil(srcFilePath, dstFilePath);
+            }
+            if (!ret) {
+                MEDIA_ERR_LOG("copyFile failed, isSrcFile: %{public}d", isEqual);
+                return E_FAIL;
+            }
+        } else {
+            MEDIA_ERR_LOG("Unhandled path type, path:%{public}s", DesensitizePath(srcFilePath).c_str());
+            return E_FAIL;
+        }
+    }
+    return E_OK;
 }
 
 bool MediaFileUtils::CopyFileSafe(const string &filePath, const string &newPath)

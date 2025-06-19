@@ -308,8 +308,8 @@ static bool CallSetAssetProperty(MediaAssetsChangeRequestAsyncContext& context,
     changeRequest->GetFileAssetIds(reqBody.fileIds);
     int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (result < 0) {
+        NAPI_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", result);
         context.SaveError(result);
-        NAPI_ERR_LOG("Failed to set property, operation: %{public}d, err: %{public}d", changeOperation, result);
         return false;
     }
     return true;

@@ -84,11 +84,11 @@ std::vector<PhotosDto> CloudMediaDownloadService::GetDownloadThmsByUri(
         photosDto.originalCloudId = downloadAssetData.originalCloudId;
         int32_t retThm = E_OK;
         int32_t retLcd = E_OK;
-        if (type & TYPE_THM) {
+        if (static_cast<uint32_t>(type) & TYPE_THM_MASK) {
             retThm = CloudMediaAttachmentUtils::GetThumbnail("thumbnail", downloadAssetData, photosDto);
             CHECK_AND_PRINT_LOG(retThm == E_OK, "GetDownloadThmsByUri GetAttachment thm fail");
         }
-        if (type & TYPE_LCD) {
+        if (static_cast<uint32_t>(type) & TYPE_LCD_MASK) {
             retLcd = CloudMediaAttachmentUtils::GetLcdThumbnail("lcd", downloadAssetData, photosDto);
             CHECK_AND_PRINT_LOG(retLcd == E_OK, "GetDownloadThmsByUri GetAttachment lcd fail");
         }
@@ -269,9 +269,11 @@ CloudMediaDownloadService::OnDownloadAssetData CloudMediaDownloadService::GetOnD
     bool isMovingPhoto = CloudMediaSyncUtils::IsMovingPhoto(photosPo);
     bool isGraffiti = CloudMediaSyncUtils::IsGraffiti(photosPo);
     bool isLivePhoto = CloudMediaSyncUtils::IsLivePhoto(photosPo);
+    bool isInvalidCover = photosPo.coverPosition.value_or(0) == 0 && photosPo.isRectificationCover.value_or(0) == 0;
     MEDIA_INFO_LOG("GetOnDownloadAssetData %{public}d,%{public}d,%{public}d", isMovingPhoto, isGraffiti, isLivePhoto);
     assetData.fixFileType = isMovingPhoto && !isGraffiti && !isLivePhoto;
     assetData.needSliceContent = (isMovingPhoto && !isGraffiti) && isLivePhoto;
+    assetData.needParseCover = isMovingPhoto && isInvalidCover;
     assetData.needSliceRaw = isMovingPhoto;
     assetData.path = photosPo.data.value_or("");
     assetData.localPath = CloudMediaSyncUtils::GetLocalPath(assetData.path);
@@ -353,7 +355,10 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
         if (isLivePhoto) {
             std::string sourceImage = CloudMediaSyncUtils::GetSourceMovingPhotoImagePath(assetData.path);
             std::string sourceVideo = CloudMediaSyncUtils::GetSourceMovingPhotoVideoPath(assetData.path);
-            return SliceAssetFile(rawFilePath, sourceImage, sourceVideo, "");
+            int32_t ret = SliceAssetFile(rawFilePath, sourceImage, sourceVideo, "");
+            CHECK_AND_PRINT_LOG(ret == E_OK,
+                "SliceRawFile Failed. rawFilePath: %{public}s, sourceImage: %{public}s, sourceVideo: %{public}s",
+                rawFilePath.c_str(), sourceImage.c_str(), sourceVideo.c_str());
         } else {
             MEDIA_WARN_LOG("OnDownloadAsset need slice raw, but file is not live photo");
         }
@@ -368,7 +373,8 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
             return E_PATH;
         }
         int32_t ret = SliceAssetFile(assetData.localPath, assetData.localPath, videoPath, extraDataPath);
-        if (ret == E_OK) {
+        if (ret == E_OK && assetData.needParseCover) {
+            MEDIA_DEBUG_LOG("cover position is invalid, parse cover position from file");
             CoverPositionParser::GetInstance().AddTask(assetData.path, assetData.fileUri);
         }
         return ret;

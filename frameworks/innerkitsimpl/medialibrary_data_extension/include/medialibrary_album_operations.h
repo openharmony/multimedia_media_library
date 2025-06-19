@@ -30,9 +30,12 @@
 #include "vision_column.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_rdb_transaction.h"
+#include "album_accurate_refresh.h"
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
+
 constexpr int32_t NULL_REFERENCE_ALBUM_ID = -1;
 struct MergeAlbumInfo {
     int albumId;
@@ -62,7 +65,7 @@ public:
     static int32_t DeletePhotoAssetsCompleted(const DataShare::DataSharePredicates &predicates, const bool isAging);
     static int32_t DeleteHighlightAlbums(NativeRdb::RdbPredicates &predicates);
     static int32_t AddPhotoAssets(const vector<DataShare::DataShareValuesBucket> &values);
-    static int32_t HandlePhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
+    EXPORT static int32_t HandlePhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates, std::shared_ptr<int> countPtr = nullptr);
     static int32_t HandleAnalysisPhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates, std::shared_ptr<int> countPtr = nullptr);
@@ -72,7 +75,7 @@ public:
     static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUserAlbum, int64_t &newAlbumId);
     static int32_t GetLPathFromSourcePath(const string &sourcePath, string &lPath, int32_t mediaType);
     static int32_t RenewDeletedPhotoAlbum(int32_t id, const NativeRdb::ValuesBucket &albumValues,
-        std::shared_ptr<TransactionOperations> trans);
+        std::shared_ptr<TransactionOperations> trans, AccurateRefresh::AlbumAccurateRefresh *albumRefresh = nullptr);
     static int32_t SetAlbumName(const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates);
     static int32_t SetHighlightAlbumName(const NativeRdb::ValuesBucket &values,
@@ -96,7 +99,14 @@ public:
         const bool isAging, const bool compatible);
     static int32_t MergePortraitAlbums(const NativeRdb::ValuesBucket &values);
     static int32_t OrderSingleAlbum(const NativeRdb::ValuesBucket &values);
+    static int32_t UpdateAlbumCoverUri(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates, bool isSystemAlbum);
+    static int32_t ResetCoverUri(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
     static bool IsCoverInAlbum(const string &fileId, int32_t albumSubtype, int32_t albumId);
+    static bool IsCoverInSystemAlbum(NativeRdb::RdbPredicates &predicates, int32_t albumSubtype);
+    static bool IsManunalCloudCover(const std::string &fileId, std::string &coverCloudId);
+    static int32_t UpdateCoverUriExecute(int32_t albumId, const std::string &coverUri, const std::string &fileId);
 };
 } // namespace Media
 } // namespace OHOS
