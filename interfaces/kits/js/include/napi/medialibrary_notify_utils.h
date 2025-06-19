@@ -61,6 +61,7 @@ public:
     static napi_status SetValueString(const napi_env& env, const char* name, const std::string& stringValue,
         napi_value& result);
     static napi_status SetValueBool(const napi_env& env, const char* name, const bool boolValue, napi_value& result);
+    static napi_status SetValueNull(const napi_env& env, const char* name, napi_value& result);
 
     static napi_value BuildPhotoAssetChangeInfo(napi_env env,
         const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo);
@@ -77,8 +78,10 @@ public:
     static napi_value BuildAlbumNapiArray(napi_env env,
         const std::vector<std::variant<AccurateRefresh::PhotoAssetChangeData, AccurateRefresh::AlbumChangeData>>
         &changeInfos);
-    static napi_value BuildAlbumAlbumChangeInfos(napi_env env,
+    static napi_value BuildAlbumChangeInfos(napi_env env,
         const std::shared_ptr<Notification::MediaChangeInfo> &changeInfo);
+    static napi_value BuildPhotoAssetRecheckChangeInfos(napi_env env);
+    static napi_value BuildAlbumRecheckChangeInfos(napi_env env);
     static int32_t ConvertToJsError(int32_t innerErr);
 };
 }

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "AccurateRefresh::MediaLibraryNotifyUtils"
 #include "medialibrary_notify_utils.h"
 
 #include "media_column.h"
@@ -202,9 +203,34 @@ napi_status MediaLibraryNotifyUtils::SetValueInt64(const napi_env& env, const ch
     return status;
 }
 
+napi_status MediaLibraryNotifyUtils::SetValueNull(const napi_env& env, const char* name, napi_value& result)
+{
+    if (result == nullptr) {
+        NAPI_ERR_LOG("result is nullptr");
+        return napi_invalid_arg;
+    }
+
+    napi_value nullValue = nullptr;
+    napi_status status = napi_get_null(env, &nullValue);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi get null error! name: %{public}s, status: %{public}d", name, status);
+        return status;
+    }
+
+    status = napi_set_named_property(env, result, name, nullValue);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Set null named property error! name: %{public}s, status: %{public}d", name, status);
+    }
+    return status;
+}
+
 napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfo(napi_env env,
     const AccurateRefresh::PhotoAssetChangeInfo &photoAssetChangeInfo)
 {
+    if (photoAssetChangeInfo.fileId_ == AccurateRefresh::INVALID_INT32_VALUE) {
+        return nullptr;
+    }
+
     napi_value result = nullptr;
     napi_create_object(env, &result);
 
@@ -236,7 +262,7 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeData(napi_env env,
 
     napi_value assetBeforeChangeValue = BuildPhotoAssetChangeInfo(env, photoAssetChangeData.infoBeforeChange_);
     if (assetBeforeChangeValue == nullptr) {
-        NAPI_ERR_LOG("failed to build assetBeforeChangeValue");
+        SetValueNull(env, "assetBeforeChange", result);
     } else {
         status = napi_set_named_property(env, result, "assetBeforeChange", assetBeforeChangeValue);
         if (status != napi_ok) {
@@ -246,7 +272,7 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeData(napi_env env,
 
     napi_value assetAfterChangeValue = BuildPhotoAssetChangeInfo(env, photoAssetChangeData.infoAfterChange_);
     if (assetAfterChangeValue == nullptr) {
-        NAPI_ERR_LOG("failed to build assetAfterChangeValue");
+        SetValueNull(env, "assetAfterChange", result);
     } else {
         status = napi_set_named_property(env, result, "assetAfterChange", assetAfterChangeValue);
         if (status != napi_ok) {
@@ -350,6 +376,10 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfos(napi_env env,
 napi_value MediaLibraryNotifyUtils::BuildAlbumChangeInfo(napi_env env,
     const AccurateRefresh::AlbumChangeInfo &albumChangeInfo)
 {
+    if (albumChangeInfo.albumId_ == AccurateRefresh::INVALID_INT32_VALUE) {
+        return nullptr;
+    }
+
     napi_value result = nullptr;
     napi_create_object(env, &result);
 
@@ -369,19 +399,17 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumChangeInfo(napi_env env,
     SetValueBool(env, "isCoverChanged", albumChangeInfo.isCoverChange_, result);
     SetValueBool(env, "isHiddenCoverChanged", albumChangeInfo.isHiddenCoverChange_, result);
 
-    if (albumChangeInfo.coverInfo_.fileId_ != AccurateRefresh::INVALID_INT32_VALUE) {
-        napi_status status = napi_ok;
-        napi_value coverInfoValue = BuildPhotoAssetChangeInfo(env, albumChangeInfo.coverInfo_);
-        CHECK_COND_RET(coverInfoValue == nullptr, nullptr, "failed to build coverInfoValue");
+    napi_status status = napi_ok;
+    napi_value coverInfoValue = BuildPhotoAssetChangeInfo(env, albumChangeInfo.coverInfo_);
+    if (coverInfoValue != nullptr) {
         status = napi_set_named_property(env, result, "coverInfo", coverInfoValue);
         if (status != napi_ok) {
             NAPI_ERR_LOG("set array named property error: coverInfo");
         }
     }
-    if (albumChangeInfo.coverInfo_.fileId_ != AccurateRefresh::INVALID_INT32_VALUE) {
-        napi_status status = napi_ok;
-        napi_value hiddenCoverInfoValue = BuildPhotoAssetChangeInfo(env, albumChangeInfo.hiddenCoverInfo_);
-        CHECK_COND_RET(hiddenCoverInfoValue == nullptr, nullptr, "failed to build hiddenCoverInfoValue");
+
+    napi_value hiddenCoverInfoValue = BuildPhotoAssetChangeInfo(env, albumChangeInfo.hiddenCoverInfo_);
+    if (hiddenCoverInfoValue != nullptr) {
         status = napi_set_named_property(env, result, "hiddenCoverInfo", hiddenCoverInfoValue);
         if (status != napi_ok) {
             NAPI_ERR_LOG("set array named property error: hiddenCoverInfo");
@@ -399,7 +427,7 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumChangeData(napi_env env,
 
     napi_value albumBeforeChangeValue = BuildAlbumChangeInfo(env, albumChangeData.infoBeforeChange_);
     if (albumBeforeChangeValue == nullptr) {
-        NAPI_ERR_LOG("failed to build albumBeforeChangeValue");
+        SetValueNull(env, "albumBeforeChange", result);
     } else {
         status = napi_set_named_property(env, result, "albumBeforeChange", albumBeforeChangeValue);
         if (status != napi_ok) {
@@ -409,7 +437,7 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumChangeData(napi_env env,
 
     napi_value albumAfterChangeValue = BuildAlbumChangeInfo(env, albumChangeData.infoAfterChange_);
     if (albumAfterChangeValue == nullptr) {
-        NAPI_ERR_LOG("failed to build albumAfterChangeValue");
+        SetValueNull(env, "albumAfterChange", result);
     } else {
         status = napi_set_named_property(env, result, "albumAfterChange", albumAfterChangeValue);
         if (status != napi_ok) {
@@ -462,11 +490,11 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumNapiArray(napi_env env,
     return result;
 }
 
-napi_value MediaLibraryNotifyUtils::BuildAlbumAlbumChangeInfos(napi_env env,
+napi_value MediaLibraryNotifyUtils::BuildAlbumChangeInfos(napi_env env,
     const shared_ptr<Notification::MediaChangeInfo> &changeInfo)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("BuildAlbumAlbumChangeInfos");
+    tracer.Start("BuildAlbumChangeInfos");
     if (changeInfo == nullptr) {
         NAPI_ERR_LOG("Invalid changeInfo");
         return nullptr;
@@ -493,6 +521,68 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumAlbumChangeInfos(napi_env env,
     }
 
     status = MediaLibraryNotifyUtils::SetValueBool(env, "isForRecheck", changeInfo->isForRecheck, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: isForRecheck");
+        return nullptr;
+    }
+
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildPhotoAssetRecheckChangeInfos(napi_env env)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildPhotoAssetRecheckChangeInfos");
+
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_status status = napi_ok;
+    // 发送全查的通知，默认通知类型为UPDATE
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type",
+        static_cast<int32_t>(NotifyChangeType::NOTIFY_CHANGE_UPDATE), result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+
+    status = SetValueNull(env, "assetChangeDatas", result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: assetChangeDatas");
+        return nullptr;
+    }
+
+    status = MediaLibraryNotifyUtils::SetValueBool(env, "isForRecheck", true, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: isForRecheck");
+        return nullptr;
+    }
+
+    return result;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildAlbumRecheckChangeInfos(napi_env env)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildAlbumRecheckChangeInfos");
+
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_status status = napi_ok;
+    // 发送全查的通知，默认通知类型为UPDATE
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "type",
+        static_cast<int32_t>(NotifyChangeType::NOTIFY_CHANGE_UPDATE), result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+
+    status = SetValueNull(env, "albumChangeDatas", result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: albumChangeDatas");
+        return nullptr;
+    }
+
+    status = MediaLibraryNotifyUtils::SetValueBool(env, "isForRecheck", true, result);
     if (status != napi_ok) {
         NAPI_ERR_LOG("set array named property error: isForRecheck");
         return nullptr;
