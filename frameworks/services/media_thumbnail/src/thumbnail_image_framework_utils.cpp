@@ -362,6 +362,7 @@ std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(con
     CHECK_AND_RETURN_RET_LOG(desiredSize.width > 0 && desiredSize.height > 0, nullptr,
         "Invalid desired size: width: %{public}d, height: %{publilc}d", desiredSize.width, desiredSize.height);
     auto copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
+    CHECK_AND_RETURN_RET_LOG(IsPixelMapValid(copySource), nullptr, "CopyPixelMapSource failed");
     float widthScale = (1.0f * desiredSize.width) / pixelMap->GetWidth();
     float heightScale = (1.0f * desiredSize.height) / pixelMap->GetHeight();
     copySource->scale(widthScale, heightScale);
