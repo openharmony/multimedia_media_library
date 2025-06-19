@@ -33,6 +33,7 @@ ohos_unittest("media_refresh_test") {
     "./src/album_accurate_refresh_test.cpp",
     "./src/asset_accurate_refresh_test.cpp",
     "./src/accurate_refresh_test_util.cpp",
+    "./src/media_refresh_controller_service_test.cpp",
   ]
   accurate_refresh_source = [
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/accurate_refresh_base.cpp",
