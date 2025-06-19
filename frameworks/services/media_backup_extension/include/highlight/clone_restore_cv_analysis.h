@@ -19,10 +19,8 @@
 #include <string>
 
 #include "clone_restore_highlight.h"
-#include "media_log.h"
 #include "nlohmann/json.hpp"
 #include "rdb_store.h"
-#include "safe_map.h"
 
 namespace OHOS::Media {
 class CloneRestoreCVAnalysis {
@@ -59,7 +57,12 @@ private:
     std::string assetPath_;
     std::string garblePath_;
     std::unordered_map<std::string, std::string> assetUriMap_;
-    int64_t failCnt_{0};
+    bool isHighlightVideoDirExist_{false};
+    int64_t assetSdSuccessCnt_{0};
+    int64_t assetSdFailedCnt_{0};
+    int64_t albumAssetSuccessCnt_{0};
+    int64_t albumAssetFailedCnt_{0};
+    int64_t restoreTimeCost_{0};
 };
 } // namespace OHOS::Media
 #endif // CLONE_RESTORE_CV_ANALYSIS_H

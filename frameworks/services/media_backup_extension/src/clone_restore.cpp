@@ -499,7 +499,7 @@ void CloneRestore::RestoreHighlightAlbums()
 {
     int32_t highlightCloudMediaCnt = GetHighlightCloudMediaCnt();
     UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
-        .Report("Highlight Restore", "",
+        .Report("CLONE_RESTORE_HIGHLIGHT_CHECK", "",
             "highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
             ", isCloudRestoreSatisfied: " + std::to_string(IsCloudRestoreSatisfied()));
     if (highlightCloudMediaCnt > 0 && !IsCloudRestoreSatisfied()) {
@@ -507,12 +507,14 @@ void CloneRestore::RestoreHighlightAlbums()
     }
 
     CloneRestoreHighlight cloneRestoreHighlight;
-    cloneRestoreHighlight.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir_, photoInfoMap_);
+    CloneRestoreHighlight::InitInfo initInfo = { sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir_,
+        photoInfoMap_ };
+    cloneRestoreHighlight.Init(initInfo);
     cloneRestoreHighlight.Restore();
 
     CloneRestoreCVAnalysis cloneRestoreCVAnalysis;
-    cloneRestoreCVAnalysis.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir_);
-    cloneRestoreCVAnalysis.RestoreAlbums(cloneRestoreHighlight); // TODO
+    cloneRestoreCVAnalysis.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir_);
+    cloneRestoreCVAnalysis.RestoreAlbums(cloneRestoreHighlight);
 }
 
 void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount,
