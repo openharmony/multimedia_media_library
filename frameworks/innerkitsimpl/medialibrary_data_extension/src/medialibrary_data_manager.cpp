@@ -496,6 +496,11 @@ void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         MediaLibraryRdbStore::AddPhotoSortIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_INDEX_FOR_PHOTO_SORT);
     }
+
+    if (oldVersion < VERSION_ADD_PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX) {
+        MediaLibraryRdbStore::AddPhotoWhiteBlocksIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX);
+    }
 }
 
 void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
