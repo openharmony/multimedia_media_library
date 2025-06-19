@@ -41,6 +41,10 @@ int32_t ThumbnailGenerationPostProcess::PostProcess(const ThumbnailData& data, c
         CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
         return E_OK;
     }
+    NotifyType notifyType;
+    err = GetNotifyType(data, opts, notifyType);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GetNotifyType failed. err: %{public}d", err);
+
     AccurateRefresh::AssetAccurateRefresh assetRefresh;
     int32_t changedRows;
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
@@ -49,10 +53,6 @@ int32_t ThumbnailGenerationPostProcess::PostProcess(const ThumbnailData& data, c
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "UpdateCachedRdbValue failed. err: %{public}d", ret);
     ret = assetRefresh.Notify();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Notify failed. err: %{public}d", ret);
-
-    NotifyType notifyType;
-    err = GetNotifyType(data, opts, notifyType);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GetNotifyType failed. err: %{public}d", err);
 
     err = Notify(data, notifyType);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Notify failed. err: %{public}d", err);
