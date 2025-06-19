@@ -15,9 +15,10 @@
 
 #define MLOG_TAG "MediaLibraryCloneRestoreCVAnalysis"
 
+#include "clone_restore_cv_analysis.h"
+
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
-#include "clone_restore_cv_analysis.h"
 #include "media_file_utils.h"
 #include "upgrade_restore_task_report.h"
 
