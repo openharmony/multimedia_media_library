@@ -226,8 +226,13 @@ private:
 
     void GetAnalysisAlbumInfos();
     void GetAnalysisRowInfo(AnalysisAlbumInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
+    void UpdateAlbumCoverUri(AnalysisAlbumInfo &info);
     void InsertIntoAnalysisAlbum();
     void GetAnalysisInsertValue(NativeRdb::ValuesBucket &value, const AnalysisAlbumInfo &info);
+    void UpdateHighlightStatusMap(int32_t highlightStatus, int32_t highlightId,
+        std::unordered_map<int32_t, std::vector<NativeRdb::ValueObject>> &highlightStatusMap);
+    void UpdateHighlightStatusInDatabase(
+        const std::unordered_map<int32_t, std::vector<NativeRdb::ValueObject>> &highlightStatusMap);
     int32_t GetMaxAlbumId(const std::string &tableName, const std::string &idName);
     void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values);
     void UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb::ValuesBucket> &values,
