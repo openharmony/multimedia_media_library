@@ -4631,6 +4631,16 @@ void AddHighlightLocation(RdbStore &store)
     ExecSqls(sql, store);
 }
 
+void AddTotalPriority(RdbStore &store)
+{
+    const vector<string> sql = {
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + PRIORITY + " INT DEFAULT 1",
+    };
+
+    MEDIA_INFO_LOG("Addding priority for VISION_TOTAL_TABLE");
+    ExecSqls(sql, store);
+}
+
 static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
@@ -4660,6 +4670,10 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_HIGHLIGHT_LOCATION) {
         AddHighlightLocation(store);
+    }
+
+    if (oldVersion < VERSION_ADD_PRIORITY_COLUMN) {
+        AddTotalPriority(store);
     }
 }
 
