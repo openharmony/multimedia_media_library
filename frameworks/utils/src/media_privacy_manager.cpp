@@ -45,6 +45,11 @@ using PrivacyRanges = vector<pair<uint32_t, uint32_t>>;
 
 namespace OHOS {
 namespace Media {
+#define HMDFS_IOC_SAVE_APPID _IOW(0xF2, 10, struct HmdfsSaveAppId)
+constexpr uint32_t APPID_MAX_LEN = 256;
+struct HmdfsSaveAppId {
+    char appId[APPID_MAX_LEN] = {0};
+};
 constexpr uint32_t E_NO_EXIF = 1;
 constexpr uint32_t E_NO_PRIVACY_EXIF_TAG = 2;
 constexpr int32_t DEFAULT_TYPE = -1;
@@ -198,6 +203,32 @@ static int32_t SendRangesToIoctl(const int32_t originFd, const int32_t proxyFd, 
     return err;
 }
 
+static void SendAppidToIoctl(int32_t fd)
+{
+    if (fd < 0) {
+        MEDIA_ERR_LOG("fd = %{public}d is invalid", fd);
+        return;
+    }
+
+    std::string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    std::string appId = PermissionUtils::GetAppIdByBundleName(bundleName);
+    MEDIA_DEBUG_LOG("bundleName: %{public}s, appId: %{public}s", bundleName.c_str(), appId.c_str());
+    struct HmdfsSaveAppId iocAppId;
+    uint32_t len = appId.size() < APPID_MAX_LEN ? appId.size() : APPID_MAX_LEN - 1;
+    if (strncpy_s(iocAppId.appId, APPID_MAX_LEN, appId.c_str(), len) != E_OK) {
+        MEDIA_ERR_LOG("strncpy_s appid failed, appid len: %{public}d", static_cast<int32_t>(appId.size()));
+        return;
+    }
+
+    int32_t ret = ioctl(fd, HMDFS_IOC_SAVE_APPID, &iocAppId);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("failed to send appid, fd: %{public}d, ret: %{public}d, appid: %{private}s, erron: %{public}d",
+            fd, ret, appId.c_str(), errno);
+    } else {
+        MEDIA_DEBUG_LOG("appid send success, fd: %{public}d, appid: %{private}s", fd, appId.c_str());
+    }
+}
+
 /* Caller is responsible to close the returned fd */
 static int32_t OpenOriginFd(const string &path, const string &mode, string &clientBundle, const bool fuseFlag)
 {
@@ -209,7 +240,9 @@ static int32_t OpenOriginFd(const string &path, const string &mode, string &clie
     if (clientBundle.empty()) {
         MEDIA_DEBUG_LOG("clientBundleName is empty");
     }
-    return MediaFileUtils::OpenFile(path, mode, clientBundle);
+    int32_t fd = MediaFileUtils::OpenFile(path, mode, clientBundle);
+    SendAppidToIoctl(fd);
+    return fd;
 }
 
 /*
@@ -229,6 +262,7 @@ static int32_t OpenFilterProxyFd(const string &path, const string &mode, const P
     int32_t originFd = open(path.c_str(), O_RDONLY);
     CHECK_AND_RETURN_RET_LOG(originFd >= 0, originFd,
         "Failed to open file, errno: %{public}d, path: %{private}s", errno, path.c_str());
+    SendAppidToIoctl(originFd);
 
     constexpr mode_t epfsFileMode = 0400;
     // filterProxyFd_ will be returned to user, so there is no need to close it here.
@@ -416,12 +450,14 @@ int32_t MediaPrivacyManager::Open()
 {
     int err = GetPrivacyRanges();
     if (err < 0) {
+        MEDIA_ERR_LOG("GetPrivacyRanges failed");
         return err;
     }
     if (ranges_.size() > 0 && !IsDeveloperMediaTool()) {
         return OpenFilterProxyFd(path_, mode_, ranges_, clientBundle_, fuseFlag_);
+    } else {
+        return OpenOriginFd(path_, mode_, clientBundle_, fuseFlag_);
     }
-    return OpenOriginFd(path_, mode_, clientBundle_, fuseFlag_);
 }
 } // namespace Media
 } // namespace OHOS
