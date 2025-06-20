@@ -176,7 +176,8 @@ enum ResultSetDataType {
     TYPE_STRING,
     TYPE_INT32,
     TYPE_INT64,
-    TYPE_DOUBLE
+    TYPE_DOUBLE,
+    TYPE_BLOB
 };
 
 enum class CleanType : int32_t {

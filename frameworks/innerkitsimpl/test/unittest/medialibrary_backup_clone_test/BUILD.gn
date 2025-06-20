@@ -53,6 +53,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_album/search_index_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_album/video_face_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_data/clone_restore_analysis_total.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_data/clone_restore_analysis_data.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_database_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_database_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_dfx_utils.cpp",
