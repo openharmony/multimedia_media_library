@@ -33,6 +33,7 @@ public:
     template <class T>
     int32_t SplitVector(const std::vector<T> &input, size_t maxSize, std::vector<std::vector<T>> &result)
     {
+        maxSize = maxSize > 0 ? maxSize : 1;
         size_t numSubVectors = (input.size() + maxSize - 1) / maxSize;
         for (size_t i = 0; i < numSubVectors; ++i) {
             size_t start = i * maxSize;
