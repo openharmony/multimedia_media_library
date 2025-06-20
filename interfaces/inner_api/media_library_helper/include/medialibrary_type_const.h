@@ -94,6 +94,7 @@ enum class FetchResType : int32_t {
     TYPE_SMARTALBUM,
     TYPE_PHOTOALBUM,
     TYPE_CUSTOMRECORD,
+    TYPE_ALBUMORDER,
 };
 
 enum class DirtyType : int32_t {
@@ -238,6 +239,10 @@ const std::string DEFAULT_DIRECTORY = "";
 const std::string DEFAULT_STRING_MEDIA_TYPE = "";
 const std::string DEFAULT_EXTENSION = "";
 const int32_t DEFAULT_MEDIAVOLUME = 0;
+const int32_t DEFAULT_ALBUMS_ORDER = -1;
+const int32_t DEFAULT_ORDER_SECTION = -1;
+const int32_t DEFAULT_ORDER_TYPE = -1;
+const int32_t DEFAULT_ORDER_STATUS = 0;
 const std::string ROOT_MEDIA_DIR = "/storage/cloud/files/";
 const std::string ROOT_SANDBOX_DIR = "/storage/Share/";
 const std::string FS_TYPE_EPFS = "epfs";

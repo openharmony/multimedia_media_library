@@ -348,6 +348,11 @@ bool PhotoAlbum::IsAnalysisAlbum(const PhotoAlbumType albumType, const PhotoAlbu
             albumSubType <= PhotoAlbumSubType::ANALYSIS_END);
 }
 
+bool PhotoAlbum::CheckOrderStyleType(const OrderStyleType orderStyle)
+{
+    return (orderStyle == OrderStyleType::MIX) || (orderStyle == OrderStyleType::SPLIT);
+}
+
 void PhotoAlbum::SetUserId(int32_t userId)
 {
     targetUserId_ = userId;
