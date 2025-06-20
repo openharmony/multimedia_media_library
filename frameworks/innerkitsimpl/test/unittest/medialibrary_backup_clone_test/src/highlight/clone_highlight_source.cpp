@@ -46,6 +46,7 @@ const unordered_map<string, string> TABLE_CREATE_MAP = {
     { VISION_LABEL_TABLE, CREATE_TAB_ANALYSIS_LABEL },
     { VISION_RECOMMENDATION_TABLE, CREATE_TAB_ANALYSIS_RECOMMENDATION },
     { VISION_SALIENCY_TABLE, CREATE_TAB_ANALYSIS_SALIENCY_DETECT },
+    { VISION_TOTAL_TABLE, CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE },
 };
 const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { PhotoColumn::PHOTOS_TABLE, InsertType::PHOTOS },
@@ -59,6 +60,7 @@ const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { VISION_LABEL_TABLE, InsertType::TAB_ANALYSIS_LABEL },
     { VISION_RECOMMENDATION_TABLE, InsertType::TAB_ANALYSIS_RECOMMENDATION },
     { VISION_SALIENCY_TABLE, InsertType::TAB_ANALYSIS_SALIENCY_DETECT },
+    { VISION_TOTAL_TABLE, InsertType::TAB_ANALYSIS_TOTAL },
 };
 const string VALUES_BEGIN = " VALUES (";
 const string VALUES_END = ") ";
@@ -104,6 +106,10 @@ const string INSERT_VISION_RECOMMENDATION_TABLE = "INSERT INTO " + VISION_RECOMM
     ANALYSIS_VERSION + ")";
 const string INSERT_VISION_SALIENCY_TABLE = "INSERT INTO " + VISION_SALIENCY_TABLE + "(id, " +
     FILE_ID + ", " + SALIENCY_X + ", " + SALIENCY_Y + ", " + SALIENCY_VERSION + ")";
+const string INSERT_TAB_ANALYSIS_TOTAL = "INSERT INTO " + VISION_TOTAL_TABLE + "(" +
+    ID + "," + FILE_ID + "," + STATUS + "," + OCR + "," + LABEL + "," + AESTHETICS_SCORE + "," +
+    FACE + "," + OBJECT + "," + RECOMMENDATION + "," + SEGMENTATION + "," + COMPOSITION + "," + SALIENCY + "," +
+    HEAD + "," + POSE + "," + GEO + ")";
 
 int32_t CloneHighlightOpenCall::OnCreate(NativeRdb::RdbStore &store)
 {
@@ -154,6 +160,7 @@ void CloneHighlightSource::Insert(const vector<string> &tableList, std::shared_p
         }
         InsertType insertType = TABLE_INSERT_TYPE_MAP.at(tableName);
         InsertByType(insertType, rdbPtr);
+        InsertAnalysisDataByType(insertType, rdbPtr);
     }
 }
 
@@ -192,6 +199,14 @@ void CloneHighlightSource::InsertByType(InsertType insertType, std::shared_ptr<N
             InsertAlbumMap(rdbPtr);
             break;
         }
+        default:
+            MEDIA_INFO_LOG("Invalid insert type");
+    }
+}
+
+void CloneHighlightSource::InsertAnalysisDataByType(InsertType insertType, std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
+{
+    switch (insertType) {
         case InsertType::TAB_ANALYSIS_LABEL: {
             InsertTabAnalysisLabel(rdbPtr);
             break;
@@ -202,6 +217,10 @@ void CloneHighlightSource::InsertByType(InsertType insertType, std::shared_ptr<N
         }
         case InsertType::TAB_ANALYSIS_SALIENCY_DETECT: {
             InsertTabAnalysisSaliency(rdbPtr);
+            break;
+        }
+        case InsertType::TAB_ANALYSIS_TOTAL: {
+            InsertTabAnalysisTotal(rdbPtr);
             break;
         }
         default:
@@ -321,6 +340,21 @@ void CloneHighlightSource::InsertTabAnalysisSaliency(std::shared_ptr<NativeRdb::
 {
     rdbPtr->ExecuteSql(INSERT_VISION_SALIENCY_TABLE + VALUES_BEGIN + "1, 1, 0.5, 0.5, '1.0'" + VALUES_END);
     rdbPtr->ExecuteSql(INSERT_VISION_SALIENCY_TABLE + VALUES_BEGIN + "2, 2, 0.5, 0.5, '1.0'" + VALUES_END);
+}
+
+void CloneHighlightSource::InsertTabAnalysisTotal(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
+{
+    // id, file_id, status, ocr, label, aesthetics_score,
+    // face, object, recommendation, segmentation, composition, saliency,
+    // head, pose, geo
+    cloneStorePtr_->ExecuteSql(INSERT_TAB_ANALYSIS_TOTAL + VALUES_BEGIN +
+        "1, 1, 0, 0, 0, 0, "
+        "0, 0, 1, 0, 0, 1, "
+        "0, 0, 0" + VALUES_END);
+    cloneStorePtr_->ExecuteSql(INSERT_TAB_ANALYSIS_TOTAL + VALUES_BEGIN +
+        "2, 2, 0, 0, 0, 0, "
+        "0, 0, 1, 0, 0, 1, "
+        "0, 0, 0" + VALUES_END);
 }
 } // namespace Media
 } // namespace OHOS

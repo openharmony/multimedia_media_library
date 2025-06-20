@@ -609,6 +609,7 @@ void CloneRestoreHighlight::GetHighlightAlbumInfos()
             highlightInfos_.emplace_back(info);
         }
         resultSet->GetRowCount(rowCount);
+        offset += PAGE_SIZE;
         resultSet->Close();
     } while (rowCount == PAGE_SIZE);
     MEDIA_INFO_LOG("query tab_highlight_album nums: %{public}zu", highlightInfos_.size());
@@ -1124,7 +1125,7 @@ void CloneRestoreHighlight::ReportRestoreTaskOfAlbumStats()
 {
     int32_t maxCnt = 0;
     int32_t totalCnt = 0;
-    for (auto &counter : albumPhotoCounter_) {
+    for (const auto &counter : albumPhotoCounter_) {
         maxCnt = maxCnt > counter.second ? maxCnt : counter.second;
         totalCnt += counter.second;
     }
@@ -1138,7 +1139,7 @@ void CloneRestoreHighlight::ReportRestoreTaskOfAlbumStats()
 
 void CloneRestoreHighlight::ReportRestoreTaskOfAlbumInfo()
 {
-    for (auto &counter : albumPhotoCounter_) {
+    for (const auto &counter : albumPhotoCounter_) {
         std::stringstream albumInfoReport;
         albumInfoReport << "albumName: " << counter.first << ", photo count: " << counter.second;
         UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)

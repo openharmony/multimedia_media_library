@@ -24,6 +24,7 @@
 #include "backup_const.h"
 #include "clone_restore_cv_analysis.h"
 #include "clone_restore_highlight.h"
+#include "clone_restore.h"
 #include "media_column.h"
 #include "media_log.h"
 #include "medialibrary_rdb_utils.h"
@@ -448,6 +449,15 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_ph
     EXPECT_EQ(newId, TEST_NEW_ID);
 }
 
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_photo_id_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("clone_restore_highlight_get_new_highlight_photo_id_test_002 start");
+    ClearHighlightData();
+    cloneRestoreHighlight->photoInfoMap_ = PHOTO_INFO_MAP;
+    int32_t newId = cloneRestoreHighlight->GetNewHighlightPhotoId(TEST_NEW_ID);
+    EXPECT_EQ(newId, 0);
+}
+
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_photo_uri_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_get_new_highlight_photo_uri_test_001 start");
@@ -455,6 +465,15 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_ph
     cloneRestoreHighlight->photoInfoMap_ = PHOTO_INFO_MAP;
     string newUri = cloneRestoreHighlight->GetNewHighlightPhotoUri(TEST_ID);
     EXPECT_FALSE(newUri.empty());
+}
+
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_photo_uri_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("clone_restore_highlight_get_new_highlight_photo_uri_test_002 start");
+    ClearHighlightData();
+    cloneRestoreHighlight->photoInfoMap_ = PHOTO_INFO_MAP;
+    string newUri = cloneRestoreHighlight->GetNewHighlightPhotoUri(TEST_NEW_ID);
+    EXPECT_TRUE(newUri.empty());
 }
 
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_is_clone_highlight_test_001, TestSize.Level1)
@@ -689,6 +708,71 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_006, TestSize
     cloneRestoreCVAnalysis->ParseEffectlineFileData(newPlayInfo2, 0, restoreHighlight);
     EXPECT_TRUE(newPlayInfo2["effectline"]["effectline"][0].contains("fileId"));
     EXPECT_TRUE(newPlayInfo2["effectline"]["effectline"][0].contains("fileUri"));
+
+    ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_restore_highlight_albums_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("clone_restore_restore_highlight_albums_test_001 start");
+    ClearHighlightData();
+    CloneHighlightSource cloneHighlightSource;
+    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_ALBUM_TABLE,
+        HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE, ANALYSIS_ASSET_SD_MAP_TABLE,
+        ANALYSIS_ALBUM_ASSET_MAP_TABLE, PhotoColumn::PHOTOS_TABLE };
+    Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
+
+    CloneRestore restoreService;
+    restoreService.mediaRdb_ = cloneHighlightSource.cloneStorePtr_;
+    restoreService.mediaLibraryRdb_ = newRdbStore->GetRaw();
+    restoreService.photoInfoMap_ = PHOTO_INFO_MAP;
+    restoreService.RestoreHighlightAlbums();
+
+    string analysisCondition = "album_name = 'test_highlight_album'";
+    int32_t analysisCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), ANALYSIS_ALBUM_TABLE, analysisCondition);
+    EXPECT_GT(analysisCount, 0);
+
+    ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_restore_analysis_tables_data_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("clone_restore_restore_analysis_tables_data_test_001 start");
+    ClearHighlightData();
+    CloneHighlightSource cloneHighlightSource;
+    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, VISION_TOTAL_TABLE, VISION_RECOMMENDATION_TABLE };
+    Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
+
+    CloneRestore restoreService;
+    restoreService.mediaRdb_ = cloneHighlightSource.cloneStorePtr_;
+    restoreService.mediaLibraryRdb_ = newRdbStore->GetRaw();
+    restoreService.photoInfoMap_ = PHOTO_INFO_MAP;
+    restoreService.RestoreAnalysisTablesData();
+
+    string condition = " id > 0 ";
+    int32_t count = GetAlbumCountByCondition(newRdbStore->GetRaw(), VISION_RECOMMENDATION_TABLE, condition);
+    EXPECT_GT(count, 0);
+
+    ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_restore_analysis_tables_data_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("clone_restore_restore_analysis_tables_data_test_002 start");
+    ClearHighlightData();
+    CloneHighlightSource cloneHighlightSource;
+    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, VISION_TOTAL_TABLE, VISION_SALIENCY_TABLE };
+    Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
+
+    CloneRestore restoreService;
+    restoreService.mediaRdb_ = cloneHighlightSource.cloneStorePtr_;
+    restoreService.mediaLibraryRdb_ = newRdbStore->GetRaw();
+    restoreService.photoInfoMap_ = PHOTO_INFO_MAP;
+    restoreService.RestoreAnalysisTablesData();
+
+    string condition = " id > 0 ";
+    int32_t count = GetAlbumCountByCondition(newRdbStore->GetRaw(), VISION_SALIENCY_TABLE, condition);
+    EXPECT_GT(count, 0);
 
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
