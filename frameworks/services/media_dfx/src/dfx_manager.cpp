@@ -98,6 +98,15 @@ void DfxManager::HandleTimeOutOperation(std::string &bundleName, int32_t type, i
     dfxReporter_->ReportTimeOutOperation(bundleName, type, object, time);
 }
 
+void DfxManager::HandleControllerServiceError(uint32_t operationCode, int32_t errorCode)
+{
+    if (!isInitSuccess_) {
+        MEDIA_WARN_LOG("DfxManager not init");
+        return;
+    }
+    dfxReporter_->ReportControllerService(operationCode, errorCode);
+}
+
 int32_t DfxManager::HandleHighMemoryThumbnail(std::string &path, int32_t mediaType, int32_t width,
     int32_t height)
 {

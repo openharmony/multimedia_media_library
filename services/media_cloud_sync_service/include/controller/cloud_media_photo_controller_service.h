@@ -36,29 +36,29 @@
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaPhotoControllerService : public IPC::IMediaControllerService {
 private:
-    void OnFetchRecords(MessageParcel &data, MessageParcel &reply);
-    void OnDentryFileInsert(MessageParcel &data, MessageParcel &reply);
-    void GetCreatedRecords(MessageParcel &data, MessageParcel &reply);
-    void GetMetaModifiedRecords(MessageParcel &data, MessageParcel &reply);
-    void GetFileModifiedRecords(MessageParcel &data, MessageParcel &reply);
-    void GetDeletedRecords(MessageParcel &data, MessageParcel &reply);
-    void GetCopyRecords(MessageParcel &data, MessageParcel &reply);
-    void GetCheckRecords(MessageParcel &data, MessageParcel &reply);
-    void OnCreateRecords(MessageParcel &data, MessageParcel &reply);
-    void OnMdirtyRecords(MessageParcel &data, MessageParcel &reply);
-    void OnFdirtyRecords(MessageParcel &data, MessageParcel &reply);
-    void OnDeleteRecords(MessageParcel &data, MessageParcel &reply);
-    void OnCopyRecords(MessageParcel &data, MessageParcel &reply);
-    void GetRetryRecords(MessageParcel &data, MessageParcel &reply);
-    void OnStartSync(MessageParcel &data, MessageParcel &reply);
-    void OnCompleteSync(MessageParcel &data, MessageParcel &reply);
-    void OnCompletePull(MessageParcel &data, MessageParcel &reply);
-    void OnCompletePush(MessageParcel &data, MessageParcel &reply);
-    void OnCompleteCheck(MessageParcel &data, MessageParcel &reply);
-    void ReportFailure(MessageParcel &data, MessageParcel &reply);
+    int32_t OnFetchRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t OnDentryFileInsert(MessageParcel &data, MessageParcel &reply);
+    int32_t GetCreatedRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t GetMetaModifiedRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t GetFileModifiedRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t GetDeletedRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t GetCopyRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t GetCheckRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t OnCreateRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t OnMdirtyRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t OnFdirtyRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t OnDeleteRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t OnCopyRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t GetRetryRecords(MessageParcel &data, MessageParcel &reply);
+    int32_t OnStartSync(MessageParcel &data, MessageParcel &reply);
+    int32_t OnCompleteSync(MessageParcel &data, MessageParcel &reply);
+    int32_t OnCompletePull(MessageParcel &data, MessageParcel &reply);
+    int32_t OnCompletePush(MessageParcel &data, MessageParcel &reply);
+    int32_t OnCompleteCheck(MessageParcel &data, MessageParcel &reply);
+    int32_t ReportFailure(MessageParcel &data, MessageParcel &reply);
 
 private:
-    using RequestHandle = void (CloudMediaPhotoControllerService::*)(MessageParcel &, MessageParcel &);
+    using RequestHandle = int32_t (CloudMediaPhotoControllerService::*)(MessageParcel &, MessageParcel &);
     const std::map<uint32_t, RequestHandle> HANDLERS = {
         {static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_FETCH_RECORDS),
             &CloudMediaPhotoControllerService::OnFetchRecords},
@@ -108,7 +108,7 @@ public:
     {
         return this->HANDLERS.find(code) != this->HANDLERS.end();
     }
-    void OnRemoteRequest(
+    int32_t OnRemoteRequest(
         uint32_t code, MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context) override
     {
         auto it = this->HANDLERS.find(code);

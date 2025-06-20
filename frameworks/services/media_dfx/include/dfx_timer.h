@@ -17,19 +17,12 @@
 #define OHOS_MEDIA_DFX_TIMER_H
 
 #include <string>
+#include <map>
 
 namespace OHOS {
 namespace Media {
-
 #define EXPORT __attribute__ ((visibility ("default")))
-
 class DfxTimer {
-public:
-    EXPORT DfxTimer(int32_t type, int32_t object, int64_t timeOut, bool isReport);
-    EXPORT ~DfxTimer();
-    void End();
-    EXPORT void SetCallerUid(int32_t uid);
-
 private:
     int32_t type_;
     int32_t object_;
@@ -39,6 +32,14 @@ private:
     bool isReport_;
     bool isEnd_;
     int32_t uid_;
+    static const std::map<uint32_t, int64_t> operationCodeTimeoutMap;
+
+public:
+    EXPORT DfxTimer(int32_t type, int32_t object, int64_t timeOut, bool isReport);
+    EXPORT ~DfxTimer();
+    void End();
+    EXPORT void SetCallerUid(int32_t uid);
+    static uint64_t GetOperationCodeTimeout(uint32_t operationCode);
 };
 } // namespace Media
 } // namespace OHOS

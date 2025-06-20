@@ -35,15 +35,15 @@
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaDownloadControllerService : public IPC::IMediaControllerService {
 private:
-    void GetDownloadThms(MessageParcel &data, MessageParcel &reply);
-    void GetDownloadThmNum(MessageParcel &data, MessageParcel &reply);
-    void GetDownloadThmsByUri(MessageParcel &data, MessageParcel &reply);
-    void OnDownloadThms(MessageParcel &data, MessageParcel &reply);
-    void GetDownloadAsset(MessageParcel &data, MessageParcel &reply);
-    void OnDownloadAsset(MessageParcel &data, MessageParcel &reply);
+    int32_t GetDownloadThms(MessageParcel &data, MessageParcel &reply);
+    int32_t GetDownloadThmNum(MessageParcel &data, MessageParcel &reply);
+    int32_t GetDownloadThmsByUri(MessageParcel &data, MessageParcel &reply);
+    int32_t OnDownloadThms(MessageParcel &data, MessageParcel &reply);
+    int32_t GetDownloadAsset(MessageParcel &data, MessageParcel &reply);
+    int32_t OnDownloadAsset(MessageParcel &data, MessageParcel &reply);
 
 private:
-    using RequestHandle = void (CloudMediaDownloadControllerService::*)(MessageParcel &, MessageParcel &);
+    using RequestHandle = int32_t (CloudMediaDownloadControllerService::*)(MessageParcel &, MessageParcel &);
     const std::map<uint32_t, RequestHandle> HANDLERS = {
         {static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_DOWNLOAD_THM),
             &CloudMediaDownloadControllerService::GetDownloadThms},
@@ -65,7 +65,7 @@ public:
     {
         return this->HANDLERS.find(code) != this->HANDLERS.end();
     }
-    void OnRemoteRequest(
+    int32_t OnRemoteRequest(
         uint32_t code, MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context) override
     {
         auto it = this->HANDLERS.find(code);
