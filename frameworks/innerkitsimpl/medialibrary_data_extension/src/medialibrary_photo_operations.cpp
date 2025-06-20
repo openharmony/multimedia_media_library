@@ -4249,21 +4249,16 @@ int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd
     int32_t targetAlbumId = 0;
     CHECK_AND_RETURN_RET(
         GetInt32FromValuesBucket(values, PhotoColumn::PHOTO_OWNER_ALBUM_ID, targetAlbumId), E_HAS_DB_ERROR);
-    int32_t rowId = UpdateFileInDb(cmd);
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    int32_t rowId = -1;
+    assetRefresh.Update(cmd, rowId);
     CHECK_AND_RETURN_RET_LOG(rowId >= 0, rowId, "Update Photo In database failed, rowId=%{public}d", rowId);
 
-    PhotoAlbumType type;
-    PhotoAlbumSubType subType;
-    CHECK_AND_RETURN_RET_LOG(GetAlbumTypeSubTypeById(to_string(targetAlbumId), type, subType) ==
-        E_SUCCESS, E_INVALID_ARGUMENTS, "invalid album uri");
-    CHECK_AND_EXECUTE(!PhotoAlbum::IsUserPhotoAlbum(type, subType), MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) }, false, true));
-
-    CHECK_AND_EXECUTE(!PhotoAlbum::IsSourceAlbum(type, subType), MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) }, false, true));
+    assetRefresh.RefreshAlbum();
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_EXECUTE(watch == nullptr, watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
         NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId));
+    assetRefresh.Notify();
     return rowId;
 }
 
