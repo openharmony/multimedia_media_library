@@ -34,6 +34,7 @@
 #include "medialibrary_photo_operations.h"
 #include "vision_column.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_tracer.h"
 #include "photo_album_column.h"
@@ -58,9 +59,12 @@
 #include "file_asset.h"
 #include "medialibrary_app_uri_sensitive_operations.h"
 #include "medialibrary_app_uri_permission_operations.h"
+#include "medialibrary_urisensitive_operations.h"
+#include "medialibrary_uripermission_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
 constexpr int32_t PHOTO_HIDDEN_FLAG = 1;
@@ -302,6 +306,43 @@ bool MediaAssetsRdbOperations::QueryAlbumIdIfExists(const std::string& albumId)
     return count == 1;
 }
 
+int32_t MediaAssetsRdbOperations::GrantPhotoUrisPermissionInner(MediaLibraryCommand &cmd,
+    const std::vector<DataShare::DataShareValuesBucket> &values)
+{
+    int32_t ret = UriSensitiveOperations::GrantUriSensitive(cmd, values);
+    CHECK_AND_RETURN_RET(ret >= 0, ret);
+    return UriPermissionOperations::GrantUriPermission(cmd, values);
+}
+
+int32_t MediaAssetsRdbOperations::CancelPhotoUrisPermissionInner(MediaLibraryCommand &cmd,
+    const DataShare::DataSharePredicates &values)
+{
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(values,
+        cmd.GetTableName());
+    int32_t errCode = MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
+    MEDIA_INFO_LOG("MediaAssetsService::CancelPhotoUriPermissionInner ret:%{public}d", errCode);
+    return errCode;
+}
+
+int32_t MediaAssetsRdbOperations::CheckPhotoUriPermissionInner(MediaLibraryCommand &cmd,
+    const DataShare::DataSharePredicates &predicates, const std::vector<std::string> &columns,
+    std::vector<std::string> &outFileIds, std::vector<int32_t> &permissionTypes)
+{
+    cmd.SetDataSharePred(predicates);
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    if (queryResultSet == nullptr) {
+        MEDIA_ERR_LOG("queryResultSet is nullptr! errCode: %{public}d", errCode);
+        return errCode;
+    }
+    shared_ptr<DataShareResultSet> dataShareResultSet = make_shared<DataShareResultSet>(queryResultSet);
+    while (dataShareResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        outFileIds.emplace_back(GetStringVal(AppUriPermissionColumn::FILE_ID, dataShareResultSet));
+        permissionTypes.emplace_back(GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, dataShareResultSet));
+    }
+    return errCode;
+}
+
 void MediaAssetsRdbOperations::QueryAssetsUri(const std::vector<std::string> &fileIds,
     std::vector<std::string> &uris)
 {
@@ -512,5 +553,19 @@ int32_t MediaAssetsRdbOperations::QueryEnhancementTaskState(const string& photoU
     dto.ceErrorCode = GetInt32Val(PhotoColumn::PHOTO_CE_STATUS_CODE, resultSet);
     resultSet->Close();
     return E_OK;
+}
+
+std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsRdbOperations::GetUrisByOldUrisInner(MediaLibraryCommand &cmd,
+    const DataShare::DataSharePredicates &predicates, const std::vector<std::string> &columns)
+{
+    cmd.SetDataSharePred(predicates);
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    if (queryResultSet == nullptr) {
+        MEDIA_ERR_LOG("queryResultSet is nullptr! errCode: %{public}d", errCode);
+        return nullptr;
+    }
+    shared_ptr<DataShareResultSet> dataShareResultSet = make_shared<DataShareResultSet>(queryResultSet);
+    return dataShareResultSet;
 }
 } // namespace OHOS::Media

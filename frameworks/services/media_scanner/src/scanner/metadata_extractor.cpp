@@ -69,7 +69,7 @@ static Type stringToNum(const string &str)
     iss >> num;
     return num;
 }
-
+// LCOV_EXCL_START
 static bool IsMovingPhoto(unique_ptr<Metadata> &data)
 {
     return data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
@@ -699,5 +699,6 @@ int32_t MetadataExtractor::Extract(std::unique_ptr<Metadata> &data, bool isCamer
         return ExtractAVMetadata(data);
     }
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

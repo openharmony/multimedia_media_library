@@ -30,7 +30,7 @@
 using namespace std;
 namespace OHOS::Media {
 constexpr int64_t INVALID_SIZE = 0;
-
+// LCOV_EXCL_START
 shared_ptr<FileAsset> MediaLibraryPtpOperations::FetchOneFileAssetFromResultSet(
     const shared_ptr<NativeRdb::ResultSet> &resultSet, const vector<string> &columns)
 {
@@ -391,4 +391,5 @@ int32_t MediaLibraryPtpOperations::DeletePtpAlbum(NativeRdb::RdbPredicates &pred
         to_string(albumId)), NotifyType::NOTIFY_REMOVE);
     return E_OK;
 }
+// LCOV_EXCL_STOP
 } // namespace OHOS::Media

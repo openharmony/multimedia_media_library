@@ -2075,15 +2075,15 @@ static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext &co
     auto photoProxyObj = objInfo->GetPhotoProxyObj();
     CHECK_COND_RET(photoProxyObj != nullptr, false, "Failed to check photoProxyObj");
 
-    NAPI_INFO_LOG("photoId: %{public}s", photoProxyObj->GetPhotoId().c_str());
-
     AddImageReqBody reqBody;
     reqBody.fileId = fileAsset->GetId();
     reqBody.photoId = photoProxyObj->GetPhotoId();
     NAPI_INFO_LOG("photoId: %{public}s", photoProxyObj->GetPhotoId().c_str());
     reqBody.deferredProcType = static_cast<int32_t>(photoProxyObj->GetDeferredProcType());
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_ADD_IMAGE);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to set, err: %{public}d", changedRows);
@@ -2214,7 +2214,9 @@ static bool SetFavoriteExecute(MediaAssetChangeRequestAsyncContext &context)
     reqBody.fileId = fileAsset->GetId();
     reqBody.favorite = fileAsset->IsFavorite();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_FAVORITE);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
@@ -2237,7 +2239,9 @@ static bool SetHiddenExecute(MediaAssetChangeRequestAsyncContext &context)
     reqBody.uri = fileAsset->GetUri();
     reqBody.hidden = fileAsset->IsHidden();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_HIDDEN);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
@@ -2267,7 +2271,9 @@ static bool SetTitleExecute(MediaAssetChangeRequestAsyncContext& context)
     reqBody.fileId = fileAsset->GetId();
     reqBody.title = fileAsset->GetTitle();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_TITLE);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
@@ -2290,7 +2296,9 @@ static bool SetOrientationExecute(MediaAssetChangeRequestAsyncContext &context)
     reqBody.fileId = fileAsset->GetId();
     reqBody.orientation = fileAsset->GetOrientation();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_ORIENTATION);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
@@ -2313,7 +2321,9 @@ static bool SetUserCommentExecute(MediaAssetChangeRequestAsyncContext& context)
     reqBody.fileId = fileAsset->GetId();
     reqBody.userComment = fileAsset->GetUserComment();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_USER_COMMENT);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
@@ -2341,7 +2351,9 @@ static bool SetEffectModeExecute(MediaAssetChangeRequestAsyncContext &context)
     reqBody.fileId = fileAsset->GetId();
     reqBody.effectMode = fileAsset->GetMovingPhotoEffectMode();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_EFFECT_MODE);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to SetEffectModeExecute of asset, err: %{public}d", changedRows);
@@ -2386,7 +2398,9 @@ static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext &context)
     reqBody.latitude = fileAsset->GetLatitude();
     reqBody.longitude = fileAsset->GetLongitude();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_LOCATION);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
@@ -2415,7 +2429,9 @@ static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context
     reqBody.fileId = fileAsset->GetId();
     reqBody.cameraShotKey = fileAsset->GetCameraShotKey();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_CAMERA_SHOT_KEY);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
@@ -2469,7 +2485,9 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext &context)
         reqBody.cameraShotKey = fileAsset->GetCameraShotKey();
     }
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_CAMERA_PHOTO);
-    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t ret = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (ret < 0) {
         NAPI_ERR_LOG("save camera photo fail");
     }
@@ -2491,7 +2509,9 @@ static bool SetVideoEnhancementAttr(MediaAssetChangeRequestAsyncContext &context
     reqBody.photoId = fileAsset->GetPhotoId();
     reqBody.path = fileAsset->GetPath();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_VIDEO_ENHANCEMENT_ATTR);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to SetVideoEnhancementAttr of asset, err: %{public}d", changedRows);
@@ -2517,7 +2537,9 @@ static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext &context)
     AssetChangeReqBody reqBody;
     reqBody.values = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_EDIT_DATA);
-    ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    ret = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (ret < 0) {
         context.SaveError(ret);
         NAPI_ERR_LOG("Failed to add filters, ret: %{public}d", ret);
@@ -2535,7 +2557,9 @@ static bool DiscardCameraPhotoExecute(MediaAssetChangeRequestAsyncContext &conte
     AssetChangeReqBody reqBody;
     reqBody.fileId = fileAsset->GetId();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::DISCARD_CAMERA_PHOTO);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
@@ -2567,7 +2591,9 @@ static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext
     reqBody.fileId = fileAsset->GetId();
     reqBody.watermarkType = fileAsset->GetSupportedWatermarkType();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUPPORTED_WATERMARK_TYPE);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to update supported_watermark_type of asset, err: %{public}d", changedRows);

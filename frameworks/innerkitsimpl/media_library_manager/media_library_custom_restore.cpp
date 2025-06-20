@@ -24,6 +24,10 @@
 #include "medialibrary_errno.h"
 #include "system_ability_definition.h"
 #include "userfilemgr_uri.h"
+#include "user_base_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "restore_vo.h"
+#include "stop_restore_vo.h"
 
 namespace OHOS {
 namespace Media {
@@ -84,16 +88,16 @@ int32_t CustomRestore::Restore()
     CHECK_AND_RETURN_RET_LOG(!bundleName_.empty(), E_INVALID_VALUES, "bundleName is empty.");
     CHECK_AND_RETURN_RET_LOG(!appName_.empty(), E_INVALID_VALUES, "appName is empty.");
 
-    Uri customRestoreUri(PAH_CUSTOM_RESTORE);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put("albumLpath", albumLpath_);
-    valuesBucket.Put("keyPath", keyPath_);
-    std::string isDeduplicationStr = isDeduplication_ ? "true" : "false";
-    valuesBucket.Put("isDeduplication", isDeduplicationStr);
-    valuesBucket.Put("bundleName", bundleName_);
-    valuesBucket.Put("appName", appName_);
-    valuesBucket.Put("appId", appId_);
-    int32_t result = sDataShareHelper_->Insert(customRestoreUri, valuesBucket);
+    RestoreReqBody reqBody;
+    reqBody.albumLpath = albumLpath_;
+    reqBody.keyPath = keyPath_;
+    reqBody.bundleName = bundleName_;
+    reqBody.appName = appName_;
+    reqBody.appId = appId_;
+    reqBody.isDeduplication = isDeduplication_;
+    int32_t result = IPC::UserBaseIPCClient()
+                         .SetDataShareHelper(sDataShareHelper_)
+                         .Call(static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE), reqBody);
     MEDIA_DEBUG_LOG("CustomRestore Restore end. %{public}d", result);
     return result;
 }
@@ -102,10 +106,12 @@ int32_t CustomRestore::StopRestore()
 {
     MEDIA_DEBUG_LOG("CustomRestore StopRestore");
     CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_DATASHARE_IS_NULL, "sDataShareHelper_ is null.");
-    Uri cancelUri(PAH_CUSTOM_RESTORE_CANCEL);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put("keyPath", keyPath_);
-    int32_t result = sDataShareHelper_->Insert(cancelUri, valuesBucket);
+
+    StopRestoreReqBody reqBody;
+    reqBody.keyPath = keyPath_;
+    int32_t result = IPC::UserBaseIPCClient()
+                         .SetDataShareHelper(sDataShareHelper_)
+                         .Call(static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE_CANCEL), reqBody);
     MEDIA_DEBUG_LOG("CustomRestore StopRestore end. %{public}d", result);
     return result;
 }

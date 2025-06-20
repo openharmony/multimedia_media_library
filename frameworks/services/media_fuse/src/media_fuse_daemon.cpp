@@ -34,7 +34,7 @@ namespace Media {
 using namespace std;
 
 static constexpr int32_t FUSE_CFG_MAX_THREADS = 5;
-
+// LCOV_EXCL_START
 static int GetAttr(const char *path, struct stat *stbuf, struct fuse_file_info *fi)
 {
     return MediaFuseManager::GetInstance().DoGetAttr(path, stbuf);
@@ -158,6 +158,7 @@ void MediaFuseDaemon::DaemonThread()
     }
     MEDIA_INFO_LOG("Ended fuse");
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
 

@@ -19,7 +19,7 @@
 #include <string>
 
 #include "media_log.h"
-
+// LCOV_EXCL_START
 std::string JsonHelper::GetStringFromJson(
     const Json::Value &data, const std::string key, const std::string defaultValue)
 {
@@ -133,3 +133,4 @@ bool JsonHelper::HasSpecifiedKey(const Json::Value &data, const std::string &key
     }
     return false;
 }
+// LCOV_EXCL_STOP

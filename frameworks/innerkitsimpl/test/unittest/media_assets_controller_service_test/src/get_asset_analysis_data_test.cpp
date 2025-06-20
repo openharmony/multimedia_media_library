@@ -31,6 +31,8 @@
 #include "media_file_utils.h"
 #include "mimetype_utils.h"
 #include "parameter_utils.h"
+#include "vision_total_column.h"
+#include "vision_aesthetics_score_column.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -81,7 +83,8 @@ static void InsertAsset(const std::string &displayName, int32_t pending = 0)
     int64_t now = MediaFileUtils::UTCTimeMilliSeconds();
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ext);
     int32_t mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
-    errCode = MediaLibraryAssetOperations::CreateAssetPathById(static_cast<int32_t>(now), mediaType, ext, assetPath);
+    int32_t id = (now > 0 && now <= INT32_MAX) ? static_cast<int32_t>(now) : 1;
+    errCode = MediaLibraryAssetOperations::CreateAssetPathById(id, mediaType, ext, assetPath);
     CHECK_AND_RETURN_LOG(errCode == E_OK, "CreateAssetPathById errCode:%{public}d", errCode);
 
     std::vector<std::pair<std::string, std::string>> items = {
@@ -111,8 +114,32 @@ static void InsertAsset(const std::string &displayName, int32_t pending = 0)
     CHECK_AND_RETURN_LOG(errCode == E_OK, "ExecuteSql errCode:%{public}d", errCode);
 
     MEDIA_INFO_LOG("CreateFile assetPath:%{public}s", assetPath.c_str());
-    std::this_thread::sleep_for(std::chrono::seconds(10));
     MediaFileUtils::CreateFile(assetPath);
+}
+
+static void InsertAnalysisTotal(int32_t fileId)
+{
+    std::vector<std::pair<std::string, std::string>> items = {
+        {MediaColumn::MEDIA_ID, to_string(fileId)},
+        {STATUS, "0"}, {OCR, "0"}, {LABEL, "0"}, {AESTHETICS_SCORE, "0"}, {FACE, "0"},
+        {OBJECT, "0"}, {RECOMMENDATION, "0"}, {SEGMENTATION, "0"}, {COMPOSITION, "0"},
+        {SALIENCY, "0"}, {HEAD, "0"}, {POSE, "0"}, {GEO, "0"},
+        {SELECTED, "0"}, {NEGATIVE, "0"}, {ABSTRACT_NODE_ANALYSIS, "0"},
+    };
+
+    std::string values;
+    std::string columns;
+    for (const auto &item : items) {
+        if (!columns.empty()) {
+            columns.append(",");
+            values.append(",");
+        }
+        columns.append(item.first);
+        values.append(item.second);
+    }
+    std::string sql = "INSERT INTO " + VISION_TOTAL_TABLE + "(" + columns + ") VALUES (" + values + ")";
+    int32_t errCode = g_rdbStore->ExecuteSql(sql);
+    CHECK_AND_RETURN_LOG(errCode == E_OK, "ExecuteSql errCode:%{public}d", errCode);
 }
 
 static int32_t GetAssetId(const std::string &displayName)
@@ -161,14 +188,17 @@ void GetAssetAnalysisDataTest::SetUpTestCase(void)
     }
 
     ClearAssetsFile();
+    ClearTable(VISION_TOTAL_TABLE);
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     InsertAsset("GetAssetAnalysisData_Test.jpg");
+    InsertAnalysisTotal(GetAssetId("GetAssetAnalysisData_Test.jpg"));
     MEDIA_INFO_LOG("SetUpTestCase");
 }
 
 void GetAssetAnalysisDataTest::TearDownTestCase(void)
 {
     ClearAssetsFile();
+    ClearTable(VISION_TOTAL_TABLE);
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     MEDIA_INFO_LOG("TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));

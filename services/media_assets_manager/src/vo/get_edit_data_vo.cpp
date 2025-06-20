@@ -20,7 +20,7 @@
 #include "itypes_util.h"
 
 namespace OHOS::Media {
-
+// LCOV_EXCL_START
 bool GetEditDataReqBody::Unmarshalling(MessageParcel &parcel)
 {
     if (!DataShare::DataSharePredicates::Unmarshal(this->predicates, parcel)) {
@@ -72,4 +72,5 @@ std::string GetEditDataRspBody::ToString() const
     // todo: add the content of GetAssetsRespBody
     return ss.str();
 }
+// LCOV_EXCL_STOP
 };

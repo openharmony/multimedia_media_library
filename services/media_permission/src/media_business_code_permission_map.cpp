@@ -84,6 +84,7 @@ std::unordered_set<uint32_t> PermissionCheck::deprecatedWritePermissionSet = {
     static_cast<uint32_t>(MediaLibraryBusinessCode::SET_ORIENTATION),
     static_cast<uint32_t>(MediaLibraryBusinessCode::SET_VIDEO_ENHANCEMENT_ATTR),
     static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUPPORTED_WATERMARK_TYPE),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_ASSET),
     // albums start
     static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ALBUM),
     static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS),
@@ -103,7 +104,11 @@ std::unordered_set<uint32_t> PermissionCheck::deprecatedWritePermissionSet = {
 };
 // API whitelist for check grant operation permission
 std::unordered_set<uint32_t> PermissionCheck::grantOperationPermissionSet = {
-    static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_BUSINESS_CODE_START)};
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CANCEL_PHOTO_URI_PERMISSION),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GRANT_PHOTO_URI_PERMISSION),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_PHOTO_URI_PERMISSION),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_AUDIO_URI_PERMISSION),
+};
 // API whitelist for check media tool operation permission
 std::unordered_set<uint32_t> PermissionCheck::mediaToolOperationPermissionSet = {
     static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_BUSINESS_CODE_START)};
