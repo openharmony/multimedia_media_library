@@ -389,6 +389,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
         MediaLibraryRdbStore::Query(predicates, columns));
     CHECK_AND_RETURN_RET(cmd.GetOprnType() != OperationType::EDIT_DATA_EXISTS,
         MediaLibraryRdbStore::QueryEditDataExists(predicates));
+    CHECK_AND_RETURN_RET(cmd.GetOprnType() != OperationType::MOVING_PHOTO_VIDEO_READY,
+        MediaLibraryRdbStore::QueryMovingPhotoVideoReady(predicates));
     MediaLibraryRdbUtils::AddQueryIndex(predicates, columns);
     return MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
 }

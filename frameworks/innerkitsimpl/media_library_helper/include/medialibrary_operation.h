@@ -113,6 +113,7 @@ enum class EXPORT OperationObject : uint32_t {
     ASSET_ALBUM_OPERATION,
     PTP_ALBUM_OPERATION,
     CUSTOM_RECORDS_OPERATION,
+    MOVING_PHOTO_VIDEO_READY,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -223,6 +224,7 @@ enum class EXPORT OperationType : uint32_t {
     SET_SOURCE_ALBUM_COVER_URI,
     SET_SYSTEM_ALBUM_COVER_URI,
     RESET_COVER_URI,
+    MOVING_PHOTO_VIDEO_READY,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

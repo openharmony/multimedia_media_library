@@ -2404,6 +2404,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<Fil
 template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<AlbumNapiAsyncContext>>(napi_env env,
     napi_callback_info info, unique_ptr<AlbumNapiAsyncContext> &context);
 
+template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<MovingPhotoAsyncContext>>(napi_env env,
+    napi_callback_info info, unique_ptr<MovingPhotoAsyncContext> &context);
+
 template napi_status MediaLibraryNapiUtils::ParsePredicates<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     const napi_value arg, unique_ptr<MediaLibraryAsyncContext> &context, const FetchOptionType &fetchOptType);
 } // namespace Media

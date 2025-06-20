@@ -223,6 +223,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryOperation(
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::EDIT_DATA_EXISTS:
+        case OperationObject::MOVING_PHOTO_VIDEO_READY:
             return MediaLibraryPhotoOperations::Query(cmd, columns);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Query(cmd, columns);

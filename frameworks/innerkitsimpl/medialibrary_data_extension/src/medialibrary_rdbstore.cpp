@@ -76,6 +76,7 @@
 #include "story_play_info_column.h"
 #include "dfx_const.h"
 #include "dfx_timer.h"
+#include "dfx_utils.h"
 #include "vision_multi_crop_column.h"
 #include "preferences.h"
 #include "preferences_helper.h"
@@ -875,6 +876,24 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryEditDataExists(
     CHECK_AND_RETURN_RET(!cond,
         MediaLibraryRdbStore::GetRaw()->QuerySql("SELECT 1 AS hasEditData"));
     return MediaLibraryRdbStore::GetRaw()->QuerySql("SELECT 0 AS hasEditData");
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryMovingPhotoVideoReady(
+    const NativeRdb::AbsRdbPredicates &predicates)
+{
+    vector<string> columns = { MediaColumn::MEDIA_FILE_PATH };
+    shared_ptr<NativeRdb::ResultSet> resultSet = Query(predicates, columns);
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, resultSet, "query moving photo video ready err");
+
+    string photoPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    size_t fileSize;
+    auto videoPath = MediaFileUtils::GetMovingPhotoVideoPath(photoPath);
+    cond = MediaFileUtils::GetFileSize(videoPath, fileSize) && (fileSize > 0);
+    MEDIA_DEBUG_LOG("photoPath:%{public}s, videoPath:%{public}s, video size:%zu",
+        DfxUtils::GetSafePath(photoPath).c_str(), DfxUtils::GetSafePath(videoPath).c_str(), fileSize);
+    CHECK_AND_RETURN_RET(!cond, MediaLibraryRdbStore::GetRaw()->QuerySql("SELECT 1 AS movingPhotoVideoReady"));
+    return MediaLibraryRdbStore::GetRaw()->QuerySql("SELECT 0 AS movingPhotoVideoReady");
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUriForPhotos(const AbsRdbPredicates &predicates,

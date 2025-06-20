@@ -35,6 +35,7 @@
 #include "userfile_manager_types.h"
 #include "moving_photo_call_transcoder.h"
 #include "permission_utils.h"
+#include "userfilemgr_uri.h"
 #include "medialibrary_business_code.h"
 #include "request_content_vo.h"
 #include "user_define_ipc_client.h"
@@ -69,6 +70,7 @@ napi_value MovingPhotoNapi::Init(napi_env env, napi_value exports)
         .props = {
             DECLARE_NAPI_FUNCTION("requestContent", JSRequestContent),
             DECLARE_NAPI_FUNCTION("getUri", JSGetUri),
+            DECLARE_NAPI_FUNCTION("isVideoReady", JSIsVideoReady),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -1044,6 +1046,97 @@ void MovingPhotoNapi::CallRequestContentCallBack(napi_env env, void* context, in
         napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
         (void)asyncContext.release();
     }
+}
+
+static void IsSandBoxMovingPhotoVideoReady(MovingPhotoAsyncContext *context, string &videoUri)
+{
+    AppFileService::ModuleFileUri::FileUri fileUri(videoUri);
+    std::string videoPath = fileUri.GetRealPath();
+    size_t fileSize = 0;
+    context->isVideoReady = MediaFileUtils::GetFileSize(videoPath, fileSize) && (fileSize > 0);
+    NAPI_DEBUG_LOG("videoUri:%{public}s, video size:%zu", videoUri.c_str(), fileSize);
+}
+
+static void IsMovingPhotoVideoReady(MovingPhotoAsyncContext *context)
+{
+    DataShare::DataSharePredicates predicates;
+    string queryId = MediaFileUtils::GetIdFromUri(context->movingPhotoUri);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, queryId);
+    vector<string> columns;
+    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY + "/"
+         + MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY);
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    if (errCode == E_PERMISSION_DENIED) {
+        context->error = OHOS_PERMISSION_DENIED_CODE;
+        return;
+    }
+    if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
+        NAPI_ERR_LOG("Query movingphoto fail");
+        context->error = JS_E_INNER_FAIL;
+        return;
+    }
+    int32_t ready;
+    if (resultSet->GetInt(0, ready) != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("can not get movingphoto video ready");
+        context->error = JS_E_INNER_FAIL;
+        return;
+    }
+    NAPI_INFO_LOG("movingphoto video ready:%d", ready);
+    context->isVideoReady = (ready != 0);
+}
+
+static void IsVideoReadyExecute(napi_env env, void *data)
+{
+    MovingPhotoAsyncContext *context = static_cast<MovingPhotoAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    if (MediaFileUtils::IsMediaLibraryUri(context->movingPhotoUri)) {
+        IsMovingPhotoVideoReady(context);
+        return;
+    }
+
+    std::vector<std::string> uris;
+    if (MediaFileUtils::SplitMovingPhotoUri(context->movingPhotoUri, uris)) {
+        IsSandBoxMovingPhotoVideoReady(context, uris[MOVING_PHOTO_VIDEO_POS]);
+        return;
+    }
+
+    NAPI_ERR_LOG("Failed to check uri of moving photo:%{public}s", context->movingPhotoUri.c_str());
+    context->error = JS_E_INNER_FAIL;
+}
+
+static void IsVideoReadyComplete(napi_env env, napi_status status, void *data)
+{
+    MovingPhotoAsyncContext *context = static_cast<MovingPhotoAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> outContext = make_unique<JSAsyncContextOutput>();
+    outContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &outContext->data), JS_E_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &outContext->error), JS_E_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env, napi_get_boolean(env, context->isVideoReady, &outContext->data), JS_E_INNER_FAIL);
+        outContext->status = true;
+    } else {
+        context->HandleError(env, outContext->error);
+    }
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, nullptr, context->work, *outContext);
+    }
+    delete context;
+}
+
+napi_value MovingPhotoNapi::JSIsVideoReady(napi_env env, napi_callback_info info)
+{
+    NAPI_DEBUG_LOG("JSIsVideoReady start");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    auto asyncContext = make_unique<MovingPhotoAsyncContext>();
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext), JS_E_INNER_FAIL);
+    asyncContext->movingPhotoUri = asyncContext->objectInfo->GetUri();
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSIsVideoReady",
+        IsVideoReadyExecute, IsVideoReadyComplete);
 }
 } // namespace Media
 } // namespace OHOS
