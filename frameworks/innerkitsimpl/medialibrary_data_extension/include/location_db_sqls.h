@@ -53,6 +53,16 @@ const std::string CREATE_GEO_DICTIONARY_TABLE =
     LANGUAGE + " TEXT, " +
     CITY_NAME + " TEXT) ";
 
+const std::string CREATE_SEGMENTATION_ANALYSIS_TABLE =
+    "CREATE TABLE IF NOT EXISTS tab_analysis_segmentation ( "
+    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+    "file_id INT UNIQUE, "
+    "segmentation_area TEXT, "
+    "segmentation_name INT, "
+    "prob REAL, "
+    "segmentation_version TEXT, "
+    "analysis_version TEXT) ";
+
 const std::string CREATE_CITY_NAME_INDEX =
     BaseColumn::CreateIndex() + LOCATION_CITY_NAME_INDEX + " ON " + GEO_DICTIONARY_TABLE +
     " (" + LANGUAGE + " DESC," + CITY_NAME + " ASC)";

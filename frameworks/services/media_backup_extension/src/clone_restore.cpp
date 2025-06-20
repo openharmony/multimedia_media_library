@@ -204,7 +204,9 @@ const unordered_map<string, ResultSetDataType> COLUMN_TYPE_MAP = {
     { "INTEGER", ResultSetDataType::TYPE_INT32 },
     { "BIGINT", ResultSetDataType::TYPE_INT64 },
     { "DOUBLE", ResultSetDataType::TYPE_DOUBLE },
+    { "REAL", ResultSetDataType::TYPE_DOUBLE },
     { "TEXT", ResultSetDataType::TYPE_STRING },
+    { "BLOB", ResultSetDataType::TYPE_BLOB },
 };
 const unordered_map<string, string> ALBUM_URI_PREFIX_MAP = {
     { PhotoAlbumColumns::TABLE, PhotoAlbumColumns::ALBUM_URI_PREFIX },
@@ -1646,11 +1648,41 @@ void CloneRestore::RestoreGallery()
     InheritManualCover();
 }
 
+void CloneRestore::RestoreAnalysisTablesData()
+{
+    cloneRestoreAnalysisData_.Init(this->sceneCode_, this->taskId_, mediaRdb_, mediaLibraryRdb_);
+    std::unordered_set<std::string> excludedColumns = {"id", "file_id"};
+    vector<std::string> analysisTables = {
+        "tab_analysis_head",
+        "tab_analysis_pose",
+        "tab_analysis_composition",
+        "tab_analysis_ocr",
+        "tab_analysis_segmentation",
+        "tab_analysis_object"
+    };
+
+    vector<std::string> totalTypes = {
+        "head",
+        "pose",
+        "composition",
+        "ocr",
+        "segmentation",
+        "object"
+    };
+
+    for (size_t index = 0; index < analysisTables.size(); index++) {
+        std::string table = analysisTables[index];
+        std::string type = totalTypes[index];
+        cloneRestoreAnalysisData_.CloneAnalysisData(table, type, photoInfoMap_, excludedColumns);
+    }
+}
+
 void CloneRestore::RestoreAnalysisData()
 {
     RestoreSearchIndexData();
     RestoreBeautyScoreData();
     RestoreVideoFaceData();
+    RestoreAnalysisTablesData();
 }
 
 void CloneRestore::RestoreSearchIndexData()

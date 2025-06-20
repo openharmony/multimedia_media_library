@@ -54,6 +54,7 @@ ohos_shared_library("mediabackup") {
     "./src/analysis_album/search_index_clone.cpp",
     "./src/analysis_album/video_face_clone.cpp",
     "./src/analysis_data/clone_restore_analysis_total.cpp",
+    "./src/analysis_data/clone_restore_analysis_data.cpp",
     "./src/backup_database_helper.cpp",
     "./src/backup_database_utils.cpp",
     "./src/backup_dfx_utils.cpp",

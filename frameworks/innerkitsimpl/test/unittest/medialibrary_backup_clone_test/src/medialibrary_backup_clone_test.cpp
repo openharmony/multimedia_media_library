@@ -28,6 +28,7 @@
 #include "backup_restore_service.h"
 #include "base_restore.h"
 #include "clone_restore.h"
+#include "clone_restore_analysis_data.h"
 #include "clone_restore_geo.h"
 #include "clone_restore_classify.h"
 #include "video_face_clone.h"
@@ -74,9 +75,13 @@ const string TEST_FILE_PATH_VIDEO = "test_file_path_video";
 const string TEST_FILE_PATH_AUDIO = "test_file_path_audio";
 const string TASK_ID = "1";
 const string TEST_DIR_PATH = "test";
+const string SEGMENTATION_ANALYSIS_TABLE = "tab_analysis_segmentation";
+const string SEGMENTATION_TYPE = "segmentation";
+const int32_t SEGMENTATION_TABLE_SIZE = 7;
 const int32_t TEST_ORIENTATION_ZERO = 0;
 const int32_t TEST_ORIENTATION_NINETY = 90;
 const int32_t I_PHONE_DYNAMIC_VIDEO_TYPE = 13;
+const int32_t PAGE_SIZE = 200;
 const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
     "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " != " +
@@ -87,6 +92,7 @@ const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE,
     "DELETE FROM " + AudioColumn::AUDIOS_TABLE,
     "DELETE FROM " + GEO_DICTIONARY_TABLE,
+    "DELETE FROM " + SEGMENTATION_ANALYSIS_TABLE,
     "DELETE FROM " + VISION_LABEL_TABLE,
     "DELETE FROM " + VISION_VIDEO_LABEL_TABLE,
     "DELETE FROM " + GEO_KNOWLEDGE_TABLE,
@@ -3241,6 +3247,101 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_video_fa
     VerifyVideoFaceRestore(g_rdbStore->GetRaw(), photoInfoMap);
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
     MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_video_face_test_001");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_analysis_data_test_001");
+    ClearData();
+    CloneSource cloneSource;
+    vector<std::string> tableList = { SEGMENTATION_ANALYSIS_TABLE, VISION_TOTAL_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    std::shared_ptr<CloneRestoreAnalysisData> cloneAnalysisData = make_shared<CloneRestoreAnalysisData>();
+    cloneAnalysisData->Init(CLONE_RESTORE_ID, TASK_ID, cloneSource.cloneStorePtr_, g_rdbStore->GetRaw());
+    cloneAnalysisData->table_ = SEGMENTATION_ANALYSIS_TABLE;
+    std::unordered_set<std::string> excludedColumns = {"id", "file_id"};
+    auto commonColumns = cloneAnalysisData->GetTableCommonColumns(excludedColumns);
+    EXPECT_EQ(commonColumns.size(), SEGMENTATION_TABLE_SIZE - excludedColumns.size());
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_analysis_data_test_002");
+    ClearData();
+    CloneSource cloneSource;
+    vector<std::string> tableList = { SEGMENTATION_ANALYSIS_TABLE, VISION_TOTAL_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    std::shared_ptr<CloneRestoreAnalysisData> cloneAnalysisData = make_shared<CloneRestoreAnalysisData>();
+    cloneAnalysisData->Init(CLONE_RESTORE_ID, TASK_ID, cloneSource.cloneStorePtr_, g_rdbStore->GetRaw());
+    cloneAnalysisData->table_ = SEGMENTATION_ANALYSIS_TABLE;
+
+    cloneSource.Insert(tableList);
+    std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
+    PhotoInfo photoInfo;
+    photoInfoMap[1] = photoInfo;
+    cloneAnalysisData->cloneRestoreAnalysisTotal_.mediaRdb_ = cloneSource.cloneStorePtr_;
+    cloneAnalysisData->cloneRestoreAnalysisTotal_.type_ = SEGMENTATION_TYPE;
+    cloneAnalysisData->cloneRestoreAnalysisTotal_.lastId_ = 0;
+    cloneAnalysisData->cloneRestoreAnalysisTotal_.pageSize_ = PAGE_SIZE;
+    
+    cloneAnalysisData->cloneRestoreAnalysisTotal_.GetInfos(photoInfoMap);
+    cloneAnalysisData->GetAnalysisDataInfo();
+    EXPECT_EQ(cloneAnalysisData->analysisDataInfos_.size(), 1);
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_test_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_analysis_data_test_003");
+    ClearData();
+    CloneSource cloneSource;
+    vector<std::string> tableList = { SEGMENTATION_ANALYSIS_TABLE, VISION_TOTAL_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    std::shared_ptr<CloneRestoreAnalysisData> cloneAnalysisData = make_shared<CloneRestoreAnalysisData>();
+    cloneAnalysisData->Init(CLONE_RESTORE_ID, TASK_ID, cloneSource.cloneStorePtr_, g_rdbStore->GetRaw());
+    cloneAnalysisData->table_ = SEGMENTATION_ANALYSIS_TABLE;
+
+    cloneSource.Insert(tableList);
+    std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
+    PhotoInfo photoInfo;
+    photoInfoMap[1] = photoInfo;
+    cloneAnalysisData->cloneRestoreAnalysisTotal_.mediaRdb_ = cloneSource.cloneStorePtr_;
+    cloneAnalysisData->cloneRestoreAnalysisTotal_.type_ = SEGMENTATION_TYPE;
+    cloneAnalysisData->cloneRestoreAnalysisTotal_.lastId_ = 0;
+    cloneAnalysisData->cloneRestoreAnalysisTotal_.pageSize_ = PAGE_SIZE;
+    
+    cloneAnalysisData->cloneRestoreAnalysisTotal_.GetInfos(photoInfoMap);
+    cloneAnalysisData->GetAnalysisDataInfo();
+    std::unordered_set<int32_t> existingFileIds = cloneAnalysisData->GetExistingFileIds();
+    EXPECT_EQ(existingFileIds.size(), 0);
+    cloneAnalysisData->RemoveDuplicateInfos(existingFileIds);
+    EXPECT_EQ(cloneAnalysisData->analysisDataInfos_.size(), 1);
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_test_004, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_analysis_data_test_004");
+    ClearData();
+    CloneSource cloneSource;
+    vector<std::string> tableList = { SEGMENTATION_ANALYSIS_TABLE, VISION_TOTAL_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    std::shared_ptr<CloneRestoreAnalysisData> cloneAnalysisData = make_shared<CloneRestoreAnalysisData>();
+    cloneAnalysisData->Init(CLONE_RESTORE_ID, TASK_ID, cloneSource.cloneStorePtr_, g_rdbStore->GetRaw());
+    cloneAnalysisData->table_ = SEGMENTATION_ANALYSIS_TABLE;
+
+    cloneSource.Insert(tableList);
+    std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
+    PhotoInfo photoInfo;
+    photoInfoMap[1] = photoInfo;
+    std::unordered_set<std::string> excludedColumns = {"id", "file_id"};
+    
+    cloneAnalysisData->CloneAnalysisData(SEGMENTATION_ANALYSIS_TABLE, SEGMENTATION_TYPE, photoInfoMap,
+        excludedColumns);
+    EXPECT_EQ(cloneAnalysisData->successCnt_, 1);
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 } // namespace Media
 } // namespace OHOS

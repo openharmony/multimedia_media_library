@@ -35,6 +35,7 @@ enum class InsertType {
     ANALYSIS_PHOTO_MAP,
     AUDIOS,
     ANALYSIS_GEO_DICTIONARY,
+    ANALYSIS_SEGMENTATION,
     TAB_ANALYSIS_LABEL,
     TAB_ANALYSIS_VIDEO_LABEL,
     ANALYSIS_SEARCH_INDEX,
@@ -160,6 +161,7 @@ public:
     void InsertFaceTag();
     void InsertImgFaceTbl();
     void InsertAnalysisGeoDictionary();
+    void InsertAnalysisSegmentation();
     void InsertTabAnalysisLabel();
     void InsertTabAnalysisVideoLabel();
     void InsertTabAnalysisGeoKnowledge();
