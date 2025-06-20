@@ -548,6 +548,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_asset_operations.cpp",
     "src/medialibrary_astc_stat.cpp",
     "src/medialibrary_audio_operations.cpp",
+    "src/medialibrary_backgroud_task_continue_clone.cpp",
     "src/medialibrary_bundle_manager.cpp",
     "src/medialibrary_command.cpp",
     "src/medialibrary_data_manager.cpp",
