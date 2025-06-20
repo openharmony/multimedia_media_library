@@ -38,6 +38,9 @@
 
 using namespace std;
 
+constexpr uint32_t MANUAL_ENHANCEMENT = 1;
+constexpr uint32_t AUTO_ENHANCEMENT = 1 << 1;
+
 namespace OHOS {
 namespace Media {
 const string API_VERSION = "api_version";
@@ -138,10 +141,20 @@ DataShare::DataShareValuesBucket PhotoAssetProxy::HandleAssetValues(const sptr<P
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
     values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
-    if (photoProxy->GetCloudImageEnhanceFlag() != static_cast<uint32_t>(CloudEnhancementAvailableType::NOT_SUPPORT) &&
-        photoProxy->GetPhotoId().size() > 0) {
-        values.Put(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(photoProxy->GetCloudImageEnhanceFlag()));
+    if (photoProxy->GetPhotoId().size() > 0) {
         values.Put(PhotoColumn::PHOTO_ID, photoProxy->GetPhotoId());
+    }
+
+    if (photoProxy->GetCloudImageEnhanceFlag() & AUTO_ENHANCEMENT) {
+        MEDIA_INFO_LOG("photoId: %{public}s is AUTO_ENHANCEMENT", photoProxy->GetPhotoId().c_str());
+        values.Put(PhotoColumn::PHOTO_IS_AUTO, static_cast<int32_t>(CloudEnhancementIsAutoType::AUTO));
+        values.Put(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
+    } else if (photoProxy->GetCloudImageEnhanceFlag() & MANUAL_ENHANCEMENT) {
+        MEDIA_INFO_LOG("photoId: %{public}s is MANUAL_ENHANCEMENT", photoProxy->GetPhotoId().c_str());
+        values.Put(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
+    } else {
+        MEDIA_INFO_LOG("photoId: %{public}s doesn't support enhancement", photoProxy->GetPhotoId().c_str());
+        values.Put(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT));
     }
 
     if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW ||
