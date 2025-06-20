@@ -115,6 +115,8 @@ private:
         const std::unordered_map<std::string, std::string> &columnInfoMap);
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
     void BatchNotifyPhoto(const std::vector<FileInfo> &fileInfos);
+    void UpdateAlbumOrderColumns(const AlbumInfo &albumInfo, const string &tableName);
+    void UpdateSystemAlbumColumns(const string &tableName);
     void InsertAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AlbumInfo> &albumInfos,
         std::vector<std::string> &albumIds, const std::string &tableName);

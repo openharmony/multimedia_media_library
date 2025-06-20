@@ -3128,6 +3128,30 @@ void AddAestheticsScoreFileds(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddAlbumsOrderKeysColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::ALBUMS_ORDER + " INT NOT NULL DEFAULT -1",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::ORDER_SECTION + " INT NOT NULL DEFAULT -1",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::ORDER_TYPE + " INT NOT NULL DEFAULT -1",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::ORDER_STATUS + " INT NOT NULL DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::STYLE2_ALBUMS_ORDER + " INT NOT NULL DEFAULT -1",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::STYLE2_ORDER_SECTION + " INT NOT NULL DEFAULT -1",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::STYLE2_ORDER_TYPE + " INT NOT NULL DEFAULT -1",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+            PhotoAlbumColumns::STYLE2_ORDER_STATUS + " INT NOT NULL DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add album order keys column start");
+    ExecSqls(sqls, store);
+}
+
 void AddStoryTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -4693,6 +4717,10 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_PRIORITY_COLUMN) {
         AddTotalPriority(store);
+    }
+
+    if (oldVersion < VERSION_ADD_ALBUMS_ORDER_KEYS_COLUMNS) {
+        AddAlbumsOrderKeysColumn(store);
     }
 }
 

@@ -19,6 +19,7 @@
 #include <variant>
 #include "abs_shared_result_set.h"
 #include "album_asset.h"
+#include "album_order.h"
 #include "datashare_result_set.h"
 #include "file_asset.h"
 #include "medialibrary_type_const.h"
@@ -86,12 +87,14 @@ private:
     void SetPhotoAssetCustomRecordAsset(PhotoAssetCustomRecord* smartAlbumData,
         std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     void SetAssetUri(FileAsset *fileAsset);
+    void SetAlbumOrder(AlbumOrder *albumOrderData, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
 
     void GetObjectFromResultSet(FileAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
     void GetObjectFromResultSet(AlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
     void GetObjectFromResultSet(PhotoAlbum *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
     void GetObjectFromResultSet(SmartAlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
     void GetObjectFromResultSet(PhotoAssetCustomRecord *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
+    void GetObjectFromResultSet(AlbumOrder *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
 
     std::string networkId_;
     ResultNapiType resultNapiType_;

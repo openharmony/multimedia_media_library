@@ -247,6 +247,11 @@ enum CoverUriSource : int32_t {
     MANUAL_LOCAL_COVER = 2,
     MANUAL_WAIT_PULL_COVER = 3,
 };
+
+enum OrderStyleType : int32_t {
+    MIX = 0,
+    SPLIT = 1
+};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_FILEMANAGEMENT_USERFILEMGR_TYPES_H

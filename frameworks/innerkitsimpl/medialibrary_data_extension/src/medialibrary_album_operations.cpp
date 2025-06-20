@@ -2964,4 +2964,40 @@ int MediaLibraryAlbumOperations::HandlePhotoAlbumOperations(MediaLibraryCommand 
             return E_ERR;
     }
 }
+
+int32_t UpdateOneAlbumOrder(const shared_ptr<MediaLibraryRdbStore> &rdbStore,
+    const NativeRdb::ValuesBucket &ValuesBucket, const NativeRdb::RdbPredicates &predicates)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdbStore failed");
+
+    int32_t changeRows = 0;
+    auto ret = rdbStore->Update(changeRows, ValuesBucket, predicates);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Failed to update album order");
+    return ret;
+}
+
+int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbumOrder(const vector<NativeRdb::ValuesBucket> &valuesBuckets,
+    const vector<NativeRdb::RdbPredicates> &predicatesArray)
+{
+    CHECK_AND_RETURN_RET_LOG(valuesBuckets.size() == predicatesArray.size(), E_INNER_FAIL,
+        "valuesBuckets.size() not equal to predicatesArray.size(), can not update album order");
+    
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_INNER_FAIL, "get rdbStore failed");
+
+    int32_t err = 0;
+    int32_t successSetOrderRows = 0;
+    if (!valuesBuckets.empty() && !predicatesArray.empty()) {
+        for (size_t i = 0; i < valuesBuckets.size(); i++) {
+            err = UpdateOneAlbumOrder(rdbStore, valuesBuckets[i], predicatesArray[i]);
+            CHECK_AND_EXECUTE(err != NativeRdb::E_OK, ++successSetOrderRows);
+        }
+        MEDIA_INFO_LOG("success update order album size: %{public}d", successSetOrderRows);
+
+        auto watch = MediaLibraryNotify::GetInstance();
+        CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
+        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
+    }
+    return successSetOrderRows == 0 ? E_INNER_FAIL : E_OK;
+}
 } // namespace OHOS::Media

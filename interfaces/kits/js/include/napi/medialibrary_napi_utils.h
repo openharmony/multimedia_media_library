@@ -190,6 +190,13 @@
         return result;                                                    \
     } while (0)
 
+#define CHECK_ARGS_WITH_MEG(env, cond, err, msg)                 \
+    do {                                                            \
+        if (!(cond)) {                                    \
+            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__, msg); \
+            return nullptr;                                          \
+        }                                                           \
+    } while (0)
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))

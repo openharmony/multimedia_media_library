@@ -469,6 +469,7 @@ void CloneRestore::RestoreAlbum()
             this->photoAlbumClone_.TRACE_LOG(tableName, albumInfos);
             InsertAlbum(albumInfos, tableName);
         }
+        UpdateSystemAlbumColumns(tableName);
     }
 
     RestoreFromGalleryPortraitAlbum();
@@ -1430,6 +1431,54 @@ void CloneRestore::BatchNotifyPhoto(const vector<FileInfo> &fileInfos)
     }
 }
 
+void CloneRestore::UpdateAlbumOrderColumns(const AlbumInfo &albumInfo, const string &tableName)
+{
+    CHECK_AND_RETURN(tableName == PhotoAlbumColumns::TABLE);
+    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "rdbStore is null");
+
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+        make_unique<NativeRdb::AbsRdbPredicates>(PhotoAlbumColumns::TABLE);
+    predicates->EqualTo(PhotoAlbumColumns::ALBUM_ID, albumInfo.albumIdNew);
+
+    NativeRdb::ValuesBucket values;
+    unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
+    for (const auto &columns : PhotoAlbumColumns::ORDER_COLUMN_STYLE_MAP) {
+        for (const auto &columnName : columns.second) {
+            auto iter = albumInfo.valMap.find(columnName);
+            CHECK_AND_EXECUTE(iter == albumInfo.valMap.end(),
+                PrepareCommonColumnVal(values, columnName, iter->second, commonColumnInfoMap));
+        }
+    }
+
+    int32_t changeRows = 0;
+    int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, values, predicates);
+    bool cond = (changeRows < 0 || ret < 0);
+    CHECK_AND_RETURN_LOG(!cond,
+        "Failed to update albumOrder columns, ret: %{public}d, updateRows: %{public}d", ret, changeRows);
+}
+
+void CloneRestore::UpdateSystemAlbumColumns(const string &tableName)
+{
+    CHECK_AND_RETURN(tableName == PhotoAlbumColumns::TABLE);
+    CHECK_AND_RETURN_LOG(this->mediaRdb_ != nullptr, "original rdbStore is null");
+
+    const std::string querySql =
+        "SELECT PhotoAlbum.* FROM PhotoAlbum WHERE PhotoAlbum.album_type = 1024 ORDER BY PhotoAlbum.album_id";
+    const vector<string> bindArgs = {};
+    auto resultSet = this->mediaRdb_->QuerySql(querySql, bindArgs);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr,
+        "Failed to query system album! querySql = %{public}s", querySql.c_str());
+    
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        AlbumInfo albumInfo;
+        bool ret = ParseAlbumResultSet(tableName, resultSet, albumInfo);
+        CHECK_AND_CONTINUE_INFO_LOG(ret == true, "Update system album columns failed");
+        albumInfo.albumIdNew = albumInfo.albumIdOld;
+        UpdateAlbumOrderColumns(albumInfo, tableName);
+    }
+    resultSet->Close();
+}
+
 void CloneRestore::InsertAlbum(vector<AlbumInfo> &albumInfos, const string &tableName)
 {
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
@@ -1456,6 +1505,7 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(vector<AlbumInfo> 
     for (size_t i = 0; i < albumInfos.size(); i++) {
         if (HasSameAlbum(albumInfos[i], tableName)) {
             albumIds.emplace_back(to_string(albumInfos[i].albumIdNew));
+            UpdateAlbumOrderColumns(albumInfos[i], tableName);
             MEDIA_WARN_LOG("Album (%{public}d, %{public}d, %{public}d, %{public}s) already exists.",
                 albumInfos[i].albumIdOld, static_cast<int32_t>(albumInfos[i].albumType),
                 static_cast<int32_t>(albumInfos[i].albumSubType), albumInfos[i].albumName.c_str());
