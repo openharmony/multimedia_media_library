@@ -33,7 +33,7 @@
 #include "on_download_asset_vo.h"
 
 namespace OHOS::Media::CloudSync {
-void CloudMediaDownloadControllerService::GetDownloadThms(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDownloadControllerService::GetDownloadThms(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetDownloadThms");
     GetDownloadThmReqBody reqBody;
@@ -65,7 +65,7 @@ void CloudMediaDownloadControllerService::GetDownloadThms(MessageParcel &data, M
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaDownloadControllerService::GetDownloadThmNum(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDownloadControllerService::GetDownloadThmNum(MessageParcel &data, MessageParcel &reply)
 {
     GetDownloadThmNumReqBody req;
     GetDownloadThmNumRespBody resp;
@@ -81,7 +81,7 @@ void CloudMediaDownloadControllerService::GetDownloadThmNum(MessageParcel &data,
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
 }
 
-void CloudMediaDownloadControllerService::GetDownloadThmsByUri(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDownloadControllerService::GetDownloadThmsByUri(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetDownloadThmsByUri");
     GetDownloadThmsByUriReqBody reqBody;
@@ -110,7 +110,7 @@ void CloudMediaDownloadControllerService::GetDownloadThmsByUri(MessageParcel &da
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaDownloadControllerService::OnDownloadThms(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDownloadControllerService::OnDownloadThms(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter OnDownloadThms");
     OnDownloadThmsReqBody reqBody;
@@ -137,7 +137,7 @@ void CloudMediaDownloadControllerService::OnDownloadThms(MessageParcel &data, Me
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
-void CloudMediaDownloadControllerService::GetDownloadAsset(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDownloadControllerService::GetDownloadAsset(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaDataControllerService::GetDownloadAsset");
     GetDownloadAssetReqBody reqBody;
@@ -167,7 +167,7 @@ void CloudMediaDownloadControllerService::GetDownloadAsset(MessageParcel &data, 
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaDownloadControllerService::OnDownloadAsset(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDownloadControllerService::OnDownloadAsset(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaDataControllerService::OnDownloadAsset");
     OnDownloadAssetReqBody reqBody;

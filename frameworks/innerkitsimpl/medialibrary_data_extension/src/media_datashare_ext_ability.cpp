@@ -1055,34 +1055,38 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
     CHECK_AND_RETURN_RET_LOG(retReq, E_IPC_SEVICE_UNMARSHALLING_FAIL, "read reqVo from parcel failed");
     uint32_t operationCode = reqVo.GetCode();
     std::string traceId = reqVo.GetTraceId();
+    int32_t userId = reqVo.GetUserId();
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t ret = E_IPC_SEVICE_NOT_FOUND;
-    DfxTimer dfxTimer(0, operationCode, COMMON_TIME_OUT, true);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(0, operationCode, timeout, true);
     for (auto &controllerService : this->serviceFactory_.GetAllMediaControllerService()) {
         if (!controllerService->Accept(operationCode)) {
             continue;
         }
 
-        ret = E_OK;
         std::vector<std::vector<PermissionType>> permissionPolicy;
         bool isDBBypass = false;
         if (controllerService->GetPermissionPolicy(operationCode, permissionPolicy, isDBBypass)) {
-            IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
+            ret = IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
             break;
         }
         PermissionHeaderReq permHeaderReq = PermissionHeaderReq::convertToPermissionHeaderReq(reqVo.GetHeader(),
-            reqVo.GetUserId(), permissionPolicy, isDBBypass);
+            userId, permissionPolicy, isDBBypass);
         int32_t errCode = PermissionCheck::VerifyPermissions(operationCode, permHeaderReq);
         if (errCode != E_SUCCESS && errCode != E_PERMISSION_DB_BYPASS) {
-            IPC::UserDefineIPC().WriteResponseBody(reply, errCode);
+            ret = IPC::UserDefineIPC().WriteResponseBody(reply, errCode);
             break;
         }
         MEDIA_INFO_LOG("API code %{public}d verify permission success", operationCode);
         IPCContext context(option, errCode);
-        controllerService->OnRemoteRequest(operationCode, data, reply, context);
+        ret = controllerService->OnRemoteRequest(operationCode, data, reply, context);
         break;
     }
-    int32_t userId = reqVo.GetUserId();
+    if (ret != E_SUCCESS) {
+        MEDIA_INFO_LOG("API code %{public}d return fail %{public}d", operationCode, ret);
+        DfxManager::GetInstance()->HandleControllerServiceError(operationCode, ret);
+    }
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
     MEDIA_INFO_LOG("API excuted, userId: %{public}d, traceId: %{public}s, "

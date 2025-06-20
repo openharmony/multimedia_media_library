@@ -24,9 +24,9 @@ namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 class EXPORT MediaRefreshControllerService : public IPC::IMediaControllerService {
 private:
-    void NotifyForReCheck(MessageParcel &data, MessageParcel &reply);
+    int32_t NotifyForReCheck(MessageParcel &data, MessageParcel &reply);
 
-    using RequestHandle = void (MediaRefreshControllerService::*)(MessageParcel &, MessageParcel &);
+    using RequestHandle = int32_t (MediaRefreshControllerService::*)(MessageParcel &, MessageParcel &);
     const std::map<uint32_t, RequestHandle> HANDLERS = {
         {
             static_cast<uint32_t>(MediaLibraryBusinessCode::NOTIFY_FOR_RECHECK),
@@ -38,7 +38,8 @@ public:
     MediaRefreshControllerService() = default;
     virtual ~MediaRefreshControllerService() = default;
     bool Accept(uint32_t code) override;
-    void OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, IPC::IPCContext &context) override;
+    int32_t OnRemoteRequest(
+        uint32_t code, MessageParcel &data, MessageParcel &reply, IPC::IPCContext &context) override;
     int32_t GetPermissionPolicy(
         uint32_t code, std::vector<std::vector<PermissionType>> &permissionPolicy, bool &isBypass) override;
 };

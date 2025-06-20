@@ -84,10 +84,10 @@ namespace OHOS::Media {
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
 
-using SpecialRequestHandle = void (MediaAssetsControllerService::*)(
+using SpecialRequestHandle = int32_t (MediaAssetsControllerService::*)(
     MessageParcel &, MessageParcel &, OHOS::Media::IPC::IPCContext &);
 
-using RequestHandle = void (MediaAssetsControllerService::*)(MessageParcel &, MessageParcel &);
+using RequestHandle = int32_t (MediaAssetsControllerService::*)(MessageParcel &, MessageParcel &);
 
 const std::map<uint32_t, SpecialRequestHandle> SPECIAL_HANDLERS = {
     {
@@ -392,7 +392,7 @@ bool MediaAssetsControllerService::Accept(uint32_t code)
     return HANDLERS.find(code) != HANDLERS.end() || SPECIAL_HANDLERS.find(code) != SPECIAL_HANDLERS.end();
 }
 
-void MediaAssetsControllerService::OnRemoteRequest(
+int32_t MediaAssetsControllerService::OnRemoteRequest(
     uint32_t code, MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context)
 {
     auto handlersIt = HANDLERS.find(code);
@@ -406,49 +406,46 @@ void MediaAssetsControllerService::OnRemoteRequest(
     return IPC::UserDefineIPC().WriteResponseBody(reply, E_IPC_SEVICE_NOT_FOUND);
 }
 
-void MediaAssetsControllerService::RemoveFormInfo(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::RemoveFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RemoveFormInfo");
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("RemoveFormInfo Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = ParameterUtils::CheckFormIds(reqBody.formIds);
     if (ret == E_OK) {
         ret = MediaAssetsService::GetInstance().RemoveFormInfo(reqBody.formIds.front());
     }
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::RemoveGalleryFormInfo(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::RemoveGalleryFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RemoveGalleryFormInfo");
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("RemoveFormInfo Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = ParameterUtils::CheckFormIds(reqBody.formIds);
     if (ret == E_OK) {
         ret = MediaAssetsService::GetInstance().RemoveGalleryFormInfo(reqBody.formIds.front());
     }
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SaveFormInfo(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SaveFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SaveFormInfo");
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SaveFormInfo Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = ParameterUtils::CheckFormIds(reqBody.formIds);
     FormInfoDto formInfoDto;
@@ -461,18 +458,17 @@ void MediaAssetsControllerService::SaveFormInfo(MessageParcel &data, MessageParc
     if (ret == E_OK) {
         ret = MediaAssetsService::GetInstance().SaveFormInfo(formInfoDto);
     }
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SaveGalleryFormInfo(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SaveGalleryFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SaveGalleryFormInfo");
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SaveGalleryFormInfo Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = ParameterUtils::CheckFormIds(reqBody.formIds);
     FormInfoDto formInfoDto;
@@ -485,18 +481,17 @@ void MediaAssetsControllerService::SaveGalleryFormInfo(MessageParcel &data, Mess
     if (ret == E_OK) {
         ret = MediaAssetsService::GetInstance().SaveGalleryFormInfo(formInfoDto);
     }
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::CommitEditedAsset(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::CommitEditedAsset(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CommitEditedAsset");
     CommitEditedAssetReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CommitEditedAsset Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     bool cond = ParameterUtils::CheckEditDataLength(reqBody.editData) && reqBody.fileId > 0;
@@ -512,10 +507,10 @@ void MediaAssetsControllerService::CommitEditedAsset(MessageParcel &data, Messag
     if (ret == E_OK) {
         ret = MediaAssetsService::GetInstance().CommitEditedAsset(commitEditedAssetDto);
     }
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SysTrashPhotos(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SysTrashPhotos(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SysTrashPhotos");
     TrashPhotosReqBody reqBody;
@@ -523,19 +518,17 @@ void MediaAssetsControllerService::SysTrashPhotos(MessageParcel &data, MessagePa
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SysTrashPhotos Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     if (reqBody.uris.empty()) {
         MEDIA_ERR_LOG("uris is empty");
-        IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
     }
     ret = MediaAssetsService::GetInstance().TrashPhotos(reqBody.uris);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::TrashPhotos(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::TrashPhotos(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter TrashPhotos");
     TrashPhotosReqBody reqBody;
@@ -543,21 +536,19 @@ void MediaAssetsControllerService::TrashPhotos(MessageParcel &data, MessageParce
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("TrashPhotos Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = ParameterUtils::CheckTrashPhotos(reqBody.uris);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("uris is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = MediaAssetsService::GetInstance().TrashPhotos(reqBody.uris);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::DeletePhotos(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::DeletePhotos(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter DeletePhotos");
     DeletePhotosReqBody reqBody;
@@ -565,19 +556,17 @@ void MediaAssetsControllerService::DeletePhotos(MessageParcel &data, MessageParc
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DeletePhotos Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     if (reqBody.uris.empty()) {
         MEDIA_ERR_LOG("uris is empty");
-        IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
     }
     ret = MediaAssetsService::GetInstance().DeletePhotos(reqBody.uris);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::DeletePhotosCompleted(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::DeletePhotosCompleted(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter DeletePhotosCompleted");
     DeletePhotosCompletedReqBody reqBody;
@@ -585,21 +574,19 @@ void MediaAssetsControllerService::DeletePhotosCompleted(MessageParcel &data, Me
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DeletePhotosCompleted Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = ParameterUtils::CheckDeletePhotosCompleted(reqBody.fileIds);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("fileIds is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = MediaAssetsService::GetInstance().DeletePhotosCompleted(reqBody.fileIds);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::AssetChangeSetFavorite(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::AssetChangeSetFavorite(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeSetFavorite");
     AssetChangeReqBody reqBody;
@@ -607,20 +594,18 @@ void MediaAssetsControllerService::AssetChangeSetFavorite(MessageParcel &data, M
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AssetChangeSetFavorite Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     if (reqBody.fileId <= 0) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
         MEDIA_ERR_LOG("fileId is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
     }
 
     ret = MediaAssetsService::GetInstance().AssetChangeSetFavorite(reqBody.fileId, reqBody.favorite);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::AssetChangeSetHidden(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::AssetChangeSetHidden(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeSetHidden");
     AssetChangeReqBody reqBody;
@@ -628,20 +613,18 @@ void MediaAssetsControllerService::AssetChangeSetHidden(MessageParcel &data, Mes
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AssetChangeSetHidden Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     if (!ParameterUtils::CheckOpenUriLength(reqBody.uri)) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
         MEDIA_ERR_LOG("uri is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
     }
 
     ret = MediaAssetsService::GetInstance().AssetChangeSetHidden(reqBody.uri, reqBody.hidden);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::AssetChangeSetUserComment(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::AssetChangeSetUserComment(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeSetUserComment");
     AssetChangeReqBody reqBody;
@@ -649,21 +632,19 @@ void MediaAssetsControllerService::AssetChangeSetUserComment(MessageParcel &data
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AssetChangeSetUserComment Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = ParameterUtils::CheckUserComment(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
     }
 
     ret = MediaAssetsService::GetInstance().AssetChangeSetUserComment(reqBody.fileId, reqBody.userComment);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::AssetChangeSetLocation(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::AssetChangeSetLocation(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeSetLocation");
     AssetChangeReqBody reqBody;
@@ -671,22 +652,20 @@ void MediaAssetsControllerService::AssetChangeSetLocation(MessageParcel &data, M
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AssetChangeSetLocation Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     if (reqBody.fileId <= 0) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
     }
 
     auto dto = SetLocationDto::Create(reqBody);
     ret = MediaAssetsService::GetInstance().AssetChangeSetLocation(dto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::AssetChangeSetTitle(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::AssetChangeSetTitle(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeSetTitle");
     AssetChangeReqBody reqBody;
@@ -694,21 +673,19 @@ void MediaAssetsControllerService::AssetChangeSetTitle(MessageParcel &data, Mess
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AssetChangeSetTitle Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     if (reqBody.fileId <= 0) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
     }
 
     ret = MediaAssetsService::GetInstance().AssetChangeSetTitle(reqBody.fileId, reqBody.title);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::AssetChangeSetEditData(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::AssetChangeSetEditData(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeSetEditData");
     AssetChangeReqBody reqBody;
@@ -716,21 +693,19 @@ void MediaAssetsControllerService::AssetChangeSetEditData(MessageParcel &data, M
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AssetChangeSetEditData Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     if (reqBody.values.IsEmpty()) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
     }
 
     ret = MediaAssetsService::GetInstance().AssetChangeSetEditData(reqBody.values);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::AssetChangeSubmitCache(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::AssetChangeSubmitCache(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeSubmitCache");
     SubmitCacheReqBody reqBody;
@@ -738,27 +713,24 @@ void MediaAssetsControllerService::AssetChangeSubmitCache(MessageParcel &data, M
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AssetChangeSubmitCache Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     if (reqBody.values.IsEmpty()) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
     }
     auto dto = SubmitCacheDto::Create(reqBody);
     ret = MediaAssetsService::GetInstance().AssetChangeSubmitCache(dto);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AssetChangeSubmitCache Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     auto rspBody = dto.CreateRspBody();
-    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody);
 }
 
-void MediaAssetsControllerService::AssetChangeCreateAsset(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::AssetChangeCreateAsset(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeCreateAsset");
     AssetChangeReqBody reqBody;
@@ -766,27 +738,24 @@ void MediaAssetsControllerService::AssetChangeCreateAsset(MessageParcel &data, M
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AssetChangeCreateAsset Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     if (reqBody.values.IsEmpty()) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
     }
     auto dto = AssetChangeCreateAssetDto::Create(reqBody);
     ret = MediaAssetsService::GetInstance().AssetChangeCreateAsset(dto);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AssetChangeCreateAsset Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     auto rspBody = dto.CreateRspBody();
-    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody);
 }
 
-void MediaAssetsControllerService::AssetChangeAddImage(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::AssetChangeAddImage(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeAddImage");
     AddImageReqBody reqBody;
@@ -794,21 +763,19 @@ void MediaAssetsControllerService::AssetChangeAddImage(MessageParcel &data, Mess
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AssetChangeAddImage Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     if (reqBody.fileId <= 0) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
     }
     auto dto = AddImageDto::Create(reqBody);
     ret = MediaAssetsService::GetInstance().AssetChangeAddImage(dto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SetCameraShotKey(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SetCameraShotKey(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SetCameraShotKey");
     AssetChangeReqBody reqBody;
@@ -816,21 +783,19 @@ void MediaAssetsControllerService::SetCameraShotKey(MessageParcel &data, Message
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SetCameraShotKey Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckCameraShotKey(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = MediaAssetsService::GetInstance().SetCameraShotKey(reqBody.fileId, reqBody.cameraShotKey);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SaveCameraPhoto(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SaveCameraPhoto(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SaveCameraPhoto");
     SaveCameraPhotoReqBody reqBody;
@@ -838,21 +803,19 @@ void MediaAssetsControllerService::SaveCameraPhoto(MessageParcel &data, MessageP
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SaveCameraPhoto Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     if (reqBody.fileId <= 0) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     auto dto = SaveCameraPhotoDto::Create(reqBody);
     ret = MediaAssetsService::GetInstance().SaveCameraPhoto(dto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::DiscardCameraPhoto(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::DiscardCameraPhoto(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter DiscardCameraPhoto");
     AssetChangeReqBody reqBody;
@@ -860,20 +823,18 @@ void MediaAssetsControllerService::DiscardCameraPhoto(MessageParcel &data, Messa
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DiscardCameraPhoto Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     if (reqBody.fileId <= 0) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = MediaAssetsService::GetInstance().DiscardCameraPhoto(reqBody.fileId);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SetEffectMode(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SetEffectMode(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SetEffectMode");
     AssetChangeReqBody reqBody;
@@ -881,20 +842,18 @@ void MediaAssetsControllerService::SetEffectMode(MessageParcel &data, MessagePar
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SetEffectMode Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     if (reqBody.fileId <= 0|| !MediaFileUtils::CheckMovingPhotoEffectMode(reqBody.effectMode)) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
     }
     ret = MediaAssetsService::GetInstance().SetEffectMode(reqBody.fileId, reqBody.effectMode);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SetOrientation(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SetOrientation(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SetOrientation");
     AssetChangeReqBody reqBody;
@@ -902,21 +861,19 @@ void MediaAssetsControllerService::SetOrientation(MessageParcel &data, MessagePa
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SetOrientation Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckOrientation(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = MediaAssetsService::GetInstance().SetOrientation(reqBody.fileId, reqBody.orientation);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SetVideoEnhancementAttr(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SetVideoEnhancementAttr(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SetVideoEnhancementAttr");
     AssetChangeReqBody reqBody;
@@ -924,21 +881,19 @@ void MediaAssetsControllerService::SetVideoEnhancementAttr(MessageParcel &data, 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SetVideoEnhancementAttr Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckVideoEnhancementAttr(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = MediaAssetsService::GetInstance().SetVideoEnhancementAttr(reqBody.fileId, reqBody.photoId, reqBody.path);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SetSupportedWatermarkType(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SetSupportedWatermarkType(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SetSupportedWatermarkType");
     AssetChangeReqBody reqBody;
@@ -946,21 +901,19 @@ void MediaAssetsControllerService::SetSupportedWatermarkType(MessageParcel &data
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SetSupportedWatermarkType Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckWatermarkType(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("params is invalid");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = MediaAssetsService::GetInstance().SetSupportedWatermarkType(reqBody.fileId, reqBody.watermarkType);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::GetAssets(
+int32_t MediaAssetsControllerService::GetAssets(
     MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context)
 {
     MEDIA_INFO_LOG("enter");
@@ -968,23 +921,20 @@ void MediaAssetsControllerService::GetAssets(
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckWhereClause(reqBody.predicates.GetWhereClause());
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CheckWhereClause fialed");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     GetAssetsDto dto = GetAssetsDto::Create(reqBody);
     if (context.GetByPassCode() == E_PERMISSION_DB_BYPASS) {
         string clientAppId = GetClientAppId();
         if (clientAppId.empty()) {
             MEDIA_ERR_LOG("clientAppId is empty");
-            IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
-            return;
+            return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
         }
         dto.predicates.And()->EqualTo("owner_appid", clientAppId);
     }
@@ -992,15 +942,14 @@ void MediaAssetsControllerService::GetAssets(
     auto resultSet = MediaAssetsService::GetInstance().GetAssets(dto);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
-        IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
     }
     GetAssetsRespBody respBody;
     respBody.resultSet = resultSet;
-    IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void MediaAssetsControllerService::GetBurstAssets(
+int32_t MediaAssetsControllerService::GetBurstAssets(
     MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context)
 {
     MEDIA_INFO_LOG("enter");
@@ -1008,23 +957,20 @@ void MediaAssetsControllerService::GetBurstAssets(
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckWhereClause(reqBody.predicates.GetWhereClause());
     if (ret != E_OK || reqBody.burstKey.empty()) {
         MEDIA_ERR_LOG("CheckWhereClause fialed or burstKey is empty");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     GetAssetsDto dto = GetAssetsDto::Create(reqBody);
     if (context.GetByPassCode() == E_PERMISSION_DB_BYPASS) {
         string clientAppId = GetClientAppId();
         if (clientAppId.empty()) {
             MEDIA_ERR_LOG("clientAppId is empty");
-            IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
-            return;
+            return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
         }
         dto.predicates.And()->EqualTo("owner_appid", clientAppId);
     }
@@ -1033,340 +979,309 @@ void MediaAssetsControllerService::GetBurstAssets(
     auto resultSet = MediaAssetsService::GetInstance().GetAssets(dto);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
-        IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
     }
     GetAssetsRespBody respBody;
     respBody.resultSet = resultSet;
-    IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void MediaAssetsControllerService::GetAllDuplicateAssets(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::GetAllDuplicateAssets(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter");
     GetAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckWhereClause(reqBody.predicates.GetWhereClause());
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CheckWhereClause fialed");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     GetAssetsDto dto = GetAssetsDto::Create(reqBody);
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
     auto resultSet = MediaAssetsService::GetInstance().GetAllDuplicateAssets(dto);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
-        IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
     }
     GetAssetsRespBody respBody;
     respBody.resultSet = resultSet;
-    IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void MediaAssetsControllerService::GetDuplicateAssetsToDelete(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::GetDuplicateAssetsToDelete(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter");
     GetAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckWhereClause(reqBody.predicates.GetWhereClause());
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CheckWhereClause fialed");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     GetAssetsDto dto = GetAssetsDto::Create(reqBody);
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
     auto resultSet = MediaAssetsService::GetInstance().GetDuplicateAssetsToDelete(dto);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
-        IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
     }
     GetAssetsRespBody respBody;
     respBody.resultSet = resultSet;
-    IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void MediaAssetsControllerService::GetIndexConstructProgress(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::GetIndexConstructProgress(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter");
     std::string indexProgress;
     auto ret = MediaAssetsService::GetInstance().GetIndexConstructProgress(indexProgress);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("get index construct progress failed, ret: %{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     GetIndexConstructProgressRespBody respBody;
     respBody.indexProgress = indexProgress;
-    IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void MediaAssetsControllerService::PublicCreateAsset(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::PublicCreateAsset(MessageParcel &data, MessageParcel &reply)
 {
     CreateAssetReqBody reqBody;
     CreateAssetRspBody rspBody;
     MEDIA_INFO_LOG("enter PublicCreateAsset");
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
         MEDIA_ERR_LOG("PublicCreateAsset Read Request Error");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
     }
 
     ret = ParameterUtils::CheckPublicCreateAsset(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
         MEDIA_ERR_LOG("CheckPublicCreateAsset ret:%{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
     }
 
     CreateAssetDto dto(reqBody);
     ret = MediaAssetsService::GetInstance().CreateAsset(dto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, dto.GetRspBody(), ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, dto.GetRspBody(), ret);
 }
 
-void MediaAssetsControllerService::SystemCreateAsset(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SystemCreateAsset(MessageParcel &data, MessageParcel &reply)
 {
     CreateAssetReqBody reqBody;
     CreateAssetRspBody rspBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
         MEDIA_ERR_LOG("SystemCreateAsset Read Request Error");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
     }
 
     ret = ParameterUtils::CheckSystemCreateAsset(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
         MEDIA_ERR_LOG("CheckSystemCreateAsset ret:%{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
     }
 
     CreateAssetDto dto(reqBody);
-    (void)ParameterUtils::GetTitleAndExtension(dto.displayName, dto.title, dto.extension);
+    (int32_t)ParameterUtils::GetTitleAndExtension(dto.displayName, dto.title, dto.extension);
     ret = MediaAssetsService::GetInstance().CreateAsset(dto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, dto.GetRspBody(), ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, dto.GetRspBody(), ret);
 }
 
-void MediaAssetsControllerService::PublicCreateAssetForApp(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::PublicCreateAssetForApp(MessageParcel &data, MessageParcel &reply)
 {
     CreateAssetForAppReqBody reqBody;
     CreateAssetForAppRspBody rspBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
         MEDIA_ERR_LOG("CreateAssetForApp Read Request Error");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
     }
 
     ret = ParameterUtils::CheckPublicCreateAssetForApp(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
         MEDIA_ERR_LOG("CheckPublicCreateAssetForApp ret:%{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
     }
 
     CreateAssetDto dto(reqBody);
     ret = MediaAssetsService::GetInstance().CreateAssetForApp(dto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, dto.GetRspBody(), ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, dto.GetRspBody(), ret);
 }
 
-void MediaAssetsControllerService::SystemCreateAssetForApp(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SystemCreateAssetForApp(MessageParcel &data, MessageParcel &reply)
 {
     CreateAssetForAppReqBody reqBody;
     CreateAssetForAppRspBody rspBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
         MEDIA_ERR_LOG("CreateAssetForApp Read Request Error");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
     }
 
     ret = ParameterUtils::CheckSystemCreateAssetForApp(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
         MEDIA_ERR_LOG("CheckSystemCreateAssetForApp ret:%{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
     }
 
     CreateAssetDto dto(reqBody);
     ret = MediaAssetsService::GetInstance().CreateAssetForApp(dto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, dto.GetRspBody(), ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, dto.GetRspBody(), ret);
 }
 
-void MediaAssetsControllerService::CreateAssetForAppWithAlbum(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::CreateAssetForAppWithAlbum(MessageParcel &data, MessageParcel &reply)
 {
     CreateAssetForAppReqBody reqBody;
     CreateAssetForAppRspBody rspBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
         MEDIA_ERR_LOG("CreateAssetForAppWithAlbum Read Request Error");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
     }
 
     ret = ParameterUtils::CheckCreateAssetForAppWithAlbum(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
         MEDIA_ERR_LOG("CheckCreateAssetForAppWithAlbum ret:%{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
     }
 
     CreateAssetDto dto(reqBody);
     ret = MediaAssetsService::GetInstance().CreateAssetForAppWithAlbum(dto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, dto.GetRspBody(), ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, dto.GetRspBody(), ret);
 }
 
-void MediaAssetsControllerService::SetAssetTitle(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SetAssetTitle(MessageParcel &data, MessageParcel &reply)
 {
     ModifyAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("SetAssetTitle Read Request Error");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckSetAssetTitle(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("CheckSetAssetTitle ret:%{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = MediaAssetsService::GetInstance().SetAssetTitle(reqBody.fileIds.front(), reqBody.title);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SetAssetPending(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SetAssetPending(MessageParcel &data, MessageParcel &reply)
 {
     ModifyAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("SetAssetPending Read Request Error");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckSetAssetPending(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("CheckSetAssetPending ret:%{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = MediaAssetsService::GetInstance().SetAssetPending(reqBody.fileIds.front(), reqBody.pending);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SetAssetsFavorite(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SetAssetsFavorite(MessageParcel &data, MessageParcel &reply)
 {
     ModifyAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("SetAssetsFavorite Read Request Error");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckSetAssetsFavorite(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("CheckSetAssetsFavorite ret:%{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = MediaAssetsService::GetInstance().SetAssetsFavorite(reqBody.fileIds, reqBody.favorite);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SetAssetsHiddenStatus(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SetAssetsHiddenStatus(MessageParcel &data, MessageParcel &reply)
 {
     ModifyAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("SetAssetsHiddenStatus Read Request Error");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckSetAssetsHiddenStatus(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("CheckSetAssetsHiddenStatus ret:%{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = MediaAssetsService::GetInstance().SetAssetsHiddenStatus(reqBody.fileIds, reqBody.hiddenStatus);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SetAssetsRecentShowStatus(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SetAssetsRecentShowStatus(MessageParcel &data, MessageParcel &reply)
 {
     ModifyAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("SetAssetsRecentShowStatus Read Request Error");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckSetAssetsRecentShowStatus(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("CheckSetAssetsRecentShowStatus ret:%{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = MediaAssetsService::GetInstance().SetAssetsRecentShowStatus(reqBody.fileIds, reqBody.recentShowStatus);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SetAssetsUserComment(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SetAssetsUserComment(MessageParcel &data, MessageParcel &reply)
 {
     ModifyAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("SetAssetsUserComment Read Request Error");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = ParameterUtils::CheckSetAssetsUserComment(reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("CheckSetAssetsUserComment ret:%{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ret = MediaAssetsService::GetInstance().SetAssetsUserComment(reqBody.fileIds, reqBody.userComment);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::GetAssetAnalysisData(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::GetAssetAnalysisData(MessageParcel &data, MessageParcel &reply)
 {
     GetAssetAnalysisDataReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("GetAssetAnalysisData Read Request Error");
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     GetAssetAnalysisDataDto dto;
@@ -1376,17 +1291,16 @@ void MediaAssetsControllerService::GetAssetAnalysisData(MessageParcel &data, Mes
     dto.analysisTotal = reqBody.analysisTotal;
     ret = MediaAssetsService::GetInstance().GetAssetAnalysisData(dto);
     if (ret != E_OK) {
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         MEDIA_ERR_LOG("GetAssetAnalysisData failed, ret:%{public}d", ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     GetAssetAnalysisDataRspBody rspBody;
     rspBody.resultSet = std::move(dto.resultSet);
-    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody);
 }
 
-void MediaAssetsControllerService::CloneAsset(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::CloneAsset(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloneAsset");
     CloneAssetReqBody reqBody;
@@ -1394,25 +1308,23 @@ void MediaAssetsControllerService::CloneAsset(MessageParcel &data, MessageParcel
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CloneAsset Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     string extension = MediaFileUtils::SplitByChar(reqBody.displayName, '.');
     string displayName = reqBody.title + "." + extension;
     if (MediaFileUtils::CheckDisplayName(displayName, true) != E_OK) {
         MEDIA_ERR_LOG("CloneAsset invalid params");
-        IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
     }
 
     CloneAssetDto cloneAssetDto;
     cloneAssetDto.fileId = reqBody.fileId;
     cloneAssetDto.title = reqBody.title;
     int32_t newAssetId = MediaAssetsService::GetInstance().CloneAsset(cloneAssetDto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, newAssetId);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, newAssetId);
 }
 
-void MediaAssetsControllerService::ConvertFormat(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::ConvertFormat(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter ConvertFormat");
     ConvertFormatReqBody reqBody;
@@ -1420,8 +1332,7 @@ void MediaAssetsControllerService::ConvertFormat(MessageParcel &data, MessagePar
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("ConvertFormat Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     ConvertFormatDto convertFormatDto;
@@ -1432,16 +1343,16 @@ void MediaAssetsControllerService::ConvertFormat(MessageParcel &data, MessagePar
     if (newAssetId < 0) {
         MEDIA_ERR_LOG("ConvertFormat failed, ret: %{public}d", newAssetId);
         if (newAssetId == E_INVALID_VALUES) {
-            IPC::UserDefineIPC().WriteResponseBody(reply, E_PARAM_CONVERT_FORMAT);
+            return IPC::UserDefineIPC().WriteResponseBody(reply, E_PARAM_CONVERT_FORMAT);
         } else {
-            IPC::UserDefineIPC().WriteResponseBody(reply, E_INNER_CONVERT_FORMAT);
+            return IPC::UserDefineIPC().WriteResponseBody(reply, E_INNER_CONVERT_FORMAT);
         }
     } else {
-        IPC::UserDefineIPC().WriteResponseBody(reply, newAssetId);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, newAssetId);
     }
 }
 
-void MediaAssetsControllerService::RevertToOriginal(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::RevertToOriginal(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RevertToOriginal");
     RevertToOriginalReqBody reqBody;
@@ -1449,26 +1360,24 @@ void MediaAssetsControllerService::RevertToOriginal(MessageParcel &data, Message
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("RevertToOriginal Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     RevertToOriginalDto revertToOriginalDto;
     revertToOriginalDto.fileId = reqBody.fileId;
     revertToOriginalDto.fileUri = reqBody.fileUri;
 
     ret = MediaAssetsService::GetInstance().RevertToOriginal(revertToOriginalDto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::UpdateGalleryFormInfo(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::UpdateGalleryFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter UpdateGalleryFormInfo");
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("UpdateGalleryFormInfo Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = ParameterUtils::CheckFormIds(reqBody.formIds);
     FormInfoDto formInfoDto;
@@ -1484,18 +1393,17 @@ void MediaAssetsControllerService::UpdateGalleryFormInfo(MessageParcel &data, Me
         ret = MediaAssetsService::GetInstance().RemoveGalleryFormInfo(reqBody.formIds.front());
         ret = MediaAssetsService::GetInstance().SaveGalleryFormInfo(formInfoDto);
     }
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::SubmitCloudEnhancementTasks(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SubmitCloudEnhancementTasks(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SubmitCloudEnhancementTasks");
     CloudEnhancementReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SubmitCloudEnhancementTasks Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     bool isValid = false;
     for (auto uri : reqBody.fileUris) {
@@ -1512,18 +1420,17 @@ void MediaAssetsControllerService::SubmitCloudEnhancementTasks(MessageParcel &da
     if (ret == E_OK) {
         ret = MediaAssetsService::GetInstance().SubmitCloudEnhancementTasks(dto);
     }
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::PrioritizeCloudEnhancementTask(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::PrioritizeCloudEnhancementTask(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter PrioritizeCloudEnhancementTask");
     CloudEnhancementReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("PrioritizeCloudEnhancementTask Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     bool isValid = false;
     for (auto uri : reqBody.fileUris) {
@@ -1538,18 +1445,17 @@ void MediaAssetsControllerService::PrioritizeCloudEnhancementTask(MessageParcel 
     if (ret == E_OK) {
         ret = MediaAssetsService::GetInstance().PrioritizeCloudEnhancementTask(dto);
     }
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::CancelCloudEnhancementTasks(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::CancelCloudEnhancementTasks(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CancelCloudEnhancementTasks");
     CloudEnhancementReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CancelCloudEnhancementTasks Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     bool isValid = false;
     for (auto uri : reqBody.fileUris) {
@@ -1564,34 +1470,32 @@ void MediaAssetsControllerService::CancelCloudEnhancementTasks(MessageParcel &da
     if (ret == E_OK) {
         ret = MediaAssetsService::GetInstance().SubmitCloudEnhancementTasks(dto);
     }
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::CancelAllCloudEnhancementTasks(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::CancelAllCloudEnhancementTasks(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CancelAllCloudEnhancementTasks");
     CloudEnhancementReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CancelAllCloudEnhancementTasks Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     if (ret == E_OK) {
         ret = MediaAssetsService::GetInstance().CancelAllCloudEnhancementTasks();
     }
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::StartDownloadCloudMedia(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::StartDownloadCloudMedia(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter StartDownloadCloudMedia");
     StartDownloadCloudMediaReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("StartDownloadCloudMedia Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     CloudMediaDownloadType downloadType = static_cast<CloudMediaDownloadType>(reqBody.cloudMediaType);
 
@@ -1599,39 +1503,37 @@ void MediaAssetsControllerService::StartDownloadCloudMedia(MessageParcel &data, 
             downloadType != CloudMediaDownloadType::DOWNLOAD_GENTLE) {
         ret = E_INVALID_VALUES;
         MEDIA_ERR_LOG("StartDownloadCloudMedia error, err param");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     CloudMediaAssetManager &instance = CloudMediaAssetManager::GetInstance();
     ret = instance.StartDownloadCloudAsset(downloadType);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::PauseDownloadCloudMedia(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::PauseDownloadCloudMedia(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter PauseDownloadCloudMedia");
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
     int32_t ret = instance.PauseDownloadCloudAsset(CloudMediaTaskPauseCause::USER_PAUSED);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::CancelDownloadCloudMedia(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::CancelDownloadCloudMedia(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CancelDownloadCloudMedia");
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
     int32_t ret = instance.CancelDownloadCloudAsset();
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::RetainCloudMediaAsset(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::RetainCloudMediaAsset(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RetainCloudMediaAsset");
     RetainCloudMediaAssetReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("StartDownloadCloudMedia Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     if (reqBody.cloudMediaRetainType == static_cast<int32_t>(CloudMediaRetainType::RETAIN_FORCE)) {
         CloudMediaAssetManager &instance = CloudMediaAssetManager::GetInstance();
@@ -1640,11 +1542,10 @@ void MediaAssetsControllerService::RetainCloudMediaAsset(MessageParcel &data, Me
         ret = E_INVALID_VALUES;
         MEDIA_ERR_LOG("RetainCloudMediaAsset error, err type: %{public}d", reqBody.cloudMediaRetainType);
     }
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    return;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::GrantPhotoUriPermission(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::GrantPhotoUriPermission(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GrantPhotoUriPermission");
     GrantUriPermissionReqBody reqBody;
@@ -1652,8 +1553,7 @@ void MediaAssetsControllerService::GrantPhotoUriPermission(MessageParcel &data, 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GrantPhotoUriPermission Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     GrantUriPermissionDto grantUriPermDto;
     grantUriPermDto.tokenId = reqBody.tokenId;
@@ -1664,11 +1564,10 @@ void MediaAssetsControllerService::GrantPhotoUriPermission(MessageParcel &data, 
     grantUriPermDto.uriType = reqBody.uriType;
 
     ret = MediaAssetsService::GetInstance().GrantPhotoUriPermission(grantUriPermDto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    return;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::GrantPhotoUrisPermission(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::GrantPhotoUrisPermission(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GrantPhotoUrisPermission");
     GrantUrisPermissionReqBody reqBody;
@@ -1676,8 +1575,7 @@ void MediaAssetsControllerService::GrantPhotoUrisPermission(MessageParcel &data,
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GrantPhotoUrisPermission Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     GrantUrisPermissionDto grantUrisPermDto;
     grantUrisPermDto.tokenId = reqBody.tokenId;
@@ -1688,11 +1586,10 @@ void MediaAssetsControllerService::GrantPhotoUrisPermission(MessageParcel &data,
     grantUrisPermDto.uriType = reqBody.uriType;
 
     ret = MediaAssetsService::GetInstance().GrantPhotoUrisPermission(grantUrisPermDto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    return;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::CancelPhotoUriPermission(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::CancelPhotoUriPermission(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GrantPhotoUriPermission");
     CancelUriPermissionReqBody reqBody;
@@ -1700,8 +1597,7 @@ void MediaAssetsControllerService::CancelPhotoUriPermission(MessageParcel &data,
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CancelPhotoUriPermission Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     CancelUriPermissionDto cancelUriPermDto;
     cancelUriPermDto.tokenId = reqBody.tokenId;
@@ -1712,11 +1608,10 @@ void MediaAssetsControllerService::CancelPhotoUriPermission(MessageParcel &data,
     cancelUriPermDto.uriType = reqBody.uriType;
 
     ret = MediaAssetsService::GetInstance().CancelPhotoUriPermission(cancelUriPermDto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    return;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::StartThumbnailCreationTask(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::StartThumbnailCreationTask(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter StartThumbnailCreationTask");
     StartThumbnailCreationTaskReqBody reqBody;
@@ -1724,18 +1619,16 @@ void MediaAssetsControllerService::StartThumbnailCreationTask(MessageParcel &dat
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("StartThumbnailCreationTask Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     StartThumbnailCreationTaskDto startCreationTaskDto;
     startCreationTaskDto.predicates = reqBody.predicates;
     startCreationTaskDto.requestId = reqBody.requestId;
     ret = MediaAssetsService::GetInstance().StartThumbnailCreationTask(startCreationTaskDto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    return;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::StopThumbnailCreationTask(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::StopThumbnailCreationTask(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter StopThumbnailCreationTask");
     StopThumbnailCreationTaskReqBody reqBody;
@@ -1743,17 +1636,15 @@ void MediaAssetsControllerService::StopThumbnailCreationTask(MessageParcel &data
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("StopThumbnailCreationTask Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     StopThumbnailCreationTaskDto stopCreationTaskDto;
     stopCreationTaskDto.requestId = reqBody.requestId;
     ret = MediaAssetsService::GetInstance().StopThumbnailCreationTask(stopCreationTaskDto);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    return;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::IsEdited(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::IsEdited(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter IsEdited");
     IsEditedReqBody reqBody;
@@ -1761,8 +1652,7 @@ void MediaAssetsControllerService::IsEdited(MessageParcel &data, MessageParcel &
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("IsEdited Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     DataShare::DataSharePredicates predicates;
     vector<string> columns = { PhotoColumn::PHOTO_EDIT_TIME };
@@ -1772,10 +1662,10 @@ void MediaAssetsControllerService::IsEdited(MessageParcel &data, MessageParcel &
     auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
     rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
-    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
 
-void MediaAssetsControllerService::RequestEditData(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::RequestEditData(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RequestEditData");
     RequestEditDataReqBody reqBody;
@@ -1783,8 +1673,7 @@ void MediaAssetsControllerService::RequestEditData(MessageParcel &data, MessageP
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("RequestEditData Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     NativeRdb::RdbPredicates rdbPredicate =
         RdbDataShareAdapter::RdbUtils::ToPredicates(reqBody.predicates, PhotoColumn::PHOTOS_TABLE);
@@ -1792,10 +1681,10 @@ void MediaAssetsControllerService::RequestEditData(MessageParcel &data, MessageP
     auto resultSet = MediaLibraryRdbStore::QueryEditDataExists(rdbPredicate);
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
     rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
-    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
 
-void MediaAssetsControllerService::GetEditData(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::GetEditData(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetEditData");
     GetEditDataReqBody reqBody;
@@ -1803,8 +1692,7 @@ void MediaAssetsControllerService::GetEditData(MessageParcel &data, MessageParce
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GetEditData Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     NativeRdb::RdbPredicates rdbPredicate =
         RdbDataShareAdapter::RdbUtils::ToPredicates(reqBody.predicates, PhotoColumn::PHOTOS_TABLE);
@@ -1812,10 +1700,10 @@ void MediaAssetsControllerService::GetEditData(MessageParcel &data, MessageParce
     auto resultSet = MediaLibraryRdbStore::QueryEditDataExists(rdbPredicate);
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
     rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
-    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
 
-void MediaAssetsControllerService::GetCloudMediaAssetStatus(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::GetCloudMediaAssetStatus(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetCloudMediaAssetStatus");
     GetCloudMediaAssetStatusReqBody reqBody;
@@ -1823,16 +1711,15 @@ void MediaAssetsControllerService::GetCloudMediaAssetStatus(MessageParcel &data,
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GetCloudMediaAssetStatus Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
     rspBody.status = instance.GetCloudMediaAssetTaskStatus();
-    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
 
-void MediaAssetsControllerService::StartAssetAnalysis(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::StartAssetAnalysis(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter StartAssetAnalysis");
     StartAssetAnalysisReqBody reqBody;
@@ -1840,8 +1727,7 @@ void MediaAssetsControllerService::StartAssetAnalysis(MessageParcel &data, Messa
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("StartAssetAnalysis Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     MediaLibraryCommand cmd
         (OperationObject::ANALYSIS_PHOTO_MAP, OperationType::UPDATE_PORTRAITS_ORDER, MediaLibraryApi::API_10);
@@ -1849,18 +1735,17 @@ void MediaAssetsControllerService::StartAssetAnalysis(MessageParcel &data, Messa
     auto resultSet = MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(cmd);
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
     rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
-    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
 
-void MediaAssetsControllerService::RequestContent(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::RequestContent(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RequestContent");
     RequestContentReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("RequestContent Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     int32_t position = 0;
@@ -1868,11 +1753,10 @@ void MediaAssetsControllerService::RequestContent(MessageParcel &data, MessagePa
 
     ret = MediaAssetsService::GetInstance().RequestContent(reqBody.mediaId, position);
     respBody.position = position;
-    IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
-    return;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
-void MediaAssetsControllerService::GetCloudEnhancementPair(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::GetCloudEnhancementPair(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetCloudEnhancementPair");
     GetCloudEnhancementPairReqBody reqBody;
@@ -1881,18 +1765,17 @@ void MediaAssetsControllerService::GetCloudEnhancementPair(MessageParcel &data, 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GetCloudEnhancementPair Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     shared_ptr<NativeRdb::ResultSet> result =
         MediaAssetsService::GetInstance().GetCloudEnhancementPair(reqBody.photoUri);
     auto resultSetBridge = RdbUtils::ToResultSetBridge(result);
     respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
-    IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
-void MediaAssetsControllerService::QueryCloudEnhancementTaskState(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::QueryCloudEnhancementTaskState(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter QueryCloudEnhancementTaskState");
     QueryCloudEnhancementTaskStateReqBody reqBody;
@@ -1901,8 +1784,7 @@ void MediaAssetsControllerService::QueryCloudEnhancementTaskState(MessageParcel 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("QueryCloudEnhancementTaskState Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
     QueryCloudEnhancementTaskStateDto dto;
@@ -1911,49 +1793,46 @@ void MediaAssetsControllerService::QueryCloudEnhancementTaskState(MessageParcel 
     respBody.photoId = dto.photoId;
     respBody.ceAvailable = dto.ceAvailable;
     respBody.ceErrorCode = dto.ceErrorCode;
-    IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
-void MediaAssetsControllerService::SyncCloudEnhancementTaskStatus(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::SyncCloudEnhancementTaskStatus(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SyncCloudEnhancementTaskStatus");
     CloudEnhancementReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SyncCloudEnhancementTaskStatus Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     if (ret == E_OK) {
         ret = MediaAssetsService::GetInstance().SyncCloudEnhancementTaskStatus();
     }
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void MediaAssetsControllerService::QueryPhotoStatus(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::QueryPhotoStatus(MessageParcel &data, MessageParcel &reply)
 {
     QueryPhotoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("QueryPhotoStatus Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     QueryPhotoRspBody rspBody;
     ret = MediaAssetsService::GetInstance().QueryPhotoStatus(reqBody, rspBody);
-    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
 
-void MediaAssetsControllerService::LogMovingPhoto(MessageParcel &data, MessageParcel &reply)
+int32_t MediaAssetsControllerService::LogMovingPhoto(MessageParcel &data, MessageParcel &reply)
 {
     AdaptedReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("LogMovingPhoto Read Request Error");
-        IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-        return;
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = MediaAssetsService::GetInstance().LogMovingPhoto(reqBody);
-    IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 } // namespace OHOS::Media

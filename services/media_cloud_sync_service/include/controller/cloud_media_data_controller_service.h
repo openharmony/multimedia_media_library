@@ -40,22 +40,22 @@
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaDataControllerService : public IPC::IMediaControllerService {
 private:
-    void UpdateDirty(MessageParcel &data, MessageParcel &reply);
-    void UpdatePosition(MessageParcel &data, MessageParcel &reply);
-    void UpdateThmStatus(MessageParcel &data, MessageParcel &reply);
-    void GetAgingFile(MessageParcel &data, MessageParcel &reply);
-    void GetActiveAgingFile(MessageParcel &data, MessageParcel &reply);
-    void GetVideoToCache(MessageParcel &data, MessageParcel &reply);
-    void GetFilePosStat(MessageParcel &data, MessageParcel &reply);
-    void GetCloudThmStat(MessageParcel &data, MessageParcel &reply);
-    void GetDirtyTypeStat(MessageParcel &data, MessageParcel &reply);
-    void UpdateLocalFileDirty(MessageParcel &data, MessageParcel &reply);
-    void UpdateSyncStatus(MessageParcel &data, MessageParcel &reply);
-    void GetCloudSyncUnPreparedData(MessageParcel &data, MessageParcel &reply);
-    void SubmitCloudSyncPreparedDataTask(MessageParcel &data, MessageParcel &reply);
+    int32_t UpdateDirty(MessageParcel &data, MessageParcel &reply);
+    int32_t UpdatePosition(MessageParcel &data, MessageParcel &reply);
+    int32_t UpdateThmStatus(MessageParcel &data, MessageParcel &reply);
+    int32_t GetAgingFile(MessageParcel &data, MessageParcel &reply);
+    int32_t GetActiveAgingFile(MessageParcel &data, MessageParcel &reply);
+    int32_t GetVideoToCache(MessageParcel &data, MessageParcel &reply);
+    int32_t GetFilePosStat(MessageParcel &data, MessageParcel &reply);
+    int32_t GetCloudThmStat(MessageParcel &data, MessageParcel &reply);
+    int32_t GetDirtyTypeStat(MessageParcel &data, MessageParcel &reply);
+    int32_t UpdateLocalFileDirty(MessageParcel &data, MessageParcel &reply);
+    int32_t UpdateSyncStatus(MessageParcel &data, MessageParcel &reply);
+    int32_t GetCloudSyncUnPreparedData(MessageParcel &data, MessageParcel &reply);
+    int32_t SubmitCloudSyncPreparedDataTask(MessageParcel &data, MessageParcel &reply);
 
 private:
-    using RequestHandle = void (CloudMediaDataControllerService::*)(MessageParcel &, MessageParcel &);
+    using RequestHandle = int32_t (CloudMediaDataControllerService::*)(MessageParcel &, MessageParcel &);
     const std::map<uint32_t, RequestHandle> HANDLERS = {
         {static_cast<uint32_t>(CloudMediaOperationCode::CMD_UPDATE_DIRTY_FOR_CLOUD_CHECK),
             &CloudMediaDataControllerService::UpdateDirty},
@@ -91,7 +91,7 @@ public:
     {
         return this->HANDLERS.find(code) != this->HANDLERS.end();
     }
-    void OnRemoteRequest(
+    int32_t OnRemoteRequest(
         uint32_t code, MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context) override
     {
         auto it = this->HANDLERS.find(code);

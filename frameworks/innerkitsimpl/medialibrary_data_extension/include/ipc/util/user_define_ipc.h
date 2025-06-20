@@ -37,20 +37,19 @@ public:
     }
 
     template <class RSP>
-    void WriteResponseBody(MessageParcel &reply, const RSP &respBody, const int32_t errCode = E_OK)
+    int32_t WriteResponseBody(MessageParcel &reply, const RSP &respBody, const int32_t errCode = E_OK)
     {
         IPC::MediaRespVo<RSP> respVo;
         respVo.SetBody(respBody);
         respVo.SetErrCode(errCode);
         bool isValid = respVo.Marshalling(reply);
         CHECK_AND_PRINT_LOG(isValid, "Failed to marshalling data");
-        return;
+        return errCode;
     }
 
-    void WriteResponseBody(MessageParcel &reply, const int32_t errCode = E_OK)
+    int32_t WriteResponseBody(MessageParcel &reply, const int32_t errCode = E_OK)
     {
-        WriteResponseBody(reply, IPC::MediaEmptyObjVo(), errCode);
-        return;
+        return WriteResponseBody(reply, IPC::MediaEmptyObjVo(), errCode);
     }
 };
 }  // namespace OHOS::Media::IPC
