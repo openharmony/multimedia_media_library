@@ -3977,5 +3977,97 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_date_modified_001, T
     
     MEDIA_INFO_LOG("end tdd photo_oprn_update_date_modified_001");
 }
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_moving_photo_video_ready_001, TestSize.Level2)
+{
+    //create moving photo with video
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo_video_ready.jpg", true);
+    MEDIA_INFO_LOG("create moving photo fileId:%{public}d", fileId);
+    EXPECT_GE(fileId, 0);
+    // write video data
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
+    string fileUriStr = fileUri.ToString();
+    string videoUriStr = fileUriStr;
+    MediaFileUtils::UriAppendKeyValue(videoUriStr, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
+    Uri videoUri(videoUriStr);
+    MediaLibraryCommand videoCmd(videoUri, Media::OperationType::OPEN);
+    videoCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t videoFd = MediaLibraryDataManager::GetInstance()->OpenFile(videoCmd, "w");
+    ASSERT_GT(videoFd, 0);
+    EXPECT_EQ(write(videoFd, FILE_TEST_MP4, sizeof(FILE_TEST_MP4)), sizeof(FILE_TEST_MP4));
+    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
+    ValuesBucket closeValues;
+    closeValues.PutString(MEDIA_DATA_DB_URI, fileUriStr);
+    closeCmd.SetValueBucket(closeValues);
+    MediaLibraryPhotoOperations::Close(closeCmd);
+    videoFd = -1; // set invalid value;
+    // check
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY + "/"
+        + MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY);
+    MediaLibraryCommand cmd(uri);
+    cmd.SetDataSharePred(predicates);
+    int errCode = 0;
+    vector<string> columns;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    EXPECT_EQ(errCode, 0);
+    ASSERT_NE(queryResultSet, nullptr);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    int32_t ready = 0;
+    EXPECT_EQ(resultSet->GetInt(0, ready), NativeRdb::E_OK);
+    EXPECT_NE(ready, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_moving_photo_video_ready_002, TestSize.Level2)
+{
+    //create moving photo with video
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo_video_ready.jpg", true);
+    MEDIA_INFO_LOG("create moving photo fileId:%{public}d", fileId);
+    EXPECT_GE(fileId, 0);
+    // check
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY + "/"
+        + MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY);
+    MediaLibraryCommand cmd(uri);
+    cmd.SetDataSharePred(predicates);
+    int errCode = 0;
+    vector<string> columns;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    EXPECT_EQ(errCode, 0);
+    ASSERT_NE(queryResultSet, nullptr);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    int32_t ready = 0;
+    EXPECT_EQ(resultSet->GetInt(0, ready), NativeRdb::E_OK);
+    EXPECT_EQ(ready, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_moving_photo_video_ready_003, TestSize.Level2)
+{
+    //create moving photo with video
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo_video_ready.jpg", false);
+    MEDIA_INFO_LOG("create moving photo fileId:%{public}d", fileId);
+    EXPECT_GE(fileId, 0);
+    // check
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY + "/"
+        + MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY);
+    MediaLibraryCommand cmd(uri);
+    cmd.SetDataSharePred(predicates);
+    int errCode = 0;
+    vector<string> columns;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    EXPECT_EQ(errCode, 0);
+    ASSERT_NE(queryResultSet, nullptr);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    int32_t ready = 0;
+    EXPECT_EQ(resultSet->GetInt(0, ready), NativeRdb::E_OK);
+    EXPECT_EQ(ready, 0);
+}
 } // namespace Media
 } // namespace OHOS
