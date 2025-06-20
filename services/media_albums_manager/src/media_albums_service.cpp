@@ -806,4 +806,28 @@ int32_t MediaAlbumsService::GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqB
     rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_SUCCESS;
 }
+
+int32_t MediaAlbumsService::UpdatePhotoAlbumOrder(const SetPhotoAlbumOrderDto &setPhotoAlbumOrderDto)
+{
+    CHECK_AND_RETURN_RET_LOG(setPhotoAlbumOrderDto.CheckArray(), E_INNER_FAIL,
+        "SetPhotoAlbumOrderDto can not be used to update album order");
+    
+    vector<NativeRdb::ValuesBucket> valuesBuckets;
+    vector<NativeRdb::RdbPredicates> predicatesArray;
+    for (size_t i = 0; i < setPhotoAlbumOrderDto.albumIds.size(); i++) {
+        NativeRdb::RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+        predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, setPhotoAlbumOrderDto.albumIds[i]);
+        predicatesArray.push_back(predicates);
+
+        NativeRdb::ValuesBucket valuesBucket;
+        valuesBucket.Put(setPhotoAlbumOrderDto.albumOrderColumn, setPhotoAlbumOrderDto.albumOrders[i]);
+        valuesBucket.Put(setPhotoAlbumOrderDto.orderSectionColumn, setPhotoAlbumOrderDto.orderSection[i]);
+        valuesBucket.Put(setPhotoAlbumOrderDto.orderTypeColumn, setPhotoAlbumOrderDto.orderType[i]);
+        valuesBucket.Put(setPhotoAlbumOrderDto.orderStatusColumn, setPhotoAlbumOrderDto.orderStatus[i]);
+        valuesBuckets.push_back(valuesBucket);
+    }
+
+    int32_t changedRows = MediaLibraryAlbumOperations::UpdatePhotoAlbumOrder(valuesBuckets, predicatesArray);
+    return changedRows;
+}
 } // namespace OHOS::Media

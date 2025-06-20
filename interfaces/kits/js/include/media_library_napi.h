@@ -343,6 +343,9 @@ private:
     EXPORT static napi_value PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperSetForceHideSensitiveType(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessStartAssetAnalysis(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetPhotoAlbumOrder(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessSetPhotoAlbumOrder(napi_env env, napi_callback_info info);
     
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
@@ -491,6 +494,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::unique_ptr<FetchResult<PhotoAlbum>> fetchPhotoAlbumResult;
     std::unique_ptr<FetchResult<SmartAlbumAsset>> fetchSmartAlbumResult;
     std::unique_ptr<FetchResult<PhotoAssetCustomRecord>> fetchCustomRecordsResult;
+    std::unique_ptr<FetchResult<AlbumOrder>> fetchAlbumOrderResult;
     std::unique_ptr<FileAsset> fileAsset;
     std::unique_ptr<PhotoAlbum> photoAlbumData;
     std::unique_ptr<SmartAlbumAsset> smartAlbumData;
@@ -539,6 +543,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t userId = -1;
     int32_t photoAlbumType;
     int32_t photoAlbumSubType;
+    int32_t orderStyle = 0;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

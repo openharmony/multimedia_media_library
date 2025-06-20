@@ -37,6 +37,7 @@ ohos_shared_library("media_library") {
   sources = [
     "src/acl.cpp",
     "src/album_asset.cpp",
+    "src/album_order.cpp",
     "src/base_column.cpp",
     "src/custom_records_column.cpp",
     "src/dir_asset.cpp",
