@@ -96,6 +96,7 @@ ohos_shared_library("media_library_cloud_sync") {
     "data_share:datashare_consumer",
     "dfs_service:cloudfile_kit",
     "hilog:libhilog",
+    "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
     "ipc:ipc_single",
@@ -103,7 +104,6 @@ ohos_shared_library("media_library_cloud_sync") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
-    "hisysevent:libhisysevent",
   ]
 
   ldflags = [ "-Wl,--gc-sections" ]

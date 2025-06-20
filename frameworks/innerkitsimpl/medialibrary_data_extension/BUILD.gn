@@ -121,7 +121,6 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_permission/include",
     "${MEDIALIB_SERVICES_PATH}/media_power_efficiency/include",
     "${MEDIALIB_SERVICES_PATH}/media_visit_count/include",
-
   ]
   include_dirs += include_fuse
   include_dirs += include_scanner
