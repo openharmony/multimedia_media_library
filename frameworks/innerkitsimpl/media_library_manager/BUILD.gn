@@ -59,9 +59,7 @@ ohos_shared_library("media_library_manager") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_uris_by_old_uris_inner_vo.cpp",
   ]
 
-  user_ipc_client_source = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp",
-  ]
+  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp" ]
 
   include_dirs += user_ipc_client_include_dirs
   sources += media_albums_manager_vo_source
@@ -90,10 +88,10 @@ ohos_shared_library("media_library_manager") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
+    "ipc:ipc_core",
     "kv_store:distributeddata_inner",
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
-    "ipc:ipc_core",
   ]
 
   ldflags = [ "-Wl,--gc-sections" ]
@@ -165,9 +163,7 @@ ohos_shared_library("media_library_extend_manager") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/check_photo_uri_permission_inner_vo.cpp",
   ]
 
-  user_ipc_client_source = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp",
-  ]
+  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp" ]
 
   include_dirs += user_ipc_client_include_dirs
   sources += media_albums_manager_vo_source
@@ -195,9 +191,9 @@ ohos_shared_library("media_library_extend_manager") {
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "ipc:ipc_core",
     "os_account:os_account_innerkits",
     "samgr:samgr_proxy",
-    "ipc:ipc_core",
   ]
 
   ldflags = [ "-Wl,--gc-sections" ]
@@ -259,9 +255,7 @@ ohos_shared_library("media_library_custom_restore") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/stop_restore_vo.cpp",
   ]
 
-  user_ipc_client_source = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp",
-  ]
+  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp" ]
 
   include_dirs += user_ipc_client_include_dirs
   sources += media_albums_manager_vo_source
@@ -279,8 +273,8 @@ ohos_shared_library("media_library_custom_restore") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
-    "samgr:samgr_proxy",
     "ipc:ipc_core",
+    "samgr:samgr_proxy",
   ]
 
   ldflags = [ "-Wl,--gc-sections" ]

@@ -167,6 +167,7 @@ ohos_shared_library("medialibrary_nutils") {
   public_configs = [ ":public_napi_config" ]
   configs = [ ":napi_config" ]
   sources = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_define_ipc_client.cpp",
     "${MEDIALIB_JS_PATH}/src/album_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/album_order_napi.cpp",
@@ -209,7 +210,6 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/thumbnail_manager.cpp",
     "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src//utils/media_notification_utils.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_itypes_utils.cpp",
   ]
 
@@ -419,10 +419,10 @@ ohos_shared_library("medialibrary") {
     "ability_runtime:napi_base_context",
     "c_utils:utils",
     "data_share:datashare_consumer",
-    "hilog:libhilog",
-    "napi:ace_napi",
-    "i18n:intl_util",
     "device_manager:devicemanagersdk",
+    "hilog:libhilog",
+    "i18n:intl_util",
+    "napi:ace_napi",
   ]
 
   defines = []
@@ -486,10 +486,10 @@ ohos_shared_library("userfilemanager") {
     "ability_runtime:napi_base_context",
     "c_utils:utils",
     "data_share:datashare_consumer",
-    "hilog:libhilog",
-    "napi:ace_napi",
-    "i18n:intl_util",
     "device_manager:devicemanagersdk",
+    "hilog:libhilog",
+    "i18n:intl_util",
+    "napi:ace_napi",
   ]
 
   defines = []

@@ -50,9 +50,7 @@ ohos_shared_library("media_library_asset_manager") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/query_photo_vo.cpp",
   ]
 
-  user_ipc_client_source = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp",
-  ]
+  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp" ]
 
   include_dirs += user_ipc_client_include_dirs
   sources += media_albums_manager_vo_source
