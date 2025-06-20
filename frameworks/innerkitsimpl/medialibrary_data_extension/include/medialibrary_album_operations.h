@@ -107,6 +107,8 @@ public:
     static bool IsCoverInSystemAlbum(NativeRdb::RdbPredicates &predicates, int32_t albumSubtype);
     static bool IsManunalCloudCover(const std::string &fileId, std::string &coverCloudId);
     static int32_t UpdateCoverUriExecute(int32_t albumId, const std::string &coverUri, const std::string &fileId);
+    static int32_t UpdatePhotoAlbumOrder(const vector<NativeRdb::ValuesBucket> &valuesBuckets,
+        const vector<NativeRdb::RdbPredicates> &predicatesArray);
 };
 } // namespace Media
 } // namespace OHOS
