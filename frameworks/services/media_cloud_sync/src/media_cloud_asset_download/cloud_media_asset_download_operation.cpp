@@ -117,12 +117,10 @@ static const std::map<CloudMediaTaskRecoverCause, CloudMediaTaskPauseCause> RECO
 void CloudDeathRecipient::OnRemoteDied(const wptr<IRemoteObject> &object)
 {
     MEDIA_INFO_LOG("enter.");
-    bool cond = (!operation_ || operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::DOWNLOADING);
-    CHECK_AND_RETURN_LOG(!cond, "operation is nullptr or taskStatus is not DOWNLOADING");
     CHECK_AND_RETURN_LOG(object != nullptr, "remote object is nullptr");
-
     object->RemoveDeathRecipient(this);
-    operation_->CancelDownloadTask();
+    CHECK_AND_RETURN_LOG(operation_, "operation is nullptr");
+    operation_->HandleOnRemoteDied();
 }
 
 std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetDownloadOperation::GetInstance()
@@ -300,7 +298,6 @@ void CloudMediaAssetDownloadOperation::StartFileCacheFailed()
 void CloudMediaAssetDownloadOperation::StartBatchDownload()
 {
     std::thread([this]() {
-        this_thread::sleep_for(chrono::milliseconds(SLEEP_FOR_LOCK));
         int32_t ret = cloudSyncManager_.get().StartFileCache(dataForDownload_.pathVec, downloadId_,
             FieldKey::FIELDKEY_CONTENT, downloadCallback_);
         if (ret != E_OK || downloadId_ == DOWNLOAD_ID_DEFAULT) {
@@ -332,6 +329,9 @@ int32_t CloudMediaAssetDownloadOperation::SubmitBatchDownload(
         MEDIA_INFO_LOG("SubmitBatchDownload permission denied, taskStatus_: %{public}d.",
             static_cast<int32_t>(taskStatus_));
         return E_ERR;
+    }
+    if (cloudRemoteObject_ == nullptr) {
+        CHECK_AND_PRINT_LOG(SetDeathRecipient() == E_OK, "failed to register death recipient.");
     }
     isCache_ = isCache;
     if (IsDataEmpty(data)) {
@@ -763,6 +763,13 @@ std::string CloudMediaAssetDownloadOperation::GetTaskInfo()
 void CloudMediaAssetDownloadOperation::ResetDownloadTryTime()
 {
     downloadTryTime_ = 0;
+}
+
+void CloudMediaAssetDownloadOperation::HandleOnRemoteDied()
+{
+    cloudRemoteObject_ = nullptr;
+    CHECK_AND_RETURN_LOG(taskStatus_ == CloudMediaAssetTaskStatus::DOWNLOADING, "taskStatus is not DOWNLOADING");
+    CancelDownloadTask();
 }
 } // namespace Media
 } // namespace OHOS

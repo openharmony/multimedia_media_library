@@ -99,6 +99,7 @@ public:
     EXPORT std::string GetTaskInfo();
     EXPORT int32_t InitDownloadTaskInfo();
     void ResetDownloadTryTime();
+    void HandleOnRemoteDied();
 
 private:
     void ClearData(DownloadFileData &data);
