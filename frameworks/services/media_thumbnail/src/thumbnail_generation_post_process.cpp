@@ -31,7 +31,7 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 
-int32_t ThumbnailGenerationPostProcess::PostProcess(const ThumbnailData& data, const ThumbRdbOpt& opts)
+int32_t ThumbnailGenerationPostProcess::PostProcess(ThumbnailData& data, const ThumbRdbOpt& opts)
 {
     int32_t err = E_OK;
     bool hasGeneratedThumb = HasGeneratedThumb(data);
@@ -59,7 +59,7 @@ int32_t ThumbnailGenerationPostProcess::PostProcess(const ThumbnailData& data, c
     return E_OK;
 }
 
-int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValue(const ThumbnailData& data, const ThumbRdbOpt& opts)
+int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValue(ThumbnailData& data, const ThumbRdbOpt& opts)
 {
     const string& photosTable = PhotoColumn::PHOTOS_TABLE;
     CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "RdbStore is nullptr");
@@ -70,6 +70,7 @@ int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValue(const ThumbnailData
     int32_t changedRows;
     int32_t err = opts.store->Update(changedRows, photosTable,
         data.rdbUpdateCache, MEDIA_DATA_DB_ID + " = ?", { data.id });
+    data.rdbUpdateCache.Clear();
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. table: %{public}s, err: %{public}d",
         photosTable.c_str(), err);
     CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_ERR, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
