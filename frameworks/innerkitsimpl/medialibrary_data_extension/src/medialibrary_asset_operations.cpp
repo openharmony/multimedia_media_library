@@ -923,6 +923,23 @@ static void ExtractHandlePhotoInfo(MediaLibraryCommand &cmd,
     }
 }
 
+static void UpdateEnhanceParam(MediaLibraryCommand &cmd, ValuesBucket &outValues, ValueObject &value)
+{
+    int32_t ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT);
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_CE_AVAILABLE, value)) {
+        value.GetInt(ceAvailable);
+        MEDIA_INFO_LOG("set ce_available: %{public}d", ceAvailable);
+    }
+    outValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+
+    int32_t isAuto = static_cast<int32_t>(CloudEnhancementIsAutoType::NOT_AUTO);
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_IS_AUTO, value)) {
+        value.GetInt(isAuto);
+        MEDIA_INFO_LOG("set is_auto: %{public}d", isAuto);
+    }
+    outValues.PutInt(PhotoColumn::PHOTO_IS_AUTO, isAuto);
+}
+
 static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, const FileAsset &fileAsset)
 {
     if (!PermissionUtils::IsNativeSAApp()) {
@@ -969,12 +986,7 @@ static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, c
         outValues.PutString(PhotoColumn::PHOTO_ID, photoId);
     }
 
-    int32_t ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT);
-    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_CE_AVAILABLE, value)) {
-        value.GetInt(ceAvailable);
-        MEDIA_INFO_LOG("set ce_available: %{public}d", ceAvailable);
-    }
-    outValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+    UpdateEnhanceParam(cmd, outValues, value);
 
     ExtractHandlePhotoInfo(cmd, outValues, fileAsset);
 }
