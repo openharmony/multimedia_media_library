@@ -190,6 +190,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_albums_test_
         CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "", PHOTO_INFO_MAP
     };
     cloneRestoreHighlight->Init(initInfo);
+    cloneRestoreHighlight->Preprocess();
     cloneRestoreHighlight->RestoreAlbums();
     EXPECT_EQ(cloneRestoreHighlight->isMapOrder_, true);
     string analysisCondition = "album_name = 'test_highlight_album'";
@@ -216,6 +217,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_maps_test_00
         CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "", PHOTO_INFO_MAP
     };
     cloneRestoreHighlight->Init(initInfo);
+    cloneRestoreHighlight->Preprocess();
     cloneRestoreHighlight->isMapOrder_ = true;
 
     CloneRestoreHighlight::AnalysisAlbumInfo testAnalysisInfo;
@@ -243,6 +245,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_values_test_0
         CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "", PHOTO_INFO_MAP
     };
     cloneRestoreHighlight->Init(initInfo);
+    cloneRestoreHighlight->Preprocess();
     cloneRestoreHighlight->isMapOrder_ = false;
 
     CloneRestoreHighlight::AnalysisAlbumInfo testAnalysisInfo;
