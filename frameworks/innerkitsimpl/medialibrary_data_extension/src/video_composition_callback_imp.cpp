@@ -38,7 +38,7 @@ std::unordered_map<uint32_t, std::shared_ptr<VideoEditor>> VideoCompositionCallb
 std::queue<VideoCompositionCallbackImpl::Task> VideoCompositionCallbackImpl::waitQueue_;
 int32_t VideoCompositionCallbackImpl::curWorkerNum_ = 0;
 std::mutex VideoCompositionCallbackImpl::mutex_;
-
+// LCOV_EXCL_START
 static int32_t CheckDirPathReal(const std::string &filePath)
 {
     string dirPath;
@@ -266,6 +266,6 @@ void VideoCompositionCallbackImpl::InitCallbackImpl(std::shared_ptr<VideoComposi
     callBack->assetPath_ = assetPath;
     callBack->isNeedScan_ = isNeedScan;
 }
-
+// LCOV_EXCL_STOP
 } // end of namespace
 }

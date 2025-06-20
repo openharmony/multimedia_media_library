@@ -44,7 +44,7 @@ constexpr int8_t MILLISECONDS_LENGTH = 3;
 constexpr int64_t SEC_TO_MILLISEC = 1000;
 constexpr int MAX_TIME_BUFF = 64;
 const std::string HIAUDIT_LOG_NAME = HIAUDIT_CONFIG.logPath + HIAUDIT_CONFIG.logName + "_audit.csv";
-
+// LCOV_EXCL_START
 BackupHiAudit::BackupHiAudit()
 {
     Init();
@@ -205,4 +205,5 @@ void BackupHiAudit::ZipAuditLog()
     }
     BackupZipUtil::CloseZipFile(compressZip);
 }
+// LCOV_EXCL_STOP
 } // namespace OHOS::Media

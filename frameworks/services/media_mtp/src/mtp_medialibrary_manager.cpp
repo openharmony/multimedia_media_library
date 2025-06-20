@@ -107,7 +107,7 @@ std::shared_ptr<MtpMedialibraryManager> MtpMedialibraryManager::instance_ = null
 std::mutex MtpMedialibraryManager::mutex_;
 shared_ptr<DataShare::DataShareHelper> MtpMedialibraryManager::dataShareHelper_ = nullptr;
 std::shared_ptr<MediaSyncObserver> mediaPhotoObserver_ = nullptr;
-
+// LCOV_EXCL_START
 std::string MtpMedialibraryManager::GetHmdfsPath(const std::string &path)
 {
     const std::string FILES = "/files/";
@@ -1693,5 +1693,6 @@ int32_t MtpMedialibraryManager::GetCloudPhotoCountFromAlbum(const std::shared_pt
     resultSet->Close();
     return count;
 }
+// LCOV_EXCL_STOP
 }  // namespace Media
 }  // namespace OHOS

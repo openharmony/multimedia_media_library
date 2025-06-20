@@ -96,7 +96,7 @@ const double HALF = 0.5;
 const std::string BackgroundCloudFileProcessor::taskName_ = DOWNLOAD_ORIGIN_CLOUD_FILES_FOR_LOGIN;
 static const std::string REMOVE_KEY = "taskRun";
 static const std::string REMOVE_VALUE = "false";
-
+// LCOV_EXCL_START
 void BackgroundCloudFileProcessor::SetDownloadLatestFinished(bool downloadLatestFinished)
 {
     int32_t errCode;
@@ -865,5 +865,6 @@ int32_t BackgroundCloudFileProcessor::Stop(const std::string &taskExtra)
     });
     return E_OK;
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

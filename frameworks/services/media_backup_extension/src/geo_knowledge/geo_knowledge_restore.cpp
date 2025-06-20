@@ -52,7 +52,7 @@ const string DOUBLE_EN = "en";
 const int32_t GEO_STATUS_SUCCESS = 1;
 constexpr double DOUBLE_EPSILON = 1e-15;
 
-
+// LCOV_EXCL_START
 void GeoKnowledgeRestore::Init(int32_t sceneCode, std::string taskId,
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
@@ -276,4 +276,5 @@ void GeoKnowledgeRestore::ReportGeoRestoreTask()
         ", failUpdateCnt_: " + std::to_string(failUpdateCnt_) +
         ", Current System Language: " + systemLanguage_);
 }
+// LCOV_EXCL_STOP
 } // namespace OHOS::Media

@@ -904,7 +904,7 @@ void MediaAlbumsControllerService::SetOrderPosition(MessageParcel &data, Message
     cmd.SetDataSharePred(predicates);
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    ret = MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumPortraitsOrder(cmd);
+    ret = MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
     IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 
     return;
@@ -993,7 +993,7 @@ void MediaAlbumsControllerService::AlbumRemoveAssets(MessageParcel &data, Messag
     AlbumRemoveAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("AddAssets Read Request Error");
+        MEDIA_ERR_LOG("RemoveAssets Read Request Error");
         IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         return;
     }
@@ -1029,7 +1029,7 @@ void MediaAlbumsControllerService::AlbumRecoverAssets(MessageParcel &data, Messa
     AlbumRecoverAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("AddAssets Read Request Error");
+        MEDIA_ERR_LOG("RecoverAssets Read Request Error");
         IPC::UserDefineIPC().WriteResponseBody(reply, ret);
         return;
     }

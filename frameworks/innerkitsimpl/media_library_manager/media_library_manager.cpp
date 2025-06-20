@@ -54,6 +54,15 @@
 #include "unique_fd.h"
 #include "userfilemgr_uri.h"
 #include "data_secondary_directory_uri.h"
+#include "medialibrary_business_code.h"
+#include "user_base_ipc_client.h"
+#include "add_visit_count_vo.h"
+#include "create_asset_vo.h"
+#include "get_result_set_from_db_vo.h"
+#include "get_moving_photo_date_modified_vo.h"
+#include "get_uri_from_filepath_vo.h"
+#include "get_filepath_from_uri_vo.h"
+#include "close_asset_vo.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -72,9 +81,6 @@ constexpr int32_t MAX_DEFAULT_THUMBNAIL_SIZE = 768;
 constexpr int32_t DEFAULT_MONTH_THUMBNAIL_SIZE = 128;
 constexpr int32_t DEFAULT_YEAR_THUMBNAIL_SIZE = 64;
 constexpr int32_t URI_MAX_SIZE = 1000;
-constexpr uint32_t URI_PERMISSION_FLAG_READ = 1;
-constexpr uint32_t URI_PERMISSION_FLAG_WRITE = 2;
-constexpr uint32_t URI_PERMISSION_FLAG_READWRITE = 3;
 
 const std::string MULTI_USER_URI_FLAG = "user=";
 
@@ -85,13 +91,6 @@ struct UriParams {
     bool isAstc;
     DecodeDynamicRange dynamicRange;
     string user;
-};
-static map<string, TableType> tableMap = {
-    { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },
-    { MEDIALIBRARY_TYPE_VIDEO_URI, TableType::TYPE_PHOTOS },
-    { MEDIALIBRARY_TYPE_AUDIO_URI, TableType::TYPE_AUDIOS },
-    { PhotoColumn::PHOTO_TYPE_URI, TableType::TYPE_PHOTOS },
-    { AudioColumn::AUDIO_TYPE_URI, TableType::TYPE_AUDIOS }
 };
 
 MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
@@ -124,41 +123,6 @@ void MediaLibraryManager::InitMediaLibraryManager()
     }
 }
 
-static void UriAppendKeyValue(string &uri, const string &key, const string &value)
-{
-    string uriKey = key + '=';
-    if (uri.find(uriKey) != string::npos) {
-        return;
-    }
-    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
-    string append = queryMark + key + '=' + value;
-    size_t posJ = uri.find('#');
-    if (posJ == string::npos) {
-        uri += append;
-    } else {
-        uri.insert(posJ, append);
-    }
-}
-
-static void GetCreateUri(string &uri)
-{
-    uri = PAH_CREATE_PHOTO;
-    const std::string API_VERSION = "api_version";
-    UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-}
-
-static int32_t parseCreateArguments(const string &displayName, DataShareValuesBucket &valuesBucket)
-{
-    MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
-    if (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) {
-        MEDIA_ERR_LOG("Failed to create Asset, invalid file type");
-        return E_ERR;
-    }
-    valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
-    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
-    return E_OK;
-}
-
 string MediaLibraryManager::CreateAsset(const string &displayName)
 {
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
@@ -167,21 +131,21 @@ string MediaLibraryManager::CreateAsset(const string &displayName)
         MEDIA_ERR_LOG("Failed to create Asset, datashareHelper is nullptr");
         return "";
     }
-    DataShareValuesBucket valuesBucket;
-    auto ret = parseCreateArguments(displayName, valuesBucket);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to create Asset, parse create argument fails");
+    MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
+    CHECK_AND_RETURN_RET_LOG((mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO),
+        "", "Failed to create Asset, invalid file type.");
+    CreateAssetReqBody reqBody;
+    reqBody.mediaType = static_cast<int32_t>(mediaType);
+    reqBody.photoSubtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
+    reqBody.displayName = displayName;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_ASSET);
+    CreateAssetRspBody rspBody;
+    int32_t errCode = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+    if (errCode != 0) {
+        MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
         return "";
     }
-    string createFileUri;
-    GetCreateUri(createFileUri);
-    Uri createUri(createFileUri);
-    string outUri;
-    int index = dataShareHelper->InsertExt(createUri, valuesBucket, outUri);
-    if (index < 0) {
-        MEDIA_ERR_LOG("Failed to create Asset, insert database error!");
-        return "";
-    }
+    string outUri = rspBody.outUri;
     return outUri;
 }
 
@@ -225,17 +189,16 @@ int32_t MediaLibraryManager::OpenAsset(string &uri, const string openMode)
 int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
 {
     int32_t retVal = E_FAIL;
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_URI, uri);
 
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
     if (dataShareHelper != nullptr) {
-        string abilityUri = MEDIALIBRARY_DATA_URI;
-        Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
 
         if (close(fd) == E_SUCCESS) {
-            retVal = dataShareHelper->Insert(closeAssetUri, valuesBucket);
+            CloseAssetReqBody reqBody;
+            reqBody.uri = uri;
+            retVal = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper).Call(
+                static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CLOSE_ASSET), reqBody);
         }
 
         if (retVal == E_FAIL) {
@@ -333,16 +296,23 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
             return resultSet;
         }
     }
-    Uri uri(MEDIALIBRARY_MEDIA_PREFIX);
-    DataSharePredicates predicates;
-    predicates.EqualTo(columnName, value);
-    predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
-    DatashareBusinessError businessError;
 
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
     CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "dataShareHelper is null");
-    return dataShareHelper->Query(uri, predicates, columns, &businessError);
+
+    GetResultSetFromDbReqBody reqBody;
+    reqBody.columnName = columnName;
+    reqBody.value = value;
+    reqBody.columns = columns;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_DB);
+    GetResultSetFromDbRespBody rspBody;
+    int32_t errCode = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+    if (errCode != 0) {
+        MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
+        return nullptr;
+    }
+    return rspBody.resultSet;
 }
 
 static int32_t SolvePath(const string &filePath, string &tempPath, string &userId)
@@ -385,6 +355,22 @@ int32_t MediaLibraryManager::CheckResultSet(std::shared_ptr<DataShareResultSet> 
     return E_SUCCESS;
 }
 
+static std::shared_ptr<DataShareResultSet> GetFilePathResultSetFromDb(const string &virId, sptr<IRemoteObject> token)
+{
+    GetFilePathFromUriReqBody reqBody;
+    GetFilePathFromUriRspBody rspBody;
+    reqBody.virtualId = virId;
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_FILEPATH_FROM_URI);
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+
+    int32_t errCode = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+    if (errCode != 0) {
+        MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
+    }
+    return rspBody.resultSet;
+}
 
 int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &filePath, string userId)
 {
@@ -399,7 +385,7 @@ int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &file
     }
 #endif
     vector<string> columns = { MEDIA_DATA_DB_FILE_PATH };
-    auto resultSet = MediaLibraryManager::GetResultSetFromDb(MEDIA_DATA_DB_ID, virtualId, columns);
+    auto resultSet = GetFilePathResultSetFromDb(virtualId, token_);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INVALID_URI,
         "GetFilePathFromUri::uri is not correct: %{private}s", uri.c_str());
     if (CheckResultSet(resultSet) != E_SUCCESS) {
@@ -427,6 +413,25 @@ int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &file
     return E_SUCCESS;
 }
 
+static std::shared_ptr<DataShareResultSet> GetUriResultSetFromDb(
+    const string &path, shared_ptr<DataShare::DataShareHelper> dataShare)
+{
+    CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(path), nullptr, "Failed to check invalid uri: %{public}s", path.c_str());
+    GetUriFromFilePathReqBody reqBody;
+    GetUriFromFilePathRspBody rspBody;
+    reqBody.fileId = MediaFileUtils::GetIdFromUri(path);
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_URI_FROM_FILEPATH);
+
+    CHECK_AND_RETURN_RET_LOG(dataShare != nullptr, nullptr, "dataShareHelper is nullptr");
+
+    int32_t errCode = IPC::UserBaseIPCClient().SetDataShareHelper(dataShare).Call(businessCode, reqBody, rspBody);
+    if (errCode != 0) {
+        MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
+    }
+    return rspBody.resultSet;
+}
+
 int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fileUri, string &userId)
 {
     if (filePath.empty()) {
@@ -449,7 +454,7 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
     }
 
     vector<string> columns = { MEDIA_DATA_DB_ID};
-    auto resultSet = MediaLibraryManager::GetResultSetFromDb(MEDIA_DATA_DB_FILE_PATH, tempPath, columns);
+    auto resultSet = GetUriResultSetFromDb(tempPath, sDataShareHelper_);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INVALID_URI,
         "GetUriFromFilePath::tempPath is not correct: %{private}s", tempPath.c_str());
     if (CheckResultSet(resultSet) != E_SUCCESS) {
@@ -501,6 +506,20 @@ static int32_t GetFdFromSandbox(const string &path, string &sandboxPath, bool is
     return open(absFilePath.c_str(), O_RDONLY);
 }
 
+static void UpdateAssetVisitCount(shared_ptr<DataShare::DataShareHelper> dataShareHelper, const string &fileIdStr)
+{
+    MEDIA_INFO_LOG("UpdateAssetVisitCount fileIdStr :%{public}s", fileIdStr.c_str());
+    AddAssetVisitCountReqBody reqBody;
+    reqBody.fileId = fileIdStr.empty() ? -1 : atoi(fileIdStr.c_str());
+    reqBody.visitType = 1; // LCD
+
+    int32_t businessCode = static_cast<int32_t>(MediaLibraryBusinessCode::INNER_ADD_ASSET_VISIT_COUNT);
+    int32_t errCode = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody);
+    if (errCode < 0) {
+        MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
+    }
+}
+
 int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size, bool isAstc)
 {
     // To ensure performance.
@@ -525,9 +544,7 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
     string sandboxPath = GetSandboxPath(path, size, isAstc);
     int32_t fd = GetFdFromSandbox(path, sandboxPath, isAstc);
     if (fd > 0 && sandboxPath.find("LCD.jpg") != std::string::npos) {
-        Uri openUri(uriStr + PhotoColumn::PHOTO_LCD_VISIT_COUNT);
-        DataShareValuesBucket dataShareValuesBucket;
-        dataShareHelper->Insert(openUri, dataShareValuesBucket);
+        UpdateAssetVisitCount(dataShareHelper, MediaFileUtils::GetIdFromUri(uriStr));
     }
     CHECK_AND_RETURN_RET(fd <= 0, fd);
     MEDIA_INFO_LOG("OpenThumbnail from andboxPath failed, errno %{public}d path :%{public}s fd %{public}d",
@@ -1002,6 +1019,23 @@ int64_t MediaLibraryManager::GetSandboxMovingPhotoTime(const string& uri)
     return imageDateModified >= videoDateModified ? imageDateModified : videoDateModified;
 }
 
+static int64_t GetMovingPhotoDateModifiedIPCExecute(
+    const std::shared_ptr<DataShare::DataShareHelper> &helper, const string &fileId)
+{
+    GetMovingPhotoDateModifiedReqBody reqBody;
+    GetMovingPhotoDateModifiedRespBody respBody;
+    reqBody.fileId = fileId;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_MOVING_PHOTO_DATE_MODIFIED);
+
+    int32_t err = IPC::UserBaseIPCClient().SetDataShareHelper(helper).Call(businessCode, reqBody, respBody);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("get position fail. err:%{public}d", err);
+        return E_ERR;
+    }
+
+    return respBody.dateModified;
+}
+
 int64_t MediaLibraryManager::GetMovingPhotoDateModified(const string &uri)
 {
     CHECK_AND_RETURN_RET_LOG(!uri.empty(), E_ERR, "Failed to check empty uri");
@@ -1014,9 +1048,14 @@ int64_t MediaLibraryManager::GetMovingPhotoDateModified(const string &uri)
     DataSharePredicates predicates;
     string fileId = MediaFileUtils::GetIdFromUri(uri);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    DatashareBusinessError businessError;
-    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_ERR, "sDataShareHelper_ is null");
 
+    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_ERR, "sDataShareHelper_ is null");
+    OperationObject object = OperationObject::UNKNOWN_OBJECT;
+    if (!MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(queryUri, object, predicates)) {
+        return GetMovingPhotoDateModifiedIPCExecute(sDataShareHelper_, fileId);
+    }
+
+    DatashareBusinessError businessError;
     vector<string> columns = {
         MediaColumn::MEDIA_DATE_MODIFIED,
     };
@@ -1024,272 +1063,6 @@ int64_t MediaLibraryManager::GetMovingPhotoDateModified(const string &uri)
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, E_ERR, "queryResultSet is null");
     CHECK_AND_RETURN_RET_LOG(queryResultSet->GoToNextRow() == NativeRdb::E_OK, E_ERR, "Failed to GoToNextRow");
     return GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, queryResultSet);
-}
-
-static int32_t UrisSourceMediaTypeClassify(const vector<string> &urisSource,
-    vector<string> &photoFileIds, vector<string> &audioFileIds)
-{
-    for (const auto &uri : urisSource) {
-        int32_t tableType = -1;
-        for (const auto &iter : tableMap) {
-            if (uri.find(iter.first) != string::npos) {
-                tableType = static_cast<int32_t>(iter.second);
-            }
-        }
-
-        CHECK_AND_RETURN_RET_LOG(tableType != -1, E_ERR, "Uri invalid error, uri:%{private}s", uri.c_str());
-        string fileId = MediaFileUtils::GetIdFromUri(uri);
-        if (tableType == static_cast<int32_t>(TableType::TYPE_PHOTOS)) {
-            photoFileIds.emplace_back(fileId);
-        } else if (tableType == static_cast<int32_t>(TableType::TYPE_AUDIOS)) {
-            audioFileIds.emplace_back(fileId);
-        } else {
-            MEDIA_ERR_LOG("Uri invalid error, uri:%{private}s", uri.c_str());
-            return E_ERR;
-        }
-    }
-    return E_SUCCESS;
-}
-
-static void CheckAccessTokenPermissionExecute(uint32_t tokenId, uint32_t checkFlag, TableType mediaType,
-    bool &isReadable, bool &isWritable)
-{
-    static map<TableType, string> readPermmisionMap = {
-        { TableType::TYPE_PHOTOS, PERM_READ_IMAGEVIDEO },
-        { TableType::TYPE_AUDIOS, PERM_READ_AUDIO }
-    };
-    static map<TableType, string> writePermmisionMap = {
-        { TableType::TYPE_PHOTOS, PERM_WRITE_IMAGEVIDEO },
-        { TableType::TYPE_AUDIOS, PERM_WRITE_AUDIO }
-    };
-    int checkReadResult = -1;
-    int checkWriteResult = -1;
-    if (checkFlag == URI_PERMISSION_FLAG_READ) {
-        checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, readPermmisionMap[mediaType]);
-        if (checkReadResult != PermissionState::PERMISSION_GRANTED) {
-            checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
-        }
-    } else if (checkFlag == URI_PERMISSION_FLAG_WRITE) {
-        checkWriteResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
-    } else if (checkFlag == URI_PERMISSION_FLAG_READWRITE) {
-        checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, readPermmisionMap[mediaType]);
-        CHECK_AND_EXECUTE(checkReadResult == PermissionState::PERMISSION_GRANTED,
-            checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]));
-        checkWriteResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
-    }
-    isReadable = checkReadResult == PermissionState::PERMISSION_GRANTED;
-    isWritable = checkWriteResult == PermissionState::PERMISSION_GRANTED;
-}
-static void CheckAccessTokenPermission(uint32_t tokenId, uint32_t checkFlag,
-    TableType mediaType, int32_t &queryFlag)
-{
-    bool isReadable = FALSE;
-    bool isWritable = FALSE;
-    CheckAccessTokenPermissionExecute(tokenId, checkFlag, mediaType, isReadable, isWritable);
-
-    if (checkFlag == URI_PERMISSION_FLAG_READ) {
-        queryFlag = isReadable ? -1 : URI_PERMISSION_FLAG_READ;
-    } else if (checkFlag == URI_PERMISSION_FLAG_WRITE) {
-        queryFlag = isWritable ? -1 : URI_PERMISSION_FLAG_WRITE;
-    } else if (checkFlag == URI_PERMISSION_FLAG_READWRITE) {
-        if (isReadable && isWritable) {
-            queryFlag = -1;
-        } else if (isReadable) {
-            queryFlag = URI_PERMISSION_FLAG_WRITE;
-        } else if (isWritable) {
-            queryFlag = URI_PERMISSION_FLAG_READ;
-        } else {
-            queryFlag = URI_PERMISSION_FLAG_READWRITE;
-        }
-    }
-}
-
-static void MakePredicatesForCheckPhotoUriPermission(int32_t &checkFlag, DataSharePredicates &predicates,
-    const string &appid, TableType mediaType, vector<string> &fileIds)
-{
-    predicates.EqualTo(AppUriPermissionColumn::APP_ID, appid);
-    predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, to_string(static_cast<int32_t>(mediaType)));
-    predicates.And()->In(AppUriPermissionColumn::FILE_ID, fileIds);
-    vector<string> permissionTypes;
-    switch (checkFlag) {
-        case URI_PERMISSION_FLAG_READ:
-            permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO)));
-            permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO)));
-            permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
-            permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
-            break;
-        case URI_PERMISSION_FLAG_WRITE:
-            permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO)));
-            permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
-            permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
-            break;
-        case URI_PERMISSION_FLAG_READWRITE:
-            permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
-            permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
-            break;
-        default:
-            MEDIA_ERR_LOG("error flag object: %{public}d", checkFlag);
-            return;
-    }
-    predicates.And()->In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
-}
-
-static int32_t CheckPhotoUriPermissionQueryOperation(const sptr<IRemoteObject> &token,
-    const DataSharePredicates &predicates, map<string, int32_t> &resultMap)
-{
-    vector<string> columns = {
-        AppUriPermissionColumn::FILE_ID,
-        AppUriPermissionColumn::PERMISSION_TYPE
-    };
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-        DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_ERR,
-        "Failed to checkPhotoUriPermission, datashareHelper is nullptr");
-
-    Uri uri(MEDIALIBRARY_CHECK_URIPERM_URI);
-    auto queryResultSet = dataShareHelper->Query(uri, predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, E_ERR, "queryResultSet is null!");
-    while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
-        string fileId = GetStringVal(AppUriPermissionColumn::FILE_ID, queryResultSet);
-        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryResultSet);
-        resultMap[fileId] = permissionType;
-    }
-    return E_SUCCESS;
-}
-
-static int32_t SetCheckPhotoUriPermissionResult(const vector<string> &urisSource, vector<bool> &results,
-    const map<string, int32_t> &photoResultMap, const map<string, int32_t> &audioResultMap,
-    int32_t queryPhotoFlag, int32_t queryAudioFlag)
-{
-    results.clear();
-    for (const auto &uri : urisSource) {
-        int32_t tableType = -1;
-        for (const auto &iter : tableMap) {
-            if (uri.find(iter.first) != string::npos) {
-                tableType = static_cast<int32_t>(iter.second);
-            }
-        }
-        string fileId = MediaFileUtils::GetIdFromUri(uri);
-        if (tableType == static_cast<int32_t>(TableType::TYPE_PHOTOS)) {
-            if (queryPhotoFlag == -1 || photoResultMap.find(fileId) != photoResultMap.end()) {
-                results.emplace_back(TRUE);
-            } else {
-                results.emplace_back(FALSE);
-            }
-        } else if (tableType == static_cast<int32_t>(TableType::TYPE_AUDIOS)) {
-            if (queryAudioFlag == -1 || audioResultMap.find(fileId) != audioResultMap.end()) {
-                results.emplace_back(TRUE);
-            } else {
-                results.emplace_back(FALSE);
-            }
-        }
-    }
-    return E_SUCCESS;
-}
-
-static int32_t CheckInputParameters(const vector<string> &urisSource, uint32_t flag)
-{
-    CHECK_AND_RETURN_RET_LOG(!urisSource.empty(), E_ERR, "Media Uri list is empty");
-    CHECK_AND_RETURN_RET_LOG(urisSource.size() <= URI_MAX_SIZE, E_ERR,
-        "Uri list is exceed one Thousand, current list size: %{public}d", (int)urisSource.size());
-
-    bool cond = (flag == 0 || flag > URI_PERMISSION_FLAG_READWRITE);
-    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Flag is invalid, current flag is: %{public}d", flag);
-    return E_SUCCESS;
-}
-
-int32_t MediaLibraryManager::CheckPhotoUriPermission(uint32_t tokenId, const string &appid,
-    const vector<string> &urisSource, vector<bool> &results, uint32_t flag)
-{
-    auto ret = CheckInputParameters(urisSource, flag);
-    CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
-    vector<string> photoFileIds;
-    vector<string> audioFileIds;
-    ret = UrisSourceMediaTypeClassify(urisSource, photoFileIds, audioFileIds);
-    CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
-
-    int32_t queryPhotoFlag = URI_PERMISSION_FLAG_READWRITE;
-    int32_t queryAudioFlag = URI_PERMISSION_FLAG_READWRITE;
-    if (photoFileIds.empty()) {
-        queryPhotoFlag = -1;
-    } else {
-        CheckAccessTokenPermission(tokenId, flag, TableType::TYPE_PHOTOS, queryPhotoFlag);
-    }
-    if (audioFileIds.empty()) {
-        queryAudioFlag = -1;
-    } else {
-        CheckAccessTokenPermission(tokenId, flag, TableType::TYPE_AUDIOS, queryAudioFlag);
-    }
-    map<string, int32_t> photoResultMap;
-    map<string, int32_t> audioResultMap;
-    if (queryPhotoFlag != -1) {
-        DataSharePredicates predicates;
-        MakePredicatesForCheckPhotoUriPermission(queryPhotoFlag, predicates,
-            appid, TableType::TYPE_PHOTOS, photoFileIds);
-        auto ret = CheckPhotoUriPermissionQueryOperation(token_, predicates, photoResultMap);
-        CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
-    }
-    if (queryAudioFlag != -1) {
-        DataSharePredicates predicates;
-        MakePredicatesForCheckPhotoUriPermission(queryAudioFlag, predicates,
-            appid, TableType::TYPE_AUDIOS, audioFileIds);
-        auto ret = CheckPhotoUriPermissionQueryOperation(token_, predicates, audioResultMap);
-        CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
-    }
-    return SetCheckPhotoUriPermissionResult(urisSource, results, photoResultMap, audioResultMap,
-        queryPhotoFlag, queryAudioFlag);
-}
-
-int32_t MediaLibraryManager::GrantPhotoUriPermission(const string &appid, const vector<string> &uris,
-    PhotoPermissionType photoPermissionType, HideSensitiveType hideSensitiveTpye)
-{
-    vector<DataShareValuesBucket> valueSet;
-    bool cond = ((uris.empty()) || (uris.size() > URI_MAX_SIZE));
-    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Media Uri list error, please check!");
-
-    cond = (photoPermissionType != PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO &&
-        photoPermissionType != PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO &&
-        photoPermissionType != PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO);
-    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "photoPermissionType error, please check param!");
-
-    cond = (hideSensitiveTpye < HideSensitiveType::ALL_DESENSITIZE ||
-        hideSensitiveTpye > HideSensitiveType::NO_DESENSITIZE);
-    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "HideSensitiveType error, please check param!");
-
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_ERR, "dataShareHelper is nullptr");
-
-    for (const auto &uri : uris) {
-        int32_t tableType = -1;
-        for (const auto &iter : tableMap) {
-            if (uri.find(iter.first) != string::npos) {
-                tableType = static_cast<int32_t>(iter.second);
-            }
-        }
-
-        CHECK_AND_RETURN_RET_LOG(tableType != -1, E_ERR, "Uri invalid error, uri:%{private}s", uri.c_str());
-        string fileId = MediaFileUtils::GetIdFromUri(uri);
-        DataShareValuesBucket valuesBucket;
-        valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
-        valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
-        valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, tableType);
-        valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, static_cast<int32_t>(photoPermissionType));
-        valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, static_cast<int32_t>(hideSensitiveTpye));
-        valueSet.push_back(valuesBucket);
-    }
-    Uri insertUri(MEDIALIBRARY_GRANT_URIPERM_URI);
-    auto ret = dataShareHelper->BatchInsert(insertUri, valueSet);
-    return ret;
 }
 
 shared_ptr<PhotoAssetProxy> MediaLibraryManager::CreatePhotoAssetProxy(CameraShotType cameraShotType,

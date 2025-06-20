@@ -15,14 +15,15 @@
 
 #include "change_request_move_assets_vo.h"
 #include <sstream>
-#include "itypes_util.h"
+
+#include "media_itypes_utils.h"
 #include "media_log.h"
 
 namespace OHOS::Media {
 
 bool ChangeRequestMoveAssetsReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = ITypesUtil::Unmarshalling(this->assets, parcel);
+    bool status = IPC::ITypeMediaUtil::UnmarshalStrVec(this->assets, parcel);
     CHECK_AND_RETURN_RET(status, status);
     parcel.ReadInt32(this->albumId);
     CHECK_AND_RETURN_RET(status, status);
@@ -36,7 +37,7 @@ bool ChangeRequestMoveAssetsReqBody::Unmarshalling(MessageParcel &parcel)
 
 bool ChangeRequestMoveAssetsReqBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = ITypesUtil::Marshalling(this->assets, parcel);
+    bool status = IPC::ITypeMediaUtil::MarshalStrVec(this->assets, parcel);
     CHECK_AND_RETURN_RET(status, status);
     parcel.WriteInt32(this->albumId);
     CHECK_AND_RETURN_RET(status, status);

@@ -68,6 +68,7 @@ public:
     EXPORT void SetAssetsHiddenStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT void SetAssetsRecentShowStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT void SetAssetsUserComment(MessageParcel &data, MessageParcel &reply);
+    EXPORT void AddAssetVisitCount(MessageParcel &data, MessageParcel &reply);
     EXPORT void GetAssetAnalysisData(MessageParcel &data, MessageParcel &reply);
     EXPORT void CloneAsset(MessageParcel &data, MessageParcel &reply);
     EXPORT void RevertToOriginal(MessageParcel &data, MessageParcel &reply);
@@ -88,7 +89,9 @@ public:
     EXPORT void GetAlbumsByAlbumIds(MessageParcel &data, MessageParcel &reply);
     EXPORT void GrantPhotoUriPermission(MessageParcel &data, MessageParcel &reply);
     EXPORT void GrantPhotoUrisPermission(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GrantPhotoUriPermissionInner(MessageParcel &data, MessageParcel &reply);
     EXPORT void CancelPhotoUriPermission(MessageParcel &data, MessageParcel &reply);
+    EXPORT void CancelPhotoUriPermissionInner(MessageParcel &data, MessageParcel &reply);
     EXPORT void StartThumbnailCreationTask(MessageParcel &data, MessageParcel &reply);
     EXPORT void StopThumbnailCreationTask(MessageParcel &data, MessageParcel &reply);
     EXPORT void RequestContent(MessageParcel &data, MessageParcel &reply);
@@ -98,6 +101,16 @@ public:
     EXPORT void QueryPhotoStatus(MessageParcel &data, MessageParcel &reply);
     EXPORT void LogMovingPhoto(MessageParcel &data, MessageParcel &reply);
     EXPORT void ConvertFormat(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetResultSetFromDb(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetResultSetFromPhotosExtend(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetMovingPhotoDateModified(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetFilePathFromUri(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetUriFromFilePath(MessageParcel &data, MessageParcel &reply);
+    EXPORT void CloseAsset(MessageParcel &data, MessageParcel &reply);
+    EXPORT void CheckUriPermissionInner(MessageParcel &data, MessageParcel &reply);
+    EXPORT void GetUrisByOldUrisInner(MessageParcel &data, MessageParcel &reply);
+    EXPORT void Restore(MessageParcel &data, MessageParcel &reply);
+    EXPORT void StopRestore(MessageParcel &data, MessageParcel &reply);
 public:
     virtual ~MediaAssetsControllerService() = default;
     bool Accept(uint32_t code) override;
