@@ -502,9 +502,7 @@ void CloneRestore::RestoreHighlightAlbums()
         .Report("CLONE_RESTORE_HIGHLIGHT_CHECK", "",
             "highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
             ", isCloudRestoreSatisfied: " + std::to_string(IsCloudRestoreSatisfied()));
-    if (highlightCloudMediaCnt > 0 && !IsCloudRestoreSatisfied()) {
-        return;
-    }
+    CHECK_AND_RETURN(highlightCloudMediaCnt == 0 || IsCloudRestoreSatisfied());
 
     CloneRestoreHighlight cloneRestoreHighlight;
     CloneRestoreHighlight::InitInfo initInfo = { sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir_,
@@ -1666,7 +1664,9 @@ void CloneRestore::RestoreAnalysisTablesData()
         "tab_analysis_composition",
         "tab_analysis_ocr",
         "tab_analysis_segmentation",
-        "tab_analysis_object"
+        "tab_analysis_object",
+        "tab_analysis_saliency_detect",
+        "tab_analysis_recommendation"
     };
 
     vector<std::string> totalTypes = {
@@ -1675,7 +1675,9 @@ void CloneRestore::RestoreAnalysisTablesData()
         "composition",
         "ocr",
         "segmentation",
-        "object"
+        "object",
+        "saliency",
+        "recommendation"
     };
 
     for (size_t index = 0; index < analysisTables.size(); index++) {
