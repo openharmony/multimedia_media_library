@@ -1669,7 +1669,7 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAssets(const DataSharePredicates
 int32_t MediaLibraryAlbumOperations::DeletePhotoAssetsCompleted(
     const DataSharePredicates &predicates, const bool isAging)
 {
-    MEDIA_DEBUG_LOG("DeletePhotoAssetsCompleted start.");
+    MEDIA_INFO_LOG("DeletePhotoAssetsCompleted start.");
     DealWithHighlightSdTable(predicates);
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     int32_t deletedRows = MediaLibraryAssetOperations::DeletePermanently(rdbPredicates, isAging);

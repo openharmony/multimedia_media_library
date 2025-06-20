@@ -2758,7 +2758,7 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
 
 static void DeleteLocalAssetsPermanentlydExecute(napi_env env, void *data)
 {
-    NAPI_DEBUG_LOG("enter DeleteLocalAssetsPermanentlydExecute.");
+    NAPI_INFO_LOG("enter DeleteLocalAssetsPermanentlydExecute.");
     MediaLibraryTracer tracer;
     tracer.Start("DeleteLocalAssetsPermanentlydExecute");
 
