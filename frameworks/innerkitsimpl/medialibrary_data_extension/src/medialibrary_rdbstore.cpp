@@ -4634,7 +4634,7 @@ void AddHighlightLocation(RdbStore &store)
 void AddTotalPriority(RdbStore &store)
 {
     const vector<string> sql = {
-        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + PRIORITY + " INT DEFAULT 1",
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + PRIORITY + " INT NOT NULL DEFAULT 1",
     };
 
     MEDIA_INFO_LOG("Addding priority for VISION_TOTAL_TABLE");
