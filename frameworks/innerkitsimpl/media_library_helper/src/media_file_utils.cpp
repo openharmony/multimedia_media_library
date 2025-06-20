@@ -2552,4 +2552,41 @@ std::string MediaFileUtils::GetReplacedPathByPrefix(const std::string srcPrefix,
     replacedPath.replace(0, srcPrefix.length(), dstPrefix);
     return replacedPath;
 }
+
+int64_t MediaFileUtils::GetFileModificationTime(const std::string &path)
+{
+    struct stat fileStat;
+
+    if (stat(path.c_str(), &fileStat) == -1) {
+        MEDIA_ERR_LOG("stat failed. File path: %{public}s, err: %{public}s", path.c_str(), strerror(errno));
+        return 0;
+    }
+    struct tm* timeInfo = localtime(&fileStat.st_mtime);
+    if (timeInfo == nullptr) {
+        return 0;
+    }
+    return static_cast<int64_t>(fileStat.st_mtime);
+}
+
+bool MediaFileUtils::IsDirExists(const std::string &path)
+{
+    struct stat st;
+    if (stat(path.c_str(), &st) == 0) {
+        return S_ISDIR(st.st_mode);
+    }
+    return false;
+}
+
+int64_t MediaFileUtils::StrToInt64(const std::string &value)
+{
+    char* pEnd = nullptr;
+    errno = 0;
+    // check whether convert success
+    int64_t res = std::strtoll(value.c_str(), &pEnd, 10);
+    if (errno == ERANGE || pEnd == value.c_str() || *pEnd != '\0') {
+        MEDIA_ERR_LOG("%{public}s:convert err.", __func__);
+        return 0;
+    }
+    return res;
+}
 } // namespace OHOS::Media
