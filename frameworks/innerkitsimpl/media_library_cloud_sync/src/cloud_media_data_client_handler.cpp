@@ -279,31 +279,6 @@ int32_t CloudMediaDataClientHandler::GetDownloadThms(
     return E_OK;
 }
 
-int32_t CloudMediaDataClientHandler::OnDownloadThms(
-    const std::unordered_map<std::string, int32_t> &resMap, int32_t &failSize)
-{
-    MEDIA_INFO_LOG("enter CloudMediaDataClientHandler::OnDownloadThms");
-    uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_ON_DOWNLOAD_THMS);
-    std::vector<OnDownloadThmsReqBody::DownloadThmsData> downloadThmsDataList;
-    for (const auto &res : resMap) {
-        OnDownloadThmsReqBody::DownloadThmsData downloadThmsData;
-        downloadThmsData.cloudId = res.first;
-        downloadThmsData.thumbStatus = res.second;
-        downloadThmsDataList.emplace_back(downloadThmsData);
-    }
-    OnDownloadThmsReqBody reqBody;
-    reqBody.downloadThmsDataList = downloadThmsDataList;
-    MEDIA_INFO_LOG("OnDownloadThmsReqBody: %{public}zu", reqBody.downloadThmsDataList.size());
-    MediaOperateResultRespBody respBody;
-    int32_t ret =
-        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
-    failSize = respBody.GetFailSize();
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to OnDownloadThms, ret: %{public}d", ret);
-    }
-    return ret;
-}
-
 int32_t CloudMediaDataClientHandler::OnDownloadThmsInner(
     std::vector<OnDownloadThmsReqBody::DownloadThmsData> &downloadThmsDataList, int32_t &failSize)
 {
@@ -312,6 +287,7 @@ int32_t CloudMediaDataClientHandler::OnDownloadThmsInner(
     OnDownloadThmsReqBody reqBody;
     reqBody.downloadThmsDataList = downloadThmsDataList;
     MEDIA_INFO_LOG("OnDownloadThmsReqBody: %{public}zu", reqBody.downloadThmsDataList.size());
+    MediaOperateResultRespBody respBody;
     int32_t ret =
         IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
     failSize = respBody.GetFailSize();
