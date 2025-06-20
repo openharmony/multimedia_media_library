@@ -22,6 +22,8 @@
 #include "i_cloud_media_data_client.h"
 #include "get_aging_file_vo.h"
 #include "cloud_media_define.h"
+#include "on_download_thms_vo.h"
+#include "cloud_media_data_client_handler_processor.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaDataClientHandler : public ICloudMediaDataClient {
@@ -66,6 +68,8 @@ public:
 
 private:
     int32_t GetAgingFile(uint32_t operationCode, GetAgingFileReqBody &reqBody, std::vector<CloudMetaData> &metaData);
+    int32_t OnDownloadThmsInner(
+        std::vector<OnDownloadThmsReqBody::DownloadThmsData> &downloadThmsDataList, int32_t &failSize);
 
 private:
     enum {
@@ -73,10 +77,12 @@ private:
         SIZE_CLOUD_THM_STAT_LEN = 4,
         SIZE_DIRTY_TYPE_LEN = 5,
     };
+    const int32_t MAX_DOWNLOAD_THMS_SIZE = 1000;
 
 private:
     std::string traceId_;
     int32_t userId_;
+    CloudMediaDataClientHandlerProcessor processor_;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DATA_CLIENT_HANDLER_H
