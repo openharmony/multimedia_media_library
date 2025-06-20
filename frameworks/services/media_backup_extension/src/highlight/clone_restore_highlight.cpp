@@ -190,7 +190,19 @@ void CloneRestoreHighlight::Restore()
 
 void CloneRestoreHighlight::Preprocess()
 {
-    CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr.");
+    CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr, "rdbStore is nullptr.");
+    const std::vector<std::string> SQLS = {
+        "ALTER TABLE AnalysisAlbum ADD COLUMN need_restore_highlight INTEGER DEFAULT 0 ",
+        "UPDATE AnalysisAlbum SET need_restore_highlight = 1 "
+            " WHERE album_id IN (SELECT album_id FROM tab_highlight_album WHERE highlight_status > 0 "
+            " UNION SELECT ai_album_id FROM tab_highlight_album WHERE highlight_status > 0) ",
+        "CREATE INDEX idx_need_restore_highlight ON AnalysisAlbum(need_restore_highlight) ",
+    };
+    for (const auto &sql : SQLS) {
+        int32_t errCode = BackupDatabaseUtils::ExecuteSQL(mediaRdb_, sql);
+        CHECK_AND_CONTINUE_ERR_LOG(errCode == NativeRdb::E_OK, "Execute %{public}s failed, errCode: %{public}d",
+            sql.c_str(), errCode);
+    }
 }
 
 void CloneRestoreHighlight::RestoreAlbums()
@@ -224,11 +236,9 @@ void CloneRestoreHighlight::RestoreMaps()
 
 int32_t CloneRestoreHighlight::GetTotalNumberOfMaps()
 {
-    // TODO OPTIMIZE
     const std::string QUERY_SQL = "SELECT count(1) AS count FROM AnalysisPhotoMap AS map "
-        " INNER JOIN AnalysisAlbum AS a ON map.map_album = a.album_id AND a.album_subtype IN (4104, 4105) "
-        " INNER JOIN tab_highlight_album AS h ON (a.album_id = h.album_id OR a.album_id = h.ai_album_id) AND "
-        " h.highlight_status > 0 ";
+        " INNER JOIN AnalysisAlbum AS a ON map.map_album = a.album_id "
+        " WHERE a.album_subtype IN (4104, 4105) AND a.need_restore_highlight = 1 ";
     return BackupDatabaseUtils::QueryInt(mediaRdb_, QUERY_SQL, "count");
 }
 
@@ -286,18 +296,20 @@ int32_t CloneRestoreHighlight::GetNewHighlightAlbumId(int32_t oldId)
 
 int32_t CloneRestoreHighlight::GetNewHighlightPhotoId(int32_t oldId)
 {
-    if (photoInfoMap_.count(oldId) == 0) {
+    auto it = photoInfoMap_.find(oldId);
+    if (it == photoInfoMap_.end()) {
         return 0;
     }
-    return photoInfoMap_.at(oldId).fileIdNew;
+    return it->second.fileIdNew;
 }
 
 std::string CloneRestoreHighlight::GetNewHighlightPhotoUri(int32_t oldId)
 {
-    if (photoInfoMap_.count(oldId) == 0) {
+    auto it = photoInfoMap_.find(oldId);
+    if (it == photoInfoMap_.end()) {
         return "";
     }
-    PhotoInfo photoInfo = photoInfoMap_.at(oldId);
+    PhotoInfo photoInfo = it->second;
     return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
         std::to_string(photoInfo.fileIdNew), MediaFileUtils::GetExtraUri(photoInfo.displayName, photoInfo.cloudPath));
 }
@@ -383,15 +395,13 @@ bool CloneRestoreHighlight::IsMapColumnOrderExist()
 
 void CloneRestoreHighlight::GetAnalysisAlbumInfos()
 {
-    // TODO OPTIMIZE
     int32_t albumIdNow = GetMaxAlbumId("AnalysisAlbum", "album_id");
     maxIdOfAlbum_ = albumIdNow;
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
-        const std::string QUERY_SQL = "SELECT AnalysisAlbum.* FROM AnalysisAlbum INNER JOIN tab_highlight_album AS h "
-            " ON (AnalysisAlbum.album_id = h.album_id OR AnalysisAlbum.album_id = h.ai_album_id) "
-            " WHERE album_subtype IN (4104, 4105) AND h.highlight_status > 0 "
+        const std::string QUERY_SQL = "SELECT * FROM AnalysisAlbum "
+            " WHERE album_subtype IN (4104, 4105) AND need_restore_highlight = 1 "
             " LIMIT " + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
         CHECK_AND_BREAK_INFO_LOG(resultSet != nullptr, "query resultSql is null.");
@@ -492,11 +502,10 @@ void CloneRestoreHighlight::GetAnalysisInsertValue(NativeRdb::ValuesBucket &valu
 
 void CloneRestoreHighlight::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values)
 {
-    // TODO OPTIMIZE
     const std::string QUERY_SQL = "SELECT map.rowid, map.* FROM AnalysisPhotoMap AS map "
-        " INNER JOIN AnalysisAlbum AS a ON map.map_album = a.album_id AND a.album_subtype IN (4104, 4105) "
-        " INNER JOIN tab_highlight_album AS h ON (a.album_id = h.album_id OR a.album_id = h.ai_album_id) AND "
-        " h.highlight_status > 0 WHERE map.rowid > ? ORDER BY map.rowid LIMIT ?";
+        " INNER JOIN AnalysisAlbum AS a ON map.map_album = a.album_id "
+        " WHERE a.album_subtype IN (4104, 4105) AND a.need_restore_highlight = 1 "
+        " AND map.rowid > ? ORDER BY map.rowid LIMIT ? ";
     std::vector<NativeRdb::ValueObject> params = { lastIdOfMap_, PAGE_SIZE };
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL, params);
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "query AnalysisPhotoMap err!");
@@ -1192,7 +1201,7 @@ void CloneRestoreHighlight::UpdateHighlightDuplicateRows(const std::vector<Nativ
     const std::string &duplicateAlbumName)
 {
     CHECK_AND_RETURN(!changeIds.empty());
-    int32_t changedRows = -1;
+    int32_t changedRows = 0;
     std::unique_ptr<NativeRdb::AbsRdbPredicates> updatePredicates =
         make_unique<NativeRdb::AbsRdbPredicates>("tab_highlight_album");
     updatePredicates->In("id", changeIds);
@@ -1208,7 +1217,7 @@ void CloneRestoreHighlight::DeleteAnalysisDuplicateRows(const std::unordered_set
     const std::string &duplicateAlbumName)
 {
     CHECK_AND_RETURN(!duplicateAnalysisAlbumIdSet.empty());
-    int32_t deleteRows = -1;
+    int32_t deleteRows = 0;
     std::vector<NativeRdb::ValueObject> duplicateAnalysisAlbumIds(duplicateAnalysisAlbumIdSet.begin(),
         duplicateAnalysisAlbumIdSet.end());
     NativeRdb::AbsRdbPredicates deletePredicates("AnalysisAlbum");
