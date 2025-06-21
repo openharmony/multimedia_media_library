@@ -37,7 +37,8 @@ enum class InsertType {
     TAB_ANALYSIS_ALBUM_ASSET_MAP,
     TAB_ANALYSIS_LABEL,
     TAB_ANALYSIS_RECOMMENDATION,
-    TAB_ANALYSIS_SALIENCY_DETECT
+    TAB_ANALYSIS_SALIENCY_DETECT,
+    TAB_ANALYSIS_TOTAL
 };
 
 class CloneHighlightSource {
@@ -46,6 +47,7 @@ public:
     void Insert(const std::vector<std::string> &tableList,
         std::shared_ptr<NativeRdb::RdbStore> rdbPtr);
     void InsertByType(InsertType insertType, std::shared_ptr<NativeRdb::RdbStore> rdbPtr);
+    void InsertAnalysisDataByType(InsertType insertType, std::shared_ptr<NativeRdb::RdbStore> rdbPtr);
     void InsertPhoto(std::shared_ptr<NativeRdb::RdbStore> rdbPtr);
     void InsertAnalysisAlbum(std::shared_ptr<NativeRdb::RdbStore> rdbPtr);
     void InsertAnalysisPhotoMap(std::shared_ptr<NativeRdb::RdbStore> rdbPtr);
@@ -57,6 +59,7 @@ public:
     void InsertTabAnalysisLabel(std::shared_ptr<NativeRdb::RdbStore> rdbPtr);
     void InsertTabAnalysisRecommendation(std::shared_ptr<NativeRdb::RdbStore> rdbPtr);
     void InsertTabAnalysisSaliency(std::shared_ptr<NativeRdb::RdbStore> rdbPtr);
+    void InsertTabAnalysisTotal(std::shared_ptr<NativeRdb::RdbStore> rdbPtr);
     std::shared_ptr<NativeRdb::RdbStore> cloneStorePtr_;
 };
 
