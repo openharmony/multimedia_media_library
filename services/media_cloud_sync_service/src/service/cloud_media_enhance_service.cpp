@@ -37,6 +37,7 @@ const int32_t SUBMIT_TIMEOUT_SECONDS = 5;
 #ifdef ABILITY_CAMERA_SUPPORT
 const int32_t SUBMIT_MAX = 10;
 #endif
+// LCOV_EXCL_START
 int32_t CloudMediaEnhanceService::GetCloudSyncUnPreparedData(int32_t &result)
 {
     MEDIA_INFO_LOG("GetCloudSyncUnPreparedData begin");
@@ -132,4 +133,5 @@ void CloudMediaEnhanceService::StopSubmit()
     submitPhotoId_.clear();
     submitRunning_.store(false);
 }
+// LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync

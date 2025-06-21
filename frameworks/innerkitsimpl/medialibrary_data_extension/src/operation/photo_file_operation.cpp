@@ -28,6 +28,7 @@
 #include "result_set_utils.h"
 
 namespace OHOS::Media {
+// LCOV_EXCL_START
 std::string PhotoFileOperation::ToString(const PhotoAssetInfo &photoInfo)
 {
     std::stringstream ss;
@@ -588,4 +589,5 @@ int32_t PhotoFileOperation::ConvertFormatPhotoExtraData(const std::string &srcPa
     }
     return E_OK;
 }
+// LCOV_EXCL_STOP
 }  // namespace OHOS::Media

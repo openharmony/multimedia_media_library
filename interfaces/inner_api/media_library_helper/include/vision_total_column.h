@@ -35,6 +35,9 @@ const std::string HEAD = "head";
 const std::string POSE = "pose";
 const std::string DETAIL_ADDRESS = "detail_address";
 const std::string GEO = "geo";
+const std::string SELECTED = "selected";
+const std::string NEGATIVE = "negative";
+const std::string ABSTRACT_NODE_ANALYSIS = "abstract_node_analysis";
 const std::string AESTHETICS_SCORE_ALL_STATUS = "aesthetics_score_all";
 const std::string PRIORITY = "priority";
 } // namespace Media
