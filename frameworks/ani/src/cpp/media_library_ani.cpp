@@ -933,7 +933,7 @@ static int32_t ParseUserIdFormCbInfo(ani_env *env, ani_object userIdObject)
         ANI_DEBUG_LOG("userIdObject is not a double");
         return userId;
     }
-    if (ANI_OK !=env->Object_CallMethodByName_Double(userIdObject, "doubleValue", nullptr, &result)) {
+    if (ANI_OK !=env->Object_CallMethodByName_Double(userIdObject, "unboxed", nullptr, &result)) {
         ANI_DEBUG_LOG("userId is undefined");
         return userId;
     }
@@ -967,7 +967,7 @@ static ani_status CheckWhetherAsync(ani_env *env, ani_object userIdObject, bool 
             isAsync = true;
         }
         ani_boolean isAsyncBoolean;
-        status = env->Object_CallMethodByName_Boolean(userIdObject, "booleanValue", nullptr, &isAsyncBoolean);
+        status = env->Object_CallMethodByName_Boolean(userIdObject, "unboxed", nullptr, &isAsyncBoolean);
         isAsync = static_cast<bool>(isAsyncBoolean);
         return status;
     }
@@ -1115,7 +1115,7 @@ ani_object MediaLibraryAni::CreateNewInstance(ani_env *env, ani_class clazz, ani
         env->Object_InstanceOf(userIdObject, doubleClass, &isDouble);
         if (isDouble) {
             ani_double result;
-            env->Object_CallMethodByName_Double(userIdObject, "doubleValue", nullptr, &result);
+            env->Object_CallMethodByName_Double(userIdObject, "unboxed", nullptr, &result);
             userId = static_cast<int>(result);
             if (userId != -1 && !MediaLibraryAniUtils::IsSystemApp()) {
                 ANI_ERR_LOG("CreateNewInstance failed, target is not system app");
