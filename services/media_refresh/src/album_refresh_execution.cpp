@@ -524,7 +524,7 @@ bool AlbumRefreshExecution::CalAlbumCover(AlbumChangeInfo &albumInfo, const Albu
             forceRefreshAlbums_.insert(albumInfo.albumId_);
             ClearAlbumInfo(albumInfo);
         }
-        ACCURATE_DEBUG("Del[%{public}d], forceRefresh[%{public}d], removeCover id:%{public}d", albumInfo.albumId_,
+        ACCURATE_DEBUG("Del[%{public}d], forceRefresh[%{public}d], old cover fileId:%{public}d", albumInfo.albumId_,
             isForceRefresh, coverFileId);
     } else if (IsValidCover(refreshInfo.deltaAddCover_) && refreshInfo.removeFileIds.size() > 0) {
         // 异常场景：同一个相册中cover既有新增又有删除;同一个相册中没有新增也没有删除
