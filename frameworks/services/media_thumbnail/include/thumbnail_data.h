@@ -181,6 +181,7 @@ public:
     EXPORT bool isOpeningCloudFile {false};
     EXPORT bool isNeedStoreSize {true};
     EXPORT bool isRegenerateStage {false};
+    EXPORT bool isUpgradeStage {false};
     EXPORT bool needCheckWaitStatus {false};
     EXPORT bool needUpdateDb {true};
     EXPORT bool createLowQulityLcd {false};

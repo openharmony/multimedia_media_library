@@ -776,7 +776,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
 
 bool IThumbnailHelper::NeedGenerateExFile(ThumbnailData &data)
 {
-    return data.isLocalFile || data.isRegenerateStage;
+    return data.isLocalFile || data.isRegenerateStage || data.isUpgradeStage;
 }
 
 bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
@@ -1075,6 +1075,8 @@ static bool ScaleLcdToThumbnail(ThumbnailData &data)
     data.loaderOpts.decodeInThumbSize = true;
     if (data.source.HasPictureSource()) {
         MEDIA_INFO_LOG("Scale from picture source, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        CHECK_AND_RETURN_RET_LOG(data.source.GetPicture() != nullptr, false,
+            "Fail to scale, picture is nullptr, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         auto mainPixelMap = data.source.GetPicture()->GetMainPixel();
         data.source.SetPixelMap(mainPixelMap);
     }
@@ -1085,6 +1087,8 @@ static bool ScaleLcdToThumbnail(ThumbnailData &data)
 
     if (data.orientation != 0 && data.source.HasPictureSource()) {
         MEDIA_INFO_LOG("Scale from picture source, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        CHECK_AND_RETURN_RET_LOG(data.source.GetPictureEx() != nullptr, false,
+            "Fail to scale, pictureEx is nullptr, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         auto mainPixelMapEx = data.source.GetPictureEx()->GetMainPixel();
         data.source.SetPixelMapEx(mainPixelMapEx);
     }

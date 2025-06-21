@@ -1284,7 +1284,7 @@ void PostProcPixelMapSource(ThumbnailData &data)
     }
     pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (data.orientation != 0) {
-        if (data.isLocalFile || data.isRegenerateStage) {
+        if (data.isLocalFile || data.isRegenerateStage || data.isUpgradeStage) {
             std::shared_ptr<PixelMap> copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
             data.source.SetPixelMapEx(copySource);
         }
@@ -1307,7 +1307,7 @@ void PostProcPictureSource(ThumbnailData &data)
         return;
     }
     if (data.orientation != 0) {
-        if (data.isLocalFile || data.isRegenerateStage) {
+        if (data.isLocalFile || data.isRegenerateStage || data.isUpgradeStage) {
             std::shared_ptr<Picture> copySource = ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
             data.source.SetPictureEx(copySource);
         }
