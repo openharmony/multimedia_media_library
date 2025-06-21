@@ -51,6 +51,7 @@ private:
 
     std::vector<AlbumChangeInfo> GetAlbumInfos(const std::vector<int32_t> &albumIds,
         const std::vector<std::string> systemTypes = {});
+    PhotoAssetChangeInfo GetPhotoAssetInfo(int32_t fileId);
 };
 
 } // namespace Media

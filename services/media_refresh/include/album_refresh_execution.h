@@ -56,12 +56,12 @@ private:
     bool CalAlbumCount(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo);
     // 计算相册hidden count
     bool CalAlbumHiddenCount(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo);
-    // 检查封面是否需要计算
-    bool CheckCoverSet(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo, int32_t coverFileId);
     // 计算相册的封面
     bool CalAlbumCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo, int32_t subType);
     // 计算相册的隐藏封面
     bool CalAlbumHiddenCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo);
+    // 相册封面手动设置场景下计算封面处理
+    bool CalCoverSetCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo);
 
     // 更新所有相册
     int32_t UpdateAllAlbums(NotifyAlbumType notifyAlbumType);
@@ -88,6 +88,8 @@ private:
     void CheckHiddenAlbumInfo(NativeRdb::ValuesBucket &values, std::stringstream &ss);
     void CheckAlbumInfo(NativeRdb::ValuesBucket &values, std::stringstream &ss);
     void CheckUpdateAlbumInfo(const AlbumChangeInfo &albumInfo, bool isHidden);
+    void CheckUpdateValues(const AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
+        NativeRdb::ValuesBucket &values);
 
 private:
     // 系统相册
@@ -102,7 +104,7 @@ private:
     AlbumAccurateRefresh albumRefresh_;
 
     // 需要刷新的相册信息
-    std::map<int32_t, AlbumChangeInfo> refreshAlbums_;
+    std::map<int32_t, std::pair<AlbumRefreshInfo, AlbumChangeInfo>> refreshAlbums_;
 
     // 需要强制刷新的相册信息
     std::set<int32_t> forceRefreshAlbums_;

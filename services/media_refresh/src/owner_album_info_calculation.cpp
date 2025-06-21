@@ -127,10 +127,12 @@ bool OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(const PhotoAssetChangeData &as
     AlbumRefreshInfo beforeRefreshInfo = refreshInfo;
     // count/hidden count/video count数量更新
     if (UpdateCount(assetChangeData, IsOwnerAlbumAsset, albumId, refreshInfo.deltaCount_)) {
+        refreshInfo.assetModifiedCnt_++;
         ret = true;
     }
     
     if (UpdateCount(assetChangeData, IsOwnerAlbumHiddenAsset, albumId, refreshInfo.deltaHiddenCount_)) {
+        refreshInfo.hiddenAssetModifiedCnt_++;
         ret = true;
     }
     

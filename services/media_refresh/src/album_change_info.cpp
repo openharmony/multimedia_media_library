@@ -116,6 +116,12 @@ string AlbumChangeInfo::ToString(bool isDetail) const
         ss << ", isCoverChange_: " << isCoverChange_ << ", isHiddenCoverChange_: " << isHiddenCoverChange_;
         ss << ", coverDateTime_: " << coverDateTime_ << ", hiddenCoverDateTime_: " << hiddenCoverDateTime_;
         ss << ", dirty_: " << dirty_ << ", coverUriSource_: " << coverUriSource_;
+        if (isCoverChange_) {
+            ss << ", cover info: " << coverInfo_.ToString().c_str();
+        }
+        if (isHiddenCoverChange_) {
+            ss << ", hidden cover info: " << hiddenCoverInfo_.ToString().c_str();
+        }
     } else {
         ss << "albumId_: " << albumId_ << ", albumSubType_: "<< albumSubType_;
     }
@@ -184,7 +190,12 @@ bool AlbumChangeInfo::Marshalling(Parcel &parcel) const
 
 bool AlbumChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
 {
-    bool ret = parcel.WriteInt32(imageCount_);
+    bool isValid = albumId_ != INVALID_INT32_VALUE;
+    bool ret = parcel.WriteBool(isValid);
+    if (ret && !isValid) {
+        return ret;
+    }
+    ret = ret && parcel.WriteInt32(imageCount_);
     ret = ret && parcel.WriteInt32(videoCount_);
     ret = ret && parcel.WriteInt32(albumType_);
     ret = ret && parcel.WriteInt32(albumSubType_);
@@ -198,21 +209,27 @@ bool AlbumChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
         ret = ret && parcel.WriteString(hiddenCoverUri_);
         ret = ret && parcel.WriteBool(isCoverChange_);
         if (isCoverChange_) {
-            ret = ret && coverInfo_.Marshalling(parcel);
+            ret = ret && coverInfo_.Marshalling(parcel, isSystem);
         }
 
         ret = ret && parcel.WriteBool(isHiddenCoverChange_);
         if (isHiddenCoverChange_) {
-            ret = ret && hiddenCoverInfo_.Marshalling(parcel);
+            ret = ret && hiddenCoverInfo_.Marshalling(parcel, isSystem);
         }
         ret = ret && parcel.WriteInt32(albumId_);
     }
+    ret = ret && parcel.WriteInt32(albumId_);
     return ret;
 }
 
 bool AlbumChangeInfo::ReadFromParcel(Parcel &parcel)
 {
-    bool ret = parcel.ReadInt32(imageCount_);
+    bool isValid = false;
+    bool ret = parcel.ReadBool(isValid);
+    if (ret && !isValid) {
+        return ret;
+    }
+    ret = ret && parcel.ReadInt32(imageCount_);
     ret = ret && parcel.ReadInt32(videoCount_);
     ret = ret && parcel.ReadInt32(albumType_);
     ret = ret && parcel.ReadInt32(albumSubType_);
@@ -234,6 +251,7 @@ bool AlbumChangeInfo::ReadFromParcel(Parcel &parcel)
         }
         ret = ret && parcel.ReadInt32(albumId_);
     }
+    ret = ret && parcel.ReadInt32(albumId_);
     return true;
 }
 
@@ -255,15 +273,36 @@ shared_ptr<AlbumChangeData> AlbumChangeData::Unmarshalling(Parcel &parcel)
     return nullptr;
 }
 
+bool AlbumChangeData::IsAlbumInfoChange()
+{
+    return infoAfterChange_.isCoverChange_ || (!IsAlbumHiddenInfoChange()) ||
+        (infoBeforeChange_.imageCount_ != infoAfterChange_.imageCount_) ||
+        (infoBeforeChange_.videoCount_ != infoAfterChange_.videoCount_) ||
+        (infoBeforeChange_.count_ != infoAfterChange_.count_) ||
+        (infoBeforeChange_.lpath_ != infoAfterChange_.lpath_) ||
+        (infoBeforeChange_.albumName_ != infoAfterChange_.albumName_) ||
+        (infoBeforeChange_.dirty_ != infoAfterChange_.dirty_);
+}
+ 
+bool AlbumChangeData::IsAlbumHiddenInfoChange()
+{
+    return infoAfterChange_.isHiddenCoverChange_ || (infoBeforeChange_.hiddenCount_ != infoAfterChange_.hiddenCount_);
+}
+
 string AlbumRefreshInfo::ToString() const
 {
     stringstream ss;
-    ss << "deltaCount_: " << deltaCount_ << ", deltaVideoCount_: " << deltaVideoCount_ << ", deltaHiddenCount_: ";
-    ss << deltaHiddenCount_;
-    ss << ", deltaAddCover_ fileId: " << deltaAddCover_.fileId_ << ", remove asset size: ";
-    ss << removeFileIds.size();
-    ss << ", deltaAddHiddenCover_ fileId: " << deltaAddHiddenCover_.fileId_ << ", remove hidden asset size: ";
-    ss << removeHiddenFileIds.size();
+    if (IsAlbumInfoRefresh()) {
+        ss << "deltaCount_: " << deltaCount_ << ", deltaVideoCount_: " << deltaVideoCount_;
+        ss << ", deltaAddCover_ fileId: " << deltaAddCover_.fileId_ << ", remove asset size: " << removeFileIds.size();
+        ss << ", assetModifiedCnt_: " << assetModifiedCnt_;
+    }
+    if (IsAlbumHiddenInfoRefresh()) {
+        ss << ", deltaHiddenCount_: " << deltaHiddenCount_ << ", deltaAddHiddenCover_ fileId: ";
+        ss << deltaAddHiddenCover_.fileId_ <<  ", remove hidden asset size: " << removeHiddenFileIds.size();
+        ss << ", hiddenAssetModifiedCnt_: " << hiddenAssetModifiedCnt_;
+    }
+    
     return ss.str();
 }
 

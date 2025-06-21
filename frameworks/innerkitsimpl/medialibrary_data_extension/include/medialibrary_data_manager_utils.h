@@ -36,6 +36,7 @@ public:
     EXPORT static std::string ObtionCondition(std::string &strQueryCondition,
         const std::vector<std::string> &whereArgs);
     EXPORT static std::string GetTypeUriByUri(std::string &uri);
+    EXPORT static int32_t GetFileIdNumFromPhotoUri(const std::string &uri);
 };
 } // namespace Media
 } // namespace OHOS

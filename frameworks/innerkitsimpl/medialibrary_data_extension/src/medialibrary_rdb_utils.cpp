@@ -560,6 +560,15 @@ static void SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const Upda
 static void SetCoverDateTime(const shared_ptr<ResultSet> &fileResult, const UpdateAlbumData &data,
     ValuesBucket &values, const bool hiddenState)
 {
+    bool isUserAlbum = data.albumSubtype == PhotoAlbumSubType::USER_GENERIC;
+    bool isSourceAlbum = data.albumSubtype == PhotoAlbumSubType::SOURCE_GENERIC;
+    bool isSystemAlbum = data.albumSubtype >= PhotoAlbumSubType::SYSTEM_START &&
+        data.albumSubtype <= PhotoAlbumSubType::SYSTEM_END;
+    bool isPhotoAlbum = isUserAlbum || isSourceAlbum || isSystemAlbum;
+    if (!isPhotoAlbum) {
+        MEDIA_INFO_LOG("AccurateRefresh Update album[%{public}d] subType[%{public}d]", data.albumId, data.albumSubtype);
+        return;
+    }
     if (hiddenState) {
         int64_t oldHiddenCoverDateTime = data.hiddenCoverDateTime;
         int64_t hiddenCoverDateTime = GetPhotosHiddenTime(fileResult);

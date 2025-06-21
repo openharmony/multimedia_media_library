@@ -57,6 +57,7 @@ const std::string CREATE_PHOTO_ALBUM_TABLE = "CREATE TABLE IF NOT EXISTS " +
     PhotoAlbumColumns::ALBUM_PRIORITY + " INT, " +
     PhotoAlbumColumns::ALBUM_CHECK_FLAG + " INT DEFAULT 0, " +
     PhotoAlbumColumns::COVER_DATE_TIME + " BIGINT DEFAULT 0, " +
+    PhotoAlbumColumns::COVER_URI_SOURCE + " INT DEFAULT 0, " +
     PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME + " BIGINT DEFAULT 0)";
 
 const std::string CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS " +
