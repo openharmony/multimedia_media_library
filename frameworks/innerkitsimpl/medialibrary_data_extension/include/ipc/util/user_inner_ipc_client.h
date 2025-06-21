@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_IPC_USER_BASE_IPC_CLIENT_H
-#define OHOS_MEDIA_IPC_USER_BASE_IPC_CLIENT_H
+#ifndef OHOS_MEDIA_IPC_USER_INNER_IPC_CLIENT_H
+#define OHOS_MEDIA_IPC_USER_INNER_IPC_CLIENT_H
 
 #include <memory>
 #include <string>
@@ -30,7 +30,7 @@
 #include "media_empty_obj_vo.h"
 
 namespace OHOS::Media::IPC {
-class UserBaseIPCClient {
+class UserInnerIPCClient {
 private:
     std::string traceId_;
     int32_t userId_ = -1;
@@ -42,13 +42,13 @@ private:
     virtual int32_t UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option);
 
 public:  // getters & setters
-    UserBaseIPCClient &SetTraceId(const std::string &traceId);
+    UserInnerIPCClient &SetTraceId(const std::string &traceId);
     std::string GetTraceId() const;
-    UserBaseIPCClient &SetUserId(const int32_t &userId);
+    UserInnerIPCClient &SetUserId(const int32_t &userId);
     int32_t GetUserId() const;
     std::unordered_map<std::string, std::string> GetHeader() const;
-    UserBaseIPCClient &SetHeader(const std::unordered_map<std::string, std::string> &header);
-    UserBaseIPCClient &SetDataShareHelper(std::shared_ptr<DataShare::DataShareHelper> dataShareHelper);
+    UserInnerIPCClient &SetHeader(const std::unordered_map<std::string, std::string> &header);
+    UserInnerIPCClient &SetDataShareHelper(std::shared_ptr<DataShare::DataShareHelper> dataShareHelper);
 
 private:
     template <class REQ>
@@ -148,4 +148,4 @@ public:
     }
 };
 }  // namespace OHOS::Media::IPC
-#endif  // OHOS_MEDIA_IPC_USER_BASE_IPC_CLIENT_H
+#endif  // OHOS_MEDIA_IPC_USER_INNER_IPC_CLIENT_H

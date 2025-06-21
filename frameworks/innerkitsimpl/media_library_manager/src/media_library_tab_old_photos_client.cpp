@@ -26,7 +26,7 @@
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "datashare_helper.h"
-#include "user_base_ipc_client.h"
+#include "user_inner_ipc_client.h"
 #include "medialibrary_business_code.h"
 #include "get_uris_by_old_uris_inner_vo.h"
 
@@ -90,7 +90,7 @@ std::unordered_map<std::string, std::string> TabOldPhotosClient::GetResultSetFro
     reqBody.columns = columns;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_URIS_BY_OLD_URIS);
     MEDIA_INFO_LOG("before IPC::UserDefineIPCClient().Call, INNER_GET_URIS_BY_OLD_URIS");
-    int32_t result = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+    int32_t result = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
     CHECK_AND_RETURN_RET_LOG(result == E_OK, resultMap, "GetResultSetFromTabOldPhotos IPC Call Failed");
     auto fileIds_size = rspBody.fileIds.size();
     auto datas_size = rspBody.datas.size();

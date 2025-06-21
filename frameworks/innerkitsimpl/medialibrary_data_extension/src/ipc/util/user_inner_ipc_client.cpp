@@ -14,57 +14,57 @@
  */
 #define MLOG_TAG "Media_IPC"
 
-#include "user_base_ipc_client.h"
+#include "user_inner_ipc_client.h"
 
 namespace OHOS::Media::IPC {
 static const std::u16string DESCRIPTOR = u"OHOS.DataShare.IDataShare";
-UserBaseIPCClient &UserBaseIPCClient::SetTraceId(const std::string &traceId)
+UserInnerIPCClient &UserInnerIPCClient::SetTraceId(const std::string &traceId)
 {
     this->traceId_ = traceId;
     return *this;
 }
 
-std::string UserBaseIPCClient::GetTraceId() const
+std::string UserInnerIPCClient::GetTraceId() const
 {
     return this->traceId_;
 }
 
-UserBaseIPCClient &UserBaseIPCClient::SetUserId(const int32_t &userId)
+UserInnerIPCClient &UserInnerIPCClient::SetUserId(const int32_t &userId)
 {
     this->userId_ = userId;
     return *this;
 }
 
-int32_t UserBaseIPCClient::GetUserId() const
+int32_t UserInnerIPCClient::GetUserId() const
 {
     return this->userId_;
 }
 
-std::unordered_map<std::string, std::string> UserBaseIPCClient::GetHeader() const
+std::unordered_map<std::string, std::string> UserInnerIPCClient::GetHeader() const
 {
     return this->header_;
 }
 
-UserBaseIPCClient &UserBaseIPCClient::SetHeader(const std::unordered_map<std::string, std::string> &header)
+UserInnerIPCClient &UserInnerIPCClient::SetHeader(const std::unordered_map<std::string, std::string> &header)
 {
     this->header_ = header;
     return *this;
 }
 
-UserBaseIPCClient &UserBaseIPCClient::SetDataShareHelper(std::shared_ptr<DataShare::DataShareHelper> dataShareHelper)
+UserInnerIPCClient &UserInnerIPCClient::SetDataShareHelper(std::shared_ptr<DataShare::DataShareHelper> dataShareHelper)
 {
     this->dataShareHelper_ = dataShareHelper;
     return *this;
 }
 
-int32_t UserBaseIPCClient::HeaderMarshalling(MessageParcel &data)
+int32_t UserInnerIPCClient::HeaderMarshalling(MessageParcel &data)
 {
     bool errConn = !data.WriteInterfaceToken(DESCRIPTOR);
     CHECK_AND_RETURN_RET_LOG(!errConn, E_FAIL, "WriteInterfaceToken failed");
     return E_OK;
 }
 
-int32_t UserBaseIPCClient::UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option)
+int32_t UserInnerIPCClient::UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option)
 {
     CHECK_AND_RETURN_RET_LOG(this->dataShareHelper_ != nullptr, E_ERR, "dataShareHelper_ is nullptr");
     return this->dataShareHelper_->UserDefineFunc(data, reply, option);

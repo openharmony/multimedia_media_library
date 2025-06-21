@@ -59,7 +59,7 @@ ohos_shared_library("media_library_manager") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_uris_by_old_uris_inner_vo.cpp",
   ]
 
-  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp" ]
+  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_inner_ipc_client.cpp" ]
 
   include_dirs += user_ipc_client_include_dirs
   sources += media_albums_manager_vo_source
@@ -163,7 +163,7 @@ ohos_shared_library("media_library_extend_manager") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/check_photo_uri_permission_inner_vo.cpp",
   ]
 
-  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp" ]
+  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_inner_ipc_client.cpp" ]
 
   include_dirs += user_ipc_client_include_dirs
   sources += media_albums_manager_vo_source
@@ -255,7 +255,7 @@ ohos_shared_library("media_library_custom_restore") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/stop_restore_vo.cpp",
   ]
 
-  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp" ]
+  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_inner_ipc_client.cpp" ]
 
   include_dirs += user_ipc_client_include_dirs
   sources += media_albums_manager_vo_source

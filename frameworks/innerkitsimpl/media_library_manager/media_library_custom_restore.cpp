@@ -24,7 +24,7 @@
 #include "medialibrary_errno.h"
 #include "system_ability_definition.h"
 #include "userfilemgr_uri.h"
-#include "user_base_ipc_client.h"
+#include "user_inner_ipc_client.h"
 #include "medialibrary_business_code.h"
 #include "restore_vo.h"
 #include "stop_restore_vo.h"
@@ -95,7 +95,7 @@ int32_t CustomRestore::Restore()
     reqBody.appName = appName_;
     reqBody.appId = appId_;
     reqBody.isDeduplication = isDeduplication_;
-    int32_t result = IPC::UserBaseIPCClient()
+    int32_t result = IPC::UserInnerIPCClient()
                          .SetDataShareHelper(sDataShareHelper_)
                          .Call(static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE), reqBody);
     MEDIA_DEBUG_LOG("CustomRestore Restore end. %{public}d", result);
@@ -109,7 +109,7 @@ int32_t CustomRestore::StopRestore()
 
     StopRestoreReqBody reqBody;
     reqBody.keyPath = keyPath_;
-    int32_t result = IPC::UserBaseIPCClient()
+    int32_t result = IPC::UserInnerIPCClient()
                          .SetDataShareHelper(sDataShareHelper_)
                          .Call(static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE_CANCEL), reqBody);
     MEDIA_DEBUG_LOG("CustomRestore StopRestore end. %{public}d", result);

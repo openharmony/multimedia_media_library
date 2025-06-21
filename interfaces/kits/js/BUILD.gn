@@ -167,7 +167,6 @@ ohos_shared_library("medialibrary_nutils") {
   public_configs = [ ":public_napi_config" ]
   configs = [ ":napi_config" ]
   sources = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_base_ipc_client.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_define_ipc_client.cpp",
     "${MEDIALIB_JS_PATH}/src/album_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/album_order_napi.cpp",
