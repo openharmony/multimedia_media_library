@@ -110,7 +110,7 @@ static const std::string MEDIA_FILEMODE = "mode";
 static const std::string ANALYSIS_NO_RESULTS = "[]";
 static const std::string ANALYSIS_INIT_VALUE = "0";
 static const std::string ANALYSIS_STATUS_ANALYZED = "Analyzed, no results";
-static const std::string URI_TPYE = "uriType";
+static const std::string URI_TYPE = "uriType";
 static const std::string TPYE_PHOTOS = "1";
 static const std::string PHOTO_BUNDLE_NAME = "com.huawei.hmos.photos";
 
@@ -1338,7 +1338,7 @@ static int32_t CallCommitModify(FileAssetAsyncContext *context)
 
     std::unordered_map<std::string, std::string> headerMap;
     headerMap[MediaColumn::MEDIA_ID] = to_string(context->objectPtr->GetId());
-    headerMap[URI_TPYE] = TPYE_PHOTOS;
+    headerMap[URI_TYPE] = TPYE_PHOTOS;
 
     int32_t errCode = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(context->businessCode, reqBody);
     if (errCode < 0) {
@@ -4182,7 +4182,7 @@ static void CloneAssetHandlerExecute(napi_env env, void *data)
     // db permission
     std::unordered_map<std::string, std::string> headerMap = {
         { MediaColumn::MEDIA_ID, to_string(reqBody.fileId) },
-        { URI_TPYE, TPYE_PHOTOS },
+        { URI_TYPE, TPYE_PHOTOS },
     };
     client.SetHeader(headerMap);
     int32_t newAssetId = client.Call(businessCode, reqBody);
@@ -4285,7 +4285,7 @@ static void ConvertFormatHandlerExecute(napi_env env, void *data)
     // db permission
     std::unordered_map<std::string, std::string> headerMap = {
         { MediaColumn::MEDIA_ID, to_string(reqBody.fileId) },
-        { URI_TPYE, TPYE_PHOTOS },
+        { URI_TYPE, TPYE_PHOTOS },
     };
     client.SetHeader(headerMap);
     int32_t newAssetId = client.Call(businessCode, reqBody);
@@ -4396,7 +4396,7 @@ static int32_t CallModifyFavorite(FileAssetAsyncContext *context)
 
     std::unordered_map<std::string, std::string> headerMap;
     headerMap[MediaColumn::MEDIA_ID] = to_string(context->objectPtr->GetId());
-    headerMap[URI_TPYE] = TPYE_PHOTOS;
+    headerMap[URI_TYPE] = TPYE_PHOTOS;
 
     int32_t errCode = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(context->businessCode, reqBody);
     if (errCode < 0) {
@@ -4740,7 +4740,7 @@ static int32_t CallModifyPending(FileAssetAsyncContext *context)
 
     std::unordered_map<std::string, std::string> headerMap;
     headerMap[MediaColumn::MEDIA_ID] = to_string(context->objectPtr->GetId());
-    headerMap[URI_TPYE] = TPYE_PHOTOS;
+    headerMap[URI_TYPE] = TPYE_PHOTOS;
 
     int32_t errCode = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(context->businessCode, reqBody);
     if (errCode < 0) {
@@ -4897,7 +4897,7 @@ static int32_t CallModifyUserComment(FileAssetAsyncContext *context)
 
     std::unordered_map<std::string, std::string> headerMap;
     headerMap[MediaColumn::MEDIA_ID] = to_string(context->objectPtr->GetId());
-    headerMap[URI_TPYE] = TPYE_PHOTOS;
+    headerMap[URI_TYPE] = TPYE_PHOTOS;
 
     int32_t errCode = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(context->businessCode, reqBody);
     if (errCode < 0) {
@@ -5566,7 +5566,7 @@ static int32_t CommitEditCall(int32_t fileId, const string& editData)
     // db permission
     std::unordered_map<std::string, std::string> headerMap = {
         { MediaColumn::MEDIA_ID, to_string(fileId) },
-        { URI_TPYE, TPYE_PHOTOS },
+        { URI_TYPE, TPYE_PHOTOS },
     };
     client.SetHeader(headerMap);
     CommitEditedAssetReqBody reqBody;
@@ -5703,7 +5703,7 @@ static void PhotoAccessHelperRevertToOriginalExecute(napi_env env, void *data)
     // db permission
     std::unordered_map<std::string, std::string> headerMap = {
         { MediaColumn::MEDIA_ID, to_string(fileId) },
-        { URI_TPYE, TPYE_PHOTOS },
+        { URI_TYPE, TPYE_PHOTOS },
     };
     client.SetHeader(headerMap);
     int32_t ret = client.Call(businessCode, reqBody);

@@ -62,7 +62,7 @@ const int32_t LOW_QUALITY_IMAGE = 1;
 const uint32_t MAX_URI_SIZE = 384;
 const std::string ERROR_REQUEST_ID = "00000000-0000-0000-0000-000000000000";
 
-static const std::string URI_TPYE = "uriType";
+static const std::string URI_TYPE = "uriType";
 static const std::string TPYE_PHOTOS = "1";
 
 static std::map<std::string, std::shared_ptr<MultiStagesTaskObserver>> multiStagesObserverMap;
@@ -279,7 +279,7 @@ MultiStagesCapturePhotoStatus MediaAssetManagerImpl::QueryPhotoStatus(int32_t fi
     QueryPhotoRspBody rspBody;
     reqBody.fileId = std::to_string(fileId);
     std::unordered_map<std::string, std::string> headerMap {
-        {MediaColumn::MEDIA_ID, reqBody.fileId }, {URI_TPYE, TPYE_PHOTOS}
+        {MediaColumn::MEDIA_ID, reqBody.fileId }, {URI_TYPE, TPYE_PHOTOS}
     };
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_QUERY_PHOTO_STATUS);
     int errCode = IPC::UserBaseIPCClient().SetHeader(headerMap)
