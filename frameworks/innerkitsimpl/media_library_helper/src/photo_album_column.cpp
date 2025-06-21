@@ -16,6 +16,7 @@
 #include "photo_album_column.h"
 
 #include <string>
+#include <unordered_map>
 #include "location_column.h"
 #include "media_column.h"
 #include "media_log.h"
@@ -63,7 +64,35 @@ const string PhotoAlbumColumns::HIDDEN_COVER = "hidden_cover";
 // For sorting albums
 const string PhotoAlbumColumns::ALBUM_ORDER = "album_order";
 const string PhotoAlbumColumns::REFERENCE_ALBUM_ID = "reference_album_id";
+// For api20 sorting albums
+const string PhotoAlbumColumns::ALBUMS_ORDER = "albums_order";
+const string PhotoAlbumColumns::ORDER_SECTION = "order_section";
+const string PhotoAlbumColumns::ORDER_TYPE = "order_type";
+const string PhotoAlbumColumns::ORDER_STATUS = "order_status";
+const string PhotoAlbumColumns::STYLE2_ALBUMS_ORDER = "style2_albums_order";
+const string PhotoAlbumColumns::STYLE2_ORDER_SECTION = "style2_order_section";
+const string PhotoAlbumColumns::STYLE2_ORDER_TYPE = "style2_order_type";
+const string PhotoAlbumColumns::STYLE2_ORDER_STATUS = "style2_order_status";
 
+const vector<std::string> PhotoAlbumColumns::ALBUM_ORDER_COLUMNS = {
+    PhotoAlbumColumns::ALBUMS_ORDER, PhotoAlbumColumns::STYLE2_ALBUMS_ORDER
+};
+const vector<std::string> PhotoAlbumColumns::ALBUM_ORDER_SECTION_COLUMNS = {
+    PhotoAlbumColumns::ORDER_SECTION, PhotoAlbumColumns::STYLE2_ORDER_SECTION
+};
+const vector<std::string> PhotoAlbumColumns::ALBUM_ORDER_TYPE_COLUMNS = {
+    PhotoAlbumColumns::ORDER_TYPE, PhotoAlbumColumns::STYLE2_ORDER_TYPE
+};
+const vector<std::string> PhotoAlbumColumns::ALBUM_ORDER_STATUS_COLUMNS = {
+    PhotoAlbumColumns::ORDER_STATUS, PhotoAlbumColumns::STYLE2_ORDER_STATUS
+};
+
+const unordered_map<AlbumOrderParam, vector<std::string>> PhotoAlbumColumns::ORDER_COLUMN_STYLE_MAP = {
+    {AlbumOrderParam::ALBUM_ORDER, PhotoAlbumColumns::ALBUM_ORDER_COLUMNS},
+    {AlbumOrderParam::ORDER_SECTION, PhotoAlbumColumns::ALBUM_ORDER_SECTION_COLUMNS},
+    {AlbumOrderParam::ORDER_TYPE, PhotoAlbumColumns::ALBUM_ORDER_TYPE_COLUMNS},
+    {AlbumOrderParam::ORDER_STATUS, PhotoAlbumColumns::ALBUM_ORDER_STATUS_COLUMNS}
+};
 // For accurate refresh
 const string PhotoAlbumColumns::COVER_DATE_TIME = "cover_date_time";
 const string PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME = "hidden_cover_date_time";
@@ -92,6 +121,16 @@ const std::string LOCATION_COVER_URI =
 // default fetch columns
 const set<string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
     ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED
+};
+
+// default fetch albumOrder columns
+const set<string> PhotoAlbumColumns::DEFAULT_FETCH_ORDER_COLUMNS_STYLE1 = {
+    PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUMS_ORDER, PhotoAlbumColumns::ORDER_SECTION,
+    PhotoAlbumColumns::ORDER_TYPE, PhotoAlbumColumns::ORDER_STATUS
+};
+const set<string> PhotoAlbumColumns::DEFAULT_FETCH_ORDER_COLUMNS_STYLE2 = {
+    PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::STYLE2_ALBUMS_ORDER, PhotoAlbumColumns::STYLE2_ORDER_SECTION,
+    PhotoAlbumColumns::STYLE2_ORDER_TYPE, PhotoAlbumColumns::STYLE2_ORDER_STATUS
 };
 
 // location default fetch columns
@@ -144,7 +183,15 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_CHECK_FLAG + " INT DEFAULT 0, " +
     PhotoAlbumColumns::COVER_URI_SOURCE + " INT DEFAULT 0, " +
     COVER_DATE_TIME + " BIGINT DEFAULT 0, " +
-    HIDDEN_COVER_DATE_TIME + " BIGINT DEFAULT 0)";
+    HIDDEN_COVER_DATE_TIME + " BIGINT DEFAULT 0, " +
+    ALBUMS_ORDER + " INT DEFAULT -1, " +
+    ORDER_SECTION + " INT DEFAULT -1, " +
+    ORDER_TYPE + " INT DEFAULT -1, " +
+    ORDER_STATUS + " INT DEFAULT 0, " +
+    STYLE2_ALBUMS_ORDER + " INT DEFAULT -1, " +
+    STYLE2_ORDER_SECTION + " INT DEFAULT -1, " +
+    STYLE2_ORDER_TYPE + " INT DEFAULT -1, " +
+    STYLE2_ORDER_STATUS + " INT DEFAULT 0)";
 
 // Create indexes
 const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +

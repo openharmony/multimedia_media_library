@@ -25,6 +25,7 @@
 #include "access_token.h"
 #include "accesstoken_kit.h"
 #include "ability_context.h"
+#include "album_order_napi.h"
 #include "confirm_callback.h"
 #include "context.h"
 #include "default_album_name_callback.h"
@@ -111,6 +112,8 @@
 #include "get_photo_index_vo.h"
 #include "query_result_vo.h"
 #include "get_analysis_process_vo.h"
+#include "get_photo_album_object_vo.h"
+#include "set_photo_album_order_vo.h"
 
 #include "parcel.h"
 #include "medialibrary_notify_utils.h"
@@ -136,6 +139,7 @@ const int32_t MAX_QUERY_ALBUM_LIMIT = 500;
 const int32_t MAX_LEN_LIMIT = 9999;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
+const size_t MAX_SET_ORDER_ARRAY_SIZE = 1000;
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
@@ -414,6 +418,9 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("startAssetAnalysis", PhotoAccessStartAssetAnalysis),
             DECLARE_NAPI_FUNCTION("on", PhotoAccessRegisterCallback),
             DECLARE_NAPI_FUNCTION("off", PhotoAccessUnregisterCallback),
+            DECLARE_NAPI_FUNCTION("getPhotoAlbums", PhotoAccessGetPhotoAlbumsWithoutSubtype),
+            DECLARE_NAPI_FUNCTION("getPhotoAlbumOrder", PhotoAccessGetPhotoAlbumOrder),
+            DECLARE_NAPI_FUNCTION("setPhotoAlbumOrder", PhotoAccessSetPhotoAlbumOrder),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -11127,6 +11134,440 @@ napi_value MediaLibraryNapi::GetPhotoPickerComponentDefaultAlbumName(napi_env en
     NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");
     callback->SetSessionId(sessionId);
     return result;
+}
+
+static napi_value CheckOrderStyle(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context,
+    OrderStyleType &orderStyle)
+{
+    CHECK_COND_RET(context->argc >= ARGS_ONE, nullptr, "No arguments to check order style");
+
+    int32_t albumOrderStyle;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[PARAM0], albumOrderStyle));
+    double doubleArg;
+    CHECK_COND_RET(MediaLibraryNapiUtils::GetDouble(env, context->argv[PARAM0], doubleArg) == napi_ok, nullptr,
+        "Failed to get orderStyle");
+    CHECK_ARGS_WITH_MEG(env, doubleArg == static_cast<double>(albumOrderStyle), JS_E_PARAM_INVALID,
+        "orderStyle is not an integer");
+
+    if (!PhotoAlbum::CheckOrderStyleType(static_cast<OrderStyleType>(albumOrderStyle))) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "orderStyle is an invalid parameter");
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    orderStyle = static_cast<OrderStyleType>(albumOrderStyle);
+    return result;
+}
+
+static napi_value ParseArgsGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return nullptr;
+    }
+    
+    constexpr size_t minArgs = ARGS_ZERO;
+    constexpr size_t maxArgs = ARGS_ONE;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_E_PARAM_INVALID);
+
+    if (context->argc == maxArgs) {
+        napi_valuetype valueType = napi_undefined;
+        if (napi_typeof(env, context->argv[PARAM1], &valueType) == napi_ok &&
+            (valueType == napi_undefined || valueType == napi_null)) {
+            context->argc -= 1;
+        }
+    }
+    
+    if (context->argc == maxArgs) {
+        auto status =
+            MediaLibraryNapiUtils::GetFetchOption(env, context->argv[maxArgs - 1], ALBUM_FETCH_OPT, context);
+        CHECK_ARGS(env, status, JS_E_INNER_FAIL);
+    }
+    RestrictAlbumSubtypeOptions(context->predicates);
+
+    CHECK_COND(env, CheckAlbumFetchColumns(context->fetchColumn), JS_E_PARAM_INVALID);
+    AddNoSmartFetchColumns(context->fetchColumn);
+    AddDefaultColumnsForNonAnalysisAlbums(*context);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    return result;
+}
+
+static void JSGetPhotoAlbumsWithoutSubtypeExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPhotoAlbumsWithoutSubtypeExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    GetPhotoAlbumObjectReqBody reqBody;
+    GetPhotoAlbumObjectRsqBody rsqBody;
+    shared_ptr<DataShareResultSet> resultSet;
+    reqBody.predicates = context->predicates;
+    reqBody.columns = context->fetchColumn;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_PHOTO_ALBUMS);
+
+    int32_t errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rsqBody);
+    resultSet = rsqBody.resultSet;
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
+        if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
+            context->SaveError(errCode);
+        } else {
+            context->SaveError(E_HAS_DB_ERROR);
+        }
+        return;
+    }
+
+    context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
+    context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
+    context->fetchPhotoAlbumResult->SetUserId(context->userId);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetPhotoAlbumsWithoutSubtype");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_NULLPTR_RET(ParseArgsGetPhotoAlbumsWithoutSubtype(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetPhotoAlbumsWithoutSubtype",
+        JSGetPhotoAlbumsWithoutSubtypeExecute, JSGetPhotoAlbumsCompleteCallback);
+}
+
+static napi_value AddDefaultAlbumOrderColumns(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context,
+    vector<string> &fetchColumns, const OrderStyleType &orderStyle)
+{
+    auto validFetchColumns = (orderStyle == OrderStyleType::MIX) ?
+        PhotoAlbumColumns::DEFAULT_FETCH_ORDER_COLUMNS_STYLE1 : PhotoAlbumColumns::DEFAULT_FETCH_ORDER_COLUMNS_STYLE2;
+    for (const auto &column : fetchColumns) {
+        if (!AlbumOrder::IsAlbumOrderColumn(orderStyle, column)) {
+            NAPI_ERR_LOG("AlbumOrder does not contain this column: %{public}s, orderStyle: %{public}d",
+                column.c_str(), static_cast<int32_t>(orderStyle));
+            return nullptr;
+        }
+    }
+    fetchColumns.assign(validFetchColumns.begin(), validFetchColumns.end());
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseArgsGetPhotoAlbumOrder(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return nullptr;
+    }
+    
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_E_PARAM_INVALID);
+
+    if (context->argc == maxArgs) {
+        napi_valuetype valueType = napi_undefined;
+        if (napi_typeof(env, context->argv[PARAM1], &valueType) == napi_ok &&
+            (valueType == napi_undefined || valueType == napi_null)) {
+            context->argc -= 1;
+        }
+    }
+    
+    OrderStyleType orderStyle;
+    CHECK_ARGS_WITH_MEG(env, CheckOrderStyle(env, context, orderStyle), JS_E_PARAM_INVALID,
+        "Failed to check orderStyle");
+
+    if (context->argc == maxArgs) {
+        auto status =
+            MediaLibraryNapiUtils::GetFetchOption(env, context->argv[maxArgs - 1], ALBUM_FETCH_OPT, context);
+        CHECK_ARGS(env, status, JS_E_INNER_FAIL);
+    }
+    RestrictAlbumSubtypeOptions(context->predicates);
+
+    CHECK_ARGS_WITH_MEG(env, AddDefaultAlbumOrderColumns(env, context, context->fetchColumn, orderStyle), 
+        JS_E_PARAM_INVALID, "Failed to add default columns");
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    return result;
+}
+
+
+static void JSGetPhotoAlbumOrderExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPhotoAlbumOrderExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    GetPhotoAlbumObjectReqBody reqBody;
+    GetPhotoAlbumObjectRsqBody rsqBody;
+    shared_ptr<DataShareResultSet> resultSet;
+    reqBody.predicates = context->predicates;
+    reqBody.columns = context->fetchColumn;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_PHOTO_ALBUM_ORDER);
+
+    int32_t errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rsqBody);
+    resultSet = rsqBody.resultSet;
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
+        if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
+            context->SaveError(errCode);
+        } else {
+            context->SaveError(E_HAS_DB_ERROR);
+        }
+        return;
+    }
+
+    context->fetchAlbumOrderResult = make_unique<FetchResult<AlbumOrder>>(move(resultSet));
+}
+
+static void GetNapiAlbumOrderResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    if (context->fetchAlbumOrderResult == nullptr) {
+        NAPI_ERR_LOG("No fetch album order result found!");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Failed to obtain Fetch AlbumOrder Result");
+        return;
+    }
+    napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchAlbumOrderResult));
+    if (fileResult == nullptr) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Failed to create js object for Fetch File Result");
+    } else {
+        jsContext->data = fileResult;
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+    }
+}
+
+static void GetAlbumOrderCallbackComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAlbumOrderCallbackComplete");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+    } else {
+        GetNapiAlbumOrderResult(env, context, jsContext);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetPhotoAlbumOrder(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetPhotoAlbumOrder");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsGetPhotoAlbumOrder(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetPhotoAlbumOrder",
+        JSGetPhotoAlbumOrderExecute, GetAlbumOrderCallbackComplete);
+}
+
+static napi_status HandleAlbumOrderParam(AlbumOrderNapi *obj, DataShareValuesBucket &valuesBucket,
+    OrderStyleType orderStyle, AlbumOrderParam param)
+{
+    int32_t index = static_cast<int32_t>(orderStyle);
+    auto iter = PhotoAlbumColumns::ORDER_COLUMN_STYLE_MAP.find(param);
+    if (iter != PhotoAlbumColumns::ORDER_COLUMN_STYLE_MAP.end()) {
+        size_t len = iter->second.size();
+        CHECK_COND_RET(index >= 0 && static_cast<size_t>(index) < len, napi_invalid_arg,
+            "The orderStyle has exceeded the length of the column array, unable to find the real column name");
+
+        string columnName = iter->second[index];
+        switch (param) {
+            case AlbumOrderParam::ALBUM_ORDER:
+                valuesBucket.Put(columnName, obj->GetAlbumOrder());
+                break;
+            case AlbumOrderParam::ORDER_SECTION:
+                valuesBucket.Put(columnName, obj->GetOrderSection());
+                break;
+            case AlbumOrderParam::ORDER_TYPE:
+                valuesBucket.Put(columnName, obj->GetOrderType());
+                break;
+            case AlbumOrderParam::ORDER_STATUS:
+                valuesBucket.Put(columnName, obj->GetOrderStatus());
+                break;
+            default:
+                break;
+        }
+    }
+    return napi_ok;
+}
+
+static napi_status TransAlbumOrderToBuckets(AlbumOrderNapi *obj, DataShare::DataShareValuesBucket &values,
+    OrderStyleType orderStyle)
+{
+    for (int i = static_cast<int32_t>(AlbumOrderParam::ALBUM_ORDER);
+        i <= static_cast<int32_t>(AlbumOrderParam::ORDER_STATUS); i++) {
+        AlbumOrderParam param = static_cast<AlbumOrderParam>(i);
+        CHECK_COND_RET(HandleAlbumOrderParam(obj, values, orderStyle, param) == napi_ok, napi_invalid_arg,
+            "orderStyle cannot be mapped to the actual rdb columnName");     
+    }
+    return napi_ok;
+}
+
+static napi_value ParseAlbumOrderArray(napi_env env, napi_value arg, OrderStyleType orderStyle,
+    vector<DataShare::DataShareValuesBucket> &dataShareValuesBuckets)
+{
+    bool isArray = false;
+    CHECK_ARGS(env, napi_is_array(env, arg, &isArray), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, isArray == true, JS_E_PARAM_INVALID, "Failed to check array type");
+
+    uint32_t len = 0;
+    CHECK_ARGS(env, napi_get_array_length(env, arg, &len), JS_E_INNER_FAIL);
+    CHECK_ARGS_WITH_MEG(env, len > 0, JS_E_PARAM_INVALID, "Failed to check array length");
+
+    for (uint32_t i = 0; i < len; i++) {
+        napi_value orderData = nullptr;
+        CHECK_ARGS(env, napi_get_element(env, arg, i, &orderData), JS_E_INNER_FAIL);
+        CHECK_ARGS_WITH_MEG(env, orderData != nullptr, JS_E_PARAM_INVALID, "Failed to get album order element");
+
+        AlbumOrderNapi *obj = nullptr;
+        DataShareValuesBucket valuesBucket;
+        CHECK_ARGS(env, napi_unwrap(env, orderData, reinterpret_cast<void **>(&obj)), JS_E_INNER_FAIL);
+        CHECK_ARGS_WITH_MEG(env, obj != nullptr, JS_E_PARAM_INVALID, "Failed to get albumOrder napi object");
+        
+        if (obj->GetAlbumId() <= 0) {
+            NAPI_ERR_LOG("Skip invalid album order, albumId: %{public}d", obj->GetAlbumId());
+            continue;
+        }
+        valuesBucket.Put(PhotoAlbumColumns::ALBUM_ID, obj->GetAlbumId());
+        CHECK_ARGS_WITH_MEG(env, TransAlbumOrderToBuckets(obj, valuesBucket, orderStyle) == napi_ok,
+            JS_E_PARAM_INVALID, "Transform albumOrder to datasharvaluebucket failed");
+
+        dataShareValuesBuckets.emplace_back(valuesBucket);
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseArgsSetPhotoAlbumOrder(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return nullptr;
+    }
+    
+    napi_value result = nullptr;
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_E_PARAM_INVALID);
+
+    OrderStyleType orderStyle;
+    CHECK_ARGS_WITH_MEG(env, CheckOrderStyle(env, context, orderStyle), JS_E_PARAM_INVALID,
+        "Failed to check orderStyle");
+    context->orderStyle = static_cast<int32_t>(orderStyle);
+
+    CHECK_NULLPTR_RET(ParseAlbumOrderArray(env, context->argv[PARAM1], orderStyle, context->valuesBucketArray));
+
+    CHECK_ARGS_WITH_MEG(env, !context->valuesBucketArray.empty(), JS_E_PARAM_INVALID,
+        "Albumorder array is empty");
+    CHECK_ARGS_WITH_MEG(env, context->valuesBucketArray.size() <= MAX_SET_ORDER_ARRAY_SIZE, JS_E_PARAM_INVALID,
+        "Exceeded the maximum batch input quantity, can not update album order");
+
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    return result;
+}
+
+static void TransValueBucketToReqBody(const std::vector<OHOS::DataShare::DataShareValuesBucket> &valuesBucketArray, 
+    const int32_t &orderStyle, SetPhotoAlbumOrderReqBody &reqBody)
+{
+    reqBody.albumOrderColumn = PhotoAlbumColumns::ALBUM_ORDER_COLUMNS[orderStyle];
+    reqBody.orderSectionColumn = PhotoAlbumColumns::ALBUM_ORDER_SECTION_COLUMNS[orderStyle];
+    reqBody.orderTypeColumn = PhotoAlbumColumns::ALBUM_ORDER_TYPE_COLUMNS[orderStyle];
+    reqBody.orderStatusColumn = PhotoAlbumColumns::ALBUM_ORDER_STATUS_COLUMNS[orderStyle];
+
+    bool isValid = false;
+    for (const auto& valueBucket : valuesBucketArray) {
+        reqBody.albumIds.emplace_back(valueBucket.Get(PhotoAlbumColumns::ALBUM_ID, isValid));
+        reqBody.albumOrders.emplace_back(valueBucket.Get(reqBody.albumOrderColumn, isValid));
+        reqBody.orderSection.emplace_back(valueBucket.Get(reqBody.orderSectionColumn, isValid));
+        reqBody.orderType.emplace_back(valueBucket.Get(reqBody.orderTypeColumn, isValid));
+        reqBody.orderStatus.emplace_back(valueBucket.Get(reqBody.orderStatusColumn, isValid));
+    }
+}
+
+static void JSSetPhotoAlbumOrderExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetPhotoAlbumOrderExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    SetPhotoAlbumOrderReqBody reqBody;
+    TransValueBucketToReqBody(context->valuesBucketArray, context->orderStyle, reqBody);
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SET_PHOTO_ALBUM_ORDER);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("set photo album order failed, err: %{public}d", ret);
+    }
+}
+
+static void JSSetAlbumOrderCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetAlbumOrderCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+        napi_get_undefined(env, &jsContext->data);
+    } else {
+        napi_get_undefined(env, &jsContext->data);
+        context->HandleError(env, jsContext->error);
+    }
+    if (context->work != nullptr) {
+        tracer.Finish();
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessSetPhotoAlbumOrder(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessSetPhotoAlbumOrder");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsSetPhotoAlbumOrder(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "SetPhotoAlbumOrder",
+        JSSetPhotoAlbumOrderExecute, JSSetAlbumOrderCompleteCallback);
 }
 
 int32_t MediaLibraryNapi::GetUserId()

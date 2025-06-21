@@ -18,7 +18,9 @@
 
 #include <set>
 #include <string>
+#include <unordered_map>
 
+#include "album_order.h"
 #include "base_column.h"
 #include "rdb_predicates.h"
 #include "userfile_manager_types.h"
@@ -69,6 +71,25 @@ public:
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
     static const std::vector<std::string> LOCATION_DEFAULT_FETCH_COLUMNS EXPORT;
     static const std::vector<std::string> CITY_DEFAULT_FETCH_COLUMNS EXPORT;
+
+    // For api19 sorting
+    static const std::string ALBUMS_ORDER EXPORT;
+    static const std::string ORDER_SECTION EXPORT;
+    static const std::string ORDER_TYPE EXPORT;
+    static const std::string ORDER_STATUS EXPORT;
+    static const std::string STYLE2_ALBUMS_ORDER EXPORT;
+    static const std::string STYLE2_ORDER_SECTION EXPORT;
+    static const std::string STYLE2_ORDER_TYPE EXPORT;
+    static const std::string STYLE2_ORDER_STATUS EXPORT;
+
+    static const std::vector<std::string> ALBUM_ORDER_COLUMNS EXPORT;
+    static const std::vector<std::string> ALBUM_ORDER_SECTION_COLUMNS EXPORT;
+    static const std::vector<std::string> ALBUM_ORDER_TYPE_COLUMNS EXPORT;
+    static const std::vector<std::string> ALBUM_ORDER_STATUS_COLUMNS EXPORT;
+
+    static const std::unordered_map<AlbumOrderParam, std::vector<std::string>> ORDER_COLUMN_STYLE_MAP EXPORT;
+    static const std::set<std::string> DEFAULT_FETCH_ORDER_COLUMNS_STYLE1 EXPORT;
+    static const std::set<std::string> DEFAULT_FETCH_ORDER_COLUMNS_STYLE2 EXPORT;
 
     // table name
     static const std::string TABLE EXPORT;

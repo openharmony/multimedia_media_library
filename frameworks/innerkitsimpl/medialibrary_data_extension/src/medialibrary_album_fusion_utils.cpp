@@ -165,6 +165,14 @@ static unordered_map<string, ResultSetDataType> albumColumnTypeMap = {
     {PhotoAlbumColumns::ALBUM_BUNDLE_NAME, ResultSetDataType::TYPE_STRING},
     {PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE, ResultSetDataType::TYPE_STRING},
     {PhotoAlbumColumns::ALBUM_IS_LOCAL, ResultSetDataType::TYPE_INT32},
+    {PhotoAlbumColumns::ALBUMS_ORDER, ResultSetDataType::TYPE_INT32},
+    {PhotoAlbumColumns::ORDER_SECTION, ResultSetDataType::TYPE_INT32},
+    {PhotoAlbumColumns::ORDER_TYPE, ResultSetDataType::TYPE_INT32},
+    {PhotoAlbumColumns::ORDER_STATUS, ResultSetDataType::TYPE_INT32},
+    {PhotoAlbumColumns::STYLE2_ALBUMS_ORDER, ResultSetDataType::TYPE_INT32},
+    {PhotoAlbumColumns::STYLE2_ORDER_SECTION, ResultSetDataType::TYPE_INT32},
+    {PhotoAlbumColumns::STYLE2_ORDER_TYPE, ResultSetDataType::TYPE_INT32},
+    {PhotoAlbumColumns::STYLE2_ORDER_STATUS, ResultSetDataType::TYPE_INT32},
 };
 
 std::mutex MediaLibraryAlbumFusionUtils::cloudAlbumAndDataMutex_;

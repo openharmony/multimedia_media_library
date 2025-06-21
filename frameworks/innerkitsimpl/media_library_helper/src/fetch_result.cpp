@@ -125,6 +125,8 @@ FetchResult<T>::FetchResult(const shared_ptr<DataShare::DataShareResultSet> &res
         fetchResType_ = FetchResType::TYPE_SMARTALBUM;
     } else if constexpr (std::is_same<T, PhotoAssetCustomRecord>::value) {
         fetchResType_ = FetchResType::TYPE_CUSTOMRECORD;
+    } else if constexpr (std::is_same<T, AlbumOrder>::value) {
+        fetchResType_ = FetchResType::TYPE_ALBUMORDER;
     } else {
         MEDIA_ERR_LOG("unsupported FetchResType");
         fetchResType_ = FetchResType::TYPE_FILE;
@@ -497,6 +499,12 @@ void FetchResult<T>::GetObjectFromResultSet(PhotoAssetCustomRecord *asset, share
 }
 
 template<class T>
+void FetchResult<T>::GetObjectFromResultSet(AlbumOrder *asset, shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    SetAlbumOrder(asset, resultSet);
+}
+
+template<class T>
 unique_ptr<T> FetchResult<T>::GetObject(shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     unique_ptr<T> asset = make_unique<T>();
@@ -650,10 +658,44 @@ void FetchResult<T>::SetPhotoAssetCustomRecordAsset(PhotoAssetCustomRecord* cust
         TYPE_INT32, resultSet)));
     customRecordData->SetResultNapiType(resultNapiType_);
 }
+
+// LCOV_EXCL_START
+template<class T>
+void FetchResult<T>::SetAlbumOrder(AlbumOrder* albumOrderData,
+    shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    bool cond = ((resultset_ == nullptr) && (resultSet == nullptr));
+    CHECK_AND_RETURN_LOG(!cond, "SetAlbumOrder fail, result is nullptr");
+
+    vector<string> columnNames;
+    if (resultSet != nullptr) {
+        resultSet->GetAllColumnNames(columnNames);
+    } else {
+        resultset_->GetAllColumnNames(columnNames);
+    }
+    for (const auto &name : columnNames) {
+        CHECK_AND_RETURN_LOG(!name.empty(), "SetAlbumOrder fail, name is empty");
+
+        if (name == PhotoAlbumColumns::ALBUM_ID) {
+            albumOrderData->SetAlbumId(get<int32_t>(GetRowValFromColumn(name, TYPE_INT32, resultSet)));
+        } else if (name == PhotoAlbumColumns::ALBUMS_ORDER || name == PhotoAlbumColumns::STYLE2_ALBUMS_ORDER) {
+            albumOrderData->SetAlbumOrder(get<int32_t>(GetRowValFromColumn(name, TYPE_INT32, resultSet)));
+        } else if (name == PhotoAlbumColumns::ORDER_SECTION || name == PhotoAlbumColumns::STYLE2_ORDER_SECTION) {
+            albumOrderData->SetOrderSection(get<int32_t>(GetRowValFromColumn(name, TYPE_INT32, resultSet)));
+        } else if (name == PhotoAlbumColumns::ORDER_TYPE || name == PhotoAlbumColumns::STYLE2_ORDER_TYPE) {
+            albumOrderData->SetOrderType(get<int32_t>(GetRowValFromColumn(name, TYPE_INT32, resultSet)));
+        } else if (name == PhotoAlbumColumns::ORDER_STATUS || name == PhotoAlbumColumns::STYLE2_ORDER_STATUS) {
+            albumOrderData->SetOrderStatus(get<int32_t>(GetRowValFromColumn(name, TYPE_INT32, resultSet)));
+        }
+    }
+    albumOrderData->SetResultNapiType(resultNapiType_);
+}
+// LCOV_EXCL_STOP
 template class FetchResult<FileAsset>;
 template class FetchResult<AlbumAsset>;
 template class FetchResult<PhotoAlbum>;
 template class FetchResult<SmartAlbumAsset>;
 template class FetchResult<PhotoAssetCustomRecord>;
+template class FetchResult<AlbumOrder>;
 }  // namespace Media
 }  // namespace OHOS

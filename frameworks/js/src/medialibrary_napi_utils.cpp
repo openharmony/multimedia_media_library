@@ -752,7 +752,7 @@ int MediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
             error = E_CHECK_SYSTEMAPP_FAIL;
         } else if (error == E_PARAM_CONVERT_FORMAT) {
             error = JS_E_PARAM_INVALID;
-        } else if (error == E_INNER_CONVERT_FORMAT) {
+        } else if (error == E_INNER_CONVERT_FORMAT || error == E_INNER_FAIL) {
             error = JS_E_INNER_FAIL;
         } else {
             error = JS_INNER_FAIL;
