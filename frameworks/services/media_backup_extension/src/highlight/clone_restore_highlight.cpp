@@ -190,7 +190,7 @@ void CloneRestoreHighlight::Restore()
 
 void CloneRestoreHighlight::Preprocess()
 {
-    CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr, "rdbStore is nullptr.");
+    CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr.");
     const std::vector<std::string> SQLS = {
         "ALTER TABLE AnalysisAlbum ADD COLUMN need_restore_highlight INTEGER DEFAULT 0 ",
         "UPDATE AnalysisAlbum SET need_restore_highlight = 1 "
@@ -200,16 +200,21 @@ void CloneRestoreHighlight::Preprocess()
     };
     for (const auto &sql : SQLS) {
         int32_t errCode = BackupDatabaseUtils::ExecuteSQL(mediaRdb_, sql);
-        CHECK_AND_CONTINUE_ERR_LOG(errCode == NativeRdb::E_OK, "Execute %{public}s failed, errCode: %{public}d",
-            sql.c_str(), errCode);
+        if (errCode != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute %{public}s failed, errCode: %{public}d", sql.c_str(), errCode);
+            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, std::to_string(errCode),
+                "clone restore highlight preprocess failed");
+            UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+            return;
+        }
     }
+    isCloneHighlight_ = true;
 }
 
 void CloneRestoreHighlight::RestoreAlbums()
 {
-    CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr.");
+    CHECK_AND_RETURN_LOG(isCloneHighlight_, "clone highlight flag is false.");
     MEDIA_INFO_LOG("restore highlight album start.");
-    isCloneHighlight_ = true;
     isMapOrder_ = IsMapColumnOrderExist();
     GetAnalysisAlbumInfos();
     InsertIntoAnalysisAlbum();
@@ -367,7 +372,7 @@ void CloneRestoreHighlight::UpdateHighlightStatusInDatabase(
         updateReport << "highlightStatus: " << highlightStatus << ", to be pushed: " << highlightIds.size() <<
             ", update: " << changedRows;
         UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
-            .Report("CLONE_RESTORE_HIGHLIGHT_STATUS", std::to_string(errCode), updateReport.str());   
+            .Report("CLONE_RESTORE_HIGHLIGHT_STATUS", std::to_string(errCode), updateReport.str());
     }
 }
 
@@ -471,8 +476,8 @@ void CloneRestoreHighlight::InsertIntoAnalysisAlbum()
             int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into AnalysisAlbum fail, num:" + std::to_string(failNums));
-            albumFailedCnt_ += failNums;
             UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+            albumFailedCnt_ += failNums;
         }
         albumSuccessCnt_ += rowNum;
         offset += PAGE_SIZE;
@@ -554,8 +559,8 @@ void CloneRestoreHighlight::InsertAnalysisPhotoMap(std::vector<NativeRdb::Values
         int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
         ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
             "insert into AnalysisPhotoMap fail, num:" + std::to_string(failNums));
-        mapFailedCnt_ += failNums;
         UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+        mapFailedCnt_ += failNums;
     }
     mapSuccessCnt_ += rowNum;
 }
@@ -709,8 +714,8 @@ void CloneRestoreHighlight::InsertIntoHighlightAlbum()
             int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into tab_highlight_album fail, num:" + std::to_string(failNums));
-            highlightFailedCnt_ += failNums;
             UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+            highlightFailedCnt_ += failNums;
         }
         highlightSuccessCnt_ += rowNum;
         offset += PAGE_SIZE;
@@ -951,8 +956,8 @@ void CloneRestoreHighlight::InsertIntoHighlightCoverInfo()
             int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into tab_highlight_cover_info fail, num:" + std::to_string(failNums));
-            coverInfoFailedCnt_ += failNums;
             UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+            coverInfoFailedCnt_ += failNums;
         }
         coverInfoSuccessCnt_ += rowNum;
         offset += PAGE_SIZE;
@@ -1059,8 +1064,8 @@ void CloneRestoreHighlight::InsertIntoHighlightPlayInfo()
             int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into tab_highlight_play_info fail, num:" + std::to_string(failNums));
-            playInfoFailedCnt_ += failNums;
             UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+            playInfoFailedCnt_ += failNums;
         }
         playInfoSuccessCnt_ += rowNum;
         offset += PAGE_SIZE;
@@ -1118,7 +1123,7 @@ void CloneRestoreHighlight::ReportRestoreTaskOfTotal()
         "; COVER_INFO: success: " << coverInfoSuccessCnt_ << ", failed: " << coverInfoFailedCnt_ <<
         "; PLAY_INFO: success: " << playInfoSuccessCnt_ << ", failed: " << playInfoFailedCnt_;
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
-        .Report("CLONE_RESTORE_HIGHLIGHT_TOTAL", RESTORE_STATUS_SUCCESS, totalReport.str());   
+        .Report("CLONE_RESTORE_HIGHLIGHT_TOTAL", RESTORE_STATUS_SUCCESS, totalReport.str());
 }
 
 void CloneRestoreHighlight::ReportRestoreTaskOfAlbumStats()
@@ -1134,7 +1139,7 @@ void CloneRestoreHighlight::ReportRestoreTaskOfAlbumStats()
     albumStatsReport << "num: " << albumPhotoCounter_.size() << ", max: " << maxCnt << ", mean: " << meanCnt
         << ", total: " << totalCnt;
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
-        .Report("CLONE_RESTORE_HIGHLIGHT_ALBUM_STATS", RESTORE_STATUS_SUCCESS, albumStatsReport.str());   
+        .Report("CLONE_RESTORE_HIGHLIGHT_ALBUM_STATS", RESTORE_STATUS_SUCCESS, albumStatsReport.str());
 }
 
 void CloneRestoreHighlight::ReportRestoreTaskOfAlbumInfo()
