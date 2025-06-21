@@ -28,6 +28,7 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_bundle_manager.h"
 #include "medialibrary_inotify.h"
 #include "medialibrary_astc_stat.h"
 using namespace std;
@@ -41,6 +42,21 @@ DfxReporter::DfxReporter()
 
 DfxReporter::~DfxReporter()
 {
+}
+
+void DfxReporter::ReportControllerService(uint32_t operationCode, int32_t errorCode)
+{
+    std::string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_SERVICE_ERROR",
+        HiviewDFX::HiSysEvent::EventType::FAULT,
+        "BUNDLE_NAME", bundleName,
+        "OPERATION_CODE", operationCode,
+        "ERROR_CODE", errorCode);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportControllerService error:%{public}d", ret);
+    }
 }
 
 void DfxReporter::ReportTimeOutOperation(std::string &bundleName, int32_t type, int32_t object, int32_t time)

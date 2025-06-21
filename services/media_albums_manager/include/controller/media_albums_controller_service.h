@@ -26,45 +26,45 @@ namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 class EXPORT MediaAlbumsControllerService : public IPC::IMediaControllerService {
 public:
-    EXPORT void DeleteHighlightAlbums(MessageParcel &data, MessageParcel &reply);
-    EXPORT void DeletePhotoAlbums(MessageParcel &data, MessageParcel &reply);
-    EXPORT void CreatePhotoAlbum(MessageParcel &data, MessageParcel &reply);
-    void SetSubtitle(MessageParcel &data, MessageParcel &reply);
-    void SetHighlightUserActionData(MessageParcel &data, MessageParcel &reply);
-    void ChangeRequestSetAlbumName(MessageParcel &data, MessageParcel &reply);
-    void ChangeRequestSetCoverUri(MessageParcel &data, MessageParcel &reply);
-    void ChangeRequestSetIsMe(MessageParcel &data, MessageParcel &reply);
-    void ChangeRequestSetDisplayLevel(MessageParcel &data, MessageParcel &reply);
-    void ChangeRequestDismiss(MessageParcel &data, MessageParcel &reply);
-    void ChangeRequestResetCoverUri(MessageParcel &data, MessageParcel &reply);
-    EXPORT void AddAssets(MessageParcel &data, MessageParcel &reply);
-    EXPORT void RemoveAssets(MessageParcel &data, MessageParcel &reply);
-    EXPORT void MoveAssets(MessageParcel &data, MessageParcel &reply);
-    EXPORT void RecoverAssets(MessageParcel &data, MessageParcel &reply);
-    EXPORT void DeleteAssets(MessageParcel &data, MessageParcel &reply);
-    EXPORT void DismissAssets(MessageParcel &data, MessageParcel &reply);
-    EXPORT void MergeAlbum(MessageParcel &data, MessageParcel &reply);
-    EXPORT void PlaceBefore(MessageParcel &data, MessageParcel &reply);
-    EXPORT void SetOrderPosition(MessageParcel &data, MessageParcel &reply);
-    EXPORT void AlbumCommitModify(MessageParcel &data, MessageParcel &reply);
-    EXPORT void AlbumAddAssets(MessageParcel &data, MessageParcel &reply);
-    EXPORT void AlbumRemoveAssets(MessageParcel &data, MessageParcel &reply);
-    EXPORT void AlbumRecoverAssets(MessageParcel &data, MessageParcel &reply);
-    EXPORT void AlbumGetAssets(MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context);
-    EXPORT void QueryAlbums(MessageParcel &data, MessageParcel &reply);
-    EXPORT void QueryHiddenAlbums(MessageParcel &data, MessageParcel &reply);
-    EXPORT void GetAlbumsByIds(MessageParcel &data, MessageParcel &reply);
-    EXPORT void GetOrderPosition(MessageParcel &data, MessageParcel &reply);
-    EXPORT void GetFaceId(MessageParcel &data, MessageParcel &reply);
-    EXPORT void GetPhotoIndex(MessageParcel &data, MessageParcel &reply);
-    EXPORT void GetAnalysisProcess(MessageParcel &data, MessageParcel &reply);
-    EXPORT void GetHighlightAlbumInfo(MessageParcel &data, MessageParcel &reply);
-    EXPORT void GetPhotoAlbumObject(MessageParcel &data, MessageParcel &reply);
-    EXPORT void UpdatePhotoAlbumOrder(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t DeleteHighlightAlbums(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t DeletePhotoAlbums(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t CreatePhotoAlbum(MessageParcel &data, MessageParcel &reply);
+    int32_t SetSubtitle(MessageParcel &data, MessageParcel &reply);
+    int32_t SetHighlightUserActionData(MessageParcel &data, MessageParcel &reply);
+    int32_t ChangeRequestSetAlbumName(MessageParcel &data, MessageParcel &reply);
+    int32_t ChangeRequestSetCoverUri(MessageParcel &data, MessageParcel &reply);
+    int32_t ChangeRequestSetIsMe(MessageParcel &data, MessageParcel &reply);
+    int32_t ChangeRequestSetDisplayLevel(MessageParcel &data, MessageParcel &reply);
+    int32_t ChangeRequestDismiss(MessageParcel &data, MessageParcel &reply);
+    int32_t ChangeRequestResetCoverUri(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t AddAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t RemoveAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t MoveAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t RecoverAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t DeleteAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t DismissAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t MergeAlbum(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t PlaceBefore(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t SetOrderPosition(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t AlbumCommitModify(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t AlbumAddAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t AlbumRemoveAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t AlbumRecoverAssets(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t AlbumGetAssets(MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context);
+    EXPORT int32_t QueryAlbums(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t QueryHiddenAlbums(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetAlbumsByIds(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetOrderPosition(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetFaceId(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetPhotoIndex(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetAnalysisProcess(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetHighlightAlbumInfo(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetPhotoAlbumObject(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t UpdatePhotoAlbumOrder(MessageParcel &data, MessageParcel &reply);
 public:
     virtual ~MediaAlbumsControllerService() = default;
     bool Accept(uint32_t code) override;
-    void OnRemoteRequest(
+    int32_t OnRemoteRequest(
         uint32_t code, MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context) override;
     int32_t GetPermissionPolicy(
         uint32_t code, std::vector<std::vector<PermissionType>> &permissionPolicy, bool &isBypass) override;

@@ -33,7 +33,7 @@
 #include "failed_size_resp_vo.h"
 
 namespace OHOS::Media::CloudSync {
-void CloudMediaAlbumControllerService::OnFetchRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::OnFetchRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("OnFetchRecords enter");
     OnFetchRecordsAlbumReqBody req;
@@ -73,13 +73,13 @@ void CloudMediaAlbumControllerService::OnFetchRecords(MessageParcel &data, Messa
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
 }
 
-void CloudMediaAlbumControllerService::OnDentryFileInsert(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::OnDentryFileInsert(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->albumService_.OnDentryFileInsert();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaAlbumControllerService::GetCheckRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::GetCheckRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaAlbumControllerService::GetCheckRecords");
     GetCheckRecordsAlbumReqBody reqBody;
@@ -98,7 +98,7 @@ void CloudMediaAlbumControllerService::GetCheckRecords(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaAlbumControllerService::GetCreatedRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::GetCreatedRecords(MessageParcel &data, MessageParcel &reply)
 {
     CloudMdkRecordPhotoAlbumReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -122,7 +122,7 @@ void CloudMediaAlbumControllerService::GetCreatedRecords(MessageParcel &data, Me
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaAlbumControllerService::GetMetaModifiedRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::GetMetaModifiedRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaAlbumControllerService::GetMetaModifiedRecords");
     CloudMdkRecordPhotoAlbumReqBody reqBody;
@@ -148,7 +148,7 @@ void CloudMediaAlbumControllerService::GetMetaModifiedRecords(MessageParcel &dat
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaAlbumControllerService::GetDeletedRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::GetDeletedRecords(MessageParcel &data, MessageParcel &reply)
 {
     CloudMdkRecordPhotoAlbumReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -172,7 +172,7 @@ void CloudMediaAlbumControllerService::GetDeletedRecords(MessageParcel &data, Me
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaAlbumControllerService::OnCreateRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::OnCreateRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaAlbumControllerService::OnCreateRecords");
     OnCreateRecordsAlbumReqBody reqBody;
@@ -196,7 +196,7 @@ void CloudMediaAlbumControllerService::OnCreateRecords(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
 }
 
-void CloudMediaAlbumControllerService::OnMdirtyRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::OnMdirtyRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaAlbumControllerService::OnMdirtyRecords");
     OnMdirtyRecordsAlbumReqBody reqBody;
@@ -222,13 +222,13 @@ void CloudMediaAlbumControllerService::OnMdirtyRecords(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
-void CloudMediaAlbumControllerService::OnFdirtyRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::OnFdirtyRecords(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->albumService_.OnFdirtyRecords();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaAlbumControllerService::OnDeleteRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::OnDeleteRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaAlbumControllerService::OnDeleteRecords");
     OnDeleteRecordsAlbumReqBody reqBody;
@@ -252,37 +252,37 @@ void CloudMediaAlbumControllerService::OnDeleteRecords(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
-void CloudMediaAlbumControllerService::OnCopyRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::OnCopyRecords(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->albumService_.OnCopyRecords();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaAlbumControllerService::OnStartSync(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::OnStartSync(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->albumService_.OnStartSync();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaAlbumControllerService::OnCompleteSync(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::OnCompleteSync(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->albumService_.OnCompleteSync();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaAlbumControllerService::OnCompletePull(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::OnCompletePull(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->albumService_.OnCompletePull();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaAlbumControllerService::OnCompletePush(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::OnCompletePush(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->albumService_.OnCompletePush();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaAlbumControllerService::OnCompleteCheck(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaAlbumControllerService::OnCompleteCheck(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->albumService_.OnCompleteCheck();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
