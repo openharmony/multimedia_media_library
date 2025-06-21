@@ -26,8 +26,6 @@
 
 #include "base_restore.h"
 #include "backup_const.h"
-#include "clone_restore_cv_analysis.h"
-#include "clone_restore_highlight.h"
 #include "clone_restore_analysis_data.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_errno.h"
@@ -270,8 +268,6 @@ private:
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
     std::vector<int> photosFailedOffsets_;
     ffrt::mutex photosFailedMutex_;
-    CloneRestoreHighlight cloneRestoreHighlight_;
-    CloneRestoreCVAnalysis cloneRestoreCVAnalysis_;
     std::atomic<uint64_t> lcdMigrateFileNumber_{0};
     std::atomic<uint64_t> thumbMigrateFileNumber_{0};
     std::atomic<uint64_t> migrateCloudSuccessNumber_{0};
