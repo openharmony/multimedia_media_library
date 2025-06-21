@@ -1612,7 +1612,7 @@ int32_t CloudMediaPhotosDao::DeleteLocalByCloudId(const std::string &cloudId)
 
     int32_t deletedRows = DEFAULT_VALUE;
     AccurateRefresh::AssetAccurateRefresh photoRefresh;
-    int32_t ret = photoRefresh.Delete(predicates, deletedRows);
+    int32_t ret = photoRefresh.LogicalDeleteReplaceByUpdate(predicates, deletedRows);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK && deletedRows > 0,
         E_CLOUDSYNC_RDB_DELETE_FAILED,
         "Failed to DeleteLocalByCloudId, ret: %{public}d, deletedRows: %{public}d.",
