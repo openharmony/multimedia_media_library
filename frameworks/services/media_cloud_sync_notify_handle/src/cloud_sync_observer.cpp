@@ -88,7 +88,8 @@ void CloudSyncObserver::DealAlbumGallery(CloudSyncNotifyInfo &notifyInfo)
 
 void CloudSyncObserver::DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo)
 {
-    if (notifyInfo.type == ChangeType::UPDATE || notifyInfo.type == ChangeType::OTHER) {
+    if (notifyInfo.type == ChangeType::UPDATE || notifyInfo.type == ChangeType::OTHER ||
+        notifyInfo.type == ChangeType::DELETE) {
         CloudSyncHandleData handleData;
         handleData.orgInfo = notifyInfo;
         shared_ptr<BaseHandler> chain = NotifyResponsibilityChainFactory::CreateChain(GALLERY_PHOTO_DELETE);
