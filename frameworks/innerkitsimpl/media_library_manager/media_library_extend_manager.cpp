@@ -38,7 +38,7 @@
 #include "unique_fd.h"
 #include "userfilemgr_uri.h"
 #include "data_secondary_directory_uri.h"
-#include "user_base_ipc_client.h"
+#include "user_inner_ipc_client.h"
 #include "medialibrary_business_code.h"
 #include "get_result_set_from_db_vo.h"
 #include "get_result_set_from_photos_extend_vo.h"
@@ -168,7 +168,7 @@ static int32_t QueryGrantedIndex(CheckUriPermissionInnerReqBody &reqBody,
     CHECK_AND_RETURN_RET_LOG(helper != nullptr, E_ERR,
         "Failed to checkPhotoUriPermission, datashareHelper is nullptr");
     MEDIA_INFO_LOG("before IPC::UserDefineIPCClient().Call, INNER_CHECK_URI_PERMISSION");
-    int32_t result = IPC::UserBaseIPCClient().SetDataShareHelper(helper).Call(businessCode, reqBody, rspBody);
+    int32_t result = IPC::UserInnerIPCClient().SetDataShareHelper(helper).Call(businessCode, reqBody, rspBody);
     CHECK_AND_RETURN_RET_LOG(result == E_OK, E_ERR, "queryResultSet is null!");
     auto fileIds_size = rspBody.fileIds.size();
     auto permissionTypes_size = rspBody.permissionTypes.size();
@@ -375,10 +375,10 @@ int32_t MediaLibraryExtendManager::GrantPhotoUriPermission(uint32_t srcTokenId, 
     }
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GRANT_PHOTO_URI_PERMISSION);
     MEDIA_INFO_LOG("before IPC::UserDefineIPCClient().Call, INNER_GRANT_PHOTO_URI_PERMISSION");
-    int32_t result = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
+    int32_t result = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
     if (result == E_ERR && ForceReconnect()) {
         MEDIA_WARN_LOG("Failed to Call INNER_GRANT_PHOTO_URI_PERMISSION and retry");
-        result = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
+        result = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
     }
     return result;
 }
@@ -454,7 +454,7 @@ int32_t MediaLibraryExtendManager::CancelPhotoUriPermission(uint32_t srcTokenId,
     }
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CANCEL_PHOTO_URI_PERMISSION);
     MEDIA_INFO_LOG("before IPC::UserDefineIPCClient().Call, INNER_CANCEL_PHOTO_URI_PERMISSION");
-    int32_t result = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
+    int32_t result = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody);
     return result;
 }
 
@@ -532,12 +532,12 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromP
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_PHOTOS_EXTEND);
     GetResultSetFromDbRespBody rspBody;
     int32_t errCode =
-        IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
     if (errCode != E_OK) {
         MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
         if (ForceReconnect()) {
             errCode =
-                IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
         }
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("errCode: %{public}d", errCode);
@@ -562,12 +562,12 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromD
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_DB_EXTEND);
     GetResultSetFromDbRespBody rspBody;
     int32_t errCode =
-        IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
     if (errCode != E_OK) {
         MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
         if (ForceReconnect()) {
             errCode =
-                IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
         }
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("errCode: %{public}d", errCode);

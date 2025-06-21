@@ -42,7 +42,7 @@
 #include "userfilemgr_uri.h"
 
 #include "medialibrary_business_code.h"
-#include "user_base_ipc_client.h"
+#include "user_inner_ipc_client.h"
 #include "query_photo_vo.h"
 
 namespace OHOS {
@@ -282,10 +282,10 @@ MultiStagesCapturePhotoStatus MediaAssetManagerImpl::QueryPhotoStatus(int32_t fi
         {MediaColumn::MEDIA_ID, reqBody.fileId }, {URI_TYPE, TYPE_PHOTOS}
     };
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_QUERY_PHOTO_STATUS);
-    int errCode = IPC::UserBaseIPCClient().SetHeader(headerMap)
+    int errCode = IPC::UserInnerIPCClient().SetHeader(headerMap)
         .SetDataShareHelper(sDataShareHelper_).Call(businessCode, reqBody, rspBody);
     if (errCode < 0) {
-        MEDIA_ERR_LOG("UserBaseIPCClient Call errCode:%{public}d", errCode);
+        MEDIA_ERR_LOG("UserInnerIPCClient Call errCode:%{public}d", errCode);
         return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     }
 

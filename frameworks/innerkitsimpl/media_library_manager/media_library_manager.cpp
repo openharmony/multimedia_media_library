@@ -55,7 +55,7 @@
 #include "userfilemgr_uri.h"
 #include "data_secondary_directory_uri.h"
 #include "medialibrary_business_code.h"
-#include "user_base_ipc_client.h"
+#include "user_inner_ipc_client.h"
 #include "add_visit_count_vo.h"
 #include "create_asset_vo.h"
 #include "get_result_set_from_db_vo.h"
@@ -140,7 +140,8 @@ string MediaLibraryManager::CreateAsset(const string &displayName)
     reqBody.displayName = displayName;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_ASSET);
     CreateAssetRspBody rspBody;
-    int32_t errCode = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
     if (errCode != 0) {
         MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
         return "";
@@ -196,7 +197,7 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
         if (close(fd) == E_SUCCESS) {
             CloseAssetReqBody reqBody;
             reqBody.uri = uri;
-            retVal = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper).Call(
+            retVal = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(
                 static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CLOSE_ASSET), reqBody);
         }
 
@@ -306,7 +307,8 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
     reqBody.columns = columns;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_DB);
     GetResultSetFromDbRespBody rspBody;
-    int32_t errCode = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
     if (errCode != 0) {
         MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
         return nullptr;
@@ -364,7 +366,8 @@ static std::shared_ptr<DataShareResultSet> GetFilePathResultSetFromDb(const stri
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
 
-    int32_t errCode = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
     if (errCode != 0) {
         MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
     }
@@ -424,7 +427,7 @@ static std::shared_ptr<DataShareResultSet> GetUriResultSetFromDb(
 
     CHECK_AND_RETURN_RET_LOG(dataShare != nullptr, nullptr, "dataShareHelper is nullptr");
 
-    int32_t errCode = IPC::UserBaseIPCClient().SetDataShareHelper(dataShare).Call(businessCode, reqBody, rspBody);
+    int32_t errCode = IPC::UserInnerIPCClient().SetDataShareHelper(dataShare).Call(businessCode, reqBody, rspBody);
     if (errCode != 0) {
         MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
     }
@@ -513,7 +516,7 @@ static void UpdateAssetVisitCount(shared_ptr<DataShare::DataShareHelper> dataSha
     reqBody.visitType = 1; // LCD
 
     int32_t businessCode = static_cast<int32_t>(MediaLibraryBusinessCode::INNER_ADD_ASSET_VISIT_COUNT);
-    int32_t errCode = IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody);
+    int32_t errCode = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody);
     if (errCode < 0) {
         MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
     }
@@ -1026,7 +1029,7 @@ static int64_t GetMovingPhotoDateModifiedIPCExecute(
     reqBody.fileId = fileId;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_MOVING_PHOTO_DATE_MODIFIED);
 
-    int32_t err = IPC::UserBaseIPCClient().SetDataShareHelper(helper).Call(businessCode, reqBody, respBody);
+    int32_t err = IPC::UserInnerIPCClient().SetDataShareHelper(helper).Call(businessCode, reqBody, respBody);
     if (err != E_OK) {
         MEDIA_ERR_LOG("get position fail. err:%{public}d", err);
         return E_ERR;
