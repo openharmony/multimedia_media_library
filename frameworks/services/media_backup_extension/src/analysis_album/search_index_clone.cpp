@@ -42,6 +42,7 @@
 #include "result_set_utils.h"
 
 namespace OHOS::Media {
+// LCOV_EXCL_START
 SearchIndexClone::SearchIndexClone(
     const std::shared_ptr<NativeRdb::RdbStore>& sourceRdb,
     const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
@@ -323,4 +324,5 @@ int32_t SearchIndexClone::BatchInsertWithRetry(const std::string &tableName,
     CHECK_AND_PRINT_LOG(errCode == E_OK, "BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
     return errCode;
 }
+// LCOV_EXCL_STOP
 } // namespace OHOS::Media

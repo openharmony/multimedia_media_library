@@ -32,7 +32,7 @@ bool GetOrderPositionReqBody::Unmarshalling(MessageParcel &parcel)
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.ReadInt32(this->albumSubType);
     CHECK_AND_RETURN_RET(status, status);
-    status = IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->assetIdArray, parcel);
+    status = IPC::ITypeMediaUtil::UnmarshalStrVec(this->assetIdArray, parcel);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
@@ -45,7 +45,7 @@ bool GetOrderPositionReqBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.WriteInt32(this->albumSubType);
     CHECK_AND_RETURN_RET(status, status);
-    status = IPC::ITypeMediaUtil::Marshalling<std::string>(this->assetIdArray, parcel);
+    status = IPC::ITypeMediaUtil::MarshalStrVec(this->assetIdArray, parcel);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }

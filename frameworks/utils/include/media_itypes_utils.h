@@ -257,5 +257,14 @@ bool Unmarshalling(std::unordered_map<K, V> &val, MessageParcel &parcel)
     }
     return true;
 }
+
+/**
+ * @brief The following two functions are used in scenarios where IPC communication parameters are extremely large,
+ * serializing objects to shared memory and deserializing objects from shared memory. The upper limit of shared memory
+ * is 128M.
+ */
+bool MarshalStrVec(const std::vector<std::string> &strVec, MessageParcel &parcel);
+
+bool UnmarshalStrVec(std::vector<std::string> &strVec, MessageParcel &parcel);
 }  // namespace OHOS::Media::IPC::ITypeMediaUtil
-#endif  // OHOS_MEDIA_IPC_ITYPES_MEDIA_UTIL_H
+#endif  // OHOS_MEDIA_IPC_ITYPES_MEDIA_UTIL_H

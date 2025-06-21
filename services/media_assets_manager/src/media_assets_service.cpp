@@ -32,6 +32,7 @@
 #include "media_analysis_helper.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
+#include "media_visit_count_manager.h"
 #include "medialibrary_tracer.h"
 #include "photo_album_column.h"
 #include "result_set_utils.h"
@@ -85,6 +86,13 @@
 #include "story_cover_info_column.h"
 #include "story_play_info_column.h"
 #include "vision_column_comm.h"
+#include "datashare_predicates.h"
+#include "medialibrary_file_operations.h"
+#include "close_asset_vo.h"
+#include "medialibrary_db_const.h"
+#include "medialibrary_object_utils.h"
+#include "media_column.h"
+#include "media_old_photos_column.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -95,6 +103,11 @@ const int32_t YES = 1;
 const int32_t NO = 0;
 const std::string SET_LOCATION_KEY = "set_location";
 const std::string SET_LOCATION_VALUE = "1";
+const std::string COLUMN_FILE_ID = "file_id";
+const std::string COLUMN_DATA = "data";
+const std::string COLUMN_OLD_FILE_ID = "old_file_id";
+const std::string COLUMN_OLD_DATA = "old_data";
+const std::string COLUMN_DISPLAY_NAME = "display_name";
 constexpr int32_t HIGH_QUALITY_IMAGE = 0;
 
 static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
@@ -484,6 +497,97 @@ int32_t MediaAssetsService::SetSupportedWatermarkType(const int32_t fileId, cons
     return MediaLibraryPhotoOperations::UpdateSupportedWatermarkType(cmd);
 }
 
+int32_t MediaAssetsService::GrantPhotoUriPermissionInner(const GrantUriPermissionInnerDto& grantUrisPermissionInnerDto)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsService::GrantPhotoUriPermissionInner");
+    auto fileIds_size = grantUrisPermissionInnerDto.fileIds.size();
+    auto uriTypes_size = grantUrisPermissionInnerDto.uriTypes.size();
+    auto permissionTypes_size = grantUrisPermissionInnerDto.permissionTypes.size();
+    bool isValid = ((fileIds_size == uriTypes_size) && (uriTypes_size == permissionTypes_size));
+    CHECK_AND_RETURN_RET_LOG(isValid, E_ERR, "GrantPhotoUriPermissionInner Failed");
+    std::vector<DataShare::DataShareValuesBucket> values;
+    for (size_t i = 0; i < grantUrisPermissionInnerDto.fileIds.size(); i++) {
+        DataShare::DataShareValuesBucket value;
+        if (!grantUrisPermissionInnerDto.appId.empty()) {
+            value.Put(AppUriPermissionColumn::APP_ID, grantUrisPermissionInnerDto.appId);
+        }
+        if (grantUrisPermissionInnerDto.tokenId != -1) {
+            value.Put(AppUriPermissionColumn::TARGET_TOKENID, grantUrisPermissionInnerDto.tokenId);
+        }
+        if (grantUrisPermissionInnerDto.srcTokenId != -1) {
+            value.Put(AppUriPermissionColumn::SOURCE_TOKENID, grantUrisPermissionInnerDto.srcTokenId);
+        }
+        value.Put(AppUriPermissionColumn::FILE_ID, grantUrisPermissionInnerDto.fileIds[i]);
+        value.Put(AppUriPermissionColumn::PERMISSION_TYPE, grantUrisPermissionInnerDto.permissionTypes[i]);
+        value.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, grantUrisPermissionInnerDto.hideSensitiveType);
+        value.Put(AppUriPermissionColumn::URI_TYPE, grantUrisPermissionInnerDto.uriTypes[i]);
+        values.push_back(value);
+    }
+    string uri = "datashare:///media/phaccess_granturipermission";
+    Uri createUri(uri);
+    MediaLibraryCommand grantUrisPermCmd(createUri);
+    int32_t errCode = this->rdbOperation_.GrantPhotoUrisPermissionInner(grantUrisPermCmd, values);
+    MEDIA_INFO_LOG("MediaAssetsService::GrantPhotoUriPermissionInner ret:%{public}d", errCode);
+    return errCode;
+}
+
+int32_t MediaAssetsService::CheckPhotoUriPermissionInner(CheckUriPermissionInnerDto& checkUriPermissionInnerDto)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsService::CheckPhotoUriPermissionInner");
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, checkUriPermissionInnerDto.targetTokenId);
+    predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, checkUriPermissionInnerDto.uriType);
+    predicates.And()->In(AppUriPermissionColumn::FILE_ID, checkUriPermissionInnerDto.inFileIds);
+    std::vector<std::string> columns = checkUriPermissionInnerDto.columns;
+    string uri = "datashare:///media/phaccess_checkuripermission";
+    Uri checkUri(uri);
+    MediaLibraryCommand grantUrisPermCmd(checkUri);
+    std::vector<std::string> outFileIds;
+    std::vector<int32_t> permissionTypes;
+    int32_t errCode = this->rdbOperation_.CheckPhotoUriPermissionInner(grantUrisPermCmd,
+        predicates, columns, outFileIds, permissionTypes);
+    checkUriPermissionInnerDto.outFileIds = outFileIds;
+    checkUriPermissionInnerDto.permissionTypes = permissionTypes;
+    MEDIA_INFO_LOG("MediaAssetsService::CheckPhotoUriPermissionInner ret:%{public}d", errCode);
+    return errCode;
+}
+
+int32_t MediaAssetsService::CancelPhotoUriPermissionInner(
+    const CancelUriPermissionInnerDto& cancelUriPermissionInnerDto)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsService::CancelPhotoUriPermissionInner");
+    auto fileIds_size = cancelUriPermissionInnerDto.fileIds.size();
+    auto uriTypes_size = cancelUriPermissionInnerDto.uriTypes.size();
+    auto permissionTypes_size = cancelUriPermissionInnerDto.permissionTypes.size();
+    bool isValid = ((fileIds_size == uriTypes_size) && (uriTypes_size == permissionTypes_size));
+    CHECK_AND_RETURN_RET_LOG(isValid, E_ERR, "CancelPhotoUriPermissionInner Failed");
+    DataShare::DataSharePredicates predicates;
+    for (size_t i = 0; i < cancelUriPermissionInnerDto.fileIds.size(); i++) {
+        if (i > 0) {
+            predicates.Or();
+        }
+        predicates.BeginWrap();
+        predicates.BeginWrap();
+        predicates.EqualTo(AppUriPermissionColumn::SOURCE_TOKENID, cancelUriPermissionInnerDto.srcTokenId);
+        predicates.Or();
+        predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, cancelUriPermissionInnerDto.srcTokenId);
+        predicates.EndWrap();
+        predicates.EqualTo(AppUriPermissionColumn::FILE_ID, cancelUriPermissionInnerDto.fileIds[i]);
+        predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, cancelUriPermissionInnerDto.targetTokenId);
+        predicates.EqualTo(AppUriPermissionColumn::URI_TYPE, cancelUriPermissionInnerDto.uriTypes[i]);
+        vector<string> permissionTypes = cancelUriPermissionInnerDto.permissionTypes[i];
+        predicates.In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
+        predicates.EndWrap();
+    }
+    string uri = "datashare:///media/phaccess_granturipermission";
+    Uri deleteUri(uri);
+    MediaLibraryCommand cancelUriPermCmd(deleteUri, Media::OperationType::DELETE);
+
+    int32_t errCode = this->rdbOperation_.CancelPhotoUrisPermissionInner(cancelUriPermCmd, predicates);
+    MEDIA_INFO_LOG("MediaAssetsService::CancelPhotoUriPermissionInner ret:%{public}d", errCode);
+    return errCode;
+}
+
 std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAssets(const GetAssetsDto &dto)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
@@ -770,6 +874,14 @@ int32_t MediaAssetsService::SetAssetsUserComment(const std::vector<int32_t> &fil
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     return MediaLibraryPhotoOperations::Update(cmd);
+}
+
+int32_t MediaAssetsService::AddAssetVisitCount(int32_t fileId, int32_t visitType)
+{
+    MEDIA_INFO_LOG("AddAssetVisitCount fileId:%{public}d, type:%{public}d", fileId, visitType);
+    auto type = static_cast<MediaVisitCountManager::VisitCountType>(visitType);
+    MediaVisitCountManager::AddVisitCount(type, to_string(fileId));
+    return E_OK;
 }
 
 struct AnalysisConfig {
@@ -1093,5 +1205,160 @@ int32_t MediaAssetsService::LogMovingPhoto(const AdaptedReqBody &req)
         static_cast<int>(req.adapted));
     DfxManager::GetInstance()->HandleAdaptationToMovingPhoto(packageName, req.adapted);
     return E_SUCCESS;
+}
+
+int32_t MediaAssetsService::GetResultSetFromDb(const GetResultSetFromDbDto& getResultSetFromDbDto,
+    GetResultSetFromDbRespBody& resp)
+{
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(getResultSetFromDbDto.columnName, getResultSetFromDbDto.value);
+    predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
+
+    Uri uri(MEDIALIBRARY_MEDIA_PREFIX);
+    MediaLibraryCommand cmd(uri);
+    cmd.SetDataSharePred(predicates);
+
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, MEDIALIBRARY_TABLE);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+    std::vector<std::string> columns = getResultSetFromDbDto.columns;
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
+
+    shared_ptr<NativeRdb::ResultSet> resultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+
+    auto resultSetBridge = RdbUtils::ToResultSetBridge(resultSet);
+    resp.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::GetResultSetFromPhotosExtend(const string &value, vector<string> &columns,
+    GetResultSetFromPhotosExtendRespBody& resp)
+{
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    string fileId = MediaFileUtils::GetIdFromUri(value);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+
+    shared_ptr<NativeRdb::ResultSet> resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+
+    auto resultSetBridge = RdbUtils::ToResultSetBridge(resultSet);
+    resp.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::GetMovingPhotoDateModified(const string &fileId, GetMovingPhotoDateModifiedRespBody& resp)
+{
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+
+    vector<string> columns = {
+        MediaColumn::MEDIA_DATE_MODIFIED,
+    };
+
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
+    if (resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+
+    resp.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::CloseAsset(const CloseAssetReqBody &req)
+{
+    MEDIA_INFO_LOG("enter CloseAsset, req.uri=%{public}s", req.uri.c_str());
+    ValuesBucket valuesBucket;
+    valuesBucket.PutString(MEDIA_DATA_DB_URI, req.uri);
+    MediaLibraryCommand cmd(valuesBucket);
+    return MediaLibraryObjectUtils::CloseFile(cmd);
+}
+
+static int BuildPredicates(const std::vector<std::string> &queryTabOldPhotosUris,
+    DataShare::DataSharePredicates &predicates)
+{
+    const std::string GALLERY_URI_PREFIX = "//media";
+    const std::string GALLERY_PATH = "/storage/emulated";
+
+    vector<string> clauses;
+        clauses.push_back(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + " = " +
+        TabOldPhotosColumn::OLD_PHOTOS_TABLE + "." + TabOldPhotosColumn::MEDIA_ID);
+    predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On(clauses);
+
+    int conditionCount = 0;
+    for (const auto &uri : queryTabOldPhotosUris) {
+        if (uri.find(GALLERY_URI_PREFIX) != std::string::npos) {
+            size_t lastSlashPos = uri.rfind('/');
+            if (lastSlashPos != std::string::npos && lastSlashPos + 1 < uri.length()) {
+                std::string idStr = uri.substr(lastSlashPos + 1);
+                predicates.Or()->EqualTo(TabOldPhotosColumn::MEDIA_OLD_ID, idStr);
+                conditionCount += 1;
+            }
+        } else if (uri.find(GALLERY_PATH) != std::string::npos) {
+            predicates.Or()->EqualTo(TabOldPhotosColumn::MEDIA_OLD_FILE_PATH, uri);
+            conditionCount += 1;
+        } else if (!uri.empty() && std::all_of(uri.begin(), uri.end(), ::isdigit)) {
+            predicates.Or()->EqualTo(TabOldPhotosColumn::MEDIA_OLD_ID, uri);
+            conditionCount += 1;
+        }
+    }
+    CHECK_AND_RETURN_RET_LOG(conditionCount != 0, E_FAIL, "Zero uri condition");
+    return E_OK;
+}
+
+int32_t MediaAssetsService::GetUrisByOldUrisInner(GetUrisByOldUrisInnerDto& getUrisByOldUrisInnerDto)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsService::GetUrisByOldUrisInner");
+    DataShare::DataSharePredicates predicates;
+    int ret = BuildPredicates(getUrisByOldUrisInnerDto.uris, predicates);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "MediaAssetsService::GetUrisByOldUrisInner build predicates failed");
+
+    std::vector<std::string> columns = getUrisByOldUrisInnerDto.columns;
+    
+    string uri = "datashare:///media/tab_old_photos_operation/query";
+    Uri getUri(uri);
+    MediaLibraryCommand getUrisByOldCmd(getUri);
+    auto resultSet = this->rdbOperation_.GetUrisByOldUrisInner(getUrisByOldCmd,
+        predicates, columns);
+    
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR,
+        "MediaAssetsService::GetUrisByOldUrisInner build predicates failed");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        getUrisByOldUrisInnerDto.fileIds.emplace_back(GetInt32Val(COLUMN_FILE_ID, resultSet));
+        getUrisByOldUrisInnerDto.datas.emplace_back(GetStringVal(COLUMN_DATA, resultSet));
+        getUrisByOldUrisInnerDto.displayNames.emplace_back(GetStringVal(COLUMN_DISPLAY_NAME, resultSet));
+        getUrisByOldUrisInnerDto.oldFileIds.emplace_back(GetInt32Val(COLUMN_OLD_FILE_ID, resultSet));
+        getUrisByOldUrisInnerDto.oldDatas.emplace_back(GetStringVal(COLUMN_OLD_DATA, resultSet));
+    }
+    return E_OK;
+}
+
+int32_t MediaAssetsService::Restore(const RestoreDto &dto)
+{
+    NativeRdb::ValuesBucket values;
+    values.PutString("albumLpath", dto.albumLpath);
+    values.PutString("keyPath", dto.keyPath);
+    values.PutString("isDeduplication", dto.isDeduplication ? "true" : "false");
+    values.PutString("bundleName", dto.bundleName);
+    values.PutString("appName", dto.appName);
+    values.PutString("appId", dto.appId);
+    MediaLibraryCommand cmd(values);
+    return MediaLibraryPhotoOperations::ProcessCustomRestore(cmd);
+}
+
+int32_t MediaAssetsService::StopRestore(const std::string &keyPath)
+{
+    NativeRdb::ValuesBucket values;
+    values.PutString("keyPath", keyPath);
+    MediaLibraryCommand cmd(values);
+    return MediaLibraryPhotoOperations::CancelCustomRestore(cmd);
 }
 } // namespace OHOS::Media

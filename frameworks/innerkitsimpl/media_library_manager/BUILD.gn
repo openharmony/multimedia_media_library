@@ -37,6 +37,35 @@ ohos_shared_library("media_library_manager") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
   ]
 
+  user_ipc_client_include_dirs = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/util",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/vo",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/vo",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/vo",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/dto",
+  ]
+
+  media_albums_manager_vo_source = []
+
+  media_assets_manager_vo_source = [
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/add_visit_count_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/create_asset_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_result_set_from_db_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_moving_photo_date_modified_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_uri_from_filepath_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_filepath_from_uri_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/close_asset_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_uris_by_old_uris_inner_vo.cpp",
+  ]
+
+  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_inner_ipc_client.cpp" ]
+
+  include_dirs += user_ipc_client_include_dirs
+  sources += media_albums_manager_vo_source
+  sources += media_assets_manager_vo_source
+  sources += user_ipc_client_source
+
   public_configs = [ ":media_library_manager_config" ]
 
   deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
@@ -59,6 +88,7 @@ ohos_shared_library("media_library_manager") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
+    "ipc:ipc_core",
     "kv_store:distributeddata_inner",
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
@@ -114,6 +144,32 @@ ohos_shared_library("media_library_extend_manager") {
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
   ]
 
+  user_ipc_client_include_dirs = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/util",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/vo",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/vo",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/vo",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/dto",
+  ]
+
+  media_albums_manager_vo_source = []
+
+  media_assets_manager_vo_source = [
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_result_set_from_db_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_result_set_from_photos_extend_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/cancel_photo_uri_permission_inner_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/grant_photo_uri_permission_inner_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/check_photo_uri_permission_inner_vo.cpp",
+  ]
+
+  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_inner_ipc_client.cpp" ]
+
+  include_dirs += user_ipc_client_include_dirs
+  sources += media_albums_manager_vo_source
+  sources += media_assets_manager_vo_source
+  sources += user_ipc_client_source
+
   public_configs = [ ":media_library_manager_config" ]
 
   deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
@@ -135,6 +191,7 @@ ohos_shared_library("media_library_extend_manager") {
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "ipc:ipc_core",
     "os_account:os_account_innerkits",
     "samgr:samgr_proxy",
   ]
@@ -183,6 +240,28 @@ ohos_shared_library("media_library_custom_restore") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
   ]
 
+  user_ipc_client_include_dirs = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/util",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/vo",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/vo",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/vo",
+  ]
+
+  media_albums_manager_vo_source = []
+
+  media_assets_manager_vo_source = [
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/restore_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/stop_restore_vo.cpp",
+  ]
+
+  user_ipc_client_source = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_inner_ipc_client.cpp" ]
+
+  include_dirs += user_ipc_client_include_dirs
+  sources += media_albums_manager_vo_source
+  sources += media_assets_manager_vo_source
+  sources += user_ipc_client_source
+
   public_configs = [ ":media_library_manager_config" ]
 
   deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
@@ -194,6 +273,7 @@ ohos_shared_library("media_library_custom_restore") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
+    "ipc:ipc_core",
     "samgr:samgr_proxy",
   ]
 

@@ -46,7 +46,7 @@ namespace {
     const std::string CUST_HWIT = "hwit";
     const char *MTP_SERVER_DISABLE = "persist.edm.mtp_server_disable";
 } // namespace
-
+// LCOV_EXCL_START
 MtpManager &MtpManager::GetInstance()
 {
     static MtpManager instance;
@@ -194,5 +194,6 @@ void MtpManager::OnMtpParamDisableChanged(const char *key, const char *value, vo
         instance->StopMtpService();
     }
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

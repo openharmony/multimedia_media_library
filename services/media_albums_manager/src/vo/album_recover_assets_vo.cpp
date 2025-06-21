@@ -30,7 +30,7 @@ bool AlbumRecoverAssetsReqBody::Unmarshalling(MessageParcel &parcel)
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.ReadInt32(this->albumSubType);
     CHECK_AND_RETURN_RET(status, status);
-    status = IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->uris, parcel);
+    status = IPC::ITypeMediaUtil::UnmarshalStrVec(this->uris, parcel);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
@@ -41,7 +41,7 @@ bool AlbumRecoverAssetsReqBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.WriteInt32(this->albumSubType);
     CHECK_AND_RETURN_RET(status, status);
-    status = IPC::ITypeMediaUtil::Marshalling<std::string>(this->uris, parcel);
+    status = IPC::ITypeMediaUtil::MarshalStrVec(this->uris, parcel);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
