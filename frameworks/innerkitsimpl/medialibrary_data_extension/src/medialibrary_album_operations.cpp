@@ -673,7 +673,7 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
     }
     AlbumAccurateRefresh albumRefresh;
     int deleteRow = -1;
-    albumRefresh.Delete(predicates, deleteRow);
+    albumRefresh.LogicalDeleteReplaceByUpdate(predicates, deleteRow);
     if (deleteRow > 0) {
         albumRefresh.Notify();
     }

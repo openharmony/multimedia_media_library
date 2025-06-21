@@ -57,9 +57,9 @@ public:
 
     std::map<int32_t, AlbumChangeInfo> GetInitAlbumInfos();
     
-    using AccurateRefreshBase::Delete;
-    int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
-    int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates, int32_t &deletedRows) override;
+    using AccurateRefreshBase::LogicalDeleteReplaceByUpdate;
+    int32_t LogicalDeleteReplaceByUpdate(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
+    int32_t LogicalDeleteReplaceByUpdate(const NativeRdb::AbsRdbPredicates &predicates, int32_t &deletedRows) override;
     static int32_t NotifyForReCheck();
 
 protected:

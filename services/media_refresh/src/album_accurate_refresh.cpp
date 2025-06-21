@@ -112,7 +112,7 @@ string AlbumAccurateRefresh::GetReturningKeyName()
     return PhotoAlbumColumns::ALBUM_ID;
 }
 
-int32_t AlbumAccurateRefresh::Delete(MediaLibraryCommand &cmd, int32_t &deletedRows)
+int32_t AlbumAccurateRefresh::LogicalDeleteReplaceByUpdate(MediaLibraryCommand &cmd, int32_t &deletedRows)
 {
     if (!IsValidTable(cmd.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
@@ -122,7 +122,7 @@ int32_t AlbumAccurateRefresh::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
     });
 }
 
-int32_t AlbumAccurateRefresh::Delete(const AbsRdbPredicates &predicates, int &deletedRows)
+int32_t AlbumAccurateRefresh::LogicalDeleteReplaceByUpdate(const AbsRdbPredicates &predicates, int &deletedRows)
 {
     if (!IsValidTable(predicates.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
