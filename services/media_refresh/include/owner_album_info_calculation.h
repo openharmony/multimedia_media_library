@@ -41,7 +41,7 @@ private:
     static bool UpdateCover(const PhotoAssetChangeData &assetChangeData,
         std::function<bool(const PhotoAssetChangeInfo&, int32_t)> isAsset, int32_t albumId,
         std::function<bool(const PhotoAssetChangeInfo&, const PhotoAssetChangeInfo&, int32_t)> isNewerAsset,
-        PhotoAssetChangeInfo &addCover, PhotoAssetChangeInfo &removeCover);
+        PhotoAssetChangeInfo &addCover, std::unordered_set<int32_t> &removeFileIds);
     static bool UpdateCount(const PhotoAssetChangeData &assetChangeData,
         std::function<bool(const PhotoAssetChangeInfo&, int32_t)> isAsset, int32_t albumId,
         int32_t &count);
