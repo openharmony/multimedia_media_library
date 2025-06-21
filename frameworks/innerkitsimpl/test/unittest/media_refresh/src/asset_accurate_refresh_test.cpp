@@ -293,9 +293,9 @@ PhotoAssetChangeInfo GetAssetInfo(int32_t fileId = 0)
     RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
     queryPredicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
 
-    auto resultSet = g_rdbStore->QueryByStep(queryPredicates, PhotoAssetChangeInfo::GetPhotoAssetClolumns());
+    auto resultSet = g_rdbStore->QueryByStep(queryPredicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     EXPECT_TRUE(resultSet != nullptr);
-    auto assetInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet, PhotoAssetChangeInfo::GetPhotoAssetClolumns());
+    auto assetInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     if (assetInfos.size() == 1) {
         ACCURATE_DEBUG("assetInfo: %{public}s", assetInfos[0].ToString().c_str());
         return assetInfos[0];

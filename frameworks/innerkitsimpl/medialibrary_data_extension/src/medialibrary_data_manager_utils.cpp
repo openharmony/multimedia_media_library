@@ -107,7 +107,7 @@ int32_t MediaLibraryDataManagerUtils::GetFileIdNumFromPhotoUri(const std::string
         MEDIA_ERR_LOG("empty uri");
         return 0;
     }
-    for (size_t index = 0; index < strFileId.size(); ++ index) {
+    for (size_t index = 0; index < strFileId.size(); ++index) {
         if (!std::isdigit(static_cast<unsigned char>(strFileId[index]))) {
             MEDIA_ERR_LOG("wrong uri: %{public}s", uri.c_str());
             return 0;
