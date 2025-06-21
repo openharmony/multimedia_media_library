@@ -540,9 +540,7 @@ static void DeleteAlbumsExecute(napi_env env, void *data)
     DeleteAlbumsReqBody reqBody;
     reqBody.albumIds = context->deleteIds;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS);
-    NAPI_INFO_LOG("test before IPC::UserDefineIPCClient().Call");
     int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    NAPI_INFO_LOG("test after IPC::UserDefineIPCClient().Call");
     if (ret < 0) {
         context->SaveError(ret);
         NAPI_ERR_LOG("Failed to delete albums, err: %{public}d", ret);

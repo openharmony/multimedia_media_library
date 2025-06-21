@@ -16,18 +16,19 @@
 #include "change_request_recover_assets_vo.h"
 
 #include <sstream>
-#include "itypes_util.h"
+
+#include "media_itypes_utils.h"
 #include "media_log.h"
 
 namespace OHOS::Media {
 
 bool ChangeRequestRecoverAssetsReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return ITypesUtil::Unmarshalling(this->assets, parcel);
+    return IPC::ITypeMediaUtil::UnmarshalStrVec(this->assets, parcel);
 }
 
 bool ChangeRequestRecoverAssetsReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return ITypesUtil::Marshalling(this->assets, parcel);
+    return IPC::ITypeMediaUtil::MarshalStrVec(this->assets, parcel);
 }
 }  // namespace OHOS::Media

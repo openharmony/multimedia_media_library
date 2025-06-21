@@ -41,6 +41,10 @@
 #include "media_userfile_client.h"
 #include "userfilemgr_uri.h"
 
+#include "medialibrary_business_code.h"
+#include "user_inner_ipc_client.h"
+#include "query_photo_vo.h"
+
 namespace OHOS {
 namespace Media {
 namespace {
@@ -54,10 +58,12 @@ const std::string API_VERSION = "api_version";
 static std::mutex multiStagesCaptureLock;
 
 const int32_t LOW_QUALITY_IMAGE = 1;
-const int32_t HIGH_QUALITY_IMAGE = 0;
 
 const uint32_t MAX_URI_SIZE = 384;
 const std::string ERROR_REQUEST_ID = "00000000-0000-0000-0000-000000000000";
+
+static const std::string URI_TYPE = "uriType";
+static const std::string TYPE_PHOTOS = "1";
 
 static std::map<std::string, std::shared_ptr<MultiStagesTaskObserver>> multiStagesObserverMap;
 static std::map<std::string, std::map<std::string, AssetHandler*>> inProcessUriMap;
@@ -268,30 +274,26 @@ MultiStagesCapturePhotoStatus MediaAssetManagerImpl::QueryPhotoStatus(int32_t fi
         MEDIA_ERR_LOG("Get sDataShareHelper_ failed");
         return MultiStagesCapturePhotoStatus::QUERY_INNER_FAIL;
     }
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    std::vector<std::string> fetchColumn { PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_ID };
-    Uri uri(PAH_QUERY_PHOTO);
-    DataShare::DatashareBusinessError errCode;
-    auto resultSet = sDataShareHelper_->Query(uri, predicates, fetchColumn, &errCode);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-        MEDIA_ERR_LOG("Query resultSet is nullptr");
+
+    QueryPhotoReqBody reqBody;
+    QueryPhotoRspBody rspBody;
+    reqBody.fileId = std::to_string(fileId);
+    std::unordered_map<std::string, std::string> headerMap {
+        {MediaColumn::MEDIA_ID, reqBody.fileId }, {URI_TYPE, TYPE_PHOTOS}
+    };
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_QUERY_PHOTO_STATUS);
+    int errCode = IPC::UserInnerIPCClient().SetHeader(headerMap)
+        .SetDataShareHelper(sDataShareHelper_).Call(businessCode, reqBody, rspBody);
+    if (errCode < 0) {
+        MEDIA_ERR_LOG("UserInnerIPCClient Call errCode:%{public}d", errCode);
         return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     }
 
-    int indexOfPhotoId = -1;
-    resultSet->GetColumnIndex(PhotoColumn::PHOTO_ID, indexOfPhotoId);
-    resultSet->GetString(indexOfPhotoId, photoId);
-
-    int columnIndexQuality = -1;
-    resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
-    int currentPhotoQuality = HIGH_QUALITY_IMAGE;
-    resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
-    if (currentPhotoQuality == LOW_QUALITY_IMAGE) {
-        MEDIA_ERR_LOG("Query photo status : lowQuality");
+    photoId = rspBody.photoId;
+    MEDIA_ERR_LOG("Query photo status quality: %{public}d", rspBody.photoQuality);
+    if (rspBody.photoQuality == LOW_QUALITY_IMAGE) {
         return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
     }
-    MEDIA_ERR_LOG("Query photo status quality: %{public}d", currentPhotoQuality);
     return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
 }
 

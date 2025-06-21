@@ -8418,9 +8418,7 @@ static void JSDeletePhotoAlbumsExecute(napi_env env, void *data)
         DeleteAlbumsReqBody reqBody;
         reqBody.albumIds = context->albumIds;
         uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS);
-        NAPI_INFO_LOG("test before IPC::UserDefineIPCClient().Call");
         ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-        NAPI_INFO_LOG("test after IPC::UserDefineIPCClient().Call");
     }
 
     if (ret < 0) {

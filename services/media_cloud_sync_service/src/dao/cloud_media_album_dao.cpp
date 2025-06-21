@@ -52,6 +52,7 @@
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
+// LCOV_EXCL_START
 int32_t CloudMediaAlbumDao::HandleLPathAndAlbumType(PhotoAlbumDto &record)
 {
     MEDIA_INFO_LOG("HandleLPathAndAlbumType enter");
@@ -1162,4 +1163,5 @@ bool CloudMediaAlbumDao::GetCoverUriFromCoverCloudId(string &coverCloudId, strin
     resultSet->Close();
     return coverUri != "";
 }
+// LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync

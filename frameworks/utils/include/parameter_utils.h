@@ -23,6 +23,7 @@
 #include "modify_assets_vo.h"
 #include "delete_highlight_albums_vo.h"
 #include "asset_change_vo.h"
+#include "restore_vo.h"
 
 namespace OHOS {
 namespace Media {
@@ -46,6 +47,7 @@ public:
     static int32_t CheckSetAssetsHiddenStatus(const ModifyAssetsReqBody &reqBody);
     static int32_t CheckSetAssetsRecentShowStatus(const ModifyAssetsReqBody &reqBody);
     static int32_t CheckSetAssetsUserComment(const ModifyAssetsReqBody &reqBody);
+    static int32_t CheckAddAssetVisitCount(int32_t fileId, int32_t visitType);
 
     static int32_t CheckCreateAssetSubtype(int32_t photoSubtype);
     static int32_t CheckCreateAssetTitle(const std::string &title, bool isSystem = false);
@@ -61,6 +63,8 @@ public:
     static int32_t CheckVideoEnhancementAttr(const AssetChangeReqBody &reqBody);
     static int32_t CheckWatermarkType(const AssetChangeReqBody &reqBody);
     static int32_t CheckWhereClause(const std::string &whereClause);
+    static bool CheckPhotoUri(const std::string &uri);
+    static int32_t CheckRestore(const RestoreReqBody &reqBody);
 };
 }  // namespace Media
 }  // namespace OHOS

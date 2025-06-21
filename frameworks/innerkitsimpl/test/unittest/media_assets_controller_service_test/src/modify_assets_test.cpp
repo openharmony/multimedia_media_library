@@ -81,7 +81,9 @@ static void InsertAsset(const std::string &displayName, int32_t pending = 0)
     int64_t now = MediaFileUtils::UTCTimeMilliSeconds();
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ext);
     int32_t mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
-    errCode = MediaLibraryAssetOperations::CreateAssetPathById(static_cast<int32_t>(now), mediaType, ext, assetPath);
+    static int32_t staticId = 1;
+    int32_t id = (now > 0 && now <= INT32_MAX) ? static_cast<int32_t>(now) : staticId++;
+    errCode = MediaLibraryAssetOperations::CreateAssetPathById(id, mediaType, ext, assetPath);
     CHECK_AND_RETURN_LOG(errCode == E_OK, "CreateAssetPathById errCode:%{public}d", errCode);
 
     std::vector<std::pair<std::string, std::string>> items = {

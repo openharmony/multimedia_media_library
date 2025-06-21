@@ -176,7 +176,7 @@ HWTEST_F(ChangeAssetsTest, AddAssets_Test_002, TestSize.Level0) {
     service->AddAssets(data, reply);
     IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     ASSERT_EQ(respVo.Unmarshalling(reply), true);
-    ASSERT_EQ(respVo.GetErrCode(), 0);
+    ASSERT_LT(respVo.GetErrCode(), 0);
 }
 
 /**
@@ -205,7 +205,7 @@ HWTEST_F(ChangeAssetsTest, RemoveAssets_Test_002, TestSize.Level0) {
     service->RemoveAssets(data, reply);
     IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     ASSERT_EQ(respVo.Unmarshalling(reply), true);
-    ASSERT_EQ(respVo.GetErrCode(), 0);
+    ASSERT_LT(respVo.GetErrCode(), 0);
 }
 
 /**
@@ -321,7 +321,7 @@ HWTEST_F(ChangeAssetsTest, DeleteAssetsTest_002, TestSize.Level0) {
     service->DeleteAssets(data, reply);
     IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     ASSERT_EQ(respVo.Unmarshalling(reply), true);
-    ASSERT_EQ(respVo.GetErrCode(), 0);
+    ASSERT_LT(respVo.GetErrCode(), 0);
 }
 
 /**

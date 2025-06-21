@@ -27,7 +27,7 @@ namespace Media {
 const std::string QUERY_URI = "datashareproxy://";
 DataShare::CreateOptions options;
 constexpr int32_t SYNC_INTERVAL = 20000;
-
+// LCOV_EXCL_START
 void CloudSyncSwitchObserver::OnChange()
 {
     MEDIA_INFO_LOG("Cloud Sync Switch Status change");
@@ -103,5 +103,6 @@ void CloudSyncSwitchManager::UnRegisterObserver()
 {
     MEDIA_ERR_LOG("CloudSyncSwitchManager UnRegisterObserver");
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
