@@ -4674,6 +4674,16 @@ void AddHighlightLocation(RdbStore &store)
     ExecSqls(sql, store);
 }
 
+void AddIsPrimaryFace(RdbStore &store)
+{
+    const vector<string> sql = {
+        " ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + IS_PRIMARY_FACE + " REAL ",
+    };
+
+    MEDIA_INFO_LOG("Adding IS_PRIMARY_FACE column for VISION_IMAGE_FACE_TABLE");
+    ExecSqls(sql, store);
+}
+
 void AddTotalPriority(RdbStore &store)
 {
     const vector<string> sql = {
@@ -4713,6 +4723,10 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_HIGHLIGHT_LOCATION) {
         AddHighlightLocation(store);
+    }
+
+    if (oldVersion < VERSION_ADD_IS_PRIMARY_FACE) {
+        AddIsPrimaryFace(store);
     }
 
     if (oldVersion < VERSION_ADD_PRIORITY_COLUMN) {
