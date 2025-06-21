@@ -62,7 +62,7 @@ public:
         const DataShare::DataSharePredicates &values);
     int32_t CheckPhotoUriPermissionInner(MediaLibraryCommand &cmd, const DataShare::DataSharePredicates &predicates,
         const std::vector<std::string> &columns, std::vector<std::string> &outFileIds,
-        std::vector<int32_t> &permissionTypes); 
+        std::vector<int32_t> &permissionTypes);
     int32_t GrantPhotoUrisPermissionInner(
         MediaLibraryCommand &cmd, const std::vector<DataShare::DataShareValuesBucket> &values);
     std::shared_ptr<DataShare::DataShareResultSet> GetUrisByOldUrisInner(MediaLibraryCommand &cmd,
