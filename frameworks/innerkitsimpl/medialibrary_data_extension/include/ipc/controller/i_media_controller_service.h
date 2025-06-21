@@ -25,7 +25,7 @@ namespace OHOS::Media::IPC {
 class IMediaControllerService {
 public:
     virtual bool Accept(uint32_t code) = 0;
-    virtual void OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, IPCContext &context) = 0;
+    virtual int32_t OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, IPCContext &context) = 0;
     // If policy returns a value other than E_SUCCESS, access is denied.
     virtual int32_t GetPermissionPolicy(
         uint32_t code, std::vector<std::vector<PermissionType>> &permissionPolicy, bool &isBypass) = 0;

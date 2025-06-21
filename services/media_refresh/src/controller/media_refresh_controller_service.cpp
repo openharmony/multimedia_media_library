@@ -34,7 +34,7 @@ bool MediaRefreshControllerService::Accept(uint32_t code)
     return HANDLERS.find(code) != HANDLERS.end();
 }
 
-void MediaRefreshControllerService::OnRemoteRequest(uint32_t code, MessageParcel &data,
+int32_t MediaRefreshControllerService::OnRemoteRequest(uint32_t code, MessageParcel &data,
     MessageParcel &reply, IPC::IPCContext &context)
 {
     auto it = HANDLERS.find(code);
@@ -44,11 +44,12 @@ void MediaRefreshControllerService::OnRemoteRequest(uint32_t code, MessageParcel
     return (this->*(it->second))(data, reply);
 }
 
-void MediaRefreshControllerService::NotifyForReCheck(MessageParcel &data, MessageParcel &reply)
+int32_t MediaRefreshControllerService::NotifyForReCheck(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("Enter NotifyForReCheck");
     AccurateRefresh::AlbumAccurateRefresh::NotifyForReCheck();
     AccurateRefresh::AssetAccurateRefresh::NotifyForReCheck();
+    return E_SUCCESS;
 }
 
 int32_t MediaRefreshControllerService::GetPermissionPolicy(

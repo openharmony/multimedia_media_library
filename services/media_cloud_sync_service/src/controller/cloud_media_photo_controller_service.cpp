@@ -41,7 +41,7 @@
 #include "report_failure_vo.h"
 
 namespace OHOS::Media::CloudSync {
-void CloudMediaPhotoControllerService::OnFetchRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::OnFetchRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaPhotoControllerService::OnFetchRecords");
     OnFetchRecordsReqBody reqBody;
@@ -74,7 +74,7 @@ void CloudMediaPhotoControllerService::OnFetchRecords(MessageParcel &data, Messa
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaPhotoControllerService::OnDentryFileInsert(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::OnDentryFileInsert(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("OnDentryFileInsert enter");
     OnDentryFileReqBody reqBody;
@@ -97,7 +97,7 @@ void CloudMediaPhotoControllerService::OnDentryFileInsert(MessageParcel &data, M
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaPhotoControllerService::GetCheckRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::GetCheckRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaPhotoControllerService::GetCheckRecords");
     GetCheckRecordsReqBody reqBody;
@@ -119,7 +119,7 @@ void CloudMediaPhotoControllerService::GetCheckRecords(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaPhotoControllerService::GetCreatedRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::GetCreatedRecords(MessageParcel &data, MessageParcel &reply)
 {
     CloudMdkRecordPhotosReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -148,7 +148,7 @@ void CloudMediaPhotoControllerService::GetCreatedRecords(MessageParcel &data, Me
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaPhotoControllerService::GetMetaModifiedRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::GetMetaModifiedRecords(MessageParcel &data, MessageParcel &reply)
 {
     CloudMdkRecordPhotosReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -179,7 +179,7 @@ void CloudMediaPhotoControllerService::GetMetaModifiedRecords(MessageParcel &dat
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaPhotoControllerService::GetFileModifiedRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::GetFileModifiedRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetFileModifiedRecords");
     CloudMdkRecordPhotosReqBody reqBody;
@@ -209,7 +209,7 @@ void CloudMediaPhotoControllerService::GetFileModifiedRecords(MessageParcel &dat
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaPhotoControllerService::GetDeletedRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::GetDeletedRecords(MessageParcel &data, MessageParcel &reply)
 {
     CloudMdkRecordPhotosReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -232,7 +232,7 @@ void CloudMediaPhotoControllerService::GetDeletedRecords(MessageParcel &data, Me
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaPhotoControllerService::GetCopyRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::GetCopyRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaPhotoControllerService::GetCopyRecords");
     CloudMdkRecordPhotosReqBody reqBody;
@@ -262,7 +262,7 @@ void CloudMediaPhotoControllerService::GetCopyRecords(MessageParcel &data, Messa
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaPhotoControllerService::OnCreateRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::OnCreateRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter OnCreateRecords");
     OnCreateRecordsPhotosReqBody req;
@@ -283,7 +283,7 @@ void CloudMediaPhotoControllerService::OnCreateRecords(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
 }
 
-void CloudMediaPhotoControllerService::OnMdirtyRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::OnMdirtyRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter OnMdirtyRecords");
     OnModifyRecordsPhotosReqBody req;
@@ -305,7 +305,7 @@ void CloudMediaPhotoControllerService::OnMdirtyRecords(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
 }
 
-void CloudMediaPhotoControllerService::OnFdirtyRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::OnFdirtyRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("OnFdirtyRecords enter");
     OnFileDirtyRecordsReqBody req;
@@ -328,7 +328,7 @@ void CloudMediaPhotoControllerService::OnFdirtyRecords(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
 }
 
-void CloudMediaPhotoControllerService::OnDeleteRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::OnDeleteRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("CloudMediaPhotoControllerService::OnDeleteRecords");
     OnDeleteRecordsPhotosReqBody reqBody;
@@ -351,7 +351,7 @@ void CloudMediaPhotoControllerService::OnDeleteRecords(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
 }
 
-void CloudMediaPhotoControllerService::OnCopyRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::OnCopyRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaPhotoControllerService::OnCopyRecords");
     OnCopyRecordsPhotosReqBody req;
@@ -387,7 +387,7 @@ void CloudMediaPhotoControllerService::OnCopyRecords(MessageParcel &data, Messag
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
 }
 
-void CloudMediaPhotoControllerService::GetRetryRecords(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::GetRetryRecords(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetRetryRecords");
     GetRetryRecordsRespBody respBody;
@@ -399,37 +399,37 @@ void CloudMediaPhotoControllerService::GetRetryRecords(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
-void CloudMediaPhotoControllerService::OnStartSync(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::OnStartSync(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->photosService_.OnStartSync();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaPhotoControllerService::OnCompleteSync(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::OnCompleteSync(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->photosService_.OnCompleteSync();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaPhotoControllerService::OnCompletePull(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::OnCompletePull(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->photosService_.OnCompletePull();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaPhotoControllerService::OnCompletePush(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::OnCompletePush(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->photosService_.OnCompletePush();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaPhotoControllerService::OnCompleteCheck(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::OnCompleteCheck(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->photosService_.OnCompleteCheck();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaPhotoControllerService::ReportFailure(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaPhotoControllerService::ReportFailure(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaPhotoControllerService::ReportFailure");
     ReportFailureReqBody reqBody;

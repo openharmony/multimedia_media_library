@@ -38,7 +38,7 @@
 #include "media_operate_result_vo.h"
 
 namespace OHOS::Media::CloudSync {
-void CloudMediaDataControllerService::UpdateDirty(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::UpdateDirty(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter UpdateDirtyForCloudCheck");
     UpdateDirtyReqBody reqBody;
@@ -51,7 +51,7 @@ void CloudMediaDataControllerService::UpdateDirty(MessageParcel &data, MessagePa
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaDataControllerService::UpdatePosition(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::UpdatePosition(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter UpdatePositionForCloudCheck");
     UpdatePositionReqBody reqBody;
@@ -64,7 +64,7 @@ void CloudMediaDataControllerService::UpdatePosition(MessageParcel &data, Messag
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaDataControllerService::UpdateSyncStatus(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::UpdateSyncStatus(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter UpdateSyncStatus");
     UpdateSyncStatusReqBody reqBody;
@@ -77,7 +77,7 @@ void CloudMediaDataControllerService::UpdateSyncStatus(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaDataControllerService::UpdateThmStatus(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::UpdateThmStatus(MessageParcel &data, MessageParcel &reply)
 {
     UpdateThmStatusReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -88,7 +88,7 @@ void CloudMediaDataControllerService::UpdateThmStatus(MessageParcel &data, Messa
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaDataControllerService::GetAgingFile(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::GetAgingFile(MessageParcel &data, MessageParcel &reply)
 {
     GetAgingFileReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -117,7 +117,7 @@ void CloudMediaDataControllerService::GetAgingFile(MessageParcel &data, MessageP
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaDataControllerService::GetActiveAgingFile(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::GetActiveAgingFile(MessageParcel &data, MessageParcel &reply)
 {
     GetAgingFileReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -146,7 +146,7 @@ void CloudMediaDataControllerService::GetActiveAgingFile(MessageParcel &data, Me
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaDataControllerService::GetVideoToCache(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::GetVideoToCache(MessageParcel &data, MessageParcel &reply)
 {
     std::vector<PhotosDto> photosDtoVec;
     int32_t ret = this->dataService_.GetVideoToCache(photosDtoVec);
@@ -163,7 +163,7 @@ void CloudMediaDataControllerService::GetVideoToCache(MessageParcel &data, Messa
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaDataControllerService::GetFilePosStat(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::GetFilePosStat(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("GetFilePosStat enter");
     std::vector<uint64_t> statList = this->dataService_.GetFilePosStat();
@@ -172,7 +172,7 @@ void CloudMediaDataControllerService::GetFilePosStat(MessageParcel &data, Messag
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaDataControllerService::GetCloudThmStat(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::GetCloudThmStat(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaDataControllerService::GetCloudThmStat");
     std::vector<uint64_t> statList = this->dataService_.GetCloudThmStat();
@@ -181,7 +181,7 @@ void CloudMediaDataControllerService::GetCloudThmStat(MessageParcel &data, Messa
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaDataControllerService::GetDirtyTypeStat(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::GetDirtyTypeStat(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaDataControllerService::GetDirtyTypeStat");
     std::vector<uint64_t> statList = this->dataService_.GetDirtyTypeStat();
@@ -190,7 +190,7 @@ void CloudMediaDataControllerService::GetDirtyTypeStat(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaDataControllerService::UpdateLocalFileDirty(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::UpdateLocalFileDirty(MessageParcel &data, MessageParcel &reply)
 {
     UpdateLocalFileDirtyReqBody req;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, req);
@@ -203,7 +203,7 @@ void CloudMediaDataControllerService::UpdateLocalFileDirty(MessageParcel &data, 
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-void CloudMediaDataControllerService::GetCloudSyncUnPreparedData(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::GetCloudSyncUnPreparedData(MessageParcel &data, MessageParcel &reply)
 {
     CloudSyncUnPreparedDataRespBody respBody;
     int32_t ret = this->enhanceService_.GetCloudSyncUnPreparedData(respBody.count);
@@ -211,7 +211,7 @@ void CloudMediaDataControllerService::GetCloudSyncUnPreparedData(MessageParcel &
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
-void CloudMediaDataControllerService::SubmitCloudSyncPreparedDataTask(MessageParcel &data, MessageParcel &reply)
+int32_t CloudMediaDataControllerService::SubmitCloudSyncPreparedDataTask(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = this->enhanceService_.SubmitCloudSyncPreparedDataTask();
     MEDIA_INFO_LOG("SubmitCloudSyncPreparedDataTask, %{public}d", ret);
