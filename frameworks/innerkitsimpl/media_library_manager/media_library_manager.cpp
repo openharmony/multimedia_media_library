@@ -193,7 +193,6 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
     if (dataShareHelper != nullptr) {
-
         if (close(fd) == E_SUCCESS) {
             CloseAssetReqBody reqBody;
             reqBody.uri = uri;

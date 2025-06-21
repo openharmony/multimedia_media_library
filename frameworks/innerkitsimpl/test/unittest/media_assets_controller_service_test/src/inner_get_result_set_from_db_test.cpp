@@ -33,7 +33,6 @@
 #include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
 #include "media_file_uri.h"
-// #include "media_library_extend_manager.h"
 
 namespace OHOS::Media {
 using namespace std;

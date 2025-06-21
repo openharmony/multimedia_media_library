@@ -404,7 +404,6 @@ HWTEST_F(InnerPhotoUriPermissionTest, GrantUrisPermissionInner_Test_002, TestSiz
         uris.push_back(uri);
     }
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS * 2));
-    // InnerQueryUriPermissionTable();
     vector<PhotoPermissionType> permissionTypes{
         PhotoPermissionType::PERSIST_READ_IMAGEVIDEO,
         PhotoPermissionType::PERSIST_READ_IMAGEVIDEO,
@@ -435,7 +434,6 @@ HWTEST_F(InnerPhotoUriPermissionTest, GrantUrisPermissionInner_Test_002, TestSiz
     auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
     ret = GrantUrisPermissionInner(fileIds, innerPermissionTypes, uriTypes, static_cast<int32_t>(SensitiveType));
     ASSERT_EQ(ret, 0);
-    // InnerQueryUriPermissionTable();
 
     std::vector<std::string> outfileIds;
     std::vector<int32_t> outpermissionTypes;
