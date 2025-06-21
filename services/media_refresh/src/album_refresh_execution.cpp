@@ -30,6 +30,8 @@
 #include "accurate_debug_log.h"
 #include "medialibrary_notify.h"
 #include "album_accurate_refresh_manager.h"
+#include "medialibrary_data_manager_utils.h"
+#include "media_file_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -240,6 +242,7 @@ int32_t AlbumRefreshExecution::GetUpdateValues(ValuesBucket &values, const Album
     data.albumCoverUri = albumInfo.coverUri_;
     data.coverDateTime = albumInfo.coverDateTime_;
     data.hiddenCoverDateTime = albumInfo.hiddenCoverDateTime_;
+    data.coverUriSource = albumInfo.coverUriSource_;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore null");
@@ -449,26 +452,49 @@ bool AlbumRefreshExecution::CalHiddenAlbumInfo(AlbumChangeInfo &albumInfo, const
         forceRefreshHiddenAlbums_.end() && (isRefreshHiddenAlbumCover || isRefreshHiddenAlbumCount);
 }
 
+bool AlbumRefreshExecution::CheckCoverSet(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
+    int32_t coverFileId)
+{
+    if (albumInfo.coverUriSource_ > 0) {
+        if (refreshInfo.removeFileIds.find(coverFileId) != refreshInfo.removeFileIds.end()) {
+            forceRefreshAlbums_.insert(albumInfo.albumId_);
+            ClearAlbumInfo(albumInfo);
+            ACCURATE_DEBUG("cover already set, refresh album for setcover.");
+            return false;
+        } else {
+            ACCURATE_DEBUG("cover already set, no need cal album cover.");
+            return false;
+        }
+    }
+    return true;
+}
+
 bool AlbumRefreshExecution::CalAlbumCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
     int32_t subType)
 {
+    auto fileIdStr = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(albumInfo.coverUri_);
+    if (!MediaFileUtils::IsValidInteger(fileIdStr)) {
+        ACCURATE_ERR("CalAlbumCover fileId err, albumInfo.coverUri:%{public}s", albumInfo.coverUri_.c_str());
+        return false;
+    }
+    auto coverFileId = stoi(fileIdStr);
+    if (!CheckCoverSet(albumInfo, refreshInfo, coverFileId)) {
+        return false;
+    }
     bool isRefreshAlbum = false;
     // 系统相册、用户、来源资产对比默认为date_taken
     auto dateTimeForAddCover = refreshInfo.deltaAddCover_.dateTakenMs_;
-    auto dateTimeForRemoveCover = refreshInfo.deltaRemoveCover_.dateTakenMs_;
     if (subType == static_cast<int32_t>(PhotoAlbumSubType::VIDEO) ||
         subType == static_cast<int32_t>(PhotoAlbumSubType::IMAGE)) {
         // date_added
         dateTimeForAddCover = refreshInfo.deltaAddCover_.dateAddedMs_;
-        dateTimeForRemoveCover = refreshInfo.deltaRemoveCover_.dateAddedMs_;
     } else if (subType == static_cast<int32_t>(PhotoAlbumSubType::HIDDEN)) {
         // hidden_time
         dateTimeForAddCover = refreshInfo.deltaAddCover_.hiddenTime_;
-        dateTimeForRemoveCover = refreshInfo.deltaRemoveCover_.hiddenTime_;
     }
 
     // 普通cover 更新
-    if (IsValidCover(refreshInfo.deltaAddCover_) && !IsValidCover(refreshInfo.deltaRemoveCover_)) { // 新增场景
+    if (IsValidCover(refreshInfo.deltaAddCover_) && refreshInfo.removeFileIds.size() == 0) { // 新增场景
         bool isRefresh = dateTimeForAddCover >= albumInfo.coverDateTime_;
         if (isRefresh) {
             albumInfo.coverInfo_ = refreshInfo.deltaAddCover_;
@@ -479,36 +505,35 @@ bool AlbumRefreshExecution::CalAlbumCover(AlbumChangeInfo &albumInfo, const Albu
         }
         ACCURATE_DEBUG("Add[%{public}d], refresh[%{public}d], albumInfo cover id: %{public}d, addCover id: %{public}d",
             albumInfo.albumId_, isRefresh, albumInfo.coverInfo_.fileId_, refreshInfo.deltaAddCover_.fileId_);
-    } else if (!IsValidCover(refreshInfo.deltaAddCover_) && IsValidCover(refreshInfo.deltaRemoveCover_)) { // 删除场景
+    } else if (!IsValidCover(refreshInfo.deltaAddCover_) && refreshInfo.removeFileIds.size() > 0) { // 删除场景
         // 当前cover没有removeCover新
-        bool isForceRefresh = dateTimeForRemoveCover >= albumInfo.coverDateTime_;
+        bool isForceRefresh = refreshInfo.removeFileIds.find(coverFileId) != refreshInfo.removeFileIds.end();
         if (isForceRefresh) {
             forceRefreshAlbums_.insert(albumInfo.albumId_);
             ClearAlbumInfo(albumInfo);
         }
         ACCURATE_DEBUG(
-            "Del[%{public}d], forceRefresh[%{public}d], time[%{public}" PRId64 ", %{public}" PRId64 "]," \
-            "removeCover id:%{public}d", albumInfo.albumId_, isForceRefresh, dateTimeForRemoveCover,
-            albumInfo.coverDateTime_, refreshInfo.deltaRemoveCover_.fileId_);
-    } else if (IsValidCover(refreshInfo.deltaAddCover_) && IsValidCover(refreshInfo.deltaRemoveCover_)) {
+            "Del[%{public}d], forceRefresh[%{public}d], old cover fileId[%{public}d]",
+            albumInfo.albumId_, isForceRefresh, coverFileId);
+    } else if (IsValidCover(refreshInfo.deltaAddCover_) && refreshInfo.removeFileIds.size() > 0) {
         // 异常场景：同一个相册中cover既有新增又有删除;同一个相册中没有新增也没有删除
         // 全量刷新指定的系统相册
         forceRefreshAlbums_.insert(albumInfo.albumId_);
         ClearAlbumInfo(albumInfo);
-        ACCURATE_ERR("Abnormal[%{public}d], forceRefresh, addCover: %{public}s, removeCover: %{public}s",
+        ACCURATE_ERR("Abnormal[%{public}d], forceRefresh, addCover: %{public}s, remove size: %{public}zu",
             albumInfo.albumId_, refreshInfo.deltaAddCover_.ToString().c_str(),
-            refreshInfo.deltaRemoveCover_.ToString().c_str());
+            refreshInfo.removeFileIds.size());
     }
     return isRefreshAlbum;
 }
 
 bool AlbumRefreshExecution::CalAlbumHiddenCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo)
 {
-    ACCURATE_DEBUG("albumInfo: %{public}s, hiddenCover: %{public}s, removeHiddenCover: %{public}s",
+    ACCURATE_DEBUG("albumInfo: %{public}s, hiddenCover: %{public}s, remove Hidden size: %{public}zu",
         albumInfo.ToString().c_str(), refreshInfo.deltaAddHiddenCover_.ToString().c_str(),
-        refreshInfo.deltaRemoveHiddenCover_.ToString().c_str());
+        refreshInfo.removeHiddenFileIds.size());
     bool isRefreshHiddenAlbum = false;
-    if (IsValidCover(refreshInfo.deltaAddHiddenCover_) && !IsValidCover(refreshInfo.deltaRemoveHiddenCover_)) {
+    if (IsValidCover(refreshInfo.deltaAddHiddenCover_) && refreshInfo.removeHiddenFileIds.size() == 0) {
         // 新增场景
         bool isRefresh = refreshInfo.deltaAddHiddenCover_.hiddenTime_ >= albumInfo.hiddenCoverDateTime_;
         if (isRefresh) {
@@ -521,23 +546,25 @@ bool AlbumRefreshExecution::CalAlbumHiddenCover(AlbumChangeInfo &albumInfo, cons
         ACCURATE_DEBUG("Add hidden[%{public}d], refresh[%{public}d] album hidden cover id[%{public}d, %{public}d]",
             albumInfo.albumId_, isRefresh, albumInfo.hiddenCoverInfo_.fileId_,
             refreshInfo.deltaAddHiddenCover_.fileId_);
-    } else if (!IsValidCover(refreshInfo.deltaAddHiddenCover_) && IsValidCover(refreshInfo.deltaRemoveHiddenCover_)) {
+    } else if (!IsValidCover(refreshInfo.deltaAddHiddenCover_) && refreshInfo.removeHiddenFileIds.size() > 0) {
         // 删除场景
         // 当前cover没有removeCover新
-        bool isRefresh = refreshInfo.deltaRemoveHiddenCover_.hiddenTime_ >= albumInfo.hiddenCoverDateTime_;
+        auto coverFileId = stoi(MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(albumInfo.hiddenCoverUri_));
+        bool isRefresh = refreshInfo.removeHiddenFileIds.find(coverFileId) != refreshInfo.removeHiddenFileIds.end();
         if (isRefresh) {
             forceRefreshHiddenAlbums_.insert(albumInfo.albumId_);
             ClearHiddenAlbumInfo(albumInfo);
         }
-        ACCURATE_DEBUG("Del hidden[%{public}d], forceRefresh[%{public}d]", albumInfo.albumId_, isRefresh);
-    } else if (IsValidCover(refreshInfo.deltaAddHiddenCover_) && IsValidCover(refreshInfo.deltaRemoveHiddenCover_)) {
+        ACCURATE_DEBUG("Del hidden[%{public}d], forceRefresh[%{public}d], coverFileId[%{public}d]",
+            albumInfo.albumId_, isRefresh, coverFileId);
+    } else if (IsValidCover(refreshInfo.deltaAddHiddenCover_) && refreshInfo.removeHiddenFileIds.size() > 0) {
         // 异常场景：同一个相册中cover既有新增又有删除
         // 全量刷新指定的系统相册
         forceRefreshHiddenAlbums_.insert(albumInfo.albumId_);
         ClearHiddenAlbumInfo(albumInfo);
-        ACCURATE_DEBUG("Abnormal hidden[%{public}d], force: %{public}s, add/remove[%{public}s/%{public}s]",
+        ACCURATE_DEBUG("Abnormal hidden[%{public}d], force: %{public}s, add/remove[%{public}s/%{public}zu]",
             albumInfo.albumId_, albumInfo.ToString().c_str(), refreshInfo.deltaAddHiddenCover_.ToString().c_str(),
-            refreshInfo.deltaRemoveHiddenCover_.ToString().c_str());
+            refreshInfo.removeHiddenFileIds.size());
     }
     return isRefreshHiddenAlbum;
 }

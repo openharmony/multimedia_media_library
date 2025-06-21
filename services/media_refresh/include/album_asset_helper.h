@@ -16,6 +16,7 @@
 #ifndef OHOS_MEDIALIBRARY_ALBUM_ASSET_HELPER
 #define OHOS_MEDIALIBRARY_ALBUM_ASSET_HELPER
 
+#include <unordered_set>
 #include "photo_asset_change_info.h"
 
 namespace OHOS {
@@ -50,7 +51,7 @@ public:
     static bool UpdateCover(const PhotoAssetChangeData &assetChangeData,
         std::function<bool(const PhotoAssetChangeInfo&)> isAlbumAsset,
         std::function<bool(const PhotoAssetChangeInfo&, const PhotoAssetChangeInfo&)> isNewerAsset,
-        PhotoAssetChangeInfo &addCover, PhotoAssetChangeInfo &removeCover);
+        PhotoAssetChangeInfo &addCover, std::unordered_set<int32_t> &removeFileIds);
     static bool UpdateCount(const PhotoAssetChangeData &assetChangeData,
         std::function<bool(PhotoAssetChangeInfo)> isAlbumAsset, int32_t &count);
 };
