@@ -59,6 +59,8 @@ public:
     EXPORT int32_t GetPhotoIndex(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetAnalysisProcess(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetHighlightAlbumInfo(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t GetPhotoAlbumObject(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t UpdatePhotoAlbumOrder(MessageParcel &data, MessageParcel &reply);
 public:
     virtual ~MediaAlbumsControllerService() = default;
     bool Accept(uint32_t code) override;
