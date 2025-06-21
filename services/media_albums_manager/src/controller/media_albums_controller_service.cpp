@@ -1194,4 +1194,50 @@ int32_t MediaAlbumsControllerService::AlbumGetAssets(
     respBody.resultSet = resultSet;
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
+
+int32_t MediaAlbumsControllerService::GetPhotoAlbumObject(MessageParcel &data, MessageParcel &reply)
+{
+    GetPhotoAlbumObjectReqBody reqBody;
+    GetPhotoAlbumObjectRsqBody rsqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetPhotoAlbumObject Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    std::vector<std::string> columns = reqBody.columns;
+    std::shared_ptr<NativeRdb::ResultSet> resultSet;
+
+    NativeRdb::RdbPredicates rdbPredicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(reqBody.predicates, PhotoAlbumColumns::TABLE);
+    resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+    if (resultSet != nullptr) {
+        auto bridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+        rsqBody.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, rsqBody, ret);
+}
+
+int32_t MediaAlbumsControllerService::UpdatePhotoAlbumOrder(MessageParcel &data, MessageParcel &reply)
+{
+    SetPhotoAlbumOrderReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("UpdatePhotoAlbumOrder Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    SetPhotoAlbumOrderDto setPhotoAlbumOrderDto;
+    setPhotoAlbumOrderDto.albumOrderColumn = reqBody.albumOrderColumn;
+    setPhotoAlbumOrderDto.orderSectionColumn = reqBody.orderSectionColumn;
+    setPhotoAlbumOrderDto.orderTypeColumn = reqBody.orderTypeColumn;
+    setPhotoAlbumOrderDto.orderStatusColumn = reqBody.orderStatusColumn;
+    setPhotoAlbumOrderDto.albumIds = reqBody.albumIds;
+    setPhotoAlbumOrderDto.albumOrders = reqBody.albumOrders;
+    setPhotoAlbumOrderDto.orderSection = reqBody.orderSection;
+    setPhotoAlbumOrderDto.orderType = reqBody.orderType;
+    setPhotoAlbumOrderDto.orderStatus = reqBody.orderStatus;
+    MEDIA_INFO_LOG("Update photo album order include: %{public}s", setPhotoAlbumOrderDto.ToString().c_str());
+
+    ret = MediaAlbumsService::GetInstance().UpdatePhotoAlbumOrder(setPhotoAlbumOrderDto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 } // namespace OHOS::Media
