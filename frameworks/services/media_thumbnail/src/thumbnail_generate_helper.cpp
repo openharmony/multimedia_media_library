@@ -883,6 +883,7 @@ int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts, b
         opts.row = infos[i].id;
         ThumbnailUtils::RecordStartGenerateStats(infos[i].stats, GenerateScene::UPGRADE, LoadSourceType::LOCAL_PHOTO);
         infos[i].loaderOpts.loadingStates = SourceLoader::UPGRADE_SOURCE_LOADING_STATES;
+        infos[i].isUpgradeStage = true;
         IThumbnailHelper::AddThumbnailGenerateTask(UpgradeThumbnailBackgroundTask,
             opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     }
