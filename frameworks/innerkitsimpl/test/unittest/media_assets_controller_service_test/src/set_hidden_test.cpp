@@ -124,7 +124,7 @@ static int32_t SetHidden(const string& uri, bool hidden)
 {
     AssetChangeReqBody reqBody;
     reqBody.uri = uri;
-    reqBody.favorite = hidden;
+    reqBody.hidden = hidden;
 
     MessageParcel data;
     MessageParcel reply;
@@ -166,7 +166,7 @@ HWTEST_F(SetHiddenTest, SetHiddenTest_Test_001, TestSize.Level0)
     EXPECT_EQ(ret, -EINVAL);
 
     ret = SetHidden("", true);
-    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(ret, -EINVAL);
 
     int32_t changedRows = SetHidden(uri, true);
     EXPECT_GT(changedRows, 0);

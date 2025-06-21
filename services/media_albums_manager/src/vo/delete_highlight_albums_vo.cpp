@@ -26,7 +26,7 @@ namespace OHOS::Media {
 using namespace std;
 bool DeleteHighLightAlbumsReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->albumIds, parcel);
+    bool status = IPC::ITypeMediaUtil::UnmarshalStrVec(this->albumIds, parcel);
     CHECK_AND_RETURN_RET(status, status);
     IPC::ITypeMediaUtil::Unmarshalling<int32_t>(this->photoAlbumTypes, parcel);
     CHECK_AND_RETURN_RET(status, status);
@@ -37,7 +37,7 @@ bool DeleteHighLightAlbumsReqBody::Unmarshalling(MessageParcel &parcel)
  
 bool DeleteHighLightAlbumsReqBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = IPC::ITypeMediaUtil::Marshalling<std::string>(this->albumIds, parcel);
+    bool status = IPC::ITypeMediaUtil::MarshalStrVec(this->albumIds, parcel);
     CHECK_AND_RETURN_RET(status, status);
     status = IPC::ITypeMediaUtil::Marshalling<int32_t>(this->photoAlbumTypes, parcel);
     CHECK_AND_RETURN_RET(status, status);

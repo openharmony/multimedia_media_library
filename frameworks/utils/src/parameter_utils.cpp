@@ -304,6 +304,13 @@ int32_t ParameterUtils::CheckSetAssetsUserComment(const ModifyAssetsReqBody &req
     return E_OK;
 }
 
+int32_t ParameterUtils::CheckAddAssetVisitCount(int32_t fileId, int32_t visitType)
+{
+    CHECK_AND_RETURN_RET_LOG(fileId > 0, -EINVAL, "fileId is invalid");
+    CHECK_AND_RETURN_RET_LOG(visitType >= 0 && visitType <= 1, -EINVAL, "Invalid visitType");
+    return E_OK;
+}
+
 int32_t ParameterUtils::CheckUserComment(const AssetChangeReqBody &reqBody)
 {
     CHECK_AND_RETURN_RET_LOG(reqBody.fileId > 0, -EINVAL, "fileId is invalid");
@@ -360,6 +367,24 @@ int32_t ParameterUtils::CheckWhereClause(const std::string &whereClause)
     }
     MEDIA_DEBUG_LOG("CheckWhereClause end");
     return ret;
+}
+
+bool ParameterUtils::CheckPhotoUri(const string &uri)
+{
+    if (uri.find("../") != string::npos) {
+        return false;
+    }
+    string photoUriPrefix = "file://media/Photo/";
+    return MediaFileUtils::StartsWith(uri, photoUriPrefix);
+}
+
+int32_t ParameterUtils::CheckRestore(const RestoreReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(!reqBody.albumLpath.empty(), E_INVALID_VALUES, "albumLpath is empty.");
+    CHECK_AND_RETURN_RET_LOG(!reqBody.keyPath.empty(), E_INVALID_VALUES, "keyPath is empty.");
+    CHECK_AND_RETURN_RET_LOG(!reqBody.bundleName.empty(), E_INVALID_VALUES, "bundleName is empty.");
+    CHECK_AND_RETURN_RET_LOG(!reqBody.appName.empty(), E_INVALID_VALUES, "appName is empty.");
+    return E_OK;
 }
 }  // namespace Media
 }  // namespace OHOS

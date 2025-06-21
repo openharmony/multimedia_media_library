@@ -17,18 +17,18 @@
 
 #include <sstream>
 
-#include "itypes_util.h"
+#include "media_itypes_utils.h"
 #include "media_log.h"
 
 namespace OHOS::Media {
 
 bool DeletePhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return ITypesUtil::Unmarshalling(this->uris, parcel);
+    return IPC::ITypeMediaUtil::UnmarshalStrVec(this->uris, parcel);
 }
 
 bool DeletePhotosReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return ITypesUtil::Marshalling(this->uris, parcel);
+    return IPC::ITypeMediaUtil::MarshalStrVec(this->uris, parcel);
 }
 }  // namespace OHOS::Media

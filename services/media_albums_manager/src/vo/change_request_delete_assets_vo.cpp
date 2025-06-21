@@ -16,18 +16,19 @@
 #include "change_request_delete_assets_vo.h"
 
 #include <sstream>
+
+#include "media_itypes_utils.h"
 #include "media_log.h"
-#include "itypes_util.h"
 
 namespace OHOS::Media {
 
 bool ChangeRequestDeleteAssetsReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return ITypesUtil::Unmarshalling(this->assets, parcel);
+    return IPC::ITypeMediaUtil::UnmarshalStrVec(this->assets, parcel);
 }
 
 bool ChangeRequestDeleteAssetsReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return ITypesUtil::Marshalling(this->assets, parcel);
+    return IPC::ITypeMediaUtil::MarshalStrVec(this->assets, parcel);
 }
 }  // namespace OHOS::Media

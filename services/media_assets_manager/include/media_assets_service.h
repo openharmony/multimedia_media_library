@@ -29,7 +29,9 @@
 #include "cloud_enhancement_dto.h"
 #include "grant_photo_uri_permission_dto.h"
 #include "grant_photo_uris_permission_dto.h"
+#include "grant_photo_uri_permission_inner_dto.h"
 #include "cancel_photo_uri_permission_dto.h"
+#include "cancel_photo_uri_permission_inner_dto.h"
 #include "start_thumbnail_creation_task_dto.h"
 #include "stop_thumbnail_creation_task_dto.h"
 #include "set_location_dto.h"
@@ -42,6 +44,14 @@
 #include "query_photo_vo.h"
 #include "adapted_vo.h"
 #include "convert_format_dto.h"
+#include "check_photo_uri_permission_inner_dto.h"
+#include "get_result_set_from_db_vo.h"
+#include "get_result_set_from_db_dto.h"
+#include "get_result_set_from_photos_extend_vo.h"
+#include "get_moving_photo_date_modified_vo.h"
+#include "close_asset_vo.h"
+#include "get_uris_by_old_uris_inner_dto.h"
+#include "restore_dto.h"
 
 namespace OHOS::Media {
 class MediaAssetsService {
@@ -85,6 +95,7 @@ public:
     int32_t SetAssetsHiddenStatus(const std::vector<int32_t> &fileIds, int32_t hiddenStatus);
     int32_t SetAssetsRecentShowStatus(const std::vector<int32_t> &fileIds, int32_t recentShowStatus);
     int32_t SetAssetsUserComment(const std::vector<int32_t> &fileIds, const std::string &userComment);
+    int32_t AddAssetVisitCount(int32_t fileId, int32_t visitType);
     int32_t GetAssetAnalysisData(GetAssetAnalysisDataDto &dto);
     int32_t CloneAsset(const CloneAssetDto& cloneAssetDto);
     int32_t RevertToOriginal(const RevertToOriginalDto& revertToOriginalDto);
@@ -94,6 +105,7 @@ public:
     int32_t CancelAllCloudEnhancementTasks();
     int32_t GrantPhotoUriPermission(const GrantUriPermissionDto& grantUriPermissionDto);
     int32_t GrantPhotoUrisPermission(const GrantUrisPermissionDto& grantUrisPermissionDto);
+    int32_t GrantPhotoUriPermissionInner(const GrantUriPermissionInnerDto& grantUriPermissionInnerDto);
     int32_t CancelPhotoUriPermission(const CancelUriPermissionDto& cancelUriPermissionDto);
     int32_t StartThumbnailCreationTask(const StartThumbnailCreationTaskDto& startThumbnailCreationTaskDto);
     int32_t StopThumbnailCreationTask(const StopThumbnailCreationTaskDto& stopThumbnailCreationTaskDto);
@@ -104,6 +116,16 @@ public:
     int32_t QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRspBody &rsp);
     int32_t LogMovingPhoto(const AdaptedReqBody &req);
     int32_t ConvertFormat(const ConvertFormatDto &convertFormatDto);
+    int32_t GetResultSetFromDb(const GetResultSetFromDbDto &getResultSetFromDbDto, GetResultSetFromDbRespBody &resp);
+    int32_t GetResultSetFromPhotosExtend(const std::string &value, std::vector<std::string> &columns,
+        GetResultSetFromPhotosExtendRespBody &resp);
+    int32_t GetMovingPhotoDateModified(const std::string &fileId, GetMovingPhotoDateModifiedRespBody &resp);
+    int32_t CancelPhotoUriPermissionInner(const CancelUriPermissionInnerDto& cancelUriPermissionInnerDto);
+    int32_t CheckPhotoUriPermissionInner(CheckUriPermissionInnerDto& checkUriPermissionInnerDto);
+    int32_t CloseAsset(const CloseAssetReqBody &req);
+    int32_t GetUrisByOldUrisInner(GetUrisByOldUrisInnerDto& getUrisByOldUrisInnerDto);
+    int32_t Restore(const RestoreDto &dto);
+    int32_t StopRestore(const std::string &keyPath);
 
 private:
     MediaAssetsRdbOperations rdbOperation_;

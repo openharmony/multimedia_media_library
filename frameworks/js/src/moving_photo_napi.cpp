@@ -49,8 +49,8 @@ namespace OHOS {
 namespace Media {
 
 static const string MOVING_PHOTO_NAPI_CLASS = "MovingPhoto";
-static const string URI_TPYE = "uriType";
-static const string TPYE_PHOTOS = "1";
+static const string URI_TYPE = "uriType";
+static const string TYPE_PHOTOS = "1";
 
 thread_local napi_ref MovingPhotoNapi::constructor_ = nullptr;
 enum class MovingPhotoResourceType : int32_t {
@@ -545,7 +545,7 @@ static int32_t QueryPhotoPositionIPCExecute(const string &movingPhotoUri, int32_
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_REQUEST_CONTENT);
 
     std::unordered_map<std::string, std::string> headerMap{
-        {MediaColumn::MEDIA_ID, reqBody.mediaId}, {URI_TPYE, TPYE_PHOTOS}};
+        {MediaColumn::MEDIA_ID, reqBody.mediaId}, {URI_TYPE, TYPE_PHOTOS}};
     int32_t err =
         IPC::UserDefineIPCClient().SetUserId(userId).SetHeader(headerMap).Call(businessCode, reqBody, respBody);
     if (err != E_OK) {

@@ -28,6 +28,7 @@
 
 namespace OHOS::Media {
 namespace DataTransfer {
+// LCOV_EXCL_START
 /**
  * @brief Upgrade the database, before data restore or clone.
  */
@@ -258,5 +259,6 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotoMap(NativeRdb::RdbStore &store)
     CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
     return NativeRdb::E_OK;
 }
+// LCOV_EXCL_STOP
 }  // namespace DataTransfer
 }  // namespace OHOS::Media

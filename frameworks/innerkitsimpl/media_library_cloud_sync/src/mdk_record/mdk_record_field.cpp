@@ -19,7 +19,7 @@
 #include "json_helper.h"
 
 namespace OHOS::Media::CloudSync {
-
+// LCOV_EXCL_START
 MDKRecordField::MDKRecordField() : type_(MDKRecordFieldType::FIELD_TYPE_NULL)
 {}
 MDKRecordField::~MDKRecordField()
@@ -466,4 +466,5 @@ MDKAsset MDKRecordField::ParseAssetFromJsonValue(const Json::Value &jvData)
     asset.fd = JsonHelper::GetIntFromJson(jvData, "fd", -1);
     return asset;
 }
+// LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync

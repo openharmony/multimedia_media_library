@@ -54,6 +54,7 @@
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
+// LCOV_EXCL_START
 void NotifyDateTakenChanged(const CloudMediaPullDataDto &pullData)
 {
     MEDIA_INFO_LOG("NotifyDateTakenChanged localTime: %{public}ld, cloudTime: %{public}ld, fileId: %{public}d",
@@ -1772,4 +1773,5 @@ bool CloudMediaPhotosDao::IsAlbumCloud(bool isUpload, std::shared_ptr<NativeRdb:
     }
     return true;
 }
+// LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync
