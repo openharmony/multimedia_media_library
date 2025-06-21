@@ -41,7 +41,7 @@ class AssetChangeNotifyExecution {
 public:
     void Notify(const std::vector<PhotoAssetChangeData> &changeDatas);
 private:
-    void InsertNotifyInfo(Notification::AssetRefreshOperation operateionType, const PhotoAssetChangeData &changeData);
+    void InsertNotifyInfo(Notification::AssetRefreshOperation operationType, const PhotoAssetChangeData &changeData);
     Notification::AssetRefreshOperation GetAddOperation(const PhotoAssetChangeInfo &changeInfo);
     Notification::AssetRefreshOperation GetRemoveOperation(const PhotoAssetChangeInfo &changeInfo);
     void InsertNormalAssetOperation(const PhotoAssetChangeData &changeData);

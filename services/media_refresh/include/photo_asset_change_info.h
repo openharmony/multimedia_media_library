@@ -111,8 +111,9 @@ public:
     static std::shared_ptr<PhotoAssetChangeData> Unmarshalling(Parcel &parcel);
     std::string ToString(bool isDetail = false) const override
     {
-        return AccurateRefreshChangeData::ToString() + ", isContentChanged_: " + std::to_string(isContentChanged_) +
-            ", thumbnailChangeStatus_: " + std::to_string(thumbnailChangeStatus_);
+        return AccurateRefreshChangeData::ToString(isDetail) + ", isContentChanged_: " +
+            std::to_string(isContentChanged_) + ", thumbnailChangeStatus_: " +
+            std::to_string(thumbnailChangeStatus_);
     }
 
 public:

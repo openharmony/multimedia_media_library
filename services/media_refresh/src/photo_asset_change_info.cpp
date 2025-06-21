@@ -171,7 +171,12 @@ bool PhotoAssetChangeInfo::Marshalling(Parcel &parcel) const
 
 bool PhotoAssetChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
 {
-    bool ret = parcel.WriteString(uri_);
+    bool isValid = fileId_ != INVALID_INT32_VALUE;
+    bool ret = parcel.WriteBool(isValid);
+    if (ret && !isValid) {
+        return ret;
+    }
+    ret = ret && parcel.WriteString(uri_);
     ret = ret && parcel.WriteInt32(mediaType_);
     ret = ret && parcel.WriteString(ownerAlbumUri_);
     ret = ret && parcel.WriteBool(isSystem);
@@ -192,7 +197,12 @@ bool PhotoAssetChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
 
 bool PhotoAssetChangeInfo::ReadFromParcel(Parcel &parcel)
 {
-    bool ret = parcel.ReadString(uri_);
+    bool isValid = false;
+    bool ret = parcel.ReadBool(isValid);
+    if (ret && !isValid) {
+        return ret;
+    }
+    ret = ret && parcel.ReadString(uri_);
     ret = ret && parcel.ReadInt32(mediaType_);
     ret = ret && parcel.ReadString(ownerAlbumUri_);
     ret = ret && parcel.ReadBool(isSystem_);

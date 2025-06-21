@@ -326,7 +326,7 @@ int32_t AccurateRefreshBase::ExecuteForLastInsertedRowId(const string &sql, cons
         "rdb ExecuteForLastInsertedRowId error.");
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     UpdateModifiedDatasInner(keys, operation);
-    auto rowId = -1;
+    auto rowId = -1; // 兼容老接口
     if (!keys.empty()) {
         rowId = keys.back();
     }
@@ -385,7 +385,6 @@ int32_t AccurateRefreshBase::UpdateWithDateTime(ValuesBucket &values, const AbsR
     auto ret = Update(changedRows, values, predicates);
     if (ret != ACCURATE_REFRESH_RET_OK) {
         ACCURATE_ERR("ret: 0x%{public}x", ret);
-        return -1;
     }
     return changedRows;
 }

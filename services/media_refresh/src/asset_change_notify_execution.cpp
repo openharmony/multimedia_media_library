@@ -98,16 +98,16 @@ void AssetChangeNotifyExecution::Notify(const vector<PhotoAssetChangeData> &chan
         auto &infoAfter = changeData.infoAfterChange_;
         auto rdbOperation = changeData.operation_;
         if (rdbOperation == RDB_OPERATION_ADD) {
-            AssetRefreshOperation operateionType = GetAddOperation(infoAfter);
-            if (operateionType != ASSET_OPERATION_UNDEFINED) {
-                InsertNotifyInfo(operateionType, changeData);
+            AssetRefreshOperation operationType = GetAddOperation(infoAfter);
+            if (operationType != ASSET_OPERATION_UNDEFINED) {
+                InsertNotifyInfo(operationType, changeData);
             } else {
                 MEDIA_WARN_LOG("invalid after asset info:%{public}s", infoAfter.ToString().c_str());
             }
         } else if (rdbOperation == RDB_OPERATION_REMOVE) {
-            AssetRefreshOperation operateionType = GetRemoveOperation(infoBefore);
-            if (operateionType != ASSET_OPERATION_UNDEFINED) {
-                InsertNotifyInfo(operateionType, changeData);
+            AssetRefreshOperation operationType = GetRemoveOperation(infoBefore);
+            if (operationType != ASSET_OPERATION_UNDEFINED) {
+                InsertNotifyInfo(operationType, changeData);
             } else {
                 MEDIA_WARN_LOG("invalid before asset info:%{public}s", infoBefore.ToString().c_str());
             }
@@ -136,17 +136,27 @@ void AssetChangeNotifyExecution::Notify(const vector<PhotoAssetChangeData> &chan
     }
 }
 
-void AssetChangeNotifyExecution::InsertNotifyInfo(AssetRefreshOperation operateionType,
+void AssetChangeNotifyExecution::InsertNotifyInfo(AssetRefreshOperation operationType,
     const PhotoAssetChangeData &changeData)
 {
-    auto iter = notifyInfos_.find(operateionType);
+    PhotoAssetChangeData modifiedChangeData = changeData;
+    if ((operationType & ASSET_ADD) == ASSET_ADD) {
+        modifiedChangeData.infoBeforeChange_.fileId_ = INVALID_INT32_VALUE;
+        ACCURATE_DEBUG("origin data: %{public}s", changeData.ToString(true).c_str());
+        ACCURATE_DEBUG("modify add data: %{public}s", modifiedChangeData.ToString(true).c_str());
+    } else if ((operationType & ASSET_REMOVE) == ASSET_REMOVE) {
+        modifiedChangeData.infoAfterChange_.fileId_ = INVALID_INT32_VALUE;
+        ACCURATE_DEBUG("origin data: %{public}s", changeData.ToString(true).c_str());
+        ACCURATE_DEBUG("modify remove data: %{public}s", modifiedChangeData.ToString(true).c_str());
+    }
+    auto iter = notifyInfos_.find(operationType);
     if (iter == notifyInfos_.end()) {
         vector<PhotoAssetChangeData> infos;
-        infos.push_back(changeData);
-        notifyInfos_.emplace(operateionType, infos);
+        infos.push_back(modifiedChangeData);
+        notifyInfos_.emplace(operationType, infos);
     } else {
         auto &infos = iter->second;
-        infos.push_back(changeData);
+        infos.push_back(modifiedChangeData);
     }
 }
 
