@@ -591,9 +591,6 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
         return E_THUMBNAIL_LOCAL_CREATE_FAIL;
     }
 
-    int32_t err = ThumbnailGenerationPostProcess::PostProcess(data, opts);
-    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed! err %{public}d", err);
-
     if (!opts.path.empty()) {
         fileName = GetThumbnailPath(data.path, thumbSuffix);
     }

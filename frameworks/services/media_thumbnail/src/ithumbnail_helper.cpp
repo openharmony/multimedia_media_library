@@ -910,8 +910,10 @@ bool IThumbnailHelper::CacheSuccessState(const ThumbRdbOpt &opts, ThumbnailData 
     int32_t err = CacheThumbDbState(opts, data);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "CacheThumbDbState failed, err = %{public}d", err);
 
-    err = CacheDirtyState(opts, data);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "CacheDirtyState failed, err = %{public}d", err);
+    if (data.isRegenerateStage) {
+        err = CacheDirtyState(opts, data);
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "CacheDirtyState failed, err = %{public}d", err);
+    }
 
     return true;
 }
