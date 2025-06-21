@@ -43,6 +43,7 @@ const map<std::string, ResultSetDataType> AlbumChangeInfo::albumInfoCloumnTypes_
     { PhotoAlbumColumns::COVER_DATE_TIME, TYPE_INT64 },
     { PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME, TYPE_INT64 },
     { PhotoAlbumColumns::ALBUM_DIRTY, TYPE_INT32 },
+    { PhotoAlbumColumns::COVER_URI_SOURCE, TYPE_INT32 },
 };
 
 const vector<std::string> AlbumChangeInfo::albumInfoColumns_ = []() {
@@ -95,6 +96,8 @@ vector<AlbumChangeInfo> AlbumChangeInfo::GetInfoFromResult(
             GetDataType(PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME)));
         albumChangeInfo.dirty_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_DIRTY,
             resultSet, GetDataType(PhotoAlbumColumns::ALBUM_DIRTY)));
+        albumChangeInfo.coverUriSource_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
+            PhotoAlbumColumns::COVER_URI_SOURCE, resultSet, GetDataType(PhotoAlbumColumns::COVER_URI_SOURCE)));
         albumChangeInfos.push_back(albumChangeInfo);
     }
 
@@ -112,7 +115,7 @@ string AlbumChangeInfo::ToString(bool isDetail) const
         ss <<  ", hiddenCoverUri_: " << hiddenCoverUri_;
         ss << ", isCoverChange_: " << isCoverChange_ << ", isHiddenCoverChange_: " << isHiddenCoverChange_;
         ss << ", coverDateTime_: " << coverDateTime_ << ", hiddenCoverDateTime_: " << hiddenCoverDateTime_;
-        ss << ", dirty_: " << dirty_;
+        ss << ", dirty_: " << dirty_ << ", coverUriSource_: " << coverUriSource_;
     } else {
         ss << "albumId_: " << albumId_ << ", albumSubType_: "<< albumSubType_;
     }
@@ -257,10 +260,10 @@ string AlbumRefreshInfo::ToString() const
     stringstream ss;
     ss << "deltaCount_: " << deltaCount_ << ", deltaVideoCount_: " << deltaVideoCount_ << ", deltaHiddenCount_: ";
     ss << deltaHiddenCount_;
-    ss << ", deltaAddCover_ fileId: " << deltaAddCover_.fileId_ << ", deltaRemoveCover_ fileId: ";
-    ss << deltaRemoveCover_.fileId_;
-    ss << ", deltaAddHiddenCover_ fileId: " << deltaAddHiddenCover_.fileId_ << ", deltaRemoveHiddenCover_ fileId: ";
-    ss << deltaRemoveHiddenCover_.fileId_;
+    ss << ", deltaAddCover_ fileId: " << deltaAddCover_.fileId_ << ", remove asset size: ";
+    ss << removeFileIds.size();
+    ss << ", deltaAddHiddenCover_ fileId: " << deltaAddHiddenCover_.fileId_ << ", remove hidden asset size: ";
+    ss << removeHiddenFileIds.size();
     return ss.str();
 }
 
