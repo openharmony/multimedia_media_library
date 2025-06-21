@@ -512,6 +512,21 @@ async function delayFunc() {
   return new Promise(resolve => setTimeout(resolve, DELAY_MILLSECONDS));
 }
 
+function convertMIMETypeToFilterType(e) {
+    let o;
+    if (e === PhotoViewMIMETypes.IMAGE_TYPE) {
+        o = PHOTO_VIEW_MIME_TYPE_MAP.get(e);
+    } else if (e === PhotoViewMIMETypes.VIDEO_TYPE) {
+        o = PHOTO_VIEW_MIME_TYPE_MAP.get(e);
+    } else if (e === PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
+        o = PHOTO_VIEW_MIME_TYPE_MAP.get(e);
+    } else {
+        o = PHOTO_VIEW_MIME_TYPE_MAP.get(PhotoViewMIMETypes.IMAGE_VIDEO_TYPE);
+    }
+    console.info('convertMIMETypeToFilterType: ' + JSON.stringify(o));
+    return o;
+}
+
 function checkIsRecentPhotoOptionValid(option) {
   if (!option) {
     console.error('photoAccessHelper invalid, option is null.');
@@ -541,6 +556,8 @@ function checkIsRecentPhotoOptionValid(option) {
     console.error('photoAccessHelper invalid, option.MIMEType is not string.');
     return false;
   }
+  // convert MIMEType string
+  option.MIMEType = convertMIMETypeToFilterType(option.MIMEType);
   const PhotoSource = {
     ALL: 0,
     CAMERA: 1,
@@ -584,7 +601,7 @@ async function rpcGetRecentPhotoInfoGetProxy() {
     context = getContext(this);
   }
   try {
-    let connectId = context.connextServiceExtensionAbility(want, connect);
+    let connectId = context.connectServiceExtensionAbility(want, connect);
     let retryConter = RETRY_COUNTER;
     while (proxy === undefined) {
       retryConter -= 1;
@@ -612,7 +629,7 @@ async function rpcGetRecentPhotoInfo(recentPhotoOption) {
     data.writeInterfaceToken(RPC_TOKEN_RECENT_PHOTO_INFO);
     data.writeInt(recentPhotoOption.period);
     data.writeString(recentPhotoOption.MIMEType);
-    data.writeInt(recentPhotoOption.photoSrouce);
+    data.writeInt(recentPhotoOption.photoSource);
     let result = await proxy.sendMessageRequest(RPC_MSGID_RECENT_PHOTO_INFO, data, reply, option);
     if (result.errCode !== 0) {
       console.error('rpcGetRecentPhotoInfo sendMessageRequest failed, errCode: ' + result.errCode);
