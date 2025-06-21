@@ -256,6 +256,7 @@ static void ExtractDateTakenMetadata(unique_ptr<ImageSource>& imageSource, uniqu
 {
     int64_t timeStamp = 0;
     GetDateTakenByExif(imageSource, timeStamp);
+    MEDIA_INFO_LOG("GetDateTakenByExif datetaken:%{public}ld", static_cast<long>(timeStamp));
     if (timeStamp > 0) {
         setSubSecondTime(imageSource, timeStamp);
         data->SetDateTaken(timeStamp);
@@ -264,7 +265,7 @@ static void ExtractDateTakenMetadata(unique_ptr<ImageSource>& imageSource, uniqu
     // use modified time as date taken time when date taken not set
     data->SetDateTaken((data->GetDateTaken() == 0 || data->GetForAdd()) ?
         data->GetFileDateModified() : data->GetDateTaken());
-    MEDIA_DEBUG_LOG("Set date_taken use modified time");
+    MEDIA_INFO_LOG("Set date_taken use modified time");
 }
 
 static string GetCastShootingMode(string &shootingModeTag)

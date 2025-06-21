@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "album_order_napi.h"
 #include "cloud_enhancement_task_state_napi.h"
 #include "cloud_enhancement_napi.h"
 #include "cloud_media_asset_manager_napi.h"
@@ -40,6 +41,7 @@ static napi_value PhotoAccessHelperExport(napi_env env, napi_value exports)
     FileAssetNapi::PhotoAccessHelperInit(env, exports);
     AlbumNapi::PhotoAccessHelperInit(env, exports);
     PhotoAlbumNapi::PhotoAccessInit(env, exports);
+    AlbumOrderNapi::PhotoAccessInit(env, exports);
     HighlightAlbumNapi::AnalysisAlbumInit(env, exports);
     HighlightAlbumNapi::Init(env, exports);
     MediaAssetEditDataNapi::Init(env, exports);
