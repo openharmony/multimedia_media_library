@@ -572,6 +572,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_001, TestSize
         CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "", PHOTO_INFO_MAP
     };
     restoreHighlight.Init(initInfo);
+    restoreHighlight.Preprocess();
     restoreHighlight.RestoreAlbums();
     EXPECT_EQ(restoreHighlight.isCloneHighlight_, true);
     cloneRestoreCVAnalysis->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
@@ -773,6 +774,24 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_restore_analysis_tables_data_t
     string condition = " id > 0 ";
     int32_t count = GetAlbumCountByCondition(newRdbStore->GetRaw(), VISION_SALIENCY_TABLE, condition);
     EXPECT_GT(count, 0);
+
+    ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_preprocess_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("clone_restore_highlight_preprocess_test_001 start");
+    ClearHighlightData();
+    CloneHighlightSource cloneHighlightSource;
+    vector<string> tableList;
+    Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
+
+    CloneRestoreHighlight::InitInfo initInfo = {
+        CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "", PHOTO_INFO_MAP
+    };
+    cloneRestoreHighlight->Init(initInfo);
+    cloneRestoreHighlight->Preprocess();
+    EXPECT_EQ(cloneRestoreHighlight->isCloneHighlight_, false);
 
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }

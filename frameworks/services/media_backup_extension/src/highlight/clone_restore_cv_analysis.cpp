@@ -146,8 +146,8 @@ void CloneRestoreCVAnalysis::InsertIntoAssetSdMap(std::vector<NativeRdb::ValuesB
     int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
     ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
         "insert into sdMap fail, num:" + std::to_string(failNums));
-    assetSdFailedCnt_ += failNums;
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+    assetSdFailedCnt_ += failNums;
 }
 
 void CloneRestoreCVAnalysis::InsertIntoAlbumAssetMap(std::vector<NativeRdb::ValuesBucket> &values)
@@ -159,8 +159,8 @@ void CloneRestoreCVAnalysis::InsertIntoAlbumAssetMap(std::vector<NativeRdb::Valu
     int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
     ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
         "insert into AssetMap fail, num:" + std::to_string(failNums));
-    albumAssetFailedCnt_ += failNums;
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+    albumAssetFailedCnt_ += failNums;
 }
 
 int32_t CloneRestoreCVAnalysis::BatchInsertWithRetry(const std::string &tableName,

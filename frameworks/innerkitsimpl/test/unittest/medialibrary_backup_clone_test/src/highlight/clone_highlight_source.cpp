@@ -160,7 +160,6 @@ void CloneHighlightSource::Insert(const vector<string> &tableList, std::shared_p
         }
         InsertType insertType = TABLE_INSERT_TYPE_MAP.at(tableName);
         InsertByType(insertType, rdbPtr);
-        InsertAnalysisDataByType(insertType, rdbPtr);
     }
 }
 
@@ -200,7 +199,7 @@ void CloneHighlightSource::InsertByType(InsertType insertType, std::shared_ptr<N
             break;
         }
         default:
-            MEDIA_INFO_LOG("Invalid insert type");
+            InsertAnalysisDataByType(insertType, rdbPtr);
     }
 }
 
@@ -347,11 +346,11 @@ void CloneHighlightSource::InsertTabAnalysisTotal(std::shared_ptr<NativeRdb::Rdb
     // id, file_id, status, ocr, label, aesthetics_score,
     // face, object, recommendation, segmentation, composition, saliency,
     // head, pose, geo
-    cloneStorePtr_->ExecuteSql(INSERT_TAB_ANALYSIS_TOTAL + VALUES_BEGIN +
+    rdbPtr->ExecuteSql(INSERT_TAB_ANALYSIS_TOTAL + VALUES_BEGIN +
         "1, 1, 0, 0, 0, 0, "
         "0, 0, 1, 0, 0, 1, "
         "0, 0, 0" + VALUES_END);
-    cloneStorePtr_->ExecuteSql(INSERT_TAB_ANALYSIS_TOTAL + VALUES_BEGIN +
+    rdbPtr->ExecuteSql(INSERT_TAB_ANALYSIS_TOTAL + VALUES_BEGIN +
         "2, 2, 0, 0, 0, 0, "
         "0, 0, 1, 0, 0, 1, "
         "0, 0, 0" + VALUES_END);
