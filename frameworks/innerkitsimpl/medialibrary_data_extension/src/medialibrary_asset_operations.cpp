@@ -1271,7 +1271,7 @@ int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd,
     if (assetRefresh == nullptr) {
         result = rdbStore->Delete(cmd, deletedRows);
     } else {
-        result = assetRefresh->Delete(cmd, deletedRows);
+        result = assetRefresh->LogicalDeleteReplaceByUpdate(cmd, deletedRows);
     }
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete operation failed. Result %{public}d.", result);
@@ -2860,7 +2860,7 @@ static int32_t DeleteDbByIds(const string &table, vector<string> &ids, const boo
         predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     }
     int32_t deletedRows = 0;
-    int32_t err = refresh->Delete(deletedRows, predicates);
+    int32_t err = refresh->LogicalDeleteReplaceByUpdate(predicates, deletedRows);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to execute delete, err: %{public}d", err);
         MediaLibraryRestore::GetInstance().CheckRestore(err);
