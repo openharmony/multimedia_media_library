@@ -740,13 +740,13 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_014, Te
     data.dateTaken = "b";
     ThumbnailType type = ThumbnailType::MTH_ASTC;
     auto res = ThumbnailUtils::SaveAstcDataToKvStore(data, type);
-    EXPECT_EQ(res, -1);
+    EXPECT_EQ(res, E_ERR);
     const ThumbnailType type2 = ThumbnailType::YEAR_ASTC;
     auto res2 = ThumbnailUtils::SaveAstcDataToKvStore(data, type2);
-    EXPECT_EQ(res2, -1);
+    EXPECT_EQ(res2, E_ERR);
     const ThumbnailType type3 = ThumbnailType::LCD;
     auto res3 = ThumbnailUtils::SaveAstcDataToKvStore(data, type3);
-    EXPECT_EQ(res3, -1);
+    EXPECT_EQ(res3, E_ERR);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_015, TestSize.Level1)
