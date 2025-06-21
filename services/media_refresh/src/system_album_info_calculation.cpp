@@ -32,10 +32,12 @@ bool SystemAlbumInfoCalculation::CalAlbumRefreshInfo(const PhotoAssetChangeData 
     // count/hidden count/video count数量更新
     AlbumRefreshInfo beforeRefreshInfo = refreshInfo;
     if (UpdateCount(assetChangeData, isSystemAsset_, refreshInfo.deltaCount_)) {
+        refreshInfo.assetModifiedCnt_++;
         ret = true;
     }
     
     if (UpdateCount(assetChangeData, isHiddenSystemAsset_, refreshInfo.deltaHiddenCount_)) {
+        refreshInfo.hiddenAssetModifiedCnt_++;
         ret = true;
     }
     

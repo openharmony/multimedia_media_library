@@ -116,7 +116,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::InsertInitChangeInfo
         auto key = GetChangeInfoKey(changeInfo);
         if (changeDatas_.find(key) != changeDatas_.end()) {
             // 数据重复：打印异常，不替换已有数据继续执行
-            MEDIA_WARN_LOG("operate duplicate init key: %{public}d", key);
+            MEDIA_INFO_LOG("operate duplicate init key: %{public}d", key);
             continue;
         }
         ChangeData changeData;
@@ -210,7 +210,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
 
         // 更新infoAfterChange_
         if (IsValidChangeInfo(changeData.infoAfterChange_)) {
-            MEDIA_WARN_LOG("operate duplicate modified key: %{public}d", key);
+            MEDIA_INFO_LOG("operate duplicate modified key: %{public}d", key);
         }
         changeData.infoAfterChange_ = modifiedInfo;
         ACCURATE_INFO("operation_: %{public}d isDelete: %{public}d", changeData.operation_, changeData.isDelete_);

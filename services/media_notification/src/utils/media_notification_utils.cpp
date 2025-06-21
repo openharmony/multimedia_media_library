@@ -145,9 +145,13 @@ int32_t NotificationUtils::SendNotification(const sptr<AAFwk::IDataAbilityObserv
         return E_ERR;
     }
 
-    for (size_t i = 0; i < changeInfos.size(); i++) {
+    for (auto &changeInfo : changeInfos) {
         MEDIA_INFO_LOG("start send notification at an interval of 10 milliseconds");
-        dataObserver->OnChangeExt(*changeInfos.at(i));
+        dataObserver->OnChangeExt(*changeInfo);
+        if (changeInfo->data_ != nullptr) {
+            delete[] static_cast<uint8_t*>(changeInfo->data_);
+            changeInfo->data_ = nullptr;
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL_TIME_MS));
     }
     return true;

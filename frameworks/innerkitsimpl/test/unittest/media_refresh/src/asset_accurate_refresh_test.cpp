@@ -474,17 +474,17 @@ bool CheckInsertAlbumInfos(const AssetAccurateRefresh &assetRefresh, const vecto
         }
         // 隐藏相册计算方式不同
         if (albumId == HIDDEN_ALBUM_ID) {
-            if (!CheckInsertHiddenAlbum(albumInfoIter->second, albumInfo, queryAssetInfo, albumChangeDatas)) {
+            if (!CheckInsertHiddenAlbum(albumInfoIter->second.second, albumInfo, queryAssetInfo, albumChangeDatas)) {
                 MEDIA_ERR_LOG("hidden album info wrong, albumId:%{public}d", albumId);
                 return false;
             }
             continue;
         }
-        if (!CheckInsertAlbumInfo(albumInfoIter->second, albumInfo, queryAssetInfo, albumChangeDatas)) {
+        if (!CheckInsertAlbumInfo(albumInfoIter->second.second, albumInfo, queryAssetInfo, albumChangeDatas)) {
             MEDIA_ERR_LOG("album info wrong, albumId:%{public}d", albumId);
             return false;
         }
-        ACCURATE_DEBUG("refrehInfo: %{public}s", albumInfoIter->second.ToString().c_str());
+        ACCURATE_DEBUG("refrehInfo: %{public}s", albumInfoIter->second.second.ToString().c_str());
     }
     ACCURATE_DEBUG("return true");
     return true;
@@ -573,7 +573,8 @@ bool CheckInsertNotifyInfos(const AssetAccurateRefresh &assetRefresh, const Phot
     return true;
 }
 
-bool CheckAlbumInfo(const map<int32_t, AlbumChangeInfo> &refreshAlbums_, const AlbumChangeInfo &initAlbumInfo,
+bool CheckAlbumInfo(const map<int32_t, pair<AlbumRefreshInfo, AlbumChangeInfo>> &refreshAlbums_,
+    const AlbumChangeInfo &initAlbumInfo,
     const AlbumChangeInfo &expectedAlbumInfo, RdbOperation operation, map<int32_t, AlbumChangeData> &albumChangeDatas)
 {
     auto refreshIter = refreshAlbums_.find(expectedAlbumInfo.albumId_);
@@ -581,7 +582,7 @@ bool CheckAlbumInfo(const map<int32_t, AlbumChangeInfo> &refreshAlbums_, const A
         MEDIA_ERR_LOG("No refresh album id: %{public}d", expectedAlbumInfo.albumId_);
         return false;
     }
-    if (!IsEqualAlbumInfo(expectedAlbumInfo, refreshIter->second)) {
+    if (!IsEqualAlbumInfo(expectedAlbumInfo, refreshIter->second.second)) {
         MEDIA_ERR_LOG("refresh album info wrong");
         return false;
     }
