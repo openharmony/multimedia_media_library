@@ -105,7 +105,7 @@ const std::string DEFAULT_TITLE_VIDEO_PREFIX = "VID_";
 const std::string MOVING_PHOTO_VIDEO_EXTENSION = "mp4";
 static const size_t BATCH_DELETE_MAX_NUMBER = 500;
 const std::string URI_TYPE = "uriType";
-const std::string TPYE_PHOTOS = "1";
+const std::string TYPE_PHOTOS = "1";
 
 int32_t MediaDataSource::ReadData(const shared_ptr<AVSharedMemory>& mem, uint32_t length)
 {
@@ -1961,7 +1961,7 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(
         HandleValueBucketForSetLocation(fileAsset_, valuesBucket, isWriteGpsAdvanced);
         reqBody.values = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
         std::unordered_map<std::string, std::string> headerMap{
-            {MediaColumn::MEDIA_ID, to_string(fileAsset_->GetId())}, {URI_TYPE, TPYE_PHOTOS}};
+            {MediaColumn::MEDIA_ID, to_string(fileAsset_->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
         ret = IPC::UserDefineIPCClient().SetUserId(userId).SetHeader(headerMap).Call(businessCode, reqBody, rspBody);
     }
     if (rspBody.fileId > 0 && isCreation) {
