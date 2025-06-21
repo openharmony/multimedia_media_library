@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 #include "photo_album_column.h"
 #include "photo_asset_change_info.h"
@@ -61,6 +62,7 @@ public:
     int64_t coverDateTime_ = INVALID_INT64_VALUE;
     int64_t hiddenCoverDateTime_ = INVALID_INT64_VALUE;
     int32_t dirty_ = INVALID_INT32_VALUE;
+    int32_t coverUriSource_ = 0;
 
     NativeRdb::ValuesBucket GetUpdateValues(const AlbumChangeInfo &oldAlbumInfo, NotifyType &type);
     std::string ToString(bool isDetail = false) const;
@@ -92,19 +94,20 @@ public:
     int32_t deltaVideoCount_ = 0;
     int32_t deltaHiddenCount_ = 0;
     PhotoAssetChangeInfo deltaAddCover_;
-    PhotoAssetChangeInfo deltaRemoveCover_;
     PhotoAssetChangeInfo deltaAddHiddenCover_;
-    PhotoAssetChangeInfo deltaRemoveHiddenCover_;
+    std::unordered_set<int32_t> removeFileIds;
+    std::unordered_set<int32_t> removeHiddenFileIds;
+
     std::string ToString() const;
     bool IsAlbumInfoRefresh() const
     {
         return deltaCount_ != 0 || deltaVideoCount_ != 0 || deltaAddCover_.fileId_ != INVALID_INT32_VALUE ||
-            deltaRemoveCover_.fileId_ != INVALID_INT32_VALUE;
+            removeFileIds.size() > 0;
     }
     bool IsAlbumHiddenInfoRefresh() const
     {
         return deltaHiddenCount_ != 0 || deltaAddHiddenCover_.fileId_ != INVALID_INT32_VALUE ||
-            deltaRemoveHiddenCover_.fileId_ != INVALID_INT32_VALUE;
+            removeHiddenFileIds.size() > 0;
     }
 };
 

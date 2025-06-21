@@ -76,7 +76,7 @@ bool AlbumAssetHelper::IsInvalidAsset(const PhotoAssetChangeInfo &assetInfo)
 bool AlbumAssetHelper::UpdateCover(const PhotoAssetChangeData &assetChangeData,
     std::function<bool(const PhotoAssetChangeInfo&)> isAlbumAsset,
     std::function<bool(const PhotoAssetChangeInfo&, const PhotoAssetChangeInfo&)> isNewerAsset,
-    PhotoAssetChangeInfo &addCover, PhotoAssetChangeInfo &removeCover)
+    PhotoAssetChangeInfo &addCover, std::unordered_set<int32_t> &removeFileIds)
 {
     bool before = isAlbumAsset(assetChangeData.infoBeforeChange_);
     bool after = isAlbumAsset(assetChangeData.infoAfterChange_);
@@ -88,11 +88,7 @@ bool AlbumAssetHelper::UpdateCover(const PhotoAssetChangeData &assetChangeData,
             ret = true;
         }
     } else if (before && !after) {
-        if (AlbumAssetHelper::IsInvalidAsset(removeCover) ||
-            isNewerAsset(assetChangeData.infoBeforeChange_, removeCover)) {
-            removeCover = assetChangeData.infoBeforeChange_;
-            ret = true;
-        }
+        removeFileIds.insert(assetChangeData.infoBeforeChange_.fileId_);
     }
 
     return ret;

@@ -521,7 +521,7 @@ void CloudMediaAlbumService::CheckAlbumManualCover()
         int32_t coverUriSource = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::COVER_URI_SOURCE,
             resultSet, TYPE_INT32));
         NativeRdb::ValuesBucket values;
-        if (coverUriSource == static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER)) {
+        if (coverUriSource == static_cast<int32_t>(CoverUriSource::MANUAL_LOCAL_COVER)) {
             string coverCloudId = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::COVER_CLOUD_ID,
                 resultSet, TYPE_STRING));
             string coverUri = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COVER_URI,

@@ -56,6 +56,8 @@ private:
     bool CalAlbumCount(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo);
     // 计算相册hidden count
     bool CalAlbumHiddenCount(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo);
+    // 检查封面是否需要计算
+    bool CheckCoverSet(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo, int32_t coverFileId);
     // 计算相册的封面
     bool CalAlbumCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo, int32_t subType);
     // 计算相册的隐藏封面
