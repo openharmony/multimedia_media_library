@@ -117,7 +117,8 @@ static shared_ptr<NativeRdb::ResultSet> QueryAsset(const string& displayName, co
     return resultSet;
 }
 
-static std::shared_ptr<DataShare::DataShareResultSet> GetResultSetFromPhotos(const string &value, vector<string> &columns)
+static std::shared_ptr<DataShare::DataShareResultSet> GetResultSetFromPhotos(const string &value,
+    vector<string> &columns)
 {
     GetResultSetFromPhotosExtendReqBody reqBody;
     reqBody.value = value;

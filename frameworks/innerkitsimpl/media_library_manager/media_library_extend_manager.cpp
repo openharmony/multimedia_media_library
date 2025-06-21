@@ -432,7 +432,7 @@ int32_t MediaLibraryExtendManager::CancelPhotoUriPermission(uint32_t srcTokenId,
     }
     vector<DataShareValuesBucket> valueSet;
     bool cond = ((uris.empty()) || (uris.size() > URI_MAX_SIZE) || (uris.size() != operModesCopy.size()));
-    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Media Uri list error, please check!");  
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Media Uri list error, please check!");
     CancelUriPermissionInnerReqBody reqBody;
     reqBody.targetTokenId = (int64_t)targetTokenId;
     reqBody.srcTokenId = (int64_t)srcTokenId;
@@ -445,7 +445,7 @@ int32_t MediaLibraryExtendManager::CancelPhotoUriPermission(uint32_t srcTokenId,
             }
         }
         CHECK_AND_RETURN_RET_LOG(tableType != -1, E_ERR, "Uri invalid error, uri:%{private}s", uri.c_str());
-        string fileId = MediaFileUtils::GetIdFromUri(uri); 
+        string fileId = MediaFileUtils::GetIdFromUri(uri);
         MEDIA_DEBUG_LOG("CancelPermission fileId:%{private}s, tableType:%{private}d", fileId.c_str(), tableType);
         reqBody.fileIds.emplace_back(fileId);
         reqBody.uriTypes.emplace_back(tableType);
@@ -533,7 +533,6 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromP
     GetResultSetFromDbRespBody rspBody;
     int32_t errCode =
         IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
-
     if (errCode != E_OK) {
         MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
         if (ForceReconnect()) {
@@ -564,7 +563,6 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromD
     GetResultSetFromDbRespBody rspBody;
     int32_t errCode =
         IPC::UserBaseIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
-
     if (errCode != E_OK) {
         MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
         if (ForceReconnect()) {
