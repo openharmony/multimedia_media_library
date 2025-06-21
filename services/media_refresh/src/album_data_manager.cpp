@@ -60,10 +60,10 @@ PhotoAssetChangeInfo AlbumDataManager::GetPhotoAssetInfo(int32_t fileId)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, PhotoAssetChangeInfo(), "rdbStore null");
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    auto resultSet = rdbStore->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetClolumns());
+    auto resultSet = rdbStore->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, PhotoAssetChangeInfo(), "resultSet null");
     auto changeInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet,
-        PhotoAssetChangeInfo::GetPhotoAssetClolumns());
+        PhotoAssetChangeInfo::GetPhotoAssetColumns());
     resultSet->Close();
     if (changeInfos.size() != 1) {
         MEDIA_WARN_LOG("changeInfos[%{public}d] size[%{public}zu] wrong.", fileId, changeInfos.size());
