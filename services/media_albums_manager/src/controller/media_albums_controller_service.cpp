@@ -1240,4 +1240,5 @@ int32_t MediaAlbumsControllerService::UpdatePhotoAlbumOrder(MessageParcel &data,
 
     ret = MediaAlbumsService::GetInstance().UpdatePhotoAlbumOrder(setPhotoAlbumOrderDto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
 } // namespace OHOS::Media
