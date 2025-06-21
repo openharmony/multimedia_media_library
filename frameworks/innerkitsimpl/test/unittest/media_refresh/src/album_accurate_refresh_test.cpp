@@ -880,7 +880,7 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_cmd_016, Test
 
     AlbumAccurateRefresh albumRefreshDel;
     int32_t changeRows = 0;
-    auto ret = albumRefreshDel.Delete(cmd, changeRows);
+    auto ret = albumRefreshDel.LogicalDeleteReplaceByUpdate(cmd, changeRows);
     ACCURATE_DEBUG("ret: %{public}d", ret);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
     EXPECT_TRUE(changeRows == 1);
@@ -918,7 +918,7 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_Trans_cmd_017
     AlbumAccurateRefresh albumRefreshDel(trans);
     int32_t changeRows = 0;
     function<int32_t()> transFunc = [&] () -> int32_t {
-        auto ret = albumRefreshDel.Delete(cmd, changeRows);
+        auto ret = albumRefreshDel.LogicalDeleteReplaceByUpdate(cmd, changeRows);
         return ret;
     };
 
@@ -951,7 +951,7 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_018, TestSize
 
     AlbumAccurateRefresh albumRefreshDel;
     int32_t changeRows = 0;
-    auto ret = albumRefreshDel.Delete(predicates, changeRows);
+    auto ret = albumRefreshDel.LogicalDeleteReplaceByUpdate(predicates, changeRows);
     ACCURATE_DEBUG("ret: %{public}d", ret);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
     EXPECT_TRUE(changeRows == 1);
@@ -985,7 +985,7 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_Trans_019, Te
     AlbumAccurateRefresh albumRefreshDel(trans);
     int32_t changeRows = 0;
     function<int32_t()> transFunc = [&] () -> int32_t {
-        auto ret = albumRefreshDel.Delete(predicates, changeRows);
+        auto ret = albumRefreshDel.LogicalDeleteReplaceByUpdate(predicates, changeRows);
         return ret;
     };
 

@@ -54,8 +54,8 @@ public:
         const NativeRdb::AbsRdbPredicates &predicates, RdbOperation operation = RDB_OPERATION_UPDATE);
     int32_t UpdateWithDateTime(NativeRdb::ValuesBucket &values, const NativeRdb::AbsRdbPredicates &predicates);
 
-    virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows);
-    virtual int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates, int32_t &deletedRows);
+    virtual int32_t LogicalDeleteReplaceByUpdate(MediaLibraryCommand &cmd, int32_t &deletedRows);
+    virtual int32_t LogicalDeleteReplaceByUpdate(const NativeRdb::AbsRdbPredicates &predicates, int32_t &deletedRows);
     int32_t Delete(int32_t &deletedRows, const std::string &table, const std::string &whereClause,
         const std::vector<std::string> &args);
     int32_t Delete(int32_t &deletedRows, const NativeRdb::AbsRdbPredicates &predicates);
