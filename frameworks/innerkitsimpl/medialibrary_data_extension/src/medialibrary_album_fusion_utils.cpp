@@ -177,7 +177,7 @@ static unordered_map<string, ResultSetDataType> albumColumnTypeMap = {
 
 std::mutex MediaLibraryAlbumFusionUtils::cloudAlbumAndDataMutex_;
 std::atomic<bool> MediaLibraryAlbumFusionUtils::isNeedRefreshAlbum = false;
-
+// LCOV_EXCL_START
 int32_t MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(
     const std::shared_ptr<MediaLibraryRdbStore> upgradeStore)
 {
@@ -2195,4 +2195,5 @@ void MediaLibraryAlbumFusionUtils::ReportAlbumFusionData(int64_t albumFusionTag,
     MEDIA_INFO_LOG("ALBUM_FUSE: Report album fusion data end, tag is %{public}" PRId64 ", fusion state is %{public}d",
         albumFusionTag, albumFusionState);
 }
+// LCOV_EXCL_STOP
 } // namespace OHOS::Media

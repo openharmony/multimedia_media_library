@@ -293,9 +293,9 @@ PhotoAssetChangeInfo GetAssetInfo(int32_t fileId = 0)
     RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
     queryPredicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
 
-    auto resultSet = g_rdbStore->QueryByStep(queryPredicates, PhotoAssetChangeInfo::GetPhotoAssetClolumns());
+    auto resultSet = g_rdbStore->QueryByStep(queryPredicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     EXPECT_TRUE(resultSet != nullptr);
-    auto assetInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet, PhotoAssetChangeInfo::GetPhotoAssetClolumns());
+    auto assetInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     if (assetInfos.size() == 1) {
         ACCURATE_DEBUG("assetInfo: %{public}s", assetInfos[0].ToString().c_str());
         return assetInfos[0];
@@ -474,17 +474,17 @@ bool CheckInsertAlbumInfos(const AssetAccurateRefresh &assetRefresh, const vecto
         }
         // 隐藏相册计算方式不同
         if (albumId == HIDDEN_ALBUM_ID) {
-            if (!CheckInsertHiddenAlbum(albumInfoIter->second, albumInfo, queryAssetInfo, albumChangeDatas)) {
+            if (!CheckInsertHiddenAlbum(albumInfoIter->second.second, albumInfo, queryAssetInfo, albumChangeDatas)) {
                 MEDIA_ERR_LOG("hidden album info wrong, albumId:%{public}d", albumId);
                 return false;
             }
             continue;
         }
-        if (!CheckInsertAlbumInfo(albumInfoIter->second, albumInfo, queryAssetInfo, albumChangeDatas)) {
+        if (!CheckInsertAlbumInfo(albumInfoIter->second.second, albumInfo, queryAssetInfo, albumChangeDatas)) {
             MEDIA_ERR_LOG("album info wrong, albumId:%{public}d", albumId);
             return false;
         }
-        ACCURATE_DEBUG("refrehInfo: %{public}s", albumInfoIter->second.ToString().c_str());
+        ACCURATE_DEBUG("refrehInfo: %{public}s", albumInfoIter->second.second.ToString().c_str());
     }
     ACCURATE_DEBUG("return true");
     return true;
@@ -573,7 +573,8 @@ bool CheckInsertNotifyInfos(const AssetAccurateRefresh &assetRefresh, const Phot
     return true;
 }
 
-bool CheckAlbumInfo(const map<int32_t, AlbumChangeInfo> &refreshAlbums_, const AlbumChangeInfo &initAlbumInfo,
+bool CheckAlbumInfo(const map<int32_t, pair<AlbumRefreshInfo, AlbumChangeInfo>> &refreshAlbums_,
+    const AlbumChangeInfo &initAlbumInfo,
     const AlbumChangeInfo &expectedAlbumInfo, RdbOperation operation, map<int32_t, AlbumChangeData> &albumChangeDatas)
 {
     auto refreshIter = refreshAlbums_.find(expectedAlbumInfo.albumId_);
@@ -581,7 +582,7 @@ bool CheckAlbumInfo(const map<int32_t, AlbumChangeInfo> &refreshAlbums_, const A
         MEDIA_ERR_LOG("No refresh album id: %{public}d", expectedAlbumInfo.albumId_);
         return false;
     }
-    if (!IsEqualAlbumInfo(expectedAlbumInfo, refreshIter->second)) {
+    if (!IsEqualAlbumInfo(expectedAlbumInfo, refreshIter->second.second)) {
         MEDIA_ERR_LOG("refresh album info wrong");
         return false;
     }
@@ -866,11 +867,9 @@ HWTEST_F(AssetAccurateRefreshTest, Insert_006, TestSize.Level2)
         Notification::ASSET_OPERATION_ADD_HIDDEN));
     
     auto notifyAlbumInfos = assetRefresh.albumRefreshExe_.albumRefresh_.notifyExe_.notifyInfos_;
-    EXPECT_TRUE(notifyAlbumInfos.size() == 2);
+    EXPECT_TRUE(notifyAlbumInfos.size() == 1);
     EXPECT_TRUE(CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE_HIDDEN,
-        albumChangeDatas, 1));
-    EXPECT_TRUE(
-        CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE, albumChangeDatas, 3));
+        albumChangeDatas, 4));
 }
 
 HWTEST_F(AssetAccurateRefreshTest, Insert_007, TestSize.Level2)

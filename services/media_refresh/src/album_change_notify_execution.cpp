@@ -52,7 +52,12 @@ void AlbumChangeNotifyExecution::Notify(vector<AlbumChangeData> changeDatas)
                 InsertNotifyInfo(ALBUM_OPERATION_REMOVE, changeData);
                 continue;
             }
-            InsertNotifyInfo(ALBUM_OPERATION_UPDATE, changeData);
+            if (changeData.IsAlbumHiddenInfoChange()) {
+                InsertNotifyInfo(ALBUM_OPERATION_UPDATE_HIDDEN, changeData);
+            }
+            if (changeData.IsAlbumInfoChange()) {
+                InsertNotifyInfo(ALBUM_OPERATION_UPDATE, changeData);
+            }
         }
     }
 
@@ -76,15 +81,24 @@ void AlbumChangeNotifyExecution::Notify(vector<AlbumChangeData> changeDatas)
 
 void AlbumChangeNotifyExecution::InsertNotifyInfo(AlbumRefreshOperation operation, const AlbumChangeData &changeData)
 {
+    AlbumChangeData albumChangeData = changeData;
+    ACCURATE_DEBUG("origin data: %{public}s", changeData.ToString(true).c_str());
+    if (operation == ALBUM_OPERATION_ADD) {
+        albumChangeData.infoBeforeChange_.albumId_ = INVALID_INT32_VALUE;
+        ACCURATE_DEBUG("modify remove data: %{public}s", albumChangeData.ToString(true).c_str());
+    } else if (operation == ALBUM_OPERATION_REMOVE) {
+        albumChangeData.infoAfterChange_.albumId_ = INVALID_INT32_VALUE;
+        ACCURATE_DEBUG("modify remove data: %{public}s", albumChangeData.ToString(true).c_str());
+    }
     auto iter = notifyInfos_.find(operation);
     if (iter == notifyInfos_.end()) {
         vector<AlbumChangeData> infos;
-        infos.push_back(changeData);
+        infos.push_back(albumChangeData);
         notifyInfos_.emplace(operation, infos);
         return;
     } else {
         auto &infos = iter->second;
-        infos.push_back(changeData);
+        infos.push_back(albumChangeData);
     }
 }
 

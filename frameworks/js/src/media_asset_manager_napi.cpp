@@ -74,8 +74,8 @@ const int32_t PROGRESS_MAX = 100;
 
 const std::string HIGH_TEMPERATURE = "high_temperature";
 
-static const std::string URI_TPYE = "uriType";
-static const std::string TPYE_PHOTOS = "1";
+static const std::string URI_TYPE = "uriType";
+static const std::string TYPE_PHOTOS = "1";
 
 thread_local unique_ptr<ChangeListenerNapi> g_multiStagesRequestListObj = nullptr;
 thread_local napi_ref constructor_ = nullptr;
@@ -376,7 +376,7 @@ MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId
     reqBody.fileId = std::to_string(fileId);
     QueryPhotoRspBody rspBody;
     std::unordered_map<std::string, std::string> headerMap {
-        {MediaColumn::MEDIA_ID, reqBody.fileId }, {URI_TPYE, TPYE_PHOTOS}};
+        {MediaColumn::MEDIA_ID, reqBody.fileId }, {URI_TYPE, TYPE_PHOTOS}};
     int ret = IPC::UserDefineIPCClient().SetUserId(userId).SetHeader(headerMap).Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_PHOTO_STATUS), reqBody, rspBody);
     if (ret < 0) {

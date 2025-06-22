@@ -62,9 +62,8 @@ public:
     ~MediaOnNotifyNewObserver() = default;
 
     void OnChange(const ChangeInfo &changeInfo) override;
-    void static ReadyForUvWork(const NewJsOnChangeCallbackWrapper &callbackWrapper);
-    void static UvQueueWork(uv_loop_s *loop, uv_work_t *work);
-    void static SendRecheckUvWork(uv_loop_s *loop, uv_work_t *work);
+    void static ReadyForCallbackEvent(const NewJsOnChangeCallbackWrapper &callbackWrapper);
+    void static OnJsCallbackEvent(std::unique_ptr<NewJsOnChangeCallbackWrapper> &jsCallback);
 
     Notification::NotifyUriType uriType_;
     std::string uri_;
@@ -97,7 +96,7 @@ private:
     static std::mutex vectorMutex_;
     int64_t lastTaskTime_ = 0;
     int32_t notifyTaskCount_ = 0;
-    int32_t notifyTaskInfoSize_ = 0;
+    size_t notifyTaskInfoSize_ = 0;
 };
 } // Media
 } // OHOS

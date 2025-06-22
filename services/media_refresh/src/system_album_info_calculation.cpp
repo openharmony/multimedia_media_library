@@ -32,10 +32,12 @@ bool SystemAlbumInfoCalculation::CalAlbumRefreshInfo(const PhotoAssetChangeData 
     // count/hidden count/video count数量更新
     AlbumRefreshInfo beforeRefreshInfo = refreshInfo;
     if (UpdateCount(assetChangeData, isSystemAsset_, refreshInfo.deltaCount_)) {
+        refreshInfo.assetModifiedCnt_++;
         ret = true;
     }
     
     if (UpdateCount(assetChangeData, isHiddenSystemAsset_, refreshInfo.deltaHiddenCount_)) {
+        refreshInfo.hiddenAssetModifiedCnt_++;
         ret = true;
     }
     
@@ -45,12 +47,12 @@ bool SystemAlbumInfoCalculation::CalAlbumRefreshInfo(const PhotoAssetChangeData 
 
     // cover/hidden cover更新
     if (UpdateCover(assetChangeData, isSystemAsset_, isNewerAsset_, refreshInfo.deltaAddCover_,
-        refreshInfo.deltaRemoveCover_)) {
+        refreshInfo.removeFileIds)) {
         ret = true;
     }
     
     if (UpdateCover(assetChangeData, isHiddenSystemAsset_, isNewerHiddenAsset_, refreshInfo.deltaAddHiddenCover_,
-        refreshInfo.deltaRemoveHiddenCover_)) {
+        refreshInfo.removeHiddenFileIds)) {
         ret = true;
     }
     return ret;
@@ -59,9 +61,9 @@ bool SystemAlbumInfoCalculation::CalAlbumRefreshInfo(const PhotoAssetChangeData 
 bool SystemAlbumInfoCalculation::UpdateCover(const PhotoAssetChangeData &assetChangeData,
     std::function<bool(const PhotoAssetChangeInfo&)> isSystemAsset,
     std::function<bool(const PhotoAssetChangeInfo&, const PhotoAssetChangeInfo&)> isNewerAsset,
-    PhotoAssetChangeInfo &addCover, PhotoAssetChangeInfo &removeCover)
+    PhotoAssetChangeInfo &addCover, unordered_set<int32_t> &removeFileIds)
 {
-    return AlbumAssetHelper::UpdateCover(assetChangeData, isSystemAsset, isNewerAsset, addCover, removeCover);
+    return AlbumAssetHelper::UpdateCover(assetChangeData, isSystemAsset, isNewerAsset, addCover, removeFileIds);
 }
 
 bool SystemAlbumInfoCalculation::UpdateCount(const PhotoAssetChangeData &assetChangeData,

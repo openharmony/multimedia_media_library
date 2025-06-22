@@ -111,7 +111,7 @@ void MediaLibraryManagerTest::SetUpTestCase(void)
         EXPECT_NE(sDataShareHelper_, nullptr);
         return;
     }
-    
+
     // make sure board is empty
     ClearAllFile();
 
@@ -2156,6 +2156,46 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstc_emptyUris, TestSiz
     auto pixelMap = mediaLibraryManager->GetAstc(Uri(uriStr));
     EXPECT_EQ(pixelMap, nullptr);
 }
+
+HWTEST_F(MediaLibraryManagerTest, GetResultSetFromPhotos_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("GetResultSetFromPhotos_001 enter");
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
+    ASSERT_NE(photoAssetProxy, nullptr);
+    sptr<PhotoProxyTest> photoProxyTest = new (std::nothrow) PhotoProxyTest();
+    ASSERT_NE(photoProxyTest, nullptr);
+    photoProxyTest->SetFormat(PhotoFormat::JPG);
+    photoProxyTest->SetPhotoQuality(PhotoQuality::LOW);
+    photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
+    auto fileAsset = photoAssetProxy->GetFileAsset();
+    ASSERT_NE(fileAsset, nullptr);
+
+    string filePath = fileAsset->GetPath();
+    string displayName = fileAsset->GetDisplayName();
+    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
+    string assetUri = MediaFileUtils::GetUriByExtrConditions("file://media/Photo/",
+        to_string(fileAsset->GetId()), extrUri);
+    int32_t fd = mediaLibraryManager->OpenAsset(assetUri, MEDIA_FILEMODE_READWRITE);
+    EXPECT_NE(fd <= 0, true);
+    write(fd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
+    mediaLibraryManager->CloseAsset(assetUri, fd);
+
+    EXPECT_NE(mediaLibraryExtendManager, nullptr);
+    vector<string> columns;
+    EXPECT_NE(mediaLibraryExtendManager->GetResultSetFromPhotos(assetUri, columns), nullptr);
+    MEDIA_INFO_LOG("GetResultSetFromPhotos_001 exit");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetResultSetFromPhotos_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("GetResultSetFromPhotos_002 enter");
+    EXPECT_NE(mediaLibraryExtendManager, nullptr);
+    string value = "1";
+    vector<string> columns;
+    EXPECT_EQ(mediaLibraryExtendManager->GetResultSetFromPhotos(value, columns), nullptr);
+    MEDIA_INFO_LOG("GetResultSetFromPhotos_002 exit");
+}
+
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstcYearAndMonth_test, TestSize.Level1)
 {
     vector<string> uris;
@@ -2165,7 +2205,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstcYearAndMonth_test, 
     for (int i = 0; i < 5; i++) {
         uris.push_back(CreatePhotoAsset("test.mp4"));
     }
-    ret = ret = mediaLibraryManager->GetAstcYearAndMonth(uris);
+    ret = mediaLibraryManager->GetAstcYearAndMonth(uris);
     EXPECT_EQ(ret, E_ERR);
 }
 

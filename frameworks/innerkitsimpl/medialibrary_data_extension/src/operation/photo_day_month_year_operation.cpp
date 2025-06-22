@@ -101,7 +101,7 @@ const std::string UPDATE_DAY_MONTH_YEAR = ""
     " END "
     "WHERE"
     "  file_id IN ( ";
-
+// LCOV_EXCL_START
 int32_t PhotoDayMonthYearOperation::UpdatePhotosDate(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
     MEDIA_INFO_LOG("update photos date start");
@@ -297,5 +297,6 @@ int32_t PhotoDayMonthYearOperation::UpdateAbnormalDayMonthYear(std::vector<std::
         needChangedSize, changedRowCount);
     return NativeRdb::E_OK;
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

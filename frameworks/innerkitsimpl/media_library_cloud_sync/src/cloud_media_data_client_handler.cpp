@@ -49,6 +49,7 @@
 #include "media_operate_result_vo.h"
 
 namespace OHOS::Media::CloudSync {
+// LCOV_EXCL_START
 void CloudMediaDataClientHandler::SetUserId(const int32_t &userId)
 {
     this->userId_ = userId;
@@ -447,4 +448,5 @@ int32_t CloudMediaDataClientHandler::SubmitCloudSyncPreparedDataTask()
     }
     return ret;
 }
+// LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync

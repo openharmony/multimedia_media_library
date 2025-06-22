@@ -673,7 +673,7 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
     }
     AlbumAccurateRefresh albumRefresh;
     int deleteRow = -1;
-    albumRefresh.Delete(predicates, deleteRow);
+    albumRefresh.LogicalDeleteReplaceByUpdate(predicates, deleteRow);
     if (deleteRow > 0) {
         albumRefresh.Notify();
     }
@@ -1310,13 +1310,14 @@ bool MediaLibraryAlbumOperations::IsManunalCloudCover(const string &fileId, stri
 }
 
 int32_t MediaLibraryAlbumOperations::UpdateCoverUriExecute(int32_t albumId,
-    const string &coverUri, const string &fileId)
+    const string &coverUri, const string &fileId, int64_t coverDateTime)
 {
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     ValuesBucket values;
     values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
     auto dateModified = MediaFileUtils::UTCTimeMilliSeconds();
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, dateModified);
+    values.PutLong(PhotoAlbumColumns::COVER_DATE_TIME, coverDateTime);
     string cloudId;
     bool isManunalCloudCover = IsManunalCloudCover(fileId, cloudId);
     MEDIA_INFO_LOG("albumId:%{public}d, coverUri:%{public}s, isManunalCloudCover:%{public}d",
@@ -1345,6 +1346,37 @@ int32_t MediaLibraryAlbumOperations::UpdateCoverUriExecute(int32_t albumId,
     return changedRows;
 }
 
+std::string GetQueryColumn(int32_t albumSubtype)
+{
+    string queryColumn = MediaColumn::MEDIA_DATE_TAKEN;
+    if (albumSubtype == PhotoAlbumSubType::VIDEO || albumSubtype == PhotoAlbumSubType::IMAGE) {
+        queryColumn = MediaColumn::MEDIA_DATE_ADDED;
+    }
+    return queryColumn;
+}
+
+int64_t GetCoverDateTime(const string &fileId, int32_t albumSubtype)
+{
+    auto columnName = GetQueryColumn(albumSubtype);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Failed to get rdbStore when query");
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+
+    vector<string> columns = {columnName};
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "failed to acquire result from visitor query.");
+    int64_t coverDateTime = 0;
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        coverDateTime = get<int64_t>(ResultSetUtils::GetValFromColumn(columnName,
+            resultSet, TYPE_INT64));
+    } else {
+        MEDIA_ERR_LOG("resultSet GoToNextRow failed, fileId:%{public}s", fileId.c_str());
+    }
+    resultSet->Close();
+    return coverDateTime;
+}
+
 int32_t MediaLibraryAlbumOperations::UpdateAlbumCoverUri(const ValuesBucket &values,
     const DataSharePredicates &predicates, bool isSystemAlbum)
 {
@@ -1367,9 +1399,10 @@ int32_t MediaLibraryAlbumOperations::UpdateAlbumCoverUri(const ValuesBucket &val
         CHECK_AND_RETURN_RET_LOG((ret == E_OK), ret, "GetIntVal error");
     }
     string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(coverUri);
+    auto coverDateTime = GetCoverDateTime(fileId, albumSubtype);
 
     // 3.update cover uri
-    auto updateRows = UpdateCoverUriExecute(albumId, coverUri, fileId);
+    auto updateRows = UpdateCoverUriExecute(albumId, coverUri, fileId, coverDateTime);
     CHECK_AND_RETURN_RET_LOG(updateRows == 1, E_ERR,
         "update coverUri failed ,maybe cover is invalid, updateRows = %{public}d", updateRows);
 
@@ -1669,7 +1702,7 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAssets(const DataSharePredicates
 int32_t MediaLibraryAlbumOperations::DeletePhotoAssetsCompleted(
     const DataSharePredicates &predicates, const bool isAging)
 {
-    MEDIA_DEBUG_LOG("DeletePhotoAssetsCompleted start.");
+    MEDIA_INFO_LOG("DeletePhotoAssetsCompleted start.");
     DealWithHighlightSdTable(predicates);
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     int32_t deletedRows = MediaLibraryAssetOperations::DeletePermanently(rdbPredicates, isAging);

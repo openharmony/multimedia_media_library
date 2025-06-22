@@ -18,27 +18,27 @@
 #include "form_info_vo.h"
  
 #include <sstream>
- 
-#include "itypes_util.h"
+
+#include "media_itypes_utils.h"
 #include "media_log.h"
  
 namespace OHOS::Media {
 using namespace std;
 bool FormInfoReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = ITypesUtil::Unmarshalling(this->formIds, parcel);
-    CHECK_AND_RETURN_RET(status, status);
-    status = ITypesUtil::Unmarshalling(this->fileUris, parcel);
-    CHECK_AND_RETURN_RET(status, status);
+    bool status = IPC::ITypeMediaUtil::UnmarshalStrVec(this->formIds, parcel);
+    CHECK_AND_RETURN_RET(status, false);
+    status = IPC::ITypeMediaUtil::UnmarshalStrVec(this->fileUris, parcel);
+    CHECK_AND_RETURN_RET(status, false);
     return true;
 }
  
 bool FormInfoReqBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = ITypesUtil::Marshalling<std::string>(this->formIds, parcel);
-    CHECK_AND_RETURN_RET(status, status);
-    status = ITypesUtil::Marshalling<std::string>(this->fileUris, parcel);
-    CHECK_AND_RETURN_RET(status, status);
+    bool status = IPC::ITypeMediaUtil::MarshalStrVec(this->formIds, parcel);
+    CHECK_AND_RETURN_RET(status, false);
+    status = IPC::ITypeMediaUtil::MarshalStrVec(this->fileUris, parcel);
+    CHECK_AND_RETURN_RET(status, false);
     return true;
 }
 } // namespace OHOS::Media

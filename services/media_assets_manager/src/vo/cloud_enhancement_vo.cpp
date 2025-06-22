@@ -18,9 +18,9 @@
 #include "cloud_enhancement_vo.h"
 
 #include <sstream>
- 
+
+#include "media_itypes_utils.h"
 #include "media_log.h"
-#include "itypes_util.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -30,7 +30,7 @@ bool CloudEnhancementReqBody::Unmarshalling(MessageParcel &parcel)
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.ReadInt32(this->triggerMode);
     CHECK_AND_RETURN_RET(status, status);
-    status = ITypesUtil::Unmarshalling(this->fileUris, parcel);
+    status = IPC::ITypeMediaUtil::UnmarshalStrVec(this->fileUris, parcel);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
@@ -41,7 +41,7 @@ bool CloudEnhancementReqBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.WriteInt32(this->triggerMode);
     CHECK_AND_RETURN_RET(status, status);
-    status = ITypesUtil::Marshalling(this->fileUris, parcel);
+    status = IPC::ITypeMediaUtil::MarshalStrVec(this->fileUris, parcel);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }

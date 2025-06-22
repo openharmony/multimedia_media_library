@@ -215,13 +215,13 @@ int32_t AccurateRefreshBase::Update(int32_t &changedRows, const ValuesBucket &va
 
 // Files表和Photos表，执行Update；PhotosAlbum表，执行Update；PhotoTable，执行Update；其它执行Delete
 // 媒体库设置标识，触发端云同步，同步完成后才会真正的删除放到对应的子类进行处理
-int32_t AccurateRefreshBase::Delete(MediaLibraryCommand &cmd, int32_t &deletedRows)
+int32_t AccurateRefreshBase::LogicalDeleteReplaceByUpdate(MediaLibraryCommand &cmd, int32_t &deletedRows)
 {
     return ACCURATE_REFRESH_RET_OK;
 }
 
 // 同上
-int32_t AccurateRefreshBase::Delete(const AbsRdbPredicates &predicates, int32_t &deletedRows)
+int32_t AccurateRefreshBase::LogicalDeleteReplaceByUpdate(const AbsRdbPredicates &predicates, int32_t &deletedRows)
 {
     return ACCURATE_REFRESH_RET_OK;
 }
@@ -326,7 +326,7 @@ int32_t AccurateRefreshBase::ExecuteForLastInsertedRowId(const string &sql, cons
         "rdb ExecuteForLastInsertedRowId error.");
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     UpdateModifiedDatasInner(keys, operation);
-    auto rowId = -1;
+    auto rowId = -1; // 兼容老接口
     if (!keys.empty()) {
         rowId = keys.back();
     }
@@ -385,7 +385,6 @@ int32_t AccurateRefreshBase::UpdateWithDateTime(ValuesBucket &values, const AbsR
     auto ret = Update(changedRows, values, predicates);
     if (ret != ACCURATE_REFRESH_RET_OK) {
         ACCURATE_ERR("ret: 0x%{public}x", ret);
-        return -1;
     }
     return changedRows;
 }

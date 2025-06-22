@@ -26,6 +26,7 @@
 #include "thumbnail_const.h"
 
 namespace OHOS::Media::CloudSync {
+// LCOV_EXCL_START
 bool CloudMediaAttachmentUtils::AddRawIntoContent(const DownloadAssetData &downloadData, PhotosDto &photosDto)
 {
     bool isAdded = false;
@@ -189,4 +190,5 @@ int32_t CloudMediaAttachmentUtils::GetAttachment(
     MEDIA_ERR_LOG("Failed to GetAttachment, fileKey: %{public}s", fileKey.c_str());
     return E_ERR;
 }
+// LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync

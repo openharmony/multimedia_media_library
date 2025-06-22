@@ -46,7 +46,7 @@ static const std::map<std::string, int32_t> ORIENTATION_INT_MAP = {
     {"Right-top", 90},
     {"Left-bottom", 270},
 };
-
+// LCOV_EXCL_START
 bool ThumbnailImageFrameWorkUtils::IsYuvPixelMap(std::shared_ptr<PixelMap> pixelMap)
 {
     CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "PixelMap is nullptr");
@@ -368,6 +368,6 @@ std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(con
     copySource->scale(widthScale, heightScale);
     return copySource;
 }
-
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

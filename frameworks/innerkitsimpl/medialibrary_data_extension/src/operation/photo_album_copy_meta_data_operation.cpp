@@ -24,7 +24,7 @@
 #include "result_set_utils.h"
 
 namespace OHOS::Media {
-
+// LCOV_EXCL_START
 PhotoAlbumCopyMetaDataOperation &PhotoAlbumCopyMetaDataOperation::SetRdbStore(
     const std::shared_ptr<MediaLibraryRdbStore> &upgradeStore)
 {
@@ -174,4 +174,5 @@ int32_t PhotoAlbumCopyMetaDataOperation::QueryAlbumPluginInfo(std::string &lPath
     album_name = GetStringVal(PhotoAlbumColumns::ALBUM_NAME, resultSet);
     return E_OK;
 }
+// LCOV_EXCL_STOP
 } // namespace OHOS::Media

@@ -18,6 +18,7 @@
 #include "album_data_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "accurate_debug_log.h"
+#include "medialibrary_data_manager_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -53,8 +54,55 @@ int32_t AlbumDataManager::UpdateModifiedDatas()
     return ACCURATE_REFRESH_RET_OK;
 }
 
+PhotoAssetChangeInfo AlbumDataManager::GetPhotoAssetInfo(int32_t fileId)
+{
+    AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, PhotoAssetChangeInfo(), "rdbStore null");
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    auto resultSet = rdbStore->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, PhotoAssetChangeInfo(), "resultSet null");
+    auto changeInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet,
+        PhotoAssetChangeInfo::GetPhotoAssetColumns());
+    resultSet->Close();
+    if (changeInfos.size() != 1) {
+        MEDIA_WARN_LOG("changeInfos[%{public}d] size[%{public}zu] wrong.", fileId, changeInfos.size());
+        return PhotoAssetChangeInfo();
+    }
+    return changeInfos[0];
+}
+
 int32_t AlbumDataManager::PostProcessModifiedDatas(const std::vector<int32_t> &keys)
 {
+    for (auto &key : keys) {
+        auto item = changeDatas_.find(key);
+        if (item == changeDatas_.end()) {
+            MEDIA_WARN_LOG("no data, albumId[%{public}d].", key);
+            continue;
+        }
+        auto &before = item->second.infoBeforeChange_;
+        auto &after = item->second.infoAfterChange_;
+        // 更新cover相关信息
+        if (before.coverUri_ != after.coverUri_) {
+            after.isCoverChange_ = true;
+            if (after.coverInfo_.fileId_ == INVALID_INT32_VALUE && !after.coverUri_.empty()) {
+                auto coverFileId = MediaLibraryDataManagerUtils::GetFileIdNumFromPhotoUri(after.coverUri_);
+                after.coverInfo_ = GetPhotoAssetInfo(coverFileId);
+            }
+        }
+ 
+        // 更新hidden cover相关信息
+        if (before.hiddenCoverUri_ != after.hiddenCoverUri_) {
+            after.isHiddenCoverChange_ = true;
+            if (after.hiddenCoverInfo_.fileId_ == INVALID_INT32_VALUE && !after.hiddenCoverUri_.empty()) {
+                auto coverFileId = MediaLibraryDataManagerUtils::GetFileIdNumFromPhotoUri(after.hiddenCoverUri_);
+                after.hiddenCoverInfo_ = GetPhotoAssetInfo(coverFileId);
+            }
+        }
+        ACCURATE_DEBUG("coverChange[%{public}d]:[%{public}s] hiddenCoverChange[%{public}d]:[%{public}s]",
+            after.isCoverChange_, after.coverInfo_.ToString().c_str(), after.isHiddenCoverChange_,
+            after.hiddenCoverInfo_.ToString().c_str());
+    }
     return ACCURATE_REFRESH_RET_OK;
 }
 
@@ -82,7 +130,6 @@ vector<AlbumChangeInfo> AlbumDataManager::GetInfosByPredicates(const AbsRdbPredi
     
     // 根据resultSet转AlbumChangeInfo
     auto albumInfos = GetInfosByResult(resultSet);
-    ACCURATE_DEBUG("GetInfosByPredicates size: %{public}zu", albumInfos.size());
     resultSet->Close();
     
     return albumInfos;
@@ -105,12 +152,9 @@ vector<AlbumChangeInfo> AlbumDataManager::GetAlbumInfos(const vector<int32_t> &a
 
     if (!albumIds.empty()) {
         vector<string> albumIdStrs;
-        stringstream ss;
         for (auto const &albumId : albumIds) {
             albumIdStrs.push_back(to_string(static_cast<int> (albumId)));
-            ss << " " << albumId;
         }
-        ACCURATE_DEBUG("Insert key: %{public}s", ss.str().c_str());
         vector<AlbumChangeInfo> albumIdInfos;
         RdbPredicates predicates(PhotoAlbumColumns::TABLE);
         predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIdStrs);

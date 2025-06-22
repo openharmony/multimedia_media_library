@@ -29,14 +29,20 @@
 namespace OHOS::Media {
 class CloneRestoreHighlight {
 public:
-    void Init(int32_t sceneCode, const std::string &taskId, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
-        std::shared_ptr<NativeRdb::RdbStore> mediaRdb, const std::string &backupRestoreDir);
-    void RestoreAlbums();
-    void RestoreMaps(std::vector<FileInfo> &fileInfos);
-    void UpdateAlbums();
+    struct InitInfo {
+        int32_t sceneCode{-1};
+        std::string taskId;
+        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb;
+        std::shared_ptr<NativeRdb::RdbStore> mediaRdb;
+        std::string backupRestoreDir;
+        std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
+    };
+
+    void Init(const InitInfo &info);
+    void Restore();
     int32_t GetNewHighlightAlbumId(int32_t oldId);
     int32_t GetNewHighlightPhotoId(int32_t oldId);
-    std::string GetNewHighlightPhotoUri(int32_t newId);
+    std::string GetNewHighlightPhotoUri(int32_t oldId);
     bool IsCloneHighlight();
     std::string GetDefaultPlayInfo();
     void UpdateHighlightStatus(const std::vector<int32_t> &highlightIds);
@@ -74,6 +80,7 @@ private:
         std::optional<int32_t> renameOperation;
         std::optional<int32_t> isLocal;
         std::optional<int32_t> isCoverSatisfied;
+        std::optional<std::string> relationship;
 
         std::optional<int32_t> highlightIdOld;
         std::optional<int32_t> highlightIdNew;
@@ -129,6 +136,7 @@ private:
         std::optional<int32_t> isMuted;
         std::optional<int32_t> isFavorite;
         std::optional<std::string> theme;
+        std::optional<int64_t> pinTime;
         std::optional<int32_t> useSubtitle;
 
         std::string ToString() const
@@ -218,15 +226,26 @@ private:
         }
     };
 
+    void Preprocess();
+    void RestoreAlbums();
+    void RestoreMaps();
+    int32_t GetTotalNumberOfMaps();
+    void RestoreMapsBatch();
+    void UpdateAlbums();
+
     void GetAnalysisAlbumInfos();
     void GetAnalysisRowInfo(AnalysisAlbumInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
+    void UpdateAlbumCoverUri(AnalysisAlbumInfo &info);
     void InsertIntoAnalysisAlbum();
     void GetAnalysisInsertValue(NativeRdb::ValuesBucket &value, const AnalysisAlbumInfo &info);
+    void UpdateHighlightStatusMap(int32_t highlightStatus, int32_t highlightId,
+        std::unordered_map<int32_t, std::vector<NativeRdb::ValueObject>> &highlightStatusMap);
+    void UpdateHighlightStatusInDatabase(
+        const std::unordered_map<int32_t, std::vector<NativeRdb::ValueObject>> &highlightStatusMap);
     int32_t GetMaxAlbumId(const std::string &tableName, const std::string &idName);
-    void GetPhotoMapInfos(const std::vector<FileInfo> &fileInfos);
-    void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const std::vector<FileInfo> &fileInfos);
+    void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values);
     void UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb::ValuesBucket> &values,
-        std::shared_ptr<NativeRdb::ResultSet> resultSet, std::unordered_map<int32_t, FileInfo> &fileInfoMap);
+        std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void InsertAnalysisPhotoMap(std::vector<NativeRdb::ValuesBucket> &values);
     int32_t BatchInsertWithRetry(const std::string &tableName, const std::vector<NativeRdb::ValuesBucket> &values,
         int64_t &rowNum);
@@ -252,6 +271,9 @@ private:
     void GetPlayInsertValue(NativeRdb::ValuesBucket &value, const HighlightPlayInfo &info);
     std::unordered_set<std::string> GetCommonColumns(const std::string &tableName);
     void ReportCloneRestoreHighlightTask();
+    void ReportRestoreTaskOfTotal();
+    void ReportRestoreTaskOfAlbumStats();
+    void ReportRestoreTaskOfAlbumInfo();
     bool IsMapColumnOrderExist();
     void HighlightDeduplicate(const HighlightAlbumInfo &info);
     std::vector<NativeRdb::ValueObject> GetHighlightDuplicateIds(const HighlightAlbumInfo &info,
@@ -264,25 +286,42 @@ private:
 private:
     int32_t sceneCode_{-1};
     std::string taskId_;
+    std::string coverPath_;
+    std::string musicDir_;
+    std::string garblePath_;
     // old media_liabrary.db
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     // new media_liabrary.db
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
+    std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
+    std::unordered_map<std::string, std::unordered_set<std::string>> intersectionMap_;
+
     std::vector<AnalysisAlbumInfo> analysisInfos_;
     std::vector<HighlightAlbumInfo> highlightInfos_;
     std::vector<HighlightCoverInfo> coverInfos_;
     std::vector<HighlightPlayInfo> playInfos_;
-    std::string coverPath_;
-    std::string musicDir_;
-    std::string garblePath_;
-    SafeMap<int32_t, int32_t> photoIdMap_;
-    SafeMap<int32_t, std::string> photoUriMap_;
+
     std::mutex counterMutex_;
     std::unordered_map<std::string, int32_t> albumPhotoCounter_;
-    std::unordered_map<std::string, std::unordered_set<std::string>> intersectionMap_;
-    int64_t failCnt_{0};
     bool isMapOrder_{false};
     bool isCloneHighlight_{false};
+    bool isHighlightDirExist_{false};
+    int32_t maxIdOfAlbum_{0};
+    int32_t maxIdOfHighlight_{0};
+    int32_t lastIdOfMap_{0};
+    int64_t albumSuccessCnt_{0};
+    int64_t albumDuplicateCnt_{0};
+    int64_t albumFailedCnt_{0};
+    int64_t highlightSuccessCnt_{0};
+    int64_t highlightDuplicateCnt_{0};
+    int64_t highlightFailedCnt_{0};
+    int64_t mapSuccessCnt_{0};
+    int64_t mapFailedCnt_{0};
+    int64_t coverInfoSuccessCnt_{0};
+    int64_t coverInfoFailedCnt_{0};
+    int64_t playInfoSuccessCnt_{0};
+    int64_t playInfoFailedCnt_{0};
+    int64_t restoreTimeCost_{0};
 };
 
 template<typename T>

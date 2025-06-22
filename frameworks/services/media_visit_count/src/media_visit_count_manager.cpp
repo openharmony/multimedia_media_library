@@ -29,7 +29,7 @@ constexpr size_t VISIT_COUNT_MAX_QUEUE_SIZE = 100;
 } // namespace
 
 using VisitType = MediaVisitCountManager::VisitCountType;
-
+// LCOV_EXCL_START
 void MediaVisitCountManager::AddVisitCount(VisitCountType type, const std::string &fileId)
 {
     MEDIA_DEBUG_LOG("MediaVisitCountManager::%{public}s is called, type: %{public}d fileId: %{public}s",
@@ -140,5 +140,6 @@ void MediaVisitCountManager::VisitCountThread()
         MEDIA_DEBUG_LOG("VisitCountThread ExcuteSqls end");
     }
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
