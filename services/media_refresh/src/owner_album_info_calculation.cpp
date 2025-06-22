@@ -97,7 +97,7 @@ bool OwnerAlbumInfoCalculation::IsNewerHiddenAsset(const PhotoAssetChangeInfo &c
 bool OwnerAlbumInfoCalculation::UpdateCover(const PhotoAssetChangeData &assetChangeData,
     function<bool(const PhotoAssetChangeInfo&, int32_t)> isAsset, int32_t albumId,
     function<bool(const PhotoAssetChangeInfo&, const PhotoAssetChangeInfo&, int32_t)> isNewerAsset,
-    PhotoAssetChangeInfo &addCover, PhotoAssetChangeInfo &removeCover)
+    PhotoAssetChangeInfo &addCover, unordered_set<int32_t> &removeFileIds)
 {
     function<bool(const PhotoAssetChangeInfo&)> isAlbumAsset =
         [&] (const PhotoAssetChangeInfo& assetChangeData) -> bool {
@@ -107,7 +107,7 @@ bool OwnerAlbumInfoCalculation::UpdateCover(const PhotoAssetChangeData &assetCha
         [&] (const PhotoAssetChangeInfo &compare, const PhotoAssetChangeInfo &current) -> bool {
             return isNewerAsset(compare, current, albumId);
     };
-    return AlbumAssetHelper::UpdateCover(assetChangeData, isAlbumAsset, isAlbumNewerAsset, addCover, removeCover);
+    return AlbumAssetHelper::UpdateCover(assetChangeData, isAlbumAsset, isAlbumNewerAsset, addCover, removeFileIds);
 }
 
 bool OwnerAlbumInfoCalculation::UpdateCount(const PhotoAssetChangeData &assetChangeData,
@@ -127,10 +127,12 @@ bool OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(const PhotoAssetChangeData &as
     AlbumRefreshInfo beforeRefreshInfo = refreshInfo;
     // count/hidden count/video count数量更新
     if (UpdateCount(assetChangeData, IsOwnerAlbumAsset, albumId, refreshInfo.deltaCount_)) {
+        refreshInfo.assetModifiedCnt_++;
         ret = true;
     }
     
     if (UpdateCount(assetChangeData, IsOwnerAlbumHiddenAsset, albumId, refreshInfo.deltaHiddenCount_)) {
+        refreshInfo.hiddenAssetModifiedCnt_++;
         ret = true;
     }
     
@@ -140,12 +142,12 @@ bool OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(const PhotoAssetChangeData &as
 
     // cover/hidden cover更新
     if (UpdateCover(assetChangeData, IsOwnerAlbumAsset, albumId, IsNewerAsset, refreshInfo.deltaAddCover_,
-        refreshInfo.deltaRemoveCover_)) {
+        refreshInfo.removeFileIds)) {
         ret = true;
     }
     
     if (UpdateCover(assetChangeData, IsOwnerAlbumHiddenAsset, albumId, IsNewerHiddenAsset,
-        refreshInfo.deltaAddHiddenCover_, refreshInfo.deltaRemoveHiddenCover_)) {
+        refreshInfo.deltaAddHiddenCover_, refreshInfo.removeHiddenFileIds)) {
         ret = true;
     }
     return ret;

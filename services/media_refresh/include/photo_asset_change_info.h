@@ -80,7 +80,7 @@ public:
     bool ReadFromParcel(Parcel &parcel);
     static std::shared_ptr<PhotoAssetChangeInfo> Unmarshalling(Parcel &parcel);
 
-    static const std::vector<std::string>& GetPhotoAssetClolumns();
+    static const std::vector<std::string>& GetPhotoAssetColumns();
     static std::vector<PhotoAssetChangeInfo> GetInfoFromResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::vector<std::string> &columns);
     static ResultSetDataType GetDataType(const std::string &column);
@@ -111,8 +111,9 @@ public:
     static std::shared_ptr<PhotoAssetChangeData> Unmarshalling(Parcel &parcel);
     std::string ToString(bool isDetail = false) const override
     {
-        return AccurateRefreshChangeData::ToString() + ", isContentChanged_: " + std::to_string(isContentChanged_) +
-            ", thumbnailChangeStatus_: " + std::to_string(thumbnailChangeStatus_);
+        return AccurateRefreshChangeData::ToString(isDetail) + ", isContentChanged_: " +
+            std::to_string(isContentChanged_) + ", thumbnailChangeStatus_: " +
+            std::to_string(thumbnailChangeStatus_);
     }
 
 public:

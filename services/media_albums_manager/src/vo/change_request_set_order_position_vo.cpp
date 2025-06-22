@@ -16,14 +16,15 @@
 #include "change_request_set_order_position_vo.h"
 
 #include <sstream>
+
+#include "media_itypes_utils.h"
 #include "media_log.h"
-#include "itypes_util.h"
 
 namespace OHOS::Media {
 
 bool ChangeRequestSetOrderPositionReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = ITypesUtil::Unmarshalling(this->assetIds, parcel);
+    bool status = IPC::ITypeMediaUtil::UnmarshalStrVec(this->assetIds, parcel);
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.ReadInt32(this->albumId);
     CHECK_AND_RETURN_RET(status, status);
@@ -34,7 +35,7 @@ bool ChangeRequestSetOrderPositionReqBody::Unmarshalling(MessageParcel &parcel)
 
 bool ChangeRequestSetOrderPositionReqBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = ITypesUtil::Marshalling(this->assetIds, parcel);
+    bool status = IPC::ITypeMediaUtil::MarshalStrVec(this->assetIds, parcel);
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.WriteInt32(this->albumId);
     CHECK_AND_RETURN_RET(status, status);

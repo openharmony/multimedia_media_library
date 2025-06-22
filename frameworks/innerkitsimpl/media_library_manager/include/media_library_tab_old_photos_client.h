@@ -46,6 +46,9 @@ private:
 public:
     TabOldPhotosClient(MediaLibraryManager &mediaLibraryManager) : mediaLibraryManager_(mediaLibraryManager) {};
     std::unordered_map<std::string, std::string> GetUrisByOldUris(std::vector<std::string>& uris);
+    std::unordered_map<std::string, std::string> UrisByOldUrisTest(std::vector<std::string>& uris,
+        std::vector<std::vector<int32_t>>& file_and_outFile_Ids,
+        std::vector<std::vector<std::string>>& stringParams);
 
 private:
     int BuildPredicates(const std::vector<std::string> &queryTabOldPhotosUris,
@@ -59,8 +62,8 @@ private:
         const std::vector<TabOldPhotosClientObj> &dataMapping, std::vector<RequestUriObj> &uriList);
     std::unordered_map<std::string, std::string> GetResultMap(
         std::shared_ptr<DataShare::DataShareResultSet> &resultSet, std::vector<std::string> &queryTabOldPhotosUris);
-    std::shared_ptr<DataShare::DataShareResultSet> GetResultSetFromTabOldPhotos(
-        Uri &uri, const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns, int &errCode);
+    std::unordered_map<std::string, std::string> GetResultSetFromTabOldPhotos(
+        std::vector<std::string>& uris, std::vector<std::string> &columns);
 
 private:
     const int32_t URI_MAX_SIZE = 100;

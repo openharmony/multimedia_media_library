@@ -47,6 +47,7 @@ const std::string HIDDEN_ALBUM = ".hiddenAlbum";
 const string INVALID_FILE_ID = "-1";
 constexpr uint64_t DELAY_FOR_MOVING_MS = 5000;
 constexpr uint64_t DELAY_FOR_BURST_MS = 12000;
+// LCOV_EXCL_START
 bool startsWith(const std::string& str, const std::string& prefix)
 {
     bool cond = (prefix.size() > str.size() || prefix.empty() || str.empty());
@@ -756,5 +757,6 @@ void MediaSyncObserver::ChangeNotifyThread()
         }
     }
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

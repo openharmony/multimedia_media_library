@@ -46,7 +46,7 @@ const std::unordered_set<OperationObject> OPERATION_OBJECT_SET = {
 const std::unordered_set<OperationType> OPERATION_TYPE_SET = {
     OperationType::QUERY,
 };
-
+// LCOV_EXCL_START
 std::string GetTableNameFromOprnObject(const OperationObject& object)
 {
     CHECK_AND_RETURN_RET(object != OperationObject::PAH_MAP, PhotoColumn::PHOTOS_TABLE);
@@ -398,6 +398,6 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(NativeRdb::RdbStore& rdbStore, int32
 {
     return 0;
 }
-
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

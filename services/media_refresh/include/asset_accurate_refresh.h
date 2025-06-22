@@ -61,9 +61,9 @@ public:
 
     // 根据传递的assetChangeDatas进行通知，不需要dataManager_处理
     int32_t Notify(const std::vector<PhotoAssetChangeData> &assetChangeDatas);
-    using AccurateRefreshBase::Delete;
-    int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
-    int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates, int32_t &deletedRows) override;
+    using AccurateRefreshBase::LogicalDeleteReplaceByUpdate;
+    int32_t LogicalDeleteReplaceByUpdate(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
+    int32_t LogicalDeleteReplaceByUpdate(const NativeRdb::AbsRdbPredicates &predicates, int32_t &deletedRows) override;
 
     int32_t SetContentChanged(int32_t fileId, bool isChanged);
     int32_t SetThumbnailStatus(int32_t fileId, int32_t status);

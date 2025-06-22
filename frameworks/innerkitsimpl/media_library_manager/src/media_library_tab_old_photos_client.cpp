@@ -26,51 +26,95 @@
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "datashare_helper.h"
+#include "user_inner_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "get_uris_by_old_uris_inner_vo.h"
 
 using namespace std;
 
 namespace OHOS::Media {
+    
+static constexpr int32_t FIRST = 0;
+static constexpr int32_t SECOND = 1;
+static constexpr int32_t THIRD = 2;
+
+std::unordered_map<std::string, std::string> TabOldPhotosClient::UrisByOldUrisTest(std::vector<std::string>& uris,
+    std::vector<std::vector<int32_t>>& file_and_outFile_Ids,
+    std::vector<std::vector<std::string>>& stringParams)
+{
+    std::vector<int32_t>& fileIds = file_and_outFile_Ids[FIRST];
+    std::vector<int32_t> oldFileIds = file_and_outFile_Ids[SECOND];
+    std::vector<std::string> datas = stringParams[FIRST];
+    std::vector<std::string> displayNames = stringParams[SECOND];
+    std::vector<std::string> oldDatas = stringParams[THIRD];
+    std::vector<TabOldPhotosClient::TabOldPhotosClientObj> dataMapping;
+    for (size_t i = 0; i < fileIds.size(); i++) {
+        TabOldPhotosClient::TabOldPhotosClientObj obj;
+        obj.fileId = fileIds[i];
+        obj.data = datas[i];
+        obj.displayName = displayNames[i];
+        obj.oldFileId = oldFileIds[i];
+        obj.oldData = oldDatas[i];
+        dataMapping.emplace_back(obj);
+    }
+    std::vector<TabOldPhotosClient::RequestUriObj> uriList = this->Parse(uris);
+    return this->Parse(dataMapping, uriList);
+}
+
 std::unordered_map<std::string, std::string> TabOldPhotosClient::GetUrisByOldUris(std::vector<std::string>& uris)
 {
     std::unordered_map<std::string, std::string> resultMap;
     bool cond = (uris.empty() || static_cast<std::int32_t>(uris.size()) > this->URI_MAX_SIZE);
     CHECK_AND_RETURN_RET_LOG(!cond, resultMap, "the size is invalid, size = %{public}d",
         static_cast<std::int32_t>(uris.size()));
-    std::string queryUri = QUERY_TAB_OLD_PHOTO;
-    Uri uri(queryUri);
-    DataShare::DataSharePredicates predicates;
-    int ret = BuildPredicates(uris, predicates);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, resultMap, "build predicates failed");
-
     std::vector<std::string> column;
     column.push_back(TabOldPhotosColumn::OLD_PHOTOS_TABLE + "." + "file_id");
     column.push_back(TabOldPhotosColumn::OLD_PHOTOS_TABLE + "." + "data");
     column.push_back(TabOldPhotosColumn::OLD_PHOTOS_TABLE + "." + "old_file_id");
     column.push_back(TabOldPhotosColumn::OLD_PHOTOS_TABLE + "." + "old_data");
     column.push_back(PhotoColumn::PHOTOS_TABLE + "." + "display_name");
-    int errCode = 0;
-    std::shared_ptr<DataShare::DataShareResultSet> dataShareResultSet =
-        this->GetResultSetFromTabOldPhotos(uri, predicates, column, errCode);
-    CHECK_AND_RETURN_RET_LOG(dataShareResultSet != nullptr, resultMap, "query failed");
-    return this->GetResultMap(dataShareResultSet, uris);
+    return this->GetResultSetFromTabOldPhotos(uris, column);
 }
 
-std::shared_ptr<DataShare::DataShareResultSet> TabOldPhotosClient::GetResultSetFromTabOldPhotos(
-    Uri &uri, const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns, int &errCode)
+std::unordered_map<std::string, std::string> TabOldPhotosClient::GetResultSetFromTabOldPhotos(
+    std::vector<std::string>& uris, std::vector<std::string> &columns)
 {
-    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
-    DataShare::DatashareBusinessError businessError;
+    std::unordered_map<std::string, std::string> resultMap;
     sptr<IRemoteObject> token = this->mediaLibraryManager_.InitToken();
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "dataShareHelper is nullptr");
-
-    resultSet = dataShareHelper->Query(uri, predicates, columns, &businessError);
-    int count = 0;
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Query failed, code: %{public}d", businessError.GetCode());
-    auto ret = resultSet->GetRowCount(count);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, nullptr, "Resultset check failed, ret: %{public}d", ret);
-    return resultSet;
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, resultMap, "dataShareHelper is nullptr");
+    GetUrisByOldUrisInnerReqBody reqBody;
+    GetUrisByOldUrisInnerRspBody rspBody;
+    reqBody.uris = uris;
+    reqBody.columns = columns;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_URIS_BY_OLD_URIS);
+    MEDIA_INFO_LOG("before IPC::UserDefineIPCClient().Call, INNER_GET_URIS_BY_OLD_URIS");
+    int32_t result = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+    CHECK_AND_RETURN_RET_LOG(result == E_OK, resultMap, "GetResultSetFromTabOldPhotos IPC Call Failed");
+    auto fileIds_size = rspBody.fileIds.size();
+    auto datas_size = rspBody.datas.size();
+    auto displayNames_size = rspBody.displayNames.size();
+    auto oldFileIds_size = rspBody.oldFileIds.size();
+    auto oldDatas_size = rspBody.oldDatas.size();
+    bool isValid = true;
+    isValid &= fileIds_size == datas_size;
+    isValid &= datas_size == displayNames_size;
+    isValid &= displayNames_size == oldFileIds_size;
+    isValid &= oldFileIds_size == oldDatas_size;
+    CHECK_AND_RETURN_RET_LOG(isValid, resultMap, "GetResultSetFromTabOldPhotos Failed");
+    std::vector<TabOldPhotosClient::TabOldPhotosClientObj> dataMapping;
+    for (size_t i = 0; i < rspBody.fileIds.size(); i++) {
+        TabOldPhotosClient::TabOldPhotosClientObj obj;
+        obj.fileId = rspBody.fileIds[i];
+        obj.data = rspBody.datas[i];
+        obj.displayName = rspBody.displayNames[i];
+        obj.oldFileId = rspBody.oldFileIds[i];
+        obj.oldData = rspBody.oldDatas[i];
+        dataMapping.emplace_back(obj);
+    }
+    std::vector<TabOldPhotosClient::RequestUriObj> uriList = this->Parse(uris);
+    return this->Parse(dataMapping, uriList);
 }
 
 int TabOldPhotosClient::BuildPredicates(const std::vector<std::string> &queryTabOldPhotosUris,

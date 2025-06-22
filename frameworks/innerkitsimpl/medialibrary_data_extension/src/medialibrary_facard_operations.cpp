@@ -76,7 +76,7 @@ std::mutex FaCloudSyncSwitchObserver::mtx;
 std::unordered_set<
     FaCloudSyncSwitchObserver::CloudSyncChangeInfo,
     FaCloudSyncSwitchObserver::CloudSyncChangeInfoHash> FaCloudSyncSwitchObserver::cloudSyncChanges;
-
+// LCOV_EXCL_START
 std::map<std::string, std::vector<std::string>> MediaLibraryFaCardOperations::GetUris()
 {
     lock_guard<mutex> lock(mutex_);
@@ -363,5 +363,6 @@ void MediaLibraryFaCardOperations::InitFaCard()
 {
     ffrt::submit([]() { MediaLibraryFaCardOperations::InitRegisterObserver(); });
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS

@@ -26,7 +26,9 @@
 #include "file_asset.h"
 #include "medialibrary_operation.h"
 #include "datashare_values_bucket.h"
+#include "datashare_predicates.h"
 #include "query_cloud_enhancement_task_state_dto.h"
+#include "datashare_result_set.h"
 
 namespace OHOS::Media {
 
@@ -56,6 +58,16 @@ public:
     int32_t CancelPhotoUriPermission(NativeRdb::RdbPredicates &rdbPredicate);
     int32_t StartThumbnailCreationTask(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
     int32_t StopThumbnailCreationTask(int32_t requestId);
+    int32_t CancelPhotoUrisPermissionInner(MediaLibraryCommand &cmd,
+        const DataShare::DataSharePredicates &values);
+    int32_t CheckPhotoUriPermissionInner(MediaLibraryCommand &cmd, const DataShare::DataSharePredicates &predicates,
+        const std::vector<std::string> &columns, std::vector<std::string> &outFileIds,
+        std::vector<int32_t> &permissionTypes);
+    int32_t GrantPhotoUrisPermissionInner(
+        MediaLibraryCommand &cmd, const std::vector<DataShare::DataShareValuesBucket> &values);
+    std::shared_ptr<DataShare::DataShareResultSet> GetUrisByOldUrisInner(MediaLibraryCommand &cmd,
+        const DataShare::DataSharePredicates &predicates, const std::vector<std::string> &columns);
+
 private:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");

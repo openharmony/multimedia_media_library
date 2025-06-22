@@ -99,5 +99,22 @@ std::string MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(const std::strin
     return uri.substr(startIndex + PhotoColumn::PHOTO_URI_PREFIX.length(),
         endIndex - startIndex - PhotoColumn::PHOTO_URI_PREFIX.length());
 }
+
+int32_t MediaLibraryDataManagerUtils::GetFileIdNumFromPhotoUri(const std::string &uri)
+{
+    auto strFileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(uri);
+    if (strFileId.empty()) {
+        MEDIA_ERR_LOG("empty uri");
+        return 0;
+    }
+    for (size_t index = 0; index < strFileId.size(); ++index) {
+        if (!std::isdigit(static_cast<unsigned char>(strFileId[index]))) {
+            MEDIA_ERR_LOG("wrong uri: %{public}s", uri.c_str());
+            return 0;
+        }
+    }
+    return stoi(strFileId);
+}
+
 } // namespace Media
 } // namespace OHOS

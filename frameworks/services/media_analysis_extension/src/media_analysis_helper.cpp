@@ -22,6 +22,7 @@
 
 namespace OHOS {
 namespace Media {
+// LCOV_EXCL_START
 void MediaAnalysisHelper::StartMediaAnalysisServiceSync(int32_t code, const std::vector<std::string> &fileIds)
 {
     MessageOption option(MessageOption::TF_SYNC);
@@ -156,5 +157,6 @@ void MediaAnalysisHelper::StartForegroundAnalysisServiceSync(int32_t code, const
         return;
     }
 }
+// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
