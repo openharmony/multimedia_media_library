@@ -216,7 +216,6 @@ bool AlbumChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
         if (isHiddenCoverChange_) {
             ret = ret && hiddenCoverInfo_.Marshalling(parcel, isSystem);
         }
-        ret = ret && parcel.WriteInt32(albumId_);
     }
     ret = ret && parcel.WriteInt32(albumId_);
     return ret;
@@ -249,7 +248,6 @@ bool AlbumChangeInfo::ReadFromParcel(Parcel &parcel)
         if (ret && isHiddenCoverChange_) {
             ret = ret && hiddenCoverInfo_.ReadFromParcel(parcel);
         }
-        ret = ret && parcel.ReadInt32(albumId_);
     }
     ret = ret && parcel.ReadInt32(albumId_);
     return true;
