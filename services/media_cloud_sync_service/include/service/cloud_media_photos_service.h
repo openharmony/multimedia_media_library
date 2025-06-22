@@ -30,6 +30,9 @@
 #include "cloud_media_common_dao.h"
 #include "report_failure_dto.h"
 #include "cloud_media_define.h"
+#include "accurate_common_data.h"
+#include "asset_accurate_refresh.h"
+#include "album_accurate_refresh.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaPhotosService {
@@ -70,35 +73,46 @@ private:
         std::map<std::string, CloudMediaPullDataDto> &cloudIdRelativeMap, std::vector<PhotosDto> &newData,
         std::vector<PhotosDto> &fdirtyData, std::vector<int32_t> &stats, std::vector<std::string> &failedRecords);
     int32_t PullUpdate(const CloudMediaPullDataDto &pullData, std::set<std::string> &refreshAlbums,
-        std::vector<PhotosDto> &fdirtyData, std::vector<int32_t> &stats);
+        std::vector<PhotosDto> &fdirtyData, std::vector<int32_t> &stats,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t IsMtimeChanged(const CloudMediaPullDataDto &cloudMediaPullData, bool &changed);
     void ExtractEditDataCamera(const CloudMediaPullDataDto &cloudMediaPullData);
-    int32_t PullDelete(const CloudMediaPullDataDto &data, std::set<std::string> &refreshAlbums);
+    int32_t PullDelete(const CloudMediaPullDataDto &data, std::set<std::string> &refreshAlbums,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t PullInsert(const std::vector<CloudMediaPullDataDto> &pullDatas, std::vector<std::string> &failedRecords);
     int32_t CreateEntry(const std::vector<CloudMediaPullDataDto> &pullDatas, std::set<std::string> &refreshAlbums,
-        std::vector<PhotosDto> &newData, std::vector<int32_t> &stats, std::vector<std::string> &failedRecords);
+        std::vector<PhotosDto> &newData, std::vector<int32_t> &stats, std::vector<std::string> &failedRecords,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t PullRecordsConflictProc(std::vector<CloudMediaPullDataDto> &allPullDatas,
-        std::set<std::string> &refreshAlbums, std::vector<int32_t> &stats, std::vector<std::string> &failedRecords);
+        std::set<std::string> &refreshAlbums, std::vector<int32_t> &stats, std::vector<std::string> &failedRecords,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t GetCloudKeyData(const CloudMediaPullDataDto &pullData, KeyData &keyData);
     void GetMergeDataMap(
         const std::vector<CloudMediaPullDataDto> &pullDatas, std::map<std::string, KeyData> &mergeDataMap);
     int32_t DoDataMerge(const CloudMediaPullDataDto &pullData, const KeyData &localKeyData, const KeyData &cloudKeyData,
-        std::set<std::string> &refreshAlbums);
-    int32_t OnRecordFailed(PhotosDto &photo);
+        std::set<std::string> &refreshAlbums, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
+    int32_t OnRecordFailed(
+        PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t OnCopyRecordSuccess(PhotosDto &photo);
-    int32_t HandleNoContentUploadFail(const PhotosDto &photo);
-    int32_t HandleSameNameUploadFail(const PhotosDto &photo);
+    int32_t HandleNoContentUploadFail(
+        const PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
+    int32_t HandleSameNameUploadFail(
+        const PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t HandleDetailcode(ErrorDetailCode &errorCode);
-    int32_t OnFdirtyRecordSuccess(const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap);
-    int32_t OnCreateRecordSuccess(const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap);
+    int32_t OnFdirtyRecordSuccess(const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
+    int32_t OnCreateRecordSuccess(const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     void DeleteTempLivePhotoFile(const PhotosDto &record);
     void NotifyPhotoInserted(const std::vector<NativeRdb::ValuesBucket> &insertFiles);
     void Notify(const std::string &uri, NotifyType type);
     void ConvertPullDataToPhotosDto(const CloudMediaPullDataDto &data, PhotosDto &dto);
     int32_t NotifyUploadErr(const int32_t errorCode, const std::string fileId);
-    int32_t OnRecordFailedErrorDetails(PhotosDto &photo);
+    int32_t OnRecordFailedErrorDetails(
+        PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t PullRecordsDataMerge(std::vector<CloudMediaPullDataDto> &allPullDatas, const KeyData &localKeyData,
-        std::map<std::string, KeyData> &mergeDataMap, DataMergeResult &mergeResult);
+        std::map<std::string, KeyData> &mergeDataMap, DataMergeResult &mergeResult,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t ClearLocalData(const CloudMediaPullDataDto &pullData, std::vector<PhotosDto> &fdirtyData);
     int32_t UpdateMetaStat(const std::vector<NativeRdb::ValuesBucket> &insertFiles,
         const std::vector<CloudMediaPullDataDto> &allPullDatas, const uint64_t dataFail);

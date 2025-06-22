@@ -38,6 +38,9 @@
 #include "cloud_media_pull_data_dto.h"
 #include "cloud_media_common_dao.h"
 #include "report_failure_dto.h"
+#include "accurate_common_data.h"
+#include "asset_accurate_refresh.h"
+#include "album_accurate_refresh.h"
 
 namespace OHOS::Media::CloudSync {
 class CloudMediaPhotosDao {
@@ -47,18 +50,22 @@ public:
 
 public:
     int32_t BatchInsertFile(std::map<std::string, int> &recordAnalysisAlbumMaps,
-        std::map<std::string, std::set<int>> &recordAlbumMaps, std::vector<NativeRdb::ValuesBucket> &insertFiles);
+        std::map<std::string, std::set<int>> &recordAlbumMaps, std::vector<NativeRdb::ValuesBucket> &insertFiles,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t BatchInsertAssetAnalysisMaps(std::map<std::string, int32_t> recordAnalysisAlbumMaps);
-    int32_t BatchInsertQuick(
-        int64_t &outRowId, const std::string &table, std::vector<NativeRdb::ValuesBucket> &initialBatchValues);
+    int32_t BatchInsertQuick(int64_t &outRowId, const std::string &table,
+        std::vector<NativeRdb::ValuesBucket> &initialBatchValues,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t BatchInsert(
         int64_t &outRowId, const std::string &table, std::vector<NativeRdb::ValuesBucket> &initialBatchValues);
     int32_t BatchInsertAssetMaps(std::map<std::string, std::set<int32_t>> &recordAlbumMaps);
     int32_t UpdateAssetInPhotoMap(const int32_t &fileId, std::set<int> cloudMapIds);
     int32_t UpdateRecordToDatabase(const CloudMediaPullDataDto &pullData, bool isLocal, bool mtimeChanged,
-        std::set<std::string> &refreshAlbums, std::vector<int32_t> &stats);
+        std::set<std::string> &refreshAlbums, std::vector<int32_t> &stats,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t ConflictDataMerge(const CloudMediaPullDataDto &pullData, const std::string fullPath, const bool cloudStd,
-        std::set<int32_t> albumIds, std::set<std::string> &refreshAlbums);
+        std::set<int32_t> albumIds, std::set<std::string> &refreshAlbums,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t GetInsertParams(const CloudMediaPullDataDto &pullData, std::map<std::string, int> &recordAnalysisAlbumMaps,
         std::map<std::string, std::set<int>> &recordAlbumMaps, std::set<std::string> &refreshAlbums,
         std::vector<NativeRdb::ValuesBucket> &insertFiles);
@@ -80,18 +87,26 @@ public:
     int32_t GetPhotoLocalInfo(const std::vector<PhotosDto> &records,
         std::unordered_map<std::string, LocalInfo> &infoMap, const std::string &type);
     int32_t UpdateLocalAlbumMap(const std::string &cloudId);
-    int32_t OnModifyPhotoRecord(const PhotosDto &record);
-    int32_t UpdateFdirtyVersion(const PhotosDto &record);
-    int32_t OnDeleteRecordsAsset(const PhotosDto &record);
-    int32_t OnCopyPhotoRecord(const PhotosDto &record);
+    int32_t OnModifyPhotoRecord(
+        const PhotosDto &record, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
+    int32_t UpdateFdirtyVersion(
+        const PhotosDto &record, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
+    int32_t OnDeleteRecordsAsset(
+        const PhotosDto &record, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
+    int32_t OnCopyPhotoRecord(
+        const PhotosDto &record, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t ClearCloudInfo(const std::string &cloudId);
-    int32_t DeleteFileNotExistPhoto(std::string &path);
-    int32_t HandleSameNameRename(const PhotosDto &photo);
+    int32_t DeleteFileNotExistPhoto(
+        std::string &path, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
+    int32_t HandleSameNameRename(
+        const PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t UpdatePhotoVisible();
     int32_t SetRetry(const std::string &cloudId);
-    int32_t DeleteLocalByCloudId(const std::string &cloudId);
+    int32_t DeleteLocalByCloudId(
+        const std::string &cloudId, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t UpdateFailRecordsCloudId(
-        const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap);
+        const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     void InsertPhotoCreateFailedRecord(int32_t fileId);
     void InsertPhotoModifyFailedRecord(const std::string &cloudId);
     void InsertPhotoCopyFailedRecord(int32_t fileId);
@@ -100,7 +115,8 @@ public:
     void RemovePhotoCopyFailedRecord(int32_t fileId);
     int32_t ClearPhotoFailedRecords();
     int32_t UpdatePhotoCreatedRecord(
-        const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap);
+        const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t GetSameNamePhotoCount(const PhotosDto &photo, bool isHide, int32_t count);
     int32_t DeleteSameNamePhoto(const PhotosDto &photo);
     int32_t AddRemoveAlbumCloudId(std::shared_ptr<MediaLibraryRdbStore> rdbStore, const int32_t fileId,
@@ -132,9 +148,10 @@ private:
         SafeMap<std::string, std::pair<int32_t, std::string>> &lpathToIdMap, bool isUpload = true);
     bool IsAlbumCloud(bool isUpload, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     int UpdateProxy(int &changedRows, const NativeRdb::ValuesBucket &row, const NativeRdb::AbsRdbPredicates &predicates,
-        const std::string &cloudId);
+        const std::string &cloudId, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int UpdateProxy(int &changedRows, const std::string &table, const NativeRdb::ValuesBucket &row,
-        const std::string &whereClause, const std::vector<std::string> &args);
+        const std::string &whereClause, const std::vector<std::string> &args,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t UpdatePhotosSynced(const NativeRdb::AbsRdbPredicates &predicates, const int32_t &dirtyValue);
     int32_t UpdatePhotosSynced(const std::string &table, const std::string &whereClause,
         const std::vector<std::string> &args, const int32_t &dirtyValue);
