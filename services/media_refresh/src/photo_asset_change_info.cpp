@@ -68,7 +68,7 @@ const vector<std::string> PhotoAssetChangeInfo::photoAssetColumns_ = []() {
     return result;
 }();
 
-const vector<string>& PhotoAssetChangeInfo::GetPhotoAssetClolumns()
+const vector<string>& PhotoAssetChangeInfo::GetPhotoAssetColumns()
 {
     return photoAssetColumns_;
 }

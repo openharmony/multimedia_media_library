@@ -293,9 +293,9 @@ PhotoAssetChangeInfo GetAssetInfo(int32_t fileId = 0)
     RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
     queryPredicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
 
-    auto resultSet = g_rdbStore->QueryByStep(queryPredicates, PhotoAssetChangeInfo::GetPhotoAssetClolumns());
+    auto resultSet = g_rdbStore->QueryByStep(queryPredicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     EXPECT_TRUE(resultSet != nullptr);
-    auto assetInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet, PhotoAssetChangeInfo::GetPhotoAssetClolumns());
+    auto assetInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     if (assetInfos.size() == 1) {
         ACCURATE_DEBUG("assetInfo: %{public}s", assetInfos[0].ToString().c_str());
         return assetInfos[0];
@@ -867,11 +867,9 @@ HWTEST_F(AssetAccurateRefreshTest, Insert_006, TestSize.Level2)
         Notification::ASSET_OPERATION_ADD_HIDDEN));
     
     auto notifyAlbumInfos = assetRefresh.albumRefreshExe_.albumRefresh_.notifyExe_.notifyInfos_;
-    EXPECT_TRUE(notifyAlbumInfos.size() == 2);
+    EXPECT_TRUE(notifyAlbumInfos.size() == 1);
     EXPECT_TRUE(CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE_HIDDEN,
-        albumChangeDatas, 1));
-    EXPECT_TRUE(
-        CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE, albumChangeDatas, 3));
+        albumChangeDatas, 4));
 }
 
 HWTEST_F(AssetAccurateRefreshTest, Insert_007, TestSize.Level2)

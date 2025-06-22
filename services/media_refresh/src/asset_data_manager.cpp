@@ -91,11 +91,11 @@ vector<PhotoAssetChangeInfo> AssetDataManager::GetInfosByPredicates(const AbsRdb
 {
     shared_ptr<ResultSet> resultSet;
     if (trans_ != nullptr) {
-        resultSet = trans_->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetClolumns());
+        resultSet = trans_->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     } else {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, vector<PhotoAssetChangeInfo>(), "rdbStore null");
-        resultSet = rdbStore->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetClolumns());
+        resultSet = rdbStore->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     }
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, vector<PhotoAssetChangeInfo>(), "resultSet null");
     auto ret = GetInfosByResult(resultSet);
@@ -106,7 +106,7 @@ vector<PhotoAssetChangeInfo> AssetDataManager::GetInfosByPredicates(const AbsRdb
 vector<PhotoAssetChangeInfo> AssetDataManager::GetInfosByResult(const shared_ptr<ResultSet> &resultSet)
 {
     // 根据resultSet转PhotoAssetChangeInfo
-    return PhotoAssetChangeInfo::GetInfoFromResult(resultSet, PhotoAssetChangeInfo::GetPhotoAssetClolumns());
+    return PhotoAssetChangeInfo::GetInfoFromResult(resultSet, PhotoAssetChangeInfo::GetPhotoAssetColumns());
 }
 
 vector<int32_t> AssetDataManager::GetInitKeys()

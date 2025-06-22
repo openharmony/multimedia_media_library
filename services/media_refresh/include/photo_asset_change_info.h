@@ -80,7 +80,7 @@ public:
     bool ReadFromParcel(Parcel &parcel);
     static std::shared_ptr<PhotoAssetChangeInfo> Unmarshalling(Parcel &parcel);
 
-    static const std::vector<std::string>& GetPhotoAssetClolumns();
+    static const std::vector<std::string>& GetPhotoAssetColumns();
     static std::vector<PhotoAssetChangeInfo> GetInfoFromResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::vector<std::string> &columns);
     static ResultSetDataType GetDataType(const std::string &column);
