@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "AccurateRefresh::MediaOnNotifyNewObserver"
 #include "medialibrary_notify_new_observer.h"
 
 #include "media_file_utils.h"
@@ -32,7 +33,7 @@ mutex ChangeInfoTaskWorker::vectorMutex_;
 static const int64_t MAX_NOTIFY_MILLISECONDS = 10;
 static const int32_t START_NOTIFY_TASK_COUNT = 3;
 static const int32_t MAX_NOTIFY_TASK_COUNT = 23;
-static const int32_t MAX_NOTIFY_TASK_INFO_SIZE = 5000;
+static const size_t MAX_NOTIFY_TASK_INFO_SIZE = 5000;
 
 void MediaOnNotifyNewObserver::OnChange(const ChangeInfo &changeInfo)
 {
@@ -60,6 +61,7 @@ void MediaOnNotifyNewObserver::OnChange(const ChangeInfo &changeInfo)
     NewJsOnChangeCallbackWrapper callbackWrapper;
     callbackWrapper.mediaChangeInfo_ = NotificationUtils::UnmarshalInMultiMode(*parcel);
     CHECK_AND_RETURN_LOG(callbackWrapper.mediaChangeInfo_ != nullptr, "invalid mediaChangeInfo");
+    NAPI_INFO_LOG("mediaChangeInfo_ is: %{public}s", callbackWrapper.mediaChangeInfo_->ToString(true).c_str());
     Notification::NotifyUriType infoUriType = callbackWrapper.mediaChangeInfo_->notifyUri;
     if (clientObservers_.find(infoUriType) == clientObservers_.end()) {
         NAPI_ERR_LOG("invalid mediaChangeInfo_->notifyUri: %{public}d", static_cast<int32_t>(infoUriType));
@@ -83,41 +85,23 @@ void MediaOnNotifyNewObserver::OnChange(const ChangeInfo &changeInfo)
     }
 }
 
-void MediaOnNotifyNewObserver::ReadyForUvWork(const NewJsOnChangeCallbackWrapper &callbackWrapper)
+void MediaOnNotifyNewObserver::ReadyForCallbackEvent(const NewJsOnChangeCallbackWrapper &callbackWrapper)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("MediaOnNotifyNewObserver::ReadyForUvWork");
-    NAPI_DEBUG_LOG("start ReadyForUvWork");
-    uv_loop_s *loop = nullptr;
-    napi_get_uv_event_loop(callbackWrapper.env_, &loop);
-    if (loop == nullptr) {
-        NAPI_ERR_LOG("Failed to get loop");
-        return;
-    }
-    uv_work_t *work = new (nothrow) uv_work_t;
-    if (work == nullptr) {
-        NAPI_ERR_LOG("Failed to new uv_work");
-        return;
-    }
+    tracer.Start("MediaOnNotifyNewObserver::ReadyForCallbackEvent");
+    NAPI_DEBUG_LOG("start ReadyForCallbackEvent");
 
-    NewJsOnChangeCallbackWrapper* wrapper = new (std::nothrow) NewJsOnChangeCallbackWrapper();
-    if (wrapper == nullptr) {
-        NAPI_ERR_LOG("NewJsOnChangeCallbackWrapper allocation failed");
-        delete work;
+    std::unique_ptr<NewJsOnChangeCallbackWrapper> jsCallback = std::make_unique<NewJsOnChangeCallbackWrapper>();
+    if (jsCallback == nullptr) {
+        NAPI_ERR_LOG("NewJsOnChangeCallbackWrapper make_unique failed");
         return;
     }
-    wrapper->env_ = callbackWrapper.env_;
-    wrapper->clientObservers_ = callbackWrapper.clientObservers_;
-    if (callbackWrapper.mediaChangeInfo_ == nullptr) {
-        work->data = reinterpret_cast<void *>(wrapper);
-        SendRecheckUvWork(loop, work);
-        return;
-    }
-    wrapper->observerUriType_ = callbackWrapper.observerUriType_;
-    wrapper->mediaChangeInfo_ = callbackWrapper.mediaChangeInfo_;
-    NAPI_INFO_LOG("mediaChangeInfo_ is: %{public}s", wrapper->mediaChangeInfo_->ToString(true).c_str());
-    work->data = reinterpret_cast<void *>(wrapper);
-    UvQueueWork(loop, work);
+    jsCallback->env_ = callbackWrapper.env_;
+    jsCallback->clientObservers_ = callbackWrapper.clientObservers_;
+    jsCallback->observerUriType_ = callbackWrapper.observerUriType_;
+    jsCallback->mediaChangeInfo_ = callbackWrapper.mediaChangeInfo_;
+
+    OnJsCallbackEvent(jsCallback);
 }
 
 static void OnChangeNotifyDetail(NewJsOnChangeCallbackWrapper* wrapper)
@@ -127,23 +111,28 @@ static void OnChangeNotifyDetail(NewJsOnChangeCallbackWrapper* wrapper)
     std::shared_ptr<Notification::MediaChangeInfo> mediaChangeInfo = wrapper->mediaChangeInfo_;
 
     napi_env env = wrapper->env_;
+    napi_handle_scope scope = nullptr;
+    napi_open_handle_scope(env, &scope);
     napi_value buildResult = nullptr;
     switch (wrapper->observerUriType_) {
         case Notification::PHOTO_URI:
         case Notification::HIDDEN_PHOTO_URI:
         case Notification::TRASH_PHOTO_URI:
-            buildResult = MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfos(env, mediaChangeInfo);
+            buildResult = mediaChangeInfo == nullptr ? MediaLibraryNotifyUtils::BuildPhotoAssetRecheckChangeInfos(env) :
+                MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfos(env, mediaChangeInfo);
             break;
         case Notification::PHOTO_ALBUM_URI:
         case Notification::HIDDEN_ALBUM_URI:
         case Notification::TRASH_ALBUM_URI:
-            buildResult = MediaLibraryNotifyUtils::BuildAlbumAlbumChangeInfos(env, mediaChangeInfo);
+            buildResult = mediaChangeInfo == nullptr ? MediaLibraryNotifyUtils::BuildAlbumRecheckChangeInfos(env) :
+                MediaLibraryNotifyUtils::BuildAlbumChangeInfos(env, mediaChangeInfo);
             break;
         default:
             NAPI_ERR_LOG("Invalid registerUriType");
     }
     if (buildResult == nullptr) {
         NAPI_ERR_LOG("Failed to build result");
+        napi_close_handle_scope(env, scope);
         return;
     }
     napi_value result[ARGS_ONE];
@@ -163,76 +152,31 @@ static void OnChangeNotifyDetail(NewJsOnChangeCallbackWrapper* wrapper)
             continue;
         }
     }
+    napi_close_handle_scope(env, scope);
 }
 
-void MediaOnNotifyNewObserver::UvQueueWork(uv_loop_s *loop, uv_work_t *work)
+void MediaOnNotifyNewObserver::OnJsCallbackEvent(std::unique_ptr<NewJsOnChangeCallbackWrapper> &jsCallback)
 {
-    uv_queue_work(loop, work, [](uv_work_t *work) {}, [](uv_work_t *work, int status) {
-        if (work == nullptr) {
-            return;
-        }
-        NewJsOnChangeCallbackWrapper* wrapper = reinterpret_cast<NewJsOnChangeCallbackWrapper *>(work->data);
-        napi_env env = wrapper->env_;
-        NapiScopeHandler scopeHandler(env);
-        if (!scopeHandler.IsValid()) {
-            delete wrapper;
-            delete work;
-            return;
-        }
-        MediaLibraryTracer tracer;
-        tracer.Start("MediaOnNotifyNewObserver::UvQueueWork");
-        OnChangeNotifyDetail(wrapper);
-        delete wrapper;
-        delete work;
-    });
-}
+    if (jsCallback.get() == nullptr) {
+        NAPI_ERR_LOG("jsCallback.get() is nullptr");
+        return;
+    }
 
-void MediaOnNotifyNewObserver::SendRecheckUvWork(uv_loop_s *loop, uv_work_t *work)
-{
-    uv_queue_work(loop, work, [](uv_work_t *work) {}, [](uv_work_t *work, int status) {
-        if (work == nullptr) {
-            return;
-        }
-        NewJsOnChangeCallbackWrapper* wrapper = reinterpret_cast<NewJsOnChangeCallbackWrapper *>(work->data);
-        napi_env env = wrapper->env_;
-        NapiScopeHandler scopeHandler(env);
-        if (!scopeHandler.IsValid()) {
-            delete wrapper;
-            delete work;
-            return;
-        }
-        MediaLibraryTracer tracer;
-        tracer.Start("MediaOnNotifyNewObserver::SendRecheckUvWork");
-        napi_value jsResults = nullptr;
-        napi_create_object(env, &jsResults);
-        napi_status jsStatus = napi_ok;
-        jsStatus = MediaLibraryNotifyUtils::SetValueBool(env, "isForReCheck", true, jsResults);
-        if (jsStatus != napi_ok) {
-            NAPI_ERR_LOG("set array named property error: isForReCheck");
-            delete wrapper;
-            delete work;
-            return;
-        }
-        napi_value result[ARGS_ONE];
-        result[PARAM0] = jsResults;
-
-        for (auto &observer : wrapper->clientObservers_) {
-            napi_value jsCallback = nullptr;
-            napi_status status = napi_get_reference_value(env, observer->ref_, &jsCallback);
-            if (status != napi_ok) {
-                NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
-                continue;
-            }
-            napi_value retVal = nullptr;
-            status = napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
-            if (status != napi_ok) {
-                NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
-                continue;
-            }
-        }
-        delete wrapper;
-        delete work;
-    });
+    napi_env env = jsCallback->env_;
+    NewJsOnChangeCallbackWrapper *event = jsCallback.release();
+    auto task = [event] () {
+        std::shared_ptr<NewJsOnChangeCallbackWrapper> context(
+            static_cast<NewJsOnChangeCallbackWrapper*>(event),
+            [](NewJsOnChangeCallbackWrapper* ptr) {
+                delete ptr;
+        });
+        CHECK_AND_RETURN_LOG(event != nullptr, "event is nullptr");
+        OnChangeNotifyDetail(event);
+    };
+    if (napi_send_event(env, task, napi_eprio_immediate) != napi_ok) {
+        NAPI_ERR_LOG("failed to execute task");
+        delete event;
+    }
 }
 
 shared_ptr<ChangeInfoTaskWorker> ChangeInfoTaskWorker::GetInstance()
@@ -273,6 +217,8 @@ void ChangeInfoTaskWorker::GetTaskInfos()
         if (taskMap.find(observerUriType) == taskMap.end()) {
             NewJsOnChangeCallbackWrapper newCallbackWrapper;
             newCallbackWrapper.env_ = env;
+            newCallbackWrapper.mediaChangeInfo_ = nullptr;
+            newCallbackWrapper.observerUriType_ = observerUriType;
             newCallbackWrapper.clientObservers_ = clientObservers;
             taskMap[observerUriType] = newCallbackWrapper;
         }
@@ -283,6 +229,8 @@ void ChangeInfoTaskWorker::GetTaskInfos()
         const NewJsOnChangeCallbackWrapper& callbackWrapper = task.second;
         taskInfos_.push_back(callbackWrapper);
     }
+    NAPI_INFO_LOG("taskInfos_ size: %{public}zu, notifyTaskCount_: %{public}d, notifyTaskInfoSize_: %{public}zu",
+        taskInfos_.size(), notifyTaskCount_, notifyTaskInfoSize_);
     return;
 }
 void ChangeInfoTaskWorker::AddTaskInfo(NewJsOnChangeCallbackWrapper callbackWrapper)
@@ -297,20 +245,19 @@ void ChangeInfoTaskWorker::AddTaskInfo(NewJsOnChangeCallbackWrapper callbackWrap
         }
         lastTaskTime_ = currentTime;
         taskInfos_.push_back(callbackWrapper);
-        NAPI_DEBUG_LOG("taskInfos_ size: %{public}zu, notifyTaskCount_: %{public}d, notifyTaskInfoSize_: %{public}d",
+        NAPI_DEBUG_LOG("taskInfos_ size: %{public}zu, notifyTaskCount_: %{public}d, notifyTaskInfoSize_: %{public}zu",
             taskInfos_.size(), notifyTaskCount_, notifyTaskInfoSize_);
         return;
     }
+    taskInfos_.push_back(callbackWrapper);
     if ((notifyTaskCount_ > MAX_NOTIFY_TASK_COUNT || notifyTaskInfoSize_ > MAX_NOTIFY_TASK_INFO_SIZE) &&
         !taskInfos_.empty()) {
         GetTaskInfos();
-    } else {
-        taskInfos_.push_back(callbackWrapper);
     }
     notifyTaskCount_ = 0;
     notifyTaskInfoSize_ = 0;
     lastTaskTime_ = currentTime;
-    NAPI_DEBUG_LOG("taskInfos_ size: %{public}zu, notifyTaskCount_: %{public}d, notifyTaskInfoSize_: %{public}d",
+    NAPI_DEBUG_LOG("taskInfos_ size: %{public}zu, notifyTaskCount_: %{public}d, notifyTaskInfoSize_: %{public}zu",
         taskInfos_.size(), notifyTaskCount_, notifyTaskInfoSize_);
 }
 
@@ -346,7 +293,7 @@ void ChangeInfoTaskWorker::HandleTimeoutNotifyTask()
     notifyTaskCount_ = 0;
     notifyTaskInfoSize_ = 0;
     lastTaskTime_ = currentTime;
-    NAPI_DEBUG_LOG("taskInfos_ size: %{public}zu, notifyTaskCount_: %{public}d, notifyTaskInfoSize_: %{public}d",
+    NAPI_DEBUG_LOG("taskInfos_ size: %{public}zu, notifyTaskCount_: %{public}d, notifyTaskInfoSize_: %{public}zu",
         taskInfos_.size(), notifyTaskCount_, notifyTaskInfoSize_);
 }
 
@@ -354,7 +301,7 @@ void ChangeInfoTaskWorker::HandleNotifyTask()
 {
     lock_guard<mutex> lock(vectorMutex_);
     if (notifyTaskCount_ > START_NOTIFY_TASK_COUNT) {
-        NAPI_DEBUG_LOG("taskInfos_ size: %{public}zu, notifyTaskCount_: %{public}d, notifyTaskInfoSize_: %{public}d",
+        NAPI_DEBUG_LOG("taskInfos_ size: %{public}zu, notifyTaskCount_: %{public}d, notifyTaskInfoSize_: %{public}zu",
             taskInfos_.size(), notifyTaskCount_, notifyTaskInfoSize_);
         return;
     }
@@ -364,7 +311,7 @@ void ChangeInfoTaskWorker::HandleNotifyTask()
     }
     NewJsOnChangeCallbackWrapper callbackWrapper = taskInfos_.front();
     taskInfos_.erase(taskInfos_.begin());
-    MediaOnNotifyNewObserver::ReadyForUvWork(callbackWrapper);
+    MediaOnNotifyNewObserver::ReadyForCallbackEvent(callbackWrapper);
 }
 
 void ChangeInfoTaskWorker::HandleNotifyTaskPeriod()
