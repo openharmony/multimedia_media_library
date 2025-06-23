@@ -614,7 +614,7 @@ int32_t MediaAlbumsService::QueryHiddenAlbums(QueryAlbumsDto &dto)
         return E_INVALID_VALUES;
     }
 
-    AddDefaultPhotoAlbumColumns(columns);
+    AddNoSmartFetchColumns(columns);
     if (dto.hiddenAlbumFetchMode == 1) {
         columns.push_back(PhotoAlbumColumns::HIDDEN_COUNT);
         columns.push_back(PhotoAlbumColumns::HIDDEN_COVER);
