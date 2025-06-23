@@ -365,8 +365,8 @@ bool MediaAssetChangeRequestImpl::SaveCameraPhotoExecute()
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
     OHOS::DataShare::DataSharePredicates predicates;
-    bool ret = UserFileClient::Update(uri, predicates, valuesBucket);
-    CHECK_AND_RETURN_RET_LOG(ret, false, "save camera photo fail");
+    int32_t changedRows = UserFileClient::Update(uri, predicates, valuesBucket);
+    CHECK_AND_RETURN_RET_LOG(changedRows >= 0, false, "save camera photo fail, err: %{public}d", changedRows);
 
     return true;
 }
