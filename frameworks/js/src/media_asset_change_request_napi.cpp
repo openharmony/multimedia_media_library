@@ -65,11 +65,6 @@ const std::string SET_LOCATION_KEY = "set_location";
 const std::string SET_LOCATION_VALUE = "1";
 const std::string SET_USER_ID_VALUE = "1";
 
-const std::string SET_DISPLAY_NAME_KEY = "set_displayName";
-const std::string CAN_FALLBACK = "can_fallback";
-const std::string OLD_DISPLAY_NAME = "old_displayName";
-const std::string DEFAULT_MIME_TYPE = "application/octet-stream";
-
 static const std::array<int, 4> ORIENTATION_ARRAY = {0, 90, 180, 270};
 
 constexpr int64_t CREATE_ASSET_REQUEST_PENDING = -4;
@@ -157,7 +152,6 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setFavorite", JSSetFavorite),
             DECLARE_NAPI_FUNCTION("setHidden", JSSetHidden),
             DECLARE_NAPI_FUNCTION("setTitle", JSSetTitle),
-            DECLARE_NAPI_FUNCTION("setDisplayName", JSSetDisplayName),
             DECLARE_NAPI_FUNCTION("setUserComment", JSSetUserComment),
             DECLARE_NAPI_FUNCTION("getWriteCacheHandler", JSGetWriteCacheHandler),
             DECLARE_NAPI_FUNCTION("setLocation", JSSetLocation),
@@ -433,11 +427,6 @@ void MediaAssetChangeRequestNapi::SetCacheFileName(string& fileName)
     cacheFileName_ = fileName;
 }
 
-std::string MediaAssetChangeRequestNapi::GetCacheFileName()
-{
-    return cacheFileName_;
-}
-
 void MediaAssetChangeRequestNapi::SetCacheMovingPhotoVideoName(string& fileName)
 {
     cacheMovingPhotoVideoName_ = fileName;
@@ -506,31 +495,6 @@ void MediaAssetChangeRequestNapi::SetIsWriteGpsAdvanced(bool val)
 bool MediaAssetChangeRequestNapi::GetIsWriteGpsAdvanced()
 {
     return isWriteGpsAdvanced_;
-}
-
-void MediaAssetChangeRequestNapi::SetIsEditDisplayName(bool val)
-{
-    isEditDisplayName_ = val;
-}
-
-bool MediaAssetChangeRequestNapi::GetIsEditDisplayName()
-{
-    return isEditDisplayName_;
-}
-
-void MediaAssetChangeRequestNapi::SetOldDisplayName(const std::string &oldDisplayName)
-{
-    oldDisplayName_ = oldDisplayName;
-}
-
-std::string MediaAssetChangeRequestNapi::GetOldDisplayName()
-{
-    return oldDisplayName_;
-}
-
-void MediaAssetChangeRequestNapi::PutStringToCreationValue(const std::string &columnName, const std::string &val)
-{
-    creationValuesBucket_.Put(columnName, val);
 }
 
 napi_value MediaAssetChangeRequestNapi::JSGetAsset(napi_env env, napi_callback_info info)
@@ -1142,11 +1106,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetTitle(napi_env env, napi_callback_i
 
     fileAsset->SetTitle(title);
     fileAsset->SetDisplayName(displayName);
-    if (!changeRequest->Contains(AssetChangeOperation::SET_DISPLAY_NAME) &&
-        !changeRequest->Contains(AssetChangeOperation::SET_TITLE)) {
-        changeRequest->RecordChangeOperation(AssetChangeOperation::SET_TITLE);
-        changeRequest->SetOldDisplayName(displayName);
-    }
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_TITLE);
 
     // Merge the creation and SET_TITLE operations.
     if (changeRequest->Contains(AssetChangeOperation::CREATE_FROM_SCRATCH) ||
@@ -1154,83 +1114,6 @@ napi_value MediaAssetChangeRequestNapi::JSSetTitle(napi_env env, napi_callback_i
         changeRequest->creationValuesBucket_.valuesMap[MEDIA_DATA_DB_NAME] = displayName;
         changeRequest->creationValuesBucket_.valuesMap[PhotoColumn::MEDIA_TITLE] = title;
     }
-    RETURN_NAPI_UNDEFINED(env);
-}
-
-int32_t SetDisplayNameInitParameters(unique_ptr<MediaAssetChangeRequestAsyncContext>& context,
-    const std::string &oldExtension, const std::string &newExtension)
-{
-    auto changeRequest = context->objectInfo;
-    CHECK_COND_RET(changeRequest != nullptr, JS_INNER_FAIL, "changeRequest is nullptr");
-    auto fileAsset = changeRequest->GetFileAssetInstance();
-    CHECK_COND_RET(fileAsset != nullptr, JS_INNER_FAIL, "fileAsset is nullptr");
-
-    if (newExtension == oldExtension) {
-        changeRequest->RecordChangeOperation(AssetChangeOperation::SET_TITLE);
-        if (changeRequest->Contains(AssetChangeOperation::CREATE_FROM_SCRATCH) ||
-            changeRequest->Contains(AssetChangeOperation::CREATE_FROM_URI)) {
-            changeRequest->PutStringToCreationValue(MediaColumn::MEDIA_NAME, fileAsset->GetDisplayName());
-            changeRequest->PutStringToCreationValue(PhotoColumn::MEDIA_TITLE, fileAsset->GetTitle());
-        }
-    } else {
-        changeRequest->SetIsEditDisplayName(true);
-        std::string newPath = MediaFileUtils::UnSplitByChar(fileAsset->GetPath(), '.') + "." + newExtension;
-        fileAsset->SetPath(newPath);
-        std::string newMimeType = MediaFileUtils::GetMimeTypeFromDisplayName(fileAsset->GetDisplayName());
-        fileAsset->SetMimeType(newMimeType);
-        changeRequest->RecordChangeOperation(AssetChangeOperation::SET_DISPLAY_NAME);
-    }
-    return E_OK;
-}
-
-napi_value MediaAssetChangeRequestNapi::JSSetDisplayName(napi_env env, napi_callback_info info)
-{
-    NAPI_INFO_LOG("Begin JSSetDisplayName.");
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return nullptr;
-    }
-    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
-    std::string newDisplayName;
-    CHECK_COND_WITH_MESSAGE(env,
-        MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, newDisplayName) == napi_ok,
-        "Failed to parse args");
-    CHECK_COND_WITH_MESSAGE(env,
-        MediaFileUtils::GetMimeTypeFromDisplayName(newDisplayName) == DEFAULT_MIME_TYPE,
-        "Invalid newDisplayName, Extension is not support.");
-    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
-    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(newDisplayName) == E_OK, "Invalid display name.");
-    NAPI_INFO_LOG("wang do: newDisplayName: %{public}s", newDisplayName.c_str());
-
-    std::string newTitle = MediaFileUtils::GetTitleFromDisplayName(newDisplayName);
-    std::string newExtension = MediaFileUtils::GetExtensionFromPath(newDisplayName);
-    MediaType newMediaType = MediaFileUtils::GetMediaType(newDisplayName);
-
-    auto changeRequest = asyncContext->objectInfo;
-    CHECK_COND(env, changeRequest != nullptr, JS_INNER_FAIL);
-    auto fileAsset = changeRequest->GetFileAssetInstance();
-    CHECK_COND(env,
-        fileAsset != nullptr && fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::BURST),
-        JS_INNER_FAIL);
-
-    MediaType oldMediaType = fileAsset->GetMediaType();
-    std::string oldExtension = MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
-    CHECK_COND_WITH_MESSAGE(env, newMediaType == oldMediaType,
-        "Invalid newDisplayName, newMediaType is not equal to oldMediaType.");
-    
-    auto setTitleIndex = std::find(changeRequest->assetChangeOperations_.begin(),
-        changeRequest->assetChangeOperations_.end(), AssetChangeOperation::SET_TITLE);
-    if (setTitleIndex != changeRequest->assetChangeOperations_.end()) {
-        changeRequest->assetChangeOperations_.erase(setTitleIndex);
-    } else {
-        // save old value
-        changeRequest->SetOldDisplayName(fileAsset->GetDisplayName());
-    }
-    // set new value
-    fileAsset->SetTitle(newTitle);
-    fileAsset->SetDisplayName(newDisplayName);
-    CHECK_COND_WITH_MESSAGE(env, SetDisplayNameInitParameters(asyncContext, oldExtension, newExtension) == E_OK,
-        "failed to SetDisplayNameInitParameters");
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -1505,14 +1388,8 @@ static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& contex
     }
 
     // specify mp4 extension for cache file of moving photo video
-    std::string extension = "";
-    if (changeRequest->GetIsEditDisplayName()) {
-        extension = isMovingPhotoVideo ? MOVING_PHOTO_VIDEO_EXTENSION
-                                       : MediaFileUtils::GetExtensionFromPath(changeRequest->GetOldDisplayName());
-    } else {
-        extension = isMovingPhotoVideo ? MOVING_PHOTO_VIDEO_EXTENSION
-                                       : MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
-    }
+    string extension = isMovingPhotoVideo ? MOVING_PHOTO_VIDEO_EXTENSION
+                                          : MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
     int64_t currentTimestamp = MediaFileUtils::UTCTimeNanoSeconds();
     uint32_t cacheFileId = changeRequest->FetchAddCacheFileId();
     string cacheFileName = to_string(currentTimestamp) + "_" + to_string(cacheFileId) + "." + extension;
@@ -2008,54 +1885,6 @@ void HandleValueBucketForSetLocation(std::shared_ptr<FileAsset> fileAsset, DataS
     }
 }
 
-int32_t MediaAssetChangeRequestNapi::SubmitCacheWithCreation(
-    std::string &uri, std::string &assetUri, bool isWriteGpsAdvanced, const int32_t userId)
-{
-    bool isValid = false;
-    std::string displayName = creationValuesBucket_.Get(MEDIA_DATA_DB_NAME, isValid);
-    CHECK_COND_RET(
-        isValid && MediaFileUtils::CheckDisplayName(displayName) == E_OK, E_FAIL, "Failed to check displayName");
-    if (GetIsEditDisplayName()) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, SET_DISPLAY_NAME_KEY, displayName);
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, CAN_FALLBACK, "1");
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, OLD_DISPLAY_NAME, oldDisplayName_);
-        SetIsEditDisplayName(false);
-    }
-    Uri submitCacheUri(uri);
-    creationValuesBucket_.Put(CACHE_FILE_NAME, cacheFileName_);
-    if (IsMovingPhoto()) {
-        creationValuesBucket_.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
-    }
-    HandleValueBucketForSetLocation(fileAsset_, creationValuesBucket_, isWriteGpsAdvanced);
-    return UserFileClient::InsertExt(submitCacheUri, creationValuesBucket_, assetUri, userId);
-}
-
-int32_t MediaAssetChangeRequestNapi::SubmitCacheWithoutCreation(std::string &uri, bool isSetEffectMode,
-    bool isWriteGpsAdvanced, const int32_t userId)
-{
-    DataShare::DataShareValuesBucket valuesBucket;
-    if (GetIsEditDisplayName()) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, SET_DISPLAY_NAME_KEY, fileAsset_->GetDisplayName());
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, CAN_FALLBACK, "1");
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, OLD_DISPLAY_NAME, oldDisplayName_);
-        SetIsEditDisplayName(false);
-    }
-    Uri submitCacheUri(uri);
-    valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset_->GetId());
-    valuesBucket.Put(CACHE_FILE_NAME, cacheFileName_);
-    int32_t ret = PutMediaAssetEditData(valuesBucket);
-    CHECK_COND_RET(ret == E_OK, ret, "Failed to put editData");
-    if (IsMovingPhoto()) {
-        valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
-    }
-    if (isSetEffectMode) {
-        valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset_->GetMovingPhotoEffectMode());
-        valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
-    }
-    HandleValueBucketForSetLocation(fileAsset_, valuesBucket, isWriteGpsAdvanced);
-    return UserFileClient::Insert(submitCacheUri, valuesBucket, userId);
-}
-
 int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffectMode,
     bool isWriteGpsAdvanced, const int32_t userId)
 {
@@ -2069,24 +1898,42 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, SET_LOCATION_KEY, SET_LOCATION_VALUE);
     }
     NAPI_INFO_LOG("Check SubmitCache isWriteGpsAdvanced: %{public}d", isWriteGpsAdvanced);
+    Uri submitCacheUri(uri);
 
     string assetUri;
     int32_t ret;
     if (isCreation) {
-        ret = SubmitCacheWithCreation(uri, assetUri, isWriteGpsAdvanced, userId);
+        bool isValid = false;
+        string displayName = creationValuesBucket_.Get(MEDIA_DATA_DB_NAME, isValid);
+        CHECK_COND_RET(
+            isValid && MediaFileUtils::CheckDisplayName(displayName) == E_OK, E_FAIL, "Failed to check displayName");
+        creationValuesBucket_.Put(CACHE_FILE_NAME, cacheFileName_);
+        if (IsMovingPhoto()) {
+            creationValuesBucket_.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
+        }
+        HandleValueBucketForSetLocation(fileAsset_, creationValuesBucket_, isWriteGpsAdvanced);
+        ret = UserFileClient::InsertExt(submitCacheUri, creationValuesBucket_, assetUri, userId);
     } else {
-        ret = SubmitCacheWithoutCreation(uri, isSetEffectMode, isWriteGpsAdvanced, userId);
-    }
-
-    if (ret == E_FAIL) {
-        return ret;
+        DataShare::DataShareValuesBucket valuesBucket;
+        valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset_->GetId());
+        valuesBucket.Put(CACHE_FILE_NAME, cacheFileName_);
+        ret = PutMediaAssetEditData(valuesBucket);
+        CHECK_COND_RET(ret == E_OK, ret, "Failed to put editData");
+        if (IsMovingPhoto()) {
+            valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
+        }
+        if (isSetEffectMode) {
+            valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset_->GetMovingPhotoEffectMode());
+            valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
+        }
+        HandleValueBucketForSetLocation(fileAsset_, valuesBucket, isWriteGpsAdvanced);
+        ret = UserFileClient::Insert(submitCacheUri, valuesBucket, userId);
     }
     if (ret > 0 && isCreation) {
         SetNewFileAsset(ret, assetUri);
     }
     cacheFileName_.clear();
     cacheMovingPhotoVideoName_.clear();
-    oldDisplayName_.clear();
     return ret;
 }
 
@@ -2098,11 +1945,6 @@ static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
     bool isCreation = IsCreation(context);
     bool isSetEffectMode = IsSetEffectMode(context);
     auto changeRequest = context.objectInfo;
-    CHECK_COND_RET(changeRequest != nullptr, false, "Failed to get changeRequest");
-    
-    auto fileAsset = changeRequest->GetFileAssetInstance();
-    CHECK_COND_RET(fileAsset != nullptr, false, "Failed to get fileAsset");
-
     bool isWriteGpsAdvanced = changeRequest->GetIsWriteGpsAdvanced();
     int32_t ret = changeRequest->SubmitCache(isCreation, isSetEffectMode, isWriteGpsAdvanced,
         changeRequest->GetFileAssetInstance()->GetUserId());
@@ -2364,54 +2206,6 @@ static bool SetTitleExecute(MediaAssetChangeRequestAsyncContext& context)
     return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
 }
 
-static bool IsEditDisplayNameFussion(MediaAssetChangeRequestAsyncContext& context)
-{
-    auto opers = context.assetChangeOperations;
-    bool isCreateFromUri =
-        std::find(opers.begin(), opers.end(), AssetChangeOperation::CREATE_FROM_URI) != opers.end();
-    bool isCreateFromScratch =
-        std::find(opers.begin(), opers.end(), AssetChangeOperation::CREATE_FROM_SCRATCH) != opers.end();
-    bool isSetEditData =
-        std::find(opers.begin(), opers.end(), AssetChangeOperation::SET_EDIT_DATA) != opers.end();
-    bool isAddResource =
-        std::find(opers.begin(), opers.end(), AssetChangeOperation::ADD_RESOURCE) != opers.end();
-    bool isAddFilters =
-        std::find(opers.begin(), opers.end(), AssetChangeOperation::ADD_RESOURCE) != opers.end();
-    bool isGetWriteCacheHandler =
-        std::find(opers.begin(), opers.end(), AssetChangeOperation::GET_WRITE_CACHE_HANDLER) != opers.end();
-    return isCreateFromUri || isCreateFromScratch || isSetEditData || isAddResource || isAddFilters ||
-        isGetWriteCacheHandler;
-}
-
-static bool SetDisplayNameExecute(MediaAssetChangeRequestAsyncContext& context)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("SetDisplayNameExecute");
-    NAPI_INFO_LOG("Begin SetDisplayNameExecute.");
-
-    // In the scenario of creation, the new title will be applied when the asset is created.
-    if (IsEditDisplayNameFussion(context)) {
-        return true;
-    }
-    auto changeRequest = context.objectInfo;
-    CHECK_COND_RET(changeRequest != nullptr, JS_INNER_FAIL, "changeRequest is nullptr");
-    auto fileAsset = changeRequest->GetFileAssetInstance();
-    CHECK_COND_RET(fileAsset != nullptr, JS_INNER_FAIL, "fileAsset is nullptr");
-
-    std::string uri = PAH_UPDATE_PHOTO;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, SET_DISPLAY_NAME_KEY, fileAsset->GetDisplayName());
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, CAN_FALLBACK, "0");
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, OLD_DISPLAY_NAME, changeRequest->GetOldDisplayName());
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MediaColumn::MEDIA_NAME, fileAsset->GetDisplayName());
-    changeRequest->SetIsEditDisplayName(false);
-    return UpdateAssetProperty(context, uri, predicates, valuesBucket);
-}
-
 static bool SetOrientationExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -2489,17 +2283,10 @@ static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
     NAPI_INFO_LOG("SetLocation begin.");
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
-    auto changeRequest = context.objectInfo;
-    auto fileAsset = changeRequest->GetFileAssetInstance();
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset->GetId());
-    if (changeRequest->GetIsEditDisplayName()) {
-        std::string oldPath = MediaFileUtils::UnSplitByChar(fileAsset->GetPath(), '.') + "." +
-                              MediaFileUtils::GetExtensionFromPath(changeRequest->GetOldDisplayName());
-        valuesBucket.Put(PhotoColumn::MEDIA_FILE_PATH, fileAsset->GetPath());
-    } else {
-        valuesBucket.Put(PhotoColumn::MEDIA_FILE_PATH, fileAsset->GetPath());
-    }
+    valuesBucket.Put(PhotoColumn::MEDIA_FILE_PATH, fileAsset->GetPath());
     valuesBucket.Put(PhotoColumn::PHOTO_LATITUDE, fileAsset->GetLatitude());
     valuesBucket.Put(PhotoColumn::PHOTO_LONGITUDE, fileAsset->GetLongitude());
     return UpdateAssetProperty(context, PAH_SET_LOCATION, predicates, valuesBucket);
@@ -2600,12 +2387,8 @@ static bool SetVideoEnhancementAttr(MediaAssetChangeRequestAsyncContext& context
     tracer.Start("setVideoEnhancementAttr");
 
     auto changeOpreations = context.assetChangeOperations;
-    auto changeRequest = context.objectInfo;
-    CHECK_COND_RET(changeRequest != nullptr, false, "Failed to get changeRequest");
-    auto fileAsset = changeRequest->GetFileAssetInstance();
-    CHECK_COND_RET(fileAsset != nullptr, false, "Failed to get fileAsset");
-
     DataShare::DataSharePredicates predicates;
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
@@ -2613,13 +2396,7 @@ static bool SetVideoEnhancementAttr(MediaAssetChangeRequestAsyncContext& context
     string uri = PAH_SET_VIDEO_ENHANCEMENT_ATTR;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, PhotoColumn::PHOTO_ID, fileAsset->GetPhotoId());
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    if (changeRequest->GetIsEditDisplayName()) {
-        std::string oldPath = MediaFileUtils::UnSplitByChar(fileAsset->GetPath(), '.') +
-                              "." + MediaFileUtils::GetExtensionFromPath(changeRequest->GetOldDisplayName());
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_FILE_PATH, oldPath);
-    } else {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_FILE_PATH, fileAsset->GetPath());
-    }
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_FILE_PATH, fileAsset->GetPath());
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(uri);
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
@@ -2636,26 +2413,13 @@ static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)
     MediaLibraryTracer tracer;
     tracer.Start("AddFiltersExecute");
 
-    auto changeRequest = context.objectInfo;
-    CHECK_COND_RET(changeRequest != nullptr, false, "Failed to get changeRequest");
-    auto fileAsset = changeRequest->GetFileAssetInstance();
-    CHECK_COND_RET(fileAsset != nullptr, false, "Failed to get fileAsset");
-    
-    std::string uri = PAH_ADD_FILTERS;
-    DataShare::DataShareValuesBucket valuesBucket;
-    if (changeRequest->GetIsEditDisplayName()) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, SET_DISPLAY_NAME_KEY, fileAsset->GetDisplayName());
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, CAN_FALLBACK, "1");
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, OLD_DISPLAY_NAME, changeRequest->GetOldDisplayName());
-        valuesBucket.Put(MediaColumn::MEDIA_NAME, fileAsset->GetDisplayName());
-        valuesBucket.Put(MediaColumn::MEDIA_TITLE, fileAsset->GetTitle());
-        valuesBucket.Put(MediaColumn::MEDIA_FILE_PATH, fileAsset->GetPath());
-        valuesBucket.Put(MediaColumn::MEDIA_MIME_TYPE, fileAsset->GetMimeType());
-        changeRequest->SetIsEditDisplayName(false);
-    }
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "Failed to check fileAsset");
+    string uri = PAH_ADD_FILTERS;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri addFiltersUri(uri);
 
+    DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset->GetId());
     int ret = context.objectInfo->PutMediaAssetEditData(valuesBucket);
     CHECK_COND_RET(ret == E_OK, false, "Failed to put editData");
@@ -2732,7 +2496,6 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_FAVORITE, SetFavoriteExecute },
     { AssetChangeOperation::SET_HIDDEN, SetHiddenExecute },
     { AssetChangeOperation::SET_TITLE, SetTitleExecute },
-    { AssetChangeOperation::SET_DISPLAY_NAME, SetDisplayNameExecute },
     { AssetChangeOperation::SET_ORIENTATION, SetOrientationExecute },
     { AssetChangeOperation::SET_USER_COMMENT, SetUserCommentExecute },
     { AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE, SetEffectModeExecute },

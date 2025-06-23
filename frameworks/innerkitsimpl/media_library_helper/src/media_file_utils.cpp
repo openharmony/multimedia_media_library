@@ -506,28 +506,6 @@ bool MediaFileUtils::DeleteDir(const string &dirName)
     return errRet;
 }
 
-static bool CheckPhotoPath(const string& photoPath)
-{
-    return photoPath.length() >= ROOT_MEDIA_DIR.length() && MediaFileUtils::StartsWith(photoPath, ROOT_MEDIA_DIR);
-}
-
-string MediaFileUtils::GetThumbDir(const string &photoPath, int32_t userId)
-{
-    if (!CheckPhotoPath(photoPath)) {
-        return "";
-    }
-    return AppendUserId(ROOT_MEDIA_DIR, userId) + ".thumbs/" + photoPath.substr(ROOT_MEDIA_DIR.length());
-}
-
-string MediaFileUtils::AppendUserId(const string& path, int32_t userId)
-{
-    if (userId < 0 || !StartsWith(path, ROOT_MEDIA_DIR)) {
-        return path;
-    }
-
-    return "/storage/cloud/" + to_string(userId) + "/files/" + path.substr(ROOT_MEDIA_DIR.length());
-}
-
 bool MediaFileUtils::CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile)
 {
     bool fileExist = IsFileExists(destFile);
@@ -617,30 +595,6 @@ void MediaFileUtils::BackupPhotoDir()
         CreateDirectory(ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR);
         CopyDirAndDelSrc(dirPath, ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR + SLASH_STR + suffixName);
     }
-}
-
-std::vector<std::string> MediaFileUtils::GetFileNameFromDir(const std::string &dirName)
-{
-    std::vector<std::string> fileNames;
-    if (!IsDirEmpty(dirName)) {
-        DIR *dir = opendir((dirName).c_str());
-        if (dir == nullptr) {
-            MEDIA_ERR_LOG("Error opening temp directory, errno: %{public}d", errno);
-            return {};
-        }
-
-        struct dirent *entry;
-        while ((entry = readdir(dir)) != nullptr) {
-            // filter . && .. dir
-            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-                continue;
-            }
-            std::string fileName = entry->d_name;
-            fileNames.push_back(fileName);
-        }
-        closedir(dir);
-    }
-    return fileNames;
 }
 
 void MediaFileUtils::RecoverMediaTempDir()
@@ -1350,12 +1304,6 @@ string MediaFileUtils::SplitByChar(const string &str, const char split)
 {
     size_t splitIndex = str.find_last_of(split);
     return (splitIndex == string::npos) ? ("") : (str.substr(splitIndex + 1));
-}
-
-string MediaFileUtils::UnSplitByChar(const string &str, const char split)
-{
-    size_t splitIndex = str.find_last_of(split);
-    return (splitIndex == string::npos) ? ("") : (str.substr(0, splitIndex));
 }
 
 string MediaFileUtils::GetExtensionFromPath(const string &path)
