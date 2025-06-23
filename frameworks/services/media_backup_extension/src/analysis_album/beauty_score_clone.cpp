@@ -196,7 +196,7 @@ void BeautyScoreClone::BatchInsertBeautyScores(
     }
 
     migrateScoreNum_ += rowNum;
-    migrateScoreFileNumber_ += fileIdSet.size();
+    migrateScoreFileNumber_ += static_cast<int64_t>(fileIdSet.size());
 }
 
 NativeRdb::ValuesBucket BeautyScoreClone::CreateValuesBucketFromBeautyScoreTbl(
