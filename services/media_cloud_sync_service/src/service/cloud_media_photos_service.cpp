@@ -1007,7 +1007,6 @@ int32_t CloudMediaPhotosService::OnRecordFailedErrorDetails(
 int32_t CloudMediaPhotosService::OnRecordFailed(
     PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
-    MEDIA_INFO_LOG("OnRecordFailed");
     int32_t serverErrorCode = photo.serverErrorCode;
     MEDIA_INFO_LOG("serverErrorCode %{public}d", serverErrorCode);
     if ((static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::NETWORK_ERROR)) {
