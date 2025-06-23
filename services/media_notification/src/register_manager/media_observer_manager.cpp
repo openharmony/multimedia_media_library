@@ -67,7 +67,7 @@ int32_t MediaObserverManager::AddObserver(const NotifyUriType &uri,
     } else {
         auto it = std::find_if(observers_[uri].begin(), observers_[uri].end(),
         [dataObserver](const ObserverInfo& obsInfo) {
-            return obsInfo.observer == dataObserver;
+            return obsInfo.observer->AsObject() == dataObserver->AsObject();
         });
         if (it == observers_[uri].end()) {
             observers_[uri].push_back(obsInfo);
@@ -168,7 +168,7 @@ int32_t MediaObserverManager::RemoveObserverWithUri(const NotifyUriType &uri,
     }
     auto iter = std::remove_if(observersIter->second.begin(), observersIter->second.end(),
         [dataObserver](const ObserverInfo& s) {
-        return s.observer == dataObserver;
+        return s.observer->AsObject() == dataObserver->AsObject();
     });
     observersIter->second.erase(iter, observersIter->second.end());
     if (observersIter->second.empty()) {
