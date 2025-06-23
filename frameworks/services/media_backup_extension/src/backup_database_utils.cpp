@@ -1005,6 +1005,10 @@ std::vector<int32_t> BackupDatabaseUtils::QueryIntVec(std::shared_ptr<NativeRdb:
     const std::string& sql, const std::string& columnName)
 {
     std::vector<int32_t> results;
+    if (rdbStore == nullptr) {
+        return results;
+    }
+
     auto resultSet = rdbStore->QuerySql(sql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query SQL or resultSet is null");
@@ -1013,6 +1017,7 @@ std::vector<int32_t> BackupDatabaseUtils::QueryIntVec(std::shared_ptr<NativeRdb:
 
     int32_t columnIndex = -1;
     if (resultSet->GetColumnIndex(columnName, columnIndex) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Get column index error");
         return results;
     }
 
@@ -1022,6 +1027,7 @@ std::vector<int32_t> BackupDatabaseUtils::QueryIntVec(std::shared_ptr<NativeRdb:
             results.push_back(value);
         }
     }
+    resultSet->Close();
     return results;
 }
 
