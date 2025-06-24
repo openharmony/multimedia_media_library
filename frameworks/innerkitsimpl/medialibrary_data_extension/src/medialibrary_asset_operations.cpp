@@ -2732,7 +2732,7 @@ static int32_t GetBurstFileInfo(const string &key, vector<CleanFileInfo> &fileIn
     return E_OK;
 }
 
-static void BatchDeleteLocalAndCloud(const vector<CleanFileInfo> &fileInfos)
+static void BatchDeleteLocalAndCloud(const vector<CleanFileInfo> &fileInfos, const map<string, int32_t> &notifyMap)
 {
     CHECK_AND_RETURN_LOG(!fileInfos.empty(), "Batch delete local and cloud fileInfo is empty.");
     vector<string> failCloudId;
@@ -2741,12 +2741,20 @@ static void BatchDeleteLocalAndCloud(const vector<CleanFileInfo> &fileInfos)
     auto ret = CloudSyncManager::GetInstance().BatchCleanFile(fileInfos, failCloudId);
     if (ret != 0) {
         MEDIA_ERR_LOG("Failed to delete local and cloud photos permanently.");
-    } else if (!failCloudId.empty()) {
-        for (const auto& element : failCloudId) {
-            MEDIA_ERR_LOG("Failed to delete, cloudId is %{public}s.", element.c_str());
+        return;
+    }
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "watch is nullptr");
+    for (const auto &fileInfo : fileInfos) {
+        string cloudId = fileInfo.cloudId;
+        if (find(failCloudId.begin(), failCloudId.end(), cloudId) != failCloudId.end()) {
+            MEDIA_ERR_LOG("Failed to delete, cloudId is %{public}s.", cloudId.c_str());
+            continue;
         }
-    } else {
-        MEDIA_DEBUG_LOG("Delete local and cloud photos permanently success");
+        if (notifyMap.find(cloudId) != notifyMap.end()) {
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(notifyMap.at(cloudId)), NotifyType::NOTIFY_UPDATE);
+        }
     }
 }
 
@@ -2761,10 +2769,12 @@ static int32_t DeleteLocalAndCloudPhotos(vector<shared_ptr<FileAsset>> &subFileA
         return E_OK;
     }
     
+    map<string, int32_t> notifyMap;
     for (auto& fileAssetPtr : subFileAsset) {
         if (fileAssetPtr == nullptr) {
             continue;
         }
+        notifyMap[fileAssetPtr->GetCloudId()] = fileAssetPtr->GetId();
         string burst_key = fileAssetPtr->GetBurstKey();
         if (burst_key != "") {
             GetBurstFileInfo(burst_key, fileInfos);
@@ -2779,13 +2789,13 @@ static int32_t DeleteLocalAndCloudPhotos(vector<shared_ptr<FileAsset>> &subFileA
         subFileInfo.push_back(element);
         count++;
         if (count == MAX_PROCESS_NUM) {
-            BatchDeleteLocalAndCloud(subFileInfo);
+            BatchDeleteLocalAndCloud(subFileInfo, notifyMap);
             subFileInfo.clear();
             count = 0;
         }
     }
     if (!subFileInfo.empty()) {
-        BatchDeleteLocalAndCloud(subFileInfo);
+        BatchDeleteLocalAndCloud(subFileInfo, notifyMap);
     }
     return E_OK;
 }
