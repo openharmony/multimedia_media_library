@@ -35,8 +35,6 @@ ohos_unittest("log_storage_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
     "${MEDIALIB_UTILS_PATH}:permission_utils",
-    "//third_party/googletest:gmock",
-    "//third_party/googletest:gtest",
   ]
 
   external_deps = [
@@ -80,6 +78,8 @@ ohos_unittest("log_storage_test") {
     "samgr:samgr_proxy",
     "window_manager:libdm",
     "zlib:shared_libz",
+     "googletest:gmock",
+    "googletest:gtest",
   ]
 
   sanitize = {

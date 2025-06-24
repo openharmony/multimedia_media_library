@@ -94,6 +94,7 @@ ohos_shared_library("mediaserviceext") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "zlib:shared_libz",
+    "ipc:ipc_napi",
   ]
 
   defines = []
