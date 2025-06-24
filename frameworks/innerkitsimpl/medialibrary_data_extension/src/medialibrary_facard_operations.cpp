@@ -235,9 +235,17 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
     shared_ptr<DataShare::DataShareHelper> dataShareHelper;
     if (registerUri.find(ASSET_URI_PREFIX) == 0) {
         dataShareHelper = DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
+        if (dataShareHelper == nullptr || observer == nullptr) {
+            MEDIA_ERR_LOG("dataShareHelper is nullptr");
+            return;
+        }
         dataShareHelper->RegisterObserverExt(notifyUri, observer, true);
     } else if (registerUri.find(CLOUD_SYNC_SWITCH_URI_PREFIX) == 0) {
         dataShareHelper = DataShare::DataShareHelper::Creator(CLOUD_SYNC_PROXY_URI, options);
+        if (dataShareHelper == nullptr || cloudSyncObserver == nullptr) {
+            MEDIA_ERR_LOG("dataShareHelper is nullptr");
+            return;
+        }
         dataShareHelper->RegisterObserver(notifyUri, cloudSyncObserver);
     }
 }
