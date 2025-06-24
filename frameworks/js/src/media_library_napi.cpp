@@ -11186,7 +11186,7 @@ static napi_value ParseArgsGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callb
     }
     RestrictAlbumSubtypeOptions(context->predicates);
 
-    CHECK_COND(env, CheckAlbumFetchColumns(context->fetchColumn), JS_E_PARAM_INVALID);
+    CHECK_COND(env, CheckAlbumFetchColumns(context->fetchColumn), JS_E_INNER_FAIL);
     AddNoSmartFetchColumns(context->fetchColumn);
     AddDefaultColumnsForNonAnalysisAlbums(*context);
 
