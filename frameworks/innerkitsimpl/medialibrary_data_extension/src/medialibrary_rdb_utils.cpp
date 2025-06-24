@@ -1060,7 +1060,8 @@ static bool IsCoverValid(const shared_ptr<MediaLibraryRdbStore> rdbStore, const 
     string photosIsTemp = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_IS_TEMP;
     string photoIsCover = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_BURST_COVER_LEVEL;
 
-    string whereClause = anaAlbumId + " = " + albumId + " AND " + photosFileId + " = " + fileId + " AND " +
+    string whereClause = "group_tag = (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " + albumId + ") AND " +
+        photosFileId + " = " + fileId + " AND " +
         photoSyncStatus + " = " + to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) + " AND " +
         photoCleanFlag + " = " + to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) + " AND " +
         photosDateTrashed + " = " + to_string(0) + " AND " + photosHidden + " = " + to_string(0) + " AND " +
