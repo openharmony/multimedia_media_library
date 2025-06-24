@@ -130,6 +130,20 @@ napi_status MediaLibraryNapiUtils::GetUInt32Array(napi_env env, napi_value arg, 
     return napi_ok;
 }
 
+napi_status MediaLibraryNapiUtils::GetInt32Array(napi_env env, napi_value arg, vector<int32_t> &result)
+{
+    uint32_t arraySize = 0;
+    CHECK_COND_RET(IsArrayForNapiValue(env, arg, arraySize), napi_array_expected, "Failed to check array type");
+    for (uint32_t i = 0; i < arraySize; i++) {
+        napi_value val = nullptr;
+        CHECK_STATUS_RET(napi_get_element(env, arg, i, &val), "Failed to get element");
+        int32_t value = 0;
+        CHECK_STATUS_RET(GetInt32(env, val, value), "Failed to get element value");
+        result.push_back(value);
+    }
+    return napi_ok;
+}
+
 napi_status MediaLibraryNapiUtils::GetParamFunction(napi_env env, napi_value arg, napi_ref &callbackRef)
 {
     napi_valuetype valueType = napi_undefined;
