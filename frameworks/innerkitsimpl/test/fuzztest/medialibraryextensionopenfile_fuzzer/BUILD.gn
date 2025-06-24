@@ -60,5 +60,6 @@ ohos_fuzztest("MediaLibraryExtensionOpenFileFuzzTest") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
     "window_manager:libdm",
+    "ipc:ipc_napi",
   ]
 }

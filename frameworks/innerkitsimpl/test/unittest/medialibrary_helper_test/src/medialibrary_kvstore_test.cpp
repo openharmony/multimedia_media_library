@@ -14,11 +14,10 @@
  */
 #include <algorithm>
 #include "medialibrary_kvstore_test.h"
-#include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
+#include "medialibrary_mocksinglekvstore.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "medialibrary_kvstore.h"
-
 using namespace std;
 using namespace testing::ext;
 

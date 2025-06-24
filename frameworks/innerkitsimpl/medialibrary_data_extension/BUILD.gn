@@ -752,6 +752,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "init:libbegetutil",
     "ipc:ipc_core",
     "ipc:ipc_single",
+    "ipc:ipc_napi",
     "kv_store:distributeddata_inner",
     "libexif:libexif",
     "libfuse:libfuse",
