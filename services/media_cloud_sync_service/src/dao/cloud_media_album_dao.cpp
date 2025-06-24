@@ -983,7 +983,6 @@ int32_t CloudMediaAlbumDao::ClearAlbumFailedRecords()
 
 std::unordered_map<std::string, MediaAlbumPluginRowData> CloudMediaAlbumDao::QueryWhiteList()
 {
-    MEDIA_INFO_LOG("WitreListMap start init");
     std::unordered_map<std::string, MediaAlbumPluginRowData> whiteListMap;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, whiteListMap, "GetLocalAlbumMap Failed to get rdbStore.");
