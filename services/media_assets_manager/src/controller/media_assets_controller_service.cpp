@@ -91,6 +91,7 @@
 #include "get_uris_by_old_uris_inner_vo.h"
 #include "close_asset_vo.h"
 #include "stop_restore_vo.h"
+#include "medialibrary_file_operations.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -2064,11 +2065,22 @@ int32_t MediaAssetsControllerService::GetFilePathFromUri(MessageParcel &data, Me
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_ID, reqBody.virtualId);
     predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
-    vector<string> columns = { MEDIA_DATA_DB_FILE_PATH };
 
-    NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, MEDIALIBRARY_TABLE);
-    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
-    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+    MediaLibraryCommand cmd(MEDIALIBRARY_TABLE);
+    cmd.SetDataSharePred(predicates);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, MEDIALIBRARY_TABLE);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+    vector<string> columns = { MEDIA_DATA_DB_FILE_PATH };
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(const_cast<vector<string>&>(columns));
+    shared_ptr<NativeRdb::ResultSet> resultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+
+    auto resultSetBridge = RdbUtils::ToResultSetBridge(resultSet);
     rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
@@ -2086,13 +2098,24 @@ int32_t MediaAssetsControllerService::GetUriFromFilePath(MessageParcel &data, Me
     }
 
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MediaColumn::MEDIA_ID, reqBody.fileId);
-    vector<string> columns = { MEDIA_DATA_DB_FILE_PATH };
+    predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, reqBody.tempPath);
+    predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
 
-    NativeRdb::RdbPredicates rdbPredicate =
-        RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
-    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
-    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+    MediaLibraryCommand cmd(MEDIALIBRARY_TABLE);
+    cmd.SetDataSharePred(predicates);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, MEDIALIBRARY_TABLE);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+    vector<string> columns = { MEDIA_DATA_DB_ID };
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(const_cast<vector<string>&>(columns));
+    shared_ptr<NativeRdb::ResultSet> resultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+
+    auto resultSetBridge = RdbUtils::ToResultSetBridge(resultSet);
     rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
