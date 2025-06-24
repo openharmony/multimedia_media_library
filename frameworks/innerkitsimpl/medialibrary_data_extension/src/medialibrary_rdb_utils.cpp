@@ -1301,30 +1301,35 @@ static bool IsNeedSetCover(UpdateAlbumData &data, PhotoAlbumSubType subtype)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore when query owner_album_id");
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
 
     if (subtype == PhotoAlbumSubType::USER_GENERIC || subtype == PhotoAlbumSubType::SOURCE_GENERIC) {
-        vector<string> columns = { PhotoColumn::PHOTO_OWNER_ALBUM_ID,
-            MediaColumn::MEDIA_DATE_TRASHED, MediaColumn::MEDIA_HIDDEN };
+        vector<string> columns = { PhotoColumn::PHOTO_OWNER_ALBUM_ID };
+
+        string checkCoverValid = MediaColumn::MEDIA_ID + " = " + fileId + " AND " +
+            MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " + MediaColumn::MEDIA_HIDDEN + " = 0 AND " +
+            MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " + PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
+            PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " +
+            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) +
+            " AND " + PhotoColumn::PHOTO_SYNC_STATUS + " = 0 AND " + PhotoColumn::PHOTO_CLEAN_FLAG + " = 0";
+
+        predicates.SetWhereClause(checkCoverValid);
         auto resultSet = rdbStore->Query(predicates, columns);
         CHECK_AND_RETURN_RET_INFO_LOG(resultSet != nullptr, E_HAS_DB_ERROR,
             "failed to acquire result from visitor query.");
         int32_t ownerAlbumId = -1;
-        bool isHidden = false;
-        bool isTrashed = false;
         if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             ownerAlbumId = GetIntValFromColumn(resultSet, PhotoColumn::PHOTO_OWNER_ALBUM_ID);
-            isHidden = GetIntValFromColumn(resultSet, MediaColumn::MEDIA_HIDDEN) == 1;
-            isTrashed = GetInt64ValFromColumn(resultSet, MediaColumn::MEDIA_DATE_TRASHED) > 0;
+        } else {
+            MEDIA_ERR_LOG("resultSet GoToNextRow failed, fileId:%{public}s", fileId.c_str());
         }
-        auto isInAlbum = (ownerAlbumId == data.albumId) && !isHidden && !isTrashed;
+        auto isInAlbum = ownerAlbumId == data.albumId;
         if (!isInAlbum) {
             UpdateCoverUriSourceToDefault(data.albumId);
         }
-        MEDIA_DEBUG_LOG("IsNeedSetCover: ownerAlbumId:%{public}d, isHidden:%{public}d, isTrashed:%{public}d",
-            ownerAlbumId, isHidden, isTrashed);
+        MEDIA_DEBUG_LOG("IsNeedSetCover: ownerAlbumId:%{public}d", ownerAlbumId);
         return !isInAlbum;
     }
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     auto isInAlbum = IsInSystemAlbum(rdbStore, predicates, subtype);
     if (!isInAlbum) {
         UpdateCoverUriSourceToDefault(data.albumId);
