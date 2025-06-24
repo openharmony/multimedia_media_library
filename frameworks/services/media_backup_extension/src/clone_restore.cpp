@@ -2068,7 +2068,6 @@ void CloneRestore::RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap
     RestoreImageFaceInfo(fileInfos);
 
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
-    BackupDatabaseUtils::UpdateAnalysisTotalTblNoFaceStatus(mediaLibraryRdb_, mediaRdb_, fileIdPairs);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
     MEDIA_INFO_LOG("end restore photo, offset: %{public}d", offset);
 }
@@ -2084,7 +2083,6 @@ void CloneRestore::RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhoto
     RestoreImageFaceInfo(fileInfos);
 
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
-    BackupDatabaseUtils::UpdateAnalysisTotalTblNoFaceStatus(mediaLibraryRdb_, mediaRdb_, fileIdPairs);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
     MEDIA_INFO_LOG("singleCloud end restore photo, offset: %{public}d", offset);
 }

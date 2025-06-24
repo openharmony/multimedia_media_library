@@ -137,10 +137,6 @@ public:
     static std::optional<T> GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::string &columnName);
     static void UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    static std::vector<int32_t> QueryIntVec(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
-        const std::string& sql, const std::string& columnName);
-    static void UpdateAnalysisTotalTblNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
-        std::shared_ptr<NativeRdb::RdbStore> oldRdbStore, const std::vector<FileIdPair>& fileIdPair);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
