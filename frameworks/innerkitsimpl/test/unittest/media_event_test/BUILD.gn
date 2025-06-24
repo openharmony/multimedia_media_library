@@ -82,7 +82,7 @@ ohos_unittest("event_create_test") {
 }
 
 ohos_unittest("event_scan_test") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
     "../medialibrary_unittest_utils/include",
@@ -129,7 +129,7 @@ ohos_unittest("event_scan_test") {
 }
 
 ohos_unittest("event_query_test") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
@@ -186,7 +186,7 @@ ohos_unittest("event_query_test") {
 }
 
 ohos_unittest("event_thumbnail_test") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
     "../medialibrary_unittest_utils/include",
