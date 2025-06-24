@@ -26,7 +26,7 @@
 namespace OHOS::Media {
 class GetUriFromFilePathReqBody : public IPC::IMediaParcelable {
 public:
-    std::string fileId;
+    std::string tempPath;
 
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
