@@ -64,6 +64,7 @@ constexpr int32_t JS_E_OPERATION_NOT_SUPPORT = UFM_JS_ERR(UFM_MODULE_CODE, 16);
 
 constexpr int32_t JS_E_NAMETOOLONG    = UFM_JS_ERR(UFM_SYSCAP_BASE, 36);
 
+constexpr int32_t JS_E_INIT_FAIL = UFM_JS_ERR(MEDIA_LIBRARY_ERR_CODE, 107);
 constexpr int32_t JS_E_PARAM_INVALID = UFM_JS_ERR(MEDIA_LIBRARY_ERR_CODE, 151);
 constexpr int32_t JS_E_INNER_FAIL = UFM_JS_ERR(MEDIA_LIBRARY_ERR_CODE, 301);
 // trans server errorCode to js Error code

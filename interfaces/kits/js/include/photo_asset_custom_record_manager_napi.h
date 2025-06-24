@@ -34,6 +34,7 @@ public:
     EXPORT PhotoAssetCustomRecordManager() = default;
     EXPORT ~PhotoAssetCustomRecordManager() = default;
     EXPORT static napi_value Init(napi_env env, napi_value exports);
+    EXPORT static bool CheckColumns(std::vector<std::string> fetchColumns);
 
 private:
     EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -78,8 +79,8 @@ struct CustomRecordAsyncContext : public NapiError {
     std::vector<std::string> fetchColumn;
     int32_t userId_ = -1;
     ResultNapiType resultNapiType;
-    std::vector<uint32_t> fileIds;
-    std::vector<uint32_t> failFileIds;
+    std::vector<int32_t> fileIds;
+    std::vector<int32_t> failFileIds;
     std::vector<PhotoAssetCustomRecord> updateRecords;
     std::unique_ptr<FetchResult<PhotoAssetCustomRecord>> fetchCustomRecordsResult;
 };
