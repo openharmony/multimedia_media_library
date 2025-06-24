@@ -365,7 +365,7 @@ static std::shared_ptr<DataShareResultSet> GetFilePathResultSetFromDb(const stri
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_FILEPATH_FROM_URI);
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "dataShareHelper is null");
     int32_t errCode =
         IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
     if (errCode != 0) {
@@ -425,7 +425,7 @@ static std::shared_ptr<DataShareResultSet> GetUriResultSetFromDb(
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_URI_FROM_FILEPATH);
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "dataShareHelper is null");
     int32_t errCode =
         IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
     if (errCode != 0) {
