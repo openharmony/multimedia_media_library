@@ -48,7 +48,7 @@ public:  // functions of Parcelable.
 
 class CreateAssetForAppReqBody : public IPC::IMediaParcelable {
 public:
-    int32_t tokenId{0};
+    int64_t tokenId{0};
     int32_t mediaType{0};
     int32_t photoSubtype{0};
     std::string title;
