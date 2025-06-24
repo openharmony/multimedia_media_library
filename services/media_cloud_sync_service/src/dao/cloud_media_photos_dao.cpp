@@ -1643,7 +1643,6 @@ int32_t CloudMediaPhotosDao::UpdateFailRecordsCloudId(
     const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
-    MEDIA_INFO_LOG("enter UpdateFailRecordsCloudId");
     CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "UpdateFailRecordsCloudId get store failed.");
     std::string fileId = to_string(record.fileId);
     if (localMap.find(fileId) == localMap.end()) {
