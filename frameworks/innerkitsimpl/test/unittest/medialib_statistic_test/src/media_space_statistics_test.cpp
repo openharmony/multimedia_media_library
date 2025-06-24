@@ -145,10 +145,7 @@ void MediaSpaceStatisticsTest::SetUpTestCase(void)
 
     MEDIA_INFO_LOG("MediaSpaceStatisticsTest::SetUpTestCase:: invoked");
     CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
-    if (sDataShareHelper_ == nullptr) {
-        EXPECT_NE(sDataShareHelper_, nullptr);
-        return;
-    }
+    ASSERT_NE(sDataShareHelper_, nullptr);
 
     // make sure board is empty
     ClearAllFile();
@@ -171,9 +168,15 @@ void MediaSpaceStatisticsTest::SetUpTestCase(void)
     sleep(SCAN_WAIT_TIME);
 
     // get base size
-    g_oneImageSize = GetFile(MEDIA_TYPE_IMAGE)->GetSize();
-    g_oneVideoSize = GetFile(MEDIA_TYPE_VIDEO)->GetSize();
-    g_oneAudioSize = GetFile(MEDIA_TYPE_AUDIO)->GetSize();
+    auto image = GetFile(MEDIA_TYPE_IMAGE);
+    auto video = GetFile(MEDIA_TYPE_VIDEO);
+    auto audio = GetFile(MEDIA_TYPE_AUDIO);
+    ASSERT_TRUE(image) << "Failed to get image file";
+    ASSERT_TRUE(video) << "Failed to get video file";
+    ASSERT_TRUE(audio) << "Failed to get audio file";
+    g_oneImageSize = image->GetSize();
+    g_oneVideoSize = video->GetSize();
+    g_oneAudioSize = audio->GetSize();
     MEDIA_INFO_LOG("MediaSpaceStatisticsTest::SetUpTestCase:: g_oneImageSize = %{public}lld",
         (long long)g_oneImageSize);
     MEDIA_INFO_LOG("MediaSpaceStatisticsTest::SetUpTestCase:: g_oneVideoSize = %{public}lld",
@@ -234,13 +237,17 @@ std::unique_ptr<FileAsset> GetFile(int mediaTypeId)
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
-    EXPECT_NE((resultSet == nullptr), true);
+    if (resultSet == nullptr) {
+        return nullptr;
+    }
 
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
-    EXPECT_NE((fetchFileResult->GetCount() <= 0), true);
+    if (fetchFileResult->GetCount() <= 0) {
+        return nullptr;
+    }
 
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetLastObject();
-    EXPECT_NE((fileAsset == nullptr), true);
+    EXPECT_NE(fileAsset, nullptr);
     return fileAsset;
 }
 
@@ -287,10 +294,10 @@ void ClearFile()
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
-    EXPECT_NE((resultSet == nullptr), true);
+    ASSERT_NE(resultSet, nullptr);
 
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
-    EXPECT_NE((fetchFileResult->GetCount() < 0), true);
+    ASSERT_GT(fetchFileResult->GetCount(), 0);
     unique_ptr<FileAsset> fileAsset = fetchFileResult->GetFirstObject();
     while (fileAsset != nullptr) {
         DeleteFile(fileAsset->GetUri());
@@ -327,11 +334,11 @@ void CreateFile(std::string baseURI, std::string targetPath, std::string newName
 
     Uri openFileUriDest(destUri);
     int32_t destFd = sDataShareHelper_->OpenFile(openFileUriDest, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(destFd <= 0, true);
+    ASSERT_GT(destFd, 0);
 
     int32_t resWrite = write(destFd, fileContent, len);
     if (resWrite == -1) {
-        EXPECT_EQ(false, true);
+        ASSERT_EQ(false, true);
     }
 
     mediaLibraryManager->CloseAsset(destUri, destFd);
@@ -347,7 +354,7 @@ void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, s
     }
     Uri openFileUri(srcUri);
     int32_t srcFd = sDataShareHelper_->OpenFile(openFileUri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(srcFd <= 0, true);
+    ASSERT_GT(srcFd, 0);
 
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
     if (MediaFileUtils::StartsWith(targetPath, "Pictures/") ||
@@ -368,7 +375,7 @@ void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, s
     string destUri = baseURI + "/" + std::to_string(virtualIndex);
     Uri openFileUriDest(destUri);
     int32_t destFd = sDataShareHelper_->OpenFile(openFileUriDest, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(destFd <= 0, true);
+    ASSERT_GT(destFd, 0);
 
     int64_t srcLen = lseek(srcFd, 0, SEEK_END);
     lseek(srcFd, 0, SEEK_SET);
@@ -376,7 +383,7 @@ void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, s
     int32_t readRet = read(srcFd, buf, srcLen);
     int32_t resWrite = write(destFd, buf, readRet);
     if (resWrite == -1) {
-        EXPECT_EQ(false, true);
+        ASSERT_EQ(false, true);
     }
 
     mediaLibraryManager->CloseAsset(srcUri, srcFd);
