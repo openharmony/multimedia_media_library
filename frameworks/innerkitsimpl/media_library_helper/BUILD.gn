@@ -119,6 +119,7 @@ ohos_shared_library("media_library") {
     external_deps += [ "graphic_2d:librender_service_client" ]
     external_deps += [ "graphic_surface:surface" ]
     external_deps += [ "image_effect:image_effect_impl" ]
+    external_deps += [ "media_foundation:histreamer_plugin_base" ]
   }
 
   if (!media_library_link_opt) {

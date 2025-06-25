@@ -123,6 +123,7 @@ ohos_shared_library("mediabackup") {
     "background_task_mgr:bgtaskmgr_innerkits",
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
+    "ipc:ipc_napi",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "e2fsprogs:libext2_uuid",
@@ -142,6 +143,7 @@ ohos_shared_library("mediabackup") {
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
     "zlib:shared_libz",
+    "eventhandler:libeventhandler",
   ]
 
   defines = []

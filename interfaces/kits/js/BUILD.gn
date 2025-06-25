@@ -23,24 +23,14 @@ js_declaration("medialibrary_js") {
 }
 
 # compile .js to .abc.
-action("gen_medialibraryinf_abc") {
-  visibility = [ ":*" ]
-  script = "../../../../../../arkcompiler/ets_frontend/es2panda/scripts/generate_js_bytecode.py"
 
-  args = [
-    "--src-js",
-    rebase_path("${MEDIALIB_JS_PATH}/src/medialibraryinf.js"),
-    "--dst-file",
-    rebase_path(target_out_dir + "/medialibraryinf.abc"),
-    "--frontend-tool-path",
-    rebase_path("${es2abc_build_path}"),
-    "--module",
-  ]
-  deps =
-      [ "../../../../../../arkcompiler/ets_frontend/es2panda:es2panda_build" ]
 
-  inputs = [ "${MEDIALIB_JS_PATH}/src/medialibraryinf.js" ]
-  outputs = [ target_out_dir + "/medialibraryinf.abc" ]
+es2abc_gen_abc("gen_medialibraryinf_abc") {
+  src_js = rebase_path("${MEDIALIB_JS_PATH}/src/medialibraryinf.js")
+  dst_file = rebase_path(target_out_dir + "/medialibraryinf.abc")
+  in_puts = [ "${MEDIALIB_JS_PATH}/src/medialibraryinf.js" ]
+  out_puts = [ target_out_dir + "/medialibraryinf.abc" ]
+  extra_args = [ "--module" ]
 }
 
 base_output_path = get_label_info(":medialibraryinf_js", "target_out_dir")
@@ -65,7 +55,6 @@ config("napi_config") {
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/accurate_refresh",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/data",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/utils",
-    "${MEDIALIB_GLOBAL_PATH}/i18n/frameworks/intl/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
@@ -80,8 +69,6 @@ config("napi_config") {
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
-    "../../../../../distributedhardware/device_manager/interfaces/inner_kits/native_cpp/include",
-    "//third_party/e2fsprogs/e2fsprogs/lib",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/media_cloud_asset_download",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/util",
@@ -334,6 +321,7 @@ ohos_shared_library("medialibrary_nutils") {
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
     "window_manager:libwm",
+    "e2fsprogs:libext2_uuid",
   ]
 
   defines = []
@@ -388,6 +376,11 @@ ohos_shared_library("medialibrary_nutils") {
     cflags_cc = [ "-DHAS_ACE_ENGINE_PART" ]
   }
 
+  if (media_library_device_manager_enabled) {
+    defines += [ "DM_DEVICE_INFO_ENABLE" ]
+    external_deps += [ "device_manager:devicemanagersdk" ]
+  }
+
   innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "media_library"
@@ -422,6 +415,7 @@ ohos_shared_library("medialibrary") {
     "hilog:libhilog",
     "i18n:intl_util",
     "napi:ace_napi",
+    "e2fsprogs:libext2_uuid",
   ]
 
   defines = []
@@ -489,6 +483,7 @@ ohos_shared_library("userfilemanager") {
     "hilog:libhilog",
     "i18n:intl_util",
     "napi:ace_napi",
+    "e2fsprogs:libext2_uuid",
   ]
 
   defines = []

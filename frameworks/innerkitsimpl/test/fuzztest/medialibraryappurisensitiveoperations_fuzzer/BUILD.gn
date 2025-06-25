@@ -29,7 +29,6 @@ ohos_fuzztest("MediaLibraryAppUriSensitiveOperationsFuzzTest") {
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-    "../../../../../../../ability/ability_runtime/interfaces/inner_api/dataobs_manager:dataobs_manager",
   ]
 
   external_deps = [
