@@ -1457,5 +1457,82 @@ HWTEST_F(MediaLibraryAlbumOperationTest, IsCoverInAlbum_test_001, TestSize.Level
     EXPECT_EQ(ret, false);
     MEDIA_INFO_LOG("IsCoverInAlbum_test_001 End");
 }
+
+HWTEST_F(MediaLibraryAlbumOperationTest, IsCoverInAlbum_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("IsCoverInAlbum_test_002::Start");
+    string fileId = "1";
+    int32_t albumSubtype = -1;
+    int32_t albumId = 7;
+    bool ret = MediaLibraryAlbumOperations::IsCoverInAlbum(fileId, albumSubtype, albumId);
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("IsCoverInAlbum_test_002 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, IsManunalCloudCover_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("IsManunalCloudCover_test_001::Start");
+    string fileId = "0";
+    string coverCloudId = "0,0";
+    bool ret = MediaLibraryAlbumOperations::IsManunalCloudCover(fileId, coverCloudId);
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("IsManunalCloudCover_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, UpdateCoverUriEXecute_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdateCoverUriEXecute_test_001::Start");
+    int32_t albumId = -1;
+    string fileId = "0";
+    string coverUri = "file://media/Photo" + fileId;
+    bool ret = MediaLibraryAlbumOperations::UpdateCoverUriExecute(albumId, coverUri, fileId, 0);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("UpdateCoverUriEXecute_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, UpdateAlbumCoverUri_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdateAlbumCoverUri_test_001::Start");
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    string fileId = "0";
+    string coverUri = "file://media/Photo" + fileId;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, 1);
+    values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
+    values.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, 1);
+    auto ret = MediaLibraryAlbumOperations::UpdateAlbumCoverUri(values, predicates, false);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("UpdateAlbumCoverUri_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, UpdateAlbumCoverUri_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdateAlbumCoverUri_test_002::Start");
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    string fileId = "0";
+    string coverUri = "file://media/Photo" + fileId;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, 1);
+    values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
+    values.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, 1);
+    auto ret = MediaLibraryAlbumOperations::UpdateAlbumCoverUri(values, predicates, true);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("UpdateAlbumCoverUri_test_002 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, ResetCoverUri_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("ResetCoverUri_test_001::Start");
+    string albumId = "1";
+    int32_t albumSubtype = 1;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, albumSubtype);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    values.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, 1);
+    auto ret = MediaLibraryAlbumOperations::ResetCoverUri(values, predicates);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("UpdateAlbumCoverUri_test_002 End");
+}
 } // namespace Media
 } // namespace OHOS
