@@ -92,7 +92,8 @@
           "json",
           "cJSON",
           "config_policy",
-          "config_policy_ext"
+          "config_policy_ext",
+          "qos_manager"
         ]
       },
       "build": {
