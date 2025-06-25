@@ -94,7 +94,8 @@
           "config_policy",
           "user_file_service",
           "image_framework",
-          "media_foundation"
+          "media_foundation",
+          "qos_manager"
         ]
       },
       "build": {

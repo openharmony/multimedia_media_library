@@ -152,7 +152,7 @@ HWTEST_F(GetFilePathFromUriTest, GetUriFromFilePathTest_002, TestSize.Level0) {
     MessageParcel data;
     MessageParcel reply;
     GetUriFromFilePathReqBody reqBody;
-    reqBody.fileId = "123";
+    reqBody.tempPath = "123";
     auto ret = reqBody.Marshalling(data);
     EXPECT_EQ(ret, true);
 

@@ -82,6 +82,14 @@ public:
     bool FindIsLivePhoto(const FileInfo &fileInfo);
     PhotoAlbumDao::PhotoAlbumRowData GetPhotoAlbumDaoRowData(std::string& lPath);
 
+    std::string ToLower(const std::string &str)
+    {
+        std::string lowerStr;
+        std::transform(
+            str.begin(), str.end(), std::back_inserter(lowerStr), [](unsigned char c) { return std::tolower(c); });
+        return lowerStr;
+    }
+ 
 private:
     PhotosRestore &SetMediaLibraryRdb(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
     {
@@ -101,13 +109,6 @@ private:
         this->photosBasicInfo_ = this->photosDao_.GetBasicInfo();
     }
     PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(const FileInfo &fileInfo);
-    std::string ToLower(const std::string &str)
-    {
-        std::string lowerStr;
-        std::transform(
-            str.begin(), str.end(), std::back_inserter(lowerStr), [](unsigned char c) { return std::tolower(c); });
-        return lowerStr;
-    }
     std::string ToString(const FileInfo &fileInfo)
     {
         std::stringstream ss;

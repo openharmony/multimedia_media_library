@@ -31,6 +31,7 @@ class EXPORT OnModifyRecord : public IPC::IMediaParcelable {
 public:
     std::string cloudId;
     std::string path;
+    std::string fileName;
     int32_t fileId;
     int64_t modifyTime;
     int64_t metaDateModified;
