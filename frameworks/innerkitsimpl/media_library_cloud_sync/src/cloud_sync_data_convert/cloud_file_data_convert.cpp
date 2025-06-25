@@ -816,12 +816,10 @@ int32_t CloudFileDataConvert::BuildModifyRecord(
     MDKRecordPhotosData photosData = MDKRecordPhotosData(result.GetDKRecord());
     std::optional<std::string> optionalCloudId = photosData.GetCloudId();
     record.cloudId = cloudId;
-    std::optional<std::string> optPath = photosData.GetFilePath();
-    record.path = optPath.value_or("");
-    std::optional<int32_t> optFileId = photosData.GetFileId();
-    record.fileId = optFileId.value_or(-1);
-    std::optional<int64_t> optSingleEditTime = photosData.GetDateModified().value_or(0);
-    int64_t singleEditTime = optSingleEditTime.value();
+    record.path = photosData.GetFilePath().value_or("");
+    record.fileName = photosData.GetFileName().value_or("");
+    record.fileId = photosData.GetFileId().value_or(-1);
+    int64_t singleEditTime = photosData.GetDateModified().value_or(0);
     int64_t dualEditTime = static_cast<int64_t>(result.GetDKRecord().GetEditedTime());
     record.modifyTime = dualEditTime > singleEditTime ? dualEditTime : singleEditTime;
     record.metaDateModified = photosData.GetPhotoMetaDateModified().value_or(-1);
