@@ -117,6 +117,9 @@ int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::st
 int32_t CloudFileDataConvert::HandleThumbSize(
     std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
+    if (type_ != FILE_CREATE && type_ != FILE_DATA_MODIFY) {
+        return E_OK;
+    }
     std::string path = upLoadRecord.data;
     CHECK_AND_RETURN_RET_LOG(!path.empty(), E_QUERY_CONTENT_IS_EMPTY, "HandleThumbSize failed to get filepath");
     int64_t fileSize;
