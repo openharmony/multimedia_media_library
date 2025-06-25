@@ -26,6 +26,7 @@ bool OnModifyRecord::Unmarshalling(MessageParcel &parcel)
 {
     parcel.ReadString(this->cloudId);
     parcel.ReadString(this->path);
+    parcel.ReadString(this->fileName);
     parcel.ReadInt32(this->fileId);
     parcel.ReadInt64(this->modifyTime);
     parcel.ReadInt64(this->metaDateModified);
@@ -43,6 +44,7 @@ bool OnModifyRecord::Marshalling(MessageParcel &parcel) const
 {
     parcel.WriteString(this->cloudId);
     parcel.WriteString(this->path);
+    parcel.WriteString(this->fileName);
     parcel.WriteInt32(this->fileId);
     parcel.WriteInt64(this->modifyTime);
     parcel.WriteInt64(this->metaDateModified);
