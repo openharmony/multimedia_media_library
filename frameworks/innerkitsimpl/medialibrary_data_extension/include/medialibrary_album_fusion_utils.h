@@ -31,6 +31,8 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore.h"
 #include "medialibrary_unistore_manager.h"
+#include "album_accurate_refresh.h"
+#include "asset_accurate_refresh.h"
 
 namespace OHOS {
 namespace Media {
@@ -67,7 +69,10 @@ public:
         const int32_t &assetId, const int32_t &ownerAlbumId, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int64_t &newAssetId);
     EXPORT static int32_t DeleteAlbumAndUpdateRelationship(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
-        const int32_t &oldAlbumId, const int64_t &newAlbumId, bool isCloudAblum);
+        const int32_t &oldAlbumId, const int64_t &newAlbumId, bool isCloudAblum,
+        std::shared_ptr<TransactionOperations> trans = nullptr,
+        std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh = nullptr,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
     EXPORT static bool IsCloudAlbum(std::shared_ptr<NativeRdb::ResultSet> resultSet);
     EXPORT static void BuildAlbumInsertValuesSetName(const std::shared_ptr<MediaLibraryRdbStore>& upgradeStore,
         NativeRdb::ValuesBucket &values, std::shared_ptr<NativeRdb::ResultSet> &resultSet,

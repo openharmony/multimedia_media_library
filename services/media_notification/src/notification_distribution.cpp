@@ -122,7 +122,7 @@ int32_t NotificationDistribution::ProcessNotifyInfo(const NotifyInfo& notifyInfo
     for (const auto& observerInfo : notifyInfo.observerInfos) {
         for (const auto& [notifyUriType, mediaChangeInfos] : notifyInfo.changeInfosMap) {
             if (!mediaChangeInfos.empty()) {
-                return ProcessMediaChangeInfos(mediaChangeInfos, notifyUriType, observerInfo);
+                ProcessMediaChangeInfos(mediaChangeInfos, notifyUriType, observerInfo);
             }
         }
     }

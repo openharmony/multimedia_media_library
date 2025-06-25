@@ -22,7 +22,7 @@ group("unittest") {
 ohos_unittest("media_notification_test") {
   module_out_path = "media_library/media_library-asset"
   include_dirs = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/register_manager",
     "../medialibrary_unittest_utils/include",
     "./include",
     "../get_self_permissions/include",
@@ -36,6 +36,7 @@ ohos_unittest("media_notification_test") {
   ]
 
   sources = [
+    "../get_self_permissions/src/get_self_permissions.cpp",
     "./src/notification_merging_test.cpp",
     "./src/notification_classification_test.cpp",
     "./src/notification_distribution_test.cpp",
@@ -49,7 +50,6 @@ ohos_unittest("media_notification_test") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/accurate_refresh_base.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/accurate_refresh_data_manager.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_accurate_refresh.cpp",
-    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_change_info.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_data_manager.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_refresh_execution.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/system_album_info_calculation.cpp",
@@ -60,7 +60,6 @@ ohos_unittest("media_notification_test") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/hiddem_asset_helper.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/image_asset_helper.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/owner_album_info_calculation.cpp",
-    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/photo_asset_change_info.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_asset_helper.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/trash_asset_helper.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/video_asset_helper.cpp",
@@ -76,6 +75,8 @@ ohos_unittest("media_notification_test") {
   ]
 
   external_deps = [
+    "access_token:libnativetoken_shared",
+    "access_token:libtokensetproc_shared",
     "ability_base:zuri",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
