@@ -86,6 +86,7 @@
 #include "userfilemgr_uri.h"
 #include "user_photography_info_column.h"
 #include "foreground_analysis_meta.h"
+#include "qos.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -8586,6 +8587,7 @@ static bool CheckTitleCompatible(MediaLibraryAsyncContext* context)
 
 static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
 {
+    OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     MediaLibraryTracer tracer;
     tracer.Start("JSCreateAssetExecute");
 
@@ -8627,6 +8629,7 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
 #endif
         }
     }
+    OHOS::QOS::ResetThreadQos();
 }
 
 static void PhotoAccessGrantPhotoUriPermissionExecute(napi_env env, void *data)
