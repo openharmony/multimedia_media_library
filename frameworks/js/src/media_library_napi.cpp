@@ -5471,6 +5471,7 @@ static napi_status ParseCreateConfig(napi_env env, napi_value arg,
         }
     }
     HandleBundleInfo(valuesBucket, isAuthorization, bundleInfo);
+    context.tokenId = bundleInfo.tokenId;
     context.valuesBucketArray.push_back(move(valuesBucket));
     return napi_ok;
 }
@@ -5555,8 +5556,8 @@ static napi_value ParseArgsCreateAgentCreateAssets(napi_env env, napi_callback_i
         bundleInfo.bundleName) == napi_ok, "Failed to get bundleName");
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE],
         bundleInfo.packageName) == napi_ok, "Failed to get appName");
-    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_TWO],
-        bundleInfo.appId) == napi_ok, "Failed to get appId");
+    CHECK_COND_WITH_MESSAGE(env, ParseTokenId(env, context->argv[ARGS_TWO],
+        bundleInfo.tokenId) == napi_ok, "Failed to get tokenId");
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));

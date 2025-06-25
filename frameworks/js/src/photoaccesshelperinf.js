@@ -451,6 +451,8 @@ async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
   let labelId = bundleInfo.appInfo.labelId;
   console.info('photoAccessHelper labelId is ' + appId + '.');
   let appName = '';
+  let tokenId = bundleInfo.appInfo.accessTokenId;
+  console.info('photoAccessHelper tokenId is ' + tokenId + '.');
   
   try {
     let modeleName = '';
@@ -465,7 +467,7 @@ async function createAssetWithShortTermPermissionOk(photoCreationConfig) {
 
     if (photoAccessHelper.checkShortTermPermission()) {
       let photoCreationConfigs = [photoCreationConfig];
-      let desFileUris = await getPhotoAccessHelper(getContext(this)).createAssetsHasPermission(bundleName, appName, appId,
+      let desFileUris = await getPhotoAccessHelper(getContext(this)).createAssetsHasPermission(bundleName, appName, tokenId,
         photoCreationConfigs);
       return new Promise((resolve, reject) => {
         resolve(desFileUris[0]);
