@@ -321,7 +321,6 @@ ohos_shared_library("medialibrary_nutils") {
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
     "window_manager:libwm",
-    "device_manager:devicemanagersdk",
     "e2fsprogs:libext2_uuid",
   ]
 
@@ -375,6 +374,11 @@ ohos_shared_library("medialibrary_nutils") {
       "image_framework:image_native",
     ]
     cflags_cc = [ "-DHAS_ACE_ENGINE_PART" ]
+  }
+
+  if (media_library_device_manager_enabled) {
+    defines += [ "DM_DEVICE_INFO_ENABLE" ]
+    external_deps += [ "device_manager:devicemanagersdk" ]
   }
 
   innerapi_tags = [ "platformsdk" ]
