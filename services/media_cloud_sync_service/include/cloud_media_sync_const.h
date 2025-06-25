@@ -277,6 +277,7 @@ enum ServerErrorCode {
     RESPONSE_TIME_OUT = 1019,          // 响应超时
     REQUEST_INHIBITED = 1020,          // 不允许
     INVALID_LOCK_PARAM = 1021,         // 锁参数不对
+    RENEW_RESOURCE = 1024,             // 需要重置id，并重新上传
 
     // networkkit 返回的错误
     NET_KIT_HTTP_ERROR = 10001,          // networkkit http错误，例如 服务端主动关闭拒绝
