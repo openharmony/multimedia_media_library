@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "ability_context_impl.h"
 #include "medialibrary_urisensitive_operations.h"
@@ -47,60 +48,44 @@ const int32_t PERMISSION_DEFAULT = -1;
 const int32_t SENSITIVE_DEFAULT = -1;
 const int32_t URI_DEFAULT = 0;
 const int32_t BatchInsertNumber = 5;
+static const int32_t NUM_BYTES = 1;
+static const int32_t MAX_PERMISSION_TYPE = 6;
+static const int32_t MAX_URI_TYPE = 2;
+static const int32_t MAX_SENSITIVE_TYPE = 4;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int32_t)) {
-        return 0;
-    }
-    return static_cast<int32_t>(*data);
-}
+FuzzedDataProvider *FDP = nullptr;
 
-static inline string FuzzString(const uint8_t *data, size_t size)
-{
-    return {reinterpret_cast<const char*>(data), size};
-}
-
-static int FuzzUriType(const uint8_t *data, size_t size)
+static int FuzzUriType()
 {
     vector<int> vecUriType;
     vecUriType.assign(Media::AppUriSensitiveColumn::URI_TYPES_ALL.begin(),
         Media::AppUriSensitiveColumn::URI_TYPES_ALL.end());
     vecUriType.push_back(URI_DEFAULT);
-    uint8_t length = static_cast<uint8_t>(vecUriType.size());
-    if (*data < length) {
-        return vecUriType[*data];
-    }
-    return Media::AppUriSensitiveColumn::URI_PHOTO;
+    uint8_t data = FDP->ConsumeIntegralInRange<uint8_t>(0, MAX_URI_TYPE);
+    return vecUriType[data];
 }
 
-static int FuzzPermissionType(const uint8_t *data, size_t size)
+static int FuzzPermissionType()
 {
     vector<int> vecPermissionType;
     vecPermissionType.assign(Media::AppUriPermissionColumn::PERMISSION_TYPES_ALL.begin(),
         Media::AppUriPermissionColumn::PERMISSION_TYPES_ALL.end());
     vecPermissionType.push_back(PERMISSION_DEFAULT);
-    uint8_t length = static_cast<uint8_t>(vecPermissionType.size());
-    if (*data < length) {
-        return vecPermissionType[*data];
-    }
-    return Media::AppUriPermissionColumn::PERMISSION_TEMPORARY_READ;
+    uint8_t data = FDP->ConsumeIntegralInRange<uint8_t>(0, MAX_PERMISSION_TYPE);
+    return vecPermissionType[data];
 }
 
-static int FuzzHideSensitiveType(const uint8_t *data, size_t size)
+static int FuzzHideSensitiveType()
 {
     vector<int> vecHideSensitiveType;
     vecHideSensitiveType.assign(Media::AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.begin(),
         Media::AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.end());
     vecHideSensitiveType.push_back(SENSITIVE_DEFAULT);
-    uint8_t length = static_cast<uint8_t>(vecHideSensitiveType.size());
-    if (*data < length) {
-        return vecHideSensitiveType[*data];
-    }
-    return Media::AppUriSensitiveColumn::SENSITIVE_ALL_DESENSITIZE;
+    uint8_t data = FDP->ConsumeIntegralInRange<uint8_t>(0, MAX_SENSITIVE_TYPE);
+    return vecHideSensitiveType[data];
 }
 
-static void InsertOperationFuzzer(string appId, int32_t photoId, int32_t sensitiveType, int32_t uriType)
+static void InsertOperationFuzzer(string appId, string photoId, int32_t sensitiveType, int32_t uriType)
 {
     DataShareValuesBucket values;
     values.Put(Media::AppUriSensitiveColumn::APP_ID, appId);
@@ -115,7 +100,7 @@ static void InsertOperationFuzzer(string appId, int32_t photoId, int32_t sensiti
     Media::UriSensitiveOperations::InsertOperation(cmd);
 }
 
-static void DeleteOperationFuzzer(string appId, int32_t photoId)
+static void DeleteOperationFuzzer(string appId, string photoId)
 {
     DataShare::DataSharePredicates dataSharePredicate;
     dataSharePredicate.And()->EqualTo(Media::AppUriSensitiveColumn::APP_ID, appId);
@@ -131,19 +116,18 @@ static void DeleteOperationFuzzer(string appId, int32_t photoId)
     Media::UriSensitiveOperations::DeleteOperation(cmd);
 }
 
-static void BatchInsertFuzzer(const uint8_t* data, size_t size)
+static void BatchInsertFuzzer(string appId, string photoId)
 {
     vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int32_t i = 0; i < BatchInsertNumber; i++) {
         DataShareValuesBucket value;
-        int32_t photoId = FuzzInt32(data, size);
-        value.Put(Media::AppUriSensitiveColumn::APP_ID, FuzzString(data, size));
+        value.Put(Media::AppUriSensitiveColumn::APP_ID, appId);
         value.Put(Media::AppUriSensitiveColumn::FILE_ID, photoId);
-        value.Put(Media::AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, FuzzHideSensitiveType(data, size));
-        value.Put(Media::AppUriPermissionColumn::PERMISSION_TYPE, FuzzPermissionType(data, size));
-        value.Put(Media::AppUriSensitiveColumn::URI_TYPE, FuzzUriType(data, size));
-        value.Put(Media::AppUriSensitiveColumn::SOURCE_TOKENID, FuzzInt32(data, size));
-        value.Put(Media::AppUriSensitiveColumn::TARGET_TOKENID, FuzzInt32(data, size));
+        value.Put(Media::AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, FuzzHideSensitiveType());
+        value.Put(Media::AppUriPermissionColumn::PERMISSION_TYPE, FuzzPermissionType());
+        value.Put(Media::AppUriSensitiveColumn::URI_TYPE, FuzzUriType());
+        value.Put(Media::AppUriSensitiveColumn::SOURCE_TOKENID, FDP->ConsumeIntegral<int32_t>());
+        value.Put(Media::AppUriSensitiveColumn::TARGET_TOKENID, FDP->ConsumeIntegral<int32_t>());
         dataShareValues.push_back(value);
     }
     Media::MediaLibraryCommand cmd(Media::OperationObject::APP_URI_PERMISSION_INNER, Media::OperationType::CREATE,
@@ -151,49 +135,49 @@ static void BatchInsertFuzzer(const uint8_t* data, size_t size)
     Media::UriSensitiveOperations::GrantUriSensitive(cmd, dataShareValues);
 }
 
-static void QuerySensitiveTypeFuzzer(const uint8_t* data, size_t size)
+static void QuerySensitiveTypeFuzzer()
 {
-    uint32_t tokenId = FuzzInt32(data, size);
-    std::string fileId = FuzzString(data, size);
+    uint32_t tokenId = FDP->ConsumeIntegral<uint32_t>();
+    std::string fileId = to_string(FDP->ConsumeIntegral<uint32_t>());
     Media::UriSensitiveOperations::QuerySensitiveType(tokenId, fileId);
 }
 
-static void QueryForceSensitiveFuzzer(const uint8_t* data, size_t size)
+static void QueryForceSensitiveFuzzer()
 {
-    uint32_t tokenId = FuzzInt32(data, size);
-    std::string fileId = FuzzString(data, size);
+    uint32_t tokenId = FDP->ConsumeIntegral<uint32_t>();
+    std::string fileId = to_string(FDP->ConsumeIntegral<uint32_t>());
     Media::UriSensitiveOperations::QueryForceSensitive(tokenId, fileId);
 }
 
-static void UpdateOperationFuzzer(const uint8_t* data, size_t size)
+static void UpdateOperationFuzzer(string appId, string photoId)
 {
     DataShare::DataSharePredicates dataSharePredicate;
-    dataSharePredicate.And()->EqualTo(Media::AppUriSensitiveColumn::APP_ID, FuzzString(data, size));
-    dataSharePredicate.And()->EqualTo(Media::AppUriSensitiveColumn::FILE_ID, FuzzInt32(data, size));
+    dataSharePredicate.And()->EqualTo(Media::AppUriSensitiveColumn::APP_ID, appId);
+    dataSharePredicate.And()->EqualTo(Media::AppUriSensitiveColumn::FILE_ID, photoId);
     Media::MediaLibraryCommand cmd(Media::OperationObject::APP_URI_PERMISSION_INNER, Media::OperationType::UPDATE,
         Media::MediaLibraryApi::API_10);
     cmd.SetTableName(Media::AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(dataSharePredicate,
         Media::AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     Media::UriSensitiveOperations::UpdateOperation(cmd, rdbPredicate);
-    std::string funcName = FuzzString(data, size);
+    std::string funcName = FDP->ConsumeBytesAsString(NUM_BYTES);
     std::shared_ptr<Media::TransactionOperations> trans = std::make_shared<Media::TransactionOperations>(funcName);
     Media::UriSensitiveOperations::UpdateOperation(cmd, rdbPredicate, trans);
 }
 
-static void UriSensitiveOperationsFuzzer(const uint8_t* data, size_t size)
+static void UriSensitiveOperationsFuzzer()
 {
-    int32_t photoId = FuzzInt32(data, size);
-    string appId = FuzzString(data, size);
-    int32_t sensitiveType = FuzzHideSensitiveType(data, size);
-    int32_t uriType = FuzzUriType(data, size);
+    string photoId = FDP->ConsumeBytesAsString(NUM_BYTES);
+    string appId = FDP->ConsumeBytesAsString(NUM_BYTES);
+    int32_t sensitiveType = FuzzHideSensitiveType();
+    int32_t uriType = FuzzUriType();
 
     InsertOperationFuzzer(appId, photoId, sensitiveType, uriType);
     DeleteOperationFuzzer(appId, photoId);
-    BatchInsertFuzzer(data, size);
-    QuerySensitiveTypeFuzzer(data, size);
-    QueryForceSensitiveFuzzer(data, size);
-    UpdateOperationFuzzer(data, size);
+    BatchInsertFuzzer(appId, photoId);
+    QuerySensitiveTypeFuzzer();
+    QueryForceSensitiveFuzzer();
+    UpdateOperationFuzzer(appId, photoId);
 }
 
 void SetTables()
@@ -241,6 +225,11 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    OHOS::UriSensitiveOperationsFuzzer(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::FDP = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::UriSensitiveOperationsFuzzer();
     return 0;
 }

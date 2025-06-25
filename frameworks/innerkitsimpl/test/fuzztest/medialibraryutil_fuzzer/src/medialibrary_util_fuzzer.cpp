@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <string>
 #include <thread>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "ability_context_impl.h"
 #include "app_mgr_interface.h"
@@ -55,64 +56,42 @@
 
 namespace OHOS {
 using namespace std;
-const int32_t EVEN = 2;
 const std::string ROOT_MEDIA_DIR = "/storage/cloud/files/";
 const std::string DISPLAY_NAME = "IMG_20250306_202859.jpg";
 const std::string FILE_HIDDEN = ".FileHidden/";
 static const int32_t E_ERR = -1;
+const int32_t NUM_BYTES = 1;
+static const int32_t MIN_CPU_AFFINITY_TYPE = -1;
+static const int32_t MAX_CPU_AFFINITY_TYPE = 11;
 static const string PHOTOS_TABLE = "Photos";
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
+FuzzedDataProvider *FDP = nullptr;
 
-static inline string FuzzString(const uint8_t *data, size_t size)
+static inline Uri FuzzUri()
 {
-    return {reinterpret_cast<const char*>(data), size};
+    return Uri(FDP->ConsumeBytesAsString(NUM_BYTES));
 }
 
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
+static inline Media::CpuAffinityType FuzzCpuAffinityType()
 {
-    if (data == nullptr || size < sizeof(int32_t)) {
-        return 0;
-    }
-    return static_cast<int32_t>(*data);
+    int32_t value = FDP->ConsumeIntegralInRange<int32_t>(MIN_CPU_AFFINITY_TYPE, MAX_CPU_AFFINITY_TYPE);
+    return static_cast<Media::CpuAffinityType>(value);
 }
 
-static inline bool FuzzBool(const uint8_t* data, size_t size)
+static inline Media::MediaLibraryCommand FuzzMediaLibraryCmd()
 {
-    if (size == 0) {
-        return false;
-    }
-    return (data[0] % EVEN) == 0;
+    return Media::MediaLibraryCommand(FuzzUri());
 }
 
-static inline Uri FuzzUri(const uint8_t *data, size_t size)
-{
-    return Uri(FuzzString(data, size));
-}
-
-static inline Media::CpuAffinityType FuzzCpuAffinityType(const uint8_t *data, size_t size)
-{
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(Media::CpuAffinityType::CPU_IDX_0) &&
-        value <= static_cast<int32_t>(Media::CpuAffinityType::CPU_IDX_11)) {
-        return static_cast<Media::CpuAffinityType>(value);
-    }
-    return Media::CpuAffinityType::CPU_IDX_DEFAULT;
-}
-
-static inline Media::MediaLibraryCommand FuzzMediaLibraryCmd(const uint8_t *data, size_t size)
-{
-    return Media::MediaLibraryCommand(FuzzUri(data, size));
-}
-
-static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
+static int32_t InsertAsset(string photoId)
 {
     if (g_rdbStore == nullptr) {
         return E_ERR;
     }
     NativeRdb::ValuesBucket values;
     values.PutString(Media::PhotoColumn::PHOTO_ID, photoId);
-    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
-    values.PutString(Media::PhotoColumn::PHOTO_LAST_VISIT_TIME, FuzzString(data, size));
+    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FDP->ConsumeBytesAsString(NUM_BYTES));
+    values.PutString(Media::PhotoColumn::PHOTO_LAST_VISIT_TIME, FDP->ConsumeBytesAsString(NUM_BYTES));
     int64_t fileId = 0;
     g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
     return static_cast<int32_t>(fileId);
@@ -149,66 +128,45 @@ static void Init()
     SetTables();
 }
 
-static void CommandTest(const uint8_t *data, size_t size)
+static void CommandTest()
 {
-    const int32_t int32Count = 10;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
-        return;
-    }
     NativeRdb::ValuesBucket value;
-    int32_t offset = 0;
-    int32_t operationObject1 = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t operationType1 = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t mediaLibraryApi1 = FuzzInt32(data + offset, size);
+    int32_t operationObject1 = FDP->ConsumeIntegral<int32_t>();
+    int32_t operationType1 = FDP->ConsumeIntegral<int32_t>();
+    int32_t mediaLibraryApi1 = FDP->ConsumeIntegral<int32_t>();
     Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(operationObject1),
         static_cast<Media::OperationType>(operationType1), static_cast<Media::MediaLibraryApi>(mediaLibraryApi1));
-    cmd.SetTableName(FuzzString(data, size));
-    cmd.SetBundleName(FuzzString(data, size));
-    cmd.SetDeviceName(FuzzString(data, size));
-    cmd.SetResult(FuzzString(data, size));
-    offset += sizeof(int32_t);
-    int32_t operationObject2 = FuzzInt32(data + offset, size);
+    cmd.SetTableName(FDP->ConsumeBytesAsString(NUM_BYTES));
+    cmd.SetBundleName(FDP->ConsumeBytesAsString(NUM_BYTES));
+    cmd.SetDeviceName(FDP->ConsumeBytesAsString(NUM_BYTES));
+    cmd.SetResult(FDP->ConsumeBytesAsString(NUM_BYTES));
+    int32_t operationObject2 = FDP->ConsumeIntegral<int32_t>();
     cmd.SetOprnObject(static_cast<Media::OperationObject>(operationObject2));
     cmd.GetOprnFileId();
-    cmd.SetOprnAssetId(FuzzString(data, size));
+    cmd.SetOprnAssetId(FDP->ConsumeBytesAsString(NUM_BYTES));
     DataShare::DataSharePredicates pred;
     cmd.SetDataSharePred(pred);
     cmd.SetValueBucket(value);
-    Media::MediaLibraryCommand cmdValueBucket(FuzzUri(data, size), value);
-    offset += sizeof(int32_t);
-    int32_t operationObject3 = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t operationType2 = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t mediaLibraryApi2 = FuzzInt32(data + offset, size);
+    Media::MediaLibraryCommand cmdValueBucket(FuzzUri(), value);
+    int32_t operationObject3 = FDP->ConsumeIntegral<int32_t>();
+    int32_t operationType2 = FDP->ConsumeIntegral<int32_t>();
+    int32_t mediaLibraryApi2 = FDP->ConsumeIntegral<int32_t>();
     Media::MediaLibraryCommand cmdValueBucket2(static_cast<Media::OperationObject>(operationObject3),
         static_cast<Media::OperationType>(operationType2), value,
         static_cast<Media::MediaLibraryApi>(mediaLibraryApi2));
-    offset += sizeof(int32_t);
-    int32_t operationObject4 = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t operationType3 = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t mediaLibraryApi3 = FuzzInt32(data + offset, size);
+    int32_t operationObject4 = FDP->ConsumeIntegral<int32_t>();
+    int32_t operationType3 = FDP->ConsumeIntegral<int32_t>();
+    int32_t mediaLibraryApi3 = FDP->ConsumeIntegral<int32_t>();
     Media::MediaLibraryCommand cmdDevice(static_cast<Media::OperationObject>(operationObject4),
-        static_cast<Media::OperationType>(operationType3), FuzzString(data, size),
+        static_cast<Media::OperationType>(operationType3), FDP->ConsumeBytesAsString(NUM_BYTES),
         static_cast<Media::MediaLibraryApi>(mediaLibraryApi3));
 }
 
-static void DirOperationTest(const uint8_t *data, size_t size)
+static void DirOperationTest()
 {
-    const int32_t int32Count = 3;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
-        return;
-    }
-    int32_t offset = 0;
-    int32_t operationObject = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t operationType = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t mediaLibraryApi = FuzzInt32(data + offset, size);
+    int32_t operationObject = FDP->ConsumeIntegral<int32_t>();
+    int32_t operationType = FDP->ConsumeIntegral<int32_t>();
+    int32_t mediaLibraryApi = FDP->ConsumeIntegral<int32_t>();
     Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(operationObject),
         static_cast<Media::OperationType>(operationType), static_cast<Media::MediaLibraryApi>(mediaLibraryApi));
     Media::MediaLibraryDirOperations::HandleDirOperation(cmd);
@@ -216,40 +174,31 @@ static void DirOperationTest(const uint8_t *data, size_t size)
     Media::MediaLibraryDirOperations::TrashDirOperation(cmd);
 }
 
-static void UriPermissionTest(const uint8_t *data, size_t size)
+static void UriPermissionTest()
 {
-    const int32_t int32Count = 6;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
-        return;
-    }
-    int32_t offset = 0;
-    int32_t operationObject = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t operationType = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t mediaLibraryApi = FuzzInt32(data + offset, size);
+    int32_t operationObject = FDP->ConsumeIntegral<int32_t>();
+    int32_t operationType = FDP->ConsumeIntegral<int32_t>();
+    int32_t mediaLibraryApi = FDP->ConsumeIntegral<int32_t>();
     Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(operationObject),
         static_cast<Media::OperationType>(operationType), static_cast<Media::MediaLibraryApi>(mediaLibraryApi));
     NativeRdb::ValuesBucket rdbValueBucket;
-    offset += sizeof(int32_t);
-    rdbValueBucket.Put(Media::PERMISSION_FILE_ID, FuzzInt32(data + offset, size));
-    rdbValueBucket.Put(Media::PERMISSION_BUNDLE_NAME, FuzzString(data, size));
+    rdbValueBucket.Put(Media::PERMISSION_FILE_ID, FDP->ConsumeIntegral<int32_t>());
+    rdbValueBucket.Put(Media::PERMISSION_BUNDLE_NAME, FDP->ConsumeBytesAsString(NUM_BYTES));
     rdbValueBucket.Put(Media::PERMISSION_MODE, "r");
-    rdbValueBucket.Put(Media::PERMISSION_TABLE_TYPE, FuzzString(data, size));
+    rdbValueBucket.Put(Media::PERMISSION_TABLE_TYPE, FDP->ConsumeBytesAsString(NUM_BYTES));
     cmd.SetValueBucket(rdbValueBucket);
     Media::UriPermissionOperations::HandleUriPermOperations(cmd);
     Media::UriPermissionOperations::HandleUriPermInsert(cmd);
-    offset += sizeof(int32_t);
-    Media::UriPermissionOperations::InsertBundlePermission(FuzzInt32(data + offset, size), FuzzString(data, size),
-        FuzzString(data, size), FuzzString(data, size));
-    Media::UriPermissionOperations::DeleteBundlePermission(FuzzString(data, size),
-        FuzzString(data, size), FuzzString(data, size));
+    Media::UriPermissionOperations::InsertBundlePermission(FDP->ConsumeIntegral<int32_t>(),
+        FDP->ConsumeBytesAsString(NUM_BYTES), FDP->ConsumeBytesAsString(NUM_BYTES),
+        FDP->ConsumeBytesAsString(NUM_BYTES));
+    Media::UriPermissionOperations::DeleteBundlePermission(FDP->ConsumeBytesAsString(NUM_BYTES),
+        FDP->ConsumeBytesAsString(NUM_BYTES), FDP->ConsumeBytesAsString(NUM_BYTES));
     string mode = "r";
-    Media::UriPermissionOperations::CheckUriPermission(FuzzString(data, size), mode);
+    Media::UriPermissionOperations::CheckUriPermission(FDP->ConsumeBytesAsString(NUM_BYTES), mode);
 
-    offset += sizeof(int32_t);
-    Media::UriPermissionOperations::GetUriPermissionMode(FuzzString(data, size), FuzzString(data, size),
-        FuzzInt32(data + offset, size), mode);
+    Media::UriPermissionOperations::GetUriPermissionMode(FDP->ConsumeBytesAsString(NUM_BYTES),
+        FDP->ConsumeBytesAsString(NUM_BYTES), FDP->ConsumeIntegral<int32_t>(), mode);
     Media::UriPermissionOperations::UpdateOperation(cmd);
     Media::UriPermissionOperations::InsertOperation(cmd);
     std::vector<NativeRdb::ValuesBucket> rdbValues;
@@ -268,57 +217,39 @@ static void UriPermissionTest(const uint8_t *data, size_t size)
     Media::UriPermissionOperations::DeleteAllTemporaryAsync();
 }
 
-static void AnalysisTest(const uint8_t *data, size_t size)
+static void AnalysisTest()
 {
-    const int32_t int32Count = 7;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
-        return;
-    }
     std::vector<std::string> columns;
     NativeRdb::ValuesBucket values;
     DataShare::DataSharePredicates pred;
-    int32_t offset = 0;
-    int32_t operationObject = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t operationType = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t mediaLibraryApi = FuzzInt32(data + offset, size);
+    int32_t operationObject = FDP->ConsumeIntegral<int32_t>();
+    int32_t operationType = FDP->ConsumeIntegral<int32_t>();
+    int32_t mediaLibraryApi = FDP->ConsumeIntegral<int32_t>();
     Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(operationObject),
         static_cast<Media::OperationType>(operationType), static_cast<Media::MediaLibraryApi>(mediaLibraryApi));
     cmd.SetTableName("Photos");
     Media::MergeAlbumInfo info1;
-    offset += sizeof(int32_t);
-    info1.albumId = FuzzInt32(data + offset, size);
+    info1.albumId = FDP->ConsumeIntegral<int32_t>();
     Media::MergeAlbumInfo info2;
-    offset += sizeof(int32_t);
-    info2.albumId = FuzzInt32(data + offset, size);
+    info2.albumId = FDP->ConsumeIntegral<int32_t>();
     std::vector<Media::MergeAlbumInfo> infos;
     infos.push_back(info1);
     infos.push_back(info2);
     Media::MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(infos);
-    offset += sizeof(int32_t);
     Media::MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(
-        static_cast<Media::OperationType>(FuzzInt32(data + offset, size)), values, pred);
+        static_cast<Media::OperationType>(FDP->ConsumeIntegral<int32_t>()), values, pred);
     Media::MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
-    offset += sizeof(int32_t);
-    Media::MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(FuzzInt32(data + offset, size));
+    Media::MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(FDP->ConsumeIntegral<int32_t>());
 }
 
-static void AppPermissionTest(const uint8_t *data, size_t size)
+static void AppPermissionTest()
 {
-    const int32_t int32Count = 3;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
-        return;
-    }
     std::vector<std::string> columns;
     NativeRdb::RdbPredicates rdbPred("Photos");
     DataShare::DataSharePredicates sharedPred;
-    int32_t offset = 0;
-    int32_t operationObject = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t operationType = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t mediaLibraryApi = FuzzInt32(data + offset, size);
+    int32_t operationObject = FDP->ConsumeIntegral<int32_t>();
+    int32_t operationType = FDP->ConsumeIntegral<int32_t>();
+    int32_t mediaLibraryApi = FDP->ConsumeIntegral<int32_t>();
     Media::MediaLibraryCommand cmd(static_cast<Media::OperationObject>(operationObject),
         static_cast<Media::OperationType>(operationType), static_cast<Media::MediaLibraryApi>(mediaLibraryApi));
     Media::MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
@@ -338,28 +269,28 @@ static void AppStateTest()
     Media::MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();
 }
 
-static void MediaLibraryManagerTest(const uint8_t *data, size_t size)
+static void MediaLibraryManagerTest()
 {
-    Media::MediaLibraryDataManagerUtils::IsNumber(FuzzString(data, size));
-    Media::MediaLibraryDataManagerUtils::GetOperationType(FuzzString(data, size));
-    Media::MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(FuzzString(data, size));
+    Media::MediaLibraryDataManagerUtils::IsNumber(FDP->ConsumeBytesAsString(NUM_BYTES));
+    Media::MediaLibraryDataManagerUtils::GetOperationType(FDP->ConsumeBytesAsString(NUM_BYTES));
+    Media::MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(FDP->ConsumeBytesAsString(NUM_BYTES));
     std::vector<std::string> whereArgs;
-    std::string str = FuzzString(data, size);
+    std::string str = FDP->ConsumeBytesAsString(NUM_BYTES);
     Media::MediaLibraryDataManagerUtils::ObtionCondition(str, whereArgs);
     Media::MediaLibraryDataManagerUtils::GetTypeUriByUri(str);
 }
 
-static void MultistageAdapterTest(const uint8_t *data, size_t size)
+static void MultistageAdapterTest()
 {
-    Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd(data, size);
+    Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd();
     Media::DatabaseAdapter::Update(cmd);
     MEDIA_INFO_LOG("MultistageAdapterTest");
 }
 
-static void MultistageTest(const uint8_t *data, size_t size)
+static void MultistageTest()
 {
-    std::string photoId = FuzzString(data, size);
-    int32_t fileId = InsertAsset(data, size, photoId);
+    std::string photoId = FDP->ConsumeBytesAsString(NUM_BYTES);
+    int32_t fileId = InsertAsset(photoId);
     MEDIA_INFO_LOG("fileId: %{public}d.", fileId);
     Media::MultiStagesCaptureDfxFirstVisit::GetInstance().Report(photoId);
     MEDIA_INFO_LOG("MultistageTest");
@@ -387,18 +318,18 @@ static void CloudDownloadTest()
     Media::BackgroundCloudFileProcessor::StopTimer();
 }
 
-static void CpuUtilsTest(const uint8_t *data, size_t size)
+static void CpuUtilsTest()
 {
     Media::CpuUtils::SlowDown();
-    Media::CpuAffinityType cpuAffinityType = FuzzCpuAffinityType(data, size);
+    Media::CpuAffinityType cpuAffinityType = FuzzCpuAffinityType();
     Media::CpuUtils::SetSelfThreadAffinity(cpuAffinityType);
     Media::CpuUtils::ResetSelfThreadAffinity();
     Media::CpuUtils::ResetCpu();
 }
 
-static void CommonUtilsTest(const uint8_t *data, size_t size)
+static void CommonUtilsTest()
 {
-    std::string str = FuzzString(data, size);
+    std::string str = FDP->ConsumeBytesAsString(NUM_BYTES);
     Media::MediaLibraryCommonUtils::CanConvertStrToInt32(str);
 }
 
@@ -409,28 +340,28 @@ static void CloudSyncUtilsTest()
     Media::CloudSyncUtils::IsCloudDataAgingPolicyOn();
 }
 
-static void ScannerUtilsTest(const uint8_t *data, size_t size)
+static void ScannerUtilsTest()
 {
-    std::string pathOrDisplayName = FuzzBool(data, size) ? DISPLAY_NAME : FuzzString(data, size);
+    std::string pathOrDisplayName = FDP->ConsumeBool() ? DISPLAY_NAME : FDP->ConsumeBytesAsString(NUM_BYTES);
     Media::ScannerUtils::GetFileExtension(pathOrDisplayName);
 
-    std::string path = FuzzBool(data, size) ? "" : FuzzString(data, size);
+    std::string path = FDP->ConsumeBool() ? "" : FDP->ConsumeBytesAsString(NUM_BYTES);
     Media::ScannerUtils::IsDirectory(path);
     Media::ScannerUtils::IsRegularFile(path);
 
-    path = FuzzBool(data, size) ? FILE_HIDDEN : FuzzString(data, size);
+    path = FDP->ConsumeBool() ? FILE_HIDDEN : FDP->ConsumeBytesAsString(NUM_BYTES);
     Media::ScannerUtils::IsFileHidden(path);
 
-    std::string dir = FuzzString(data, size);
+    std::string dir = FDP->ConsumeBytesAsString(NUM_BYTES);
     Media::ScannerUtils::GetRootMediaDir(dir);
 
-    std::string displayName = FuzzString(data, size);
+    std::string displayName = FDP->ConsumeBytesAsString(NUM_BYTES);
     Media::ScannerUtils::GetFileTitle(displayName);
 
-    path = FuzzBool(data, size) ? FILE_HIDDEN : FuzzString(data, size);
+    path = FDP->ConsumeBool() ? FILE_HIDDEN : FDP->ConsumeBytesAsString(NUM_BYTES);
     Media::ScannerUtils::IsDirHidden(path, true);
 
-    path = FuzzBool(data, size) ? ROOT_MEDIA_DIR + "Pictures": FuzzString(data, size);
+    path = FDP->ConsumeBool() ? ROOT_MEDIA_DIR + "Pictures": FDP->ConsumeBytesAsString(NUM_BYTES);
     Media::ScannerUtils::CheckSkipScanList(path);
 }
 } // namespace OHOS
@@ -447,20 +378,25 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     /* Run your code on data */
     int sleepTime = 100;
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
-    OHOS::CommandTest(data, size);
-    OHOS::DirOperationTest(data, size);
-    OHOS::UriPermissionTest(data, size);
-    OHOS::AnalysisTest(data, size);
-    OHOS::AppPermissionTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::FDP = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::CommandTest();
+    OHOS::DirOperationTest();
+    OHOS::UriPermissionTest();
+    OHOS::AnalysisTest();
+    OHOS::AppPermissionTest();
     OHOS::AppStateTest();
-    OHOS::MediaLibraryManagerTest(data, size);
-    OHOS::MultistageAdapterTest(data, size);
-    OHOS::MultistageTest(data, size);
+    OHOS::MediaLibraryManagerTest();
+    OHOS::MultistageAdapterTest();
+    OHOS::MultistageTest();
     OHOS::ActiveAnalysisTest();
     OHOS::CloudDownloadTest();
-    OHOS::CpuUtilsTest(data, size);
-    OHOS::CommonUtilsTest(data, size);
+    OHOS::CpuUtilsTest();
+    OHOS::CommonUtilsTest();
     OHOS::CloudSyncUtilsTest();
-    OHOS::ScannerUtilsTest(data, size);
+    OHOS::ScannerUtilsTest();
     return 0;
 }
