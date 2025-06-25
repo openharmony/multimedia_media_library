@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define MLOG_TAG "PhotoAlbumAni"
 #include "photo_album_ani.h"
 
 #include "ani_class_name.h"
@@ -20,8 +20,6 @@
 #include "file_asset_ani.h"
 #include "media_file_utils.h"
 #include "media_library_enum_ani.h"
-#include "medialibrary_client_errno.h"
-#include "medialibrary_ani_log.h"
 #include "medialibrary_ani_utils.h"
 #include "medialibrary_tracer.h"
 #include "photo_map_column.h"
@@ -29,11 +27,9 @@
 #include "userfile_client.h"
 #include "album_operation_uri.h"
 
-using namespace std;
-using namespace OHOS::DataShare;
-
 namespace OHOS::Media {
-
+using DataSharePredicates = OHOS::DataShare::DataSharePredicates;
+using DataShareValuesBucket = OHOS::DataShare::DataShareValuesBucket;
 struct PhotoAlbumAttributes {
     PhotoAlbumType albumType;
     PhotoAlbumSubType albumSubtype;
@@ -41,6 +37,7 @@ struct PhotoAlbumAttributes {
     std::string albumUri;
     int32_t count;
     std::string coverUri;
+    std::string lPath;
 };
 
 thread_local PhotoAlbum *PhotoAlbumAni::pAlbumData_ = nullptr;
@@ -70,13 +67,16 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
         ani_native_function {"getFaceIdInner", nullptr, reinterpret_cast<void *>(PhotoAccessHelperGetFaceId)},
         ani_native_function {"getImageCount", nullptr, reinterpret_cast<void *>(GetImageCount)},
         ani_native_function {"getVideoCount", nullptr, reinterpret_cast<void *>(GetVideoCount)},
+        ani_native_function {"getSharedPhotoAssets", nullptr,
+            reinterpret_cast<void *>(PhotoAccessGetSharedPhotoAssets)},
+        ani_native_function {"getdateAdded", nullptr, reinterpret_cast<void *>(GetdateAdded)},
+        ani_native_function {"getdateModified", nullptr, reinterpret_cast<void *>(GetdateModified)},
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE.c_str());
         return ANI_ERROR;
     }
-
     return ANI_OK;
 }
 
@@ -142,6 +142,8 @@ ani_status PhotoAlbumAni::InitAniPhotoAlbumOperator(ani_env *env, AniPhotoAlbumO
             &(photoAlbumOperator.setCount)), "No <set>count");
         CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>coverUri", nullptr,
             &(photoAlbumOperator.setCoverUri)), "No <set>coverUri");
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>lpath", nullptr,
+            &(photoAlbumOperator.setLPath)), "No <set>lPath");
     }
     return ANI_OK;
 }
@@ -191,6 +193,7 @@ static ani_status GetPhotoAlbumAttributes(ani_env *env, unique_ptr<PhotoAlbumAni
     attrs.albumUri = photoAlbum->GetAlbumUri();
     attrs.count = photoAlbum->GetCount();
     attrs.coverUri = photoAlbum->GetCoverUri();
+    attrs.lPath = photoAlbum->GetLPath();
     return ANI_OK;
 }
 
@@ -206,7 +209,8 @@ static ani_status BindAniAttributes(ani_env *env, const AniPhotoAlbumOperator &o
         ani_enum_item albumSubtype = 0;
         CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, attrs.albumSubtype, albumSubtype),
             "Get albumSubtype index fail");
-        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumSubtype, albumSubtype), "<set>albumType fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumSubtype, albumSubtype),
+            "<set>albumSubtype fail");
 
         ani_string albumName {};
         CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.albumName, albumName),
@@ -225,12 +229,17 @@ static ani_status BindAniAttributes(ani_env *env, const AniPhotoAlbumOperator &o
         CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.coverUri, coverUri),
             "ToAniString coverUri fail");
         CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setCoverUri, coverUri), "<set>coverUri fail");
+
+        ani_string lPath {};
+        CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.lPath, lPath), "ToAniString lPath fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setLPath, lPath), "<set>lPath fail");
     }
     return ANI_OK;
 }
 
 ani_object PhotoAlbumAni::PhotoAlbumAniConstructor(ani_env *env, const AniPhotoAlbumOperator &opt)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     unique_ptr<PhotoAlbumAni> obj = make_unique<PhotoAlbumAni>();
     CHECK_COND_RET(obj != nullptr, nullptr, "PhotoAlbumAni is nullptr");
     obj->env_ = env;
@@ -243,7 +252,8 @@ ani_object PhotoAlbumAni::PhotoAlbumAniConstructor(ani_env *env, const AniPhotoA
 
     ani_object albumHandle {};
     CHECK_COND_RET(env->Object_New(opt.cls, opt.ctor, &albumHandle,
-        reinterpret_cast<ani_long>(obj.release())) == ANI_OK, nullptr, "New PhotoAlbumHandle Fail");
+        reinterpret_cast<ani_long>(obj.get())) == ANI_OK, nullptr, "New PhotoAlbumHandle Fail");
+    (void)obj.release();
 
     CHECK_COND_RET(BindAniAttributes(env, opt, albumHandle, attrs) == ANI_OK,
         nullptr, "PhotoAlbum BindAniAttributes Fail");
@@ -298,7 +308,7 @@ static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbu
         }
         return MediaLibraryAniUtils::GetAnalysisAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
     }
-    
+
     if ((type != PhotoAlbumType::SYSTEM) || (subType == PhotoAlbumSubType::USER_GENERIC) ||
         (subType == PhotoAlbumSubType::ANY)) {
         return E_INVALID_ARGUMENTS;
@@ -376,12 +386,13 @@ static void ConvertColumnsForPortrait(unique_ptr<PhotoAlbumAniContext> &context)
 
 static void PhotoAccessGetPhotoAssetsExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     Uri uri(PAH_QUERY_PHOTO_MAP);
     ConvertColumnsForPortrait(context);
     int32_t errCode = 0;
-    int32_t userId = -1;
+    int32_t userId = DEFAULT_USER_ID;
     if (context->objectInfo != nullptr) {
-        shared_ptr<PhotoAlbum> photoAlbum =  context->objectInfo->GetPhotoAlbumInstance();
+        shared_ptr<PhotoAlbum> photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
         if (photoAlbum != nullptr) {
             userId = photoAlbum->GetUserId();
         }
@@ -392,6 +403,7 @@ static void PhotoAccessGetPhotoAssetsExecute(ani_env *env, unique_ptr<PhotoAlbum
         return;
     }
     context->fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    CHECK_NULL_PTR_RETURN_VOID(context->fetchResult, "context->fetchResult is nullptr");
     context->fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     context->fetchResult->SetUserId(userId);
 }
@@ -436,7 +448,7 @@ static ani_object PhotoAccessGetPhotoAssetsExecuteSync(ani_env *env, unique_ptr<
     ConvertColumnsForPortrait(context);
     int32_t errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
-    CHECK_COND_RET(resultSet != nullptr, nullptr, "Query failed,resultSet is nullptr");
+    CHECK_COND_RET(resultSet != nullptr, nullptr, "Query failed, resultSet is nullptr");
     CHECK_NULLPTR_RET(resultSet);
     auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     CHECK_COND_RET(fetchResult != nullptr, nullptr, "Failed to create FetchResult");
@@ -444,9 +456,9 @@ static ani_object PhotoAccessGetPhotoAssetsExecuteSync(ani_env *env, unique_ptr<
 
     std::vector<std::unique_ptr<FileAsset>> fileAssetArray;
     auto file = fetchResult->GetFirstObject();
-    int32_t userId = -1;
+    int32_t userId = DEFAULT_USER_ID;
     if (context->objectInfo != nullptr) {
-        shared_ptr<PhotoAlbum> photoAlbum =  context->objectInfo->GetPhotoAlbumInstance();
+        shared_ptr<PhotoAlbum> photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
         if (photoAlbum != nullptr) {
             userId = photoAlbum->GetUserId();
         }
@@ -482,6 +494,7 @@ void SyncAlbumName(ani_env *env, ani_object object, std::shared_ptr<PhotoAlbum> 
     CHECK_IF_EQUAL(MediaLibraryAniUtils::GetProperty(env, object, "albumName", albumName) == ANI_OK,
         "Failed to get albumName");
     CHECK_IF_EQUAL(!albumName.empty(), "Get empty albumName");
+    CHECK_IF_EQUAL(MediaFileUtils::CheckAlbumName(albumName) == E_OK, "Invalid albumName");
     photoAlbum->SetAlbumName(albumName);
 }
 
@@ -635,6 +648,7 @@ static ani_status ParseArgsAddAssets(ani_env *env, ani_object object, ani_object
 static bool FetchNewCount(unique_ptr<PhotoAlbumAniContext> &context)
 {
     CHECK_COND_RET(context != nullptr, false, "context is nullptr");
+    CHECK_COND_RET(context->objectInfo != nullptr, false, "context->objectInfo is nullptr");
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     if (photoAlbum == nullptr) {
         ANI_ERR_LOG("photoAlbum is nullptr");
@@ -684,7 +698,7 @@ static void PhotoAlbumAddAssetsExecute(ani_env *env, unique_ptr<PhotoAlbumAniCon
     string addAssetsUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
         UFM_PHOTO_ALBUM_ADD_ASSET : PAH_PHOTO_ALBUM_ADD_ASSET;
     Uri uri(addAssetsUri);
-    
+
     auto changedRows = UserFileClient::BatchInsert(uri, context->valuesBuckets);
     if (changedRows < 0) {
         context->SaveError(changedRows);
@@ -787,6 +801,7 @@ static void PhotoAlbumRemoveAssetsComplete(ani_env *env, unique_ptr<PhotoAlbumAn
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     ani_object errorObj {};
     if (context->error == ERR_DEFAULT) {
+        CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "context->objectInfo is nullptr");
         auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
         CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is nullptr");
         photoAlbum->SetCount(context->newCount);
@@ -938,7 +953,7 @@ static ani_status ParseArgsSetCoverUri(ani_env *env, ani_object object, ani_stri
 
     std::string coverUri;
     CHECK_STATUS_RET(MediaLibraryAniUtils::GetParamStringPathMax(env, uri, coverUri), "Parse coverUri failed.");
-    
+
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "Only system apps can update album cover");
         return ANI_ERROR;
@@ -1055,4 +1070,63 @@ ani_double PhotoAlbumAni::GetVideoCount(ani_env *env, ani_object object)
     int32_t videoCount = photoAlbumAni->GetPhotoAlbumInstance()->GetVideoCount();
     return static_cast<ani_double>(videoCount);
 }
+
+ani_object PhotoAlbumAni::PhotoAccessGetSharedPhotoAssets(ani_env *env, ani_object object, ani_object options)
+{
+    ANI_DEBUG_LOG("%{public}s is called", __func__);
+    ani_object returnObj {};
+    CHECK_COND_RET(env != nullptr, returnObj, "env is null");
+    auto asyncContext = std::make_unique<PhotoAlbumAniContext>();
+    CHECK_COND_WITH_RET_MESSAGE(env, asyncContext != nullptr, returnObj, "asyncContext is nullptr");
+    CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsGetPhotoAssets(env, object, options, asyncContext) == ANI_OK,
+        returnObj, "objectInfo is nullptr");
+
+    Uri uri(PAH_QUERY_PHOTO_MAP);
+    ConvertColumnsForPortrait(asyncContext);
+
+    PhotoAlbumAniContext* context = static_cast<PhotoAlbumAniContext*>(asyncContext.get());
+    CHECK_COND_WITH_RET_MESSAGE(env, context != nullptr, returnObj, "context is nullptr");
+    shared_ptr<NativeRdb::ResultSet> resultSet = UserFileClient::QueryRdb(uri,
+        context->predicates, context->fetchColumn);
+    CHECK_NULLPTR_RET(resultSet);
+
+    int err = resultSet->GoToFirstRow();
+    CHECK_COND_RET(err == ANI_OK, returnObj, "GoToFirstRow failed %{public}d", err);
+
+    std::vector<MediaLibraryAniUtils::VarMap> array;
+    do {
+        MediaLibraryAniUtils::VarMap object;
+        CHECK_COND_RET(MediaLibraryAniUtils::GetNextRowObject(env, resultSet, true, object) == ANI_OK,
+            returnObj, "GetNextRowObject failed");
+        array.push_back(object);
+    } while (!resultSet->GoToNextRow());
+    resultSet->Close();
+    ani_object aniArray;
+    CHECK_COND_RET(MediaLibraryAniUtils::ToAniVariantArray(env, array, aniArray) == ANI_OK, returnObj,
+        "ToAniVariantArray failed");
+    return aniArray;
+}
+
+ani_double PhotoAlbumAni::GetdateAdded(ani_env *env, ani_object object)
+{
+    PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
+    if (photoAlbumAni == nullptr || photoAlbumAni->GetPhotoAlbumInstance() == nullptr) {
+        ANI_ERR_LOG("photoAlbumAni or photoAlbum is nullptr");
+        return 0;
+    }
+    auto dateAdded = photoAlbumAni->GetPhotoAlbumInstance()->GetDateAdded();
+    return static_cast<ani_double>(dateAdded);
+}
+
+ani_double PhotoAlbumAni::GetdateModified(ani_env *env, ani_object object)
+{
+    PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
+    if (photoAlbumAni == nullptr || photoAlbumAni->GetPhotoAlbumInstance() == nullptr) {
+        ANI_ERR_LOG("photoAlbumAni or photoAlbum is nullptr");
+        return 0;
+    }
+    auto dateModified = photoAlbumAni->GetPhotoAlbumInstance()->GetDateModified();
+    return static_cast<ani_double>(dateModified);
+}
+
 } // namespace OHOS::Media

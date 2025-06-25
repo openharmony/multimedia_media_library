@@ -19,9 +19,6 @@
 #include "media_file_utils.h"
 #include "userfile_client.h"
 
-using namespace std;
-using namespace OHOS::DataShare;
-
 namespace OHOS {
 namespace Media {
 #ifdef HAS_ACE_ENGINE_PART
@@ -49,9 +46,9 @@ void DeleteCallback::OnResult(int32_t resultCode, const OHOS::AAFwk::Want &resul
         string trashUri = PAH_TRASH_PHOTO;
         MediaLibraryAniUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
         Uri updateAssetUri(trashUri);
-        DataSharePredicates predicates;
+        DataShare::DataSharePredicates predicates;
         predicates.In(MediaColumn::MEDIA_ID, this->uris_);
-        DataShareValuesBucket valuesBucket;
+        DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
         int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
         if (changedRows < 0) {
@@ -105,5 +102,5 @@ void DeleteCallback::CloseModalUIExtension()
     }
 #endif
 }
-}
-}
+} // namespace Media
+} // namespace OHOS

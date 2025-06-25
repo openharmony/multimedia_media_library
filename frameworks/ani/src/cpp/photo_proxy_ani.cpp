@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-#include "ani_class_name.h"
-#include "medialibrary_ani_log.h"
 #include "photo_proxy_ani.h"
+#include "ani_class_name.h"
 #include "medialibrary_ani_utils.h"
 
 namespace OHOS {
@@ -88,11 +87,11 @@ ani_object PhotoProxyAni::PhotoProxyAniConstructor(ani_env *env, [[maybe_unused]
 
     // wrap nativeHandle to aniObject
     ani_object aniObject;
-    if (ANI_OK !=env->Object_New(cls, ctor, &aniObject, reinterpret_cast<ani_long>(nativeHandle.release()))) {
+    if (ANI_OK != env->Object_New(cls, ctor, &aniObject, reinterpret_cast<ani_long>(nativeHandle.get()))) {
         ANI_ERR_LOG("New PhotoProxy Fail");
         return nullptr;
     }
-
+    (void)nativeHandle.release();
     return aniObject;
 }
 

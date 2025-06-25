@@ -13,24 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_ASSET_MANAGER_CALLBACK_H
-#define MEDIA_ASSET_MANAGER_CALLBACK_H
+#ifndef FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_LIBRARY_COMM_NAPI_H
+#define FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_LIBRARY_COMM_NAPI_H
 
+#include <ani.h>
 #include <string>
-#include "transcoder.h"
 
 namespace OHOS {
 namespace Media {
-class MediaAssetManagerCallback : public TransCoderCallback {
+#define EXPORT __attribute__ ((visibility ("default")))
+class MediaLibraryCommAni {
 public:
-    MediaAssetManagerCallback() = default;
-    ~MediaAssetManagerCallback() = default;
-    void SetRequestId(std::string requestId);
-protected:
-    void OnError(int32_t errCode, const std::string &errorMsg) override;
-    void OnInfo(int32_t type, int32_t extra) override;
-    std::string requestId_;
+    MediaLibraryCommAni();
+    ~MediaLibraryCommAni();
+    EXPORT static ani_object CreatePhotoAssetAni(ani_env *env, const std::string &uri,
+        int32_t cameraShotType, const std::string &burstKey = "");
+    EXPORT static ani_object CreatePhotoAssetAni(ani_env *env, const std::string &uri,
+        int32_t cameraShotType, int32_t captureId, const std::string &burstKey = "");
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIA_ASSET_MANAGER_CALLBACK_H
+#endif  // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_LIBRARY_COMM_NAPI_H

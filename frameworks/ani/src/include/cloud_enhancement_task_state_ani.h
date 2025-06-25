@@ -17,6 +17,7 @@
 #define FRAMEWORKS_ANI_SRC_INCLUDE_CLOUD_ENHANCEMENT_TASK_STATE_ANI_H
 
 #include <ani.h>
+#include <memory>
 #include "cloud_enhancement_ani.h"
 
 namespace OHOS {
@@ -59,6 +60,6 @@ private:
     int32_t statusCode_ {UNDEFINED};
 };
 
-}
-}
+} // namespace Media
+} // namespace OHOS
 #endif // FRAMEWORKS_ANI_SRC_INCLUDE_CLOUD_ENHANCEMENT_TASK_STATE_ANI_H

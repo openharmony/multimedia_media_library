@@ -29,6 +29,10 @@ static const std::string PAH_ANI_CLASS_FILE_ASSET_INFO = PAH_CLASS_SPACE + "File
 static const std::string PAH_ANI_CLASS_CLOUD_ENHANCEMENT = PAH_CLASS_SPACE + "CloudEnhancement;";
 static const std::string PAH_ANI_CLASS_CLOUD_ENHANCEMENT_TASK_STATE_HANDLE =
     PAH_CLASS_SPACE + "CloudEnhancementTaskStateHandle;";
+static const std::string PAH_ANI_CLASS_CLOUD_MEDIA_ASSET_MANAGER =
+    PAH_CLASS_SPACE + "CloudMediaAssetManager;";
+static const std::string PAH_ANI_CLASS_CLOUD_MEDIA_ASSET_STATUS_HANDLE =
+    PAH_CLASS_SPACE + "CloudMediaAssetStatusHandle;";
 static const std::string PAH_ANI_CLASS_FETCH_RESULT_HANDLE = PAH_CLASS_SPACE + "FetchResultHandle;";
 static const std::string PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE = PAH_CLASS_SPACE + "AlbumHandle;";
 static const std::string PAH_ANI_CLASS_HIGHLIGHT_ALBUM = PAH_CLASS_SPACE + "HighlightAlbum;";
@@ -49,6 +53,8 @@ static const std::string PAH_ANI_CLASS_MEDIA_ASSETS_EDIT_DATA = PAH_CLASS_SPACE 
 static const std::string PAH_ANI_CLASS_MEDIA_MANAGER = PAH_CLASS_SPACE + "MediaAssetManager;";
 static const std::string PAH_ANI_CLASS_MEDIA_DATA_HANDLER = PAH_CLASS_SPACE + "MediaAssetDataHandler;";
 static const std::string PAH_ANI_CLASS_MEDIA_PROGRESS_HANDLER = PAH_CLASS_SPACE + "MediaAssetProgressHandler;";
+static const std::string PAH_ANI_CLASS_SHARED_PHOTO_ASSET_HANDLE = PAH_CLASS_SPACE + "SharedPhotoAssetHandle;";
+static const std::string PAH_ANI_CLASS_SHARED_ALBUM_ASSET_HANDLE = PAH_CLASS_SPACE + "SharedAlbumAssetHandle;";
 
 // ETS Enum in photoAccessHelper
 static const std::string PAH_ANI_CLASS_ENUM_PHOTO_TYPE = PAH_CLASS_SPACE + "PhotoType;";
@@ -62,6 +68,7 @@ static const std::string PAH_ANI_CLASS_ENUM_MOVING_PHOTO_EFFECT_MODE = PAH_CLASS
 static const std::string PAH_ANI_CLASS_ENUM_CLOUD_ENHANCEMENT_TASK_STAGE =
     PAH_CLASS_SPACE + "CloudEnhancementTaskStage;";
 static const std::string PAH_ANI_CLASS_ENUM_RESOURCE_TYPE = PAH_CLASS_SPACE + "ResourceType;";
+static const std::string PAH_ANI_CLASS_ENUM_IMAGEFILE_TYPE = PAH_CLASS_SPACE + "ImageFileType;";
 
 // ETS Class in userFileManager
 static const std::string UFM_ANI_CLASS_USER_FILE_MANAGER_HANDLE = UFM_CLASS_SPACE + "UserFileManagerHandle;";

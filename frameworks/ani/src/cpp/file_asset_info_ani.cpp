@@ -16,7 +16,6 @@
 #include "file_asset_info_ani.h"
 
 #include "ani_class_name.h"
-#include "medialibrary_ani_log.h"
 #include "medialibrary_ani_utils.h"
 #include "media_library_enum_ani.h"
 #include "media_column.h"
@@ -47,7 +46,6 @@ ani_object FileAssetInfo::ToFileAssetInfoObject(ani_env *env, std::unique_ptr<Fi
         ANI_ERR_LOG("BindFileAssetInfoAttributes failed");
         return nullptr;
     }
-
     return fileAssetObj;
 }
 
@@ -62,7 +60,8 @@ ani_status FileAssetInfo::BindFileAssetInfoAttributes(ani_env *env, ani_class cl
     CHECK_STATUS_RET(SetDisplayName(env, cls, object, fileAsset->GetDisplayName()), "SetDisplayName failed");
     CHECK_STATUS_RET(SetSize(env, cls, object, (double)fileAsset->GetSize()), "SetSize failed");
     CHECK_STATUS_RET(SetDateAdded(env, cls, object, (double)fileAsset->GetDateAdded()), "SetDateAdded failed");
-    CHECK_STATUS_RET(SetDateModified(env, cls, object, (double)fileAsset->GetDateModified()), "SetDateModified failed");
+    CHECK_STATUS_RET(SetDateModified(env, cls, object, (double)fileAsset->GetDateModified()),
+        "SetDateModified failed");
     CHECK_STATUS_RET(SetDuration(env, cls, object, (double)fileAsset->GetDuration()), "SetDuration failed");
     CHECK_STATUS_RET(SetWidth(env, cls, object, (double)fileAsset->GetWidth()), "SetWidth failed");
     CHECK_STATUS_RET(SetHeight(env, cls, object, (double)fileAsset->GetHeight()), "SetHeight failed");
@@ -88,7 +87,6 @@ ani_status FileAssetInfo::BindFileAssetInfoAttributes(ani_env *env, ani_class cl
     CHECK_STATUS_RET(SetDateTrashedMs(env, cls, object, (double)fileAsset->GetDateTrashed()),
         "SetDateTrashedMs failed");
     CHECK_STATUS_RET(SetSubtype(env, cls, object, (PhotoSubType)fileAsset->GetPhotoSubType()), "SetSubtype failed");
-
     return ANI_OK;
 }
 

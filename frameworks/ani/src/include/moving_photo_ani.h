@@ -16,7 +16,7 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_MOVING_PHOTO_ANI_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_MOVING_PHOTO_ANI_H
 
-#include <ani.h>
+#include <string>
 #include "ani_error.h"
 #include "media_library_enum_ani.h"
 
@@ -30,7 +30,7 @@ struct MovingPhotoAsyncContext;
 
 class MovingPhotoAni {
 public:
-    MovingPhotoAni(const std::string& photoUri) : photoUri_(photoUri) {};
+    explicit MovingPhotoAni(const std::string& photoUri) : photoUri_(photoUri) {}
     ~MovingPhotoAni() = default;
     static ani_status Init(ani_env *env);
     static MovingPhotoAni* Unwrap(ani_env *env, ani_object object);
@@ -38,7 +38,8 @@ public:
     static int32_t OpenReadOnlyLivePhoto(const std::string& destLivePhotoUri);
     static int32_t OpenReadOnlyMetadata(const std::string& movingPhotoUri);
     static ani_object NewMovingPhotoAni(ani_env *env, const std::string& photoUri, SourceMode sourceMode,
-        MovingPhotoParam movingPhotoParam, const std::function<void(int, int, std::string)> callbacks);
+        MovingPhotoParam movingPhotoParam,
+        const std::function<void(int, int, std::string)> callbacks = [](int, int, std::string) {});
     static void SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context);
     std::string GetUriInner();
     SourceMode GetSourceMode();
@@ -91,5 +92,4 @@ struct MovingPhotoAsyncContext : public AniError {
 };
 } // namespace Media
 } // namespace OHOS
-
 #endif // FRAMEWORKS_ANI_SRC_INCLUDE_MOVING_PHOTO_ANI_H

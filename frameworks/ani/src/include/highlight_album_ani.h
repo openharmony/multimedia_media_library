@@ -16,7 +16,9 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_HIGHLIGHT_ALBUM_ANI_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_HIGHLIGHT_ALBUM_ANI_H
 
-#include <ani.h>
+#include <memory>
+#include <string>
+#include <vector>
 #include "ani_error.h"
 #include "datashare_predicates.h"
 #include "datashare_values_bucket.h"
@@ -48,11 +50,14 @@ private:
     static HighlightAlbumAni* Unwrap(ani_env *env, ani_object object);
 
     EXPORT static ani_string GetHighlightAlbumInfo(ani_env *env, ani_object object, ani_enum_item type);
+    EXPORT static ani_object GetHighlightResource(ani_env *env, ani_object object, ani_string resourceUri);
+    EXPORT static ani_status SetHighlightUserActionData(ani_env *env, ani_object object, ani_enum_item type,
+         ani_int actionDataAni);
     EXPORT static ani_status SetSubTitle(ani_env *env, ani_object object, ani_object subTitle);
     EXPORT static ani_double DeleteHighlightAlbums(ani_env *env, ani_object object, ani_object context,
         ani_object albums);
 
-    ani_env *highlightmEnv_;
+    ani_env *highlightEnv_;
     std::shared_ptr<PhotoAlbum> highlightAlbumPtr = nullptr;
 };
 
@@ -79,7 +84,7 @@ struct HighlightAlbumAniContext : public AniError {
     int32_t actionData = 0;
     std::string resourceUri;
     std::string subtitle;
-
+    ani_arraybuffer aniArrayBuffer;
     HighlightAlbumAni *objectInfo;
 };
 
