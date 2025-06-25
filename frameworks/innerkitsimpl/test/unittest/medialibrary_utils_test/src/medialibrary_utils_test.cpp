@@ -15,7 +15,6 @@
 
 #include <thread>
 #include "avmetadatahelper.h"
-#include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
 #include "media_remote_thumbnail_column.h"
 #include "medialibrary_db_const.h"

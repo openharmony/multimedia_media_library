@@ -37,6 +37,7 @@ ohos_unittest("medialibrary_handler_unittest") {
   external_deps = [
     "data_share:datashare_common",
     "data_share:datashare_consumer",
+    "ipc:ipc_core",
   ]
 
   sanitize = {

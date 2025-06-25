@@ -29,7 +29,7 @@
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "datashare_helper.h"
-#include "foundation/ability/ability_runtime/interfaces/kits/native/appkit/ability_runtime/context/context.h"
+#include "context.h"
 #include "thumbnail_manager.h"
 
 namespace OHOS {

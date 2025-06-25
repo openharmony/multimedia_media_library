@@ -76,6 +76,7 @@ ohos_unittest("medialibrary_rdb_test") {
     "ffrt:libffrt",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "ipc:ipc_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
