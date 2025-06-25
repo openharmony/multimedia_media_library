@@ -48,7 +48,7 @@
 #include "media_gallery_sync_notify.h"
 #include "cloud_media_sync_const.h"
 #include "cloud_media_dao_utils.h"
-+#include "media_file_utils.h"
+#include "media_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
