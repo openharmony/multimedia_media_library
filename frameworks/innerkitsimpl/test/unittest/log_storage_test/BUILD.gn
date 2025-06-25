@@ -78,7 +78,7 @@ ohos_unittest("log_storage_test") {
     "samgr:samgr_proxy",
     "window_manager:libdm",
     "zlib:shared_libz",
-     "googletest:gmock",
+    "googletest:gmock",
     "googletest:gtest",
   ]
 
