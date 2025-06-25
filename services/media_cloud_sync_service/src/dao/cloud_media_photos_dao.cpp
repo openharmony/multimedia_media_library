@@ -1465,7 +1465,7 @@ int32_t CloudMediaPhotosDao::HandleSameNameRename(
     CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "rename same name get store failed.");
     size_t dotPos = photo.fileName.rfind('.');
     if (dotPos == std::string::npos) {
-        MEDIA_INFO_LOG("fileName have no suffix");
+        MEDIA_ERR_LOG("fileName have no suffix, %{private}s.", photo.fileName.c_str());
         dotPos = photo.fileName.length();
     }
     std::string fileName = photo.fileName.substr(0, dotPos);
