@@ -87,7 +87,7 @@ ani_object CloudEnhancementTaskStateAni::NewCloudEnhancementTaskStateAni(ani_env
     CHECK_COND_RET(aniObject != nullptr, nullptr, "Failed to construct CloudEnhancementTaskStateAni");
     CHECK_COND_RET(BindAniAttributes(env, cls, aniObject, nativeHandle) == ANI_OK, nullptr,
         "CloudEnhancementTaskStateAni BindAniAttributes Fail");
-    nativeHandle.release();
+    (void)nativeHandle.release();
     return aniObject;
 }
 
@@ -103,7 +103,7 @@ ani_object CloudEnhancementTaskStateAni::Constructor(ani_env *env, ani_class cls
     }
 
     ani_object aniObject;
-    if (ANI_OK !=env->Object_New(cls, ctor, &aniObject, reinterpret_cast<ani_long>(nativeHandle.get()))) {
+    if (ANI_OK != env->Object_New(cls, ctor, &aniObject, reinterpret_cast<ani_long>(nativeHandle.get()))) {
         ANI_ERR_LOG("New CloudEnhancementTaskStateAni Fail");
         return nullptr;
     }

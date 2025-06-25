@@ -13,15 +13,10 @@
  * limitations under the License.
  */
 
-#include "ani_class_name.h"
 #include "media_asset_edit_data_ani.h"
+#include "ani_class_name.h"
 #include "media_file_utils.h"
 #include "medialibrary_ani_utils.h"
-#include "medialibrary_client_errno.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_ani_log.h"
-
-using namespace std;
 
 namespace OHOS::Media {
 constexpr int32_t EDIT_FORMAT_MAX_LENGTH = 256;
@@ -80,7 +75,7 @@ ani_status MediaAssetEditDataAni::Constructor(ani_env *env, ani_object aniObject
     CHECK_STATUS_RET(env->Object_CallMethodByName_Void(
         aniObject, "create", nullptr, reinterpret_cast<ani_long>(obj.get())),
         "Failed to call create method to construct MediaAssetEditDataAni!");
-    obj.release();
+    (void)obj.release();
     return ANI_OK;
 }
 
@@ -168,6 +163,40 @@ ani_string MediaAssetEditDataAni::DataGetter(ani_env *env, ani_object object)
 shared_ptr<MediaAssetEditData> MediaAssetEditDataAni::GetMediaAssetEditData() const
 {
     return editData_;
+}
+
+ani_object MediaAssetEditDataAni::CreateMediaAssetEditData(ani_env *env, const std::string compatibleFormat,
+                                                           const std::string formatVersion, const std::string data)
+{
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    ani_string ani_CompatibleFormat {};
+    ani_string ani_FormatVersion {};
+    ani_string ani_Data {};
+    MediaLibraryAniUtils::ToAniString(env, compatibleFormat, ani_CompatibleFormat);
+    MediaLibraryAniUtils::ToAniString(env, formatVersion, ani_FormatVersion);
+    static const char *className = PAH_ANI_CLASS_MEDIA_ASSETS_EDIT_DATA.c_str();
+    ani_class cls {};
+    CHECK_COND_RET(env->FindClass(className, &cls) == ANI_OK,
+        nullptr, "Can't find class");
+    ani_method ctor;
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", nullptr, &ctor)) {
+        ANI_ERR_LOG("Failed to find method: %{public}s", "ctor");
+        return nullptr;
+    }
+    ani_object aniObject;
+    if (ANI_OK != env->Object_New(cls, ctor, &aniObject, ani_CompatibleFormat, ani_FormatVersion)) {
+        ANI_ERR_LOG("Failed to create MediaAssetEditDataAni!");
+        return nullptr;
+    }
+
+    MediaLibraryAniUtils::ToAniString(env, data, ani_Data);
+    MediaAssetEditDataAni* assetEditData = Unwrap(env, aniObject);
+    if (assetEditData == nullptr) {
+        ANI_ERR_LOG("assetEditData is nullptr");
+        return nullptr;
+    }
+    assetEditData->SetData(data);
+    return aniObject;
 }
 
 string MediaAssetEditDataAni::GetCompatibleFormat() const

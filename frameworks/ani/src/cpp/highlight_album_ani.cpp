@@ -13,17 +13,15 @@
  * limitations under the License.
  */
 
+#include "highlight_album_ani.h"
 #include <unordered_map>
 #include <unordered_set>
 
-#include "highlight_album_ani.h"
 #include "ani_class_name.h"
 #include "file_asset_ani.h"
 #include "media_album_change_request_ani.h"
 #include "media_file_utils.h"
 #include "media_library_enum_ani.h"
-#include "medialibrary_client_errno.h"
-#include "medialibrary_ani_log.h"
 #include "medialibrary_ani_utils.h"
 #include "medialibrary_tracer.h"
 #include "photo_album_ani.h"
@@ -36,8 +34,7 @@
 #include "userfile_client.h"
 #include "vision_column.h"
 #include "album_operation_uri.h"
-
-using namespace std;
+#include "highlight_column.h"
 
 namespace OHOS::Media {
 namespace {
@@ -58,7 +55,20 @@ static const map<int32_t, struct HighlightAlbumInfo> HIGHLIGHT_ALBUM_INFO_MAP = 
         MUSIC, FILTER, HIGHLIGHT_PLAY_INFO, IS_CHOSEN, PLAY_INFO_VERSION, PLAY_INFO_ID } } },
 };
 
-HighlightAlbumAni::HighlightAlbumAni() : highlightmEnv_(nullptr) {}
+static const map<int32_t, std::string> HIGHLIGHT_USER_ACTION_MAP = {
+    { INSERTED_PIC_COUNT, HIGHLIGHT_INSERT_PIC_COUNT },
+    { REMOVED_PIC_COUNT, HIGHLIGHT_REMOVE_PIC_COUNT },
+    { SHARED_SCREENSHOT_COUNT, HIGHLIGHT_SHARE_SCREENSHOT_COUNT },
+    { SHARED_COVER_COUNT, HIGHLIGHT_SHARE_COVER_COUNT },
+    { RENAMED_COUNT, HIGHLIGHT_RENAME_COUNT },
+    { CHANGED_COVER_COUNT, HIGHLIGHT_CHANGE_COVER_COUNT },
+    { RENDER_VIEWED_TIMES, HIGHLIGHT_RENDER_VIEWED_TIMES },
+    { RENDER_VIEWED_DURATION, HIGHLIGHT_RENDER_VIEWED_DURATION },
+    { ART_LAYOUT_VIEWED_TIMES, HIGHLIGHT_ART_LAYOUT_VIEWED_TIMES },
+    { ART_LAYOUT_VIEWED_DURATION, HIGHLIGHT_ART_LAYOUT_VIEWED_DURATION },
+};
+
+HighlightAlbumAni::HighlightAlbumAni() : highlightEnv_(nullptr) {}
 
 HighlightAlbumAni::~HighlightAlbumAni() = default;
 
@@ -74,14 +84,17 @@ ani_status HighlightAlbumAni::Init(ani_env *env)
     std::array methods = {
         ani_native_function {"nativeConstructor", nullptr, reinterpret_cast<void *>(Constructor)},
         ani_native_function {"getHighlightAlbumInfoInner", nullptr, reinterpret_cast<void *>(GetHighlightAlbumInfo)},
-
+        ani_native_function {"getHighlightResourceInner", nullptr, reinterpret_cast<void *>(GetHighlightResource)},
+        ani_native_function {"setHighlightUserActionDataInner", nullptr,
+            reinterpret_cast<void *>(SetHighlightUserActionData)},
+        ani_native_function {"setSubTitleInner", nullptr, reinterpret_cast<void *>(SetSubTitle)},
+        ani_native_function {"deleteHighlightAlbumsInner", nullptr, reinterpret_cast<void *>(DeleteHighlightAlbums)},
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", PAH_ANI_CLASS_HIGHLIGHT_ALBUM.c_str());
         return ANI_ERROR;
     }
-
     return ANI_OK;
 }
 
@@ -96,14 +109,14 @@ ani_status HighlightAlbumAni::AnalysisAlbumInit(ani_env *env)
     }
 
     std::array methods = {
-        ani_native_function {"nativeConstructor", nullptr, reinterpret_cast<void *>(Constructor)}
+        ani_native_function {"nativeConstructor", nullptr, reinterpret_cast<void *>(Constructor)},
+        ani_native_function {"getOrderPositionInner", nullptr, reinterpret_cast<void *>(GetOrderPosition)}
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", PAH_ANI_CLASS_HIGHLIGHT_ALBUM.c_str());
         return ANI_ERROR;
     }
-
     return ANI_OK;
 }
 
@@ -139,7 +152,7 @@ ani_long HighlightAlbumAni::Constructor(ani_env *env, [[maybe_unused]] ani_objec
     unique_ptr<HighlightAlbumAni> highlightAlbum = make_unique<HighlightAlbumAni>();
     CHECK_COND_RET(highlightAlbum != nullptr, 0, "Failed to new HighlightAlbumAni");
     highlightAlbum->highlightAlbumPtr = photoAlbumPtr;
-    highlightAlbum->highlightmEnv_ = env;
+    highlightAlbum->highlightEnv_ = env;
     return reinterpret_cast<ani_long>(highlightAlbum.release());
 }
 
@@ -150,7 +163,7 @@ void HighlightAlbumAni::Destructor(ani_env *env, ani_object object)
     if (highlightAlbum == nullptr) {
         return;
     }
-    highlightAlbum->highlightmEnv_ = nullptr;
+    highlightAlbum->highlightEnv_ = nullptr;
     delete highlightAlbum;
 }
 
@@ -181,13 +194,14 @@ static void GetHighlightAlbumInfoExecute(ani_env *env, unique_ptr<HighlightAlbum
     }
     int32_t albumId = context->albumId;
     PhotoAlbumSubType subType = context->subType;
-    Uri uri (uriStr);
+    Uri uri(uriStr);
     if (subType == PhotoAlbumSubType::HIGHLIGHT) {
         predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
     } else if (subType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID, to_string(albumId));
     } else {
         ANI_ERR_LOG("Invalid highlight album subType");
+        context->error = JS_ERR_PARAMETER_INVALID;
         return;
     }
     int errCode = 0;
@@ -220,6 +234,7 @@ ani_string HighlightAlbumAni::GetHighlightAlbumInfo(ani_env *env, ani_object obj
     tracer.Start("GetHighlightAlbumInfo");
 
     unique_ptr<HighlightAlbumAniContext> context = make_unique<HighlightAlbumAniContext>();
+    CHECK_COND_RET(context != nullptr, nullptr, "context is null");
     context->objectInfo = Unwrap(env, object);
     if (context->objectInfo == nullptr) {
         ANI_ERR_LOG("Unwrap HighlightAlbumAni fail");
@@ -243,6 +258,192 @@ ani_string HighlightAlbumAni::GetHighlightAlbumInfo(ani_env *env, ani_object obj
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     GetHighlightAlbumInfoExecute(env, context);
     return GetHighlightAlbumInfoComplete(env, context);
+}
+
+static int32_t GetFdForArrayBuffer(std::string uriStr)
+{
+    int32_t fd = 0;
+    Uri uri(uriStr);
+    fd = UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
+    if (fd == E_ERR) {
+        ANI_ERR_LOG("Open highlight cover file failed, error: %{public}d", errno);
+        return E_HAS_FS_ERROR;
+    } else if (fd < 0) {
+        ANI_ERR_LOG("Open highlight cover file failed due to OpenFile failure");
+        return fd;
+    }
+    return fd;
+}
+
+static void GetHighlightResourceExecute(ani_env *env, unique_ptr<HighlightAlbumAniContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetHighlightResourceExecute");
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
+    if (context->resourceUri.find(MEDIA_DATA_DB_HIGHLIGHT) == string::npos) {
+        ANI_ERR_LOG("Invalid highlight resource uri");
+        return;
+    }
+    int32_t fd = GetFdForArrayBuffer(context->resourceUri);
+    if (fd < 0) {
+        return;
+    }
+    UniqueFd uniqueFd(fd);
+    off_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
+    if (fileLen < 0) {
+        ANI_ERR_LOG("Failed to get highlight cover file length, error: %{public}d", errno);
+        return;
+    }
+    off_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
+    if (ret < 0) {
+        ANI_ERR_LOG("Failed to reset highlight cover file offset, error: %{public}d", errno);
+        return;
+    }
+    void* arrayBufferData = nullptr;
+    ani_arraybuffer arrayBuffer = {};
+
+    if (env->CreateArrayBuffer(fileLen, &arrayBufferData, &arrayBuffer) != ANI_OK) {
+        ANI_ERR_LOG("Create array buffer fail");
+        return;
+    }
+    ssize_t readBytes = read(uniqueFd.Get(), arrayBufferData, fileLen);
+    if (readBytes != fileLen) {
+        ANI_ERR_LOG("read file failed, read bytes is %{public}zu,""actual length is %{public}" PRId64
+            ",error: %{public}d", readBytes, fileLen, errno);
+        return;
+    }
+    context->aniArrayBuffer = arrayBuffer;
+}
+
+static ani_arraybuffer GetHighlightResourceCompleteCallback(ani_env *env,
+    unique_ptr<HighlightAlbumAniContext> &context)
+{
+    ani_arraybuffer result {};
+    ani_object errorObj {};
+    CHECK_COND_RET(context != nullptr, result, "context is null");
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, errorObj);
+    } else {
+        result = context->aniArrayBuffer;
+    }
+    context.reset();
+    return result;
+}
+
+ani_object HighlightAlbumAni::GetHighlightResource(ani_env *env, ani_object object, ani_string resourceUri)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetHighlightResource");
+
+    unique_ptr<HighlightAlbumAniContext> context = make_unique<HighlightAlbumAniContext>();
+    CHECK_COND_RET(context != nullptr, nullptr, "context is null");
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        ANI_ERR_LOG("Unwrap HighlightAlbumAni fail");
+        return nullptr;
+    }
+    std::string resourceUriStr("");
+    auto ret = MediaLibraryAniUtils::GetString(env, resourceUri, resourceUriStr);
+    CHECK_COND_WITH_RET_MESSAGE(env, ret == ANI_OK, nullptr, "get resourceUriStr failed");
+    context->resourceUri = resourceUriStr;
+
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, nullptr, "photoAlbum is null");
+    if (!PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        ANI_ERR_LOG("Only and smart highlight album can get highlight resource");
+        return nullptr;
+    }
+    context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    GetHighlightResourceExecute(env, context);
+    return GetHighlightResourceCompleteCallback(env, context);
+}
+
+static void SetHighlightUserActionDataExecute(ani_env *env, unique_ptr<HighlightAlbumAniContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetHighlightUserActionDataExecute");
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
+    string userActionType("");
+    if (HIGHLIGHT_USER_ACTION_MAP.find(context->highlightUserActionType) != HIGHLIGHT_USER_ACTION_MAP.end()) {
+        userActionType = HIGHLIGHT_USER_ACTION_MAP.at(context->highlightUserActionType);
+        context->fetchColumn.push_back(userActionType);
+    } else {
+        ANI_ERR_LOG("Invalid highlightUserActionType");
+        return;
+    }
+    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "context->objectInfo is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo->GetPhotoAlbumInstance(), "GetPhotoAlbumInstance is nullptr");
+    int albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
+    Uri uri(URI_HIGHLIGHT_ALBUM);
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    if (resultSet != nullptr) {
+        auto count = 0;
+        auto ret = resultSet->GetRowCount(count);
+        if (ret != NativeRdb::E_OK || count == 0 || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+            ANI_ERR_LOG("highlight user action data get rdbstore failed");
+            context->error = JS_INNER_FAIL;
+            return;
+        }
+        int64_t userActionDataCount = get<int64_t>(ResultSetUtils::GetValFromColumn(userActionType,
+            resultSet, TYPE_INT64));
+        context->valuesBucket.Put(userActionType, to_string(userActionDataCount + context->actionData));
+        int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
+        context->SaveError(changedRows);
+        context->changedRows = changedRows;
+    } else {
+        ANI_ERR_LOG("highlight user action data get rdbstore failed");
+        context->error = JS_INNER_FAIL;
+        return;
+    }
+}
+
+static ani_status SetHighlightUserActionDataCompleteCallback(ani_env *env,
+    unique_ptr<HighlightAlbumAniContext> &context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is null");
+    CHECK_COND_WITH_RET_MESSAGE(env, context != nullptr, ANI_INVALID_ARGS, "context is nullptr");
+    ani_status result {};
+    ani_object errorObj {};
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, errorObj);
+        result = ANI_ERROR;
+    }
+    context.reset();
+    return result;
+}
+
+ani_status HighlightAlbumAni::SetHighlightUserActionData(ani_env *env, ani_object object,
+    ani_enum_item type, ani_int actionDataAni)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetHighlightUserActionData");
+    unique_ptr<HighlightAlbumAniContext> context = make_unique<HighlightAlbumAniContext>();
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is null");
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        ANI_ERR_LOG("Unwrap HighlightAlbumAni fail");
+        return ANI_ERROR;
+    }
+    int32_t actionData = 0;
+    auto ret = MediaLibraryAniUtils::GetInt32(env, actionDataAni, actionData);
+    CHECK_COND_WITH_RET_MESSAGE(env, ret == ANI_OK, ANI_ERROR, "get actionData failed");
+    context->actionData = actionData;
+    int32_t typeInt = 0;
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, type, typeInt)== ANI_OK,
+        ANI_ERROR, "Failed to get photoType");
+    context->highlightUserActionType = typeInt;
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, ANI_ERROR, "photoAlbum is null");
+    if (!PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        ANI_ERR_LOG("Only and smart highlight album can set highlight user action data");
+        return ANI_ERROR;
+    }
+    context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+
+    SetHighlightUserActionDataExecute(env, context);
+    return SetHighlightUserActionDataCompleteCallback(env, context);
 }
 
 static ani_object GetOrderPositionComplete(ani_env *env, std::unique_ptr<HighlightAlbumAniContext> &context)
@@ -370,7 +571,7 @@ static void SetHighlightSubtitleExecute(std::unique_ptr<HighlightAlbumAniContext
     tracer.Start("SetHighlightSubtitleExecute");
 
     CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
-    if (context->objectInfo == nullptr) {
+    if (context->objectInfo == nullptr || context->objectInfo->GetPhotoAlbumInstance() == nullptr) {
         ANI_ERR_LOG("objectInfo is null");
         context->SaveError(ANI_INVALID_ARGS);
         return;
@@ -429,7 +630,7 @@ ani_double HighlightAlbumAni::DeleteHighlightAlbums(ani_env *env, ani_object obj
     }
 
     auto aniContext = std::make_unique<HighlightAlbumAniContext>();
-    CHECK_COND_WITH_RET_MESSAGE(env, context != nullptr, returnObj, "context is nullptr");
+    CHECK_COND_WITH_RET_MESSAGE(env, aniContext != nullptr, returnObj, "aniContext is nullptr");
     CHECK_COND_WITH_RET_MESSAGE(env, MediaAlbumChangeRequestAni::InitUserFileClient(env, context), returnObj,
         "DeleteAlbums InitUserFileClient failed");
 

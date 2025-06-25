@@ -19,6 +19,7 @@
 #include <ani.h>
 #include <string>
 #include <uv.h>
+#include <vector>
 
 #include "want.h"
 #ifdef HAS_ACE_ENGINE_PART
@@ -65,6 +66,6 @@ private:
     void SendMessageBack();
     void CloseModalUIExtension();
 };
-}
-}
+} // namespace Media
+} // namespace OHOS
 #endif // FRAMEWORKS_ANI_SRC_INCLUDE_DELETE_CALLBACK_H

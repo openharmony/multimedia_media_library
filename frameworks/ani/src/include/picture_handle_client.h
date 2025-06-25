@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_PICTURE_HANDLE_CLIENT_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_PICTURE_HANDLE_CLIENT_H
 
+#include <memory>
 #include "message_parcel.h"
 #include "picture.h"
 #include "surface_buffer.h"

@@ -13,29 +13,21 @@
  * limitations under the License.
  */
 
-#include <ani.h>
-#include <iostream>
-#include <array>
-#include "ani_error.h"
-#include "ani_class_name.h"
 #include "media_assets_change_request_ani.h"
-#include "media_log.h"
+#include <memory>
+#include <string>
+#include <vector>
+#include <unordered_set>
+#include <utility>
+#include "ani_class_name.h"
+#include "medialibrary_ani_utils.h"
 #include "userfile_client.h"
-#include "medialibrary_ani_log.h"
-
-using namespace std;
-using namespace OHOS::DataShare;
 
 namespace OHOS::Media {
 
 constexpr int32_t YES = 1;
 constexpr int32_t NO = 0;
-
-std::vector<std::shared_ptr<FileAsset>> MediaAssetsChangeRequestAni::fileAssets_;
-std::vector<AssetsChangeOperation> MediaAssetsChangeRequestAni::assetsChangeOperations_;
-bool MediaAssetsChangeRequestAni::isFavorite_;
-bool MediaAssetsChangeRequestAni::isHidden_;
-std::string MediaAssetsChangeRequestAni::userComment_;
+constexpr int32_t USER_COMMENT_MAX_LEN = 420;
 
 MediaAssetsChangeRequestAni::MediaAssetsChangeRequestAni(vector<shared_ptr<FileAsset>> fileAssets)
 {
@@ -48,11 +40,6 @@ MediaAssetsChangeRequestAni::~MediaAssetsChangeRequestAni()
     fileAssets_.clear();
 }
 
-void MediaAssetsChangeRequestAni::RecordChangeOperation(AssetsChangeOperation changeOperation)
-{
-    assetsChangeOperations_.push_back(changeOperation);
-}
-
 void MediaAssetsChangeRequestAni::SetFavorite([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
     ani_boolean isFavorite)
 {
@@ -60,15 +47,17 @@ void MediaAssetsChangeRequestAni::SetFavorite([[maybe_unused]] ani_env *env, [[m
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return;
     }
-    auto context =  Unwrap(env, object);
-    if (context == nullptr) {
-        return;
-    }
-    for (const auto& fileAsset : context->fileAssets_) {
+    auto asyncContext = std::make_unique<MediaAssetsChangeRequestAniContext>();
+    CHECK_NULL_PTR_RETURN_VOID(asyncContext, "Failed to create asyncContext");
+    asyncContext->objectInfo = Unwrap(env, object);
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_NULL_PTR_RETURN_VOID(changeRequest, "changeRequest is null");
+    changeRequest->isFavorite_ = isFavorite;
+    for (const auto& fileAsset : changeRequest->fileAssets_) {
+        CHECK_NULL_PTR_RETURN_VOID(fileAsset, "fileAsset is null");
         fileAsset->SetFavorite(isFavorite);
     }
-    context->isFavorite_ = isFavorite;
-    RecordChangeOperation(AssetsChangeOperation::BATCH_SET_FAVORITE);
+    changeRequest->assetsChangeOperations_.push_back(AssetsChangeOperation::BATCH_SET_FAVORITE);
 }
 
 void MediaAssetsChangeRequestAni::SetHidden([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
@@ -78,15 +67,18 @@ void MediaAssetsChangeRequestAni::SetHidden([[maybe_unused]] ani_env *env, [[may
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return;
     }
-    auto context = Unwrap(env, object);
-    if (context == nullptr) {
-        return;
-    }
-    for (const auto& fileAsset : context->fileAssets_) {
+
+    auto asyncContext = std::make_unique<MediaAssetsChangeRequestAniContext>();
+    CHECK_NULL_PTR_RETURN_VOID(asyncContext, "Failed to create asyncContext");
+    asyncContext->objectInfo = Unwrap(env, object);
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_NULL_PTR_RETURN_VOID(changeRequest, "changeRequest is null");
+    changeRequest->isHidden_ = isHidden;
+    for (const auto& fileAsset : changeRequest->fileAssets_) {
+        CHECK_NULL_PTR_RETURN_VOID(fileAsset, "fileAsset is null");
         fileAsset->SetHidden(isHidden);
     }
-    context->isHidden_ = isHidden;
-    RecordChangeOperation(AssetsChangeOperation::BATCH_SET_HIDDEN);
+    changeRequest->assetsChangeOperations_.push_back(AssetsChangeOperation::BATCH_SET_HIDDEN);
 }
 
 ani_object MediaAssetsChangeRequestAni::SetUserComment([[maybe_unused]] ani_env *env,
@@ -99,52 +91,92 @@ ani_object MediaAssetsChangeRequestAni::SetUserComment([[maybe_unused]] ani_env 
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return result;
     }
-    auto context = Unwrap(env, object);
-    CHECK_COND_WITH_MESSAGE(env, context != nullptr, "[SetUserComment] context is null");
 
-    std::string stdComment("");
-    CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetString(env, comment, stdComment) == ANI_OK,
+    auto asyncContext = std::make_unique<MediaAssetsChangeRequestAniContext>();
+    CHECK_COND_WITH_MESSAGE(env, asyncContext != nullptr, "Failed to create asyncContext");
+    asyncContext->objectInfo = Unwrap(env, object);
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND_WITH_MESSAGE(env, changeRequest != nullptr, "changeRequest is null");
+    std::string userComment("");
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetString(env, comment, userComment) == ANI_OK,
         "Failed to get comment");
-    for (const auto& fileAsset : context->fileAssets_) {
-        fileAsset->SetUserComment(stdComment);
+    CHECK_COND_WITH_MESSAGE(env, userComment.length() <= USER_COMMENT_MAX_LEN, "user comment too long");
+    for (const auto& fileAsset : changeRequest->fileAssets_) {
+        CHECK_COND_WITH_MESSAGE(env, fileAsset != nullptr, "fileAsset is null");
+        fileAsset->SetUserComment(userComment);
     }
-    context->userComment_ = std::move(stdComment);
-    RecordChangeOperation(AssetsChangeOperation::BATCH_SET_USER_COMMENT);
+    changeRequest->userComment_ = std::move(userComment);
+    changeRequest->assetsChangeOperations_.push_back(AssetsChangeOperation::BATCH_SET_USER_COMMENT);
     return result;
 }
 
-bool MediaAssetsChangeRequestAni::SetAssetsPropertyExecute(const AssetsChangeOperation& changeOperation)
+ani_object MediaAssetsChangeRequestAni::SetIsRecentShow([[maybe_unused]] ani_env *env,
+    [[maybe_unused]] ani_object object, ani_boolean isRecentShowAni)
+{
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = std::make_unique<MediaAssetsChangeRequestAniContext>();
+    CHECK_COND_WITH_MESSAGE(env, asyncContext != nullptr, "Failed to create asyncContext");
+    asyncContext->objectInfo = Unwrap(env, object);
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND_WITH_MESSAGE(env, changeRequest != nullptr, "changeRequest is null");
+    bool isRecentShow;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetBool(env, isRecentShowAni, isRecentShow) == ANI_OK,
+        "Failed to get isRecentShowAni");
+    for (const auto& fileAsset : changeRequest->fileAssets_) {
+        CHECK_COND_WITH_MESSAGE(env, fileAsset != nullptr, "fileAsset is null");
+        fileAsset->SetRecentShow(isRecentShow);
+    }
+    changeRequest->isRecentShow_ = isRecentShow;
+    changeRequest->assetsChangeOperations_.push_back(AssetsChangeOperation::BATCH_SET_RECENT_SHOW);
+
+    ani_object result {};
+    MediaLibraryAniUtils::GetUndefinedObject(env, result);
+    return result;
+}
+
+static bool SetAssetsPropertyExecute(
+    const MediaAssetsChangeRequestAniContext& context, const AssetsChangeOperation& changeOperation)
 {
     string uri;
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
-    predicates.In(PhotoColumn::MEDIA_ID, GetFileAssetUriArray());
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is null");
+    predicates.In(PhotoColumn::MEDIA_ID, changeRequest->GetFileAssetUriArray());
     switch (changeOperation) {
         case AssetsChangeOperation::BATCH_SET_FAVORITE:
             uri = PAH_BATCH_UPDATE_FAVORITE;
-            valuesBucket.Put(PhotoColumn::MEDIA_IS_FAV, GetFavoriteStatus() ? YES : NO);
-            MEDIA_INFO_LOG("Batch set favorite: %{public}d", GetFavoriteStatus() ? YES : NO);
+            valuesBucket.Put(PhotoColumn::MEDIA_IS_FAV, changeRequest->GetFavoriteStatus() ? YES : NO);
+            ANI_INFO_LOG("Batch set favorite: %{public}d", changeRequest->GetFavoriteStatus() ? YES : NO);
             break;
         case AssetsChangeOperation::BATCH_SET_HIDDEN:
             uri = PAH_HIDE_PHOTOS;
-            valuesBucket.Put(PhotoColumn::MEDIA_HIDDEN, GetHiddenStatus() ? YES : NO);
+            valuesBucket.Put(PhotoColumn::MEDIA_HIDDEN, changeRequest->GetHiddenStatus() ? YES : NO);
             break;
         case AssetsChangeOperation::BATCH_SET_USER_COMMENT:
             uri = PAH_BATCH_UPDATE_USER_COMMENT;
-            valuesBucket.Put(PhotoColumn::PHOTO_USER_COMMENT, GetUserComment());
+            valuesBucket.Put(PhotoColumn::PHOTO_USER_COMMENT, changeRequest->GetUserComment());
+            break;
+        case AssetsChangeOperation::BATCH_SET_RECENT_SHOW:
+            uri = PAH_BATCH_UPDATE_RECENT_SHOW;
+            valuesBucket.Put(PhotoColumn::PHOTO_IS_RECENT_SHOW, changeRequest->GetRecentShowStatus() ? YES : NO);
             break;
         default:
-            MEDIA_ERR_LOG("Unsupported assets change operation: %{public}d", changeOperation);
+            ANI_ERR_LOG("Unsupported assets change operation: %{public}d", changeOperation);
             return false;
     }
-
-    MEDIA_INFO_LOG("changeOperation:%{public}d, size:%{public}zu",
-        changeOperation, GetFileAssetUriArray().size());
+    ANI_INFO_LOG("changeOperation:%{public}d, size:%{public}zu",
+        changeOperation, changeRequest->GetFileAssetUriArray().size());
     MediaLibraryAniUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetsUri(uri);
     int32_t changedRows = UserFileClient::Update(updateAssetsUri, predicates, valuesBucket);
     if (changedRows < 0) {
-        MEDIA_ERR_LOG("Failed to set property, operation: %{public}d, err: %{public}d", changeOperation, changedRows);
+        ANI_ERR_LOG("Failed to set property, operation: %{public}d, err: %{public}d", changeOperation, changedRows);
         return false;
     }
     return true;
@@ -152,29 +184,28 @@ bool MediaAssetsChangeRequestAni::SetAssetsPropertyExecute(const AssetsChangeOpe
 
 ani_status MediaAssetsChangeRequestAni::ApplyChanges(ani_env *env)
 {
-    auto context =  this;
-    if (context == nullptr) {
-        return ANI_ERROR;
-    }
-    ANI_CHECK_RETURN_RET_LOG(context->assetsChangeOperations_.empty() == false, ANI_ERROR,
-        "MediaAssetsChangeRequestAni::ApplyChanges assetsChangeOperations_ is empty");
-    ANI_CHECK_RETURN_RET_LOG(context->fileAssets_.empty() == false, ANI_ERROR,
-        "MediaAssetsChangeRequestAni::ApplyChanges fileAssets_ is empty");
-    for (const auto& fileAsset : context->fileAssets_) {
-        ANI_CHECK_RETURN_RET_LOG(fileAsset != nullptr && fileAsset->GetId() > 0 && fileAsset->GetUri().empty() == false,
+    auto asyncContext = std::make_unique<MediaAssetsChangeRequestAniContext>();
+    ANI_CHECK_RETURN_RET_LOG(asyncContext != nullptr, ANI_ERROR, "Failed to create asyncContext");
+    asyncContext->objectInfo = this;
+    ANI_CHECK_RETURN_RET_LOG(!assetsChangeOperations_.empty(), ANI_ERROR,
+        "ApplyChanges assetsChangeOperations_ is empty");
+    ANI_CHECK_RETURN_RET_LOG(!fileAssets_.empty(), ANI_ERROR, "ApplyChanges fileAssets_ is empty");
+    for (const auto& fileAsset : fileAssets_) {
+        ANI_CHECK_RETURN_RET_LOG(fileAsset != nullptr && fileAsset->GetId() > 0 && !fileAsset->GetUri().empty(),
             ANI_ERROR, "MediaAssetsChangeRequestAni::ApplyChanges check fileAssets_ failed");
     }
+    asyncContext->assetsChangeOperations.swap(assetsChangeOperations_);
 
     unordered_set<AssetsChangeOperation> appliedOperations;
-    for (const auto& changeOperation : context->assetsChangeOperations_) {
+    for (const auto& changeOperation : asyncContext->assetsChangeOperations) {
         // Keep the final result(s) of each operation, and commit only once.
         if (appliedOperations.find(changeOperation) != appliedOperations.end()) {
             continue;
         }
 
-        bool valid = MediaAssetsChangeRequestAni::SetAssetsPropertyExecute(changeOperation);
+        bool valid = SetAssetsPropertyExecute(*asyncContext, changeOperation);
         if (!valid) {
-            MEDIA_ERR_LOG("Failed to apply assets change request, operation: %{public}d", changeOperation);
+            ANI_ERR_LOG("Failed to apply assets change request, operation: %{public}d", changeOperation);
             return ANI_ERROR;
         }
         appliedOperations.insert(changeOperation);
@@ -187,24 +218,33 @@ vector<string> MediaAssetsChangeRequestAni::GetFileAssetUriArray()
     vector<string> uriArray;
     uriArray.reserve(fileAssets_.size());
     for (const auto& fileAsset : fileAssets_) {
+        if (fileAsset == nullptr || fileAsset->GetUri().empty()) {
+            ANI_ERR_LOG("fileAsset is null or uri is empty");
+            continue;
+        }
         uriArray.push_back(fileAsset->GetUri());
     }
     return uriArray;
 }
 
-bool MediaAssetsChangeRequestAni::GetFavoriteStatus()
+bool MediaAssetsChangeRequestAni::GetFavoriteStatus() const
 {
     return isFavorite_;
 }
 
-bool MediaAssetsChangeRequestAni::GetHiddenStatus()
+bool MediaAssetsChangeRequestAni::GetHiddenStatus() const
 {
     return isHidden_;
 }
 
-std::string &MediaAssetsChangeRequestAni::GetUserComment()
+std::string MediaAssetsChangeRequestAni::GetUserComment() const
 {
     return userComment_;
+}
+
+bool MediaAssetsChangeRequestAni::GetRecentShowStatus() const
+{
+    return isRecentShow_;
 }
 
 MediaAssetsChangeRequestAni* MediaAssetsChangeRequestAni::Unwrap(ani_env *env, ani_object object)
@@ -228,10 +268,11 @@ ani_status MediaAssetsChangeRequestAni::Constructor(ani_env *env, ani_object obj
         return ANI_ERROR;
     }
     if (ANI_OK != env->Object_CallMethodByName_Void(object, "create", nullptr,
-        reinterpret_cast<ani_long>(nativeHandle.release()))) {
-        MEDIA_ERR_LOG("New MediaAssetsChangeRequest Fail");
+        reinterpret_cast<ani_long>(nativeHandle.get()))) {
+        ANI_ERR_LOG("New MediaAssetsChangeRequest Fail");
         return ANI_ERROR;
     }
+    (void)nativeHandle.release();
     return ANI_OK;
 }
 
@@ -246,13 +287,14 @@ ani_status MediaAssetsChangeRequestAni::Init(ani_env *env)
     std::array methods = {
         ani_native_function {"setFavorite", nullptr, reinterpret_cast<void *>(SetFavorite)},
         ani_native_function {"setHidden", nullptr, reinterpret_cast<void *>(SetHidden)},
+        ani_native_function {"setUserComment", "Lstd/core/String;:V", reinterpret_cast<void *>(SetUserComment)},
+        ani_native_function {"setIsRecentShow", nullptr, reinterpret_cast<void *>(SetIsRecentShow)},
         ani_native_function {"nativeConstructor", nullptr, reinterpret_cast<void *>(Constructor)},
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
         return ANI_ERROR;
     }
-
     return ANI_OK;
 }
-} // namespace OHOS::MEDIA
+} // namespace OHOS::Media

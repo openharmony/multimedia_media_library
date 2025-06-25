@@ -12,13 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define MLOG_TAG "UserFileClient"
 #include "userfile_client.h"
 
 #include "ability.h"
 #include "ani_base_context.h"
 #include "media_asset_rdbstore.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_ani_log.h"
 #include "medialibrary_ani_utils.h"
 #include "medialibrary_helper_container.h"
@@ -26,15 +25,13 @@
 #include "userfilemgr_uri.h"
 #include "safe_map.h"
 
-using namespace std;
-using namespace OHOS::DataShare;
-using namespace OHOS::AppExecFwk;
-using namespace OHOS::AbilityRuntime;
-
 namespace OHOS {
 namespace Media {
-
-int32_t UserFileClient::userId_ = -1;
+using DataShareResultSet = DataShare::DataShareResultSet;
+using DataSharePredicates = DataShare::DataSharePredicates;
+using DatashareBusinessError = DataShare::DatashareBusinessError;
+using DataShareValuesBucket = DataShare::DataShareValuesBucket;
+int32_t UserFileClient::userId_ = DEFAULT_USER_ID;
 std::string MULTI_USER_URI_FLAG = "user=";
 std::string USER_STR = "user";
 SafeMap<int32_t, std::shared_ptr<DataShare::DataShareHelper>> UserFileClient::dataShareHelperMap_ = {};
@@ -42,7 +39,7 @@ SafeMap<int32_t, std::shared_ptr<DataShare::DataShareHelper>> UserFileClient::da
 static std::string GetMediaLibraryDataUri(const int32_t userId)
 {
     std::string mediaLibraryDataUri = MEDIALIBRARY_DATA_URI;
-    if (userId != -1) {
+    if (userId != DEFAULT_USER_ID) {
         mediaLibraryDataUri = mediaLibraryDataUri + "?" + MULTI_USER_URI_FLAG + to_string(userId);
     }
     return mediaLibraryDataUri;
@@ -50,7 +47,7 @@ static std::string GetMediaLibraryDataUri(const int32_t userId)
 
 static Uri MultiUserUriRecognition(Uri &uri, const int32_t userId)
 {
-    if (userId == -1) {
+    if (userId == DEFAULT_USER_ID) {
         return uri;
     }
     std::string uriString = uri.ToString();
@@ -72,7 +69,7 @@ shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(ani_en
     ani_object object, const int32_t userId)
 {
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = nullptr;
-    auto context = GetStageModeContext(env, object);
+    auto context = AbilityRuntime::GetStageModeContext(env, object);
     if (context == nullptr) {
         ANI_ERR_LOG("Failed to get native stage context instance");
         return nullptr;
@@ -90,14 +87,14 @@ shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(ani_en
 ani_status UserFileClient::CheckIsStage(ani_env *env, ani_object object, bool &result)
 {
     ani_boolean isStageMode = false;
-    CHECK_STATUS_RET(IsStageContext(env, object, isStageMode), "IsStageContext failed.");
+    CHECK_STATUS_RET(AbilityRuntime::IsStageContext(env, object, isStageMode), "IsStageContext failed.");
     CHECK_STATUS_RET(MediaLibraryAniUtils::GetBool(env, isStageMode, result), "GetBool failed.");
     return ANI_OK;
 }
 
 sptr<IRemoteObject> UserFileClient::ParseTokenInStageMode(ani_env *env, ani_object object)
 {
-    auto context = GetStageModeContext(env, object);
+    auto context = AbilityRuntime::GetStageModeContext(env, object);
     if (context == nullptr) {
         ANI_ERR_LOG("Failed to get native stage context instance");
         return nullptr;
@@ -107,7 +104,7 @@ sptr<IRemoteObject> UserFileClient::ParseTokenInStageMode(ani_env *env, ani_obje
 
 sptr<IRemoteObject> UserFileClient::ParseTokenInAbility(ani_env *env, ani_object object)
 {
-    auto ability = GetCurrentAbility(env);
+    auto ability = AbilityRuntime::GetCurrentAbility(env);
     if (ability == nullptr) {
         ANI_ERR_LOG("Failed to get native ability instance");
         return nullptr;
@@ -185,8 +182,10 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
 
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     OperationObject object = OperationObject::UNKNOWN_OBJECT;
-    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) && userId == -1) {
-        resultSet = MediaAssetRdbStore::GetInstance()->Query(predicates, columns, object, errCode);
+    auto rdbStore = MediaAssetRdbStore::GetInstance();
+    CHECK_COND_RET(rdbStore != nullptr, nullptr, "rdbStore is nullptr");
+    if (rdbStore->IsQueryAccessibleViaSandBox(uri, object, predicates) && userId == DEFAULT_USER_ID) {
+        resultSet = rdbStore->Query(predicates, columns, object, errCode);
     } else {
         uri = MultiUserUriRecognition(uri, userId);
         DatashareBusinessError businessError;

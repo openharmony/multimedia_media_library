@@ -16,17 +16,11 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_FETCH_RESULT_ANI_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_FETCH_RESULT_ANI_H
 
-#include <map>
-
-#include <ani.h>
+#include <memory>
+#include <vector>
 #include "ani_error.h"
-#include "datashare_helper.h"
-#include "datashare_predicates.h"
-#include "photo_album.h"
-#include "values_bucket.h"
 #include "fetch_result.h"
 #include "file_asset.h"
-#include "medialibrary_type_const.h"
 
 namespace OHOS {
 namespace Media {
@@ -49,9 +43,11 @@ public:
     static FetchFileResultAni* Unwrap(ani_env *env, ani_object fetchFileResultHandle);
     static ani_object Constructor(ani_env *env, [[maybe_unused]] ani_class clazz);
     static ani_object GetAllObjects(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
+    static ani_boolean IsAfterLast([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_status Close(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_object GetFirstObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_object GetNextObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
+    static ani_object GetLastObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_object GetPositionObject(ani_env *env, ani_object fetchFileResultHandle, ani_double index);
     static ani_double GetCount([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
 

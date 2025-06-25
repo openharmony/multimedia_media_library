@@ -16,9 +16,12 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_USER_FILE_CLIENT_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_USER_FILE_CLIENT_H
 
-#include "datashare_helper.h"
-#include "datashare_predicates.h"
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "ani_error.h"
+#include "datashare_helper.h"
 #include "rdb_store.h"
 #include "uri.h"
 #include "safe_map.h"
@@ -63,13 +66,11 @@ public:
     EXPORT static int32_t GetUserId();
     EXPORT static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelperByUser(const int32_t userId);
 private:
-    static inline std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(ani_env *env,
         ani_object object, const int32_t userId);
     static int32_t userId_;
     static SafeMap<int32_t, std::shared_ptr<DataShare::DataShareHelper>> dataShareHelperMap_;
 };
-}
-}
-
+} // namespace Media
+} // namespace OHOS
 #endif // FRAMEWORKS_ANI_SRC_INCLUDE_USER_FILE_CLIENT_H

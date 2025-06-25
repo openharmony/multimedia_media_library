@@ -17,6 +17,7 @@
 
 #include <cstdlib>
 #include <fcntl.h>
+#include <fstream>
 #include <libexif/exif-entry.h>
 #include <securec.h>
 #include <sys/mman.h>
@@ -25,30 +26,27 @@
 #include "exif_metadata.h"
 #include "image_type.h"
 #include "image_utils.h"
-#include "medialibrary_db_const.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_ani_utils.h"
 #include "media_column.h"
 #include "media_file_utils.h"
-#include "media_log.h"
 #include "pixel_yuv.h"
 #include "pixel_yuv_ext.h"
 #include "userfilemgr_uri.h"
 #include "userfile_client.h"
-#include <fstream>
 
 namespace OHOS {
 namespace Media {
 const int32_t MAX_VALUE = 100000000;
+constexpr uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
 std::shared_ptr<Media::Picture> PictureHandlerClient::RequestPicture(const int32_t &fileId)
 {
-    MEDIA_DEBUG_LOG("PictureHandlerClient::RequestPicture fileId: %{public}d", fileId);
+    ANI_DEBUG_LOG("PictureHandlerClient::RequestPicture fileId: %{public}d", fileId);
     std::string uri = PhotoColumn::PHOTO_REQUEST_PICTURE;
     MediaFileUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_ID, std::to_string(fileId));
     Uri requestUri(uri);
     int32_t fd = UserFileClient::OpenFile(requestUri, MEDIA_FILEMODE_READONLY);
     if (fd < 0) {
-        MEDIA_DEBUG_LOG("PictureHandlerClient::RequestPicture picture not exist");
+        ANI_DEBUG_LOG("PictureHandlerClient::RequestPicture picture not exist");
         return nullptr;
     }
     std::shared_ptr<Media::Picture> picture = nullptr;
@@ -60,7 +58,7 @@ std::shared_ptr<Media::Picture> PictureHandlerClient::RequestPicture(const int32
 
 void PictureHandlerClient::FinishRequestPicture(const int32_t &fileId)
 {
-    MEDIA_DEBUG_LOG("PictureHandlerClient::FinishRequestPicture fileId: %{public}d", fileId);
+    ANI_DEBUG_LOG("PictureHandlerClient::FinishRequestPicture fileId: %{public}d", fileId);
     std::string uri = PAH_FINISH_REQUEST_PICTURE;
     MediaLibraryAniUtils::UriAppendKeyValue(uri, API_VERSION, std::to_string(MEDIA_API_VERSION_V10));
     Uri finishRequestPictureUri(uri);
@@ -74,14 +72,14 @@ int32_t GetMessageLength(const int32_t &fd, uint32_t &msgLen)
 {
     void* msgLenAddr = mmap(nullptr, UINT32_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (msgLenAddr == MAP_FAILED) {
-        MEDIA_ERR_LOG("mmap msgLen failed");
+        ANI_ERR_LOG("mmap msgLen failed");
         close(fd);
         return E_ERR;
     }
-    
+
     msgLen = *static_cast<uint32_t*>(msgLenAddr);
     munmap(msgLenAddr, UINT32_LEN);
-    MEDIA_DEBUG_LOG("msgLen: %{public}u", msgLen);
+    ANI_DEBUG_LOG("msgLen: %{public}u", msgLen);
     return E_OK;
 }
 
@@ -89,28 +87,28 @@ int32_t MapMessageData(const int32_t &fd, uint32_t msgLen, uint8_t*& addr)
 {
     addr = static_cast<uint8_t*>(mmap(nullptr, msgLen, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
     if (addr == MAP_FAILED) {
-        MEDIA_ERR_LOG("mmap addr failed");
+        ANI_ERR_LOG("mmap addr failed");
         close(fd);
         return E_ERR;
     }
     return E_OK;
 }
 
-uint32_t ReadDataSize(uint8_t* addr, uint32_t& offset)
+uint32_t ReadDataSize(const uint8_t* addr, uint32_t& offset)
 {
     uint32_t dataSize = *reinterpret_cast<const uint32_t*>(addr + offset);
     offset += UINT32_LEN;
-    MEDIA_DEBUG_LOG("dataSize: %{public}u", dataSize);
+    ANI_DEBUG_LOG("dataSize: %{public}u", dataSize);
     return dataSize;
 }
 
-int32_t ParseMainPicture(uint8_t* addr, uint32_t& offset, uint32_t dataSize, MessageParcel& parcel)
+int32_t ParseMainPicture(const uint8_t* addr, uint32_t& offset, uint32_t dataSize, MessageParcel& parcel)
 {
     uint32_t auxCount = *reinterpret_cast<const uint32_t*>(addr + offset);
     offset += UINT32_LEN;
-    MEDIA_DEBUG_LOG("auxiliaryPictureSize: %{public}u", auxCount);
+    ANI_DEBUG_LOG("auxiliaryPictureSize: %{public}u", auxCount);
 
-    if (dataSize <= 0) {
+    if (dataSize == 0 || dataSize > MAX_SOURCE_SIZE) {
         return E_ERR;
     }
 
@@ -127,11 +125,10 @@ int32_t ParseMainPicture(uint8_t* addr, uint32_t& offset, uint32_t dataSize, Mes
 
     parcel.ParseFrom(reinterpret_cast<uintptr_t>(parcelData), dataSize);
     free(parcelData);
-
     return E_OK;
 }
 
-uint32_t ReadAuxiliaryPictureCount(uint8_t* addr, uint32_t& offset)
+uint32_t ReadAuxiliaryPictureCount(const uint8_t* addr, uint32_t& offset)
 {
     uint32_t count = *reinterpret_cast<const uint32_t*>(addr + offset);
     offset += UINT32_LEN;
@@ -141,28 +138,26 @@ uint32_t ReadAuxiliaryPictureCount(uint8_t* addr, uint32_t& offset)
 int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &fileId,
     std::shared_ptr<Media::Picture> &picture)
 {
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture fd: %{public}d", fd);
-    // 获取消息总长度
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadPicture fd: %{public}d", fd);
+
     uint32_t msgLen = 0;
     if (GetMessageLength(fd, msgLen) != E_OK) {
         return E_ERR;
     }
-    // 获取消息
+
     uint8_t* addr = nullptr;
     if (MapMessageData(fd, msgLen, addr) != E_OK) {
         return E_ERR;
     }
     uint32_t readOffset = UINT32_LEN;
 
-    // 读取dataSize
     uint32_t dataSize = ReadDataSize(addr, readOffset);
     if (dataSize == 0) {
-        MEDIA_DEBUG_LOG("Picture not exists");
+        ANI_DEBUG_LOG("Picture not exists");
         munmap(addr, msgLen);
         return E_NO_SUCH_FILE;
     }
 
-    // 读取auxiliaryPictureSize
     MessageParcel pictureParcel;
     std::unique_ptr<Media::Picture> picturePtr;
     if (ParseMainPicture(addr, readOffset, dataSize, pictureParcel) != E_OK) {
@@ -172,7 +167,7 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     std::shared_ptr<PixelMap> pixelMap = PictureHandlerClient::ReadPixelMap(pictureParcel);
     picturePtr = Picture::Create(pixelMap);
     if (picturePtr == nullptr) {
-        MEDIA_ERR_LOG("PictureHandlerService::ReadPicture picturePtr is nullptr!");
+        ANI_ERR_LOG("PictureHandlerService::ReadPicture picturePtr is nullptr!");
         munmap(addr, msgLen);
         return E_ERR;
     }
@@ -182,11 +177,11 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
 
     uint32_t auxiliaryPictureSize = ReadAuxiliaryPictureCount(addr, readOffset);
     for (size_t i = 1; i <= auxiliaryPictureSize; i++) {
-        MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture read auxiliaryPicture, index:%{public}zu", i);
+        ANI_DEBUG_LOG("PictureHandlerClient::ReadPicture read auxiliaryPicture, index:%{public}zu", i);
         ReadAuxiliaryPicture(pictureParcel, picturePtr);
     }
     picture.reset(picturePtr.get());
-    picturePtr.release();
+    (void)picturePtr.release();
     munmap(addr, msgLen);
     return E_OK;
 }
@@ -197,14 +192,14 @@ std::shared_ptr<PixelMap> PictureHandlerClient::ReadPixelMap(MessageParcel &data
     ReadImageInfo(data, imageInfo);
 
     bool isYuv = data.ReadBool();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPixelMap isYuv:%{public}d", isYuv);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadPixelMap isYuv:%{public}d", isYuv);
     YUVDataInfo yuvInfo;
     if (isYuv) {
         ReadYuvDataInfo(data, yuvInfo);
     }
 
     bool editable = data.ReadBool();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPixelMap editable:%{public}d", editable);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadPixelMap editable:%{public}d", editable);
 
     std::unique_ptr<PixelMap> pixelMap;
     CHECK_COND_RET(pixelMap != nullptr, nullptr, "pixelMap is nullptr");
@@ -220,9 +215,8 @@ std::shared_ptr<PixelMap> PictureHandlerClient::ReadPixelMap(MessageParcel &data
     pixelMap->SetImageInfo(imageInfo);
     pixelMap->SetImageYUVInfo(yuvInfo);
 
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPixelMap read surface buffer");
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadPixelMap read surface buffer");
     ReadSurfaceBuffer(data, pixelMap);
-
     return pixelMap;
 }
 
@@ -239,111 +233,112 @@ bool PictureHandlerClient::ReadAuxiliaryPicture(MessageParcel &data, std::unique
     std::shared_ptr<AuxiliaryPicture> auxiliaryPicture;
     CHECK_COND_RET(auxiliaryPicture != nullptr, false, "auxiliaryPicture is nullptr");
     auxiliaryPicture.reset(uptr.get());
-    uptr.release();
+    (void)uptr.release();
 
     auxiliaryPicture->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
 
     int32_t metadataSize = 0;
     if (data.ReadInt32(metadataSize) && metadataSize >= 0 && metadataSize < MAX_VALUE) {
-        MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPicture metadataSize: %{public}d", metadataSize);
+        ANI_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPicture metadataSize: %{public}d", metadataSize);
         for (int i = 0; i < metadataSize; i++) {
             MetadataType type = static_cast<MetadataType>(data.ReadInt32());
-            MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPicture type: %{public}d", type);
+            ANI_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPicture type: %{public}d", type);
             std::shared_ptr<ImageMetadata> metadataPtr(nullptr);
             metadataPtr.reset(ExifMetadata::Unmarshalling(data));
             auxiliaryPicture->SetMetadata(type, metadataPtr);
         }
     } else {
-        MEDIA_ERR_LOG("PictureHandlerClient::ReadAuxiliaryPicture metadataSize failed");
+        ANI_ERR_LOG("PictureHandlerClient::ReadAuxiliaryPicture metadataSize failed");
     }
+    CHECK_COND_RET(picture != nullptr, false, "picture is nullptr");
     picture->SetAuxiliaryPicture(auxiliaryPicture);
-    MEDIA_DEBUG_LOG("PictureHandler::ReadAuxiliaryPicture end");
+    ANI_DEBUG_LOG("PictureHandler::ReadAuxiliaryPicture end");
     return true;
 }
 
 bool PictureHandlerClient::ReadAuxiliaryPictureInfo(MessageParcel &data, AuxiliaryPictureInfo &auxiliaryPictureInfo)
 {
     auxiliaryPictureInfo.auxiliaryPictureType = static_cast<AuxiliaryPictureType>(data.ReadInt32());
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo auxiliaryPictureType: %{public}d",
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo auxiliaryPictureType: %{public}d",
         auxiliaryPictureInfo.auxiliaryPictureType);
 
     auxiliaryPictureInfo.colorSpace = static_cast<ColorSpace>(data.ReadInt32());
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo colorSpace: %{public}d",
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo colorSpace: %{public}d",
         auxiliaryPictureInfo.colorSpace);
 
     auxiliaryPictureInfo.pixelFormat = static_cast<PixelFormat>(data.ReadInt32());
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo pixelFormat: %{public}d",
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo pixelFormat: %{public}d",
         auxiliaryPictureInfo.pixelFormat);
 
     auxiliaryPictureInfo.rowStride = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo rowStride: %{public}d",
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo rowStride: %{public}d",
         auxiliaryPictureInfo.rowStride);
 
     auxiliaryPictureInfo.size.height = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo height: %{public}d",
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo height: %{public}d",
         auxiliaryPictureInfo.size.height);
 
     auxiliaryPictureInfo.size.width = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo width: %{public}d",
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadAuxiliaryPictureInfo width: %{public}d",
         auxiliaryPictureInfo.size.width);
-    
     return true;
 }
 
 bool PictureHandlerClient::ReadImageInfo(MessageParcel &data, ImageInfo &imageInfo)
 {
     imageInfo.size.width = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadImageInfo width: %{public}d", imageInfo.size.width);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadImageInfo width: %{public}d", imageInfo.size.width);
     imageInfo.size.height = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadImageInfo height: %{public}d", imageInfo.size.height);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadImageInfo height: %{public}d", imageInfo.size.height);
     imageInfo.pixelFormat = static_cast<PixelFormat>(data.ReadInt32());
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadImageInfo pixelFormat: %{public}d", imageInfo.pixelFormat);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadImageInfo pixelFormat: %{public}d", imageInfo.pixelFormat);
     imageInfo.colorSpace = static_cast<ColorSpace>(data.ReadInt32());
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadImageInfo colorSpace: %{public}d", imageInfo.colorSpace);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadImageInfo colorSpace: %{public}d", imageInfo.colorSpace);
     imageInfo.alphaType = static_cast<AlphaType>(data.ReadInt32());
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadImageInfo alphaType: %{public}d", imageInfo.alphaType);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadImageInfo alphaType: %{public}d", imageInfo.alphaType);
     imageInfo.baseDensity = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadImageInfo baseDensity: %{public}d", imageInfo.baseDensity);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadImageInfo baseDensity: %{public}d", imageInfo.baseDensity);
     return true;
 }
 
 bool PictureHandlerClient::ReadYuvDataInfo(MessageParcel &data, YUVDataInfo &info)
 {
     info.imageSize.width = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo width: %{public}d", info.imageSize.width);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo width: %{public}d", info.imageSize.width);
     info.imageSize.height = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo height: %{public}d", info.imageSize.height);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo height: %{public}d", info.imageSize.height);
     info.yWidth = data.ReadUint32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo yWidth: %{public}d", info.yWidth);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo yWidth: %{public}d", info.yWidth);
     info.yHeight = data.ReadUint32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo yHeight: %{public}d", info.yHeight);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo yHeight: %{public}d", info.yHeight);
     info.uvWidth = data.ReadUint32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo uvWidth: %{public}d", info.uvWidth);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo uvWidth: %{public}d", info.uvWidth);
     info.uvHeight = data.ReadUint32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo uvHeight: %{public}d", info.uvHeight);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo uvHeight: %{public}d", info.uvHeight);
     info.yStride = data.ReadUint32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo yStride: %{public}d", info.yStride);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo yStride: %{public}d", info.yStride);
     info.uStride = data.ReadUint32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo uStride: %{public}d", info.uStride);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo uStride: %{public}d", info.uStride);
     info.vStride = data.ReadUint32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo vStride: %{public}d", info.vStride);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo vStride: %{public}d", info.vStride);
     info.uvStride = data.ReadUint32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo uvStride: %{public}d", info.uvStride);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo uvStride: %{public}d", info.uvStride);
     info.yOffset = data.ReadUint32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo yOffset: %{public}d", info.yOffset);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo yOffset: %{public}d", info.yOffset);
     info.uOffset = data.ReadUint32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo uOffset: %{public}d", info.uOffset);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo uOffset: %{public}d", info.uOffset);
     info.vOffset = data.ReadUint32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo vOffset: %{public}d", info.vOffset);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo vOffset: %{public}d", info.vOffset);
     info.uvOffset = data.ReadUint32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo uvOffset: %{public}d", info.uvOffset);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadYuvDataInfo uvOffset: %{public}d", info.uvOffset);
     return true;
 }
 
 bool PictureHandlerClient::ReadSurfaceBuffer(MessageParcel &data, std::unique_ptr<PixelMap> &pixelMap)
 {
+    CHECK_COND_RET(pixelMap != nullptr, false, "pixelMap is nullptr");
     bool hasBufferHandle = data.ReadBool();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadSurfaceBuffer hasBufferHandle: %{public}d", hasBufferHandle);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadSurfaceBuffer hasBufferHandle: %{public}d", hasBufferHandle);
     if (!hasBufferHandle) {
         return false;
     }
@@ -356,7 +351,7 @@ bool PictureHandlerClient::ReadSurfaceBuffer(MessageParcel &data, std::unique_pt
     ref->IncStrongRef(ref);
     pixelMap->SetPixelsAddr(static_cast<uint8_t*>(surfaceBuffer->GetVirAddr()), nativeBuffer,
         pixelMap->GetByteCount(), AllocatorType::DMA_ALLOC, nullptr);
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadSurfaceBuffer end");
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadSurfaceBuffer end");
     return true;
 }
 
@@ -364,21 +359,22 @@ void setHandleFromData(BufferHandle *handle, MessageParcel &data)
 {
     CHECK_NULL_PTR_RETURN_VOID(handle, "handle is null");
     handle->width = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle width: %{public}d", handle->width);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle width: %{public}d", handle->width);
     handle->stride = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle stride: %{public}d", handle->stride);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle stride: %{public}d", handle->stride);
     handle->height = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle height: %{public}d", handle->height);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle height: %{public}d", handle->height);
     handle->size = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle size: %{public}d", handle->size);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle size: %{public}d", handle->size);
     handle->format = data.ReadInt32();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle format: %{public}d", handle->format);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle format: %{public}d", handle->format);
     handle->usage = data.ReadUint64();
     handle->phyAddr = data.ReadUint64();
 }
 
 bool PictureHandlerClient::ReadBufferHandle(MessageParcel &data, sptr<SurfaceBuffer> &surfaceBuffer)
 {
+    CHECK_COND_RET(surfaceBuffer != nullptr, false, "surfaceBuffer is nullptr");
     uint32_t reserveFds = 0;
     bool readReserveFdsRet = data.ReadUint32(reserveFds);
     if (reserveFds < 0 || reserveFds > static_cast<uint32_t>(MAX_VALUE)) {
@@ -393,7 +389,7 @@ bool PictureHandlerClient::ReadBufferHandle(MessageParcel &data, sptr<SurfaceBuf
     size_t handleSize = sizeof(BufferHandle) + (sizeof(int32_t) * (reserveFds + reserveInts));
     BufferHandle *handle = static_cast<BufferHandle *>(malloc(handleSize));
     if (handle == nullptr) {
-        MEDIA_ERR_LOG("PictureHandlerClient::ReadBufferHandle malloc BufferHandle failed");
+        ANI_ERR_LOG("PictureHandlerClient::ReadBufferHandle malloc BufferHandle failed");
         return false;
     }
     memset_s(handle, handleSize, 0, handleSize);
@@ -403,14 +399,14 @@ bool PictureHandlerClient::ReadBufferHandle(MessageParcel &data, sptr<SurfaceBuf
     setHandleFromData(handle, data);
 
     int32_t fd = RequestBufferHandlerFd(data.ReadInt32());
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle fd: %{public}d", fd);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle fd: %{public}d", fd);
     handle->fd = dup(fd);
     close(fd);
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle handle->fd: %{public}d", handle->fd);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle handle->fd: %{public}d", handle->fd);
     if (readReserveFdsRet) {
         for (uint32_t i = 0; i < reserveFds; i++) {
             int32_t reserveFd = RequestBufferHandlerFd(data.ReadInt32());
-            MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle reserve[%{public}d]: %{public}d", i, reserveFd);
+            ANI_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle reserve[%{public}d]: %{public}d", i, reserveFd);
             handle->reserve[i] = dup(reserveFd);
             close(reserveFd);
         }
@@ -427,8 +423,9 @@ bool PictureHandlerClient::ReadBufferHandle(MessageParcel &data, sptr<SurfaceBuf
 
 bool PictureHandlerClient::ReadExifMetadata(MessageParcel &data, std::unique_ptr<Media::Picture> &picture)
 {
+    CHECK_COND_RET(picture != nullptr, false, "picture is nullptr");
     bool hasExifMetadata = data.ReadBool();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadExifMetadata hasExifMetadata:%{public}d", hasExifMetadata);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadExifMetadata hasExifMetadata:%{public}d", hasExifMetadata);
     if (!hasExifMetadata) {
         return true;
     }
@@ -440,8 +437,9 @@ bool PictureHandlerClient::ReadExifMetadata(MessageParcel &data, std::unique_ptr
 
 bool PictureHandlerClient::ReadMaintenanceData(MessageParcel &data, std::unique_ptr<Media::Picture> &picture)
 {
+    CHECK_COND_RET(picture != nullptr, false, "picture is nullptr");
     bool hasMaintenanceData = data.ReadBool();
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadMaintenanceData hasMaintenanceData:%{public}d", hasMaintenanceData);
+    ANI_DEBUG_LOG("PictureHandlerClient::ReadMaintenanceData hasMaintenanceData:%{public}d", hasMaintenanceData);
     if (!hasMaintenanceData) {
         return true;
     }
@@ -454,9 +452,9 @@ int32_t PictureHandlerClient::RequestBufferHandlerFd(const int32_t &fd)
 {
     std::string uri = PhotoColumn::PHOTO_REQUEST_PICTURE_BUFFER;
     MediaFileUtils::UriAppendKeyValue(uri, "fd", std::to_string(fd));
-    MEDIA_DEBUG_LOG("PictureHandlerClient::RequestBufferHandlerFd uri: %{public}s", uri.c_str());
+    ANI_DEBUG_LOG("PictureHandlerClient::RequestBufferHandlerFd uri: %{public}s", uri.c_str());
     Uri requestUri(uri);
     return UserFileClient::OpenFile(requestUri, MEDIA_FILEMODE_READONLY);
 }
-}
-}
+} // namespace Media
+} // namespace OHOS

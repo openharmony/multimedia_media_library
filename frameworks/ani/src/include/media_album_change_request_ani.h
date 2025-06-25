@@ -17,13 +17,14 @@
 #define FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_ALBUM_CHANGE_REQUEST_ANI_H
 
 #include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
-#include <ani.h>
 #include "ani_error.h"
-#include "datashare_helper.h"
 #include "datashare_predicates.h"
+#include "datashare_values_bucket.h"
 #include "photo_album.h"
-#include "values_bucket.h"
 #include "media_change_request_ani.h"
 
 namespace OHOS {
@@ -86,6 +87,9 @@ public:
     void ClearDeleteAssetArray();
     void ClearDismissAssetArray();
     void ClearMoveMap();
+    static ani_object GetAlbum(ani_env *env, ani_object object);
+    static ani_object CreateAlbumRequest(ani_env *env, ani_object object, ani_object aniContext,
+        ani_string aniName);
     static ani_status PlaceBefore(ani_env *env, ani_object object, ani_object albumHandle);
     static ani_status DismissAssets(ani_env *env, ani_object object, ani_object arrayPhotoAssetStr);
     static ani_status MergeAlbum(ani_env *env, ani_object object, ani_object albumHandle);
@@ -97,6 +101,7 @@ public:
     static ani_status SetDisplayLevel(ani_env *env, ani_object object, ani_int displayLevel);
     static ani_status SetCoverUri(ani_env *env, ani_object object, ani_string coverUri);
     static ani_status SetIsMe(ani_env *env, ani_object object);
+    static ani_status Dismiss(ani_env *env, ani_object object);
     static ani_status DeleteAlbums(ani_env *env, ani_class clazz, ani_object context, ani_object arrayAlbum);
     static ani_status DeleteAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
     static ani_status SetOrderPosition(ani_env *env, ani_object object, ani_object assets, ani_object position);

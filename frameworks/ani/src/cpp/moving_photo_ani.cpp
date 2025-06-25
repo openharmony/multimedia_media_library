@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "MovingPhotoAni"
 #include "moving_photo_ani.h"
 
 #include <cstddef>
@@ -23,7 +24,6 @@
 #include <securec.h>
 
 #include "ani_class_name.h"
-#include "media_log.h"
 #include "medialibrary_ani_utils.h"
 #include "media_file_utils.h"
 #include "file_uri.h"
@@ -34,8 +34,6 @@
 #include "application_context.h"
 #include "media_call_transcode.h"
 
-using namespace OHOS::Media;
-using UniqueFd = OHOS::UniqueFd;
 namespace OHOS {
 namespace Media {
 
@@ -51,7 +49,7 @@ ani_status MovingPhotoAni::Init(ani_env *env)
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
-        MEDIA_ERR_LOG("Failed to find class: %{public}s", className);
+        ANI_ERR_LOG("Failed to find class: %{public}s", className);
         return status;
     }
     std::array methods = {
@@ -66,7 +64,7 @@ ani_status MovingPhotoAni::Init(ani_env *env)
 
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
-        MEDIA_ERR_LOG("Failed to bind native methods to: %{public}s", className);
+        ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
         return status;
     }
     return ANI_OK;
@@ -77,13 +75,13 @@ ani_object MovingPhotoAni::NewMovingPhotoAni(ani_env *env, const string& photoUr
 {
     ani_string photoUriAni;
     if (ANI_OK != MediaLibraryAniUtils::ToAniString(env, photoUri, photoUriAni)) {
-        MEDIA_ERR_LOG("ToAniString photoUri fail");
+        ANI_ERR_LOG("ToAniString photoUri fail");
         return nullptr;
     }
     ani_object movingPhotoObject = Constructor(env, nullptr, photoUriAni);
     MovingPhotoAni* movingPhotoAni = Unwrap(env, movingPhotoObject);
     if (movingPhotoAni == nullptr) {
-        MEDIA_ERR_LOG("movingPhotoAni is nullptr");
+        ANI_ERR_LOG("movingPhotoAni is nullptr");
         return nullptr;
     }
     movingPhotoAni->SetSourceMode(sourceMode);
@@ -137,29 +135,30 @@ ani_object MovingPhotoAni::Constructor(ani_env *env, [[maybe_unused]] ani_class 
     CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     std::string photoUri;
     if (ANI_OK != MediaLibraryAniUtils::GetString(env, photoUriAni, photoUri)) {
-        MEDIA_ERR_LOG("Failed to get photoUri");
+        ANI_ERR_LOG("Failed to get photoUri");
         return nullptr;
     }
     unique_ptr<MovingPhotoAni> obj = make_unique<MovingPhotoAni>(photoUri);
-
+    CHECK_COND_RET(obj != nullptr, nullptr, "obj is nullptr");
     static const char *className = PAH_ANI_CLASS_MOVING_PHOTO_HANDLE.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
-        MEDIA_ERR_LOG("Failed to find class: %{public}s", className);
+        ANI_ERR_LOG("Failed to find class: %{public}s", className);
         return nullptr;
     }
 
     ani_method ctor;
     if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
-        MEDIA_ERR_LOG("Failed to find method: %{public}s", "ctor");
+        ANI_ERR_LOG("Failed to find method: %{public}s", "ctor");
         return nullptr;
     }
 
     ani_object movingPhotoObject;
-    if (ANI_OK != env->Object_New(cls, ctor, &movingPhotoObject, reinterpret_cast<ani_long>(obj.release()))) {
-        MEDIA_ERR_LOG("New MovingPhoto Fail");
+    if (ANI_OK != env->Object_New(cls, ctor, &movingPhotoObject, reinterpret_cast<ani_long>(obj.get()))) {
+        ANI_ERR_LOG("New MovingPhoto Fail");
         return nullptr;
     }
+    (void)obj.release();
     return movingPhotoObject;
 }
 
@@ -518,6 +517,7 @@ static ani_status ParseArgsByImageFileAndVideoFile(ani_env *env, ani_string imag
     MovingPhotoAni* thisArg, std::unique_ptr<MovingPhotoAsyncContext>& context)
 {
     CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+    CHECK_COND_RET(thisArg != nullptr, ANI_ERROR, "thisArg is nullptr");
     context->movingPhotoUri = thisArg->GetUriInner();
     context->sourceMode = thisArg->GetSourceMode();
     context->requestContentMode = MovingPhotoAsyncContext::WRITE_TO_SANDBOX;
