@@ -14,15 +14,11 @@
  */
 
 #include "media_asset_data_handler_ani.h"
-
 #include "ani_class_name.h"
-#include "ani_error.h"
-#include "medialibrary_client_errno.h"
 #include "medialibrary_ani_utils.h"
 
 namespace OHOS {
 namespace Media {
-static const std::string MEDIA_ASSET_DATA_HANDLER_CLASS = "MediaAssetDataHandler";
 std::mutex AniMediaAssetDataHandler::dataHandlerRefMutex_;
 
 AniMediaAssetDataHandler::AniMediaAssetDataHandler(ani_env *env, ani_ref dataHandler, ReturnDataType dataType,

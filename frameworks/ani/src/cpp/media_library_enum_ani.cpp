@@ -45,7 +45,8 @@ static const std::map<PhotoPositionType, int32_t> ANI_PHOTOPOSITIONTYPE_INDEX_MA
 static const std::map<PhotoAlbumType, int32_t> ANI_PHOTOALBUMTYPE_INDEX_MAP = {
     {PhotoAlbumType::USER, 0},
     {PhotoAlbumType::SYSTEM, 1},
-    {PhotoAlbumType::SMART, 2},
+    {PhotoAlbumType::SOURCE, 2},
+    {PhotoAlbumType::SMART, 3},
 };
 
 static const std::map<PhotoAlbumSubType, int32_t> ANI_PHOTOALBUMSUBTYPE_INDEX_MAP = {
@@ -241,7 +242,8 @@ ani_status MediaLibraryEnumAni::ToAniEnum(ani_env *env, CloudEnhancementTaskStag
     ani_int enumIndex = static_cast<ani_int>(it->second);
 
     ani_enum aniEnum {};
-    CHECK_STATUS_RET(env->FindEnum(PAH_ANI_CLASS_ENUM_MOVING_PHOTO_EFFECT_MODE.c_str(), &aniEnum), "Find Enum Fail");
+    CHECK_STATUS_RET(env->FindEnum(PAH_ANI_CLASS_ENUM_CLOUD_ENHANCEMENT_TASK_STAGE.c_str(),
+        &aniEnum), "Find Enum Fail");
     CHECK_STATUS_RET(env->Enum_GetEnumItemByIndex(aniEnum, enumIndex, &aniEnumItem), "Find Enum item Fail");
     return ANI_OK;
 }

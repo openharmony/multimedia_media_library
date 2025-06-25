@@ -16,7 +16,7 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_CLOUD_ENHANCEMENT_ANI_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_CLOUD_ENHANCEMENT_ANI_H
 
-#include <ani.h>
+#include <memory>
 #include <string>
 #include <vector>
 #include "ani_error.h"
@@ -48,13 +48,13 @@ public:
 
 private:
     static ani_object Constructor(ani_env *env, ani_class clazz, ani_object context);
-    static ani_object SubmitCloudEnhancementTasks(ani_env *env, ani_object aniObject, ani_object photoAssets,
-        ani_boolean hasCloudWatermark, int triggerMode);
-    static ani_object PrioritizeCloudEnhancementTask(ani_env *env, ani_object aniObject, ani_object photoAsset);
-    static ani_object CancelCloudEnhancementTasks(ani_env *env, ani_object aniObject, ani_object photoAssets);
-    static ani_object CancelAllCloudEnhancementTasks(ani_env *env, ani_object aniObject);
+    static void SubmitCloudEnhancementTasks(ani_env *env, ani_object aniObject, ani_object photoAssets,
+        ani_boolean hasCloudWatermark, ani_object triggerMode);
+    static void PrioritizeCloudEnhancementTask(ani_env *env, ani_object aniObject, ani_object photoAsset);
+    static void CancelCloudEnhancementTasks(ani_env *env, ani_object aniObject, ani_object photoAssets);
+    static void CancelAllCloudEnhancementTasks(ani_env *env, ani_object aniObject);
     static ani_object QueryCloudEnhancementTaskState(ani_env *env, ani_object aniObject, ani_object photoAsset);
-    static ani_object SyncCloudEnhancementTaskStatus(ani_env *env, ani_object aniObject);
+    static void SyncCloudEnhancementTaskStatus(ani_env *env, ani_object aniObject);
     static ani_object GetCloudEnhancementPair(ani_env *env, ani_object aniObject, ani_object asset);
 };
 

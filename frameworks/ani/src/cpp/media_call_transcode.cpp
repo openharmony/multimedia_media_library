@@ -15,8 +15,8 @@
 
 #define MLOG_TAG "MediaCallTranscode"
 
-#include "media_asset_manager_callback.h"
 #include "media_call_transcode.h"
+#include "media_asset_manager_callback.h"
 #include "medialibrary_ani_log.h"
 #include "medialibrary_errno.h"
 #include "unique_fd.h"
@@ -101,24 +101,25 @@ bool MediaCallTranscode::DoTranscode(int srcFd, int destFd, off_t &size, std::st
     }
     if (transCoder->Prepare() != E_OK) {
         ANI_ERR_LOG("Failed to prepare TransCoder");
+        transCoder->Release();
         return false;
     }
     if (transCoder->Start() != E_OK) {
         ANI_ERR_LOG("Failed to TransCoder Start");
         return false;
     }
-    return  true;
+    return true;
 }
 
 void MediaCallTranscode::CallTranscodeRelease(const std::string& requestId)
 {
     std::lock_guard<std::mutex> lock(transCoderMapMutex_);
-    auto tcm = transCoderMap_.find(requestId);
-    if (tcm == transCoderMap_.end()) {
+    auto it = transCoderMap_.find(requestId);
+    if (it == transCoderMap_.end()) {
         return;
     }
-    tcm->second->Release();
-    transCoderMap_.erase(tcm);
+    it->second->Release();
+    transCoderMap_.erase(it);
 }
 
 void MediaCallTranscode::RegisterCallback(const CallbackType &cb)
@@ -137,9 +138,9 @@ void MediaAssetManagerCallback::OnInfo(int32_t type, int32_t extra)
 void MediaAssetManagerCallback::OnError(int32_t errCode, const std::string &errorMsg)
 {
     std::lock_guard<std::mutex> lock(transCoderMapMutex_);
-    auto tcm = transCoderMap_.find(requestId_);
-    if (tcm != transCoderMap_.end()) {
-        transCoderMap_.erase(tcm);
+    auto it = transCoderMap_.find(requestId_);
+    if (it != transCoderMap_.end()) {
+        transCoderMap_.erase(it);
     }
     ANI_ERR_LOG("MediaAssetManagerCallback OnError errorMsg:%{public}s", errorMsg.c_str());
     int32_t type = INFO_TYPE_ERROR;

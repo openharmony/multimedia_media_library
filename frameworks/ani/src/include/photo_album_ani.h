@@ -16,13 +16,16 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_PHOTO_ALBUM_ANI_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_PHOTO_ALBUM_ANI_H
 
-#include <ani.h>
-#include "photo_album.h"
+#include <memory>
+#include <vector>
+#include <string>
+
+#include "ani_error.h"
 #include "datashare_predicates.h"
 #include "datashare_values_bucket.h"
 #include "fetch_result.h"
 #include "file_asset.h"
-#include "ani_error.h"
+#include "photo_album.h"
 
 namespace OHOS {
 namespace Media {
@@ -38,6 +41,7 @@ struct AniPhotoAlbumOperator {
     ani_method setAlbumUri {};
     ani_method setCount {};
     ani_method setCoverUri {};
+    ani_method setLPath {};
 };
 
 class PhotoAlbumAni {
@@ -71,6 +75,9 @@ private:
     EXPORT static ani_string PhotoAccessHelperGetFaceId(ani_env *env, ani_object object);
     EXPORT static ani_double GetImageCount(ani_env *env, ani_object object);
     EXPORT static ani_double GetVideoCount(ani_env *env, ani_object object);
+    EXPORT static ani_object PhotoAccessGetSharedPhotoAssets(ani_env *env, ani_object object, ani_object options);
+    EXPORT static ani_double GetdateAdded(ani_env *env, ani_object object);
+    EXPORT static ani_double GetdateModified(ani_env *env, ani_object object);
 
     ani_env *env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
@@ -97,5 +104,4 @@ struct PhotoAlbumAniContext : public AniError {
 
 } // namespace Media
 } // namespace OHOS
-
 #endif // FRAMEWORKS_ANI_SRC_INCLUDE_PHOTO_ALBUM_ANI_H

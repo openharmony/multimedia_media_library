@@ -87,6 +87,6 @@ private:
     std::string requestId_;
     static std::mutex dataHandlerRefMutex_;
 };
-} // Media
-} // OHOS
+} // namespace Media
+} // namespace OHOS
 #endif // FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_ASSETS_DATA_HANDLER_ANI_H
