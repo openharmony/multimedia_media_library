@@ -117,6 +117,7 @@
 
 #include "parcel.h"
 #include "medialibrary_notify_utils.h"
+#include "qos.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -8997,6 +8998,7 @@ static int32_t CallPhotoAccessCreateAsset(MediaLibraryAsyncContext* context, std
 
 static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
 {
+    OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     MediaLibraryTracer tracer;
     tracer.Start("JSCreateAssetExecute");
 
@@ -9042,6 +9044,7 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
 #endif
         }
     }
+    OHOS::QOS::ResetThreadQos();
 }
 
 static void PhotoAccessGrantPhotoUriPermissionExecute(napi_env env, void *data)
