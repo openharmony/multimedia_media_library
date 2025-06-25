@@ -42,7 +42,7 @@ ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
     if (ANI_OK != env->Namespace_BindNativeFunctions(staticNs, staticMethods.data(), staticMethods.size())) {
         ANI_ERR_LOG("Cannot bind native methods to %{public}s", staticNsName);
         return ANI_ERROR;
-    };
+    }
 
     CHECK_STATUS_RET(MediaLibraryAni::UserFileMgrInit(env), "MediaLibraryAni::UserFileMgrInit fail");
     CHECK_STATUS_RET(FetchFileResultAni::UserFileMgrInit(env), "FetchFileResultAni::UserFileMgrInit fail");

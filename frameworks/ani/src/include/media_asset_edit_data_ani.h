@@ -16,10 +16,11 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_ASSET_EDIT_DATA_ANI_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_ASSET_EDIT_DATA_ANI_H
 
+#include <memory>
 #include <string>
 
-#include "media_asset_edit_data.h"
 #include "ani_error.h"
+#include "media_asset_edit_data.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,6 +35,9 @@ public:
     static MediaAssetEditDataAni* Unwrap(ani_env *env, ani_object aniObject);
 
     std::shared_ptr<MediaAssetEditData> GetMediaAssetEditData() const;
+
+    static ani_object CreateMediaAssetEditData(ani_env *env, const std::string compatibleFormat,
+        const std::string formatVersion, const std::string data);
 
 private:
     static void CompatibleFormatSetter(ani_env *env, ani_object object, ani_string compatibleFormat);
@@ -54,5 +58,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-
 #endif // FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_ASSET_EDIT_DATA_ANI_H

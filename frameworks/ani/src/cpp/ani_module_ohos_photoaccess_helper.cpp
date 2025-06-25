@@ -28,6 +28,8 @@
 #include "moving_photo_ani.h"
 #include "photo_album_ani.h"
 #include "photo_proxy_ani.h"
+#include "cloud_media_asset_manager_ani.h"
+#include "cloud_media_asset_status_ani.h"
 
 using namespace OHOS::Media;
 
@@ -85,6 +87,8 @@ ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
     CHECK_STATUS_RET(MovingPhotoAni::Init(env), "MovingPhoto init fail");
     CHECK_STATUS_RET(CloudEnhancementAni::Init(env), "CloudEnhancementAni init fail");
     CHECK_STATUS_RET(CloudEnhancementTaskStateAni::Init(env), "CloudEnhancementTaskStateAni init fail");
+    CHECK_STATUS_RET(CloudMediaAssetManagerAni::Init(env), "CloudMediaAssetManagerAni init fail");
+    CHECK_STATUS_RET(CloudMediaAssetStatusAni::Init(env), "CloudMediaAssetStatusAni init fail");
 
     *result = ANI_VERSION_1;
     return ANI_OK;

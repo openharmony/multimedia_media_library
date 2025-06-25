@@ -16,11 +16,13 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_MEDIALIBRARY_ANI_UTILS_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_MEDIALIBRARY_ANI_UTILS_H
 
+#include <map>
 #include <memory>
-#include <set>
+#include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
-#include "ani.h"
 #include "ani_error.h"
 #include "datashare_predicates.h"
 #include "datashare_result_set.h"
@@ -145,6 +147,10 @@ const std::string API_VERSION = "api_version";
 
 const std::string PENDING_STATUS = "pending";
 
+constexpr ani_double DEFAULT_ERR_ANI_DOUBLE = -1;
+constexpr int DEFAULT_ERR_INT = -1;
+constexpr int32_t DEFAULT_USER_ID = -1;
+
 enum AniAssetType {
     TYPE_DEFAULT = 0,
     TYPE_AUDIO = 1,
@@ -168,9 +174,35 @@ enum HiddenPhotosDisplayMode {
     ALBUMS_MODE = 1
 };
 
+typedef union ColumnUnion {
+    ~ColumnUnion() {}
+    std::string sval_;
+    int ival_;
+    int64_t lval_;
+    double dval_;
+} ColumnUnion;
+
+struct RowObject;
+struct ColumnInfo {
+    std::string columnName_;
+    std::string tmpName_;
+    ColumnUnion tmpNameValue_{};
+    std::string timeInfoKey_;
+    int64_t timeInfoVal_{0};
+    int32_t thumbnailReady_{0};
+    std::shared_ptr<RowObject> coverSharedPhotoAsset_;
+};
+
+struct RowObject {
+    std::vector<std::shared_ptr<ColumnInfo>> columnVector_;
+    std::string dbUri_;
+};
+
 /* Util class used by ani methods for making call to js callback function */
 class MediaLibraryAniUtils {
 public:
+    using VarMap = std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>>;
+    using Var = std::variant<int32_t, int64_t, std::string, double>;
     static const std::unordered_map<std::string, std::pair<ResultSetDataType, std::string>> &GetTypeMap()
     {
         static const std::unordered_map<std::string, std::pair<ResultSetDataType, std::string>> TYPE_MAP = {
@@ -279,6 +311,8 @@ public:
     static ani_status ToAniStringArray(ani_env *env, const std::vector<std::string> &array, ani_object &aniArray);
     static ani_status GetObjectArray(ani_env *env, ani_object arg, std::vector<ani_object> &array);
     static ani_status ToAniMap(ani_env *env, const std::map<std::string, std::string> &map, ani_object &aniMap);
+    static ani_status MakeAniArray(ani_env* env, uint32_t size, ani_object &aniArray, ani_method &setMethod);
+    static ani_status GetAniValueArray(ani_env *env, ani_object arg, vector<ani_object> &array);
 
     static ani_status GetProperty(ani_env *env, ani_object arg, const std::string &propName, uint32_t &propValue);
     static ani_status GetProperty(ani_env *env, ani_object arg, const std::string &propName, std::string &propValue);
@@ -321,7 +355,36 @@ public:
     template <class AniContext>
     static ani_status ParsePredicates(ani_env *env, const ani_object predicate, AniContext &context,
         FetchOptionType fetchOptType);
-
+    static ani_object CreateValueByIndex(ani_env *env, int32_t index, std::string name,
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
+    static void handleTimeInfo(ani_env *env, const std::string& name, ani_object& result, int32_t index,
+        const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static ani_object GetNextRowObject(ani_env *env, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        bool isShared = false);
+    static ani_object GetSharedPhotoAssets(ani_env *env, std::shared_ptr<NativeRdb::ResultSet> result,
+        int32_t size, bool isSingleResult = false);
+    static ani_object BuildValueByIndex(ani_env *env, int32_t index, const std::string& name,
+        ColumnUnion& tmpNameValue);
+    static int ParseNextRowObject(std::shared_ptr<RowObject>& rowObj, std::shared_ptr<NativeRdb::ResultSet>& resultSet,
+        bool isShared);
+    static int ParseNextRowAlbumObject(std::shared_ptr<RowObject>& rowObj,
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet);
+    static ani_object BuildNextRowObject(ani_env *env, std::shared_ptr<RowObject>& rowObj, bool isShared);
+    static ani_object BuildNextRowAlbumObject(ani_env *env, std::shared_ptr<RowObject>& rowObj);
+    static int ParseValueByIndex(std::shared_ptr<ColumnInfo>& columnInfo, int32_t index, const std::string& name,
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
+    static int ParseTimeInfo(const std::string& name, std::shared_ptr<ColumnInfo>& columnInfo, int32_t index,
+        const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static void BuildTimeInfo(ani_env *env, const std::string& name, ani_object& result, int32_t index,
+    std::shared_ptr<ColumnInfo>& columnInfo);
+    static int ParseThumbnailReady(const std::string& name, std::shared_ptr<ColumnInfo>& columnInfo, int32_t index,
+        const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static void BuildThumbnailReady(ani_env *env, const std::string& name, ani_object& result, int32_t index,
+    std::shared_ptr<ColumnInfo>& columnInfo);
+    static int ParseCoverSharedPhotoAsset(int32_t index, std::shared_ptr<ColumnInfo>& columnInfo,
+        const std::string& name, const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static int ParseSingleSharedPhotoAssets(std::shared_ptr<ColumnInfo>& columnInfo,
+        std::shared_ptr<NativeRdb::ResultSet>& result);
     template <class AniContext>
     static bool HandleSpecialPredicate(AniContext &context,
         DataShare::DataSharePredicates *predicate, FetchOptionType fetchOptType);
@@ -377,12 +440,14 @@ public:
     static bool IsFeaturedSinglePortraitAlbum(std::string albumName, DataShare::DataSharePredicates &predicates);
     static bool IsSystemApp();
     static ani_status ParseAssetIdArray(ani_env *env, ani_object photoAssets, std::vector<std::string> &idArray);
+    static std::string GetFileIdFromUriString(const std::string& uri);
+    static std::string GetAlbumIdFromUriString(const std::string& uri);
 
     EXPORT static std::string ParseResultSet2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
-        const std::vector<std::string> &cloumns);
+        const std::vector<std::string> &columns);
 
     static std::string ParseAnalysisFace2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
-        const std::vector<std::string> &cloumns);
+        const std::vector<std::string> &columns);
 
     static std::string GetStringValueByColumn(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         const std::string columnName);
@@ -391,9 +456,19 @@ public:
 
     static ani_status FindClassMethod(ani_env *env, const std::string &className, const std::string &methodName,
         ani_method *method);
+    static Var CreateValueByIndex(int32_t index, std::string colName,
+        shared_ptr<NativeRdb::ResultSet> &resultSet, const shared_ptr<FileAsset> &asset);
+    static void HandleTimeInfo(const std::string& name, VarMap &result, int32_t index,
+        const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static void HandleThumbnailReady(const std::string& name, VarMap &result, int32_t index,
+        const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static ani_status GetNextRowObject(ani_env *env, shared_ptr<NativeRdb::ResultSet> &resultSet, bool isShared,
+        VarMap &result);
+    static ani_status ToAniVariantArray(ani_env *env, const std::vector<VarMap> &array, ani_object &aniArray);
+private:
+    static ani_status VariantMapToAniMap(ani_env *env, const VarMap &map, ani_object &aniMap);
 };
 
 } // namespace Media
 } // namespace OHOS
-
 #endif  // FRAMEWORKS_ANI_SRC_INCLUDE_MEDIALIBRARY_ANI_UTILS_H
