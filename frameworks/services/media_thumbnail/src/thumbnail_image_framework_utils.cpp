@@ -342,7 +342,7 @@ std::shared_ptr<Picture> ThumbnailImageFrameWorkUtils::CopyAndScalePicture(const
 {
     std::shared_ptr<Picture> copyPicture = nullptr;
     CHECK_AND_RETURN_RET_LOG(desiredSize.width > 0 && desiredSize.height > 0, nullptr,
-        "Invalid desired size: width: %{public}d, height: %{publilc}d", desiredSize.width, desiredSize.height);
+        "Invalid desired size: width: %{public}d, height: %{public}d", desiredSize.width, desiredSize.height);
     CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPictureValid(picture), nullptr, "picture is invalid");
 
     copyPicture = ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
@@ -360,7 +360,7 @@ std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(con
 {
     CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPixelMapValid(pixelMap), nullptr, "PixelMap is invalid");
     CHECK_AND_RETURN_RET_LOG(desiredSize.width > 0 && desiredSize.height > 0, nullptr,
-        "Invalid desired size: width: %{public}d, height: %{publilc}d", desiredSize.width, desiredSize.height);
+        "Invalid desired size: width: %{public}d, height: %{public}d", desiredSize.width, desiredSize.height);
     auto copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
     CHECK_AND_RETURN_RET_LOG(IsPixelMapValid(copySource), nullptr, "CopyPixelMapSource failed");
     float widthScale = (1.0f * desiredSize.width) / pixelMap->GetWidth();
