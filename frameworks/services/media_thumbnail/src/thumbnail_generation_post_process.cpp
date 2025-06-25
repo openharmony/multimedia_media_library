@@ -33,14 +33,18 @@ namespace Media {
 
 int32_t ThumbnailGenerationPostProcess::PostProcess(ThumbnailData& data, const ThumbRdbOpt& opts)
 {
+    CHECK_AND_RETURN_RET_INFO_LOG(!data.rdbUpdateCache.IsEmpty(), E_OK, "RdbUpdateCache is empty, no need update.");
     int32_t err = E_OK;
     bool hasGeneratedThumb = HasGeneratedThumb(data);
     MEDIA_INFO_LOG("HasGeneratedThumb: %{public}d", hasGeneratedThumb);
     if (!hasGeneratedThumb) {
         err = UpdateCachedRdbValue(data, opts);
         CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
+        data.rdbUpdateCache.Clear();
         return E_OK;
     }
+
+    // 必须在更新数据库前获取通知类型
     NotifyType notifyType;
     err = GetNotifyType(data, opts, notifyType);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GetNotifyType failed. err: %{public}d", err);
@@ -50,7 +54,8 @@ int32_t ThumbnailGenerationPostProcess::PostProcess(ThumbnailData& data, const T
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::MEDIA_ID, data.id);
     auto ret = assetRefresh.Update(changedRows, data.rdbUpdateCache, predicates);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "UpdateCachedRdbValue failed. err: %{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "AssetRefresh.Update failed. err: %{public}d", ret);
+    data.rdbUpdateCache.Clear();
     ret = assetRefresh.Notify();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Notify failed. err: %{public}d", ret);
 
@@ -70,7 +75,6 @@ int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValue(ThumbnailData& data
     int32_t changedRows;
     int32_t err = opts.store->Update(changedRows, photosTable,
         data.rdbUpdateCache, MEDIA_DATA_DB_ID + " = ?", { data.id });
-    data.rdbUpdateCache.Clear();
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. table: %{public}s, err: %{public}d",
         photosTable.c_str(), err);
     CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_ERR, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
