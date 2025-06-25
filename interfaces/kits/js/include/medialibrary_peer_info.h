@@ -17,8 +17,9 @@
 #define  INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_PEER_INFO_H_
 
 #include <cstdint>
-
+#ifdef  DM_DEVICE_INFO_ENABLE
 #include "dm_device_info.h"
+#endif
 
 namespace OHOS {
 namespace Media {
