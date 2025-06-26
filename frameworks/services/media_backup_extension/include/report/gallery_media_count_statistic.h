@@ -57,6 +57,7 @@ private:
     bool HasLowQualityImage();
     int32_t QueryGalleryAppTwinDataCount();
     int32_t QueryGalleryOnlyHDCDataCount();
+    int32_t QueryGallerySizeUnnormalDataCount();
     int32_t QueryAlbumAllVideoCount(SearchCondition searchCondition);
     std::vector<AlbumStatisticInfo> QueryAlbumCountByName(
         const std::string &albumName, SearchCondition searchCondition);
@@ -73,6 +74,7 @@ private:
     AlbumMediaStatisticInfo GetDuplicateStatInfo();
     AlbumMediaStatisticInfo GetAppTwinStatInfo();
     AlbumMediaStatisticInfo GetOnlyHDCInfo();
+    AlbumMediaStatisticInfo GetSizeUnnormalInfo();
     AlbumMediaStatisticInfo GetImageAlbumInfo();
     AlbumMediaStatisticInfo GetFavoriteAlbumStatInfo();
     AlbumMediaStatisticInfo GetTrashedAlbumStatInfo();
@@ -258,6 +260,25 @@ private:
                 ) \
             ) AND \
             (_size > 0 OR (_size = 0 AND photo_quality = 0)) AND \
+            _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+            COALESCE(_data, '') <> '' AND \
+            (COALESCE(storage_id, 0) IN (0, 65537) ) \
+        ORDER BY _id ASC ;";
+    const std::string SQL_SIZE_UNNORMAL_META_QUERY_COUNT = "\
+        SELECT COUNT(1) AS count \
+        FROM gallery_media \
+            LEFT JOIN gallery_album \
+            ON gallery_media.albumId=gallery_album.albumId \
+            LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
+        WHERE (relative_bucket_id IS NULL OR \
+                relative_bucket_id NOT IN ( \
+                    SELECT DISTINCT relative_bucket_id \
+                    FROM garbage_album \
+                    WHERE type = 1 \
+                ) \
+            ) AND \
+            (COALESCE(_size, -1) < 0 OR (_size = 0 AND photo_quality <> 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
             (COALESCE(storage_id, 0) IN (0, 65537) ) \
