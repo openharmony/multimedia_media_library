@@ -438,6 +438,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAssetsControllerService::GetResultSetFromDb
     },
     {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_PHOTOS),
+        &MediaAssetsControllerService::GetResultSetFromPhotosExtend
+    },
+    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_PHOTOS_EXTEND),
         &MediaAssetsControllerService::GetResultSetFromPhotosExtend
     },
@@ -1590,7 +1594,7 @@ int32_t MediaAssetsControllerService::CancelCloudEnhancementTasks(MessageParcel 
     CloudEnhancementDto dto;
     dto.fileUris = reqBody.fileUris;
     if (ret == E_OK) {
-        ret = MediaAssetsService::GetInstance().SubmitCloudEnhancementTasks(dto);
+        ret = MediaAssetsService::GetInstance().CancelCloudEnhancementTasks(dto);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
