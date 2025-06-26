@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <sstream>
 #include <string>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "medialibrary_appstate_observer.h"
 #include "if_system_ability_manager.h"
@@ -37,69 +38,44 @@ using namespace std;
 using namespace DataShare;
 using namespace OHOS::AppExecFwk;
 using OHOS::AppExecFwk::AppStateData;
-const int32_t EVEN = 2;
+static const int32_t NUM_BYTES = 1;
+static const int32_t MAX_ABILITY_TYPE = 30;
+FuzzedDataProvider *FDP = nullptr;
 
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
+static inline std::vector<int32_t> FuzzVector()
 {
-    return static_cast<int32_t>(*data);
+    return { FDP->ConsumeIntegral<int32_t>() };
 }
 
-static inline int32_t FuzzUInt32(const uint8_t *data, size_t size)
+static inline AppExecFwk::ExtensionAbilityType FuzzExtensionAbilityType()
 {
-    return static_cast<uint32_t>(*data);
+    int32_t value = FDP->ConsumeIntegralInRange<int32_t>(0, MAX_ABILITY_TYPE);
+    return static_cast<AppExecFwk::ExtensionAbilityType>(value);
 }
 
-static inline bool FuzzBool(const uint8_t* data, size_t size)
-{
-    if (size == 0) {
-        return false;
-    }
-    return (data[0] % EVEN) == 0;
-}
-
-static inline string FuzzString(const uint8_t *data, size_t size)
-{
-    return {reinterpret_cast<const char*>(data), size};
-}
-
-static inline std::vector<int32_t> FuzzVector(const uint8_t* data, size_t size)
-{
-    return {FuzzInt32(data, size)};
-}
-
-static inline AppExecFwk::ExtensionAbilityType FuzzExtensionAbilityType(const uint8_t* data, size_t size)
-{
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(AppExecFwk::ExtensionAbilityType::FORM) &&
-        value <= static_cast<int32_t>(AppExecFwk::ExtensionAbilityType::SYSPICKER_SHARE)) {
-        return static_cast<AppExecFwk::ExtensionAbilityType>(value);
-    }
-    return  AppExecFwk::ExtensionAbilityType::SYSPICKER_SHARE;
-}
-
-static AppExecFwk::AppStateData FuzzAppStateData(const uint8_t* data, size_t size)
+static AppExecFwk::AppStateData FuzzAppStateData()
 {
     AppExecFwk::AppStateData appStateData;
-    appStateData.isFocused = FuzzBool(data, size);
-    appStateData.isSplitScreenMode = FuzzBool(data, size);
-    appStateData.isFloatingWindowMode = FuzzBool(data, size);
-    appStateData.isSpecifyTokenId = FuzzBool(data, size);
-    appStateData.isPreloadModule = FuzzBool(data, size);
-    appStateData.pid = FuzzInt32(data, size);
-    appStateData.uid = FuzzInt32(data, size);
-    appStateData.state = FuzzInt32(data, size);
-    appStateData.appIndex = FuzzInt32(data, size);
-    appStateData.accessTokenId = FuzzUInt32(data, size);
-    appStateData.extensionType =  FuzzExtensionAbilityType(data, size);
-    appStateData.renderPids = FuzzVector(data, size);
-    appStateData.bundleName = FuzzString(data, size);
-    appStateData.callerBundleName = FuzzString(data, size);
+    appStateData.isFocused = FDP->ConsumeBool();
+    appStateData.isSplitScreenMode = FDP->ConsumeBool();
+    appStateData.isFloatingWindowMode = FDP->ConsumeBool();
+    appStateData.isSpecifyTokenId = FDP->ConsumeBool();
+    appStateData.isPreloadModule = FDP->ConsumeBool();
+    appStateData.pid = FDP->ConsumeIntegral<int32_t>();
+    appStateData.uid = FDP->ConsumeIntegral<int32_t>();
+    appStateData.state = FDP->ConsumeIntegral<int32_t>();
+    appStateData.appIndex = FDP->ConsumeIntegral<int32_t>();
+    appStateData.accessTokenId = FDP->ConsumeIntegral<uint32_t>();
+    appStateData.extensionType =  FuzzExtensionAbilityType();
+    appStateData.renderPids = FuzzVector();
+    appStateData.bundleName = FDP->ConsumeBytesAsString(NUM_BYTES);
+    appStateData.callerBundleName = FDP->ConsumeBytesAsString(NUM_BYTES);
     return appStateData;
 }
 
-static void AppStateObserver(const uint8_t* data, size_t size)
+static void AppStateObserver()
 {
-    AppExecFwk::AppStateData appStateData = FuzzAppStateData(data, size);
+    AppExecFwk::AppStateData appStateData = FuzzAppStateData();
     sptr<Media::MedialibraryAppStateObserver> appStateObserver =
         new (std::nothrow) Media::MedialibraryAppStateObserver();
     appStateObserver->OnAppStopped(appStateData);
@@ -109,6 +85,11 @@ static void AppStateObserver(const uint8_t* data, size_t size)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    OHOS::AppStateObserver(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::FDP = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::AppStateObserver();
     return 0;
 }
