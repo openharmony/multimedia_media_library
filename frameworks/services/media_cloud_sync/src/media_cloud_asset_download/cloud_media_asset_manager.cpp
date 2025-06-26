@@ -286,6 +286,7 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
             CHECK_AND_PRINT_LOG(DeleteEditdata(paths[i]) == E_OK, "DeleteEditdata error.");
             CHECK_AND_PRINT_LOG(ThumbnailService::GetInstance()->DeleteThumbnailDirAndAstc(fileIds[i],
                 PhotoColumn::PHOTOS_TABLE, paths[i], dateTakens[i]), "DeleteThumbnailDirAndAstc error.");
+            CloudSyncManager::GetInstance().CleanGalleryDentryFile(paths[i]);
         }
  
         fileIds.clear();
@@ -564,11 +565,6 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia()
         MEDIA_WARN_LOG("end to ForceRetainDownloadCloudMedia, updateRet: %{public}d.", updateRet);
         return updateRet;
     }
-    std::thread([&] {
-        MEDIA_INFO_LOG("begin to CleanGalleryDentryFile");
-        CloudSyncManager::GetInstance().CleanGalleryDentryFile();
-        MEDIA_INFO_LOG("end to CleanGalleryDentryFile");
-    }).detach();
     SetCloudsyncStatusKey(static_cast<int32_t>(CloudSyncStatus::SYNC_SWITCHED_OFF));
 
     TaskDeleteState expect = TaskDeleteState::IDLE;
