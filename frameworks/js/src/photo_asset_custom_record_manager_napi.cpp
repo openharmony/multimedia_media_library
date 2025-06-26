@@ -88,7 +88,7 @@ napi_value PhotoAssetCustomRecordManager::Constructor(napi_env env, napi_callbac
     napi_value newTarget = nullptr;
     CHECK_ARGS(env, napi_get_new_target(env, info, &newTarget), JS_E_INIT_FAIL);
     if (!InitUserFileClient(env, info)) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "user file client init fail");
+        NapiError::ThrowError(env, JS_E_INIT_FAIL, "user file client init fail");
         return nullptr;
     }
     CHECK_COND_RET(newTarget != nullptr, nullptr, "Failed to check new.target");
