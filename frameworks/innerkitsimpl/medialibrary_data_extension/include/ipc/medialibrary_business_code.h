@@ -163,6 +163,7 @@ enum class MediaLibraryBusinessCode : uint32_t {
     INNER_GET_URIS_BY_OLD_URIS = 50015,
     INNER_CUSTOM_RESTORE,
     INNER_CUSTOM_RESTORE_CANCEL,
+    INNER_GET_RESULT_SET_FROM_PHOTOS,
     INNER_BUSINESS_CODE_END = 59999,
 };
 }  // namespace OHOS::Media

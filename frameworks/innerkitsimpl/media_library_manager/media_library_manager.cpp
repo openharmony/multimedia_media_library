@@ -63,6 +63,7 @@
 #include "get_uri_from_filepath_vo.h"
 #include "get_filepath_from_uri_vo.h"
 #include "close_asset_vo.h"
+#include "get_result_set_from_photos_extend_vo.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -273,13 +274,20 @@ std::shared_ptr<DataShareResultSet> GetResultSetFromPhotos(const string &value, 
     sptr<IRemoteObject> &token, shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
 {
     CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(value), nullptr, "Failed to check invalid uri: %{public}s", value.c_str());
-    Uri queryUri(PAH_QUERY_PHOTO);
-    DataSharePredicates predicates;
-    string fileId = MediaFileUtils::GetIdFromUri(value);
-    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    DatashareBusinessError businessError;
     CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "datashareHelper is nullptr");
-    return dataShareHelper->Query(queryUri, predicates, columns, &businessError);
+
+    GetResultSetFromPhotosExtendReqBody reqBody;
+    reqBody.value = value;
+    reqBody.columns = columns;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_PHOTOS);
+    GetResultSetFromDbRespBody rspBody;
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("errCode: %{public}d", errCode);
+        return nullptr;
+    }
+    return rspBody.resultSet;
 }
 
 std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(string columnName, const string &value,
