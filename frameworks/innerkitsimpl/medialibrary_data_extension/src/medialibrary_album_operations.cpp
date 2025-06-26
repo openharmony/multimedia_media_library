@@ -2784,6 +2784,14 @@ int32_t MediaLibraryAlbumOperations::SetIsMe(const ValuesBucket &values, const D
     }
     vector<string> updateSqls;
     SetMyOldAlbum(updateSqls, uniStore);
+    std::string queryTargetAlbum = "SELECT " + USER_DISPLAY_LEVEL + " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ALBUM_ID + " = " + targetAlbumId;
+    auto targetResultSet = uniStore->QuerySql(queryTargetAlbum);
+    if (targetResultSet == nullptr || targetResultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query target album!");
+        return -E_HAS_DB_ERROR;
+    }
+    targetResultSet->Close();
 
     MEDIA_INFO_LOG("Start set is me, album id: %{public}s", targetAlbumId.c_str());
     std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " + RENAME_OPERATION +
