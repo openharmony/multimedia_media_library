@@ -204,7 +204,7 @@ void VideoFaceClone::BatchInsertVideoFaces(const std::vector<VideoFaceTbl>& vide
     }
 
     migrateVideoFaceNum_ += rowNum;
-    migrateVideoFaceFileNumber_ += fileIdSet.size();
+    migrateVideoFaceFileNumber_ += static_cast<int64_t>(fileIdSet.size());
 }
 
 NativeRdb::ValuesBucket VideoFaceClone::CreateValuesBucketFromVideoFaceTbl(const VideoFaceTbl& videoFaceTbl)
