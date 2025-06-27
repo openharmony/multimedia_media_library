@@ -366,7 +366,6 @@ HWTEST_F(MediaLibraryTriggerTest, InsertSourcePhotoCreateSourceAlbumTrigger_Inse
     EXPECT_TRUE(ret);
 }
 
-// TODO:增加查数据库看看数据是不是真的操作了
 HWTEST_F(MediaLibraryTriggerTest, InsertSourcePhotoCreateSourceAlbumTrigger_GetLPathFromAlbumPlugin_000,
     TestSize.Level2)
 {
