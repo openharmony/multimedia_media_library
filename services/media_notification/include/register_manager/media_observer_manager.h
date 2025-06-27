@@ -33,7 +33,7 @@ public:
     EXPORT MediaObserverManager();
     EXPORT ~MediaObserverManager();
     EXPORT int32_t AddObserver(const NotifyUriType &uri, const sptr<AAFwk::IDataAbilityObserver>
-        &dataObserver) override;
+        &dataObserver, bool isReconnect) override;
     EXPORT int32_t RemoveObserver(const wptr<IRemoteObject> &object) override;
     EXPORT std::vector<ObserverInfo> FindObserver(const NotifyUriType &uri) override;
 
@@ -45,6 +45,7 @@ public:
 
 private:
     int32_t RemoveObsDeathRecipient(const wptr<IRemoteObject> &object);
+    void ExeForReconnect(const NotifyUriType &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver);
 
 private:
     std::mutex mutex_;

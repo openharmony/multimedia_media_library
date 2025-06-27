@@ -30,7 +30,7 @@ public:
     EXPORT IObserverManager() = default;
     EXPORT virtual ~IObserverManager() = default;
     EXPORT virtual int32_t AddObserver(const NotifyUriType &uri, const sptr<AAFwk::IDataAbilityObserver>
-        &dataObserver) = 0;
+        &dataObserver, bool isReconnect) = 0;
     EXPORT virtual int32_t RemoveObserver(const wptr<IRemoteObject> &object) = 0;
     EXPORT virtual std::vector<ObserverInfo> FindObserver(const NotifyUriType &uri) = 0;
     EXPORT virtual int32_t RemoveObserverWithUri(const NotifyUriType &uri,

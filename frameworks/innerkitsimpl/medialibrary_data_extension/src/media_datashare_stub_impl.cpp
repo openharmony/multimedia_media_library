@@ -174,7 +174,7 @@ bool MediaDataShareStubImpl::UnregisterObserver(const Uri &uri, const sptr<AAFwk
 }
 
 int MediaDataShareStubImpl::RegisterObserverExtProvider(const Uri &uri,
-    const sptr<AAFwk::IDataAbilityObserver> &dataObserver, bool isDescendants)
+    const sptr<AAFwk::IDataAbilityObserver> &dataObserver, bool isDescendants, RegisterOption option)
 {
     MEDIA_INFO_LOG("enter MediaDataShareStubImpl::RegisterObserver, uri:%{public}s", uri.ToString().c_str());
     std::string uriType = uri.ToString();
@@ -185,7 +185,7 @@ int MediaDataShareStubImpl::RegisterObserverExtProvider(const Uri &uri,
     Notification::NotifyUriType registerUriType = NOTIFY_URI_MAP.at(uriType);
     auto observerManager = Media::Notification::MediaObserverManager::GetObserverManager();
     CHECK_AND_RETURN_RET_LOG(observerManager != nullptr, E_OBSERVER_MANAGER_IS_NULL, "observerManager is nullptr");
-    int32_t ret = observerManager->AddObserver(registerUriType, dataObserver);
+    int32_t ret = observerManager->AddObserver(registerUriType, dataObserver, option.isReconnect);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to add observer, error is %{public}d", ret);
     return E_SUCCESS;
 }
