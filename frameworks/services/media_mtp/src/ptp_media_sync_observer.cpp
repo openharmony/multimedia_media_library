@@ -564,7 +564,8 @@ void MediaSyncObserver::SendEventToPTP(ChangeType changeType, const std::vector<
 
 bool MediaSyncObserver::ParseNotifyData(const ChangeInfo &changeInfo, vector<string> &fileIds)
 {
-    if (changeInfo.data_ == nullptr || changeInfo.size_ <= 0) {
+    if (changeInfo.data_ == nullptr || changeInfo.size_ <= 0 ||
+        changeInfo.size_ > std::numeric_limits<uint32_t>::max()) {
         MEDIA_DEBUG_LOG("changeInfo.data_ is null or changeInfo.size_ is invalid");
         return false;
     }
@@ -689,7 +690,8 @@ void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
     {
         std::lock_guard<std::mutex> lock(mutex_);
         ChangeInfo changeInfoCopy = changeInfo;
-        if (changeInfo.data_ != nullptr && changeInfo.size_ > 0) {
+        if (changeInfo.data_ != nullptr && changeInfo.size_ > 0 &&
+            changeInfo.size_ <= std::numeric_limits<uint32_t>::max()) {
             changeInfoCopy.data_ = malloc(changeInfo.size_);
             CHECK_AND_RETURN_LOG(changeInfoCopy.data_ != nullptr, "changeInfoCopy.data_ is nullptr.");
             if (memcpy_s(const_cast<void*>(changeInfoCopy.data_),
