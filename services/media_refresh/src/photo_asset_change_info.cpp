@@ -59,7 +59,7 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
     { PhotoColumn::MEDIA_NAME, TYPE_STRING },
     { PhotoColumn::MEDIA_FILE_PATH, TYPE_STRING },
     { MediaColumn::MEDIA_PACKAGE_NAME, TYPE_STRING},
-    { MediaColumn::MEDIA_OWNER_PACKAGE, TYPE_STRING}
+    { MediaColumn::MEDIA_OWNER_PACKAGE, TYPE_STRING},
     { PhotoColumn::PHOTO_DIRTY, TYPE_INT32 },
 };
 
