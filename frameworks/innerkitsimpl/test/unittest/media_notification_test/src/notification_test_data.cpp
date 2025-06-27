@@ -26,6 +26,10 @@
 #include "data_ability_observer_stub.h"
 #include "media_log.h"
 #include "notify_task_worker.h"
+#include "get_self_permissions.h"
+#include "access_token.h"
+#include "accesstoken_kit.h"
+#include "token_setproc.h"
 
 namespace OHOS {
 namespace Media {
@@ -150,7 +154,8 @@ const Media::AccurateRefresh::AlbumChangeData albumChangeData3 = []() {
 }();
 
 std::vector<Notification::MediaChangeInfo> NotificationTestData::getPhotoChangeInfos(
-    const Notification::NotifyUriType &notifyUriType, const Notification::NotifyType &notifyType, bool isForRecheck)
+    const Notification::NotifyUriType &notifyUriType,
+    const Notification::NotifyType &notifyType, bool isForRecheck)
 {
     Media::Notification::MediaChangeInfo photoUriChangeInfo;
     const auto &deletePhotoData1 = OHOS::Media::Notification::deletePhotoData1;
@@ -271,106 +276,93 @@ std::vector<Notification::MediaChangeInfo> NotificationTestData::buildAssetsMedi
     return mediaChangeInfos;
 }
 
-std::vector<Notification::NotifyInfo> NotificationTestData::buildAssetsNotifyInfo(const std::string &testName)
+Notification::NotifyInfo createBaseNotifyInfo(NotifyUriType uriType, bool isAlbum)
+{
+    Notification::NotifyInfo notifyInfo;
+    std::vector<Notification::MediaChangeInfo> changeInfos = isAlbum ?
+        NotificationTestData::getAlbumChangeInfosByUriType(uriType, isAlbum) :
+        NotificationTestData::getPhotnChangeInfosByUriType(uriType, isAlbum);
+    notifyInfo.changeInfosMap[uriType] = changeInfos;
+    return notifyInfo;
+}
+
+void setupObserversByTestCase(
+    const std::string& testName,
+    std::unordered_map<NotifyUriType, std::vector<ObserverInfo>>& observerMap,
+    Notification::NotifyInfo& photoUri,
+    Notification::NotifyInfo& hiddenPhotoUri,
+    Notification::NotifyInfo& trashPhotoUri,
+    Notification::NotifyInfo& photoAlbumUri,
+    Notification::NotifyInfo& hiddenAlbumUri,
+    Notification::NotifyInfo& trashAlbumUri)
+{
+    static const std::unordered_map<std::string, std::vector<NotifyUriType>> testCaseMap = {
+        {"test001", {NotifyUriType::PHOTO_URI}},
+        {"test002", {NotifyUriType::HIDDEN_PHOTO_URI}},
+        {"test003", {NotifyUriType::TRASH_PHOTO_URI}},
+        {"test004", {NotifyUriType::PHOTO_ALBUM_URI}},
+        {"test005", {NotifyUriType::HIDDEN_ALBUM_URI}},
+        {"test006", {NotifyUriType::TRASH_ALBUM_URI}},
+        {"test007", {NotifyUriType::HIDDEN_ALBUM_URI, NotifyUriType::TRASH_ALBUM_URI}},
+        {"test008", {NotifyUriType::PHOTO_URI}},
+        {"test009", {NotifyUriType::PHOTO_ALBUM_URI, NotifyUriType::TRASH_ALBUM_URI}},
+        {"test010", {NotifyUriType::PHOTO_URI, NotifyUriType::HIDDEN_PHOTO_URI, NotifyUriType::TRASH_PHOTO_URI}},
+        {"test011", {NotifyUriType::PHOTO_URI, NotifyUriType::HIDDEN_ALBUM_URI, NotifyUriType::TRASH_ALBUM_URI}},
+        {"test012", {NotifyUriType::PHOTO_URI, NotifyUriType::TRASH_PHOTO_URI,
+            NotifyUriType::PHOTO_ALBUM_URI, NotifyUriType::TRASH_ALBUM_URI}}
+    };
+
+    auto it = testCaseMap.find(testName);
+    if (it == testCaseMap.end()) {
+        return;
+    }
+
+    for (auto uriType : it->second) {
+        switch (uriType) {
+            case NotifyUriType::PHOTO_URI:
+                photoUri.observerInfos = observerMap[uriType];
+                if (testName == "test010") {
+                    photoUri.changeInfosMap[uriType].at(0).changeInfos.clear();
+                }
+                break;
+            case NotifyUriType::HIDDEN_PHOTO_URI:
+                hiddenPhotoUri.observerInfos = observerMap[uriType]; break;
+            case NotifyUriType::TRASH_PHOTO_URI:
+                trashPhotoUri.observerInfos = observerMap[uriType];
+                if (testName == "test008") {
+                    trashPhotoUri.observerInfos = observerMap[NotifyUriType::PHOTO_URI];
+                }
+                break;
+            case NotifyUriType::PHOTO_ALBUM_URI:
+                photoAlbumUri.observerInfos = observerMap[uriType]; break;
+            case NotifyUriType::HIDDEN_ALBUM_URI:
+                hiddenAlbumUri.observerInfos = observerMap[uriType]; break;
+            case NotifyUriType::TRASH_ALBUM_URI:
+                trashAlbumUri.observerInfos = observerMap[uriType]; break;
+            default:
+                break;
+        }
+    }
+}
+
+std::vector<Notification::NotifyInfo> NotificationTestData::buildAssetsNotifyInfo(
+    const std::string &testName,
+    std::unordered_map<NotifyUriType, std::vector<ObserverInfo>> observerMap)
 {
     std::vector<Notification::NotifyInfo> notifyInfos;
+    Notification::NotifyInfo photoUri = createBaseNotifyInfo(NotifyUriType::PHOTO_URI, false);
+    Notification::NotifyInfo hiddenPhotoUri = createBaseNotifyInfo(NotifyUriType::HIDDEN_PHOTO_URI, false);
+    Notification::NotifyInfo trashPhotoUri = createBaseNotifyInfo(NotifyUriType::TRASH_PHOTO_URI, false);
+    Notification::NotifyInfo photoAlbumUri = createBaseNotifyInfo(NotifyUriType::PHOTO_ALBUM_URI, true);
+    Notification::NotifyInfo hiddenAlbumUri = createBaseNotifyInfo(NotifyUriType::HIDDEN_ALBUM_URI, false);
+    Notification::NotifyInfo trashAlbumUri  = createBaseNotifyInfo(NotifyUriType::TRASH_ALBUM_URI, false);
+    setupObserversByTestCase(testName, observerMap, photoUri, hiddenPhotoUri,
+        trashPhotoUri, photoAlbumUri, hiddenAlbumUri, trashAlbumUri);
+    notifyInfos.insert(notifyInfos.end(), {
+        photoUri, hiddenPhotoUri, trashPhotoUri,
+        photoAlbumUri, hiddenAlbumUri, trashAlbumUri
+    });
 
-    Notification::NotifyInfo photoUriNotifyInfo;
-    Notification::NotifyInfo hiddenPhotoUriNotifyInfo;
-    Notification::NotifyInfo trashPhotoUriNotifyInfo;
-    Notification::NotifyInfo photoAlbumUriNotifyInfo;
-    Notification::NotifyInfo hiddenAlbumUriNotifyInfo;
-    Notification::NotifyInfo trashAlbumUriNotifyInfo;
-
-    // PHOTO_URI
-    std::vector<Notification::MediaChangeInfo> photoUriInfos =
-        getPhotnChangeInfosByUriType(NotifyUriType::PHOTO_URI, true);
-    photoUriNotifyInfo.changeInfosMap[Notification::NotifyUriType::PHOTO_URI] = photoUriInfos;
-    // HIDDEN_PHOTO_URI
-    std::vector<Notification::MediaChangeInfo> hiddenPhotoUriInfos =
-        getPhotnChangeInfosByUriType(NotifyUriType::HIDDEN_PHOTO_URI, false);
-    hiddenPhotoUriNotifyInfo.changeInfosMap[Notification::NotifyUriType::HIDDEN_PHOTO_URI] = hiddenPhotoUriInfos;
-    // TRASH_PHOTO_URI
-    std::vector<Notification::MediaChangeInfo> trashPhotoUriInfos =
-        getPhotnChangeInfosByUriType(NotifyUriType::TRASH_PHOTO_URI, false);
-    trashPhotoUriNotifyInfo.changeInfosMap[Notification::NotifyUriType::TRASH_PHOTO_URI] = trashPhotoUriInfos;
-    // PHOTO_ALBUM_URI
-    std::vector<Notification::MediaChangeInfo> photoAlbumUriInfos =
-        getAlbumChangeInfosByUriType(NotifyUriType::PHOTO_ALBUM_URI, true);
-    photoAlbumUriNotifyInfo.changeInfosMap[Notification::NotifyUriType::PHOTO_ALBUM_URI] = photoAlbumUriInfos;
-    // HIDDEN_ALBUM_URI
-    std::vector<Notification::MediaChangeInfo> hiddenAlbumUriInfos =
-        getAlbumChangeInfosByUriType(NotifyUriType::HIDDEN_ALBUM_URI, false);
-    hiddenAlbumUriNotifyInfo.changeInfosMap[Notification::NotifyUriType::HIDDEN_ALBUM_URI] = hiddenAlbumUriInfos;
-    // TRASH_ALBUM_URI
-    std::vector<Notification::MediaChangeInfo> trashAlbumUriInfos =
-        getAlbumChangeInfosByUriType(NotifyUriType::TRASH_ALBUM_URI, false);
-    trashAlbumUriNotifyInfo.changeInfosMap[Notification::NotifyUriType::TRASH_ALBUM_URI] = trashAlbumUriInfos;
-
-    auto observerManager = MediaObserverManager::GetObserverManager();
-    if (observerManager == nullptr) {
-        MEDIA_ERR_LOG("observerManager is null");
-        return {};
-    }
-
-    OHOS::Media::Notification::ObserverInfo photoUriObs;
-    photoUriObs.observer = nullptr;
-    OHOS::Media::Notification::ObserverInfo hiddenPhotoUriObs;
-    hiddenPhotoUriObs.observer = nullptr;
-    OHOS::Media::Notification::ObserverInfo trashPhotoUriObs;
-    trashPhotoUriObs.observer = nullptr;
-    OHOS::Media::Notification::ObserverInfo albumUriObs;
-    albumUriObs.observer = nullptr;
-    OHOS::Media::Notification::ObserverInfo hiddenAlbumUriObs;
-    hiddenAlbumUriObs.observer = nullptr;
-    OHOS::Media::Notification::ObserverInfo trashAlbumUriObs;
-    trashAlbumUriObs.observer = nullptr;
-
-    if (testName == "test001") {
-        photoUriNotifyInfo.observerInfos.push_back(photoUriObs);
-    } else if (testName == "test002") {
-        hiddenPhotoUriNotifyInfo.observerInfos.push_back(hiddenPhotoUriObs);
-    } else if (testName == "test003") {
-        trashPhotoUriNotifyInfo.observerInfos.push_back(trashPhotoUriObs);
-    } else if (testName == "test004") {
-        photoAlbumUriNotifyInfo.observerInfos.push_back(albumUriObs);
-    } else if (testName == "test005") {
-        hiddenAlbumUriNotifyInfo.observerInfos.push_back(hiddenAlbumUriObs);
-    } else if (testName == "test006") {
-        trashAlbumUriNotifyInfo.observerInfos.push_back(trashAlbumUriObs);
-    } else if (testName == "test007") {
-        photoUriNotifyInfo.observerInfos.push_back(photoUriObs);
-        hiddenPhotoUriNotifyInfo.observerInfos.push_back(hiddenPhotoUriObs);
-    } else if (testName == "test008") {
-        trashPhotoUriNotifyInfo.observerInfos.push_back(trashPhotoUriObs);
-        photoAlbumUriNotifyInfo.observerInfos.push_back(albumUriObs);
-    } else if (testName == "test009") {
-        hiddenAlbumUriNotifyInfo.observerInfos.push_back(hiddenAlbumUriObs);
-        trashAlbumUriNotifyInfo.observerInfos.push_back(trashAlbumUriObs);
-    } else if (testName == "test010") {
-        photoUriNotifyInfo.observerInfos.push_back(photoUriObs);
-        hiddenPhotoUriNotifyInfo.observerInfos.push_back(hiddenPhotoUriObs);
-        trashPhotoUriNotifyInfo.observerInfos.push_back(trashPhotoUriObs);
-    } else if (testName == "test011") {
-        photoAlbumUriNotifyInfo.observerInfos.push_back(albumUriObs);
-        hiddenAlbumUriNotifyInfo.observerInfos.push_back(hiddenAlbumUriObs);
-        trashAlbumUriNotifyInfo.observerInfos.push_back(trashAlbumUriObs);
-    } else if (testName == "test012") {
-        photoUriNotifyInfo.observerInfos.push_back(photoUriObs);
-        hiddenPhotoUriNotifyInfo.observerInfos.push_back(hiddenPhotoUriObs);
-        trashPhotoUriNotifyInfo.observerInfos.push_back(trashPhotoUriObs);
-        photoAlbumUriNotifyInfo.observerInfos.push_back(albumUriObs);
-        hiddenAlbumUriNotifyInfo.observerInfos.push_back(hiddenAlbumUriObs);
-        trashAlbumUriNotifyInfo.observerInfos.push_back(trashAlbumUriObs);
-    } else {
-        return notifyInfos;
-    }
-    notifyInfos.push_back(photoUriNotifyInfo);
-    notifyInfos.push_back(hiddenPhotoUriNotifyInfo);
-    notifyInfos.push_back(trashPhotoUriNotifyInfo);
-    notifyInfos.push_back(photoAlbumUriNotifyInfo);
-    notifyInfos.push_back(hiddenAlbumUriNotifyInfo);
-    notifyInfos.push_back(trashAlbumUriNotifyInfo);
     return notifyInfos;
 }
 
@@ -406,6 +398,53 @@ std::vector<NotifyInfoInner> NotificationTestData::buildAlbumNotifyTaskInfo(Noti
     notifyInfoInners.push_back(notifyInfoInner);
 
     return notifyInfoInners;
+}
+
+void NotificationTestData::SetHapPermission()
+{
+    Security::AccessToken::HapInfoParams info = {
+        .userID = 100, // 100 UserID
+        .bundleName = "com.ohos.test.screencapturetdd",
+        .instIndex = 0, // 0 index
+        .appIDDesc = "com.ohos.test.screencapturetdd",
+        .isSystemApp = true
+    };
+
+    Security::AccessToken::HapPolicyParams policy = {
+        .apl = Security::AccessToken::APL_SYSTEM_BASIC,
+        .domain = "test.domain.screencapturetdd",
+        .permList = { },
+        .permStateList = {
+            {
+                .permissionName = "ohos.permission.MANAGE_PRIVATE_PHOTOS",
+                .isGeneral = true,
+                .resDeviceID = { "local" },
+                .grantStatus = { Security::AccessToken::PermissionState::PERMISSION_GRANTED },
+                .grantFlags = { 1 }
+            },
+            {
+                .permissionName = "ohos.permission.READ_IMAGEVIDEO",
+                .isGeneral = true,
+                .resDeviceID = { "local" },
+                .grantStatus = { Security::AccessToken::PermissionState::PERMISSION_GRANTED },
+                .grantFlags = { 1 }
+            },
+            {
+                .permissionName = "ohos.permission.WRITE_IMAGEVIDEO",
+                .isGeneral = true,
+                .resDeviceID = { "local" },
+                .grantStatus = { Security::AccessToken::PermissionState::PERMISSION_GRANTED },
+                .grantFlags = { 1 }
+            }
+        }
+    };
+    Security::AccessToken::AccessTokenIDEx tokenIdEx = { 0 };
+    tokenIdEx = Security::AccessToken::AccessTokenKit::AllocHapToken(info, policy);
+    int ret = SetSelfTokenID(tokenIdEx.tokenIDEx);
+    if (ret != 0) {
+        MEDIA_INFO_LOG("Set hap token failed, err: %{public}d", ret);
+    }
+    MEDIA_INFO_LOG("end SetHapPermission");
 }
 
 }  // namespace Notification
