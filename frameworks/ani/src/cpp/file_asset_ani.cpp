@@ -1028,12 +1028,12 @@ ani_object FileAssetAni::PhotoAccessHelperGetThumbnail(ani_env *env, ani_object 
     context->size.width = DEFAULT_THUMB_SIZE;
     context->size.height = DEFAULT_THUMB_SIZE;
     if (MediaLibraryAniUtils::IsUndefined(env, size) == ANI_FALSE) {
-        ani_int heightValue = 0;
-        ani_int widthValue = 0;
-        if (ANI_OK != env->Object_GetPropertyByName_Int(size, "height", &heightValue)) {
+        ani_double heightValue = 0;
+        ani_double widthValue = 0;
+        if (ANI_OK != env->Object_GetPropertyByName_Double(size, "height", &heightValue)) {
             ANI_ERR_LOG("Class_FindMethod Fail %{public}s", PAH_ANI_CLASS_SIZE.c_str());
         }
-        if (ANI_OK != env->Object_GetPropertyByName_Int(size, "width", &widthValue)) {
+        if (ANI_OK != env->Object_GetPropertyByName_Double(size, "width", &widthValue)) {
             ANI_ERR_LOG("Class_FindMethod Fail %{public}s", PAH_ANI_CLASS_SIZE.c_str());
         }
         context->size.width = static_cast<int32_t>(widthValue);
@@ -1807,13 +1807,13 @@ static ani_status GetPhotoRequestOption(ani_env *env, ani_object object,
     CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, object, size, sizeObj), "Failed to check empty size!");
     ANI_INFO_LOG("sizeObj: %{public}p", sizeObj);
     if (MediaLibraryAniUtils::IsUndefined(env, sizeObj) == ANI_FALSE) {
-        ani_int heightValue = 0;
-        ani_int widthValue = 0;
-        if (ANI_OK != env->Object_GetPropertyByName_Int(sizeObj, "height", &heightValue)) {
+        ani_double heightValue = 0;
+        ani_double widthValue = 0;
+        if (ANI_OK != env->Object_GetPropertyByName_Double(sizeObj, "height", &heightValue)) {
             AniError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid parameter height");
             return ANI_ERROR;
         }
-        if (ANI_OK != env->Object_GetPropertyByName_Int(sizeObj, "width", &widthValue)) {
+        if (ANI_OK != env->Object_GetPropertyByName_Double(sizeObj, "width", &widthValue)) {
             AniError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid parameter width");
             return ANI_ERROR;
         }
