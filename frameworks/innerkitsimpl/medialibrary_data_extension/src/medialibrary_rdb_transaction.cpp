@@ -443,10 +443,6 @@ pair<int32_t, NativeRdb::Results> TransactionOperations::Update(
         return {E_HAS_DB_ERROR, -1};
     }
     ValuesBucket valuesSet(values);
-    if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        valuesSet.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
-        valuesSet.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
-    }
 
     return transaction_->Update(valuesSet, predicates, { returningField });
 }

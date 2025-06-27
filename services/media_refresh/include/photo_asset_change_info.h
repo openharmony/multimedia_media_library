@@ -73,6 +73,7 @@ public:
     int64_t thumbnailReady_ = INVALID_INT64_VALUE;
     std::string displayName_ = EMPTY_STR;
     std::string path_ = EMPTY_STR;
+    int32_t dirty_ = INVALID_INT32_VALUE;
 
     std::string ToString(bool isDetail = false) const;
     bool Marshalling(Parcel &parcel) const override;

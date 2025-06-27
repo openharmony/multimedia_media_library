@@ -150,20 +150,18 @@ int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &tab
 }
 int32_t AccurateRefreshBase::Update(MediaLibraryCommand &cmd, int32_t &changedRows)
 {
-    // 保持和 medialibrary_rdbstore.cpp 处理一致
-    if (!trans_) {
-        if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-            cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
-                MediaFileUtils::UTCTimeMilliSeconds());
-            cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME,
-                MediaFileUtils::UTCTimeMilliSeconds());
-        }
+    // 保持和 medialibrary_rdbstore.cpp medialibrary_rdb_transaction.cpp 处理一致
+    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
+            MediaFileUtils::UTCTimeMilliSeconds());
+        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME,
+            MediaFileUtils::UTCTimeMilliSeconds());
     }
 
     DfxTimer dfxTimer(DfxType::RDB_UPDATE_BY_CMD, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->UpdateByCmd");
-    return Update(changedRows, cmd.GetValueBucket(), *(cmd.GetAbsRdbPredicates()));
+    return UpdateWithNoDateTime(changedRows, cmd.GetValueBucket(), *(cmd.GetAbsRdbPredicates()));
 }
 
 int32_t AccurateRefreshBase::Update(int32_t &changedRows, const string &table, const ValuesBucket &value,
@@ -172,11 +170,26 @@ int32_t AccurateRefreshBase::Update(int32_t &changedRows, const string &table, c
     AbsRdbPredicates predicates(table);
     predicates.SetWhereClause(whereClause);
     predicates.SetWhereArgs(args);
-    return Update(changedRows, value, predicates);
+    return UpdateWithNoDateTime(changedRows, value, predicates);
 }
 
 int32_t AccurateRefreshBase::Update(int32_t &changedRows, const ValuesBucket &value, const AbsRdbPredicates &predicates,
     RdbOperation operation)
+{
+    // medialibrary_rdb_transaction.cpp 处理一致
+    ValuesBucket checkValue = value;
+    if (trans_) {
+        if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+            checkValue.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+            checkValue.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+        }
+    }
+
+    return UpdateWithNoDateTime(changedRows, checkValue, predicates, operation);
+}
+
+int32_t AccurateRefreshBase::UpdateWithNoDateTime(int32_t &changedRows, const ValuesBucket &value,
+    const AbsRdbPredicates &predicates, RdbOperation operation)
 {
     if (!IsValidTable(predicates.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
@@ -191,12 +204,7 @@ int32_t AccurateRefreshBase::Update(int32_t &changedRows, const ValuesBucket &va
 
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
-        ValuesBucket checkValue = value;
-        if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-            checkValue.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
-            checkValue.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
-        }
-        retWithResults = trans_->Update(checkValue, predicates, GetReturningKeyName());
+        retWithResults = trans_->Update(value, predicates, GetReturningKeyName());
         CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
             "rdb trans Update error.");
     } else {
