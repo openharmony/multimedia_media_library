@@ -87,7 +87,8 @@
           "libxml2",
           "zlib",
           "device_standby",
-          "libfuse"
+          "libfuse",
+          "qos_manager"
         ],
         "third_party": [
           "openssl"
