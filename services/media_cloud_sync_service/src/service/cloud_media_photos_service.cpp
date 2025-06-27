@@ -1029,7 +1029,7 @@ int32_t CloudMediaPhotosService::HandleSameCloudResource(const PhotosDto &photo)
     bool isFileExists = (access(localPath.c_str(), F_OK) == 0);
     CHECK_AND_EXECUTE(!isFileExists, this->photosDao_.RenewSameCloudResource(photo));
     CHECK_AND_RETURN_RET_LOG(!isFileExists, E_DATA, "HandleSameCloudResource push again %{public}s",
-        MediaFileUtils::DesensitizePath(path).c_str())
+        MediaFileUtils::DesensitizePath(path).c_str());
     int32_t ret = this->photosDao_.DeleteLocalFileNotExistRecord(photo);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "DeleteLocalFileNotExistRecord err: %{public}d, path: %{public}s",
         ret, MediaFileUtils::DesensitizePath(path).c_str());
