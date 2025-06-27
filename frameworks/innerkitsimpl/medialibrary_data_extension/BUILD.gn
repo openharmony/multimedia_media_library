@@ -104,6 +104,10 @@ config("media_data_extension_public_config") {
 
   include_media_bgtask = [ "${MEDIALIB_BUSINESS_PATH}/media_service_extension/include/bg_task_processor" ]
 
+  include_media_trigger = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/trigger",
+  ]
+
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -137,6 +141,7 @@ config("media_data_extension_public_config") {
   include_dirs += include_notification
   include_dirs += include_accurate_refresh
   include_dirs += include_media_bgtask
+  include_dirs += include_media_trigger
 
   if (media_library_feature_cloud_enhancement) {
     include_cloud_enhancement = [
@@ -654,6 +659,12 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   accurate_refresh_server_source = [ "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/controller/media_refresh_controller_service.cpp" ]
+  
+  media_trigger_source = [
+    "src/trigger/medialibrary_trigger_manager.cpp",
+    "src/trigger/medialibrary_trigger.cpp",
+    "src/trigger/medialibrary_trigger_utils.cpp",
+  ]
 
   sources += media_scan_source
   sources += media_fuse_source
@@ -681,6 +692,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_notification_source
   sources += accurate_refresh_source
   sources += accurate_refresh_server_source
+  sources += media_trigger_source
 
   if (media_library_feature_cloud_enhancement) {
     media_cloud_enhancement_source = [

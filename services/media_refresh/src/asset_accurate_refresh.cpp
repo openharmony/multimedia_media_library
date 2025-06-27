@@ -24,6 +24,7 @@
 #include "asset_accurate_refresh.h"
 #include "medialibrary_notify_new.h"
 #include "accurate_debug_log.h"
+#include "medialibrary_trigger_manager.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -31,14 +32,249 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
+class TransactionManager {
+public:
+    bool Init(AccurateRefreshBase& refresh, const std::string& info, int32_t& ret)
+    {
+        CHECK_AND_RETURN_RET_INFO_LOG(!refresh.trans_, true, "refresh has alreay got transaction");
+        auto trans = std::make_shared<TransactionOperations>(info);
+        CHECK_AND_RETURN_RET_LOG(trans, false, "TransactionManager fail to create transaction");
+        auto transStartRet = trans->Start();
+        CHECK_AND_RETURN_RET_LOG(transStartRet == NativeRdb::E_OK, false,
+            "TransactionManager fail to start trans, ret: %{public}d", transStartRet);
+        refresh.trans_ = trans;
+        MEDIA_DEBUG_LOG("TransactionManager init trans info:%{public}s trans:%{public}p",
+            info.c_str(), refresh.trans_.get());
+        refresh.SetDataManagerTransaction(refresh.trans_);
+        callback = [&]() -> void {
+            CHECK_AND_RETURN_LOG(refresh.trans_,
+                "TransactionManager try to finish/rollback transaction, but transaction is null");
+            int32_t retTemp;
+            if (ret == ACCURATE_REFRESH_RET_OK) {
+                retTemp = refresh.trans_->Finish();
+            } else {
+                retTemp = refresh.trans_->Rollback();
+            }
+            std::string operationType = ((ret == ACCURATE_REFRESH_RET_OK) ? "Finish" : "RollBack");
+            if (retTemp != NativeRdb::E_OK) {
+                MEDIA_ERR_LOG("TransactionManager fail to %{public}s transaction",
+                    operationType.c_str());
+            } else {
+                MEDIA_INFO_LOG("TransactionManager succeed to %{public}s transaction",
+                    operationType.c_str());
+            }
+            refresh.trans_ = nullptr;
+            MEDIA_DEBUG_LOG("TransactionManager set trans trans:%{public}p", refresh.trans_.get());
+            refresh.SetDataManagerTransaction(refresh.trans_);
+        };
+        return true;
+    }
+    ~TransactionManager()
+    {
+        callback();
+    }
+private:
+    std::function<void()> callback = []() -> void {return;};
+};
+
 AssetAccurateRefresh::AssetAccurateRefresh(std::shared_ptr<TransactionOperations> trans) : AccurateRefreshBase(trans)
 {
-    dataManager_.SetTransaction(trans);
+    SetDataManagerTransaction(trans);
 }
 
 int32_t AssetAccurateRefresh::Init()
 {
     return ACCURATE_REFRESH_RET_OK;
+}
+
+void AssetAccurateRefresh::SetDataManagerTransaction(std::shared_ptr<TransactionOperations> trans)
+{
+    dataManager_.SetTransaction(trans);
+}
+
+int32_t AssetAccurateRefresh::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
+{
+    int32_t ret;
+    {
+        TransactionManager transactionManager;
+        if (!transactionManager.Init(*this, "AssetAccurateRefresh::Insert", ret)) {
+            MEDIA_ERR_LOG("transactionManager init failed");
+            ret = ACCURATE_REFRESH_RDB_TRANS_GEN_ERR;
+            return ret;
+        }
+        CHECK_AND_RETURN_RET_LOG(trans_, ret = ACCURATE_REFRESH_RDB_TRANS_GEN_ERR,
+            "trans_ of assetAccurateRefresh for insert is nullptr");
+        ret = AccurateRefreshBase::Insert(cmd, outRowId);
+        CHECK_AND_RETURN_RET_LOG(ret == ACCURATE_REFRESH_RET_OK,
+            ret, "assetAccurateRefresh fail to Insert, ret: %{public}d", ret);
+        auto trigger = MediaLibraryTriggerManager::GetInstance().GetTrigger(
+            cmd.GetTableName(), MediaLibraryTriggerManager::TriggerType::INSERT);
+        CHECK_AND_RETURN_RET_LOG(trigger,
+            ret = ACCURATE_REFRESH_RDB_TRIGGER_ERR, "assetAccurateRefresh fail to get trigger");
+        auto changeDataVec = dataManager_.GetChangeDatas();
+        MEDIA_DEBUG_LOG("get %{public}zu changedata for trigger", changeDataVec.size());
+        ret = trigger->Process(trans_, changeDataVec);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+            "trigger fail to process, ret:%{public}d", ret);
+        ret = ACCURATE_REFRESH_RET_OK;
+    }
+    return ret;
+}
+
+int32_t AssetAccurateRefresh::Insert(int64_t &outRowId, const std::string &table, NativeRdb::ValuesBucket &value)
+{
+    int32_t ret;
+    {
+        TransactionManager transactionManager;
+        if (!transactionManager.Init(*this, "AssetAccurateRefresh::Insert", ret)) {
+            MEDIA_ERR_LOG("transactionManager init failed");
+            ret = ACCURATE_REFRESH_RDB_TRANS_GEN_ERR;
+            return ret;
+        }
+        CHECK_AND_RETURN_RET_LOG(trans_, ret = ACCURATE_REFRESH_RDB_TRANS_GEN_ERR,
+            "trans_ of assetAccurateRefresh for insert is nullptr");
+        ret =  AccurateRefreshBase::Insert(outRowId, table, value);
+        CHECK_AND_RETURN_RET_LOG(ret == ACCURATE_REFRESH_RET_OK,
+            ret, "assetAccurateRefresh fail to Insert, ret: %{public}d", ret);
+        auto trigger = MediaLibraryTriggerManager::GetInstance().GetTrigger(table,
+            MediaLibraryTriggerManager::TriggerType::INSERT);
+        CHECK_AND_RETURN_RET_LOG(trigger, ret = ACCURATE_REFRESH_RDB_TRIGGER_ERR,
+            "assetAccurateRefresh fail to get trigger");
+        auto changeDataVec = dataManager_.GetChangeDatas();
+        MEDIA_DEBUG_LOG("get %{public}zu changedata for trigger", changeDataVec.size());
+        ret = trigger->Process(trans_, changeDataVec);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+            "trigger fail to process, ret:%{public}d", ret);
+        ret = ACCURATE_REFRESH_RET_OK;
+    }
+    return ret;
+}
+
+int32_t AssetAccurateRefresh::BatchInsert(int64_t &changedRows, const std::string &table,
+    std::vector<NativeRdb::ValuesBucket> &values)
+{
+    int32_t ret;
+    {
+        TransactionManager transactionManager;
+        if (!transactionManager.Init(*this, "AssetAccurateRefresh::BatchInsert", ret)) {
+            MEDIA_ERR_LOG("transactionManager init failed");
+            ret = ACCURATE_REFRESH_RDB_TRANS_GEN_ERR;
+            return ret;
+        }
+        CHECK_AND_RETURN_RET_LOG(trans_, ret = ACCURATE_REFRESH_RDB_TRANS_GEN_ERR,
+            "trans_ of assetAccurateRefresh for BatchInsert is nullptr");
+        ret =  AccurateRefreshBase::BatchInsert(changedRows, table, values);
+        CHECK_AND_RETURN_RET_LOG(ret == ACCURATE_REFRESH_RET_OK, ret,
+            "assetAccurateRefresh fail to BatchInsert, ret: %{public}d", ret);
+        auto trigger = MediaLibraryTriggerManager::GetInstance().GetTrigger(table,
+            MediaLibraryTriggerManager::TriggerType::INSERT);
+        CHECK_AND_RETURN_RET_LOG(trigger, ret = ACCURATE_REFRESH_RDB_TRIGGER_ERR,
+            "assetAccurateRefresh fail to get trigger");
+        auto changeDataVec = dataManager_.GetChangeDatas();
+        MEDIA_DEBUG_LOG("get %{public}zu changedata for trigger", changeDataVec.size());
+        ret = trigger->Process(trans_, changeDataVec);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+            "trigger fail to process, ret:%{public}d", ret);
+        ret = ACCURATE_REFRESH_RET_OK;
+    }
+    return ret;
+}
+
+
+int32_t AssetAccurateRefresh::ExecuteForLastInsertedRowId(const std::string &sql,
+    const std::vector<NativeRdb::ValueObject> &bindArgs, RdbOperation operation)
+{
+    int32_t ret;
+    if (operation == RDB_OPERATION_ADD) {
+        TransactionManager transactionManager;
+        if (!transactionManager.Init(*this, "AssetAccurateRefresh::ExecuteForLastInsertedRowId", ret)) {
+            MEDIA_ERR_LOG("transactionManager init failed");
+            ret = ACCURATE_REFRESH_RDB_TRANS_GEN_ERR;
+            return ret;
+        }
+        CHECK_AND_RETURN_RET_LOG(trans_, ret = ACCURATE_REFRESH_RDB_TRANS_GEN_ERR,
+            "trans_ of assetAccurateRefresh for ExecuteForLastInsertedRowId is nullptr");
+        ret =  AccurateRefreshBase::ExecuteForLastInsertedRowId(sql, bindArgs, operation);
+        CHECK_AND_RETURN_RET_LOG(ret == ACCURATE_REFRESH_RET_OK, ret,
+            "assetAccurateRefresh fail to ExecuteForLastInsertedRowId, ret: %{public}d", ret);
+        auto trigger = MediaLibraryTriggerManager::GetInstance().GetTrigger(PhotoColumn::PHOTOS_TABLE,
+            MediaLibraryTriggerManager::TriggerType::INSERT);
+        CHECK_AND_RETURN_RET_LOG(trigger, ret = ACCURATE_REFRESH_RDB_TRIGGER_ERR,
+            "assetAccurateRefresh fail to get trigger");
+        auto changeDataVec = dataManager_.GetChangeDatas();
+        MEDIA_DEBUG_LOG("get %{public}zu changedata for trigger", changeDataVec.size());
+        ret = trigger->Process(trans_, changeDataVec);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+            "trigger fail to process, ret:%{public}d", ret);
+        ret = ACCURATE_REFRESH_RET_OK;
+    } else {
+        ret = AccurateRefreshBase::ExecuteForLastInsertedRowId(sql, bindArgs, operation);
+    }
+    return ret;
+}
+
+int32_t AssetAccurateRefresh::ExecuteSql(const std::string &sql,
+    const std::vector<NativeRdb::ValueObject> &bindArgs, RdbOperation operation)
+{
+    int32_t ret;
+    if (operation == RDB_OPERATION_ADD) {
+        TransactionManager transactionManager;
+        if (!transactionManager.Init(*this, "AssetAccurateRefresh::ExecuteSql", ret)) {
+            MEDIA_ERR_LOG("transactionManager init failed");
+            ret = ACCURATE_REFRESH_RDB_TRANS_GEN_ERR;
+            return ret;
+        }
+        CHECK_AND_RETURN_RET_LOG(trans_, ret = ACCURATE_REFRESH_RDB_TRANS_GEN_ERR,
+            "trans_ of assetAccurateRefresh for ExecuteSql is nullptr");
+        ret =  AccurateRefreshBase::ExecuteSql(sql, bindArgs, operation);
+        CHECK_AND_RETURN_RET_LOG(ret == ACCURATE_REFRESH_RET_OK, ret,
+            "assetAccurateRefresh fail to ExecuteSql, ret: %{public}d", ret);
+        auto trigger = MediaLibraryTriggerManager::GetInstance().GetTrigger(PhotoColumn::PHOTOS_TABLE,
+            MediaLibraryTriggerManager::TriggerType::INSERT);
+        CHECK_AND_RETURN_RET_LOG(trigger, ret = ACCURATE_REFRESH_RDB_TRIGGER_ERR,
+            "assetAccurateRefresh fail to get trigger");
+        auto changeDataVec = dataManager_.GetChangeDatas();
+        MEDIA_DEBUG_LOG("get %{public}zu changedata for trigger", changeDataVec.size());
+        ret = trigger->Process(trans_, changeDataVec);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+            "trigger fail to process, ret:%{public}d", ret);
+        ret = ACCURATE_REFRESH_RET_OK;
+    } else {
+        ret = AccurateRefreshBase::ExecuteSql(sql, bindArgs, operation);
+    }
+    return ret;
+}
+
+int32_t AssetAccurateRefresh::ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
+    const std::vector<NativeRdb::ValueObject> &bindArgs, RdbOperation operation)
+{
+    int32_t ret;
+    if (operation == RDB_OPERATION_ADD) {
+        TransactionManager transactionManager;
+        if (!transactionManager.Init(*this, "AssetAccurateRefresh::ExecuteForChangedRowCount", ret)) {
+            MEDIA_ERR_LOG("transactionManager init failed");
+            ret = ACCURATE_REFRESH_RDB_TRANS_GEN_ERR;
+            return ret;
+        }
+        CHECK_AND_RETURN_RET_LOG(trans_, ret = ACCURATE_REFRESH_RDB_TRANS_GEN_ERR,
+            "trans_ of assetAccurateRefresh for ExecuteForChangedRowCount is nullptr");
+        ret =  AccurateRefreshBase::ExecuteForChangedRowCount(outValue, sql, bindArgs, operation);
+        CHECK_AND_RETURN_RET_LOG(ret == ACCURATE_REFRESH_RET_OK, ret,
+            "assetAccurateRefresh fail to ExecuteForChangedRowCount, ret: %{public}d", ret);
+        auto trigger = MediaLibraryTriggerManager::GetInstance().GetTrigger(PhotoColumn::PHOTOS_TABLE,
+            MediaLibraryTriggerManager::TriggerType::INSERT);
+        CHECK_AND_RETURN_RET_LOG(trigger, ret = ACCURATE_REFRESH_RDB_TRIGGER_ERR,
+            "assetAccurateRefresh fail to get trigger");
+        auto changeDataVec = dataManager_.GetChangeDatas();
+        MEDIA_DEBUG_LOG("get %{public}zu changedata for trigger", changeDataVec.size());
+        ret = trigger->Process(trans_, changeDataVec);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+            "trigger fail to process, ret:%{public}d", ret);
+        ret = ACCURATE_REFRESH_RET_OK;
+    } else {
+        ret = AccurateRefreshBase::ExecuteForChangedRowCount(outValue, sql, bindArgs, operation);
+    }
+    return ret;
 }
 
 int32_t AssetAccurateRefresh::Init(const AbsRdbPredicates &predicates)

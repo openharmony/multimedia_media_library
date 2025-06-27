@@ -58,6 +58,8 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
     { PhotoColumn::PHOTO_THUMBNAIL_READY, TYPE_INT64 },
     { PhotoColumn::MEDIA_NAME, TYPE_STRING },
     { PhotoColumn::MEDIA_FILE_PATH, TYPE_STRING },
+    { MediaColumn::MEDIA_PACKAGE_NAME, TYPE_STRING},
+    { MediaColumn::MEDIA_OWNER_PACKAGE, TYPE_STRING}
     { PhotoColumn::PHOTO_DIRTY, TYPE_INT32 },
 };
 
@@ -122,6 +124,10 @@ vector<PhotoAssetChangeInfo> PhotoAssetChangeInfo::GetInfoFromResult(const share
             GetDataType(PhotoColumn::MEDIA_NAME)));
         assetChangeInfo.path_ = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet,
             GetDataType(PhotoColumn::MEDIA_FILE_PATH)));
+        assetChangeInfo.packageName_ = get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_PACKAGE_NAME,
+            resultSet, GetDataType(MediaColumn::MEDIA_PACKAGE_NAME)));
+        assetChangeInfo.ownerPackage_ = get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_OWNER_PACKAGE,
+            resultSet, GetDataType(MediaColumn::MEDIA_OWNER_PACKAGE)));
         assetChangeInfo.dirty_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
             PhotoColumn::PHOTO_DIRTY, resultSet, GetDataType(PhotoColumn::PHOTO_DIRTY)));
 
@@ -161,6 +167,7 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
         ss << ", hiddenTime_: " << hiddenTime_ << ", thumbnailReady_: " << thumbnailReady_;
         ss << ", displayName_: " << displayName_;
         ss << ", path_: " << path_ << ", dirty_: " << dirty_;
+        ss << ", packageName_: " << packageName_ << ", ownerPackgae: " << ownerPackage_;
     } else {
         ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_;
     }
@@ -259,6 +266,8 @@ PhotoAssetChangeInfo& PhotoAssetChangeInfo::operator=(const PhotoAssetChangeInfo
         path_ = info.path_;
         uri_ = info.uri_;
         ownerAlbumUri_ = info.ownerAlbumUri_;
+        packageName_ = info.packageName_;
+        ownerPackage_ = info.ownerPackage_;
     }
     return *this;
 }
@@ -286,7 +295,9 @@ bool PhotoAssetChangeInfo::operator==(const PhotoAssetChangeInfo &info) const
         displayName_ == info.displayName_ &&
         path_ == info.path_ &&
         uri_ == info.uri_ &&
-        ownerAlbumUri_ == info.ownerAlbumUri_;
+        ownerAlbumUri_ == info.ownerAlbumUri_ &&
+        packageName_ == info.packageName_ &&
+        ownerPackage_ == info.ownerPackage_;
 }
 
 bool PhotoAssetChangeInfo::operator!=(const PhotoAssetChangeInfo &info) const
