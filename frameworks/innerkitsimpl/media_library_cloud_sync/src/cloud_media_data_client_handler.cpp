@@ -447,6 +447,7 @@ int32_t CloudMediaDataClientHandler::GetCloudSyncUnPreparedData(int32_t &result)
     // request info.
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_CLOUD_SYNC_UNPREPARED_DATA);
     CloudSyncUnPreparedDataRespBody respBody;
+    respBody.count = 0;
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Get(operationCode, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to GetCloudSyncUnPreparedData, ret: %{public}d", ret);
