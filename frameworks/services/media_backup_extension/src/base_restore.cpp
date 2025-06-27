@@ -572,6 +572,23 @@ void BaseRestore::InsertDetailTime(const std::unique_ptr<Metadata> &metadata, Na
     value.PutString(PhotoColumn::PHOTO_DETAIL_TIME, fileInfo.detailTime);
 }
 
+void BaseRestore::CheckAndDelete(NativeRdb::ValuesBucket &value, const std::string &column)
+{
+    bool hasColumn = value.HasColumn(column);
+    if (hasColumn) {
+        value.Delete(column);
+    }
+}
+
+void BaseRestore::InsertFileDuration(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
+    FileInfo &fileInfo)
+{
+    int32_t duration = metadata->GetFileDuration();
+    if (duration != 0) {
+        CheckAndDelete(value, MediaColumn::MEDIA_DURATION);
+    }
+    value.PutInt(MediaColumn::MEDIA_DURATION, duration);
+}
 
 void BaseRestore::SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
@@ -640,7 +657,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
         fileInfo.fileSize = data->GetFileSize();
     }
     value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
-    value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
+    InsertFileDuration(data, value, fileInfo);
     InsertDateTaken(data, fileInfo, value);
     InsertDetailTime(data, value, fileInfo);
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
