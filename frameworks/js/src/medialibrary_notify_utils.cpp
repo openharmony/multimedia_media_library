@@ -74,6 +74,8 @@ const std::map<Notification::NotifyType, NotifyChangeType> MediaLibraryNotifyUti
 const std::unordered_map<int32_t, int32_t> ERROR_MAP = {
     { E_PERMISSION_DENIED,     OHOS_PERMISSION_DENIED_CODE },
     { -E_CHECK_SYSTEMAPP_FAIL, E_CHECK_SYSTEMAPP_FAIL },
+    { JS_E_PARAM_INVALID,      JS_E_PARAM_INVALID },
+    { OHOS_INVALID_PARAM_CODE, OHOS_INVALID_PARAM_CODE },
 };
 
 int32_t MediaLibraryNotifyUtils::GetRegisterNotifyType(const string &type, Notification::NotifyUriType &uriType)
@@ -593,7 +595,7 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumRecheckChangeInfos(napi_env env)
 
 int32_t MediaLibraryNotifyUtils::ConvertToJsError(int32_t innerErr)
 {
-    int32_t err = JS_INNER_FAIL;
+    int32_t err = JS_E_INNER_FAIL;
     if (ERROR_MAP.find(innerErr) != ERROR_MAP.end()) {
         err = ERROR_MAP.at(innerErr);
     }
