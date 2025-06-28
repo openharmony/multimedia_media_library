@@ -483,8 +483,8 @@ bool InsertPhotoUpdateAlbumBundleNameTrigger::isAlbumWoBundleName(std::shared_pt
     CHECK_AND_RETURN_RET_LOG(trans, false, "input parameter trans is null");
     auto& packageInfo = packageInfoMap_[packageName];
     if (packageInfo.IsValid()) {
-        MEDIA_INFO_LOG("%{public}s already got albumWoBundleNameCnt:%{public}d",
-            packageName.c_str(), packageInfo.albumWoBundleNameCnt);
+        MEDIA_INFO_LOG("%{public}s already got albumWithoutBundleNameCnt:%{public}d",
+            packageName.c_str(), packageInfo.albumWithoutBundleNameCnt);
         return true;
     }
     std::string sql = "SELECT COUNT(1) FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
@@ -499,8 +499,8 @@ bool InsertPhotoUpdateAlbumBundleNameTrigger::isAlbumWoBundleName(std::shared_pt
         "fail to query album without bundleName");
     packageInfo.albumWithoutBundleNameCnt = ResultSetUtils::GetIntValFromColumn(0, resultSet);
     resultSet->Close();
-    MEDIA_INFO_LOG("key:%{public}s albumWoBundleNameCnt:%{public}d",
-        packageName.c_str(), packageInfo.albumWoBundleNameCnt);
+    MEDIA_INFO_LOG("key:%{public}s albumWithoutBundleNameCnt:%{public}d",
+        packageName.c_str(), packageInfo.albumWithoutBundleNameCnt);
     return true;
 }
 

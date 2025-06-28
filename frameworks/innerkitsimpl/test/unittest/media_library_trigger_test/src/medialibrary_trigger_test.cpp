@@ -656,7 +656,7 @@ HWTEST_F(MediaLibraryTriggerTest, InsertPhotoUpdateAlbumBundleNameTrigger_IsTrig
     auto packageInfo = trigger.packageInfoMap_[packageName];
     EXPECT_EQ(packageInfo.packageName, packageName);
     EXPECT_EQ(packageInfo.ownerPackage, ownerPackage);
-    EXPECT_EQ(packageInfo.albumWoBundleNameCnt, expectedAlbumWoBundleCnt);
+    EXPECT_EQ(packageInfo.albumWithoutBundleNameCnt, expectedAlbumWoBundleCnt);
 }
 } // namespace Media
 } // namespace OHOS
