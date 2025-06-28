@@ -29,6 +29,7 @@ using namespace OHOS::Security::AccessToken;
 static const int32_t GRANT_PERMISSION_CALLING_UID = 5523; // foundation调用方
 static const int32_t ROOT_UID = 0;
 static const int32_t HDC_SHELL_UID = 2000;
+static const int32_t SANDBOX_UID = 3076;
 static int32_t AcrossLocalAccountsPermCheck(const PermissionHeaderReq &data);
 WriteCompositePermCheck::WriteCompositePermCheck()
 {
@@ -108,7 +109,7 @@ int32_t GrantWritePermCheck::CheckPermission(uint32_t businessCode, const Permis
         return E_PERMISSION_DENIED;
     }
     if (getCallingUidPtr() == GRANT_PERMISSION_CALLING_UID ||
-        getCallingUidPtr() == ROOT_UID) {
+        getCallingUidPtr() == ROOT_UID || getCallingUidPtr() == SANDBOX_UID) {
         MEDIA_INFO_LOG("GrantWritePermCheck callingUid check success");
         return E_SUCCESS;
     }
