@@ -145,21 +145,21 @@ HWTEST_F(MediaLibraryTriggerTest, MediaLibraryTrigger_Processs_000, TestSize.Lev
     // 3. 0 changeDataVec
     EXPECT_TRUE(trigger.Init({mockTrigger}, PhotoAlbumColumns::TABLE));
     EXPECT_EQ(trigger.Process(g_trans, {}), NativeRdb::E_OK);
-    // 4. isTriggerFireForRow fail
-    EXPECT_CALL(*mockTrigger, isTriggerFireForRow(g_trans, ::testing::_))
+    // 4. IsTriggerFireForRow fail
+    EXPECT_CALL(*mockTrigger, IsTriggerFireForRow(g_trans, ::testing::_))
         .Times(1).WillOnce(::testing::Return(false));
     EXPECT_CALL(*mockTrigger, Process(g_trans, ::testing::_)).Times(0);
     EXPECT_EQ(trigger.Process(g_trans, changeDataVec), NativeRdb::E_ERROR);
-    // 5. isTriggerFireForRow succeed & Process fail
+    // 5. IsTriggerFireForRow succeed & Process fail
     ::testing::Mock::VerifyAndClearExpectations(&(*mockTrigger));
-    EXPECT_CALL(*mockTrigger, isTriggerFireForRow(g_trans, ::testing::_))
+    EXPECT_CALL(*mockTrigger, IsTriggerFireForRow(g_trans, ::testing::_))
         .Times(1).WillOnce(::testing::Return(true));
     EXPECT_CALL(*mockTrigger, Process(g_trans, ::testing::_))
         .Times(1).WillOnce(::testing::Return(NativeRdb::E_ERROR));
     EXPECT_EQ(trigger.Process(g_trans, changeDataVec), NativeRdb::E_ERROR);
-    // 6. isTriggerFireForRow succeed & Process succeed
+    // 6. IsTriggerFireForRow succeed & Process succeed
     ::testing::Mock::VerifyAndClearExpectations(&(*mockTrigger));
-    EXPECT_CALL(*mockTrigger, isTriggerFireForRow(g_trans, ::testing::_))
+    EXPECT_CALL(*mockTrigger, IsTriggerFireForRow(g_trans, ::testing::_))
         .Times(1).WillOnce(::testing::Return(true));
     EXPECT_CALL(*mockTrigger, Process(g_trans, ::testing::_))
         .Times(1).WillOnce(::testing::Return(NativeRdb::E_OK));
@@ -175,16 +175,16 @@ HWTEST_F(MediaLibraryTriggerTest, MediaLibraryTrigger_IsTriggerFireForRow_000, T
     EXPECT_TRUE(trigger.Init({mockTrigger}, PhotoAlbumColumns::TABLE));
 
     // 1. nullptr trans
-    EXPECT_FALSE(trigger.isTriggerFireForRow(nullptr, changeData));
-    // 2. isTriggerFireForRow fail
-    EXPECT_CALL(*mockTrigger, isTriggerFireForRow(g_trans, ::testing::_))
+    EXPECT_FALSE(trigger.IsTriggerFireForRow(nullptr, changeData));
+    // 2. IsTriggerFireForRow fail
+    EXPECT_CALL(*mockTrigger, IsTriggerFireForRow(g_trans, ::testing::_))
         .Times(1).WillOnce(::testing::Return(false));
-    EXPECT_FALSE(trigger.isTriggerFireForRow(g_trans, changeData));
+    EXPECT_FALSE(trigger.IsTriggerFireForRow(g_trans, changeData));
     ::testing::Mock::VerifyAndClearExpectations(&(*mockTrigger));
-    // 3. isTriggerFireForRow succeed
-    EXPECT_CALL(*mockTrigger, isTriggerFireForRow(g_trans, ::testing::_))
+    // 3. IsTriggerFireForRow succeed
+    EXPECT_CALL(*mockTrigger, IsTriggerFireForRow(g_trans, ::testing::_))
         .Times(1).WillOnce(::testing::Return(true));
-    EXPECT_TRUE(trigger.isTriggerFireForRow(g_trans, changeData));
+    EXPECT_TRUE(trigger.IsTriggerFireForRow(g_trans, changeData));
 }
 
 HWTEST_F(MediaLibraryTriggerTest, InsertSourcePhotoCreateSourceAlbumTrigger_PackageInfo_000, TestSize.Level2)
@@ -470,7 +470,7 @@ HWTEST_F(MediaLibraryTriggerTest, InsertSourcePhotoCreateSourceAlbumTrigger_Coll
     EXPECT_EQ(trigger.packageInfoMap_[key].albumCnt, NON_EXIST_ALBUM_CNT);
 }
 
-HWTEST_F(MediaLibraryTriggerTest, InsertSourcePhotoCreateSourceAlbumTrigger_isTriggerFireForRow_000,
+HWTEST_F(MediaLibraryTriggerTest, InsertSourcePhotoCreateSourceAlbumTrigger_IsTriggerFireForRow_000,
     TestSize.Level2)
 {
     InsertSourcePhotoCreateSourceAlbumTrigger trigger;
@@ -481,14 +481,14 @@ HWTEST_F(MediaLibraryTriggerTest, InsertSourcePhotoCreateSourceAlbumTrigger_isTr
     changeData.infoAfterChange_.fileId_ = DEFAULT_FILEID;
     bool ret = false;
     std::function<int(void)> transFunc = [&]() -> int {
-        ret = trigger.isTriggerFireForRow(g_trans, changeData);
+        ret = trigger.IsTriggerFireForRow(g_trans, changeData);
         return NativeRdb::E_OK;
     };
     std::string key = "packageName#ownerPackage";
     std::string expectedLPath = "/Pictures/packageName";
     int expectedAlbumCnt = NON_EXIST_ALBUM_CNT;
     // 1. trans nullptr
-    EXPECT_FALSE(trigger.isTriggerFireForRow(nullptr, changeData));
+    EXPECT_FALSE(trigger.IsTriggerFireForRow(nullptr, changeData));
     // 2. packageName invalid
     EXPECT_EQ(g_trans->RetryTrans(transFunc), NativeRdb::E_OK);
     EXPECT_TRUE(ret);
@@ -554,7 +554,7 @@ HWTEST_F(MediaLibraryTriggerTest, InsertPhotoUpdateAlbumBundleNameTrigger_Packag
     EXPECT_FALSE(packageInfo.IsValid());
     packageInfo.ownerPackage = DEFAULT_OWNER_PACKAGE_NAME;
     EXPECT_FALSE(packageInfo.IsValid());
-    packageInfo.albumWoBundleNameCnt = EXIT_ALBUM_WO_BUNDLE_NAME_CNT;
+    packageInfo.albumWithoutBundleNameCnt = EXIT_ALBUM_WO_BUNDLE_NAME_CNT;
     EXPECT_TRUE(packageInfo.IsValid());
 }
 
@@ -570,7 +570,7 @@ HWTEST_F(MediaLibraryTriggerTest, InsertPhotoUpdateAlbumBundleNameTrigger_Proces
     InsertPhotoUpdateAlbumBundleNameTrigger::PackageInfo packageInfo = {
         .packageName = DEFAULT_PACKAGE_NAME,
         .ownerPackage = DEFAULT_OWNER_PACKAGE_NAME,
-        .albumWoBundleNameCnt = INVALID_ALBUM_WO_BUNDLE_NAME_CNT
+        .albumWithoutBundleNameCnt = INVALID_ALBUM_WO_BUNDLE_NAME_CNT
     };
     std::string key = DEFAULT_KEY;
 
@@ -583,12 +583,12 @@ HWTEST_F(MediaLibraryTriggerTest, InsertPhotoUpdateAlbumBundleNameTrigger_Proces
     trigger.packageInfoMap_[key] = packageInfo;
     EXPECT_EQ(g_trans->RetryTrans(transFunc), NativeRdb::E_OK);
     EXPECT_EQ(ret, NativeRdb::E_ERROR);
-    packageInfo.albumWoBundleNameCnt = NON_EXIT_ALBUM_WO_BUNDLE_NAME_CNT;
+    packageInfo.albumWithoutBundleNameCnt = NON_EXIT_ALBUM_WO_BUNDLE_NAME_CNT;
     trigger.packageInfoMap_[key] = packageInfo;
-    // 4. packageInfo albumWoBundleNameCnt 0
+    // 4. packageInfo albumWithoutBundleNameCnt 0
     EXPECT_EQ(g_trans->RetryTrans(transFunc), NativeRdb::E_OK);
     EXPECT_EQ(ret, NativeRdb::E_OK);
-    packageInfo.albumWoBundleNameCnt = EXIT_ALBUM_WO_BUNDLE_NAME_CNT;
+    packageInfo.albumWithoutBundleNameCnt = EXIT_ALBUM_WO_BUNDLE_NAME_CNT;
     trigger.packageInfoMap_[key] = packageInfo;
 
     EXPECT_EQ(g_trans->RetryTrans(transFunc), NativeRdb::E_OK);
@@ -610,19 +610,19 @@ HWTEST_F(MediaLibraryTriggerTest, InsertPhotoUpdateAlbumBundleNameTrigger_isAlbu
     InsertPhotoUpdateAlbumBundleNameTrigger::PackageInfo packageInfo = {
         .packageName = packageName,
         .ownerPackage = DEFAULT_OWNER_PACKAGE_NAME,
-        .albumWoBundleNameCnt = NON_EXIT_ALBUM_WO_BUNDLE_NAME_CNT
+        .albumWithoutBundleNameCnt = NON_EXIT_ALBUM_WO_BUNDLE_NAME_CNT
     };
     trigger.packageInfoMap_[packageName] = packageInfo;
     EXPECT_EQ(g_trans->RetryTrans(transFunc), NativeRdb::E_OK);
     EXPECT_TRUE(ret);
-    packageInfo.albumWoBundleNameCnt = INVALID_ALBUM_WO_BUNDLE_NAME_CNT;
+    packageInfo.albumWithoutBundleNameCnt = INVALID_ALBUM_WO_BUNDLE_NAME_CNT;
     trigger.packageInfoMap_[packageName] = packageInfo;
     // 3. packageInfo inValid
     EXPECT_EQ(g_trans->RetryTrans(transFunc), NativeRdb::E_OK);
     EXPECT_TRUE(ret);
 }
 
-HWTEST_F(MediaLibraryTriggerTest, InsertPhotoUpdateAlbumBundleNameTrigger_isTriggerFireForRow_000,
+HWTEST_F(MediaLibraryTriggerTest, InsertPhotoUpdateAlbumBundleNameTrigger_IsTriggerFireForRow_000,
     TestSize.Level2)
 {
     InsertPhotoUpdateAlbumBundleNameTrigger trigger;
@@ -631,14 +631,14 @@ HWTEST_F(MediaLibraryTriggerTest, InsertPhotoUpdateAlbumBundleNameTrigger_isTrig
     changeData.infoAfterChange_.ownerPackage_ = "";
     bool ret = false;
     std::function<int(void)> transFunc = [&]() -> int {
-        ret = trigger.isTriggerFireForRow(g_trans, changeData);
+        ret = trigger.IsTriggerFireForRow(g_trans, changeData);
         return NativeRdb::E_OK;
     };
     std::string packageName = DEFAULT_PACKAGE_NAME;
     std::string ownerPackage = DEFAULT_OWNER_PACKAGE_NAME;
 
     // 1. trans nullptr
-    EXPECT_FALSE(trigger.isTriggerFireForRow(nullptr, changeData));
+    EXPECT_FALSE(trigger.IsTriggerFireForRow(nullptr, changeData));
     // 2. packageName invalid
     EXPECT_EQ(g_trans->RetryTrans(transFunc), NativeRdb::E_OK);
     EXPECT_TRUE(ret);

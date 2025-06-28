@@ -33,7 +33,7 @@ class MediaLibraryTriggerTest  : public ::testing::Test {
 class MockTrigger : public MediaLibraryTriggerBase {
     MOCK_METHOD(int32_t, Process, (std::shared_ptr<TransactionOperations> trans,
         const std::vector<AccurateRefresh::PhotoAssetChangeData>& changeDataVec), (override));
-    MOCK_METHOD(bool, isTriggerFireForRow, (std::shared_ptr<TransactionOperations> trans,
+    MOCK_METHOD(bool, IsTriggerFireForRow, (std::shared_ptr<TransactionOperations> trans,
         const AccurateRefresh::PhotoAssetChangeData& changeData), (override));
 };
 } // namespace Media
