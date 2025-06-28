@@ -348,18 +348,21 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::HandleIndexOfUri(
     return MediaLibraryRdbStore::GetIndexOfUriForPhotos(predicates, columns, photoId);
 }
 
-int32_t GetAnalysisAlbumSubTypeById(const string &albumId, PhotoAlbumSubType &subType)
+int32_t QueryAnalysisAlbumSubTypeById(const string &albumId, PhotoAlbumSubType &subType)
 {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is nullptr!");
+    
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
     vector<string> columns = { PhotoAlbumColumns::ALBUM_SUBTYPE };
-    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
+    auto resultSet = rdbStore->QueryByStep(predicates, columns);
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Analysis album id %{private}s is not exist", albumId.c_str());
+        MEDIA_ERR_LOG("Analysis album id %{public}s is not exist", albumId.c_str());
         return E_INVALID_ARGUMENTS;
     }
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, E_INVALID_ARGUMENTS,
-        "Analysis album id is not exist");
+        "Analysis album id %{public}s is not exist", albumId.c_str());
     subType = static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet));
     resultSet->Close();
     return E_SUCCESS;
@@ -373,7 +376,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::HandleAnalysisInde
     CHECK_AND_RETURN_RET_LOG(albumId.size() > 0, nullptr, "null albumId");
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     PhotoAlbumSubType albumSubtype;
-    CHECK_AND_RETURN_RET_LOG(GetAnalysisAlbumSubTypeById(albumId, albumSubtype) == E_SUCCESS, nullptr,
+    CHECK_AND_RETURN_RET_LOG(QueryAnalysisAlbumSubTypeById(albumId, albumSubtype) == E_SUCCESS, nullptr,
         "invalid analysis album id: %{public}s", albumId.c_str());
     if (albumSubtype == PhotoAlbumSubType::PORTRAIT) {
         PhotoAlbumColumns::GetPortraitAlbumPredicates(stoi(albumId), predicates, false);
