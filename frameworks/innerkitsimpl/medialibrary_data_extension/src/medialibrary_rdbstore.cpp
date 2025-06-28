@@ -1728,9 +1728,6 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_HIGHLIGHT_COVER_INFO_TABLE,
     CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
     CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
-    CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
-    CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER,
-    INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
     CREATE_SOURCE_ALBUM_INDEX,
     FormMap::CREATE_FORM_MAP_TABLE,
     CREATE_DICTIONARY_INDEX,
@@ -4694,6 +4691,27 @@ void AddTotalPriority(RdbStore &store)
     ExecSqls(sql, store);
 }
 
+static void DropInsertSourcePhotoCreateSourceAlbumTrigger(RdbStore &store)
+{
+    MEDIA_INFO_LOG("drop trigger insert_source_photo_create_source_album_trigger start");
+    ExecSqls({DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER}, store);
+    MEDIA_INFO_LOG("drop trigger insert_source_photo_create_source_album_trigger end");
+}
+
+static void DropInsertPhotoUpdateAlbumBundleNameTrigger(RdbStore &store)
+{
+    MEDIA_INFO_LOG("drop trigger insert_photo_update_album_bundlename start");
+    ExecSqls({DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME}, store);
+    MEDIA_INFO_LOG("drop trigger insert_photo_update_album_bundlename end");
+}
+
+static void DropInsertSourcePhotoUpdateAlbumIdTrigger(RdbStore &store)
+{
+    MEDIA_INFO_LOG("drop trigger insert_source_photo_update_album_id_trigger start");
+    ExecSqls({DROP_INSERT_SOURCE_PHOTO_UPDATE_ALBUM_ID_TRIGGER}, store);
+    MEDIA_INFO_LOG("drop trigger insert_source_photo_update_album_id_trigger end");
+}
+
 static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
@@ -4735,6 +4753,12 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_ALBUMS_ORDER_KEYS_COLUMNS) {
         AddAlbumsOrderKeysColumn(store);
+    }
+
+    if (oldVersion < VERSION_DROP_PHOTO_INSERT_SOURCE_PHOTO_TRIGGER) {
+        DropInsertSourcePhotoCreateSourceAlbumTrigger(store);
+        DropInsertPhotoUpdateAlbumBundleNameTrigger(store);
+        DropInsertSourcePhotoUpdateAlbumIdTrigger(store);
     }
 }
 
