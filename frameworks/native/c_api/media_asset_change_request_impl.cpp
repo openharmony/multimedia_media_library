@@ -100,16 +100,18 @@ MediaLibrary_ErrorCode MediaAssetChangeRequestImpl::GetWriteCacheHandler(int32_t
 
 MediaLibrary_ErrorCode MediaAssetChangeRequestImpl::SaveCameraPhoto(MediaLibrary_ImageFileType imageFileType)
 {
-    CHECK_AND_RETURN_RET_LOG(imageFileType == MEDIA_LIBRARY_IMAGE_JPEG || imageFileType == MEDIA_LIBRARY_FILE_VIDEO,
-        MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED,
-        "imageFileType not support");
-
     unique_lock<mutex> ulock(mutex_);
     auto fileAsset = mediaAsset_->GetFileAssetInstance();
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED, "fileAsset get failed!");
 
-    RecordChangeOperation(AssetChangeOperation::SAVE_CAMERA_PHOTO);
-    return MEDIA_LIBRARY_OK;
+    MediaType mediaType = fileAsset->GetMediaType();
+    if ((mediaType == MEDIA_TYPE_IMAGE && imageFileType == MEDIA_LIBRARY_IMAGE_JPEG) ||
+        (mediaType == MEDIA_TYPE_VIDEO && imageFileType == MEDIA_LIBRARY_FILE_VIDEO)) {
+        RecordChangeOperation(AssetChangeOperation::SAVE_CAMERA_PHOTO);
+        return MEDIA_LIBRARY_OK;
+    }
+    MEDIA_ERR_LOG("type mismatch, mediaType: %{public}d, imageFileType: %{public}d", mediaType, imageFileType);
+    return MEDIA_LIBRARY_PARAMETER_ERROR;
 }
 
 MediaLibrary_ErrorCode MediaAssetChangeRequestImpl::DiscardCameraPhoto()
