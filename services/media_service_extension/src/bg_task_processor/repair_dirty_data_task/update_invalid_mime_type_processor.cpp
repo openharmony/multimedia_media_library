@@ -84,7 +84,7 @@ int32_t UpdateInvalidMimeTypePrecessor::UpdateInvalidMimeType()
 
     int32_t startCount = 0;
     while (!taskStop_ && startCount < assetsCount) {
-        predicates.Limit(startCount, BATCH_QUERY_NUMBER);
+        predicates.Limit(BATCH_QUERY_NUMBER);
         auto resultSet = rdbStore->Query(predicates, columns);
         CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "UpdateMimeType failed. resultSet is null.");
 
