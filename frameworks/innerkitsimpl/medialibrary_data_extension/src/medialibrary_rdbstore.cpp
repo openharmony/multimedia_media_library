@@ -578,8 +578,8 @@ void MediaLibraryRdbStore::AddPhotoSortIndex(const std::shared_ptr<MediaLibraryR
     const vector<string> sqls = {
         PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
         PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
-        PhotoColumn::CREATE_PHOTO_SORT_DATE_ADDED_INDEX,
-        PhotoColumn::CREATE_PHOTO_SORT_DATE_TAKEN_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
     };
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("End AddPhotoSortIndex");
@@ -1636,9 +1636,11 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_TABLE,
     PhotoColumn::CREATE_CLOUD_ID_INDEX,
     PhotoColumn::INDEX_SCTHP_ADDTIME,
+    PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
     PhotoColumn::INDEX_SCHPT_ALBUM_GENERAL,
     PhotoColumn::INDEX_SCHPT_ALBUM,
     PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED,
+    PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
     PhotoColumn::INDEX_QUERY_THUMBNAIL_WHITE_BLOCKS,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::INDEX_SCHPT_READY,
@@ -1780,10 +1782,8 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INDEX_LONGITUDE,
     CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
     CustomRecordsColumns::CREATE_TABLE,
-    PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
-    PhotoColumn::CREATE_PHOTO_SORT_DATE_ADDED_INDEX,
-    PhotoColumn::CREATE_PHOTO_SORT_DATE_TAKEN_INDEX,
+    PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
