@@ -154,7 +154,8 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
 {
     stringstream ss;
     if (isDetail) {
-        ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_ << ", uri_: " << uri_;
+        ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_ << ", uri_: ";
+        ss << MediaFileUtils::DesensitizeUri(uri_);
         ss << ", dateDay_: " << dateDay_ << ", ownerAlbumUri_: " << ownerAlbumUri_ << ", isFavorite_: " << isFavorite_;
         ss << ", mediaType_: " << mediaType_;
         ss << ", isHidden_: " << isHidden_ << ", dateTrashedMs_: " << dateTrashedMs_;
@@ -165,8 +166,8 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
         ss << ", timePending_: " << timePending_ << ", isTemp_: " << isTemp_;
         ss << ", burstCoverLevel_: " << burstCoverLevel_;
         ss << ", hiddenTime_: " << hiddenTime_ << ", thumbnailReady_: " << thumbnailReady_;
-        ss << ", displayName_: " << displayName_;
-        ss << ", path_: " << path_ << ", dirty_: " << dirty_;
+        ss << ", displayName_: " << MediaFileUtils::DesensitizePath(displayName_);
+        ss << ", path_: " << MediaFileUtils::DesensitizePath(path_) << ", dirty_: " << dirty_;
         ss << ", packageName_: " << packageName_ << ", ownerPackgae: " << ownerPackage_;
     } else {
         ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_;
@@ -268,6 +269,7 @@ PhotoAssetChangeInfo& PhotoAssetChangeInfo::operator=(const PhotoAssetChangeInfo
         ownerAlbumUri_ = info.ownerAlbumUri_;
         packageName_ = info.packageName_;
         ownerPackage_ = info.ownerPackage_;
+        dirty_ = info.dirty_;
     }
     return *this;
 }
@@ -297,7 +299,8 @@ bool PhotoAssetChangeInfo::operator==(const PhotoAssetChangeInfo &info) const
         uri_ == info.uri_ &&
         ownerAlbumUri_ == info.ownerAlbumUri_ &&
         packageName_ == info.packageName_ &&
-        ownerPackage_ == info.ownerPackage_;
+        ownerPackage_ == info.ownerPackage_ &&
+        dirty_ == info.dirty_;
 }
 
 bool PhotoAssetChangeInfo::operator!=(const PhotoAssetChangeInfo &info) const
