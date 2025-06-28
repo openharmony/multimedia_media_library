@@ -26,6 +26,7 @@ ohos_unittest("medialibrary_thumbnail_service_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "./include",
     "../medialibrary_unittest_utils/include",
+    "../medialibrary_utils_test/include",
   ]
 
   cflags = [ "-fno-access-control" ]

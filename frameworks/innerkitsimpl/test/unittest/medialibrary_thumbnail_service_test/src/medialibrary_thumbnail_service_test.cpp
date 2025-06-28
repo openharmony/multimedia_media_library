@@ -14,7 +14,7 @@
  */
 
 #include <thread>
-#include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
+#include "medialibrary_mocksinglekvstore.h"
 #include "kvstore.h"
 #include "medialibrary_thumbnail_service_test.h"
 #define private public
@@ -140,9 +140,7 @@ void MediaLibraryThumbnailServiceTest::TearDown(void)
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetThumbnail_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     string uri = "";
     auto fd = serverTest->GetThumbnailFd(uri);
@@ -160,9 +158,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetThumbnail_test_001, TestS
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetKeyFrameThumbnail_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     string uri = "";
     auto fd = serverTest->GetKeyFrameThumbnailFd(uri);
@@ -176,9 +172,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetKeyFrameThumbnail_test_00
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_LcdAging_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     int32_t ret = serverTest->LcdAging();
     EXPECT_EQ(ret, 0);
@@ -191,9 +185,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_LcdAging_test_001, TestSize.
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     int32_t ret = serverTest->GenerateThumbnailBackground();
     EXPECT_EQ(ret <= 0, true);
@@ -209,9 +201,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_InterruptBgworker_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     EXPECT_NE(serverTest, nullptr);
     serverTest->InterruptBgworker();
@@ -223,9 +213,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_InterruptBgworker_test_001, 
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_StopAllWorker_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     EXPECT_NE(serverTest, nullptr);
     serverTest->StopAllWorker();
@@ -237,9 +225,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_StopAllWorker_test_001, Test
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string url = "";
     ThumbnailService serverTest;
     int32_t ret = serverTest.CreateThumbnailFileScaned(url, "", true);
@@ -249,9 +235,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_00
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcBatchOnDemand_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
     serverTest->Init(storePtr, context);
@@ -265,9 +249,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcBatchOnDemand_test
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CancelAstcBatchTask_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     EXPECT_NE(serverTest, nullptr);
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -738,15 +720,9 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_014, Te
     ThumbnailData data;
     data.id = "a";
     data.dateTaken = "b";
-    ThumbnailType type = ThumbnailType::MTH_ASTC;
+    const ThumbnailType type = ThumbnailType::LCD;
     auto res = ThumbnailUtils::SaveAstcDataToKvStore(data, type);
     EXPECT_EQ(res, E_ERR);
-    const ThumbnailType type2 = ThumbnailType::YEAR_ASTC;
-    auto res2 = ThumbnailUtils::SaveAstcDataToKvStore(data, type2);
-    EXPECT_EQ(res2, E_ERR);
-    const ThumbnailType type3 = ThumbnailType::LCD;
-    auto res3 = ThumbnailUtils::SaveAstcDataToKvStore(data, type3);
-    EXPECT_EQ(res3, E_ERR);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_015, TestSize.Level1)
@@ -1222,9 +1198,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_035, Tes
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailWithPictureAsync_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string url = "";
     ThumbnailService serverTest;
     std::shared_ptr<Picture> originalPhotoPicture = nullptr;
@@ -1235,9 +1209,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailWithPictureAs
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailWithPictureAsync_test_002, TestSize.Level0)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string url = "";
     ThumbnailService serverTest;
     std::shared_ptr<Picture> originalPhotoPicture = nullptr;

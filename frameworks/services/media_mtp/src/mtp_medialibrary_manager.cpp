@@ -1364,6 +1364,7 @@ int32_t MtpMedialibraryManager::CloseFd(const shared_ptr<MtpOperationContext> &c
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_URI, MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + MEDIA_FILEOPRN_CLOSEASSET +
         "/" + to_string(HandleConvertToAdded(context->handle) - COMMON_PHOTOS_OFFSET));
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "fileAsset is nullptr");
     MEDIA_INFO_LOG("CloseFd %{public}s, FilePath  %{public}s", fileAsset->GetUri().c_str(),
         fileAsset->GetFilePath().c_str());
     Uri closeAssetUri(MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + MEDIA_FILEOPRN_CLOSEASSET);

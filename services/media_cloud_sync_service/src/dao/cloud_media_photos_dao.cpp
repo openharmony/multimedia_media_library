@@ -1284,9 +1284,8 @@ int32_t CloudMediaPhotosDao::UpdatePhotoCreatedRecord(
     }
 
     int32_t changedRows;
-    std::string whereClause = "file_id = ? AND dirty = ? AND COALESCE(cloud_id, '') <> ?";
-    std::vector<std::string> whereArgs = {
-        fileId, std::to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)), record.cloudId};
+    std::string whereClause = PhotoColumn::MEDIA_ID + " = ? AND " + PhotoColumn::PHOTO_DIRTY + " = ?";
+    std::vector<std::string> whereArgs = {fileId, std::to_string(static_cast<int32_t>(DirtyType::TYPE_NEW))};
     int32_t ret = photoRefresh->Update(changedRows, PhotoColumn::PHOTOS_TABLE, valuesBucket, whereClause, whereArgs);
     MEDIA_INFO_LOG("UpdatePhotoCreatedRecord ret:%{public}d, changedRows:%{public}d, cloudId:%{public}s",
         ret,
@@ -1465,7 +1464,7 @@ int32_t CloudMediaPhotosDao::HandleSameNameRename(
     CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "rename same name get store failed.");
     size_t dotPos = photo.fileName.rfind('.');
     if (dotPos == std::string::npos) {
-        MEDIA_INFO_LOG("fileName have no suffix");
+        MEDIA_ERR_LOG("fileName have no suffix, %{private}s.", photo.fileName.c_str());
         dotPos = photo.fileName.length();
     }
     std::string fileName = photo.fileName.substr(0, dotPos);
@@ -1643,7 +1642,6 @@ int32_t CloudMediaPhotosDao::UpdateFailRecordsCloudId(
     const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
-    MEDIA_INFO_LOG("enter UpdateFailRecordsCloudId");
     CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "UpdateFailRecordsCloudId get store failed.");
     std::string fileId = to_string(record.fileId);
     if (localMap.find(fileId) == localMap.end()) {

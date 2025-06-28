@@ -42,8 +42,6 @@ ohos_unittest("medialibrary_rdb_callback_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
     "${MEDIALIB_UTILS_PATH}:permission_utils",
-    "//third_party/googletest:gmock",
-    "//third_party/googletest:gtest",
   ]
 
   external_deps = [
@@ -63,6 +61,8 @@ ohos_unittest("medialibrary_rdb_callback_test") {
     "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
+    "googletest:gtest",
+    "googletest:gmock",
   ]
 
   sanitize = {

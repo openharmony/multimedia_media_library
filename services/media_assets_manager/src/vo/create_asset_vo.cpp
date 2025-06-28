@@ -65,7 +65,7 @@ bool CreateAssetRspBody::Marshalling(MessageParcel &parcel) const
 
 bool CreateAssetForAppReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = parcel.ReadInt32(this->tokenId);
+    bool status = parcel.ReadInt64(this->tokenId);
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.ReadInt32(this->mediaType);
     CHECK_AND_RETURN_RET(status, status);
@@ -88,7 +88,7 @@ bool CreateAssetForAppReqBody::Unmarshalling(MessageParcel &parcel)
 
 bool CreateAssetForAppReqBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = parcel.WriteInt32(this->tokenId);
+    bool status = parcel.WriteInt64(this->tokenId);
     CHECK_AND_RETURN_RET(status, status);
     status = parcel.WriteInt32(this->mediaType);
     CHECK_AND_RETURN_RET(status, status);

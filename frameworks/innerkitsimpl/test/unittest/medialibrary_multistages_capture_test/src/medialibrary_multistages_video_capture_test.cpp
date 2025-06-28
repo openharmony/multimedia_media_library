@@ -576,20 +576,5 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_remove_video_004, Test
     EXPECT_EQ(MediaFileUtils::IsFileExists(filePath), true);
     MEDIA_INFO_LOG("manager_remove_video_004 End");
 }
-
-HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, remove_photos_with_result_set_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("remove_photos_with_result_set_001 Start");
-    MultiStagesCaptureManager::RemovePhotosWithResultSet(nullptr, true);
-    MEDIA_INFO_LOG("remove_photos_with_result_set_001 End");
-}
-
-HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, remove_photos_with_result_set_002, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("remove_photos_with_result_set_002 Start");
-    MultiStagesCaptureManager::RemovePhotosWithResultSet(nullptr, false);
-    MEDIA_INFO_LOG("remove_photos_with_result_set_002 End");
-}
-
 } // Media
 } // OHOS

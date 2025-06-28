@@ -16,8 +16,7 @@
 #include "medialibrary_ithumbnail_helper_test.h"
 
 #include <thread>
-
-#include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
+#include "medialibrary_mocksinglekvstore.h"
 #include "highlight_column.h"
 #include "kvstore.h"
 #include "vision_db_sqls.h"

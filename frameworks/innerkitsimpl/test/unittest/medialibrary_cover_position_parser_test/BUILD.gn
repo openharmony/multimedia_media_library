@@ -21,7 +21,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_cover_position_parser_test") {
-  module_out_path = "media_library/medialibrary-asset"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "${MEDIALIB_UTILS_PATH}/include",
     "../medialibrary_unittest_utils/include",

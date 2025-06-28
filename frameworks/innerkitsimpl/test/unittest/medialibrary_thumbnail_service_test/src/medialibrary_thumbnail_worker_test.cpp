@@ -71,10 +71,7 @@ static void ThumbnailTestTask(std::shared_ptr<ThumbnailTaskData> &data)
  */
 HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_AddThumbnailGenerateTask_test_001, TestSize.Level1)
 {
-    if (foregroundWorkerPtr_ == nullptr) {
-        return;
-    }
-
+    ASSERT_NE(foregroundWorkerPtr_, nullptr);
     ThumbRdbOpt opts;
     ThumbnailData thumbData;
     std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, thumbData);
@@ -92,10 +89,7 @@ HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_AddThumbnailGenerateTa
  */
 HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_ReleaseTaskQueue_test_001, TestSize.Level1)
 {
-    if (backgroundWorkerPtr_ == nullptr) {
-        return;
-    }
-
+    ASSERT_NE(backgroundWorkerPtr_, nullptr);
     int32_t status = backgroundWorkerPtr_->ReleaseTaskQueue(ThumbnailTaskPriority::HIGH);
     EXPECT_EQ(status, E_OK);
     status = backgroundWorkerPtr_->ReleaseTaskQueue(ThumbnailTaskPriority::LOW);
@@ -109,10 +103,7 @@ HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_ReleaseTaskQueue_test_
  */
 HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_IgnoreTaskByRequestId_test_001, TestSize.Level1)
 {
-    if (foregroundWorkerPtr_ == nullptr) {
-        return;
-    }
-
+    ASSERT_NE(foregroundWorkerPtr_, nullptr);
     ThumbRdbOpt opts;
     ThumbnailData thumbData;
     int32_t requestId = 1;

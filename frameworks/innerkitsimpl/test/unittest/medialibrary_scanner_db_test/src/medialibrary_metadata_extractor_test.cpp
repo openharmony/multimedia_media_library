@@ -152,7 +152,8 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_001, Tes
     unordered_map<int32_t, std::string> resultMap;
     resultMap = {{AV_KEY_ALBUM, ""}, {AV_KEY_ARTIST, ""}, {AV_KEY_DURATION, ""}, {AV_KEY_DATE_TIME_FORMAT, ""},
         {AV_KEY_VIDEO_HEIGHT, ""}, {AV_KEY_VIDEO_WIDTH, ""}, {AV_KEY_MIME_TYPE, ""}, {AV_KEY_MIME_TYPE, ""},
-        {AV_KEY_VIDEO_ORIENTATION, ""}, {AV_KEY_VIDEO_IS_HDR_VIVID, ""}, {AV_KEY_TITLE, ""}, {AV_KEY_GENRE, ""}};
+        {AV_KEY_VIDEO_ORIENTATION, ""}, {AV_KEY_VIDEO_IS_HDR_VIVID, ""}, {AV_KEY_TITLE, ""}, {AV_KEY_GENRE, ""},
+        {AV_KEY_DATE_TIME_ISO8601, ""}};
     MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_EQ(data->GetAlbum(), "");
     EXPECT_EQ(data->GetLongitude(), 0);
@@ -197,7 +198,30 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_003, Tes
     data->SetFileDateModified(dateModify);
     std::shared_ptr<Media::Meta> meta = std::make_shared<Media::Meta>();
     unordered_map<int32_t, std::string> resultMap;
-    resultMap = {{AV_KEY_DATE_TIME_ISO8601, "11112"}};
+    resultMap = {{AV_KEY_ALBUM, "a"}, {AV_KEY_ARTIST, "a"}, {AV_KEY_DURATION, "a"}, {AV_KEY_DATE_TIME_FORMAT, "a"},
+        {AV_KEY_VIDEO_HEIGHT, "a"}, {AV_KEY_VIDEO_WIDTH, "a"}, {AV_KEY_MIME_TYPE, "a"}, {AV_KEY_MIME_TYPE, "a"},
+        {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_VIDEO_IS_HDR_VIVID, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"},
+        {AV_KEY_DATE_TIME_ISO8601, "11112"}};
+    MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
+    EXPECT_EQ(data->GetDateTaken(), dateModify);
+}
+
+HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_004, TestSize.Level1)
+{
+    unique_ptr<Metadata> data = make_unique<Metadata>();
+    unique_ptr<MediaScannerDb> mediaScannerDb;
+    string path = "/storage/cloud/files/";
+    mediaScannerDb->GetFileBasicInfo(path, data);
+    data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
+    data->SetFilePath(path);
+    int64_t dateModify = 11;
+    data->SetFileDateModified(dateModify);
+    std::shared_ptr<Media::Meta> meta = std::make_shared<Media::Meta>();
+    unordered_map<int32_t, std::string> resultMap;
+    resultMap = {{AV_KEY_ALBUM, "a"}, {AV_KEY_ARTIST, "a"}, {AV_KEY_DURATION, "a"}, {AV_KEY_DATE_TIME_FORMAT, "a"},
+        {AV_KEY_VIDEO_HEIGHT, "a"}, {AV_KEY_VIDEO_WIDTH, "a"}, {AV_KEY_MIME_TYPE, "a"}, {AV_KEY_MIME_TYPE, "a"},
+        {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_VIDEO_IS_HDR_VIVID, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"},
+        {AV_KEY_DATE_TIME_ISO8601, "2025/06/11 18:00:00Z"}};
     MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_EQ(data->GetDateTaken(), dateModify);
 }
@@ -221,7 +245,8 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_photo, TestSi
     unordered_map<int32_t, std::string> resultMap;
     resultMap = {{AV_KEY_ALBUM, "a"}, {AV_KEY_ARTIST, "a"}, {AV_KEY_DURATION, "a"}, {AV_KEY_DATE_TIME_FORMAT, "a"},
         {AV_KEY_VIDEO_HEIGHT, "a"}, {AV_KEY_VIDEO_WIDTH, "a"}, {AV_KEY_MIME_TYPE, "a"}, {AV_KEY_MIME_TYPE, "a"},
-        {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_VIDEO_IS_HDR_VIVID, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"}};
+        {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_VIDEO_IS_HDR_VIVID, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"},
+        {AV_KEY_DATE_TIME_ISO8601, "a"}};
     MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_EQ(data->GetAlbum(), "a");
     EXPECT_EQ(data->GetLongitude(), longtitude);

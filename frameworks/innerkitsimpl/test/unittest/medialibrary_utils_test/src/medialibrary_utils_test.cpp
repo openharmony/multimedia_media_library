@@ -15,7 +15,6 @@
 
 #include <thread>
 #include "avmetadatahelper.h"
-#include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
 #include "media_remote_thumbnail_column.h"
 #include "medialibrary_db_const.h"
@@ -82,9 +81,7 @@ void MediaLibraryUtilsTest::TearDown(void) {}
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailSet_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string row = "medialib_QueryThumbnailSet_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -97,9 +94,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailSet_test_001, TestSize.Le
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailInfo_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string row = "medialib_QueryThumbnailInfo_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -114,9 +109,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailInfo_test_001, TestSize.L
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_table, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     ThumbRdbOpt opts = {
         .store = storePtr,
         .table = "test_table"
@@ -129,9 +122,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_table, TestSize.Leve
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     ThumbRdbOpt opts = {
         .store = storePtr,
         .table = MEDIALIBRARY_TABLE
@@ -144,9 +135,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_001, TestSize.Level1
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_002, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string table = "Photos";
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -160,9 +149,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_002, TestSize.Level1
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDistributeLcdCount_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     ThumbRdbOpt opts = {
         .store = storePtr,
     };
@@ -174,9 +161,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDistributeLcdCount_test_001, TestS
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryAgingLcdInfos_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string table = "medialib_QueryAgingLcdInfos_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -191,9 +176,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryAgingLcdInfos_test_001, TestSize.L
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string table = "medialib_QueryNoLcdInfos_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -207,9 +190,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_001, TestSize.Leve
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_002, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string table = "Photos";
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -223,9 +204,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_002, TestSize.Leve
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string table = "medialib_QueryNoThumbnailInfos_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -239,9 +218,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_001, TestSiz
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_002, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string table = "Photos";
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -255,9 +232,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_002, TestSiz
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightInfos_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string table = "medialib_QueryNoHighlightInfos_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -271,9 +246,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightInfos_test_001, TestSiz
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightInfos_test_002, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string table = "tab_analysis_video_label";
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -303,9 +276,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_GetHighlightValue_test_001, TestSize.Le
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryHighlightTriggerPath_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string table = "Photos";
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -319,9 +290,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryHighlightTriggerPath_test_001, Tes
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_GetHighlightTracks_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string table = "tab_analysis_video_label";
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -335,9 +304,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_GetHighlightTracks_test_001, TestSize.L
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightPath_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     ThumbnailData data;
     ThumbRdbOpt opts = {
         .store = storePtr,
@@ -350,9 +317,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightPath_test_001, TestSize
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_CacheLcdInfo_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     string row = "medialib_CacheLcdInfo_test_001";
     string table = "medialib_CacheLcdInfo_test_001";
     ThumbRdbOpt opts = {
@@ -369,9 +334,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_CacheLcdInfo_test_001, TestSize.Level1)
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_CacheVisitTime_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     ThumbRdbOpt opts = {
         .store = storePtr,
         .networkId = "",
@@ -386,9 +349,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_CacheVisitTime_test_001, TestSize.Level
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_CleanThumbnailInfo_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     ThumbRdbOpt opts = {
     .store = storePtr,
     };
@@ -412,9 +373,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeImage_test_001, TestSize.Level1)
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_DeleteAllThumbFilesAndAstc_test_001, TestSize.Level1)
 {
-    if (storePtr == nullptr) {
-        exit(1);
-    }
+    ASSERT_NE(storePtr, nullptr);
     ThumbnailData thumbnailData;
     string row = "medialib_DeleteAllThumbFilesAndAstc_test_001";
     ThumbRdbOpt opts = {

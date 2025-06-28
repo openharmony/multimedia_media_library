@@ -84,8 +84,8 @@ private:
     std::recursive_mutex proxyMutex_;
     sptr<ILocalAbilityManager> extensionProxy_;
     sptr<SAStatusListener> statusListener_;
-    std::atomic<bool> isConnected_; // does extensionProxy useable
-    std::atomic<bool> isLoaded_; // does SA process loaded
+    std::atomic<bool> isConnected_{false}; // does extensionProxy useable
+    std::atomic<bool> isLoaded_{false}; // does SA process loaded
     std::string taskName_;
     std::string ops_;
     std::string extra_;

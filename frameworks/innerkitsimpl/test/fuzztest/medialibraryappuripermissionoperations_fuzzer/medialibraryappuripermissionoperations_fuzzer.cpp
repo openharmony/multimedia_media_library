@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "ability_context_impl.h"
 #include "medialibrary_app_uri_permission_operations.h"
@@ -45,76 +46,52 @@ const int32_t PERMISSION_DEFAULT = -1;
 const int32_t URI_DEFAULT = 0;
 const int32_t BatchInsertNumber = 5;
 static const int32_t E_ERR = -1;
+static const int32_t NUM_BYTES = 1;
+static const int32_t MAX_PERMISSION_TYPE = 6;
+static const int32_t MAX_URI_TYPE = 2;
+static const int32_t MAX_DATA = 1;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int32_t)) {
-        return 0;
-    }
-    return static_cast<int32_t>(*data);
-}
+FuzzedDataProvider *FDP = nullptr;
 
-static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int64_t)) {
-        return 0;
-    }
-    return static_cast<int64_t>(*data);
-}
-
-static inline string FuzzString(const uint8_t *data, size_t size)
-{
-    return {reinterpret_cast<const char*>(data), size};
-}
-
-static int FuzzPermissionType(const uint8_t *data, size_t size)
+static int FuzzPermissionType()
 {
     vector<int> vecPermissionType;
     vecPermissionType.assign(Media::AppUriPermissionColumn::PERMISSION_TYPES_ALL.begin(),
         Media::AppUriPermissionColumn::PERMISSION_TYPES_ALL.end());
     vecPermissionType.push_back(PERMISSION_DEFAULT);
-    uint8_t length = static_cast<uint8_t>(vecPermissionType.size());
-    if (*data < length) {
-        return vecPermissionType[*data];
-    }
-    return Media::AppUriPermissionColumn::PERMISSION_TEMPORARY_READ;
+    uint8_t data = FDP->ConsumeIntegralInRange<uint8_t>(0, MAX_PERMISSION_TYPE);
+    return vecPermissionType[data];
 }
 
-static int FuzzUriType(const uint8_t *data, size_t size)
+static int FuzzUriType()
 {
     vector<int> vecUriType;
     vecUriType.assign(Media::AppUriPermissionColumn::URI_TYPES_ALL.begin(),
         Media::AppUriPermissionColumn::URI_TYPES_ALL.end());
     vecUriType.push_back(URI_DEFAULT);
-    uint8_t length = static_cast<uint8_t>(vecUriType.size());
-    if (*data < length) {
-        return vecUriType[*data];
-    }
-    return Media::AppUriPermissionColumn::URI_PHOTO;
+    uint8_t data = FDP->ConsumeIntegralInRange<uint8_t>(0, MAX_URI_TYPE);
+    return vecUriType[data];
 }
 
-static inline void FuzzMimeTypeAndDisplayNameExtension(const uint8_t *data, size_t size, string &mimeType,
-    string &displayName)
+static inline void FuzzMimeTypeAndDisplayNameExtension(string &mimeType, string &displayName)
 {
-    uint8_t length = static_cast<uint8_t>(Media::DISPLAY_NAME_EXTENSION_FUZZER_LISTS.size());
-    if (*data < length) {
-        mimeType = Media::MIMETYPE_FUZZER_LISTS[*data];
-        displayName = FuzzString(data, size) + Media::DISPLAY_NAME_EXTENSION_FUZZER_LISTS[*data];
-    }
+    uint8_t data = FDP->ConsumeIntegralInRange<uint8_t>(0, MAX_DATA);
+    mimeType = Media::MIMETYPE_FUZZER_LISTS[data];
+    displayName = FDP->ConsumeBytesAsString(NUM_BYTES) + Media::DISPLAY_NAME_EXTENSION_FUZZER_LISTS[data];
 }
 
-static int32_t InsertPhotoAsset(const uint8_t *data, size_t size, int32_t photoId)
+static int32_t InsertPhotoAsset(string photoId)
 {
     if (g_rdbStore == nullptr) {
         return E_ERR;
     }
     NativeRdb::ValuesBucket values;
-    values.PutInt(Media::PhotoColumn::PHOTO_ID, photoId);
-    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
+    values.PutString(Media::PhotoColumn::PHOTO_ID, photoId);
+    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FDP->ConsumeBytesAsString(NUM_BYTES));
 
     string mimeType = "undefined";
     string displayName = ".undefined";
-    FuzzMimeTypeAndDisplayNameExtension(data, size, mimeType, displayName);
+    FuzzMimeTypeAndDisplayNameExtension(mimeType, displayName);
     values.PutString(Media::MediaColumn::MEDIA_NAME, displayName);
     values.PutString(Media::MediaColumn::MEDIA_MIME_TYPE, mimeType);
 
@@ -148,19 +125,19 @@ static void DeleteOperationFuzzer(string appId, int32_t photoId, int32_t permiss
     Media::MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
 }
 
-static void BatchInsertFuzzer(const uint8_t* data, size_t size)
+static void BatchInsertFuzzer()
 {
     vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int32_t i = 0; i < BatchInsertNumber; i++) {
         DataShareValuesBucket value;
-        int32_t photoId = FuzzInt32(data, size);
-        int32_t fileId = InsertPhotoAsset(data, size, photoId);
-        string appId = FuzzString(data, size);
+        string photoId = FDP->ConsumeBytesAsString(NUM_BYTES);
+        int32_t fileId = InsertPhotoAsset(photoId);
+        string appId = FDP->ConsumeBytesAsString(NUM_BYTES);
         value.Put(Media::AppUriPermissionColumn::APP_ID, appId);
         value.Put(Media::AppUriPermissionColumn::FILE_ID, fileId);
-        int32_t permissionType = FuzzPermissionType(data, size);
+        int32_t permissionType = FuzzPermissionType();
         value.Put(Media::AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
-        int32_t uriType = FuzzUriType(data, size);
+        int32_t uriType = FuzzUriType();
         value.Put(Media::AppUriPermissionColumn::URI_TYPE, uriType);
         dataShareValues.push_back(value);
     }
@@ -169,46 +146,46 @@ static void BatchInsertFuzzer(const uint8_t* data, size_t size)
     Media::MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, dataShareValues);
 }
 
-static void BatchInsertInnerFuzzer(const uint8_t* data, size_t size)
+static void BatchInsertInnerFuzzer()
 {
     vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int32_t i = 0; i < BatchInsertNumber; i++) {
         DataShareValuesBucket value;
-        int32_t photoId = FuzzInt32(data, size);
-        int32_t fileId = InsertPhotoAsset(data, size, photoId);
-        string appId = FuzzString(data, size);
+        string photoId = FDP->ConsumeBytesAsString(NUM_BYTES);
+        int32_t fileId = InsertPhotoAsset(photoId);
+        string appId = FDP->ConsumeBytesAsString(NUM_BYTES);
         value.Put(Media::AppUriPermissionColumn::APP_ID, appId);
         value.Put(Media::AppUriPermissionColumn::FILE_ID, fileId);
-        int32_t permissionType = FuzzPermissionType(data, size);
+        int32_t permissionType = FuzzPermissionType();
         value.Put(Media::AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
-        int32_t uriType = FuzzUriType(data, size);
+        int32_t uriType = FuzzUriType();
         value.Put(Media::AppUriPermissionColumn::URI_TYPE, uriType);
-        value.Put(Media::AppUriPermissionColumn::DATE_MODIFIED, FuzzInt64(data, size));
-        value.Put(Media::AppUriPermissionColumn::SOURCE_TOKENID, FuzzInt64(data, size));
-        value.Put(Media::AppUriPermissionColumn::TARGET_TOKENID, FuzzInt64(data, size));
+        value.Put(Media::AppUriPermissionColumn::DATE_MODIFIED, FDP->ConsumeIntegral<int64_t>());
+        value.Put(Media::AppUriPermissionColumn::SOURCE_TOKENID, FDP->ConsumeIntegral<int64_t>());
+        value.Put(Media::AppUriPermissionColumn::TARGET_TOKENID, FDP->ConsumeIntegral<int64_t>());
         dataShareValues.push_back(value);
     }
     Media::MediaLibraryCommand cmd(Media::OperationObject::MEDIA_APP_URI_PERMISSION, Media::OperationType::CREATE,
         Media::MediaLibraryApi::API_10);
-    std::string funcName = FuzzString(data, size);
+    std::string funcName = FDP->ConsumeBytesAsString(NUM_BYTES);
     std::shared_ptr<Media::TransactionOperations> trans = std::make_shared<Media::TransactionOperations>(funcName);
     Media::MediaLibraryAppUriPermissionOperations::BatchInsertInner(cmd, dataShareValues, trans);
 }
 
-static void AppUriPermissionOperationsFuzzer(const uint8_t* data, size_t size)
+static void AppUriPermissionOperationsFuzzer()
 {
-    int32_t photoId = FuzzInt32(data, size);
-    int32_t fileId = InsertPhotoAsset(data, size, photoId);
-    string appId = FuzzString(data, size);
-    int32_t permissionType = FuzzPermissionType(data, size);
-    int32_t uriType = FuzzUriType(data, size);
+    string photoId = FDP->ConsumeBytesAsString(NUM_BYTES);
+    int32_t fileId = InsertPhotoAsset(photoId);
+    string appId = FDP->ConsumeBytesAsString(NUM_BYTES);
+    int32_t permissionType = FuzzPermissionType();
+    int32_t uriType = FuzzUriType();
     HandleInsertOperationFuzzer(appId, fileId, permissionType, uriType);
-    permissionType = FuzzPermissionType(data, size);
+    permissionType = FuzzPermissionType();
     HandleInsertOperationFuzzer(appId, fileId, permissionType, uriType);    // if exit, run UpdatePermissionType();
     DeleteOperationFuzzer(appId, fileId, permissionType);
 
-    BatchInsertFuzzer(data, size);
-    BatchInsertInnerFuzzer(data, size);
+    BatchInsertFuzzer();
+    BatchInsertInnerFuzzer();
 }
 
 void SetTables()
@@ -256,6 +233,11 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    OHOS::AppUriPermissionOperationsFuzzer(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::FDP = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::AppUriPermissionOperationsFuzzer();
     return 0;
 }

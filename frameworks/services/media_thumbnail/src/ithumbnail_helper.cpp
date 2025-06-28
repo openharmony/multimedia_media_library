@@ -45,6 +45,7 @@
 #include "thumbnail_image_framework_utils.h"
 #include "thumbnail_source_loading.h"
 #include "medialibrary_astc_stat.h"
+#include "medialibrary_object_utils.h"
 using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
@@ -601,6 +602,8 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
     }
     thumbnailWait.UpdateThumbnailMap();
     data.needCheckWaitStatus = false;
+    const std::string hasData = "1";
+    MediaLibraryObjectUtils::TryUpdateAnalysisProp(hasData);
     return true;
 }
 
@@ -676,7 +679,8 @@ bool IThumbnailHelper::SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &da
     CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPictureValid(lcdSource), false, "LcdSource is invalid");
 
     Size desiredSize = GetLcdDesiredSize(data, isSourceEx);
-    if (desiredSize.width != lcdSource->GetMainPixel()->GetWidth()) {
+    bool isDesiredSizeEqualZero = desiredSize.width == 0 && desiredSize.height == 0;
+    if (!isDesiredSizeEqualZero && desiredSize.width != lcdSource->GetMainPixel()->GetWidth()) {
         MEDIA_INFO_LOG("Copy and resize picture source for lcd desiredSize: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
         lcdSource = ThumbnailImageFrameWorkUtils::CopyAndScalePicture(lcdSource, desiredSize);
@@ -734,7 +738,8 @@ bool IThumbnailHelper::SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &d
     shared_ptr<PixelMap> lcdSource = isSourceEx ? data.source.GetPixelMapEx() : data.source.GetPixelMap();
     CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPixelMapValid(lcdSource), false, "lcdSource is invalid");
     Size desiredSize = GetLcdDesiredSize(data, isSourceEx);
-    if (desiredSize.width != lcdSource->GetWidth()) {
+    bool isDesiredSizeEqualZero = desiredSize.width == 0 && desiredSize.height == 0;
+    if (!isDesiredSizeEqualZero && desiredSize.width != lcdSource->GetWidth()) {
         MEDIA_INFO_LOG("Copy and resize data source for lcd desiredSize: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
         lcdSource = ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(lcdSource, desiredSize);

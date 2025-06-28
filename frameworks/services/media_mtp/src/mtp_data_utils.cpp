@@ -734,6 +734,8 @@ int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
 
 void MtpDataUtils::SetOneDefaultlPropList(uint32_t handle, uint16_t property, shared_ptr<vector<Property>> &outProps)
 {
+    CHECK_AND_RETURN_LOG(PropDefaultMap.find(property) != PropDefaultMap.end(),
+        "SetMtpOneDefaultlPropList property not found in PropDefaultMap");
     auto propType = PropDefaultMap.at(property);
     auto properType = MtpPacketTool::GetObjectPropTypeByPropCode(property);
     Property prop(property, properType);
@@ -1030,6 +1032,8 @@ void MtpDataUtils::SetMtpOneDefaultlPropList(uint32_t handle,
     uint16_t property, std::shared_ptr<std::vector<Property>> &outProps, int32_t storageId)
 {
     CHECK_AND_RETURN_LOG(outProps != nullptr, "outProps is nullptr");
+    CHECK_AND_RETURN_LOG(PropDefaultMap.find(property) != PropDefaultMap.end(),
+        "SetMtpOneDefaultlPropList property not found in PropDefaultMap");
     auto propType = PropDefaultMap.at(property);
     auto properType = MtpPacketTool::GetObjectPropTypeByPropCode(property);
     Property prop(property, properType);

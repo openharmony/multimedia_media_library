@@ -117,7 +117,9 @@ int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::st
 int32_t CloudFileDataConvert::HandleThumbSize(
     std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
-    MEDIA_INFO_LOG("enter HandleThumbSize");
+    if (type_ != FILE_CREATE && type_ != FILE_DATA_MODIFY) {
+        return E_OK;
+    }
     std::string path = upLoadRecord.data;
     CHECK_AND_RETURN_RET_LOG(!path.empty(), E_QUERY_CONTENT_IS_EMPTY, "HandleThumbSize failed to get filepath");
     int64_t fileSize;
@@ -144,7 +146,6 @@ int32_t CloudFileDataConvert::HandleLcdSize(
 int32_t CloudFileDataConvert::HandleFormattedDate(
     std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
-    MEDIA_INFO_LOG("enter HandleFormattedDate");
     std::string year = upLoadRecord.dateYear;
     std::string month = upLoadRecord.dateMonth;
     std::string day = upLoadRecord.dateDay;
@@ -165,7 +166,6 @@ int32_t CloudFileDataConvert::HandleFormattedDate(
 int32_t CloudFileDataConvert::HandleUniqueFileds(
     std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
-    MEDIA_INFO_LOG("enter HandleUniqueFileds");
     std::map<std::string, MDKRecordField> map;
     /* store media unique fileds in attributes */
     map[PhotoColumn::MEDIA_TITLE] = MDKRecordField(upLoadRecord.title);
@@ -239,7 +239,6 @@ int32_t CloudFileDataConvert::HandleFileType(
 int32_t CloudFileDataConvert::HandlePosition(
     std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
-    MEDIA_INFO_LOG("enter HandlePosition");
     std::stringstream latitudestream;
     std::stringstream longitudestream;
     latitudestream.precision(15);   // 15:precision
@@ -469,7 +468,6 @@ int32_t CloudFileDataConvert::CheckContentFile(const CloudMdkRecordPhotosVo &upL
 int32_t CloudFileDataConvert::HandleContent(
     std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
-    MEDIA_INFO_LOG("enter HandleContent");
     std::string path = upLoadRecord.data;
     std::string lowerPath = "";
     bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(
@@ -498,7 +496,6 @@ int32_t CloudFileDataConvert::HandleContent(
 int32_t CloudFileDataConvert::HandleThumbnail(
     std::map<std::string, MDKRecordField> &recordData, std::string &path, int32_t orientation)
 {
-    MEDIA_INFO_LOG("enter HandleThumbnail");
     std::string thumbnailUploadPath;
     std::string thumbnailExPath = GetThumbPath(path, THUMB_EX_SUFFIX);
     if (orientation == NO_ORIENTATION) {
@@ -547,7 +544,6 @@ std::string CloudFileDataConvert::GetParentPath(const std::string &path)
 int32_t CloudFileDataConvert::HandleLcd(
     std::map<std::string, MDKRecordField> &recordData, std::string &path, int32_t orientation)
 {
-    MEDIA_INFO_LOG("enter HandleLcd");
     std::string lcdUploadPath;
     std::string lcdExPath = GetThumbPath(path, LCD_EX_SUFFIX);
     std::string lcdExDir = GetParentPath(lcdExPath);
@@ -587,7 +583,6 @@ int32_t CloudFileDataConvert::HandleLcd(
 int32_t CloudFileDataConvert::HandleAttachments(
     std::map<std::string, MDKRecordField> &recordData, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
-    MEDIA_INFO_LOG("enter HandleAttachments");
     int32_t orientation = (upLoadRecord.mediaType == MEDIA_TYPE_IMAGE) ? upLoadRecord.orientation : NO_ORIENTATION;
     /* content */
     int32_t ret = HandleContent(recordData, upLoadRecord);
@@ -633,7 +628,6 @@ int32_t CloudFileDataConvert::HandleWidthAndHeight(
 int32_t CloudFileDataConvert::HandleCompatibleFileds(
     std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
-    MEDIA_INFO_LOG("enter HandleCompatibleFileds");
     /* gallery-specific or shared fileds */
     data["fileName"] = MDKRecordField(upLoadRecord.displayName);
     data["createdTime"] = MDKRecordField(upLoadRecord.dateTaken);
@@ -825,12 +819,10 @@ int32_t CloudFileDataConvert::BuildModifyRecord(
     MDKRecordPhotosData photosData = MDKRecordPhotosData(result.GetDKRecord());
     std::optional<std::string> optionalCloudId = photosData.GetCloudId();
     record.cloudId = cloudId;
-    std::optional<std::string> optPath = photosData.GetFilePath();
-    record.path = optPath.value_or("");
-    std::optional<int32_t> optFileId = photosData.GetFileId();
-    record.fileId = optFileId.value_or(-1);
-    std::optional<int64_t> optSingleEditTime = photosData.GetDateModified().value_or(0);
-    int64_t singleEditTime = optSingleEditTime.value();
+    record.path = photosData.GetFilePath().value_or("");
+    record.fileName = photosData.GetFileName().value_or("");
+    record.fileId = photosData.GetFileId().value_or(-1);
+    int64_t singleEditTime = photosData.GetDateModified().value_or(0);
     int64_t dualEditTime = static_cast<int64_t>(result.GetDKRecord().GetEditedTime());
     record.modifyTime = dualEditTime > singleEditTime ? dualEditTime : singleEditTime;
     record.metaDateModified = photosData.GetPhotoMetaDateModified().value_or(-1);

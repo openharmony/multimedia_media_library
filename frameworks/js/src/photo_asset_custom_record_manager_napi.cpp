@@ -17,6 +17,7 @@
 
 #include "photo_asset_custom_record_manager_napi.h"
 
+#include <cstdlib>
 #include "custom_record_uri.h"
 #include "custom_records_column.h"
 #include "medialibrary_errno.h"
@@ -27,6 +28,7 @@
 #include "fetch_file_result_napi.h"
 #include "js_proxy.h"
 #include "result_set_utils.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS::Media {
 static const std::string PHOTO_ASSET_CUSTOM_RECORD_MANAGER = "PhotoAssetCustomRecordManager";
@@ -34,9 +36,11 @@ thread_local napi_ref PhotoAssetCustomRecordManager::constructor_ = nullptr;
 
 const int32_t OPERATION_MAX_LEN = 200;
 const int32_t OPERATION_MAX_FILE_IDS_LEN = 500;
-const std::string NapiCustomRecordStr::FILE_ID = "fileId";
-const std::string NapiCustomRecordStr::SHARE_COUNT = "shareCount";
-const std::string NapiCustomRecordStr::LCD_JUMP_COUNT = "lcdJumpCount";
+const int32_t OPERATION_MIN_LEN = 0;
+const std::string AUTO_INCREMENT = "1";
+const std::string NapiCustomRecordStr::FILE_ID = "file_id";
+const std::string NapiCustomRecordStr::SHARE_COUNT = "share_count";
+const std::string NapiCustomRecordStr::LCD_JUMP_COUNT = "lcd_jump_count";
 
 napi_value PhotoAssetCustomRecordManager::Init(napi_env env, napi_value exports)
 {
@@ -81,12 +85,12 @@ napi_value PhotoAssetCustomRecordManager::Constructor(napi_env env, napi_callbac
             "The custom record asset manager instance can be called only by system apps");
         return nullptr;
     }
+    napi_value newTarget = nullptr;
+    CHECK_ARGS(env, napi_get_new_target(env, info, &newTarget), JS_E_INIT_FAIL);
     if (!InitUserFileClient(env, info)) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "user file client init fail");
+        NapiError::ThrowError(env, JS_E_INIT_FAIL, "user file client init fail");
         return nullptr;
     }
-    napi_value newTarget = nullptr;
-    CHECK_ARGS(env, napi_get_new_target(env, info, &newTarget), JS_INNER_FAIL);
     CHECK_COND_RET(newTarget != nullptr, nullptr, "Failed to check new.target");
     int32_t userId = ParseUserIdFormCbInfo(env, info);
     UserFileClient::SetUserId(userId);
@@ -176,7 +180,7 @@ napi_value PhotoAssetCustomRecordManager::JSGetCustomRecordsInstance(napi_env en
 
     NAPI_CALL(env, napi_new_instance(env, ctor, argc, argv, &result));
     if (!CheckWhetherInitSuccess(env, result, false)) {
-        NAPI_ERR_LOG("Init Cloud Media Asset Manager Instance is failed");
+        NAPI_ERR_LOG("GetCustomRecordsInstance is failed");
         NAPI_CALL(env, napi_get_undefined(env, &result));
     }
     return result;
@@ -192,9 +196,8 @@ static napi_value ParseArgsCustomRecords(napi_env env, napi_callback_info info,
         JS_E_PARAM_INVALID);
     uint32_t len = 0;
     CHECK_ARGS(env, napi_get_array_length(env, context->argv[ARGS_ZERO], &len), JS_E_PARAM_INVALID);
-    if (context->argc != ARGS_ONE || len > OPERATION_MAX_LEN) {
-        NAPI_ERR_LOG("Number of args is invalid");
-        context->SaveError(JS_E_PARAM_INVALID);
+    if (context->argc != ARGS_ONE || len > OPERATION_MAX_LEN || len == OPERATION_MIN_LEN) {
+        context->error = JS_E_PARAM_INVALID;
         return nullptr;
     }
     std::vector<PhotoAssetCustomRecord> customRecords;
@@ -216,9 +219,9 @@ static napi_value ParseArgsCustomRecords(napi_env env, napi_callback_info info,
         CHECK_ARGS(env, napi_get_value_int32(env, jsFileId, &fileId), JS_E_PARAM_INVALID);
         CHECK_ARGS(env, napi_get_value_int32(env, jsShareCount, &shareCount), JS_E_PARAM_INVALID);
         CHECK_ARGS(env, napi_get_value_int32(env, jsLcdJumpCount, &lcdJumpCount), JS_E_PARAM_INVALID);
-        CHECK_COND(env, fileId > 0, JS_E_PARAM_INVALID);
-        CHECK_COND(env, shareCount >= 0, JS_E_PARAM_INVALID);
-        CHECK_COND(env, lcdJumpCount >= 0, JS_E_PARAM_INVALID);
+        if (fileId <= 0 || shareCount <= 0 || lcdJumpCount <= 0) {
+            context->error = JS_E_PARAM_INVALID;
+        }
         customRecord.SetFileId(fileId);
         customRecord.SetShareCount(shareCount);
         customRecord.SetLcdJumpCount(lcdJumpCount);
@@ -236,12 +239,15 @@ static napi_value ParseArgsCustomRecords(napi_env env, napi_callback_info info,
 static void CreateCustomRecordsExecute(napi_env env, void* data)
 {
     auto* context = static_cast<CustomRecordAsyncContext*>(data);
+    if (context->error != ERR_DEFAULT) {
+        return;
+    }
     CHECK_NULL_PTR_RETURN_VOID(context, "async context is null");
     std::vector<DataShare::DataShareValuesBucket> valueBuckets = context->valuesBuckets;
     Uri uri(CUSTOM_RECORDS_CREATE_URI);
     int32_t ret = UserFileClient::BatchInsert(uri, valueBuckets);
     if (ret <= 0) {
-        context->SaveError(JS_INNER_FAIL);
+        context->error = JS_E_PARAM_INVALID;
         return;
     }
 }
@@ -274,31 +280,31 @@ napi_value PhotoAssetCustomRecordManager::JSCreateCustomRecords(napi_env env, na
         return nullptr;
     }
     std::unique_ptr<CustomRecordAsyncContext> context = std::make_unique<CustomRecordAsyncContext>();
-    CHECK_NULLPTR_RET(ParseArgsCustomRecords(env, info, context));
+    ParseArgsCustomRecords(env, info, context);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, context, "JSCreateCustomRecords",
         CreateCustomRecordsExecute, CustomRecordsCallback);
 }
 
-static napi_status GetFetchOption(napi_env env, napi_callback_info info,
+static bool GetFetchOption(napi_env env, napi_callback_info info,
     std::unique_ptr<CustomRecordAsyncContext>& context)
 {
     if (context == nullptr) {
         NAPI_ERR_LOG("async context is nullptr");
-        return napi_invalid_arg;
+        return false;
     }
     context->argc = ARGS_TWO;
     CHECK_STATUS_RET(napi_get_cb_info(env, info, &context->argc, &(context->argv[ARGS_ZERO]), NULL, NULL),
         "Failed to napi_get_cb_info");
     if (context->argc != ARGS_ONE) {
         NAPI_ERR_LOG("Number of args is invalid");
-        return napi_invalid_arg;
+        return false;
     }
     bool present = false;
     CHECK_STATUS_RET(napi_has_named_property(env, context->argv[ARGS_ZERO], "fetchColumns", &present),
         "Failed to napi_has_named_property");
     if (!present) {
         NAPI_ERR_LOG("napi params error");
-        return napi_invalid_arg;
+        return false;
     }
     napi_value property = nullptr;
     CHECK_STATUS_RET(napi_get_named_property(env, context->argv[ARGS_ZERO], "fetchColumns", &property),
@@ -308,15 +314,15 @@ static napi_status GetFetchOption(napi_env env, napi_callback_info info,
     CHECK_STATUS_RET(MediaLibraryNapiUtils::GetStringArray(env, property, fetchColumns),
         "Failed to napi_get_named_property");
     context->fetchColumn = fetchColumns;
-    return napi_ok;
+    return true;
 }
 
-static napi_status GetPredicate(napi_env env, const napi_value arg, const string &propName,
+static bool GetPredicate(napi_env env, const napi_value arg, const string &propName,
     std::unique_ptr<CustomRecordAsyncContext>& context)
 {
     if (context == nullptr) {
         NAPI_ERR_LOG("async context is nullptr");
-        return napi_invalid_arg;
+        return false;
     }
     bool present = false;
     napi_value property = nullptr;
@@ -324,25 +330,44 @@ static napi_status GetPredicate(napi_env env, const napi_value arg, const string
         "Failed to check property name");
     if (!present) {
         NAPI_ERR_LOG("napi_has_named_property is invalid");
-        return napi_invalid_arg;
+        return false;
     }
     CHECK_STATUS_RET(napi_get_named_property(env, arg, propName.c_str(), &property), "Failed to get property");
     JSProxy::JSProxy<DataShare::DataShareAbsPredicates> *jsProxy = nullptr;
     napi_unwrap(env, property, reinterpret_cast<void **>(&jsProxy));
     if (jsProxy == nullptr) {
         NAPI_ERR_LOG("jsProxy is invalid");
-        return napi_invalid_arg;
+        return false;
     }
     std::shared_ptr<DataShare::DataShareAbsPredicates> predicate = jsProxy->GetInstance();
     if (predicate == nullptr) {
         NAPI_ERR_LOG("predicate is nullptr");
-        return napi_invalid_arg;
+        return false;
     }
     context->predicates = DataShare::DataSharePredicates(predicate->GetOperationList());
-    return napi_ok;
+    return true;
 }
 
-static napi_value ParserArgsFetchOpeions(napi_env env, napi_callback_info info,
+bool PhotoAssetCustomRecordManager::CheckColumns(std::vector<std::string> fetchColumns)
+{
+    static std::unordered_set<std::string> CustomRecordsColumns = {
+        NapiCustomRecordStr::FILE_ID,
+        NapiCustomRecordStr::SHARE_COUNT,
+        NapiCustomRecordStr::LCD_JUMP_COUNT,
+    };
+    if (fetchColumns.size() == 0) {
+        return true;
+    }
+    for (auto column : fetchColumns) {
+        if (!CustomRecordsColumns.count(column)) {
+            NAPI_ERR_LOG("fetchColumns is invalid");
+            return false;
+        }
+    }
+    return true;
+}
+
+static napi_value ParserArgsFetchOptions(napi_env env, napi_callback_info info,
     std::unique_ptr<CustomRecordAsyncContext>& context)
 {
     napi_value result = nullptr;
@@ -352,11 +377,16 @@ static napi_value ParserArgsFetchOpeions(napi_env env, napi_callback_info info,
         JS_E_PARAM_INVALID);
     if (context->argc != ARGS_ONE) {
         NAPI_ERR_LOG("Number of args is invalid");
-        context->SaveError(JS_E_PARAM_INVALID);
+        context->error = JS_E_PARAM_INVALID;
         return nullptr;
     }
-    CHECK_ARGS(env, GetFetchOption(env, info, context), JS_E_PARAM_INVALID);
-    CHECK_ARGS(env, GetPredicate(env, context->argv[ARGS_ZERO], "predicates", context), JS_E_PARAM_INVALID);
+
+    if (!GetFetchOption(env, info, context) || !PhotoAssetCustomRecordManager::CheckColumns(context->fetchColumn) ||
+        !GetPredicate(env, context->argv[ARGS_ZERO], "predicates", context)) {
+        NAPI_ERR_LOG("param is invalid");
+        context->error = JS_E_PARAM_INVALID;
+        return nullptr;
+    }
 
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -374,13 +404,13 @@ static void JSGetCustomRecordsExecute(napi_env env, void* data)
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet is nullptr, errCode is %{public}d", errCode);
-        context->SaveError(errCode);
+        context->error = errCode;
         return;
     }
     context->fetchCustomRecordsResult = std::make_unique<FetchResult<PhotoAssetCustomRecord>>(move(resultSet));
     if (context->fetchCustomRecordsResult == nullptr) {
         NAPI_ERR_LOG("fetchCustomRecordsResult is nullptr, errCode is %{public}d", errCode);
-        context->SaveError(errCode);
+        context->error = errCode;
         return;
     }
     context->fetchCustomRecordsResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -439,7 +469,7 @@ napi_value PhotoAssetCustomRecordManager::JSGetCustomRecords(napi_env env, napi_
         return nullptr;
     }
     std::unique_ptr<CustomRecordAsyncContext> context = std::make_unique<CustomRecordAsyncContext>();
-    CHECK_NULLPTR_RET(ParserArgsFetchOpeions(env, info, context));
+    ParserArgsFetchOptions(env, info, context);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, context, "JSGetCustomRecords",
         JSGetCustomRecordsExecute, GetFileAssetsAsyncCallbackComplete);
 }
@@ -452,7 +482,7 @@ static void JSRemoveCustomRecordsExecute(napi_env env, void* data)
     int32_t errcode = UserFileClient::Delete(uri, context->predicates);
     if (errcode < 0) {
         NAPI_ERR_LOG("UserFileClient::Delete fail.");
-        context->SaveError(JS_INNER_FAIL);
+        context->error = JS_E_PARAM_INVALID;
     }
 }
 
@@ -487,7 +517,7 @@ napi_value PhotoAssetCustomRecordManager::JSRemoveCustomRecords(napi_env env, na
     }
     std::unique_ptr<CustomRecordAsyncContext> context = std::make_unique<CustomRecordAsyncContext>();
     context->userId_ = UserFileClient::GetUserId();
-    CHECK_NULLPTR_RET(ParserArgsFetchOpeions(env, info, context));
+    ParserArgsFetchOptions(env, info, context);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, context, "JSRemoveCustomRecords",
         JSRemoveCustomRecordsExecute, JSRemoveCustomRecordsCompleteCallback);
 }
@@ -495,29 +525,37 @@ napi_value PhotoAssetCustomRecordManager::JSRemoveCustomRecords(napi_env env, na
 static void JSAddShareCountExecute(napi_env env, void* data)
 {
     auto* context = static_cast<CustomRecordAsyncContext*>(data);
-    for (auto id : context->fileIds) {
+    std::set<int32_t> deduplicationIds(context->fileIds.begin(), context->fileIds.end());
+    for (auto id : deduplicationIds) {
         int32_t errcode = 0;
         std::string queryUriStr = CUSTOM_RECORDS_QUERY_URI;
         Uri queryuri(queryUriStr);
+        OHOS::DataShare::DataSharePredicates predicates;
         context->fetchColumn.push_back(CustomRecordsColumns::SHARE_COUNT);
-        context->predicates.EqualTo(CustomRecordsColumns::FILE_ID, std::to_string(id));
+        predicates.EqualTo(CustomRecordsColumns::FILE_ID, std::to_string(id));
         std::shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(queryuri,
-            context->predicates, context->fetchColumn, errcode);
+            predicates, context->fetchColumn, errcode);
         if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
             NAPI_ERR_LOG("Resultset is nullptr");
-            context->SaveError(JS_INNER_FAIL);
             context->failFileIds.push_back(id);
             continue;
+        }
+        if (errcode == E_HAS_DB_ERROR ||
+            (errcode >= E_MEDIA_IPC_OFFSET && errcode <= E_IPC_SEVICE_UNMARSHALLING_FAIL)) {
+            NAPI_ERR_LOG("JSAddShareCountExecute inner fail");
+            context->error = JS_E_INNER_FAIL;
         }
         int32_t shareCount = get<int32_t>(ResultSetUtils::GetValFromColumn(CustomRecordsColumns::SHARE_COUNT,
             resultSet, TYPE_INT32));
         Uri updateUri(CUSTOM_RECORDS_UPDATE_URI);
         DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.Put(CustomRecordsColumns::SHARE_COUNT, ++shareCount);
-        int32_t result = UserFileClient::Update(updateUri, context->predicates, valuesBucket, context->userId_);
-        if (result <= 0) {
+        int32_t result = UserFileClient::Update(updateUri, predicates, valuesBucket, context->userId_);
+        if (result == E_HAS_DB_ERROR || (result >= E_MEDIA_IPC_OFFSET && result <= E_IPC_SEVICE_UNMARSHALLING_FAIL)) {
+            NAPI_ERR_LOG("JSAddShareCountExecute inner fail");
+            context->error = JS_E_INNER_FAIL;
+        } else if (result < 0) {
             NAPI_ERR_LOG("JSAddShareCountExecute Update fail");
-            context->SaveError(JS_INNER_FAIL);
             context->failFileIds.push_back(id);
         }
     }
@@ -559,18 +597,18 @@ static napi_value ParserArgsCustomRecordsFileIds(napi_env env, napi_callback_inf
         JS_E_PARAM_INVALID);
     if (context->argc != ARGS_ONE) {
         NAPI_ERR_LOG("Number of args is invalid");
-        context->SaveError(JS_E_PARAM_INVALID);
+        context->error = JS_E_PARAM_INVALID;
         return nullptr;
     }
     uint32_t len = 0;
-    std::vector<uint32_t> fileIds;
+    std::vector<int32_t> fileIds;
     CHECK_ARGS(env, napi_get_array_length(env, context->argv[ARGS_ZERO], &len), JS_E_PARAM_INVALID);
-    if (len > OPERATION_MAX_FILE_IDS_LEN) {
+    if (len > OPERATION_MAX_FILE_IDS_LEN || len == OPERATION_MIN_LEN) {
         NAPI_ERR_LOG("param count exceeds the predefined maximum");
-        context->SaveError(JS_E_PARAM_INVALID);
+        context->error = JS_E_PARAM_INVALID;
         return nullptr;
     }
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetUInt32Array(env, context->argv[ARGS_ZERO], fileIds), JS_E_PARAM_INVALID);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetInt32Array(env, context->argv[ARGS_ZERO], fileIds), JS_E_PARAM_INVALID);
     context->fileIds = fileIds;
 
     napi_value result = nullptr;
@@ -586,7 +624,7 @@ napi_value PhotoAssetCustomRecordManager::JSAddShareCount(napi_env env, napi_cal
         return nullptr;
     }
     std::unique_ptr<CustomRecordAsyncContext> context = std::make_unique<CustomRecordAsyncContext>();
-    CHECK_NULLPTR_RET(ParserArgsCustomRecordsFileIds(env, info, context));
+    ParserArgsCustomRecordsFileIds(env, info, context);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, context, "JSAddShareCount",
         JSAddShareCountExecute, JSAddCustomRecordCompleteCallback);
 }
@@ -595,16 +633,17 @@ static void JSAddLcdJumpCountExecute(napi_env env, void* data)
 {
     auto* context = static_cast<CustomRecordAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "async context is nullptr");
-    for (auto id : context->fileIds) {
+    std::set<int32_t> deduplicationIds(context->fileIds.begin(), context->fileIds.end());
+    for (auto id : deduplicationIds) {
         int32_t errcode = 0;
         Uri queryuri(CUSTOM_RECORDS_QUERY_URI);
         context->fetchColumn.push_back(CustomRecordsColumns::LCD_JUMP_COUNT);
-        context->predicates.EqualTo(CustomRecordsColumns::FILE_ID, std::to_string(id));
+        DataShare::DataSharePredicates predicates;
+        predicates.EqualTo(CustomRecordsColumns::FILE_ID, std::to_string(id));
         std::shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(queryuri,
-            context->predicates, context->fetchColumn, errcode);
+            predicates, context->fetchColumn, errcode);
         if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
             NAPI_ERR_LOG("Resultset is nullptr");
-            context->SaveError(JS_INNER_FAIL);
             context->failFileIds.push_back(id);
             continue;
         }
@@ -613,10 +652,12 @@ static void JSAddLcdJumpCountExecute(napi_env env, void* data)
         Uri updateUri(CUSTOM_RECORDS_UPDATE_URI);
         DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.Put(CustomRecordsColumns::LCD_JUMP_COUNT, ++lcdJumpCount);
-        int32_t result = UserFileClient::Update(updateUri, context->predicates, valuesBucket, context->userId_);
-        if (result <= 0) {
+        int32_t result = UserFileClient::Update(updateUri, predicates, valuesBucket, context->userId_);
+        if (result == E_HAS_DB_ERROR || (result >= E_MEDIA_IPC_OFFSET && result <= E_IPC_SEVICE_UNMARSHALLING_FAIL)) {
+            NAPI_ERR_LOG("JSAddLcdJumpCountExecute inner fail");
+            context->error = JS_E_INNER_FAIL;
+        } else if (result < 0) {
             NAPI_ERR_LOG("JSAddLcdJumpCountExecute Update fail");
-            context->SaveError(JS_INNER_FAIL);
             context->failFileIds.push_back(id);
         }
     }
@@ -630,7 +671,7 @@ napi_value PhotoAssetCustomRecordManager::JSAddLCDJumpCount(napi_env env, napi_c
         return nullptr;
     }
     std::unique_ptr<CustomRecordAsyncContext> context = std::make_unique<CustomRecordAsyncContext>();
-    CHECK_NULLPTR_RET(ParserArgsCustomRecordsFileIds(env, info, context));
+    ParserArgsCustomRecordsFileIds(env, info, context);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, context, "JSAddLCDJumpCount",
         JSAddLcdJumpCountExecute, JSAddCustomRecordCompleteCallback);
 }
@@ -652,7 +693,6 @@ static void JSSetCustomRecordsExecute(napi_env env, void* data)
         int32_t result = UserFileClient::Update(updateUri, predicate, valuesBucket);
         if (result <= 0) {
             NAPI_ERR_LOG("JSSetCustomRecordsExecute Update fail");
-            context->SaveError(JS_INNER_FAIL);
             context->failFileIds.push_back(fileId);
         }
     }
@@ -666,7 +706,7 @@ napi_value PhotoAssetCustomRecordManager::JSSetCustomRecords(napi_env env, napi_
         return nullptr;
     }
     std::unique_ptr<CustomRecordAsyncContext> context = std::make_unique<CustomRecordAsyncContext>();
-    CHECK_NULLPTR_RET(ParseArgsCustomRecords(env, info, context));
+    ParseArgsCustomRecords(env, info, context);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, context, "JSSetCustomRecords",
         JSSetCustomRecordsExecute, JSAddCustomRecordCompleteCallback);
 }

@@ -117,12 +117,12 @@ ohos_unittest("medialibrary_meta_recovery_json_test") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
+    "googletest:gtest_main",
   ]
 
   deps = [
     "$MEDIALIB_INNERKITS_PATH/media_library_helper:media_library",
     "$MEDIALIB_INNERKITS_PATH/medialibrary_data_extension:medialibrary_data_extension",
-    "//third_party/googletest:gtest_main",
   ]
 
   defines = [ "META_RECOVERY_SUPPORT=1" ]

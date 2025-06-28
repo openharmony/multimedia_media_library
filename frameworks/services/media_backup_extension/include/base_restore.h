@@ -168,6 +168,9 @@ protected:
     int32_t GetRestoreMode();
     uint64_t GetNotFoundNumber();
     bool IsCloudRestoreSatisfied();
+    void CheckAndDelete(NativeRdb::ValuesBucket &value, const std::string &column);
+    void InsertFileDuration(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
+        FileInfo &fileInfo);
     void SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value);
     void AddToPhotoInfoMap(std::vector<FileInfo> &fileInfos);
     void InsertDetailTime(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,

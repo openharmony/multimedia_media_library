@@ -1033,7 +1033,10 @@ static bool BuildNewNameValuesBucket(const shared_ptr<MediaLibraryRdbStore>& rdb
     return true;
 }
 
-static bool SetNewNameExecute(AlbumAccurateRefresh &albumRefresh, const shared_ptr<MediaLibraryRdbStore>& rdbStore,
+static bool SetNewNameExecute(shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh,
+    std::shared_ptr<TransactionOperations> trans,
+    const shared_ptr<MediaLibraryRdbStore>& rdbStore,
     int32_t oldAlbumId, int64_t& newAlbumId, NativeRdb::ValuesBucket& newNameValues, bool isCloudAlbum)
 {
     if (newAlbumId > 0) {
@@ -1042,18 +1045,21 @@ static bool SetNewNameExecute(AlbumAccurateRefresh &albumRefresh, const shared_p
         newNameValues.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
         RdbPredicates rdbPredicatesNew(PhotoAlbumColumns::TABLE);
         rdbPredicatesNew.EqualTo(PhotoAlbumColumns::ALBUM_ID, newAlbumId);
-        CHECK_AND_RETURN_RET_LOG(albumRefresh.Update(changeRows, newNameValues, rdbPredicatesNew) == NativeRdb::E_OK,
+        CHECK_AND_RETURN_RET_LOG(albumRefresh->Update(changeRows, newNameValues, rdbPredicatesNew) == NativeRdb::E_OK,
             false, "Failed to update deleted album with same name");
         CHECK_AND_RETURN_RET_LOG(MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(rdbStore, oldAlbumId,
-            newAlbumId, false) == E_OK, false, "Failed to merge old name album with new name album");
+            newAlbumId, false, trans, albumRefresh, assetRefresh) == E_OK,
+            false, "Failed to merge old name album with new name album");
         MEDIA_INFO_LOG("Set photo album name: update deleted album with same name success,"
             "old album id: %{public}d, new album id: %{public}" PRId64, oldAlbumId, newAlbumId);
     } else {
         newNameValues.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
-        CHECK_AND_RETURN_RET_LOG(albumRefresh.Insert(newAlbumId, PhotoAlbumColumns::TABLE,
+
+        CHECK_AND_RETURN_RET_LOG(albumRefresh->Insert(newAlbumId, PhotoAlbumColumns::TABLE,
             newNameValues) == NativeRdb::E_OK, false, "Failed to insert new name album");
         CHECK_AND_RETURN_RET_LOG(MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(rdbStore, oldAlbumId,
-            newAlbumId, isCloudAlbum) == E_OK, false, "Failed to merge old name album with new name album");
+            newAlbumId, isCloudAlbum, trans, albumRefresh, assetRefresh) == E_OK,
+            false, "Failed to merge old name album with new name album");
         MEDIA_INFO_LOG("Set photo album name: insert new name album success,"
             "old album id: %{public}d, new album id: %{public}" PRId64, oldAlbumId, newAlbumId);
     }
@@ -1099,7 +1105,8 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int64_t newAlbumId = -1;
 
-    AlbumAccurateRefresh albumRefresh;
+    auto albumRefresh = make_shared<AccurateRefresh::AlbumAccurateRefresh>(trans);
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(trans);
     std::function<int(void)> trySetUserAlbumName = [&]()->int {
         newAlbumId = -1;
         int32_t ret = CheckConflictsWithExistingAlbum(newAlbumName, rdbStore);
@@ -1118,7 +1125,8 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
             return E_OK;
         }
         CHECK_AND_RETURN_RET_LOG(
-            SetNewNameExecute(albumRefresh, rdbStore, oldAlbumId, newAlbumId, newNameValues, isCloudAlbum),
+            SetNewNameExecute(albumRefresh, assetRefresh,
+            trans, rdbStore, oldAlbumId, newAlbumId, newNameValues, isCloudAlbum),
             E_HAS_DB_ERROR, "Set new name execute failed");
         return E_OK;
     };
@@ -1126,16 +1134,15 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     if (argInvalid) {
         return E_INVALID_ARGS;
     }
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Try trans fail!, ret: %{public}d", ret);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_DB_ERROR, "Try trans fail!, ret: %{public}d", ret);
+
     UpdateAnalysisIndexAfterRename(fileIdsToUpdateIndex);
 
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
 
-    albumRefresh.Notify();
+    albumRefresh->Notify();
+    assetRefresh->Notify();
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
         to_string(newAlbumId)), NotifyType::NOTIFY_UPDATE);
     return ALBUM_SETNAME_OK;
@@ -2784,6 +2791,14 @@ int32_t MediaLibraryAlbumOperations::SetIsMe(const ValuesBucket &values, const D
     }
     vector<string> updateSqls;
     SetMyOldAlbum(updateSqls, uniStore);
+    std::string queryTargetAlbum = "SELECT " + USER_DISPLAY_LEVEL + " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ALBUM_ID + " = " + targetAlbumId;
+    auto targetResultSet = uniStore->QuerySql(queryTargetAlbum);
+    if (targetResultSet == nullptr || targetResultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query target album!");
+        return -E_HAS_DB_ERROR;
+    }
+    targetResultSet->Close();
 
     MEDIA_INFO_LOG("Start set is me, album id: %{public}s", targetAlbumId.c_str());
     std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " + RENAME_OPERATION +
