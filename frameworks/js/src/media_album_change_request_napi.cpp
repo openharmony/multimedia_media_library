@@ -1668,6 +1668,7 @@ static bool SetCoverUriExecute(MediaAlbumChangeRequestAsyncContext& context)
     int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changedRows < 0) {
         NAPI_ERR_LOG("Failed to set cover uri, err: %{public}d", changedRows);
+        context.error = JS_INNER_FAIL;
         return false;
     }
     return true;
@@ -1763,6 +1764,7 @@ static bool ResetCoverUriExecute(MediaAlbumChangeRequestAsyncContext& context)
     int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changedRows < 0) {
         NAPI_ERR_LOG("Failed to reset cover uri, err: %{public}d", changedRows);
+        context.error = JS_E_INNER_FAIL;
         return false;
     }
     return true;
