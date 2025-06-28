@@ -99,6 +99,7 @@
 #include "create_album_vo.h"
 #include "delete_albums_vo.h"
 #include "trash_photos_vo.h"
+#include "file_uri.h"
 #include "grant_photo_uri_permission_vo.h"
 #include "grant_photo_uris_permission_vo.h"
 #include "cancel_photo_uri_permission_vo.h"
@@ -10373,8 +10374,12 @@ static bool ParseAndSetFileUriArray(const napi_env &env, OHOS::AAFwk::Want &want
         if (!ParseString(env, element, srcFileUri)) {
             return false;
         }
+        NAPI_INFO_LOG("srcFileUri is %{public}s.", srcFileUri.c_str());
+        AppFileService::ModuleFileUri::FileUri fileUri(srcFileUri);
+        std::string realUriPath = fileUri.ToString();
+        NAPI_INFO_LOG("realUriPath is %{public}s.", realUriPath.c_str());
 
-        srcFileUris.emplace_back(srcFileUri);
+        srcFileUris.emplace_back(realUriPath);
     }
 
     want.SetParam(CONFIRM_BOX_SRC_FILE_URIS, srcFileUris);
