@@ -8489,11 +8489,17 @@ static napi_value GetAlbumFetchOption(napi_env env, unique_ptr<MediaLibraryAsync
     }
 
     // The index of fetchOption should always be the last arg besides callback
-    napi_value fetchOption = context->argv[context->argc - 1 - hasCallback];
+    uint32_t argIndex = context->argc - ARGS_ONE - hasCallback;
+    auto args = context->argv;
+    if (argIndex < PARAM0 || argIndex >= sizeof(args)) {
+        NAPI_ERR_LOG("argIndex ilegal");
+        return nullptr;
+    }
+    napi_value fetchOption = args[argIndex];
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env, fetchOption, ALBUM_FETCH_OPT, context), JS_INNER_FAIL);
     if (!context->uri.empty()) {
         if (context->uri.find(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX) != std::string::npos) {
-            context->isAnalysisAlbum = 1; // 1:is an analysis album
+            context->isAnalysisAlbum = PARAM1; // 1:is an analysis album
         }
     }
     napi_value result = nullptr;
