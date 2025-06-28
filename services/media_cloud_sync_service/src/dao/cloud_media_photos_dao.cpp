@@ -1850,4 +1850,5 @@ int32_t CloudMediaPhotosDao::DeleteLocalFileNotExistRecord(const PhotosDto &phot
         ret, deletedRows, MediaFileUtils::DesensitizePath(photo.path).c_str());
     return ret;
 }
+// LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync
