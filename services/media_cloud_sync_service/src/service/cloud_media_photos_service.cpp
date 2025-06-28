@@ -1015,11 +1015,16 @@ std::string CloudMediaPhotosService::GetCloudPath(const std::string &filePath)
     return dfsPrefix + filePath.substr(sandboxPrefix.length());
 }
 
+// failure scenario handler for repush duplicate resource, never return E_OK. E_DATA when process success.
 int32_t CloudMediaPhotosService::HandleDuplicatedResource(const PhotosDto &photo)
 {
-    return this->photosDao_.RepushDuplicatedPhoto(photo);
+    int32_t ret = this->photosDao_.RepushDuplicatedPhoto(photo);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_RDB, "HandleDuplicatedResource, err: %{public}d, photo: %{public}s",
+        ret, photo.ToString().c_str());
+    return E_DATA;
 }
 
+// failure scenario handler for same cloud resource, never return E_OK. E_DATA when process success.
 int32_t CloudMediaPhotosService::HandleSameCloudResource(const PhotosDto &photo)
 {
     std::string path = photo.path;
@@ -1031,7 +1036,7 @@ int32_t CloudMediaPhotosService::HandleSameCloudResource(const PhotosDto &photo)
     CHECK_AND_RETURN_RET_LOG(!isFileExists, E_DATA, "HandleSameCloudResource push again %{public}s",
         MediaFileUtils::DesensitizePath(path).c_str());
     int32_t ret = this->photosDao_.DeleteLocalFileNotExistRecord(photo);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "DeleteLocalFileNotExistRecord err: %{public}d, path: %{public}s",
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_RDB, "DeleteLocalFileNotExistRecord err: %{public}d, path: %{public}s",
         ret, MediaFileUtils::DesensitizePath(path).c_str());
     std::string cloudPath = GetCloudPath(path);
     CHECK_AND_RETURN_RET_LOG(!cloudPath.empty(), E_DATA, "cloudPath is empty, path: %{public}s",
