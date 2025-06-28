@@ -442,9 +442,8 @@ pair<int32_t, NativeRdb::Results> TransactionOperations::Update(
         MEDIA_ERR_LOG("transaction_ is null");
         return {E_HAS_DB_ERROR, -1};
     }
-    ValuesBucket valuesSet(values);
 
-    return transaction_->Update(valuesSet, predicates, { returningField });
+    return transaction_->Update(values, predicates, { returningField });
 }
 
 pair<int32_t, NativeRdb::Results> TransactionOperations::Delete(const AbsRdbPredicates &predicates,

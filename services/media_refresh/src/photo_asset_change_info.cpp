@@ -148,7 +148,8 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
 {
     stringstream ss;
     if (isDetail) {
-        ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_ << ", uri_: " << uri_;
+        ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_ << ", uri_: ";
+        ss << MediaFileUtils::DesensitizeUri(uri_);
         ss << ", dateDay_: " << dateDay_ << ", ownerAlbumUri_: " << ownerAlbumUri_ << ", isFavorite_: " << isFavorite_;
         ss << ", mediaType_: " << mediaType_;
         ss << ", isHidden_: " << isHidden_ << ", dateTrashedMs_: " << dateTrashedMs_;
@@ -159,8 +160,8 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
         ss << ", timePending_: " << timePending_ << ", isTemp_: " << isTemp_;
         ss << ", burstCoverLevel_: " << burstCoverLevel_;
         ss << ", hiddenTime_: " << hiddenTime_ << ", thumbnailReady_: " << thumbnailReady_;
-        ss << ", displayName_: " << displayName_;
-        ss << ", path_: " << path_ << ", dirty_: " << dirty_;
+        ss << ", displayName_: " << MediaFileUtils::DesensitizePath(displayName_);
+        ss << ", path_: " << MediaFileUtils::DesensitizePath(path_) << ", dirty_: " << dirty_;
     } else {
         ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_;
     }
@@ -259,6 +260,7 @@ PhotoAssetChangeInfo& PhotoAssetChangeInfo::operator=(const PhotoAssetChangeInfo
         path_ = info.path_;
         uri_ = info.uri_;
         ownerAlbumUri_ = info.ownerAlbumUri_;
+        dirty_ = info.dirty_;
     }
     return *this;
 }
@@ -286,7 +288,8 @@ bool PhotoAssetChangeInfo::operator==(const PhotoAssetChangeInfo &info) const
         displayName_ == info.displayName_ &&
         path_ == info.path_ &&
         uri_ == info.uri_ &&
-        ownerAlbumUri_ == info.ownerAlbumUri_;
+        ownerAlbumUri_ == info.ownerAlbumUri_ &&
+        dirty_ == info.dirty_;
 }
 
 bool PhotoAssetChangeInfo::operator!=(const PhotoAssetChangeInfo &info) const
