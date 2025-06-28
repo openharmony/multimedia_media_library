@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <string>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "data_ability_observer_interface.h"
 #include "datashare_business_error.h"
@@ -31,20 +32,17 @@ namespace OHOS {
 using namespace std;
 using namespace AbilityRuntime;
 using namespace DataShare;
-static inline string FuzzString(const uint8_t *data, size_t size)
+static const int32_t NUM_BYTES = 1;
+FuzzedDataProvider *provider = nullptr;
+static inline Uri FuzzUri()
 {
-    return {reinterpret_cast<const char*>(data), size};
+    return Uri(provider->ConsumeBytesAsString(NUM_BYTES));
 }
 
-static inline Uri FuzzUri(const uint8_t *data, size_t size)
-{
-    return Uri(FuzzString(data, size));
-}
-
-static inline void RegisterObserverFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void RegisterObserverFuzzer(MediaDataShareExtAbility &extension)
 {
     sptr<AAFwk::IDataAbilityObserver> dataObserver;
-    extension.RegisterObserver(FuzzUri(data, size), dataObserver);
+    extension.RegisterObserver(FuzzUri(), dataObserver);
 }
 
 static inline MediaDataShareExtAbility Init()
@@ -58,7 +56,12 @@ static inline MediaDataShareExtAbility Init()
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
     auto extension = OHOS::Init();
-    OHOS::RegisterObserverFuzzer(extension, data, size);
+    OHOS::RegisterObserverFuzzer(extension);
     return 0;
 }

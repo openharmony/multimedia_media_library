@@ -17,6 +17,8 @@
 
 #include <cstdint>
 #include <string>
+#include <fstream>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "ability_context_impl.h"
 #include "media_log.h"
@@ -37,129 +39,78 @@
 namespace OHOS {
 using namespace std;
 using namespace AbilityRuntime;
-const int32_t EVEN = 2;
-static const int32_t E_ERR = -1;
+using namespace OHOS::Media;
+static const int32_t NUM_BYTES = 1;
+static const int32_t MIN_PHOTO_POSITION = 1;
+static const int32_t MIN_DFX_TYPE = 17;
+static const int32_t MAX_PHOTO_THUMB_STATUS = 2;
+static const int32_t MAX_PHOTO_POSITION = 3;
+static const int32_t MAX_DIRTY_TYPE = 8;
+static const int32_t MAX_DFX_TYPE = 20;
+static const int32_t MAX_BYTE_VALUE = 256;
+static const int32_t SEED_SIZE = 1024;
 const string TABLE = "PhotoAlbum";
 const string PHOTOS_TABLE = "Photos";
+FuzzedDataProvider *provider = nullptr;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
-static inline uint8_t FuzzUInt8(const uint8_t *data, size_t size)
+
+static inline Media::DfxType FuzzDfxType()
 {
-    if (data == nullptr || size < sizeof(uint8_t)) {
-        return 0;
-    }
-    return *data;
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(MIN_DFX_TYPE, MAX_DFX_TYPE);
+    return static_cast<Media::DfxType>(value);
 }
 
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
+static inline Media::DirtyType FuzzDirtyType()
 {
-    if (data == nullptr || size < sizeof(int32_t)) {
-        return 0;
-    }
-    return static_cast<int32_t>(*data);
-}
- 
-static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int64_t)) {
-        return 0;
-    }
-    return static_cast<int64_t>(*data);
-}
- 
-static inline string FuzzString(const uint8_t *data, size_t size)
-{
-    return {reinterpret_cast<const char*>(data), size};
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_DIRTY_TYPE);
+    return static_cast<Media::DirtyType>(value);
 }
 
-static inline bool FuzzBool(const uint8_t* data, size_t size)
+static inline int32_t FuzzPhotoPosition()
 {
-    if (size == 0) {
-        return false;
-    }
-    return (data[0] % EVEN) == 0;
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(MIN_PHOTO_POSITION, MAX_PHOTO_POSITION);
+    return static_cast<Media::PhotoPosition>(value);
 }
 
-static inline Media::DfxType FuzzDfxType(const uint8_t* data, size_t size)
+static inline int32_t FuzzPhotoThumbStatus()
 {
-    int32_t value = FuzzInt32(data, size);
-    if (value < static_cast<int32_t>(Media::DfxType::ALBUM_REMOVE_PHOTOS)) {
-        return Media::DfxType::ALBUM_REMOVE_PHOTOS;
-    } else if (value > static_cast<int32_t>(Media::DfxType::TRASH_PHOTO)) {
-        return Media::DfxType::TRASH_PHOTO;
-    }
-    return Media::DfxType::ALBUM_DELETE_ASSETS;
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_PHOTO_THUMB_STATUS);
+    return static_cast<Media::PhotoThumbStatus>(value);
 }
 
-static inline Media::DirtyType FuzzDirtyType(const uint8_t* data, size_t size)
+static int32_t InsertAlbumAsset()
 {
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(Media::DirtyType::TYPE_SYNCED) &&
-        value <= static_cast<int32_t>(Media::DirtyType::TYPE_COPY)) {
-        return static_cast<Media::DirtyType>(value);
-    }
-    return Media::DirtyType::TYPE_COPY;
-}
-
-static inline int32_t FuzzPhotoPosition(const uint8_t* data, size_t size)
-{
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(Media::PhotoPosition::LOCAL) &&
-        value <= static_cast<int32_t>(Media::PhotoPosition::LOCAL_AND_CLOUD)) {
-        return static_cast<Media::PhotoPosition>(value);
-    }
-    return Media::PhotoPosition::CLOUD;
-}
-
-static inline int32_t FuzzPhotoThumbStatus(const uint8_t* data, size_t size)
-{
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(Media::PhotoThumbStatus::DOWNLOADED) &&
-        value <= static_cast<int32_t>(Media::PhotoThumbStatus::NOT_DOWNLOADED)) {
-        return static_cast<Media::PhotoThumbStatus>(value);
-    }
-    return Media::PhotoThumbStatus::NOT_DOWNLOADED;
-}
-
-static int32_t InsertAlbumAsset(const uint8_t *data, size_t size)
-{
-    if (g_rdbStore == nullptr) {
-        return E_ERR;
-    }
     NativeRdb::ValuesBucket values;
-    values.PutInt(Media::PhotoAlbumColumns::ALBUM_SUBTYPE, FuzzInt32(data, size));
-    values.PutInt(Media::PhotoAlbumColumns::ALBUM_COUNT, FuzzInt32(data, size));
-    values.PutInt(Media::PhotoAlbumColumns::ALBUM_IMAGE_COUNT, FuzzInt32(data, size));
-    values.PutInt(Media::PhotoAlbumColumns::ALBUM_VIDEO_COUNT, FuzzInt32(data, size));
-    values.PutString(Media::PhotoAlbumColumns::ALBUM_CLOUD_ID, FuzzString(data, size));
+    values.PutInt(Media::PhotoAlbumColumns::ALBUM_SUBTYPE, provider->ConsumeIntegral<int32_t>());
+    values.PutInt(Media::PhotoAlbumColumns::ALBUM_COUNT, provider->ConsumeIntegral<int32_t>());
+    values.PutInt(Media::PhotoAlbumColumns::ALBUM_IMAGE_COUNT, provider->ConsumeIntegral<int32_t>());
+    values.PutInt(Media::PhotoAlbumColumns::ALBUM_VIDEO_COUNT, provider->ConsumeIntegral<int32_t>());
+    values.PutString(Media::PhotoAlbumColumns::ALBUM_CLOUD_ID, provider->ConsumeBytesAsString(NUM_BYTES));
     int64_t fileId = 0;
     g_rdbStore->Insert(fileId, TABLE, values);
     return static_cast<int32_t>(fileId);
 }
 
-static int32_t InsertPhotoAsset(const uint8_t *data, size_t size)
+static int32_t InsertPhotoAsset()
 {
-    if (g_rdbStore == nullptr) {
-        return E_ERR;
-    }
     NativeRdb::ValuesBucket values;
-    values.PutInt(Media::PhotoColumn::PHOTO_POSITION, FuzzPhotoPosition(data, size));
-    int32_t dirtyType = static_cast<int32_t>(FuzzDirtyType(data, size));
-    values.PutInt(Media::PhotoColumn::PHOTO_DIRTY, dirtyType);
-    values.PutInt(Media::PhotoColumn::PHOTO_THUMB_STATUS, FuzzPhotoThumbStatus(data, size));
-    int64_t thumbnailReady = FuzzBool(data, size) ? 3 : 2;
+    values.PutInt(Media::PhotoColumn::PHOTO_POSITION, FuzzPhotoPosition());
+    values.PutInt(Media::PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(FuzzDirtyType()));
+    values.PutInt(Media::PhotoColumn::PHOTO_THUMB_STATUS, FuzzPhotoThumbStatus());
+    int64_t thumbnailReady = provider->ConsumeBool() ? 3 : 2;
     values.PutLong(Media::PhotoColumn::PHOTO_THUMBNAIL_READY, thumbnailReady);
-    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
-    values.PutString(Media::PhotoColumn::PHOTO_CLOUD_ID, FuzzString(data, size));
+    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
+    values.PutString(Media::PhotoColumn::PHOTO_CLOUD_ID, provider->ConsumeBytesAsString(NUM_BYTES));
     int64_t fileId = 0;
     g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
     return static_cast<int32_t>(fileId);
 }
 
-static void DfxCollectorFuzzer(const uint8_t *data, size_t size)
+static void DfxCollectorFuzzer()
 {
     std::shared_ptr<Media::DfxCollector> dfxCollector = std::make_shared<Media::DfxCollector>();
-    std::string bundleName = FuzzString(data, size);
-    int32_t type = FuzzDfxType(data, size);
+    std::string bundleName = provider->ConsumeBytesAsString(NUM_BYTES);
+    int32_t type = FuzzDfxType();
     int32_t value = -1;
     dfxCollector->CollectDeleteBehavior(bundleName, type, value);
 
@@ -172,69 +123,49 @@ static void DfxCollectorFuzzer(const uint8_t *data, size_t size)
     type = Media::DfxType::ALBUM_DELETE_ASSETS;
     dfxCollector->CollectDeleteBehavior(bundleName, type, value);
 
-    std::string appName = FuzzString(data, size);
-    bool adapted = FuzzBool(data, size);
+    std::string appName = provider->ConsumeBytesAsString(NUM_BYTES);
+    bool adapted = provider->ConsumeBool();
     dfxCollector->CollectAdaptationToMovingPhotoInfo(appName, adapted);
 }
 
-static void DfxDatabaseUtilsFuzzer(const uint8_t *data, size_t size)
+static void DfxDatabaseUtilsFuzzer()
 {
-    const int32_t int32Count = 3;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
-        return;
-    }
-    int32_t offset = 0;
-    int32_t fileId = InsertAlbumAsset(data, size);
+    int32_t fileId = InsertAlbumAsset();
     MEDIA_INFO_LOG("fileId: %{public}d.", fileId);
-    int32_t albumSubtype = FuzzInt32(data + offset, size);
+    int32_t albumSubtype = provider->ConsumeIntegral<int32_t>();
     Media::DfxDatabaseUtils::QueryAlbumInfoBySubtype(albumSubtype);
-    fileId = InsertPhotoAsset(data, size);
+    fileId = InsertPhotoAsset();
     MEDIA_INFO_LOG("fileId: %{public}d.", fileId);
     Media::DfxDatabaseUtils::QueryDirtyCloudPhoto();
 
-    offset += sizeof(int32_t);
-    int32_t downloadedThumb = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t generatedThumb = FuzzInt32(data + offset, size);
+    int32_t downloadedThumb = provider->ConsumeIntegral<int32_t>();
+    int32_t generatedThumb = provider->ConsumeIntegral<int32_t>();
     Media::DfxDatabaseUtils::QueryDownloadedAndGeneratedThumb(downloadedThumb, generatedThumb);
 
-    bool isLocal = FuzzBool(data, size);
+    bool isLocal = provider->ConsumeBool();
     Media::DfxDatabaseUtils::QueryASTCThumb(isLocal);
     Media::DfxDatabaseUtils::QueryLCDThumb(isLocal);
 }
 
-static void DfxTimerFuzzer(const uint8_t *data, size_t size)
+static void DfxTimerFuzzer()
 {
-    const int32_t int32Count = 3;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(int64_t)) {
-        return;
-    }
-    int32_t offset = 0;
-    int32_t type = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t object = FuzzInt32(data + offset, size);
-    offset += sizeof(int64_t);
-    int64_t timeOut = FuzzInt64(data + offset, size);
-    bool isReport = FuzzBool(data, size);
+    int32_t type = provider->ConsumeIntegral<int32_t>();
+    int32_t object = provider->ConsumeIntegral<int32_t>();
+    int64_t timeOut = provider->ConsumeIntegral<int64_t>();
+    bool isReport = provider->ConsumeBool();
     std::shared_ptr<Media::DfxTimer> dfxTimer = std::make_shared<Media::DfxTimer>(type, object, timeOut, isReport);
-    offset += sizeof(int32_t);
-    dfxTimer->SetCallerUid(FuzzInt32(data + offset, size));
+    dfxTimer->SetCallerUid(provider->ConsumeIntegral<int32_t>());
     dfxTimer->End();
 }
 
-static void DfxTransactionFuzzer(const uint8_t *data, size_t size)
+static void DfxTransactionFuzzer()
 {
-    if (data == nullptr || size < sizeof(int32_t) + sizeof(uint8_t)) {
-        return;
-    }
-    int offset = 0;
-    std::string funcName = FuzzString(data, size);
+    std::string funcName = provider->ConsumeBytesAsString(NUM_BYTES);
     std::shared_ptr<Media::DfxTransaction> dfxTransaction = std::make_shared<Media::DfxTransaction>(funcName);
     dfxTransaction->Restart();
     dfxTransaction->ReportIfTimeout();
-    uint8_t abnormalType = FuzzUInt8(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t errCode = FuzzInt32(data + offset, size);
+    uint8_t abnormalType = provider->ConsumeIntegral<uint8_t>();
+    int32_t errCode = provider->ConsumeIntegral<int32_t>();
     dfxTransaction->ReportError(abnormalType, errCode);
 }
 
@@ -287,20 +218,46 @@ static void Init()
     g_rdbStore = rdbStore;
     SetTables();
 }
+
+static int32_t AddSeed()
+{
+    char *seedData = new char[OHOS::SEED_SIZE];
+    for (int i = 0; i < OHOS::SEED_SIZE; i++) {
+        seedData[i] = static_cast<char>(i % MAX_BYTE_VALUE);
+    }
+
+    const char* filename = "corpus/seed.txt";
+    std::ofstream file(filename, std::ios::binary | std::ios::trunc);
+    if (!file) {
+        MEDIA_ERR_LOG("Cannot open file filename:%{public}s", filename);
+        return Media::E_ERR;
+    }
+    file.write(seedData, OHOS::SEED_SIZE);
+    file.close();
+    delete[] seedData;
+    MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
+    return Media::E_OK;
+}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 {
+    OHOS::AddSeed();
     OHOS::Init();
     return 0;
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    OHOS::DfxCollectorFuzzer(data, size);
-    OHOS::DfxDatabaseUtilsFuzzer(data, size);
-    OHOS::DfxTimerFuzzer(data, size);
-    OHOS::DfxTransactionFuzzer(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::DfxCollectorFuzzer();
+    OHOS::DfxDatabaseUtilsFuzzer();
+    OHOS::DfxTimerFuzzer();
+    OHOS::DfxTransactionFuzzer();
     OHOS::DfxWorkerFuzzer();
     return 0;
 }
