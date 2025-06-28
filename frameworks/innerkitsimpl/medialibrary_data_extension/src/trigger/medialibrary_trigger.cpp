@@ -82,8 +82,8 @@ int32_t MediaLibraryTrigger::Process(std::shared_ptr<TransactionOperations> tran
 
     for (auto &changeData : changeDataVec) {
         MEDIA_DEBUG_LOG("Process PhotoAssetChangeData: %{public}s", changeData.ToString().c_str());
-        if (!isTriggerFireForRow(trans, changeData)) {
-            MEDIA_ERR_LOG("isTriggerFireForRow failed");
+        if (!IsTriggerFireForRow(trans, changeData)) {
+            MEDIA_ERR_LOG("IsTriggerFireForRow failed");
             return NativeRdb::E_ERROR;
         }
     }
@@ -97,14 +97,14 @@ int32_t MediaLibraryTrigger::Process(std::shared_ptr<TransactionOperations> tran
     return NativeRdb::E_OK;
 }
 
-bool MediaLibraryTrigger::isTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
+bool MediaLibraryTrigger::IsTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
     const AccurateRefresh::PhotoAssetChangeData& changeData)
 {
     CHECK_AND_RETURN_RET_LOG(trans, false, "input parameter trans is null");
     for (auto trigger : triggers_) {
-        MEDIA_DEBUG_LOG("%{public}s process isTriggerFireForRow", trigger->GetName().c_str());
-        if (!trigger->isTriggerFireForRow(trans, changeData)) {
-            MEDIA_ERR_LOG("%{public}s isTriggerFireForRow failed", trigger->GetName().c_str());
+        MEDIA_DEBUG_LOG("%{public}s process IsTriggerFireForRow", trigger->GetName().c_str());
+        if (!trigger->IsTriggerFireForRow(trans, changeData)) {
+            MEDIA_ERR_LOG("%{public}s IsTriggerFireForRow failed", trigger->GetName().c_str());
             return false;
         }
     }
@@ -169,17 +169,16 @@ bool InsertSourcePhotoCreateSourceAlbumTrigger::QueryAlbumIdByLPath(std::shared_
 
 bool InsertSourcePhotoCreateSourceAlbumTrigger::CheckValid() const
 {
-    bool valid = true;
     for (const auto&[packageKey, packageInfo] : packageInfoMap_) {
         MEDIA_DEBUG_LOG("packageInfo key: %{public}s, info: %{public}s",
             packageKey.c_str(), packageInfo.ToString().c_str());
         if (!packageInfo.IsValid()) {
             MEDIA_ERR_LOG("packageInfo with key: %{public}s is not valid, info: %{public}s",
                 packageKey.c_str(), packageInfo.ToString().c_str());
-            valid = false;
+            return false;
         }
     }
-    return valid;
+    return true;
 }
 
 
@@ -387,7 +386,7 @@ bool InsertSourcePhotoCreateSourceAlbumTrigger::CollectPackageInfo(std::shared_p
     return true;
 }
 
-bool InsertSourcePhotoCreateSourceAlbumTrigger::isTriggerFireForRow(
+bool InsertSourcePhotoCreateSourceAlbumTrigger::IsTriggerFireForRow(
     std::shared_ptr<TransactionOperations> trans, const AccurateRefresh::PhotoAssetChangeData& changeData)
 {
     CHECK_AND_RETURN_RET_LOG(trans, false, "input parameter trans is null");
@@ -434,7 +433,7 @@ int32_t InsertSourcePhotoCreateSourceAlbumTrigger::Process(std::shared_ptr<Trans
 bool InsertPhotoUpdateAlbumBundleNameTrigger::PackageInfo::IsValid() const
 {
     return packageName != "" && ownerPackage != "" &&
-        albumWoBundleNameCnt != -1;
+        albumWithoutBundleNameCnt != -1;
 }
 
 InsertPhotoUpdateAlbumBundleNameTrigger::InsertPhotoUpdateAlbumBundleNameTrigger()
@@ -453,7 +452,7 @@ int32_t InsertPhotoUpdateAlbumBundleNameTrigger::Process(std::shared_ptr<Transac
     for (const auto &[packageName, packageInfo] : packageInfoMap_) {
         CHECK_AND_RETURN_RET_LOG(packageInfo.IsValid(), NativeRdb::E_ERROR,
             "%{public}s packageInfo is not valid", packageName.c_str());
-        if (packageInfo.albumWoBundleNameCnt == 0) continue;
+        if (packageInfo.albumWithoutBundleNameCnt == 0) continue;
         triggeredPackages.push_back(packageName);
         sql += " WHEN " + PhotoAlbumColumns::ALBUM_NAME + " = " +
             MediaLibraryTriggerUtils::WrapQuotation(packageInfo.packageName) +
@@ -498,14 +497,14 @@ bool InsertPhotoUpdateAlbumBundleNameTrigger::isAlbumWoBundleName(std::shared_pt
     std::shared_ptr<NativeRdb::ResultSet> resultSet = trans->QueryByStep(sql);
     CHECK_AND_RETURN_RET_LOG(MediaLibraryTriggerUtils::CheckResultSet(resultSet), false,
         "fail to query album without bundleName");
-    packageInfo.albumWoBundleNameCnt = ResultSetUtils::GetIntValFromColumn(0, resultSet);
+    packageInfo.albumWithoutBundleNameCnt = ResultSetUtils::GetIntValFromColumn(0, resultSet);
     resultSet->Close();
     MEDIA_INFO_LOG("key:%{public}s albumWoBundleNameCnt:%{public}d",
         packageName.c_str(), packageInfo.albumWoBundleNameCnt);
     return true;
 }
 
-bool InsertPhotoUpdateAlbumBundleNameTrigger::isTriggerFireForRow(
+bool InsertPhotoUpdateAlbumBundleNameTrigger::IsTriggerFireForRow(
     std::shared_ptr<TransactionOperations> trans, const AccurateRefresh::PhotoAssetChangeData& changeData)
 {
     CHECK_AND_RETURN_RET_LOG(trans, false, "input parameter trans is null");

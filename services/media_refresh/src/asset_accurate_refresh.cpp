@@ -116,7 +116,6 @@ int32_t AssetAccurateRefresh::Insert(MediaLibraryCommand &cmd, int64_t &outRowId
         ret = trigger->Process(trans_, changeDataVec);
         CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
             "trigger fail to process, ret:%{public}d", ret);
-        ret = ACCURATE_REFRESH_RET_OK;
     }
     return ret;
 }
@@ -145,7 +144,6 @@ int32_t AssetAccurateRefresh::Insert(int64_t &outRowId, const std::string &table
         ret = trigger->Process(trans_, changeDataVec);
         CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
             "trigger fail to process, ret:%{public}d", ret);
-        ret = ACCURATE_REFRESH_RET_OK;
     }
     return ret;
 }
@@ -175,7 +173,6 @@ int32_t AssetAccurateRefresh::BatchInsert(int64_t &changedRows, const std::strin
         ret = trigger->Process(trans_, changeDataVec);
         CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
             "trigger fail to process, ret:%{public}d", ret);
-        ret = ACCURATE_REFRESH_RET_OK;
     }
     return ret;
 }
@@ -206,7 +203,6 @@ int32_t AssetAccurateRefresh::ExecuteForLastInsertedRowId(const std::string &sql
         ret = trigger->Process(trans_, changeDataVec);
         CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
             "trigger fail to process, ret:%{public}d", ret);
-        ret = ACCURATE_REFRESH_RET_OK;
     } else {
         ret = AccurateRefreshBase::ExecuteForLastInsertedRowId(sql, bindArgs, operation);
     }
@@ -238,7 +234,6 @@ int32_t AssetAccurateRefresh::ExecuteSql(const std::string &sql,
         ret = trigger->Process(trans_, changeDataVec);
         CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
             "trigger fail to process, ret:%{public}d", ret);
-        ret = ACCURATE_REFRESH_RET_OK;
     } else {
         ret = AccurateRefreshBase::ExecuteSql(sql, bindArgs, operation);
     }
@@ -270,7 +265,6 @@ int32_t AssetAccurateRefresh::ExecuteForChangedRowCount(int64_t &outValue, const
         ret = trigger->Process(trans_, changeDataVec);
         CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
             "trigger fail to process, ret:%{public}d", ret);
-        ret = ACCURATE_REFRESH_RET_OK;
     } else {
         ret = AccurateRefreshBase::ExecuteForChangedRowCount(outValue, sql, bindArgs, operation);
     }

@@ -43,9 +43,9 @@ public:
         const std::vector<AccurateRefresh::PhotoAssetChangeData>& changeDataVec) {return NativeRdb::E_ERROR;}
     virtual int32_t Process(std::shared_ptr<TransactionOperations> trans,
         const std::vector<AccurateRefresh::AlbumChangeData>& changeDataVec) {return NativeRdb::E_ERROR;}
-    virtual bool isTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
+    virtual bool IsTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
         const AccurateRefresh::PhotoAssetChangeData& changeData) {return false;}
-    virtual bool isTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
+    virtual bool IsTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
         const AccurateRefresh::AlbumChangeData& changeData) {return false;}
 };
 
@@ -55,7 +55,7 @@ public:
     MediaLibraryTrigger();
     int32_t Process(std::shared_ptr<TransactionOperations> trans,
         const std::vector<AccurateRefresh::PhotoAssetChangeData>& changeDataVec) override;
-    bool isTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
+    bool IsTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
         const AccurateRefresh::PhotoAssetChangeData& changeData) override;
 
 private:
@@ -69,7 +69,7 @@ public:
     InsertSourcePhotoCreateSourceAlbumTrigger();
     int32_t Process(std::shared_ptr<TransactionOperations> trans,
         const std::vector<AccurateRefresh::PhotoAssetChangeData>& changeDataVec) override;
-    bool isTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
+    bool IsTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
         const AccurateRefresh::PhotoAssetChangeData& changeData) override;
 
 private:
@@ -107,13 +107,13 @@ public:
     InsertPhotoUpdateAlbumBundleNameTrigger();
     int32_t Process(std::shared_ptr<TransactionOperations> trans,
         const std::vector<AccurateRefresh::PhotoAssetChangeData>& changeDataVec) override;
-    bool isTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
+    bool IsTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
         const AccurateRefresh::PhotoAssetChangeData& changeData) override;
 private:
     struct PackageInfo {
         std::string packageName;
         std::string ownerPackage;
-        int albumWoBundleNameCnt = -1;
+        int albumWithoutBundleNameCnt = -1;
         bool IsValid() const;
     };
     bool isAlbumWoBundleName(std::shared_ptr<TransactionOperations> trans, const std::string& packageName);
