@@ -1083,6 +1083,7 @@ static void SaveDefaultMetaDate(NativeRdb::ValuesBucket &values, bool isBurst, c
     values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::COVER));
     values.PutInt(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int32_t>(MetadataFlags::TYPE_NEW));
     values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, curTime);
+    values.PutLong(PhotoColumn::MEDIA_DATE_ADDED, curTime);
     values.PutLong(PhotoColumn::PHOTO_EDIT_TIME, editTime > 0 ? editTime : 0);
     if (isBurst) {
         values.Delete(PhotoColumn::PHOTO_SUBTYPE);
