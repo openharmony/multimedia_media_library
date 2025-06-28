@@ -45,6 +45,7 @@
 #include "thumbnail_image_framework_utils.h"
 #include "thumbnail_source_loading.h"
 #include "medialibrary_astc_stat.h"
+#include "medialibrary_object_utils.h"
 using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
@@ -601,6 +602,8 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
     }
     thumbnailWait.UpdateThumbnailMap();
     data.needCheckWaitStatus = false;
+    const std::string hasData = "1";
+    MediaLibraryObjectUtils::TryUpdateAnalysisProp(hasData);
     return true;
 }
 
