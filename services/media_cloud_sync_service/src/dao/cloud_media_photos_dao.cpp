@@ -1538,12 +1538,12 @@ int32_t CloudMediaPhotosDao::UpdateAlbumReplacedSignal(const std::vector<std::st
     }
 
     NativeRdb::ValuesBucket refreshValues;
-    std::string insertRefreshTableSql = "INSERT OR IGNORE INTO RefreshAlbum (REFRESH_ALBUM_ID) VALUES ";
+    std::string insertRefreshTableSql = "INSERT OR REPLACE INTO RefreshAlbum (REFRESH_ALBUM_ID, STATUS) VALUES ";
     for (size_t i = 0; i < albumIds.size(); ++i) {
         if (i != albumIds.size() - 1) {
-            insertRefreshTableSql += "(" + albumIds[i] + "), ";
+            insertRefreshTableSql += "(" + albumIds[i] + ", 0), ";
         } else {
-            insertRefreshTableSql += "(" + albumIds[i] + ");";
+            insertRefreshTableSql += "(" + albumIds[i] + ", 0);";
         }
     }
     MEDIA_INFO_LOG("output insertRefreshTableSql:%{public}s", insertRefreshTableSql.c_str());
