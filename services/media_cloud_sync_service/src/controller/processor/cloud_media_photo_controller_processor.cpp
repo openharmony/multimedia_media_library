@@ -338,6 +338,7 @@ void CloudMediaPhotoControllerProcessor::ConvertToPhotosDto(const OnModifyRecord
 {
     dto.cloudId = recordVo.cloudId;
     dto.fileId = recordVo.fileId;
+    dto.fileName = recordVo.fileName;
     dto.modifiedTime = recordVo.modifyTime;
     dto.metaDateModified = recordVo.metaDateModified;
     dto.path = recordVo.path;

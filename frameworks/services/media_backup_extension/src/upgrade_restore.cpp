@@ -58,6 +58,8 @@ const int32_t IMAGE_ALBUM_ID = 7;
 const int32_t VIDEO_ALBUM_ID = 2;
 const int32_t FAVORITE_ALBUM_ID = 1;
 const int32_t CLOUD_ENHANCEMENT_ALBUM_ID = 8;
+const std::string LPATH_SCREEN_SHOTS = "/Pictures/Screenshots";
+const std::string LPATH_SCREEN_RECORDS = "/Pictures/Screenrecords";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -1598,6 +1600,15 @@ void UpgradeRestore::InheritManualCover()
         if (RecordAlbumCoverInfo(resultSet, albumCoverInfo) != E_OK) {
             continue;
         }
+        auto lPath = albumCoverInfo.lPath;
+        if (this->photosRestore_.ToLower(lPath) ==
+            this->photosRestore_.ToLower(LPATH_SCREEN_SHOTS)) {
+            AlbumCoverInfo screenRecordsCoverInfo;
+            screenRecordsCoverInfo.albumId = 0;
+            screenRecordsCoverInfo.lPath = LPATH_SCREEN_RECORDS;
+            screenRecordsCoverInfo.coverUri = albumCoverInfo.coverUri;
+            albumCoverinfos.emplace_back(screenRecordsCoverInfo);
+        }
         albumCoverinfos.emplace_back(albumCoverInfo);
     }
     resultSet->Close();
@@ -1650,7 +1661,11 @@ void UpgradeRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCover
         int32_t changeRows = 0;
         std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
             make_unique<NativeRdb::AbsRdbPredicates>(PhotoAlbumColumns::TABLE);
-        predicates->EqualTo(PhotoAlbumColumns::ALBUM_ID, albumCoverInfo.albumId);
+        predicates->BeginWrap()
+        ->EqualTo(PhotoAlbumColumns::ALBUM_ID, albumCoverInfo.albumId)
+        ->Or()
+        ->EqualTo(PhotoAlbumColumns::ALBUM_LPATH, albumCoverInfo.lPath)
+        ->EndWrap();
         NativeRdb::ValuesBucket updateBucket;
         updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE,
             static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER));

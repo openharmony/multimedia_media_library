@@ -26,100 +26,196 @@
 #include "media_observer_manager.h"
 #include "medialibrary_errno.h"
 #include "notification_test_data.h"
+#include "get_self_permissions.h"
+#include "media_datashare_stub_impl.h"
+#include "data_ability_observer_interface.h"
+#include "observer_info.h"
+#include "data_ability_observer_stub.h"
+#include "notify_task_worker.h"
 
 #include <string>
 #include <unordered_set>
 
 
-using namespace std;
-using namespace OHOS;
 using namespace testing::ext;
+using namespace OHOS::AbilityRuntime;
+using namespace OHOS::AAFwk;
 
 namespace OHOS {
 namespace Media {
 
-void NotificationDistributionTest::SetUpTestCase(void) {}
+void NotificationDistributionTest::SetUpTestCase(void)
+{
+    Notification::NotificationTestData::SetHapPermission();
+}
 
-void NotificationDistributionTest::TearDownTestCase(void) {}
+void NotificationDistributionTest::TearDownTestCase(void)
+{}
 
-void NotificationDistributionTest::SetUp() {}
+void NotificationDistributionTest::SetUp()
+{}
 
-void NotificationDistributionTest::TearDown(void) {}
+void NotificationDistributionTest::TearDown(void)
+{
+    MEDIA_INFO_LOG("NotificationDistributionTest TearDown start");
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    observerManager->observers_.clear();
+    MEDIA_INFO_LOG("NotificationDistributionTest TearDown end");
+}
 
 HWTEST_F(NotificationDistributionTest, medialib_distribution_test001, TestSize.Level1)
 {
+    // 一个PHOTO_URI类型的observer
     MEDIA_INFO_LOG("enter medialib_distribution_test001");
-    int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo({});
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+    Notification::NotifyUriType uri = Notification::NotifyUriType::PHOTO_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(uri, dataObserver);
+    std::vector<Notification::ObserverInfo> observerInfos = observerManager->FindObserver(uri);
+    if (observerInfos.size() < 0) {
+        MEDIA_INFO_LOG("observerInfos is nullptr");
+    }
+    observerMap[uri] = observerInfos;
+    std::vector<Notification::NotifyInfo> notifyInfos =
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test001", observerMap);
+    EXPECT_TRUE(!notifyInfos.empty());
+    int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test001");
 }
 
 HWTEST_F(NotificationDistributionTest, medialib_distribution_test002, TestSize.Level1)
 {
+    // 一个HIDDEN_PHOTO_URI类型的observer
     MEDIA_INFO_LOG("enter medialib_distribution_test002");
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+    Notification::NotifyUriType uri = Notification::NotifyUriType::HIDDEN_PHOTO_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(uri, dataObserver);
+    std::vector<Notification::ObserverInfo> observerInfos = observerManager->FindObserver(uri);
+    observerMap[uri] = observerInfos;
     std::vector<Notification::NotifyInfo> notifyInfos =
-        Notification::NotificationTestData::buildAssetsNotifyInfo("test002");
-    EXPECT_TRUE(!notifyInfos.empty());
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test002", observerMap);
+    EXPECT_TRUE(notifyInfos.empty());
     int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test002");
 }
-
 HWTEST_F(NotificationDistributionTest, medialib_distribution_test003, TestSize.Level1)
 {
+    // 一个TRASH_PHOTO_URI类型的observer
     MEDIA_INFO_LOG("enter medialib_distribution_test003");
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+    Notification::NotifyUriType uri = Notification::NotifyUriType::TRASH_PHOTO_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(uri, dataObserver);
+    std::vector<Notification::ObserverInfo> observerInfos = observerManager->FindObserver(uri);
+    observerMap[uri] = observerInfos;
     std::vector<Notification::NotifyInfo> notifyInfos =
-        Notification::NotificationTestData::buildAssetsNotifyInfo("test003");
-    EXPECT_TRUE(!notifyInfos.empty());
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test003", observerMap);
     int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test003");
 }
+
 HWTEST_F(NotificationDistributionTest, medialib_distribution_test004, TestSize.Level1)
 {
+    // 一个PHOTO_ALBUM_URI类型的observer
     MEDIA_INFO_LOG("enter medialib_distribution_test004");
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+    Notification::NotifyUriType uri = Notification::NotifyUriType::PHOTO_ALBUM_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(uri, dataObserver);
+    std::vector<Notification::ObserverInfo> observerInfos = observerManager->FindObserver(uri);
+    observerMap[uri] = observerInfos;
     std::vector<Notification::NotifyInfo> notifyInfos =
-        Notification::NotificationTestData::buildAssetsNotifyInfo("test004");
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test004", observerMap);
     int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test004");
 }
 
+
 HWTEST_F(NotificationDistributionTest, medialib_distribution_test005, TestSize.Level1)
 {
+    // 一个HIDDEN_ALBUM_URI类型的observer
     MEDIA_INFO_LOG("enter medialib_distribution_test005");
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+    Notification::NotifyUriType uri = Notification::NotifyUriType::HIDDEN_ALBUM_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(uri, dataObserver);
+    std::vector<Notification::ObserverInfo> observerInfos = observerManager->FindObserver(uri);
+    observerMap[uri] = observerInfos;
     std::vector<Notification::NotifyInfo> notifyInfos =
-        Notification::NotificationTestData::buildAssetsNotifyInfo("test005");
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test005", observerMap);
     int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test005");
 }
 
-
 HWTEST_F(NotificationDistributionTest, medialib_distribution_test006, TestSize.Level1)
 {
+    // 一个TRASH_ALBUM_URI类型的observer
     MEDIA_INFO_LOG("enter medialib_distribution_test006");
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+    Notification::NotifyUriType uri = Notification::NotifyUriType::TRASH_ALBUM_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(uri, dataObserver);
+    std::vector<Notification::ObserverInfo> observerInfos = observerManager->FindObserver(uri);
+    observerMap[uri] = observerInfos;
     std::vector<Notification::NotifyInfo> notifyInfos =
-        Notification::NotificationTestData::buildAssetsNotifyInfo("test006");
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test006", observerMap);
     int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test006");
 }
-
 HWTEST_F(NotificationDistributionTest, medialib_distribution_test007, TestSize.Level1)
 {
+    // HIDDEN_ALBUM_URI、TRASH_ALBUM_URI类型的observer
     MEDIA_INFO_LOG("enter medialib_distribution_test007");
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+
+    Notification::NotifyUriType hiddenUri = Notification::NotifyUriType::HIDDEN_ALBUM_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(hiddenUri, dataObserver);
+    std::vector<Notification::ObserverInfo> observerInfos = observerManager->FindObserver(hiddenUri);
+    observerMap[hiddenUri] = observerInfos;
+
+    Notification::NotifyUriType trashUri = Notification::NotifyUriType::TRASH_ALBUM_URI;
+    sptr<IDataAbilityObserver> secondDataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(trashUri, secondDataObserver);
+    std::vector<Notification::ObserverInfo> secondObserverInfos = observerManager->FindObserver(trashUri);
+    observerMap[trashUri] = secondObserverInfos;
+
     std::vector<Notification::NotifyInfo> notifyInfos =
-        Notification::NotificationTestData::buildAssetsNotifyInfo("test007");
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test007", observerMap);
     int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test007");
 }
+
 HWTEST_F(NotificationDistributionTest, medialib_distribution_test008, TestSize.Level1)
 {
+    // 两个PHOTO_URI类型的observer
     MEDIA_INFO_LOG("enter medialib_distribution_test008");
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+    Notification::NotifyUriType uri = Notification::NotifyUriType::PHOTO_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    sptr<IDataAbilityObserver> secondDataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(uri, dataObserver);
+    observerManager->AddObserver(uri, secondDataObserver);
+    std::vector<Notification::ObserverInfo> observerInfos = observerManager->FindObserver(uri);
+    observerMap[uri] = observerInfos;
     std::vector<Notification::NotifyInfo> notifyInfos =
-        Notification::NotificationTestData::buildAssetsNotifyInfo("test008");
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test008", observerMap);
     int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test008");
@@ -127,9 +223,22 @@ HWTEST_F(NotificationDistributionTest, medialib_distribution_test008, TestSize.L
 
 HWTEST_F(NotificationDistributionTest, medialib_distribution_test009, TestSize.Level1)
 {
+    //存在其中一个notify的isForRecheck为true
     MEDIA_INFO_LOG("enter medialib_distribution_test009");
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+    Notification::NotifyUriType uri = Notification::NotifyUriType::TRASH_PHOTO_URI;
+    Notification::NotifyUriType secondUri = Notification::NotifyUriType::PHOTO_ALBUM_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    sptr<IDataAbilityObserver> secondDataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(uri, dataObserver);
+    observerManager->AddObserver(secondUri, secondDataObserver);
+    std::vector<Notification::ObserverInfo> observerInfos = observerManager->FindObserver(uri);
+    std::vector<Notification::ObserverInfo> secondObserverInfos = observerManager->FindObserver(secondUri);
+    observerMap[uri] = observerInfos;
+    observerMap[secondUri] = secondObserverInfos;
     std::vector<Notification::NotifyInfo> notifyInfos =
-        Notification::NotificationTestData::buildAssetsNotifyInfo("test009");
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test009", observerMap);
     int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test009");
@@ -137,9 +246,25 @@ HWTEST_F(NotificationDistributionTest, medialib_distribution_test009, TestSize.L
 
 HWTEST_F(NotificationDistributionTest, medialib_distribution_test010, TestSize.Level1)
 {
+    // 存在changeInfos是空
     MEDIA_INFO_LOG("enter medialib_distribution_test010");
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+    Notification::NotifyUriType uri = Notification::NotifyUriType::HIDDEN_PHOTO_URI;
+    Notification::NotifyUriType photoUri = Notification::NotifyUriType::PHOTO_URI;
+    Notification::NotifyUriType trashPhotoUri = Notification::NotifyUriType::TRASH_PHOTO_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(uri, dataObserver);
+    observerManager->AddObserver(photoUri, dataObserver);
+    observerManager->AddObserver(trashPhotoUri, dataObserver);
+    std::vector<Notification::ObserverInfo> observerInfos = observerManager->FindObserver(uri);
+    std::vector<Notification::ObserverInfo> photoUriObserverInfos = observerManager->FindObserver(photoUri);
+    std::vector<Notification::ObserverInfo> trashPhotoUriObserverInfos = observerManager->FindObserver(trashPhotoUri);
+    observerMap[uri] = observerInfos;
+    observerMap[photoUri] = photoUriObserverInfos;
+    observerMap[trashPhotoUri] = trashPhotoUriObserverInfos;
     std::vector<Notification::NotifyInfo> notifyInfos =
-        Notification::NotificationTestData::buildAssetsNotifyInfo("test010");
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test010", observerMap);
     int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test010");
@@ -147,9 +272,23 @@ HWTEST_F(NotificationDistributionTest, medialib_distribution_test010, TestSize.L
 
 HWTEST_F(NotificationDistributionTest, medialib_distribution_test011, TestSize.Level1)
 {
+    // 存在多个changeInfos
     MEDIA_INFO_LOG("enter medialib_distribution_test011");
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+    Notification::NotifyUriType uri = Notification::NotifyUriType::PHOTO_URI;
+    Notification::NotifyUriType photoUri = Notification::NotifyUriType::HIDDEN_ALBUM_URI;
+    Notification::NotifyUriType trashPhotoUri = Notification::NotifyUriType::TRASH_ALBUM_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(uri, dataObserver);
+    observerManager->AddObserver(photoUri, dataObserver);
+    observerManager->AddObserver(trashPhotoUri, dataObserver);
+    std::vector<Notification::ObserverInfo> observerInfos = observerManager->FindObserver(uri);
+    observerMap[uri] = observerInfos;
+    observerMap[photoUri] = observerManager->FindObserver(photoUri);
+    observerMap[trashPhotoUri] = observerManager->FindObserver(trashPhotoUri);
     std::vector<Notification::NotifyInfo> notifyInfos =
-        Notification::NotificationTestData::buildAssetsNotifyInfo("test011");
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test011", observerMap);
     int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test011");
@@ -158,11 +297,40 @@ HWTEST_F(NotificationDistributionTest, medialib_distribution_test011, TestSize.L
 HWTEST_F(NotificationDistributionTest, medialib_distribution_test012, TestSize.Level1)
 {
     MEDIA_INFO_LOG("enter medialib_distribution_test012");
+    std::unordered_map<Notification::NotifyUriType, std::vector<Notification::ObserverInfo>> observerMap;
+    Notification::NotifyUriType uri = Notification::NotifyUriType::PHOTO_URI;
+    Notification::NotifyUriType trashPhotoUri = Notification::NotifyUriType::TRASH_PHOTO_URI;
+    Notification::NotifyUriType photoAlbumUri = Notification::NotifyUriType::PHOTO_ALBUM_URI;
+    Notification::NotifyUriType trashAlbumUri = Notification::NotifyUriType::TRASH_ALBUM_URI;
+    auto observerManager = Notification::MediaObserverManager::GetObserverManager();
+    sptr<IDataAbilityObserver> dataObserver = new (std::nothrow) IDataAbilityObserverTest();
+    observerManager->AddObserver(uri, dataObserver);
+    observerManager->AddObserver(trashPhotoUri, dataObserver);
+    observerManager->AddObserver(photoAlbumUri, dataObserver);
+    observerManager->AddObserver(trashAlbumUri, dataObserver);
+    std::vector<Notification::ObserverInfo> observerInfos = observerManager->FindObserver(uri);
+    std::vector<Notification::ObserverInfo> trashPhotoUriObs = observerManager->FindObserver(trashPhotoUri);
+    std::vector<Notification::ObserverInfo> photoAlbumUriObs = observerManager->FindObserver(photoAlbumUri);
+    std::vector<Notification::ObserverInfo> trashAlbumUriObs = observerManager->FindObserver(trashAlbumUri);
+    observerMap[uri] = observerInfos;
+    observerMap[trashPhotoUri] = trashPhotoUriObs;
+    observerMap[photoAlbumUri] = photoAlbumUriObs;
+    observerMap[trashAlbumUri] = trashAlbumUriObs;
     std::vector<Notification::NotifyInfo> notifyInfos =
-        Notification::NotificationTestData::buildAssetsNotifyInfo("test012");
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test012", observerMap);
     int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test012");
+}
+
+HWTEST_F(NotificationDistributionTest, medialib_distribution_test013, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter medialib_distribution_test013");
+    std::vector<Notification::NotifyInfo> notifyInfos =
+        Notification::NotificationTestData::buildAssetsNotifyInfo("test013", {});
+    int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
+    EXPECT_TRUE(ret == E_OK);
+    MEDIA_INFO_LOG("end medialib_distribution_test013");
 }
 
 } // namespace Media

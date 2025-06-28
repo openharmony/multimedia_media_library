@@ -1083,6 +1083,7 @@ static void SaveDefaultMetaDate(NativeRdb::ValuesBucket &values, bool isBurst, c
     values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::COVER));
     values.PutInt(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int32_t>(MetadataFlags::TYPE_NEW));
     values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, curTime);
+    values.PutLong(PhotoColumn::MEDIA_DATE_ADDED, curTime);
     values.PutLong(PhotoColumn::PHOTO_EDIT_TIME, editTime > 0 ? editTime : 0);
     if (isBurst) {
         values.Delete(PhotoColumn::PHOTO_SUBTYPE);
@@ -1527,46 +1528,63 @@ static int32_t CopyAlbumMetaData(const std::shared_ptr<MediaLibraryRdbStore> upg
 }
 
 static int32_t BatchDeleteAlbumAndUpdateRelation(const int32_t &oldAlbumId, const int64_t &newAlbumId,
-    bool isCloudAblum, std::shared_ptr<TransactionOperations> trans)
+    bool isCloudAblum, std::shared_ptr<TransactionOperations> trans,
+    shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
-    if (trans == nullptr) {
-        MEDIA_ERR_LOG("transactionOprn is null");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     std::string DELETE_EXPIRED_ALBUM = "";
     if (isCloudAblum) {
         DELETE_EXPIRED_ALBUM = "UPDATE PhotoAlbum SET dirty = '4' WHERE album_id = " + to_string(oldAlbumId);
     } else {
         DELETE_EXPIRED_ALBUM = "DELETE FROM PhotoAlbum WHERE album_id = " + to_string(oldAlbumId);
     }
-    int32_t ret = trans->ExecuteSql(DELETE_EXPIRED_ALBUM);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("DELETE expired album failed, ret = %{public}d, albumId is %{public}d",
-            ret, oldAlbumId);
-        return E_HAS_DB_ERROR;
+    int32_t ret = E_HAS_DB_ERROR;
+    if (albumRefresh != nullptr && assetRefresh != nullptr) {
+        RdbPredicates rdbPredicatesAlbum(PhotoAlbumColumns::TABLE);
+        rdbPredicatesAlbum.EqualTo(PhotoAlbumColumns::ALBUM_ID, oldAlbumId);
+        albumRefresh->Init(rdbPredicatesAlbum);
+        RdbPredicates rdbPredicatesPhoto(PhotoColumn::PHOTOS_TABLE);
+        rdbPredicatesPhoto.And()->NotEqualTo(PhotoColumn::PHOTO_DIRTY, '4');
+        rdbPredicatesPhoto.And()->EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, oldAlbumId);
+        assetRefresh->Init(rdbPredicatesPhoto);
+        ret = albumRefresh->ExecuteSql(
+            DELETE_EXPIRED_ALBUM, isCloudAblum ? AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE :
+            AccurateRefresh::RdbOperation::RDB_OPERATION_REMOVE);
+    } else {
+        ret = trans->ExecuteSql(DELETE_EXPIRED_ALBUM);
     }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "DELETE expired album failed, ret = %{public}d, albumId is %{public}d",
+        ret, oldAlbumId);
     const std::string UPDATE_NEW_ALBUM_ID_IN_PHOTO_MAP = "UPDATE PhotoMap SET map_album = " +
         to_string(newAlbumId) + " WHERE dirty != '4' AND map_album = " + to_string(oldAlbumId);
     ret = trans->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTO_MAP);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Update relationship in photo map fails, ret = %{public}d, albumId is %{public}d",
-            ret, oldAlbumId);
-        return E_HAS_DB_ERROR;
-    }
+
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Update relationship in photo map fails, ret = %{public}d, albumId is %{public}d",
+        ret, oldAlbumId);
+
     const std::string UPDATE_NEW_ALBUM_ID_IN_PHOTOS = "UPDATE Photos SET owner_album_id = " +
         to_string(newAlbumId) + " WHERE dirty != '4' AND owner_album_id = " + to_string(oldAlbumId);
-    ret = trans->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTOS);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Update relationship in photo map fails, ret = %{public}d, albumId is %{public}d",
-            ret, oldAlbumId);
-        return E_HAS_DB_ERROR;
+
+    if (assetRefresh != nullptr) {
+        ret = assetRefresh->ExecuteSql(
+            UPDATE_NEW_ALBUM_ID_IN_PHOTOS, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+    } else {
+        ret = trans->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTOS);
     }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Update relationship in photo map fails, ret = %{public}d, albumId is %{public}d",
+        ret, oldAlbumId);
     return E_OK;
 }
 
 int32_t MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(
     const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const int32_t &oldAlbumId, const int64_t &newAlbumId,
-    bool isCloudAblum)
+    bool isCloudAblum, std::shared_ptr<TransactionOperations> trans,
+    shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     if (upgradeStore == nullptr) {
         MEDIA_ERR_LOG("invalid rdbstore or nullptr map");
@@ -1577,14 +1595,19 @@ int32_t MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(
         return E_INVALID_ARGUMENTS;
     }
 
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t errCode = E_OK;
-    std::function<int(void)> func = [&]()->int {
-        return BatchDeleteAlbumAndUpdateRelation(oldAlbumId, newAlbumId, isCloudAblum, trans);
-    };
-    errCode = trans->RetryTrans(func);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("DeleteAlbumAndUpdateRelationship trans retry fail!, ret = %{public}d", errCode);
+    if (albumRefresh != nullptr && assetRefresh != nullptr) {
+        errCode = BatchDeleteAlbumAndUpdateRelation(
+            oldAlbumId, newAlbumId, isCloudAblum, trans, albumRefresh, assetRefresh);
+    } else {
+        std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+        std::function<int(void)> func = [&]()->int {
+            return BatchDeleteAlbumAndUpdateRelation(oldAlbumId, newAlbumId, isCloudAblum, trans, nullptr, nullptr);
+        };
+        errCode = trans->RetryTrans(func);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("DeleteAlbumAndUpdateRelationship trans retry fail!, ret = %{public}d", errCode);
+        }
     }
     return errCode;
 }

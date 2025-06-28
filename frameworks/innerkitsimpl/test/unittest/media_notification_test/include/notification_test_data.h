@@ -26,14 +26,88 @@
 
 namespace OHOS {
 namespace Media {
+class IRemoteObjectTest : public IRemoteObject {
+    IRemoteObjectTest() : IRemoteObject(u"mock_i_remote_object") {}
+
+    ~IRemoteObjectTest() {}
+
+    int32_t GetObjectRefCount() override
+    {
+        return 0;
+    }
+
+    int SendRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override
+    {
+        return 0;
+    }
+
+    bool IsProxyObject() const override
+    {
+        return true;
+    }
+
+    bool CheckObjectLegality() const override
+    {
+        return true;
+    }
+
+    bool AddDeathRecipient(const sptr<DeathRecipient> &recipient) override
+    {
+        return true;
+    }
+
+    bool RemoveDeathRecipient(const sptr<DeathRecipient> &recipient) override
+    {
+        return true;
+    }
+
+    bool Marshalling(Parcel &parcel) const override
+    {
+        return true;
+    }
+
+    sptr<IRemoteBroker> AsInterface() override
+    {
+        return nullptr;
+    }
+
+    int Dump(int fd, const std::vector<std::u16string> &args) override
+    {
+        return 0;
+    }
+
+    std::u16string GetObjectDescriptor() const
+    {
+        std::u16string descriptor = std::u16string();
+        return descriptor;
+    }
+};
+
+class IDataAbilityObserverTest : public AAFwk::DataAbilityObserverStub {
+public:
+    IDataAbilityObserverTest() {}
+    ~IDataAbilityObserverTest() {}
+    void OnChange() override {}
+    sptr<IRemoteObject> AsObject() override
+    {
+        if (objectTest == nullptr) {
+            objectTest = new (std::nothrow)IRemoteObjectTest();
+        }
+        return objectTest;
+    }
+
+private:
+    sptr<IRemoteObjectTest> objectTest;
+};
 namespace Notification {
     extern const AccurateRefresh::PhotoAssetChangeData deletePhotoData1;
     extern const AccurateRefresh::PhotoAssetChangeData deletePhotoData2;
     extern const AccurateRefresh::AlbumChangeData albumChangeData1;
     extern const AccurateRefresh::AlbumChangeData albumChangeData2;
-    extern const AccurateRefresh::AlbumChangeData albumChangeData3;
 class NotificationTestData {
 public:
+    EXPORT NotificationTestData();
+    EXPORT ~NotificationTestData();
     static std::vector<Notification::MediaChangeInfo> getPhotoChangeInfos(
         const Notification::NotifyUriType& notifyUriType,
         const Notification::NotifyType& notifyType,  bool isForRecheck);
@@ -44,7 +118,8 @@ public:
         const Notification::NotifyType& notifyType, bool isForRecheck);
     static std::vector<Notification::MediaChangeInfo> getAlbumChangeInfosByUriType(
         const Notification::NotifyUriType& notifyUriType, bool isForRecheck);
-    static std::vector<Notification::NotifyInfo> buildAssetsNotifyInfo(const std::string &testName);
+    static std::vector<Notification::NotifyInfo> buildAssetsNotifyInfo(const std::string &testName,
+        std::unordered_map<NotifyUriType, std::vector<ObserverInfo>> observerMap);
     static std::vector<Notification::MediaChangeInfo> buildAssetsMediaChangeInfo();
     static std::vector<NotifyInfoInner> buildPhotoNotifyTaskInfo(NotifyTableType tableType,
         std::vector<AccurateRefresh::PhotoAssetChangeData> infos,
@@ -52,6 +127,7 @@ public:
     static std::vector<NotifyInfoInner> buildAlbumNotifyTaskInfo(NotifyTableType tableType,
         std::vector<AccurateRefresh::AlbumChangeData> infos,
         Notification::AlbumRefreshOperation operationType, NotifyLevel notifyLevel);
+    static void SetHapPermission();
 };
 } // namespace Notification
 } // namespace Media

@@ -57,7 +57,8 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
     { PhotoColumn::PHOTO_HIDDEN_TIME, TYPE_INT64 },
     { PhotoColumn::PHOTO_THUMBNAIL_READY, TYPE_INT64 },
     { PhotoColumn::MEDIA_NAME, TYPE_STRING },
-    { PhotoColumn::MEDIA_FILE_PATH, TYPE_STRING }
+    { PhotoColumn::MEDIA_FILE_PATH, TYPE_STRING },
+    { PhotoColumn::PHOTO_DIRTY, TYPE_INT32 },
 };
 
 const vector<std::string> PhotoAssetChangeInfo::photoAssetColumns_ = []() {
@@ -121,6 +122,8 @@ vector<PhotoAssetChangeInfo> PhotoAssetChangeInfo::GetInfoFromResult(const share
             GetDataType(PhotoColumn::MEDIA_NAME)));
         assetChangeInfo.path_ = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet,
             GetDataType(PhotoColumn::MEDIA_FILE_PATH)));
+        assetChangeInfo.dirty_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
+            PhotoColumn::PHOTO_DIRTY, resultSet, GetDataType(PhotoColumn::PHOTO_DIRTY)));
 
         assetChangeInfo.uri_ = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
             to_string(assetChangeInfo.fileId_), MediaFileUtils::GetExtraUri(assetChangeInfo.displayName_,
@@ -157,7 +160,7 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
         ss << ", burstCoverLevel_: " << burstCoverLevel_;
         ss << ", hiddenTime_: " << hiddenTime_ << ", thumbnailReady_: " << thumbnailReady_;
         ss << ", displayName_: " << displayName_;
-        ss << ", path_: " << path_ << ", path_: " << path_;
+        ss << ", path_: " << path_ << ", dirty_: " << dirty_;
     } else {
         ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_;
     }

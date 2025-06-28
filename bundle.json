@@ -92,7 +92,10 @@
           "json",
           "cJSON",
           "config_policy",
-          "config_policy_ext"
+          "user_file_service",
+          "image_framework",
+          "media_foundation",
+          "qos_manager"
         ]
       },
       "build": {

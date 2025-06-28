@@ -23,14 +23,14 @@ namespace OHOS::Media {
 
 bool GetUriFromFilePathReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = parcel.ReadString(this->fileId);
+    bool status = parcel.ReadString(this->tempPath);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 
 bool GetUriFromFilePathReqBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = parcel.WriteString(this->fileId);
+    bool status = parcel.WriteString(this->tempPath);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }

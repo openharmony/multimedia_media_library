@@ -698,6 +698,7 @@ int32_t MediaAssetsService::CreateAssetForApp(CreateAssetDto& dto)
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
 
     cmd.SetValueBucket(assetInfo);
+    cmd.SetApiParam("tokenId", to_string(dto.tokenId));
     cmd.SetDeviceName(GetLocalDeviceName());
     cmd.SetBundleName(GetClientBundleName());
     int32_t ret = MediaLibraryPhotoOperations::Create(cmd);

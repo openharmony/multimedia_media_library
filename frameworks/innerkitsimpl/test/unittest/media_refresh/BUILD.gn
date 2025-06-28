@@ -39,7 +39,6 @@ ohos_unittest("media_refresh_test") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/accurate_refresh_base.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/accurate_refresh_data_manager.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_accurate_refresh.cpp",
-    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_change_info.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_data_manager.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_refresh_execution.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/system_album_info_calculation.cpp",
@@ -50,7 +49,6 @@ ohos_unittest("media_refresh_test") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/hiddem_asset_helper.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/image_asset_helper.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/owner_album_info_calculation.cpp",
-    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/photo_asset_change_info.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_asset_helper.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/trash_asset_helper.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/video_asset_helper.cpp",
@@ -90,7 +88,6 @@ ohos_unittest("media_refresh_test") {
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   defines = []

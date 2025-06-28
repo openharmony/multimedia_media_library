@@ -365,7 +365,7 @@ static std::shared_ptr<DataShareResultSet> GetFilePathResultSetFromDb(const stri
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_FILEPATH_FROM_URI);
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "dataShareHelper is null");
     int32_t errCode =
         IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
     if (errCode != 0) {
@@ -416,18 +416,18 @@ int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &file
 }
 
 static std::shared_ptr<DataShareResultSet> GetUriResultSetFromDb(
-    const string &path, shared_ptr<DataShare::DataShareHelper> dataShare)
+    const string &tempPath, sptr<IRemoteObject> token)
 {
-    CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(path), nullptr, "Failed to check invalid uri: %{public}s", path.c_str());
     GetUriFromFilePathReqBody reqBody;
     GetUriFromFilePathRspBody rspBody;
-    reqBody.fileId = MediaFileUtils::GetIdFromUri(path);
+    reqBody.tempPath = tempPath;
 
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_URI_FROM_FILEPATH);
-
-    CHECK_AND_RETURN_RET_LOG(dataShare != nullptr, nullptr, "dataShareHelper is nullptr");
-
-    int32_t errCode = IPC::UserInnerIPCClient().SetDataShareHelper(dataShare).Call(businessCode, reqBody, rspBody);
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "dataShareHelper is null");
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
     if (errCode != 0) {
         MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
     }
@@ -456,7 +456,7 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
     }
 
     vector<string> columns = { MEDIA_DATA_DB_ID};
-    auto resultSet = GetUriResultSetFromDb(tempPath, sDataShareHelper_);
+    auto resultSet = GetUriResultSetFromDb(tempPath, token_);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INVALID_URI,
         "GetUriFromFilePath::tempPath is not correct: %{private}s", tempPath.c_str());
     if (CheckResultSet(resultSet) != E_SUCCESS) {

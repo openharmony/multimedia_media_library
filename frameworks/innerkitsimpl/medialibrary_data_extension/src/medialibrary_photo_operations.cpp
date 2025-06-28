@@ -1315,7 +1315,7 @@ int32_t MediaLibraryPhotoOperations::Get500FileIdsAndPathS(const std::shared_ptr
         ->And()
         ->IsNotNull(MediaColumn::MEDIA_FILE_PATH);
 
-    if (!startFileId.empty()) {
+    if ((!startFileId.empty()) && MediaLibraryDataManagerUtils::IsNumber(startFileId)) {
         queryCmd.GetAbsRdbPredicates()->Offset(std::stoi(startFileId));
     }
     // 一次查取500个
