@@ -1,0 +1,73 @@
+diff --git a/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_rdb_transaction.cpp b/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_rdb_transaction.cpp
+index 9e835836e..8340d6b19 100755
+--- a/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_rdb_transaction.cpp
++++ b/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_rdb_transaction.cpp
+@@ -442,9 +442,8 @@ pair<int32_t, NativeRdb::Results> TransactionOperations::Update(
+         MEDIA_ERR_LOG("transaction_ is null");
+         return {E_HAS_DB_ERROR, -1};
+     }
+-    ValuesBucket valuesSet(values);
+ 
+-    return transaction_->Update(valuesSet, predicates, { returningField });
++    return transaction_->Update(values, predicates, { returningField });
+ }
+ 
+ pair<int32_t, NativeRdb::Results> TransactionOperations::Delete(const AbsRdbPredicates &predicates,
+diff --git a/services/media_refresh/src/album_change_info.cpp b/services/media_refresh/src/album_change_info.cpp
+index b48b8cc78..6c9e567ff 100644
+--- a/services/media_refresh/src/album_change_info.cpp
++++ b/services/media_refresh/src/album_change_info.cpp
+@@ -111,8 +111,8 @@ string AlbumChangeInfo::ToString(bool isDetail) const
+         ss << "albumId_: " << albumId_ << ", albumSubType_: "<< albumSubType_ << ", count_: " << count_;
+         ss << ", imageCount_: " << imageCount_ << ", videoCount_: " << videoCount_;
+         ss << ", hiddenCount_: " << hiddenCount_ << ", albumType_: " << albumType_  << ", albumName_: " << albumName_;
+-        ss << ", albumUri_: " << albumUri_ << ", coverUri_: " << coverUri_;
+-        ss <<  ", hiddenCoverUri_: " << hiddenCoverUri_;
++        ss << ", albumUri_: " << albumUri_ << ", coverUri_: " << MediaFileUtils::DesensitizeUri(coverUri_);
++        ss <<  ", hiddenCoverUri_: " << MediaFileUtils::DesensitizeUri(hiddenCoverUri_);
+         ss << ", isCoverChange_: " << isCoverChange_ << ", isHiddenCoverChange_: " << isHiddenCoverChange_;
+         ss << ", coverDateTime_: " << coverDateTime_ << ", hiddenCoverDateTime_: " << hiddenCoverDateTime_;
+         ss << ", dirty_: " << dirty_ << ", coverUriSource_: " << coverUriSource_;
+diff --git a/services/media_refresh/src/photo_asset_change_info.cpp b/services/media_refresh/src/photo_asset_change_info.cpp
+index b6ae2b906..567ec4470 100644
+--- a/services/media_refresh/src/photo_asset_change_info.cpp
++++ b/services/media_refresh/src/photo_asset_change_info.cpp
+@@ -148,7 +148,8 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
+ {
+     stringstream ss;
+     if (isDetail) {
+-        ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_ << ", uri_: " << uri_;
++        ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_ << ", uri_: ";
++        ss << MediaFileUtils::DesensitizeUri(uri_);
+         ss << ", dateDay_: " << dateDay_ << ", ownerAlbumUri_: " << ownerAlbumUri_ << ", isFavorite_: " << isFavorite_;
+         ss << ", mediaType_: " << mediaType_;
+         ss << ", isHidden_: " << isHidden_ << ", dateTrashedMs_: " << dateTrashedMs_;
+@@ -159,8 +160,8 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
+         ss << ", timePending_: " << timePending_ << ", isTemp_: " << isTemp_;
+         ss << ", burstCoverLevel_: " << burstCoverLevel_;
+         ss << ", hiddenTime_: " << hiddenTime_ << ", thumbnailReady_: " << thumbnailReady_;
+-        ss << ", displayName_: " << displayName_;
+-        ss << ", path_: " << path_ << ", dirty_: " << dirty_;
++        ss << ", displayName_: " << MediaFileUtils::DesensitizePath(displayName_);
++        ss << ", path_: " << MediaFileUtils::DesensitizePath(path_) << ", dirty_: " << dirty_;
+     } else {
+         ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_;
+     }
+@@ -259,6 +260,7 @@ PhotoAssetChangeInfo& PhotoAssetChangeInfo::operator=(const PhotoAssetChangeInfo
+         path_ = info.path_;
+         uri_ = info.uri_;
+         ownerAlbumUri_ = info.ownerAlbumUri_;
++        dirty_ = info.dirty_;
+     }
+     return *this;
+ }
+@@ -286,7 +288,8 @@ bool PhotoAssetChangeInfo::operator==(const PhotoAssetChangeInfo &info) const
+         displayName_ == info.displayName_ &&
+         path_ == info.path_ &&
+         uri_ == info.uri_ &&
+-        ownerAlbumUri_ == info.ownerAlbumUri_;
++        ownerAlbumUri_ == info.ownerAlbumUri_ &&
++        dirty_ == info.dirty_;
+ }
+ 
+ bool PhotoAssetChangeInfo::operator!=(const PhotoAssetChangeInfo &info) const

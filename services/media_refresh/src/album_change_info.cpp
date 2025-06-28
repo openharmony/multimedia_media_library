@@ -111,8 +111,8 @@ string AlbumChangeInfo::ToString(bool isDetail) const
         ss << "albumId_: " << albumId_ << ", albumSubType_: "<< albumSubType_ << ", count_: " << count_;
         ss << ", imageCount_: " << imageCount_ << ", videoCount_: " << videoCount_;
         ss << ", hiddenCount_: " << hiddenCount_ << ", albumType_: " << albumType_  << ", albumName_: " << albumName_;
-        ss << ", albumUri_: " << albumUri_ << ", coverUri_: " << coverUri_;
-        ss <<  ", hiddenCoverUri_: " << hiddenCoverUri_;
+        ss << ", albumUri_: " << albumUri_ << ", coverUri_: " << MediaFileUtils::DesensitizeUri(coverUri_);
+        ss <<  ", hiddenCoverUri_: " << MediaFileUtils::DesensitizeUri(hiddenCoverUri_);
         ss << ", isCoverChange_: " << isCoverChange_ << ", isHiddenCoverChange_: " << isHiddenCoverChange_;
         ss << ", coverDateTime_: " << coverDateTime_ << ", hiddenCoverDateTime_: " << hiddenCoverDateTime_;
         ss << ", dirty_: " << dirty_ << ", coverUriSource_: " << coverUriSource_;
@@ -250,7 +250,7 @@ bool AlbumChangeInfo::ReadFromParcel(Parcel &parcel)
         }
     }
     ret = ret && parcel.ReadInt32(albumId_);
-    return true;
+    return ret;
 }
 
 shared_ptr<AlbumChangeInfo> AlbumChangeInfo::Unmarshalling(Parcel &parcel)
