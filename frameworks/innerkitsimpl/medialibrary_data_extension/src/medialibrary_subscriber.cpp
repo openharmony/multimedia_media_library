@@ -48,6 +48,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
+#include "medialibrary_kvstore_manager.h"
 #ifdef META_RECOVERY_SUPPORT
 #include "medialibrary_meta_recovery.h"
 #endif
@@ -615,6 +616,7 @@ void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventTy
 
     CloudSyncDfxManager::GetInstance().RunDfx();
     ThumbnailGenerateWorkerManager::GetInstance().TryCloseThumbnailWorkerTimer();
+    MediaLibraryKvStoreManager::GetInstance().TryCloseAllKvStore();
     PowerEfficiencyManager::SetSubscriberStatus(isCharging_, isScreenOff_);
 
     if (statusEventType == StatusEventType::THERMAL_LEVEL_CHANGED) {

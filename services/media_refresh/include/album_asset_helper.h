@@ -16,7 +16,6 @@
 #ifndef OHOS_MEDIALIBRARY_ALBUM_ASSET_HELPER
 #define OHOS_MEDIALIBRARY_ALBUM_ASSET_HELPER
 
-#include <unordered_set>
 #include "photo_asset_change_info.h"
 
 namespace OHOS {

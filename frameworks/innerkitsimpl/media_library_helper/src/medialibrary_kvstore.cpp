@@ -242,6 +242,7 @@ int32_t MediaLibraryKvStore::BatchQuery(
 
 bool MediaLibraryKvStore::Close()
 {
+    MEDIA_INFO_LOG("MediaLibraryKvStore close");
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryKvStore::Close");
     if (kvStorePtr_ == nullptr) {
