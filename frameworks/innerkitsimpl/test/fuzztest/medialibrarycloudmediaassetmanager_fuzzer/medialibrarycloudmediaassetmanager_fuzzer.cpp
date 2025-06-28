@@ -292,6 +292,7 @@ static int32_t AddSeed()
     std::ofstream file(filename, std::ios::binary | std::ios::trunc);
     if (!file) {
         MEDIA_ERR_LOG("Cannot open file filename:%{public}s", filename);
+        delete[] seedData;
         return Media::E_ERR;
     }
     file.write(seedData, OHOS::Media::SEED_SIZE);
