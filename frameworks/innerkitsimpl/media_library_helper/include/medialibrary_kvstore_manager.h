@@ -16,6 +16,7 @@
 #ifndef OHOS_MEDIALIBRARY_KVSTORE_MANAGER_H
 #define OHOS_MEDIALIBRARY_KVSTORE_MANAGER_H
 
+#include <atomic>
 #include <safe_map.h>
 
 #include "medialibrary_kvstore.h"
@@ -36,12 +37,14 @@ public:
         return instance;
     }
 
-    EXPORT int32_t InitKvStore(const KvStoreRoleType &roleType, const KvStoreValueType &valueType);
+    EXPORT std::shared_ptr<MediaLibraryKvStore> InitKvStore(const KvStoreRoleType &roleType,
+        const KvStoreValueType &valueType);
     EXPORT std::shared_ptr<MediaLibraryKvStore> GetKvStore(
         const KvStoreRoleType &roleType, const KvStoreValueType &valueType);
     EXPORT bool InitMonthAndYearKvStore(const KvStoreRoleType &roleType);
     EXPORT bool CloseKvStore(const KvStoreValueType &valueType);
     EXPORT void CloseAllKvStore();
+    EXPORT void TryCloseAllKvStore();
     EXPORT bool IsKvStoreValid(const KvStoreValueType &valueType);
     EXPORT int32_t RebuildInvalidKvStore(const KvStoreValueType &valueType);
     EXPORT std::shared_ptr<MediaLibraryKvStore> GetSingleKvStore(const KvStoreRoleType &roleType,
@@ -51,15 +54,11 @@ public:
 
 private:
     MediaLibraryKvStoreManager() = default;
-    ~MediaLibraryKvStoreManager();
-
-    void RegisterTimer(const KvStoreRoleType &roleType, const KvStoreValueType &valueType);
+    ~MediaLibraryKvStoreManager() = default;
 
     SafeMap<KvStoreValueType, KvStoreSharedPtr> kvStoreMap_;
-    static std::mutex mutex_;
-    static Utils::Timer timer_;
-    static uint32_t timerId_;
-    static std::atomic<uint32_t> insertImageCount_;
+    std::mutex mutex_;
+    std::atomic<int64_t> kvStoreEvokedTimeStamp_{0};
 };
 } // namespace Media
 } // namespace OHOS
