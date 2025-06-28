@@ -633,8 +633,10 @@ struct AnalysisPhotoMapTbl {
 
 struct AlbumCoverInfo {
     int32_t albumId;
+    int32_t coverUriSource = 0;
     std::string lPath;
     std::string coverUri;
+    std::string coverCloudId = "";
 };
 
 using NeedQueryMap = std::unordered_map<PhotoRelatedType, std::unordered_set<std::string>>;

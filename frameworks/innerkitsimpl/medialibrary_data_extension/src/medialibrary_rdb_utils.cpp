@@ -1302,7 +1302,8 @@ static bool IsNeedSetCover(UpdateAlbumData &data, PhotoAlbumSubType subtype)
         "IsNeedSetCover enter, albumId:%{public}d, coverUri:%{public}s, subtype:%{public}d, coverUriSource:%{public}d",
         data.albumId, data.albumCoverUri.c_str(), static_cast<int32_t>(subtype), data.coverUriSource);
     // manual cover and cover in the album
-    if (data.coverUriSource == static_cast<int32_t>(CoverUriSource::DEFAULT_COVER)) {
+    if (data.coverUriSource == static_cast<int32_t>(CoverUriSource::DEFAULT_COVER) ||
+        data.albumCoverUri.empty()) { // first pull
         return true;
     }
     string &coverUri = data.albumCoverUri;
