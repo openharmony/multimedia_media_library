@@ -1004,6 +1004,50 @@ int32_t CloudMediaPhotosService::OnRecordFailedErrorDetails(
     return E_UNKNOWN;
 }
 
+std::string CloudMediaPhotosService::GetCloudPath(const std::string &filePath)
+{
+    const std::string sandboxPrefix = "/storage/cloud";
+    const std::string dfsPrefix = "/mnt/hmdfs/account/device_view/cloud";
+    size_t pos = filePath.find(sandboxPrefix);
+    bool isInValid = (pos != 0 || pos == std::string::npos);
+    CHECK_AND_RETURN_RET_LOG(!isInValid, "", "GetCloudPath, invalid path %{public}s",
+        MediaFileUtils::DesensitizePath(filePath).c_str());
+    return dfsPrefix + filePath.substr(sandboxPrefix.length());
+}
+
+// failure scenario handler for repush duplicate resource, never return E_OK. E_DATA when process success.
+int32_t CloudMediaPhotosService::HandleDuplicatedResource(const PhotosDto &photo)
+{
+    int32_t ret = this->photosDao_.RepushDuplicatedPhoto(photo);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_RDB, "HandleDuplicatedResource, err: %{public}d, photo: %{public}s",
+        ret, photo.ToString().c_str());
+    return E_DATA;
+}
+
+// failure scenario handler for same cloud resource, never return E_OK. E_DATA when process success.
+int32_t CloudMediaPhotosService::HandleSameCloudResource(const PhotosDto &photo)
+{
+    std::string path = photo.path;
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INVAL_ARG, "HandleSameCloudResource data invalid, photo: %{public}s",
+        photo.ToString().c_str());
+    std::string localPath = CloudMediaSyncUtils::GetLocalPath(path);
+    bool isFileExists = (access(localPath.c_str(), F_OK) == 0);
+    CHECK_AND_EXECUTE(!isFileExists, this->photosDao_.RenewSameCloudResource(photo));
+    CHECK_AND_RETURN_RET_LOG(!isFileExists, E_DATA, "HandleSameCloudResource push again %{public}s",
+        MediaFileUtils::DesensitizePath(path).c_str());
+    int32_t ret = this->photosDao_.DeleteLocalFileNotExistRecord(photo);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_RDB, "DeleteLocalFileNotExistRecord err: %{public}d, path: %{public}s",
+        ret, MediaFileUtils::DesensitizePath(path).c_str());
+    std::string cloudPath = GetCloudPath(path);
+    CHECK_AND_RETURN_RET_LOG(!cloudPath.empty(), E_DATA, "cloudPath is empty, path: %{public}s",
+        MediaFileUtils::DesensitizePath(path).c_str());
+    bool isValid = (unlink(cloudPath.c_str()) >= 0);
+    CHECK_AND_PRINT_LOG(isValid, "unlink fail, path: %{public}s, err: %{public}d",
+        MediaFileUtils::DesensitizePath(cloudPath).c_str(), errno);
+    CloudMediaSyncUtils::RemoveThmParentPath(path, PhotoColumn::FILES_CLOUD_DIR);
+    return E_DATA;
+}
+
 int32_t CloudMediaPhotosService::OnRecordFailed(
     PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
@@ -1021,6 +1065,12 @@ int32_t CloudMediaPhotosService::OnRecordFailed(
         return E_STOP;
     } else if (static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::RESPONSE_TIME_OUT) {
         MEDIA_ERR_LOG("on record failed response time out");
+    } else if (static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::RESOURCE_INVALID) {
+        MEDIA_ERR_LOG("resource invalid");
+        return HandleDuplicatedResource(photo);
+    } else if (static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::RENEW_RESOURCE) {
+        MEDIA_ERR_LOG("renew resource");
+        return HandleSameCloudResource(photo);
     }
     return this->OnRecordFailedErrorDetails(photo, photoRefresh);
 }
@@ -1055,9 +1105,25 @@ int32_t CloudMediaPhotosService::HandleDetailcode(ErrorDetailCode &errorCode)
 int32_t CloudMediaPhotosService::HandleSameNameUploadFail(
     const PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
+    CloudMediaPullDataDto pullData;
+    pullData.hasAttributes = true;
+    pullData.basicFileName = photo.fileName;
+    pullData.basicSize = photo.size;
+    pullData.attributesMetaDateModified = photo.metaDateModified;
+    pullData.basicEditedTime = photo.editedTimeMs;
+    pullData.basicCreatedTime = photo.createTime;
+    pullData.propertiesRotate = photo.rotation;
+    pullData.propertiesSourcePath = photo.sourcePath;
+    pullData.basicFileType = photo.fileType;
+    KeyData keyData = {0};
+    int32_t ret = GetCloudKeyData(pullData, keyData);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetCloudKey data failed");
+        return ret;
+    }
     std::string fileId = std::to_string(photo.fileId);
     std::string path = photo.data;
-    int32_t ret = this->photosDao_.HandleSameNameRename(photo, photoRefresh);
+    ret = this->photosDao_.HandleSameNameRename(photo, photoRefresh);
     if (ret == E_OK) {
         std::string uri = PhotoColumn::PHOTO_CLOUD_URI_PREFIX + to_string(photo.fileId);
         MediaGallerySyncNotify::GetInstance().TryNotify(uri, ChangeType::UPDATE, to_string(photo.fileId));
