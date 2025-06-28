@@ -37,25 +37,24 @@ void MediaLibraryKvstoreManagerTest::TearDown(void) {}
  */
 HWTEST_F(MediaLibraryKvstoreManagerTest, MediaLibraryKvstoreManager_Test_001, TestSize.Level1)
 {
-    MediaLibraryKvStoreManager mediaLibraryKvStoreManager = MediaLibraryKvStoreManager::GetInstance();
     shared_ptr<MediaLibraryKvStore> mediaLibraryKvStore = make_shared<MediaLibraryKvStore>();
     ASSERT_NE(mediaLibraryKvStore, nullptr);
     KvStoreValueType valueType = KvStoreValueType::MONTH_ASTC;
-    mediaLibraryKvStoreManager.kvStoreMap_.Insert(valueType, mediaLibraryKvStore);
-    mediaLibraryKvStoreManager.CloseAllKvStore();
-    mediaLibraryKvStoreManager.kvStoreMap_.Clear();
-    mediaLibraryKvStoreManager.CloseAllKvStore();
+    MediaLibraryKvStoreManager::GetInstance().kvStoreMap_.Insert(valueType, mediaLibraryKvStore);
+    MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
+    MediaLibraryKvStoreManager::GetInstance().kvStoreMap_.Clear();
+    MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 
-    bool res = mediaLibraryKvStoreManager.CloseKvStore(valueType);
+    bool res = MediaLibraryKvStoreManager::GetInstance().CloseKvStore(valueType);
     EXPECT_FALSE(res);
 
     mediaLibraryKvStore->kvStorePtr_ = nullptr;
-    res = mediaLibraryKvStoreManager.CloseKvStore(valueType);
+    res = MediaLibraryKvStoreManager::GetInstance().CloseKvStore(valueType);
     EXPECT_FALSE(res);
     
     mediaLibraryKvStore = nullptr;
-    mediaLibraryKvStoreManager.kvStoreMap_.Insert(valueType, mediaLibraryKvStore);
-    res = mediaLibraryKvStoreManager.CloseKvStore(valueType);
+    MediaLibraryKvStoreManager::GetInstance().kvStoreMap_.Insert(valueType, mediaLibraryKvStore);
+    res = MediaLibraryKvStoreManager::GetInstance().CloseKvStore(valueType);
     EXPECT_FALSE(res);
 }
 
@@ -69,9 +68,8 @@ HWTEST_F(MediaLibraryKvstoreManagerTest, MediaLibraryKvstoreManager_Test_001, Te
  */
 HWTEST_F(MediaLibraryKvstoreManagerTest, MediaLibraryKvstoreManager_Test_002, TestSize.Level1)
 {
-    MediaLibraryKvStoreManager mediaLibraryKvStoreManager = MediaLibraryKvStoreManager::GetInstance();
     KvStoreRoleType roleType = KvStoreRoleType::VISITOR;
-    bool res = mediaLibraryKvStoreManager.InitMonthAndYearKvStore(roleType);
+    bool res = MediaLibraryKvStoreManager::GetInstance().InitMonthAndYearKvStore(roleType);
     EXPECT_FALSE(res);
 }
 } // namespace Media
