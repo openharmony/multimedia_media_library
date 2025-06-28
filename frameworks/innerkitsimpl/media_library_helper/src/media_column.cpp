@@ -151,8 +151,8 @@ const std::string PhotoColumn::LATITUDE_INDEX = "idx_latitude";
 const std::string PhotoColumn::LONGITUDE_INDEX = "idx_longtitude";
 const std::string PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX = "idx_photo_sort_media_type_date_added";
 const std::string PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX = "idx_photo_sort_media_type_date_taken";
-const std::string PhotoColumn::PHOTO_SORT_DATE_ADDED_INDEX = "idx_photo_sort_date_added";
-const std::string PhotoColumn::PHOTO_SORT_DATE_TAKEN_INDEX = "idx_photo_sort_date_taken";
+const std::string PhotoColumn::PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX = "idx_photo_sort_in_album_date_added";
+const std::string PhotoColumn::PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX = "idx_photo_sort_in_album_date_taken";
 const std::string PhotoColumn::PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX = "idx_query_thumbnail_white_blocks_num";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
@@ -447,16 +447,16 @@ const std::string PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX = B
     "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + MEDIA_TYPE + "," + PHOTO_BURST_COVER_LEVEL +
     "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC);";
 
-const std::string PhotoColumn::CREATE_PHOTO_SORT_DATE_ADDED_INDEX = BaseColumn::CreateIndex() +
-    PHOTO_SORT_DATE_ADDED_INDEX + " ON " + PHOTOS_TABLE +
+const std::string PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
-    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + PHOTO_OWNER_ALBUM_ID +
     "," + MEDIA_DATE_ADDED + " DESC," + MEDIA_NAME + " DESC);";
 
-const std::string PhotoColumn::CREATE_PHOTO_SORT_DATE_TAKEN_INDEX = BaseColumn::CreateIndex() +
-    PHOTO_SORT_DATE_TAKEN_INDEX + " ON " + PHOTOS_TABLE +
+const std::string PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
-    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + PHOTO_OWNER_ALBUM_ID +
     "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC);";
 
 const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
