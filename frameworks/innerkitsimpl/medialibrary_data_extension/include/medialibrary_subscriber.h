@@ -94,6 +94,7 @@ private:
     EXPORT int32_t DoClearContinueCloneData();
     EXPORT bool IsClearContinueCloneData(const std::string &path);
     EXPORT bool TryClearContinueCloneData();
+    EXPORT std::string GetDataCloneDescriptionJsonPath();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();
