@@ -191,8 +191,8 @@ bool PhotoAssetChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
     ret = ret && parcel.WriteInt32(mediaType_);
     ret = ret && parcel.WriteString(ownerAlbumUri_);
     ret = ret && parcel.WriteBool(isSystem);
+    ret = ret && parcel.WriteInt32(fileId_);
     if (isSystem) {
-        ret = ret && parcel.WriteInt32(fileId_);
         ret = ret && parcel.WriteString(dateDay_);
         ret = ret && parcel.WriteBool(isFavorite_);
         ret = ret && parcel.WriteBool(isHidden_);
@@ -217,8 +217,8 @@ bool PhotoAssetChangeInfo::ReadFromParcel(Parcel &parcel)
     ret = ret && parcel.ReadInt32(mediaType_);
     ret = ret && parcel.ReadString(ownerAlbumUri_);
     ret = ret && parcel.ReadBool(isSystem_);
+    ret = ret && parcel.ReadInt32(fileId_);
     if (isSystem_) {
-        ret = ret && parcel.ReadInt32(fileId_);
         ret = ret && parcel.ReadString(dateDay_);
         ret = ret && parcel.ReadBool(isFavorite_);
         ret = ret && parcel.ReadBool(isHidden_);
