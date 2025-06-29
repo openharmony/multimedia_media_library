@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <string>
 #include <pixel_map.h>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #define private public
 #include "medialibrary_meta_recovery.h"
@@ -28,6 +29,8 @@
 
 namespace OHOS {
 using namespace std;
+const int32_t NUM_BYTES = 1;
+FuzzedDataProvider *provider = nullptr;
 
 const static std::vector<std::string> COLUMN_VECTOR = {
     Media::MediaColumn::MEDIA_ID,
@@ -37,21 +40,11 @@ const static std::vector<std::string> COLUMN_VECTOR = {
     "test",
 };
 
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
-{
-    return static_cast<int32_t>(*data);
-}
-
-static inline string FuzzString(const uint8_t *data, size_t size)
-{
-    return {reinterpret_cast<const char*>(data), size};
-}
-
-static void MediaLibraryMetaRecoverTest(const uint8_t *data, size_t size)
+static void MediaLibraryMetaRecoverTest()
 {
     std::shared_ptr<Media::MediaLibraryMetaRecovery> mediaLibraryMetaRecovery =
         std::make_shared<Media::MediaLibraryMetaRecovery>();
-    Media::MediaLibraryMetaRecovery::DeleteMetaDataByPath(FuzzString(data, size));
+    Media::MediaLibraryMetaRecovery::DeleteMetaDataByPath(provider->ConsumeBytesAsString(NUM_BYTES));
     Media::MediaLibraryMetaRecovery::GetInstance().StatisticSave();
     Media::MediaLibraryMetaRecovery::GetInstance().StatisticReset();
     Media::MediaLibraryMetaRecovery::GetInstance().RecoveryStatistic();
@@ -65,7 +58,7 @@ static void MediaLibraryMetaRecoverTest(const uint8_t *data, size_t size)
     for (auto name : COLUMN_VECTOR) {
         Media::MediaLibraryMetaRecovery::GetInstance().GetDataType(name);
     }
-    Media::MediaLibraryMetaRecovery::GetInstance().SetRdbRebuiltStatus(FuzzInt32(data, size));
+    Media::MediaLibraryMetaRecovery::GetInstance().SetRdbRebuiltStatus(provider->ConsumeIntegral<int32_t>());
     Media::MediaLibraryMetaRecovery::GetInstance().StopCloudSync();
     Media::MediaLibraryMetaRecovery::GetInstance().RestartCloudSync();
     Media::MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();
@@ -77,6 +70,11 @@ static void MediaLibraryMetaRecoverTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::MediaLibraryMetaRecoverTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::MediaLibraryMetaRecoverTest();
     return 0;
 }

@@ -17,6 +17,8 @@
 #include <cstdint>
 #include <string>
 #include <pixel_map.h>
+#include <fstream>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "ability_context_impl.h"
 #include "abs_rdb_predicates.h"
@@ -27,6 +29,7 @@
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_unistore_manager.h"
@@ -54,106 +57,65 @@ using namespace AAFwk;
 using ChangeType = DataShare::DataShareObserver::ChangeType;
 using ThumbnailGenerateExecute = void (*)(std::shared_ptr<Media::ThumbnailTaskData> &data);
 using ThumbnailWorkerPtr = std::shared_ptr<Media::ThumbnailGenerateWorker>;
-const int32_t PRIORITY_DEFAULT = -1;
-const int32_t THUMBNAIL_TASK_TYPE_DEFAULT = -1;
 const string PHOTOS_TABLE = "Photos";
 const string TEST_IMAGE_PATH = "/storage/cloud/files/Photo/1/CreateImageLcdTest_001.jpg";
-const int32_t EVEN = 2;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 const int32_t PIXELMAP_WIDTH_AND_HEIGHT = 1000;
+const int32_t NUM_BYTES = 1;
 const int32_t REMAINDER_1 = 1;
 const int32_t REMAINDER_2 = 2;
 const int32_t REMAINDER_3 = 3;
 const int32_t REMAINDER_4 = 4;
+const int32_t MIN_THUMBNAIL_TYPE = -1;
+const int32_t MIN_TASK_TYPE = -1;
+const int32_t MIN_TASK_PRIORITY = -1;
+const int32_t MAX_TASK_TYPE = 1;
+const int32_t MAX_TASK_PRIORITY = 2;
+const int32_t MAX_THUMBNAIL_TYPE = 8;
+const int32_t MAX_PIXEL_FORMAT = 15;
+const int32_t MAX_MEDIA_TYPE = 14;
+const int32_t MAX_BYTE_VALUE = 256;
+const int32_t SEED_SIZE = 1024;
+FuzzedDataProvider *provider = nullptr;
 
-static inline string FuzzString(const uint8_t *data, size_t size)
+static inline Media::ThumbnailType FuzzThumbnailType()
 {
-    return {reinterpret_cast<const char*>(data), size};
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(MIN_THUMBNAIL_TYPE, MAX_THUMBNAIL_TYPE);
+    return static_cast<Media::ThumbnailType>(value);
 }
 
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int32_t)) {
-        return 0;
-    }
-    return static_cast<int32_t>(*data);
-}
-
-static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int64_t)) {
-        return 0;
-    }
-    return static_cast<int64_t>(*data);
-}
-
-static inline bool FuzzBool(const uint8_t* data, size_t size)
-{
-    if (size == 0) {
-        return false;
-    }
-    return (data[0] % EVEN) == 0;
-}
-
-static inline Media::ThumbnailType FuzzThumbnailType(const uint8_t* data, size_t size)
-{
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(Media::ThumbnailType::LCD) &&
-        value <= static_cast<int32_t>(Media::ThumbnailType::THUMB_EX)) {
-        return static_cast<Media::ThumbnailType>(value);
-    }
-    return Media::ThumbnailType::LCD;
-}
-
-static inline Media::Size FuzzSize(const uint8_t* data, size_t size)
+static inline Media::Size FuzzSize()
 {
     Media::Size value;
-    const int32_t int32Count = 2;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
-        return value;
-    }
-    int32_t offset = 0;
-    value.width = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    value.height = FuzzInt32(data + offset, size);
+    value.width = provider->ConsumeIntegral<int32_t>();
+    value.height = provider->ConsumeIntegral<int32_t>();
     return value;
 }
 
-static inline Media::PixelFormat FuzzPixelFormat(const uint8_t* data, size_t size)
+static inline Media::PixelFormat FuzzPixelFormat()
 {
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(Media::PixelFormat::UNKNOWN) &&
-        value <= static_cast<int32_t>(Media::PixelFormat::ASTC_8x8)) {
-        return static_cast<Media::PixelFormat>(value);
-    }
-    return Media::PixelFormat::ARGB_8888;
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_PIXEL_FORMAT);
+    return static_cast<Media::PixelFormat>(value);
 }
 
-static inline Media::DecodeOptions FuzzDecodeOptions(const uint8_t* data, size_t size)
+static inline Media::DecodeOptions FuzzDecodeOptions()
 {
     Media::DecodeOptions value;
-    value.desiredPixelFormat = FuzzPixelFormat(data, size);
+    value.desiredPixelFormat = FuzzPixelFormat();
     return value;
 }
 
-static inline Media::ThumbnailTaskType FuzzThumbnailTaskType(const uint8_t* data, size_t size)
+static inline Media::ThumbnailTaskType FuzzThumbnailTaskType()
 {
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(Media::ThumbnailTaskType::FOREGROUND) &&
-        value <= static_cast<int32_t>(Media::ThumbnailTaskType::BACKGROUND)) {
-        return static_cast<Media::ThumbnailTaskType>(value);
-    }
-    if (value == THUMBNAIL_TASK_TYPE_DEFAULT) {
-        return static_cast<Media::ThumbnailTaskType>(THUMBNAIL_TASK_TYPE_DEFAULT);
-    }
-    return Media::ThumbnailTaskType::FOREGROUND;
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(MIN_TASK_TYPE, MAX_TASK_TYPE);
+    return static_cast<Media::ThumbnailTaskType>(value);
 }
 
-static Media::ThumbRdbOpt FuzzThumbRdbOpt(const uint8_t* data, size_t size, bool isNeedNullptr)
+static Media::ThumbRdbOpt FuzzThumbRdbOpt(bool isNeedNullptr)
 {
     std::shared_ptr<Media::MediaLibraryRdbStore> store;
     if (isNeedNullptr) {
-        store = FuzzBool(data, size) ?
+        store = provider->ConsumeBool() ?
             Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore() : nullptr;
     } else {
         store = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -161,68 +123,57 @@ static Media::ThumbRdbOpt FuzzThumbRdbOpt(const uint8_t* data, size_t size, bool
 
     Media::ThumbRdbOpt opt = {
         .store = store,
-        .networkId = FuzzString(data, size),
-        .path = FuzzString(data, size),
-        .table = FuzzBool(data, size) ? PHOTOS_TABLE : FuzzString(data, size),
-        .row = FuzzString(data, size),
-        .dateTaken = FuzzString(data, size),
-        .fileUri = FuzzString(data, size)
+        .networkId = provider->ConsumeBytesAsString(NUM_BYTES),
+        .path = provider->ConsumeBytesAsString(NUM_BYTES),
+        .table = provider->ConsumeBool() ? PHOTOS_TABLE : provider->ConsumeBytesAsString(NUM_BYTES),
+        .row = provider->ConsumeBytesAsString(NUM_BYTES),
+        .dateTaken = provider->ConsumeBytesAsString(NUM_BYTES),
+        .fileUri = provider->ConsumeBytesAsString(NUM_BYTES)
     };
     return opt;
 }
 
-static inline Media::MediaType FuzzMediaType(const uint8_t* data, size_t size)
+static inline Media::MediaType FuzzMediaType()
 {
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(Media::MediaType::MEDIA_TYPE_FILE) &&
-        value <= static_cast<int32_t>(Media::MediaType::MEDIA_TYPE_DEFAULT)) {
-        return static_cast<Media::MediaType>(value);
-    }
-    return Media::MediaType::MEDIA_TYPE_IMAGE;
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_MEDIA_TYPE);
+    return static_cast<Media::MediaType>(value);
 }
 
-static Media::ThumbnailData FuzzThumbnailData(const uint8_t* data, size_t size)
+static Media::ThumbnailData FuzzThumbnailData()
 {
     Media::ThumbnailData datas;
-    datas.path = FuzzString(data, size);
-    datas.mediaType = FuzzMediaType(data, size);
-    if (FuzzBool(data, size)) {
-        datas.id = to_string(FuzzInt32(data, size));
-        datas.dateTaken = to_string(FuzzInt32(data, size));
+    datas.path = provider->ConsumeBytesAsString(NUM_BYTES);
+    datas.mediaType = FuzzMediaType();
+    if (provider->ConsumeBool()) {
+        datas.id = to_string(provider->ConsumeIntegral<int32_t>());
+        datas.dateTaken = to_string(provider->ConsumeIntegral<int32_t>());
     }
     return datas;
 }
 
-static Media::ThumbnailTaskPriority FuzzThumbnailTaskPriority(const uint8_t* data, size_t size)
+static Media::ThumbnailTaskPriority FuzzThumbnailTaskPriority()
 {
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(Media::ThumbnailTaskPriority::HIGH) &&
-        value <= static_cast<int32_t>(Media::ThumbnailTaskPriority::LOW)) {
-        return static_cast<Media::ThumbnailTaskPriority>(value);
-    }
-    if (value == PRIORITY_DEFAULT) {
-        return static_cast<Media::ThumbnailTaskPriority>(PRIORITY_DEFAULT);
-    }
-    return Media::ThumbnailTaskPriority::LOW;
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(MIN_TASK_PRIORITY, MAX_TASK_PRIORITY);
+    return static_cast<Media::ThumbnailTaskPriority>(value);
 }
 
-static string FuzzThumbnailUri(const uint8_t* data, size_t size, bool isNeedPath)
+static string FuzzThumbnailUri(bool isNeedPath)
 {
-    if (!FuzzBool(data, size)) {
-        return FuzzString(data, size);
+    if (!provider->ConsumeBool()) {
+        return provider->ConsumeBytesAsString(NUM_BYTES);
     }
 
     string thumUri = "file://media/Photo/1?operation=thumbnail";
-    Media::Size value = FuzzSize(data, size);
+    Media::Size value = FuzzSize();
     thumUri += "&width=" + to_string(value.width) + "&height=" + to_string(value.height);
-    thumUri += "&date_modified=" + to_string(FuzzInt64(data, size));
-    int32_t thumbType = abs(FuzzInt32(data, size)) % 4;
+    thumUri += "&date_modified=" + to_string(provider->ConsumeIntegral<int64_t>());
+    int32_t thumbType = abs(provider->ConsumeIntegral<int32_t>()) % 4;
     thumUri += "&type=" + to_string(thumbType);
-    thumUri += "&begin_stamp=" + to_string(FuzzInt32(data, size));
+    thumUri += "&begin_stamp=" + to_string(provider->ConsumeIntegral<int32_t>());
     if (isNeedPath) {
-        thumUri += "&path=" + FuzzString(data, size);
+        thumUri += "&path=" + provider->ConsumeBytesAsString(NUM_BYTES);
     }
-    thumUri += "&date_taken=" + to_string(FuzzInt64(data, size));
+    thumUri += "&date_taken=" + to_string(provider->ConsumeIntegral<int64_t>());
 
     return thumUri;
 }
@@ -239,11 +190,11 @@ static std::shared_ptr<Media::PixelMap> CreateTestPixelMap(Media::PixelFormat fo
     return pixelMap;
 }
 
-static std::shared_ptr<Media::PixelMap> FuzzNormalPixelMap(const uint8_t* data, size_t size, bool isNeedNullptr = false)
+static std::shared_ptr<Media::PixelMap> FuzzNormalPixelMap(bool isNeedNullptr = false)
 {
-    int32_t value = abs(FuzzInt32(data, size)) % 3;
+    int32_t value = abs(provider->ConsumeIntegral<int32_t>()) % 3;
     Media::PixelFormat format = Media::PixelFormat::RGBA_8888;
-    bool useDMA = FuzzBool(data, size);
+    bool useDMA = provider->ConsumeBool();
     if (value == REMAINDER_1) {
         format = Media::PixelFormat::RGBA_8888;
     } else if (value == REMAINDER_2) {
@@ -257,11 +208,11 @@ static std::shared_ptr<Media::PixelMap> FuzzNormalPixelMap(const uint8_t* data, 
     return CreateTestPixelMap(format, useDMA);
 }
 
-static std::shared_ptr<Media::PixelMap> FuzzYuvPixelMap(const uint8_t* data, size_t size, bool isNeedNullptr = false)
+static std::shared_ptr<Media::PixelMap> FuzzYuvPixelMap(bool isNeedNullptr = false)
 {
-    int32_t value = abs(FuzzInt32(data, size)) % 5;
+    int32_t value = abs(provider->ConsumeIntegral<int32_t>()) % 5;
     Media::PixelFormat format = Media::PixelFormat::NV12;
-    bool useDMA = FuzzBool(data, size);
+    bool useDMA = provider->ConsumeBool();
     if (value == REMAINDER_1) {
         format = Media::PixelFormat::NV12;
     } else if (value == REMAINDER_2) {
@@ -280,14 +231,13 @@ static std::shared_ptr<Media::PixelMap> FuzzYuvPixelMap(const uint8_t* data, siz
     return CreateTestPixelMap(format, useDMA);
 }
 
-static std::shared_ptr<Media::Picture> FuzzPicture(const uint8_t* data, size_t size,
-    bool isNeedGainMap, bool isYuv, bool isNeedNullptr = false)
+static std::shared_ptr<Media::Picture> FuzzPicture(bool isNeedGainMap, bool isYuv, bool isNeedNullptr = false)
 {
     std::shared_ptr<Media::PixelMap> pixelMap;
     if (isYuv) {
-        pixelMap = FuzzYuvPixelMap(data, size, isNeedNullptr);
+        pixelMap = FuzzYuvPixelMap(isNeedNullptr);
     } else {
-        pixelMap = FuzzNormalPixelMap(data, size, isNeedNullptr);
+        pixelMap = FuzzNormalPixelMap(isNeedNullptr);
     }
     if (pixelMap == nullptr) {
         return nullptr;
@@ -301,9 +251,9 @@ static std::shared_ptr<Media::Picture> FuzzPicture(const uint8_t* data, size_t s
 
     std::shared_ptr<Media::PixelMap> gainMap;
     if (isYuv) {
-        gainMap = FuzzYuvPixelMap(data, size, isNeedNullptr);
+        gainMap = FuzzYuvPixelMap(isNeedNullptr);
     } else {
-        gainMap = FuzzNormalPixelMap(data, size, isNeedNullptr);
+        gainMap = FuzzNormalPixelMap(isNeedNullptr);
     }
     if (gainMap == nullptr) {
         return nullptr;
@@ -318,9 +268,9 @@ static std::shared_ptr<Media::Picture> FuzzPicture(const uint8_t* data, size_t s
     return picture;
 }
 
-static std::string FuzzThumbnailPath(const uint8_t* data, size_t size)
+static std::string FuzzThumbnailPath()
 {
-    std::string path = "/storage/cloud/files/" + to_string(FuzzInt32(data, size)) + "/fuzztest";
+    std::string path = "/storage/cloud/files/" + to_string(provider->ConsumeIntegral<int32_t>()) + "/fuzztest";
     Media::ThumbnailData thumbnailData;
     thumbnailData.path = path;
     std::string thumbnailDir = Media::ThumbnailFileUtils::GetThumbnailDir(thumbnailData);
@@ -351,39 +301,32 @@ static std::string FuzzThumbnailPath(const uint8_t* data, size_t size)
     return path;
 }
 
-static void ThumbnailAgingHelperTest(const uint8_t* data, size_t size)
+static void ThumbnailAgingHelperTest()
 {
-    const int64_t int64Count = 2;
-    if (data == nullptr || size <  sizeof(int32_t) + sizeof(int64_t) * int64Count) {
-        return;
-    }
-    Media::ThumbRdbOpt opt = FuzzThumbRdbOpt(data, size, false);
+    Media::ThumbRdbOpt opt = FuzzThumbRdbOpt(false);
     Media::ThumbnailAgingHelper::AgingLcdBatch(opt);
-    int64_t offset = 0;
-    int64_t time = FuzzInt64(data + offset, size);
-    bool before = FuzzBool(data, size);
+    int64_t time = provider->ConsumeIntegral<int64_t>();
+    bool before = provider->ConsumeBool();
     int outLcdCount;
     Media::ThumbnailAgingHelper::GetAgingDataCount(time, before, opt, outLcdCount);
 
     vector<Media::ThumbnailData> infos;
-    offset += sizeof(int32_t);
-    Media::ThumbnailAgingHelper::GetAgingLcdData(opt, FuzzInt32(data + offset, size), infos);
-    offset += sizeof(int64_t);
-    Media::ThumbnailAgingHelper::GetLcdCountByTime(FuzzInt64(data + offset, size), FuzzBool(data, size),
+    Media::ThumbnailAgingHelper::GetAgingLcdData(opt, provider->ConsumeIntegral<int32_t>(), infos);
+    Media::ThumbnailAgingHelper::GetLcdCountByTime(provider->ConsumeIntegral<int64_t>(), provider->ConsumeBool(),
         opt, outLcdCount);
 }
 
-static void ThumbnailGenerateHelperTest(const uint8_t* data, size_t size)
+static void ThumbnailGenerateHelperTest()
 {
-    Media::ThumbRdbOpt opts = FuzzThumbRdbOpt(data, size, true);
-    Media::ThumbnailGenerateHelper::CreateThumbnailFileScaned(opts, FuzzBool(data, size));
+    Media::ThumbRdbOpt opts = FuzzThumbRdbOpt(true);
+    Media::ThumbnailGenerateHelper::CreateThumbnailFileScaned(opts, provider->ConsumeBool());
     Media::ThumbnailGenerateHelper::CreateThumbnailBackground(opts);
     Media::ThumbnailGenerateHelper::CreateAstcBackground(opts);
-    Media::ThumbnailGenerateHelper::CreateAstcCloudDownload(opts, FuzzBool(data, size));
+    Media::ThumbnailGenerateHelper::CreateAstcCloudDownload(opts, provider->ConsumeBool());
     Media::ThumbnailGenerateHelper::CreateAstcMthAndYear(opts);
     RdbPredicates predicates(PHOTOS_TABLE);
     Media::ThumbnailGenerateHelper::CreateLcdBackground(opts);
-    Media::ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, predicates, FuzzInt32(data, size));
+    Media::ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, predicates, provider->ConsumeIntegral<int32_t>());
     Media::ThumbnailGenerateHelper::CheckLcdSizeAndUpdateStatus(opts);
     int32_t outLcdCount;
     Media::ThumbnailGenerateHelper::GetLcdCount(opts, outLcdCount);
@@ -396,51 +339,51 @@ static void ThumbnailGenerateHelperTest(const uint8_t* data, size_t size)
     outDatas.clear();
     Media::ThumbnailGenerateHelper::GetLocalNoLcdData(opts, outDatas);
     outDatas.clear();
-    int64_t time = FuzzInt64(data, size);
+    int64_t time = provider->ConsumeIntegral<int64_t>();
     int32_t count;
     Media::ThumbnailGenerateHelper::GetNewThumbnailCount(opts, time, count);
-    Media::ThumbnailData thumbData = FuzzThumbnailData(data, size);
+    Media::ThumbnailData thumbData = FuzzThumbnailData();
     string fileName;
-    int32_t thumbType = abs(FuzzInt32(data, size)) % 4;
-    int32_t timeStamp = FuzzInt32(data, size);
-    Media::ThumbnailGenerateHelper::GetAvailableFile(opts, thumbData, FuzzThumbnailType(data, size), fileName);
+    int32_t thumbType = abs(provider->ConsumeIntegral<int32_t>()) % 4;
+    int32_t timeStamp = provider->ConsumeIntegral<int32_t>();
+    Media::ThumbnailGenerateHelper::GetAvailableFile(opts, thumbData, FuzzThumbnailType(), fileName);
     Media::ThumbnailGenerateHelper::GetAvailableKeyFrameFile(opts, thumbData, thumbType, fileName);
-    Media::ThumbnailGenerateHelper::GetThumbnailPixelMap(thumbData, opts, FuzzThumbnailType(data, size));
-    Media::ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, FuzzBool(data, size));
+    Media::ThumbnailGenerateHelper::GetThumbnailPixelMap(thumbData, opts, FuzzThumbnailType());
+    Media::ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, provider->ConsumeBool());
     Media::ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
     outDatas.clear();
-    Media::ThumbnailGenerateHelper::GetThumbnailDataNeedUpgrade(opts, outDatas, FuzzBool(data, size));
+    Media::ThumbnailGenerateHelper::GetThumbnailDataNeedUpgrade(opts, outDatas, provider->ConsumeBool());
     Media::ThumbnailGenerateHelper::CheckMonthAndYearKvStoreValid(opts);
     Media::ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
-    Media::ThumbRdbOpt optsWithRdb = FuzzThumbRdbOpt(data, size, false);
+    Media::ThumbRdbOpt optsWithRdb = FuzzThumbRdbOpt(false);
     if (optsWithRdb.store != nullptr) {
         outDatas.clear();
         Media::ThumbnailGenerateHelper::GetNoHighlightData(optsWithRdb, outDatas);
         outDatas.clear();
         Media::ThumbnailGenerateHelper::GetKeyFrameThumbnailPixelMap(optsWithRdb, timeStamp, thumbType);
         Media::ThumbnailGenerateHelper::CreateThumbnailFileScanedWithPicture(
-            optsWithRdb, FuzzPicture(data, size, true, true, true), FuzzBool(data, size));
+            optsWithRdb, FuzzPicture(true, true, true), provider->ConsumeBool());
     }
 }
 
-static void ThumbnailGenerateWorkerTest(const uint8_t* data, size_t size)
+static void ThumbnailGenerateWorkerTest()
 {
-    Media::ThumbRdbOpt opts = FuzzThumbRdbOpt(data, size, false);
-    Media::ThumbnailData thumbnailData = FuzzThumbnailData(data, size);
+    Media::ThumbRdbOpt opts = FuzzThumbRdbOpt(false);
+    Media::ThumbnailData thumbnailData = FuzzThumbnailData();
     std::shared_ptr<Media::ThumbnailTaskData> taskData =
-        std::make_shared<Media::ThumbnailTaskData>(opts, thumbnailData, FuzzInt32(data, size));
+        std::make_shared<Media::ThumbnailTaskData>(opts, thumbnailData, provider->ConsumeIntegral<int32_t>());
     std::shared_ptr<Media::ThumbnailGenerateTask> task =
         std::make_shared<Media::ThumbnailGenerateTask>(Media::IThumbnailHelper::CreateLcdAndThumbnail, taskData);
 
     std::shared_ptr<Media::ThumbnailGenerateWorker> workerPtr = std::make_shared<Media::ThumbnailGenerateWorker>();
-    Media::ThumbnailTaskPriority priority = FuzzThumbnailTaskPriority(data, size);
+    Media::ThumbnailTaskPriority priority = FuzzThumbnailTaskPriority();
     workerPtr->AddTask(task, priority);
     workerPtr->ReleaseTaskQueue(priority);
 }
 
-static void ThumbnailGenerateWorkerManagerTest(const uint8_t* data, size_t size)
+static void ThumbnailGenerateWorkerManagerTest()
 {
-    Media::ThumbnailTaskType type = FuzzThumbnailTaskType(data, size);
+    Media::ThumbnailTaskType type = FuzzThumbnailTaskType();
     auto& manager = Media::ThumbnailGenerateWorkerManager::GetInstance();
     manager.InitThumbnailWorker(type);
     manager.ClearAllTask();
@@ -486,25 +429,17 @@ static void Finish()
     Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 }
 
-static void ThumhnailTest(const uint8_t* data, size_t size)
+static void ThumhnailTest()
 {
-    const int32_t int32Count = 4;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
-        return;
-    }
-    int32_t offset = 0;
-    Media::ThumbnailService::GetInstance()->GetThumbnailFd(FuzzString(data, size),
-        FuzzInt32(data + offset, size));
+    Media::ThumbnailService::GetInstance()->GetThumbnailFd(provider->ConsumeBytesAsString(NUM_BYTES),
+        provider->ConsumeIntegral<int32_t>());
     string thumUri = "file://media/Photo/1?operation=thumbnail&width=-1&height=-1";
-    offset += sizeof(int32_t);
-    Media::ThumbnailService::GetInstance()->GetThumbnailFd(thumUri, FuzzInt32(data + offset, size));
+    Media::ThumbnailService::GetInstance()->GetThumbnailFd(thumUri, provider->ConsumeIntegral<int32_t>());
     Media::ThumbnailService::GetInstance()->LcdAging();
-    offset += sizeof(int32_t);
-    Media::ThumbnailService::GetInstance()->CreateThumbnailFileScaned(FuzzString(data, size),
-        FuzzString(data, size), FuzzInt32(data + offset, size));
-    offset += sizeof(int32_t);
+    Media::ThumbnailService::GetInstance()->CreateThumbnailFileScaned(provider->ConsumeBytesAsString(NUM_BYTES),
+        provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeIntegral<int32_t>());
     NativeRdb::RdbPredicates rdbPredicate("Photos");
-    Media::ThumbnailService::GetInstance()->CancelAstcBatchTask(FuzzInt32(data + offset, size));
+    Media::ThumbnailService::GetInstance()->CancelAstcBatchTask(provider->ConsumeIntegral<int32_t>());
     Media::ThumbnailService::GetInstance()->GenerateThumbnailBackground();
     Media::ThumbnailService::GetInstance()->UpgradeThumbnailBackground(false);
     Media::ThumbnailService::GetInstance()->RestoreThumbnailDualFrame();
@@ -512,74 +447,74 @@ static void ThumhnailTest(const uint8_t* data, size_t size)
     Media::ThumbnailService::GetInstance()->InterruptBgworker();
 }
 
-static void ThumbnailSourceTest(const uint8_t* data, size_t size)
+static void ThumbnailSourceTest()
 {
-    Media::GetLocalThumbnailPath(FuzzString(data, size), FuzzString(data, size));
+    Media::GetLocalThumbnailPath(provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeBytesAsString(NUM_BYTES));
     int32_t error;
-    int32_t minSize = FuzzInt32(data, size);
-    Media::ThumbnailData thumbnailData = FuzzThumbnailData(data, size);
+    int32_t minSize = provider->ConsumeIntegral<int32_t>();
+    Media::ThumbnailData thumbnailData = FuzzThumbnailData();
     Media::LocalThumbSource::GetSourcePath(thumbnailData, error);
     Media::LocalThumbSource::IsSizeLargeEnough(thumbnailData, minSize);
-    thumbnailData = FuzzThumbnailData(data, size);
+    thumbnailData = FuzzThumbnailData();
     Media::LocalLcdSource::GetSourcePath(thumbnailData, error);
     Media::LocalLcdSource::IsSizeLargeEnough(thumbnailData, minSize);
-    thumbnailData = FuzzThumbnailData(data, size);
+    thumbnailData = FuzzThumbnailData();
     Media::LocalOriginSource::GetSourcePath(thumbnailData, error);
     Media::LocalOriginSource::IsSizeLargeEnough(thumbnailData, minSize);
 
-    thumbnailData = FuzzThumbnailData(data, size);
+    thumbnailData = FuzzThumbnailData();
     Media::CloudThumbSource::GetSourcePath(thumbnailData, error);
     Media::CloudThumbSource::IsSizeLargeEnough(thumbnailData, minSize);
 
-    thumbnailData = FuzzThumbnailData(data, size);
+    thumbnailData = FuzzThumbnailData();
     Media::CloudLcdSource::GetSourcePath(thumbnailData, error);
     Media::CloudLcdSource::IsSizeLargeEnough(thumbnailData, minSize);
 
-    thumbnailData = FuzzThumbnailData(data, size);
+    thumbnailData = FuzzThumbnailData();
     Media::CloudOriginSource::GetSourcePath(thumbnailData, error);
     Media::CloudOriginSource::IsSizeLargeEnough(thumbnailData, minSize);
-    Media::NeedAutoResize(FuzzSize(data, size));
+    Media::NeedAutoResize(FuzzSize());
 
-    Media::DecodeOptions decodeOpts = FuzzDecodeOptions(data, size);
-    Media::GenDecodeOpts(FuzzSize(data, size), FuzzSize(data, size), decodeOpts);
+    Media::DecodeOptions decodeOpts = FuzzDecodeOptions();
+    Media::GenDecodeOpts(FuzzSize(), FuzzSize(), decodeOpts);
 
-    thumbnailData = FuzzThumbnailData(data, size);
-    Media::Size sourceSize = FuzzSize(data, size);
-    Media::Size desiredSize = FuzzSize(data, size);
+    thumbnailData = FuzzThumbnailData();
+    Media::Size sourceSize = FuzzSize();
+    Media::Size desiredSize = FuzzSize();
     Media::ConvertDecodeSize(thumbnailData, sourceSize, desiredSize);
     uint32_t err = 0;
-    Media::LoadImageSource(FuzzString(data, size), err);
+    Media::LoadImageSource(provider->ConsumeBytesAsString(NUM_BYTES), err);
 }
 
-static void ThumbnailSourceTest2(const uint8_t* data, size_t size)
+static void ThumbnailSourceTest2()
 {
-    Media::Size desiredSize = FuzzSize(data, size);
-    Media::ThumbnailData thumbnailData = FuzzThumbnailData(data, size);
+    Media::Size desiredSize = FuzzSize();
+    Media::ThumbnailData thumbnailData = FuzzThumbnailData();
     Media::SourceLoader sourceLoader(desiredSize, thumbnailData);
     sourceLoader.CreateVideoFramePixelMap();
     sourceLoader.SetCurrentStateFunction();
 
-    thumbnailData = FuzzThumbnailData(data, size);
-    thumbnailData.originalPhotoPicture = FuzzPicture(data, size, true, true, true);
+    thumbnailData = FuzzThumbnailData();
+    thumbnailData.originalPhotoPicture = FuzzPicture(true, true, true);
     Media::SourceLoader sourceLoader2(desiredSize, thumbnailData);
     sourceLoader2.RunLoading();
-    thumbnailData = FuzzThumbnailData(data, size);
-    thumbnailData.originalPhotoPicture = FuzzPicture(data, size, false, false, true);
+    thumbnailData = FuzzThumbnailData();
+    thumbnailData.originalPhotoPicture = FuzzPicture(false, false, true);
     Media::SourceLoader sourceLoader3(desiredSize, thumbnailData);
     sourceLoader3.CreateSourceFromOriginalPhotoPicture();
 
-    thumbnailData = FuzzThumbnailData(data, size);
-    thumbnailData.originalPhotoPicture = FuzzPicture(data, size, true, false, true);
+    thumbnailData = FuzzThumbnailData();
+    thumbnailData.originalPhotoPicture = FuzzPicture(true, false, true);
     Media::SourceLoader sourceLoader4(desiredSize, thumbnailData);
     sourceLoader4.CreateSourceWithWholeOriginalPicture();
 
-    thumbnailData = FuzzThumbnailData(data, size);
-    thumbnailData.originalPhotoPicture = FuzzPicture(data, size, false, false, true);
+    thumbnailData = FuzzThumbnailData();
+    thumbnailData.originalPhotoPicture = FuzzPicture(false, false, true);
     Media::SourceLoader sourceLoader5(desiredSize, thumbnailData);
     sourceLoader5.CreateSourceWithOriginalPictureMainPixel();
 
-    thumbnailData = FuzzThumbnailData(data, size);
-    desiredSize = FuzzSize(data, size);
+    thumbnailData = FuzzThumbnailData();
+    desiredSize = FuzzSize();
     thumbnailData.path = TEST_IMAGE_PATH;
     thumbnailData.mediaType = Media::MediaType::MEDIA_TYPE_IMAGE;
     thumbnailData.loaderOpts.loadingStates = {
@@ -591,7 +526,7 @@ static void ThumbnailSourceTest2(const uint8_t* data, size_t size)
     MEDIA_INFO_LOG("sourceLoader6.RunLoading image path: %{public}s. ret: %{public}d", TEST_IMAGE_PATH.c_str(), ret);
 }
 
-static void ParseFileUriTest(const uint8_t* data, size_t size)
+static void ParseFileUriTest()
 {
     string outFileId;
     string outNetworkId;
@@ -600,32 +535,32 @@ static void ParseFileUriTest(const uint8_t* data, size_t size)
     string outPath;
     int32_t outType = 0;
     int32_t outBeginStamp = 0;
-    string uri = FuzzThumbnailUri(data, size, true);
+    string uri = FuzzThumbnailUri(true);
     Media::ThumbnailUriUtils::ParseFileUri(uri, outFileId, outNetworkId, outTableName);
     Media::ThumbnailUriUtils::ParseThumbnailInfo(uri, outFileId, outSize, outPath, outTableName);
     Media::ThumbnailUriUtils::ParseKeyFrameThumbnailInfo(uri, outFileId, outBeginStamp, outType, outPath);
     Media::ThumbnailUriUtils::GetDateTakenFromUri(uri);
     Media::ThumbnailUriUtils::GetDateModifiedFromUri(uri);
     Media::ThumbnailUriUtils::GetFileUriFromUri(uri);
-    Media::Size checkSize = FuzzSize(data, size);
+    Media::Size checkSize = FuzzSize();
     Media::ThumbnailUriUtils::IsOriginalImg(checkSize, outPath);
     Media::ThumbnailUriUtils::CheckSize(checkSize, outPath);
     Media::ThumbnailUriUtils::GetTableFromUri(uri);
 }
 
-static void ThumbnailImageFrameworkUtilsTest(const uint8_t* data, size_t size)
+static void ThumbnailImageFrameworkUtilsTest()
 {
     int32_t orientation = 0;
-    std::shared_ptr<Media::PixelMap> pixelMap = FuzzNormalPixelMap(data, size, true);
-    std::shared_ptr<Media::Picture> picture = FuzzPicture(data, size, true, false, true);
+    std::shared_ptr<Media::PixelMap> pixelMap = FuzzNormalPixelMap(true);
+    std::shared_ptr<Media::Picture> picture = FuzzPicture(true, false, true);
     Media::ThumbnailImageFrameWorkUtils::IsYuvPixelMap(pixelMap);
     Media::ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap);
     Media::ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
     Media::ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
     Media::ThumbnailImageFrameWorkUtils::GetPictureOrientation(picture, orientation);
 
-    pixelMap = FuzzYuvPixelMap(data, size, false);
-    picture = FuzzPicture(data, size, true, true, false);
+    pixelMap = FuzzYuvPixelMap(false);
+    picture = FuzzPicture(true, true, false);
     Media::ThumbnailImageFrameWorkUtils::IsYuvPixelMap(pixelMap);
     Media::ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap);
     Media::ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
@@ -633,21 +568,43 @@ static void ThumbnailImageFrameworkUtilsTest(const uint8_t* data, size_t size)
     Media::ThumbnailImageFrameWorkUtils::GetPictureOrientation(picture, orientation);
 }
 
-static void ThumbnailFileUtilsTest(const uint8_t* data, size_t size)
+static void ThumbnailFileUtilsTest()
 {
     Media::ThumbnailData thumbnailData;
-    thumbnailData.path = FuzzThumbnailPath(data, size);
+    thumbnailData.path = FuzzThumbnailPath();
     Media::ThumbnailFileUtils::DeleteThumbnailDir(thumbnailData);
-    thumbnailData.path = FuzzThumbnailPath(data, size);
+    thumbnailData.path = FuzzThumbnailPath();
     Media::ThumbnailFileUtils::DeleteAllThumbFiles(thumbnailData);
     Media::ThumbnailFileUtils::DeleteMonthAndYearAstc(thumbnailData);
-    Media::ThumbnailFileUtils::CheckRemainSpaceMeetCondition(FuzzInt32(data, size));
-    Media::ThumbnailFileUtils::DeleteAstcDataFromKvStore(thumbnailData, FuzzThumbnailType(data, size));
+    Media::ThumbnailFileUtils::CheckRemainSpaceMeetCondition(provider->ConsumeIntegral<int32_t>());
+    Media::ThumbnailFileUtils::DeleteAstcDataFromKvStore(thumbnailData, FuzzThumbnailType());
+}
+
+static int32_t AddSeed()
+{
+    char *seedData = new char[OHOS::SEED_SIZE];
+    for (int i = 0; i < OHOS::SEED_SIZE; i++) {
+        seedData[i] = static_cast<char>(i % MAX_BYTE_VALUE);
+    }
+
+    const char* filename = "corpus/seed.txt";
+    std::ofstream file(filename, std::ios::binary | std::ios::trunc);
+    if (!file) {
+        MEDIA_ERR_LOG("Cannot open file filename:%{public}s", filename);
+        delete[] seedData;
+        return Media::E_ERR;
+    }
+    file.write(seedData, OHOS::SEED_SIZE);
+    file.close();
+    delete[] seedData;
+    MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
+    return Media::E_OK;
 }
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 {
+    OHOS::AddSeed();
     OHOS::Init();
     return 0;
 }
@@ -655,16 +612,21 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    OHOS::ThumhnailTest(data, size);
-    OHOS::ThumbnailAgingHelperTest(data, size);
-    OHOS::ThumbnailGenerateHelperTest(data, size);
-    OHOS::ThumbnailGenerateWorkerTest(data, size);
-    OHOS::ThumbnailGenerateWorkerManagerTest(data, size);
-    OHOS::ThumbnailSourceTest(data, size);
-    OHOS::ThumbnailSourceTest2(data, size);
-    OHOS::ParseFileUriTest(data, size);
-    OHOS::ThumbnailImageFrameworkUtilsTest(data, size);
-    OHOS::ThumbnailFileUtilsTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::ThumhnailTest();
+    OHOS::ThumbnailAgingHelperTest();
+    OHOS::ThumbnailGenerateHelperTest();
+    OHOS::ThumbnailGenerateWorkerTest();
+    OHOS::ThumbnailGenerateWorkerManagerTest();
+    OHOS::ThumbnailSourceTest();
+    OHOS::ThumbnailSourceTest2();
+    OHOS::ParseFileUriTest();
+    OHOS::ThumbnailImageFrameworkUtilsTest();
+    OHOS::ThumbnailFileUtilsTest();
     OHOS::Finish();
     return 0;
 }
