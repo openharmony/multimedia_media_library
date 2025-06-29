@@ -519,6 +519,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/album_get_assets_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_order_position_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/set_photo_album_order_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_move_assets_dto.cpp",
   ]
 
   media_permission_check_source = [

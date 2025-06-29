@@ -81,6 +81,7 @@
 #include "get_photo_album_object_vo.h"
 #include "set_photo_album_order_vo.h"
 #include "set_photo_album_order_dto.h"
+#include "change_request_move_assets_dto.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -652,50 +653,22 @@ int32_t MediaAlbumsControllerService::MoveAssets(MessageParcel &data, MessagePar
 {
     MEDIA_INFO_LOG("enter MoveAssets");
     ChangeRequestMoveAssetsReqBody reqBody;
-    ChangeRequestMoveAssetsRspBody rspBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("MoveAssets Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(reqBody.albumId));
-    predicates.And()->In(PhotoColumn::MEDIA_ID, reqBody.assets);
-    NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, MEDIALIBRARY_TABLE);
-
-    DataShare::DataShareValuesBucket valuesBuckets;
-    valuesBuckets.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, reqBody.targetAlbumId);
-    NativeRdb::ValuesBucket value = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBuckets);
-    if (value.IsEmpty()) {
-        MEDIA_ERR_LOG("MoveAssets:Input parameter is invalid");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-
-    MediaLibraryCommand cmd(OperationObject::PAH_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
-    cmd.SetValueBucket(value);
-    cmd.SetDataSharePred(predicates);
-    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    ret = MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(cmd);
-
-    DataShare::DataSharePredicates queuePredicates;
-    queuePredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, reqBody.albumId);
-    std::vector<std::string> fetchColumns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COUNT,
-        PhotoAlbumColumns::ALBUM_IMAGE_COUNT, PhotoAlbumColumns::ALBUM_VIDEO_COUNT };
-    auto resultSet = QueryOperation(queuePredicates, fetchColumns);
-    if (reqBody.isHiddenOnly) {
-        rspBody.imageCount = -1;
-        rspBody.videoCount = -1;
-    } else {
-        rspBody.imageCount =
-            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet, TYPE_INT32));
-        rspBody.videoCount =
-            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet, TYPE_INT32));
-    }
-    rspBody.albumCount =
-        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, resultSet, TYPE_INT32));
-    MEDIA_ERR_LOG("MoveAssets rspBody.albumCount %{public}d", rspBody.albumCount);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    ChangeRequestMoveAssetsDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().MoveAssets(dto);
+    ChangeRequestMoveAssetsRespBody respBody;
+    respBody.albumCount = dto.albumCount;
+    respBody.albumImageCount = dto.albumImageCount;
+    respBody.albumVideoCount = dto.albumVideoCount;
+    respBody.targetAlbumCount = dto.targetAlbumCount;
+    respBody.targetAlbumImageCount = dto.targetAlbumImageCount;
+    respBody.targetAlbumVideoCount = dto.targetAlbumVideoCount;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::RecoverAssets(MessageParcel &data, MessageParcel &reply)
