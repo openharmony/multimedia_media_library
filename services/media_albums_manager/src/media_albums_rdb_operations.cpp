@@ -31,6 +31,7 @@
 #include "media_file_utils.h"
 #include "result_set_utils.h"
 #include "vision_column.h"
+#include "change_request_move_assets_dto.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -106,5 +107,17 @@ int32_t MediaAlbumsRdbOperations::GetFaceId(int32_t albumId, string& groupTag)
     CHECK_AND_RETURN_RET_LOG(!cond, E_HAS_DB_ERROR, "Failed to query group tag!");
     groupTag = GetStringVal(GROUP_TAG, resultSet);
     return E_OK;
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaAlbumsRdbOperations::MoveAssetsGetAlbumInfo(
+    const ChangeRequestMoveAssetsDto &moveAssetsDto)
+{
+    NativeRdb::RdbPredicates rdbPredicates(PhotoAlbumColumns::TABLE);
+    rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, moveAssetsDto.albumId);
+    rdbPredicates.Or();
+    rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, moveAssetsDto.targetAlbumId);
+    std::vector<std::string> fetchColumns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COUNT,
+        PhotoAlbumColumns::ALBUM_IMAGE_COUNT, PhotoAlbumColumns::ALBUM_VIDEO_COUNT };
+    return MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, fetchColumns);
 }
 } // namespace OHOS::Media

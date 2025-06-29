@@ -37,6 +37,7 @@
 #include "get_highlight_album_info_vo.h"
 #include "query_albums_dto.h"
 #include "set_photo_album_order_dto.h"
+#include "change_request_move_assets_vo.h"
 
 namespace OHOS::Media {
 class MediaAlbumsService {
@@ -68,6 +69,7 @@ public:
     int32_t GetAnalysisProcess(GetAnalysisProcessReqBody &reqBody, QueryResultRspBody &rspBody);
     int32_t GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqBody, QueryResultRspBody &rspBody);
     int32_t UpdatePhotoAlbumOrder(const SetPhotoAlbumOrderDto& setPhotoAlbumOrderDto);
+    int32_t MoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto);
 
 private:
     int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);
