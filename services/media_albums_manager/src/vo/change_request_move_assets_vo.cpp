@@ -29,8 +29,6 @@ bool ChangeRequestMoveAssetsReqBody::Unmarshalling(MessageParcel &parcel)
     CHECK_AND_RETURN_RET(status, status);
     parcel.ReadInt32(this->targetAlbumId);
     CHECK_AND_RETURN_RET(status, status);
-    parcel.ReadInt32(this->isHiddenOnly);
-    CHECK_AND_RETURN_RET(status, status);
 
     return true;
 }
@@ -43,29 +41,39 @@ bool ChangeRequestMoveAssetsReqBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     parcel.WriteInt32(this->targetAlbumId);
     CHECK_AND_RETURN_RET(status, status);
-    parcel.WriteInt32(this->isHiddenOnly);
-    CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 
-bool ChangeRequestMoveAssetsRspBody::Unmarshalling(MessageParcel &parcel)
+bool ChangeRequestMoveAssetsRespBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadInt32(this->albumCount);
     CHECK_AND_RETURN_RET(status, status);
-    status = parcel.ReadInt32(this->imageCount);
+    status = parcel.ReadInt32(this->albumImageCount);
     CHECK_AND_RETURN_RET(status, status);
-    status = parcel.ReadInt32(this->videoCount);
+    status = parcel.ReadInt32(this->albumVideoCount);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadInt32(this->targetAlbumCount);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadInt32(this->targetAlbumImageCount);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadInt32(this->targetAlbumVideoCount);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 
-bool ChangeRequestMoveAssetsRspBody::Marshalling(MessageParcel &parcel) const
+bool ChangeRequestMoveAssetsRespBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = parcel.WriteInt32(this->albumCount);
     CHECK_AND_RETURN_RET(status, status);
-    status = parcel.WriteInt32(this->imageCount);
+    status = parcel.WriteInt32(this->albumImageCount);
     CHECK_AND_RETURN_RET(status, status);
-    status = parcel.WriteInt32(this->videoCount);
+    status = parcel.WriteInt32(this->albumVideoCount);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteInt32(this->targetAlbumCount);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteInt32(this->targetAlbumImageCount);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteInt32(this->targetAlbumVideoCount);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }

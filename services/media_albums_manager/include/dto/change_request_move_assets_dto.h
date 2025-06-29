@@ -13,35 +13,30 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_ALBUMS_MANAGER_CHANGE_REQUEST_MOVE_ASSETS_VO_H
-#define OHOS_MEDIA_ALBUMS_MANAGER_CHANGE_REQUEST_MOVE_ASSETS_VO_H
+#ifndef OHOS_MEDIA_ASSETS_MANAGER_CHANGE_REQUEST_MOVE_ASSETS_DTO_H
+#define OHOS_MEDIA_ASSETS_MANAGER_CHANGE_REQUEST_MOVE_ASSETS_DTO_H
 
-#include "i_media_parcelable.h"
+#include <string>
+#include <sstream>
+
+#include "userfile_manager_types.h"
+
+#include "change_request_move_assets_vo.h"
 
 namespace OHOS::Media {
-class ChangeRequestMoveAssetsReqBody : public IPC::IMediaParcelable {
+class ChangeRequestMoveAssetsDto {
 public:
     std::vector<std::string> assets;
     int32_t albumId {-1};
     int32_t targetAlbumId {0};
-
-public:  // functions of Parcelable.
-    bool Unmarshalling(MessageParcel &parcel) override;
-    bool Marshalling(MessageParcel &parcel) const override;
-};
-
-class ChangeRequestMoveAssetsRespBody : public IPC::IMediaParcelable {
-public:
     int32_t albumCount {-1};
     int32_t albumImageCount {-1};
     int32_t albumVideoCount {-1};
     int32_t targetAlbumCount {-1};
     int32_t targetAlbumImageCount {-1};
     int32_t targetAlbumVideoCount {-1};
-
-public:  // functions of Parcelable.
-    bool Unmarshalling(MessageParcel &parcel) override;
-    bool Marshalling(MessageParcel &parcel) const override;
+public:
+    void FromVo(const ChangeRequestMoveAssetsReqBody& reqBody);
 };
-} // namespace OHOS::Media
-#endif // OHOS_MEDIA_ALBUMS_MANAGER_CHANGE_REQUEST_MOVE_ASSETS_VO_H
+}  // namespace OHOS::Media
+#endif // OHOS_MEDIA_ASSETS_MANAGER_CHANGE_REQUEST_MOVE_ASSETS_DTO_H
