@@ -862,7 +862,9 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
         MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(deleteRows),
         (api == MediaLibraryApi::API_10 ? MediaFileUtils::GetExtraUri(displayName, filePath) : ""));
     watch->Notify(notifyDeleteUri, NotifyType::NOTIFY_REMOVE);
-    assetRefresh->Notify();
+    if (assetRefresh !=nullptr) {
+        assetRefresh->Notify();
+    }
     DeleteRevertMessage(filePath);
     return deleteRows;
 }

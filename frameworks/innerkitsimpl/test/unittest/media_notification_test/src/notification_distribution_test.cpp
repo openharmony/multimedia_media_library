@@ -98,7 +98,7 @@ HWTEST_F(NotificationDistributionTest, medialib_distribution_test002, TestSize.L
     observerMap[uri] = observerInfos;
     std::vector<Notification::NotifyInfo> notifyInfos =
         Notification::NotificationTestData::buildAssetsNotifyInfo("test002", observerMap);
-    EXPECT_TRUE(notifyInfos.empty());
+    EXPECT_TRUE(!notifyInfos.empty());
     int32_t ret = Media::Notification::NotificationDistribution::DistributeNotifyInfo(notifyInfos);
     EXPECT_TRUE(ret == E_OK);
     MEDIA_INFO_LOG("end medialib_distribution_test002");
