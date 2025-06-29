@@ -62,7 +62,6 @@ const std::string TAG_CRITICALRES = "criticalRes";
 const std::string TAG_CONFLICTEDTASK = "conflictedTask";
 const std::string TAG_DEFAULTRUN = "defaultRun";
 const std::string TAG_STARTCONDITION = "startCondition";
-const std::string TAG_TIMERINTERVAL = "timerInterval";
 const std::string TAG_RESCHEDULEINTERVAL = "reScheduleInterval";
 const std::string TAG_CONDITIONARRAY = "conditionArray";
 const std::string TAG_ISCHARGING = "isCharging";
@@ -71,6 +70,8 @@ const std::string TAG_BATTERYCAPACITY = "batteryCapacity";
 const std::string TAG_STORAGEFREE = "storageFree";
 const std::string TAG_CHECKPARAMBEFORERUN = "checkParamBeforeRun";
 const std::string TAG_SCREENOFF = "screenOff";
+const std::string TAG_STARTTHERMALLEVELDAY = "startThermalLevelDay";
+const std::string TAG_STARTTHERMALLEVELNIGHT = "startThermalLevelNight";
 
 const std::string TAG_SCHEDULE_ENABLE = "scheduleEnable";
 const std::string TAG_AGING_FACTOR_MAP = "agingFactorMap";
@@ -329,9 +330,6 @@ bool TaskScheduleParamManager::GetStartConditionFromJson(const cJSON *paramData,
         return false;
     }
 
-    if (!GetIntFromJsonObj(startConditionJson, TAG_TIMERINTERVAL, startCondition.timerInterval)) {
-        MEDIA_DEBUG_LOG("Did't define %s in json.", TAG_TIMERINTERVAL.c_str());
-    }
     if (!GetIntFromJsonObj(startConditionJson, TAG_RESCHEDULEINTERVAL, startCondition.reScheduleInterval)) {
         MEDIA_DEBUG_LOG("Did't define %s in json.", TAG_RESCHEDULEINTERVAL.c_str());
     }
@@ -360,6 +358,14 @@ bool TaskScheduleParamManager::GetStartConditionFromJson(const cJSON *paramData,
         CFG_CHECK_AND_RETURN(taskStartSubCondition.batteryCapacity, 0, MAX_BATTERYCAPACITY, TAG_BATTERYCAPACITY);
         (void)GetIntFromJsonObj(value, TAG_SCREENOFF, taskStartSubCondition.screenOff);
         CFG_CHECK_AND_RETURN(taskStartSubCondition.screenOff, 0, MAX_SCREENOFF_VALUE, TAG_SCREENOFF);
+
+        (void)GetIntFromJsonObj(value, TAG_STARTTHERMALLEVELDAY, taskStartSubCondition.startThermalLevelDay);
+        CFG_CHECK_AND_RETURN(
+            taskStartSubCondition.startThermalLevelDay, 0, MAX_TEMPERATURE_LEVEL, TAG_STARTTHERMALLEVELDAY);
+        (void)GetIntFromJsonObj(value, TAG_STARTTHERMALLEVELNIGHT, taskStartSubCondition.startThermalLevelNight);
+        CFG_CHECK_AND_RETURN(
+            taskStartSubCondition.startThermalLevelNight, 0, MAX_TEMPERATURE_LEVEL, TAG_STARTTHERMALLEVELNIGHT);
+        
         (void)GetStringFromJsonObj(value, TAG_NETWORKTYPE, taskStartSubCondition.networkType);
         (void)GetStringFromJsonObj(value, TAG_CHECKPARAMBEFORERUN, taskStartSubCondition.checkParamBeforeRun);
         ReadIntMap(cJSON_GetObjectItemCaseSensitive(value, TAG_STORAGEFREE.c_str()),
@@ -376,12 +382,12 @@ bool TaskScheduleParamManager::GetStartConditionFromJson(const cJSON *paramData,
 
 bool TaskScheduleParamManager::VerifyTaskPolicy(const TaskScheduleCfg &taskScheduleCfg)
 {
-    CFG_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.priorityLevel, 0, MAX_PRIORITY_LEVEL, TAG_PRIORITY_LVL);
-    CFG_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.priorityFactor, 1, MAX_PRIORITY_FACTOR, TAG_PRIORITY_FACTOR);
-    CFG_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.maxToleranceTime, 1, MAX_TOLERANCE_TIME, TAG_MAX_TOLERANCE_TIME);
-    CFG_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.maxRunningTime, 1, MAX_RUNNING_TIME, TAG_MAX_RUNNING_TIME);
-    CFG_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.loadLevel, 0, MAX_LOAD_LEVEL, TAG_LOAD_LVL);
-    CFG_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.loadScale, 1, MAX_LOADSCALE, TAG_LOADSCALE);
+    CFG_PURE_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.priorityLevel, 0, MAX_PRIORITY_LEVEL, TAG_PRIORITY_LVL);
+    CFG_PURE_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.priorityFactor, 1, MAX_PRIORITY_FACTOR, TAG_PRIORITY_FACTOR);
+    CFG_PURE_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.maxToleranceTime, 1, MAX_TOLERANCE_TIME, TAG_MAX_TOLERANCE_TIME);
+    CFG_PURE_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.maxRunningTime, 1, MAX_RUNNING_TIME, TAG_MAX_RUNNING_TIME);
+    CFG_PURE_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.loadLevel, 0, MAX_LOAD_LEVEL, TAG_LOAD_LVL);
+    CFG_PURE_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.loadScale, 1, MAX_LOADSCALE, TAG_LOADSCALE);
     return true;
 }
 
@@ -578,6 +584,10 @@ void TaskScheduleParamManager::GetUnifySchedulePolicyCfgFromJson(const cJSON *js
 
 void TaskScheduleParamManager::ParseTaskScheduleCfg(const std::string &filepath)
 {
+    if (!MediaBgTaskUtils::IsFileExists(filepath)) {
+        MEDIA_ERR_LOG("file not exist, path=%{private}s", filepath.c_str());
+        return;
+    }
     std::ifstream file(filepath);
     if (!file.is_open()) {
         MEDIA_ERR_LOG("fail to open file %{public}s", MediaBgTaskUtils::DesensitizeUri(filepath).c_str());
@@ -605,6 +615,10 @@ void TaskScheduleParamManager::ParseTaskScheduleCfg(const std::string &filepath)
 
 void TaskScheduleParamManager::ParseUnifySchedulePolicyCfg(const std::string &filepath)
 {
+    if (!MediaBgTaskUtils::IsFileExists(filepath)) {
+        MEDIA_ERR_LOG("file not exist, path=%{private}s", filepath.c_str());
+        return;
+    }
     std::ifstream file(filepath);
     MEDIA_INFO_LOG("filepath: %{public}s", MediaBgTaskUtils::DesensitizeUri(filepath).c_str());
     if (!file.is_open()) {

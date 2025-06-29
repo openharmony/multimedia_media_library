@@ -41,25 +41,20 @@ int TaskRunner::OpsSaTask(TaskOps ops, int32_t saId, std::string taskName, std::
 int TaskRunner::OpsAppTask(TaskOps ops, AppSvcInfo svcName, std::string taskName, std::string extra)
 {
     MEDIA_INFO_LOG("app TaskRunner, taskName: %{public}s.", taskName.c_str());
-    std::vector<int32_t> activeIdList = { 0 };
-    DelayedSingleton<AppExecFwk::OsAccountManagerWrapper>::GetInstance()->QueryActiveOsAccountIds(activeIdList);
+    MEDIA_INFO_LOG("OpsAppTask activeId: %{public}d.", svcName.userId);
 
-    int32_t ret = E_ERR;
-    for (auto activeId : activeIdList) {
-        MEDIA_INFO_LOG("OpsAppTask activeId: %{public}d.", activeId);
-        ret = DelayedSingleton<AppOpsConnectAbility>::GetInstance()->ConnectAbility(svcName, activeId,
+    int32_t ret = DelayedSingleton<AppOpsConnectAbility>::GetInstance()->ConnectAbility(svcName,
+        MediaBgTaskUtils::TaskOpsToString(ops), taskName, extra);
+    if (ret == AppConnectionStatus::ALREADY_EXISTS) {
+        ret = DelayedSingleton<AppOpsConnectAbility>::GetInstance()->TaskOpsSync(svcName,
             MediaBgTaskUtils::TaskOpsToString(ops), taskName, extra);
-        if (ret == AppConnectionStatus::ALREADY_EXISTS) {
-            ret = DelayedSingleton<AppOpsConnectAbility>::GetInstance()->TaskOpsSync(svcName, activeId,
-                MediaBgTaskUtils::TaskOpsToString(ops), taskName, extra);
-            if (ret != E_OK) {
-                MEDIA_ERR_LOG("Failed to TaskOpsSync, activeId: %{public}d, ret: %{public}d.", activeId, ret);
-                continue;
-            }
-        } else {
-            MEDIA_INFO_LOG("ConnectAbility ret: %{public}d.", ret);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("Failed to TaskOpsSync, activeId: %{public}d, ret: %{public}d.", svcName.userId, ret);
+            return ret;
         }
     }
+
+    MEDIA_INFO_LOG("ConnectAbility ret: %{public}d.", ret);
     return ret;
 }
 

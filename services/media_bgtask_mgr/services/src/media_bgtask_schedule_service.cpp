@@ -25,6 +25,7 @@
 
 #include "ffrt_inner.h"
 #include "media_bgtask_mgr_log.h"
+#include "media_bgtask_schedule_service_ability.h"
 #include "media_bgtask_utils.h"
 #include "schedule_policy.h"
 #include "task_info_mgr.h"
@@ -34,7 +35,8 @@
 
 namespace OHOS {
 namespace MediaBgtaskSchedule {
-
+static const std::string TASKID_BUNDLE_SEP = ":";
+static const std::string TASKID_USERID_SEP = "@";
 constexpr int US_TO_S = 1000 * 1000;
 
 void MediaBgtaskScheduleService::AddDelaySchedule(time_t delaySec)
@@ -53,12 +55,14 @@ void MediaBgtaskScheduleService::ClearAllSchedule()
 // 任务名字不符合要求，不应该出现在解析后的信息中
 std::string MediaBgtaskScheduleService::GetTaskNameFromId(std::string taskId)
 {
-    size_t pos = taskId.find_first_of(":");
-    if (pos == std::string::npos) {
+    size_t posBundle = taskId.find_first_of(TASKID_BUNDLE_SEP);
+    size_t posUserId = taskId.find_first_of(TASKID_USERID_SEP);
+    posUserId = posUserId == std::string::npos ? INT_MAX : posUserId;
+    if (posBundle == std::string::npos) {
         MEDIA_ERR_LOG("Error task Id: [%{public}s]", taskId.c_str());
         return "";
     }
-    return std::string(taskId, pos + 1);
+    return std::string(taskId, posBundle + 1, posUserId - posBundle - 1);
 }
 
 void MediaBgtaskScheduleService::Init()
@@ -77,6 +81,30 @@ void MediaBgtaskScheduleService::Init()
     SystemStateMgr::GetInstance().Init();
 }
 
+bool MediaBgtaskScheduleService::CanExit(TaskScheduleResult &compResult)
+{
+    // 有任务启动，不能停止
+    if (compResult.taskStart_.size() > 0) {
+        return false;
+    }
+    // 有任务中止，说明正在运行，但是还没complete，不能停止
+    if (compResult.taskStop_.size() > 0) {
+        return false;
+    }
+    std::map<std::string, TaskInfo> &allTask = TaskInfoMgr::GetInstance().GetAllTask();
+    for (auto &it : allTask) {
+        TaskInfo &info = it.second;
+        if (!TaskInfoMgr::IsTaskEnabled(info)) {
+            continue;
+        }
+        // 任务未完成，不能停止
+        if (!info.isComplete) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void MediaBgtaskScheduleService::HandleStopTask(TaskScheduleResult &compResult)
 {
     std::map<std::string, TaskInfo> &allTask = TaskInfoMgr::GetInstance().GetAllTask();
@@ -89,9 +117,9 @@ void MediaBgtaskScheduleService::HandleStopTask(TaskScheduleResult &compResult)
         TaskInfo &task = iter->second;
         int ret = -1;
         if (task.scheduleCfg.type == "sa") {
-            ret = TaskRunner::OpsSaTask(TaskOps::STOP, task.scheduleCfg.saId, GetTaskNameFromId(taskId), "");
+            MEDIA_INFO_LOG("SA task no need to stop.");
         } else if (task.scheduleCfg.type == "app") {
-            AppSvcInfo svcInfo{task.scheduleCfg.bundleName, task.scheduleCfg.abilityName};
+            AppSvcInfo svcInfo{task.scheduleCfg.bundleName, task.scheduleCfg.abilityName, task.userId};
             ret = TaskRunner::OpsAppTask(TaskOps::STOP, svcInfo, GetTaskNameFromId(taskId), "");
         } else {
             MEDIA_ERR_LOG("Task [%{public}s] type [%{public}s] unknown", taskId.c_str(), task.scheduleCfg.type.c_str());
@@ -121,7 +149,7 @@ void MediaBgtaskScheduleService::HandleStartTask(TaskScheduleResult &compResult)
         if (task.scheduleCfg.type == "sa") {
             ret = TaskRunner::OpsSaTask(TaskOps::START, task.scheduleCfg.saId, GetTaskNameFromId(taskId), "");
         } else if (task.scheduleCfg.type == "app") {
-            AppSvcInfo svcInfo{task.scheduleCfg.bundleName, task.scheduleCfg.abilityName};
+            AppSvcInfo svcInfo{task.scheduleCfg.bundleName, task.scheduleCfg.abilityName, task.userId};
             ret = TaskRunner::OpsAppTask(TaskOps::START, svcInfo, GetTaskNameFromId(taskId), "");
         } else {
             MEDIA_ERR_LOG("Task [%{public}s] type [%{public}s] unknown", taskId.c_str(), task.scheduleCfg.type.c_str());
@@ -150,6 +178,10 @@ void MediaBgtaskScheduleService::HandleReschedule()
     AddDelaySchedule(compResult.nextComputeTime_);
     HandleStopTask(compResult);
     HandleStartTask(compResult);
+
+    if (CanExit(compResult)) {
+        MediaBgtaskScheduleServiceAbility::ExitSelf(compResult.nextComputeTime_);
+    }
 }
 
 // 当有调度策略更新的时候，参数管理模块调用这个接口
@@ -236,6 +268,37 @@ bool MediaBgtaskScheduleService::modifyTask(
     return true;
 }
 
+void MediaBgtaskScheduleService::HandleTaskProcessDie(TaskInfo &info)
+{
+    info.lastStopTime = MediaBgTaskUtils::GetNowTime();
+    info.isRunning = false;
+    // 改变状态，重新调度
+    AddDelaySchedule(SCHEDULE_DELAY_DEFAULT_SEC);
+}
+
+void MediaBgtaskScheduleService::NotifySaTaskProcessDie(int32_t saId)
+{
+    LOCK_SCHEDULE_AND_CHANGE();
+    std::map<std::string, TaskInfo> &allTask = TaskInfoMgr::GetInstance().GetAllTask();
+    for (auto it = allTask.begin(); it != allTask.end(); it++) {
+        TaskInfo &info = it->second;
+        if (TaskInfoMgr::IsSaTaskMatchProcess(info, saId)) {
+            HandleTaskProcessDie(info);
+        }
+    }
+}
+
+void MediaBgtaskScheduleService::NotifyAppTaskProcessDie(const std::string &appBundle, int32_t appUserId)
+{
+    LOCK_SCHEDULE_AND_CHANGE();
+    std::map<std::string, TaskInfo> &allTask = TaskInfoMgr::GetInstance().GetAllTask();
+    for (auto it = allTask.begin(); it != allTask.end(); it++) {
+        TaskInfo &info = it->second;
+        if (TaskInfoMgr::IsAppTaskMatchProcess(info, appBundle, appUserId)) {
+            HandleTaskProcessDie(info);
+        }
+    }
+}
 }  // namespace MediaBgtaskSchedule
 }  // namespace OHOS
 

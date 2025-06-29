@@ -105,10 +105,16 @@ void SystemStateMgr::handleSystemStateChange(const EventFwk::CommonEventData &ev
             return;
         }
     } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_USER_UNLOCKED) {
-        sysInfo.unlocked = true;
+        TaskInfoMgr::GetInstance().AddTaskForNewUserIfNeed(eventData.GetCode());
+        sysInfo.allUserIds.insert(eventData.GetCode());
         MEDIA_INFO_LOG("receive %{public}s, userId = %{public}d", action.c_str(), eventData.GetCode());
-    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING ||
-               action == EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING) {
+    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_USER_REMOVED) {
+        TaskInfoMgr::GetInstance().RemoveTaskForUser(eventData.GetCode());
+        sysInfo.allUserIds.erase(eventData.GetCode());
+        TaskInfoMgr::GetInstance().SaveTaskState(false);
+        MEDIA_INFO_LOG("receive %{public}s, userId = %{public}d", action.c_str(), eventData.GetCode());
+    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED ||
+        action == EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED) {
         MEDIA_INFO_LOG("receive %{public}s", action.c_str());
         if (IsCharging() == sysInfo.charging) {
             MEDIA_INFO_LOG("final charging status not change, ignore");
@@ -167,15 +173,15 @@ void SystemStateMgr::registerDynamicEvent()
 
     const std::vector<std::string> events = {
         EventFwk::CommonEventSupport::COMMON_EVENT_USER_UNLOCKED,  // "usual.event.SCREEN_UNLOCKED"
-        EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
-        EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING,
+        EventFwk::CommonEventSupport::COMMON_EVENT_USER_REMOVED,
+        EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED,
+        EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED,
         EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF,
         EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON,
         EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED,
         EventFwk::CommonEventSupport::COMMON_EVENT_THERMAL_LEVEL_CHANGED,
         EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE,
         EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE,
-        EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED,
     };
 
     EventFwk::MatchingSkills matchingSkills;
@@ -244,8 +250,8 @@ void SystemStateMgr::UpdateDataFreeSpacePercent()
         systemInfo_.storageFree = -1;
         return;
     }
-    int ratio = diskInfo.f_bfree * 100 / diskInfo.f_blocks;
-    MEDIA_INFO_LOG("/data free ratio: %{public}d", ratio);
+    auto ratio = diskInfo.f_bfree * 100 / diskInfo.f_blocks;
+    MEDIA_INFO_LOG("/data free ratio: %{public}s", std::to_string(ratio).c_str());
     systemInfo_.storageFree = ratio;
 }
 
@@ -291,12 +297,27 @@ void SystemStateMgr::QueryForegroundUser()
     systemInfo_.userId = foregroundUserId;
 }
 
+void SystemStateMgr::QueryAllUser()
+{
+    std::vector<AccountSA::OsAccountInfo> osAccounts;
+    ErrCode errCode = AccountSA::OsAccountManager::QueryAllCreatedOsAccounts(osAccounts);
+    if (errCode != ERR_OK || osAccounts.empty()) {
+        MEDIA_ERR_LOG("QueryAllCreatedOsAccounts error, ret %{public}d", errCode);
+        return;
+    }
+    MEDIA_INFO_LOG("QueryAllCreatedOsAccounts get userId cnt %{public}zu", osAccounts.size());
+    for (const AccountSA::OsAccountInfo &accountInfo : osAccounts) {
+        systemInfo_.allUserIds.insert(accountInfo.GetLocalId());
+    }
+}
+
 void SystemStateMgr::InitSystemState()
 {
     QueryBatteryState();
     QueryThermalLoadLevel();
     QueryNetworkState();
     QueryForegroundUser();
+    QueryAllUser();
 }
 
 void SystemStateMgr::Init()

@@ -134,8 +134,7 @@
             "//foundation/multimedia/media_library/frameworks/services/media_backup_extension:media_backup_package",
             "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp_package",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_cloud_sync:media_library_cloud_sync",
-            "//foundation/multimedia/media_library/services/media_bgtask_mgr:media_bgtask_mgr_grp",
-            "//foundation/multimedia/media_library/services/media_service_extension:mediaserviceext"
+            "//foundation/multimedia/media_library/services/media_bgtask_mgr:media_bgtask_mgr_grp"
           ]
         },
         "inner_kits": [

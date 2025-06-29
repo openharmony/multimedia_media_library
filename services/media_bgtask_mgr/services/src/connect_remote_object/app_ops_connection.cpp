@@ -16,6 +16,7 @@
 #define MLOG_TAG "MediaBgTask_AppOpsConnection"
 
 #include "app_ops_connection.h"
+#include "media_bgtask_schedule_service.h"
 #include "media_bgtask_mgr_log.h"
 
 namespace OHOS {
@@ -44,6 +45,17 @@ void AppOpsConnection::OnAbilityConnectDone(const AppExecFwk::ElementName &eleme
         MEDIA_ERR_LOG("taskOpsProxy is nullptr.");
         return;
     }
+
+    std::string bundle = svcName_.bundleName;
+    int32_t userId = userId_;
+    deathRecipient_ = new AAFwk::AbilityConnectCallbackRecipient([bundle, userId](const wptr<IRemoteObject> &remote) {
+        MEDIA_INFO_LOG("app death recipient, userId: %{public}d", userId);
+        MediaBgtaskScheduleService::GetInstance().NotifyAppTaskProcessDie(bundle, userId);
+    });
+
+    if (!remoteObject_->AddDeathRecipient(deathRecipient_)) {
+        MEDIA_INFO_LOG("add death recipient failed.");
+    }
     if (!connectedCallback_) {
         MEDIA_ERR_LOG("connectedCallback_ is nullptr.");
         return;
@@ -54,8 +66,17 @@ void AppOpsConnection::OnAbilityConnectDone(const AppExecFwk::ElementName &eleme
 void AppOpsConnection::OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int resultCode)
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    if (remoteObject_) {
+        MEDIA_INFO_LOG("app disconnect, remove death recipient, userId: %{public}d", userId_);
+        remoteObject_->RemoveDeathRecipient(deathRecipient_);
+    }
     proxy_ = nullptr;
     remoteObject_ = nullptr;
+    deathRecipient_ = nullptr;
+    if (disConnectedCallback_) {
+        disConnectedCallback_(userId_);
+    }
+    TaskInfoMgr::GetInstance().SaveTaskState(false);
 }
 
 int32_t AppOpsConnection::TaskOpsSync(const std::string& ops, const std::string& taskName, const std::string &extra)
@@ -72,6 +93,13 @@ void AppOpsConnection::AddConnectedCallback(std::function<void()> callback)
 {
     if (callback) {
         connectedCallback_ = std::move(callback);
+    }
+}
+
+void AppOpsConnection::AddDisConnectedCallback(std::function<void(int32_t)> callback)
+{
+    if (callback) {
+        disConnectedCallback_ = std::move(callback);
     }
 }
 } // namespace MediaBgtaskSchedule

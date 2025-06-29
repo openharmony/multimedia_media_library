@@ -22,6 +22,8 @@
 
 namespace OHOS {
 namespace MediaBgtaskSchedule {
+static const std::string TASKID_USERID_SEP = "@";
+static const int64_t ONE_DAY_SECONDS = 24 * 60 * 60;
 
 bool LessSort(AgingFactorMapElement a, AgingFactorMapElement b)
 {
@@ -68,6 +70,18 @@ bool SchedulePolicy::SatisfyNetwork(const TaskStartSubCondition &condition)
     return true;
 }
 
+bool SchedulePolicy::SatisfyThermal(const TaskStartSubCondition &condition)
+{
+    int startThermalLevel = isNight_ ? condition.startThermalLevelNight : condition.startThermalLevelDay;
+    if (startThermalLevel == -1) {
+        return true;
+    }
+    if (sysInfo_.thermalLevel <= startThermalLevel) {
+        return true;
+    }
+    return false;
+}
+
 bool SchedulePolicy::StartCondition(const TaskStartSubCondition &condition) // LOG
 {
     if ((condition.isCharging == 0 && sysInfo_.charging) || (condition.isCharging == 1 && !sysInfo_.charging)) {
@@ -83,6 +97,9 @@ bool SchedulePolicy::StartCondition(const TaskStartSubCondition &condition) // L
         return false;
     }
     if (!SatisfyNetwork(condition)) {
+        return false;
+    }
+    if (!SatisfyThermal(condition)) {
         return false;
     }
     if (!condition.checkParamBeforeRun.empty()) {
@@ -121,12 +138,11 @@ bool SchedulePolicy::TaskCanStart(const TaskInfo &task)
         return false;
     }
     if (task.isComplete) {
-        return false;
-    }
-    if (task.scheduleCfg.taskPolicy.startCondition.reScheduleInterval != -1) {
-        if (sysInfo_.now - task.lastStopTime <
-            task.scheduleCfg.taskPolicy.startCondition.reScheduleInterval * SECONDSPERMINUTE_) {
-            return false;
+        if (task.scheduleCfg.taskPolicy.startCondition.reScheduleInterval != -1) {
+            if (sysInfo_.now - task.lastStopTime <
+                task.scheduleCfg.taskPolicy.startCondition.reScheduleInterval * SECONDSPERMINUTE_) {
+                return false;
+            }
         }
     }
     if (task.scheduleCfg.taskPolicy.maxRunningTime != -1) {
@@ -221,10 +237,21 @@ void SchedulePolicy::AddValidTaskToQueues(std::vector<TaskInfo> &tasks)
     }
 }
 
+// 存在一些场景taskId中没有userId, conflicted与该taskInfo保持一致, 获取userId包含@符号
+std::string GetUserIdFromTaskId(std::string taskId)
+{
+    size_t pos = taskId.find_first_of(TASKID_USERID_SEP);
+    if (pos == std::string::npos) {
+        return "";
+    }
+    return std::string(taskId, pos);
+}
+
 bool SchedulePolicy::CanConcurrency(const TaskInfo &task)
 {
+    std::string userId = GetUserIdFromTaskId(task.taskId);
     for (size_t i = 0; i < task.scheduleCfg.taskPolicy.conflictedTask.size(); i++) {
-        if (selectedTasksId_.find(task.scheduleCfg.taskPolicy.conflictedTask[i]) != selectedTasksId_.end()) {
+        if (selectedTasksId_.find(task.scheduleCfg.taskPolicy.conflictedTask[i] + userId) != selectedTasksId_.end()) {
             return false;
         }
     }
@@ -293,7 +320,7 @@ void SchedulePolicy::Schedule()
 
 time_t SchedulePolicy::MinNextScheduleInterval()
 {
-    time_t minNextInterval = INT_MAX;
+    time_t minNextInterval = ONE_DAY_SECONDS;
     for (size_t i = 0; i < validTasks_.size(); i++) {
         if ((selectedTasksId_.find(validTasks_[i].taskId) == selectedTasksId_.end()) && (!validTasks_[i].isRunning)) {
             time_t waitTime = sysInfo_.now - validTasks_[i].lastStopTime;
@@ -331,19 +358,40 @@ void SchedulePolicy::GetSchedulResult(TaskScheduleResult &result)
 void SchedulePolicy::GetNoSchedulResult(TaskScheduleResult &result)
 {
     for (std::map<std::string, TaskInfo>::iterator it = allTasksList_.begin(); it != allTasksList_.end(); it++) {
+        bool isRunning = allTasksList_[it->first].isRunning;
         if (validTasksId_.find(it->first) != validTasksId_.end()) {
-            result.taskStart_.push_back(it->first);
-            continue;
+            if (isRunning) {
+                result.taskRetain_.push_back(it->first);
+            } else {
+                result.taskStart_.push_back(it->first);
+            }
+        } else {
+            if (!isRunning) {
+                result.taskRetain_.push_back(it->first);
+            } else {
+                result.taskStop_.push_back(it->first);
+            }
         }
-        result.taskStop_.push_back(it->first);
     }
     result.nextComputeTime_ = INT_MAX;
+}
+
+bool isInMidnightTo6AM(time_t timestamp)
+{
+    struct tm* timeinfo = localtime(&timestamp);  // 把 time_t 转成本地时间
+    int hour = timeinfo->tm_hour;                 // 获取小时（范围 0~23）
+    return (hour >= 1 && hour < 6);               // 判断是否在 [1~6) 点之间
+}
+
+std::map<std::string, TaskInfo> &SchedulePolicy::GetAllTaskList()
+{
+    return allTasksList_;
 }
 
 TaskScheduleResult SchedulePolicy::ScheduleTasks(std::map<std::string, TaskInfo> &taskInfos, SystemInfo & sysInfo)
 {
     MEDIA_INFO_LOG("current status: %{public}s", sysInfo.ToString().c_str());
-    // step0. 获取系统状态
+    // step1. 获取系统状态
     sysInfo_ = sysInfo;
     validTasks_.clear();
     validTasksId_.clear();
@@ -351,17 +399,8 @@ TaskScheduleResult SchedulePolicy::ScheduleTasks(std::map<std::string, TaskInfo>
     validTasksNotMustStart_.clear();
     selectedTasks_.clear();
     selectedTasksId_.clear();
+    isNight_ = isInMidnightTo6AM(sysInfo_.now);
     TaskScheduleResult result;
-    // step1. 充电、非充电触发温控判断. 此处需确认， 温度档位和温度的关系，是否对应
-    if (((sysInfo.charging) && (sysInfo_.thermalLevel > policyCfg_.temperatureLevelThredCharing)) ||
-        ((!sysInfo.charging) && (sysInfo_.thermalLevel > policyCfg_.temperatureLevelThredNoCharing))) {
-        result.nextComputeTime_ = INT_MAX; // 超温控，返回一个默认值，例如INT_MAX。温控恢复后自然会调用本函数
-        result.taskStart_.clear();
-        for (std::map<std::string, TaskInfo>::iterator it = allTasksList_.begin(); it != allTasksList_.end(); it++) {
-            result.taskStop_.push_back(it->first);
-        }
-        return result;
-    }
     // step2. 更新任务状态
     GetTasksState(taskInfos);
     // step3. 根据当前系统状态+任务状态+任务启停条件，筛选满足执行条件的有效任务
@@ -383,8 +422,9 @@ TaskScheduleResult SchedulePolicy::ScheduleTasks(std::map<std::string, TaskInfo>
     Schedule();
     // step9. 获取启动、停止任务列表，并计算下次调用时间
     GetSchedulResult(result);
-    MEDIA_INFO_LOG("success ScheduleTasks, startTask: %{public}zu, stopTask: %{public}zu, retainTask: %{public}zu.",
-        result.taskStart_.size(), result.taskStop_.size(), result.taskRetain_.size());
+    MEDIA_INFO_LOG("success ScheduleTasks, startTask: %{public}zu, stopTask: %{public}zu, retainTask: %{public}zu, "
+        "nextComputeTime: %{public}s", result.taskStart_.size(), result.taskStop_.size(), result.taskRetain_.size(),
+        std::to_string(static_cast<int64_t>(result.nextComputeTime_).c_str()));
     return result;
 }
 

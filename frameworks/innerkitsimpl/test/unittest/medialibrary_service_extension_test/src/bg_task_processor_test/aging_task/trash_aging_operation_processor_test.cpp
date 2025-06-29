@@ -34,105 +34,248 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-static const int32_t BATCH_INSERT_COUNT = 100;
-static const int32_t HOURS_26 = 26 * 60 * 60;    // 26 hours
+static constexpr int64_t TIME_22_HOURS = 22 * 60 * 60;
+static constexpr int64_t TIME_26_HOURS = 26 * 60 * 60;
+
+static constexpr int32_t INSERT_1_DATA = 1;
+
+static constexpr int32_t QUERY_0_DATA = 0;
+static constexpr int32_t QUERY_1_DATA = 1;
 
 const std::string MEDIA_CACHE_FILE = "/storage/cloud/files/.cache/test.jpg";
-int32_t InsertInvalidDeletedAlbum(int32_t dirty, int32_t &fileId)
+
+int32_t InsertInvalidDeletedAlbum(const std::string &albumName, int32_t dirty, const std::string &cloudId,
+    int64_t &outRowId, int32_t count)
 {
-    MEDIA_INFO_LOG("start");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    EXPECT_NE(rdbStore, nullptr);
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return E_ERR;
+    }
 
     NativeRdb::ValuesBucket value;
+    value.Put(PhotoAlbumColumns::ALBUM_NAME, albumName);
     value.Put(PhotoAlbumColumns::ALBUM_DIRTY, dirty);
+    if (!cloudId.empty()) {
+        value.Put(PhotoAlbumColumns::ALBUM_CLOUD_ID, cloudId);
+    }
     std::vector<NativeRdb::ValuesBucket> insertValues;
-    for (int i = 0; i < BATCH_INSERT_COUNT; ++i) {
+    for (int i = 0; i < count; ++i) {
         insertValues.push_back(value);
     }
-    int64_t outRowId = -1;
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return E_ERR;
     }
     int32_t ret = rdbStore->BatchInsert(outRowId, PhotoAlbumColumns::TABLE, insertValues);
-    EXPECT_EQ(ret, E_OK);
-    fileId = static_cast<int32_t>(outRowId);
     return ret;
 }
 
-void modifyFileTime(const std::string& filePath)
+void modifyFileTime(const std::string& filePath, int64_t timeValue)
 {
     time_t currentTime = time(nullptr);
     if (currentTime == -1) {
         return;
     }
     struct utimbuf newTime;
-    newTime.modtime = currentTime - HOURS_26;
+    newTime.modtime = currentTime - timeValue;
     CHECK_AND_RETURN_INFO_LOG(utime(filePath.c_str(), &newTime) != E_OK, "modifyFileTime success");
 }
 
-int32_t QueryFileId(int32_t fileId)
+int32_t QueryDeletedAlbumCount(int32_t &count, const std::string &albumName)
 {
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("this file id %{private}d is invalid", fileId);
-        return E_ERR;
-    }
- 
-    vector<string> columns = { PhotoColumn::MEDIA_ID };
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
-        MediaLibraryApi::API_10);
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    vector<string> columns = { PhotoAlbumColumns::ALBUM_ID };
+    NativeRdb::AbsRdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
+
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("can not get rdbstore");
         return E_ERR;
     }
-    auto resultSet = rdbStore->Query(cmd, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not get fileId");
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is nullptr");
+        return E_ERR;
+    }
+    if (resultSet->GetRowCount(count) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("failed to GetRowCount");
         return E_ERR;
     }
     resultSet->Close();
     return E_OK;
 }
 
+/**
+ * @tc.name: CacheAging_test_001
+ * @tc.desc: /storage/cloud/files/.cache/ 路径不存在时, CacheAging不会执行
+ */
 HWTEST_F(MediaLibraryBgTaskProcessorTest, CacheAging_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("CacheAging_test_001 start");
     auto processor = TrashAgingOperationProcessor();
     processor.CacheAging();
     EXPECT_EQ(MediaFileUtils::IsDirectory(MEDIA_CACHE_DIR), false);
-    MEDIA_INFO_LOG("cache file dir not exist");
+    MEDIA_INFO_LOG("CacheAging_test_001 end");
 }
 
+/**
+ * @tc.name: CacheAging_test_002
+ * @tc.desc: 停止后台任务时, 会在CacheAging中打断
+ */
 HWTEST_F(MediaLibraryBgTaskProcessorTest, CacheAging_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("CacheAging_test_002 start");
     EXPECT_EQ(MediaFileUtils::CreateDirectory(MEDIA_CACHE_DIR), true);
     EXPECT_EQ(MediaFileUtils::CreateFile(MEDIA_CACHE_FILE), true);
     EXPECT_EQ(MediaFileUtils::IsFileExists(MEDIA_CACHE_FILE), true);
-    modifyFileTime(MEDIA_CACHE_FILE);
     auto processor = TrashAgingOperationProcessor();
-    processor.CacheAging();
-    EXPECT_EQ(MediaFileUtils::IsFileExists(MEDIA_CACHE_FILE), false);
-    MEDIA_INFO_LOG("cache file clear");
-}
-
-HWTEST_F(MediaLibraryBgTaskProcessorTest, ClearInvalidDeletedAlbum_test_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("CacheAging_test_002 start");
-    auto processor = TrashAgingOperationProcessor();
-    int32_t fileId = -1;
-    int32_t dirty = 4;
-    int32_t ret = InsertInvalidDeletedAlbum(dirty, fileId);
+    auto ret = processor.Stop("");
     EXPECT_EQ(ret, E_OK);
-    processor.ClearInvalidDeletedAlbum();
-    ret = QueryFileId(fileId);
-    EXPECT_EQ(ret, E_ERR);
+
+    processor.CacheAging();
+    EXPECT_EQ(MediaFileUtils::IsFileExists(MEDIA_CACHE_FILE), true);
     MEDIA_INFO_LOG("CacheAging_test_002 end");
 }
 
+/**
+ * @tc.name: CacheAging_test_003
+ * @tc.desc: 24小时以内的文件不会被删除
+ */
+HWTEST_F(MediaLibraryBgTaskProcessorTest, CacheAging_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("CacheAging_test_003 start");
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(MEDIA_CACHE_DIR), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(MEDIA_CACHE_FILE), true);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(MEDIA_CACHE_FILE), true);
+    modifyFileTime(MEDIA_CACHE_FILE, TIME_22_HOURS);
 
+    auto processor = TrashAgingOperationProcessor();
+    processor.CacheAging();
+
+    EXPECT_EQ(MediaFileUtils::IsFileExists(MEDIA_CACHE_FILE), true);
+    MEDIA_INFO_LOG("CacheAging_test_003 end");
+}
+
+/**
+ * @tc.name: CacheAging_test_004
+ * @tc.desc: 24小时之前的文件会被删除
+ */
+HWTEST_F(MediaLibraryBgTaskProcessorTest, CacheAging_test_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("CacheAging_test_004 start");
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(MEDIA_CACHE_DIR), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(MEDIA_CACHE_FILE), true);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(MEDIA_CACHE_FILE), true);
+    modifyFileTime(MEDIA_CACHE_FILE, TIME_26_HOURS);
+
+    auto processor = TrashAgingOperationProcessor();
+    processor.CacheAging();
+
+    EXPECT_EQ(MediaFileUtils::IsFileExists(MEDIA_CACHE_FILE), false);
+    MEDIA_INFO_LOG("CacheAging_test_004 end");
+}
+
+/**
+ * @tc.name: ClearInvalidDeletedAlbum_test_001
+ * @tc.desc: 仅 dirty = 4 不会被删除
+ */
+HWTEST_F(MediaLibraryBgTaskProcessorTest, ClearInvalidDeletedAlbum_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("ClearInvalidDeletedAlbum_test_001 start");
+    int64_t outRow = -1;
+    std::string albumName = "ClearInvalidDeletedAlbum_test_001";
+    int32_t dirty = static_cast<int32_t>(DirtyTypes::TYPE_DELETED);
+    std::string cloudId = "test123456";
+    int32_t ret = InsertInvalidDeletedAlbum(albumName, dirty, cloudId, outRow, INSERT_1_DATA);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(outRow, INSERT_1_DATA);
+
+    auto processor = TrashAgingOperationProcessor();
+    processor.ClearInvalidDeletedAlbum();
+    
+    int32_t count = -1;
+    ret = QueryDeletedAlbumCount(count, albumName);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(count, QUERY_1_DATA);
+    MEDIA_INFO_LOG("ClearInvalidDeletedAlbum_test_001 end");
+}
+
+/**
+ * @tc.name: ClearInvalidDeletedAlbum_test_002
+ * @tc.desc: 仅 cloud_id = null 不会被删除
+ */
+HWTEST_F(MediaLibraryBgTaskProcessorTest, ClearInvalidDeletedAlbum_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("ClearInvalidDeletedAlbum_test_002 start");
+    int64_t outRow = -1;
+    std::string albumName = "ClearInvalidDeletedAlbum_test_002";
+    int32_t dirty = static_cast<int32_t>(DirtyTypes::TYPE_NEW);
+    std::string cloudId = "test123456";
+    int32_t ret = InsertInvalidDeletedAlbum(albumName, dirty, cloudId, outRow, INSERT_1_DATA);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(outRow, INSERT_1_DATA);
+
+    auto processor = TrashAgingOperationProcessor();
+    processor.ClearInvalidDeletedAlbum();
+
+    int32_t count = -1;
+    ret = QueryDeletedAlbumCount(count, albumName);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(count, QUERY_1_DATA);
+    MEDIA_INFO_LOG("ClearInvalidDeletedAlbum_test_002 end");
+}
+
+/**
+ * @tc.name: ClearInvalidDeletedAlbum_test_003
+ * @tc.desc: dirty = 4 && cloud_id = null 会被删除
+ */
+HWTEST_F(MediaLibraryBgTaskProcessorTest, ClearInvalidDeletedAlbum_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("ClearInvalidDeletedAlbum_test_003 start");
+    int64_t outRow = -1;
+    std::string albumName = "ClearInvalidDeletedAlbum_test_003";
+    int32_t dirty = static_cast<int32_t>(DirtyTypes::TYPE_DELETED);
+    std::string cloudId = "";
+    int32_t ret = InsertInvalidDeletedAlbum(albumName, dirty, cloudId, outRow, INSERT_1_DATA);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(outRow, INSERT_1_DATA);
+
+    auto processor = TrashAgingOperationProcessor();
+    processor.ClearInvalidDeletedAlbum();
+
+    int32_t count = -1;
+    ret = QueryDeletedAlbumCount(count, albumName);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(count, QUERY_0_DATA);
+    MEDIA_INFO_LOG("ClearInvalidDeletedAlbum_test_003 end");
+}
+
+/**
+ * @tc.name: ClearInvalidDeletedAlbum_test_004
+ * @tc.desc: 停止后台任务时, 会在ClearInvalidDeletedAlbum中打断
+ */
+HWTEST_F(MediaLibraryBgTaskProcessorTest, ClearInvalidDeletedAlbum_test_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("ClearInvalidDeletedAlbum_test_004 start");
+    int64_t outRow = -1;
+    std::string albumName = "ClearInvalidDeletedAlbum_test_004";
+    int32_t dirty = static_cast<int32_t>(DirtyTypes::TYPE_DELETED);
+    std::string cloudId = "";
+    int32_t ret = InsertInvalidDeletedAlbum(albumName, dirty, cloudId, outRow, INSERT_1_DATA);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(outRow, INSERT_1_DATA);
+
+    auto processor = TrashAgingOperationProcessor();
+    ret = processor.Stop("");
+    EXPECT_EQ(ret, E_OK);
+    processor.ClearInvalidDeletedAlbum();
+
+    int32_t count = -1;
+    ret = QueryDeletedAlbumCount(count, albumName);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(count, QUERY_1_DATA);
+    MEDIA_INFO_LOG("ClearInvalidDeletedAlbum_test_004 end");
+}
 } // namespace Media
 } // namespace OHOS

@@ -112,20 +112,14 @@ void TrashAgingOperationProcessor::ClearInvalidDeletedAlbum()
 {
     MEDIA_INFO_LOG("begin ClearInvalidDeletedAlbum");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
 
     const std::string QUERY_NO_CLOUD_DELETED_ALBUM_INFO =
         "SELECT album_id, album_name FROM PhotoAlbum WHERE " +
         PhotoAlbumColumns::ALBUM_DIRTY + " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
         " AND " + PhotoColumn::PHOTO_CLOUD_ID + " is NULL";
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_NO_CLOUD_DELETED_ALBUM_INFO);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query not match data fails");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Query not match data fails");
 
     std::vector<std::string> albumIds;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK && !taskStop_) {

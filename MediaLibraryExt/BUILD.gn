@@ -22,7 +22,6 @@ ohos_hap("medialibrary_ext_hap") {
   ]
   shared_libraries = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension:mediaserviceext",
   ]
   certificate_profile = "./signature/medialib.p7b"
   hap_name = "Media_Library_Ext"

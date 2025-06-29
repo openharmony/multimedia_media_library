@@ -18,6 +18,11 @@
 constexpr int MEDIA_TASK_SCHEDULE_SERVICE_ID = 3016;
 #include "media_bgtask_schedule_service_ability.h"
 
+#include <vector>
+
+#include "string_ex.h"
+#include "if_system_ability_manager.h"
+#include "iservice_registry.h"
 #include "system_ability_definition.h"
 #include "media_bgtask_mgr_log.h"
 #include "media_bgtask_schedule_service.h"
@@ -27,6 +32,7 @@ constexpr int MEDIA_TASK_SCHEDULE_SERVICE_ID = 3016;
 
 namespace OHOS {
 namespace MediaBgtaskSchedule {
+static const int32_t ARGS_INDEX_FIVE = 5;
 REGISTER_SYSTEM_ABILITY_BY_ID(MediaBgtaskScheduleServiceAbility, MEDIA_TASK_SCHEDULE_SERVICE_ID, true);
 
 MediaBgtaskScheduleServiceAbility::MediaBgtaskScheduleServiceAbility(const int32_t systemAbilityId, bool runOnCreate)
@@ -84,6 +90,51 @@ int32_t MediaBgtaskScheduleServiceAbility::OnSvcCmd(int32_t fd, const std::vecto
     return 0;
 }
 
+void MediaBgtaskScheduleServiceAbility::ExitSelf(time_t nextRunDelay)
+{
+    sptr<ISystemAbilityManager> samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (samgr == nullptr) {
+        MEDIA_ERR_LOG("Get samgr return null!");
+        return;
+    }
+
+    // 更新下次启动条件
+    std::vector<SystemAbilityOnDemandEvent> events;
+    int32_t ret = samgr->GetOnDemandPolicy(MEDIA_TASK_SCHEDULE_SERVICE_ID, OnDemandPolicyType::START_POLICY, events);
+    if (ret != ERR_OK) {
+        MEDIA_ERR_LOG("GetStartupOnDemandPolicy failure,return code %{public}d", ret);
+        return;
+    }
+
+    SystemAbilityOnDemandEvent timeEvent;
+    timeEvent.eventId = OnDemandEventId::TIMED_EVENT;
+    timeEvent.name = "loopevent";
+    timeEvent.value = std::to_string(nextRunDelay);
+    events.emplace_back(timeEvent);
+    ret = samgr->UpdateOnDemandPolicy(MEDIA_TASK_SCHEDULE_SERVICE_ID, OnDemandPolicyType::START_POLICY, events);
+    if (ret != ERR_OK) {
+        MEDIA_ERR_LOG("UpdateOnDemandPolicy failure,return code %{public}d", ret);
+        return;
+    }
+    MEDIA_INFO_LOG("UpdateOnDemandPolicy success, delay second %{public}s", timeEvent.value.c_str());
+
+    ret = samgr->UnloadSystemAbility(MEDIA_TASK_SCHEDULE_SERVICE_ID);
+    if (ret != ERR_OK) {
+        MEDIA_ERR_LOG("UnloadSystemAbility failure, return code %{public}d", ret);
+        return;
+    }
+    MEDIA_INFO_LOG("UnloadSystemAbility success");
+}
+
+int32_t GetUserIdFromArgs(const std::vector<std::u16string> &args)
+{
+    constexpr int testUseridArgsCnt = 6;
+    if (args.size() >= testUseridArgsCnt && IsNumericStr(Str16ToStr8(args[ARGS_INDEX_FIVE]))) {
+        return std::stoi(Str16ToStr8(args[ARGS_INDEX_FIVE]));
+    }
+    return -1;
+}
+
 int32_t MediaBgtaskScheduleServiceAbility::Dump(int32_t fd, const std::vector<std::u16string> &args)
 {
     MEDIA_INFO_LOG("Dump called....");
@@ -92,7 +143,7 @@ int32_t MediaBgtaskScheduleServiceAbility::Dump(int32_t fd, const std::vector<st
     MEDIA_INFO_LOG("Dump called....");
 
     int32_t ret = OHOS::NO_ERROR;
-    int argSize = args.size();
+    auto argSize = args.size();
     std::string arg0 = (argSize == 0) ? "" : Str16ToStr8(args[0]);
     // -test sa|app start|stop $(said)|$(bundle/abilityName) $(taskName)
     constexpr int TEST_ARGS_CNT = 5;
@@ -101,6 +152,7 @@ int32_t MediaBgtaskScheduleServiceAbility::Dump(int32_t fd, const std::vector<st
         std::string ops = Str16ToStr8(args[2]);
         std::string startInfo = Str16ToStr8(args[3]);
         std::string taskName = Str16ToStr8(args[4]);
+        int32_t userId = GetUserIdFromArgs(args);
         dprintf(fd,
             "Enter test: %{public}s %{public}s task in [%{public}s], name %{public}s.\n",
             type.c_str(),
@@ -123,7 +175,7 @@ int32_t MediaBgtaskScheduleServiceAbility::Dump(int32_t fd, const std::vector<st
                 dprintf(fd, "Bad ops type:%{public}s", ops.c_str());
                 return OHOS::INVALID_OPERATION;
             }
-            AppSvcInfo svcInfo{"com.ohos.medialibrary.medialibrarydata", "ServiceExtAbility"};
+            AppSvcInfo svcInfo{"com.ohos.medialibrary.medialibrarydata", "ServiceExtAbility", userId};
             TaskRunner::OpsAppTask(taskOps, svcInfo, taskName, "");
         }
     }

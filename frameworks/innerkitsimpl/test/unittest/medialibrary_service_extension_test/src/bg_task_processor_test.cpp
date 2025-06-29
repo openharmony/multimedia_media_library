@@ -27,6 +27,7 @@
 #include "media_log.h"
 #include "media_old_photos_column.h"
 #include "media_app_uri_permission_column.h"
+#include "photo_album_column.h"
 
 #include <string>
 #include <vector>
@@ -50,6 +51,7 @@ static void CleanTestTables()
 {
     std::vector<std::string> dropTableList = {
         PhotoColumn::PHOTOS_TABLE,
+        PhotoAlbumColumns::TABLE,
         PhotoColumn::TAB_OLD_PHOTOS_TABLE,
         AppUriPermissionColumn::APP_URI_PERMISSION_TABLE,
     };
@@ -68,6 +70,7 @@ static void SetTables()
 {
     vector<string> createTableSqlList = {
         PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoAlbumColumns::CREATE_TABLE,
         CREATE_TAB_OLD_PHOTO_TABLE,
         AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
     };
@@ -95,6 +98,10 @@ static void ClearAndRestart()
     system("rm -rf /storage/cloud/files/.thumbs");
     system("rm -rf /storage/cloud/files/.editData");
     system("rm -rf /storage/cloud/files/.cache");
+    system("rm -rf /storage/cloud/files/highlight");
+    system("rm -rf /data/storage/el2/log/logpack/*");
+    system("rm -rf /data/medialibrary/database/rdb/*");
+    system("rm -rf /data/storage/el2/base");
     for (const auto &dir : TEST_ROOT_DIRS) {
         string ROOT_PATH = "/storage/cloud/100/files/";
         bool ret = MediaFileUtils::CreateDirectory(ROOT_PATH + dir + "/");

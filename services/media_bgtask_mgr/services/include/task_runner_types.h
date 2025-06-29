@@ -29,6 +29,7 @@ enum TaskOps {
 struct AppSvcInfo {
     std::string bundleName;
     std::string abilityName;
+    int32_t userId;
 };
 } // namespace MediaBgtaskSchedule
 } // namespace OHOS
