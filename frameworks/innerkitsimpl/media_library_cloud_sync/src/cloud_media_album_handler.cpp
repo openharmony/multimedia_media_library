@@ -278,6 +278,10 @@ int32_t CloudMediaAlbumHandler::OnCreateRecords(
         MDKRecordAlbumData data(result.GetDKRecord());
         std::string newCloudId = data.GetCloudId().value_or("");
         reqBody.AddAlbumData(entry.first, newCloudId, result.IsSuccess());
+        MEDIA_INFO_LOG("OnCreateRecords, IsSuccess: %{public}d, ErrorCode: %{public}d, cloudId: %{public}s",
+            result.IsSuccess(),
+            result.GetDKError().serverErrorCode,
+            entry.first.c_str());
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_CREATE_RECORDS);
     FailedSizeResp resp;
@@ -301,6 +305,10 @@ int32_t CloudMediaAlbumHandler::OnMdirtyRecords(
         record.cloudId = entry.first;
         record.isSuccess = result.IsSuccess();
         reqBody.AddMdirtyRecord(record);
+        MEDIA_INFO_LOG("OnMdirtyRecords, IsSuccess: %{public}d, ErrorCode: %{public}d, cloudId: %{public}s",
+            result.IsSuccess(),
+            result.GetDKError().serverErrorCode,
+            entry.first.c_str());
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_MDIRTY_RECORDS);
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
@@ -333,6 +341,10 @@ int32_t CloudMediaAlbumHandler::OnDeleteRecords(
         album.cloudId = entry.first;
         album.isSuccess = result.IsSuccess();
         reqBody.AddSuccessResult(album);
+        MEDIA_INFO_LOG("OnDeleteRecords, IsSuccess: %{public}d, ErrorCode: %{public}d, cloudId: %{public}s",
+            result.IsSuccess(),
+            result.GetDKError().serverErrorCode,
+            entry.first.c_str());
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_DELETE_RECORDS);
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
