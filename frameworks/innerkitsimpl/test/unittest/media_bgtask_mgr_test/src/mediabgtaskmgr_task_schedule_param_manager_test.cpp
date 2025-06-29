@@ -49,7 +49,6 @@ const std::string TAG_LOAD_LVL = "loadLevel";
 const std::string TAG_LOADSCALE = "loadscale";
 const std::string TAG_CRITICALRES = "criticalRes";
 const std::string TAG_CONFLICTEDTASK = "conflictedTask";
-const std::string TAG_TIMERINTERVAL = "timerInterval";
 const std::string TAG_RESCHEDULEINTERVAL = "reScheduleInterval";
 const std::string TAG_CONDITIONARRAY = "conditionArray";
 const std::string TAG_ISCHARGING = "isCharging";
@@ -498,20 +497,17 @@ HWTEST_F(MediaBgtaskMgrTaskScheduleParamManagerTest, media_bgtask_mgr_GetStartCo
          TestSize.Level1)
 {
     cJSON* testJson = cJSON_CreateObject();
-    // 1. 测试当JSON中未包含timerInterval, reScheduleInterval, conditionArray字段时，函数应正确解析该字段
+    // 1. 测试当JSON中未包含reScheduleInterval, conditionArray字段时，函数应正确解析该字段
     cJSON_AddObjectToObject(testJson, TAG_STARTCONDITION.c_str());
     TaskStartCondition startCondition;
     TaskScheduleParamManager::GetInstance().GetStartConditionFromJson(testJson, startCondition);
-    EXPECT_EQ(startCondition.timerInterval, -1);
     EXPECT_EQ(startCondition.reScheduleInterval, -1);
     EXPECT_EQ(startCondition.conditionArray.size(), 0);
 
     cJSON *startJson = cJSON_GetObjectItem(testJson, TAG_STARTCONDITION.c_str());
-    cJSON_AddNumberToObject(startJson, TAG_TIMERINTERVAL.c_str(), 1);
     cJSON_AddNumberToObject(startJson, TAG_RESCHEDULEINTERVAL.c_str(), 2);
     cJSON_AddNumberToObject(startJson, TAG_CONDITIONARRAY.c_str(), 2);
     TaskScheduleParamManager::GetInstance().GetStartConditionFromJson(testJson, startCondition);
-    EXPECT_EQ(startCondition.timerInterval, 1);
     EXPECT_EQ(startCondition.reScheduleInterval, 2);
     EXPECT_EQ(startCondition.conditionArray.size(), 0);
     cJSON_Delete(testJson);

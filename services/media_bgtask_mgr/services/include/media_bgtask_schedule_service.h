@@ -58,6 +58,10 @@ public:
     // 所有调度，都要加这个锁。只用这一个锁，避免多个锁造成死锁
     std::recursive_mutex scheduleLock_;
     void AddDelaySchedule(time_t delaySec);
+    bool CanExit(TaskScheduleResult &compResult);
+    // 进程意外死亡后，刷新运行状态，重新触发调度
+    void NotifySaTaskProcessDie(int saId);
+    void NotifyAppTaskProcessDie(const std::string &appBundle,  int32_t appUserId);
 
 private:
     std::shared_ptr<ffrt::queue> queue_ = nullptr;
@@ -65,6 +69,7 @@ private:
     void HandleReschedule();
     void HandleStopTask(TaskScheduleResult &compResult);
     void HandleStartTask(TaskScheduleResult &compResult);
+    void HandleTaskProcessDie(TaskInfo &info);
 };
 
 // 注意：因为涉及作用域，不能用函数

@@ -39,7 +39,6 @@ ohos_fuzztest("MediaLibraryServiceExtensionFuzzTest") {
 
   deps = [
     "${MEDIALIB_BUSINESS_PATH}/media_bgtask_mgr:media_bgtask_mgr_client",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension:mediaserviceext",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
   ]
