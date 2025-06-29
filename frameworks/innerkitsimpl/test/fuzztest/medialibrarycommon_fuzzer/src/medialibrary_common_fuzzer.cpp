@@ -16,6 +16,8 @@
 
 #include <cstdint>
 #include <string>
+#include <fstream>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "dfx_database_utils.h"
 #include "exif_utils.h"
@@ -33,138 +35,88 @@
 
 namespace OHOS {
 using namespace std;
-const int32_t EVEN = 2;
+static const int32_t NUM_BYTES = 1;
+static const int32_t MIN_PERMISSION_USED_TYPE = -1;
+static const int32_t MAX_PERMISSION_USED_TYPE = 3;
+static const int32_t MAX_BYTE_VALUE = 256;
+static const int32_t SEED_SIZE = 1024;
+const string TABLE = "PhotoAlbum";
+const string PHOTOS_TABLE = "Photos";
 const std::string PERMISSION = "testName";
 const std::string ROOT_MEDIA_DIR = "/storage/cloud/files/";
 const std::string PHOTO_PATH = "/Photo/5/IMG_1741264239_005.jpg";
-static inline string FuzzString(const uint8_t *data, size_t size)
+FuzzedDataProvider *provider = nullptr;
+
+static inline vector<string> FuzzVectorString()
 {
-    return {reinterpret_cast<const char*>(data), size};
+    return {provider->ConsumeBytesAsString(NUM_BYTES)};
 }
 
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
+static inline Security::AccessToken::PermissionUsedType FuzzPermissionUsedType()
 {
-    if (data == nullptr || size < sizeof(int32_t)) {
-        return 0;
-    }
-    return static_cast<int32_t>(*data);
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(MIN_PERMISSION_USED_TYPE, MAX_PERMISSION_USED_TYPE);
+    return static_cast<Security::AccessToken::PermissionUsedType>(value);
 }
 
-static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int64_t)) {
-        return 0;
-    }
-    return static_cast<int64_t>(*data);
-}
-
-static inline bool FuzzBool(const uint8_t* data, size_t size)
-{
-    if (size == 0) {
-        return false;
-    }
-    return (data[0] % EVEN) == 0;
-}
-
-static inline double FuzzDouble(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(double)) {
-        return 0.0;
-    }
-    return static_cast<double>(*data);
-}
-
-static inline vector<string> FuzzVectorString(const uint8_t *data, size_t size)
-{
-    return {FuzzString(data, size)};
-}
-
-static inline vector<uint8_t> FuzzVectorUint8(const uint8_t *data, size_t size)
-{
-    return {*data};
-}
-
-static inline Security::AccessToken::PermissionUsedType FuzzPermissionUsedType(const uint8_t *data, size_t size)
-{
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(Security::AccessToken::PermissionUsedType::NORMAL_TYPE) &&
-        value <= static_cast<int32_t>(Security::AccessToken::PermissionUsedType::PERM_USED_TYPE_BUTT)) {
-        return static_cast<Security::AccessToken::PermissionUsedType>(value);
-    }
-    return Security::AccessToken::PermissionUsedType::INVALID_USED_TYPE;
-}
-
-static void ScanTest(const uint8_t *data, size_t size)
+static void ScanTest()
 {
     auto scannerManager = Media::MediaScannerManager::GetInstance();
     if (scannerManager != nullptr) {
-        scannerManager->ScanDir(FuzzString(data, size), nullptr);
+        scannerManager->ScanDir(provider->ConsumeBytesAsString(NUM_BYTES), nullptr);
     }
 }
 
-static void CommonUtilsTest(const uint8_t *data, size_t size)
+static void CommonUtilsTest()
 {
-    Media::MediaLibraryCommonUtils::CheckWhereClause(FuzzString(data, size));
+    Media::MediaLibraryCommonUtils::CheckWhereClause(provider->ConsumeBytesAsString(NUM_BYTES));
     string key;
-    Media::MediaLibraryCommonUtils::GenKeySHA256(FuzzString(data, size), key);
-    Media::MediaLibraryCommonUtils::GenKeySHA256(FuzzVectorUint8(data, size), key);
+    Media::MediaLibraryCommonUtils::GenKeySHA256(provider->ConsumeBytesAsString(NUM_BYTES), key);
+    Media::MediaLibraryCommonUtils::GenKeySHA256(provider->ConsumeBytes<uint8_t>(NUM_BYTES), key);
     string selection;
     Media::MediaLibraryCommonUtils::AppendSelections(selection);
 }
 
-static void DfxTest(const uint8_t *data, size_t size)
+static void DfxTest()
 {
-    const int32_t int32Count = 5;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
-        return;
-    }
-    int32_t offset = 0;
-    int32_t mediaType = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t position = FuzzInt32(data + offset, size);
+    int32_t mediaType = provider->ConsumeIntegral<int32_t>();
+    int32_t position = provider->ConsumeIntegral<int32_t>();
     Media::DfxDatabaseUtils::QueryFromPhotos(mediaType, position);
-    offset += sizeof(int32_t);
-    int32_t albumSubtype = FuzzInt32(data + offset, size);
+
+    int32_t albumSubtype = provider->ConsumeIntegral<int32_t>();
     Media::DfxDatabaseUtils::QueryAlbumInfoBySubtype(albumSubtype);
     Media::DfxDatabaseUtils::QueryDirtyCloudPhoto();
-    Media::DfxDatabaseUtils::QueryAnalysisVersion(FuzzString(data, size), FuzzString(data, size));
+    Media::DfxDatabaseUtils::QueryAnalysisVersion(provider->ConsumeBytesAsString(NUM_BYTES),
+        provider->ConsumeBytesAsString(NUM_BYTES));
+
     int32_t downloadedThumb;
     int32_t generatedThumb;
     Media::DfxDatabaseUtils::QueryDownloadedAndGeneratedThumb(downloadedThumb, generatedThumb);
     int32_t totalDownload;
     Media::DfxDatabaseUtils::QueryTotalCloudThumb(totalDownload);
     Media::DfxDatabaseUtils::QueryDbVersion();
-    offset += sizeof(int32_t);
-    int32_t imageCount = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t videoCount = FuzzInt32(data + offset, size);
+
     Media::PhotoRecordInfo info = {
-        .imageCount = imageCount,
-        .videoCount = videoCount
+        .imageCount = provider->ConsumeIntegral<int32_t>(),
+        .videoCount = provider->ConsumeIntegral<int32_t>()
     };
     Media::DfxDatabaseUtils::QueryPhotoRecordInfo(info);
 }
 
-static void PermissionUtilsTest(const uint8_t *data, size_t size)
+static void PermissionUtilsTest()
 {
-    Media::PermissionUtils::CheckCallerPermission(FuzzString(data, size));
+    Media::PermissionUtils::CheckCallerPermission(provider->ConsumeBytesAsString(NUM_BYTES));
     std::vector<std::string> perms;
     Media::PermissionUtils::CheckCallerPermission(perms);
     Media::PermissionUtils::CheckPhotoCallerPermission(perms);
-    Media::PermissionUtils::CheckPhotoCallerPermission(FuzzString(data, size));
+    Media::PermissionUtils::CheckPhotoCallerPermission(provider->ConsumeBytesAsString(NUM_BYTES));
     Media::PermissionUtils::CheckHasPermission(perms);
-    perms.push_back(FuzzString(data, size));
+    perms.push_back(provider->ConsumeBytesAsString(NUM_BYTES));
     Media::PermissionUtils::CheckHasPermission(perms);
-    string packageName = FuzzString(data, size);
-    const int32_t int32Count = 4;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(int64_t)) {
-        return;
-    }
-    int32_t offset = 0;
-    int uid = FuzzInt32(data + offset, size);
+    string packageName = provider->ConsumeBytesAsString(NUM_BYTES);
+    int uid = provider->ConsumeIntegral<int32_t>();
     Media::PermissionUtils::GetPackageName(uid, packageName);
     Media::PermissionUtils::CheckIsSystemAppByUid();
-    Media::PermissionUtils::GetPackageNameByBundleName(FuzzString(data, size));
+    Media::PermissionUtils::GetPackageNameByBundleName(provider->ConsumeBytesAsString(NUM_BYTES));
     Media::PermissionUtils::GetAppIdByBundleName(packageName);
     Media::PermissionUtils::IsSystemApp();
     Media::PermissionUtils::IsNativeSAApp();
@@ -172,91 +124,64 @@ static void PermissionUtilsTest(const uint8_t *data, size_t size)
     Media::PermissionUtils::IsHdcShell();
     Media::PermissionUtils::GetTokenId();
     Media::PermissionUtils::ClearBundleInfoInCache();
-    bool permGranted = FuzzBool(data, size);
-    offset += sizeof(int32_t);
-    int32_t permissionUsedType = FuzzInt32(data + offset, size);
-    Media::PermissionUtils::CollectPermissionInfo(FuzzString(data, size), permGranted,
+    bool permGranted = provider->ConsumeBool();
+    int32_t permissionUsedType = provider->ConsumeIntegral<int32_t>();
+    Media::PermissionUtils::CollectPermissionInfo(provider->ConsumeBytesAsString(NUM_BYTES), permGranted,
         static_cast<Security::AccessToken::PermissionUsedType>(permissionUsedType));
     Media::PermissionUtils::UpdatePackageNameInCache(uid, packageName);
 
-    std::string appId = FuzzString(data, size);
-    offset += sizeof(int64_t);
-    int64_t tokenId = FuzzInt64(data + offset, size);
+    std::string appId = provider->ConsumeBytesAsString(NUM_BYTES);
+    int64_t tokenId = provider->ConsumeIntegral<int64_t>();
     Media::PermissionUtils::GetMainTokenId(appId, tokenId);
 
-    std::string permission = FuzzString(data, size);
-    offset += sizeof(int32_t);
-    Security::AccessToken::PermissionUsedType type = FuzzPermissionUsedType(data + offset, size);
+    std::string permission = provider->ConsumeBytesAsString(NUM_BYTES);
+    Security::AccessToken::PermissionUsedType type = FuzzPermissionUsedType();
     Media::PermissionUtils::CollectPermissionInfo(permission, permGranted, type);
 
-    offset += sizeof(int32_t);
-    Security::AccessToken::AccessTokenID tokenCaller = FuzzInt32(data + offset, size);
+    Security::AccessToken::AccessTokenID tokenCaller = provider->ConsumeIntegral<int32_t>();
     Media::PermissionUtils::CheckPhotoCallerPermission(perms, uid, tokenCaller);
 
-    permission = FuzzBool(data, size) ? PERMISSION : FuzzString(data, size);
+    permission = provider->ConsumeBool() ? PERMISSION : provider->ConsumeBytesAsString(NUM_BYTES);
     Media::PermissionUtils::CheckPhotoCallerPermission(permission, tokenCaller);
     Media::PermissionUtils::SetEPolicy();
 }
 
-static void FileUriTest(const uint8_t *data, size_t size)
+static void FileUriTest()
 {
-    string uriStr = FuzzString(data, size);
+    string uriStr = provider->ConsumeBytesAsString(NUM_BYTES);
     Media::MediaFileUri fileUri(uriStr);
     fileUri.GetFilePath();
     fileUri.GetFileId();
     fileUri.GetTableName();
-    Media::MediaFileUri::GetPhotoId(FuzzString(data, size));
+    Media::MediaFileUri::GetPhotoId(provider->ConsumeBytesAsString(NUM_BYTES));
     Media::MediaFileUri::RemoveAllFragment(uriStr);
-    const int32_t int32Count = 6;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
-        return;
-    }
-    int32_t offset = 0;
-    int32_t mediaType = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t apiVersion = FuzzInt32(data + offset, size);
+    int32_t mediaType = provider->ConsumeIntegral<int32_t>();
+    int32_t apiVersion = provider->ConsumeIntegral<int32_t>();
     Media::MediaFileUri::GetMediaTypeUri(static_cast<Media::MediaType>(mediaType), apiVersion);
     vector<string> timeIdBatch;
 
-    offset += sizeof(int32_t);
-    int start = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int count = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    Media::MediaFileUri::GetTimeIdFromUri(FuzzVectorString(data, size), timeIdBatch);
-    Media::MediaFileUri::GetTimeIdFromUri(FuzzVectorString(data, size), timeIdBatch, start, count);
-    int32_t fileId = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t isPhoto = FuzzInt32(data + offset, size);
+    int start = provider->ConsumeIntegral<int32_t>();
+    int count = provider->ConsumeIntegral<int32_t>();
+    Media::MediaFileUri::GetTimeIdFromUri(FuzzVectorString(), timeIdBatch);
+    Media::MediaFileUri::GetTimeIdFromUri(FuzzVectorString(), timeIdBatch, start, count);
+    int32_t fileId = provider->ConsumeIntegral<int32_t>();
+    int32_t isPhoto = provider->ConsumeIntegral<int32_t>();
     Media::MediaFileUri::CreateAssetBucket(fileId, count);
-    Media::MediaFileUri::GetPathFromUri(FuzzString(data, size), isPhoto);
+    Media::MediaFileUri::GetPathFromUri(provider->ConsumeBytesAsString(NUM_BYTES), isPhoto);
 }
 
-static void ExifTest(const uint8_t *data, size_t size)
+static void ExifTest()
 {
-    const double doubleCount = 2;
-    if (data == nullptr || size < sizeof(double) * doubleCount) {
-        return;
-    }
-    size_t offset = 0;
-    double longitude = FuzzDouble(data + offset, size);
-    offset += sizeof(double);
-    double latitude = FuzzDouble(data + offset, size);
-    Media::ExifUtils::WriteGpsExifInfo(FuzzString(data, size), longitude, latitude);
+    double longitude = static_cast<double>(provider->ConsumeFloatingPoint<float>());
+    double latitude = static_cast<double>(provider->ConsumeFloatingPoint<float>());
+    Media::ExifUtils::WriteGpsExifInfo(provider->ConsumeBytesAsString(NUM_BYTES), longitude, latitude);
 }
 
-static void PhotoProxyTest(const uint8_t *data, size_t size)
+static void PhotoProxyTest()
 {
-    const int32_t int32Count = 3;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
-        return;
-    }
-    int32_t offset = 0;
-    int32_t cameraShotType = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    uint32_t callingUid = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t userId = FuzzInt32(data + offset, size);
+    int32_t cameraShotType = provider->ConsumeIntegral<int32_t>();
+    uint32_t callingUid = provider->ConsumeIntegral<uint32_t>();
+    int32_t userId = provider->ConsumeIntegral<int32_t>();
     Media::PhotoAssetProxy proxy(nullptr, static_cast<Media::CameraShotType>(cameraShotType),
         callingUid, userId);
     proxy.GetFileAsset();
@@ -264,50 +189,75 @@ static void PhotoProxyTest(const uint8_t *data, size_t size)
     proxy.GetVideoFd();
 }
 
-static void PhotoFileUtilsTest(const uint8_t *data, size_t size)
+static void PhotoFileUtilsTest()
 {
-    const int32_t int32Count = 2;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(int64_t)) {
-        return;
-    }
-    int offset = 0;
-    std::string photoPath = FuzzBool(data, size) ? ROOT_MEDIA_DIR : FuzzString(data, size);
-    int32_t userId = FuzzInt32(data + offset, size);
+    std::string photoPath = provider->ConsumeBool() ? ROOT_MEDIA_DIR : provider->ConsumeBytesAsString(NUM_BYTES);
+    int32_t userId = provider->ConsumeIntegral<int32_t>();
     Media::PhotoFileUtils::GetEditDataPath(photoPath, userId);
     Media::PhotoFileUtils::GetEditDataCameraPath(photoPath, userId);
     Media::PhotoFileUtils::GetEditDataSourcePath(photoPath, userId);
 
-    offset += sizeof(int64_t);
-    int64_t editTime = FuzzInt64(data + offset, size);
+    int64_t editTime = provider->ConsumeIntegral<int64_t>();
     Media::PhotoFileUtils::HasEditData(editTime);
-    bool hasEditDataCamera = FuzzBool(data, size);
-    offset += sizeof(int32_t);
-    int32_t effectMode = FuzzInt32(data + offset, size);
+    bool hasEditDataCamera = provider->ConsumeBool();
+    int32_t effectMode = provider->ConsumeIntegral<int32_t>();
     Media::PhotoFileUtils::HasSource(hasEditDataCamera, editTime, effectMode);
 
-    photoPath = FuzzBool(data, size) ? "" : FuzzString(data, size);
+    photoPath = provider->ConsumeBool() ? "" : provider->ConsumeBytesAsString(NUM_BYTES);
     Media::PhotoFileUtils::GetMetaDataRealPath(photoPath, userId);
     photoPath = PHOTO_PATH;
     Media::PhotoFileUtils::GetMetaDataRealPath(photoPath, userId);
 
-    photoPath = FuzzBool(data, size) ? ROOT_MEDIA_DIR : "";
+    photoPath = provider->ConsumeBool() ? ROOT_MEDIA_DIR : "";
     Media::PhotoFileUtils::IsThumbnailExists(photoPath);
-    photoPath = FuzzString(data, size);
+    photoPath = provider->ConsumeBytesAsString(NUM_BYTES);
     Media::PhotoFileUtils::IsThumbnailExists(photoPath);
 }
+
+static int32_t AddSeed()
+{
+    char *seedData = new char[OHOS::SEED_SIZE];
+    for (int i = 0; i < OHOS::SEED_SIZE; i++) {
+        seedData[i] = static_cast<char>(i % MAX_BYTE_VALUE);
+    }
+
+    const char* filename = "corpus/seed.txt";
+    std::ofstream file(filename, std::ios::binary | std::ios::trunc);
+    if (!file) {
+        MEDIA_ERR_LOG("Cannot open file filename:%{public}s", filename);
+        delete[] seedData;
+        return Media::E_ERR;
+    }
+    file.write(seedData, OHOS::SEED_SIZE);
+    file.close();
+    delete[] seedData;
+    MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
+    return Media::E_OK;
+}
 } // namespace OHOS
+
+extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
+{
+    OHOS::AddSeed();
+    return 0;
+}
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::ScanTest(data, size);
-    OHOS::CommonUtilsTest(data, size);
-    OHOS::PermissionUtilsTest(data, size);
-    OHOS::FileUriTest(data, size);
-    OHOS::DfxTest(data, size);
-    OHOS::ExifTest(data, size);
-    OHOS::PhotoProxyTest(data, size);
-    OHOS::PhotoFileUtilsTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::ScanTest();
+    OHOS::CommonUtilsTest();
+    OHOS::PermissionUtilsTest();
+    OHOS::FileUriTest();
+    OHOS::DfxTest();
+    OHOS::ExifTest();
+    OHOS::PhotoProxyTest();
+    OHOS::PhotoFileUtilsTest();
     return 0;
 }

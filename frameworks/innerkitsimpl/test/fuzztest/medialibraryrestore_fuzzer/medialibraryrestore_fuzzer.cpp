@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <string>
 #include <pixel_map.h>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "medialibrary_restore.h"
 #define private public
@@ -34,10 +35,11 @@
 
 namespace OHOS {
 using namespace std;
-
+constexpr int32_t NUM_BYTES = 1;
 constexpr int RDB_VERSION = 1;
 constexpr int32_t SLEEP_1 = 1;
 constexpr int32_t SLEEP_2 = 2;
+FuzzedDataProvider *provider = nullptr;
 const std::string TEST_BACKUP_FOLDER = "/data/test/media_library_restore/rdb";
 const std::string TEST_BACKUP_FILE = TEST_BACKUP_FOLDER + "/media_library";
 const std::string SLAVE_DB = "_slave";
@@ -63,11 +65,6 @@ const std::string CREATE_PHOTOS_ALBUM = std::string("CREATE TABLE IF NOT EXISTS 
     .append("count INT DEFAULT 0, date_modified BIGINT DEFAULT 0, dirty INT DEFAULT 1, ")
     .append("cloud_id TEXT, ")
     .append("relative_path TEXT, contains_hidden INT DEFAULT 0, hidden_count INT DEFAULT 0)");
-
-static inline string FuzzString(const uint8_t *data, size_t size)
-{
-    return {reinterpret_cast<const char*>(data), size};
-}
 
 int Media::FuzzRestoreDataCallback::OnCreate(NativeRdb::RdbStore &store)
 {
@@ -121,7 +118,7 @@ const NativeRdb::RdbStoreConfig GetConfig()
     return config;
 }
 
-static void MediaLibraryRestoreTest(const uint8_t *data, size_t size)
+static void MediaLibraryRestoreTest()
 {
     auto config = GetConfig();
     Media::FuzzRestoreDataCallback callBack;
@@ -131,7 +128,7 @@ static void MediaLibraryRestoreTest(const uint8_t *data, size_t size)
         return;
     }
     errCode = rdb->ExecuteSql(INCREASE_SQL);
-    std::string testSql = FuzzString(data, size);
+    std::string testSql = provider->ConsumeBytesAsString(NUM_BYTES);
     errCode = rdb->ExecuteSql(testSql);
     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_1));
     rdb->IsSlaveDiffFromMaster();
@@ -156,7 +153,7 @@ static void MediaLibraryRestoreTest(const uint8_t *data, size_t size)
     NativeRdb::RdbHelper::DeleteRdbStore(config);
 }
 
-static void AlbumPluginFuzzerTest(const uint8_t *data, size_t size)
+static void AlbumPluginFuzzerTest()
 {
     auto config = GetConfig();
     Media::FuzzRestoreDataCallback callBack;
@@ -166,7 +163,7 @@ static void AlbumPluginFuzzerTest(const uint8_t *data, size_t size)
         return;
     }
     errCode = rdb->ExecuteSql(INCREASE_SQL);
-    std::string testSql = FuzzString(data, size);
+    std::string testSql = provider->ConsumeBytesAsString(NUM_BYTES);
     errCode = rdb->ExecuteSql(testSql);
     Media::AlbumPluginTableEventHandler albumPluginTableEventHandler;
     albumPluginTableEventHandler.OnCreate(*rdb);
@@ -179,7 +176,12 @@ static void AlbumPluginFuzzerTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::MediaLibraryRestoreTest(data, size);
-    OHOS::AlbumPluginFuzzerTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::MediaLibraryRestoreTest();
+    OHOS::AlbumPluginFuzzerTest();
     return 0;
 }
