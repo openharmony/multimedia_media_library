@@ -974,7 +974,6 @@ int32_t CloudMediaPhotosService::OnRecordFailedErrorDetails(
     } else if (photo.errorDetails.size() != 0) {
         auto errorDetailcode = static_cast<ErrorDetailCode>(photo.errorDetails[0].detailCode);
         if (errorDetailcode == ErrorDetailCode::SPACE_FULL) {
-            MEDIA_ERR_LOG("Cloud Space Not Enough");
             /* Stop sync */
             return E_CLOUD_STORAGE_FULL;
         }
@@ -1052,7 +1051,6 @@ int32_t CloudMediaPhotosService::OnRecordFailed(
     PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
     int32_t serverErrorCode = photo.serverErrorCode;
-    MEDIA_INFO_LOG("serverErrorCode %{public}d", serverErrorCode);
     if ((static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::NETWORK_ERROR)) {
         MEDIA_ERR_LOG("Network Error or Response Time Out");
         return E_SYNC_FAILED_NETWORK_NOT_AVAILABLE;

@@ -140,7 +140,6 @@ int32_t MediaGallerySyncNotify::TryNotify(
 
 int32_t MediaGallerySyncNotify::FinalNotify()
 {
-    MEDIA_INFO_LOG("FinalNotify");
     auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
     if (obsMgrClient == nullptr) {
         MEDIA_ERR_LOG("FinalNotify %{public}s obsMgrClient is nullptr", __func__);
