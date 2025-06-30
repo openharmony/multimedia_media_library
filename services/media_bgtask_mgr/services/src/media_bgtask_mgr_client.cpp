@@ -25,8 +25,6 @@ namespace OHOS::MediaBgtaskSchedule {
 
 static const int32_t MEDIA_BGTASK_MGR_SERVICE_ID = 3016;
 static const int32_t SA_LOAD_SYNC_TIMEOUT = 5;
-static const int32_t INVALID_UID = -1;
-static const int32_t BASE_USER_RANGE = 200000;
 
 std::once_flag MediaBgtaskMgrClient::instanceFlag_;
 std::shared_ptr<MediaBgtaskMgrClient> MediaBgtaskMgrClient::instance_;
@@ -47,13 +45,6 @@ int32_t MediaBgtaskMgrClient::ReportTaskComplete(const std::string& task_name)
 {
     MEDIA_INFO_LOG("ReportTaskComplete taskName: %{public}s", task_name.c_str());
     std::lock_guard<std::mutex> lock(proxyMutex_);
-    int32_t callingUid = IPCSkeleton::GetCallingUid();
-    int32_t userId = -1;
-    if (callingUid <= INVALID_UID) {
-        MEDIA_ERR_LOG("Get Invalid uid: %{public}d.", callingUid);
-    } else {
-        userId = callingUid / BASE_USER_RANGE;
-    }
     sptr<IMmlTaskMgr> proxy = GetMediaBgtaskMgrProxy();
     if (proxy == nullptr) {
         MEDIA_ERR_LOG("MediaBgTaskMgr proxy not connected");

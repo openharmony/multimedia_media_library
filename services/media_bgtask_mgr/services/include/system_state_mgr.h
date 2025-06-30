@@ -23,6 +23,7 @@
 #include "matching_skills.h"
 #include "res_sched_client.h"
 
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -38,22 +39,24 @@ public:
 };
 
 struct SystemInfo {
-    bool needCompute;   // 如果有状态需要计算置为true。有些变化比如电量变化，可能不需要置为true
-    bool unlocked;      // 是否解锁
-    bool charging;      // 是否充电
-    bool screenOff;      // 是否息屏
-    int loadLevel;      // 系统负载档位， 0-7
-    int thermalLevel;   // 系统温度级别: 温度和档位是否匹配的
+    bool needCompute = false;   // 如果有状态需要计算置为true。有些变化比如电量变化，可能不需要置为true
+    bool unlocked = false;      // 是否解锁
+    bool charging = false;      // 是否充电
+    bool screenOff = false;      // 是否息屏
+    int loadLevel = -1;      // 系统负载档位， 0-7
+    int thermalLevel = -1;   // 系统温度级别: 温度和档位是否匹配的
     // 其他条件
     //  电池电量
-    int batteryCap;
-    bool wifiConnected;
-    bool CellularConnect;
+    int batteryCap = -1;
+    bool wifiConnected = false;
+    bool CellularConnect = false;
     // bool blueTooth;
     // 剩余空间百分比
-    int storageFree;
-    time_t now; // 当前系统时间,调试用！！！！
-    int userId;
+    int storageFree = -1;
+    time_t now = -1; // 当前系统时间,调试用！！！！
+    int userId = -1; // 没用待删除
+    // 所有的用户Id，有新用户解锁要加入，有用户删除要删减
+    std::set<int32_t> allUserIds;
 
     std::string ToString() const
     {
@@ -107,6 +110,7 @@ private:
     void QueryThermalLoadLevel();
     void QueryNetworkState();
     void QueryForegroundUser();
+    void QueryAllUser();
     bool CheckCellularConnectChange(const EventFwk::CommonEventData &eventData);
     bool CheckSocNeedHandle(const AAFwk::Want &want, std::string &action);
     bool IsCharging();

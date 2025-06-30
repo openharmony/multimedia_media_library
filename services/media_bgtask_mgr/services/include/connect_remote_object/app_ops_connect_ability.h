@@ -35,15 +35,15 @@ enum AppConnectionStatus : int32_t {
 class AppOpsConnectAbility {
 DECLARE_DELAYED_SINGLETON(AppOpsConnectAbility)
 public:
-    int32_t ConnectAbility(const AppSvcInfo &svcName, int32_t userId, const std::string &ops,
-        const std::string &taskName, const std::string &extra);
+    int32_t ConnectAbility(const AppSvcInfo &svcName, const std::string &ops, const std::string &taskName,
+                           const std::string &extra);
     int32_t DisconnectAbility(int32_t userId);
-    int32_t TaskOpsSync(const AppSvcInfo &svcName, int32_t userId, const std::string &ops,
+    int32_t TaskOpsSync(const AppSvcInfo &svcName, const std::string &ops,
         const std::string& taskName, const std::string &extra);
 
 private:
-    int32_t DoConnect(const AppSvcInfo &svcName, int32_t userId, const std::string &ops,
-        const std::string &taskName, const std::string &extra);
+    int32_t DoConnect(const AppSvcInfo &svcName, const std::string &ops, const std::string &taskName,
+                      const std::string &extra);
     void OnConnectedCallback();
 
     std::mutex abilityMapMutex_;

@@ -1082,6 +1082,16 @@ ohos_unittest("media_bgtask_mgr_task_schedule_param_manager_test") {
     "thermal_manager:thermalsrv_client",
   ]
 
+  defines = []
+  if (defined(global_parts_info) &&
+  defined(global_parts_info.customization_config_policy_ext)) {
+    external_deps += [
+      "config_policy:configpolicy_util",
+      "config_policy_ext:config_policy_ext_utils",
+    ]
+    defines += ["CONFIG_POLICY_PUSH_SUPPORT"]
+  }
+
   sanitize = {
     cfi = true
     cfi_cross_dso = true

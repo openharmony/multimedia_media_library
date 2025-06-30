@@ -18,6 +18,7 @@
 
 #include <map>
 #include <vector>
+#include <mutex>
 
 #include "task_schedule_cfg.h"
 
@@ -46,6 +47,7 @@ struct TaskInfo {
     // $(said):taskNameXx 或 $(bundleName):taskName
     // 例子： "10120:cleanCache"、"com.ohos.medialibrary.medialibrarydata:cleanLcd",
     std::string taskId;
+    int32_t userId = -1;
     TaskScheduleCfg scheduleCfg;
 
     // *** 动态参数 ***，表示任务状态
@@ -88,10 +90,12 @@ public:
     void InitTaskInfoByCfg(std::vector<TaskScheduleCfg> taskCfgs);
 
     void AddTaskForNewUserIfNeed(int32_t newUserId);
+    void RemoveTaskForUser(int32_t newUserId);
     // 保存任务状态
     void SaveTaskState(bool onlyCriticalInfo);
     // 启动的时候，恢复任务状态
     void RestoreTaskState();
+    static bool IsTaskEnabled(TaskInfo &info);
 
     // private:
     // 当前的用户信息
@@ -101,12 +105,15 @@ public:
     static std::string TaskInfoToLineString(TaskInfo info, bool onlyCriticalInfo);
     static void LineStringToTaskInfo(std::vector<std::string> segs, TaskInfo &info);
 
+    static bool IsSaTaskMatchProcess(const TaskInfo &info, int32_t saId);
+    static bool IsAppTaskMatchProcess(const TaskInfo &info, const std::string &appBundle, int32_t appUserId);
 private:
     std::string TASK_INFO_PERSIST_FILE = "/data/service/el1/public/media_bgtask_mgr/bgtask_task.info";
     std::string TASK_INFO_PERSIST_FILE_BAK = "/data/service/el1/public/media_bgtask_mgr/bgtask_task.info.bak";
     // 获取保存任务的文件路径，注意用atomic file
     std::string GetPersistTaskInfoFilePathRead();
     std::string GetPersistTaskInfoFilePathWrite();
+    std::mutex saveStateMutex_;
 };
 
 }  // namespace MediaBgtaskSchedule

@@ -40,6 +40,14 @@
         }                                                                            \
     } while (0)
 
+#define CFG_PURE_CHECK_AND_RETURN(value, rangeLow, rangeHigh, logString)                                 \
+    do {                                                                                         \
+        if ((value) < (rangeLow) || (value) > (rangeHigh)) {                \
+            MEDIA_ERR_LOG("[%{public}s: %{public}d] value invalid", (logString).c_str(), value); \
+            return false;                                                                        \
+        }                                                                                        \
+    } while (0)
+
 namespace OHOS {
 namespace MediaBgtaskSchedule {
 
