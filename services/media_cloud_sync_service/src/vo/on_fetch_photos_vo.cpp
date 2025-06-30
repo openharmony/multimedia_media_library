@@ -42,7 +42,8 @@ bool OnFetchPhotosVo::MarshallingBasicInfo(Parcel &parcel) const
     parcel.WriteString(this->shootingModeTag);
     parcel.WriteString(this->burstKey);
     parcel.WriteString(this->localPath);
-    parcel.WriteString(this->position);
+    parcel.WriteDouble(this->latitude);
+    parcel.WriteDouble(this->longitude);
     parcel.WriteString(this->description);
     parcel.WriteString(this->source);
     return true;
@@ -103,7 +104,8 @@ bool OnFetchPhotosVo::ReadBasicInfo(Parcel &parcel)
     parcel.ReadString(this->shootingModeTag);
     parcel.ReadString(this->burstKey);
     parcel.ReadString(this->localPath);
-    parcel.ReadString(this->position);
+    parcel.ReadDouble(this->latitude);
+    parcel.ReadDouble(this->longitude);
     parcel.ReadString(this->description);
     parcel.ReadString(this->source);
     return true;

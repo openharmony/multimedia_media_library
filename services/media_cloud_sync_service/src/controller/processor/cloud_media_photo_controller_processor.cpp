@@ -207,7 +207,8 @@ bool CloudMediaPhotoControllerProcessor::GetBasicInfo(const OnFetchPhotosVo &pho
     data.basicIsFavorite = photosVo.isFavorite;
     data.attributesHidden = photosVo.hidden;
     data.basicRecycledTime = photosVo.recycledTime;
-    data.propertiesPosition = photosVo.position; /* MDKRecord也没有Position */
+    data.latitude = photosVo.latitude;
+    data.longitude = photosVo.longitude;
     data.localPath = photosVo.localPath;
     data.basicDeviceName = photosVo.source;
     data.basicDescription = photosVo.description;
