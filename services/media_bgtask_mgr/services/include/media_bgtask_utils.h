@@ -19,6 +19,7 @@
 #include <time.h>
 
 #include <string>
+#include <charconv>
 #include "task_runner_types.h"
 
 namespace OHOS {
@@ -39,6 +40,18 @@ public:
     static time_t GetNowTime();
 
     static bool IsNumber(const std::string& str);
+    template<typename T>
+    static bool StrToNumeric(const std::string& str, T& result)
+    {
+        if (!IsNumber(str)) {
+            return false;
+        }
+        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+        return ec == std::errc() && ptr == str.data() + str.size();
+    }
+ 
+    static bool IsValidTaskEnable(int value);
+    static bool IsFileExists(const std::string &fileName);
 };
 }  // namespace MediaBgtaskSchedule
 }  // namespace OHOS

@@ -42,23 +42,99 @@ const std::string NEW_DIR = "/storage/cloud/files/highlight";
 const std::string OLD_PATH = "/storage/cloud/files/.thumbs/highlight/test.jpg";
 const std::string NEW_PATH = "/storage/cloud/files/highlight/test.jpg";
 
+/**
+ * @tc.name: DoMigrateHighLight_test_001
+ * @tc.desc: OLD_DIR 和 NEW_DIR, 均不存在
+ */
 HWTEST_F(MediaLibraryBgTaskProcessorTest, DoMigrateHighLight_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DoMigrateHighLight_test_001 start");
+    EXPECT_EQ(MediaFileUtils::IsDirectory(OLD_DIR), false);
+
     auto processor = MigrateHighLightInfoToNewPathProcessor();
     processor.DoMigrateHighLight();
+
     EXPECT_EQ(MediaFileUtils::IsDirectory(OLD_DIR), false);
     EXPECT_EQ(MediaFileUtils::IsDirectory(NEW_DIR), false);
-    EXPECT_EQ(MediaFileUtils::CreateDirectory(OLD_DIR), true);
-    EXPECT_EQ(MediaFileUtils::CreateDirectory(NEW_DIR), true);
-    EXPECT_EQ(MediaFileUtils::CreateFile(OLD_PATH), true);
-    EXPECT_EQ(MediaFileUtils::IsFileExists(OLD_PATH), true);
-    EXPECT_EQ(MediaFileUtils::IsFileExists(NEW_PATH), false);
-    processor.DoMigrateHighLight();
-    EXPECT_EQ(MediaFileUtils::IsFileExists(OLD_PATH), false);
-    EXPECT_EQ(MediaFileUtils::IsFileExists(NEW_PATH), true);
     MEDIA_INFO_LOG("DoMigrateHighLight_test_001 end");
 }
 
+/**
+ * @tc.name: DoMigrateHighLight_test_002
+ * @tc.desc: OLD_DIR 目录存在, 但是没有文件, 则会清除 OLD_DIR 目录
+ */
+HWTEST_F(MediaLibraryBgTaskProcessorTest, DoMigrateHighLight_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("DoMigrateHighLight_test_002 start");
+    EXPECT_EQ(MediaFileUtils::IsDirectory(OLD_DIR), false);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(OLD_DIR), true);
+    EXPECT_EQ(MediaFileUtils::IsDirectory(OLD_DIR), true);
+
+    auto processor = MigrateHighLightInfoToNewPathProcessor();
+    processor.DoMigrateHighLight();
+
+    EXPECT_EQ(MediaFileUtils::IsDirectory(OLD_DIR), false);
+    MEDIA_INFO_LOG("DoMigrateHighLight_test_002 end");
+}
+
+/**
+ * @tc.name: DoMigrateHighLight_test_003
+ * @tc.desc: OLD_DIR 目录存在且有文件, NEW_DIR 不存在, 则会把对应文件存放到 NEW_DIR 目录中, 并清除 OLD_DIR 目录
+ */
+HWTEST_F(MediaLibraryBgTaskProcessorTest, DoMigrateHighLight_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("DoMigrateHighLight_test_003 start");
+    // 创建 OLD_DIR 目录
+    EXPECT_EQ(MediaFileUtils::IsDirectory(OLD_DIR), false);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(OLD_DIR), true);
+    EXPECT_EQ(MediaFileUtils::IsDirectory(OLD_DIR), true);
+
+    // 创建 OLD_PATH 文件
+    EXPECT_EQ(MediaFileUtils::CreateFile(OLD_PATH), true);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(OLD_PATH), true);
+
+    // NEW_DIR 不存在
+    EXPECT_EQ(MediaFileUtils::IsDirectory(NEW_DIR), false);
+
+    auto processor = MigrateHighLightInfoToNewPathProcessor();
+    processor.DoMigrateHighLight();
+
+    EXPECT_EQ(MediaFileUtils::IsFileExists(OLD_PATH), false);
+    EXPECT_EQ(MediaFileUtils::IsDirectory(OLD_DIR), false);
+    EXPECT_EQ(MediaFileUtils::IsDirectory(NEW_DIR), true);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(NEW_PATH), true);
+    MEDIA_INFO_LOG("DoMigrateHighLight_test_003 end");
+}
+
+/**
+ * @tc.name: DoMigrateHighLight_test_004
+ * @tc.desc: OLD_DIR 目录存在且有文件, NEW_DIR 存在, 则会把对应文件存放到 NEW_DIR 目录中, 并清除 OLD_DIR 目录
+ */
+HWTEST_F(MediaLibraryBgTaskProcessorTest, DoMigrateHighLight_test_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("DoMigrateHighLight_test_004 start");
+    // 创建 OLD_DIR 目录
+    EXPECT_EQ(MediaFileUtils::IsDirectory(OLD_DIR), false);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(OLD_DIR), true);
+    EXPECT_EQ(MediaFileUtils::IsDirectory(OLD_DIR), true);
+
+    // 创建 OLD_PATH 文件
+    EXPECT_EQ(MediaFileUtils::CreateFile(OLD_PATH), true);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(OLD_PATH), true);
+
+    // NEW_DIR 不存在
+    EXPECT_EQ(MediaFileUtils::IsDirectory(NEW_DIR), false);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(NEW_DIR), true);
+    EXPECT_EQ(MediaFileUtils::IsDirectory(OLD_DIR), true);
+
+    auto processor = MigrateHighLightInfoToNewPathProcessor();
+    processor.DoMigrateHighLight();
+
+    EXPECT_EQ(MediaFileUtils::IsFileExists(OLD_PATH), false);
+    EXPECT_EQ(MediaFileUtils::IsDirectory(OLD_DIR), false);
+    EXPECT_EQ(MediaFileUtils::IsDirectory(NEW_DIR), true);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(NEW_PATH), true);
+    MEDIA_INFO_LOG("DoMigrateHighLight_test_004 end");
+}
 } // namespace Media
 } // namespace OHOS

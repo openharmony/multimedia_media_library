@@ -16,6 +16,8 @@
 #ifndef MEDIA_BGTASK_SCHEDULE_SERVICE_ABILITY_H
 #define MEDIA_BGTASK_SCHEDULE_SERVICE_ABILITY_H
 
+#include <cstdlib>
+
 #include "system_ability.h"
 #include "imml_task_mgr.h"
 #include "app_bgtask_schedule_stub.h"
@@ -31,6 +33,7 @@ public:
 
     ErrCode ReportTaskComplete(const std::string& task_name, int32_t& funcResult) override;
     ErrCode ModifyTask(const std::string& task_name, const std::string& modifyInfo, int32_t& funcResult) override;
+    static void ExitSelf(time_t nextRunDelay);
 protected:
     void OnStart(const SystemAbilityOnDemandReason& activeReason) override;
     void OnStop() override;

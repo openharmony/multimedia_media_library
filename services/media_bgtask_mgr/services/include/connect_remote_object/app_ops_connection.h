@@ -37,15 +37,18 @@ public:
 
     int32_t TaskOpsSync(const std::string &ops, const std::string &taskName, const std::string &extra);
     void AddConnectedCallback(std::function<void()> callback);
+    void AddDisConnectedCallback(std::function<void(int32_t)> callback);
 
 private:
     std::mutex mutex_;
     sptr<IRemoteObject> remoteObject_;
     sptr<AppTaskOpsProxy> proxy_;
+    sptr<IRemoteObject::DeathRecipient> deathRecipient_;
     AppSvcInfo svcName_;
     int32_t userId_;
 
     std::function<void()> connectedCallback_;
+    std::function<void(int32_t)> disConnectedCallback_;
 };
 } // namespace MediaBgtaskSchedule
 } // namespace OHOS

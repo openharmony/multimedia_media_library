@@ -18,6 +18,8 @@
 #include "medialibrary_base_bg_processor.h"
 
 #include "media_bgtask_mgr_client.h"
+#include "ipc_skeleton.h"
+#include "string_ex.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 
@@ -25,6 +27,9 @@ using namespace OHOS::MediaBgtaskSchedule;
 namespace OHOS {
 namespace Media {
 static const std::string BUNDLE_NAME = "com.ohos.medialibrary.medialibrarydata:";
+static const int32_t INVALID_UID = -1;
+static const int32_t BASE_USER_RANGE = 200000;
+static const std::string TASKID_USERID_SEP = "@";
 
 std::mutex MediaLibraryBaseBgProcessor::removeTaskNameMutex_;
 std::function<void(const std::string &)> MediaLibraryBaseBgProcessor::removeTaskNameCallback_;
@@ -73,12 +78,26 @@ void MediaLibraryBaseBgProcessor::WriteModifyInfo(const std::string &key, const 
     }
 }
 
+int32_t GetUserId()
+{
+    int32_t callingUid = IPCSkeleton::GetCallingUid();
+    int32_t userId = -1;
+    if (callingUid <= INVALID_UID) {
+        MEDIA_ERR_LOG("Get Invalid uid: %{public}d.", callingUid);
+    } else {
+        userId = callingUid / BASE_USER_RANGE;
+    }
+    return userId;
+}
+
 void MediaLibraryBaseBgProcessor::ReportTaskComplete(const std::string &taskName)
 {
     std::lock_guard<std::mutex> lock(ipcMutex_);
     std::shared_ptr<MediaBgtaskSchedule::MediaBgtaskMgrClient> bgtaskMgr = MediaBgtaskMgrClient::GetInstance();
     CHECK_AND_RETURN_LOG(bgtaskMgr != nullptr, "bgtaskMgr is nullptr.");
-    std::string taskId = BUNDLE_NAME + taskName;
+    int32_t userId = GetUserId();
+    MEDIA_INFO_LOG("ReportTaskComplete, cur userid: %{public}d.", userId);
+    std::string taskId = BUNDLE_NAME + taskName + TASKID_USERID_SEP + ToString(userId);
     bgtaskMgr->ReportTaskComplete(taskId);
 }
 
@@ -87,7 +106,9 @@ void MediaLibraryBaseBgProcessor::ModifyTask(const std::string &taskName, const 
     std::lock_guard<std::mutex> lock(ipcMutex_);
     std::shared_ptr<MediaBgtaskSchedule::MediaBgtaskMgrClient> bgtaskMgr = MediaBgtaskMgrClient::GetInstance();
     CHECK_AND_RETURN_LOG(bgtaskMgr != nullptr, "bgtaskMgr is nullptr.");
-    std::string taskId = BUNDLE_NAME + taskName;
+    int32_t userId = GetUserId();
+    MEDIA_INFO_LOG("ModifyTask, cur userid: %{public}d.", userId);
+    std::string taskId = BUNDLE_NAME + taskName + TASKID_USERID_SEP + ToString(userId);
     bgtaskMgr->ModifyTask(taskId, modifyInfo);
 }
 } // namespace Media

@@ -136,7 +136,7 @@ void DeleteTemporaryPhotosProcessor::DeleteTempPhotoMoreThanHundred()
     std::vector<std::string> fileIds;
     int32_t retainCount = 0;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        if (retainCount <= RETAIN_COUNT_WITHIN_ONE_DAY) {
+        if (retainCount < RETAIN_COUNT_WITHIN_ONE_DAY) {
             retainCount++;
             continue;
         }

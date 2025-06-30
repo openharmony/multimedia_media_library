@@ -22,33 +22,121 @@
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "string_ex.h"
+
+#include "os_account_manager.h"
+#include "system_state_mgr.h"
 #include "task_schedule_cfg.h"
+#include "task_schedule_param_manager.h"
+#include "schedule_policy.h"
 #include "media_bgtask_mgr_log.h"
 #include "media_bgtask_utils.h"
 
 namespace OHOS {
 namespace MediaBgtaskSchedule {
+static const std::string TASKID_BUNDLE_SEP = ":";
+static const std::string TASKID_USERID_SEP = "@";
 
 std::map<std::string, TaskInfo> &TaskInfoMgr::GetAllTask()
 {
-    // 考虑多用户，新来用户，直接清理之前的信息
     return allTaskInfos_;
 }
 
 void TaskInfoMgr::InitTaskInfoByCfg(std::vector<TaskScheduleCfg> taskCfgs)
 {
+    std::vector<int32_t> activeIds = {};
+    ErrCode errCode = AccountSA::OsAccountManager::QueryActiveOsAccountIds(activeIds);
+    if (errCode != ERR_OK) {
+        MEDIA_ERR_LOG("QueryActiveOsAccountIds error, ret %{public}d", errCode);
+    } else {
+        MEDIA_INFO_LOG("QueryActiveOsAccountIds ok, get %{public}zu avtive users", activeIds.size());
+    }
+
     size_t taskSize = taskCfgs.size();
     MEDIA_INFO_LOG("Find task cnt %{public}zu", taskSize);
     for (TaskScheduleCfg &cfg : taskCfgs) {
-        TaskInfo info;
-        info.taskId = cfg.taskId;
-        info.SetCfgInfo(cfg);
-        allTaskInfos_.insert(std::make_pair(cfg.taskId, info));
+        if (cfg.type == "app") {
+            // 为每个激活用户实例化一个APP任务
+            for (int32_t userId : activeIds) {
+                TaskInfo info;
+                info.taskId = cfg.taskId + TASKID_USERID_SEP + ToString(userId);
+                info.userId = userId;
+                info.SetCfgInfo(cfg);
+                allTaskInfos_.insert(std::make_pair(info.taskId, info));
+            }
+        } else {
+            TaskInfo info;
+            info.taskId = cfg.taskId;
+            info.SetCfgInfo(cfg);
+            allTaskInfos_.insert(std::make_pair(info.taskId, info));
+        }
     }
 }
 
+bool TaskInfoMgr::IsTaskEnabled(TaskInfo &info)
+{
+    if (info.taskEnable_ == NO_MODIFY) {
+        return info.scheduleCfg.taskPolicy.defaultRun;
+    }
+    return info.taskEnable_ == MODIDY_ENABLE;
+}
+
+// 返回-1表示错误
+static int32_t GetUserIdFromTaskId(std::string taskId)
+{
+    std::vector<std::string> segs;
+    SplitStr(taskId, TASKID_USERID_SEP, segs);
+    if (segs.size() > 1 && IsNumericStr(segs[1])) {
+        return std::stoi(segs[1]);
+    }
+    return -1;
+}
+
+// use below or add cflags_cc = [ "-std=c++20" ]
+static inline bool StrEndWith(std::string const & value, std::string const & ending)
+{
+    if (ending.size() > value.size()) {
+        return false;
+    }
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
+// 删除用户的时候，用户的进程也会被kill掉，任务会停止
+void TaskInfoMgr::RemoveTaskForUser(int32_t userId)
+{
+    int delTaskCnt = 0;
+    std::string checkEnd = std::string(TASKID_USERID_SEP) + ToString(userId);
+    std::map<std::string, TaskInfo> & taskList = SchedulePolicy::GetInstance().GetAllTaskList();
+    for (auto it = allTaskInfos_.begin(); it != allTaskInfos_.end();) {
+        const std::string taskId = it->first;
+        auto currentIt = it;
+        it++;
+        if (StrEndWith(taskId, checkEnd)) {
+            allTaskInfos_.erase(currentIt);
+            taskList.erase(taskId);
+            delTaskCnt++;
+            MEDIA_INFO_LOG("RemoveTaskForUser taskId = %{public}s", taskId.c_str());
+        }
+    }
+    MEDIA_INFO_LOG("RemoveTaskForUser userId = %{public}d, remove %{public}d task", userId, delTaskCnt);
+}
+
 void TaskInfoMgr::AddTaskForNewUserIfNeed(int32_t newUserId)
-{}
+{
+    auto taskCfgs = TaskScheduleParamManager::GetInstance().GetAllTaskCfg();
+    int addTaskCnt = 0;
+    for (TaskScheduleCfg &cfg : taskCfgs) {
+        if (cfg.type == "app") {
+            TaskInfo info;
+            info.taskId = cfg.taskId + TASKID_USERID_SEP + ToString(newUserId);
+            info.userId = newUserId;
+            info.SetCfgInfo(cfg);
+            allTaskInfos_.insert(std::make_pair(info.taskId, info));
+            addTaskCnt++;
+        }
+    }
+    MEDIA_INFO_LOG("AddTaskForNewUserIfNeed userId = %{public}d, add %{public}d task", newUserId, addTaskCnt);
+    RestoreTaskState(); // 如果有该用户保存的状态，需要同时恢复
+}
 
 // 写文件时，先备份，再写入，再删备份。正常流程没有bak文件，有bak文件说明写入出问题了
 // 读文件时候，优先读取bak文件
@@ -83,7 +171,8 @@ std::string TaskInfoMgr::GetPersistTaskInfoFilePathWrite()
     return fileName;
 }
 
-const std::string KEY_VAL_SEP = ",";
+// string格式，不同字段用';'分隔，第一字段是taskId，其余字段的key和value用'='分隔
+const std::string KEY_VAL_SEP = "=";
 const std::string SEG_SEP = ";";
 const std::string LINE_END = "\n";
 
@@ -94,13 +183,13 @@ const std::string KEY_EXCEED_ENERGY = "exceedEnergy";
 const std::string KEY_EXCEED_ENERGY_TIME = "exceedEnergySetTime";
 const std::string KEY_IS_COMPLETE = "isComplete";
 const std::string KEY_TASK_ENABLE = "taskEnable";
+const static int EXPECT_MIN_KV_SZIE = 2;
 
 static inline std::string ONE_KEY_VALUE(std::string key, std::string value)
 {
     return key + KEY_VAL_SEP + value + SEG_SEP;
 }
 
-// string格式门，不同字段用';'分隔， 以taskId开头，字段的key和value用','分隔
 // 在修改任务、报告超功耗时，onlyCriticalInfo为true；进程退出的时候用false
 std::string TaskInfoMgr::TaskInfoToLineString(TaskInfo info, bool onlyCriticalInfo)
 {
@@ -121,28 +210,37 @@ void TaskInfoMgr::LineStringToTaskInfo(std::vector<std::string> segs, TaskInfo &
     for (size_t i = 1; i < segs.size(); i++) {
         std::vector<std::string> kv;
         SplitStr(segs[i], KEY_VAL_SEP, kv);
-        if (kv.empty()) {
-            MEDIA_ERR_LOG("kv is empty, size: %{public}zu, %{public}zu.", segs.size(), i);
+        if (kv.size() < EXPECT_MIN_KV_SZIE) {
+            MEDIA_ERR_LOG("kv size < 2, size:%{public}zu, index:%{public}zu", kv.size(), i);
             continue;
         }
         if (kv[0] == KEY_START_TIME) {
-            info.startTime_ = std::stoll(kv[1]);
+            CHECK_AND_CONTINUE_ERR_LOG(MediaBgTaskUtils::StrToNumeric(kv[1], info.startTime_),
+                "fail to convert key:%{public}s, value:%{public}s to numeric type",
+                kv[0].c_str(), kv[1].c_str());
         } else if (kv[0] == KEY_STOP_TIME) {
-            info.lastStopTime = std::stoll(kv[1]);
+            CHECK_AND_CONTINUE_ERR_LOG(MediaBgTaskUtils::StrToNumeric(kv[1], info.lastStopTime),
+                "fail to convert key:%{public}s, value:%{public}s to numeric type",
+                kv[0].c_str(), kv[1].c_str());
         } else if (kv[0] == KEY_IS_RUNNING) {
             info.isRunning = ("1" == kv[1]);
         } else if (kv[0] == KEY_EXCEED_ENERGY) {
             info.exceedEnergy = ("1" == kv[1]);
         } else if (kv[0] == KEY_EXCEED_ENERGY_TIME) {
-            info.exceedEnergySetTime = std::stoll(kv[1]);
+            CHECK_AND_CONTINUE_ERR_LOG(MediaBgTaskUtils::StrToNumeric(kv[1], info.exceedEnergySetTime),
+                "fail to convert key:%{public}s, value:%{public}s to numeric type",
+                kv[0].c_str(), kv[1].c_str());
         } else if (kv[0] == KEY_IS_COMPLETE) {
             info.isComplete = ("1" == kv[1]);
         } else if (kv[0] == KEY_TASK_ENABLE) {
-            if (!MediaBgTaskUtils::IsNumber(kv[1])) {
-                MEDIA_ERR_LOG("kv[1] is not number.");
-                continue;
-            }
-            info.taskEnable_ = (TaskEnable)std::stoi(kv[1]);
+            int taskEnable = -1;
+            CHECK_AND_CONTINUE_ERR_LOG(MediaBgTaskUtils::StrToNumeric(kv[1], taskEnable),
+                "fail to convert key:%{public}s, value:%{public}s to numeric type",
+                kv[0].c_str(), kv[1].c_str());
+            CHECK_AND_CONTINUE_ERR_LOG(MediaBgTaskUtils::IsValidTaskEnable(taskEnable),
+                "key:%{public}s, value:%{public}s invalid value to convert to TaskEnable",
+                kv[0].c_str(), kv[1].c_str());
+            info.taskEnable_ = (TaskEnable)taskEnable;
         }
     }
 }
@@ -151,16 +249,49 @@ void TaskInfoMgr::LineStringToTaskInfo(std::vector<std::string> segs, TaskInfo &
 void TaskInfoMgr::SaveTaskState(bool onlyCriticalInfo)
 {
     MEDIA_INFO_LOG("SaveTaskState");
-    // 准备任务信息
-    std::string content;
+    std::lock_guard<std::mutex> lock(saveStateMutex_);
+    std::vector<int32_t> allActiveIds = {};
+    ErrCode errCode = AccountSA::OsAccountManager::QueryActiveOsAccountIds(allActiveIds);
+    std::set<int32_t> &allUserIds = SystemStateMgr::GetInstance().GetSystemState().allUserIds;
+    std::string resContent;
+
+    // 检查用户的不同状态：删除、激活，并做不同的处理
+    std::string readContent;
+    // 1、用户存在-已激活：保存最新的状态
     for (auto it = allTaskInfos_.begin(); it != allTaskInfos_.end(); it++) {
         const TaskInfo &info = it->second;
-        content += TaskInfoToLineString(info, onlyCriticalInfo);
-        content += LINE_END;
+        resContent += TaskInfoToLineString(info, onlyCriticalInfo);
+        resContent += LINE_END;
     }
+
+    std::string readFilePath = GetPersistTaskInfoFilePathRead();
+    LoadStringFromFile(readFilePath, readContent);
+    std::vector<std::string> lines;
+    SplitStr(readContent, LINE_END, lines);
+    for (size_t i = 0; i < lines.size(); i++) {
+        std::string userIdStr;
+        GetFirstSubStrBetween(lines[i], TASKID_USERID_SEP, SEG_SEP, userIdStr);
+        if (userIdStr == "") {
+            // 2、用户不存在：删除任务状态
+            MEDIA_INFO_LOG("UserId NOT exist, task info %{public}s", lines[i].c_str());
+        } else {
+            int32_t userId = std::stoi(userIdStr);
+            if (allUserIds.count(userId) == 0) {
+                MEDIA_INFO_LOG("UserId %{public}d NOT exist, delete task info %{public}s", userId, lines[i].c_str());
+                continue;
+            }
+            if (std::count(allActiveIds.begin(), allActiveIds.end(), userId) == 0) {
+                // 3、用户存在-未激活：保持之前状态
+                resContent += lines[i];
+                resContent += LINE_END;
+            }
+            // else 已激活，不使用之前保存的，在1、中从TaskInfo中生成并保存
+        }
+    }
+
     // 写入任务信息
     std::string filePath = GetPersistTaskInfoFilePathWrite();
-    bool success = SaveStringToFile(filePath, content);
+    bool success = SaveStringToFile(filePath, resContent);
     if (success) {
         MEDIA_INFO_LOG("SaveTaskState success");
         RemoveFile(TASK_INFO_PERSIST_FILE_BAK);
@@ -200,6 +331,20 @@ void TaskInfoMgr::RestoreTaskState()
             LineStringToTaskInfo(segs, info);
         }
     }
+}
+
+bool TaskInfoMgr::IsSaTaskMatchProcess(const TaskInfo &info, int32_t saId)
+{
+    return info.scheduleCfg.type == "sa" && info.scheduleCfg.saId == saId;
+}
+
+bool TaskInfoMgr::IsAppTaskMatchProcess(const TaskInfo &info, const std::string &appBundle, int32_t appUserId)
+{
+    if (info.scheduleCfg.type == "app") {
+        int32_t userId = GetUserIdFromTaskId(info.taskId);
+        return userId == appUserId;
+    }
+    return false;
 }
 
 }  // namespace MediaBgtaskSchedule
