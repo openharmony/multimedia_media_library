@@ -295,31 +295,8 @@ int32_t CloudSyncConvert::CompensatePropOrientation(const CloudMediaPullDataDto 
 
 int32_t CloudSyncConvert::CompensatePropPosition(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
-    std::string position = data.propertiesPosition;
-    CHECK_AND_RETURN_RET_WARN_LOG(!position.empty(), E_OK, "Cannot find properties::position.");
-    std::string latitude;
-    std::string longitude;
-    std::regex positionPattern("(-?\\d+\\.?\\d+|0).*?(-?\\d+\\.?\\d+|0)");
-    std::smatch match;
-    if (std::regex_search(position, match, positionPattern)) {
-        latitude = match[FIRST_MATCH_PARAM];
-        longitude = match[SECOND_MATCH_PARAM];
-        MEDIA_ERR_LOG("position latitude: %{private}s, longitude: %{private}s", latitude.c_str(), longitude.c_str());
-    } else {
-        MEDIA_ERR_LOG("position %{private}s extract latitude or longitude error", position.c_str());
-        return E_CLOUDSYNC_INVAL_ARG;
-    }
-    std::stringstream latitudestream(latitude);
-    std::stringstream longitudestream(longitude);
-    latitudestream.precision(15);   // 15:precision
-    longitudestream.precision(15);  // 15:precision
-    double latitudeValue;
-    double longitudeValue;
-    latitudestream >> latitudeValue;
-    longitudestream >> longitudeValue;
-
-    values.PutDouble(PhotoColumn::PHOTO_LATITUDE, latitudeValue);
-    values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, longitudeValue);
+    values.PutDouble(PhotoColumn::PHOTO_LATITUDE, data.latitude);
+    values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data.longitude);
     return E_OK;
 }
 
