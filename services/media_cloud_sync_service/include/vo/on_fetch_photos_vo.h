@@ -46,7 +46,8 @@ public:
     std::string shootingModeTag;
     std::string burstKey;
     std::string localPath;
-    std::string position;
+    double latitude;
+    double longitude;
     std::string description;
     std::string source;  // decice_name
     int32_t fileId;

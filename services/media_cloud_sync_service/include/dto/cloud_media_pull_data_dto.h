@@ -84,7 +84,8 @@ public:
     std::string propertiesSourceFileName;
     std::string propertiesSourcePath;
     int32_t propertiesRotate{-1};
-    std::string propertiesPosition;
+    double latitude;
+    double longitude;
     int32_t propertiesHeight{-1};
     int32_t propertiesWidth{-1};
     std::string propertiesFirstUpdateTime;
