@@ -384,7 +384,8 @@ bool TaskScheduleParamManager::VerifyTaskPolicy(const TaskScheduleCfg &taskSched
 {
     CFG_PURE_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.priorityLevel, 0, MAX_PRIORITY_LEVEL, TAG_PRIORITY_LVL);
     CFG_PURE_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.priorityFactor, 1, MAX_PRIORITY_FACTOR, TAG_PRIORITY_FACTOR);
-    CFG_PURE_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.maxToleranceTime, 1, MAX_TOLERANCE_TIME, TAG_MAX_TOLERANCE_TIME);
+    CFG_PURE_CHECK_AND_RETURN(
+        taskScheduleCfg.taskPolicy.maxToleranceTime, 1, MAX_TOLERANCE_TIME, TAG_MAX_TOLERANCE_TIME);
     CFG_PURE_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.maxRunningTime, 1, MAX_RUNNING_TIME, TAG_MAX_RUNNING_TIME);
     CFG_PURE_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.loadLevel, 0, MAX_LOAD_LEVEL, TAG_LOAD_LVL);
     CFG_PURE_CHECK_AND_RETURN(taskScheduleCfg.taskPolicy.loadScale, 1, MAX_LOADSCALE, TAG_LOADSCALE);

@@ -378,8 +378,9 @@ void SchedulePolicy::GetNoSchedulResult(TaskScheduleResult &result)
 
 bool isInMidnightTo6AM(time_t timestamp)
 {
-    struct tm* timeinfo = localtime(&timestamp);  // 把 time_t 转成本地时间
-    int hour = timeinfo->tm_hour;                 // 获取小时（范围 0~23）
+    struct tm timeinfo;
+    localtime_r(&timestamp, &timeinfo);
+    int hour = timeinfo.tm_hour;                 // 获取小时（范围 0~23）
     return (hour >= 1 && hour < 6);               // 判断是否在 [1~6) 点之间
 }
 
@@ -424,7 +425,7 @@ TaskScheduleResult SchedulePolicy::ScheduleTasks(std::map<std::string, TaskInfo>
     GetSchedulResult(result);
     MEDIA_INFO_LOG("success ScheduleTasks, startTask: %{public}zu, stopTask: %{public}zu, retainTask: %{public}zu, "
         "nextComputeTime: %{public}s", result.taskStart_.size(), result.taskStop_.size(), result.taskRetain_.size(),
-        std::to_string(static_cast<int64_t>(result.nextComputeTime_).c_str()));
+        std::to_string(static_cast<int64_t>(result.nextComputeTime_)).c_str());
     return result;
 }
 
