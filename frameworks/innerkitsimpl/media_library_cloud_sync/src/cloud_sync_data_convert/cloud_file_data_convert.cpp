@@ -30,6 +30,7 @@
 #include "moving_photo_file_utils.h"
 #include "photo_file_utils.h"
 #include "cloud_report_utils.h"
+#include "nlohmann/json.hpp"
 
 namespace OHOS::Media::CloudSync {
 
@@ -873,6 +874,35 @@ int32_t CloudFileDataConvert::ConvertToOnCreateRecord(
     return E_OK;
 }
 
+int32_t CloudFileDataConvert::ExtractPosition(const std::string &position, double &latitude, double &longitude)
+{
+    CHECK_AND_RETURN_RET_LOG(!position.empty(), E_INVAL_ARG, "position is empty.");
+    auto json = nlohmann::json::parse(position, nullptr, false);
+    bool isValid = !json.is_discarded();
+    CHECK_AND_RETURN_RET_LOG(isValid, E_INVAL_ARG, "position json parse error, %{private}s", position.c_str());
+    isValid = json.contains("x") && json.contains("y");
+    CHECK_AND_RETURN_RET_LOG(isValid, E_INVAL_ARG, "position miss x or y fields, %{private}s", position.c_str());
+    isValid = json["x"].is_string() && json["y"].is_string();
+    CHECK_AND_RETURN_RET_LOG(isValid, E_INVAL_ARG, "position x or y is not string, %{private}s", position.c_str());
+    std::string latitudeStr = json["x"].get<std::string>();
+    std::string longitudeStr = json["y"].get<std::string>();
+    std::stringstream latitudestream(latitudeStr);
+    std::stringstream longitudestream(longitudeStr);
+    latitudestream.precision(15);   // 15:precision
+    longitudestream.precision(15);  // 15:precision
+    latitude = 0.0;
+    longitude = 0.0;
+    latitudestream >> latitude;
+    longitudestream >> longitude;
+    return E_OK;
+}
+
+int32_t CloudFileDataConvert::ExtractPosition(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo)
+{
+    std::string position = data.GetPosition().value_or("");
+    return ExtractPosition(position, onFetchPhotoVo.latitude, onFetchPhotoVo.longitude);
+}
+
 void CloudFileDataConvert::ConvertProperties(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo)
 {
     onFetchPhotoVo.hasproperties = data.hasProperties();
@@ -884,7 +914,7 @@ void CloudFileDataConvert::ConvertProperties(MDKRecordPhotosData &data, OnFetchP
     onFetchPhotoVo.photoHeight = data.GetHeight().value_or(0);
     onFetchPhotoVo.photoWidth = data.GetWidth().value_or(0);
     onFetchPhotoVo.detailTime = data.GetDetailTime().value_or("");
-    onFetchPhotoVo.position = data.GetPosition().value_or("");
+    ExtractPosition(data, onFetchPhotoVo);
 }
 
 void CloudFileDataConvert::ConvertAttributes(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo)
