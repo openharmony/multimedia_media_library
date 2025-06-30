@@ -52,7 +52,6 @@ void AppOpsConnection::OnAbilityConnectDone(const AppExecFwk::ElementName &eleme
         MEDIA_INFO_LOG("app death recipient, userId: %{public}d", userId);
         MediaBgtaskScheduleService::GetInstance().NotifyAppTaskProcessDie(bundle, userId);
     });
-
     if (!remoteObject_->AddDeathRecipient(deathRecipient_)) {
         MEDIA_INFO_LOG("add death recipient failed.");
     }
