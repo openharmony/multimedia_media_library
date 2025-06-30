@@ -348,7 +348,6 @@ std::vector<PhotoAlbumPo> CloudMediaAlbumService::GetAlbumCreatedRecords(int32_t
 
 std::vector<PhotoAlbumPo> CloudMediaAlbumService::GetAlbumMetaModifiedRecords(int32_t size)
 {
-    MEDIA_INFO_LOG("CloudMediaAlbumService::GetAlbumMetaModifiedRecords enter");
     std::vector<PhotoAlbumPo> photoAlbumList;
     int32_t ret = this->albumDao_.GetMetaModifiedAlbum(size, photoAlbumList);
     CHECK_AND_PRINT_LOG(ret == E_OK, "failed to get metaModifiedAlbum record");

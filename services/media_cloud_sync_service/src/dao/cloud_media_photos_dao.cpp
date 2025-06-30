@@ -919,7 +919,6 @@ int32_t CloudMediaPhotosDao::GetCreatedRecords(int32_t size, std::vector<PhotosP
  */
 int32_t CloudMediaPhotosDao::GetMetaModifiedRecords(int32_t size, std::vector<PhotosPo> &cloudRecordPoList)
 {
-    MEDIA_INFO_LOG("enter GetMetaModifiedRecords");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DB_FAIL, "GetMetaModifiedRecords Failed to get rdbStore.");
     /* build predicates */
@@ -933,9 +932,7 @@ int32_t CloudMediaPhotosDao::GetMetaModifiedRecords(int32_t size, std::vector<Ph
     int32_t rowCount = 0;
     int32_t ret = resultSet->GetRowCount(rowCount);
     CHECK_AND_RETURN_RET_LOG(ret >= 0, E_DB_FAIL, "GetMetaModifiedRecords Failed to query.");
-    MEDIA_INFO_LOG("GetMetaModifiedRecords RowCount:%{public}d", rowCount);
     // Notify caller if no data is returned, it means all data has been processed.
-    CHECK_AND_RETURN_RET_LOG(rowCount > 0, E_OK, "GetMetaModifiedRecords Empty Result.");
     std::vector<PhotosPo> tempList = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords();
     MEDIA_INFO_LOG("GetMetaModifiedRecords Counts: %{public}zu", tempList.size());
     int32_t ownerAlbumId;
@@ -1030,12 +1027,11 @@ int32_t CloudMediaPhotosDao::GetDeletedRecordsAsset(int32_t size, std::vector<Ph
  */
 int32_t CloudMediaPhotosDao::GetCopyRecords(int32_t size, std::vector<PhotosPo> &copyRecords)
 {
-    MEDIA_INFO_LOG("enter GetCopyRecords");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DB_FAIL, "GetCopyRecords Failed to get rdbStore.");
     /* build predicates */
     std::string fileIdNotIn = CloudMediaDaoUtils::ToStringWithComma(this->photoCopyFailSet_.ToVector());
-    MEDIA_INFO_LOG("GetCopyRecords fileIdNotIn:%{public}s", fileIdNotIn.c_str());
+    MEDIA_DEBUG_LOG("GetCopyRecords fileIdNotIn:%{public}s", fileIdNotIn.c_str());
     std::vector<NativeRdb::ValueObject> bindArgs = {size};
     std::string execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_COPY_RECORDS, {fileIdNotIn});
     /* query */
@@ -1044,9 +1040,7 @@ int32_t CloudMediaPhotosDao::GetCopyRecords(int32_t size, std::vector<PhotosPo> 
     int32_t rowCount = 0;
     int32_t ret = resultSet->GetRowCount(rowCount);
     CHECK_AND_RETURN_RET_LOG(ret >= 0, E_DB_FAIL, "GetCopyRecords Failed to query RowCount.");
-    MEDIA_INFO_LOG("GetCopyRecords RowCount:%{public}d", rowCount);
     // Notify caller if no data is returned, it means all data has been processed.
-    CHECK_AND_RETURN_RET_LOG(rowCount > 0, E_OK, "GetCopyRecords Empty Result.");
     std::vector<PhotosPo> tempList = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords();
     MEDIA_INFO_LOG("GetCopyRecords Counts: %{public}zu", tempList.size());
     int32_t ownerAlbumId;
@@ -1115,7 +1109,6 @@ static int32_t BuildInfoMap(const shared_ptr<NativeRdb::ResultSet> resultSet,
         int64_t metatime;
         if (resultSet->GetString(idIndex, idValue) == 0 && resultSet->GetLong(mtimeIndex, mtime) == 0 &&
             resultSet->GetLong(metatimeIndex, metatime) == 0) {
-            MEDIA_ERR_LOG("BuildInfoMap Insert Local Map: %{public}s", idValue.c_str());
             infoMap.insert({idValue, {"", "", metatime, mtime, 0}});
         }
     }

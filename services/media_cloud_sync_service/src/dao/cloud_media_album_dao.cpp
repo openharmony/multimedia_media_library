@@ -750,7 +750,6 @@ int32_t CloudMediaAlbumDao::GetDeletedRecordsAlbum(int32_t size, std::vector<Pho
 
 int32_t CloudMediaAlbumDao::GetMetaModifiedAlbum(int32_t size, std::vector<PhotoAlbumPo> &cloudRecordPoList)
 {
-    MEDIA_INFO_LOG("enter GetMetaModifiedAlbum");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "GetMetaModifiedAlbum Failed to get rdbStore.");
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
@@ -829,7 +828,6 @@ int32_t CloudMediaAlbumDao::GetCreatedAlbum(int32_t size, std::vector<PhotoAlbum
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
-    MEDIA_INFO_LOG("enter GetCreatedAlbum");
     std::vector<PhotoAlbumPo> tempList;
     int32_t ret = QueryCreatedAlbums(size, tempList);
     /* results to records */
@@ -988,7 +986,6 @@ std::unordered_map<std::string, MediaAlbumPluginRowData> CloudMediaAlbumDao::Que
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, whiteListMap, "GetLocalAlbumMap get nullptr created result.");
     int rowCount = 0;
     int ret = resultSet->GetRowCount(rowCount);
-    MEDIA_INFO_LOG("WitreListMap init count %{public}d", rowCount);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK && rowCount >= 0,
         whiteListMap,
         "result set get row count err %{public}d, rowCount %{public}d",
