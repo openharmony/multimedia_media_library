@@ -157,7 +157,6 @@ int32_t CloudMediaPhotoControllerService::GetMetaModifiedRecords(MessageParcel &
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     int32_t size = reqBody.size;
-    MEDIA_INFO_LOG("enter CloudMediaPhotoControllerService::GetMetaModifiedRecords %{public}d", size);
     if (size <= 0 || size > LIMIT_SIZE) {
         MEDIA_ERR_LOG("GetMetaModifiedRecords param error, size: %{public}d", size);
         return IPC::UserDefineIPC().WriteResponseBody(reply, E_MEDIA_CLOUD_ARGS_INVAILD);
@@ -234,7 +233,6 @@ int32_t CloudMediaPhotoControllerService::GetDeletedRecords(MessageParcel &data,
 
 int32_t CloudMediaPhotoControllerService::GetCopyRecords(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter CloudMediaPhotoControllerService::GetCopyRecords");
     CloudMdkRecordPhotosReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
