@@ -95,6 +95,7 @@ private:
     EXPORT bool IsClearContinueCloneData(const std::string &path);
     EXPORT bool TryClearContinueCloneData();
     EXPORT std::string GetDataCloneDescriptionJsonPath();
+    EXPORT bool GetCloneTimestamp(const std::string &path, int64_t &cloneTimestamp);
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();
