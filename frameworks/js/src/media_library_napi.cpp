@@ -8778,6 +8778,9 @@ static napi_value ParseArgsPahGetAlbums(napi_env env, napi_callback_info info,
         }
         CHECK_NULLPTR_RET(GetAlbumFetchOption(env, context, hasCallback));
         CHECK_COND(env, CheckAlbumFetchColumns(context->fetchColumn), JS_ERR_PARAMETER_INVALID);
+        if (context->isAnalysisAlbum) {
+            context->photoAlbumType = PhotoAlbumType::SMART;
+        }
         return result;
     }
 
