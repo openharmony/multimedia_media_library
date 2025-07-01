@@ -1,0 +1,411 @@
+# Copyright (C) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
+
+group("unittest") {
+  testonly = true
+  deps = [
+    ":media_library_cloud_sync_service_test",
+    ":media_library_cloud_sync_service_dao_test",
+    ":media_library_cloud_sync_service_dto_test",
+    ":media_library_cloud_sync_service_controller_service_test",
+    ":media_library_cloud_sync_service_controller_processor_test",
+    ":media_library_cloud_sync_service_service_test",
+    ":media_library_cloud_sync_service_service_ext_test",
+  ]
+}
+
+ohos_unittest("media_library_cloud_sync_service_test") {
+  module_out_path = "media_library/media_library-asset"
+  include_dirs = [
+    "./include",
+    "./include/utils",
+    "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/vo",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/includ/utils/",
+  ]
+
+  sources = [
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "./src/cloud_media_controller_service_test.cpp",
+    "./src/media_cloud_sync_service_utils_test.cpp",
+    "./src/media_cloud_sync_service_vo_test.cpp",
+    "./src/cloud_media_service_test.cpp",
+    "src/media_cloud_sync_test_utils.cpp",
+  ]
+
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync:media_library_cloud_sync",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
+
+  external_deps = [
+    "ability_runtime:ability_manager",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "data_share:datashare_provider",
+    "hilog:libhilog",
+    "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
+    "ability_base:zuri",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "device_manager:devicemanagersdk",
+    "ipc:ipc_single",
+    "kv_store:distributeddata_inner",
+    "napi:ace_napi",
+    "player_framework:media_client",
+    "dfs_service:cloudsync_kit_inner",
+    "relational_store:rdb_data_share_adapter",
+  ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  resource_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
+}
+
+ohos_unittest("media_library_cloud_sync_service_dao_test") {
+  module_out_path = "media_library/media_library-asset"
+  include_dirs = [
+    "include",
+    "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/dto",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/utils/",
+  ]
+
+  sources = [
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "src/media_cloud_sync_service_dao_test.cpp",
+    "src/media_cloud_sync_test_utils.cpp",
+  ]
+
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync:media_library_cloud_sync",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
+
+  external_deps = [
+    "ability_runtime:ability_manager",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "data_share:datashare_provider",
+    "hilog:libhilog",
+    "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
+    "ability_base:zuri",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "device_manager:devicemanagersdk",
+    "ipc:ipc_single",
+    "kv_store:distributeddata_inner",
+    "napi:ace_napi",
+    "player_framework:media_client",
+    "dfs_service:cloudsync_kit_inner",
+    "relational_store:rdb_data_share_adapter",
+  ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  resource_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
+}
+
+ohos_unittest("media_library_cloud_sync_service_dto_test") {
+  module_out_path = "media_library/media_library-asset"
+  include_dirs = [
+    "include",
+    "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/dto",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/utils/",
+  ]
+
+  sources = [
+    "src/media_cloud_sync_service_dto_test.cpp",
+  ]
+
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync:media_library_cloud_sync",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
+
+  external_deps = [
+    "ability_runtime:ability_manager",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "data_share:datashare_provider",
+    "hilog:libhilog",
+    "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
+    "ability_base:zuri",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "device_manager:devicemanagersdk",
+    "ipc:ipc_single",
+    "kv_store:distributeddata_inner",
+    "napi:ace_napi",
+    "player_framework:media_client",
+    "dfs_service:cloudsync_kit_inner",
+    "relational_store:rdb_data_share_adapter",
+  ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  resource_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
+}
+
+ohos_unittest("media_library_cloud_sync_service_controller_service_test") {
+  module_out_path = "media_library/media_library-asset"
+  include_dirs = [
+    "include",
+    "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/vo",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/includ/utils/",
+  ]
+
+  sources = [
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "src/cloud_media_controller_service_test.cpp",
+    "src/media_cloud_sync_test_utils.cpp",
+  ]
+
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync:media_library_cloud_sync",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
+
+  external_deps = [
+    "ability_runtime:ability_manager",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "data_share:datashare_provider",
+    "hilog:libhilog",
+    "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
+    "ability_base:zuri",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "device_manager:devicemanagersdk",
+    "ipc:ipc_single",
+    "kv_store:distributeddata_inner",
+    "napi:ace_napi",
+    "player_framework:media_client",
+    "dfs_service:cloudsync_kit_inner",
+    "relational_store:rdb_data_share_adapter",
+  ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  resource_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
+}
+
+ohos_unittest("media_library_cloud_sync_service_controller_processor_test") {
+  module_out_path = "media_library/media_library-asset"
+  include_dirs = [
+    "include",
+    "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/vo",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/includ/utils/",
+  ]
+
+  sources = [
+    "src/cloud_media_controller_processor_test.cpp",
+  ]
+
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync:media_library_cloud_sync",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
+
+  external_deps = [
+    "ability_runtime:ability_manager",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "data_share:datashare_provider",
+    "hilog:libhilog",
+    "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
+    "ability_base:zuri",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "device_manager:devicemanagersdk",
+    "ipc:ipc_single",
+    "kv_store:distributeddata_inner",
+    "napi:ace_napi",
+    "player_framework:media_client",
+    "dfs_service:cloudsync_kit_inner",
+    "relational_store:rdb_data_share_adapter",
+  ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  resource_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
+}
+
+ohos_unittest("media_library_cloud_sync_service_service_test") {
+  module_out_path = "media_library/media_library-asset"
+  include_dirs = [
+    "include",
+    "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/vo",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/includ/utils/",
+  ]
+
+  sources = [
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "src/media_cloud_sync_service_service_test.cpp",
+    "src/media_cloud_sync_test_utils.cpp",
+  ]
+
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync:media_library_cloud_sync",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
+
+  external_deps = [
+    "ability_runtime:ability_manager",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "data_share:datashare_provider",
+    "hilog:libhilog",
+    "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
+    "ability_base:zuri",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "device_manager:devicemanagersdk",
+    "ipc:ipc_single",
+    "kv_store:distributeddata_inner",
+    "napi:ace_napi",
+    "player_framework:media_client",
+    "dfs_service:cloudsync_kit_inner",
+    "relational_store:rdb_data_share_adapter",
+  ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  resource_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
+}
+
+ohos_unittest("media_library_cloud_sync_service_service_ext_test") {
+  module_out_path = "media_library/media_library-asset"
+  include_dirs = [
+    "include",
+    "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/vo",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/includ/utils/",
+  ]
+
+  sources = [
+    "src/media_cloud_sync_service_service_test_ext.cpp",
+  ]
+
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync:media_library_cloud_sync",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
+
+  external_deps = [
+    "ability_runtime:ability_manager",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "data_share:datashare_provider",
+    "hilog:libhilog",
+    "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
+    "ability_base:zuri",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "device_manager:devicemanagersdk",
+    "ipc:ipc_single",
+    "kv_store:distributeddata_inner",
+    "napi:ace_napi",
+    "player_framework:media_client",
+    "dfs_service:cloudsync_kit_inner",
+    "relational_store:rdb_data_share_adapter",
+  ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  resource_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
+}

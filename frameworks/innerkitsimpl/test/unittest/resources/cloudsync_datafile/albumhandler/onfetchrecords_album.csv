@@ -1,0 +1,31 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+data_desc,index,album_id,album_type,album_subtype,album_name,cover_uri,count,date_modified,dirty,cloud_id,relative_path,contains_hidden,hidden_count,hidden_cover,album_order,image_count,video_count,bundle_name,local_language,is_local,date_added,lpath,priority,metadata_flags,check_flag
+unknown,50,50,0,1,Album50,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,1,defalut-album-8d51ed54ff8050,,0,0,,50,1,0,,,1,1739459628868,/Pictures/Users/Album50,1,0,0
+unknown,51,51,0,1,Album51,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,1,defalut-album-8d51ed54ff8051,,0,0,,51,1,0,,,1,1739459628868,/Pictures/Users/Album51,1,0,0
+unknown,52,52,0,1,Album52,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,1,defalut-album-8d51ed54ff8052,,0,0,,52,1,0,,,1,1739459628868,/Pictures/Users/Album52,1,0,0
+unknown,53,53,0,1,Album53,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,1,defalut-album-8d51ed54ff8053,,0,0,,53,1,0,,,1,1739459628868,/Pictures/Users/Album53,1,0,0
+unknown,54,54,0,1,Album54,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,1,defalut-album-8d51ed54ff8054,,0,0,,54,1,0,,,1,1739459628868,/Pictures/Users/Album54,1,0,0
+unknown,55,55,0,1,Album55,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,1,defalut-album-8d51ed54ff8055,,0,0,,55,1,0,,,1,1739459628868,/Pictures/Users/Album55,1,0,0
+unknown,56,56,0,1,Album56,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,1,defalut-album-8d51ed54ff8056,,0,0,,56,1,0,,,1,1739459628868,/Pictures/Users/Album56,1,0,0
+unknown,57,57,0,1,Album57,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,1,defalut-album-8d51ed54ff8057,,0,0,,57,1,0,,,1,1739459628868,/Pictures/Users/Album57,1,0,0
+unknown,58,58,0,1,Album58,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,1,defalut-album-8d51ed54ff8058,,0,0,,58,1,0,,,1,1739459628868,/Pictures/Users/Album58,1,0,0
+OnFetchRecords,59,59,0,1,Album59,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,0,defalut-album-8d51ed54ff8059,,0,0,,59,1,0,,,1,1739459628868,/Pictures/Users/Album59,1,0,0
+OnFetchRecords,60,60,0,1,Album60,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,0,,,0,0,,60,1,0,,,1,1739459628868,/Pictures/Users/Album60,1,0,0
+OnFetchRecords,61,61,0,1,Album61,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,0,defalut-album-8d51ed54ff8061,,0,0,,61,1,0,,,1,1739459628868,/Pictures/Users/Album61,1,0,0
+OnFetchRecords,62,62,0,1,Album62,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,0,defalut-album-8d51ed54ff8062,,0,0,,62,0,0,,,1,1739459628868,/Pictures/Users/Album62,1,0,0
+OnFetchRecords,63,63,0,1,Album63,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,0,defalut-album-8d51ed54ff8063,,0,0,,63,0,0,,,1,1739459628868,/Pictures/Users/Album63,1,0,0
+OnDeleteRecords,64,64,0,1,Album64,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,0,defalut-album-8d51ed54ff8064,,0,0,,64,0,0,,,1,1739459628868,/Pictures/Users/Album64,1,0,0
+OnDeleteRecords,65,65,0,1,Album65,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,0,defalut-album-8d51ed54ff8065,,0,0,,65,1,1,,,1,1739459628868,/Pictures/Users/Album65,1,0,0

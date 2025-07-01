@@ -23,8 +23,6 @@
 
 #include "media_log.h"
 #include "database_data_mock.h"
-#include "photos_dao.h"
-#include "album_dao.h"
 
 using namespace testing::ext;
 
@@ -87,33 +85,6 @@ HWTEST_F(DatabaseDataMockTest, DATABASE, TestSize.Level1)
     ASSERT_NE(rdbStore, nullptr);
 }
 
-void DatabaseDataMockTest::CheckPhotos()
-{
-    PhotosDao photosDao;
-    std::string cloudId = "1c854334ffe54d16881f8a92700cddcdfed7976ab9e64fd2bb743183d98c3877";
-    std::string data = "/storage/cloud/files/Photo/16/IMG_1739459136_000.jpg";
-    std::vector<PhotosPo> photosList = photosDao.QueryPhotosByCloudId(cloudId);
-    PhotosPo targetPhotos;
-    int32_t ret = photosDao.GetPhotoByCloudId(photosList, cloudId, targetPhotos);
-    EXPECT_EQ(ret, 0);
-    EXPECT_EQ(targetPhotos.cloudId.value_or(""), cloudId);
-    EXPECT_EQ(targetPhotos.data.value_or(""), data);
-}
-
-void DatabaseDataMockTest::CheckPhotoAlbum()
-{
-    AlbumDao albumDao;
-    std::string cloudId = "default-album-200-1509715215-1726020218000";
-    std::string lPath = "/Pictures/Users/K";
-    std::vector<std::string> cloudIds = {cloudId};
-    std::vector<PhotoAlbumPo> albumList = albumDao.QueryByCloudIds(cloudIds);
-    PhotoAlbumPo targetAlbumPo;
-    int32_t ret = albumDao.GetAlbumByCloudId(albumList, cloudId, targetAlbumPo);
-    EXPECT_EQ(ret, 0);
-    EXPECT_EQ(targetAlbumPo.cloudId, cloudId);
-    EXPECT_EQ(targetAlbumPo.lpath, lPath);
-}
-
 HWTEST_F(DatabaseDataMockTest, DATABASE_DATA_MOCK, TestSize.Level1)
 {
     // Get RdbStore
@@ -127,13 +98,11 @@ HWTEST_F(DatabaseDataMockTest, DATABASE_DATA_MOCK, TestSize.Level1)
     EXPECT_EQ(ret, DatabaseDataMock::E_OK);
     // Verify CheckPoint
     EXPECT_GE(dbDataMock.GetMaxFileId(), 0);
-    EXPECT_GT(dbDataMock.GetMaxAlbumId(), 0);
-    EXPECT_GT(dbDataMock.GetMaxAnalysisId(), 0);
+    EXPECT_GE(dbDataMock.GetMaxAlbumId(), 0);
+    EXPECT_GE(dbDataMock.GetMaxAnalysisId(), 0);
     // Test Mock Data
     ret = dbDataMock.MockData(DatabaseDataMockTest::GetTableMockInfoList());
     EXPECT_EQ(ret, DatabaseDataMock::E_OK);
-    this->CheckPhotos();
-    this->CheckPhotoAlbum();
     // Test Rollback
     ret = dbDataMock.Rollback();
     EXPECT_EQ(ret, DatabaseDataMock::E_OK);

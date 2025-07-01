@@ -59,8 +59,7 @@ private:
 
 public:  // constructor & destructor
     CSVFileReader() = default;
-    CSVFileReader(const std::string &csvFilePath) : csvFilePath_(csvFilePath)
-    {}
+    CSVFileReader(const std::string &csvFilePath) : csvFilePath_(csvFilePath) {}
 
 public:  // getter & setter
     std::vector<std::string> GetHeaderNames() const

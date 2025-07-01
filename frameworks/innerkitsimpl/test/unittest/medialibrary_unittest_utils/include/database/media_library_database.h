@@ -57,12 +57,8 @@ public:
 
     std::shared_ptr<NativeRdb::RdbStore> GetRdbStore()
     {
-        int32_t errCode = 0;
-        auto store = this->GetRdbStore(errCode);
-        if (store == nullptr || errCode != 0) {
-            return nullptr;
-        }
-        return store;
+        int32_t errCode;
+        return this->GetRdbStore(errCode);
     }
 
 private:
