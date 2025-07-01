@@ -676,6 +676,9 @@ static int32_t UpdateRelationship(const std::shared_ptr<MediaLibraryRdbStore> rd
         to_string(assetInfo.ownerAlbumId) + " WHERE file_id = " + to_string(assetInfo.newAssetId);
     int32_t ret = -1;
     if (assetRefresh) {
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(assetInfo.newAssetId));
+        assetRefresh->Init(predicates);
         ret = assetRefresh->ExecuteSql(UPDATE_ALBUM_ID_FOR_COPY_ASSET, AccurateRefresh::RDB_OPERATION_UPDATE);
     } else {
         ret = rdbStore->ExecuteSql(UPDATE_ALBUM_ID_FOR_COPY_ASSET);
@@ -738,13 +741,10 @@ static int32_t UpdateCoverInfoForAlbum(const std::shared_ptr<MediaLibraryRdbStor
     MEDIA_INFO_LOG("New cover uri is %{public}s", targetPath.c_str());
     const std::string UPDATE_ALBUM_COVER_URI =
         "UPDATE PhotoAlbum SET cover_uri = '" + newCoverUri +"' WHERE album_id = " + to_string(ownerAlbumId);
-    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
-    albumRefresh.Init(UPDATE_ALBUM_COVER_URI, {});
-    int32_t ret = albumRefresh.ExecuteSql(UPDATE_ALBUM_COVER_URI, AccurateRefresh::RDB_OPERATION_UPDATE);
+    int32_t ret = upgradeStore->ExecuteSql(UPDATE_ALBUM_COVER_URI);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "update cover uri failed, ret = %{public}d, target album is %{public}d", ret, ownerAlbumId);
-    albumRefresh.Notify();
-        return E_OK;
+    return E_OK;
 }
 
 static int32_t CopyLocalFile(shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t &ownerAlbumId,
@@ -888,7 +888,6 @@ static int32_t CopyLocalSingleFileSync(shared_ptr<AccurateRefresh::AssetAccurate
             targetPath.c_str(), err, newAssetId);
         return err;
     }
-    UpdateCoverInfoForAlbum(upgradeStore, assetId, ownerAlbumId, newAssetId, targetPath);
     return E_OK;
 }
 
@@ -1182,7 +1181,6 @@ static int32_t ConvertFormatFileSync(const std::shared_ptr<MediaLibraryRdbStore>
             targetPath.c_str(), err, newAssetId);
         return err;
     }
-    UpdateCoverInfoForAlbum(upgradeStore, assetId, ownerAlbumId, newAssetId, targetPath);
     return E_OK;
 }
 
