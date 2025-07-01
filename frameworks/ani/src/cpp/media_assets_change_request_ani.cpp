@@ -287,7 +287,7 @@ ani_status MediaAssetsChangeRequestAni::Init(ani_env *env)
     std::array methods = {
         ani_native_function {"setFavorite", nullptr, reinterpret_cast<void *>(SetFavorite)},
         ani_native_function {"setHidden", nullptr, reinterpret_cast<void *>(SetHidden)},
-        ani_native_function {"setUserComment", "Lstd/core/String;:V", reinterpret_cast<void *>(SetUserComment)},
+        ani_native_function {"setUserComment", "C{std.core.String}:", reinterpret_cast<void *>(SetUserComment)},
         ani_native_function {"setIsRecentShow", nullptr, reinterpret_cast<void *>(SetIsRecentShow)},
         ani_native_function {"nativeConstructor", nullptr, reinterpret_cast<void *>(Constructor)},
     };

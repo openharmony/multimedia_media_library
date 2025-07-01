@@ -289,7 +289,7 @@ ani_status FileAssetAni::InitFileAssetAniMethod(ani_env *env, ResultNapiType cla
 
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &fileAssetAniMethod.cls),
         "No className: %{public}s", className.c_str());
-    CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<ctor>", "J:V", &fileAssetAniMethod.ctor),
+    CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<ctor>", "l:", &fileAssetAniMethod.ctor),
         "No <ctor>");
     CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<set>uri", nullptr, &fileAssetAniMethod.setUri),
         "No <set>uri");
