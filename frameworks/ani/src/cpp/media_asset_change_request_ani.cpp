@@ -48,12 +48,13 @@
 
 namespace OHOS::Media {
 namespace {
-static const string addResourceByFileUriSignature = PAH_ANI_CLASS_ENUM_RESOURCE_TYPE + "Lstd/core/String;:V";
-static const string addResourceByArrayBufferSignature = PAH_ANI_CLASS_ENUM_RESOURCE_TYPE +
-    "Lescompat/ArrayBuffer;:V";
+static const string addResourceByFileUriSignature = "C{" + PAH_ANI_CLASS_ENUM_RESOURCE_TYPE + "}" +
+    "C{std.core.String}:";
+static const string addResourceByArrayBufferSignature = "C{" + PAH_ANI_CLASS_ENUM_RESOURCE_TYPE + "}" +
+    "C{escompat.ArrayBuffer}:";
 static const string addResourceByPhotoProxySignature = PAH_ANI_CLASS_ENUM_RESOURCE_TYPE +
-    "L@ohos/file/photoAccessHelper/photoAccessHelper/PhotoProxy;:V";
-static const string saveCameraPhotoByImageFileTypeSignature = PAH_ANI_CLASS_ENUM_IMAGEFILE_TYPE + ":V";
+    "C{@ohos.file.photoAccessHelper.photoAccessHelper.PhotoProxy}:";
+static const string saveCameraPhotoByImageFileTypeSignature = "C{" + PAH_ANI_CLASS_ENUM_IMAGEFILE_TYPE + "}:";
 const std::array mediaAssetChangeMethods = {
     ani_native_function {"nativeConstructor", nullptr,
         reinterpret_cast<void *>(MediaAssetChangeRequestAni::Constructor)},
@@ -89,9 +90,9 @@ const std::array mediaAssetChangeMethods = {
         reinterpret_cast<void *>(MediaAssetChangeRequestAni::SetLocation)},
     ani_native_function {"setTitle", nullptr,
         reinterpret_cast<void *>(MediaAssetChangeRequestAni::SetTitle)},
-    ani_native_function {"setCameraShotKey", "Lstd/core/String;:V",
+    ani_native_function {"setCameraShotKey", "C{std.core.String}:",
         reinterpret_cast<void *>(MediaAssetChangeRequestAni::SetCameraShotKey)},
-    ani_native_function {"saveCameraPhoto", ":V",
+    ani_native_function {"saveCameraPhoto", ":",
         reinterpret_cast<void *>(MediaAssetChangeRequestAni::SaveCameraPhoto)},
     ani_native_function {"saveCameraPhoto", saveCameraPhotoByImageFileTypeSignature.c_str(),
         reinterpret_cast<void *>(MediaAssetChangeRequestAni::SaveCameraPhotoByImageFileType)},
@@ -999,11 +1000,11 @@ static ani_status ParseArgsDeleteAssets(ani_env *env, ani_object assets, std::ve
     }
     ani_ref value {};
     ani_int index = 0;
-    CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(assets, "$_get", "I:Lstd/core/Object;", &value, index),
+    CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(assets, "$_get", "i:C{std.core.Object}", &value, index),
         "Failed to get reference.");
 
     ani_class stringClass;
-    CHECK_STATUS_RET(env->FindClass("Lstd/core/String;", &stringClass), "Failed to find string class.");
+    CHECK_STATUS_RET(env->FindClass("std.core.String", &stringClass), "Failed to find string class.");
     ani_class photoAssetClass;
     CHECK_STATUS_RET(env->FindClass(PAH_ANI_CLASS_PHOTO_ASSET.c_str(), &photoAssetClass),
         "Failed to find photoAsset class.");
