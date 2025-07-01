@@ -1,0 +1,33 @@
+﻿/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+data_desc,index,album_id,album_type,album_subtype,album_name,cover_uri,count,date_modified,dirty,cloud_id,relative_path,contains_hidden,hidden_count,hidden_cover,album_order,image_count,video_count,bundle_name,local_language,is_local,date_added,lpath,priority,metadata_flags,check_flag
+unknown,19,,0,1,L,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459628868,1,,,0,0,,15,1,0,,,1,1739459628868,/Pictures/Users/L,1,0,0
+unknown,20,,0,1,M,,0,1739459613705,3,373b364a41e54ebf912b3414aeabe963507a901b2b1a4332939d51ed54ff97c5,,0,0,,16,0,0,,,1,1739459613605,/Pictures/Users/M,1,0,0
+unknown,21,,0,2049,N,,0,1739459613706,4,373b364a41e54ebf912b3424aeabe963507a901b2b1a4332939d51ed54ff97c6,,0,0,,17,0,0,,,1,1739459613606,/Pictures/Users/N,1,0,0
+unknown,22,,0,2049,O,,0,1739459613707,5,373b364a41e54ebf912b3424aeabe963507a901b2b1a4332939d51ed54ff97c7,,0,0,,18,0,0,,,1,1739459613607,/Pictures/Users/O,1,0,0
+unknown,23,,0,1,Q,,0,1739459613708,6,373b364a41e54ebf912b3464aeabe963507a901b2b1a4332939d58ed54ff97c8,,0,0,,19,0,0,,,1,1739459613608,/Pictures/Users/Q,1,0,0
+unknown,24,,0,1,R,,0,1739459613709,2,373b364a41e54ebf912b3464aeabe963507a901b2b1a4332939d58ed54ff97c9,,0,0,,20,0,0,,,1,1739459613609,/Pictures/Users/R,1,0,0
+GetCreatedRecords_Update_AlbumName,25,,0,1,S,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459613610,1,default-album-200-/Pictures/Users/S-202504021638,,0,0,,21,1,0,,,1,1739459628868,/Pictures/Users/S,1,0,0
+GetMetaModifiedRecords,26,,0,1,T,file://media/Photo/22/IMG_1739459148_021/IMG_20250213_230407_8.jpg,1,1739459613610,2,default-album-200-/Pictures/Users/T-202504021638,,0,0,,22,1,0,,,1,1739459628868,/Pictures/Users/T,1,0,0
+GetDeletedRecords_Delete,27,,0,1,U,,1,1739459613610,1,default-album-200-/Pictures/Users/U-202504021520,,0,0,,23,1,0,,,1,1739459628868,/Pictures/Users/U,1,0,0
+unknown,28,,0,1,V,,1,1739459613610,1,default-album-200-/Pictures/Users/V-202504021520,,0,0,,24,1,0,,,1,1739459628868,/Pictures/Users/V,1,0,0
+OnMdirtyRecords,29,,0,1,W,,1,1739459613610,2,default-album-200-/Pictures/Users/W-202504021520,,0,0,,25,1,0,,,1,1739459628868,/Pictures/Users/W,1,0,0
+OnMdirtyRecords,30,,0,1,X,,1,1739459613610,2,default-album-200-/Pictures/Users/X-202504021520,,0,0,,26,1,0,,,1,1739459628868,/Pictures/Users/X,1,0,0
+OnDeleteRecords,31,,0,1,W,,0,1739459613610,4,default-album-200-/Pictures/Users/Y-202504021601,,0,0,,27,1,0,,,1,1739459628868,/Pictures/Users/Y,1,0,0
+OnDeleteRecords,32,,0,1,X,,0,1739459613610,4,default-album-200-/Pictures/Users/Z-202504021601,,0,0,,28,1,0,,,1,1739459628868,/Pictures/Users/Z,1,0,0
+OnCreateRecords,33,,0,2049,Aa-202504021601,,0,1739459613706,1,default-album-200-/Pictures/Users/Aa-202504021601,,0,0,,29,0,0,,,1,1739459613606,/Pictures/Users/Aa,1,0,0
+OnCreateRecords,34,,0,2049,Ab-202504021601,,0,1739459613707,1,default-album-200-/Pictures/Users/Ab-202504021601,,0,0,,30,0,0,,,1,1739459613607,/Pictures/Users/Ab,1,0,0
+GetDeletedRecords_notEmptyAlbumSetNew,35,33,0,1,U,,1,1739459613610,4,default-album-200-/Pictures/Users/U-202504113456,,0,0,,31,1,0,,,1,1739459628868,/Pictures/Users/U,1,0,0
+unknown,36,,0,1,Q,,1,1739459613708,6,373b364a41e54ebf912b3464aeabe963507a901b2b1a4332939d58ed54ff97ca,,0,0,,32,0,0,,,1,1739459613608,/Pictures/Users/Q,1,0,0

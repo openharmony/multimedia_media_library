@@ -33,8 +33,7 @@ private:
     CSVFileReader reader_;
 
 public:
-    TableWriter(std::shared_ptr<NativeRdb::RdbStore> store) : store_(store)
-    {}
+    TableWriter(std::shared_ptr<NativeRdb::RdbStore> store) : store_(store) {}
     TableWriter &SetTableName(const std::string &tableName)
     {
         this->tableName_ = tableName;
@@ -56,7 +55,7 @@ private:
     {
         NativeRdb::ValuesBucket values;
         std::string columnValue;
-        std::string select = "INSERT INTO Photos(";
+        std::string select = "INSERT INTO " + this->tableName_ + "(";
         std::string where = " VALUES(";
         for (auto &columnName : this->columnNames_) {
             if (columnName == "data_desc") {
