@@ -1,0 +1,18 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+data_desc,index,album_id,album_type,album_subtype,album_name,cover_uri,count,date_modified,dirty,cloud_id,relative_path,contains_hidden,hidden_count,hidden_cover,album_order,image_count,video_count,bundle_name,local_language,is_local,date_added,lpath,priority,metadata_flags
+unknown,22,32,0,1,O,file://media/Photo/22/IMG_1739459148_020/IMG_20250213_230417_3.jpg,1,1739459628868 ,1,373b364a41e59ebf912b3414aeabe963507a901b2b1a4332939d51ed54ff97c4,,0,0,,15,1,0,,,1,1739459628868 ,/Pictures/Users/O,1,0,0
+unknown,23,33,0,1,P,,0,1739459613605,4,373b364a41e59ebf912b3414aeabe963507a901b2b1a4332939d51ed54ff97c5,,0,0,,16,0,0,,,1,1739459613605,/Pictures/Users/P,1,0,0
+unknown,24,34,0,2049,Q,,0,1739459623606,4,373b364a41e54ebf912b3414aeabe963507a901b2b1a4332939d51ed54ff97c6,,0,0,,17,0,0,,,1,1739459623606,/Pictures/Users/Q,1,0,0

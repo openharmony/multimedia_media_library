@@ -163,27 +163,262 @@
         <preparer>
             <option name="shell" value="rm -rf /data/test/cloudsync"/>
             <option name="shell" value="mkdir -p /data/test/cloudsync"/>
-            <option name="push" value="cloudsync_datafile/database_mock-photos.csv -> /data/test/cloudsync" src="res"/>
-            <option name="push" value="cloudsync_datafile/database_mock-photo_album.csv -> /data/test/cloudsync" src="res"/>
+            <option name="shell" value="rm -rf /data/test/cloudsync/dataclient"/>
+            <option name="shell" value="mkdir -p /data/test/cloudsync/dataclient"/>
+            <option name="shell" value="rm -rf /data/test/cloudsync/albumhandler"/>
+            <option name="shell" value="mkdir -p /data/test/cloudsync/albumhandler"/>
+            <option name="shell" value="rm -rf /data/test/cloudsync/photohandler"/>
+            <option name="shell" value="mkdir -p /data/test/cloudsync/photohandler"/>
+            <option name="shell" value="rm -rf /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_023.jpg"/>
+            <option name="shell" value="mkdir -p /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_023.jpg"/>
+            <option name="shell" value="rm -rf /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/16/IMG_1739459146_016.jpg"/>
+            <option name="shell" value="mkdir -p /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/16/IMG_1739459146_016.jpg"/>
+            <option name="shell" value="rm -rf /data/service/el2/100/hmdfs/account/files/Photo/16"/>
+            <option name="shell" value="mkdir -p /data/service/el2/100/hmdfs/account/files/Photo/16"/>
+            <option name="shell" value="rm -rf /data/service/el2/100/hmdfs/account/files/Photo/2"/>
+            <option name="shell" value="mkdir -p /data/service/el2/100/hmdfs/account/files/Photo/2"/>
+            <option name="shell" value="rm -rf /data/service/el2/100/hmdfs/account/files/Photo/13"/>
+            <option name="shell" value="mkdir -p /data/service/el2/100/hmdfs/account/files/Photo/13"/>
+            <option name="shell" value="rm -rf /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13"/>
+            <option name="shell" value="mkdir -p /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13"/>
+            <option name="shell" value="rm -rf /data/service/el2/100/hmdfs/account/files/Photo/11"/>
+            <option name="shell" value="mkdir -p /data/service/el2/100/hmdfs/account/files/Photo/11"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/16/IMG_1739459146_016.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/2/IMG_1739459148_023.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/11/IMG_1739459144_011.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/12/IMG_1739459145_012.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1739459146_013.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/14/IMG_1739459146_014.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/15/IMG_1739459146_015.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/9/IMG_1739459141_009.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/3/IMG_1739766467_006.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/4/IMG_1739766580_005.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/12/IMG_1739459145_033.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/9/IMG_1739459141_20011.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/10/IMG_1739459142_20012.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/11/IMG_1739459144_20013.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/12/IMG_1739459145_20014.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1739459146_20015.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1739459146_20016.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/15/IMG_1739459146_20017.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/16/IMG_1739459146_20018.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/1/IMG_1739459147_20019.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/2/IMG_1739459147_20020.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/2/IMG_1739459148_20021.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/2/IMG_1739459148_20022.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/2/IMG_1739459148_20023.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/2/IMG_1739459148_20024.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1739459145_20025.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/8/IMG_1739459149_20026.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/8/IMG_1739459151_20028.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/8/IMG_1739459151_20029.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/8/IMG_1739459151_20030.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/8/IMG_1739459151_20031.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/8/IMG_1739459151_20032.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/8/IMG_1739459151_20033.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/8/IMG_1739459151_20034.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/3/IMG_1739766467_10047.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/2/IMG_1739459137_002.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/3/IMG_1739459138_003.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/3/IMG_1739766467_10036.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/3/IMG_1739766467_10037.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/gif_00.gif -> /data/service/el2/100/hmdfs/account/files/Photo/3/IMG_1739766467_10038.gif" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/gif_00.gif -> /data/service/el2/100/hmdfs/account/files/Photo/3/IMG_1739766467_10039.gif" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/3/IMG_1739766467_10040.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/3/IMG_1739766467_10041.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/gif_00.gif -> /data/service/el2/100/hmdfs/account/files/Photo/3/IMG_1739766467_10042.gif" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/3/IMG_1739766467_10043.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/3/IMG_1739766467_10047.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/video_000.mp4 -> /data/service/el2/100/hmdfs/account/files/Photo/15/VID_1735607604_10015.mp4" src="res"/>
+            <!-- ~/13/IMG_1743927694_000.gif -->
+            <option name="shell" value="mkdir -p /data/service/el2/100/hmdfs/account/files/Photo/13"/>
+            <option name="shell" value="rm -rf /data/service/el2/100/hmdfs/account/files/Photo/13/gif_00.gif"/>
+            <option name="push" value="cloudsync_datafile/pictures/gif_00.gif -> /data/service/el2/100/hmdfs/account/files/Photo/13" src="res"/>
+            <option name="shell" value="rm -rf /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1743927694_000.gif"/>
+            <option name="shell" value="cp /data/service/el2/100/hmdfs/account/files/Photo/13/gif_00.gif /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1743927694_000.gif"/>
+            <option name="shell" value="rm -rf /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1743927694_000.gif"/>
+            <option name="shell" value="mkdir -p /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1743927694_000.gif"/>
+            <option name="shell" value="cp /data/service/el2/100/hmdfs/account/files/Photo/13/gif_00.gif /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1743927694_000.gif/THM.jpg"/>
+            <option name="shell" value="cp /data/service/el2/100/hmdfs/account/files/Photo/13/gif_00.gif /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1743927694_000.gif/LCD.jpg"/>
+            <!-- ~/11/IMG_1744190669_028.jpg -->
+            <option name="shell" value="mkdir -p /data/service/el2/100/hmdfs/account/files/Photo/11"/>
+            <option name="shell" value="rm -rf /data/service/el2/100/hmdfs/account/files/Photo/11/IMG_1739459146_013.jpg"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/11" src="res"/>
+            <option name="shell" value="rm -rf /data/service/el2/100/hmdfs/account/files/Photo/11/IMG_1744190669_028.jpg"/>
+            <option name="shell" value="cp /data/service/el2/100/hmdfs/account/files/Photo/11/IMG_1739459146_013.jpg /data/service/el2/100/hmdfs/account/files/Photo/11/IMG_1744190669_028.jpg"/>
+            <option name="shell" value="rm -rf /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/11/IMG_1744190669_028.jpg"/>
+            <option name="shell" value="mkdir -p /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/11/IMG_1744190669_028.jpg"/>
+            <option name="shell" value="cp /data/service/el2/100/hmdfs/account/files/Photo/11/IMG_1739459146_013.jpg /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/11/IMG_1744190669_028.jpg/THM.jpg"/>
+            <option name="shell" value="cp /data/service/el2/100/hmdfs/account/files/Photo/11/IMG_1739459146_013.jpg /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/11/IMG_1744190669_028.jpg/LCD.jpg"/>
+            <!-- ~/13/IMG_1739459145_10028.jpg -->
+            <option name="shell" value="mkdir -p /data/service/el2/100/hmdfs/account/files/Photo/13"/>
+            <option name="shell" value="rm -rf /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1739459146_013.jpg"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/13" src="res"/>
+            <option name="shell" value="rm -rf /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1739459145_10028.jpg"/>
+            <option name="shell" value="cp /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1739459146_013.jpg /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1739459145_10028.jpg"/>
+            <option name="shell" value="rm -rf /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1739459145_10028.jpg"/>
+            <option name="shell" value="mkdir -p /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1739459145_10028.jpg"/>
+            <option name="shell" value="cp /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1739459146_013.jpg /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1739459145_10028.jpg/THM.jpg"/>
+            <option name="shell" value="cp /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1739459146_013.jpg /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1739459145_10028.jpg/LCD.jpg"/>
+            <!-- ~/13/IMG_1743927751_001.gif -->
+            <option name="shell" value="mkdir -p /data/service/el2/100/hmdfs/account/files/Photo/13"/>
+            <option name="shell" value="rm -rf /data/service/el2/100/hmdfs/account/files/Photo/13/gif_00.gif"/>
+            <option name="push" value="cloudsync_datafile/pictures/gif_00.gif -> /data/service/el2/100/hmdfs/account/files/Photo/13" src="res"/>
+            <option name="shell" value="rm -rf /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1743927751_001.gif"/>
+            <option name="shell" value="cp /data/service/el2/100/hmdfs/account/files/Photo/13/gif_00.gif /data/service/el2/100/hmdfs/account/files/Photo/13/IMG_1743927751_001.gif"/>
+            <option name="shell" value="rm -rf /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1743927751_001.gif"/>
+            <option name="shell" value="mkdir -p /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1743927751_001.gif"/>
+            <option name="shell" value="cp /data/service/el2/100/hmdfs/account/files/Photo/13/gif_00.gif /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1743927751_001.gif/THM.jpg"/>
+            <option name="shell" value="cp /data/service/el2/100/hmdfs/account/files/Photo/13/gif_00.gif /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1743927751_001.gif/LCD.jpg"/>
+            <!-- separate -->
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /data/service/el2/100/hmdfs/account/files/Photo/8/IMG_1739459151_20034.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/9/IMG_1739459141_009.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/9/IMG_1739459141_009.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/11/IMG_1739459144_011.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/11/IMG_1739459144_011.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/12/IMG_1739459145_012.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/12/IMG_1739459145_012.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/12/IMG_1739459145_033.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/12/IMG_1739459145_033.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1739459146_013.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1739459146_013.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/14/IMG_1739459146_014.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/14/IMG_1739459146_014.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/15/IMG_1739459146_015.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/15/IMG_1739459146_015.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/16/IMG_1739459146_016.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/16/IMG_1739459146_016.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_023.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_023.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/3/IMG_1739766467_006.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/3/IMG_1739766467_006.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/4/IMG_1739766580_005.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/4/IMG_1739766580_005.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_024.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_024.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459150_026.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459150_026.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_027.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_027.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_022.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_022.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/9/IMG_1739459141_20011.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/9/IMG_1739459141_20011.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/10/IMG_1739459142_20012.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/10/IMG_1739459142_20012.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/11/IMG_1739459144_20013.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/11/IMG_1739459144_20013.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/12/IMG_1739459145_20014.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/12/IMG_1739459145_20014.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1739459146_20015.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1739459146_20015.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1739459146_20016.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1739459146_20016.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/15/IMG_1739459146_20017.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/15/IMG_1739459146_20017.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/16/IMG_1739459146_20018.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/16/IMG_1739459146_20018.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/1/IMG_1739459147_20019.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/1/IMG_1739459147_20019.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459147_20020.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459147_20020.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_20021.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_20021.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_20022.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_20022.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_20023.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_20023.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_20024.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459148_20024.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1739459145_20025.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/13/IMG_1739459145_20025.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459149_20026.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459149_20026.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20028.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20028.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20029.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20029.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20030.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20030.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20031.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20031.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20032.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20032.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20033.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20033.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20034.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/8/IMG_1739459151_20034.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459137_002.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/2/IMG_1739459137_002.jpg/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/15/VID_1735607604_10015.mp4/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/15/VID_1735607604_10015.mp4/LCD.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/3/IMG_1739766467_10047.jpg/THM.jpg" src="res"/>
+            <option name="push" value="cloudsync_datafile/pictures/IMG_1739459146_013.jpg -> /mnt/hmdfs/100/account/device_view/local/files/.thumbs/Photo/3/IMG_1739766467_10047.jpg/LCD.jpg" src="res"/>
+            
             <option name="push" value="cloudsync_datafile/data_client-photos.csv -> /data/test/cloudsync" src="res"/>
             <option name="push" value="cloudsync_datafile/data_client-photo_album.csv -> /data/test/cloudsync" src="res"/>
-        </preparer>
-    </target>
-    <target name="MediaLibraryThumbnailFuzzTest">
-        <preparer>
-            <option name="shell" value="rm -rf /storage/media/local/files/*"/>
-            <option name="shell" value="scanner"/>
-            <option name="shell" value="sleep 10"/>
-            <option name="shell" value="mkdir /storage/media/local"/>
-            <option name="shell" value="mkdir /storage/media/local/files"/>
-            <option name="shell" value="mkdir /storage/media/local/files/Photo"/>
-            <option name="shell" value="mkdir /storage/media/local/files/Photo/1"/>
-            <option name="push" value="thumbnail_testfile/CreateImageThumbnailTest_001.jpg -> /storage/media/local/files/Photo/1" src="res"/>
-            <option name="push" value="thumbnail_testfile/CreateImageLcdTest_001.jpg -> /storage/media/local/files/Photo/1" src="res"/>
-            <option name="push" value="thumbnail_testfile/CreateAudioThumbnailTest_001.mp3 -> /storage/media/local/files/Photo/1" src="res"/>
-            <option name="push" value="thumbnail_testfile/CreateVideoThumbnailTest_001.mp4 -> /storage/media/local/files/Photo/1" src="res"/>
-            <option name="shell" value="scanner"/>
-            <option name="shell" value="sleep 10"/>
+            <option name="push" value="cloudsync_datafile/photo_handler-photos.csv -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/photo_handler-photo_album.csv -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/database_mock-photos.csv -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/database_mock-photo_album.csv -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/photo_album_handler-photos.csv -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/albumhandler/onfetchrecords_album.csv -> /data/test/cloudsync/albumhandler" src="res"/>
+            <option name="push" value="cloudsync_datafile/albumhandler/onfetchrecords_photo.csv -> /data/test/cloudsync/albumhandler" src="res"/>
+            <option name="push" value="cloudsync_datafile/photo_album_handler-photo_album.csv -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreatedrecords_photo_album.csv -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreatedrecords_photos.csv -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/cloud_record_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/photo_on_modify_records_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/photo_on_fdirty_records_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/photo_album_handler_on_deleted_records.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/photo_on_create_records_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/photo_on_delete_records_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/data_client_update_local_file_dirty_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/album_handler_get_created_record_result.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/photo_handler_get_meta_modified_record_result.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/album_handler_get_meta_modified_record_result.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/album_handler_on_fecth_records.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/album_handler_on_fecth_records_source_album.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/album_handler_on_fecth_records_user_album.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/photo_handler_get_delete_record_result.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/album_handler_get_delete_record_result.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/photo_handler_get_file_modified_record_result.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/photo_handler_get_copy_record_result.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_handler-onfetchrecords_photos.csv -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_handler-onfetchrecords_photo_album.csv -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_on_fetch_records_new_data_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_on_fetch_records_delete_data_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_on_fetch_records_cloud_favorite_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_on_fetch_records_cloud_hidden_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_on_fetch_records_date_trashed_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_on_fetch_records_rename_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_on_fetch_records_delete_dirty_data_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_on_fetch_records_no_change_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_on_fetch_records_file_modify_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_on_fetch_records_merge_data_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/onfetchrecords_photo/photo_on_fetch_records_all_data_test.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/getcreatedrecords_photo/getcreatedrecords_album.csv -> /data/test/cloudsync/getcreatedrecords_photo" src="res"/>
+            <option name="push" value="cloudsync_datafile/getcreatedrecords_photo/getcreatedrecords_photo.csv -> /data/test/cloudsync/getcreatedrecords_photo" src="res"/>
+            <option name="push" value="cloudsync_datafile/getcreatedrecords_photo/photo_handler_get_created_record_result.json -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/albumhandler/onfetchrecords_album.json -> /data/test/cloudsync/albumhandler" src="res"/>
+            <option name="push" value="cloudsync_datafile/albumhandler/onfetchrecords_album_check_data.json -> /data/test/cloudsync/albumhandler" src="res"/>
+            <option name="push" value="cloudsync_datafile/albumhandler/oncreatedrecords_has_error.json -> /data/test/cloudsync/albumhandler" src="res"/>
+            <option name="push" value="cloudsync_datafile/albumhandler/oncreatedrecords_no_error.json -> /data/test/cloudsync/albumhandler" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreaterecords_test.json -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreaterecords_cloud_full_space_error_test.json -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreaterecords_cloud_network_error_test.json -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreaterecords_user_upload_unpermited_test.json -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreaterecords_stop_sync_test.json -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreaterecords_same_filename_test.json -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreaterecords_file_not_exist_test.json -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreaterecords_file_exist_upload_failed_test.json -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreaterecords_invalid_lock_test.json -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreaterecords_other_error_test.json -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreaterecords_upload_metadata_changed_test.json -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/photohandler/oncreaterecords_normal_test.json -> /data/test/cloudsync/photohandler/" src="res"/>
+            <option name="push" value="cloudsync_datafile/oncopyrecords_photo/oncopyrecord_photo.csv -> /data/test/cloudsync/oncopyrecords_photo" src="res"/>
+            <option name="push" value="cloudsync_datafile/oncopyrecords_photo/oncopyrecord_album.csv -> /data/test/cloudsync/oncopyrecords_photo" src="res"/>
+            <option name="push" value="cloudsync_datafile/oncopyrecords_photo/photo_on_copy_records_test.json -> /data/test/cloudsync" src="res"/>
         </preparer>
     </target>
     <target name="media_bgtask_mgr_schedule_policy_test">
