@@ -146,7 +146,9 @@ void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &p
     if (event.mask & (IN_CLOSE_WRITE | IN_MOVED_FROM | IN_MOVED_TO | IN_CREATE | IN_DELETE)) {
         MEDIA_INFO_LOG("path:%{public}s mask:0x%{public}x name:%{public}s",
             path.c_str(), event.mask, event.name);
-        eventPtr->SendObjectInfoChanged(path);
+        if (mtpMedialibrary->GetIdByPath(path, handle) == 0) {
+            AddToQueue(MTP_EVENT_OBJECT_INFO_CHANGED_CODE, handle);
+        }
     }
 }
 
