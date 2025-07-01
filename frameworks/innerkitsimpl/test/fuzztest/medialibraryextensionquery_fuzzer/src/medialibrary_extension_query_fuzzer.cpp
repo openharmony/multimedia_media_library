@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "data_ability_observer_interface.h"
 #include "datashare_business_error.h"
@@ -32,99 +33,80 @@ namespace OHOS {
 using namespace std;
 using namespace AbilityRuntime;
 using namespace DataShare;
-
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
+static const int32_t NUM_BYTES = 1;
+FuzzedDataProvider *provider = nullptr;
+static inline vector<int32_t> FuzzVectorInt32()
 {
-    return static_cast<int32_t>(*data);
+    return {provider->ConsumeIntegral<int32_t>()};
 }
 
-static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
+static inline vector<int64_t> FuzzVectorInt64()
 {
-    return static_cast<int64_t>(*data);
+    return {provider->ConsumeIntegral<int64_t>()};
 }
 
-static inline double FuzzDouble(const uint8_t *data, size_t size)
+static inline vector<double> FuzzVectorDouble()
 {
-    return static_cast<double>(*data);
+    return {provider->ConsumeFloatingPoint<double>()};
 }
 
-static inline string FuzzString(const uint8_t *data, size_t size)
+static inline vector<string> FuzzVectorString()
 {
-    return {reinterpret_cast<const char*>(data), size};
+    return {provider->ConsumeBytesAsString(NUM_BYTES)};
 }
 
-static inline vector<int32_t> FuzzVectorInt32(const uint8_t *data, size_t size)
+static inline vector<SingleValue::Type> FuzzVectorSingleValueType()
 {
-    return {FuzzInt32(data, size)};
+    return {provider->ConsumeIntegral<int64_t>()};
 }
 
-static inline vector<int64_t> FuzzVectorInt64(const uint8_t *data, size_t size)
-{
-    return {FuzzInt64(data, size)};
-}
-
-static inline vector<double> FuzzVectorDouble(const uint8_t *data, size_t size)
-{
-    return {FuzzDouble(data, size)};
-}
-
-static inline vector<string> FuzzVectorString(const uint8_t *data, size_t size)
-{
-    return {FuzzString(data, size)};
-}
-
-static inline vector<SingleValue::Type> FuzzVectorSingleValueType(const uint8_t *data, size_t size)
-{
-    return {FuzzInt64(data, size)};
-}
-
-static inline vector<MutliValue::Type> FuzzVectorMultiValueType(const uint8_t *data, size_t size)
+static inline vector<MutliValue::Type> FuzzVectorMultiValueType()
 {
     return {
-        FuzzVectorInt32(data, size),
-        FuzzVectorInt64(data, size),
-        FuzzVectorString(data, size),
-        FuzzVectorDouble(data, size)
+        FuzzVectorInt32(),
+        FuzzVectorInt64(),
+        FuzzVectorString(),
+        FuzzVectorDouble()
     };
 }
 
-static inline OperationItem FuzzOperationItem(const uint8_t *data, size_t size)
+static inline OperationItem FuzzOperationItem()
 {
     return {
-        .operation = FuzzInt32(data, size),
-        .singleParams = FuzzVectorSingleValueType(data, size),
-        .multiParams = FuzzVectorMultiValueType(data, size),
+        .operation = provider->ConsumeIntegral<int32_t>(),
+        .singleParams = FuzzVectorSingleValueType(),
+        .multiParams = FuzzVectorMultiValueType(),
     };
 }
 
-static inline vector<OperationItem> FuzzVectorOperationItem(const uint8_t *data, size_t size)
+static inline vector<OperationItem> FuzzVectorOperationItem()
 {
-    return {FuzzOperationItem(data, size)};
+    return {FuzzOperationItem()};
 }
 
-static inline Uri FuzzUri(const uint8_t *data, size_t size)
+static inline Uri FuzzUri()
 {
-    return Uri(FuzzString(data, size));
+    return Uri(provider->ConsumeBytesAsString(NUM_BYTES));
 }
 
-static inline DataSharePredicates FuzzDataSharePredicates(const uint8_t *data, size_t size)
+static inline DataSharePredicates FuzzDataSharePredicates()
 {
-    return DataSharePredicates(FuzzVectorOperationItem(data, size));
+    return DataSharePredicates(FuzzVectorOperationItem());
 }
 
-static inline DatashareBusinessError FuzzDataShareBusinessError(const uint8_t *data, size_t size)
+static inline DatashareBusinessError FuzzDataShareBusinessError()
 {
     DatashareBusinessError error;
-    error.SetCode(FuzzInt32(data, size));
-    error.SetMessage(FuzzString(data, size));
+    error.SetCode(provider->ConsumeIntegral<int32_t>());
+    error.SetMessage(provider->ConsumeBytesAsString(NUM_BYTES));
     return error;
 }
 
-static inline void QueryFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void QueryFuzzer(MediaDataShareExtAbility &extension)
 {
-    auto columns = FuzzVectorString(data, size);
-    auto error = FuzzDataShareBusinessError(data, size);
-    extension.Query(FuzzUri(data, size), FuzzDataSharePredicates(data, size), columns, error);
+    auto columns = FuzzVectorString();
+    auto error = FuzzDataShareBusinessError();
+    extension.Query(FuzzUri(), FuzzDataSharePredicates(), columns, error);
 }
 
 static inline MediaDataShareExtAbility Init()
@@ -139,7 +121,12 @@ static inline MediaDataShareExtAbility Init()
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
     auto extension = OHOS::Init();
-    OHOS::QueryFuzzer(extension, data, size);
+    OHOS::QueryFuzzer(extension);
     return 0;
 }

@@ -11,11 +11,11 @@
 		"maxToleranceTime": 24,
 		"loadLevel": 1,
 		"loadScale": 11,
-		"conflictedTask": ["com.ohos.medialibrary.medialibrarydata:StorageAgingTask"],
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
-				"isCharging": 1
+				"isCharging": 1,
+				"screenOff": 1
 			}]
 			}
 		}
@@ -31,11 +31,11 @@
 		"maxToleranceTime": 24,
 		"loadLevel": 1,
 		"loadScale": 11,
-		"conflictedTask": ["com.ohos.medialibrary.medialibrarydata:StorageAgingTask"],
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
-				"isCharging": 1
+				"isCharging": 1,
+				"screenOff": 1
 			}]
 			}
 		}
@@ -78,7 +78,8 @@
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
-				"isCharging": 1
+				"isCharging": 1,
+				"screenOff": 1
 			}]
 			}
 		}
@@ -97,7 +98,8 @@
 		"startCondition": {
 			"reScheduleInterval": 1440,
 			"conditionArray": [{
-				"isCharging": 1
+				"isCharging": 1,
+				"screenOff": 1
 			}]
 			}
 		}
@@ -116,7 +118,8 @@
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
-				"isCharging": 1
+				"isCharging": 1,
+				"screenOff": 1
 			}]
 			}
 		}
@@ -136,6 +139,7 @@
 			"reScheduleInterval": 5,
 			"conditionArray": [{
 				"isCharging": 1,
+				"screenOff": 1,
 				"networkType": "wifi"
 			}]
 			}
@@ -155,7 +159,8 @@
 		"startCondition": {
 			"reScheduleInterval": 1440,
 			"conditionArray": [{
-				"isCharging": 1
+				"isCharging": 1,
+				"screenOff": 1
 			}]
 			}
 		}
@@ -174,7 +179,8 @@
 		"startCondition": {
 			"reScheduleInterval": 0,
 			"conditionArray": [{
-				"isCharging": 1
+				"isCharging": 1,
+				"screenOff": 1
 			}]
 			}
 		}
@@ -193,7 +199,8 @@
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
-				"isCharging": 1
+				"isCharging": 1,
+				"screenOff": 1
 			}]
 			}
 		}
@@ -212,7 +219,8 @@
 		"startCondition": {
 			"reScheduleInterval": 1440,
 			"conditionArray": [{
-				"isCharging": 1
+				"isCharging": 1,
+				"screenOff": 1
 			}]
 			}
 		}
@@ -231,7 +239,8 @@
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
-				"isCharging": 1
+				"isCharging": 1,
+				"screenOff": 1
 			}]
 			}
 		}
@@ -250,7 +259,8 @@
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
-				"isCharging": 1
+				"isCharging": 1,
+				"screenOff": 1
 			}]
 			}
 		}
@@ -270,10 +280,17 @@
 			"reScheduleInterval": 10,
 			"conditionArray": [{
 				"isCharging": 1,
-				"batteryCapacity": 20
+				"screenOff": 1,
+				"storageFree": [11,100],
+				"batteryCapacity": 20,
+				"startThermalLevelDay": 3,
+				"startThermalLevelNight": 3
 			},{
 				"isCharging": 0,
-				"screenOff": 1
+				"screenOff": 1,
+				"storageFree": [11,100],
+				"startThermalLevelDay": 2,
+				"startThermalLevelNight": 2
 			}]
 			}
 		}
@@ -292,7 +309,8 @@
 		"startCondition": {
 			"reScheduleInterval": 1440,
 			"conditionArray": [{
-				"isCharging": 1
+				"isCharging": 1,
+				"screenOff": 1
 			}]
 			}
 		}
@@ -311,11 +329,9 @@
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
-				"isCharging": 1,
-				"batteryCapacity": 0
+				"isCharging": 1
 			},{
-				"screenOff": 1,
-				"batteryCapacity": 0
+				"screenOff": 1
 			}]
 			}
 		}
@@ -335,7 +351,7 @@
 			"reScheduleInterval": 360,
 			"conditionArray": [{
 				"isCharging": 1,
-				"batteryCapacity": 0
+				"screenOff": 1
 			}]
 			}
 		}
@@ -355,7 +371,7 @@
 			"reScheduleInterval": 30,
 			"conditionArray": [{
 				"isCharging": 1,
-				"batteryCapacity": 0
+				"screenOff": 1
 			}]
 			}
 		}
@@ -375,7 +391,7 @@
 			"reScheduleInterval": 720,
 			"conditionArray": [{
 				"isCharging": 1,
-				"batteryCapacity": 0
+				"screenOff": 1
 			}]
 			}
 		}
@@ -395,7 +411,7 @@
 			"reScheduleInterval": 60,
 			"conditionArray": [{
 				"isCharging": 1,
-				"batteryCapacity": 0
+				"screenOff": 1
 			}]
 			}
 		}
@@ -414,6 +430,8 @@
 		"startCondition": {
 			"conditionArray": [{
 				"isCharging": 1,
+				"screenOff": 1,
+				"storageFree": [5,100],
 				"networkType": "wifi"
 			}]
 			}
@@ -438,6 +456,8 @@
 				"isCharging": 1,
 				"screenOff": 1,
 				"batteryCapacity": 50,
+				"startThermalLevelDay": 1,
+				"startThermalLevelNight": 1,
 				"checkParamBeforeRun": "persist.multimedia.media_analysis_service.hasdata"
 			}]
 			}
@@ -462,6 +482,8 @@
 				"isCharging": 1,
 				"screenOff": 1,
 				"batteryCapacity": 50,
+				"startThermalLevelDay": 1,
+				"startThermalLevelNight": 1,
 				"checkParamBeforeRun": "persist.multimedia.media_analysis_service.hasdata"
 			}]
 			}

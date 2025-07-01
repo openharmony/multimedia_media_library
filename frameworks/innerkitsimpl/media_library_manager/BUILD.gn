@@ -53,6 +53,7 @@ ohos_shared_library("media_library_manager") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/create_asset_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_result_set_from_db_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_moving_photo_date_modified_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_result_set_from_photos_extend_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_uri_from_filepath_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_filepath_from_uri_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/close_asset_vo.cpp",

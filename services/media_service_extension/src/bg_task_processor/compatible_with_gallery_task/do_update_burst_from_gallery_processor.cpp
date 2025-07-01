@@ -28,6 +28,7 @@
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
 #include "uuid.h"
+#include "asset_accurate_refresh.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -79,7 +80,8 @@ static std::string generateRegexpMatchForNumber(const int32_t num)
     return strRegexpMatch;
 }
 
-static std::string generateUpdateSql(const bool isCover, const std::string title, const int32_t ownerAlbumId)
+static std::string generateUpdateSql(const bool isCover, const std::string title, const int32_t ownerAlbumId,
+    AccurateRefresh::AssetAccurateRefresh &assetRefresh)
 {
     uint32_t index = title.find_first_of("BURST");
     std::string globMember = title.substr(0, index) + "BURST" + generateRegexpMatchForNumber(3);
@@ -87,15 +89,18 @@ static std::string generateUpdateSql(const bool isCover, const std::string title
     std::string updateSql;
     if (isCover) {
         std::string burstkey = GenerateUuid();
+        std::string sqlWhere = " WHERE " + MediaColumn::MEDIA_TYPE +
+            " = " + to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
+            to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
+            " = " + to_string(ownerAlbumId) + " AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" +
+            globMember + "') OR LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globCover + "'))";
         updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_SUBTYPE + " = " +
             to_string(static_cast<int32_t>(PhotoSubType::BURST)) + ", " + PhotoColumn::PHOTO_BURST_KEY + " = '" +
             burstkey + "', " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = CASE WHEN " + MediaColumn::MEDIA_TITLE +
             " NOT LIKE '%COVER%' THEN " + to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER)) + " ELSE " +
-            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " END WHERE " + MediaColumn::MEDIA_TYPE +
-            " = " + to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
-            to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
-            " = " + to_string(ownerAlbumId) + " AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" +
-            globMember + "') OR LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globCover + "'));";
+            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " END" + sqlWhere;
+        std::string initSql = "SELECT * FROM " + PhotoColumn::PHOTOS_TABLE + sqlWhere;
+        assetRefresh.Init(initSql, {});
     } else {
         string subWhere = "FROM " + PhotoColumn::PHOTOS_TABLE + " AS p2 WHERE LOWER(p2." + MediaColumn::MEDIA_TITLE +
             ") GLOB LOWER('" + globCover + "') AND p2." + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " +
@@ -111,12 +116,14 @@ static std::string generateUpdateSql(const bool isCover, const std::string title
             to_string(static_cast<int32_t>(PhotoSubType::BURST)) + " ELSE p1." + PhotoColumn::PHOTO_SUBTYPE + " END " +
             subWhere + ") WHERE p1." + MediaColumn::MEDIA_TITLE + " = '" + title + "' AND p1." +
             PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " + to_string(ownerAlbumId);
+        std::string initSql = "SELECT * FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_TITLE +
+            " = '" + title + "' AND " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " + to_string(ownerAlbumId);
+        assetRefresh.Init(initSql, {});
     }
     return updateSql;
 }
 
-static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    shared_ptr<NativeRdb::ResultSet> resultSet)
+static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::ResultSet> resultSet)
 {
     int32_t count;
     int32_t retCount = resultSet->GetRowCount(count);
@@ -133,6 +140,7 @@ static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibrar
     }
 
     int32_t ret = E_ERR;
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int columnIndex = 0;
         string title;
@@ -144,13 +152,16 @@ static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibrar
             resultSet->GetInt(columnIndex, ownerAlbumId);
         }
 
-        string updateSql = generateUpdateSql(isCover, title, ownerAlbumId);
-        ret = rdbStore->ExecuteSql(updateSql);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
-            return E_HAS_DB_ERROR;
+        string updateSql = generateUpdateSql(isCover, title, ownerAlbumId, assetRefresh);
+        ret = assetRefresh.ExecuteSql(updateSql, AccurateRefresh::RDB_OPERATION_UPDATE);
+        if (ret != AccurateRefresh::ACCURATE_REFRESH_RET_OK) {
+            MEDIA_ERR_LOG("assetRefresh ExecuteSql failed, ret = %{public}d", ret);
+            ret = E_HAS_DB_ERROR;
+            break;
         }
     }
+    assetRefresh.RefreshAlbum();
+    assetRefresh.Notify();
     return ret;
 }
 
@@ -190,7 +201,7 @@ int32_t DoUpdateBurstFromGalleryProcessor::UpdateBurstFromGallery()
 
     auto resultSet = QueryBurst(rdbStore, globCoverStr1, globCoverStr2);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "rdbStore is null.");
-    int32_t ret = UpdateBurstPhoto(true, rdbStore, resultSet);
+    int32_t ret = UpdateBurstPhoto(true, resultSet);
     if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("failed to UpdateBurstPhotoByCovers.");
         return E_FAIL;
@@ -198,7 +209,7 @@ int32_t DoUpdateBurstFromGalleryProcessor::UpdateBurstFromGallery()
 
     resultSet = QueryBurst(rdbStore, globMemberStr1, globMemberStr2);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "rdbStore is null.");
-    ret = UpdateBurstPhoto(false, rdbStore, resultSet);
+    ret = UpdateBurstPhoto(false, resultSet);
     if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("failed to UpdateBurstPhotoByMembers.");
         return E_FAIL;
@@ -207,10 +218,9 @@ int32_t DoUpdateBurstFromGalleryProcessor::UpdateBurstFromGallery()
     return ret;
 }
 
-static int32_t DoUpdateBurstCoverLevelOperation(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+static int32_t DoUpdateBurstCoverLevelOperation(AccurateRefresh::AssetAccurateRefresh &assetRefresh,
     const std::vector<std::string> &fileIdVec)
 {
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "rdbStore is nullptr");
     AbsRdbPredicates updatePredicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     updatePredicates.In(MediaColumn::MEDIA_ID, fileIdVec);
     updatePredicates.BeginWrap();
@@ -222,7 +232,7 @@ static int32_t DoUpdateBurstCoverLevelOperation(const shared_ptr<MediaLibraryRdb
     values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::COVER));
 
     int32_t changedRows = -1;
-    int32_t ret = rdbStore->Update(changedRows, values, updatePredicates);
+    int32_t ret = assetRefresh.Update(changedRows, values, updatePredicates);
     CHECK_AND_RETURN_RET_LOG((ret == E_OK && changedRows > 0), E_FAIL,
         "Failed to UpdateBurstCoverLevelFromGallery, ret: %{public}d, updateRows: %{public}d", ret, changedRows);
     MEDIA_INFO_LOG("UpdateBurstCoverLevelFromGallery success, changedRows: %{public}d, fileIdVec.size(): %{public}d.",
@@ -246,6 +256,7 @@ int32_t DoUpdateBurstFromGalleryProcessor::UpdateBurstCoverLevelFromGallery()
     predicates.Limit(BATCH_QUERY_NUMBER);
 
     bool nextUpdate = true;
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
     while (nextUpdate && !taskStop_) {
         auto resultSet = rdbStore->Query(predicates, columns);
         CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "Failed to query resultSet");
@@ -267,9 +278,11 @@ int32_t DoUpdateBurstFromGalleryProcessor::UpdateBurstCoverLevelFromGallery()
         }
         resultSet->Close();
 
-        CHECK_AND_RETURN_RET_LOG(DoUpdateBurstCoverLevelOperation(rdbStore, fileIdVec) == E_OK,
-            E_FAIL, "Failed to DoUpdateBurstCoverLevelOperation");
+        CHECK_AND_CONTINUE_ERR_LOG(DoUpdateBurstCoverLevelOperation(assetRefresh, fileIdVec) == E_OK,
+            "Failed to DoUpdateBurstCoverLevelOperation");
     }
+    assetRefresh.RefreshAlbum();
+    assetRefresh.Notify();
     return E_OK;
 }
 } // namespace Media

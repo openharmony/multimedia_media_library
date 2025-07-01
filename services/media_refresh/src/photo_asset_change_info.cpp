@@ -58,6 +58,8 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
     { PhotoColumn::PHOTO_THUMBNAIL_READY, TYPE_INT64 },
     { PhotoColumn::MEDIA_NAME, TYPE_STRING },
     { PhotoColumn::MEDIA_FILE_PATH, TYPE_STRING },
+    { MediaColumn::MEDIA_PACKAGE_NAME, TYPE_STRING},
+    { MediaColumn::MEDIA_OWNER_PACKAGE, TYPE_STRING},
     { PhotoColumn::PHOTO_DIRTY, TYPE_INT32 },
 };
 
@@ -122,6 +124,10 @@ vector<PhotoAssetChangeInfo> PhotoAssetChangeInfo::GetInfoFromResult(const share
             GetDataType(PhotoColumn::MEDIA_NAME)));
         assetChangeInfo.path_ = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet,
             GetDataType(PhotoColumn::MEDIA_FILE_PATH)));
+        assetChangeInfo.packageName_ = get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_PACKAGE_NAME,
+            resultSet, GetDataType(MediaColumn::MEDIA_PACKAGE_NAME)));
+        assetChangeInfo.ownerPackage_ = get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_OWNER_PACKAGE,
+            resultSet, GetDataType(MediaColumn::MEDIA_OWNER_PACKAGE)));
         assetChangeInfo.dirty_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
             PhotoColumn::PHOTO_DIRTY, resultSet, GetDataType(PhotoColumn::PHOTO_DIRTY)));
 
@@ -148,7 +154,8 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
 {
     stringstream ss;
     if (isDetail) {
-        ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_ << ", uri_: " << uri_;
+        ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_ << ", uri_: ";
+        ss << MediaFileUtils::DesensitizeUri(uri_);
         ss << ", dateDay_: " << dateDay_ << ", ownerAlbumUri_: " << ownerAlbumUri_ << ", isFavorite_: " << isFavorite_;
         ss << ", mediaType_: " << mediaType_;
         ss << ", isHidden_: " << isHidden_ << ", dateTrashedMs_: " << dateTrashedMs_;
@@ -159,8 +166,9 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
         ss << ", timePending_: " << timePending_ << ", isTemp_: " << isTemp_;
         ss << ", burstCoverLevel_: " << burstCoverLevel_;
         ss << ", hiddenTime_: " << hiddenTime_ << ", thumbnailReady_: " << thumbnailReady_;
-        ss << ", displayName_: " << displayName_;
-        ss << ", path_: " << path_ << ", dirty_: " << dirty_;
+        ss << ", displayName_: " << MediaFileUtils::DesensitizePath(displayName_);
+        ss << ", path_: " << MediaFileUtils::DesensitizePath(path_) << ", dirty_: " << dirty_;
+        ss << ", packageName_: " << packageName_ << ", ownerPackgae: " << ownerPackage_;
     } else {
         ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_;
     }
@@ -183,8 +191,8 @@ bool PhotoAssetChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
     ret = ret && parcel.WriteInt32(mediaType_);
     ret = ret && parcel.WriteString(ownerAlbumUri_);
     ret = ret && parcel.WriteBool(isSystem);
+    ret = ret && parcel.WriteInt32(fileId_);
     if (isSystem) {
-        ret = ret && parcel.WriteInt32(fileId_);
         ret = ret && parcel.WriteString(dateDay_);
         ret = ret && parcel.WriteBool(isFavorite_);
         ret = ret && parcel.WriteBool(isHidden_);
@@ -209,8 +217,8 @@ bool PhotoAssetChangeInfo::ReadFromParcel(Parcel &parcel)
     ret = ret && parcel.ReadInt32(mediaType_);
     ret = ret && parcel.ReadString(ownerAlbumUri_);
     ret = ret && parcel.ReadBool(isSystem_);
+    ret = ret && parcel.ReadInt32(fileId_);
     if (isSystem_) {
-        ret = ret && parcel.ReadInt32(fileId_);
         ret = ret && parcel.ReadString(dateDay_);
         ret = ret && parcel.ReadBool(isFavorite_);
         ret = ret && parcel.ReadBool(isHidden_);
@@ -259,6 +267,9 @@ PhotoAssetChangeInfo& PhotoAssetChangeInfo::operator=(const PhotoAssetChangeInfo
         path_ = info.path_;
         uri_ = info.uri_;
         ownerAlbumUri_ = info.ownerAlbumUri_;
+        packageName_ = info.packageName_;
+        ownerPackage_ = info.ownerPackage_;
+        dirty_ = info.dirty_;
     }
     return *this;
 }
@@ -286,7 +297,10 @@ bool PhotoAssetChangeInfo::operator==(const PhotoAssetChangeInfo &info) const
         displayName_ == info.displayName_ &&
         path_ == info.path_ &&
         uri_ == info.uri_ &&
-        ownerAlbumUri_ == info.ownerAlbumUri_;
+        ownerAlbumUri_ == info.ownerAlbumUri_ &&
+        packageName_ == info.packageName_ &&
+        ownerPackage_ == info.ownerPackage_ &&
+        dirty_ == info.dirty_;
 }
 
 bool PhotoAssetChangeInfo::operator!=(const PhotoAssetChangeInfo &info) const

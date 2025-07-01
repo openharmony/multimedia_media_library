@@ -578,8 +578,8 @@ void MediaLibraryRdbStore::AddPhotoSortIndex(const std::shared_ptr<MediaLibraryR
     const vector<string> sqls = {
         PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
         PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
-        PhotoColumn::CREATE_PHOTO_SORT_DATE_ADDED_INDEX,
-        PhotoColumn::CREATE_PHOTO_SORT_DATE_TAKEN_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
     };
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("End AddPhotoSortIndex");
@@ -1636,9 +1636,11 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_TABLE,
     PhotoColumn::CREATE_CLOUD_ID_INDEX,
     PhotoColumn::INDEX_SCTHP_ADDTIME,
+    PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
     PhotoColumn::INDEX_SCHPT_ALBUM_GENERAL,
     PhotoColumn::INDEX_SCHPT_ALBUM,
     PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED,
+    PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
     PhotoColumn::INDEX_QUERY_THUMBNAIL_WHITE_BLOCKS,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::INDEX_SCHPT_READY,
@@ -1728,9 +1730,6 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_HIGHLIGHT_COVER_INFO_TABLE,
     CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
     CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
-    CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
-    CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER,
-    INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
     CREATE_SOURCE_ALBUM_INDEX,
     FormMap::CREATE_FORM_MAP_TABLE,
     CREATE_DICTIONARY_INDEX,
@@ -1783,10 +1782,8 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INDEX_LONGITUDE,
     CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
     CustomRecordsColumns::CREATE_TABLE,
-    PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
-    PhotoColumn::CREATE_PHOTO_SORT_DATE_ADDED_INDEX,
-    PhotoColumn::CREATE_PHOTO_SORT_DATE_TAKEN_INDEX,
+    PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -3113,16 +3110,18 @@ void AddAestheticsScoreFileds(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + AESTHETICS_ALL_VERSION + " TEXT ",
-        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + AESTHETICS_SCORE_ALL + " INT ",
-        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_FILTERED_HARD + " BOOLEAN ",
-        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + CLARITY_SCORE_ALL + " DOUBLE ",
-        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + SATURATION_SCORE_ALL + " DOUBLE ",
-        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + LUMINANCE_SCORE_ALL + " DOUBLE ",
-        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + SEMANTICS_SCORE + " DOUBLE ",
-        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_BLACK_WHITE_STRIPE + " BOOLEAN ",
-        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_BLURRY + " BOOLEAN ",
-        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_MOSAIC + " BOOLEAN ",
-        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + AESTHETICS_SCORE_ALL_STATUS + " INT ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + AESTHETICS_SCORE_ALL + " INT NOT NULL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_FILTERED_HARD + " BOOLEAN NOT NULL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + CLARITY_SCORE_ALL + " DOUBLE NOT NULL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " +
+            SATURATION_SCORE_ALL + " DOUBLE NOT NULL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + LUMINANCE_SCORE_ALL + " DOUBLE NOT NULL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + SEMANTICS_SCORE + " DOUBLE NOT NULL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " +
+            IS_BLACK_WHITE_STRIPE + " BOOLEAN NOT NULL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_BLURRY + " BOOLEAN NOT NULL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + IS_MOSAIC + " BOOLEAN NOT NULL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + AESTHETICS_SCORE_ALL_STATUS + " INT NOT NULL DEFAULT 0 ",
     };
     MEDIA_INFO_LOG("start add aesthetics score fields");
     ExecSqls(sqls, store);
@@ -4694,6 +4693,27 @@ void AddTotalPriority(RdbStore &store)
     ExecSqls(sql, store);
 }
 
+static void DropInsertSourcePhotoCreateSourceAlbumTrigger(RdbStore &store)
+{
+    MEDIA_INFO_LOG("drop trigger insert_source_photo_create_source_album_trigger start");
+    ExecSqls({DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER}, store);
+    MEDIA_INFO_LOG("drop trigger insert_source_photo_create_source_album_trigger end");
+}
+
+static void DropInsertPhotoUpdateAlbumBundleNameTrigger(RdbStore &store)
+{
+    MEDIA_INFO_LOG("drop trigger insert_photo_update_album_bundlename start");
+    ExecSqls({DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME}, store);
+    MEDIA_INFO_LOG("drop trigger insert_photo_update_album_bundlename end");
+}
+
+static void DropInsertSourcePhotoUpdateAlbumIdTrigger(RdbStore &store)
+{
+    MEDIA_INFO_LOG("drop trigger insert_source_photo_update_album_id_trigger start");
+    ExecSqls({DROP_INSERT_SOURCE_PHOTO_UPDATE_ALBUM_ID_TRIGGER}, store);
+    MEDIA_INFO_LOG("drop trigger insert_source_photo_update_album_id_trigger end");
+}
+
 static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
@@ -4735,6 +4755,12 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_ALBUMS_ORDER_KEYS_COLUMNS) {
         AddAlbumsOrderKeysColumn(store);
+    }
+
+    if (oldVersion < VERSION_DROP_PHOTO_INSERT_SOURCE_PHOTO_TRIGGER) {
+        DropInsertSourcePhotoCreateSourceAlbumTrigger(store);
+        DropInsertPhotoUpdateAlbumBundleNameTrigger(store);
+        DropInsertSourcePhotoUpdateAlbumIdTrigger(store);
     }
 }
 

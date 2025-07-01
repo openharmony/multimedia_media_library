@@ -97,6 +97,8 @@ private:
     int32_t HandleEditDataCamera(std::map<std::string, MDKRecordField> &data, std::string &path);
     int32_t CheckContentLivePhoto(const CloudMdkRecordPhotosVo &upLoadRecord, std::string &lowerPath);
     int32_t CheckContentFile(const CloudMdkRecordPhotosVo &upLoadRecord, const std::string &lowerPath);
+    int32_t ExtractPosition(const std::string &position, double &latitude, double &longitude);
+    int32_t ExtractPosition(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo);
 
 private:
     /* identifier */

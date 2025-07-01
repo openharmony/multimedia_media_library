@@ -29,14 +29,14 @@ AppOpsConnectAbility::AppOpsConnectAbility() {}
 
 AppOpsConnectAbility::~AppOpsConnectAbility() {}
 
-int32_t AppOpsConnectAbility::ConnectAbility(const AppSvcInfo &svcName, int32_t userId, const std::string &ops,
+int32_t AppOpsConnectAbility::ConnectAbility(const AppSvcInfo &svcName, const std::string &ops,
     const std::string &taskName, const std::string &extra)
 {
     std::lock_guard<std::mutex> lock(abilityMapMutex_);
-    if (appConnections_.find(userId) != appConnections_.end()) {
+    if (appConnections_.find(svcName.userId) != appConnections_.end()) {
         return AppConnectionStatus::ALREADY_EXISTS;
     }
-    return DoConnect(svcName, userId, ops, taskName, extra);
+    return DoConnect(svcName, ops, taskName, extra);
 }
 
 int32_t AppOpsConnectAbility::DisconnectAbility(int32_t userId)
@@ -49,18 +49,19 @@ int32_t AppOpsConnectAbility::DisconnectAbility(int32_t userId)
         return E_ERR;
     }
     ErrCode err = AAFwk::AbilityManagerClient::GetInstance()->DisconnectAbility(appConnections_[userId]);
+    appConnections_.erase(userId);
     if (err != ERR_OK) {
         MEDIA_ERR_LOG("Fail to disconnect callui ,err:%{public}d", err);
         return E_ERR;
     }
-    appConnections_.erase(userId);
     MEDIA_INFO_LOG("Success disconnect app service extension, userId: %{public}d.", userId);
     return E_OK;
 }
 
-int32_t AppOpsConnectAbility::TaskOpsSync(const AppSvcInfo &svcName, int32_t userId, const std::string &ops,
+int32_t AppOpsConnectAbility::TaskOpsSync(const AppSvcInfo &svcName, const std::string &ops,
     const std::string &taskName, const std::string &extra)
 {
+    int32_t userId = svcName.userId;
     if (appConnections_.find(userId) == appConnections_.end() || appConnections_[userId] == nullptr) {
         MEDIA_ERR_LOG("userId is not exist");
         return E_ERR;
@@ -68,18 +69,21 @@ int32_t AppOpsConnectAbility::TaskOpsSync(const AppSvcInfo &svcName, int32_t use
     int32_t ret = appConnections_[userId]->TaskOpsSync(ops, taskName, extra);
     if (ret == E_ERR) {
         MEDIA_INFO_LOG("connectCallback_ maybe died, need to connect again.");
-        return DoConnect(svcName, userId, ops, taskName, extra);
     }
     return ret;
 }
 
-int32_t AppOpsConnectAbility::DoConnect(const AppSvcInfo &svcName, int32_t userId, const std::string &ops,
+int32_t AppOpsConnectAbility::DoConnect(const AppSvcInfo &svcName, const std::string &ops,
     const std::string &taskName, const std::string &extra)
 {
+    int32_t userId = svcName.userId;
     sptr<AppOpsConnection> appConnection = new AppOpsConnection(svcName, userId);
     CHECK_AND_RETURN_RET_LOG(appConnection != nullptr, E_ERR, "appConnection is nullptr.");
     appConnection->AddConnectedCallback([this]() {
         this->OnConnectedCallback();
+    });
+    appConnection->AddDisConnectedCallback([this](int32_t userId) {
+        this->DisconnectAbility(userId);
     });
 
     AAFwk::Want want;

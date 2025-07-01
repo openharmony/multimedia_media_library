@@ -49,12 +49,13 @@ typedef struct TaskStartSubCondition_ {
     int storageFreeRangeLow = -1;          // 剩余存储空间低门限, -1表示未配置，不需判断这个条件
     int storageFreeRangeHig = -1;          // 剩余存储空间高门限, -1表示未配置，不需判断这个条件
     int screenOff = -1;                    // 是否灭屏：0--亮屏 1--灭屏， -1--表示未配置，不需判断这个条件
+    int startThermalLevelDay = 1; //白天启动温度，默认1。-1--不需判断温控, 1 [35-37), 2 [37,40), 3 [40, 43), 4[43, 46)
+    int startThermalLevelNight = 3; // 夜晚启动温度，默认3。-1--不需判断温控, 1 [35-37), 2 [37,40), 3 [40, 43), 4[43, 46)
     std::string networkType = "";          // 网络条件wifi/蜂窝，any--wifi或蜂窝，空字符串--表示未配置，不需判断这个条件
     std::string checkParamBeforeRun = "";  // 运行前先检查param是否非空且不为0/false/null
 } TaskStartSubCondition;
 
 typedef struct TaskStartCondition_ {
-    int timerInterval = -1; // 纯定时任务，单位小时，最小12小时，不是严格定时，可能会延后24小时， -1--表示未配置，不需判断这个条件
     int reScheduleInterval = -1; // 非定时任务，任务完成后再调度的间隔时间，单位min， -1--表示未配置，不需判断这个条件
     std::vector<TaskStartSubCondition> conditionArray; // 条件组合，或的关系， 只要有一个满足就可以执行
 } TaskStartCondition;

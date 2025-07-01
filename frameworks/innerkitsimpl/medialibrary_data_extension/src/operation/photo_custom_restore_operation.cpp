@@ -520,15 +520,17 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
     }
     int64_t rowNum = 0;
     int32_t errCode = E_ERR;
-    TransactionOperations trans{__func__};
+    std::shared_ptr<TransactionOperations> trans = std::make_shared<TransactionOperations>(__func__);
     std::function<int(void)> func = [&]() -> int {
-        errCode = trans.BatchInsert(rowNum, PhotoColumn::PHOTOS_TABLE, values);
-        CHECK_AND_PRINT_LOG(errCode == E_OK, "BatchInsert failed, errCode: %{public}d,"
+        AccurateRefresh::AssetAccurateRefresh refresh(trans);
+        errCode = refresh.BatchInsert(rowNum, PhotoColumn::PHOTOS_TABLE, values);
+        CHECK_AND_PRINT_LOG(errCode == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
+            "BatchInsert failed, errCode: %{public}d,"
             " rowNum: %{public}" PRId64, errCode, rowNum);
         return errCode;
     };
     // If not the first batch of data, retry 10 times
-    errCode = trans.RetryTrans(func, !isFirst);
+    errCode = trans->RetryTrans(func, !isFirst);
     if (errCode != E_OK) {
         insertFiles.clear();
         MEDIA_ERR_LOG("RetryTrans: trans retry fail!, ret:%{public}d", errCode);

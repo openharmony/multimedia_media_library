@@ -56,6 +56,7 @@ public:
     SchedulePolicy() {}
     ~SchedulePolicy() {}
     void SetSchedulePolicy(const UnifySchedulePolicyCfg &policy);
+    std::map<std::string, TaskInfo> &GetAllTaskList();
     TaskScheduleResult ScheduleTasks(std::map<std::string, TaskInfo> &taskInfos, SystemInfo &systemInfo);
 
 private:
@@ -74,10 +75,12 @@ private:
     std::vector<TaskInfo> validTasksNotMustStart_;          // 存放本次满足启动条件的，非必须立即执行的任务列表
     std::vector<TaskInfo> selectedTasks_;                   // 存放本次最终选出的要执行的任务列表
     std::unordered_set<std::string> selectedTasksId_;
+    bool isNight_;
     void GetTasksState(std::map<std::string, TaskInfo>  &allTasks);
     int SysLoad();
     bool SatisfyStorage(const TaskStartSubCondition &condition);
     bool SatisfyNetwork(const TaskStartSubCondition &condition);
+    bool SatisfyThermal(const TaskStartSubCondition &condition);
     bool StartCondition(const TaskStartSubCondition &condition);
     bool TaskCanStart(const TaskInfo &task);
     void GetValidTasks();

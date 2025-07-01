@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <string>
 #include <thread>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "ability_context_impl.h"
 #include "media_log.h"
 #include "rdb_utils.h"
@@ -32,37 +33,29 @@
 namespace OHOS {
 using namespace std;
 static const int32_t E_ERR = -1;
+static const int32_t NUM_BYTES = 1;
 static const string PHOTOS_TABLE = "Photos";
+FuzzedDataProvider *provider = nullptr;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
+static inline Uri FuzzUri()
 {
-    return static_cast<int32_t>(*data);
+    return Uri(provider->ConsumeBytesAsString(NUM_BYTES));
 }
 
-static inline string FuzzString(const uint8_t *data, size_t size)
+static inline Media::MediaLibraryCommand FuzzMediaLibraryCmd()
 {
-    return {reinterpret_cast<const char*>(data), size};
+    return Media::MediaLibraryCommand(FuzzUri());
 }
 
-static inline Uri FuzzUri(const uint8_t *data, size_t size)
-{
-    return Uri(FuzzString(data, size));
-}
-
-static inline Media::MediaLibraryCommand FuzzMediaLibraryCmd(const uint8_t *data, size_t size)
-{
-    return Media::MediaLibraryCommand(FuzzUri(data, size));
-}
-
-static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
+static int32_t InsertAsset(string photoId)
 {
     if (g_rdbStore == nullptr) {
         return E_ERR;
     }
     NativeRdb::ValuesBucket values;
     values.PutString(Media::PhotoColumn::PHOTO_ID, photoId);
-    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
+    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
     int64_t fileId = 0;
     g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
     return static_cast<int32_t>(fileId);
@@ -100,13 +93,13 @@ static void Init()
     SetTables();
 }
 
-static void MultistagesCaptureManagerTest(const uint8_t *data, size_t size)
+static void MultistagesCaptureManagerTest()
 {
-    Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd(data, size);
+    Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd();
     auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdb store.");
-    std::string photoId = FuzzString(data, size);
-    int32_t fileId = InsertAsset(data, size, photoId);
+    std::string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
+    int32_t fileId = InsertAsset(photoId);
     MEDIA_DEBUG_LOG("fileId: %{public}d.", fileId);
     Media::MultiStagesCaptureRequestTaskManager::AddPhotoInProgress(fileId, photoId, false);
     NativeRdb::RdbPredicates rdbPredicate(PHOTOS_TABLE);
@@ -117,35 +110,35 @@ static void MultistagesCaptureManagerTest(const uint8_t *data, size_t size)
     Media::MultiStagesCaptureManager::QuerySubType(photoId);
 }
 
-static void MultistagesMovingPhotoCaptureManagerTest(const uint8_t *data, size_t size)
+static void MultistagesMovingPhotoCaptureManagerTest()
 {
-    std::string photoId = FuzzString(data, size);
+    std::string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
     Media::MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(photoId);
     Media::MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(photoId);
 }
 
-static void MultistagesPhotoCaptureManagerTest(const uint8_t *data, size_t size)
+static void MultistagesPhotoCaptureManagerTest()
 {
-    Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd(data, size);
+    Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd();
     Media::MultiStagesPhotoCaptureManager &instance =
         Media::MultiStagesPhotoCaptureManager::GetInstance();
     instance.UpdateDbInfo(cmd);
-    std::string photoId = FuzzString(data, size);
+    std::string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
     instance.CancelProcessRequest(photoId);
-    int32_t fileId = InsertAsset(data, size, photoId);
+    int32_t fileId = InsertAsset(photoId);
     MEDIA_DEBUG_LOG("fileId: %{public}d.", fileId);
-    int32_t deferredProcType = FuzzInt32(data, size);
+    int32_t deferredProcType = provider->ConsumeIntegral<int32_t>();
     instance.AddImage(fileId, photoId, deferredProcType);
     instance.IsPhotoDeleted(photoId);
 }
 
-static void MultistagesVideoCaptureManagerTest(const uint8_t *data, size_t size)
+static void MultistagesVideoCaptureManagerTest()
 {
-    std::string videoId = FuzzString(data, size);
-    std::string filePath = FuzzString(data, size);
+    std::string videoId = provider->ConsumeBytesAsString(NUM_BYTES);
+    std::string filePath = provider->ConsumeBytesAsString(NUM_BYTES);
     Media::MultiStagesVideoCaptureManager &instance =
         Media::MultiStagesVideoCaptureManager::GetInstance();
-    int32_t fileId = InsertAsset(data, size, videoId);
+    int32_t fileId = InsertAsset(videoId);
     instance.AddVideo(videoId, std::to_string(fileId), filePath);
 }
 } // namespace OHOS
@@ -159,11 +152,16 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
     int sleepTime = 100;
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
-    OHOS::MultistagesCaptureManagerTest(data, size);
-    OHOS::MultistagesMovingPhotoCaptureManagerTest(data, size);
-    OHOS::MultistagesPhotoCaptureManagerTest(data, size);
-    OHOS::MultistagesVideoCaptureManagerTest(data, size);
+    OHOS::MultistagesCaptureManagerTest();
+    OHOS::MultistagesMovingPhotoCaptureManagerTest();
+    OHOS::MultistagesPhotoCaptureManagerTest();
+    OHOS::MultistagesVideoCaptureManagerTest();
     return 0;
 }

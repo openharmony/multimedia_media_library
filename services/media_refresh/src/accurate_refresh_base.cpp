@@ -31,15 +31,12 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
-mutex AccurateRefreshBase::dbOperationMtx_;
 
 int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
 {
     if (!IsValidTable(cmd.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-
-    lock_guard<mutex> lock(dbOperationMtx_);
     vector<int32_t> keys;
     #ifdef MEDIA_REFRESH_TEST
         pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
@@ -59,7 +56,9 @@ int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
         outRowId = keys[0];
     #else
         if (trans_) {
-            trans_->Insert(cmd, outRowId);
+            auto ret = trans_->Insert(cmd, outRowId);
+            CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+                "rdb transaction insert error.");
         } else {
             auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
             CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
@@ -79,7 +78,6 @@ int32_t AccurateRefreshBase::Insert(int64_t &outRowId, const string &table, Valu
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
 
-    lock_guard<mutex> lock(dbOperationMtx_);
     vector<int32_t> keys;
     #ifdef MEDIA_REFRESH_TEST
         pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
@@ -130,7 +128,6 @@ int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &tab
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
 
-    lock_guard<mutex> lock(dbOperationMtx_);
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->BatchInsert(table, values, GetReturningKeyName());
@@ -194,7 +191,6 @@ int32_t AccurateRefreshBase::UpdateWithNoDateTime(int32_t &changedRows, const Va
     if (!IsValidTable(predicates.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-    lock_guard<mutex> lock(dbOperationMtx_);
 
     // 初始化Init数据
     auto ret = Init(predicates);
@@ -254,7 +250,6 @@ int32_t AccurateRefreshBase::Delete(int32_t &deletedRows, const AbsRdbPredicates
     if (!IsValidTable(predicates.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-    lock_guard<mutex> lock(dbOperationMtx_);
     auto ret = Init(predicates);
     if (ret != ACCURATE_REFRESH_RET_OK) {
         MEDIA_WARN_LOG("no Init.");
@@ -318,7 +313,6 @@ int32_t AccurateRefreshBase::ExecuteSql(const string &sql, RdbOperation operatio
 int32_t AccurateRefreshBase::ExecuteForLastInsertedRowId(const string &sql, const vector<ValueObject> &bindArgs,
     RdbOperation operation)
 {
-    lock_guard<mutex> lock(dbOperationMtx_);
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->Execute(sql, bindArgs, GetReturningKeyName());
@@ -344,7 +338,6 @@ int32_t AccurateRefreshBase::ExecuteForLastInsertedRowId(const string &sql, cons
 
 int32_t AccurateRefreshBase::ExecuteSql(const string &sql, const vector<ValueObject> &bindArgs, RdbOperation operation)
 {
-    lock_guard<mutex> lock(dbOperationMtx_);
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->Execute(sql, bindArgs, GetReturningKeyName());
@@ -364,7 +357,6 @@ int32_t AccurateRefreshBase::ExecuteSql(const string &sql, const vector<ValueObj
 int32_t AccurateRefreshBase::ExecuteForChangedRowCount(int64_t &outValue, const string &sql,
     const vector<ValueObject> &bindArgs, RdbOperation operation)
 {
-    lock_guard<mutex> lock(dbOperationMtx_);
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->Execute(sql, bindArgs, GetReturningKeyName());

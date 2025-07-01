@@ -219,19 +219,19 @@ std::shared_ptr<MDKRecord> CloudAlbumDataConvert::ConvertToMdkRecord(const Cloud
     std::shared_ptr<MDKRecord> record = std::make_shared<MDKRecord>();
     std::map<std::string, MDKRecordField> data;
     /* basic */
-    CHECK_AND_RETURN_RET(HandleAlbumName(data, upLoadRecord) == E_OK, nullptr);
-    CHECK_AND_RETURN_RET(HandleAlbumLogicType(data, upLoadRecord) == E_OK, nullptr);
-    CHECK_AND_RETURN_RET(HandleType(data, upLoadRecord) == E_OK, nullptr);
+    CHECK_AND_RETURN_RET_LOG(HandleAlbumName(data, upLoadRecord) == E_OK, nullptr, "HandleAlbumName failed");
+    CHECK_AND_RETURN_RET_LOG(HandleAlbumLogicType(data, upLoadRecord) == E_OK, nullptr, "HandleAlbumLogicType failed");
+    CHECK_AND_RETURN_RET_LOG(HandleType(data, upLoadRecord) == E_OK, nullptr, "HandleType failed");
 
     /* properties */
-    CHECK_AND_RETURN_RET(HandleProperties(record, data, upLoadRecord) == E_OK, nullptr);
+    CHECK_AND_RETURN_RET_LOG(HandleProperties(record, data, upLoadRecord) == E_OK, nullptr, "HandleProperties failed");
     /* control info */
     record->SetRecordType(recordType_);
     if (type_ == PHOTO_ALBUM_CREATE) {
         record->SetNewCreate(true);
-        CHECK_AND_RETURN_RET(HandleAlbumId(data, upLoadRecord) == E_OK, nullptr);
-        CHECK_AND_RETURN_RET(HandleRecordId(record, upLoadRecord) == E_OK, nullptr);
-        CHECK_AND_RETURN_RET(HandlePath(data, upLoadRecord) == E_OK, nullptr);
+        CHECK_AND_RETURN_RET_LOG(HandleAlbumId(data, upLoadRecord) == E_OK, nullptr, "HandleAlbumId failed");
+        CHECK_AND_RETURN_RET_LOG(HandleRecordId(record, upLoadRecord) == E_OK, nullptr, "HandleRecordId failed");
+        CHECK_AND_RETURN_RET_LOG(HandlePath(data, upLoadRecord) == E_OK, nullptr, "HandlePath failed");
     } else {
         int32_t ret = FillRecordId(record, upLoadRecord);
         if (ret != E_OK) {

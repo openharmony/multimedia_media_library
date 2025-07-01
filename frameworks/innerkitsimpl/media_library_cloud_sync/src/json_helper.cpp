@@ -98,7 +98,7 @@ std::string JsonHelper::JsonArrayToString(const Json::Value &data, const std::st
     if (!data.isArray()) {
         return out;
     }
-    int32_t maxCount = 500;
+    Json::ArrayIndex maxCount = 500;
     for (Json::ArrayIndex i = 0; i < data.size() && i < maxCount; ++i) {
         if (!data[i].isString()) {
             continue;
@@ -116,7 +116,7 @@ bool JsonHelper::JsonToStrVec(const Json::Value &data, std::vector<std::string> 
     if (!data.isArray()) {
         return false;
     }
-    int32_t maxCount = 500;
+    Json::ArrayIndex maxCount = 500;
     for (Json::ArrayIndex i = 0; i < data.size() && i < maxCount; ++i) {
         if (!data[i].isString()) {
             continue;

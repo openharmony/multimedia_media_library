@@ -3020,7 +3020,8 @@ void CloneRestore::StartBackup()
 
 void CloneRestore::InheritManualCover()
 {
-    std::string querySql = "SELECT album_id, cover_uri FROM PhotoAlbum WHERE cover_uri_source > 0";
+    std::string querySql = "SELECT album_id, cover_uri, cover_uri_source, cover_cloud_id"
+        " FROM PhotoAlbum WHERE cover_uri_source > 0";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "Query resultSql is null.");
 
@@ -3030,7 +3031,9 @@ void CloneRestore::InheritManualCover()
         int32_t albumIdOld = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
         string coverUriOld = GetStringVal(PhotoAlbumColumns::ALBUM_COVER_URI, resultSet);
         int32_t fileIdOld = atoi(MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(coverUriOld).c_str());
-        
+        int32_t coverUriSourceOld = GetInt32Val(PhotoAlbumColumns::COVER_URI_SOURCE, resultSet);
+        string coverCloudIdOld = GetStringVal(PhotoAlbumColumns::COVER_CLOUD_ID, resultSet);
+
         int32_t albumIdNew = tableAlbumIdMap_[PhotoAlbumColumns::TABLE][albumIdOld];
         auto photoInfo = photoInfoMap_[fileIdOld];
         int32_t fileIdNew = photoInfo.fileIdNew;
@@ -3038,6 +3041,8 @@ void CloneRestore::InheritManualCover()
             MediaFileUtils::GetExtraUri(photoInfo.displayName, photoInfo.cloudPath));
         albumCoverInfo.albumId = albumIdNew;
         albumCoverInfo.coverUri = coverUriNew;
+        albumCoverInfo.coverUriSource = coverUriSourceOld;
+        albumCoverInfo.coverCloudId = coverCloudIdOld;
         albumCoverinfos.emplace_back(albumCoverInfo);
     }
     resultSet->Close();
@@ -3182,9 +3187,9 @@ void CloneRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverIn
             make_unique<NativeRdb::AbsRdbPredicates>(PhotoAlbumColumns::TABLE);
         predicates->EqualTo(PhotoAlbumColumns::ALBUM_ID, albumCoverInfo.albumId);
         NativeRdb::ValuesBucket updateBucket;
-        updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE,
-            static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER));
+        updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, albumCoverInfo.coverUriSource);
         updateBucket.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, albumCoverInfo.coverUri);
+        updateBucket.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, albumCoverInfo.coverCloudId);
         BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, updateBucket, predicates);
         if (changeRows != 1) {
             MEDIA_ERR_LOG("UpdatePhotoAlbumCoverUri failed, expected count 1, but got %{public}d", changeRows);

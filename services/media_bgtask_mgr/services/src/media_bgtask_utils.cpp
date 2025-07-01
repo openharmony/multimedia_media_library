@@ -20,14 +20,18 @@
 #include <cstdlib>
 
 #include <string>
+#include <sys/stat.h>
 
 #include "parameters.h"
 #include "string_ex.h"
 
 #include "media_bgtask_mgr_log.h"
+#include "task_info_mgr.h"
 
 namespace OHOS {
 namespace MediaBgtaskSchedule {
+
+static constexpr int E_STAT_SUCCESS = 0;
 
 bool MediaBgTaskUtils::IsStrTrueOrLtZero(std::string value)
 {
@@ -96,6 +100,19 @@ bool MediaBgTaskUtils::IsNumber(const std::string& str)
         CHECK_AND_RETURN_RET(isdigit(c) != 0, false);
     }
     return true;
+}
+
+bool MediaBgTaskUtils::IsValidTaskEnable(int value)
+{
+    return value == static_cast<int>(TaskEnable::NO_MODIFY) ||
+        value == static_cast<int>(TaskEnable::MODIDY_ENABLE) ||
+        value == static_cast<int>(TaskEnable::MODIDY_DISABLE);
+}
+ 
+bool MediaBgTaskUtils::IsFileExists(const std::string &fileName)
+{
+    struct stat statInfo {};
+    return ((stat(fileName.c_str(), &statInfo)) == E_STAT_SUCCESS);
 }
 
 }  // namespace MediaBgtaskSchedule

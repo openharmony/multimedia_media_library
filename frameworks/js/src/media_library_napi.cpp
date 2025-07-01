@@ -99,6 +99,7 @@
 #include "create_album_vo.h"
 #include "delete_albums_vo.h"
 #include "trash_photos_vo.h"
+#include "file_uri.h"
 #include "grant_photo_uri_permission_vo.h"
 #include "grant_photo_uris_permission_vo.h"
 #include "cancel_photo_uri_permission_vo.h"
@@ -8490,12 +8491,11 @@ static napi_value GetAlbumFetchOption(napi_env env, unique_ptr<MediaLibraryAsync
 
     // The index of fetchOption should always be the last arg besides callback
     uint32_t argIndex = context->argc - ARGS_ONE - hasCallback;
-    auto args = context->argv;
-    if (argIndex < PARAM0 || argIndex >= sizeof(args)) {
+    if (argIndex >= NAPI_ARGC_MAX) {
         NAPI_ERR_LOG("argIndex ilegal");
         return nullptr;
     }
-    napi_value fetchOption = args[argIndex];
+    napi_value fetchOption = context->argv[argIndex];
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env, fetchOption, ALBUM_FETCH_OPT, context), JS_INNER_FAIL);
     if (!context->uri.empty()) {
         if (context->uri.find(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX) != std::string::npos) {
@@ -10382,8 +10382,12 @@ static bool ParseAndSetFileUriArray(const napi_env &env, OHOS::AAFwk::Want &want
         if (!ParseString(env, element, srcFileUri)) {
             return false;
         }
+        NAPI_INFO_LOG("srcFileUri is %{public}s.", srcFileUri.c_str());
+        AppFileService::ModuleFileUri::FileUri fileUri(srcFileUri);
+        std::string realUriPath = fileUri.ToString();
+        NAPI_INFO_LOG("realUriPath is %{public}s.", realUriPath.c_str());
 
-        srcFileUris.emplace_back(srcFileUri);
+        srcFileUris.emplace_back(realUriPath);
     }
 
     want.SetParam(CONFIRM_BOX_SRC_FILE_URIS, srcFileUris);
