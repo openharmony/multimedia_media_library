@@ -123,6 +123,9 @@ public:
         const int32_t ownerAlbumId, PhotosPo &record);
     std::shared_ptr<NativeRdb::ResultSet> BatchQueryLocal(
         const std::vector<CloudMediaPullDataDto> &datas, const std::vector<std::string> &columns, int32_t &rowCount);
+    int32_t DeleteLocalFileNotExistRecord(const PhotosDto &photo);
+    int32_t RenewSameCloudResource(const PhotosDto &photo);
+    int32_t RepushDuplicatedPhoto(const PhotosDto &photo);
 
 private:
     bool IsTimeChanged(const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
@@ -159,6 +162,9 @@ private:
         const NativeRdb::ValuesBucket &values, const std::string &fieldName, const int32_t &defaultFieldValue);
     void GetUpdateRecordValues(const CloudMediaPullDataDto &pullData, NativeRdb::ValuesBucket &values);
     NativeRdb::AbsRdbPredicates GetUpdateRecordCondition(const std::string &cloudId);
+    int32_t UpdatePhoto(const std::string &whereClause, const std::vector<std::string> &whereArgs,
+        NativeRdb::ValuesBucket &values, int32_t &changeRows);
+    int32_t DeletePhoto(const std::string &whereClause, const std::vector<std::string> &whereArgs, int32_t &deleteRows);
 
 private:
     CloudMediaCommonDao commonDao_;

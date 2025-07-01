@@ -734,8 +734,6 @@ int32_t CloudMediaAlbumDao::GetDeletedRecordsAlbum(int32_t size, std::vector<Pho
     std::unordered_map<std::string, MediaAlbumPluginRowData> writeListMap = QueryWhiteList();
     for (auto &record : tempList) {
         // dirty为delete的相册如果非空，则不删除，设置相册dirty为new
-        std::string lpath = record.lpath.value_or("");
-        RelateToAlbumPluginInfo(record, writeListMap);
         std::string albumCloudId = record.cloudId.value_or("");
         if (IsEmptyAlbum(rdbStore, albumCloudId) != E_OK) {
             if (ResetAlbumDirty(rdbStore, albumCloudId, DirtyType::TYPE_NEW) != E_OK) {
@@ -752,7 +750,6 @@ int32_t CloudMediaAlbumDao::GetDeletedRecordsAlbum(int32_t size, std::vector<Pho
 
 int32_t CloudMediaAlbumDao::GetMetaModifiedAlbum(int32_t size, std::vector<PhotoAlbumPo> &cloudRecordPoList)
 {
-    MEDIA_INFO_LOG("enter GetMetaModifiedAlbum");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "GetMetaModifiedAlbum Failed to get rdbStore.");
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
@@ -785,11 +782,6 @@ int32_t CloudMediaAlbumDao::GetMetaModifiedAlbum(int32_t size, std::vector<Photo
             // CloudAlbumDataConvert::HandleRecordId 先cloudId然后return,导致isInWhiteList无效,
             // 系统相册cloudId没有使用正确的WriteListMap中的cloudId
             record.isInWhiteList = true;
-            std::string albumPluginCloudId = writeListMap.at(lpath).cloudId;
-            if (!albumPluginCloudId.empty()) {
-                record.cloudId = albumPluginCloudId;
-                record.albumPluginCloudId = albumPluginCloudId;
-            }
             record.albumNameEn = writeListMap.at(lpath).albumNameEn;
             record.dualAlbumName = writeListMap.at(lpath).dualAlbumName;
             record.priority = writeListMap.at(lpath).priority;
@@ -817,8 +809,8 @@ int32_t CloudMediaAlbumDao::QueryCreatedAlbums(int32_t size, std::vector<PhotoAl
         ->Or()
         ->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE))
         ->EndWrap();
-    if (!albumModifyFailSet_.empty()) {
-        createPredicates.NotIn(PhotoAlbumColumns::ALBUM_CLOUD_ID, albumModifyFailSet_);
+    if (!albumCreateFailSet_.empty()) {
+        createPredicates.NotIn(PhotoAlbumColumns::ALBUM_CLOUD_ID, albumCreateFailSet_);
     }
     if (!albumInsertFailSet_.empty()) {
         createPredicates.NotIn(PhotoAlbumColumns::ALBUM_LPATH, albumInsertFailSet_);
@@ -836,7 +828,6 @@ int32_t CloudMediaAlbumDao::GetCreatedAlbum(int32_t size, std::vector<PhotoAlbum
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
-    MEDIA_INFO_LOG("enter GetCreatedAlbum");
     std::vector<PhotoAlbumPo> tempList;
     int32_t ret = QueryCreatedAlbums(size, tempList);
     /* results to records */
@@ -945,16 +936,19 @@ int32_t CloudMediaAlbumDao::DeleteCloudAlbum(const std::string &field, const std
 
 void CloudMediaAlbumDao::InsertAlbumModifyFailedRecord(const std::string &cloudId)
 {
+    MEDIA_WARN_LOG("albumModifyFailSet_ add cloudId: %{public}s", cloudId.c_str());
     albumModifyFailSet_.push_back(cloudId);
 }
 
 void CloudMediaAlbumDao::InsertAlbumInsertFailedRecord(const std::string &cloudId)
 {
+    MEDIA_WARN_LOG("albumInsertFailSet_ add cloudId: %{public}s", cloudId.c_str());
     albumInsertFailSet_.push_back(cloudId);
 }
 
 void CloudMediaAlbumDao::InsertAlbumCreateFailedRecord(const std::string &cloudId)
 {
+    MEDIA_WARN_LOG("albumCreateFailSet_ add cloudId: %{public}s", cloudId.c_str());
     albumCreateFailSet_.push_back(cloudId);
 }
 
@@ -992,7 +986,6 @@ std::unordered_map<std::string, MediaAlbumPluginRowData> CloudMediaAlbumDao::Que
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, whiteListMap, "GetLocalAlbumMap get nullptr created result.");
     int rowCount = 0;
     int ret = resultSet->GetRowCount(rowCount);
-    MEDIA_INFO_LOG("WitreListMap init count %{public}d", rowCount);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK && rowCount >= 0,
         whiteListMap,
         "result set get row count err %{public}d, rowCount %{public}d",

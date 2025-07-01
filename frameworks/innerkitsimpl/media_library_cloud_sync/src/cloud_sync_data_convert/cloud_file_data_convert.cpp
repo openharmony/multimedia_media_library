@@ -30,6 +30,7 @@
 #include "moving_photo_file_utils.h"
 #include "photo_file_utils.h"
 #include "cloud_report_utils.h"
+#include "nlohmann/json.hpp"
 
 namespace OHOS::Media::CloudSync {
 
@@ -217,7 +218,7 @@ int32_t CloudFileDataConvert::HandleUniqueFileds(
 int32_t CloudFileDataConvert::HandleFileType(
     std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
-    MEDIA_INFO_LOG("enter HandleFileType %{public}d, %{public}d", upLoadRecord.subtype, upLoadRecord.dirty);
+    MEDIA_DEBUG_LOG("enter HandleFileType %{public}d, %{public}d", upLoadRecord.subtype, upLoadRecord.dirty);
     if (upLoadRecord.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
         data["fileType"] = MDKRecordField(FILE_TYPE_LIVEPHOTO);
         return E_OK;
@@ -253,7 +254,7 @@ int32_t CloudFileDataConvert::HandlePosition(
 int32_t CloudFileDataConvert::HandleRotate(
     std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
-    MEDIA_INFO_LOG("enter HandleRotate orientation: %{public}d", upLoadRecord.orientation);
+    MEDIA_DEBUG_LOG("enter HandleRotate orientation: %{public}d", upLoadRecord.orientation);
     int32_t val;
     switch (upLoadRecord.orientation) {
         case ROTATE_ANGLE_0:
@@ -288,7 +289,6 @@ int32_t CloudFileDataConvert::HandleSourcePath(
 int32_t CloudFileDataConvert::HandleProperties(
     std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
-    MEDIA_INFO_LOG("enter HandleProperties source path:%{public}s", upLoadRecord.sourcePath.c_str());
     std::map<std::string, MDKRecordField> properties;
     this->HandleSourcePath(properties, upLoadRecord);
     properties["sourceFileName"] = MDKRecordField(upLoadRecord.displayName);
@@ -423,7 +423,8 @@ int32_t CloudFileDataConvert::CheckContentLivePhoto(const CloudMdkRecordPhotosVo
     bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(
         upLoadRecord.subtype, upLoadRecord.movingPhotoEffectMode, upLoadRecord.originalSubtype);
     bool isGraffiti = MovingPhotoFileUtils::IsGraffiti(upLoadRecord.subtype, upLoadRecord.originalSubtype);
-    MEDIA_INFO_LOG("HandleContent isMovingPhoto: %{public}d, isGraffiti: %{public}d", isMovingPhoto, isGraffiti);
+    CHECK_AND_PRINT_LOG(!isMovingPhoto && !isGraffiti,
+        "HandleContent isMovingPhoto: %{public}d, isGraffiti: %{public}d", isMovingPhoto, isGraffiti);
     if (isMovingPhoto && !isGraffiti) {
         if (MovingPhotoFileUtils::ConvertToLivePhoto(path, coverPosition, lowerPath, userId_) != E_OK) {
             MEDIA_ERR_LOG("covert to live photo fail");
@@ -473,7 +474,8 @@ int32_t CloudFileDataConvert::HandleContent(
     bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(
         upLoadRecord.subtype, upLoadRecord.movingPhotoEffectMode, upLoadRecord.originalSubtype);
     bool isGraffiti = MovingPhotoFileUtils::IsGraffiti(upLoadRecord.subtype, upLoadRecord.originalSubtype);
-    MEDIA_INFO_LOG("HandleContent isMovingPhoto: %{public}d, isGraffiti: %{public}d", isMovingPhoto, isGraffiti);
+    CHECK_AND_PRINT_LOG(!isMovingPhoto && !isGraffiti,
+        "HandleContent isMovingPhoto: %{public}d, isGraffiti: %{public}d", isMovingPhoto, isGraffiti);
     int32_t ret = this->CheckContentLivePhoto(upLoadRecord, lowerPath);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleContent CheckContentLivePhoto err: %{public}d", ret);
     ret = this->CheckContentFile(upLoadRecord, lowerPath);
@@ -613,13 +615,13 @@ int32_t CloudFileDataConvert::HandleSize(
 int32_t CloudFileDataConvert::HandleWidthAndHeight(
     std::map<std::string, MDKRecordField> &properties, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
+    bool isValid = upLoadRecord.height != 0 && upLoadRecord.width != 0;
+    CHECK_AND_PRINT_LOG(isValid, "Get local height or local width is 0 ");
     /* Resolution is combined by cloud sdk, just upload height and width */
     if (upLoadRecord.height != 0) {
-        MEDIA_WARN_LOG("Get local height is 0 ");
         properties["height"] = MDKRecordField(upLoadRecord.height);
     }
     if (upLoadRecord.width != 0) {
-        MEDIA_WARN_LOG("Get local width is 0 ");
         properties["width"] = MDKRecordField(upLoadRecord.width);
     }
     return E_OK;
@@ -675,7 +677,7 @@ int32_t CloudFileDataConvert::SetSourceAlbum(MDKRecord &record, const CloudMdkRe
     } else if (!albumCloudId.empty()) {
         data["albumId"] = MDKRecordField(albumCloudId);
     }
-    MEDIA_INFO_LOG("SetSourceAlbum Hidden:%{public}d, albumCloudId:%{public}s, albumLPath::%{public}s",
+    MEDIA_DEBUG_LOG("SetSourceAlbum Hidden:%{public}d, albumCloudId:%{public}s, albumLPath::%{public}s",
         hidden,
         albumCloudId.c_str(),
         albumLPath.c_str());
@@ -873,6 +875,35 @@ int32_t CloudFileDataConvert::ConvertToOnCreateRecord(
     return E_OK;
 }
 
+int32_t CloudFileDataConvert::ExtractPosition(const std::string &position, double &latitude, double &longitude)
+{
+    CHECK_AND_RETURN_RET_LOG(!position.empty(), E_INVAL_ARG, "position is empty.");
+    auto json = nlohmann::json::parse(position, nullptr, false);
+    bool isValid = !json.is_discarded();
+    CHECK_AND_RETURN_RET_LOG(isValid, E_INVAL_ARG, "position json parse error, %{private}s", position.c_str());
+    isValid = json.contains("x") && json.contains("y");
+    CHECK_AND_RETURN_RET_LOG(isValid, E_INVAL_ARG, "position miss x or y fields, %{private}s", position.c_str());
+    isValid = json["x"].is_string() && json["y"].is_string();
+    CHECK_AND_RETURN_RET_LOG(isValid, E_INVAL_ARG, "position x or y is not string, %{private}s", position.c_str());
+    std::string latitudeStr = json["x"].get<std::string>();
+    std::string longitudeStr = json["y"].get<std::string>();
+    std::stringstream latitudestream(latitudeStr);
+    std::stringstream longitudestream(longitudeStr);
+    latitudestream.precision(15);   // 15:precision
+    longitudestream.precision(15);  // 15:precision
+    latitude = 0.0;
+    longitude = 0.0;
+    latitudestream >> latitude;
+    longitudestream >> longitude;
+    return E_OK;
+}
+
+int32_t CloudFileDataConvert::ExtractPosition(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo)
+{
+    std::string position = data.GetPosition().value_or("");
+    return ExtractPosition(position, onFetchPhotoVo.latitude, onFetchPhotoVo.longitude);
+}
+
 void CloudFileDataConvert::ConvertProperties(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo)
 {
     onFetchPhotoVo.hasproperties = data.hasProperties();
@@ -884,7 +915,7 @@ void CloudFileDataConvert::ConvertProperties(MDKRecordPhotosData &data, OnFetchP
     onFetchPhotoVo.photoHeight = data.GetHeight().value_or(0);
     onFetchPhotoVo.photoWidth = data.GetWidth().value_or(0);
     onFetchPhotoVo.detailTime = data.GetDetailTime().value_or("");
-    onFetchPhotoVo.position = data.GetPosition().value_or("");
+    ExtractPosition(data, onFetchPhotoVo);
 }
 
 void CloudFileDataConvert::ConvertAttributes(MDKRecordPhotosData &data, OnFetchPhotosVo &onFetchPhotoVo)

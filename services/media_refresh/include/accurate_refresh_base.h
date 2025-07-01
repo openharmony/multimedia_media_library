@@ -30,6 +30,7 @@ namespace Media::AccurateRefresh {
 #define EXPORT __attribute__ ((visibility ("default")))
 
 class EXPORT AccurateRefreshBase {
+friend class TransactionManager;
 public:
     AccurateRefreshBase(std::shared_ptr<TransactionOperations> trans): trans_(trans) {}
     // init的查询语句
@@ -39,12 +40,12 @@ public:
     virtual int32_t Init(const std::vector<int32_t> &keys) = 0; // 删除/更新指定fileIds场景使用
 
     // database execution
-    int32_t Insert(MediaLibraryCommand &cmd, int64_t &outRowId);
-    int32_t Insert(int64_t &outRowId, const std::string &table, NativeRdb::ValuesBucket &value);
+    virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &outRowId);
+    virtual int32_t Insert(int64_t &outRowId, const std::string &table, NativeRdb::ValuesBucket &value);
 
     int32_t BatchInsert(MediaLibraryCommand &cmd, int64_t& changedRows,
         std::vector<NativeRdb::ValuesBucket>& values);
-    int32_t BatchInsert(int64_t &changedRows, const std::string &table,
+    virtual int32_t BatchInsert(int64_t &changedRows, const std::string &table,
         std::vector<NativeRdb::ValuesBucket> &values);
 
     int32_t Update(MediaLibraryCommand &cmd, int32_t &changedRows);
@@ -65,11 +66,11 @@ public:
     int32_t ExecuteSql(const std::string &sql, RdbOperation operation);
 
     // 返回值为rowId
-    int32_t ExecuteForLastInsertedRowId(const std::string &sql,
+    virtual int32_t ExecuteForLastInsertedRowId(const std::string &sql,
         const std::vector<NativeRdb::ValueObject> &bindArgs, RdbOperation operation);
-    int32_t ExecuteSql(const std::string &sql,
+    virtual int32_t ExecuteSql(const std::string &sql,
         const std::vector<NativeRdb::ValueObject> &bindArgs, RdbOperation operation);
-    int32_t ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
+    virtual int32_t ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
         const std::vector<NativeRdb::ValueObject> &bindArgs, RdbOperation operation);
 
 protected:
@@ -77,11 +78,11 @@ protected:
     virtual int32_t UpdateModifiedDatasInner(const std::vector<int32_t> &keys, RdbOperation operation);
     virtual std::string GetReturningKeyName() = 0;
     virtual bool IsValidTable(std::string tableName) = 0;
+    virtual void SetDataManagerTransaction(std::shared_ptr<TransactionOperations> trans) = 0;
 protected:
     std::shared_ptr<TransactionOperations> trans_;
 private:
     std::vector<int32_t> GetReturningKeys(const std::pair<int32_t, NativeRdb::Results> &retWithResults);
-    static std::mutex dbOperationMtx_;
 };
 } // namespace Media
 } // namespace OHOS

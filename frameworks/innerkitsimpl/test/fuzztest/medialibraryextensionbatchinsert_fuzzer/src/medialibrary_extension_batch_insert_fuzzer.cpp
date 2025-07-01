@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <string>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "data_ability_observer_interface.h"
 #include "datashare_business_error.h"
@@ -31,14 +32,11 @@ namespace OHOS {
 using namespace std;
 using namespace AbilityRuntime;
 using namespace DataShare;
-static inline string FuzzString(const uint8_t *data, size_t size)
+static const int32_t NUM_BYTES = 1;
+FuzzedDataProvider *provider = nullptr;
+static inline Uri FuzzUri()
 {
-    return {reinterpret_cast<const char*>(data), size};
-}
-
-static inline Uri FuzzUri(const uint8_t *data, size_t size)
-{
-    return Uri(FuzzString(data, size));
+    return Uri(provider->ConsumeBytesAsString(NUM_BYTES));
 }
 
 static inline DataShareValuesBucket FuzzDataShareValuesBucket()
@@ -51,9 +49,9 @@ static inline vector<DataShareValuesBucket> FuzzVectorDataShareValuesBucket()
     return {FuzzDataShareValuesBucket()};
 }
 
-static inline void BatchInsertFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void BatchInsertFuzzer(MediaDataShareExtAbility &extension)
 {
-    extension.BatchInsert(FuzzUri(data, size), FuzzVectorDataShareValuesBucket());
+    extension.BatchInsert(FuzzUri(), FuzzVectorDataShareValuesBucket());
 }
 
 static inline MediaDataShareExtAbility Init()
@@ -67,7 +65,12 @@ static inline MediaDataShareExtAbility Init()
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
     auto extension = OHOS::Init();
-    OHOS::BatchInsertFuzzer(extension, data, size);
+    OHOS::BatchInsertFuzzer(extension);
     return 0;
 }

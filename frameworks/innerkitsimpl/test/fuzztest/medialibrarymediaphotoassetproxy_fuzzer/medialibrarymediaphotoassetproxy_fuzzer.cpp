@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #define private public
 #include "media_photo_asset_proxy.h"
@@ -39,42 +40,30 @@
 namespace OHOS {
 using namespace std;
 using namespace DataShare;
+static const int32_t MAX_PHOTO_QUALITY_FUZZER_LISTS = 1;
+static const int32_t MAX_CAMERA_SHOT_TYPE_FUZZER_LISTS = 3;
+static const int32_t MAX_PHOTO_FORMAT_FUZZER_LISTS = 3;
 constexpr int FUZZ_STORAGE_MANAGER_MANAGER_ID = 5003;
 std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
+FuzzedDataProvider *provider = nullptr;
+
+static inline Media::CameraShotType FuzzCameraShotType()
 {
-    if (data == nullptr || size < sizeof(int32_t)) {
-        return 0;
-    }
-    return static_cast<int32_t>(*data);
+    uint8_t data = provider->ConsumeIntegralInRange<uint8_t>(0, MAX_CAMERA_SHOT_TYPE_FUZZER_LISTS);
+    return Media::CameraShotType_FUZZER_LISTS[data];
 }
 
-static inline Media::CameraShotType FuzzCameraShotType(const uint8_t *data, size_t size)
+static inline Media::PhotoFormat FuzzPhotoFormat()
 {
-    uint8_t length = static_cast<uint8_t>(Media::CameraShotType_FUZZER_LISTS.size());
-    if (*data < length) {
-        return Media::CameraShotType_FUZZER_LISTS[*data];
-    }
-    return Media::CameraShotType::IMAGE;
+    uint8_t data = provider->ConsumeIntegralInRange<uint8_t>(0, MAX_PHOTO_FORMAT_FUZZER_LISTS);
+    return Media::PhotoFormat_FUZZER_LISTS[data];
 }
 
-static inline Media::PhotoFormat FuzzPhotoFormat(const uint8_t *data, size_t size)
+static inline Media::PhotoQuality FuzzPhotoQuality()
 {
-    uint8_t length = static_cast<uint8_t>(Media::PhotoFormat_FUZZER_LISTS.size());
-    if (*data < length) {
-        return Media::PhotoFormat_FUZZER_LISTS[*data];
-    }
-    return Media::PhotoFormat::RGBA;
-}
-
-static inline Media::PhotoQuality FuzzPhotoQuality(const uint8_t *data, size_t size)
-{
-    uint8_t length = static_cast<uint8_t>(Media::PhotoQuality_FUZZER_LISTS.size());
-    if (*data < length) {
-        return Media::PhotoQuality_FUZZER_LISTS[*data];
-    }
-    return Media::PhotoQuality::HIGH;
+    uint8_t data = provider->ConsumeIntegralInRange<uint8_t>(0, MAX_PHOTO_QUALITY_FUZZER_LISTS);
+    return Media::PhotoQuality_FUZZER_LISTS[data];
 }
 
 void CreateDataHelper(int32_t systemAbilityId)
@@ -96,43 +85,35 @@ void CreateDataHelper(int32_t systemAbilityId)
     }
 }
 
-static shared_ptr<Media::PhotoAssetProxy> Init(const uint8_t *data, size_t size)
+static shared_ptr<Media::PhotoAssetProxy> Init()
 {
-    const int32_t int32Count = 2;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
-        return nullptr;
-    }
-    int offset = 0;
-    uint32_t callingUid = FuzzInt32(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t userId = FuzzInt32(data + offset, size);
     shared_ptr<Media::PhotoAssetProxy> photoAssetProxy = make_shared<Media::PhotoAssetProxy>(sDataShareHelper_,
-        FuzzCameraShotType(data, size), callingUid, userId);
+        FuzzCameraShotType(), provider->ConsumeIntegral<int32_t>(), provider->ConsumeIntegral<int32_t>());
     return photoAssetProxy;
 }
 
-static sptr<Media::PhotoProxyFuzzTest> FuzzPhotoAssetProxy(const uint8_t *data, size_t size)
+static sptr<Media::PhotoProxyFuzzTest> FuzzPhotoAssetProxy()
 {
     sptr<Media::PhotoProxyFuzzTest> photoProxyFuzzTest = new(std::nothrow) Media::PhotoProxyFuzzTest();
     if (photoProxyFuzzTest == nullptr) {
         return nullptr;
     }
-    photoProxyFuzzTest->SetFormat(FuzzPhotoFormat(data, size));
-    photoProxyFuzzTest->SetPhotoQuality(FuzzPhotoQuality(data, size));
+    photoProxyFuzzTest->SetFormat(FuzzPhotoFormat());
+    photoProxyFuzzTest->SetPhotoQuality(FuzzPhotoQuality());
 
     return photoProxyFuzzTest;
 }
 
-static void MediaLibraryMediaPhotoAssetProxyTest(const uint8_t *data, size_t size)
+static void MediaLibraryMediaPhotoAssetProxyTest()
 {
     if (sDataShareHelper_ == nullptr) {
         CreateDataHelper(FUZZ_STORAGE_MANAGER_MANAGER_ID);
     }
-    shared_ptr<Media::PhotoAssetProxy> photoAssetProxy = Init(data, size);
+    shared_ptr<Media::PhotoAssetProxy> photoAssetProxy = Init();
     if (photoAssetProxy == nullptr) {
         return;
     }
-    sptr<Media::PhotoProxyFuzzTest> photoProxyFuzzTest = FuzzPhotoAssetProxy(data, size);
+    sptr<Media::PhotoProxyFuzzTest> photoProxyFuzzTest = FuzzPhotoAssetProxy();
     photoAssetProxy->AddPhotoProxy((sptr<Media::PhotoProxy>&)photoProxyFuzzTest);
     photoAssetProxy->GetVideoFd();
     photoAssetProxy->NotifyVideoSaveFinished();
@@ -182,6 +163,11 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::MediaLibraryMediaPhotoAssetProxyTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::MediaLibraryMediaPhotoAssetProxyTest();
     return 0;
 }

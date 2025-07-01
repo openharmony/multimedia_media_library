@@ -21,7 +21,7 @@
 #endif
 
 #undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002B70
+#define LOG_DOMAIN 0xD002B74
 
 #undef LOG_TAG
 #define LOG_TAG "MediaBgTaskSchedule"

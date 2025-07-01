@@ -24,18 +24,20 @@ public:
     std::vector<std::string> assets;
     int32_t albumId {-1};
     int32_t targetAlbumId {0};
-    int32_t isHiddenOnly {0};
 
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
 };
 
-class ChangeRequestMoveAssetsRspBody : public IPC::IMediaParcelable {
+class ChangeRequestMoveAssetsRespBody : public IPC::IMediaParcelable {
 public:
     int32_t albumCount {-1};
-    int32_t imageCount {-1};
-    int32_t videoCount {-1};
+    int32_t albumImageCount {-1};
+    int32_t albumVideoCount {-1};
+    int32_t targetAlbumCount {-1};
+    int32_t targetAlbumImageCount {-1};
+    int32_t targetAlbumVideoCount {-1};
 
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;

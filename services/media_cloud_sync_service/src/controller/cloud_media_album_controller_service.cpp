@@ -81,7 +81,6 @@ int32_t CloudMediaAlbumControllerService::OnDentryFileInsert(MessageParcel &data
 
 int32_t CloudMediaAlbumControllerService::GetCheckRecords(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter CloudMediaAlbumControllerService::GetCheckRecords");
     GetCheckRecordsAlbumReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -111,7 +110,6 @@ int32_t CloudMediaAlbumControllerService::GetCreatedRecords(MessageParcel &data,
         MEDIA_ERR_LOG("GetCreatedRecords param error, size: %{public}d", size);
         return IPC::UserDefineIPC().WriteResponseBody(reply, E_MEDIA_CLOUD_ARGS_INVAILD);
     }
-    MEDIA_INFO_LOG("enter CloudMediaAlbumControllerService::GetCreatedRecords size %{public}d", reqBody.size);
     std::vector<PhotoAlbumPo> photoAlbumPoList = this->albumService_.GetAlbumCreatedRecords(reqBody.size);
     std::vector<CloudMdkRecordPhotoAlbumVo> recordsList;
     for (const auto &record : photoAlbumPoList) {
@@ -124,7 +122,6 @@ int32_t CloudMediaAlbumControllerService::GetCreatedRecords(MessageParcel &data,
 
 int32_t CloudMediaAlbumControllerService::GetMetaModifiedRecords(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter CloudMediaAlbumControllerService::GetMetaModifiedRecords");
     CloudMdkRecordPhotoAlbumReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -141,7 +138,7 @@ int32_t CloudMediaAlbumControllerService::GetMetaModifiedRecords(MessageParcel &
         CloudMdkRecordPhotoAlbumVo recordVo = this->processor_.ConvertRecordPoToVo(record);
         recordsList.push_back(recordVo);
     }
-    MEDIA_INFO_LOG("Enter CloudMediaAlbumControllerService::GetMetaModifiedRecords size: %{public}zu, %{public}zu",
+    MEDIA_INFO_LOG("CloudMediaAlbumControllerService::GetMetaModifiedRecords size: %{public}zu, %{public}zu",
         photoAlbumPoList.size(),
         recordsList.size());
     CloudMdkRecordPhotoAlbumRespBody respBody{recordsList};
@@ -161,7 +158,6 @@ int32_t CloudMediaAlbumControllerService::GetDeletedRecords(MessageParcel &data,
         MEDIA_ERR_LOG("GetDeletedRecords param error, size: %{public}d", size);
         return IPC::UserDefineIPC().WriteResponseBody(reply, E_MEDIA_CLOUD_ARGS_INVAILD);
     }
-    MEDIA_INFO_LOG("enter CloudMediaAlbumControllerService::GetDeletedRecords %{public}d", reqBody.size);
     std::vector<PhotoAlbumPo> photoAlbumPoList = this->albumService_.GetAlbumDeletedRecords(reqBody.size);
     std::vector<CloudMdkRecordPhotoAlbumVo> recordsList;
     for (const auto &record : photoAlbumPoList) {
@@ -174,7 +170,6 @@ int32_t CloudMediaAlbumControllerService::GetDeletedRecords(MessageParcel &data,
 
 int32_t CloudMediaAlbumControllerService::OnCreateRecords(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter CloudMediaAlbumControllerService::OnCreateRecords");
     OnCreateRecordsAlbumReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -198,7 +193,6 @@ int32_t CloudMediaAlbumControllerService::OnCreateRecords(MessageParcel &data, M
 
 int32_t CloudMediaAlbumControllerService::OnMdirtyRecords(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter CloudMediaAlbumControllerService::OnMdirtyRecords");
     OnMdirtyRecordsAlbumReqBody reqBody;
     OnMdirtyRecordsAlbumRespBody respBody;
     respBody.failSize = 0;
@@ -230,7 +224,6 @@ int32_t CloudMediaAlbumControllerService::OnFdirtyRecords(MessageParcel &data, M
 
 int32_t CloudMediaAlbumControllerService::OnDeleteRecords(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter CloudMediaAlbumControllerService::OnDeleteRecords");
     OnDeleteRecordsAlbumReqBody reqBody;
     OnDeleteRecordsAlbumRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);

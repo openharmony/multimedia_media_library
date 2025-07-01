@@ -36,13 +36,13 @@ public:
         bool isFavorite, int32_t mediaType, bool isHidden, int64_t dateTrashedMs, int32_t strongAssociation,
         int32_t thumbnailVisible, int64_t dateAddedMs, int64_t dateTakenMs, int32_t subType,
         int32_t syncStatus, int32_t cleanFlag, int32_t timePending, bool isTemp, int32_t burstCoverLevel,
-        int32_t ownerAlbumId, int64_t hiddenTime, int64_t thumbnailReady, std::string displayName,
-        std::string path) : fileId_(fileId), uri_(uri), dateDay_(dateDay), ownerAlbumUri_(ownerAlbumUri),
-        isFavorite_(isFavorite), mediaType_(mediaType), isHidden_(isHidden), dateTrashedMs_(dateTrashedMs),
-        strongAssociation_(strongAssociation), thumbnailVisible_(thumbnailVisible), dateAddedMs_(dateAddedMs),
-        dateTakenMs_(dateTakenMs), subType_(subType), syncStatus_(syncStatus), cleanFlag_(cleanFlag),
-        timePending_(timePending), isTemp_(isTemp), burstCoverLevel_(burstCoverLevel), ownerAlbumId_(ownerAlbumId),
-        hiddenTime_(hiddenTime), thumbnailReady_(thumbnailReady), displayName_(displayName), path_(path) {}
+        int32_t ownerAlbumId, int64_t hiddenTime, int64_t thumbnailReady, std::string displayName, std::string path,
+        std::string ownerPackage, std::string packageName) : fileId_(fileId), uri_(uri), dateDay_(dateDay),
+        ownerAlbumUri_(ownerAlbumUri), isFavorite_(isFavorite), mediaType_(mediaType), isHidden_(isHidden),
+        dateTrashedMs_(dateTrashedMs), strongAssociation_(strongAssociation), thumbnailVisible_(thumbnailVisible),
+        dateAddedMs_(dateAddedMs), dateTakenMs_(dateTakenMs), subType_(subType), syncStatus_(syncStatus),
+        cleanFlag_(cleanFlag), timePending_(timePending), isTemp_(isTemp), burstCoverLevel_(burstCoverLevel),
+        ownerAlbumId_(ownerAlbumId), packageName_(packageName), ownerPackage_(ownerPackage) {}
         
 public:
     int32_t fileId_ = INVALID_INT32_VALUE;
@@ -73,6 +73,8 @@ public:
     int64_t thumbnailReady_ = INVALID_INT64_VALUE;
     std::string displayName_ = EMPTY_STR;
     std::string path_ = EMPTY_STR;
+    std::string packageName_ = EMPTY_STR;
+    std::string ownerPackage_ = EMPTY_STR;
     int32_t dirty_ = INVALID_INT32_VALUE;
 
     std::string ToString(bool isDetail = false) const;

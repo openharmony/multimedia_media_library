@@ -57,7 +57,14 @@ ohos_unittest("media_refresh_test") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_accurate_refresh_manager.cpp",
   ]
 
+  media_trigger_source = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/trigger/medialibrary_trigger_manager.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/trigger/medialibrary_trigger.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/trigger/medialibrary_trigger_utils.cpp",
+  ]
+
   sources += accurate_refresh_source
+  sources += media_trigger_source
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",

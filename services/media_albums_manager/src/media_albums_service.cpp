@@ -830,4 +830,44 @@ int32_t MediaAlbumsService::UpdatePhotoAlbumOrder(const SetPhotoAlbumOrderDto &s
     int32_t changedRows = MediaLibraryAlbumOperations::UpdatePhotoAlbumOrder(valuesBuckets, predicatesArray);
     return changedRows;
 }
+
+int32_t MediaAlbumsService::MoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto)
+{
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(moveAssetsDto.albumId));
+    predicates.And();
+    predicates.In(PhotoColumn::MEDIA_ID, moveAssetsDto.assets);
+    NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
+        PhotoColumn::PHOTOS_TABLE);
+
+    NativeRdb::ValuesBucket value;
+    value.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, moveAssetsDto.targetAlbumId);
+
+    MediaLibraryCommand cmd(OperationObject::PAH_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
+    cmd.SetValueBucket(value);
+    cmd.SetDataSharePred(predicates);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    int32_t ret = MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(cmd);
+
+    auto resultSet = this->rdbOperation_.MoveAssetsGetAlbumInfo(moveAssetsDto);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, E_ERR);
+    while (resultSet->GoToNextRow() == E_OK) {
+        int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+        int32_t albumImageCount = GetInt32Val(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet);
+        int32_t albumVideoCount = GetInt32Val(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet);
+        int32_t albumCount = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
+        if (albumId == moveAssetsDto.albumId) {
+            moveAssetsDto.albumImageCount = albumImageCount;
+            moveAssetsDto.albumVideoCount = albumVideoCount;
+            moveAssetsDto.albumCount = albumCount;
+            continue;
+        }
+        moveAssetsDto.targetAlbumImageCount = albumImageCount;
+        moveAssetsDto.targetAlbumVideoCount = albumVideoCount;
+        moveAssetsDto.targetAlbumCount = albumCount;
+    }
+    resultSet->Close();
+    return ret;
+}
 } // namespace OHOS::Media

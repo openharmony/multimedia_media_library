@@ -49,10 +49,10 @@ HWTEST_F(MediaBgtaskMgrAppOpsConnectAbilityTest, media_bgtask_mgr_ConnectAbility
 {
     auto inst = DelayedSingleton<AppOpsConnectAbility>::GetInstance();
     // 1. 测试当userId已存在时，ConnectAbility应返回ALREADY_EXISTS
-    AppSvcInfo svcName;
+    AppSvcInfo svcName{"", "", 1};
     AppOpsConnection* conn = new AppOpsConnection(svcName, 1);
     inst->appConnections_[1] = conn;
-    int32_t result = inst->ConnectAbility(svcName, 1, "", "", "");
+    int32_t result = inst->ConnectAbility(svcName, "", "", "");
     EXPECT_EQ(result, AppConnectionStatus::ALREADY_EXISTS);
 }
 
@@ -76,7 +76,7 @@ HWTEST_F(MediaBgtaskMgrAppOpsConnectAbilityTest, media_bgtask_mgr_ConnectAbility
 
     auto inst = DelayedSingleton<AppOpsConnectAbility>::GetInstance();
     AppSvcInfo svcName;
-    int32_t result = inst->ConnectAbility(svcName, 1, "", "", "");
+    int32_t result = inst->ConnectAbility(svcName, "", "", "");
     EXPECT_EQ(result, AppConnectionStatus::FAILED_TO_CONNECT);
 }
 
@@ -95,7 +95,7 @@ HWTEST_F(MediaBgtaskMgrAppOpsConnectAbilityTest, media_bgtask_mgr_ConnectAbility
 
     auto inst = DelayedSingleton<AppOpsConnectAbility>::GetInstance();
     AppSvcInfo svcName;
-    int32_t result = inst->ConnectAbility(svcName, 1, "", "", "");
+    int32_t result = inst->ConnectAbility(svcName, "", "", "");
     EXPECT_EQ(result, E_OK);
 }
 
@@ -152,8 +152,8 @@ HWTEST_F(MediaBgtaskMgrAppOpsConnectAbilityTest, media_bgtask_mgr_TaskOpsSync_te
     int32_t userId = 1;
     inst->appConnections_[userId] = nullptr;
 
-    AppSvcInfo svcName;
-    int32_t result = inst->TaskOpsSync(svcName, userId, "", "", "");
+    AppSvcInfo svcName{"", "", 1};
+    int32_t result = inst->TaskOpsSync(svcName, "", "", "");
     EXPECT_EQ(result, E_ERR);
 }
 
@@ -167,8 +167,8 @@ HWTEST_F(MediaBgtaskMgrAppOpsConnectAbilityTest, media_bgtask_mgr_TaskOpsSync_te
     Stub stub;
     stub.set(ADDR(AppOpsConnection, TaskOpsSync), TaskOpsSyncStub);
 
-    AppSvcInfo svcName;
-    int32_t result = inst->TaskOpsSync(svcName, userId, "", "", "");
+    AppSvcInfo svcName{"", "", 1};
+    int32_t result = inst->TaskOpsSync(svcName, "", "", "");
     EXPECT_EQ(result, E_OK);
 }
 

@@ -348,6 +348,26 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::HandleIndexOfUri(
     return MediaLibraryRdbStore::GetIndexOfUriForPhotos(predicates, columns, photoId);
 }
 
+int32_t QueryAnalysisAlbumSubTypeById(const string &albumId, PhotoAlbumSubType &subType)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is nullptr!");
+    
+    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    vector<string> columns = { PhotoAlbumColumns::ALBUM_SUBTYPE };
+    auto resultSet = rdbStore->QueryByStep(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Analysis album id %{public}s is not exist", albumId.c_str());
+        return E_INVALID_ARGUMENTS;
+    }
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, E_INVALID_ARGUMENTS,
+        "Analysis album id %{public}s is not exist", albumId.c_str());
+    subType = static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet));
+    resultSet->Close();
+    return E_SUCCESS;
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::HandleAnalysisIndex(MediaLibraryCommand &cmd,
     const string &photoId, const string &albumId)
 {
@@ -355,7 +375,14 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::HandleAnalysisInde
     CHECK_AND_RETURN_RET_LOG(GetValidOrderClause(cmd.GetDataSharePred(), orderClause), nullptr, "invalid orderby");
     CHECK_AND_RETURN_RET_LOG(albumId.size() > 0, nullptr, "null albumId");
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    PhotoAlbumColumns::GetAnalysisAlbumPredicates(stoi(albumId), predicates, false);
+    PhotoAlbumSubType albumSubtype;
+    CHECK_AND_RETURN_RET_LOG(QueryAnalysisAlbumSubTypeById(albumId, albumSubtype) == E_SUCCESS, nullptr,
+        "invalid analysis album id: %{public}s", albumId.c_str());
+    if (albumSubtype == PhotoAlbumSubType::PORTRAIT) {
+        PhotoAlbumColumns::GetPortraitAlbumPredicates(stoi(albumId), predicates, false);
+    } else {
+        PhotoAlbumColumns::GetAnalysisAlbumPredicates(stoi(albumId), predicates, false);
+    }
     vector<string> columns;
     columns.push_back(orderClause);
     columns.push_back(MediaColumn::MEDIA_ID);
@@ -835,7 +862,9 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
         MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(deleteRows),
         (api == MediaLibraryApi::API_10 ? MediaFileUtils::GetExtraUri(displayName, filePath) : ""));
     watch->Notify(notifyDeleteUri, NotifyType::NOTIFY_REMOVE);
-    assetRefresh->Notify();
+    if (assetRefresh !=nullptr) {
+        assetRefresh->Notify();
+    }
     DeleteRevertMessage(filePath);
     return deleteRows;
 }

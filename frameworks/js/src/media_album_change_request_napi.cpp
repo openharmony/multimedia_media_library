@@ -1377,12 +1377,11 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     auto moveMap = changeRequest->GetMoveMap();
     changeRequest->ClearMoveMap();
     ChangeRequestMoveAssetsReqBody reqBody;
-    ChangeRequestMoveAssetsRspBody rspBody;
+    ChangeRequestMoveAssetsRespBody respBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_MOVE_ASSETS);
-    reqBody.isHiddenOnly = photoAlbum->GetHiddenOnly();
-
     for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
         auto targetPhotoAlbum = iter->first;
+        bool isTargetHiddenOnly = targetPhotoAlbum->GetHiddenOnly();
         int32_t targetAlbumId = targetPhotoAlbum->GetAlbumId();
         vector<string> moveAssetArray = iter->second;
         // Move into target album.
@@ -1391,20 +1390,23 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
         for (const auto& asset : moveAssetArray) {
             reqBody.assets.push_back(asset);
         }
-        int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+        int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
         if (ret < 0) {
             context.SaveError(ret);
             NAPI_ERR_LOG("Failed to move assets into album %{public}d, err: %{public}d", targetAlbumId, ret);
             return false;
         }
         NAPI_INFO_LOG("Move %{public}d asset(s) into album %{public}d", ret, targetAlbumId);
-        photoAlbum->SetVideoCount(rspBody.videoCount);
-        photoAlbum->SetImageCount(rspBody.imageCount);
-        photoAlbum->SetCount(rspBody.albumCount);
+        targetPhotoAlbum->SetVideoCount(isTargetHiddenOnly ? -1 : respBody.targetAlbumVideoCount);
+        targetPhotoAlbum->SetImageCount(isTargetHiddenOnly ? -1 : respBody.targetAlbumImageCount);
+        targetPhotoAlbum->SetCount(respBody.targetAlbumCount);
     }
-    photoAlbum->SetVideoCount(rspBody.videoCount);
-    photoAlbum->SetImageCount(rspBody.imageCount);
-    photoAlbum->SetCount(rspBody.albumCount);
+    bool isHiddenOnly = photoAlbum->GetHiddenOnly();
+    photoAlbum->SetVideoCount(isHiddenOnly ? -1 : respBody.albumVideoCount);
+    photoAlbum->SetImageCount(isHiddenOnly ? -1 : respBody.albumImageCount);
+    photoAlbum->SetCount(respBody.albumCount);
+    NAPI_INFO_LOG("origin album video count: %{public}d, image count: %{public}d, count: %{public}d",
+        respBody.albumVideoCount, respBody.albumImageCount, respBody.albumCount);
     return true;
 }
 
@@ -1668,6 +1670,7 @@ static bool SetCoverUriExecute(MediaAlbumChangeRequestAsyncContext& context)
     int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changedRows < 0) {
         NAPI_ERR_LOG("Failed to set cover uri, err: %{public}d", changedRows);
+        context.error = JS_INNER_FAIL;
         return false;
     }
     return true;
@@ -1763,6 +1766,7 @@ static bool ResetCoverUriExecute(MediaAlbumChangeRequestAsyncContext& context)
     int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changedRows < 0) {
         NAPI_ERR_LOG("Failed to reset cover uri, err: %{public}d", changedRows);
+        context.error = JS_E_INNER_FAIL;
         return false;
     }
     return true;
