@@ -126,6 +126,7 @@ public:
     int32_t DeleteLocalFileNotExistRecord(const PhotosDto &photo);
     int32_t RenewSameCloudResource(const PhotosDto &photo);
     int32_t RepushDuplicatedPhoto(const PhotosDto &photo);
+    void ClearAlbumMap();
 
 private:
     bool IsTimeChanged(const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
@@ -143,9 +144,10 @@ private:
         const std::vector<std::string> &subtypes, const std::vector<std::string> &columns);
     std::shared_ptr<NativeRdb::ResultSet> GetAllSysAlbumsQuery(
         NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns);
-    SafeMap<int32_t, std::pair<std::string, std::string>> GetAlbumLocalToCloudMap();
-    SafeMap<std::string, int32_t> GetAlbumCloudToLocalMap();
-    SafeMap<std::string, std::pair<int32_t, std::string>> GetAlbumLPathToIdMap();
+    void LoadAlbumMap();
+    SafeMap<int32_t, std::pair<std::string, std::string>> &GetAlbumLocalToCloudMap();
+    SafeMap<std::string, int32_t> &GetAlbumCloudToLocalMap();
+    SafeMap<std::string, std::pair<int32_t, std::string>> &GetAlbumLPathToIdMap();
     void PrepareAlbumMap(SafeMap<int32_t, std::pair<std::string, std::string>> &localToCloudMap,
         SafeMap<std::string, int32_t> &cloudToLocalMap,
         SafeMap<std::string, std::pair<int32_t, std::string>> &lpathToIdMap, bool isUpload = true);
@@ -175,6 +177,10 @@ private:
     SafeVector<std::string> photoCreateFailSet_;
     SafeVector<std::string> photoCopyFailSet_;
     int32_t hiddenAlbumId_ = -1;
+    // the cache of PhotoAlbum
+    SafeMap<int32_t, std::pair<std::string, std::string>> localToCloudMap_;
+    SafeMap<std::string, int32_t> cloudToLocalMap_;
+    SafeMap<std::string, std::pair<int32_t, std::string>> lpathToIdMap_;
 
 private:
     const std::string SQL_PHOTOS_GET_CREATE_RECORDS = "\

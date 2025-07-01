@@ -563,7 +563,6 @@ int32_t CloudMediaPhotosService::OnFetchRecords(const std::vector<std::string> &
     std::vector<PhotosDto> &fdirtyData, std::vector<int32_t> &stats, std::vector<std::string> &failedRecords)
 {
     MEDIA_INFO_LOG("OnFetchRecords: %{public}d.", static_cast<int32_t>(cloudIds.size()));
-
     std::vector<PhotosPo> photos;
     int32_t ret = this->commonDao_.QueryLocalByCloudId(cloudIds, PULL_QUERY_COLUMNS, photos);
     if (ret != E_OK) {
@@ -572,6 +571,7 @@ int32_t CloudMediaPhotosService::OnFetchRecords(const std::vector<std::string> &
         MEDIA_ERR_LOG("OnFetchRecords query error.");
         return E_CLOUDSYNC_RDB_QUERY_FAILED;
     }
+    this->photosDao_.ClearAlbumMap();
     for (auto it = cloudIdRelativeMap.begin(); it != cloudIdRelativeMap.end(); it++) {
         bool found = false;
         for (auto &photo : photos) {
