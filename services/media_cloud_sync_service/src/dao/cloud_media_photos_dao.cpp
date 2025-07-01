@@ -1696,6 +1696,30 @@ int32_t CloudMediaPhotosDao::ClearPhotoFailedRecords()
     return E_OK;
 }
 
+void CloudMediaPhotosDao::LoadAlbumMap()
+{
+    // use localToCloudMap_ to identify the cache loaded or not.
+    CHECK_AND_RETURN_INFO_LOG(localToCloudMap_.IsEmpty(),
+        "Album Map is not empty. localToCloudMap: %{public}d,"
+        "cloudToLocalMap: %{public}d, lpathToIdMap: %{public}d",
+        localToCloudMap_.Size(),
+        cloudToLocalMap_.Size(),
+        lpathToIdMap_.Size());
+    return PrepareAlbumMap(localToCloudMap_, cloudToLocalMap_, lpathToIdMap_);
+}
+
+void CloudMediaPhotosDao::ClearAlbumMap()
+{
+    MEDIA_INFO_LOG("ClearAlbumMap. localToCloudMap: %{public}d,"
+                   "cloudToLocalMap: %{public}d, lpathToIdMap: %{public}d",
+        localToCloudMap_.Size(),
+        cloudToLocalMap_.Size(),
+        lpathToIdMap_.Size());
+    localToCloudMap_.Clear();
+    cloudToLocalMap_.Clear();
+    lpathToIdMap_.Clear();
+}
+
 void CloudMediaPhotosDao::PrepareAlbumMap(SafeMap<int32_t, std::pair<std::string, std::string>> &localToCloudMap,
     SafeMap<std::string, int32_t> &cloudToLocalMap, SafeMap<std::string, std::pair<int32_t, std::string>> &lpathToIdMap,
     bool isUpload)
@@ -1744,31 +1768,22 @@ void CloudMediaPhotosDao::PrepareAlbumMap(SafeMap<int32_t, std::pair<std::string
     }
 }
 
-SafeMap<int32_t, std::pair<std::string, std::string>> CloudMediaPhotosDao::GetAlbumLocalToCloudMap()
+SafeMap<int32_t, std::pair<std::string, std::string>> &CloudMediaPhotosDao::GetAlbumLocalToCloudMap()
 {
-    SafeMap<int32_t, std::pair<std::string, std::string>> localToCloudMap;
-    SafeMap<std::string, int32_t> cloudToLocalMap;
-    SafeMap<std::string, std::pair<int32_t, std::string>> lpathToIdMap;
-    PrepareAlbumMap(localToCloudMap, cloudToLocalMap, lpathToIdMap);
-    return localToCloudMap;
+    CHECK_AND_EXECUTE(!localToCloudMap_.IsEmpty(), LoadAlbumMap());
+    return localToCloudMap_;
 }
 
-SafeMap<std::string, int32_t> CloudMediaPhotosDao::GetAlbumCloudToLocalMap()
+SafeMap<std::string, int32_t> &CloudMediaPhotosDao::GetAlbumCloudToLocalMap()
 {
-    SafeMap<int32_t, std::pair<std::string, std::string>> localToCloudMap;
-    SafeMap<std::string, int32_t> cloudToLocalMap;
-    SafeMap<std::string, std::pair<int32_t, std::string>> lpathToIdMap;
-    PrepareAlbumMap(localToCloudMap, cloudToLocalMap, lpathToIdMap);
-    return cloudToLocalMap;
+    CHECK_AND_EXECUTE(!cloudToLocalMap_.IsEmpty(), LoadAlbumMap());
+    return cloudToLocalMap_;
 }
 
-SafeMap<std::string, std::pair<int32_t, std::string>> CloudMediaPhotosDao::GetAlbumLPathToIdMap()
+SafeMap<std::string, std::pair<int32_t, std::string>> &CloudMediaPhotosDao::GetAlbumLPathToIdMap()
 {
-    SafeMap<int32_t, std::pair<std::string, std::string>> localToCloudMap;
-    SafeMap<std::string, int32_t> cloudToLocalMap;
-    SafeMap<std::string, std::pair<int32_t, std::string>> lpathToIdMap;
-    PrepareAlbumMap(localToCloudMap, cloudToLocalMap, lpathToIdMap);
-    return lpathToIdMap;
+    CHECK_AND_EXECUTE(!lpathToIdMap_.IsEmpty(), LoadAlbumMap());
+    return lpathToIdMap_;
 }
 
 bool CloudMediaPhotosDao::IsAlbumCloud(bool isUpload, std::shared_ptr<NativeRdb::ResultSet> &resultSet)
