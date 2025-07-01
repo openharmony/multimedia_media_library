@@ -20,9 +20,11 @@
 #include <mutex>
 #include <string>
 
+#include "cloud_media_define.h"
+
 namespace OHOS {
 namespace Media {
-class CoverPositionParser {
+class EXPORT CoverPositionParser {
 public:
     static CoverPositionParser &GetInstance();
     bool AddTask(const std::string &path, const std::string &fileUri);

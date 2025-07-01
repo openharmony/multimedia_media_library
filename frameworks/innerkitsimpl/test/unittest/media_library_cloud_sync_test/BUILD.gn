@@ -24,7 +24,9 @@ ohos_unittest("media_library_cloud_sync_test") {
   module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
+    "./include/utils",
     "../medialibrary_unittest_utils/include/database",
+    "${MEDIALIB_CLOUD_SYNC_CLIENT}/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/orm",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/orm/po",
     "${MEDIALIB_TEST_PATH}/unittest/get_self_permissions/include/",
@@ -33,7 +35,14 @@ ohos_unittest("media_library_cloud_sync_test") {
   sources = [
     "${MEDIALIB_TEST_PATH}/unittest/get_self_permissions/src/get_self_permissions.cpp",
     "./src/cloud_media_data_client_test.cpp",
+    "./src/cloud_media_photo_album_handler_test.cpp",
+    "./src/cloud_media_photo_handler_test.cpp",
     "./src/database_data_mock_test.cpp",
+    "./src/cloud_media_album_handler_onfetchrecords_test.cpp",
+    "./src/cloud_media_photo_handler_onfetchrecords_test.cpp",
+    "./src/cloud_media_photo_handler_oncreaterecords_test.cpp",
+    "./src/cloud_media_photo_handler_getcreatedrecords_test.cpp",
+    "./src/cloud_media_photo_handler_oncopyrecords_test.cpp",
   ]
 
   deps = [
