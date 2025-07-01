@@ -152,16 +152,6 @@ static void InsertDateAdded(const Metadata &metadata, ValuesBucket &outValues)
     outValues.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
 }
 
-static inline void FixDateDayIfNeeded(const Metadata &metadata, ValuesBucket &outValues)
-{
-    int64_t dateTaken = metadata.GetDateTaken();
-    string dateDayOld = metadata.GetDateDay();
-    string dateDayNew = MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateTaken);
-    if (dateDayOld != dateDayNew) {
-        SetDateDay(dateTaken, outValues);
-    }
-}
-
 static inline void HandleDateAdded(const Metadata &metadata, const bool isInsert, ValuesBucket &outValues)
 {
     if (isInsert) {
@@ -175,13 +165,9 @@ static inline void HandleDateDay(const Metadata &metadata, const bool isInsert, 
     if ((type != MEDIA_TYPE_PHOTO) && (type != MEDIA_TYPE_IMAGE) && (type != MEDIA_TYPE_VIDEO)) {
         return;
     }
-    if (isInsert) {
-        int64_t dateTaken = metadata.GetDateTaken();
-        SetDateDay(dateTaken, outValues);
-        return;
-    }
-
-    FixDateDayIfNeeded(metadata, outValues);
+    int64_t dateTaken = metadata.GetDateTaken();
+    SetDateDay(dateTaken, outValues);
+    return;
 }
 
 static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &values, bool isInsert,
