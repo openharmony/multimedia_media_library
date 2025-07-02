@@ -30,7 +30,7 @@ public:
     CloudMediaAssetStatusAni() = default;
     ~CloudMediaAssetStatusAni() = default;
     static ani_object NewCloudMediaAssetStatusAni(
-        ani_env *env, std::unique_ptr<CloudMediaAssetAsyncAniContext> &context);
+        ani_env *env, CloudMediaAssetAsyncAniContext *context);
     static ani_status Init(ani_env *env);
 
 private:

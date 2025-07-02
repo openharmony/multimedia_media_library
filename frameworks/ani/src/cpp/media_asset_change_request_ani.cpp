@@ -988,7 +988,12 @@ static ani_status ParseArgsDeleteAssets(ani_env *env, ani_object assets, std::ve
     ANI_CHECK_RETURN_RET_LOG(env != nullptr, ANI_ERROR, "env is null");
     CHECK_COND_RET(MediaLibraryAniUtils::IsUndefined(env, assets) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(MediaLibraryAniUtils::IsArray(env, assets) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
-
+    ani_double length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(assets, "length", &length),
+        "Call method <get>length failed.");
+    if (length <= 0) {
+        return ANI_ERROR;
+    }
     ani_ref value {};
     ani_int index = 0;
     CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(assets, "$_get", "I:Lstd/core/Object;", &value, index),
@@ -2139,6 +2144,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAniContext &context)
     auto ret = UserFileClient::Update(uri, predicates, valuesBucket);
     if (ret < 0) {
         ANI_ERR_LOG("save camera photo fail");
+        return false;
     }
     return true;
 }

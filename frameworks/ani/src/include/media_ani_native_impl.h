@@ -47,7 +47,7 @@ private:
         std::unique_ptr<FileAsset> &fileAsset);
     static bool ExtractSpecialFields(std::shared_ptr<MediaLibraryAsyncContext> context,
         const DataShare::OperationItem &item, const FetchOptionType &fetchOptType,
-        std::vector<DataShare::OperationItem> operations);
+        std::vector<DataShare::OperationItem> &operations);
 
 public:
     static std::vector<std::unique_ptr<FileAsset>> GetAssetsSync(ani_env *env,

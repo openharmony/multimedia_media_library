@@ -360,7 +360,7 @@ static ani_object GetCloudMediaAssetStatusComplete(ani_env *env, unique_ptr<Clou
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, errorObj);
     } else {
-        AssetStateObj = CloudMediaAssetStatusAni::NewCloudMediaAssetStatusAni(env, context);
+        AssetStateObj = CloudMediaAssetStatusAni::NewCloudMediaAssetStatusAni(env, context.get());
     }
     context.reset();
     return AssetStateObj;

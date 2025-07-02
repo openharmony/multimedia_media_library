@@ -1028,16 +1028,25 @@ ani_object FileAssetAni::PhotoAccessHelperGetThumbnail(ani_env *env, ani_object 
     context->size.width = DEFAULT_THUMB_SIZE;
     context->size.height = DEFAULT_THUMB_SIZE;
     if (MediaLibraryAniUtils::IsUndefined(env, size) == ANI_FALSE) {
-        ani_int heightValue = 0;
-        ani_int widthValue = 0;
+        ani_int heightValue = DEFAULT_THUMB_SIZE;
+        ani_int widthValue = DEFAULT_THUMB_SIZE;
+        ani_object errorObj {};
         if (ANI_OK != env->Object_GetPropertyByName_Int(size, "height", &heightValue)) {
             ANI_ERR_LOG("Class_FindMethod Fail %{public}s", PAH_ANI_CLASS_SIZE.c_str());
+            MediaLibraryAniUtils::CreateAniErrorObject(env, errorObj, ERR_INVALID_OUTPUT, "Get size height failed");
         }
         if (ANI_OK != env->Object_GetPropertyByName_Int(size, "width", &widthValue)) {
             ANI_ERR_LOG("Class_FindMethod Fail %{public}s", PAH_ANI_CLASS_SIZE.c_str());
+            MediaLibraryAniUtils::CreateAniErrorObject(env, errorObj, ERR_INVALID_OUTPUT, "Get size width failed");
         }
         context->size.width = static_cast<int32_t>(widthValue);
         context->size.height = static_cast<int32_t>(heightValue);
+        if (heightValue <= 0) {
+            context->size.height = DEFAULT_THUMB_SIZE;
+        }
+        if (widthValue <= 0) {
+            context->size.width = DEFAULT_THUMB_SIZE;
+        }
     }
 
     GetThumbnailExecute(env, context);

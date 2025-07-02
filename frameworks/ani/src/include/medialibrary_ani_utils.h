@@ -355,7 +355,7 @@ public:
     template <class AniContext>
     static ani_status ParsePredicates(ani_env *env, const ani_object predicate, AniContext &context,
         FetchOptionType fetchOptType);
-    static ani_object CreateValueByIndex(ani_env *env, int32_t index, std::string name,
+    static ani_object CreateValueByIndex(ani_env *env, int32_t index, const std::string &name,
         std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
     static void handleTimeInfo(ani_env *env, const std::string& name, ani_object& result, int32_t index,
         const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
@@ -417,7 +417,7 @@ public:
 
     static void HandleError(ani_env *env, int error, ani_object &errorObj, const std::string &Name);
 
-    static void CreateAniErrorObject(ani_env *env, ani_object &errorObj, const int32_t errCode,
+    static ani_status CreateAniErrorObject(ani_env *env, ani_object &errorObj, const int32_t errCode,
         const std::string &errMsg);
 
     static void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value);
@@ -456,7 +456,7 @@ public:
 
     static ani_status FindClassMethod(ani_env *env, const std::string &className, const std::string &methodName,
         ani_method *method);
-    static Var CreateValueByIndex(int32_t index, std::string colName,
+    static Var CreateValueByIndex(int32_t index, const std::string &colName,
         shared_ptr<NativeRdb::ResultSet> &resultSet, const shared_ptr<FileAsset> &asset);
     static void HandleTimeInfo(const std::string& name, VarMap &result, int32_t index,
         const std::shared_ptr<NativeRdb::ResultSet>& resultSet);

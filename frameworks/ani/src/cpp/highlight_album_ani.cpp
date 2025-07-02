@@ -390,7 +390,9 @@ static void SetHighlightUserActionDataExecute(ani_env *env, unique_ptr<Highlight
             resultSet, TYPE_INT64));
         context->valuesBucket.Put(userActionType, to_string(userActionDataCount + context->actionData));
         int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
-        context->SaveError(changedRows);
+        if (changedRows < 0) {
+            context->SaveError(changedRows);
+        }
         context->changedRows = changedRows;
     } else {
         ANI_ERR_LOG("highlight user action data get rdbstore failed");
