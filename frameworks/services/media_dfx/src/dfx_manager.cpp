@@ -36,6 +36,10 @@
 #include "preferences_helper.h"
 #include "hi_audit.h"
 #include "medialibrary_errno.h"
+#include "photo_storage_operation.h"
+#include "media_library_manager.h"
+#include "medialibrary_unistore_manager.h"
+#include "media_volume.h"
 
 using namespace std;
 
@@ -523,6 +527,37 @@ void DfxManager::HandleAdaptationToMovingPhoto(const string &appName, bool adapt
     dfxCollector_->CollectAdaptationToMovingPhotoInfo(appName, adapted);
 }
 
+static void GetPhotoAndPhotoExtSizes(QuerySizeAndResolution &queryInfo)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    bool conn = rdbStore == nullptr;
+    CHECK_AND_RETURN_LOG(!conn, "rdbStore is null");
+
+    int64_t cacheSize = PhotoStorageOperation().GetCacheSize();
+    int64_t highlightSize = PhotoStorageOperation().GetHighlightSizeFromPreferences();
+
+    TotalThumbnailSizeResult totalThumbnailSizeResult = {};
+    PhotoStorageOperation().GetTotalThumbnailSize(rdbStore, totalThumbnailSizeResult);
+
+    TotalEditdataSizeResult totalEditdataSizeRusult = {};
+    PhotoStorageOperation().GetTotalEditdataSize(rdbStore, totalEditdataSizeRusult);
+
+    int64_t totalExtSize = cacheSize + highlightSize + totalThumbnailSizeResult.totalThumbnailSize +
+                           totalEditdataSizeRusult.totalEditdataSize;
+    LocalPhotoSizeResult localPhotoSizeResult = {};
+    PhotoStorageOperation().GetLocalPhotoSize(rdbStore, localPhotoSizeResult, totalExtSize);
+
+    int64_t totalSize = localPhotoSizeResult.localImageSize + localPhotoSizeResult.localVideoSize + totalExtSize;
+
+    queryInfo.cacheRomSize = std::to_string(cacheSize);
+    queryInfo.highlightRomSize = std::to_string(highlightSize);
+    queryInfo.ThumbnailRomSize = std::to_string(totalThumbnailSizeResult.totalThumbnailSize);
+    queryInfo.EditdataRomSize = std::to_string(totalEditdataSizeRusult.totalEditdataSize);
+    queryInfo.localImageRomSize = std::to_string(localPhotoSizeResult.localImageSize);
+    queryInfo.localVideoRomSize = std::to_string(localPhotoSizeResult.localVideoSize);
+    queryInfo.totalSize = std::to_string(totalSize);
+}
+
 static void HandleGetSizeAndResolutionInfo(std::shared_ptr<DfxReporter>& dfxReporter)
 {
     MEDIA_INFO_LOG("HandleGetSizeAndResolutionInfo start");
@@ -532,7 +567,16 @@ static void HandleGetSizeAndResolutionInfo(std::shared_ptr<DfxReporter>& dfxRepo
     CHECK_AND_RETURN_LOG(bQueryInfo, "E_OK");
     std::string photoMimeType;
     DfxDatabaseUtils::GetPhotoMimeType(photoMimeType);
+    GetPhotoAndPhotoExtSizes(queryInfo);
+    MEDIA_INFO_LOG("localImageRomSize: %{public}s, localVideoRomSize: %{public}s, totalThumbnailSize: %{public}s, "
+                   "totalEditdataSize: %{public}s, cacheSize: %{public}s, highlightSize: %{public}s, "
+                   "totalSize: %{public}s",
+                   queryInfo.localImageRomSize.c_str(), queryInfo.localVideoRomSize.c_str(),
+                   queryInfo.ThumbnailRomSize.c_str(), queryInfo.EditdataRomSize.c_str(),
+                   queryInfo.cacheRomSize.c_str(), queryInfo.highlightRomSize.c_str(),
+                   queryInfo.totalSize.c_str());
     dfxReporter->ReportPhotoSizeAndResolutionInfo(queryInfo, photoMimeType);
+    MEDIA_INFO_LOG("HandleGetSizeAndResolutionInfo end");
 }
 
 static void HandleCheckOneWeekDayTask(DfxData *data)
