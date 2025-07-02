@@ -17,6 +17,7 @@
 #include "notify_register_permission.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
+#include "media_notification_utils.h"
 
 namespace OHOS::Media {
 using namespace Notification;
@@ -44,7 +45,7 @@ std::shared_ptr<Notification::MediaObserverManager> MediaObserverManager::GetObs
 }
 
 int32_t MediaObserverManager::AddObserver(const NotifyUriType &uri,
-    const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
+    const sptr<AAFwk::IDataAbilityObserver> &dataObserver, bool isReconnect)
 {
     MEDIA_INFO_LOG("AddObserver");
     if (dataObserver == nullptr || dataObserver->AsObject() == nullptr) {
@@ -87,6 +88,9 @@ int32_t MediaObserverManager::AddObserver(const NotifyUriType &uri,
         return E_OBSERVER_CALLBACK_RECIPIENT_ERROR;
     }
     obsCallbackPecipients_.emplace(dataObserver->AsObject(), observerCallbackRecipient);
+    if (isReconnect) {
+        ExeForReconnect(uri, dataObserver);
+    }
     return E_OK;
 }
 
@@ -182,4 +186,20 @@ std::unordered_map<NotifyUriType, std::vector<ObserverInfo>> MediaObserverManage
     std::lock_guard<std::mutex> lock(mutex_);
     return this->observers_;
 }
+
+void MediaObserverManager::ExeForReconnect(const NotifyUriType &registerUri,
+    const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
+{
+    shared_ptr<MediaChangeInfo> recheckChangeInfo = make_shared<MediaChangeInfo>();
+    recheckChangeInfo->notifyUri = registerUri;
+    recheckChangeInfo->isForRecheck = true;
+    if (registerUri == PHOTO_URI || registerUri == HIDDEN_PHOTO_URI || registerUri == TRASH_PHOTO_URI) {
+        recheckChangeInfo->notifyType = Notification::NotifyType::NOTIFY_ASSET_ADD;
+    } else {
+        recheckChangeInfo->notifyType = Notification::NotifyType::NOTIFY_ALBUM_ADD;
+    }
+    NotificationUtils::SendNotification(dataObserver, recheckChangeInfo);
+    MEDIA_WARN_LOG("reconnect server and send recheck for uriType[%{public}d]", registerUri);
+}
+
 } // OHOS::Media
