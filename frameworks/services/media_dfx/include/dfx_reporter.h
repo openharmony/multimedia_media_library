@@ -61,6 +61,13 @@ struct QuerySizeAndResolution {
     std::string localVideoResolution;
     std::string cloudImageResolution;
     std::string cloudVideoResolution;
+    std::string localImageRomSize;
+    std::string localVideoRomSize;
+    std::string cacheRomSize;
+    std::string highlightRomSize;
+    std::string ThumbnailRomSize;
+    std::string EditdataRomSize;
+    std::string totalSize;
 };
 
 struct PhotoStatistics {
