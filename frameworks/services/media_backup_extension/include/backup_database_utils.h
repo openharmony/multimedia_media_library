@@ -147,6 +147,7 @@ private:
     static std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     static std::string PhotoAlbumNotifyFunc(const std::vector<std::string>& args);
     static std::string BeginGenerateHighlightThumbnail(const std::vector<std::string>& args);
+    constexpr ssize_t WAL_LIMIT_SIZE = 1024 * 1024 * 1024;
 };
 
 class RdbCallback : public NativeRdb::RdbOpenCallback {
