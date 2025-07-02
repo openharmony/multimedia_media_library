@@ -35,7 +35,9 @@ public:
     {
         maxSize = maxSize > 0 ? maxSize : 1;
         size_t numSubVectors = (input.size() + maxSize - 1) / maxSize;
+        size_t maxSubVectors = 1000;
         numSubVectors = numSubVectors > 0 ? numSubVectors : 0;
+        numSubVectors = numSubVectors > maxSubVectors ? maxSubVectors : numSubVectors;
         for (size_t i = 0; i < numSubVectors; ++i) {
             size_t start = i * maxSize;
             size_t end = std::min(start + maxSize, input.size());
