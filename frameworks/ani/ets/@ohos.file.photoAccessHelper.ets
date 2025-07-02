@@ -20,8 +20,8 @@ import Context from 'application.Context';
 import { CustomColors } from '@ohos.arkui.theme';
 
 class SizeImpl implements image.Size {
-  height: number = 0;
-  width: number = 0;
+  height: int = 0;
+  width: int = 0;
 }
 
 type RejectString = (e: BusinessError<string>) => void;
