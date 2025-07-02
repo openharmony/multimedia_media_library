@@ -142,7 +142,7 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
 }
 
 bool MediaAniNativeImpl::ExtractSpecialFields(std::shared_ptr<MediaLibraryAsyncContext> context,
-    const OperationItem &item, const FetchOptionType &fetchOptType, std::vector<OperationItem> operations)
+    const OperationItem &item, const FetchOptionType &fetchOptType, std::vector<OperationItem> &operations)
 {
     CHECK_COND_RET(context != nullptr, false, "context is nullptr");
     constexpr int32_t fieldIdx = 0;

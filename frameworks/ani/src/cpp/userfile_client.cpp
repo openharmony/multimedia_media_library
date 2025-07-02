@@ -264,7 +264,7 @@ int UserFileClient::Delete(Uri &uri, const DataSharePredicates &predicates)
     }
     auto helper = GetDataShareHelperByUser(GetUserId());
     if (helper == nullptr) {
-        ANI_ERR_LOG("Batch insert fail, helper null, userId is %{public}d", GetUserId());
+        ANI_ERR_LOG("helper null, userId is %{public}d", GetUserId());
         return E_FAIL;
     }
     return helper->Delete(uri, predicates);
@@ -278,7 +278,7 @@ void UserFileClient::NotifyChange(const Uri &uri)
     }
     auto helper = GetDataShareHelperByUser(GetUserId());
     if (helper == nullptr) {
-        ANI_ERR_LOG("Batch insert fail, helper null, userId is %{public}d", GetUserId());
+        ANI_ERR_LOG("helper null, userId is %{public}d", GetUserId());
         return;
     }
     helper->NotifyChange(uri);
@@ -292,7 +292,7 @@ void UserFileClient::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbi
     }
     auto helper = GetDataShareHelperByUser(GetUserId());
     if (helper == nullptr) {
-        ANI_ERR_LOG("Batch insert fail, helper null, userId is %{public}d", GetUserId());
+        ANI_ERR_LOG("helper null, userId is %{public}d", GetUserId());
         return;
     }
     helper->RegisterObserver(uri, dataObserver);
@@ -306,7 +306,7 @@ void UserFileClient::UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataA
     }
     auto helper = GetDataShareHelperByUser(GetUserId());
     if (helper == nullptr) {
-        ANI_ERR_LOG("Batch insert fail, helper null, userId is %{public}d", GetUserId());
+        ANI_ERR_LOG("helper null, userId is %{public}d", GetUserId());
         return;
     }
     helper->UnregisterObserver(uri, dataObserver);
@@ -351,7 +351,7 @@ void UserFileClient::RegisterObserverExt(const Uri &uri,
     }
     auto helper = GetDataShareHelperByUser(GetUserId());
     if (helper == nullptr) {
-        ANI_ERR_LOG("Batch insert fail, helper null, userId is %{public}d", GetUserId());
+        ANI_ERR_LOG("helper null, userId is %{public}d", GetUserId());
         return;
     }
     helper->RegisterObserverExt(uri, std::move(dataObserver), isDescendants);
@@ -365,7 +365,7 @@ void UserFileClient::UnregisterObserverExt(const Uri &uri, std::shared_ptr<DataS
     }
     auto helper = GetDataShareHelperByUser(GetUserId());
     if (helper == nullptr) {
-        ANI_ERR_LOG("Batch insert fail, helper null, userId is %{public}d", GetUserId());
+        ANI_ERR_LOG("helper null, userId is %{public}d", GetUserId());
         return;
     }
     helper->UnregisterObserverExt(uri, std::move(dataObserver));
@@ -379,7 +379,7 @@ std::string UserFileClient::GetType(Uri &uri)
     }
     auto helper = GetDataShareHelperByUser(GetUserId());
     if (helper == nullptr) {
-        ANI_ERR_LOG("Batch insert fail, helper null, userId is %{public}d", GetUserId());
+        ANI_ERR_LOG("helper null, userId is %{public}d", GetUserId());
         return "";
     }
     return helper->GetType(uri);

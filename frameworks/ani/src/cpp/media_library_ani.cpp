@@ -395,7 +395,7 @@ void ChangeListenerAni::QueryRdbAndNotifyChange(UvChangeMsg *msg)
         ANI_WARN_LOG("Failed to ParseSharedPhotoAssets, ret: %{public}d", ret);
     }
     std::thread worker(ExecuteThreadWork, env_, wrapper);
-    worker.join();
+    worker.detach();
 }
 
 void ChangeListenerAni::ExecuteThreadWork(ani_env *env, JsOnChangeCallbackWrapper* wrapper)
@@ -2913,9 +2913,10 @@ static ani_status ParseArgsCreatePhotoAssetComponent(ani_env* env, ani_enum_item
 
     // Parse extension.
     std::string extensionStr;
-    CHECK_COND_WITH_RET_MESSAGE(env,
-        MediaLibraryAniUtils::GetParamStringPathMax(env, stringObj, extensionStr) == ANI_OK, ANI_ERROR,
-        "Failed to get extension");
+    if (MediaLibraryAniUtils::GetParamStringPathMax(env, stringObj, extensionStr) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get extension");
+        return ANI_ERROR;
+    }
     CHECK_COND_WITH_RET_MESSAGE(env, mediaType == MediaFileUtils::GetMediaType("." + extensionStr), ANI_ERROR,
         "Failed to check extension");
     asyncContext->valuesBucket.Put(ASSET_EXTENTION, extensionStr);

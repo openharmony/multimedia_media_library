@@ -46,7 +46,7 @@ public:
     static int32_t GetFdFromUri(const std::string &uri);
     void SetSourceMode(SourceMode sourceMode);
     std::string GetRequestId();
-    void SetRequestId(const std::string requestId);
+    void SetRequestId(const std::string &requestId);
     CompatibleMode GetCompatibleMode();
     void SetCompatibleMode(const CompatibleMode compatibleMode);
     void SetMovingPhotoCallback(const std::function<void(int, int, std::string)> callback);

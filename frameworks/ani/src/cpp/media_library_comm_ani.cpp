@@ -45,7 +45,7 @@ ani_object MakePhotoAssetAni(ani_env *env, shared_ptr<FileAsset> fileAsset, bool
     ani_method setCaptureId;
     CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     CHECK_COND_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<set>captureId", nullptr, &setCaptureId),
-        nullptr, "No <set>uri");
+        nullptr, "No <set>captureId");
     CHECK_COND_RET(env->Object_CallMethod_Void(ret, setCaptureId, static_cast<ani_double>(captureId)), nullptr,
         "<set>photoType fail");
     return ret;
