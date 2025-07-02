@@ -37,6 +37,7 @@
 #include "moving_photo_file_utils.h"
 #include "medialibrary_notify_new.h"
 #include "asset_accurate_refresh.h"
+#include "medialibrary_photo_operations.h"
 
 namespace OHOS {
 namespace Media {
@@ -290,6 +291,13 @@ int32_t MediaScannerObj::Commit()
         if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT) {
             watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
         }
+    }
+
+    int32_t fileId = data_->GetFileId();
+    int32_t ret = MediaLibraryPhotoOperations::CalSingleEditDataSize(std::to_string(fileId));
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CalSingleEditDataSize failed for ID: %{public}d (ret code: %{public}d)",
+            fileId, ret);
     }
 
     if (!data_->GetShootingMode().empty() && !isSkipAlbumUpdate_) {

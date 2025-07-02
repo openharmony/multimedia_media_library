@@ -1313,7 +1313,7 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
     return updateDirtyRows;
 }
 
-static int32_t CalSingleEditDataSize(const std::string &fileId)
+int32_t MediaLibraryPhotoOperations::CalSingleEditDataSize(const std::string &fileId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -2837,11 +2837,6 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
 #endif
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
-    errCode = CalSingleEditDataSize(std::to_string(fileId));
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("CalSingleEditDataSize failed for fileId: %{public}d (ret code: %{public}d)",
-            fileId, errCode);
-    }
     MEDIA_INFO_LOG("end to do revertEdit");
     return E_OK;
 }
@@ -3409,11 +3404,6 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         MediaFileUtils::CopyFileUtil(assetPath, GetEditDataSourcePath(assetPath));
         int32_t ret = MediaChangeEffect::TakeEffectForPicture(picture, editData);
         FileUtils::DealPicture(photoExtInfo.format, assetPath, picture, isHighQualityPicture);
-        ret = CalSingleEditDataSize(std::to_string(fileId));
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("CalSingleEditDataSize failed for fileId: %{public}d (ret code: %{public}d)",
-                fileId, ret);
-        }
     }
     isHighQualityPicture = (picture == nullptr) ? photoExtInfo.isHighQualityPicture : isHighQualityPicture;
     if (isHighQualityPicture) {
@@ -3477,11 +3467,6 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     std::string photoId;
     bool isHighQualityPicture = false;
     CHECK_AND_RETURN_RET(GetPicture(fileId, picture, true, photoId, isHighQualityPicture) != E_OK, E_OK);
-    ret = CalSingleEditDataSize(std::to_string(fileId));
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("CalSingleEditDataSize failed for ID: %{public}d (ret code: %{public}d)",
-                      fileId, ret);
-    }
     return ret;
 }
 
@@ -3635,11 +3620,6 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     NotifyFormMap(id, assetPath, false);
     MediaLibraryVisionOperations::EditCommitOperation(cmd);
     MEDIA_INFO_LOG("SubmitEditCacheExecute success, isWriteGpsAdvanced: %{public}d.", isWriteGpsAdvanced);
-    errCode = CalSingleEditDataSize(std::to_string(id));
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("CalSingleEditDataSize failed for ID: %{public}d (error code: %{public}d)",
-            id, errCode);
-    }
     return errCode;
 }
 
