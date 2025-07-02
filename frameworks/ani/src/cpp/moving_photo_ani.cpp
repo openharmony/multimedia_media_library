@@ -53,11 +53,11 @@ ani_status MovingPhotoAni::Init(ani_env *env)
         return status;
     }
     std::array methods = {
-        ani_native_function {"RequestContentByImageFileAndVideoFile", nullptr,
+        ani_native_function {"requestContentByImageFileAndVideoFile", nullptr,
             reinterpret_cast<void *>(MovingPhotoAni::RequestContentByImageFileAndVideoFile)},
-        ani_native_function {"RequestContentByResourceTypeAndFile", nullptr,
+        ani_native_function {"requestContentByResourceTypeAndFile", nullptr,
             reinterpret_cast<void *>(MovingPhotoAni::RequestContentByResourceTypeAndFile)},
-        ani_native_function {"RequestContentByResourceType", nullptr,
+        ani_native_function {"requestContentByResourceType", nullptr,
             reinterpret_cast<void *>(MovingPhotoAni::RequestContentByResourceType)},
         ani_native_function {"getUri", nullptr, reinterpret_cast<void *>(MovingPhotoAni::GetUri)},
     };
@@ -212,7 +212,7 @@ std::string MovingPhotoAni::GetRequestId()
     return requestId_;
 }
 
-void MovingPhotoAni::SetRequestId(const std::string requestId)
+void MovingPhotoAni::SetRequestId(const std::string &requestId)
 {
     requestId_ = requestId;
 }

@@ -3773,7 +3773,7 @@ export namespace photoAccessHelper {
       return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
         let cb = (): undefined | MediaLibraryAniError => {
           try {
-            this.RequestContentByImageFileAndVideoFile(imageFileUri, videoFileUri);
+            this.requestContentByImageFileAndVideoFile(imageFileUri, videoFileUri);
             return undefined;
           } catch(e) {
             return e as MediaLibraryAniError;
@@ -3794,7 +3794,7 @@ export namespace photoAccessHelper {
       return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
         let cb = (): undefined | MediaLibraryAniError => {
           try {
-            this.RequestContentByResourceTypeAndFile(resourceType, fileUri);
+            this.requestContentByResourceTypeAndFile(resourceType, fileUri);
             return undefined;
           } catch(e) {
             return e as MediaLibraryAniError;
@@ -3816,7 +3816,7 @@ export namespace photoAccessHelper {
         let cb = (): ArrayBuffer | MediaLibraryAniError => {
           let result: ArrayBuffer | MediaLibraryAniError;
           try {
-            result = this.RequestContentByResourceType(resourceType);
+            result = this.requestContentByResourceType(resourceType);
           } catch(e) {
             result = e as MediaLibraryAniError;
           }
@@ -3838,9 +3838,9 @@ export namespace photoAccessHelper {
     }
 
     native getUri(): string;
-    native RequestContentByImageFileAndVideoFile(imageFileUri: string, videoFileUri: string): void;
-    native RequestContentByResourceTypeAndFile(resourceType: ResourceType, fileUri: string): void;
-    native RequestContentByResourceType(resourceType: ResourceType): ArrayBuffer;
+    native requestContentByImageFileAndVideoFile(imageFileUri: string, videoFileUri: string): void;
+    native requestContentByResourceTypeAndFile(resourceType: ResourceType, fileUri: string): void;
+    native requestContentByResourceType(resourceType: ResourceType): ArrayBuffer;
   }
 
   export enum HighlightAlbumInfoType {
@@ -4330,15 +4330,15 @@ export namespace photoAccessHelper {
     private constructor(nativePointer: long) {
       if (this.nativeHandle == 0) {
         this.nativeHandle = nativePointer;
-        this.taskStatus = this.GettaskStatus();
-        this.taskInfo = this.GettaskInfo();
-        this.errorCode = this.GeterrorCode();
+        this.taskStatus = this.gettaskStatus();
+        this.taskInfo = this.gettaskInfo();
+        this.errorCode = this.geterrorCode();
       }
     }
 
-    private native GettaskStatus(): CloudMediaAssetTaskStatus;
-    private native GettaskInfo(): string;
-    private native GeterrorCode(): CloudMediaTaskPauseCause;
+    private native gettaskStatus(): CloudMediaAssetTaskStatus;
+    private native gettaskInfo(): string;
+    private native geterrorCode(): CloudMediaTaskPauseCause;
   }
 
   export enum CloudMediaDownloadType{
