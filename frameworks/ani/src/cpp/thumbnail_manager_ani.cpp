@@ -683,7 +683,11 @@ static void HandlePixelCallback(ani_env *env, const RequestSharedPtr &request)
     constexpr size_t param0 = 0;
     constexpr size_t param1 = 1;
     int32_t errorNum = MediaLibraryAniUtils::TransErrorCode("requestPhoto", request->error);
-    MediaLibraryAniUtils::CreateAniErrorObject(env, result[param0], errorNum, "Failed to create error object");
+    if (MediaLibraryAniUtils::CreateAniErrorObject(env, result[param0], errorNum,
+        "Failed to create error object") != ANI_OK) {
+        ANI_ERR_LOG("Create ani error object fail");
+        return;
+    }
     if (request->GetStatus() == ThumbnailStatus::THUMB_FAST) {
         result[param1] = OHOS::Media::PixelMapTaiheAni::CreateEtsPixelMap(env,
             shared_ptr<PixelMap>(request->GetFastPixelMap()));
@@ -745,12 +749,11 @@ void ThumbnailManagerAni::NotifyImage(const RequestSharedPtr &request)
         return;
     }
     std::thread worker(ExecuteThreadWork, request->callback_.env_, msg);
-    worker.join();
+    worker.detach();
 }
 
 void ThumbnailManagerAni::ExecuteThreadWork(ani_env* env, ThumnailUv* msg)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_NULL_PTR_RETURN_VOID(msg, "msg is nullptr");
     ani_vm *etsVm {};
     if (env == nullptr || env->GetVM(&etsVm) != ANI_OK) {

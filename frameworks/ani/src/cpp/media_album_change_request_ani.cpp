@@ -187,7 +187,7 @@ ani_object CreateMediaAlbumChangeRequestAni(ani_env *env, ani_object object)
         return nullptr;
     }
     ani_object ret;
-    env->Object_New(cls, ctor, &ret, object);
+    status = env->Object_New(cls, ctor, &ret, object);
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to create MediaAlbumChangeRequestAni object");
         return nullptr;

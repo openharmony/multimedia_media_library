@@ -38,11 +38,11 @@ ani_status CloudMediaAssetStatusAni::Init(ani_env *env)
     }
 
     std::array methods = {
-        ani_native_function {"GettaskStatus", nullptr,
+        ani_native_function {"gettaskStatus", nullptr,
             reinterpret_cast<void *>(CloudMediaAssetStatusAni::CloudMediaAssetGetTaskStatus)},
-        ani_native_function {"GettaskInfo", nullptr,
+        ani_native_function {"gettaskInfo", nullptr,
             reinterpret_cast<void *>(CloudMediaAssetStatusAni::CloudMediaAssetGetTaskInfo)},
-        ani_native_function {"GeterrorCode", nullptr,
+        ani_native_function {"geterrorCode", nullptr,
             reinterpret_cast<void *>(CloudMediaAssetStatusAni::CloudMediaAssetGetErrorCode)},
     };
 
@@ -104,7 +104,7 @@ void CloudMediaAssetStatusAni::SetTaskInfo(const std::string &taskInfo)
 }
 
 ani_object CloudMediaAssetStatusAni::NewCloudMediaAssetStatusAni(ani_env *env,
-    std::unique_ptr<CloudMediaAssetAsyncAniContext> &context)
+    CloudMediaAssetAsyncAniContext *context)
 {
     CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     CHECK_COND_RET(context != nullptr, nullptr, "CloudMediaAssetAsyncAniContext is nullptr");

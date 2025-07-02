@@ -202,7 +202,6 @@ std::shared_ptr<PixelMap> PictureHandlerClient::ReadPixelMap(MessageParcel &data
     ANI_DEBUG_LOG("PictureHandlerClient::ReadPixelMap editable:%{public}d", editable);
 
     std::unique_ptr<PixelMap> pixelMap;
-    CHECK_COND_RET(pixelMap != nullptr, nullptr, "pixelMap is nullptr");
     if (isYuv) {
 #ifdef EXT_PIXEL
         pixelMap = std::make_unique<PixelYuvExt>();
@@ -212,6 +211,7 @@ std::shared_ptr<PixelMap> PictureHandlerClient::ReadPixelMap(MessageParcel &data
     } else {
         pixelMap = std::make_unique<PixelMap>();
     }
+    CHECK_COND_RET(pixelMap != nullptr, nullptr, "pixelMap is nullptr");
     pixelMap->SetImageInfo(imageInfo);
     pixelMap->SetImageYUVInfo(yuvInfo);
 

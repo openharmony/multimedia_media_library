@@ -620,6 +620,7 @@ ani_status MediaLibraryAniUtils::ToAniMap(ani_env *env, const std::map<std::stri
 ani_status MediaLibraryAniUtils::MakeAniArray(ani_env* env, uint32_t size, ani_object &aniArray, ani_method &setMethod)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(size < std::numeric_limits<int>::max(), ANI_ERROR, "size is too large");
     ani_class cls {};
     static const std::string className = "Lescompat/Array;";
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Array");
@@ -1111,7 +1112,7 @@ ani_status MakeSharedPhotoAssetHandle(ani_env *env, ani_object &result)
     return ANI_OK;
 }
 
-ani_object MediaLibraryAniUtils::CreateValueByIndex(ani_env *env, int32_t index, string name,
+ani_object MediaLibraryAniUtils::CreateValueByIndex(ani_env *env, int32_t index, const string &name,
     shared_ptr<NativeRdb::ResultSet> &resultSet, const shared_ptr<FileAsset> &asset)
 {
     CHECK_COND_RET(resultSet != nullptr, nullptr, "resultSet is nullptr");
@@ -1215,6 +1216,9 @@ ani_object MediaLibraryAniUtils::GetNextRowObject(ani_env *env, shared_ptr<Nativ
             continue;
         }
         value = MediaLibraryAniUtils::CreateValueByIndex(env, index, name, resultSet, fileAsset);
+        if (value == nullptr) {
+            continue;
+        }
         auto dataType = MediaLibraryAniUtils::GetTypeMap().at(name);
         std::string tmpName = isShared ? dataType.second : name;
         env->Object_SetPropertyByName_Ref(result, tmpName.c_str(), value);
@@ -1286,7 +1290,9 @@ ani_object MediaLibraryAniUtils::BuildValueByIndex(ani_env *env, int32_t index, 
     switch (dataType.first) {
         case TYPE_STRING:
             stringVal = static_cast<std::string>(tmpNameValue.sval_);
-            MediaLibraryAniUtils::ToAniString(env, stringVal, aniString);
+            if (MediaLibraryAniUtils::ToAniString(env, stringVal, aniString) != ANI_OK) {
+                return nullptr;
+            }
             value = aniString;
             break;
         case TYPE_INT32:
@@ -1404,6 +1410,9 @@ ani_object MediaLibraryAniUtils::BuildNextRowObject(ani_env* env, std::shared_pt
             continue;
         }
         value = MediaLibraryAniUtils::BuildValueByIndex(env, index, name, columnInfo->tmpNameValue_);
+        if (value == nullptr) {
+            continue;
+        }
         env->Object_SetPropertyByName_Ref(result, columnInfo->tmpName_.c_str(), value);
         if (!isShared) {
             continue;
@@ -1454,6 +1463,9 @@ ani_object MediaLibraryAniUtils::BuildNextRowAlbumObject(ani_env *env, std::shar
             continue;
         }
         value = MediaLibraryAniUtils::BuildValueByIndex(env, index, name, columnInfo->tmpNameValue_);
+        if (value == nullptr) {
+            continue;
+        }
         env->Object_SetPropertyByName_Ref(result, columnInfo->tmpName_.c_str(), value);
 
         if (name == "cover_uri") {
@@ -1785,35 +1797,35 @@ void MediaLibraryAniUtils::HandleError(ani_env *env, int error, ani_object &erro
     ANI_ERR_LOG("Error: %{public}s, js errcode:%{public}d ", errMsg.c_str(), originalError);
 }
 
-void MediaLibraryAniUtils::CreateAniErrorObject(ani_env *env, ani_object &errorObj, const int32_t errCode,
+ani_status MediaLibraryAniUtils::CreateAniErrorObject(ani_env *env, ani_object &errorObj, const int32_t errCode,
     const string &errMsg)
 {
-    CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     static const std::string className = "L@ohos/file/photoAccessHelper/MediaLibraryAniError;";
     ani_class cls {};
     ani_status status = env->FindClass(className.c_str(), &cls);
     if (status != ANI_OK) {
         ANI_ERR_LOG("Can't find class %{public}s", className.c_str());
-        return;
+        return status;
     }
 
     ani_method ctor {};
     if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "DLstd/core/String;:V", &ctor)) {
         ANI_ERR_LOG("Can't find <ctor> from class %{public}s", className.c_str());
-        return;
+        return ANI_ERROR;
     }
 
     ani_string error_msg {};
     if (ANI_OK != MediaLibraryAniUtils::ToAniString(env, errMsg, error_msg)) {
         ANI_ERR_LOG("Call ToAniString function failed.");
-        return;
+        return ANI_ERROR;
     }
 
     if (ANI_OK != env->Object_New(cls, ctor, &errorObj, (ani_double)errCode, error_msg)) {
         ANI_ERR_LOG("New MediaLibraryAniError object failed.");
-        return;
+        return ANI_ERROR;
     }
-    return;
+    return ANI_OK;
 }
 
 string MediaLibraryAniUtils::GetStringValueByColumn(shared_ptr<DataShare::DataShareResultSet> resultSet,
@@ -2318,7 +2330,7 @@ ani_status MediaLibraryAniUtils::FindClassMethod(ani_env *env, const std::string
     return ANI_OK;
 }
 
-MediaLibraryAniUtils::Var MediaLibraryAniUtils::CreateValueByIndex(int32_t index, std::string colName,
+MediaLibraryAniUtils::Var MediaLibraryAniUtils::CreateValueByIndex(int32_t index, const std::string &colName,
     shared_ptr<NativeRdb::ResultSet> &resultSet, const shared_ptr<FileAsset> &asset)
 {
     int status;
