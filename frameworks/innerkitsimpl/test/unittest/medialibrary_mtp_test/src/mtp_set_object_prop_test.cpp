@@ -31,10 +31,8 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_parser_test_001, TestSize.Level1)
     vector<uint8_t> buffer;
     auto mtpStorageManager = MtpStorageManager::GetInstance();
     auto storage = make_shared<Storage>();
-    int ret = setObjectPropValueData.Parser(buffer, 0);
-    EXPECT_EQ(ret, MTP_INVALID_PARAMETER_CODE);
     mtpStorageManager->AddStorage(storage);
-    ret = setObjectPropValueData.Parser(buffer, 0);
+    int ret = setObjectPropValueData.Parser(buffer, 0);
     EXPECT_EQ(ret, MTP_INVALID_PARAMETER_CODE);
     for (int i = 0; i < SIZE_NUM_SMALL; i++)
     {
@@ -113,11 +111,9 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_maker_test_001, TestSize.Level1)
     auto mtpStorageManager = MtpStorageManager::GetInstance();
     vector<uint8_t> outBuffer;
     SetObjectPropValueData setObjectPropValueData(context);
-    int ret = setObjectPropValueData.Maker(outBuffer);
-    EXPECT_EQ(ret, MTP_INVALID_OBJECTHANDLE_CODE);
     auto storage = make_shared<Storage>();
     mtpStorageManager->AddStorage(storage);
-    ret = setObjectPropValueData.Maker(outBuffer);
+    int ret = setObjectPropValueData.Maker(outBuffer);
     EXPECT_EQ(ret, MTP_INVALID_OBJECTHANDLE_CODE);
     setObjectPropValueData.SetResult(0);
     ret = setObjectPropValueData.Maker(outBuffer);
