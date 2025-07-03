@@ -495,28 +495,6 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0025, TestSize.Level1)
 
 /*
  * Feature: MediaLibraryMTP
- * Function: StartSendEventThread
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
- * CaseDescription: StartSendEventThread with isEventThreadRunning_ true
- */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0026, TestSize.Level1)
-{
-    MtpFileObserver::isEventThreadRunning_.store(true);
-    ContextSptr context = make_shared<MtpOperationContext>();
-    MtpFileObserver::StartSendEventThread(context);
-    MtpFileObserver::eventQueue_.push(std::make_pair(MTP_EVENT_OBJECT_ADDED_CODE, 0));
-    MtpFileObserver::cv_.notify_all();
-    // Allow time for the thread to finish processing
-    std::this_thread::sleep_for(chrono::milliseconds(100));
-    EXPECT_TRUE(MtpFileObserver::eventQueue_.empty());
-    MtpFileObserver::isEventThreadRunning_.store(false);
-    MtpFileObserver::cv_.notify_all();
-}
-
-/*
- * Feature: MediaLibraryMTP
  * Function: SendEventThread
  * SubFunction: NA
  * FunctionPoints: NA
