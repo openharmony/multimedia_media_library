@@ -34,9 +34,9 @@
 #include "parameters.h"
 #include "preferences.h"
 #include "preferences_helper.h"
+#include "photo_storage_operation.h"
 #include "hi_audit.h"
 #include "medialibrary_errno.h"
-#include "photo_storage_operation.h"
 #include "medialibrary_unistore_manager.h"
 
 using namespace std;

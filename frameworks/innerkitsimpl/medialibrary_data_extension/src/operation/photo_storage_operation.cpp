@@ -112,8 +112,7 @@ void PhotoStorageOperation::SaveHighlightSizeToPreferences(int64_t size)
 void PhotoStorageOperation::GetTotalThumbnailSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     TotalThumbnailSizeResult &totalThumbnailSizeResult)
 {
-    bool conn = rdbStore == nullptr;
-    CHECK_AND_RETURN_LOG(!conn, "rdbStore is null");
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is null");
 
     std::string sql = "SELECT "
                       "SUM(thumbnail_size) AS total_thumbnail_size, "
@@ -133,8 +132,7 @@ void PhotoStorageOperation::GetTotalThumbnailSize(std::shared_ptr<MediaLibraryRd
 void PhotoStorageOperation::GetTotalEditdataSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     TotalEditdataSizeResult &totalEditdataSizeResult)
 {
-    bool conn = rdbStore == nullptr;
-    CHECK_AND_RETURN_LOG(!conn, "rdbStore is null");
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is null");
 
     std::string sql = "SELECT "
                       "SUM(editdata_size) AS total_editdata_size, "
@@ -154,8 +152,7 @@ void PhotoStorageOperation::GetTotalEditdataSize(std::shared_ptr<MediaLibraryRdb
 void PhotoStorageOperation::GetLocalPhotoSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     LocalPhotoSizeResult &localPhotoSizeResult, int64_t totalExtSize)
 {
-    bool conn = rdbStore == nullptr;
-    CHECK_AND_RETURN_LOG(!conn, "rdbStore is null");
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is null");
 
     std::string sql = this->SQL_DB_STORAGE_QUERY;
     std::vector<NativeRdb::ValueObject> params = {totalExtSize};
