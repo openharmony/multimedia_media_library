@@ -35,6 +35,12 @@ std::unordered_set<uint32_t> PermissionCheck::deprecatedReadPermissionSet = {
     static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_REQUEST_EDIT_DATA),
     static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_EDIT_DATA),
     static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_REQUEST_CONTENT),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_DB),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_FILEPATH_FROM_URI),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_URI_FROM_FILEPATH),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_MOVING_PHOTO_DATE_MODIFIED),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_PHOTOS_EXTEND),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_DB_EXTEND),
     // albums start
     static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_SYS_GET_ASSETS),
     static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_GET_ASSETS),
@@ -85,6 +91,9 @@ std::unordered_set<uint32_t> PermissionCheck::deprecatedWritePermissionSet = {
     static_cast<uint32_t>(MediaLibraryBusinessCode::SET_VIDEO_ENHANCEMENT_ATTR),
     static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUPPORTED_WATERMARK_TYPE),
     static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_ASSET),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CLOSE_ASSET),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE_CANCEL),
     // albums start
     static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ALBUM),
     static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS),
