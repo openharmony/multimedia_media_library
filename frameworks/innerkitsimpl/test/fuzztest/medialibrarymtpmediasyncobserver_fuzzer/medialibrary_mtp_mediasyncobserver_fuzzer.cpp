@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "system_ability_definition.h"
 #include "iservice_registry.h"
@@ -36,44 +37,15 @@
 namespace OHOS {
 using namespace std;
 using namespace Media;
+static const int32_t NUM_BYTES = 1;
+static const int32_t MAX_CHANGE_TYPE = 4;
 constexpr int FUZZ_STORAGE_MANAGER_MANAGER_ID = 5003;
-static inline string FuzzString(const uint8_t *data, size_t size)
-{
-    return {reinterpret_cast<const char*>(data), size};
-}
+FuzzedDataProvider *provider = nullptr;
 
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
+static DataShareObserver::ChangeType FuzzChangeType()
 {
-    if (data == nullptr || size < sizeof(int32_t)) {
-        return 0;
-    }
-    return static_cast<int32_t>(*data);
-}
-
-static inline uint16_t FuzzUInt16(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(uint16_t)) {
-        return 0;
-    }
-    return static_cast<uint16_t>(*data);
-}
-
-static inline uint32_t FuzzUInt32(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(uint32_t)) {
-        return 0;
-    }
-    return static_cast<uint32_t>(*data);
-}
-
-static DataShareObserver::ChangeType FuzzChangeType(const uint8_t *data, size_t size)
-{
-    int32_t value = FuzzUInt32(data, size);
-    if (value >= static_cast<int32_t>(DataShareObserver::ChangeType::INSERT) &&
-        value <= static_cast<int32_t>(DataShareObserver::ChangeType::INVAILD)) {
-        return static_cast<DataShareObserver::ChangeType>(value);
-    }
-    return DataShareObserver::ChangeType::DELETE;
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_CHANGE_TYPE);
+    return static_cast<DataShareObserver::ChangeType>(value);
 }
 
 static std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper()
@@ -111,26 +83,17 @@ static shared_ptr<MediaSyncObserver> InitMediaSyncObserver()
     return mediaSyncObserver;
 }
 
-static void PtpMediaSyncObserverTest(const uint8_t* data, size_t size)
+static void PtpMediaSyncObserverTest()
 {
-    const uint32_t uInt32Count = 3;
-    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count + sizeof(uint16_t) + sizeof(int32_t)) {
-        return;
-    }
     shared_ptr<MediaSyncObserver> mediaSyncObserver = InitMediaSyncObserver();
     ChangeInfo changeInfo;
-    string dataTest = FuzzString(data, size);
+    string dataTest = provider->ConsumeBytesAsString(NUM_BYTES);
     changeInfo.data_ = dataTest.c_str();
-    int32_t offset = 0;
-    changeInfo.size_ = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    uint32_t objectHandle = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint16_t);
-    uint16_t eventCode = FuzzUInt16(data + offset, size);
-    offset += sizeof(int32_t);
-    int32_t handle = FuzzInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    DataShareObserver::ChangeType changeType = FuzzChangeType(data + offset, size);
+    changeInfo.size_ = provider->ConsumeIntegral<uint32_t>();
+    uint32_t objectHandle = provider->ConsumeIntegral<uint32_t>();
+    uint16_t eventCode = provider->ConsumeIntegral<uint16_t>();
+    int32_t handle = provider->ConsumeIntegral<int32_t>();
+    DataShareObserver::ChangeType changeType = FuzzChangeType();
     string suffixString = "1";
     std::vector<std::string> handles;
     handles.push_back("handle");
@@ -161,11 +124,21 @@ static void PtpMediaSyncObserverTest(const uint8_t* data, size_t size)
 }
 } // namespace OHOS
 
+extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
+{
+    OHOS::InitMediaSyncObserver();
+    return 0;
+}
+
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::InitMediaSyncObserver();
-    OHOS::PtpMediaSyncObserverTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::PtpMediaSyncObserverTest();
     return 0;
 }

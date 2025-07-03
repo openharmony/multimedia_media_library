@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "ability_context_impl.h"
 #include "data_ability_observer_interface.h"
@@ -32,93 +33,76 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "runtime.h"
+#include "js_runtime.h"
 
 namespace OHOS {
 using namespace std;
 using namespace AbilityRuntime;
 using namespace DataShare;
+static const int32_t NUM_BYTES = 1;
+static const int32_t DEFAULT_URI_LISTS = 1;
+static const int32_t DEFAULT_MEDIA_OPEN_MODES = 1;
+FuzzedDataProvider *provider = nullptr;
 
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
+static inline vector<int32_t> FuzzVectorInt32()
 {
-    return static_cast<int32_t>(*data);
+    return {provider->ConsumeIntegral<int32_t>()};
 }
 
-static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
+static inline vector<int64_t> FuzzVectorInt64()
 {
-    return static_cast<int64_t>(*data);
+    return {provider->ConsumeIntegral<int64_t>()};
 }
 
-static inline double FuzzDouble(const uint8_t *data, size_t size)
+static inline vector<double> FuzzVectorDouble()
 {
-    return static_cast<double>(*data);
+    return {provider->ConsumeFloatingPoint<double>()};
 }
 
-static inline string FuzzString(const uint8_t *data, size_t size)
+static inline vector<string> FuzzVectorString()
 {
-    return {reinterpret_cast<const char*>(data), size};
+    return {provider->ConsumeBytesAsString(NUM_BYTES)};
 }
 
-static inline vector<int32_t> FuzzVectorInt32(const uint8_t *data, size_t size)
+static inline vector<SingleValue::Type> FuzzVectorSingleValueType()
 {
-    return {FuzzInt32(data, size)};
+    return {provider->ConsumeIntegral<int64_t>()};
 }
 
-static inline vector<int64_t> FuzzVectorInt64(const uint8_t *data, size_t size)
-{
-    return {FuzzInt64(data, size)};
-}
-
-static inline vector<double> FuzzVectorDouble(const uint8_t *data, size_t size)
-{
-    return {FuzzDouble(data, size)};
-}
-
-static inline vector<string> FuzzVectorString(const uint8_t *data, size_t size)
-{
-    return {FuzzString(data, size)};
-}
-
-static inline vector<SingleValue::Type> FuzzVectorSingleValueType(const uint8_t *data, size_t size)
-{
-    return {FuzzInt64(data, size)};
-}
-
-static inline vector<MutliValue::Type> FuzzVectorMultiValueType(const uint8_t *data, size_t size)
+static inline vector<MutliValue::Type> FuzzVectorMultiValueType()
 {
     return {
-        FuzzVectorInt32(data, size),
-        FuzzVectorInt64(data, size),
-        FuzzVectorString(data, size),
-        FuzzVectorDouble(data, size)
+        FuzzVectorInt32(),
+        FuzzVectorInt64(),
+        FuzzVectorString(),
+        FuzzVectorDouble()
     };
 }
 
-static inline OperationItem FuzzOperationItem(const uint8_t *data, size_t size)
+static inline OperationItem FuzzOperationItem()
 {
     return {
-        .operation = FuzzInt32(data, size),
-        .singleParams = FuzzVectorSingleValueType(data, size),
-        .multiParams = FuzzVectorMultiValueType(data, size),
+        .operation = provider->ConsumeIntegral<int32_t>(),
+        .singleParams = FuzzVectorSingleValueType(),
+        .multiParams = FuzzVectorMultiValueType(),
     };
 }
 
-static inline vector<OperationItem> FuzzVectorOperationItem(const uint8_t *data, size_t size)
+static inline vector<OperationItem> FuzzVectorOperationItem()
 {
-    return {FuzzOperationItem(data, size)};
+    return {FuzzOperationItem()};
 }
 
-static inline Uri FuzzUri(const uint8_t *data, size_t size)
+static inline Uri FuzzUri()
 {
-    uint8_t length = static_cast<uint8_t>(Media::EXTENSION_FUZZER_URI_LISTS.size());
-    if (*data < length) {
-        return Uri(Media::EXTENSION_FUZZER_URI_LISTS[*data]);
-    }
-    return Uri("Undefined");
+    uint8_t data = provider->ConsumeIntegralInRange<uint8_t>(0,
+        static_cast<uint8_t>(Media::EXTENSION_FUZZER_URI_LISTS.size() - DEFAULT_URI_LISTS));
+    return Uri(Media::EXTENSION_FUZZER_URI_LISTS[data]);
 }
 
-static inline DataSharePredicates FuzzDataSharePredicates(const uint8_t *data, size_t size)
+static inline DataSharePredicates FuzzDataSharePredicates()
 {
-    return DataSharePredicates(FuzzVectorOperationItem(data, size));
+    return DataSharePredicates(FuzzVectorOperationItem());
 }
 
 static inline DataShareValuesBucket FuzzDataShareValuesBucket()
@@ -131,115 +115,101 @@ static inline vector<DataShareValuesBucket> FuzzVectorDataShareValuesBucket()
     return {FuzzDataShareValuesBucket()};
 }
 
-static inline DatashareBusinessError FuzzDataShareBusinessError(const uint8_t *data, size_t size)
+static inline DatashareBusinessError FuzzDataShareBusinessError()
 {
     DatashareBusinessError error;
-    error.SetCode(FuzzInt32(data, size));
-    error.SetMessage(FuzzString(data, size));
+    error.SetCode(provider->ConsumeIntegral<int32_t>());
+    error.SetMessage(provider->ConsumeBytesAsString(NUM_BYTES));
     return error;
 }
 
-static inline string FuzzOpenMode(const uint8_t *data, size_t size)
+static inline string FuzzOpenMode()
 {
-    uint8_t length = static_cast<uint8_t>(Media::MEDIA_OPEN_MODES.size());
-    if (*data < length) {
-        auto it = Media::MEDIA_OPEN_MODES.begin();
-        std::advance(it, *data);
-        return *it;
-    }
-    return "";
+    uint8_t data = provider->ConsumeIntegralInRange<int32_t>(0,
+        Media::MEDIA_OPEN_MODES.size() - DEFAULT_MEDIA_OPEN_MODES);
+    auto it = Media::MEDIA_OPEN_MODES.begin();
+    std::advance(it, data);
+    return *it;
 }
 
-// function
-static inline void CreateFuzzer(MediaDataShareExtAbility &extension)
+static inline void GetFileTypesFuzzer(MediaDataShareExtAbility &extension)
 {
-    const std::unique_ptr<AbilityRuntime::Runtime> runtime;
-    extension.Create(runtime);
+    extension.GetFileTypes(FuzzUri(), provider->ConsumeBytesAsString(NUM_BYTES));
 }
 
-static inline void GetFileTypesFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void OpenFileFuzzer(MediaDataShareExtAbility &extension)
 {
-    extension.GetFileTypes(FuzzUri(data, size), FuzzString(data, size));
+    extension.OpenFile(FuzzUri(), FuzzOpenMode());
 }
 
-static inline void OpenFileFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void OpenRawFileFuzzer(MediaDataShareExtAbility &extension)
 {
-    extension.OpenFile(FuzzUri(data, size), FuzzOpenMode(data, size));
+    extension.OpenRawFile(FuzzUri(), FuzzOpenMode());
 }
 
-static inline void OpenRawFileFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void InsertFuzzer(MediaDataShareExtAbility &extension)
 {
-    extension.OpenRawFile(FuzzUri(data, size), FuzzOpenMode(data, size));
+    extension.Insert(FuzzUri(), FuzzDataShareValuesBucket());
 }
 
-static inline void InsertFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
-{
-    extension.Insert(FuzzUri(data, size), FuzzDataShareValuesBucket());
-}
-
-static inline void InsertExtFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void InsertExtFuzzer(MediaDataShareExtAbility &extension)
 {
     string uri;
-    extension.InsertExt(FuzzUri(data, size), FuzzDataShareValuesBucket(), uri);
+    extension.InsertExt(FuzzUri(), FuzzDataShareValuesBucket(), uri);
 }
 
-static inline void UpdateFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void UpdateFuzzer(MediaDataShareExtAbility &extension)
 {
-    extension.Update(FuzzUri(data, size), FuzzDataSharePredicates(data, size), FuzzDataShareValuesBucket());
+    extension.Update(FuzzUri(), FuzzDataSharePredicates(), FuzzDataShareValuesBucket());
 }
 
-static inline void DeleteFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void DeleteFuzzer(MediaDataShareExtAbility &extension)
 {
-    extension.Delete(FuzzUri(data, size), FuzzDataSharePredicates(data, size));
+    extension.Delete(FuzzUri(), FuzzDataSharePredicates());
 }
 
-static inline void QueryFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void QueryFuzzer(MediaDataShareExtAbility &extension)
 {
-    auto columns = FuzzVectorString(data, size);
-    auto error = FuzzDataShareBusinessError(data, size);
-    extension.Query(FuzzUri(data, size), FuzzDataSharePredicates(data, size), columns, error);
+    auto columns = FuzzVectorString();
+    auto error = FuzzDataShareBusinessError();
+    extension.Query(FuzzUri(), FuzzDataSharePredicates(), columns, error);
 }
 
-static inline void GetTypeFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void GetTypeFuzzer(MediaDataShareExtAbility &extension)
 {
-    extension.GetType(FuzzUri(data, size));
+    extension.GetType(FuzzUri());
 }
 
-static inline void BatchInsertFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void BatchInsertFuzzer(MediaDataShareExtAbility &extension)
 {
-    extension.BatchInsert(FuzzUri(data, size), FuzzVectorDataShareValuesBucket());
+    extension.BatchInsert(FuzzUri(), FuzzVectorDataShareValuesBucket());
 }
 
-static inline void RegisterObserverFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
-{
-    sptr<AAFwk::IDataAbilityObserver> dataObserver;
-    extension.RegisterObserver(FuzzUri(data, size), dataObserver);
-}
-
-static inline void UnregisterObserverFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void RegisterObserverFuzzer(MediaDataShareExtAbility &extension)
 {
     sptr<AAFwk::IDataAbilityObserver> dataObserver;
-    extension.UnregisterObserver(FuzzUri(data, size), dataObserver);
+    extension.RegisterObserver(FuzzUri(), dataObserver);
 }
 
-static inline void NotifyChangeFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void UnregisterObserverFuzzer(MediaDataShareExtAbility &extension)
 {
-    extension.NotifyChange(FuzzUri(data, size));
+    sptr<AAFwk::IDataAbilityObserver> dataObserver;
+    extension.UnregisterObserver(FuzzUri(), dataObserver);
 }
 
-static inline void NormalizeUriFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void NotifyChangeFuzzer(MediaDataShareExtAbility &extension)
 {
-    extension.NormalizeUri(FuzzUri(data, size));
+    extension.NotifyChange(FuzzUri());
 }
 
-static inline void DenormalizeUriFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+static inline void NormalizeUriFuzzer(MediaDataShareExtAbility &extension)
 {
-    extension.DenormalizeUri(FuzzUri(data, size));
+    extension.NormalizeUri(FuzzUri());
 }
 
-static inline void StopFuzzer(MediaDataShareExtAbility &extension)
+static inline void DenormalizeUriFuzzer(MediaDataShareExtAbility &extension)
 {
-    extension.OnStop();
+    extension.DenormalizeUri(FuzzUri());
 }
 
 static int InitExtention(MediaDataShareExtAbility &extension)
@@ -253,6 +223,44 @@ static int InitExtention(MediaDataShareExtAbility &extension)
         sceneCode);
 }
 
+class ArkJsRuntime : public AbilityRuntime::JsRuntime {
+public:
+    ArkJsRuntime() {};
+
+    ~ArkJsRuntime() {};
+
+    void StartDebugMode(const DebugOption debugOption) {};
+    void FinishPreload() {};
+    bool LoadRepairPatch(const string& patchFile, const string& baseFile)
+    {
+        return true;
+    };
+    bool NotifyHotReloadPage()
+    {
+        return true;
+    };
+    bool UnLoadRepairPatch(const string& patchFile)
+    {
+        return true;
+    };
+    bool RunScript(const string& path, const string& hapPath, bool useCommonChunk = false)
+    {
+        return true;
+    };
+};
+#ifdef FILEEXT
+static inline void CreateFileFuzzer(MediaFileExtAbility &extension)
+{
+    Uri fuzzUri = FuzzUri();
+    extension.CreateFile(FuzzUri(), provider->ConsumeBytesAsString(NUM_BYTES), fuzzUri);
+}
+
+static inline MediaFileExtAbility FileExtInit()
+{
+    const std::unique_ptr<ArkJsRuntime> runtime;
+    return {(*runtime)};
+}
+#endif
 static inline MediaDataShareExtAbility Init()
 {
     const std::unique_ptr<AbilityRuntime::Runtime> runtime;
@@ -265,25 +273,32 @@ static inline MediaDataShareExtAbility Init()
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
     auto extension = OHOS::Init();
     OHOS::InitExtention(extension);
-    OHOS::CreateFuzzer(extension);
-    OHOS::GetFileTypesFuzzer(extension, data, size);
-    OHOS::OpenFileFuzzer(extension, data, size);
-    OHOS::OpenRawFileFuzzer(extension, data, size);
-    OHOS::InsertFuzzer(extension, data, size);
-    OHOS::InsertExtFuzzer(extension, data, size);
-    OHOS::UpdateFuzzer(extension, data, size);
-    OHOS::DeleteFuzzer(extension, data, size);
-    OHOS::QueryFuzzer(extension, data, size);
-    OHOS::GetTypeFuzzer(extension, data, size);
-    OHOS::BatchInsertFuzzer(extension, data, size);
-    OHOS::RegisterObserverFuzzer(extension, data, size);
-    OHOS::UnregisterObserverFuzzer(extension, data, size);
-    OHOS::NotifyChangeFuzzer(extension, data, size);
-    OHOS::NormalizeUriFuzzer(extension, data, size);
-    OHOS::DenormalizeUriFuzzer(extension, data, size);
-    OHOS::StopFuzzer(extension);
+    OHOS::GetFileTypesFuzzer(extension);
+    OHOS::OpenFileFuzzer(extension);
+    OHOS::OpenRawFileFuzzer(extension);
+    OHOS::InsertFuzzer(extension);
+    OHOS::InsertExtFuzzer(extension);
+    OHOS::UpdateFuzzer(extension);
+    OHOS::DeleteFuzzer(extension);
+    OHOS::QueryFuzzer(extension);
+    OHOS::GetTypeFuzzer(extension);
+    OHOS::BatchInsertFuzzer(extension);
+    OHOS::RegisterObserverFuzzer(extension);
+    OHOS::UnregisterObserverFuzzer(extension);
+    OHOS::NotifyChangeFuzzer(extension);
+    OHOS::NormalizeUriFuzzer(extension);
+    OHOS::DenormalizeUriFuzzer(extension);
+#ifdef FILEEXT
+    auto fileExtension = OHOS::FileExtInit();
+    OHOS::CreateFileFuzzer(fileExtension);
+#endif
     int sleepTime = 100;
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
     return 0;
