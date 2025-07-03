@@ -32,23 +32,22 @@ std::shared_ptr<NativeRdb::ResultSet> PhotoStorageOperation::FindStorage(std::sh
 
     TotalThumbnailSizeResult totalThumbnailSizeResult = {};
     GetTotalThumbnailSize(rdbStore, totalThumbnailSizeResult);
+    int64_t totalThumbnailSize = totalThumbnailSizeResult.totalThumbnailSize;
+    int32_t thumbnailCount = totalThumbnailSizeResult.thumbnailCount;
+    MEDIA_INFO_LOG("Thumbnail stats: total_size = %{public}" PRId64 " bytes, count = %{public}d",
+        totalThumbnailSize, thumbnailCount);
 
     TotalEditdataSizeResult totalEditdataSizeRusult = {};
     GetTotalEditdataSize(rdbStore, totalEditdataSizeRusult);
-
-    int64_t totalThumbnailSize = totalThumbnailSizeResult.totalThumbnailSize;
-    int32_t thumbnailCount = totalThumbnailSizeResult.thumbnailCount;
     int64_t totalEditdataSize = totalEditdataSizeRusult.totalEditdataSize;
     int32_t editdataCount = totalEditdataSizeRusult.editdataCount;
-    MEDIA_INFO_LOG("Thumbnail stats: total_size = %{public}" PRId64 " bytes, count = %{public}d",
-            totalThumbnailSize, thumbnailCount);
     MEDIA_INFO_LOG("Editdata stats: total_size = %{public}" PRId64 " bytes, count = %{public}d",
-            totalEditdataSize, editdataCount);
+        totalEditdataSize, editdataCount);
 
     int64_t cacheSize = this->GetCacheSize();
     int64_t highlightSize = this->GetHighlightSizeFromPreferences();
     MEDIA_INFO_LOG("Media_Storage: cacheSize = %{public}" PRId64 ", highlightSize = %{public}" PRId64 "",
-            cacheSize, highlightSize);
+        cacheSize, highlightSize);
 
     int64_t totalExtSize = cacheSize + highlightSize + totalThumbnailSize + totalEditdataSize;
     std::string sql = this->SQL_DB_STORAGE_QUERY;
@@ -127,7 +126,7 @@ void PhotoStorageOperation::GetTotalThumbnailSize(std::shared_ptr<MediaLibraryRd
         statsResult->GetInt(1, totalThumbnailSizeResult.thumbnailCount);
 
         MEDIA_INFO_LOG("Thumbnail stats: totalThumbnailSize = %{public}" PRId64 " bytes, count = %{public}d",
-                totalThumbnailSizeResult.totalThumbnailSize, totalThumbnailSizeResult.thumbnailCount);
+            totalThumbnailSizeResult.totalThumbnailSize, totalThumbnailSizeResult.thumbnailCount);
     }
 }
 
@@ -148,7 +147,7 @@ void PhotoStorageOperation::GetTotalEditdataSize(std::shared_ptr<MediaLibraryRdb
         statsResult->GetInt(1, totalEditdataSizeResult.editdataCount);
 
         MEDIA_INFO_LOG("Editdata stats: totalEditdataSize = %{public}" PRId64 " bytes, count = %{public}d",
-                totalEditdataSizeResult.totalEditdataSize, totalEditdataSizeResult.editdataCount);
+            totalEditdataSizeResult.totalEditdataSize, totalEditdataSizeResult.editdataCount);
     }
 }
 
@@ -168,11 +167,11 @@ void PhotoStorageOperation::GetLocalPhotoSize(std::shared_ptr<MediaLibraryRdbSto
         if (mediaType == MediaType::MEDIA_TYPE_IMAGE) {
             statsResult->GetLong(1, localPhotoSizeResult.localImageSize);
             MEDIA_INFO_LOG("Photos stats: localImageSize = %{public}" PRId64 " bytes",
-                    localPhotoSizeResult.localImageSize);
+                localPhotoSizeResult.localImageSize);
         } else if (mediaType == MediaType::MEDIA_TYPE_VIDEO) {
             statsResult->GetLong(1, localPhotoSizeResult.localVideoSize);
             MEDIA_INFO_LOG("Photos stats: localVideoSize = %{public}" PRId64 " bytes",
-                    localPhotoSizeResult.localVideoSize);
+                localPhotoSizeResult.localVideoSize);
         }
     }
     statsResult->Close();
