@@ -4971,6 +4971,10 @@ napi_value FileAssetNapi::PhotoAccessHelperGetAnalysisData(napi_env env, napi_ca
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperGetAnalysisData");
 
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
