@@ -44,12 +44,12 @@ public:
     int64_t GetCacheSize();
     int64_t GetHighlightSizeFromPreferences();
     void GetTotalThumbnailSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-                               TotalThumbnailSizeResult &totalThumbnailSizeResult);
+        TotalThumbnailSizeResult &totalThumbnailSizeResult);
 
     void GetTotalEditdataSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-                              TotalEditdataSizeResult &totalEditdataSizeResult);
+        TotalEditdataSizeResult &totalEditdataSizeResult);
     void GetLocalPhotoSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore, LocalPhotoSizeResult &localPhotoSizeResult,
-                           int64_t totalExtSize);
+        int64_t totalExtSize);
 
 private:
     int64_t GetHighlightSize();
