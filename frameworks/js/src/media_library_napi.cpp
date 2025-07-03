@@ -9324,7 +9324,7 @@ static int32_t CallPhotoAccessCreateAssetForApp(MediaLibraryAsyncContext* contex
 {
     bool isValid = false;
     CreateAssetForAppReqBody reqBody;
-    reqBody.tokenId = context->tokenId;
+    reqBody.tokenId = static_cast<int64_t>(context->tokenId);
     reqBody.mediaType = valuesBucket.Get(MEDIA_DATA_DB_MEDIA_TYPE, isValid);
     reqBody.photoSubtype = valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
 
