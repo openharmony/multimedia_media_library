@@ -27,6 +27,7 @@
 #include "photo_album_column.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
+#include "album_accurate_refresh.h"
 using namespace std;
 namespace OHOS::Media {
 constexpr int64_t INVALID_SIZE = 0;
@@ -284,12 +285,13 @@ int32_t MediaLibraryPtpOperations::DeletePtpPhoto(NativeRdb::RdbPredicates &rdbP
     bool isBurstCover = false;
     bool isLastBurstPhoto = false;
     vector<int32_t> burstFileIds;
+    auto assetRefresh = std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
     if (subType == static_cast<int32_t>(PhotoSubType::BURST)) {
         isBurstCover = burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER);
         ret = GetBurstPhotosInfo(burstKey, isLastBurstPhoto, burstFileIds);
         CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "GetBurstPhotosInfo fail.");
         bool needClearBurst = isLastBurstPhoto || isBurstCover;
-        ret = UpdateBurstPhotoInfo(burstKey, needClearBurst, rdbPredicate);
+        ret = UpdateBurstPhotoInfo(burstKey, needClearBurst, rdbPredicate, assetRefresh);
         CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "UpdateBurstPhotoInfo fail.");
     }
     if (isBurstCover) {
@@ -300,7 +302,7 @@ int32_t MediaLibraryPtpOperations::DeletePtpPhoto(NativeRdb::RdbPredicates &rdbP
             watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(fileId), NotifyType::NOTIFY_THUMB_ADD);
         }
     }
-    return MediaLibraryAssetOperations::DeletePermanently(rdbPredicate, true);
+    return MediaLibraryAssetOperations::DeletePermanently(rdbPredicate, true, assetRefresh);
 }
 
 std::shared_ptr<FileAsset> MediaLibraryPtpOperations::QueryPhotoInfo(NativeRdb::RdbPredicates &rdbPredicate)
@@ -331,8 +333,9 @@ std::shared_ptr<FileAsset> MediaLibraryPtpOperations::QueryPhotoInfo(NativeRdb::
 }
 
 int32_t MediaLibraryPtpOperations::UpdateBurstPhotoInfo(const std::string &burstKey, const bool isCover,
-    NativeRdb::RdbPredicates &rdbPredicate)
+    NativeRdb::RdbPredicates &rdbPredicate, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
+    CHECK_AND_RETURN_RET_LOG(assetRefresh != nullptr, E_HAS_DB_ERROR, "assetRefresh is null");
     vector<string> whereArgs;
     string whereClause;
     int32_t changeRows;
@@ -341,14 +344,12 @@ int32_t MediaLibraryPtpOperations::UpdateBurstPhotoInfo(const std::string &burst
     values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::COVER));
     values.PutString(PhotoColumn::PHOTO_BURST_KEY, "");
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
     if (isCover) {
         whereClause = PhotoColumn::PHOTO_BURST_KEY + " = ?";
         whereArgs = {burstKey};
-        changeRows = rdbStore->Update(updateCount, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
+        changeRows = assetRefresh->Update(updateCount, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
     } else {
-        changeRows = rdbStore->Update(updateCount, values, rdbPredicate);
+        changeRows = assetRefresh->Update(updateCount, values, rdbPredicate);
     }
     MEDIA_INFO_LOG("UpdateBurstPhotoInfo end updateRows:%{public}d", updateCount);
     CHECK_AND_RETURN_RET_LOG(changeRows == NativeRdb::E_OK && updateCount >= 0, E_HAS_DB_ERROR,
@@ -383,8 +384,11 @@ int32_t MediaLibraryPtpOperations::DeletePtpAlbum(NativeRdb::RdbPredicates &pred
         }
     }
     MediaLibraryAssetOperations::DeletePermanently(deletePhotoPredicates, true);
-    int deleteRow = MediaLibraryRdbStore::Delete(predicates);
+    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
+    int deleteRow = -1;
+    albumRefresh.LogicalDeleteReplaceByUpdate(predicates, deleteRow);
     CHECK_AND_RETURN_RET_LOG(deleteRow > 0, E_ERR, "delete album fail");
+    albumRefresh.Notify();
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,

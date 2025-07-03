@@ -48,6 +48,7 @@
 #include "scanner_utils.h"
 #include "media_refresh_album_column.h"
 #include "cloud_media_dao_const.h"
+#include "asset_accurate_refresh.h"
 
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaDataDao::UpdateDirty(const std::string &cloudId, int32_t dirtyType)
@@ -72,8 +73,6 @@ int32_t CloudMediaDataDao::UpdateDirty(const std::string &cloudId, int32_t dirty
 int32_t CloudMediaDataDao::UpdatePosition(const std::vector<std::string> &cloudIds, int32_t position)
 {
     MEDIA_INFO_LOG("enter UpdatePosition, cloudIds size: %{public}zu, position: %{public}d", cloudIds.size(), position);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "UpdatePosition Failed to get rdbStore.");
 
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.In(PhotoColumn::PHOTO_CLOUD_ID, cloudIds);
@@ -82,9 +81,12 @@ int32_t CloudMediaDataDao::UpdatePosition(const std::vector<std::string> &cloudI
     values.PutInt(PhotoColumn::PHOTO_POSITION, position);
 
     int32_t changedRows = DEFAULT_VALUE;
-    int32_t ret = rdbStore->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to UpdatePosition, ret: %{public}d.", ret);
+    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    int32_t ret = assetRefresh.Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, ret,
+        "Failed to UpdatePosition, ret: %{public}d.", ret);
     CHECK_AND_PRINT_LOG(changedRows > 0, "UpdatePosition Check updateRows: %{public}d.", changedRows);
+    assetRefresh.Notify();
     return ret;
 }
 
