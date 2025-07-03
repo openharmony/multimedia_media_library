@@ -500,7 +500,6 @@ static void EnhancementServiceCallbackTest()
     Media::EnhancementServiceCallback::DealWithSuccessedTask(task);
     Media::EnhancementServiceCallback::DealWithFailedTask(task);
     Media::EnhancementServiceCallback::UpdateAlbumsForCloudEnhancement();
-    // delete[] buffer;
 }
 
 static int32_t AddSeed()
