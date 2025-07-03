@@ -225,6 +225,8 @@ std::shared_ptr<MDKRecord> CloudAlbumDataConvert::ConvertToMdkRecord(const Cloud
 
     /* properties */
     CHECK_AND_RETURN_RET_LOG(HandleProperties(record, data, upLoadRecord) == E_OK, nullptr, "HandleProperties failed");
+    /* attributes */
+    CHECK_AND_RETURN_RET_LOG(HandleAttributes(data, upLoadRecord) == E_OK, nullptr, "HandleAttributes failed");
     /* control info */
     record->SetRecordType(recordType_);
     if (type_ == PHOTO_ALBUM_CREATE) {
