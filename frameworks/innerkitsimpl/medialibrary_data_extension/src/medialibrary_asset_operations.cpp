@@ -1793,7 +1793,12 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
         MEDIA_ERR_LOG("Can not get rdbstore");
         return;
     }
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, {notifyData->notifyUri});
+    if (notifyData->refresh_ != nullptr) {
+        notifyData->refresh_->RefreshAlbum();
+        notifyData->refresh_->Notify();
+    } else {
+        MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, {notifyData->notifyUri});
+    }
 
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
@@ -1822,7 +1827,8 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
     }
 }
 
-int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri)
+int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     ValueObject value;
     int64_t trashDate = 0;
@@ -1854,6 +1860,7 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
     }
     taskData->notifyUri = notifyUri;
     taskData->trashDate = trashDate;
+    taskData->refresh_ = assetRefresh;
     shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(
         UpdateAlbumsAndSendNotifyInTrash, taskData);
     if (notifyAsyncTask != nullptr) {

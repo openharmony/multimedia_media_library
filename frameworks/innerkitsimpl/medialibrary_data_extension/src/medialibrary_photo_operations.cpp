@@ -2113,9 +2113,10 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update allexif failed, allexif=%{private}s",
         fileAsset->GetAllExif().c_str());
 
-    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh =
+        make_shared<AccurateRefresh::AssetAccurateRefresh>();
     int32_t rowId = -1;
-    assetRefresh.Update(cmd, rowId);
+    assetRefresh->Update(cmd, rowId);
     if (rowId < 0) {
         MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
         RevertOrientation(fileAsset, currentOrientation);
@@ -2127,9 +2128,8 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Edit user comment errCode = %{private}d", errCode);
     }
     HandleUpdateIndex(cmd, to_string(fileAsset->GetId()));
-    assetRefresh.Notify();
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
-    errCode = SendTrashNotify(cmd, fileAsset->GetId(), extraUri);
+    errCode = SendTrashNotify(cmd, fileAsset->GetId(), extraUri, assetRefresh);
     CHECK_AND_RETURN_RET(errCode != E_OK, rowId);
     SendFavoriteNotify(cmd, fileAsset, extraUri);
     SendModifyUserCommentNotify(cmd, fileAsset->GetId(), extraUri);

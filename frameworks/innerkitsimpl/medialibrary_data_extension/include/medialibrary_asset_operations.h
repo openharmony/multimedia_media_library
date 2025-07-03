@@ -225,7 +225,8 @@ protected:
     static int32_t OpenHighlightVideo(MediaLibraryCommand &cmd, const std::string &mode);
     EXPORT static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync = false);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
-    static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
+    static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "",
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset,
         const std::string &extraUri = "");
     static void UpdateOwnerAlbumIdOnMove(MediaLibraryCommand &cmd, int32_t &targetAlbumId, int32_t &oriAlbumId);
@@ -323,6 +324,7 @@ public:
     std::vector<std::string> notifyUris;
     std::string notifyUri;
     int64_t trashDate = 0;
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> refresh_ = nullptr;
 };
 
 using VerifyFunction = bool (*) (NativeRdb::ValueObject&, MediaLibraryCommand&);
