@@ -473,53 +473,12 @@ static void RecoverBackgroundDownloadCloudMediaAsset()
     CHECK_AND_PRINT_LOG(ret == E_OK, "RecoverDownloadCloudAsset faild");
 }
 
-static void ClearDirtyDiskData(AsyncTaskData *data)
-{
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    CHECK_AND_RETURN_LOG(dataManager != nullptr, "Failed to MediaLibraryDataManager instance!");
-
-    int32_t result = dataManager->ClearDirtyDiskData();
-    CHECK_AND_PRINT_LOG(result == E_OK, "ClearDirtyDiskData faild, result = %{public}d", result);
-}
-
-static int32_t DoClearDirtyDiskData()
-{
-    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
-        "Failed to get async worker instance");
-    shared_ptr<MediaLibraryAsyncTask> clearDirtyDiskDataTask =
-        make_shared<MediaLibraryAsyncTask>(ClearDirtyDiskData, nullptr);
-    CHECK_AND_RETURN_RET_LOG(clearDirtyDiskDataTask != nullptr, E_FAIL,
-        "Failed to create async task for clearDirtyDiskDataTask");
-    asyncWorker->AddTask(clearDirtyDiskDataTask, false);
-    return E_SUCCESS;
-}
-
-void MedialibrarySubscriber::ClearDirtyDiskData()
-{
-    int32_t errCode;
-    shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
-    if (prefs == nullptr) {
-        MEDIA_ERR_LOG("Get preferences error: %{public}d", errCode);
-        return;
-    }
-
-    int64_t lastClearTime = prefs->GetLong(LAST_CLEAR_DISK_DIRTY_DATA_TIME, 0);
-    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
-    if (currentTime - lastClearTime > THIRTY_DAYS) {
-        int32_t ret = DoClearDirtyDiskData();
-        CHECK_AND_PRINT_LOG(ret == E_OK, "DoClearDirtyDiskData failed");
-    }
-}
-
  void MedialibrarySubscriber::ClearDirtyData()
 {
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
     CHECK_AND_RETURN_LOG(prefs, "Get preferences error: %{public}d", errCode);
-    ClearDirtyDiskData();
     TryClearContinueCloneData();
     return;
 }
