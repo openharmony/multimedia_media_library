@@ -35,8 +35,7 @@ int32_t DbPermissionCheck::GetPermissionType(uint32_t code, const PermissionHead
     string appId = PermissionUtils::GetAppIdByBundleName(
         MediaLibraryBundleManager::GetInstance()->GetClientBundleName());
     uint32_t tokenId = PermissionUtils::GetTokenId();
-    MEDIA_DEBUG_LOG("appId=%{public}s,tokenId=%{public}u,fileId=%{public}s,uriType=%{public}d",
-        appId.c_str(), tokenId, fileId.c_str(), uriType);
+    MEDIA_DEBUG_LOG("appId=%{public}s,fileId=%{public}s", appId.c_str(), fileId.c_str());
     if ((appId.empty() && !tokenId)) {
         MEDIA_ERR_LOG("invalid input");
         return E_INVALID_FILEID;

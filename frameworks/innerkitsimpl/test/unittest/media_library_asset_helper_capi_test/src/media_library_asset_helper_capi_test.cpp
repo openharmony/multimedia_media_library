@@ -1210,7 +1210,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_039, TestSize.
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_VIDEO);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
@@ -1236,7 +1236,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_040, TestSize.
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_VIDEO);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
@@ -1264,7 +1264,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_041, TestSize.
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_VIDEO);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
@@ -1292,7 +1292,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_042, TestSize.
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_VIDEO);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
@@ -1320,7 +1320,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_043, TestSize.
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_VIDEO);
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
     auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
     auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
