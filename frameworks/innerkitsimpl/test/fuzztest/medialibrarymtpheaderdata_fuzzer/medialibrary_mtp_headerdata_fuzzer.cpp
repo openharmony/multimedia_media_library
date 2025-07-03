@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "system_ability_definition.h"
 #include "iservice_registry.h"
@@ -32,140 +33,27 @@
 namespace OHOS {
 using namespace std;
 using namespace Media;
-const int32_t EVEN = 2;
-static inline string FuzzString(const uint8_t *data, size_t size)
+static const int32_t NUM_BYTES = 1;
+FuzzedDataProvider *provider = nullptr;
+
+static void HeaderDataTest()
 {
-    return {reinterpret_cast<const char*>(data), size};
-}
-
-static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int64_t)) {
-        return 0;
-    }
-    return static_cast<int64_t>(*data);
-}
-
-static inline bool FuzzBool(const uint8_t* data, size_t size)
-{
-    if (size == 0) {
-        return false;
-    }
-    return (data[0] % EVEN) == 0;
-}
-
-static inline uint16_t FuzzUInt16(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(uint16_t)) {
-        return 0;
-    }
-    return static_cast<uint16_t>(*data);
-}
-
-static inline uint32_t FuzzUInt32(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(uint32_t)) {
-        return 0;
-    }
-    return static_cast<uint32_t>(*data);
-}
-
-static inline vector<uint8_t> FuzzVectorUInt8(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(uint8_t)) {
-        return {0};
-    }
-    return {*data};
-}
-
-static inline vector<uint32_t> FuzzVectorUInt32(const uint8_t *data, size_t size)
-{
-    return {FuzzUInt32(data, size)};
-}
-
-static MtpOperationContext FuzzMtpOperationContext(const uint8_t* data, size_t size)
-{
-    MtpOperationContext context;
-    const int32_t uInt32Count = 13;
-    const int32_t uInt16Count = 2;
-    if (data == nullptr || size < (sizeof(uint32_t) * uInt32Count +
-        sizeof(uint16_t) * uInt16Count + sizeof(int64_t))) {
-        return context;
-    }
-    int32_t offset = 0;
-    context.operationCode = FuzzUInt16(data + offset, size);
-    offset += sizeof(uint16_t);
-    context.transactionID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.devicePropertyCode = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.storageID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.format = FuzzUInt16(data + offset, size);
-    offset += sizeof(uint16_t);
-    context.parent = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.handle = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.property = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.groupCode = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.depth = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.properStrValue = FuzzString(data, size);
-    context.properIntValue = FuzzInt64(data + offset, size);
-    offset += sizeof(uint64_t);
-    context.handles = make_shared<UInt32List>(FuzzVectorUInt32(data, size)),
-    context.name = FuzzString(data, size);
-    context.created = FuzzString(data, size);
-    context.modified = FuzzString(data, size);
-
-    context.indata = FuzzBool(data + offset, size);
-    context.storageInfoID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-
-    context.sessionOpen = FuzzBool(data + offset, size);
-    context.sessionID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.tempSessionID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.eventHandle = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.eventProperty = FuzzUInt32(data + offset, size);
-    return context;
-}
-
-static void HeaderDataTest(const uint8_t* data, size_t size)
-{
-    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext(data, size));
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     if (context == nullptr) {
         MEDIA_ERR_LOG("context is nullptr");
         return;
     }
     shared_ptr<HeaderData> headerData = make_shared<HeaderData>(context);
 
-    vector<uint8_t> buffer = FuzzVectorUInt8(data, size);
+    vector<uint8_t> buffer = provider->ConsumeBytes<uint8_t>(NUM_BYTES);
     int32_t readSize = buffer.size();
 
     headerData->Parser(buffer, readSize);
     headerData->Maker(buffer);
-
-    const int32_t uInt32Count = 2;
-    const int32_t uInt16Count = 2;
-    if (data == nullptr || size < (sizeof(uint32_t) * uInt32Count +
-        sizeof(uint16_t) * uInt16Count)) {
-        return;
-    }
-    int32_t offset = 0;
-    headerData->SetCode(FuzzUInt16(data + offset, size));
-    offset += sizeof(uint16_t);
-    headerData->SetContainerLength(FuzzUInt32(data + offset, size));
-    offset += sizeof(uint32_t);
-    headerData->SetContainerType(FuzzUInt16(data + offset, size));
-    offset += sizeof(uint16_t);
-    headerData->SetTransactionId(FuzzUInt32(data + offset, size));
+    headerData->SetCode(provider->ConsumeIntegral<uint16_t>());
+    headerData->SetContainerLength(provider->ConsumeIntegral<uint32_t>());
+    headerData->SetContainerType(provider->ConsumeIntegral<uint16_t>());
+    headerData->SetTransactionId(provider->ConsumeIntegral<uint32_t>());
 
     headerData->GetCode();
     headerData->GetContainerLength();
@@ -180,6 +68,11 @@ static void HeaderDataTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::HeaderDataTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::HeaderDataTest();
     return 0;
 }

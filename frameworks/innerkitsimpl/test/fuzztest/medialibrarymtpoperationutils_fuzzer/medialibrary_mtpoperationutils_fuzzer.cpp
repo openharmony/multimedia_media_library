@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "system_ability_definition.h"
 #include "iservice_registry.h"
@@ -34,150 +35,69 @@
 namespace OHOS {
 using namespace std;
 using namespace Media;
-const int32_t EVEN = 2;
 const int32_t MTP_ERROR_DEFAULT = 0;
+static const int32_t NUM_BYTES = 1;
 const string FILE_PATH = "/storage/media/local/files/Docs/Desktop";
+FuzzedDataProvider *provider = nullptr;
 shared_ptr<MtpOperationUtils> mtpOperUtils_ = nullptr;
-static inline string FuzzString(const uint8_t *data, size_t size)
+
+static inline vector<uint32_t> FuzzVectorUInt32()
 {
-    return {reinterpret_cast<const char*>(data), size};
+    return {provider->ConsumeIntegral<uint32_t>()};
 }
 
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int32_t)) {
-        return 0;
-    }
-    return static_cast<int32_t>(*data);
-}
-
-static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int64_t)) {
-        return 0;
-    }
-    return static_cast<int64_t>(*data);
-}
-
-static inline bool FuzzBool(const uint8_t* data, size_t size)
-{
-    if (size == 0) {
-        return false;
-    }
-    return (data[0] % EVEN) == 0;
-}
-
-static inline uint16_t FuzzUInt16(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(uint16_t)) {
-        return 0;
-    }
-    return static_cast<uint16_t>(*data);
-}
-
-static inline uint32_t FuzzUInt32(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(uint32_t)) {
-        return 0;
-    }
-    return static_cast<uint32_t>(*data);
-}
-
-static inline vector<uint32_t> FuzzVectorUInt32(const uint8_t *data, size_t size)
-{
-    return {FuzzUInt32(data, size)};
-}
-
-static MtpFileRange FuzzMtpFileRange(const uint8_t *data, size_t size)
+static MtpFileRange FuzzMtpFileRange()
 {
     MtpFileRange object;
-    const int int64Count = 2;
-    if (data == nullptr || size < sizeof(int32_t) + sizeof(uint16_t) +
-        sizeof(uint32_t) + sizeof(int64_t) * int64Count) {
-        return object;
-    }
-    int32_t offset = 0;
-    object.fd = FuzzInt32(data + offset, size);
-    offset += sizeof(int64_t);
-    object.offset = FuzzInt64(data + offset, size);
-    offset += sizeof(int64_t);
-    object.length = FuzzInt64(data + offset, size);
-    offset += sizeof(uint16_t);
-    object.command = FuzzUInt16(data + offset, size);
-    offset += sizeof(uint32_t);
-    object.transaction_id = FuzzUInt32(data + offset, size);
+    object.fd = provider->ConsumeIntegral<int32_t>();
+    object.offset = provider->ConsumeIntegral<int64_t>();
+    object.length = provider->ConsumeIntegral<int64_t>();
+    object.command = provider->ConsumeIntegral<uint16_t>();
+    object.transaction_id = provider->ConsumeIntegral<uint32_t>();
     return object;
 }
 
-static MtpOperationContext FuzzMtpOperationContext(const uint8_t* data, size_t size)
+static MtpOperationContext FuzzMtpOperationContext()
 {
     MtpOperationContext context;
-    const int32_t uInt32Count = 13;
-    const int32_t uInt16Count = 2;
-    if (data == nullptr || size < (sizeof(uint32_t) * uInt32Count +
-        sizeof(uint16_t) * uInt16Count + sizeof(int64_t))) {
-        return context;
-    }
-    int32_t offset = 0;
-    context.operationCode = FuzzUInt16(data + offset, size);
-    offset += sizeof(uint16_t);
-    context.transactionID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.devicePropertyCode = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.storageID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.format = FuzzUInt16(data + offset, size);
-    offset += sizeof(uint16_t);
-    context.parent = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.handle = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.property = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.groupCode = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.depth = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.properStrValue = FuzzString(data, size);
-    context.properIntValue = FuzzInt64(data + offset, size);
-    offset += sizeof(uint64_t);
-    context.handles = make_shared<UInt32List>(FuzzVectorUInt32(data, size)),
-    context.name = FuzzString(data, size);
-    context.created = FuzzString(data, size);
-    context.modified = FuzzString(data, size);
-
-    context.indata = FuzzBool(data + offset, size);
-    context.storageInfoID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-
-    context.sessionOpen = FuzzBool(data + offset, size);
-    context.sessionID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.tempSessionID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.eventHandle = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.eventProperty = FuzzUInt32(data + offset, size);
+    context.operationCode = provider->ConsumeIntegral<uint16_t>();
+    context.transactionID = provider->ConsumeIntegral<uint32_t>();
+    context.devicePropertyCode = provider->ConsumeIntegral<uint32_t>();
+    context.storageID = provider->ConsumeIntegral<uint32_t>();
+    context.format = provider->ConsumeIntegral<uint16_t>();
+    context.parent = provider->ConsumeIntegral<uint32_t>();
+    context.handle = provider->ConsumeIntegral<uint32_t>();
+    context.property = provider->ConsumeIntegral<uint32_t>();
+    context.groupCode = provider->ConsumeIntegral<uint32_t>();
+    context.depth = provider->ConsumeIntegral<uint32_t>();
+    context.properStrValue = provider->ConsumeBytesAsString(NUM_BYTES);
+    context.properIntValue = provider->ConsumeIntegral<int64_t>();
+    context.handles = make_shared<UInt32List>(FuzzVectorUInt32());
+    context.name = provider->ConsumeBytesAsString(NUM_BYTES);
+    context.created = provider->ConsumeBytesAsString(NUM_BYTES);
+    context.modified = provider->ConsumeBytesAsString(NUM_BYTES);
+    context.indata = provider->ConsumeBool();
+    context.storageInfoID = provider->ConsumeIntegral<uint32_t>();
+    context.sessionOpen = provider->ConsumeBool();
+    context.sessionID = provider->ConsumeIntegral<uint32_t>();
+    context.mtpDriver = make_shared<MtpDriver>();
+    context.tempSessionID = provider->ConsumeIntegral<uint32_t>();
+    context.eventHandle = provider->ConsumeIntegral<uint32_t>();
+    context.eventProperty = provider->ConsumeIntegral<uint32_t>();
     return context;
 }
 
 // MtpOperationUtilsTest start
-static void MtpOperationUtilsContainerTest(const uint8_t* data, size_t size)
+static void MtpOperationUtilsContainerTest()
 {
-    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(FuzzMtpOperationContext(data, size));
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(FuzzMtpOperationContext());
     if (mtpOperUtils_ == nullptr) {
         mtpOperUtils_ = make_shared<MtpOperationUtils>(context);
     }
 
     shared_ptr<PayloadData> payData = make_shared<CloseSessionData>(context);
-    if (data == nullptr || size < sizeof(uint16_t) + sizeof(int32_t)) {
-        return;
-    }
-    int32_t offset = 0;
-    uint16_t containerType = FuzzUInt16(data + offset, size);
-    offset += sizeof(uint16_t);
-    int errorCode = FuzzInt32(data + offset, size);
+    uint16_t containerType =  provider->ConsumeIntegral<uint16_t>();
+    int errorCode =  provider->ConsumeIntegral<int32_t>();
     mtpOperUtils_->SetIsDevicePropSet();
     mtpOperUtils_->GetDeviceInfo(payData, containerType, errorCode);
     mtpOperUtils_->GetObjectInfo(payData, containerType, errorCode);
@@ -216,11 +136,11 @@ static void MtpOperationUtilsContainerTest(const uint8_t* data, size_t size)
     mtpOperUtils_->GetStorageInfo(payData, containerType, errorCode);
 }
 
-static void MtpOperationUtilsGetPathByHandleTest(const uint8_t* data, size_t size)
+static void MtpOperationUtilsGetPathByHandleTest()
 {
     if (mtpOperUtils_ == nullptr) {
         shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-            FuzzMtpOperationContext(data, size));
+            FuzzMtpOperationContext());
         if (context == nullptr) {
             MEDIA_ERR_LOG("context is nullptr");
             return;
@@ -228,18 +148,18 @@ static void MtpOperationUtilsGetPathByHandleTest(const uint8_t* data, size_t siz
         mtpOperUtils_ = make_shared<MtpOperationUtils>(context);
     }
 
-    string path = FILE_PATH + "/" + FuzzString(data, size);
-    string realPath = FILE_PATH + "/" + FuzzString(data, size);
-    uint32_t handle = FuzzUInt32(data, size);
+    string path = FILE_PATH + "/" + provider->ConsumeBytesAsString(NUM_BYTES);
+    string realPath = FILE_PATH + "/" + provider->ConsumeBytesAsString(NUM_BYTES);
+    uint32_t handle = provider->ConsumeIntegral<uint32_t>();
     mtpOperUtils_->GetPathByHandle(handle, path, realPath);
     MtpManager::GetInstance().mtpMode_ = MtpManager::MtpMode::MTP_MODE;
     mtpOperUtils_->GetPathByHandle(handle, path, realPath);
     mtpOperUtils_->GetHandleByPaths(path, handle);
 }
 
-static void MtpOperationUtilsHandleTest(const uint8_t* data, size_t size)
+static void MtpOperationUtilsHandleTest()
 {
-    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(FuzzMtpOperationContext(data, size));
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(FuzzMtpOperationContext());
     if (mtpOperUtils_ == nullptr) {
         mtpOperUtils_ = make_shared<MtpOperationUtils>(context);
     }
@@ -247,28 +167,18 @@ static void MtpOperationUtilsHandleTest(const uint8_t* data, size_t size)
     mtpOperUtils_->SetDevicePropValueResp(payData);
     mtpOperUtils_->ResetDevicePropResp(payData);
 
-    const int int32Count = 3;
-    const int uint16Count = 2;
-    if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(uint16_t) * uint16Count + sizeof(uint32_t)) {
-        return;
-    }
-    int32_t offset = 0;
-    mtpOperUtils_->ObjectEvent(payData, FuzzInt32(data + offset, size));
+    mtpOperUtils_->ObjectEvent(payData, provider->ConsumeIntegral<int32_t>());
 
-    offset += sizeof(uint32_t);
-    uint32_t objectHandle = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint16_t);
-    uint16_t eventCode = FuzzUInt16(data + offset, size);
+    uint32_t objectHandle = provider->ConsumeIntegral<uint32_t>();
+    uint16_t eventCode = provider->ConsumeIntegral<uint16_t>();
     mtpOperUtils_->context_->mtpDriver = make_shared<MtpDriver>();
     mtpOperUtils_->SendEventPacket(objectHandle, eventCode);
 
-    offset += sizeof(int32_t);
-    int errorCode = FuzzInt32(data + offset, size);
+    int errorCode = provider->ConsumeIntegral<int32_t>();
     mtpOperUtils_->GetRespCommonData(payData, errorCode);
     mtpOperUtils_->HasStorage(errorCode);
 
-    offset += sizeof(uint16_t);
-    uint16_t containerType = FuzzUInt16(data + offset, size);
+    uint16_t containerType = provider->ConsumeIntegral<uint16_t>();
     mtpOperUtils_->context_->sessionOpen = true;
     mtpOperUtils_->GetObjectReferences(payData, containerType, errorCode);
 
@@ -282,9 +192,8 @@ static void MtpOperationUtilsHandleTest(const uint8_t* data, size_t size)
     mtpOperUtils_->ModifyObjectInfo();
     mtpOperUtils_->DoRecevieSendObject();
 
-    offset += sizeof(int32_t);
-    int fd = FuzzInt32(data + offset, size);
-    MtpFileRange object = FuzzMtpFileRange(data, size);
+    int fd = provider->ConsumeIntegral<int32_t>();
+    MtpFileRange object = FuzzMtpFileRange();
     mtpOperUtils_->RecevieSendObject(object, fd);
     mtpOperUtils_->GetThumb(payData, containerType, errorCode);
     containerType = DATA_CONTAINER_TYPE;
@@ -293,10 +202,10 @@ static void MtpOperationUtilsHandleTest(const uint8_t* data, size_t size)
     mtpOperUtils_->HasStorage(errorCode);
 }
 
-static void MtpOperationUtilsCheckErrorCodeTest(const uint8_t* data, size_t size)
+static void MtpOperationUtilsCheckErrorCodeTest()
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext(data, size));
+        FuzzMtpOperationContext());
     if (context == nullptr) {
         MEDIA_ERR_LOG("context is nullptr");
         return;
@@ -304,7 +213,7 @@ static void MtpOperationUtilsCheckErrorCodeTest(const uint8_t* data, size_t size
     if (mtpOperUtils_ == nullptr) {
         mtpOperUtils_ = make_shared<MtpOperationUtils>(context);
     }
-    int errorCode = FuzzInt32(data, size);
+    int errorCode = provider->ConsumeIntegral<int32_t>();
     mtpOperUtils_->CheckErrorCode(errorCode);
     errorCode = MTP_ERROR_PACKET_INCORRECT;
     mtpOperUtils_->CheckErrorCode(errorCode);
@@ -344,10 +253,10 @@ static void MtpOperationUtilsCheckErrorCodeTest(const uint8_t* data, size_t size
     mtpOperUtils_->CheckErrorCode(errorCode);
 }
 
-static void MtpOperationUtilsGetPropertyTest(const uint8_t* data, size_t size)
+static void MtpOperationUtilsGetPropertyTest()
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext(data, size));
+        FuzzMtpOperationContext());
     if (context == nullptr) {
         MEDIA_ERR_LOG("context is nullptr");
         return;
@@ -356,8 +265,8 @@ static void MtpOperationUtilsGetPropertyTest(const uint8_t* data, size_t size)
         mtpOperUtils_ = make_shared<MtpOperationUtils>(context);
     }
     shared_ptr<PayloadData> payData = make_shared<CloseSessionData>(context);
-    uint16_t containerType = FuzzBool(data, size) ? DATA_CONTAINER_TYPE : FuzzUInt16(data, size);
-    int errorCode = FuzzInt32(data, size);
+    uint16_t containerType = provider->ConsumeBool() ? DATA_CONTAINER_TYPE : provider->ConsumeIntegral<uint16_t>();
+    int errorCode = provider->ConsumeIntegral<int32_t>();
     mtpOperUtils_->context_->property = MTP_DEVICE_PROPERTY_UNDEFINED_CODE;
     mtpOperUtils_->GetPropDesc(payData, containerType, errorCode);
     mtpOperUtils_->GetPropValue(payData, containerType, errorCode);
@@ -381,11 +290,11 @@ static void MtpOperationUtilsGetPropertyTest(const uint8_t* data, size_t size)
     mtpOperUtils_->GetPropValue(payData, containerType, errorCode);
 }
 
-static void MtpOperationUtilsStorageIdTest(const uint8_t* data, size_t size)
+static void MtpOperationUtilsStorageIdTest()
 {
     if (mtpOperUtils_ == nullptr) {
         shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-            FuzzMtpOperationContext(data, size));
+            FuzzMtpOperationContext());
         if (context == nullptr) {
             MEDIA_ERR_LOG("context is nullptr");
             return;
@@ -393,21 +302,21 @@ static void MtpOperationUtilsStorageIdTest(const uint8_t* data, size_t size)
         mtpOperUtils_ = make_shared<MtpOperationUtils>(context);
     }
 
-    string fsUuid = FuzzString(data, size);
-    uint32_t storageId = FuzzUInt32(data, size);
+    string fsUuid = provider->ConsumeBytesAsString(NUM_BYTES);
+    uint32_t storageId = provider->ConsumeIntegral<uint32_t>();
     mtpOperUtils_->TryAddExternalStorage(fsUuid, storageId);
     mtpOperUtils_->TryRemoveExternalStorage(fsUuid, storageId);
     mtpOperUtils_->GetBatteryLevel();
 }
 
-static void MtpOperationUtilsTest(const uint8_t* data, size_t size)
+static void MtpOperationUtilsTest()
 {
-    MtpOperationUtilsContainerTest(data, size);
-    MtpOperationUtilsGetPathByHandleTest(data, size);
-    MtpOperationUtilsHandleTest(data, size);
-    MtpOperationUtilsCheckErrorCodeTest(data, size);
-    MtpOperationUtilsGetPropertyTest(data, size);
-    MtpOperationUtilsStorageIdTest(data, size);
+    MtpOperationUtilsContainerTest();
+    MtpOperationUtilsGetPathByHandleTest();
+    MtpOperationUtilsHandleTest();
+    MtpOperationUtilsCheckErrorCodeTest();
+    MtpOperationUtilsGetPropertyTest();
+    MtpOperationUtilsStorageIdTest();
 }
 } // namespace OHOS
 
@@ -415,6 +324,11 @@ static void MtpOperationUtilsTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::MtpOperationUtilsTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::MtpOperationUtilsTest();
     return 0;
 }
