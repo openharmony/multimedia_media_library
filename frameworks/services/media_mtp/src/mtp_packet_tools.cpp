@@ -730,6 +730,9 @@ std::shared_ptr<UInt32List> MtpPacketTool::GetAUInt32(const std::vector<uint8_t>
 
 std::string MtpPacketTool::GetString(const std::vector<uint8_t> &buffer, size_t &offset)
 {
+    if (buffer.empty()) {
+        return std::string();
+    }
     uint8_t count = GetUInt8(buffer, offset);
     if (count < 1) {
         return std::string();
@@ -956,8 +959,10 @@ void MtpPacketTool::DumpPacket(const std::vector<uint8_t> &outBuffer)
     uint16_t containerType = MtpPacketTool::GetUInt16(outBuffer[offset + OFFSET_4],
         outBuffer[offset + OFFSET_5]);
     if (containerType == DATA_CONTAINER_TYPE) {
-        MEDIA_DEBUG_LOG("Packet type: %{public}d, Payload Size: %{public}d",
-            DATA_CONTAINER_TYPE, containerLength - PACKET_HEADER_LENGETH);
+        if (containerLength > PACKET_HEADER_LENGETH) {
+            MEDIA_DEBUG_LOG("Packet type: %{public}d, Payload Size: %{public}d",
+                DATA_CONTAINER_TYPE, containerLength - PACKET_HEADER_LENGETH);
+        }
         MtpPacketTool::Dump(outBuffer, 0, PACKET_HEADER_LENGETH);
     } else {
         MEDIA_DEBUG_LOG("Packet type: %{public}d, Packet size: %{public}d",
