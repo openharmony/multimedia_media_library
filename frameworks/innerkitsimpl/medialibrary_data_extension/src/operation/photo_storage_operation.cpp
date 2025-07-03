@@ -110,7 +110,7 @@ void PhotoStorageOperation::SaveHighlightSizeToPreferences(int64_t size)
 }
 
 void PhotoStorageOperation::GetTotalThumbnailSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-                                                  TotalThumbnailSizeResult &totalThumbnailSizeResult)
+    TotalThumbnailSizeResult &totalThumbnailSizeResult)
 {
     bool conn = rdbStore == nullptr;
     CHECK_AND_RETURN_LOG(!conn, "rdbStore is null");
@@ -131,7 +131,7 @@ void PhotoStorageOperation::GetTotalThumbnailSize(std::shared_ptr<MediaLibraryRd
 }
 
 void PhotoStorageOperation::GetTotalEditdataSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-                                                 TotalEditdataSizeResult &totalEditdataSizeResult)
+    TotalEditdataSizeResult &totalEditdataSizeResult)
 {
     bool conn = rdbStore == nullptr;
     CHECK_AND_RETURN_LOG(!conn, "rdbStore is null");
@@ -152,8 +152,7 @@ void PhotoStorageOperation::GetTotalEditdataSize(std::shared_ptr<MediaLibraryRdb
 }
 
 void PhotoStorageOperation::GetLocalPhotoSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-                                              LocalPhotoSizeResult &localPhotoSizeResult,
-                                              int64_t totalExtSize)
+    LocalPhotoSizeResult &localPhotoSizeResult, int64_t totalExtSize)
 {
     bool conn = rdbStore == nullptr;
     CHECK_AND_RETURN_LOG(!conn, "rdbStore is null");
