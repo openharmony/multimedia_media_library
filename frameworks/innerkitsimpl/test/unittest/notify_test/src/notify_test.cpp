@@ -87,11 +87,9 @@ const std::array<CloudSyncErrType, 7> allErrorTypes = {
 
 void CheckGetAlbumIdBySubType(PhotoAlbumSubType photoAlbumSubType, DefaultAlbumId defaultAlbumId)
 {
-    MediaLibraryUnitTestUtils::InitUnistore();
     auto watch = MediaLibraryNotify::GetInstance();
     int albumId = watch->GetAlbumIdBySubType(photoAlbumSubType);
     EXPECT_EQ(defaultAlbumId, albumId);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 void CheckFileNotify(NotifyType notifyType)
@@ -253,7 +251,6 @@ static void CheckCloudSyncNotify(const std::string &uriPrefix, const std::string
     const DataShareObserver::ChangeType &changeType)
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnitTestUtils::InitUnistore();
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_TRUE(rdbStore != nullptr);
 
@@ -282,12 +279,12 @@ static void CheckCloudSyncNotify(const std::string &uriPrefix, const std::string
 
     CheckInfo(obs, uriPrefix, uriPostfix, changeType);
     sDataShareHelper_->UnregisterObserverExt(uri2, obs);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
     obs = nullptr;
 }
 
 void NotifyTest::SetUpTestCase()
 {
+    MediaLibraryUnitTestUtils::Init();
     vector<string> perms;
     perms.push_back("ohos.permission.READ_MEDIA");
     perms.push_back("ohos.permission.WRITE_MEDIA");
@@ -307,6 +304,10 @@ void NotifyTest::SetUpTestCase()
 
 void NotifyTest::TearDownTestCase()
 {
+    if (!MediaLibraryUnitTestUtils::IsValid()) {
+        MediaLibraryUnitTestUtils::Init();
+    }
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 

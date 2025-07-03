@@ -368,6 +368,7 @@ ohos_unittest("media_library_cloud_sync_service_service_ext_test") {
 
   sources = [
     "src/media_cloud_sync_service_service_test_ext.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
   ]
 
   deps = [
