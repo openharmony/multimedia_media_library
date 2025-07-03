@@ -37,9 +37,7 @@
 #include "hi_audit.h"
 #include "medialibrary_errno.h"
 #include "photo_storage_operation.h"
-#include "media_library_manager.h"
 #include "medialibrary_unistore_manager.h"
-#include "media_volume.h"
 
 using namespace std;
 
@@ -556,6 +554,13 @@ static void GetPhotoAndPhotoExtSizes(QuerySizeAndResolution &queryInfo)
     queryInfo.localImageRomSize = std::to_string(localPhotoSizeResult.localImageSize);
     queryInfo.localVideoRomSize = std::to_string(localPhotoSizeResult.localVideoSize);
     queryInfo.totalSize = std::to_string(totalSize);
+    MEDIA_INFO_LOG("localImageRomSize: %{public}s, localVideoRomSize: %{public}s, totalThumbnailSize: %{public}s, "
+                   "totalEditdataSize: %{public}s, cacheSize: %{public}s, highlightSize: %{public}s, "
+                   "totalSize: %{public}s",
+                   queryInfo.localImageRomSize.c_str(), queryInfo.localVideoRomSize.c_str(),
+                   queryInfo.ThumbnailRomSize.c_str(), queryInfo.EditdataRomSize.c_str(),
+                   queryInfo.cacheRomSize.c_str(), queryInfo.highlightRomSize.c_str(),
+                   queryInfo.totalSize.c_str());
 }
 
 static void HandleGetSizeAndResolutionInfo(std::shared_ptr<DfxReporter>& dfxReporter)
@@ -568,15 +573,7 @@ static void HandleGetSizeAndResolutionInfo(std::shared_ptr<DfxReporter>& dfxRepo
     std::string photoMimeType;
     DfxDatabaseUtils::GetPhotoMimeType(photoMimeType);
     GetPhotoAndPhotoExtSizes(queryInfo);
-    MEDIA_INFO_LOG("localImageRomSize: %{public}s, localVideoRomSize: %{public}s, totalThumbnailSize: %{public}s, "
-                   "totalEditdataSize: %{public}s, cacheSize: %{public}s, highlightSize: %{public}s, "
-                   "totalSize: %{public}s",
-                   queryInfo.localImageRomSize.c_str(), queryInfo.localVideoRomSize.c_str(),
-                   queryInfo.ThumbnailRomSize.c_str(), queryInfo.EditdataRomSize.c_str(),
-                   queryInfo.cacheRomSize.c_str(), queryInfo.highlightRomSize.c_str(),
-                   queryInfo.totalSize.c_str());
     dfxReporter->ReportPhotoSizeAndResolutionInfo(queryInfo, photoMimeType);
-    MEDIA_INFO_LOG("HandleGetSizeAndResolutionInfo end");
 }
 
 static void HandleCheckOneWeekDayTask(DfxData *data)
