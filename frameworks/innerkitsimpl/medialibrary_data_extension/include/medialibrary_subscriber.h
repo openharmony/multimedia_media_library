@@ -64,7 +64,6 @@ public:
     EXPORT static bool IsWifiConnected();
     EXPORT static bool IsCurrentStatusOn();
     EXPORT static void RefreshCellularNetStatus();
-    EXPORT static void ClearDirtyDiskData();
     EXPORT static bool IsCharging();
     EXPORT static bool IsScreenOff();
     EXPORT static int32_t GetNewTemperatureLevel();
