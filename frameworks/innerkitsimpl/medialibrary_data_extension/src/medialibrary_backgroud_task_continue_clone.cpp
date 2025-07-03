@@ -61,25 +61,12 @@ int32_t MedialibrarySubscriber::DoClearContinueCloneData()
 bool MedialibrarySubscriber::IsClearContinueCloneData(const std::string &path)
 {
     int64_t cloneTimestamp = MediaFileUtils::GetFileModificationTime(path) * SECONDS_TO_MS;
-    MEDIA_INFO_LOG("IsClearContinueCloneData fileModificationTime:%{public}" PRId64, cloneTimestamp);
-    int64_t curTime = MediaFileUtils::UTCTimeMilliSeconds();
-    bool contentNotExistRet = curTime - cloneTimestamp > MS_OF_ONE_DAY;
-    std::string content = "";
-    bool isContentExist = LoadStringFromFile(path, content) && !content.empty();
-    CHECK_AND_RETURN_RET_LOG(isContentExist, contentNotExistRet, "file is empty %{public}s",
-        MediaFileUtils::DesensitizePath(path).c_str());
-    nlohmann::json jsonArray = nlohmann::json::parse(content, nullptr, false);
-    CHECK_AND_RETURN_RET_LOG(!jsonArray.is_discarded(), contentNotExistRet, "json array is empty ");
-    for (auto &[key, value] : jsonArray.items()) {
-        if (key == CLONE_TIME_STAMP && value.is_number_integer()) {
-            cloneTimestamp = value.get<int64_t>();
-        }
-    }
-    if (cloneTimestamp == 0) {
-        MEDIA_INFO_LOG("not have clone time stamp key");
+    bool isCloneTimestampExist = MedialibrarySubscriber::GetCloneTimestamp(path, cloneTimestamp);
+    if (!isCloneTimestampExist) {
         cloneTimestamp = MediaFileUtils::GetFileModificationTime(path) * SECONDS_TO_MS;
     }
-    MEDIA_INFO_LOG("IsClearContinueCloneData cloneTimestamp:%{public}" PRId64, cloneTimestamp);
+    MEDIA_INFO_LOG("IsClearContinueCloneData fileModificationTime:%{public}" PRId64, cloneTimestamp);
+    int64_t curTime = MediaFileUtils::UTCTimeMilliSeconds();
     return curTime - cloneTimestamp > MS_OF_ONE_DAY;
 }
 
@@ -106,6 +93,22 @@ std::string MedialibrarySubscriber::GetDataCloneDescriptionJsonPath()
     std::string restorePath = RESTORE_FOLDER_PATH + DATA_CLONE_DESCRIPTION_JSON_FILE_NAME;
     std::string clonePath = CLONE_FOLDER_PATH + DATA_CLONE_DESCRIPTION_JSON_FILE_NAME;
     return MediaFileUtils::IsFileExists(restorePath) ? restorePath : clonePath;
+}
+
+bool MedialibrarySubscriber::GetCloneTimestamp(const std::string &path, int64_t &cloneTimestamp)
+{
+    std::string content = "";
+    bool isContentExist = LoadStringFromFile(path, content) && !content.empty();
+    CHECK_AND_RETURN_RET_LOG(isContentExist, false, "file is empty %{private}s", path.c_str());
+    nlohmann::json jsonArray = nlohmann::json::parse(content, nullptr, false);
+    CHECK_AND_RETURN_RET_LOG(!jsonArray.is_discarded(), false, "json array is empty ");
+    for (auto &[key, value] : jsonArray.items()) {
+        if (key == CLONE_TIME_STAMP && value.is_number_integer()) {
+            cloneTimestamp = value.get<int64_t>();
+            return true;
+        }
+    }
+    return false;
 }
 }  // namespace Media
 }  // namespace OHOS
