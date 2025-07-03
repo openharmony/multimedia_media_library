@@ -151,8 +151,9 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::CheckAndUpdateOperat
         return ACCURATE_REFRESH_RET_OK;
     }
 
-    MEDIA_WARN_LOG("duplicate operation error");
-    return ACCURATE_REFRESH_OPERATION_NO_MATCH;
+    MEDIA_WARN_LOG("duplicate operation, oldOperation:%{public}d, newOperation:%{public}d",
+        static_cast<int32_t>(oldOperation), static_cast<int32_t>(newOperation));
+    return ACCURATE_REFRESH_RET_OK;
 }
 
 template <typename ChangeInfo, typename ChangeData>
