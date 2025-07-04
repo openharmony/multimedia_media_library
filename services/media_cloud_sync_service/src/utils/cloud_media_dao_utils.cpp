@@ -62,7 +62,7 @@ std::string CloudMediaDaoUtils::FillParams(const std::string &sql, const std::ve
         while (pos != std::string::npos) {
             os.str("");
             os << result.substr(0, pos) << bindArgs[i];
-            os << ((pos + flag.length() <= result.length()) ? result.substr(pos + flag.length()) : "");
+            os << (pos + flag.length() <= result.length() ? result.substr(pos + flag.length()) : "");
             result = os.str();
             os.str("");
             pos = result.find(flag);
