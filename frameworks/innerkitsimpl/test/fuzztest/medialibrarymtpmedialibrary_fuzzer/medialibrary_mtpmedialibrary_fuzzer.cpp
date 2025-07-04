@@ -17,12 +17,15 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #include "system_ability_definition.h"
 #include "iservice_registry.h"
 #include "userfilemgr_uri.h"
 #include "payload_data.h"
 #include "close_session_data.h"
+#include "medialibrary_errno.h"
 #include "media_log.h"
 
 #define private public
@@ -32,156 +35,196 @@
 namespace OHOS {
 using namespace std;
 using namespace Media;
-const int32_t EVEN = 2;
+static const int32_t NUM_BYTES = 1;
+static const int32_t MAX_BYTE_VALUE = 256;
+static const int32_t SEED_SIZE = 1024;
 // storage file
 const std::string STORAGE_FILE = "/storage/media/local/files/Docs";
 // file path
 const string FILE_PATH = "/storage/media/local/files/Docs/Desktop";
 const shared_ptr<MtpMediaLibrary> mtpMediaLib_ = MtpMediaLibrary::GetInstance();
-static inline string FuzzString(const uint8_t *data, size_t size)
+FuzzedDataProvider *provider = nullptr;
+
+static inline vector<uint32_t> FuzzVectorUInt32()
 {
-    return {reinterpret_cast<const char*>(data), size};
+    return {provider->ConsumeIntegral<uint32_t>()};
 }
 
-static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int64_t)) {
-        return 0;
-    }
-    return static_cast<int64_t>(*data);
-}
-
-static inline bool FuzzBool(const uint8_t* data, size_t size)
-{
-    if (size == 0) {
-        return false;
-    }
-    return (data[0] % EVEN) == 0;
-}
-
-static inline uint16_t FuzzUInt16(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(uint16_t)) {
-        return 0;
-    }
-    return static_cast<uint16_t>(*data);
-}
-
-static inline uint32_t FuzzUInt32(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(uint32_t)) {
-        return 0;
-    }
-    return static_cast<uint32_t>(*data);
-}
-
-static inline vector<uint8_t> FuzzVectorUInt8(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(uint8_t)) {
-        return {0};
-    }
-    return {*data};
-}
-
-static inline vector<uint32_t> FuzzVectorUInt32(const uint8_t *data, size_t size)
-{
-    return {FuzzUInt32(data, size)};
-}
-
-static MtpOperationContext FuzzMtpOperationContext(const uint8_t* data, size_t size)
+static MtpOperationContext FuzzMtpOperationContext()
 {
     MtpOperationContext context;
-    const int32_t uInt32Count = 13;
-    const int32_t uInt16Count = 2;
-    if (data == nullptr || size < (sizeof(uint32_t) * uInt32Count +
-        sizeof(uint16_t) * uInt16Count + sizeof(int64_t))) {
-        return context;
-    }
-    int32_t offset = 0;
-    context.operationCode = FuzzUInt16(data + offset, size);
-    offset += sizeof(uint16_t);
-    context.transactionID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.devicePropertyCode = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.storageID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.format = FuzzUInt16(data + offset, size);
-    offset += sizeof(uint16_t);
-    context.parent = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.handle = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.property = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.groupCode = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.depth = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.properStrValue = FuzzString(data, size);
-    context.properIntValue = FuzzInt64(data + offset, size);
-    offset += sizeof(uint64_t);
-    context.handles = make_shared<UInt32List>(FuzzVectorUInt32(data, size)),
-    context.name = FuzzString(data, size);
-    context.created = FuzzString(data, size);
-    context.modified = FuzzString(data, size);
-
-    context.indata = FuzzBool(data + offset, size);
-    context.storageInfoID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-
-    context.sessionOpen = FuzzBool(data + offset, size);
-    context.sessionID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.tempSessionID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.eventHandle = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    context.eventProperty = FuzzUInt32(data + offset, size);
+    context.operationCode = provider->ConsumeIntegral<uint16_t>();
+    context.transactionID = provider->ConsumeIntegral<uint32_t>();
+    context.devicePropertyCode = provider->ConsumeIntegral<uint32_t>();
+    context.storageID = provider->ConsumeIntegral<uint32_t>();
+    context.format = provider->ConsumeIntegral<uint16_t>();
+    context.parent = provider->ConsumeIntegral<uint32_t>();
+    context.handle = provider->ConsumeIntegral<uint32_t>();
+    context.property = provider->ConsumeIntegral<uint32_t>();
+    context.groupCode = provider->ConsumeIntegral<uint32_t>();
+    context.depth = provider->ConsumeIntegral<uint32_t>();
+    context.properStrValue = provider->ConsumeBytesAsString(NUM_BYTES);
+    context.properIntValue = provider->ConsumeIntegral<int64_t>();
+    context.handles = make_shared<UInt32List>(FuzzVectorUInt32());
+    context.name = provider->ConsumeBytesAsString(NUM_BYTES);
+    context.created = provider->ConsumeBytesAsString(NUM_BYTES);
+    context.modified = provider->ConsumeBytesAsString(NUM_BYTES);
+    context.indata = provider->ConsumeBool();
+    context.storageInfoID = provider->ConsumeIntegral<uint32_t>();
+    context.sessionOpen = provider->ConsumeBool();
+    context.sessionID = provider->ConsumeIntegral<uint32_t>();
+    context.mtpDriver = make_shared<MtpDriver>();
+    context.tempSessionID = provider->ConsumeIntegral<uint32_t>();
+    context.eventHandle = provider->ConsumeIntegral<uint32_t>();
+    context.eventProperty = provider->ConsumeIntegral<uint32_t>();
     return context;
 }
 
-//MtpMediaLibraryTest start
-static void GetThumbTest(const uint8_t* data, size_t size)
+static ObjectInfo FuzzObjectInfo()
 {
+    ObjectInfo objectInfo(0);
+    objectInfo.handle = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.storageID = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.format = provider->ConsumeIntegral<uint16_t>();
+    objectInfo.protectionStatus = provider->ConsumeIntegral<uint16_t>();
+    objectInfo.compressedSize = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.size = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.thumbFormat = provider->ConsumeIntegral<uint16_t>();
+    objectInfo.thumbCompressedSize = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.thumbPixelWidth = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.thumbPixelHeight = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.imagePixelWidth = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.imagePixelHeight = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.imagePixelDepth = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.parent = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.associationType = provider->ConsumeIntegral<uint16_t>();
+    objectInfo.associationDesc = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.sequenceNumber = provider->ConsumeIntegral<uint32_t>();
+    objectInfo.name = provider->ConsumeBytesAsString(NUM_BYTES);
+    objectInfo.keywords = provider->ConsumeBytesAsString(NUM_BYTES);
+    return objectInfo;
+}
+
+static void AddPathToMapTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->AddPathToMap(provider->ConsumeBytesAsString(NUM_BYTES));
+    mtpMediaLib_->Clear();
+}
+
+static void ObserverAddPathToMapTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    mtpMediaLib_->ObserverAddPathToMap(provider->ConsumeBytesAsString(NUM_BYTES));
+
+    uint32_t parentId = 0;
+    mtpMediaLib_->GetIdByPath(provider->ConsumeBytesAsString(NUM_BYTES), parentId);
+    vector<int> outHandles;
+    mtpMediaLib_->GetHandles(parentId, outHandles, MEDIA_TYPE_FILE);
+}
+
+static void GetHandlesTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext(data, size));
+        FuzzMtpOperationContext());
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    mtpMediaLib_->ObserverAddPathToMap(FILE_PATH);
+    mtpMediaLib_->ObserverAddPathToMap(FILE_PATH + "/" + provider->ConsumeBytesAsString(NUM_BYTES) + ".txt");
+
+    uint32_t parentId = 0;
+    shared_ptr<UInt32List> outHandles = make_shared<UInt32List>(FuzzVectorUInt32());
+    mtpMediaLib_->GetIdByPath(FILE_PATH, parentId);
+    context->parent = parentId;
+    context->storageID = parentId;
+    mtpMediaLib_->GetHandles(context, outHandles);
+}
+
+static void GetObjectInfoTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext());
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(FuzzObjectInfo());
+    context->handle = 1;
+    mtpMediaLib_->GetObjectInfo(context, objectInfo);
+}
+
+static void GetFdTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    shared_ptr<MtpOperationContext> context = nullptr;
+    bool condition = false;
+    int fd = 0;
+    mtpMediaLib_->CondCloseFd(condition, fd);
+
+    int32_t outFd = provider->ConsumeIntegral<int32_t>();
+    mtpMediaLib_->GetFd(context, outFd);
+}
+
+static void GetThumbTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext());
     if (context == nullptr) {
         MEDIA_ERR_LOG("context is nullptr");
         return;
     }
 
-    if (data == nullptr || size < (sizeof(uint32_t) + sizeof(uint8_t))) {
-        return;
-    }
-    int32_t offset = 0;
-    shared_ptr<UInt8List> outThumb = make_shared<UInt8List>(FuzzVectorUInt8(data + offset, size));
-    offset += sizeof(uint8_t);
-    mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + FuzzString(data, size) +
-        ".txt", FuzzUInt32(data + offset, size));
+    shared_ptr<UInt8List> outThumb = make_shared<UInt8List>(provider->ConsumeBytes<uint8_t>(NUM_BYTES));
+    mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + provider->ConsumeBytesAsString(NUM_BYTES) +
+        ".txt", provider->ConsumeIntegral<uint32_t>());
     mtpMediaLib_->GetThumb(context, outThumb);
 }
 
-static void SendObjectInfoTest(const uint8_t* data, size_t size)
+static void SendObjectInfoTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext(data, size));
+        FuzzMtpOperationContext());
     if (context == nullptr) {
         MEDIA_ERR_LOG("context is nullptr");
         return;
     }
-    const int32_t uInt32Count = 3;
-    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
-        return;
-    }
-    int32_t offset = 0;
-    uint32_t outStorageID = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    uint32_t outParent = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    uint32_t outHandle = FuzzUInt32(data + offset, size);
+
+    uint32_t outStorageID = provider->ConsumeIntegral<uint32_t>();
+    uint32_t outParent = provider->ConsumeIntegral<uint32_t>();
+    uint32_t outHandle = provider->ConsumeIntegral<uint32_t>();
 
     mtpMediaLib_->SendObjectInfo(context, outStorageID, outParent, outHandle);
 
@@ -189,34 +232,130 @@ static void SendObjectInfoTest(const uint8_t* data, size_t size)
     mtpMediaLib_->SendObjectInfo(context, outStorageID, outParent, outHandle);
 }
 
-static void CopyObjectTest(const uint8_t* data, size_t size)
+static void MoveObjectTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext(data, size));
+        FuzzMtpOperationContext());
     if (context == nullptr) {
         MEDIA_ERR_LOG("context is nullptr");
         return;
     }
-    const int32_t uInt32Count = 3;
-    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
+
+    mtpMediaLib_->ObserverAddPathToMap(provider->ConsumeBytesAsString(NUM_BYTES));
+    string from = provider->ConsumeBytesAsString(NUM_BYTES);
+    mtpMediaLib_->ObserverAddPathToMap(from);
+    string to = provider->ConsumeBytesAsString(NUM_BYTES);
+    uint32_t fromId = 0;
+    mtpMediaLib_->GetIdByPath(from, fromId);
+    uint32_t parentId = 0;
+    mtpMediaLib_->GetIdByPath(from, parentId);
+    context->handle = fromId;
+    context->parent = parentId;
+    mtpMediaLib_->MoveObject(context, parentId);
+}
+
+static void CopyObjectTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
         return;
     }
-    int32_t offset = 0;
-    mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + FuzzString(data, size), FuzzUInt32(data + offset, size));
-    offset += sizeof(uint32_t);
-    uint32_t outObjectHandle = FuzzUInt32(data + offset, size);
-    offset += sizeof(uint32_t);
-    uint32_t oldHandle = FuzzUInt32(data + offset, size);
+    mtpMediaLib_->Clear();
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext());
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+
+    mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + provider->ConsumeBytesAsString(NUM_BYTES),
+        provider->ConsumeIntegral<uint32_t>());
+    uint32_t outObjectHandle = provider->ConsumeIntegral<uint32_t>();
+    uint32_t oldHandle = provider->ConsumeIntegral<uint32_t>();
     mtpMediaLib_->CopyObject(context, outObjectHandle, oldHandle);
     mtpMediaLib_->DeleteObject(context);
 }
 
-static void GetObjectPropValueTest(const uint8_t* data, size_t size)
+static void SetObjectPropValueTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext(data, size));
+        FuzzMtpOperationContext());
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + provider->ConsumeBytesAsString(NUM_BYTES) + ".txt",
+        provider->ConsumeIntegral<uint32_t>());
+
+    mtpMediaLib_->SetObjectPropValue(context);
+}
+
+static void CloseFdTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext());
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    mtpMediaLib_->ObserverAddPathToMap(FILE_PATH);
+    mtpMediaLib_->ObserverAddPathToMap(provider->ConsumeBytesAsString(NUM_BYTES));
+
+    uint32_t handle = 0;
+    mtpMediaLib_->GetIdByPath(provider->ConsumeBytesAsString(NUM_BYTES), handle);
+    context->handle = handle;
+    int32_t outFd = provider->ConsumeIntegral<int32_t>();
+    mtpMediaLib_->GetFd(context, outFd);
+    mtpMediaLib_->CloseFd(context, outFd);
+}
+
+static void GetObjectPropListTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext());
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    shared_ptr<vector<Property>> outProps = make_shared<vector<Property>>();
+    context->groupCode = 0;
+    mtpMediaLib_->GetObjectPropList(context, outProps);
+
+    context->property = provider->ConsumeIntegral<uint32_t>();
+    context->depth = MTP_ALL_DEPTH;
+    context->handle = 0;
+    mtpMediaLib_->GetObjectPropList(context, outProps);
+}
+
+static void GetObjectPropValueTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext());
     if (context == nullptr) {
         MEDIA_ERR_LOG("context is nullptr");
         return;
@@ -224,66 +363,324 @@ static void GetObjectPropValueTest(const uint8_t* data, size_t size)
     uint64_t outIntVal = 0;
     uint128_t outLongVal = { 0 };
     string outStrVal = "";
-    const int32_t uInt32Count = 2;
-    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
-        return;
-    }
-    int32_t offset = 0;
-    mtpMediaLib_->AddToHandlePathMap(FuzzString(data, size), FuzzUInt32(data + offset, size));
-    offset += sizeof(uint32_t);
+    mtpMediaLib_->AddToHandlePathMap(provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeIntegral<uint32_t>());
     mtpMediaLib_->GetObjectPropValue(context, outIntVal, outLongVal, outStrVal);
-    mtpMediaLib_->DeleteHandlePathMap(FuzzString(data, size), FuzzUInt32(data + offset, size));
+    mtpMediaLib_->DeleteHandlePathMap(provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeIntegral<uint32_t>());
 }
 
-static void ModifyHandlePathMapTest(const uint8_t* data, size_t size)
+static void GetRealPathTest()
 {
-    mtpMediaLib_->Clear();
-    const int32_t uInt32Count = 2;
-    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
         return;
     }
-    int32_t offset = 0;
-    mtpMediaLib_->AddToHandlePathMap(FuzzString(data, size), FuzzUInt32(data + offset, size));
-    offset += sizeof(uint32_t);
-
-    mtpMediaLib_->ModifyHandlePathMap(FuzzString(data, size), FuzzString(data, size));
-
-    uint32_t id = FuzzUInt32(data + offset, size);
-    mtpMediaLib_->ModifyPathHandleMap(FuzzString(data, size), id);
+    mtpMediaLib_->Clear();
+    string outPath = "";
+    mtpMediaLib_->GetRealPath(provider->ConsumeBytesAsString(NUM_BYTES), outPath);
 }
 
-static void MoveObjectSubTest(const uint8_t* data, size_t size)
+
+static void MtpMediaLibraryStorageTest()
 {
-    mtpMediaLib_->Clear();
-    const int32_t uInt32Count = 2;
-    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
         return;
     }
-    int32_t offset = 0;
-    mtpMediaLib_->AddToHandlePathMap(FuzzString(data, size), FuzzUInt32(data + offset, size));
-    offset += sizeof(uint32_t);
+    mtpMediaLib_->Clear();
+    string fsUuid = provider->ConsumeBytesAsString(NUM_BYTES);
+    uint32_t storageId = provider->ConsumeIntegral<uint32_t>();
+    mtpMediaLib_->TryAddExternalStorage(fsUuid, storageId);
+    mtpMediaLib_->TryRemoveExternalStorage(fsUuid, storageId);
+    mtpMediaLib_->GetStorageIds();
+}
+
+static void ObserverDeletePathToMapTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    mtpMediaLib_->ObserverAddPathToMap(provider->ConsumeBytesAsString(NUM_BYTES));
+    mtpMediaLib_->ObserverDeletePathToMap(provider->ConsumeBytesAsString(NUM_BYTES));
+}
+
+static void ModifyHandlePathMapTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    mtpMediaLib_->AddToHandlePathMap(provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeIntegral<uint32_t>());
+
+    mtpMediaLib_->ModifyHandlePathMap(provider->ConsumeBytesAsString(NUM_BYTES),
+        provider->ConsumeBytesAsString(NUM_BYTES));
+
+    uint32_t id = provider->ConsumeIntegral<uint32_t>();
+    mtpMediaLib_->ModifyPathHandleMap(provider->ConsumeBytesAsString(NUM_BYTES), id);
+}
+
+static void StartsWithTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+
+    string str = provider->ConsumeBytesAsString(NUM_BYTES);
+    string prefix = provider->ConsumeBytesAsString(NUM_BYTES);
+    mtpMediaLib_->StartsWith(str, prefix);
+}
+
+static void MoveHandlePathMapTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    mtpMediaLib_->AddToHandlePathMap(provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeIntegral<uint32_t>());
+    mtpMediaLib_->MoveHandlePathMap(FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
+    mtpMediaLib_->AddToHandlePathMap(FILE_PATH, 1);
+    mtpMediaLib_->MoveRepeatDirHandlePathMap(FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
+}
+
+static void MoveObjectSubTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    mtpMediaLib_->AddToHandlePathMap(provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeIntegral<uint32_t>());
 
     mtpMediaLib_->AddToHandlePathMap(FILE_PATH, 1);
-    bool isDir = FuzzBool(data, size);
-    uint32_t repeatHandle = FuzzUInt32(data + offset, size);
-    mtpMediaLib_->MoveObjectSub(FILE_PATH, FuzzString(data, size), isDir, repeatHandle);
+    bool isDir = provider->ConsumeBool();
+    uint32_t repeatHandle = provider->ConsumeIntegral<uint32_t>();
+    mtpMediaLib_->MoveObjectSub(FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES), isDir, repeatHandle);
 }
 
-static void MtpMediaLibraryTest(const uint8_t* data, size_t size)
+static void GetIdTest()
 {
-    GetThumbTest(data, size);
-    SendObjectInfoTest(data, size);
-    CopyObjectTest(data, size);
-    GetObjectPropValueTest(data, size);
-    ModifyHandlePathMapTest(data, size);
-    MoveObjectSubTest(data, size);
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    mtpMediaLib_->GetId();
+    mtpMediaLib_->GetParentId(provider->ConsumeBytesAsString(NUM_BYTES));
+}
+
+static void ScanDirNoDepthTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    string root = provider->ConsumeBytesAsString(NUM_BYTES);
+    shared_ptr<UInt32List> out = make_shared<UInt32List>();
+    mtpMediaLib_->ScanDirNoDepth(root, out);
+}
+
+static void ScanDirWithTypeTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    shared_ptr<unordered_map<uint32_t, string>> out =
+        make_shared<unordered_map<uint32_t, string>>();
+
+    mtpMediaLib_->ScanDirWithType(STORAGE_FILE, out);
+    mtpMediaLib_->ScanDirTraverseWithType(STORAGE_FILE, out);
+
+    string root = FILE_PATH + "/" + provider->ConsumeBytesAsString(NUM_BYTES);
+    int64_t size = provider->ConsumeIntegral<int64_t>();
+    mtpMediaLib_->ScanDirWithType(root, out);
+    mtpMediaLib_->ScanDirTraverseWithType(root, out);
+    mtpMediaLib_->GetSizeFromOfft(size);
+}
+
+static void GetHandlesMapTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext());
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    mtpMediaLib_->AddToHandlePathMap(provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeIntegral<uint32_t>());
+    context->handle = 0;
+    context->depth = MTP_ALL_DEPTH;
+    mtpMediaLib_->GetHandlesMap(context);
+
+    context->handle = MTP_ALL_DEPTH;
+    mtpMediaLib_->GetHandlesMap(context);
+
+    context->depth = DEFAULT_STORAGE_ID;
+    mtpMediaLib_->GetHandlesMap(context);
+
+    context->handle = MTP_ALL_HANDLE_ID;
+    mtpMediaLib_->GetHandlesMap(context);
+}
+
+static void GetExternalStoragesTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    mtpMediaLib_->GetExternalStorages();
+}
+
+static void ErasePathInfoTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+
+    mtpMediaLib_->ObserverAddPathToMap(provider->ConsumeBytesAsString(NUM_BYTES));
+    uint32_t handle = provider->ConsumeIntegral<uint32_t>();
+    mtpMediaLib_->GetIdByPath(provider->ConsumeBytesAsString(NUM_BYTES), handle);
+    mtpMediaLib_->ErasePathInfo(handle, FILE_PATH);
+}
+
+static void GetVideoThumbTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext());
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    shared_ptr<UInt8List> outThumb = make_shared<UInt8List>();
+    mtpMediaLib_->AddToHandlePathMap(provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeIntegral<uint32_t>());
+
+    mtpMediaLib_->GetVideoThumb(context, outThumb);
+}
+
+static void GetPictureThumbTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext());
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    shared_ptr<UInt8List> outThumb = make_shared<UInt8List>();
+    mtpMediaLib_->AddToHandlePathMap(provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeIntegral<uint32_t>());
+
+    mtpMediaLib_->GetPictureThumb(context, outThumb);
+}
+
+static void CorrectStorageIdTest()
+{
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
+    mtpMediaLib_->Clear();
+    const shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext());
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    mtpMediaLib_->CorrectStorageId(context);
+}
+
+static void MtpMediaLibraryTest()
+{
+    AddPathToMapTest();
+    ObserverAddPathToMapTest();
+    GetHandlesTest();
+    GetObjectInfoTest();
+    GetFdTest();
+    GetThumbTest();
+    SendObjectInfoTest();
+    MoveObjectTest();
+    CopyObjectTest();
+    SetObjectPropValueTest();
+    CloseFdTest();
+    GetObjectPropListTest();
+    GetObjectPropValueTest();
+    GetRealPathTest();
+    MtpMediaLibraryStorageTest();
+    ObserverDeletePathToMapTest();
+    ModifyHandlePathMapTest();
+    StartsWithTest();
+    MoveHandlePathMapTest();
+    MoveObjectSubTest();
+    GetIdTest();
+    ScanDirNoDepthTest();
+    ScanDirWithTypeTest();
+    GetHandlesMapTest();
+    GetExternalStoragesTest();
+    ErasePathInfoTest();
+    GetVideoThumbTest();
+    GetPictureThumbTest();
+    CorrectStorageIdTest();
+}
+
+static int32_t AddSeed()
+{
+    char *seedData = new char[OHOS::SEED_SIZE];
+    for (int i = 0; i < OHOS::SEED_SIZE; i++) {
+        seedData[i] = static_cast<char>(i % MAX_BYTE_VALUE);
+    }
+
+    const char* filename = "corpus/seed.txt";
+    std::ofstream file(filename, std::ios::binary | std::ios::trunc);
+    if (!file) {
+        MEDIA_ERR_LOG("Cannot open file filename:%{public}s", filename);
+        delete[] seedData;
+        return Media::E_ERR;
+    }
+    file.write(seedData, OHOS::SEED_SIZE);
+    file.close();
+    delete[] seedData;
+    MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
+    return Media::E_OK;
 }
 } // namespace OHOS
+
+extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
+{
+    OHOS::AddSeed();
+    return 0;
+}
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::MtpMediaLibraryTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::MtpMediaLibraryTest();
     return 0;
 }
