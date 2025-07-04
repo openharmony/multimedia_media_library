@@ -191,6 +191,8 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_001, TestSize.Lev
     auto result = MediaFileUtils::CreateFile(META_RECOVERY_ALBUM_PATH);
     EXPECT_EQ(result, true);
     EXPECT_EQ(access(META_RECOVERY_ALBUM_PATH.c_str(), F_OK), 0);
+    result = MediaFileUtils::DeleteFile(META_RECOVERY_ALBUM_PATH);
+    EXPECT_EQ(result, true);
     MEDIA_INFO_LOG("MetaRecovery_Backup_001::End");
 }
 

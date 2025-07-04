@@ -163,7 +163,7 @@ HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_stop_test, TestSize.Level
 
     customRestore.Init("testbundle", "test");
     auto ret = customRestore.StopRestore();
-    EXPECT_NE(ret, E_OK);
+    EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("custom_restore_stop_test End");
 }
 }

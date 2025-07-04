@@ -23,6 +23,11 @@
 #include <cstring>
 #include <unistd.h>
 
+#include "media_log.h"
+#include "media_file_utils.h"
+#include "medialibrary_unittest_utils.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 #define private public
 #include "cloud_media_album_service.h"
 #include "cloud_media_photos_service.h"
@@ -32,22 +37,109 @@ using namespace testing::ext;
 using namespace OHOS::AAFwk;
 
 namespace OHOS::Media::CloudSync {
-void CloudMediaSyncServiceTestExt::SetUpTestCase() {}
-void CloudMediaSyncServiceTestExt::TearDownTestCase() {}
-void CloudMediaSyncServiceTestExt::SetUp() {}
+
+static shared_ptr<MediaLibraryRdbStore> g_rdbStore = nullptr;
+
+static void SetTables()
+{
+    vector<string> createTableSqlList = {
+        PhotoAlbumColumns::CREATE_TABLE,
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        if (g_rdbStore == nullptr) {
+            MEDIA_ERR_LOG("can not get g_rdbstore");
+            return;
+        }
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
+static void CleanTestTables()
+{
+    vector<string> dropTableList = {
+        PhotoAlbumColumns::TABLE,
+    };
+    for (auto &dropTable : dropTableList) {
+        string dropSql = "DROP TABLE " + dropTable + ";";
+        int32_t ret = g_rdbStore->ExecuteSql(dropSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Drop %{public}s table failed", dropTable.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Drop %{public}s table success", dropTable.c_str());
+    }
+}
+
+static void ClearAndRestart()
+{
+    if (!MediaLibraryUnitTestUtils::IsValid()) {
+        MediaLibraryUnitTestUtils::Init();
+    }
+
+    system("rm -rf /storage/cloud/files/*");
+    system("rm -rf /storage/cloud/files/.thumbs");
+    system("rm -rf /storage/cloud/files/.editData");
+    system("rm -rf /storage/cloud/files/.cache");
+    for (const auto &dir : TEST_ROOT_DIRS) {
+        string ROOT_PATH = "/storage/cloud/100/files/";
+        bool ret = MediaFileUtils::CreateDirectory(ROOT_PATH + dir + "/");
+        CHECK_AND_PRINT_LOG(ret, "make %{public}s dir failed, ret=%{public}d", dir.c_str(), ret);
+    }
+    CleanTestTables();
+    SetTables();
+}
+
+void CloudMediaSyncServiceTestExt::SetUpTestCase()
+{
+    MediaLibraryUnitTestUtils::Init();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Start CloudMediaSyncServiceTestExt failed, can not get rdbstore");
+        exit(1);
+    }
+    SetTables();
+}
+
+void CloudMediaSyncServiceTestExt::TearDownTestCase()
+{
+    if (!MediaLibraryUnitTestUtils::IsValid()) {
+        MediaLibraryUnitTestUtils::Init();
+    }
+
+    system("rm -rf /storage/cloud/files/*");
+    ClearAndRestart();
+    g_rdbStore = nullptr;
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    MEDIA_INFO_LOG("CloudMediaSyncServiceTestExt  finish");
+}
+
+void CloudMediaSyncServiceTestExt::SetUp()
+{
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Start CloudMediaSyncServiceTestExt failed, can not get rdbstore");
+        exit(1);
+    }
+    ClearAndRestart();
+}
+
 void CloudMediaSyncServiceTestExt::TearDown() {}
 
 HWTEST_F(CloudMediaSyncServiceTestExt, AlbumService_HandleFetchOldRecord_Test_001, TestSize.Level1)
 {
     CloudMediaAlbumService service;
     PhotoAlbumDto record;
-    bool bContinue = false;
+    bool bContinue = true;
     ChangeInfo::ChangeType changeType = ChangeInfo::ChangeType::INVAILD;
     OnFetchRecordsAlbumRespBody resp;
 
     int32_t ret = service.HandleFetchOldRecord(record, bContinue, changeType, resp);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(bContinue, true);
+    EXPECT_EQ(bContinue, false);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, AlbumService_OnFetchOldRecords_Test_001, TestSize.Level1)
@@ -100,8 +192,8 @@ HWTEST_F(CloudMediaSyncServiceTestExt, AlbumService_OnMdirtyRecords_Test_001, Te
     std::vector<PhotoAlbumDto> albumDtoList = {dto1};
     int32_t failSize = 0;
     int32_t ret = service.OnMdirtyRecords(albumDtoList, failSize);
-    EXPECT_EQ(ret, E_RDB_STORE_NULL);
-    EXPECT_EQ(failSize, 1);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(failSize, 0);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, AlbumService_OnDeleteRecords_Test_001, TestSize.Level1)
@@ -113,8 +205,8 @@ HWTEST_F(CloudMediaSyncServiceTestExt, AlbumService_OnDeleteRecords_Test_001, Te
     std::vector<PhotoAlbumDto> albumDtoList = {dto1};
     int32_t failSize = 0;
     int32_t ret = service.OnDeleteRecords(albumDtoList, failSize);
-    EXPECT_EQ(ret, E_RDB_STORE_NULL);
-    EXPECT_EQ(failSize, 1);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(failSize, 0);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, AlbumService_OnFetchRecords_Test_001, TestSize.Level1)
@@ -127,7 +219,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, AlbumService_OnFetchRecords_Test_001, Tes
     std::vector<int32_t> stats;
     std::vector<std::string> failedRecords;
     int32_t ret = service.OnFetchRecords(cloudIds, cloudIdRelativeMap, newData, fdirtyData, stats, failedRecords);
-    EXPECT_EQ(ret, E_CLOUDSYNC_RDB_QUERY_FAILED);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_HandleRecord_Test_001, TestSize.Level1)
@@ -171,7 +263,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_PullDelete_Test_001, TestSi
     std::set<std::string> refreshAlbums;
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
     int32_t ret = service.PullDelete(data, refreshAlbums, photoRefresh);
-    EXPECT_EQ(ret, E_RDB_STORE_NULL);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_PullDelete_Test_002, TestSize.Level1)
@@ -191,7 +283,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_PullDelete_Test_002, TestSi
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
 
     int32_t ret = service.PullDelete(data, refreshAlbums, photoRefresh);
-    EXPECT_EQ(ret, E_RDB_STORE_NULL);
+    EXPECT_EQ(ret, E_OK);
     system("rm -rf /data/testtdd.txt");
 }
 
@@ -210,7 +302,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_PullUpdate_Test_001, TestSi
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
 
     int32_t ret = service.PullUpdate(pullData, refreshAlbums, fdirtyData, stats, photoRefresh);
-    EXPECT_EQ(ret, E_RDB_STORE_NULL);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_PullUpdate_Test_002, TestSize.Level1)
@@ -229,7 +321,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_PullUpdate_Test_002, TestSi
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
 
     int32_t ret = service.PullUpdate(pullData, refreshAlbums, fdirtyData, stats, photoRefresh);
-    EXPECT_EQ(ret, E_RDB_STORE_NULL);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_DoDataMerge_Test_001, TestSize.Level1)
@@ -244,7 +336,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_DoDataMerge_Test_001, TestS
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
 
     int32_t ret = service.DoDataMerge(pullData, localKeyData, cloudKeyData, refreshAlbums, photoRefresh);
-    EXPECT_EQ(ret, E_RDB_STORE_NULL);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_PullInsert_Test_002, TestSize.Level1)
@@ -321,7 +413,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_OnCreateRecordSuccess_Test_
     };
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
     int32_t ret = service.OnCreateRecordSuccess(record, localMap, photoRefresh);
-    EXPECT_EQ(ret, E_RDB_STORE_NULL);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_OnFdirtyRecordSuccess_Test_001, TestSize.Level1)
@@ -331,7 +423,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_OnFdirtyRecordSuccess_Test_
     std::unordered_map<std::string, LocalInfo> localMap;
     auto photoRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
     int32_t ret = service.OnFdirtyRecordSuccess(record, localMap, photoRefresh);
-    EXPECT_EQ(ret, E_RDB_STORE_NULL);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, PhotosService_HandleNoContentUploadFail_Test_001, TestSize.Level1)
