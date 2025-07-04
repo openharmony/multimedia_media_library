@@ -112,6 +112,10 @@ static ObjectInfo FuzzObjectInfo()
 // MtpMedialibraryManagerTest start
 static void PtpGetHandlesTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -134,6 +138,10 @@ static void PtpGetHandlesTest()
 
 static void PtpGetObjectInfoTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -149,6 +157,10 @@ static void PtpGetObjectInfoTest()
 
 static void PtpGetFdTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = nullptr;
     bool condition = false;
     int fd = 0;
@@ -161,6 +173,10 @@ static void PtpGetFdTest()
 
 static void PtpGetThumbTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -174,6 +190,10 @@ static void PtpGetThumbTest()
 
 static void PtpSendObjectInfoTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -189,6 +209,10 @@ static void PtpSendObjectInfoTest()
 
 static void PtpMoveObjectTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -200,6 +224,10 @@ static void PtpMoveObjectTest()
 
 static void PtpCopyObjectTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -215,6 +243,10 @@ static void PtpCopyObjectTest()
 
 static void PtpSetObjectPropValueTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -226,6 +258,10 @@ static void PtpSetObjectPropValueTest()
 
 static void PtpCloseFdTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -243,6 +279,10 @@ static void PtpCloseFdTest()
 
 static void PtpGetObjectPropListTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -259,6 +299,10 @@ static void PtpGetObjectPropListTest()
 
 static void PtpGetObjectPropValueTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -273,6 +317,10 @@ static void PtpGetObjectPropValueTest()
 
 static void PtpGetPictureThumbTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -285,6 +333,10 @@ static void PtpGetPictureThumbTest()
 
 static void PtpGetVideoThumbTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -297,6 +349,10 @@ static void PtpGetVideoThumbTest()
 
 static void PtpGetFdByOpenFileTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -309,6 +365,10 @@ static void PtpGetFdByOpenFileTest()
 
 static void PtpSetObjectInfoTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     const unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
     fileAsset->SetMediaType(MediaType::MEDIA_TYPE_ALBUM);
     shared_ptr<ObjectInfo> outObjectInfo = make_shared<ObjectInfo>(FuzzObjectInfo());
@@ -323,6 +383,10 @@ static void PtpSetObjectInfoTest()
 
 static void PtpSetObjectTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -337,6 +401,10 @@ static void PtpSetObjectTest()
 
 static void PtpCompressImageTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     unique_ptr<PixelMap> pixelMap = nullptr;
     vector<uint8_t> imageDdata  = provider->ConsumeBytes<uint8_t>(NUM_BYTES);
     ptpMediaLib_->CompressImage(pixelMap, imageDdata);
@@ -344,6 +412,10 @@ static void PtpCompressImageTest()
 
 static void PtpGetAlbumInfoTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -357,6 +429,10 @@ static void PtpGetAlbumInfoTest()
 
 static void PtpGetPhotosInfoTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
     if (context == nullptr) {
@@ -370,6 +446,10 @@ static void PtpGetPhotosInfoTest()
 
 static void PtpGetAlbumCloudTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     ptpMediaLib_->GetAlbumCloud();
     vector<string> ownerAlbumIds = {provider->ConsumeBytesAsString(NUM_BYTES)};
     ptpMediaLib_->GetAlbumCloudDisplay(ownerAlbumIds);
@@ -377,6 +457,10 @@ static void PtpGetAlbumCloudTest()
 
 static void PtpHaveMovingPhotesHandleTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>();
     shared_ptr<UInt32List> outHandles = make_shared<UInt32List>(FuzzVectorUInt32());
     const uint32_t parent = provider->ConsumeIntegral<uint32_t>();
@@ -390,6 +474,10 @@ static void PtpHaveMovingPhotesHandleTest()
 
 static void PtpGetThumbUriTest()
 {
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     const int32_t handle = provider->ConsumeIntegral<int32_t>();
     const string thumbSizeValue = provider->ConsumeBytesAsString(NUM_BYTES);
     const string dataPath = FILE_PATH + "/" + provider->ConsumeBytesAsString(NUM_BYTES);
@@ -448,6 +536,10 @@ static void InitMtpMedialibraryManager()
         return;
     }
     sptr<IRemoteObject> token = remoteObj;
+    if (ptpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("ptpMediaLib_ is nullptr");
+        return;
+    }
     ptpMediaLib_->Init(token, context);
 }
 
