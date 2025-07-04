@@ -56,7 +56,7 @@ FuzzedDataProvider *provider = nullptr;
 // mtp_data_utils
 static vector<uint16_t> MEDIA_PROP_FUZZY_CODE_VECTOR;
 const uint16_t PROP_BASE = 0xDC00;
-const uint16_t PROP_OFFSET = 100; 
+const uint16_t PROP_OFFSET = 100;
 static string VIDEO_MP4_PATH = "/data/local/tmp/test_video_mp4.mp4";
 
 // mtp_operation
