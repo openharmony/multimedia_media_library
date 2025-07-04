@@ -119,6 +119,10 @@
 #include "parcel.h"
 #include "medialibrary_notify_utils.h"
 #include "qos.h"
+#include "vision_ocr_column.h"
+#include "vision_video_label_column.h"
+#include "vision_label_column.h"
+#include "vision_image_face_column.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -142,6 +146,13 @@ const int32_t MAX_LEN_LIMIT = 9999;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
 const size_t MAX_SET_ORDER_ARRAY_SIZE = 1000;
+
+static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP = {
+    {ANALYSIS_LABEL, FEATURE},
+    {ANALYSIS_FACE, FEATURES},
+    {ANALYSIS_VIDEO_LABEL, VIDEO_PART_FEATURE},
+    {ANALYSIS_OCR, OCR_TEXT_MSG}
+};
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
@@ -7057,11 +7068,7 @@ static void JSGetAnalysisDataExecute(napi_env env, MediaLibraryAsyncContext *con
             AOI, POI, FIRST_AOI, FIRST_POI, LOCATION_VERSION, FIRST_AOI_CATEGORY, FIRST_POI_CATEGORY};
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
         //Chinese and English supported. Other languages English default.
-        if (language.find(LANGUAGE_ZH) == 0 || language.find(LANGUAGE_ZH_TR) == 0) {
-            language = LANGUAGE_ZH;
-        } else {
-            language = LANGUAGE_EN;
-        }
+        language = (language.find(LANGUAGE_ZH) == 0 || language.find(LANGUAGE_ZH_TR) == 0) ? LANGUAGE_ZH : LANGUAGE_EN;
         vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
             GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
             GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \'" + language + "\'" };
@@ -7082,7 +7089,13 @@ static void JSGetAnalysisDataExecute(napi_env env, MediaLibraryAsyncContext *con
         nlohmann::json jsonObject;
         for (uint32_t i = 0; i < columns.size(); i++) {
             string columnName = columns[i];
-            jsonObject[columnName] = MediaLibraryNapiUtils::GetStringValueByColumn(resultSet, columnName);
+            auto it = NEED_COMPATIBLE_COLUMN_MAP.find(context->analysisType);
+            if (it != NEED_COMPATIBLE_COLUMN_MAP.end() && columnName == it->second) {
+                jsonObject[columnName] = MediaLibraryNapiUtils::ParseColumnNeedCompatible(resultSet,
+                    context->analysisType, columnName);
+            } else {
+                jsonObject[columnName] = MediaLibraryNapiUtils::GetStringValueByColumn(resultSet, columnName);
+            }
         }
         context->analysisDatas.push_back(jsonObject.dump());
     }
