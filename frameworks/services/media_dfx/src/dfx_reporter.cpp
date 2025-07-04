@@ -662,7 +662,13 @@ void DfxReporter::ReportPhotoSizeAndResolutionInfo(const QuerySizeAndResolution&
         "LOCAL_IMAGE_RESOLUTION", querySizeAndResolution.localImageResolution,
         "LOCAL_VIDEO_RESOLUTION", querySizeAndResolution.localVideoResolution,
         "CLOUD_IMAGE_RESOLUTION", querySizeAndResolution.cloudImageResolution,
-        "CLOUD_VIDEO_RESOLUTION", querySizeAndResolution.cloudVideoResolution);
+        "CLOUD_VIDEO_RESOLUTION", querySizeAndResolution.cloudVideoResolution,
+        "LOCAL_IMAGE_ROM_SIZE", querySizeAndResolution.localImageRomSize,
+        "LOCAL_VIDEO_ROM_SIZE", querySizeAndResolution.localVideoRomSize,
+        "CACHE_ROM_SIZE", querySizeAndResolution.cacheRomSize,
+        "HIGHLIGHT_ROM_SIZE", querySizeAndResolution.highlightRomSize,
+        "THUMBNAIL_ROM_SIZE", querySizeAndResolution.ThumbnailRomSize,
+        "EDITDATA_ROM_SIZE", querySizeAndResolution.EditdataRomSize);
     if (ret != 0) {
         MEDIA_ERR_LOG("Report ReportPhotoSizeAndResolutionInfo error: %{public}d", ret);
     }
