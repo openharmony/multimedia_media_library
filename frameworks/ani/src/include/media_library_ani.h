@@ -94,6 +94,10 @@ public:
 
     ~ChangeListenerAni() {}
 
+    void SetEnv(ani_env *env)
+    {
+        this->env_ = env;
+    }
     void OnChange(MediaChangeListener &listener, const ani_ref cbRef);
     void QueryRdbAndNotifyChange(UvChangeMsg* msg);
     static void ExecuteThreadWork(ani_env* env, JsOnChangeCallbackWrapper* wrapper);
@@ -133,14 +137,14 @@ public:
     void OnChange(const ChangeInfo &changeInfo) override;
 };
 
-using ThreadFunciton = std::function<void(ani_env*, ani_object, void*, void*)>;
+using ThreadFunction = std::function<void(ani_env*, ani_object, void*, void*)>;
 class ThumbnailGenerateHandler {
 public:
-    ThumbnailGenerateHandler(ani_object ref, ThreadFunciton func) : callbackRef_(ref), threadSafeFunc_(func) {}
+    ThumbnailGenerateHandler(ani_object ref, ThreadFunction func) : callbackRef_(ref), threadSafeFunc_(func) {}
     ~ThumbnailGenerateHandler() = default;
 
     ani_object callbackRef_;
-    ThreadFunciton threadSafeFunc_;
+    ThreadFunction threadSafeFunc_;
 };
 
 class MediaOnNotifyObserver : public DataShare::DataShareObserver {
@@ -255,6 +259,7 @@ private:
     ani_env *env_;
     int32_t userId_ = -1;
     static std::mutex sOnOffMutex_;
+    std::unique_ptr<ChangeListenerAni> listObj_ = nullptr;
 };
 
 struct PickerCallBack {
