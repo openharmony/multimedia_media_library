@@ -32,9 +32,9 @@
 #include "dfx_database_utils.h"
 #include "vision_aesthetics_score_column.h"
 #include "parameters.h"
+#include "photo_storage_operation.h"
 #include "preferences.h"
 #include "preferences_helper.h"
-#include "photo_storage_operation.h"
 #include "hi_audit.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
@@ -528,22 +528,22 @@ void DfxManager::HandleAdaptationToMovingPhoto(const string &appName, bool adapt
 static void GetPhotoAndPhotoExtSizes(QuerySizeAndResolution &queryInfo)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    bool conn = rdbStore == nullptr;
-    CHECK_AND_RETURN_LOG(!conn, "rdbStore is null");
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null");
 
-    int64_t cacheSize = PhotoStorageOperation().GetCacheSize();
-    int64_t highlightSize = PhotoStorageOperation().GetHighlightSizeFromPreferences();
+    PhotoStorageOperation photoStorageOperation;
+    int64_t cacheSize = photoStorageOperation.GetCacheSize();
+    int64_t highlightSize = photoStorageOperation.GetHighlightSizeFromPreferences();
 
     TotalThumbnailSizeResult totalThumbnailSizeResult = {};
-    PhotoStorageOperation().GetTotalThumbnailSize(rdbStore, totalThumbnailSizeResult);
+    photoStorageOperation.GetTotalThumbnailSize(rdbStore, totalThumbnailSizeResult);
 
     TotalEditdataSizeResult totalEditdataSizeRusult = {};
-    PhotoStorageOperation().GetTotalEditdataSize(rdbStore, totalEditdataSizeRusult);
+    photoStorageOperation.GetTotalEditdataSize(rdbStore, totalEditdataSizeRusult);
 
     int64_t totalExtSize = cacheSize + highlightSize + totalThumbnailSizeResult.totalThumbnailSize +
-                           totalEditdataSizeRusult.totalEditdataSize;
+        totalEditdataSizeRusult.totalEditdataSize;
     LocalPhotoSizeResult localPhotoSizeResult = {};
-    PhotoStorageOperation().GetLocalPhotoSize(rdbStore, localPhotoSizeResult, totalExtSize);
+    photoStorageOperation.GetLocalPhotoSize(rdbStore, localPhotoSizeResult, totalExtSize);
 
     int64_t totalSize = localPhotoSizeResult.localImageSize + localPhotoSizeResult.localVideoSize + totalExtSize;
 
