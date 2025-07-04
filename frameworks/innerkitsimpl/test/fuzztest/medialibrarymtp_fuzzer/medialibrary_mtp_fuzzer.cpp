@@ -103,7 +103,7 @@ static void MtpDriverTest()
 
     vector<uint8_t> buffer = provider->ConsumeBytes<uint8_t>(NUM_BYTES);
     uint32_t sizeBuf = buffer.size();
-    int32_t result = provider->ConsumeIntegral<uint32_t>();
+    int32_t result = provider->ConsumeIntegral<int32_t>();
     mtpDriver->Read(buffer, sizeBuf);
     mtpDriver->Write(buffer, sizeBuf, result);
     MtpFileRange mfr;

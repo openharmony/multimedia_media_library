@@ -107,12 +107,20 @@ static ObjectInfo FuzzObjectInfo()
 
 static void AddPathToMapTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->AddPathToMap(provider->ConsumeBytesAsString(NUM_BYTES));
     mtpMediaLib_->Clear();
 }
 
 static void ObserverAddPathToMapTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     mtpMediaLib_->ObserverAddPathToMap(provider->ConsumeBytesAsString(NUM_BYTES));
 
@@ -124,6 +132,10 @@ static void ObserverAddPathToMapTest()
 
 static void GetHandlesTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -144,6 +156,10 @@ static void GetHandlesTest()
 
 static void GetObjectInfoTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -158,6 +174,10 @@ static void GetObjectInfoTest()
 
 static void GetFdTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = nullptr;
     bool condition = false;
@@ -170,6 +190,10 @@ static void GetFdTest()
 
 static void GetThumbTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -186,6 +210,10 @@ static void GetThumbTest()
 
 static void SendObjectInfoTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -206,6 +234,10 @@ static void SendObjectInfoTest()
 
 static void MoveObjectTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -229,6 +261,10 @@ static void MoveObjectTest()
 
 static void CopyObjectTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -247,6 +283,10 @@ static void CopyObjectTest()
 
 static void SetObjectPropValueTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -262,6 +302,10 @@ static void SetObjectPropValueTest()
 
 static void CloseFdTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -282,6 +326,10 @@ static void CloseFdTest()
 
 static void GetObjectPropListTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -301,6 +349,10 @@ static void GetObjectPropListTest()
 
 static void GetObjectPropValueTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -318,6 +370,10 @@ static void GetObjectPropValueTest()
 
 static void GetRealPathTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     string outPath = "";
     mtpMediaLib_->GetRealPath(provider->ConsumeBytesAsString(NUM_BYTES), outPath);
@@ -326,6 +382,10 @@ static void GetRealPathTest()
 
 static void MtpMediaLibraryStorageTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     string fsUuid = provider->ConsumeBytesAsString(NUM_BYTES);
     uint32_t storageId = provider->ConsumeIntegral<uint32_t>();
@@ -336,6 +396,10 @@ static void MtpMediaLibraryStorageTest()
 
 static void ObserverDeletePathToMapTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     mtpMediaLib_->ObserverAddPathToMap(provider->ConsumeBytesAsString(NUM_BYTES));
     mtpMediaLib_->ObserverDeletePathToMap(provider->ConsumeBytesAsString(NUM_BYTES));
@@ -343,6 +407,10 @@ static void ObserverDeletePathToMapTest()
 
 static void ModifyHandlePathMapTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     mtpMediaLib_->AddToHandlePathMap(provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeIntegral<uint32_t>());
 
@@ -355,6 +423,10 @@ static void ModifyHandlePathMapTest()
 
 static void StartsWithTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
 
     string str = provider->ConsumeBytesAsString(NUM_BYTES);
@@ -364,6 +436,10 @@ static void StartsWithTest()
 
 static void MoveHandlePathMapTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     mtpMediaLib_->AddToHandlePathMap(provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeIntegral<uint32_t>());
     mtpMediaLib_->MoveHandlePathMap(FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
@@ -373,6 +449,10 @@ static void MoveHandlePathMapTest()
 
 static void MoveObjectSubTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     mtpMediaLib_->AddToHandlePathMap(provider->ConsumeBytesAsString(NUM_BYTES), provider->ConsumeIntegral<uint32_t>());
 
@@ -384,6 +464,10 @@ static void MoveObjectSubTest()
 
 static void GetIdTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     mtpMediaLib_->GetId();
     mtpMediaLib_->GetParentId(provider->ConsumeBytesAsString(NUM_BYTES));
@@ -391,6 +475,10 @@ static void GetIdTest()
 
 static void ScanDirNoDepthTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     string root = provider->ConsumeBytesAsString(NUM_BYTES);
     shared_ptr<UInt32List> out = make_shared<UInt32List>();
@@ -399,6 +487,10 @@ static void ScanDirNoDepthTest()
 
 static void ScanDirWithTypeTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<unordered_map<uint32_t, string>> out =
         make_shared<unordered_map<uint32_t, string>>();
@@ -415,6 +507,10 @@ static void ScanDirWithTypeTest()
 
 static void GetHandlesMapTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -439,12 +535,20 @@ static void GetHandlesMapTest()
 
 static void GetExternalStoragesTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     mtpMediaLib_->GetExternalStorages();
 }
 
 static void ErasePathInfoTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
 
     mtpMediaLib_->ObserverAddPathToMap(provider->ConsumeBytesAsString(NUM_BYTES));
@@ -455,6 +559,10 @@ static void ErasePathInfoTest()
 
 static void GetVideoThumbTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -470,6 +578,10 @@ static void GetVideoThumbTest()
 
 static void GetPictureThumbTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
@@ -485,6 +597,10 @@ static void GetPictureThumbTest()
 
 static void CorrectStorageIdTest()
 {
+    if (mtpMediaLib_ == nullptr) {
+        MEDIA_ERR_LOG("mtpMediaLib_ is nullptr");
+        return;
+    }
     mtpMediaLib_->Clear();
     const shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext());
