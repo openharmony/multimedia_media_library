@@ -667,7 +667,7 @@ void DfxReporter::ReportPhotoSizeAndResolutionInfo(const QuerySizeAndResolution&
         "LOCAL_VIDEO_ROM_SIZE", querySizeAndResolution.localVideoRomSize,
         "CACHE_ROM_SIZE", querySizeAndResolution.cacheRomSize,
         "HIGHLIGHT_ROM_SIZE", querySizeAndResolution.highlightRomSize,
-        "THUMNAIL_ROM_SIZE", querySizeAndResolution.ThumbnailRomSize,
+        "THUMBNAIL_ROM_SIZE", querySizeAndResolution.ThumbnailRomSize,
         "EDITDATA_ROM_SIZE", querySizeAndResolution.EditdataRomSize);
     if (ret != 0) {
         MEDIA_ERR_LOG("Report ReportPhotoSizeAndResolutionInfo error: %{public}d", ret);

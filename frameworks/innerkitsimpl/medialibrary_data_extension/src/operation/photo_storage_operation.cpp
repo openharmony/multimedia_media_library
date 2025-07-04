@@ -28,28 +28,25 @@ std::shared_ptr<NativeRdb::ResultSet> PhotoStorageOperation::FindStorage(std::sh
     MediaLibraryTracer tracer;
     tracer.Start("PhotoStorageOperation::FindStorage");
     bool conn = rdbStore == nullptr;
-    CHECK_AND_RETURN_RET_LOG(!conn, nullptr, "rdbStore is null");
+    CHECK_AND_RETURN_RET_LOG(!conn, nullptr, "RdbStore is null");
 
     TotalThumbnailSizeResult totalThumbnailSizeResult = {};
     GetTotalThumbnailSize(rdbStore, totalThumbnailSizeResult);
-    int64_t totalThumbnailSize = totalThumbnailSizeResult.totalThumbnailSize;
-    int32_t thumbnailCount = totalThumbnailSizeResult.thumbnailCount;
     MEDIA_INFO_LOG("Thumbnail stats: total_size = %{public}" PRId64 " bytes, count = %{public}d",
-        totalThumbnailSize, thumbnailCount);
+        totalThumbnailSizeResult.totalThumbnailSize, totalThumbnailSizeResult.thumbnailCount);
 
     TotalEditdataSizeResult totalEditdataSizeRusult = {};
     GetTotalEditdataSize(rdbStore, totalEditdataSizeRusult);
-    int64_t totalEditdataSize = totalEditdataSizeRusult.totalEditdataSize;
-    int32_t editdataCount = totalEditdataSizeRusult.editdataCount;
     MEDIA_INFO_LOG("Editdata stats: total_size = %{public}" PRId64 " bytes, count = %{public}d",
-        totalEditdataSize, editdataCount);
+        totalEditdataSizeRusult.totalEditdataSize, totalEditdataSizeRusult.editdataCount);
 
     int64_t cacheSize = this->GetCacheSize();
     int64_t highlightSize = this->GetHighlightSizeFromPreferences();
     MEDIA_INFO_LOG("Media_Storage: cacheSize = %{public}" PRId64 ", highlightSize = %{public}" PRId64 "",
         cacheSize, highlightSize);
 
-    int64_t totalExtSize = cacheSize + highlightSize + totalThumbnailSize + totalEditdataSize;
+    int64_t totalExtSize = cacheSize + highlightSize + totalThumbnailSizeResult.totalThumbnailSize +
+        totalEditdataSizeRusult.totalEditdataSize;
     std::string sql = this->SQL_DB_STORAGE_QUERY;
     std::vector<NativeRdb::ValueObject> params = {totalExtSize};
     return rdbStore->QuerySql(sql, params);
@@ -112,7 +109,7 @@ void PhotoStorageOperation::SaveHighlightSizeToPreferences(int64_t size)
 void PhotoStorageOperation::GetTotalThumbnailSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     TotalThumbnailSizeResult &totalThumbnailSizeResult)
 {
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is null");
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null");
 
     std::string sql = "SELECT "
                       "SUM(thumbnail_size) AS total_thumbnail_size, "
@@ -123,16 +120,13 @@ void PhotoStorageOperation::GetTotalThumbnailSize(std::shared_ptr<MediaLibraryRd
     if (statsResult && (statsResult->GoToFirstRow() == NativeRdb::E_OK)) {
         statsResult->GetLong(0, totalThumbnailSizeResult.totalThumbnailSize);
         statsResult->GetInt(1, totalThumbnailSizeResult.thumbnailCount);
-
-        MEDIA_INFO_LOG("Thumbnail stats: totalThumbnailSize = %{public}" PRId64 " bytes, count = %{public}d",
-            totalThumbnailSizeResult.totalThumbnailSize, totalThumbnailSizeResult.thumbnailCount);
     }
 }
 
 void PhotoStorageOperation::GetTotalEditdataSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     TotalEditdataSizeResult &totalEditdataSizeResult)
 {
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is null");
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null");
 
     std::string sql = "SELECT "
                       "SUM(editdata_size) AS total_editdata_size, "
@@ -143,16 +137,13 @@ void PhotoStorageOperation::GetTotalEditdataSize(std::shared_ptr<MediaLibraryRdb
     if (statsResult && (statsResult->GoToFirstRow() == NativeRdb::E_OK)) {
         statsResult->GetLong(0, totalEditdataSizeResult.totalEditdataSize);
         statsResult->GetInt(1, totalEditdataSizeResult.editdataCount);
-
-        MEDIA_INFO_LOG("Editdata stats: totalEditdataSize = %{public}" PRId64 " bytes, count = %{public}d",
-            totalEditdataSizeResult.totalEditdataSize, totalEditdataSizeResult.editdataCount);
     }
 }
 
 void PhotoStorageOperation::GetLocalPhotoSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     LocalPhotoSizeResult &localPhotoSizeResult, int64_t totalExtSize)
 {
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is null");
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null");
 
     std::string sql = this->SQL_DB_STORAGE_QUERY;
     std::vector<NativeRdb::ValueObject> params = {totalExtSize};
@@ -162,12 +153,8 @@ void PhotoStorageOperation::GetLocalPhotoSize(std::shared_ptr<MediaLibraryRdbSto
         statsResult->GetInt(0, mediaType);
         if (mediaType == MediaType::MEDIA_TYPE_IMAGE) {
             statsResult->GetLong(1, localPhotoSizeResult.localImageSize);
-            MEDIA_INFO_LOG("Photos stats: localImageSize = %{public}" PRId64 " bytes",
-                localPhotoSizeResult.localImageSize);
         } else if (mediaType == MediaType::MEDIA_TYPE_VIDEO) {
             statsResult->GetLong(1, localPhotoSizeResult.localVideoSize);
-            MEDIA_INFO_LOG("Photos stats: localVideoSize = %{public}" PRId64 " bytes",
-                localPhotoSizeResult.localVideoSize);
         }
     }
     statsResult->Close();
