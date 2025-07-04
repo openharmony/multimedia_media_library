@@ -1363,7 +1363,7 @@ int32_t MtpMedialibraryManager::CloseFd(const shared_ptr<MtpOperationContext> &c
         MtpErrorUtils::SolveCloseFdError(errCode), "fail to GetAssetById");
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_URI, MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + MEDIA_FILEOPRN_CLOSEASSET +
-        "/" + to_string(HandleConvertToAdded(context->handle) - COMMON_PHOTOS_OFFSET));
+        "/" + to_string(HandleConvertToAdded(context->handle) % COMMON_PHOTOS_OFFSET));
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "fileAsset is nullptr");
     MEDIA_INFO_LOG("CloseFd %{public}s, FilePath  %{public}s", fileAsset->GetUri().c_str(),
         fileAsset->GetFilePath().c_str());
@@ -1538,7 +1538,7 @@ void MtpMedialibraryManager::DeleteCanceledObject(uint32_t id)
     DataShare::DataShareValuesBucket valuesBucketTrashed;
     valuesBucketTrashed.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     DataShare::DataSharePredicates predicatesTrashed;
-    predicatesTrashed.EqualTo(MediaColumn::MEDIA_ID, to_string(HandleConvertToAdded(id) - COMMON_PHOTOS_OFFSET));
+    predicatesTrashed.EqualTo(MediaColumn::MEDIA_ID, to_string(HandleConvertToAdded(id) % COMMON_PHOTOS_OFFSET));
     dataShareHelper_->Update(trashAssetUri, predicatesTrashed, valuesBucketTrashed);
     MEDIA_INFO_LOG("Update file date_trashed SUCCESS");
 
@@ -1546,7 +1546,7 @@ void MtpMedialibraryManager::DeleteCanceledObject(uint32_t id)
     MediaFileUtils::UriAppendKeyValue(deleteUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri deleteUri(deleteUriStr);
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(HandleConvertToAdded(id) - COMMON_PHOTOS_OFFSET));
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(HandleConvertToAdded(id) % COMMON_PHOTOS_OFFSET));
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, DATE_UNTRASHED);
     dataShareHelper_->Update(deleteUri, predicates, valuesBucket);
