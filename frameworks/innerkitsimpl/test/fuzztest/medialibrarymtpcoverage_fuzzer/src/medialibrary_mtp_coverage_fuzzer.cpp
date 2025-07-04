@@ -56,8 +56,8 @@ FuzzedDataProvider *provider = nullptr;
 // mtp_data_utils
 static vector<uint16_t> MEDIA_PROP_FUZZY_CODE_VECTOR;
 const uint16_t PROP_BASE = 0xDC00;
-const uint16_t PROP_OFFSET = 100; 
-static string VIDEO_MP4_PATH = "/data/local/tmp/test_video_mp4.mp4";
+const uint16_t PROP_OFFSET = 100;
+static string g_videoMP4Path = "/data/local/tmp/test_video_mp4.mp4";
 
 // mtp_operation
 shared_ptr<MtpOperation> mtpOperation_ = nullptr;
@@ -67,16 +67,16 @@ static vector<uint16_t> GET_PAYLOAD_OPERATION_CODE_VECTOR;
 constexpr int FUZZ_STORAGE_MANAGER_MANAGER_ID = 5003;
 static shared_ptr<MtpMedialibraryManager> mtpMediaManagerLib_ = MtpMedialibraryManager::GetInstance();
 shared_ptr<Media::MediaLibraryRdbStore> rdbStore_ = nullptr;
-static int64_t fileId_ = 0;
-static int64_t albumId_ = 0;
+static int64_t g_fileId = 0;
+static int64_t g_albumId = 0;
 const uint32_t MTP_PROP_OFFSET = 255;
-static string FUZZ_THUMBNAIL_PATH = "/data/local/tmp/test_fuzzy_thumbnail.thumbnail";
+static string g_fuzzThumbnailPath = "/data/local/tmp/test_fuzzy_thumbnail.thumbnail";
 
 // mtp_medialibrary
 static shared_ptr<MtpMediaLibrary> mtpMediaLib_ = MtpMediaLibrary::GetInstance();
-static string FUZZ_COPY_PATH = "/data/local/tmp/test_fuzzy_copy.txt";
-static string FUZZ_COPY_NAME = "test_fuzzy_copy.txt";
-static string DIR_PATH = "/data/local/tmp";
+static string g_fuzzCopyPath = "/data/local/tmp/test_fuzzy_copy.txt";
+static string g_fuzzCopyName = "test_fuzzy_copy.txt";
+static string g_dirPath = "/data/local/tmp";
 const uint16_t GALLERY_PROP_OFFSET = 255;
 
 static MtpOperationContext FuzzMtpOperationContext(const uint8_t* data, size_t size)
@@ -157,12 +157,12 @@ static void MtpDataUtilsTest(const uint8_t* data, size_t size)
     PropertyValue outPropValue;
     uint32_t property = MEDIA_PROP_FUZZY_CODE_VECTOR.at(
         provider->ConsumeIntegralInRange<size_t>(0, MEDIA_PROP_FUZZY_CODE_VECTOR.size() - 1));
-    MtpDataUtils::GetPropValueForVideoOfMovingPhoto(VIDEO_MP4_PATH, property, outPropValue);
+    MtpDataUtils::GetPropValueForVideoOfMovingPhoto(g_videoMP4Path, property, outPropValue);
 
     shared_ptr<unordered_map<uint32_t, std::string>> handles = make_shared<unordered_map<uint32_t, std::string>>();
-    handles->insert({1, VIDEO_MP4_PATH});
-    handles->insert({2, DIR_PATH});
-    std::unordered_map<std::string, uint32_t> pathHandles = {{DIR_PATH, 1}};
+    handles->insert({1, g_videoMP4Path});
+    handles->insert({2, g_dirPath});
+    std::unordered_map<std::string, uint32_t> pathHandles = {{g_dirPath, 1}};
     outProps->clear();
     context->property = provider->ConsumeBool() ? MTP_PROPERTY_ALL_CODE : MTP_PROPERTY_ALL_CODE - 1;
     context->format = provider->ConsumeBool() ? 0 : 1;
@@ -229,8 +229,8 @@ static void MtpMedialibraryManagerTest(const uint8_t* data, size_t size)
         return;
     }
 
-    uint32_t start = fileId_ > NORMAL_OFFSET ? fileId_ - NORMAL_OFFSET : 0;
-    uint32_t handle = provider->ConsumeIntegralInRange<uint32_t>(start, fileId_);
+    uint32_t start = g_fileId > NORMAL_OFFSET ? g_fileId - NORMAL_OFFSET : 0;
+    uint32_t handle = provider->ConsumeIntegralInRange<uint32_t>(start, g_fileId);
     PathMap paths;
     mtpMediaManagerLib_->GetCopyObjectPath(handle, paths);
     mtpMediaManagerLib_->GetCopyObjectPath(COMMON_PHOTOS_OFFSET + handle, paths);
@@ -242,7 +242,7 @@ static void MtpMedialibraryManagerTest(const uint8_t* data, size_t size)
     mtpMediaManagerLib_->GetPhotosInfo(context, isHandle);
     
     mtpMediaManagerLib_->GetAlbumCloud();
-    uint32_t uid = provider->ConsumeIntegralInRange<uint32_t>(albumId_, albumId_ + NORMAL_OFFSET);
+    uint32_t uid = provider->ConsumeIntegralInRange<uint32_t>(g_albumId, g_albumId + NORMAL_OFFSET);
     vector<string> ownerAlbumIds = {to_string(uid)};
     mtpMediaManagerLib_->GetAlbumCloudDisplay(ownerAlbumIds);
 
@@ -253,7 +253,7 @@ static void MtpMedialibraryManagerTest(const uint8_t* data, size_t size)
     mtpMediaManagerLib_->GetObjectInfo(context, outObjectInfo);
 
     shared_ptr<UInt8List> thumb = make_shared<UInt8List>();
-    mtpMediaManagerLib_->GetThumbnailFromPath(FUZZ_THUMBNAIL_PATH, thumb);
+    mtpMediaManagerLib_->GetThumbnailFromPath(g_fuzzThumbnailPath, thumb);
 
     int32_t id = provider->ConsumeIntegral<int32_t>();
     std::string randomString = provider->ConsumeBytesAsString(NUM_BYTES);
@@ -292,23 +292,23 @@ static void MtpMedialibraryTest(const uint8_t* data, size_t size)
     std::string outStrVal;
     mtpMediaLib_->GetGalleryPropValue(context, outIntVal, outLongVal, outStrVal, randomString);
 
-    context->parent =  mtpMediaLib_->AddPathToMap(DIR_PATH);
-    PathMap paths = {{FUZZ_COPY_PATH, FUZZ_COPY_NAME}};
+    context->parent =  mtpMediaLib_->AddPathToMap(g_dirPath);
+    PathMap paths = {{g_fuzzCopyPath, g_fuzzCopyName}};
     uint32_t outObjectHandle = 0;
     mtpMediaLib_->CopyGalleryAlbum(context, randomString, paths, outObjectHandle);
-    paths = {{FUZZ_COPY_PATH, randomString}};
+    paths = {{g_fuzzCopyPath, randomString}};
     mtpMediaLib_->CopyGalleryPhoto(context, paths, outObjectHandle);
 
-    mtpMediaLib_->ErasePathInfo(context->parent, DIR_PATH);
+    mtpMediaLib_->ErasePathInfo(context->parent, g_dirPath);
 
     bool realPath = provider->ConsumeBool();
-    std::string path = realPath ? DIR_PATH : randomString;
+    std::string path = realPath ? g_dirPath : randomString;
     std::shared_ptr<UInt32List> out = std::make_shared<UInt32List>();
     mtpMediaLib_->ScanDirNoDepth(path, out);
     std::shared_ptr<std::unordered_map<uint32_t, std::string>> outMap =
         std::make_shared<std::unordered_map<uint32_t, std::string>>();
     mtpMediaLib_->ScanDirWithType(path, outMap);
-    mtpMediaLib_->ScanDirTraverseWithType(DIR_PATH, outMap);
+    mtpMediaLib_->ScanDirTraverseWithType(g_dirPath, outMap);
 }
 
 static inline int32_t FuzzPhotoThumbStatus()
@@ -350,9 +350,9 @@ static void DatabaseDataInitial()
     albumValues.PutString(PhotoAlbumColumns::ALBUM_NAME, provider->ConsumeBytesAsString(NUM_BYTES));
     albumValues.PutString(PhotoAlbumColumns::ALBUM_NAME, provider->ConsumeBytesAsString(NUM_BYTES));
     albumValues.PutString(PhotoAlbumColumns::ALBUM_NAME, provider->ConsumeBytesAsString(NUM_BYTES));
-    albumId_ = 0;
-    rdbStore_->Insert(albumId_, PhotoAlbumColumns::TABLE, albumValues);
-    MEDIA_INFO_LOG("albumId: %{public}lld.", albumId_);
+    g_albumId = 0;
+    rdbStore_->Insert(g_albumId, PhotoAlbumColumns::TABLE, albumValues);
+    MEDIA_INFO_LOG("albumId: %{public}lld.", g_albumId);
     
     NativeRdb::ValuesBucket photoValues;
     photoValues.PutInt(PhotoColumn::PHOTO_POSITION, FuzzPhotoPosition());
@@ -366,13 +366,13 @@ static void DatabaseDataInitial()
     photoValues.PutString(PhotoColumn::PHOTO_BURST_KEY, provider->ConsumeBytesAsString(NUM_BYTES));
     int64_t trashed = provider->ConsumeBool() ? 0 : 1;
     photoValues.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, trashed);
-    photoValues.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId_);
+    photoValues.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, g_albumId);
     photoValues.PutString(PhotoColumn::MEDIA_TIME_PENDING, "0");
     photoValues.PutString(PhotoColumn::MEDIA_HIDDEN, "0");
     photoValues.PutString(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
-    fileId_ = 0;
-    rdbStore_->Insert(fileId_, PhotoColumn::PHOTOS_TABLE, photoValues);
-    MEDIA_INFO_LOG("fileId: %{public}lld.", fileId_);
+    g_fileId = 0;
+    rdbStore_->Insert(g_fileId, PhotoColumn::PHOTOS_TABLE, photoValues);
+    MEDIA_INFO_LOG("fileId: %{public}lld.", g_fileId);
 }
 
 static void DatabaseDataClear()
@@ -382,19 +382,19 @@ static void DatabaseDataClear()
     }
 
     std::string whereClause = PhotoAlbumColumns::ALBUM_ID + " = ? ";
-    std::vector<std::string> whereArgs = {to_string(albumId_)};
+    std::vector<std::string> whereArgs = {to_string(g_albumId)};
     int32_t deletedRows = -1;
     int32_t ret = rdbStore_->Delete(deletedRows, PhotoAlbumColumns::TABLE, whereClause, whereArgs);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("DeleteAlbumAsset by albumId %{public}lld Failed %{public}d", albumId_, ret);
+        MEDIA_ERR_LOG("DeleteAlbumAsset by albumId %{public}lld Failed %{public}d", g_albumId, ret);
     }
 
     whereClause = MediaColumn::MEDIA_ID + " = ? ";
-    whereArgs = {to_string(fileId_)};
+    whereArgs = {to_string(g_fileId)};
     deletedRows = -1;
     ret = rdbStore_->Delete(deletedRows, PhotoColumn::PHOTOS_TABLE, whereClause, whereArgs);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("DeletePhotoAsset by fileId %{public}lld Failed %{public}d", fileId_, ret);
+        MEDIA_ERR_LOG("DeletePhotoAsset by fileId %{public}lld Failed %{public}d", g_fileId, ret);
     }
 }
 
@@ -527,13 +527,13 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
     OHOS::InitDB();
 
     char buff[2] = "1";
-    int fd1 = open(OHOS::VIDEO_MP4_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    int fd1 = open(OHOS::g_videoMP4Path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     write(fd1, buff, 1);
     close(fd1);
-    int fd2 = open(OHOS::FUZZ_THUMBNAIL_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    int fd2 = open(OHOS::g_fuzzThumbnailPath.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     write(fd2, buff, 1);
     close(fd2);
-    int fd3 = open(OHOS::FUZZ_COPY_PATH.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    int fd3 = open(OHOS::g_fuzzCopyPath.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     write(fd3, buff, 1);
     close(fd3);
     return 0;
