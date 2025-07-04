@@ -34,7 +34,8 @@ public:
 private:
     static std::shared_ptr<FileAsset> QueryPhotoInfo(NativeRdb::RdbPredicates &rdbPredicate);
     static int32_t UpdateBurstPhotoInfo(const std::string &burstKey, const bool isCover,
-        NativeRdb::RdbPredicates &rdbPredicate);
+        NativeRdb::RdbPredicates &rdbPredicate,
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
 
     static std::shared_ptr<FileAsset> FetchOneFileAssetFromResultSet(
         const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::vector<std::string> &columns);

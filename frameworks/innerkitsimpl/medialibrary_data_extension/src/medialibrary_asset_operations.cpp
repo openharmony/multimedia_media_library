@@ -3192,9 +3192,12 @@ static int32_t DeleteLocalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
     return E_OK;
 }
 
-int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predicates, const bool isAging)
+int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predicates, const bool isAging,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
-    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    if (assetRefresh == nullptr) {
+        assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    }
     MEDIA_DEBUG_LOG("DeletePermanently begin");
     MediaLibraryTracer tracer;
     tracer.Start("DeletePermanently");
