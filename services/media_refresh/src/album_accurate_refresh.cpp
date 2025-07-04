@@ -72,6 +72,9 @@ int32_t AlbumAccurateRefresh::Init(const std::vector<int32_t> &albumIds)
 
 int32_t AlbumAccurateRefresh::Notify()
 {
+    if (dataManager_.CheckIsExceed()) {
+        return NotifyForReCheck();
+    }
     return Notify(dataManager_.GetChangeDatas());
 }
 
