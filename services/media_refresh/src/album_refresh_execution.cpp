@@ -249,10 +249,7 @@ int32_t AlbumRefreshExecution::GetUpdateValues(ValuesBucket &values, const Album
         data.shouldUpdateDateModified = true; // 非隐藏全量刷新时，说明相册封面有变化，需要设置
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore null");
-        return ACCURATE_REFRESH_RDB_NULL;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null");
     type = data.albumCount < data.newTotalCount ? NOTIFY_ALBUM_ADD_ASSET :
         (data.albumCount > data.newTotalCount ? NOTIFY_ALBUM_REMOVE_ASSET : NOTIFY_UPDATE);
     return MediaLibraryRdbUtils::GetUpdateValues(rdbStore, data, values, subtype, isHidden);
@@ -645,5 +642,15 @@ void AlbumRefreshExecution::CheckNotifyOldNotification(NotifyAlbumType notifyAlb
             albumInfo.albumType_, albumInfo.albumSubType_, notifyAlbumType);
     }
 }
+
+int32_t AlbumRefreshExecution::RefreshAllAlbum()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null");
+    ACCURATE_DEBUG("force update all albums");
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
+    return ACCURATE_REFRESH_RET_OK;
+}
+
 } // namespace Media
 } // namespace OHOS

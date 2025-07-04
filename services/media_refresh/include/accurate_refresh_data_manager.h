@@ -44,6 +44,7 @@ public:
     std::vector<ChangeData> GetChangeDatas();
     virtual std::vector<int32_t> GetInitKeys() = 0;
     void SetTransaction(std::shared_ptr<TransactionOperations> trans);
+    bool CheckIsExceed(bool isLengthChanged = false);
  
 protected:
     int32_t InsertInitChangeInfos(const std::vector<ChangeInfo> &changeInfos);
@@ -59,10 +60,13 @@ private:
     virtual std::vector<ChangeInfo> GetInfoByKeys(const std::vector<int32_t> &keys) = 0;
     virtual std::vector<ChangeInfo> GetInfosByPredicates(const NativeRdb::AbsRdbPredicates &predicates) = 0;
     virtual std::vector<ChangeInfo> GetInfosByResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet) = 0;
+    std::size_t GetCurrentDataLength();
 
 protected:
+    const std::size_t MAX_DATA_LENGTH = 1000;
     std::map<int32_t, ChangeData> changeDatas_;
     std::shared_ptr<TransactionOperations> trans_;
+    bool isExceed_ = false;
 };
 
 } // namespace Media

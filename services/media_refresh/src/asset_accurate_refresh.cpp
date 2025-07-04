@@ -294,6 +294,9 @@ int32_t AssetAccurateRefresh::Init(const vector<int32_t> &fileIds)
 // refresh album based on init datas and modified datas.
 int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType)
 {
+    if (dataManager_.CheckIsExceed()) {
+        return RefreshAllAlbum();
+    }
     auto assetChangeDatas = dataManager_.GetChangeDatas();
     if (assetChangeDatas.empty()) {
         MEDIA_WARN_LOG("change data empty.");
@@ -328,6 +331,9 @@ int32_t AssetAccurateRefresh::RefreshAlbum(const vector<PhotoAssetChangeData> &a
 // notify assest change infos based on init datas and modified datas.
 int32_t AssetAccurateRefresh::Notify()
 {
+    if (dataManager_.CheckIsExceed()) {
+        return NotifyForReCheck();
+    }
     // 相册通知
     albumRefreshExe_.Notify();
 
@@ -441,5 +447,9 @@ int32_t AssetAccurateRefresh::NotifyForReCheck()
     return ACCURATE_REFRESH_RET_OK;
 }
 
+int32_t AssetAccurateRefresh::RefreshAllAlbum()
+{
+    return albumRefreshExe_.RefreshAllAlbum();
+}
 }  // namespace Media::AccurateRefresh
 }  // namespace OHOS

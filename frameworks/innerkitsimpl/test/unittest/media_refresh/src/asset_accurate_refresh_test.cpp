@@ -1037,5 +1037,69 @@ HWTEST_F(AssetAccurateRefreshTest, Update_009, TestSize.Level2)
     EXPECT_TRUE(
         CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE, albumChangeDatas, 3));
 }
+
+HWTEST_F(AssetAccurateRefreshTest, Update_Exceed_010, TestSize.Level2)
+{
+    PrepareNormalAssets();
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+    ValuesBucket value;
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh;
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+
+    // 修改changeDatas_的数量
+    auto &changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData changeData;
+    // 总共1001条
+    for (int i = 0; i < 1000; ++i) {
+        changeDatasMap.insert_or_assign(1000000 + i, changeData);
+    }
+    ValuesBucket newValue;
+    newValue.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+    ret = assetRefresh.Update(changedRow, newValue, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+    // 总共1001条
+    EXPECT_TRUE(assetRefresh.dataManager_.CheckIsExceed());
+    EXPECT_TRUE(assetRefresh.dataManager_.changeDatas_.empty());
+    EXPECT_TRUE(assetRefresh.RefreshAlbum() == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(assetRefresh.Notify() == ACCURATE_REFRESH_RET_OK);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Update_Exceed_011, TestSize.Level2)
+{
+    PrepareNormalAssets();
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+    ValuesBucket value;
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh;
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+
+    // 修改changeDatas_的数量
+    auto &changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData changeData;
+    // 总共1000条
+    for (int i = 0; i < 999; ++i) {
+        changeDatasMap.insert_or_assign(1000000 + i, changeData);
+    }
+    ValuesBucket newValue;
+    newValue.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+    ret = assetRefresh.Update(changedRow, newValue, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+    EXPECT_TRUE(!assetRefresh.dataManager_.CheckIsExceed());
+    // 总共1000条
+    EXPECT_TRUE(assetRefresh.dataManager_.changeDatas_.size() == 1000);
+}
 } // namespace Media
 } // namespace OHOS
