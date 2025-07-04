@@ -57,6 +57,7 @@ int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
     config.SetHaMode(NativeRdb::HAMode::MANUAL_TRIGGER);
     config.SetAllowRebuild(true);
+    config.SetWalLimitSize(WAL_LIMIT_SIZE);
     if (area != DEFAULT_AREA_VERSION) {
         config.SetArea(area);
     }
