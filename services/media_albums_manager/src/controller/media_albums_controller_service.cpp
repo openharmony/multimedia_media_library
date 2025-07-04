@@ -824,7 +824,7 @@ int32_t MediaAlbumsControllerService::SetOrderPosition(MessageParcel &data, Mess
     cmd.SetDataSharePred(predicates);
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    ret = MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumPortraitsOrder(cmd);
+    ret = MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
