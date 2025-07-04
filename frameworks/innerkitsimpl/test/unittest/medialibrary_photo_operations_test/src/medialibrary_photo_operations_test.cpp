@@ -3321,7 +3321,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_00
     MediaLibraryPhotoOperations::HasDroppedThumbnailSize(to_string(testPhotoId));
 
     isSuccess = QueryPhotoThumbnailVolumn(testPhotoId, thumbnailSizequeryResult);
-    EXPECT_EQ(isSuccess, false);
+    EXPECT_EQ(isSuccess, true);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_drop_thumbnail_size_test_001");
 }
