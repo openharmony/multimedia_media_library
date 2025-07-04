@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <string>
 #include <thread>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "ability_context_impl.h"
 #include "media_log.h"
 #include "rdb_utils.h"
@@ -31,32 +32,26 @@
 namespace OHOS {
 using namespace std;
 static const int32_t E_ERR = -1;
+static const int32_t NUM_BYTES = 1;
+static const int32_t MAX_DPS_ERROR_CODE = 10;
 static const string PHOTOS_TABLE = "Photos";
+FuzzedDataProvider *provider = nullptr;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
+static inline CameraStandard::DpsErrorCode FuzzDpsErrorCode()
 {
-    return static_cast<int32_t>(*data);
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_DPS_ERROR_CODE);
+    return static_cast<CameraStandard::DpsErrorCode>(value);
 }
 
-static inline string FuzzString(const uint8_t *data, size_t size)
-{
-    return {reinterpret_cast<const char*>(data), size};
-}
-
-static inline CameraStandard::DpsErrorCode FuzzDpsErrorCode(const uint8_t *data, size_t size)
-{
-    return static_cast<CameraStandard::DpsErrorCode>(FuzzInt32(data, size));
-}
-
-static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
+static int32_t InsertAsset(string photoId)
 {
     if (g_rdbStore == nullptr) {
         return E_ERR;
     }
     NativeRdb::ValuesBucket values;
     values.PutString(Media::PhotoColumn::PHOTO_ID, photoId);
-    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
+    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
     int64_t fileId = 0;
     g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
     return static_cast<int32_t>(fileId);
@@ -94,27 +89,27 @@ static void Init()
     SetTables();
 }
 
-static void MultistagesCaptureDeferredPhotoProcAdapterTest(const uint8_t *data, size_t size)
+static void MultistagesCaptureDeferredPhotoProcAdapterTest()
 {
     std::shared_ptr<Media::DeferredPhotoProcessingAdapter> deferredProcSession =
         make_shared<Media::DeferredPhotoProcessingAdapter>();
     deferredProcSession->BeginSynchronize();
     deferredProcSession->EndSynchronize();
-    std::string photoId = FuzzString(data, size);
-    std::string appName = FuzzString(data, size);
+    std::string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
+    std::string appName = provider->ConsumeBytesAsString(NUM_BYTES);
     deferredProcSession->RestoreImage(photoId);
     deferredProcSession->ProcessImage(appName, photoId);
     deferredProcSession->CancelProcessImage(photoId);
 }
 
-static void MultistagesCaptureDeferredPhotoProcSessionCallbackTest(const uint8_t *data, size_t size)
+static void MultistagesCaptureDeferredPhotoProcSessionCallbackTest()
 {
     Media::MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
         new Media::MultiStagesCaptureDeferredPhotoProcSessionCallback();
-    std::string photoId = FuzzString(data, size);
-    int32_t fileId = InsertAsset(data, size, photoId);
+    std::string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
+    int32_t fileId = InsertAsset(photoId);
     MEDIA_DEBUG_LOG("fileId: %{public}d.", fileId);
-    CameraStandard::DpsErrorCode errCode = FuzzDpsErrorCode(data, size);
+    CameraStandard::DpsErrorCode errCode = FuzzDpsErrorCode();
     callback->OnError(photoId, errCode);
 }
 
@@ -129,9 +124,14 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
     int sleepTime = 100;
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
-    OHOS::MultistagesCaptureDeferredPhotoProcAdapterTest(data, size);
-    OHOS::MultistagesCaptureDeferredPhotoProcSessionCallbackTest(data, size);
+    OHOS::MultistagesCaptureDeferredPhotoProcAdapterTest();
+    OHOS::MultistagesCaptureDeferredPhotoProcSessionCallbackTest();
     return 0;
 }
