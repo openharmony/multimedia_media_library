@@ -847,15 +847,8 @@ static const map<int32_t, struct SendableAnalysisSourceInfo> ANALYSIS_SOURCE_INF
         POSE_SCALE_WIDTH, POSE_SCALE_HEIGHT, PROB, POSE_TYPE, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
 };
 
-static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
+static DataShare::DataSharePredicates GetPredicatesHelper(SendableFileAssetAsyncContext *context)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("JSGetThumbnailExecute");
-    if (ANALYSIS_SOURCE_INFO_MAP.find(context->analysisType) == ANALYSIS_SOURCE_INFO_MAP.end()) {
-        NAPI_ERR_LOG("Invalid analysisType");
-        return;
-    }
-    auto &analysisInfo = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType);
     DataShare::DataSharePredicates predicates;
     if (context->analysisType == ANALYSIS_HUMAN_FACE_TAG) {
         string onClause = VISION_IMAGE_FACE_TABLE + "." + TAG_ID + " = " + VISION_FACE_TAG_TABLE + "." + TAG_ID;
@@ -879,11 +872,26 @@ static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
     } else {
         predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     }
+    return predicates;
+}
+
+static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetThumbnailExecute");
+    if (ANALYSIS_SOURCE_INFO_MAP.find(context->analysisType) == ANALYSIS_SOURCE_INFO_MAP.end()) {
+        NAPI_ERR_LOG("Invalid analysisType");
+        return;
+    }
+    auto &analysisInfo = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType);
+    DataShare::DataSharePredicates predicates = GetPredicatesHelper(context);
+    string fileId = to_string(context->objectInfo->GetFileId());
     Uri uri(analysisInfo.uriStr);
     std::vector<std::string> fetchColumn = analysisInfo.fetchColumn;
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
-    context->analysisData = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
+    context->analysisData = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet,
+        fetchColumn, context->analysisType);
     if (context->analysisData == ANALYSIS_NO_RESULTS) {
         Uri uri(PAH_QUERY_ANA_TOTAL);
         DataShare::DataSharePredicates predicates;
