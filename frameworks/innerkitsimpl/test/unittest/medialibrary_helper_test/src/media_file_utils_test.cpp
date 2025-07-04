@@ -1027,23 +1027,46 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateAssetRealName_Test_001
 {
     int32_t fileId = 1;
     int32_t mediaType = MediaType::MEDIA_TYPE_IMAGE;
-    string extension = "";
+    string extension = "jpg";
     string name = "";
     int32_t res = MediaFileUtils::CreateAssetRealName(fileId, mediaType, extension, name);
     EXPECT_EQ(res, E_OK);
+    size_t lastPos = name.rfind('.');
+    string str = name.substr(lastPos + 1);
+    EXPECT_EQ(extension, str);
 
     fileId = 1000;
+    extension = "mp4";
     mediaType = MediaType::MEDIA_TYPE_VIDEO;
     res = MediaFileUtils::CreateAssetRealName(fileId, mediaType, extension, name);
     EXPECT_EQ(res, E_OK);
+    lastPos = name.rfind('.');
+    str = name.substr(lastPos + 1);
+    EXPECT_EQ(extension, str);
 
+    extension = "mp3";
     mediaType = MediaType::MEDIA_TYPE_AUDIO;
     res = MediaFileUtils::CreateAssetRealName(fileId, mediaType, extension, name);
     EXPECT_EQ(res, E_OK);
+    lastPos = name.rfind('.');
+    str = name.substr(lastPos + 1);
+    EXPECT_EQ(extension, str);
 
     mediaType = MediaType::MEDIA_TYPE_MEDIA;
     res = MediaFileUtils::CreateAssetRealName(fileId, mediaType, extension, name);
     EXPECT_EQ(res, E_INVALID_VALUES);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateAssetRealName_Test_002, TestSize.Level1)
+{
+    int32_t fileId = 1;
+    int32_t mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    string extension = "";
+    string name = "";
+    int32_t res = MediaFileUtils::CreateAssetRealName(fileId, mediaType, extension, name);
+    EXPECT_EQ(res, E_OK);
+    size_t lastPos = name.rfind('.');
+    EXPECT_EQ(std::string::npos, lastPos);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaTypeUri_Test_01, TestSize.Level1)
