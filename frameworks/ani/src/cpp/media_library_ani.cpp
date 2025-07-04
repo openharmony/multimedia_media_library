@@ -59,7 +59,7 @@ using ChangeType = AAFwk::ChangeInfo::ChangeType;
 using DataSharePredicates = OHOS::DataShare::DataSharePredicates;
 using DataShareResultSet = OHOS::DataShare::DataShareResultSet;
 using DataShareValuesBucket = OHOS::DataShare::DataShareValuesBucket;
-thread_local std::unique_ptr<ChangeListenerAni> g_listObj = nullptr;
+
 
 static SafeMap<int32_t, std::shared_ptr<ThumbnailBatchGenerateObserver>> thumbnailGenerateObserverMap;
 static SafeMap<int32_t, std::shared_ptr<ThumbnailGenerateHandler>> thumbnailGenerateHandlerMap;
@@ -1179,7 +1179,7 @@ static void CreateThumbnailHandler(ani_env *env, std::unique_ptr<MediaLibraryAsy
 {
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
     ani_object callback = asyncContext->callback;
-    ThreadFunciton threadSafeFunc = MediaLibraryAni::OnThumbnailGenerated;
+    ThreadFunction threadSafeFunc = MediaLibraryAni::OnThumbnailGenerated;
 
     std::shared_ptr<ThumbnailGenerateHandler> dataHandler =
         std::make_shared<ThumbnailGenerateHandler>(callback, threadSafeFunc);
@@ -1561,8 +1561,8 @@ ani_object MediaLibraryAni::Constructor(ani_env *env, ani_class clazz, ani_objec
     nativeHandle->env_ = env;
     nativeHandle->SetUserId(userId);
     // Initialize the ChangeListener object
-    if (g_listObj == nullptr) {
-        g_listObj = std::make_unique<ChangeListenerAni>(env);
+    if (nativeHandle->listObj_ == nullptr) {
+        nativeHandle->listObj_ = std::make_unique<ChangeListenerAni>(env);
     }
 
     bool isAsync = false;
@@ -1600,8 +1600,8 @@ ani_object MediaLibraryAni::Constructor(ani_env *env, ani_class clazz, ani_objec
 
     nativeHandle->env_ = env;
     // Initialize the ChangeListener object
-    if (g_listObj == nullptr) {
-        g_listObj = std::make_unique<ChangeListenerAni>(env);
+    if (nativeHandle->listObj_ == nullptr) {
+        nativeHandle->listObj_ = std::make_unique<ChangeListenerAni>(env);
     }
 
     bool isAsync = true;
@@ -1960,59 +1960,17 @@ ani_object MediaLibraryAni::GetPhotoAlbums(ani_env *env, ani_object object, ani_
     return GetPhotoAlbumsComplete(env, asyncContext);
 }
 
-static ani_status GetInt32(ani_env *env, ani_object arg, int32_t &value)
-{
-    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    CHECK_COND_RET(MediaLibraryAniUtils::IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
-
-    ani_class cls {};
-    static const std::string className = "Lstd/core/Double;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lstd/core/Double.");
-
-    ani_boolean isDouble;
-    env->Object_InstanceOf(arg, cls, &isDouble);
-    CHECK_COND_RET(isDouble == ANI_TRUE, ANI_ERROR, "arg is not a double type");
-
-    ani_double result;
-    env->Object_CallMethodByName_Double(arg, "unboxed", nullptr, &result);
-    double doubleValue = 0;
-    CHECK_STATUS_RET(MediaLibraryAniUtils::GetDouble(env, result, doubleValue), "get GetDouble error");
-    value = static_cast<int32_t>(doubleValue);
-    return ANI_OK;
-}
-
-static ani_status GetInt32Array(ani_env *env, ani_object arg, std::vector<int32_t> &array)
-{
-    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    CHECK_COND_RET(MediaLibraryAniUtils::IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
-    CHECK_COND_RET(MediaLibraryAniUtils::IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
-
-    ani_double length;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
-        "Call method <get>length failed.");
-
-    for (int i = 0; i < static_cast<ani_int>(length); i++) {
-        ani_ref ref;
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "I:Lstd/core/Object;", &ref, (ani_int)i),
-            "Call method $_get failed.");
-
-        int32_t value = 0;
-        CHECK_STATUS_RET(GetInt32(env, (ani_object)ref, value), "Call method GetInt32 failed.");
-
-        array.emplace_back(value);
-    }
-    return ANI_OK;
-}
-
 static ani_status GetAlbumIds(ani_env *env, ani_object albumIds, unique_ptr<MediaLibraryAsyncContext> &context)
 {
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return ANI_ERROR;
     }
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_WITH_RET_MESSAGE(env, context != nullptr, ANI_ERROR, "context is nullptr");
 
     std::vector<int32_t> intarray = {};
-    auto order = GetInt32Array(env, albumIds, intarray);
+    auto order = MediaLibraryAniUtils::GetInt32Array(env, albumIds, intarray);
     CHECK_COND_WITH_RET_MESSAGE(env, order == ANI_OK, ANI_INVALID_ARGS, "Failed to parse order GetAlbumIds");
     if (intarray.empty() || intarray.size() > MAX_QUERY_ALBUM_LIMIT) {
         ANI_ERR_LOG("the size of albumid is invalid");
@@ -3060,6 +3018,7 @@ void MediaLibraryAni::RegisterNotifyChange(ani_env *env, const std::string &uri,
     ChangeListenerAni &listObj)
 {
     Uri notifyUri(uri);
+    listObj.SetEnv(env);
     shared_ptr<MediaOnNotifyObserver> observer = make_shared<MediaOnNotifyObserver>(listObj, uri, ref);
     CHECK_NULL_PTR_RETURN_VOID(observer, "observer is nullptr");
     UserFileClient::RegisterObserverExt(notifyUri,
@@ -3246,8 +3205,8 @@ void MediaLibraryAni::PhotoAccessHelperOnCallback(ani_env *env, ani_object objec
     ani_ref cbOnRef {};
     env->GlobalReference_Create(static_cast<ani_ref>(callbackOn), &cbOnRef);
     tracer.Start("RegisterNotifyChange");
-    if (CheckRef(env, cbOnRef, *g_listObj, false, uri)) {
-        obj->RegisterNotifyChange(env, uri, isDerived, cbOnRef, *g_listObj);
+    if (CheckRef(env, cbOnRef, *obj->listObj_, false, uri)) {
+        obj->RegisterNotifyChange(env, uri, isDerived, cbOnRef, *obj->listObj_);
     } else {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         env->GlobalReference_Delete(cbOnRef);
@@ -3280,16 +3239,16 @@ void MediaLibraryAni::PhotoAccessHelperOffCallback(ani_env *env, ani_object obje
     env->Reference_IsUndefined(callbackOff, &isUndefined);
     if (ListenerTypeMaps.find(uri) != ListenerTypeMaps.end()) {
         if (isUndefined == ANI_FALSE) {
-            env->GlobalReference_Create(static_cast<ani_ref>(callbackOff), &g_listObj->cbOffRef_);
+            env->GlobalReference_Create(static_cast<ani_ref>(callbackOff), &obj->listObj_->cbOffRef_);
         }
-        obj->UnregisterChange(env, uri, *g_listObj);
+        obj->UnregisterChange(env, uri, *obj->listObj_);
         return;
     }
     if (isUndefined == ANI_FALSE) {
         env->GlobalReference_Create(static_cast<ani_ref>(callbackOff), &cbOffRef);
     }
     tracer.Start("UnRegisterNotifyChange");
-    obj->UnRegisterNotifyChange(env, uri, cbOffRef, *g_listObj);
+    obj->UnRegisterNotifyChange(env, uri, cbOffRef, *obj->listObj_);
 }
 
 static ani_status ParseArgsSaveFormInfo(ani_env *env, ani_object info, unique_ptr<MediaLibraryAsyncContext> &context)
@@ -3363,7 +3322,7 @@ void MediaLibraryAni::PhotoAccessSaveFormInfo(ani_env *env, ani_object object, a
         return;
     }
 
-    CHECK_IF_EQUAL(ParseArgsSaveFormInfo(env, info, context) == ANI_OK, "ParseArgsSaveFormInfo fail");
+    CHECK_ARGS_RET_VOID(env, ParseArgsSaveFormInfo(env, info, context), JS_ERR_PARAMETER_INVALID);
     PhotoAccessSaveFormInfoExec(env, context);
     PhotoAccessSaveFormInfoComplete(env, context);
 }

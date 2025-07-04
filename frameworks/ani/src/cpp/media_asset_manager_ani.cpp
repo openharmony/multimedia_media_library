@@ -95,7 +95,7 @@ static bool HasReadPermission()
 }
 
 static AssetHandler* CreateAssetHandler(ani_env *env, unique_ptr<MediaAssetManagerAniContext> &context,
-    const std::shared_ptr<AniMediaAssetDataHandler> &handler, ThreadFuncitonOnData func)
+    const std::shared_ptr<AniMediaAssetDataHandler> &handler, ThreadFunctionOnData func)
 {
     CHECK_COND_RET(context != nullptr, nullptr, "context is null");
     AssetHandler *assetHandler =
@@ -205,7 +205,7 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, ani_env *env,
 {
     CHECK_COND_RET(context != nullptr, nullptr, "context is null");
     ani_ref dataHandlerRef;
-    ThreadFuncitonOnData threadSafeFunc;
+    ThreadFunctionOnData threadSafeFunc;
     if (notifyMode == NotifyMode::FAST_NOTIFY) {
         dataHandlerRef = context->dataHandlerRef;
         context->dataHandlerRef = nullptr;
@@ -565,7 +565,7 @@ ani_status MediaAssetManagerAni::CreateProgressHandlerRef(ani_env *env,
     return status;
 }
 
-ani_status MediaAssetManagerAni::CreateOnDataPreparedThreadSafeFunc(ThreadFuncitonOnData &threadSafeFunc)
+ani_status MediaAssetManagerAni::CreateOnDataPreparedThreadSafeFunc(ThreadFunctionOnData &threadSafeFunc)
 {
     threadSafeFunc = [](AssetHandler* assetHandler) {
         CHECK_IF_EQUAL(assetHandler != nullptr, "assetHandler is null");
@@ -589,7 +589,7 @@ ani_status MediaAssetManagerAni::CreateOnDataPreparedThreadSafeFunc(ThreadFuncit
     return ANI_OK;
 }
 
-ani_status MediaAssetManagerAni::CreateOnProgressThreadSafeFunc(ThreadFuncitonOnProgress &progressFunc)
+ani_status MediaAssetManagerAni::CreateOnProgressThreadSafeFunc(ThreadFunctionOnProgress &progressFunc)
 {
     progressFunc = [](ProgressHandler* progressHandler) {
         CHECK_IF_EQUAL(progressHandler != nullptr, "progressHandler is null");
@@ -1147,7 +1147,7 @@ static ProgressHandler* InsertProgressHandler(ani_env *env, unique_ptr<MediaAsse
 {
     CHECK_COND_RET(context != nullptr, nullptr, "context is null");
     ani_ref dataHandlerRef = context->progressHandlerRef;
-    ThreadFuncitonOnProgress threadSafeFunc = context->onProgressPtr;
+    ThreadFunctionOnProgress threadSafeFunc = context->onProgressPtr;
     ProgressHandler *progressHandler = new ProgressHandler(env, threadSafeFunc, context->requestId,
         dataHandlerRef);
     CHECK_COND_RET(progressHandler != nullptr, nullptr, "progressHandler is null");
