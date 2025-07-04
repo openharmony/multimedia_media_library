@@ -40,9 +40,9 @@ enum ProgressReturnInfoType : int32_t {
 };
 
 struct AssetHandler;
-using ThreadFuncitonOnData = std::function<void(AssetHandler*)>;
+using ThreadFunctionOnData = std::function<void(AssetHandler*)>;
 struct ProgressHandler;
-using ThreadFuncitonOnProgress = std::function<void(ProgressHandler*)>;
+using ThreadFunctionOnProgress = std::function<void(ProgressHandler*)>;
 
 struct AssetHandler {
     ani_env *env;
@@ -50,13 +50,13 @@ struct AssetHandler {
     std::string requestId;
     std::string requestUri;
     std::shared_ptr<AniMediaAssetDataHandler> dataHandler;
-    ThreadFuncitonOnData threadSafeFunc;
+    ThreadFunctionOnData threadSafeFunc;
     MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     bool needsExtraInfo = false;
     bool isError = false;
 
     AssetHandler(ani_env *env, const std::string &photoId, const std::string &requestId, const std::string &uri,
-        const std::shared_ptr<AniMediaAssetDataHandler> &handler, ThreadFuncitonOnData func)
+        const std::shared_ptr<AniMediaAssetDataHandler> &handler, ThreadFunctionOnData func)
         : env(env), photoId(photoId), requestId(requestId), requestUri(uri), dataHandler(handler),
         threadSafeFunc(func) {}
 };
@@ -70,11 +70,11 @@ struct RetProgressValue {
 
 struct ProgressHandler {
     ani_env *env;
-    ThreadFuncitonOnProgress progressFunc;
+    ThreadFunctionOnProgress progressFunc;
     std::string requestId;
     RetProgressValue retProgressValue;
     ani_ref progressRef;
-    ProgressHandler(ani_env *env, ThreadFuncitonOnProgress func, const std::string &requestId,
+    ProgressHandler(ani_env *env, ThreadFunctionOnProgress func, const std::string &requestId,
         ani_ref progressRef) : env(env), progressFunc(func),
         requestId(requestId), progressRef(progressRef) {}
 };
@@ -105,9 +105,9 @@ struct MediaAssetManagerAniContext : AniError {
     ani_object requestIdAniValue;
     ani_object dataHandler;
     ani_object mediaAssetProgressHandler;
-    ThreadFuncitonOnData onDataPreparedPtr;
-    ThreadFuncitonOnData onDataPreparedPtr2;
-    ThreadFuncitonOnProgress onProgressPtr;
+    ThreadFunctionOnData onDataPreparedPtr;
+    ThreadFunctionOnData onDataPreparedPtr2;
+    ThreadFunctionOnProgress onProgressPtr;
 };
 
 class MultiStagesTaskObserver : public DataShare::DataShareObserver {
@@ -181,8 +181,8 @@ private:
         ani_ref &dataHandlerRef);
     static ani_status CreateProgressHandlerRef(ani_env *env, const unique_ptr<MediaAssetManagerAniContext> &context,
         ani_ref &dataHandlerRef);
-    static ani_status CreateOnDataPreparedThreadSafeFunc(ThreadFuncitonOnData &threadSafeFunc);
-    static ani_status CreateOnProgressThreadSafeFunc(ThreadFuncitonOnProgress &progressFunc);
+    static ani_status CreateOnDataPreparedThreadSafeFunc(ThreadFunctionOnData &threadSafeFunc);
+    static ani_status CreateOnProgressThreadSafeFunc(ThreadFunctionOnProgress &progressFunc);
     static bool CreateOnProgressHandlerInfo(ani_env *env, unique_ptr<MediaAssetManagerAniContext> &context);
     static void RequestExecute(ani_env *env, unique_ptr<MediaAssetManagerAniContext> &context);
     static ani_string RequestComplete(ani_env *env, unique_ptr<MediaAssetManagerAniContext> &context);
