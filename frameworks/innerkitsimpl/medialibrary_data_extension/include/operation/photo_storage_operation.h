@@ -21,15 +21,38 @@
 #include "medialibrary_rdbstore.h"
 
 namespace OHOS::Media {
+
+struct TotalThumbnailSizeResult {
+    int64_t totalThumbnailSize;
+    int32_t thumbnailCount;
+};
+
+struct TotalEditdataSizeResult {
+    int64_t totalEditdataSize;
+    int32_t editdataCount;
+};
+
+struct LocalPhotoSizeResult {
+    int64_t localImageSize;
+    int64_t localVideoSize;
+};
+
 class PhotoStorageOperation {
 public:
     std::shared_ptr<NativeRdb::ResultSet> FindStorage(std::shared_ptr<MediaLibraryRdbStore> mediaRdbStorePtr);
     std::shared_ptr<NativeRdb::ResultSet> QueryHighlightDirectorySize(std::shared_ptr<MediaLibraryRdbStore> rdbStore);
+    int64_t GetCacheSize();
+    int64_t GetHighlightSizeFromPreferences();
+    void GetTotalThumbnailSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        TotalThumbnailSizeResult &totalThumbnailSizeResult);
+
+    void GetTotalEditdataSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        TotalEditdataSizeResult &totalEditdataSizeResult);
+    void GetLocalPhotoSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore, LocalPhotoSizeResult &localPhotoSizeResult,
+        int64_t totalExtSize);
 
 private:
-    int64_t GetCacheSize();
     int64_t GetHighlightSize();
-    int64_t GetHighlightSizeFromPreferences();
     void SaveHighlightSizeToPreferences(int64_t size);
 
 private:

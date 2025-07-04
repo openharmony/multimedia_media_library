@@ -34,6 +34,7 @@ ohos_unittest("medialibrary_dfx_test") {
 
   sources = [
     "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/medialibrary_base_bg_processor.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_storage_operation.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_analyzer.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_collector.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_database_utils.cpp",
