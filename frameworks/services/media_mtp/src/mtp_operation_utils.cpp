@@ -349,7 +349,10 @@ uint16_t MtpOperationUtils::GetObjectDataDeal()
     if (context_->length == 0 || context_->length == MTP_ALL_HANDLE_ID) {
         object.length = sstat.st_size;
     } else {
-        if (context_->offset + context_->length > static_cast<uint64_t>(sstat.st_size)) {
+        if (context_->offset > static_cast<uint64_t>(sstat.st_size)) {
+            context_->length = 0;
+            MEDIA_WARN_LOG("GetObjectDataDeal offset is larger than file size, set length to 0");
+        } else if (context_->offset + context_->length > static_cast<uint64_t>(sstat.st_size)) {
             context_->length = static_cast<uint32_t>(static_cast<uint64_t>(sstat.st_size) - context_->offset);
         }
         object.length = context_->length;
