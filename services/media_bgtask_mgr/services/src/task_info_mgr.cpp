@@ -74,10 +74,10 @@ void TaskInfoMgr::InitTaskInfoByCfg(std::vector<TaskScheduleCfg> taskCfgs)
 
 bool TaskInfoMgr::IsTaskEnabled(TaskInfo &info)
 {
-    if (info.taskEnable_ == NO_MODIFY) {
+    if (info.taskEnable_ == MODIFY_ENABLE) {
         return info.scheduleCfg.taskPolicy.defaultRun;
     }
-    return info.taskEnable_ == MODIDY_ENABLE;
+    return false;
 }
 
 // 返回-1表示错误

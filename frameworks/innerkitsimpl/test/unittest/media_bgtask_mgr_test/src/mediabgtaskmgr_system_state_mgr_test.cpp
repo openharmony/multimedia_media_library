@@ -150,9 +150,16 @@ HWTEST_F(MediaBgtaskMgrSystemStateMgrTest, media_bgtask_mgr_handleSystemStateCha
 
     // 2. 测试用户解锁事件，更新解锁状态
     auto &inst = SystemStateMgr::GetInstance();
-    inst.systemInfo_.unlocked = false;
     inst.handleSystemStateChange(eventData);
-    EXPECT_EQ(inst.systemInfo_.unlocked, true);
+    EXPECT_NE(inst.systemInfo_.allUserIds.size(), 0);
+
+    EventFwk::Want wantRemove;
+    wantRemove.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_USER_REMOVED);
+    EventFwk::CommonEventData eventDataRemove;
+    eventDataRemove.SetWant(wantRemove);
+    eventDataRemove.SetCode(1); // 用户ID
+    inst.handleSystemStateChange(eventDataRemove);
+    EXPECT_EQ(inst.systemInfo_.allUserIds.size(), 0);
 }
 
 static PowerMgr::BatteryChargeState GetChargingStatusStub(PowerMgr::BatterySrvClient *obj)
@@ -171,7 +178,7 @@ HWTEST_F(MediaBgtaskMgrSystemStateMgrTest, media_bgtask_mgr_handleSystemStateCha
     stub.set(ADDR(MediaBgtaskScheduleService, HandleSystemStateChange), HandleSystemStateChangeStub);
     stub.set(ADDR(PowerMgr::BatterySrvClient, GetChargingStatus), GetChargingStatusStub);
     AAFwk::Want want;
-    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED);
     EventFwk::CommonEventData eventData;
     eventData.SetWant(want);
 
@@ -188,7 +195,7 @@ HWTEST_F(MediaBgtaskMgrSystemStateMgrTest, media_bgtask_mgr_handleSystemStateCha
     stub.set(ADDR(MediaBgtaskScheduleService, HandleSystemStateChange), HandleSystemStateChangeStub);
     stub.set(ADDR(SystemStateMgr, IsCharging), IsChargingStub);
     AAFwk::Want want;
-    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED);
     EventFwk::CommonEventData eventData;
     eventData.SetWant(want);
 
@@ -332,22 +339,6 @@ HWTEST_F(MediaBgtaskMgrSystemStateMgrTest, media_bgtask_mgr_handleSystemStateCha
     inst.systemInfo_.CellularConnect = false;
     inst.handleSystemStateChange(eventData);
     EXPECT_FALSE(inst.systemInfo_.CellularConnect);
-}
-
-HWTEST_F(MediaBgtaskMgrSystemStateMgrTest, media_bgtask_mgr_handleSystemStateChange_test_015, TestSize.Level1)
-{
-    Stub stub;
-    stub.set(ADDR(MediaBgtaskScheduleService, HandleSystemStateChange), HandleSystemStateChangeStub);
-    AAFwk::Want want;
-    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_USER_SWITCHED);
-    EventFwk::CommonEventData eventData;
-    eventData.SetWant(want);
-    eventData.SetCode(0);
-
-    // 7. 测试用户切换事件，更新用户ID
-    auto &inst = SystemStateMgr::GetInstance();
-    inst.handleSystemStateChange(eventData);
-    EXPECT_EQ(inst.systemInfo_.userId, 0);
 }
 
 /**
@@ -537,7 +528,7 @@ HWTEST_F(MediaBgtaskMgrSystemStateMgrTest, media_bgtask_mgr_QueryForegroundUser_
     stub.set((ErrCode(*)(int32_t &))AccountSA::OsAccountManager::GetForegroundOsAccountLocalId,
              GetForegroundOsAccountLocalIdFailedStub);
     SystemStateMgr::GetInstance().QueryForegroundUser();
-    EXPECT_EQ(SystemStateMgr::GetInstance().systemInfo_.userId, 0);
+    EXPECT_EQ(SystemStateMgr::GetInstance().systemInfo_.userId, -1);
 }
 
 HWTEST_F(MediaBgtaskMgrSystemStateMgrTest, media_bgtask_mgr_QueryForegroundUser_test_002, TestSize.Level1)

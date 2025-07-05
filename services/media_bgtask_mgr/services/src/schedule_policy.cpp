@@ -19,13 +19,14 @@
 #include <iostream>
 #include "media_bgtask_utils.h"
 #include "media_bgtask_mgr_log.h"
+#include "task_schedule_param_manager.h"
 
 namespace OHOS {
 namespace MediaBgtaskSchedule {
 static const std::string TASKID_USERID_SEP = "@";
 static const int64_t ONE_DAY_SECONDS = 24 * 60 * 60;
 
-bool LessSort(AgingFactorMapElement a, AgingFactorMapElement b)
+static bool LessSort(AgingFactorMapElement a, AgingFactorMapElement b)
 {
     return a.waitingPressure < b.waitingPressure;
 }
@@ -123,8 +124,7 @@ int SchedulePolicy::SysLoad()
 
 bool SchedulePolicy::TaskCanStart(const TaskInfo &task)
 {
-    if ((task.taskEnable_ == NO_MODIFY && !task.scheduleCfg.taskPolicy.defaultRun) ||
-        (task.taskEnable_ == MODIDY_DISABLE)) {
+    if ((!task.scheduleCfg.taskPolicy.defaultRun) || (task.taskEnable_ == MODIFY_DISABLE)) {
         return false;
     }
     if ((!sysInfo_.charging) && (task.exceedEnergy)) {
@@ -320,7 +320,9 @@ void SchedulePolicy::Schedule()
 
 time_t SchedulePolicy::MinNextScheduleInterval()
 {
-    time_t minNextInterval = ONE_DAY_SECONDS;
+    int maxRescheduleInterval = TaskScheduleParamManager::GetInstance().GetMaxRescheduleInerval();
+    time_t minNextInterval = (maxRescheduleInterval == -1 ? ONE_DAY_SECONDS :
+        maxRescheduleInterval * SECONDSPERMINUTE_);
     for (size_t i = 0; i < validTasks_.size(); i++) {
         if ((selectedTasksId_.find(validTasks_[i].taskId) == selectedTasksId_.end()) && (!validTasks_[i].isRunning)) {
             time_t waitTime = sysInfo_.now - validTasks_[i].lastStopTime;
@@ -359,12 +361,13 @@ void SchedulePolicy::GetNoSchedulResult(TaskScheduleResult &result)
 {
     for (std::map<std::string, TaskInfo>::iterator it = allTasksList_.begin(); it != allTasksList_.end(); it++) {
         bool isRunning = allTasksList_[it->first].isRunning;
-        if (validTasksId_.find(it->first) != validTasksId_.end()) {
+        if (validTasksId_.find(it->first) != validTasksId_.end() && CanConcurrency(it->second)) {
             if (isRunning) {
                 result.taskRetain_.push_back(it->first);
             } else {
                 result.taskStart_.push_back(it->first);
             }
+            selectedTasksId_.insert(it->first);
         } else {
             if (!isRunning) {
                 result.taskRetain_.push_back(it->first);
@@ -409,6 +412,9 @@ TaskScheduleResult SchedulePolicy::ScheduleTasks(std::map<std::string, TaskInfo>
     // step4. 逃生通道判断，如果走逃生通道，则不进行算法调度，直接启动所有有效任务
     if (!policyCfg_.scheduleEnable) {
         GetNoSchedulResult(result);
+        MEDIA_INFO_LOG("No ScheduleTasks startTask: %{public}zu, stopTask: %{public}zu, retainTask: %{public}zu, "
+            "nextComputeTime: %{public}s", result.taskStart_.size(), result.taskStop_.size(),
+            result.taskRetain_.size(), std::to_string(static_cast<int64_t>(result.nextComputeTime_)).c_str());
         return result;
     }
     // step5. 对有效任务计算vruntime，并找出必须立即启动任务

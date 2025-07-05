@@ -13,5 +13,8 @@
     [0.8, 0.6],
     [0.95, 0.3],
     [1, 0.01]
-  ]
+  ],
+  "sysLoadLowLevel": 1,
+  "sysLoadMediumLevel": 2,
+  "minNextInterval": 60
 }

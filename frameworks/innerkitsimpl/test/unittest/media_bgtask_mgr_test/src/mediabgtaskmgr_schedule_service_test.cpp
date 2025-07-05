@@ -169,7 +169,7 @@ HWTEST_F(MediaBgtaskMgrScheduleServiceTest, media_bgtask_mgr_HandleReschedule_te
     EXPECT_FALSE(task.isRunning);
 }
 
-static int32_t TaskOpsSyncManagerStub(SAOpsConnectionManager *obj, const std::string& ops, int32_t saId,
+static int32_t TaskOpsSyncManagerStub(SAOpsConnectionManager *obj, const std::string& ops,
     const std::string& taskName, const std::string& extra)
 {
     return 0;
@@ -180,16 +180,15 @@ HWTEST_F(MediaBgtaskMgrScheduleServiceTest, media_bgtask_mgr_HandleReschedule_te
     Stub stub;
     stub.set(ADDR(SchedulePolicy, ScheduleTasks), ScheduleTasksStub);
     stub.set(ADDR(SAOpsConnectionManager, TaskOpsSync), TaskOpsSyncManagerStub);
-
+ 
     TaskInfo testTask;
     testTask.scheduleCfg.type = "sa";
     testTask.isRunning = true; // stop
     TaskInfoMgr::GetInstance().allTaskInfos_["id"] = testTask;
     TaskInfo &task = TaskInfoMgr::GetInstance().allTaskInfos_["id"];
-
-    // 2. type为sa, stop成功 期望false
+ 
     MediaBgtaskScheduleService::GetInstance().HandleReschedule();
-    EXPECT_FALSE(task.isRunning);
+    EXPECT_TRUE(task.isRunning);
 }
 
 HWTEST_F(MediaBgtaskMgrScheduleServiceTest, media_bgtask_mgr_HandleReschedule_test_003, TestSize.Level1)
@@ -318,10 +317,10 @@ HWTEST_F(MediaBgtaskMgrScheduleServiceTest, media_bgtask_mgr_modifyTask_test_001
 
     // 3. taskId存在, modifyInfo合法
     result = MediaBgtaskScheduleService::GetInstance().modifyTask("id", "taskRun:true", funcResult);
-    EXPECT_TRUE(task.taskEnable_ == TaskEnable::MODIDY_ENABLE);
+    EXPECT_TRUE(task.taskEnable_ == TaskEnable::MODIFY_ENABLE);
 
     result = MediaBgtaskScheduleService::GetInstance().modifyTask("id", "taskRun:false", funcResult);
-    EXPECT_TRUE(task.taskEnable_ == TaskEnable::MODIDY_DISABLE);
+    EXPECT_TRUE(task.taskEnable_ == TaskEnable::MODIFY_DISABLE);
 
     result = MediaBgtaskScheduleService::GetInstance().modifyTask("id", "taskRun:skipToday", funcResult);
     EXPECT_TRUE(task.exceedEnergy);

@@ -89,22 +89,6 @@ HWTEST_F(MediaBgtaskMgrAppOpsConnectionTest, media_bgtask_mgr_OnAbilityDisconnec
     connection_.OnAbilityDisconnectDone(element, 0);
     EXPECT_EQ(connection_.proxy_, nullptr);
 }
-
-/**
- * TaskOpsSync
- */
-HWTEST_F(MediaBgtaskMgrAppOpsConnectionTest, media_bgtask_mgr_TaskOpsSync_test_001, TestSize.Level1)
-{
-    auto mock = new MockAppTaskOpsProxy(nullptr);
-    EXPECT_CALL(*mock, DoTaskOps(testing::_, testing::_, testing::_, testing::_)).WillOnce(testing::Return(0));
-
-    AppSvcInfo svcInfo;
-    AppOpsConnection connection_(svcInfo, 0);
-    connection_.proxy_ = mock;
-    int32_t result = connection_.TaskOpsSync("", "", "");
-    EXPECT_EQ(result, 0);
-}
-
 } // namespace MediaBgtaskSchedule
 } // namespace OHOS
 

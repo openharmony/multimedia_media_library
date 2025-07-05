@@ -17,6 +17,8 @@
 
 #include "sa_ops_connection_manager.h"
 #include "media_bgtask_utils.h"
+#include "media_bgtask_schedule_service.h"
+#include "task_info_mgr.h"
 #include "media_bgtask_mgr_log.h"
 
 namespace OHOS::MediaBgtaskSchedule {
@@ -43,6 +45,10 @@ std::shared_ptr<SAOpsConnection> SAOpsConnectionManager::GetConnection(int32_t s
         auto connection = std::make_shared<SAOpsConnection>(saId,
             [](const int32_t saId, SAOpsConnection::ConnectionStatus status) {
                 MEDIA_INFO_LOG("Connection status changed SAID:%{public}d status:%{public}d", saId, status);
+                if (status == SAOpsConnection::ConnectionStatus::DISCONNECTED) {
+                    MediaBgtaskScheduleService::GetInstance().NotifySaTaskProcessDie(saId);
+                    TaskInfoMgr::GetInstance().SaveTaskState(false);
+                }
             }
         );
         if (connection->Init() != 0) {
