@@ -59,6 +59,7 @@ private:
     EXPORT static int32_t GetNoAstcData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
     EXPORT static int32_t GetAvailableFile(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
         std::string &fileName);
+    EXPORT static std::string GetAvailablePath(const std::string &path, const ThumbnailType &thumbType);
     EXPORT static int32_t GetNoHighlightData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
     EXPORT static int32_t GetAvailableKeyFrameFile(ThumbRdbOpt &opts, ThumbnailData &data, int32_t thumbType,
         std::string &fileName);
