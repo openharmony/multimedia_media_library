@@ -514,6 +514,8 @@ void CloneRestore::RestoreHighlightAlbums()
     CloneRestoreCVAnalysis cloneRestoreCVAnalysis;
     cloneRestoreCVAnalysis.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir_);
     cloneRestoreCVAnalysis.RestoreAlbums(cloneRestoreHighlight);
+
+    cloneRestoreHighlight.ReportCloneRestoreHighlightTask();
 }
 
 void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount,
