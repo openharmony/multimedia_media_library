@@ -520,18 +520,12 @@ int32_t ThumbnailGenerateHelper::GetNewThumbnailCount(ThumbRdbOpt &opts, const i
 bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType)
 {
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
-    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
-        MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, doCreateLcd failed: %{public}s",
-            DfxUtils::GetSafePath(data.path).c_str());
-        return false;
-    }
-    if (thumbType != ThumbnailType::LCD) {
-        bool isSuccess = IThumbnailHelper::DoCreateThumbnail(opts, data);
-        if (!isSuccess) {
-            MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s",
-                DfxUtils::GetSafePath(data.path).c_str());
-            return false;
-        }
+    if (thumbType == ThumbnailType::LCD) {
+        CHECK_AND_RETURN_RET_LOG(IThumbnailHelper::DoCreateLcd(opts, data), false,
+            "Get default pixelmap, DoCreateLcd failed: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    } else {
+        CHECK_AND_RETURN_RET_LOG(IThumbnailHelper::DoCreateThumbnail(opts, data), false,
+            "Get default pixelmap, DoCreateThumbnail failed: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
     }
     return true;
 }
@@ -558,19 +552,9 @@ bool GenerateKeyFrameLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int3
 int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
     std::string &fileName)
 {
-    string thumbSuffix = GetThumbSuffix(thumbType);
-    fileName = GetThumbnailPath(data.path, thumbSuffix);
-    if (thumbType == ThumbnailType::THUMB_ASTC) {
-        // Try to get jpeg thumbnail instead if there is no astc file
-        if (access(fileName.c_str(), F_OK) == 0) {
-            return E_OK;
-        } else {
-            fileName = GetThumbnailPath(data.path, GetThumbSuffix(ThumbnailType::THUMB));
-        }
-    }
-
-    // No need to create thumbnails if corresponding file exists
+    fileName = GetAvailablePath(data.path, thumbType);
     if (access(fileName.c_str(), F_OK) == 0) {
+        // No need to create thumbnails if corresponding file exists
         MEDIA_INFO_LOG("File exists, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
         return E_OK;
     }
@@ -586,15 +570,30 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
     }
 
     MEDIA_INFO_LOG("No available file, create thumbnail, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
-    if (!GenerateLocalThumbnail(opts, data, thumbType)) {
+    if (!GenerateLocalThumbnail(opts, data, thumbType) && access(fileName.c_str(), F_OK) != 0) {
         MEDIA_ERR_LOG("GenerateLocalThumbnail failed, path: %{public}s", DfxUtils::GetSafePath(tempFileName).c_str());
         return E_THUMBNAIL_LOCAL_CREATE_FAIL;
     }
 
     if (!opts.path.empty()) {
-        fileName = GetThumbnailPath(data.path, thumbSuffix);
+        fileName = GetAvailablePath(data.path, thumbType);
     }
     return E_OK;
+}
+
+std::string ThumbnailGenerateHelper::GetAvailablePath(const std::string &path, const ThumbnailType &thumbType)
+{
+    string thumbSuffix = GetThumbSuffix(thumbType);
+    std::string outputPath = GetThumbnailPath(path, thumbSuffix);
+    if (thumbType == ThumbnailType::THUMB_ASTC) {
+        // Try to get jpeg thumbnail instead if there is no astc file
+        if (access(outputPath.c_str(), F_OK) == 0) {
+            return outputPath;
+        } else {
+            outputPath = GetThumbnailPath(path, GetThumbSuffix(ThumbnailType::THUMB));
+        }
+    }
+    return outputPath;
 }
 
 int32_t ThumbnailGenerateHelper::GetAvailableKeyFrameFile(ThumbRdbOpt &opts, ThumbnailData &data, int32_t thumbType,
