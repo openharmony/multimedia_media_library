@@ -82,6 +82,7 @@ void CloneRestoreCVAnalysis::RestoreAlbums(CloneRestoreHighlight &cloneHighlight
         endTime - startRestoreAssetSdTime, startRestoreAlbumAssetTime - startRestoreAssetSdTime,
         startUpdatePlayInfoTime - startRestoreAlbumAssetTime, endTime - startUpdatePlayInfoTime);
     restoreTimeCost_ += endTime - startRestoreAssetSdTime;
+    cloneHighlight.UpdateRestoreTimeCost(restoreTimeCost_);
     ReportCloneRestoreCVAnalysisTask();
 }
 
@@ -452,7 +453,7 @@ void CloneRestoreCVAnalysis::ReportCloneRestoreCVAnalysisTask()
 {
     std::stringstream totalReport;
     totalReport << "isHighlightVideoDirExist: " << isHighlightVideoDirExist_ << ", timeCost: " << restoreTimeCost_ <<
-        "; ALBUM_SD: success: " << assetSdSuccessCnt_ << ", failed: " << assetSdFailedCnt_ <<
+        "; ASSET_SD: success: " << assetSdSuccessCnt_ << ", failed: " << assetSdFailedCnt_ <<
         "; ALBUM_ASSET: success: " << albumAssetSuccessCnt_ << ", failed: " << albumAssetFailedCnt_;
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
         .Report("CLONE_RESTORE_CV_ANALYSIS_TOTAL", RESTORE_STATUS_SUCCESS, totalReport.str());

@@ -795,5 +795,13 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_preprocess_test_001,
 
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
+
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_restore_time_cost_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("clone_restore_highlight_update_restore_time_cost_test_001 start");
+    cloneRestoreHighlight->restoreTimeCost_ = 0;
+    cloneRestoreHighlight->UpdateRestoreTimeCost(SLEEP_FIVE_SECONDS);
+    EXPECT_GT(cloneRestoreHighlight->restoreTimeCost_, 0);
+}
 } // namespace Media
 } // namespace OHOS
