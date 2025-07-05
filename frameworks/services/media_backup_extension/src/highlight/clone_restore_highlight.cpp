@@ -182,10 +182,9 @@ void CloneRestoreHighlight::Restore()
     UpdateAlbums();
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     restoreTimeCost_ += end - startPreprocess;
-    MEDIA_INFO_LOG("TimeCost: RestoreAlbums: %{public}" PRId64 ", RestoreMaps: %{public}" PRId64
-        ", UpdateAlbums: %{public}" PRId64,
+    MEDIA_INFO_LOG("TimeCost: Preprocess: %{public}" PRId64 ",RestoreAlbums: %{public}" PRId64
+        ", RestoreMaps: %{public}" PRId64 ", UpdateAlbums: %{public}" PRId64, startRestoreAlbums - startPreprocess,
         startRestoreMaps - startRestoreAlbums, startUpdateAlbums - startRestoreMaps, end - startUpdateAlbums);
-    ReportCloneRestoreHighlightTask();
 }
 
 void CloneRestoreHighlight::Preprocess()
@@ -196,7 +195,8 @@ void CloneRestoreHighlight::Preprocess()
         "UPDATE AnalysisAlbum SET need_restore_highlight = 1 "
             " WHERE album_id IN (SELECT album_id FROM tab_highlight_album WHERE highlight_status > 0 "
             " UNION SELECT ai_album_id FROM tab_highlight_album WHERE highlight_status > 0) ",
-        "CREATE INDEX idx_need_restore_highlight ON AnalysisAlbum(need_restore_highlight) ",
+        "CREATE INDEX idx_need_restore_highlight ON AnalysisAlbum(need_restore_highlight) "
+            " WHERE need_restore_highlight = 1 ",
     };
     for (const auto &sql : SQLS) {
         int32_t errCode = BackupDatabaseUtils::ExecuteSQL(mediaRdb_, sql);
@@ -1232,5 +1232,10 @@ void CloneRestoreHighlight::DeleteAnalysisDuplicateRows(const std::unordered_set
     MEDIA_INFO_LOG("delete duplicate analysis album, duplicate album name: %{public}s, duplicate nums: %{public}zu, "
         "delete nums: %{public}d", duplicateAlbumName.c_str(), duplicateAnalysisAlbumIds.size(), deleteRows);
     albumDuplicateCnt_ += deleteRows;
+}
+
+void CloneRestoreHighlight::UpdateRestoreTimeCost(int64_t timeCost)
+{
+    restoreTimeCost_ += timeCost;
 }
 } // namespace OHOS::Media

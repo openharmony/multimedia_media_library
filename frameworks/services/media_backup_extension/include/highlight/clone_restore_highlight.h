@@ -40,12 +40,14 @@ public:
 
     void Init(const InitInfo &info);
     void Restore();
+    void ReportCloneRestoreHighlightTask();
     int32_t GetNewHighlightAlbumId(int32_t oldId);
     int32_t GetNewHighlightPhotoId(int32_t oldId);
     std::string GetNewHighlightPhotoUri(int32_t oldId);
     bool IsCloneHighlight();
     std::string GetDefaultPlayInfo();
     void UpdateHighlightStatus(const std::vector<int32_t> &highlightIds);
+    void UpdateRestoreTimeCost(int64_t timeCost);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket &values, const std::string &columnName,
@@ -270,7 +272,6 @@ private:
     void InsertIntoHighlightPlayInfo();
     void GetPlayInsertValue(NativeRdb::ValuesBucket &value, const HighlightPlayInfo &info);
     std::unordered_set<std::string> GetCommonColumns(const std::string &tableName);
-    void ReportCloneRestoreHighlightTask();
     void ReportRestoreTaskOfTotal();
     void ReportRestoreTaskOfAlbumStats();
     void ReportRestoreTaskOfAlbumInfo();
