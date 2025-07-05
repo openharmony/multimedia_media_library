@@ -997,7 +997,7 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
     RdbPredicates newPredicates(PhotoColumn::PHOTOS_TABLE);
     newPredicates.EqualTo(PhotoColumn::MEDIA_ID, newAssetId);
     vector<string> columns = {
-        PhotoColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_HIDDEN
+        PhotoColumn::MEDIA_FILE_PATH
     };
     shared_ptr<NativeRdb::ResultSet> newResultSet = rdbStore->Query(newPredicates, columns);
     if (newResultSet == nullptr || newResultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -1007,10 +1007,6 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
 
     string newFileAssetUri = MediaFileUtils::GetFileAssetUri(GetStringVal(MediaColumn::MEDIA_FILE_PATH, newResultSet),
         displayName, newAssetId);
-    int32_t isHidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, newResultSet);
-    if (isHidden == 1) {
-        MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore);
-    }
     SendNewAssetNotify(newFileAssetUri, rdbStore, assetRefresh);
     MEDIA_INFO_LOG("End clone asset, newAssetId = %{public}lld", (long long)newAssetId);
     return newAssetId;
