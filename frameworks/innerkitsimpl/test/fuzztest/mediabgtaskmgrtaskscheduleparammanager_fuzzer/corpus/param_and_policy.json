@@ -1,0 +1,563 @@
+{
+  "taskScheduleParam": {
+    "taskList": [
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:DeleteTemporaryPhotos",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 1,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 1,
+          "loadScale": 11,
+          "conflictedTask": [
+            "com.ohos.medialibrary.medialibrarydata:StorageAgingTask"
+          ],
+          "startCondition": {
+            "reScheduleInterval": 60,
+            "conditionArray": [
+              {
+                "isCharging": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:TrashAgingOperation",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 1,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 1,
+          "loadScale": 11,
+          "conflictedTask": [
+            "com.ohos.medialibrary.medialibrarydata:StorageAgingTask"
+          ],
+          "startCondition": {
+            "reScheduleInterval": 60,
+            "conditionArray": [
+              {
+                "isCharging": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:StorageAgingTask",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 0,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 1,
+          "loadScale": 11,
+          "defaultRun": false,
+          "conflictedTask": [
+            "com.ohos.medialibrary.medialibrarydata:DeleteTemporaryPhotos",
+            "com.ohos.medialibrary.medialibrarydata:TrashAgingOperation"
+          ],
+          "startCondition": {
+            "reScheduleInterval": 720,
+            "conditionArray": [
+              {
+                "isCharging": 1,
+                "screenOff": 1,
+                "storageFree": [
+                  0,
+                  10
+                ],
+                "batteryCapacity": 50
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:RepairNoOriginPhoto",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 1,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 0,
+          "loadScale": 1,
+          "startCondition": {
+            "reScheduleInterval": 60,
+            "conditionArray": [
+              {
+                "isCharging": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:DeleteCloudMediaAssets",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 1,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 0,
+          "loadScale": 1,
+          "startCondition": {
+            "reScheduleInterval": 1440,
+            "conditionArray": [
+              {
+                "isCharging": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:UpdateInvalidMimeType",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 0,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 0,
+          "loadScale": 1,
+          "startCondition": {
+            "reScheduleInterval": 60,
+            "conditionArray": [
+              {
+                "isCharging": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:RepairHistoryDirtyData",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 1,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 1,
+          "loadScale": 11,
+          "startCondition": {
+            "reScheduleInterval": 5,
+            "conditionArray": [
+              {
+                "isCharging": 1,
+                "networkType": "wifi"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:AddPermissionForCloudEnhancement",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 1,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 1,
+          "loadScale": 11,
+          "startCondition": {
+            "reScheduleInterval": 1440,
+            "conditionArray": [
+              {
+                "isCharging": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:ClearBetaAndHDCDirtyData",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 1,
+          "priorityFactor": 5,
+          "maxToleranceTime": 48,
+          "loadLevel": 1,
+          "loadScale": 11,
+          "startCondition": {
+            "reScheduleInterval": 0,
+            "conditionArray": [
+              {
+                "isCharging": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:DoUpdateBurstFromGallery",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 0,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 0,
+          "loadScale": 1,
+          "startCondition": {
+            "reScheduleInterval": 60,
+            "conditionArray": [
+              {
+                "isCharging": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:MigrateHighlightInfoToNewPath",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 0,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 0,
+          "loadScale": 1,
+          "startCondition": {
+            "reScheduleInterval": 1440,
+            "conditionArray": [
+              {
+                "isCharging": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:CompatOldVersionMovingPhoto",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 1,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 0,
+          "loadScale": 1,
+          "startCondition": {
+            "reScheduleInterval": 60,
+            "conditionArray": [
+              {
+                "isCharging": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:CleanInvalidCloudAlbumAndData",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 1,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 0,
+          "loadScale": 1,
+          "startCondition": {
+            "reScheduleInterval": 60,
+            "conditionArray": [
+              {
+                "isCharging": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:DoThumbnailBgOperation",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 0,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 2,
+          "loadScale": 21,
+          "startCondition": {
+            "reScheduleInterval": 10,
+            "conditionArray": [
+              {
+                "isCharging": 1,
+                "batteryCapacity": 20
+              },
+              {
+                "isCharging": 0,
+                "screenOff": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:AnalyzePhotosTable",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 0,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 0,
+          "loadScale": 1,
+          "startCondition": {
+            "reScheduleInterval": 1440,
+            "conditionArray": [
+              {
+                "isCharging": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:WalCheck",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 1,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 0,
+          "loadScale": 1,
+          "startCondition": {
+            "reScheduleInterval": 60,
+            "conditionArray": [
+              {
+                "isCharging": 1,
+                "batteryCapacity": 0
+              },
+              {
+                "screenOff": 1,
+                "batteryCapacity": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:CheckDbBackup",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 0,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 1,
+          "loadScale": 11,
+          "startCondition": {
+            "reScheduleInterval": 360,
+            "conditionArray": [
+              {
+                "isCharging": 1,
+                "batteryCapacity": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:UploadDBFile",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 2,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 2,
+          "loadScale": 21,
+          "startCondition": {
+            "reScheduleInterval": 30,
+            "conditionArray": [
+              {
+                "isCharging": 1,
+                "batteryCapacity": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:DfxHandleMissions",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 2,
+          "priorityFactor": 5,
+          "maxToleranceTime": 48,
+          "loadLevel": 0,
+          "loadScale": 1,
+          "startCondition": {
+            "reScheduleInterval": 720,
+            "conditionArray": [
+              {
+                "isCharging": 1,
+                "batteryCapacity": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:AllAlbumRefresh",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 1,
+          "priorityFactor": 5,
+          "maxToleranceTime": 48,
+          "loadLevel": 1,
+          "loadScale": 11,
+          "startCondition": {
+            "reScheduleInterval": 60,
+            "conditionArray": [
+              {
+                "isCharging": 1,
+                "batteryCapacity": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "com.ohos.medialibrary.medialibrarydata:DownloadOriginCloudFilesForLogin",
+        "type": "app",
+        "bundleName": "com.ohos.medialibrary.medialibrarydata",
+        "abilityName": "ServiceExtAbility",
+        "taskPolicy": {
+          "priorityLevel": 1,
+          "priorityFactor": 5,
+          "maxToleranceTime": 24,
+          "loadLevel": 2,
+          "loadScale": 21,
+          "startCondition": {
+            "conditionArray": [
+              {
+                "isCharging": 1,
+                "networkType": "wifi"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "10120:CleanDirtyData",
+        "type": "sa",
+        "saId": 10120,
+        "taskPolicy": {
+          "priorityLevel": 0,
+          "priorityFactor": 1,
+          "maxToleranceTime": 24,
+          "maxRunningTime": 60,
+          "loadLevel": 1,
+          "loadScale": 11,
+          "conflictedTask": [
+            "10120:BackupAllAnalysis"
+          ],
+          "startCondition": {
+            "reScheduleInterval": 1440,
+            "conditionArray": [
+              {
+                "isCharging": 1,
+                "screenOff": 1,
+                "batteryCapacity": 50,
+                "checkParamBeforeRun": "persist.multimedia.media_analysis_service.hasdata"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "taskId": "10120:BackupAllAnalysis",
+        "type": "sa",
+        "saId": 10120,
+        "taskPolicy": {
+          "priorityLevel": 0,
+          "priorityFactor": 1,
+          "maxToleranceTime": 24,
+          "maxRunningTime": 2880,
+          "loadLevel": 1,
+          "loadScale": 11,
+          "conflictedTask": [
+            "10120:CleanDirtyData"
+          ],
+          "startCondition": {
+            "reScheduleInterval": 10,
+            "conditionArray": [
+              {
+                "isCharging": 1,
+                "screenOff": 1,
+                "batteryCapacity": 50,
+                "checkParamBeforeRun": "persist.multimedia.media_analysis_service.hasdata"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "schedulePolicy": {
+    "scheduleEnable": true,
+    "agingFactorMap": [
+      [
+        0.3,
+        1
+      ],
+      [
+        0.6,
+        0.9
+      ],
+      [
+        0.9,
+        0.6
+      ],
+      [
+        0.95,
+        0.3
+      ]
+    ],
+    "temperatureLevelThredNoCharing": 1,
+    "temperatureLevelThredCharing": 3,
+    "loadThredHigh": 200,
+    "loadThredMedium": 100,
+    "loadThredLow": 50,
+    "waitingPressureThred": 0.97,
+    "sysLoadLowLevel": 1,
+    "sysLoadMediumLevel": 2,
+    "minNextInterval": 60
+  }
+}

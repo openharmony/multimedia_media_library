@@ -71,7 +71,7 @@ static ErrCode QueryActiveOsAccountIdsStub(AppExecFwk::OsAccountManagerWrapper* 
     return ERR_OK;
 }
 
-static int32_t ConnectAbilityStub(AppOpsConnectAbility* obj, const AppSvcInfo &svcName, int32_t userId, std::string ops,
+static int32_t ConnectAbilityStub(AppOpsConnectAbility* obj, const AppSvcInfo &svcName, std::string ops,
                                   std::string taskName, std::string extra)
 {
     if (taskName == "success") {
@@ -81,7 +81,7 @@ static int32_t ConnectAbilityStub(AppOpsConnectAbility* obj, const AppSvcInfo &s
     }
 }
 
-static int32_t AppTaskOpsSyncStub(AppOpsConnectAbility* obj, const AppSvcInfo &svcName, int32_t userId,
+static int32_t AppTaskOpsSyncStub(AppOpsConnectAbility* obj, const AppSvcInfo &svcName,
                                   const std::string& ops, const std::string& taskName, const std::string extra)
 {
     if (extra == "success") {

@@ -17,6 +17,13 @@
                             {
                                 "eventId": "commonevent",
                                 "name": "usual.event.USER_UNLOCKED"
+                            },
+                            {
+                                "eventId": "commonevent",
+                                "name": "usual.event.THERMAL_LEVEL_CHANGED",
+                                "extra-messages": {
+                                    "0": "<3"
+                                }
                             }
                         ]
                     },
@@ -26,13 +33,93 @@
                             {
                                 "eventId": "commonevent",
                                 "name": "usual.event.USER_UNLOCKED"
+                            },
+                            {
+                                "eventId": "commonevent",
+                                "name": "usual.event.THERMAL_LEVEL_CHANGED",
+                                "extra-messages": {
+                                    "0": "<3"
+                                }
                             }
                         ]
+                    },
+                    {
+                        "name": "usual.event.BATTERY_CHANGED",
+                        "conditions": [
+                            {
+                                "eventId": "commonevent",
+                                "name": "usual.event.USER_UNLOCKED"
+                            },
+                            {
+                                "eventId": "commonevent",
+                                "name": "usual.event.THERMAL_LEVEL_CHANGED",
+                                "extra-messages": {
+                                    "0": "<3"
+                                }
+                            },
+                            {
+                                "eventId": "commonevent",
+                                "name": "usual.event.SCREEN_OFF",
+                                "value": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "usual.event.BATTERY_CHANGED",
+                        "conditions": [
+                            {
+                                "eventId": "commonevent",
+                                "name": "usual.event.USER_UNLOCKED"
+                            },
+                            {
+                                "eventId": "commonevent",
+                                "name": "usual.event.THERMAL_LEVEL_CHANGED",
+                                "extra-messages": {
+                                    "0": "<3"
+                                }
+                            },
+                            {
+                                "eventId": "commonevent",
+                                "name": "usual.event.POWER_CONNECTED"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "usual.event.THERMAL_LEVEL_CHANGED",
+                        "conditions": [
+                            {
+                                "eventId": "commonevent",
+                                "name": "usual.event.USER_UNLOCKED"
+                            },
+                            {
+                                "eventId": "commonevent",
+                                "name": "usual.event.SCREEN_OFF",
+                                "value": "0"
+                            }
+                        ],
+                        "extra-message": {
+                            "0": "<3"
+                        }
+                    },
+                    {
+                        "name": "usual.event.THERMAL_LEVEL_CHANGED",
+                        "conditions": [
+                            {
+                                "eventId": "commonevent",
+                                "name": "usual.event.USER_UNLOCKED"
+                            },
+                            {
+                                "eventId": "commonevent",
+                                "name": "usual.event.POWER_CONNECTED"
+                            }
+                        ],
+                        "extra-message": {
+                            "0": "<3"
+                        }
                     }
                 ]
             }
         }
     ]
 }
-
 

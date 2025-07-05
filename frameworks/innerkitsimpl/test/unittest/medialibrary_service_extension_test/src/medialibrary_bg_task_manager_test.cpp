@@ -41,7 +41,7 @@ HWTEST_F(MediaLibraryBgTaskProcessorTest, DownloadOriginCloudFilesForLogin_test_
 {
     MEDIA_INFO_LOG("DownloadOriginCloudFilesForLogin_test_001 start");
     auto mediaLibraryBgTaskManager = MediaLibraryBgTaskManager();
-    int32_t ret = mediaLibraryBgTaskManager.Start(DOWNLOAD_ORIGIN_CLOUD_FILES_FOR_LOGIN, "test");
+    int32_t ret = mediaLibraryBgTaskManager.Start(DELETE_TEMPORARY_PHOTOS, "test");
     EXPECT_EQ(ret, E_OK);
     ret = mediaLibraryBgTaskManager.Start("DoUpdateBurstFromGalleryTest", "test");
     EXPECT_EQ(ret, E_ERR);

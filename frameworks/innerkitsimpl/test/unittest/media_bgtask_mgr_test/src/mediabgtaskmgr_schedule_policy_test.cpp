@@ -48,6 +48,7 @@ const std::string TAG_LASTSTOPTIME = "lastStopTime";
 const std::string TAG_ISRUNNING = "isRunning";
 const std::string TAG_EXCEEDENERGY = "exceedEnergy";
 const std::string TAG_ISCOMPLETE = "isComplete";
+const int64_t ONE_DAY_SECOND = 24 * 60 * 60;
 
 void ClearQueueTest(std::priority_queue<TaskInfo, std::vector<TaskInfo>, cmp> &taskQueue)
 {
@@ -200,23 +201,14 @@ HWTEST_F(MediaBgtaskMgrSchedulePolicyTest, media_bgtask_mgr_ScheduleTasks_test_0
 {
     // 1. 测试当充电且温度超过充电温度阈值时，返回最大下次调度时间和所有任务停止
     SchedulePolicy schedulePolicy = SchedulePolicy();
+    schedulePolicy.policyCfg_.scheduleEnable = false;
     SystemInfo sysInfo;
-    sysInfo.charging = true;
     std::map<std::string, TaskInfo> taskInfos;
-    sysInfo.thermalLevel = schedulePolicy.policyCfg_.temperatureLevelThredCharing + 1;
     schedulePolicy.allTasksList_["task1"] = TaskInfo();
     TaskScheduleResult result = schedulePolicy.ScheduleTasks(taskInfos, sysInfo);
     EXPECT_EQ(result.nextComputeTime_, INT_MAX);
     EXPECT_EQ(result.taskStart_.size(), 0);
-    EXPECT_FALSE(result.taskStop_.empty());
-
-    // 2. 测试当非充电且温度超过非充电温度阈值时，返回最大下次调度时间和所有任务停止
-    sysInfo.charging = false;
-    sysInfo.thermalLevel = schedulePolicy.policyCfg_.temperatureLevelThredNoCharing + 1;
-    result = schedulePolicy.ScheduleTasks(taskInfos, sysInfo);
-    EXPECT_EQ(result.nextComputeTime_, INT_MAX);
-    EXPECT_EQ(result.taskStart_.size(), 0);
-    EXPECT_FALSE(result.taskStop_.empty());
+    EXPECT_TRUE(result.taskStop_.empty());
 }
 
 // 默认配置文件测试
@@ -228,7 +220,7 @@ HWTEST_F(MediaBgtaskMgrSchedulePolicyTest, media_bgtask_mgr_ScheduleTasks_test_0
     // 模拟修改taskEnable
     std::string taskId = "10120:BackupAllAnalysis";
     std::string taskIdAlbum = "com.ohos.medialibrary.medialibrarydata:AllAlbumRefresh";
-    testTaskInfos_[taskId].taskEnable_ = MODIDY_DISABLE;
+    testTaskInfos_[taskId].taskEnable_ = MODIFY_DISABLE;
     schedulePolicy.allTasksList_[taskIdAlbum].scheduleCfg.taskPolicy.maxRunningTime = 1;
 
     TaskScheduleResult result = schedulePolicy.ScheduleTasks(testTaskInfos_, testSysInfo_);
@@ -312,12 +304,12 @@ HWTEST_F(MediaBgtaskMgrSchedulePolicyTest, media_bgtask_mgr_TaskCanStart_test_00
     EXPECT_FALSE(schedulePolicy.TaskCanStart(task));
 
     // 8. 测试当任务默认不运行 & 未修改时，TaskCanStart应返回false
-    task.taskEnable_ = NO_MODIFY;
+    task.taskEnable_ = MODIFY_ENABLE;
     task.scheduleCfg.taskPolicy.defaultRun = false;
     EXPECT_FALSE(schedulePolicy.TaskCanStart(task));
 
     // 9. 测试当任务被禁用时，TaskCanStart应返回false
-    task.taskEnable_ = NO_MODIFY;
+    task.taskEnable_ = MODIFY_DISABLE;
     EXPECT_FALSE(schedulePolicy.TaskCanStart(task));
 }
 
@@ -508,7 +500,7 @@ HWTEST_F(MediaBgtaskMgrSchedulePolicyTest, media_bgtask_mgr_GetSchedulResult_tes
     EXPECT_TRUE(result.taskStart_.empty());
     EXPECT_FALSE(result.taskStop_.empty());
     EXPECT_NE(result.taskStop_.size(), 0);
-    EXPECT_EQ(result.nextComputeTime_, INT_MAX);
+    EXPECT_EQ(result.nextComputeTime_, ONE_DAY_SECOND);
 
     // 2. 设置 hTaskQueue_ || mTaskQueue_ || lTaskQueue_列表
     result.taskStop_.clear();
@@ -520,7 +512,7 @@ HWTEST_F(MediaBgtaskMgrSchedulePolicyTest, media_bgtask_mgr_GetSchedulResult_tes
     schedulePolicy.GetSchedulResult(result);
     EXPECT_FALSE(result.taskStart_.empty());
     EXPECT_FALSE(result.taskStop_.empty());
-    EXPECT_NE(result.nextComputeTime_, INT_MAX);
+    EXPECT_NE(result.nextComputeTime_, ONE_DAY_SECOND);
 }
 } // namespace MediaBgtaskSchedule
 } // namespace OHOS

@@ -60,6 +60,7 @@ ohos_unittest("media_bgtask_mgr_app_bgtask_schedule_stub_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_app_bgtask_schedule_stub_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -101,6 +102,7 @@ ohos_unittest("media_bgtask_mgr_app_bgtask_schedule_stub_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   sanitize = {
@@ -149,6 +151,7 @@ ohos_unittest("media_bgtask_mgr_app_ops_connect_ability_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_app_ops_connect_ability_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -190,6 +193,7 @@ ohos_unittest("media_bgtask_mgr_app_ops_connect_ability_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   sanitize = {
@@ -238,6 +242,7 @@ ohos_unittest("media_bgtask_mgr_app_ops_connection_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_app_ops_connection_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -279,6 +284,7 @@ ohos_unittest("media_bgtask_mgr_app_ops_connection_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   sanitize = {
@@ -327,6 +333,7 @@ ohos_unittest("media_bgtask_mgr_app_task_ops_proxy_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_app_task_ops_proxy_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -368,6 +375,7 @@ ohos_unittest("media_bgtask_mgr_app_task_ops_proxy_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   sanitize = {
@@ -416,6 +424,7 @@ ohos_unittest("media_bgtask_mgr_sa_ops_connection_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_sa_ops_connection_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -457,6 +466,7 @@ ohos_unittest("media_bgtask_mgr_sa_ops_connection_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   sanitize = {
@@ -505,6 +515,7 @@ ohos_unittest("media_bgtask_mgr_schedule_policy_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_schedule_policy_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -546,6 +557,7 @@ ohos_unittest("media_bgtask_mgr_schedule_policy_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   sanitize = {
@@ -594,6 +606,7 @@ ohos_unittest("media_bgtask_mgr_schedule_service_ability_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_schedule_service_ability_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -635,6 +648,7 @@ ohos_unittest("media_bgtask_mgr_schedule_service_ability_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   sanitize = {
@@ -683,6 +697,7 @@ ohos_unittest("media_bgtask_mgr_schedule_service_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_schedule_service_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -724,6 +739,7 @@ ohos_unittest("media_bgtask_mgr_schedule_service_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   sanitize = {
@@ -772,6 +788,7 @@ ohos_unittest("media_bgtask_mgr_system_state_mgr_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_system_state_mgr_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -813,6 +830,7 @@ ohos_unittest("media_bgtask_mgr_system_state_mgr_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   sanitize = {
@@ -861,6 +879,7 @@ ohos_unittest("media_bgtask_mgr_task_runner_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_task_runner_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -902,6 +921,7 @@ ohos_unittest("media_bgtask_mgr_task_runner_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   sanitize = {
@@ -950,6 +970,7 @@ ohos_unittest("media_bgtask_mgr_task_info_mgr_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_task_info_mgr_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -991,6 +1012,7 @@ ohos_unittest("media_bgtask_mgr_task_info_mgr_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   sanitize = {
@@ -1039,6 +1061,7 @@ ohos_unittest("media_bgtask_mgr_task_schedule_param_manager_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_task_schedule_param_manager_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -1080,6 +1103,7 @@ ohos_unittest("media_bgtask_mgr_task_schedule_param_manager_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   defines = []
@@ -1138,6 +1162,7 @@ ohos_unittest("media_bgtask_mgr_utils_test") {
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_runner.cpp",
     "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/task_schedule_param_manager.cpp",
     "./src/mediabgtaskmgr_utils_test.cpp",
+    "${MEDIA_BGTASK_MGR_SERVICE_PATH}/services/src/media_bgtask_dfx.cpp",
   ]
 
   deps = [
@@ -1179,6 +1204,7 @@ ohos_unittest("media_bgtask_mgr_utils_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
 
   sanitize = {

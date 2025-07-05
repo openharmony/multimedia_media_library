@@ -10,7 +10,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
 		"loadLevel": 1,
-		"loadScale": 11,
+		"loadScale": 19,
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
@@ -30,7 +30,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
 		"loadLevel": 1,
-		"loadScale": 11,
+		"loadScale": 17,
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
@@ -52,7 +52,6 @@
 		"loadLevel": 1,
 		"loadScale": 11,
 		"defaultRun": false,
-		"conflictedTask": ["com.ohos.medialibrary.medialibrarydata:DeleteTemporaryPhotos","com.ohos.medialibrary.medialibrarydata:TrashAgingOperation"],
 		"startCondition": {
 			"reScheduleInterval": 720,
 			"conditionArray": [{
@@ -74,7 +73,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
 		"loadLevel": 0,
-		"loadScale": 1,
+		"loadScale": 10,
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
@@ -93,8 +92,8 @@
 		"priorityLevel": 1,
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
-		"loadLevel": 0,
-		"loadScale": 1,
+		"loadLevel": 1,
+		"loadScale": 15,
 		"startCondition": {
 			"reScheduleInterval": 1440,
 			"conditionArray": [{
@@ -114,7 +113,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
 		"loadLevel": 0,
-		"loadScale": 1,
+		"loadScale": 10,
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
@@ -133,8 +132,8 @@
 		"priorityLevel": 1,
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
-		"loadLevel": 1,
-		"loadScale": 11,
+		"loadLevel": 0,
+		"loadScale": 10,
 		"startCondition": {
 			"reScheduleInterval": 5,
 			"conditionArray": [{
@@ -155,7 +154,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
 		"loadLevel": 1,
-		"loadScale": 11,
+		"loadScale": 16,
 		"startCondition": {
 			"reScheduleInterval": 1440,
 			"conditionArray": [{
@@ -175,7 +174,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 48,
 		"loadLevel": 1,
-		"loadScale": 11,
+		"loadScale": 15,
 		"startCondition": {
 			"reScheduleInterval": 0,
 			"conditionArray": [{
@@ -194,8 +193,8 @@
 		"priorityLevel": 0,
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
-		"loadLevel": 0,
-		"loadScale": 1,
+		"loadLevel": 1,
+		"loadScale": 16,
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
@@ -214,8 +213,8 @@
 		"priorityLevel": 0,
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
-		"loadLevel": 0,
-		"loadScale": 1,
+		"loadLevel": 1,
+		"loadScale": 15,
 		"startCondition": {
 			"reScheduleInterval": 1440,
 			"conditionArray": [{
@@ -235,7 +234,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
 		"loadLevel": 0,
-		"loadScale": 1,
+		"loadScale": 10,
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
@@ -254,8 +253,8 @@
 		"priorityLevel": 1,
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
-		"loadLevel": 0,
-		"loadScale": 1,
+		"loadLevel": 1,
+		"loadScale": 17,
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
@@ -275,7 +274,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
 		"loadLevel": 2,
-		"loadScale": 21,
+		"loadScale": 30,
 		"startCondition": {
 			"reScheduleInterval": 10,
 			"conditionArray": [{
@@ -305,7 +304,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
 		"loadLevel": 0,
-		"loadScale": 1,
+		"loadScale": 10,
 		"startCondition": {
 			"reScheduleInterval": 1440,
 			"conditionArray": [{
@@ -325,7 +324,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
 		"loadLevel": 0,
-		"loadScale": 1,
+		"loadScale": 12,
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
@@ -346,7 +345,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
 		"loadLevel": 1,
-		"loadScale": 11,
+		"loadScale": 15,
 		"startCondition": {
 			"reScheduleInterval": 360,
 			"conditionArray": [{
@@ -365,8 +364,8 @@
 		"priorityLevel": 2,
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
-		"loadLevel": 2,
-		"loadScale": 21,
+		"loadLevel": 1,
+		"loadScale": 16,
 		"startCondition": {
 			"reScheduleInterval": 30,
 			"conditionArray": [{
@@ -386,7 +385,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 48,
 		"loadLevel": 0,
-		"loadScale": 1,
+		"loadScale": 12,
 		"startCondition": {
 			"reScheduleInterval": 720,
 			"conditionArray": [{
@@ -406,7 +405,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 48,
 		"loadLevel": 1,
-		"loadScale": 11,
+		"loadScale": 17,
 		"startCondition": {
 			"reScheduleInterval": 60,
 			"conditionArray": [{
@@ -426,7 +425,7 @@
 		"priorityFactor": 5,
 		"maxToleranceTime": 24,
 		"loadLevel": 2,
-		"loadScale": 21,
+		"loadScale": 22,
 		"startCondition": {
 			"conditionArray": [{
 				"isCharging": 1,

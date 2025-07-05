@@ -34,6 +34,105 @@
 namespace OHOS {
 namespace MediaBgtaskSchedule {
 
+const std::map<std::string, SystemStateMgr::EventHandler> SystemStateMgr::eventHandlers_ = {
+    {
+        EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED,
+        [](SystemStateMgr* self, const EventFwk::CommonEventData& data) {
+            std::string action = data.GetWant().GetAction();
+            return self->CheckSocNeedHandle(data.GetWant(), action);
+        }
+    },
+    {
+        EventFwk::CommonEventSupport::COMMON_EVENT_USER_UNLOCKED,
+        [](SystemStateMgr* self, const EventFwk::CommonEventData& data) {
+            TaskInfoMgr::GetInstance().AddTaskForNewUserIfNeed(data.GetCode());
+            self->systemInfo_.allUserIds.insert(data.GetCode());
+            MEDIA_INFO_LOG("receive %{public}s, userId %{public}d", data.GetWant().GetAction().c_str(), data.GetCode());
+            return true;
+        }
+    },
+    {
+        EventFwk::CommonEventSupport::COMMON_EVENT_USER_REMOVED,
+        [](SystemStateMgr* self, const EventFwk::CommonEventData& data) {
+            TaskInfoMgr::GetInstance().RemoveTaskForUser(data.GetCode());
+            self->systemInfo_.allUserIds.erase(data.GetCode());
+            TaskInfoMgr::GetInstance().SaveTaskState(false);
+            MEDIA_INFO_LOG("receive %{public}s, userId %{public}d", data.GetWant().GetAction().c_str(), data.GetCode());
+            return true;
+        }
+    },
+    {
+        EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED,
+        [](SystemStateMgr* self, const EventFwk::CommonEventData& data) {
+            MEDIA_INFO_LOG("receive %{public}s", data.GetWant().GetAction().c_str());
+            if (self->IsCharging() == self->systemInfo_.charging) {
+                MEDIA_INFO_LOG("final charging status not change, ignore");
+                return false;
+            }
+            self->systemInfo_.charging = !self->systemInfo_.charging;
+            return true;
+        }
+    },
+    {
+        EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED,
+        [](SystemStateMgr* self, const EventFwk::CommonEventData& data) {
+            MEDIA_INFO_LOG("receive %{public}s", data.GetWant().GetAction().c_str());
+            if (self->IsCharging() == self->systemInfo_.charging) {
+                MEDIA_INFO_LOG("final charging status not change, ignore");
+                return false;
+            }
+            self->systemInfo_.charging = !self->systemInfo_.charging;
+            return true;
+        }
+    },
+    {
+        EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF,
+        [](SystemStateMgr* self, const EventFwk::CommonEventData& data) {
+            self->systemInfo_.screenOff = true;
+            MEDIA_INFO_LOG("receive %{public}s", data.GetWant().GetAction().c_str());
+            return true;
+        }
+    },
+    {
+        EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON,
+        [](SystemStateMgr* self, const EventFwk::CommonEventData& data) {
+            self->systemInfo_.screenOff = false;
+            MEDIA_INFO_LOG("receive %{public}s", data.GetWant().GetAction().c_str());
+            return true;
+        }
+    },
+    {
+        EventFwk::CommonEventSupport::COMMON_EVENT_THERMAL_LEVEL_CHANGED,
+        [](SystemStateMgr* self, const EventFwk::CommonEventData& data) {
+            int level = data.GetWant().GetIntParam("0", -1);
+            MEDIA_INFO_LOG("receive %{public}s, level = %{public}d, oldLevel = %{public}d",
+                data.GetWant().GetAction().c_str(), level, self->systemInfo_.thermalLevel);
+            self->systemInfo_.thermalLevel = level;
+            return true;
+        }
+    },
+    {
+        EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE,
+        [](SystemStateMgr* self, const EventFwk::CommonEventData& data) {
+            bool connected = (data.GetCode() == 4); /* WIFI_STATE_CONNECTED */
+            MEDIA_INFO_LOG("receive %{public}s, state = %{public}d, oldState = %{public}d",
+                data.GetWant().GetAction().c_str(), connected, self->systemInfo_.wifiConnected);
+            if (connected == self->systemInfo_.wifiConnected) {
+                MEDIA_INFO_LOG("wifi connect state not changed, ignore");
+                return false;
+            }
+            self->systemInfo_.wifiConnected = connected;
+            return true;
+        }
+    },
+    {
+        EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE,
+        [](SystemStateMgr* self, const EventFwk::CommonEventData& data) {
+            return self->CheckCellularConnectChange(data);
+        }
+    }
+};
+
 LocalSystemStateSubscriber::LocalSystemStateSubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)
     : EventFwk::CommonEventSubscriber(subscriberInfo)
 {}
@@ -92,62 +191,24 @@ bool SystemStateMgr::IsCharging()
     return finalCharging;
 }
 
+bool SystemStateMgr::ProcessEventAction(const EventFwk::CommonEventData &eventData)
+{
+    const std::string& action = eventData.GetWant().GetAction();
+    auto it = eventHandlers_.find(action);
+    if (it != eventHandlers_.end()) {
+        return it->second(this, eventData);
+    }
+    MEDIA_INFO_LOG("Received other event action:%{public}s.", action.c_str());
+    return false;
+}
+
 void SystemStateMgr::handleSystemStateChange(const EventFwk::CommonEventData &eventData)
 {
     LOCK_SCHEDULE_AND_CHANGE();
-    const AAFwk::Want &want = eventData.GetWant();
-    std::string action = want.GetAction();
 
-    SystemInfo &sysInfo = systemInfo_;
-    // 变化最频繁的事件放最上面
-    if (action == EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED) {
-        if (!CheckSocNeedHandle(want, action)) {
-            return;
-        }
-    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_USER_UNLOCKED) {
-        TaskInfoMgr::GetInstance().AddTaskForNewUserIfNeed(eventData.GetCode());
-        sysInfo.allUserIds.insert(eventData.GetCode());
-        MEDIA_INFO_LOG("receive %{public}s, userId = %{public}d", action.c_str(), eventData.GetCode());
-    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_USER_REMOVED) {
-        TaskInfoMgr::GetInstance().RemoveTaskForUser(eventData.GetCode());
-        sysInfo.allUserIds.erase(eventData.GetCode());
-        TaskInfoMgr::GetInstance().SaveTaskState(false);
-        MEDIA_INFO_LOG("receive %{public}s, userId = %{public}d", action.c_str(), eventData.GetCode());
-    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED ||
-        action == EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED) {
-        MEDIA_INFO_LOG("receive %{public}s", action.c_str());
-        if (IsCharging() == sysInfo.charging) {
-            MEDIA_INFO_LOG("final charging status not change, ignore");
-            return;
-        }
-        sysInfo.charging = !sysInfo.charging;
-    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF ||
-               action == EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON) {
-        sysInfo.screenOff = (action == EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF);
-        MEDIA_INFO_LOG("receive %{public}s", action.c_str());
-    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_THERMAL_LEVEL_CHANGED) {
-        int level = want.GetIntParam("0", -1);
-        MEDIA_INFO_LOG("receive %{public}s, level = %{public}d, oldLevel = %{public}d",
-            action.c_str(), level, sysInfo.thermalLevel);
-        sysInfo.thermalLevel = level;
-    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
-        bool connected = (eventData.GetCode() == 4); /* WIFI_STATE_CONNECTED */
-        MEDIA_INFO_LOG("receive %{public}s, state = %{public}d, oldState = %{public}d",
-            action.c_str(), connected, sysInfo.wifiConnected);
-        if (connected == sysInfo.wifiConnected) {
-            MEDIA_INFO_LOG("wifi connect state not changed, ignore");
-            return;
-        }
-        sysInfo.wifiConnected = connected;
-    } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
-        if (!CheckCellularConnectChange(eventData)) {
-            return;
-        }
-    } else {
-        MEDIA_WARN_LOG("Received other event action:%{public}s.", action.c_str());
-        return;
+    if (ProcessEventAction(eventData)) {
+        MediaBgtaskScheduleService::GetInstance().HandleSystemStateChange();
     }
-    MediaBgtaskScheduleService::GetInstance().HandleSystemStateChange();
 }
 
 void SystemStateMgr::handleSystemLoadLevelChange(int level)
