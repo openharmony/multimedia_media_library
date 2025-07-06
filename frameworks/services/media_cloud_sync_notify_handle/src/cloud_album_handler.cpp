@@ -27,6 +27,8 @@
 #include "rdb_predicates.h"
 #include "media_file_utils.h"
 #include "photo_query_filter.h"
+#include "accurate_common_data.h"
+#include "album_accurate_refresh.h"
 
 using namespace std;
 
@@ -98,6 +100,9 @@ static void UpdateSourcePath(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 static int32_t DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
 {
     constexpr int32_t AFTER_AGR_SIZE = 2;
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh =
+        std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
+    CHECK_AND_RETURN_RET_LOG(albumRefresh != nullptr, E_RDB_STORE_NULL, "DeletePhotoAlbum Failed to get albumRefresh");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("DeletePhotoAlbum failed. rdbStore is null");
@@ -111,8 +116,8 @@ static int32_t DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
     predicates.Or()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
     predicates.EndWrap();
     int deleteRow = -1;
-    auto ret = rdbStore->Delete(deleteRow, predicates);
-    if (ret != NativeRdb::E_OK || deleteRow <= 0) {
+    auto ret = albumRefresh->Delete(deleteRow, predicates);
+    if (ret != AccurateRefresh::ACCURATE_REFRESH_RET_OK || deleteRow <= 0) {
         MEDIA_ERR_LOG("DeletePhotoAlbum failed, errCode = %{public}d, deleteRow = %{public}d", ret, deleteRow);
     }
     auto watch = MediaLibraryNotify::GetInstance();
@@ -125,6 +130,7 @@ static int32_t DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
                 notifyUris[i]), NotifyType::NOTIFY_REMOVE);
         }
     }
+    albumRefresh->Notify();
     return deleteRow;
 }
 
