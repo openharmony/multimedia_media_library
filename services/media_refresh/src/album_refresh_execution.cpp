@@ -155,10 +155,12 @@ int32_t AlbumRefreshExecution::CalAlbumsInfos()
             refreshInfo = calAlbumInfoIter->second;
         }
         auto albumInfoBefore = albumInfo;
-        CalAlbumInfos(albumInfo, refreshInfo, subType);
-        ACCURATE_INFO("before albumInfo: %{public}s", albumInfoBefore.ToString(true).c_str());
-        ACCURATE_INFO("refresh info: %{public}s", refreshInfo.ToString().c_str());
-        ACCURATE_INFO("after albumInfo: %{public}s", albumInfo.ToString(true).c_str());
+        bool isAccurateRefresh = CalAlbumInfos(albumInfo, refreshInfo, subType);
+        ACCURATE_INFO("albumInfo: %{public}s", albumInfoBefore.ToString(true).c_str());
+        if (isAccurateRefresh) {
+            ACCURATE_INFO("refresh info: %{public}s", refreshInfo.ToString().c_str());
+            ACCURATE_INFO("cal albumInfo: %{public}s", albumInfo.ToString(true).c_str());
+        }
     }
 
     return ACCURATE_REFRESH_RET_OK;
@@ -213,7 +215,6 @@ int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden,
         MEDIA_WARN_LOG("no album info.");
         return ACCURATE_REFRESH_ALBUM_INFO_NULL;
     }
-
     MediaLibraryTracer tracer;
     tracer.Start("AlbumRefreshExecution::ForceUpdateAlbums " + to_string(albumId) + (isHidden ? " hidden" : ""));
     ACCURATE_DEBUG("force update albumId[%{public}d], isHidden[%{public}d]", albumId, isHidden);
@@ -445,6 +446,8 @@ bool AlbumRefreshExecution::CalAlbumInfos(AlbumChangeInfo &albumInfo, const Albu
         refreshAlbums_.insert(make_pair(albumInfo.albumId_, make_pair(refreshInfo, albumInfo)));
         return true;
     }
+    ACCURATE_INFO("accurate refresh album_info[%{public}d], hidden_album_info[%{public}d]", needRefreshAblum,
+        needRefreshHiddenAlbum);
     return false;
 }
 

@@ -15,6 +15,7 @@
 
 #define MLOG_TAG "AccurateRefresh::AlbumDataManager"
 
+#include "media_file_utils.h"
 #include "album_data_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "accurate_debug_log.h"
@@ -196,5 +197,31 @@ vector<int32_t> AlbumDataManager::GetInitKeys()
     return albumIds;
 }
 
+vector<AlbumChangeData> AlbumDataManager::GetAlbumDatasFromAddAlbum(const vector<string> &albumIdsStr)
+{
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIdsStr);
+    if (albumIdsStr.size() > 0) {
+        ACCURATE_DEBUG("albumId: %{public}s", albumIdsStr[0].c_str());
+    } else {
+        ACCURATE_DEBUG("albumId empty");
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    vector<AlbumChangeData> albumChangeDatas;
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, albumChangeDatas, "rdbStore null");
+    auto resultSet = rdbStore->QueryByStep(predicates, AlbumChangeInfo::GetAlbumInfoColumns());
+    auto albumIdInfos = AlbumChangeInfo::GetInfoFromResult(resultSet, AlbumChangeInfo::GetAlbumInfoColumns());
+    resultSet->Close();
+    for (auto &albumInfo : albumIdInfos) {
+        AlbumChangeData changeData;
+        changeData.operation_ = RDB_OPERATION_ADD;
+        changeData.version_ = MediaFileUtils::UTCTimeMilliSeconds();
+        changeData.infoAfterChange_ = albumInfo;
+        albumChangeDatas.push_back(changeData);
+        ACCURATE_DEBUG("albumInfo: %{public}s", albumInfo.ToString().c_str());
+    }
+    return albumChangeDatas;
+}
 } // namespace Media
 } // namespace OHOS

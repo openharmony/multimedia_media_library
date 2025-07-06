@@ -39,8 +39,9 @@ public:
     int32_t InitAlbumInfos(const std::vector<PhotoAlbumSubType> &systemTypes, const std::vector<int> &albumIds);
     int32_t UpdateModifiedDatas() override;
     int32_t PostProcessModifiedDatas(const std::vector<int32_t> &keys) override;
-    std::map<int32_t, AlbumChangeInfo>  GetInitAlbumInfos();
+    std::map<int32_t, AlbumChangeInfo> GetInitAlbumInfos();
     std::vector<int32_t> GetInitKeys() override;
+    static std::vector<AlbumChangeData> GetAlbumDatasFromAddAlbum(const std::vector<std::string> &albumIdsStr);
 
 private:
     int32_t GetChangeInfoKey(const AlbumChangeInfo &changeInfo) override;
