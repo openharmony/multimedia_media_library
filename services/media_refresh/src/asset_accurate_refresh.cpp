@@ -25,6 +25,7 @@
 #include "medialibrary_notify_new.h"
 #include "accurate_debug_log.h"
 #include "medialibrary_trigger_manager.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -294,6 +295,8 @@ int32_t AssetAccurateRefresh::Init(const vector<int32_t> &fileIds)
 // refresh album based on init datas and modified datas.
 int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AssetAccurateRefresh::RefreshAlbum");
     if (dataManager_.CheckIsExceed()) {
         return RefreshAllAlbum();
     }
@@ -331,6 +334,8 @@ int32_t AssetAccurateRefresh::RefreshAlbum(const vector<PhotoAssetChangeData> &a
 // notify assest change infos based on init datas and modified datas.
 int32_t AssetAccurateRefresh::Notify()
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AssetAccurateRefresh::RefreshAlbum");
     if (dataManager_.CheckIsExceed()) {
         return NotifyForReCheck();
     }
@@ -401,6 +406,8 @@ int32_t AssetAccurateRefresh::LogicalDeleteReplaceByUpdate(const AbsRdbPredicate
 
 int32_t AssetAccurateRefresh::DeleteCommon(function<int32_t(ValuesBucket &)> updateExe)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AssetAccurateRefresh::DeleteCommon");
     ValuesBucket valuesBucket;
     valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
     valuesBucket.PutInt(MEDIA_DATA_DB_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_UPLOAD));

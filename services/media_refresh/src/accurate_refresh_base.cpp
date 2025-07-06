@@ -37,6 +37,8 @@ int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
     if (!IsValidTable(cmd.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshBase::Insert cmd");
     vector<int32_t> keys;
     #ifdef MEDIA_REFRESH_TEST
         pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
@@ -77,7 +79,8 @@ int32_t AccurateRefreshBase::Insert(int64_t &outRowId, const string &table, Valu
     if (!IsValidTable(table)) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshBase::Insert talbe");
     vector<int32_t> keys;
     #ifdef MEDIA_REFRESH_TEST
         pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
@@ -127,7 +130,8 @@ int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &tab
     if (!IsValidTable(table)) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshBase::BatchInsert");
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->BatchInsert(table, values, GetReturningKeyName());
@@ -156,8 +160,6 @@ int32_t AccurateRefreshBase::Update(MediaLibraryCommand &cmd, int32_t &changedRo
     }
 
     DfxTimer dfxTimer(DfxType::RDB_UPDATE_BY_CMD, INVALID_DFX, RDB_TIME_OUT, false);
-    MediaLibraryTracer tracer;
-    tracer.Start("RdbStore->UpdateByCmd");
     return UpdateWithNoDateTime(changedRows, cmd.GetValueBucket(), *(cmd.GetAbsRdbPredicates()));
 }
 
@@ -192,6 +194,8 @@ int32_t AccurateRefreshBase::UpdateWithNoDateTime(int32_t &changedRows, const Va
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshBase::UpdateWithNoDateTime");
     // 初始化Init数据
     auto ret = Init(predicates);
     if (ret != ACCURATE_REFRESH_RET_OK) {
@@ -234,9 +238,6 @@ int32_t AccurateRefreshBase::LogicalDeleteReplaceByUpdate(const AbsRdbPredicates
 int32_t AccurateRefreshBase::Delete(int32_t &deletedRows, const string &table, const string &whereClause,
     const vector<string> &args)
 {
-    if (!IsValidTable(table)) {
-        return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
-    }
     // 初始化Init数据
     AbsRdbPredicates predicates(table);
     predicates.SetWhereClause(whereClause);
@@ -250,6 +251,8 @@ int32_t AccurateRefreshBase::Delete(int32_t &deletedRows, const AbsRdbPredicates
     if (!IsValidTable(predicates.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshBase::Delete");
     auto ret = Init(predicates);
     if (ret != ACCURATE_REFRESH_RET_OK) {
         MEDIA_WARN_LOG("no Init.");
@@ -301,7 +304,8 @@ vector<int32_t> AccurateRefreshBase::GetReturningKeys(const pair<int32_t, Result
         keys.push_back(key);
         ss << " " << key;
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
-    ACCURATE_DEBUG("returning new rows: %{public}s, ret: %{public}d", ss.str().c_str(), retWithResults.first);
+    ACCURATE_DEBUG("returning total length: %{public}d, new rows: %{public}s, ret: %{public}d",
+        retWithResults.second.changed, ss.str().c_str(), retWithResults.first);
     return keys;
 }
 
@@ -313,6 +317,8 @@ int32_t AccurateRefreshBase::ExecuteSql(const string &sql, RdbOperation operatio
 int32_t AccurateRefreshBase::ExecuteForLastInsertedRowId(const string &sql, const vector<ValueObject> &bindArgs,
     RdbOperation operation)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshBase::ExecuteForLastInsertedRowId");
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->Execute(sql, bindArgs, GetReturningKeyName());
@@ -338,6 +344,8 @@ int32_t AccurateRefreshBase::ExecuteForLastInsertedRowId(const string &sql, cons
 
 int32_t AccurateRefreshBase::ExecuteSql(const string &sql, const vector<ValueObject> &bindArgs, RdbOperation operation)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshBase::ExecuteSql");
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->Execute(sql, bindArgs, GetReturningKeyName());
@@ -357,6 +365,8 @@ int32_t AccurateRefreshBase::ExecuteSql(const string &sql, const vector<ValueObj
 int32_t AccurateRefreshBase::ExecuteForChangedRowCount(int64_t &outValue, const string &sql,
     const vector<ValueObject> &bindArgs, RdbOperation operation)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshBase::ExecuteForChangedRowCount");
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->Execute(sql, bindArgs, GetReturningKeyName());

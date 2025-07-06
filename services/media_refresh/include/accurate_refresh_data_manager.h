@@ -45,6 +45,7 @@ public:
     virtual std::vector<int32_t> GetInitKeys() = 0;
     void SetTransaction(std::shared_ptr<TransactionOperations> trans);
     bool CheckIsExceed(bool isLengthChanged = false);
+    bool CheckIsExceed(std::size_t length);
  
 protected:
     int32_t InsertInitChangeInfos(const std::vector<ChangeInfo> &changeInfos);
