@@ -20,6 +20,7 @@
 #include "asset_data_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "accurate_debug_log.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -89,6 +90,8 @@ std::vector<PhotoAssetChangeInfo> AssetDataManager::GetInfoByKeys(const std::vec
 
 vector<PhotoAssetChangeInfo> AssetDataManager::GetInfosByPredicates(const AbsRdbPredicates &predicates)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AssetDataManager::GetInfosByPredicates");
     shared_ptr<ResultSet> resultSet;
     if (trans_ != nullptr) {
         resultSet = trans_->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());

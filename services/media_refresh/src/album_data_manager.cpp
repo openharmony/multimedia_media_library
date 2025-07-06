@@ -19,6 +19,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "accurate_debug_log.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -33,6 +34,8 @@ int32_t AlbumDataManager::InitAlbumInfos(const std::vector<PhotoAlbumSubType> &s
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("AlbumDataManager::InitAlbumInfos");
     vector<string> systemTypesStr;
     for (auto const &type : systemTypes) {
         systemTypesStr.push_back(to_string(static_cast<int> (type)));
@@ -56,6 +59,8 @@ int32_t AlbumDataManager::UpdateModifiedDatas()
 
 PhotoAssetChangeInfo AlbumDataManager::GetPhotoAssetInfo(int32_t fileId)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AlbumDataManager::GetPhotoAssetInfo");
     AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, PhotoAssetChangeInfo(), "rdbStore null");
@@ -74,6 +79,8 @@ PhotoAssetChangeInfo AlbumDataManager::GetPhotoAssetInfo(int32_t fileId)
 
 int32_t AlbumDataManager::PostProcessModifiedDatas(const std::vector<int32_t> &keys)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AlbumDataManager::PostProcessModifiedDatas");
     for (auto &key : keys) {
         auto item = changeDatas_.find(key);
         if (item == changeDatas_.end()) {
@@ -118,6 +125,8 @@ vector<AlbumChangeInfo> AlbumDataManager::GetInfoByKeys(const vector<int32_t> &a
 
 vector<AlbumChangeInfo> AlbumDataManager::GetInfosByPredicates(const AbsRdbPredicates &predicates)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AlbumDataManager::GetInfosByPredicates");
     shared_ptr<ResultSet> resultSet;
     if (trans_ != nullptr) {
         resultSet = trans_->QueryByStep(predicates, AlbumChangeInfo::GetAlbumInfoColumns());

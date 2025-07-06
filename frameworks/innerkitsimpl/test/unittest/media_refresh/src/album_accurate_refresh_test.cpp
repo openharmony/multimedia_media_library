@@ -1356,8 +1356,8 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Exceed_032, T
     EXPECT_TRUE(changeRows == 1);
     auto &changeDatasMap = albumRefreshUpdate.dataManager_.changeDatas_;
     AlbumChangeData changeData;
-    // 总共1001条
-    for (int i = 0; i < 1000; ++i) {
+    // 总共1000条
+    for (int i = 0; i < 999; ++i) {
         changeDatasMap.insert_or_assign(1000000 + i, changeData);
     }
 
@@ -1370,7 +1370,7 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Exceed_032, T
     ACCURATE_DEBUG("ret: %{public}d", ret);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
     EXPECT_TRUE(changeRows == 1);
-    // 总共1001条
+    // 总共1000条
     EXPECT_TRUE(albumRefreshUpdate.dataManager_.CheckIsExceed());
     EXPECT_TRUE(albumRefreshUpdate.dataManager_.changeDatas_.empty());
     EXPECT_TRUE(albumRefreshUpdate.Notify() == ACCURATE_REFRESH_RET_OK);
@@ -1395,8 +1395,8 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Exceed_033, T
     EXPECT_TRUE(changeRows == 1);
     auto &changeDatasMap = albumRefreshUpdate.dataManager_.changeDatas_;
     AlbumChangeData changeData;
-    // 总共1000条
-    for (int i = 0; i < 999; ++i) {
+    // 总共999条
+    for (int i = 0; i < 998; ++i) {
         changeDatasMap.insert_or_assign(1000000 + i, changeData);
     }
 
@@ -1409,7 +1409,7 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Exceed_033, T
     ACCURATE_DEBUG("ret: %{public}d", ret);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
     EXPECT_TRUE(changeRows == 1);
-    // 总共1000条
+    // 总共999条
     EXPECT_TRUE(!albumRefreshUpdate.dataManager_.CheckIsExceed());
 }
 } // namespace Media

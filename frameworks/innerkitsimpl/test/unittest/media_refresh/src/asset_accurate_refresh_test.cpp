@@ -1055,8 +1055,8 @@ HWTEST_F(AssetAccurateRefreshTest, Update_Exceed_010, TestSize.Level2)
     // 修改changeDatas_的数量
     auto &changeDatasMap = assetRefresh.dataManager_.changeDatas_;
     PhotoAssetChangeData changeData;
-    // 总共1001条
-    for (int i = 0; i < 1000; ++i) {
+    // 总共1000条
+    for (int i = 0; i < 999; ++i) {
         changeDatasMap.insert_or_assign(1000000 + i, changeData);
     }
     ValuesBucket newValue;
@@ -1064,7 +1064,7 @@ HWTEST_F(AssetAccurateRefreshTest, Update_Exceed_010, TestSize.Level2)
     ret = assetRefresh.Update(changedRow, newValue, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
     EXPECT_TRUE(changedRow == 1);
-    // 总共1001条
+    // 总共1000条
     EXPECT_TRUE(assetRefresh.dataManager_.CheckIsExceed());
     EXPECT_TRUE(assetRefresh.dataManager_.changeDatas_.empty());
     EXPECT_TRUE(assetRefresh.RefreshAlbum() == ACCURATE_REFRESH_RET_OK);
@@ -1088,8 +1088,8 @@ HWTEST_F(AssetAccurateRefreshTest, Update_Exceed_011, TestSize.Level2)
     // 修改changeDatas_的数量
     auto &changeDatasMap = assetRefresh.dataManager_.changeDatas_;
     PhotoAssetChangeData changeData;
-    // 总共1000条
-    for (int i = 0; i < 999; ++i) {
+    // 总共999条
+    for (int i = 0; i < 998; ++i) {
         changeDatasMap.insert_or_assign(1000000 + i, changeData);
     }
     ValuesBucket newValue;
@@ -1098,8 +1098,8 @@ HWTEST_F(AssetAccurateRefreshTest, Update_Exceed_011, TestSize.Level2)
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
     EXPECT_TRUE(changedRow == 1);
     EXPECT_TRUE(!assetRefresh.dataManager_.CheckIsExceed());
-    // 总共1000条
-    EXPECT_TRUE(assetRefresh.dataManager_.changeDatas_.size() == 1000);
+    // 总共999条
+    EXPECT_TRUE(assetRefresh.dataManager_.changeDatas_.size() == 999);
 }
 } // namespace Media
 } // namespace OHOS

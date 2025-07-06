@@ -21,6 +21,7 @@
 #include "accurate_debug_log.h"
 #include "photo_asset_change_info.h"
 #include "album_change_info.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -32,6 +33,8 @@ template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const AbsRdbPredicates &predicates)
 {
     CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshDataManager::Init predicates");
     auto initDatas = GetInfosByPredicates(predicates);
     if (initDatas.empty()) {
         MEDIA_WARN_LOG("init data empty");
@@ -45,7 +48,8 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const string sq
 {
     CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     CHECK_AND_RETURN_RET_LOG(!sql.empty(), ACCURATE_REFRESH_INPUT_PARA_ERR, "input sql empty");
-
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshDataManager::Init sql");
     shared_ptr<ResultSet> resultSet;
     if (trans_ != nullptr) {
         resultSet = trans_->QueryByStep(sql, bindArgs);
@@ -69,9 +73,10 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const string sq
 template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const vector<int32_t> &keys)
 {
-    CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
+    CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(keys.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     CHECK_AND_RETURN_RET_LOG(!keys.empty(), ACCURATE_REFRESH_INPUT_PARA_ERR, "input keys empty");
-
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshDataManager::Init keys");
     auto initDatas = GetInfoByKeys(keys);
     if (initDatas.empty()) {
         MEDIA_WARN_LOG("initDatas empty");
@@ -89,6 +94,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasI
         MEDIA_WARN_LOG("input keys empty or operation error");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
+    CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(keys.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     auto ret = ACCURATE_REFRESH_RET_OK;
     switch (operation) {
         case RDB_OPERATION_REMOVE:
@@ -114,6 +120,7 @@ template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::InsertInitChangeInfos(
     const vector<ChangeInfo> &changeInfos)
 {
+    CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(changeInfos.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     for (auto const &changeInfo : changeInfos) {
         auto key = GetChangeInfoKey(changeInfo);
         if (changeDatas_.find(key) != changeDatas_.end()) {
@@ -184,6 +191,8 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
 template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForUpdate(const vector<int32_t> &keys)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshDataManager::UpdateModifiedDatasForUpdate");
     auto &modifiedKeys = keys;
     auto modifiedDatas = GetInfoByKeys(modifiedKeys);
     if (modifiedDatas.empty()) {
@@ -227,6 +236,8 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
 template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForAdd(const vector<int32_t> &keys)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AccurateRefreshDataManager::UpdateModifiedDatasForAdd");
     ACCURATE_DEBUG("keys size: %{public}zu", keys.size());
     auto modifiedDatas = GetInfoByKeys(keys);
     if (modifiedDatas.empty()) {
@@ -293,9 +304,18 @@ bool AccurateRefreshDataManager<ChangeInfo, ChangeData>::CheckIsExceed(bool isLe
         return true;
     }
 
-    isExceed_ = GetCurrentDataLength() > MAX_DATA_LENGTH;
+    isExceed_ = GetCurrentDataLength() >= MAX_DATA_LENGTH;
     if (isExceed_) {
         changeDatas_.clear();
+    }
+    return isExceed_;
+}
+
+template <typename ChangeInfo, typename ChangeData>
+bool AccurateRefreshDataManager<ChangeInfo, ChangeData>::CheckIsExceed(size_t length)
+{
+    if (length >= MAX_DATA_LENGTH) {
+        isExceed_ = true;
     }
     return isExceed_;
 }
