@@ -316,6 +316,7 @@ bool AccurateRefreshDataManager<ChangeInfo, ChangeData>::CheckIsExceed(size_t le
 {
     if (length >= MAX_DATA_LENGTH) {
         isExceed_ = true;
+        changeDatas_.clear();
     }
     return isExceed_;
 }
