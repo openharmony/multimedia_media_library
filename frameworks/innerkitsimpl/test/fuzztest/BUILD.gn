@@ -16,6 +16,7 @@ import("//foundation/multimedia/media_library/media_library.gni")
 group("media_library_fuzztest") {
   testonly = true
   deps = [
+    "media_bgtask_aging_task_fuzzer:MediaBgtaskAgingTaskFuzzTest",
     "medialibraryappstateobserver_fuzzer:MediaLibraryAppstateObserverFuzzTest",
     "medialibraryappuripermissionoperations_fuzzer:MediaLibraryAppUriPermissionOperationsFuzzTest",
     "medialibraryappurisensitiveoperations_fuzzer:MediaLibraryAppUriSensitiveOperationsFuzzTest",
@@ -58,6 +59,16 @@ group("media_library_fuzztest") {
     "medialibraryuripermissionoperations_fuzzer:MediaLibraryUriPermissionOperationsFuzzTest",
     "medialibraryurisensitiveoperations_fuzzer:MediaLibraryUriSensitiveOperationsFuzzTest",
     "medialibraryutil_fuzzer:MediaLibraryUtilFuzzTest",
+    "mediabgtaskmgrappopsconnectability_fuzzer:MediaBgtaskMgrAppOpsConnectAbilityFuzzTest",
+    "mediabgtaskmgrscheduleservice_fuzzer:MediaBgtaskMgrScheduleServiceFuzzTest",
+    "mediabgtaskmgrscheduleserviceability_fuzzer:MediaBgtaskMgrScheduleServiceAbilityFuzzTest",
+    "mediabgtaskmgrutils_fuzzer:MediaBgtaskMgrUtilsFuzzTest",
+    "mediabgtaskmgrsaopsconnection_fuzzer:MediaBgtaskMgrSaOpsConnectionFuzzTest",
+    "mediabgtaskmgrschedulepolicy_fuzzer:MediaBgtaskMgrSchedulePolicyFuzzTest",
+    "mediabgtaskmgrappbgtaskschedulestub_fuzzer:MediaBgtaskMgrAppBgtaskScheduleStubFuzzTest",
+    "mediabgtaskmgrsystemstatemgr_fuzzer:MediaBgtaskMgrSystemStateMgrFuzzTest",
+    "mediabgtaskmgrtaskinfomgr_fuzzer:MediaBgtaskMgrTaskInfoMgrFuzzTest",
+    "mediabgtaskmgrtaskscheduleparammanager_fuzzer:MediaBgtaskMgrTaskScheduleParamManagerFuzzTest",
   ]
 
   if (defined(global_parts_info.hdf_drivers_interface_usb) &&

@@ -114,6 +114,11 @@ private:
     bool CheckCellularConnectChange(const EventFwk::CommonEventData &eventData);
     bool CheckSocNeedHandle(const AAFwk::Want &want, std::string &action);
     bool IsCharging();
+
+    using EventHandler = std::function<bool(SystemStateMgr*, const EventFwk::CommonEventData&)>;
+    static const std::map<std::string, EventHandler> eventHandlers_;
+
+    bool ProcessEventAction(const EventFwk::CommonEventData &eventData);
 };
 
 class SystemLoadHandler : public ResourceSchedule::ResSchedSystemloadNotifierClient {

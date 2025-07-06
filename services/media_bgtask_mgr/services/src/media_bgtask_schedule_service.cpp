@@ -68,7 +68,10 @@ std::string MediaBgtaskScheduleService::GetTaskNameFromId(std::string taskId)
 void MediaBgtaskScheduleService::Init()
 {
     // Init cfg file
-    TaskScheduleParamManager::GetInstance().InitParams();
+    if (!TaskScheduleParamManager::GetInstance().InitParams()) {
+        MEDIA_ERR_LOG("fail to init scheduleTask params");
+        MediaBgtaskScheduleServiceAbility::ExitSelf(INT_MAX);
+    }
     // Init schedule policy by cfg
     auto scheduleCfg = TaskScheduleParamManager::GetInstance().GetScheduleCfg();
     SchedulePolicy::GetInstance().SetSchedulePolicy(scheduleCfg);
@@ -79,6 +82,7 @@ void MediaBgtaskScheduleService::Init()
     TaskInfoMgr::GetInstance().RestoreTaskState();
     // Init stateManager
     SystemStateMgr::GetInstance().Init();
+    AddDelaySchedule(SCHEDULE_DELAY_DEFAULT_SEC);
 }
 
 bool MediaBgtaskScheduleService::CanExit(TaskScheduleResult &compResult)
@@ -99,6 +103,7 @@ bool MediaBgtaskScheduleService::CanExit(TaskScheduleResult &compResult)
         }
         // 任务未完成，不能停止
         if (!info.isComplete) {
+            MEDIA_INFO_LOG("Can not exit, task: %{public}s is not completed", it.first.c_str());
             return false;
         }
     }
@@ -180,6 +185,7 @@ void MediaBgtaskScheduleService::HandleReschedule()
     HandleStartTask(compResult);
 
     if (CanExit(compResult)) {
+        MEDIA_INFO_LOG("media bgtask mgr can exit");
         MediaBgtaskScheduleServiceAbility::ExitSelf(compResult.nextComputeTime_);
     }
 }
@@ -251,10 +257,10 @@ bool MediaBgtaskScheduleService::modifyTask(
     }
     TaskInfo &task = iter->second;
     if (modifyInfo.find("taskRun:true") != std::string::npos) {
-        task.taskEnable_ = TaskEnable::MODIDY_ENABLE;
+        task.taskEnable_ = TaskEnable::MODIFY_ENABLE;
         // 这里不马上触发调度，如果需要再触发 HandleTaskStateChange
     } else if (modifyInfo.find("taskRun:false") != std::string::npos) {
-        task.taskEnable_ = TaskEnable::MODIDY_DISABLE;
+        task.taskEnable_ = TaskEnable::MODIFY_DISABLE;
     } else if (modifyInfo.find("taskRun:skipToday") != std::string::npos) {
         task.exceedEnergy = true;
         task.exceedEnergySetTime = MediaBgTaskUtils::GetNowTime();

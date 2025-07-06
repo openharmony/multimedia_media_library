@@ -27,12 +27,10 @@ namespace MediaBgtaskSchedule {
 
 // 任务的启用、禁用状态
 enum TaskEnable {
-    // 未修改，用配置文件中的值
-    NO_MODIFY,
     // 代码调用使能任务
-    MODIDY_ENABLE,
+    MODIFY_ENABLE,
     // 代码调用禁用任务
-    MODIDY_DISABLE,
+    MODIFY_DISABLE,
 };
 
 // 任务状态版本，所有新增信息都必须面尾部增加
@@ -67,7 +65,7 @@ struct TaskInfo {
     // 用于队列内排序，通过内部计算得出最终值
     float vrunTime{0.0};
     // 用户修改后的使能、禁用状态
-    TaskEnable taskEnable_{NO_MODIFY};
+    TaskEnable taskEnable_{MODIFY_ENABLE};
 
     void SetCfgInfo(TaskScheduleCfg &cfg)
     {

@@ -29,9 +29,7 @@ int32_t DeleteCloudMediaAssetsProcessor::Start(const std::string &taskExtra)
 {
     MEDIA_INFO_LOG("Start begin");
     ffrt::submit([this]() {
-        CloudMediaAssetManager::GetInstance().DeleteAllCloudMediaAssetsOperation(nullptr);
-        RemoveTaskName(taskName_);
-        ReportTaskComplete(taskName_);
+        CloudMediaAssetManager::GetInstance().StartDeleteCloudMediaAssets();
     });
     return E_OK;
 }
