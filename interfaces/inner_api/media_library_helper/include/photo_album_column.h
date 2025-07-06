@@ -124,12 +124,11 @@ public:
 
     EXPORT static void GetUserAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);
-    EXPORT static void GetSystemAlbumPredicates(const PhotoAlbumSubType subType, NativeRdb::RdbPredicates &predicates,
+    EXPORT static bool GetSystemAlbumPredicates(const PhotoAlbumSubType subType, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);
-    EXPORT static void GetAnalysisAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
+    EXPORT static void GetAnalysisPhotoMapPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);
-    EXPORT static void GetPortraitAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
-        const bool hiddenState);
+    EXPORT static void GetPortraitAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates);
     EXPORT static void GetSourceAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);
     EXPORT static std::string CheckUploadPhotoAlbumColumns();

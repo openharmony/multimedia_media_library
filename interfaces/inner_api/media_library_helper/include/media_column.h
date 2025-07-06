@@ -174,6 +174,11 @@ public:
     static const std::string PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX EXPORT;
     static const std::string PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX EXPORT;
     static const std::string PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX EXPORT;
+    static const std::string PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX EXPORT;
+    static const std::string PHOTO_BURST_MODE_ALBUM_INDEX EXPORT;
+    static const std::string PHOTO_FRONT_CAMERA_ALBUM_INDEX EXPORT;
+    static const std::string PHOTO_RAW_IMAGE_ALBUM_INDEX EXPORT;
+    static const std::string PHOTO_MOVING_PHOTO_ALBUM_INDEX EXPORT;
     // for clone query
     static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // for burst query
@@ -252,6 +257,11 @@ public:
     static const std::string CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX;
     static const std::string CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX;
     static const std::string CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX;
+    static const std::string CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX;
+    static const std::string CREATE_PHOTO_BURST_MODE_ALBUM_INDEX;
+    static const std::string CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX;
+    static const std::string CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX;
+    static const std::string CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX;
     static const std::string INDEX_QUERY_THUMBNAIL_WHITE_BLOCKS;
 
     // create Photo cloud sync trigger
