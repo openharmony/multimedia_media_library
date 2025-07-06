@@ -32,6 +32,7 @@
 #include "album_accurate_refresh_manager.h"
 #include "medialibrary_data_manager_utils.h"
 #include "media_file_utils.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -84,31 +85,40 @@ int32_t AlbumRefreshExecution::RefreshAlbum(const vector<PhotoAssetChangeData> &
 int32_t AlbumRefreshExecution::CalRefreshInfos(const vector<PhotoAssetChangeData> &assetChangeDatas)
 {
     // 计算系统相册信息
-    for (auto &item : systemAlbumCalculations_) {
-        for (auto const &assetChangeData : assetChangeDatas) {
-            const PhotoAlbumSubType &subType = item.first;
-            SystemAlbumInfoCalculation &calculation = item.second;
-            auto subTypeInfoIter = systemAlbumInfos_.find(subType);
-            if (subTypeInfoIter != systemAlbumInfos_.end()) {
-                calculation.CalAlbumRefreshInfo(assetChangeData, subTypeInfoIter->second);
-                continue;
-            }
-            AlbumRefreshInfo refreshInfo;
-            if (calculation.CalAlbumRefreshInfo(assetChangeData, refreshInfo)) {
-                systemAlbumInfos_.emplace(subType, refreshInfo);
+    {
+        MediaLibraryTracer tracer;
+        tracer.Start("AlbumRefreshExecution::CalRefreshInfos system");
+        for (auto &item : systemAlbumCalculations_) {
+            for (auto const &assetChangeData : assetChangeDatas) {
+                const PhotoAlbumSubType &subType = item.first;
+                SystemAlbumInfoCalculation &calculation = item.second;
+                auto subTypeInfoIter = systemAlbumInfos_.find(subType);
+                if (subTypeInfoIter != systemAlbumInfos_.end()) {
+                    calculation.CalAlbumRefreshInfo(assetChangeData, subTypeInfoIter->second);
+                    continue;
+                }
+                AlbumRefreshInfo refreshInfo;
+                if (calculation.CalAlbumRefreshInfo(assetChangeData, refreshInfo)) {
+                    systemAlbumInfos_.emplace(subType, refreshInfo);
+                }
             }
         }
     }
+
     // 计算用户和来源相册
-    ownerAlbumInfos_ = OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(assetChangeDatas);
-    if (IS_ACCURATE_DEBUG) {
-        for (auto const &systemInfo : systemAlbumInfos_) {
-            ACCURATE_INFO("subType: %{public}d, refreshInfo: %{public}s", systemInfo.first,
-                systemInfo.second.ToString().c_str());
-        }
-        for (auto const &ownerInfo : ownerAlbumInfos_) {
-            ACCURATE_INFO("albumId: %{public}d, refreshInfo: %{public}s", ownerInfo.first,
-                ownerInfo.second.ToString().c_str());
+    {
+        MediaLibraryTracer tracer;
+        tracer.Start("AlbumRefreshExecution::CalRefreshInfos owner albumId");
+        ownerAlbumInfos_ = OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(assetChangeDatas);
+        if (IS_ACCURATE_DEBUG) {
+            for (auto const &systemInfo : systemAlbumInfos_) {
+                ACCURATE_INFO("subType: %{public}d, refreshInfo: %{public}s", systemInfo.first,
+                    systemInfo.second.ToString().c_str());
+            }
+            for (auto const &ownerInfo : ownerAlbumInfos_) {
+                ACCURATE_INFO("albumId: %{public}d, refreshInfo: %{public}s", ownerInfo.first,
+                    ownerInfo.second.ToString().c_str());
+            }
         }
     }
 
@@ -117,6 +127,8 @@ int32_t AlbumRefreshExecution::CalRefreshInfos(const vector<PhotoAssetChangeData
 
 int32_t AlbumRefreshExecution::CalAlbumsInfos()
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AlbumRefreshExecution::CalAlbumsInfos");
     // 查询相册数据
     albumRefresh_.Init(GetAlbumSubTypes(), GetOwnerAlbumIds());
     initAlbumInfos_ = albumRefresh_.GetInitAlbumInfos();
@@ -178,6 +190,8 @@ vector<int32_t> AlbumRefreshExecution::GetOwnerAlbumIds()
 
 int32_t AlbumRefreshExecution::UpdateAllAlbums(NotifyAlbumType notifyAlbumType)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AlbumRefreshExecution::UpdateAllAlbums");
     for (auto &albumId : forceRefreshAlbums_) {
         // 封装刷新处理；全量刷新指定的相册（系统相册、用户相册、来源相册）
         ForceUpdateAlbums(albumId, false, notifyAlbumType);
@@ -200,6 +214,9 @@ int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden,
         return ACCURATE_REFRESH_ALBUM_INFO_NULL;
     }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("AlbumRefreshExecution::ForceUpdateAlbums " + to_string(albumId) + (isHidden ? " hidden" : ""));
+    ACCURATE_DEBUG("force update albumId[%{public}d], isHidden[%{public}d]", albumId, isHidden);
     auto &albumInfo = iter->second;
     PhotoAlbumSubType subtype = static_cast<PhotoAlbumSubType>(albumInfo.albumSubType_);
     ValuesBucket values;
@@ -231,6 +248,8 @@ int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden,
 int32_t AlbumRefreshExecution::GetUpdateValues(ValuesBucket &values, const AlbumChangeInfo &albumInfo,
     bool isHidden, NotifyType &type)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AlbumRefreshExecution::GetUpdateValues");
     PhotoAlbumSubType subtype = static_cast<PhotoAlbumSubType>(albumInfo.albumSubType_);
     struct UpdateAlbumData data;
     data.albumSubtype = albumInfo.albumSubType_;
@@ -249,10 +268,7 @@ int32_t AlbumRefreshExecution::GetUpdateValues(ValuesBucket &values, const Album
         data.shouldUpdateDateModified = true; // 非隐藏全量刷新时，说明相册封面有变化，需要设置
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore null");
-        return ACCURATE_REFRESH_RDB_NULL;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null");
     type = data.albumCount < data.newTotalCount ? NOTIFY_ALBUM_ADD_ASSET :
         (data.albumCount > data.newTotalCount ? NOTIFY_ALBUM_REMOVE_ASSET : NOTIFY_UPDATE);
     return MediaLibraryRdbUtils::GetUpdateValues(rdbStore, data, values, subtype, isHidden);
@@ -271,6 +287,8 @@ void AlbumRefreshExecution::CheckUpdateValues(const AlbumChangeInfo &albumInfo, 
 
 int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumType)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AlbumRefreshExecution::AccurateUpdateAlbums");
     for (auto &iter : refreshAlbums_) {
         auto &albumInfo = iter.second.second;
         ACCURATE_DEBUG("## Update type: %{public}d, albumId: %{public}d start", albumInfo.albumSubType_,
@@ -645,5 +663,15 @@ void AlbumRefreshExecution::CheckNotifyOldNotification(NotifyAlbumType notifyAlb
             albumInfo.albumType_, albumInfo.albumSubType_, notifyAlbumType);
     }
 }
+
+int32_t AlbumRefreshExecution::RefreshAllAlbum()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null");
+    ACCURATE_DEBUG("force update all albums");
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
+    return ACCURATE_REFRESH_RET_OK;
+}
+
 } // namespace Media
 } // namespace OHOS

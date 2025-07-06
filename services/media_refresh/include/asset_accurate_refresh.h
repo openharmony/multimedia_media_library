@@ -90,6 +90,7 @@ protected:
     void SetDataManagerTransaction(std::shared_ptr<TransactionOperations> trans) override;
 private:
     int32_t DeleteCommon(std::function<int32_t(NativeRdb::ValuesBucket &)> updateExe);
+    int32_t RefreshAllAlbum();
 
 private:
     AssetDataManager dataManager_;

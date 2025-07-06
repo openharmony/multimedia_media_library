@@ -24,6 +24,7 @@
 #include "album_accurate_refresh.h"
 #include "medialibrary_notify_new.h"
 #include "accurate_debug_log.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -72,6 +73,9 @@ int32_t AlbumAccurateRefresh::Init(const std::vector<int32_t> &albumIds)
 
 int32_t AlbumAccurateRefresh::Notify()
 {
+    if (dataManager_.CheckIsExceed()) {
+        return NotifyForReCheck();
+    }
     return Notify(dataManager_.GetChangeDatas());
 }
 
@@ -139,6 +143,8 @@ int32_t AlbumAccurateRefresh::LogicalDeleteReplaceByUpdate(const AbsRdbPredicate
 
 int32_t AlbumAccurateRefresh::DeleteCommon(function<int32_t(ValuesBucket&)> updateExe)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AlbumAccurateRefresh::DeleteCommon");
     ValuesBucket valuesBucket;
     valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
     auto ret = updateExe(valuesBucket);
