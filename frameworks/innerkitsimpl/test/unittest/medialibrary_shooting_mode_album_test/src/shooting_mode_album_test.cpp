@@ -53,6 +53,17 @@ const std::string URI_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_A
 const std::string URI_ORDER_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM;
 constexpr int32_t SHOOTING_MODE_ALBUM_MIN_NUM = 9;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
+const string PORTRAIT_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::PORTRAIT));
+const string WIDE_APERTURE_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::WIDE_APERTURE));
+const string NIGHT_SHOT_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::NIGHT_SHOT));
+const string MOVING_PICTURE_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::MOVING_PICTURE));
+const string PRO_PHOTO_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::PRO_PHOTO));
+const string SLOW_MOTION_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::SLOW_MOTION));
+const string LIGHT_PAINTING_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::LIGHT_PAINTING));
+const string HIGH_PIXEL_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::HIGH_PIXEL));
+const string SUPER_MACRO_ALBUM = to_string(static_cast<int32_t>(ShootingModeAlbumType::SUPER_MACRO));
+
 int32_t ClearTable(const string &table)
 {
     RdbPredicates predicates(table);
@@ -127,53 +138,49 @@ struct ShootingModeValueBucket {
 };
 
 static int32_t InsertShootingModeAlbumValues(
-    const ShootingModeValueBucket &shootingModeAlbum, shared_ptr<MediaLibraryRdbStore> store)
+    const string& albumName, const shared_ptr<MediaLibraryRdbStore>& store)
 {
     ValuesBucket valuesBucket;
-    valuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, shootingModeAlbum.albumType);
-    valuesBucket.PutInt(COMPAT_ALBUM_SUBTYPE, shootingModeAlbum.albumSubType);
-    valuesBucket.PutString(MEDIA_DATA_DB_ALBUM_NAME, shootingModeAlbum.albumName);
+    valuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, SHOOTING_MODE_TYPE);
+    valuesBucket.PutInt(COMPAT_ALBUM_SUBTYPE, SHOOTING_MODE_SUB_TYPE);
+    valuesBucket.PutString(MEDIA_DATA_DB_ALBUM_NAME, albumName);
+    valuesBucket.PutInt(MEDIA_DATA_DB_IS_LOCAL, 1); // local album is 1.
     int64_t outRowId = -1;
     int32_t insertResult = store->Insert(outRowId, ANALYSIS_ALBUM_TABLE, valuesBucket);
     return insertResult;
 }
 
-static int32_t CreateShootingModeAlbum()
+static int32_t QueryExistingShootingModeAlbumNames(const shared_ptr<MediaLibraryRdbStore>& store,
+    vector<string>& existingAlbumNames)
 {
-    ShootingModeValueBucket portraitAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, PORTRAIT_ALBUM
-    };
-    ShootingModeValueBucket wideApertureAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, WIDE_APERTURE_ALBUM
-    };
-    ShootingModeValueBucket nightShotAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, NIGHT_SHOT_ALBUM
-    };
-    ShootingModeValueBucket movingPictureAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, MOVING_PICTURE_ALBUM
-    };
-    ShootingModeValueBucket proPhotoAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, PRO_PHOTO_ALBUM
-    };
-    ShootingModeValueBucket slowMotionAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, SLOW_MOTION_ALBUM
-    };
-    ShootingModeValueBucket lightPaintingAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, LIGHT_PAINTING_ALBUM
-    };
-    ShootingModeValueBucket highPixelAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, HIGH_PIXEL_ALBUM
-    };
-    ShootingModeValueBucket superMicroAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, SUPER_MACRO_ALBUM
-    };
+    string queryRowSql = "SELECT " + PhotoAlbumColumns::ALBUM_NAME + " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::SHOOTING_MODE);
+    auto resultSet = store->QuerySql(queryRowSql);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL,
+        "Can not get shootingMode album names, resultSet is nullptr");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        string albumName = GetStringVal(PhotoAlbumColumns::ALBUM_NAME, resultSet);
+        if (!albumName.empty()) {
+            existingAlbumNames.push_back(albumName);
+        }
+    }
+    return E_SUCCESS;
+}
 
-    vector<ShootingModeValueBucket> shootingModeValuesBucket = {
-        portraitAlbum, wideApertureAlbum, nightShotAlbum, movingPictureAlbum,
-        proPhotoAlbum, lightPaintingAlbum, highPixelAlbum, superMicroAlbum, slowMotionAlbum
-    };
-    for (const auto& shootingModeAlbum : shootingModeValuesBucket) {
-        if (InsertShootingModeAlbumValues(shootingModeAlbum, g_rdbStore) != NativeRdb::E_OK) {
+static int32_t PrepareShootingModeAlbum()
+{
+    vector<string> existingAlbumNames;
+    if (QueryExistingShootingModeAlbumNames(g_rdbStore, existingAlbumNames) != E_SUCCESS) {
+        MEDIA_ERR_LOG("Query existing shootingMode album names failed");
+        return NativeRdb::E_ERROR;
+    }
+    for (int i = static_cast<int>(ShootingModeAlbumType::START);
+        i <= static_cast<int>(ShootingModeAlbumType::END); ++i) {
+        string albumName = to_string(i);
+        if (find(existingAlbumNames.begin(), existingAlbumNames.end(), albumName) != existingAlbumNames.end()) {
+            continue;
+        }
+        if (InsertShootingModeAlbumValues(albumName, g_rdbStore) != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Prepare shootingMode album failed");
             return NativeRdb::E_ERROR;
         }
@@ -217,7 +224,7 @@ void ShootingModeAlbumTest::TearDown() {}
 HWTEST_F(ShootingModeAlbumTest, photoalbum_create_ShootingMode_album_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_create_album_001 enter");
-    auto ret = CreateShootingModeAlbum();
+    auto ret = PrepareShootingModeAlbum();
     EXPECT_EQ(ret, E_OK);
     DoCheckShootingAlbumData(PORTRAIT_ALBUM);
     DoCheckShootingAlbumData(WIDE_APERTURE_ALBUM);
@@ -251,5 +258,14 @@ HWTEST_F(ShootingModeAlbumTest, query_shooting_mode_album_001, TestSize.Level1)
     int32_t albumCount = 0;
     resultSet->GetRowCount(albumCount);
     EXPECT_EQ((albumCount >= SHOOTING_MODE_ALBUM_MIN_NUM), true);
+}
+
+HWTEST_F(ShootingModeAlbumTest, query_shooting_mode_album_index_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("query_shooting_mode_album_index_001 enter");
+    ShootingModeAlbumType type = ShootingModeAlbumType::PORTRAIT;
+    string index = ShootingModeAlbum::GetQueryAssetsIndex(type);
+    EXPECT_EQ(index, PhotoColumn::PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX);
+    MEDIA_INFO_LOG("query_shooting_mode_album_index_001 end");
 }
 } // namespace OHOS::Media

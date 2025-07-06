@@ -16,6 +16,7 @@
 #include "photo_query_filter.h"
 
 #include "base_column.h"
+#include "datashare_predicates.h"
 #include "media_log.h"
 
 namespace OHOS {
@@ -81,7 +82,8 @@ std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilter::Config& 
     return whereClause;
 }
 
-void PhotoQueryFilter::ModifyPredicate(const PhotoQueryFilter::Option option, NativeRdb::RdbPredicates& predicate)
+template <class T>
+void PhotoQueryFilter::ModifyPredicate(const PhotoQueryFilter::Option option, T& predicate)
 {
     PhotoQueryFilter::Config config {};
     switch (option) {
@@ -102,7 +104,8 @@ void PhotoQueryFilter::ModifyPredicate(const PhotoQueryFilter::Option option, Na
     }
 }
 
-void PhotoQueryFilter::ModifyPredicate(const PhotoQueryFilter::Config& config, NativeRdb::RdbPredicates& predicates)
+template <class T>
+void PhotoQueryFilter::ModifyPredicate(const PhotoQueryFilter::Config& config, T& predicates)
 {
     if (config.syncStatusConfig != ConfigType::IGNORE) {
         predicates.EqualTo("sync_status", config.syncStatusConfig == ConfigType::INCLUDE ? 1 : 0);
@@ -134,5 +137,18 @@ void PhotoQueryFilter::ModifyPredicate(const PhotoQueryFilter::Config& config, N
         predicates.EqualTo("burst_cover_level", config.burstCoverOnly == ConfigType::INCLUDE ? 1 : 0);
     }
 }
+
+template void PhotoQueryFilter::ModifyPredicate<DataShare::DataSharePredicates>(const PhotoQueryFilter::Option option,
+    DataShare::DataSharePredicates& predicate);
+
+template void PhotoQueryFilter::ModifyPredicate<NativeRdb::RdbPredicates>(const PhotoQueryFilter::Option option,
+    NativeRdb::RdbPredicates& predicate);
+
+template void PhotoQueryFilter::ModifyPredicate<DataShare::DataSharePredicates>(const PhotoQueryFilter::Config& config,
+    DataShare::DataSharePredicates& predicate);
+
+template void PhotoQueryFilter::ModifyPredicate<NativeRdb::RdbPredicates>(const PhotoQueryFilter::Config& config,
+    NativeRdb::RdbPredicates& predicate);
+
 }  // namespace Media
 }  // namespace OHOS

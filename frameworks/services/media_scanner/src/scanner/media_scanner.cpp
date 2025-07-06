@@ -237,31 +237,40 @@ static string GetAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     return album_id;
 }
 
-static int32_t MaintainShootingModeMap(std::unique_ptr<Metadata> &data,
-    const shared_ptr<MediaLibraryRdbStore> rdbStore)
+static void NotifyAnalysisAlbum(const vector<string>& changedAlbumIds)
 {
-    string insertShootingModeSql = "INSERT OR IGNORE INTO " + ANALYSIS_PHOTO_MAP_TABLE +
-        "(" + PhotoMap::ALBUM_ID + "," + PhotoMap::ASSET_ID + ") SELECT AnalysisAlbum.album_id, " +
-        "Photos.file_id FROM " + PhotoColumn::PHOTOS_TABLE + " JOIN " +
-        ANALYSIS_ALBUM_TABLE + " ON Photos.shooting_mode=AnalysisAlbum.album_name WHERE file_id = " +
-        to_string(data->GetFileId()) + " AND AnalysisAlbum.album_subtype = " +
-        to_string(PhotoAlbumSubType::SHOOTING_MODE);
-    int32_t result = rdbStore->ExecuteSql(insertShootingModeSql);
-    return result;
+    if (changedAlbumIds.size() <= 0) {
+        return;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+    for (const string& albumId : changedAlbumIds) {
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+            PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, albumId), NotifyType::NOTIFY_UPDATE);
+    }
 }
 
-static int32_t MaintainAlbumRelationship(std::unique_ptr<Metadata> &data)
+static void UpdateAndNotifyShootingModeAlbumOfAsset(std::unique_ptr<Metadata>& data)
 {
+    vector<ShootingModeAlbumType> albumTypes = ShootingModeAlbum::GetShootingModeAlbumOfAsset(
+        data->GetPhotoSubType(), data->GetFileMimeType(), data->GetMovingPhotoEffectMode(),
+        data->GetFrontCamera(), data->GetShootingMode());
+
+    vector<string> albumIdsToUpdate;
+    for (const auto& type : albumTypes) {
+        int32_t albumId;
+        if (MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(type, albumId)) {
+            albumIdsToUpdate.push_back(to_string(albumId));
+        }
+    }
+
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbstore is nullptr");
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbstore is nullptr");
 
-    auto ret = MaintainShootingModeMap(data, rdbStore);
-    CHECK_AND_RETURN_RET(ret == E_OK, ret);
-
-    string album_id = GetAlbumId(rdbStore, data->GetShootingMode());
-    CHECK_AND_RETURN_RET_LOG(!album_id.empty(), E_ERR, "Failed to query album_id,Album cover and count update fails");
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, {album_id});
-    return E_OK;
+    if (albumIdsToUpdate.size() > 0) {
+        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsToUpdate);
+        NotifyAnalysisAlbum(albumIdsToUpdate);
+    }
 }
 
 int32_t MediaScannerObj::Commit()
@@ -275,6 +284,7 @@ int32_t MediaScannerObj::Commit()
         if (!isSkipAlbumUpdate_) {
             assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
                 NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
+            UpdateAndNotifyShootingModeAlbumOfAsset(data_);
         }
         if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT && data_->GetBurstCoverLevel() == COVER) {
             if (data_->GetForAdd()) {
@@ -288,6 +298,7 @@ int32_t MediaScannerObj::Commit()
         uri_ = mediaScannerDb_->InsertMetadata(*data_, tableName, api_, assetRefresh);
         assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
             NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
+        UpdateAndNotifyShootingModeAlbumOfAsset(data_);
         if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT) {
             watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
         }
@@ -300,12 +311,6 @@ int32_t MediaScannerObj::Commit()
             fileId, ret);
     }
 
-    if (!data_->GetShootingMode().empty() && !isSkipAlbumUpdate_) {
-        auto err = MaintainAlbumRelationship(data_);
-        if (err != E_OK) {
-            return err;
-        }
-    }
     assetRefresh->Notify();
     // notify change
     mediaScannerDb_->NotifyDatabaseChange(data_->GetFileMediaType());

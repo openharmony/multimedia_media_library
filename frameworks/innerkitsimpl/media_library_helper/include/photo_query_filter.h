@@ -49,8 +49,12 @@ public:
 
     static std::string GetSqlWhereClause(const PhotoQueryFilter::Option option);
     static std::string GetSqlWhereClause(const PhotoQueryFilter::Config& config);
-    static void ModifyPredicate(const PhotoQueryFilter::Option option, NativeRdb::RdbPredicates& predicate);
-    static void ModifyPredicate(const PhotoQueryFilter::Config& config, NativeRdb::RdbPredicates& predicate);
+
+    template <class T>
+    static void ModifyPredicate(const PhotoQueryFilter::Option option, T& predicate);
+
+    template <class T>
+    static void ModifyPredicate(const PhotoQueryFilter::Config& config, T& predicate);
 };
 
 }  // namespace Media

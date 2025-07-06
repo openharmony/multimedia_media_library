@@ -106,6 +106,7 @@
 #include "result_set_utils.h"
 #include "source_album.h"
 #include "system_ability_definition.h"
+#include "shooting_mode_column.h"
 #include "timer.h"
 #include "value_object.h"
 #include "photo_storage_operation.h"
@@ -460,6 +461,48 @@ static void FixOrientation180DirtyThumbnail(const shared_ptr<MediaLibraryRdbStor
     MEDIA_INFO_LOG("End fix dirty thumbnail");
 }
 
+static void AddShootingModeAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("Start to add shooting mode album index");
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX,
+        PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
+        PhotoColumn::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX,
+        PhotoColumn::CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX,
+        PhotoColumn::CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX,
+    };
+    for (const auto& sql : sqls) {
+        int ret = store->ExecuteSql(sql);
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    }
+    MEDIA_INFO_LOG("End add shooting mode album index");
+}
+
+static void AddHistoryPanoramaModeAlbumData(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("Start to add panorama mode album data");
+    const string panoramaModeAlbumType = to_string(static_cast<int32_t>(ShootingModeAlbumType::PANORAMA_MODE));
+    const string sql = "UPDATE Photos SET shooting_mode = " + panoramaModeAlbumType +
+        " WHERE shooting_mode_tag IN (" + CAMERA_CUSTOM_SM_PANORAMA +
+        ", " + CAMERA_CUSTOM_SM_PHOTO_STITCHING + ")";
+    int ret = store->ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End add panorama mode album data");
+}
+
+static void UpdateAllShootingModeAlbums(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+{
+    vector<int32_t> albumIds;
+    vector<string> albumIdsStr;
+    CHECK_AND_RETURN_LOG(MediaLibraryRdbUtils::QueryAllShootingModeAlbumIds(albumIds),
+        "Failed to query shooting mode album ids");
+    for (auto albumId : albumIds) {
+        albumIdsStr.push_back(to_string(albumId));
+    }
+
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
+}
+
 void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
@@ -500,6 +543,13 @@ void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_ADD_PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX) {
         MediaLibraryRdbStore::AddPhotoWhiteBlocksIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX);
+    }
+
+    if (oldVersion < VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION) {
+        AddShootingModeAlbumIndex(rdbStore);
+        AddHistoryPanoramaModeAlbumData(rdbStore);
+        UpdateAllShootingModeAlbums(rdbStore);
+        rdbStore->SetOldVersion(VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION);
     }
 }
 

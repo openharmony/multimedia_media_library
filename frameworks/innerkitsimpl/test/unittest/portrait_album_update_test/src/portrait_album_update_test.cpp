@@ -73,7 +73,6 @@ struct PortraitData {
 };
 
 constexpr int32_t TEST_INDEX_ONE = 1;
-constexpr int32_t TEST_INDEX_TWO = 2;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 int GetNumber()
@@ -347,22 +346,18 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_001, TestSize.Level
     int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<string> albumIds = { to_string(albumId) };
-    vector<string> fileIds;
-    for (auto &data : portraits) {
-        fileIds.push_back(to_string(data.fileId));
-    }
 
     InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, 4, portraits[1].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     TrashPortrait(portraits[0].fileId);
     TrashPortrait(portraits[1].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[0], fileIds[1] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, 2, portraits[3].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     TrashPortrait(portraits[3].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[3] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, 1, portraits[2].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     MEDIA_INFO_LOG("portrait_album_update_test_001 End");
@@ -376,25 +371,21 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_002, TestSize.Level
     int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<string> albumIds = { to_string(albumId) };
-    vector<string> fileIds;
-    for (auto &data : portraits) {
-        fileIds.push_back(to_string(data.fileId));
-    }
 
     InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, 4, portraits[1].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     HidePortrait(portraits[1].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[1] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, 3, portraits[0].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     HidePortrait(portraits[0].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[0] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, 2, portraits[3].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     HidePortrait(portraits[2].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[2] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, 1, portraits[3].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     MEDIA_INFO_LOG("portrait_album_update_test_002 End");
@@ -408,25 +399,21 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_003, TestSize.Level
     int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<string> albumIds = { to_string(albumId) };
-    vector<string> fileIds;
-    for (auto &data : portraits) {
-        fileIds.push_back(to_string(data.fileId));
-    }
 
     InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, 4, portraits[1].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     DismissPortrait(albumId, portraits[1].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[1] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, 3, portraits[0].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     DismissPortrait(albumId, portraits[0].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[0] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, 2, portraits[3].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     DismissPortrait(albumId, portraits[3].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, { fileIds[3] });
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, 1, portraits[2].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     MEDIA_INFO_LOG("portrait_album_update_test_003 End");
@@ -461,7 +448,7 @@ void SetPortraitCover(int64_t albumId, const string &coverUri, int32_t isCoverSa
     EXPECT_EQ(ret, E_OK);
 }
 
-void TestCoverUpdateByFileIds(int64_t albumId, const vector<PortraitData> &portraits, const vector<string> &fileIds,
+void TestCoverUpdateByFileIds(int64_t albumId, const vector<PortraitData> &portraits,
     const string &coverUri, int32_t expectedCoverId)
 {
     int32_t isCoverSatisfied = 1;
@@ -469,7 +456,7 @@ void TestCoverUpdateByFileIds(int64_t albumId, const vector<PortraitData> &portr
     SetPortraitCover(albumId, coverUri, isCoverSatisfied);
 
     vector<string> albumIds = { to_string(albumId) };
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, portraits.size(), portraits[expectedCoverId].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 }
 
@@ -480,9 +467,8 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_004, TestSize.Level
     int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<PortraitData> portraits = PreparePortraitData(tagId);
-    vector<string> fileIds; // empty fileId list, full update
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
-    TestCoverUpdateByFileIds(albumId, portraits, fileIds, coverUri, TEST_INDEX_ONE);
+    TestCoverUpdateByFileIds(albumId, portraits, coverUri, TEST_INDEX_ONE);
     MEDIA_INFO_LOG("portrait_album_update_test_004 End");
 }
 
@@ -493,12 +479,8 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_005, TestSize.Level
     int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<PortraitData> portraits = PreparePortraitData(tagId);
-    vector<string> fileIds;
-    for (auto &data : portraits) {
-        fileIds.push_back(to_string(data.fileId)); // full fileId list, update by uri
-    }
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
-    TestCoverUpdateByFileIds(albumId, portraits, fileIds, coverUri, TEST_INDEX_ONE);
+    TestCoverUpdateByFileIds(albumId, portraits, coverUri, TEST_INDEX_ONE);
     MEDIA_INFO_LOG("portrait_album_update_test_005 End");
 }
 
@@ -509,9 +491,8 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_006, TestSize.Level
     int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<PortraitData> portraits = PreparePortraitData(tagId);
-    vector<string> fileIds;
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "/0/fake/fake.jpg"; // invalid uri, get empty fileId
-    TestCoverUpdateByFileIds(albumId, portraits, fileIds, coverUri, TEST_INDEX_ONE);
+    TestCoverUpdateByFileIds(albumId, portraits, coverUri, TEST_INDEX_ONE);
     MEDIA_INFO_LOG("portrait_album_update_test_006 End");
 }
 
@@ -522,13 +503,11 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_007, TestSize.Level
     int64_t albumId = CreatePortraitAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<PortraitData> portraits = PreparePortraitData(tagId);
-    vector<string> fileIds; // empty fileId list, full update
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
-    TestCoverUpdateByFileIds(albumId, portraits, fileIds, coverUri, TEST_INDEX_ONE);
+    TestCoverUpdateByFileIds(albumId, portraits, coverUri, TEST_INDEX_ONE);
 
-    fileIds.push_back(to_string(portraits[TEST_INDEX_TWO].fileId));
     vector<string> albumIds = { to_string(albumId) };
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, fileIds); // no need update
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds); // no need update
     CheckAlbum(albumId, portraits.size(), portraits[TEST_INDEX_ONE].fileId, CoverSatisfiedType::DEFAULT_SETTING);
     MEDIA_INFO_LOG("portrait_album_update_test_007 End");
 }
@@ -553,13 +532,9 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_008, TestSize.Level
     EXPECT_GT(albumId, 0);
     vector<PortraitData> portraits = PreparePortraitData(tagId);
     vector<string> albumIds = { to_string(albumId) };
-    vector<string> fileIds;
-    for (auto &data : portraits) {
-        fileIds.push_back(to_string(data.fileId));
-    }
 
     InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
     CheckAlbum(albumId, 4, portraits[1].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 
     UserSetCoverUriTest(albumId, portraits, 3);

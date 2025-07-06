@@ -25,10 +25,13 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_notify.h"
+#include "media_file_utils.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
 #include "uuid.h"
 #include "asset_accurate_refresh.h"
+#include "shooting_mode_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -123,6 +126,31 @@ static std::string generateUpdateSql(const bool isCover, const std::string title
     return updateSql;
 }
 
+static void NotifyAnalysisAlbum(const string& albumId)
+{
+    if (albumId.empty()) {
+        return;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+        PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, albumId), NotifyType::NOTIFY_UPDATE);
+}
+
+static void UpdateAndNotifyBurstModeAlbum()
+{
+    int32_t albumId;
+    CHECK_AND_RETURN_LOG(
+        MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(ShootingModeAlbumType::BURST_MODE_ALBUM, albumId),
+        "Failed to query albumId");
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbstore is nullptr");
+
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, { to_string(albumId) });
+    NotifyAnalysisAlbum(to_string(albumId));
+}
+
 static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::ResultSet> resultSet)
 {
     int32_t count;
@@ -162,6 +190,7 @@ static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::Result
     }
     assetRefresh.RefreshAlbum();
     assetRefresh.Notify();
+    UpdateAndNotifyBurstModeAlbum();
     return ret;
 }
 

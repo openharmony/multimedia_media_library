@@ -426,13 +426,24 @@ static void HandleImageAndVideoAlbums(const shared_ptr<MediaLibraryRdbStore> rdb
     info.refreshResult = E_SUCCESS;
 }
 
+static void PushShootingModeAlbumIds(std::vector<RefreshAlbumData>& analysisAlbums)
+{
+    vector<int32_t> albumIds;
+    CHECK_AND_RETURN_LOG(MediaLibraryRdbUtils::QueryAllShootingModeAlbumIds(albumIds),
+        "Failed to query shooting mode album ids");
+    for (auto albumId : albumIds) {
+        analysisAlbums.push_back({ albumId, static_cast<int32_t>(PhotoAlbumSubType::SHOOTING_MODE) });
+    }
+}
+
 static void HandleAnalysisAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore, SyncNotifyInfo &info)
 {
     std::vector<RefreshAlbumData> analysisAlbums;
 
     int32_t ret =
         GetAnalysisRefreshAlbums(rdbStore, analysisAlbums, info.forceRefreshType);
-    CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "failed to get analysis albums from refreshalbum table");
+    CHECK_AND_PRINT_LOG(ret == E_SUCCESS, "failed to get analysis albums from refreshalbum table");
+    PushShootingModeAlbumIds(analysisAlbums);
     CHECK_AND_RETURN(!analysisAlbums.empty());
 
     // Clean all analysis albums from RefreshAlbums Table
@@ -462,7 +473,6 @@ void AlbumsRefreshManager::RefreshPhotoAlbumsBySyncNotifyInfo(const shared_ptr<M
 
     if (info.taskType == TIME_END_SYNC) {
         HandleAllRefreshAlbums(rdbStore, info);
-        MediaLibraryRdbUtils::UpdateShootingModeAlbum(rdbStore);
         MEDIA_INFO_LOG("refresh all albums from RefreshAlbums Table end, cost: %{public}ld",
             (long)(MediaFileUtils::UTCTimeMilliSeconds() - start));
         return;

@@ -41,6 +41,7 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_album_helper.h"
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_analysis_album_operations.h"
@@ -92,6 +93,7 @@
 #include "hi_audit.h"
 #include "video_composition_callback_imp.h"
 #include "medialibrary_data_manager.h"
+#include "shooting_mode_column.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -348,14 +350,14 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::HandleIndexOfUri(
     return MediaLibraryRdbStore::GetIndexOfUriForPhotos(predicates, columns, photoId);
 }
 
-int32_t QueryAnalysisAlbumSubTypeById(const string &albumId, PhotoAlbumSubType &subType)
+static int32_t QueryAnalysisAlbumById(const string &albumId, PhotoAlbumSubType &subType, string &albumName)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is nullptr!");
     
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
-    vector<string> columns = { PhotoAlbumColumns::ALBUM_SUBTYPE };
+    vector<string> columns = { PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumColumns::ALBUM_NAME };
     auto resultSet = rdbStore->QueryByStep(predicates, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Analysis album id %{public}s is not exist", albumId.c_str());
@@ -364,6 +366,7 @@ int32_t QueryAnalysisAlbumSubTypeById(const string &albumId, PhotoAlbumSubType &
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, E_INVALID_ARGUMENTS,
         "Analysis album id %{public}s is not exist", albumId.c_str());
     subType = static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet));
+    albumName = GetStringVal(PhotoAlbumColumns::ALBUM_NAME, resultSet);
     resultSet->Close();
     return E_SUCCESS;
 }
@@ -376,13 +379,11 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::HandleAnalysisInde
     CHECK_AND_RETURN_RET_LOG(albumId.size() > 0, nullptr, "null albumId");
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     PhotoAlbumSubType albumSubtype;
-    CHECK_AND_RETURN_RET_LOG(QueryAnalysisAlbumSubTypeById(albumId, albumSubtype) == E_SUCCESS, nullptr,
+    string albumName;
+    CHECK_AND_RETURN_RET_LOG(QueryAnalysisAlbumById(albumId, albumSubtype, albumName) == E_SUCCESS, nullptr,
         "invalid analysis album id: %{public}s", albumId.c_str());
-    if (albumSubtype == PhotoAlbumSubType::PORTRAIT) {
-        PhotoAlbumColumns::GetPortraitAlbumPredicates(stoi(albumId), predicates, false);
-    } else {
-        PhotoAlbumColumns::GetAnalysisAlbumPredicates(stoi(albumId), predicates, false);
-    }
+    MediaLibraryAlbumHelper::GetAnalysisAlbumPredicates(atoi(albumId.c_str()), albumSubtype,
+        albumName, predicates, false);
     vector<string> columns;
     columns.push_back(orderClause);
     columns.push_back(MediaColumn::MEDIA_ID);
@@ -2781,6 +2782,28 @@ static void RemoveMovingPhotoVideo(std::string &sourcePath, std::string &path)
         "Failed to delete video file, errno: %{public}d", errno);
 }
 
+static void NotifyAnalysisAlbum(int32_t albumId)
+{
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+        PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);
+}
+
+static void UpdateAndNotifyMovingPhotoAlbum()
+{
+    int32_t albumId;
+    CHECK_AND_RETURN_LOG(
+        MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(ShootingModeAlbumType::MOVING_PICTURE, albumId),
+        "Failed to query albumId");
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbstore is nullptr");
+
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, { to_string(albumId) });
+    NotifyAnalysisAlbum(albumId);
+}
+
 int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset)
 {
     MEDIA_INFO_LOG("begin to do revertEdit");
@@ -2800,10 +2823,12 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
 
     int32_t subtype = static_cast<int32_t>(fileAsset->GetPhotoSubType());
     int32_t movingPhotoSubtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+    bool revertMovingPhotoGraffiti = false;
     if (fileAsset->GetOriginalSubType() == movingPhotoSubtype &&
         subtype == static_cast<int32_t>(PhotoSubType::DEFAULT)) {
         errCode = UpdateMovingPhotoSubtype(fileAsset->GetId(), subtype);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update movingPhoto subtype");
+        revertMovingPhotoGraffiti = true;
     }
 
     string editDataPath = GetEditDataPath(path);
@@ -2832,6 +2857,9 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
         "Failed to DoRevertFilters to photo");
 
     ScanFile(path, true, true, true);
+    if (revertMovingPhotoGraffiti) {
+        UpdateAndNotifyMovingPhotoAlbum();
+    }
     // revert cloud enhancement ce_available
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
@@ -3589,10 +3617,12 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to save source and editData");
 
     int32_t subtype = fileAsset->GetPhotoSubType();
+    bool addMovingPhotoGraffiti = false;
     if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
         fileAsset->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
         errCode = SubmitEditMovingPhotoExecute(cmd, fileAsset);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to SubmitEditMovingPhotoExecute");
+        addMovingPhotoGraffiti = true;
     }
 
     string assetPath = fileAsset->GetFilePath();
@@ -3610,6 +3640,9 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     }
     ScanFile(assetPath, false, true, true);
     MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(id);
+    if (addMovingPhotoGraffiti) {
+        UpdateAndNotifyMovingPhotoAlbum();
+    }
     // delete cloud enhacement task
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     vector<string> fileId;
