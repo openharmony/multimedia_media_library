@@ -205,6 +205,7 @@ HWTEST_F(GetPhotoIndexTest, GetPhotoIndexTest_Test_001, TestSize.Level0)
     }
     std::cout << "analysisPhotoMap rowsCount = " << rowsCount << std::endl;
 
+    EXPECT_EQ(InsertPhotoAlbum(), NativeRdb::E_OK);
     RdbPredicates photoAlbumPredicates(PhotoAlbumColumns::TABLE);
     columns = { "album_id", "album_type" };
     resSet = MediaLibraryRdbStore::Query(photoAlbumPredicates, columns);
