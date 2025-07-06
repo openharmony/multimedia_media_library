@@ -327,17 +327,6 @@ int32_t CloudMediaAlbumDao::UpdateCloudAlbum(PhotoAlbumDto &record, const std::s
     return ret;
 }
 
-void CloudAlbumDeletedNotify(std::vector<AccurateRefresh::AlbumChangeData> &albumDatas)
-{
-    MEDIA_INFO_LOG("enter CloudAlbumDeletedNotify");
-    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh =
-        std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
-    CHECK_AND_RETURN_LOG(albumRefresh != nullptr, "Delete Cloud Album Failed to get albumRefresh.");
-    CHECK_AND_RETURN_LOG(albumRefresh->Init() == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
-        "fail to execute albumRefresh init");
-    albumRefresh->Notify(albumDatas);
-}
-
 int32_t CloudMediaAlbumDao::OnDeleteAlbums(std::vector<std::string> &failedAlbumIds)
 {
     MEDIA_INFO_LOG("enter OnDeleteAlbums");
@@ -349,8 +338,6 @@ int32_t CloudMediaAlbumDao::OnDeleteAlbums(std::vector<std::string> &failedAlbum
         PhotoAlbumColumns::ALBUM_ID,
         PhotoAlbumColumns::ALBUM_COUNT,
         PhotoAlbumColumns::ALBUM_CLOUD_ID,
-        PhotoAlbumColumns::ALBUM_TYPE,
-        PhotoAlbumColumns::ALBUM_SUBTYPE
     };
 
     auto resultSet = rdbStore->Query(predicates, columns);
@@ -360,30 +347,15 @@ int32_t CloudMediaAlbumDao::OnDeleteAlbums(std::vector<std::string> &failedAlbum
         resultSet->GetRowCount(rowCount) == NativeRdb::E_OK, E_ERR, "OnDeleteAlbums Failed to get rowCount.");
     MEDIA_INFO_LOG("OnDeleteAlbums GetRowCount: %{public}d", rowCount);
     NativeRdb::AbsRdbPredicates update = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
-    std::vector<AccurateRefresh::AlbumChangeData> albumDatas;
-
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        std::shared_ptr<AccurateRefresh::AlbumChangeData> changeData = make_shared<AccurateRefresh::AlbumChangeData>();
         std::string cloudId = GetStringVal(PhotoAlbumColumns::ALBUM_CLOUD_ID, resultSet);
-        int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
-        int32_t albumType = GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet);
-        int32_t albumSubType = GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet);
         if (cloudId.empty()) {
             continue;
         }
-        changeData->operation_ = AccurateRefresh::RdbOperation::RDB_OPERATION_REMOVE;
-        changeData->infoBeforeChange_.albumId_ = albumId;
-        changeData->infoBeforeChange_.albumType_ = albumType;
-        changeData->infoBeforeChange_.albumSubType_ = albumSubType;
-        changeData->infoAfterChange_.albumId_ = albumId;
-        changeData->infoAfterChange_.albumType_ = albumType;
-        changeData->infoAfterChange_.albumSubType_ = albumSubType;
-        albumDatas.push_back(*changeData);
         MEDIA_DEBUG_LOG("OnDeleteAlbums Notify Delete: %{public}s", cloudId.c_str());
         MediaGallerySyncNotify::GetInstance().AddNotify(
             PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX, ChangeType::DELETE, cloudId);
     }
-    CloudAlbumDeletedNotify(albumDatas);
     MediaGallerySyncNotify::GetInstance().FinalNotify();
     return E_OK;
 }
