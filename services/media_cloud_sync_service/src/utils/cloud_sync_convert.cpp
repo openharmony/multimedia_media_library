@@ -28,6 +28,7 @@
 #include "media_column.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "shooting_mode_column.h"
 
 namespace OHOS::Media::CloudSync {
 const int32_t FIRST_MATCH_PARAM = 1;
@@ -169,6 +170,9 @@ int32_t CloudSyncConvert::CompensateAttDateDay(const CloudMediaPullDataDto &data
 int32_t CloudSyncConvert::CompensateAttShootingMode(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string shootingMode = data.attributesShootingMode;
+    if (!data.attributesShootingModeTag.empty()) {
+        shootingMode = ShootingModeAlbum::MapShootingModeTagToShootingMode(data.attributesShootingModeTag);
+    }
     CHECK_AND_RETURN_RET_WARN_LOG(
         !shootingMode.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::shootingMode.");
     values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, shootingMode);

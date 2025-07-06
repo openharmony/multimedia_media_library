@@ -1366,12 +1366,13 @@ int32_t MediaLibraryDataCallBack::PrepareSmartAlbum(RdbStore &store)
 }
 
 static int32_t InsertShootingModeAlbumValues(
-    const ShootingModeValueBucket &shootingModeAlbum, RdbStore &store)
+    const string& albumName, RdbStore &store)
 {
     ValuesBucket valuesBucket;
-    valuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, shootingModeAlbum.albumType);
-    valuesBucket.PutInt(COMPAT_ALBUM_SUBTYPE, shootingModeAlbum.albumSubType);
-    valuesBucket.PutString(MEDIA_DATA_DB_ALBUM_NAME, shootingModeAlbum.albumName);
+    valuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, SHOOTING_MODE_TYPE);
+    valuesBucket.PutInt(COMPAT_ALBUM_SUBTYPE, SHOOTING_MODE_SUB_TYPE);
+    valuesBucket.PutString(MEDIA_DATA_DB_ALBUM_NAME, albumName);
+    valuesBucket.PutInt(MEDIA_DATA_DB_COUNT, 0);
     valuesBucket.PutInt(MEDIA_DATA_DB_IS_LOCAL, 1); // local album is 1.
     int64_t outRowId = -1;
     int32_t insertResult = ExecSqlWithRetry([&]() {
@@ -1381,42 +1382,36 @@ static int32_t InsertShootingModeAlbumValues(
     return insertResult;
 }
 
+static int32_t QueryExistingShootingModeAlbumNames(RdbStore& store, vector<string>& existingAlbumNames)
+{
+    string queryRowSql = "SELECT album_name FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE album_subtype = " + to_string(PhotoAlbumSubType::SHOOTING_MODE);
+    auto resultSet = store.QuerySql(queryRowSql);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL,
+        "Can not get shootingMode album names, resultSet is nullptr");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        string albumName = GetStringVal("album_name", resultSet);
+        if (!albumName.empty()) {
+            existingAlbumNames.push_back(albumName);
+        }
+    }
+    return E_SUCCESS;
+}
+
 static int32_t PrepareShootingModeAlbum(RdbStore &store)
 {
-    ShootingModeValueBucket portraitAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, PORTRAIT_ALBUM
-    };
-    ShootingModeValueBucket wideApertureAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, WIDE_APERTURE_ALBUM
-    };
-    ShootingModeValueBucket nightShotAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, NIGHT_SHOT_ALBUM
-    };
-    ShootingModeValueBucket movingPictureAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, MOVING_PICTURE_ALBUM
-    };
-    ShootingModeValueBucket proPhotoAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, PRO_PHOTO_ALBUM
-    };
-    ShootingModeValueBucket slowMotionAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, SLOW_MOTION_ALBUM
-    };
-    ShootingModeValueBucket lightPaintingAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, LIGHT_PAINTING_ALBUM
-    };
-    ShootingModeValueBucket highPixelAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, HIGH_PIXEL_ALBUM
-    };
-    ShootingModeValueBucket superMicroAlbum = {
-        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, SUPER_MACRO_ALBUM
-    };
-
-    vector<ShootingModeValueBucket> shootingModeValuesBucket = {
-        portraitAlbum, wideApertureAlbum, nightShotAlbum, movingPictureAlbum,
-        proPhotoAlbum, lightPaintingAlbum, highPixelAlbum, superMicroAlbum, slowMotionAlbum
-    };
-    for (const auto& shootingModeAlbum : shootingModeValuesBucket) {
-        if (InsertShootingModeAlbumValues(shootingModeAlbum, store) != NativeRdb::E_OK) {
+    vector<string> existingAlbumNames;
+    if (QueryExistingShootingModeAlbumNames(store, existingAlbumNames) != E_SUCCESS) {
+        MEDIA_ERR_LOG("Query existing shootingMode album names failed");
+        return NativeRdb::E_ERROR;
+    }
+    for (int i = static_cast<int>(ShootingModeAlbumType::START);
+        i <= static_cast<int>(ShootingModeAlbumType::END); ++i) {
+        string albumName = to_string(i);
+        if (find(existingAlbumNames.begin(), existingAlbumNames.end(), albumName) != existingAlbumNames.end()) {
+            continue;
+        }
+        if (InsertShootingModeAlbumValues(albumName, store) != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Prepare shootingMode album failed");
             return NativeRdb::E_ERROR;
         }
@@ -1799,6 +1794,11 @@ static const vector<string> onCreateSqlStrs = {
     CustomRecordsColumns::CREATE_TABLE,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
+    PhotoColumn::CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX,
+    PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
+    PhotoColumn::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX,
+    PhotoColumn::CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX,
+    PhotoColumn::CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -1855,9 +1855,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
         return NativeRdb::E_ERROR;
     }
 
-    if (PrepareShootingModeAlbum(store)!= NativeRdb::E_OK) {
-        return NativeRdb::E_ERROR;
-    }
+    PrepareShootingModeAlbum(store);
 
     MediaLibraryRdbStore::SetOldVersion(MEDIA_RDB_VERSION);
     return NativeRdb::E_OK;
@@ -3942,7 +3940,6 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
     }
     if (oldVersion < VERSION_ADD_SHOOTING_MODE_TAG) {
         AddShootingModeTagColumn(store);
-        PrepareShootingModeAlbum(store);
     }
 
     if (oldVersion < VERSION_ADD_PORTRAIT_IN_ALBUM) {
@@ -4776,6 +4773,10 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
         DropInsertSourcePhotoCreateSourceAlbumTrigger(store);
         DropInsertPhotoUpdateAlbumBundleNameTrigger(store);
         DropInsertSourcePhotoUpdateAlbumIdTrigger(store);
+    }
+
+    if (oldVersion < VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION) {
+        PrepareShootingModeAlbum(store);
     }
 }
 

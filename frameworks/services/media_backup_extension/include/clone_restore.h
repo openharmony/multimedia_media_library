@@ -225,6 +225,8 @@ private:
     void RestoreAnalysisGeo();
     void RestoreBeautyScoreData();
     void RestoreVideoFaceData();
+    void PrepareShootingModeVal(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
+    void GetInsertValueFromValMap(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,

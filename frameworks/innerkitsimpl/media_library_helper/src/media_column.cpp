@@ -154,6 +154,11 @@ const std::string PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX = "idx_pho
 const std::string PhotoColumn::PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX = "idx_photo_sort_in_album_date_added";
 const std::string PhotoColumn::PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX = "idx_photo_sort_in_album_date_taken";
 const std::string PhotoColumn::PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX = "idx_query_thumbnail_white_blocks_num";
+const std::string PhotoColumn::PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX = "idx_shooting_mode_album_general";
+const std::string PhotoColumn::PHOTO_BURST_MODE_ALBUM_INDEX = "idx_burst_mode_album";
+const std::string PhotoColumn::PHOTO_FRONT_CAMERA_ALBUM_INDEX = "idx_front_camera_album";
+const std::string PhotoColumn::PHOTO_RAW_IMAGE_ALBUM_INDEX = "idx_raw_image_album";
+const std::string PhotoColumn::PHOTO_MOVING_PHOTO_ALBUM_INDEX = "idx_moving_photo_album";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -458,6 +463,37 @@ const std::string PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX = Bas
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
     "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + PHOTO_OWNER_ALBUM_ID +
     "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC);";
+
+const std::string PhotoColumn::CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + PHOTO_SHOOTING_MODE +
+    "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC);";
+
+const std::string PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_BURST_MODE_ALBUM_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + PHOTO_SUBTYPE +
+    "," + PHOTO_BURST_KEY + "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC);";
+
+const std::string PhotoColumn::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_FRONT_CAMERA_ALBUM_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + PHOTO_FRONT_CAMERA +
+    "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC);";
+
+const std::string PhotoColumn::CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_RAW_IMAGE_ALBUM_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + MEDIA_MIME_TYPE +
+    "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC);";
+
+const std::string PhotoColumn::CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_MOVING_PHOTO_ALBUM_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
+    "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC) "
+    "WHERE (subtype = 3 OR (moving_photo_effect_mode = 10 AND subtype = 0));";
 
 const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         "CREATE TRIGGER IF NOT EXISTS photos_delete_trigger AFTER UPDATE ON " +

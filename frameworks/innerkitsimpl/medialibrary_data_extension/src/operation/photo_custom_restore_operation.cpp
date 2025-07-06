@@ -43,6 +43,7 @@
 #include "photo_file_utils.h"
 #include "result_set_utils.h"
 #include "scanner_utils.h"
+#include "shooting_mode_column.h"
 #include "userfile_manager_types.h"
 
 using namespace std;
@@ -269,6 +270,46 @@ void PhotoCustomRestoreOperation::InitRestoreTask(RestoreTaskInfo &restoreTaskIn
     GetAlbumInfoBySubType(PhotoAlbumSubType::VIDEO, restoreTaskInfo.videoAlbumUri, restoreTaskInfo.videoAlbumId);
 }
 
+static void NotifyAnalysisAlbum(const vector<string>& changedAlbumIds)
+{
+    if (changedAlbumIds.size() <= 0) {
+        return;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+    for (const string& albumId : changedAlbumIds) {
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+            PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, albumId), NotifyType::NOTIFY_UPDATE);
+    }
+}
+
+static void UpdateAndNotifyShootingModeAlbumIfNeeded(const vector<FileInfo>& fileInfos)
+{
+    set<ShootingModeAlbumType> albumTypesSet;
+    for (const auto &fileInfo : fileInfos) {
+        vector<ShootingModeAlbumType> albumTypes = ShootingModeAlbum::GetShootingModeAlbumOfAsset(
+            fileInfo.subtype, fileInfo.mimeType, fileInfo.movingPhotoEffectMode,
+            fileInfo.frontCamera, fileInfo.shootingMode);
+        albumTypesSet.insert(albumTypes.begin(), albumTypes.end());
+    }
+
+    vector<string> albumIdsToUpdate;
+    for (const auto& type : albumTypesSet) {
+        int32_t albumId;
+        if (MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(type, albumId)) {
+            albumIdsToUpdate.push_back(to_string(albumId));
+        }
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbstore is nullptr");
+
+    if (albumIdsToUpdate.size() > 0) {
+        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsToUpdate);
+        NotifyAnalysisAlbum(albumIdsToUpdate);
+    }
+}
+
 int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst,
     UniqueNumber &uniqueNumber)
@@ -292,6 +333,7 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "BatchUpdateTimePending failed. errCode: %{public}d", errCode);
     assetRefresh.RefreshAlbum();
     assetRefresh.Notify();
+    UpdateAndNotifyShootingModeAlbumIfNeeded(insertRestoreFiles);
     if (isFirst) {
         CHECK_AND_RETURN_RET(successFileNum != 0, E_ERR);
         CHECK_AND_RETURN_RET_LOG(UpdatePhotoAlbum(restoreTaskInfo, insertRestoreFiles[0]) == E_OK,
@@ -304,7 +346,7 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     return E_OK;
 }
 
-int32_t PhotoCustomRestoreOperation::BatchUpdateTimePending(vector<FileInfo> &restoreFiles,
+int32_t PhotoCustomRestoreOperation::BatchUpdateTimePending(const vector<FileInfo> &restoreFiles,
     AccurateRefresh::AssetAccurateRefresh &assetRefresh)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -742,6 +784,7 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     int32_t subType = fileInfo.isLivePhoto ? static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)
                                            : static_cast<int32_t>(PhotoSubType::DEFAULT);
     value.PutInt(PhotoColumn::PHOTO_SUBTYPE, subType);
+    fileInfo.subtype = subType;
     value.PutString(MediaColumn::MEDIA_PACKAGE_NAME, restoreTaskInfo.packageName);
     value.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, restoreTaskInfo.bundleName);
     value.PutString(MediaColumn::MEDIA_OWNER_APPID, restoreTaskInfo.appId);
@@ -757,6 +800,7 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
     value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
     value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
+    fileInfo.mimeType = data->GetFileMimeType();
     value.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, data->GetFileExtension());
     value.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.mediaType);
     value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
@@ -770,13 +814,16 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     value.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
     value.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());
     value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, data->GetShootingMode());
+    fileInfo.shootingMode = data->GetShootingMode();
     value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
     value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
     value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
+    fileInfo.frontCamera = data->GetFrontCamera();
     value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, data->GetUserComment());
     value.PutInt(PhotoColumn::PHOTO_QUALITY, 0);
     value.PutString(PhotoColumn::PHOTO_DETAIL_TIME, data->GetDetailTime());
+    fileInfo.movingPhotoEffectMode = 0;
     return value;
 }
 
@@ -865,10 +912,10 @@ static void UpdateCoverPosition(const string &filePath, int64_t coverPosition)
         " ret = %{public}d", errCode);
 }
 
-int32_t PhotoCustomRestoreOperation::RenameFiles(vector<FileInfo> &restoreFiles)
+int32_t PhotoCustomRestoreOperation::RenameFiles(const vector<FileInfo> &restoreFiles)
 {
     int32_t renameNum = 0;
-    for (auto &fileInfo : restoreFiles) {
+    for (const auto &fileInfo : restoreFiles) {
         if (fileInfo.isLivePhoto) {
             if (MoveLivePhoto(fileInfo.originFilePath, fileInfo.filePath) != E_OK) {
                 MEDIA_ERR_LOG("MoveFile failed. srcFile:%{public}s, destFile:%{public}s",

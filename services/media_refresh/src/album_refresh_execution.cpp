@@ -272,7 +272,7 @@ int32_t AlbumRefreshExecution::GetUpdateValues(ValuesBucket &values, const Album
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null");
     type = data.albumCount < data.newTotalCount ? NOTIFY_ALBUM_ADD_ASSET :
         (data.albumCount > data.newTotalCount ? NOTIFY_ALBUM_REMOVE_ASSET : NOTIFY_UPDATE);
-    return MediaLibraryRdbUtils::GetUpdateValues(rdbStore, data, values, subtype, isHidden);
+    return MediaLibraryRdbUtils::GetUpdateValues(rdbStore, data, values, isHidden);
 }
 
 void AlbumRefreshExecution::CheckUpdateValues(const AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,

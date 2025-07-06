@@ -283,7 +283,7 @@ int32_t DoDismissAssets(int32_t subtype, const string &albumId, const vector<str
         return deleteRow;
     }
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), updateAlbumIds, assetIds);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), updateAlbumIds);
     return deleteRow;
 }
 
