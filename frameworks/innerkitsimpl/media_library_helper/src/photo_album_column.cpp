@@ -269,8 +269,7 @@ void PhotoAlbumColumns::GetUserAlbumPredicates(const int32_t albumId, RdbPredica
     predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
 }
 
-void PhotoAlbumColumns::GetPortraitAlbumPredicates(const int32_t albumId, RdbPredicates &predicates,
-    const bool hiddenState)
+void PhotoAlbumColumns::GetPortraitAlbumPredicates(const int32_t albumId, RdbPredicates &predicates)
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     vector<string> clauses = { onClause };
@@ -290,7 +289,7 @@ void PhotoAlbumColumns::GetPortraitAlbumPredicates(const int32_t albumId, RdbPre
     return;
 }
 
-void PhotoAlbumColumns::GetAnalysisAlbumPredicates(const int32_t albumId,
+void PhotoAlbumColumns::GetAnalysisPhotoMapPredicates(const int32_t albumId,
     RdbPredicates &predicates, const bool hiddenState)
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
@@ -338,6 +337,8 @@ static void GetTrashPredicates(RdbPredicates &predicates)
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
     predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
         to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     predicates.EndWrap();
@@ -400,38 +401,46 @@ void PhotoAlbumColumns::GetSourceAlbumPredicates(const int32_t albumId, RdbPredi
     predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
 }
 
-void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype, RdbPredicates &predicates,
+bool PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype, RdbPredicates &predicates,
     const bool hiddenState)
 {
     switch (subtype) {
         case PhotoAlbumSubType::FAVORITE: {
-            return GetFavoritePredicates(predicates, hiddenState);
+            GetFavoritePredicates(predicates, hiddenState);
+            return true;
         }
         case PhotoAlbumSubType::VIDEO: {
-            return GetVideoPredicates(predicates, hiddenState);
+            GetVideoPredicates(predicates, hiddenState);
+            return true;
         }
         case PhotoAlbumSubType::HIDDEN: {
-            return GetHiddenPredicates(predicates);
+            GetHiddenPredicates(predicates);
+            return true;
         }
         case PhotoAlbumSubType::TRASH: {
-            return GetTrashPredicates(predicates);
+            GetTrashPredicates(predicates);
+            return true;
         }
         case PhotoAlbumSubType::SCREENSHOT: {
-            return GetScreenshotPredicates(predicates, hiddenState);
+            GetScreenshotPredicates(predicates, hiddenState);
+            return true;
         }
         case PhotoAlbumSubType::CAMERA: {
-            return GetCameraPredicates(predicates, hiddenState);
+            GetCameraPredicates(predicates, hiddenState);
+            return true;
         }
         case PhotoAlbumSubType::IMAGE: {
-            return GetAllImagesPredicates(predicates, hiddenState);
+            GetAllImagesPredicates(predicates, hiddenState);
+            return true;
         }
         case PhotoAlbumSubType::CLOUD_ENHANCEMENT: {
-            return GetCloudEnhancementPredicates(predicates, hiddenState);
+            GetCloudEnhancementPredicates(predicates, hiddenState);
+            return true;
         }
         default: {
             predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(0));
             MEDIA_ERR_LOG("Unsupported system album subtype: %{public}d", subtype);
-            return;
+            return false;
         }
     }
 }

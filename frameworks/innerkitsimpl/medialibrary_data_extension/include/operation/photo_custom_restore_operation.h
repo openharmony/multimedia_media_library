@@ -61,6 +61,11 @@ struct FileInfo {
     int32_t orientation;
     bool isLivePhoto;
     int32_t fileId;
+    std::string mimeType;
+    int32_t subtype;
+    int32_t movingPhotoEffectMode;
+    std::string frontCamera;
+    std::string shootingMode;
 };
 
 struct UniqueNumber {
@@ -115,8 +120,9 @@ private:
     NativeRdb::ValuesBucket GetInsertValue(RestoreTaskInfo &restoreTaskInfo, FileInfo &fileInfo);
     int32_t FillMetadata(std::unique_ptr<Metadata> &data);
     int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
-    int32_t RenameFiles(vector<FileInfo> &restoreFiles);
-    int32_t BatchUpdateTimePending(vector<FileInfo> &restoreFiles, AccurateRefresh::AssetAccurateRefresh &assetRefresh);
+    int32_t RenameFiles(const vector<FileInfo> &restoreFiles);
+    int32_t BatchUpdateTimePending(const vector<FileInfo> &restoreFiles,
+        AccurateRefresh::AssetAccurateRefresh &assetRefresh);
     int32_t UpdatePhotoAlbum(RestoreTaskInfo &restoreTaskInfo, FileInfo fileInfo);
     void SendNotifyMessage(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, int32_t errCode, int32_t fileNum,
         const UniqueNumber &uniqueNumber);

@@ -1071,7 +1071,7 @@ int32_t MediaLibraryNapiUtils::GetPortraitAlbumPredicates(const int32_t albumId,
     return E_SUCCESS;
 }
 
-int32_t MediaLibraryNapiUtils::GetAnalysisAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates)
+int32_t MediaLibraryNapiUtils::GetAnalysisPhotoMapPredicates(const int32_t albumId, DataSharePredicates &predicates)
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });

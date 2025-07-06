@@ -44,23 +44,6 @@ constexpr int32_t HOURSTOSECOND = 60 * 60;
 constexpr int32_t MINUTESTOSECOND = 60;
 const string ZEROTIMESTRING = "0000:00:00 00:00:00";
 
-static const std::unordered_map<std::string, std::string> SHOOTING_MODE_CAST_MAP = {
-    {PORTRAIT_ALBUM_TAG, PORTRAIT_ALBUM},
-    {WIDE_APERTURE_ALBUM_TAG, WIDE_APERTURE_ALBUM},
-    {NIGHT_SHOT_ALBUM_TAG, NIGHT_SHOT_ALBUM},
-    {REAR_CAMERA_NIGHT_SHOT_TAG, NIGHT_SHOT_ALBUM},
-    {MOVING_PICTURE_ALBUM_TAG, MOVING_PICTURE_ALBUM},
-    {PRO_PHOTO_ALBUM_TAG, PRO_PHOTO_ALBUM},
-    {TAIL_LIGHT_ALBUM_TAG, LIGHT_PAINTING_ALBUM},
-    {LIGHT_GRAFFITI_TAG, LIGHT_PAINTING_ALBUM},
-    {SILKY_WATER_TAG, LIGHT_PAINTING_ALBUM},
-    {STAR_TRACK_TAG, LIGHT_PAINTING_ALBUM},
-    {HIGH_PIXEL_ALBUM_TAG, HIGH_PIXEL_ALBUM},
-    {SUPER_MACRO_ALBUM_TAG, SUPER_MACRO_ALBUM},
-    {SLOW_MOTION_ALBUM_TAG, SLOW_MOTION_ALBUM},
-    {SUPER_SLOW_MOTION_ALBUM_TAG, SLOW_MOTION_ALBUM},
-};
-
 template <class Type>
 static Type stringToNum(const string &str)
 {
@@ -268,15 +251,6 @@ static void ExtractDateTakenMetadata(unique_ptr<ImageSource>& imageSource, uniqu
     MEDIA_INFO_LOG("Set date_taken use modified time");
 }
 
-static string GetCastShootingMode(string &shootingModeTag)
-{
-    auto it = SHOOTING_MODE_CAST_MAP.find(shootingModeTag);
-    if (it != SHOOTING_MODE_CAST_MAP.end()) {
-        return it->second;
-    }
-    return "";
-}
-
 static string GetCompatibleUserComment(const string& userComment)
 {
     const string startFlag = "<mgzn-content>";
@@ -333,7 +307,7 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
     }
     if (err == 0 && !propertyStr.empty()) {
         data->SetShootingModeTag(propertyStr);
-        data->SetShootingMode(GetCastShootingMode(propertyStr));
+        data->SetShootingMode(ShootingModeAlbum::MapShootingModeTagToShootingMode(propertyStr));
     }
 
     int64_t timeNow = MediaFileUtils::UTCTimeMilliSeconds();
@@ -493,7 +467,7 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
     if (!strTemp.empty()) {
         std::string videoShootingMode = ExtractVideoShootingMode(strTemp);
         data->SetShootingModeTag(videoShootingMode);
-        data->SetShootingMode(GetCastShootingMode(videoShootingMode));
+        data->SetShootingMode(ShootingModeAlbum::MapShootingModeTagToShootingMode(videoShootingMode));
     }
     strTemp = resultMap.at(AV_KEY_VIDEO_IS_HDR_VIVID);
     const string isHdr = "yes";
