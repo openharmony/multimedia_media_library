@@ -104,9 +104,8 @@ bool MediaBgTaskUtils::IsNumber(const std::string& str)
 
 bool MediaBgTaskUtils::IsValidTaskEnable(int value)
 {
-    return value == static_cast<int>(TaskEnable::NO_MODIFY) ||
-        value == static_cast<int>(TaskEnable::MODIDY_ENABLE) ||
-        value == static_cast<int>(TaskEnable::MODIDY_DISABLE);
+    return value == static_cast<int>(TaskEnable::MODIFY_ENABLE) ||
+        value == static_cast<int>(TaskEnable::MODIFY_DISABLE);
 }
  
 bool MediaBgTaskUtils::IsFileExists(const std::string &fileName)

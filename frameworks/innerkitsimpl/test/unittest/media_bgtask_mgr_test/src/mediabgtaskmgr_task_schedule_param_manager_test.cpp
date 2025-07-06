@@ -165,7 +165,7 @@ HWTEST_F(MediaBgtaskMgrTaskScheduleParamManagerTest, media_bgtask_mgr_ParseUnify
 }
 
 /**
- * GetUnifySchedulePolicyCfgFromJson
+ * UpdateUnifySchedulePolicyCfgFromJson
  */
 HWTEST_F(MediaBgtaskMgrTaskScheduleParamManagerTest, media_bgtask_mgr_GetUnifySchedulePolicyCfgFromJson_test_001,
          TestSize.Level1)
@@ -173,21 +173,11 @@ HWTEST_F(MediaBgtaskMgrTaskScheduleParamManagerTest, media_bgtask_mgr_GetUnifySc
     // 1. 测试当JSON只包含部分字段时，缺失TAG_SCHEDULE_ENABLE
     TaskScheduleParamManager &manager = TaskScheduleParamManager::GetInstance();
     cJSON* json = cJSON_CreateObject();
-    manager.GetUnifySchedulePolicyCfgFromJson(json);
+    manager.UpdateUnifySchedulePolicyCfgFromJson(json);
     EXPECT_TRUE(manager.unifySchedulePolicyCfg_.scheduleEnable);
 
     // 2. 添加TAG_SCHEDULE_ENABLE，缺少其他配置
     cJSON_AddFalseToObject(json, TAG_SCHEDULE_ENABLE.c_str());
-    manager.GetUnifySchedulePolicyCfgFromJson(json);
-    EXPECT_FALSE(manager.unifySchedulePolicyCfg_.scheduleEnable);
-    EXPECT_EQ(DEFAULT_TEMP_LEVEL_THRED_NOCHARING, manager.unifySchedulePolicyCfg_.temperatureLevelThredNoCharing);
-    EXPECT_EQ(DEFAULT_TEMP_LEVEL_THRED_CHARING, manager.unifySchedulePolicyCfg_.temperatureLevelThredCharing);
-    EXPECT_EQ(DEFAULT_LOAD_THRED_HIGH, manager.unifySchedulePolicyCfg_.loadThredHigh);
-    EXPECT_EQ(DEFAULT_LOAD_THRED_MEDIUM, manager.unifySchedulePolicyCfg_.loadThredMedium);
-    EXPECT_EQ(DEFAULT_LOAD_THRED_LOW, manager.unifySchedulePolicyCfg_.loadThredLow);
-    EXPECT_FLOAT_EQ(DEFAULT_WAITING_PRESSURE_THRED, manager.unifySchedulePolicyCfg_.waitingPressureThred);
-
-    // 3. 添加TAG_SCHEDULE_ENABLE及其他配置
     cJSON_AddNumberToObject(json, TAG_TEMPERATURE_LEVEL_THRED_NOCHARING.c_str(), 2);
     cJSON_AddNumberToObject(json, TAG_TEMPERATURE_LEVEL_THRED_CHARING.c_str(), 2);
     cJSON_AddNumberToObject(json, TAG_LOAD_THRED_HIGH.c_str(), 2);
@@ -197,8 +187,19 @@ HWTEST_F(MediaBgtaskMgrTaskScheduleParamManagerTest, media_bgtask_mgr_GetUnifySc
     cJSON_AddNumberToObject(json, TAG_SYS_LOAD_L_LVL.c_str(), 2);
     cJSON_AddNumberToObject(json, TAG_SYS_LOAD_M_LVL.c_str(), 2);
     cJSON_AddNumberToObject(json, TAG_MIN_NEXT_INTERVAL.c_str(), 2);
-    manager.GetUnifySchedulePolicyCfgFromJson(json);
-    EXPECT_EQ(2, manager.unifySchedulePolicyCfg_.temperatureLevelThredNoCharing);
+    bool result = manager.UpdateUnifySchedulePolicyCfgFromJson(json);
+    EXPECT_EQ(result, false);
+
+    cJSON* array = cJSON_CreateArray();
+    cJSON_AddItemToObject(json, TAG_AGING_FACTOR_MAP.c_str(), array);
+    for (int i = 0; i < MAX_AGING_FACTOR_MAP_LEN; ++i) {
+        cJSON *innerArray = cJSON_CreateArray();
+        cJSON_AddItemToArray(innerArray, cJSON_CreateNumber(1));
+        cJSON_AddItemToArray(innerArray, cJSON_CreateNumber(0.5));
+        cJSON_AddItemToArray(array, innerArray);
+    }
+    result = manager.UpdateUnifySchedulePolicyCfgFromJson(json);
+    EXPECT_EQ(result, true);
     EXPECT_EQ(2, manager.unifySchedulePolicyCfg_.temperatureLevelThredCharing);
     EXPECT_EQ(2, manager.unifySchedulePolicyCfg_.loadThredHigh);
     EXPECT_EQ(2, manager.unifySchedulePolicyCfg_.loadThredMedium);
@@ -214,10 +215,11 @@ HWTEST_F(MediaBgtaskMgrTaskScheduleParamManagerTest, media_bgtask_mgr_GetAgingFa
          TestSize.Level1)
 {
     TaskScheduleParamManager &manager = TaskScheduleParamManager::GetInstance();
+    UnifySchedulePolicyCfg cfg = {};
     // 1. 测试当传入的JSON对象不是数组时，agingFactorMap应被清空
     cJSON* json = cJSON_CreateObject();
     cJSON_AddStringToObject(json, TAG_AGING_FACTOR_MAP.c_str(), TAG_AGING_FACTOR_MAP.c_str());
-    manager.GetAgingFactorMapFromJson(json);
+    manager.GetAgingFactorMapFromJson(json, cfg);
     EXPECT_TRUE(manager.unifySchedulePolicyCfg_.agingFactorMap.empty());
     cJSON_Delete(json);
 
@@ -226,7 +228,7 @@ HWTEST_F(MediaBgtaskMgrTaskScheduleParamManagerTest, media_bgtask_mgr_GetAgingFa
     json = cJSON_CreateObject();
     cJSON* array = cJSON_CreateArray();
     cJSON_AddItemToObject(json, TAG_AGING_FACTOR_MAP.c_str(), array);
-    manager.GetAgingFactorMapFromJson(json);
+    manager.GetAgingFactorMapFromJson(json, cfg);
     EXPECT_TRUE(manager.unifySchedulePolicyCfg_.agingFactorMap.empty());
 
     // 添加超过MAX_TASK_LIST_LEN个元素
@@ -234,7 +236,7 @@ HWTEST_F(MediaBgtaskMgrTaskScheduleParamManagerTest, media_bgtask_mgr_GetAgingFa
         cJSON* item = cJSON_CreateObject();
         cJSON_AddItemToArray(array, item);
     }
-    manager.GetAgingFactorMapFromJson(json);
+    manager.GetAgingFactorMapFromJson(json, cfg);
     EXPECT_TRUE(manager.unifySchedulePolicyCfg_.agingFactorMap.empty());
     cJSON_Delete(json);
 }

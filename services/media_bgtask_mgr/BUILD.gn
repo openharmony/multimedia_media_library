@@ -81,6 +81,7 @@ ohos_shared_library("media_bgtask_mgr_service") {
     "services/src/task_info_mgr.cpp",
     "services/src/task_runner.cpp",
     "services/src/task_schedule_param_manager.cpp",
+    "services/src/media_bgtask_dfx.cpp",
   ]
 
   include_dirs = [
@@ -123,6 +124,7 @@ ohos_shared_library("media_bgtask_mgr_service") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
     "thermal_manager:thermalsrv_client",
+    "hisysevent:libhisysevent",
   ]
   defines = []
   if (defined(global_parts_info) &&
