@@ -55,6 +55,8 @@ public:
     // 根据传递的assetChangeDatas进行通知，不需要dataManager_处理
     int32_t Notify(std::vector<AlbumChangeData> albumChangeDatas);
 
+    int32_t NotifyAddAlbums(const std::vector<std::string> &albumIdsStr);
+
     std::map<int32_t, AlbumChangeInfo> GetInitAlbumInfos();
     
     using AccurateRefreshBase::LogicalDeleteReplaceByUpdate;
