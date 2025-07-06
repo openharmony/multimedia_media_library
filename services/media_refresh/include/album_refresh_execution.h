@@ -37,6 +37,7 @@ public:
     int32_t RefreshAlbum(const std::vector<PhotoAssetChangeData> &assetChangeDatas,
         NotifyAlbumType notifyAlbumType = NO_NOTIFY);
     int32_t Notify();
+    int32_t RefreshAllAlbum();
 
 private:
     std::vector<PhotoAlbumSubType> GetAlbumSubTypes();
