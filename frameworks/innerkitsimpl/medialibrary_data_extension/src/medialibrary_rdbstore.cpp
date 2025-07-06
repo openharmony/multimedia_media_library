@@ -18,6 +18,8 @@
 
 #include <mutex>
 #include <regex>
+#include <thread>
+#include <chrono>
 
 #include "album_plugin_table_event_handler.h"
 #include "cloud_sync_helper.h"
@@ -232,6 +234,15 @@ const std::string MediaLibraryRdbStore::RegexReplaceFunc(const std::vector<std::
     return std::regex_replace(input, re, replacement);
 }
 
+void MediaLibraryRdbStore::NotifyAddAlbumAsync(string albumId)
+{
+    // 延时50ms
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
+    albumRefresh.NotifyAddAlbums(vector<string>{ albumId });
+    MEDIA_INFO_LOG("AccurateRefresh NotifyAddAlbumAsync albumId = %{public}s", albumId.c_str());
+}
+
 const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<std::string> &args)
 {
     if (args.size() < 1) {
@@ -250,6 +261,10 @@ const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<s
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, "", "Failed to get MediaLibraryNotify");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX, albumId),
         NotifyType::NOTIFY_ADD);
+
+    std::thread taskThread(NotifyAddAlbumAsync, albumId);
+    taskThread.detach();
+    MEDIA_INFO_LOG("AccurateRefresh PhotoAlbumNotifyFunc albumId = %{public}s", albumId.c_str());
     return "";
 }
 

@@ -89,6 +89,11 @@ int32_t AlbumAccurateRefresh::Notify(vector<AlbumChangeData> albumChangeDatas)
     return ACCURATE_REFRESH_RET_OK;
 }
 
+int32_t AlbumAccurateRefresh::NotifyAddAlbums(const vector<string> &albumIdsStr)
+{
+    return Notify(dataManager_.GetAlbumDatasFromAddAlbum(albumIdsStr));
+}
+
 int32_t AlbumAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &albumIds, RdbOperation operation)
 {
     auto modifiedAlbumIds = albumIds;
