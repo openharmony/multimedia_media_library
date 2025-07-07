@@ -238,7 +238,8 @@ HWTEST_F(CloudMediaPhotoAlbumHandlerTest, GetMetaModifiedRecords, TestSize.Level
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
     std::vector<MDKRecord> records;
     int32_t size = 100;
-    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size);
+    int32_t mdirty = 2;
+    int32_t ret = dataHandler->GetMetaModifiedRecords(records, size, mdirty);
     EXPECT_EQ(ret, 0);
     EXPECT_GT(records.size(), 0);
 

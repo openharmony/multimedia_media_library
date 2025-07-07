@@ -260,17 +260,26 @@ std::string CloudMdkRecordPhotosVo::ToString()
 
 bool CloudMdkRecordPhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return IPC::ITypeMediaUtil::Unmarshalling(this->size, parcel);
+    parcel.ReadInt32(this->size);
+    parcel.ReadInt32(this->dirtyType);
+    return true;
 }
 
 bool CloudMdkRecordPhotosReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return IPC::ITypeMediaUtil::Marshalling(this->size, parcel);
+    parcel.WriteInt32(this->size);
+    parcel.WriteInt32(this->dirtyType);
+    return true;
 }
 
 std::string CloudMdkRecordPhotosReqBody::ToString() const
 {
-    return "";
+    std::stringstream ss;
+    ss << "{";
+    ss << "\"size\":" << this->size << ",";
+    ss << "\"dirtyType\":" << this->dirtyType << ",";
+    ss << "}";
+    return ss.str();
 }
 
 std::vector<CloudMdkRecordPhotosVo> CloudMdkRecordPhotosRespBody::GetPhotosRecords()
