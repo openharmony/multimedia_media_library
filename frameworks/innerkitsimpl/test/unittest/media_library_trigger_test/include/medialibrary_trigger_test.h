@@ -35,12 +35,14 @@ public:
     void SetProcessReturn(int32_t ret) {processReturn_ = ret;}
 
     int32_t Process(std::shared_ptr<TransactionOperations> trans,
-        const std::vector<AccurateRefresh::PhotoAssetChangeData>& changeDataVec) override {
+        const std::vector<AccurateRefresh::PhotoAssetChangeData>& changeDataVec) override
+    {
         return processReturn_;
     }
 
     bool IsTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
-        const AccurateRefresh::PhotoAssetChangeData& changeData) override {
+        const AccurateRefresh::PhotoAssetChangeData& changeData) override
+    {
         return isTriggerFireForRowReturn_;
     }
 private:
