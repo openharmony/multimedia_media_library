@@ -46,7 +46,7 @@ private:
 public:
     std::vector<PhotosDto> GetCheckRecords(const std::vector<std::string> &cloudIds);
     int32_t GetCreatedRecords(int32_t size, std::vector<PhotosPo> &createdRecords);
-    int32_t GetMetaModifiedRecords(int32_t size, std::vector<PhotosPo> &modifiedRecords);
+    int32_t GetMetaModifiedRecords(int32_t size, std::vector<PhotosPo> &modifiedRecords, int32_t dirtyType);
     int32_t GetFileModifiedRecords(int32_t size, std::vector<PhotosPo> &modifiedRecords);
     std::vector<PhotosPo> GetDeletedRecords(int32_t size);
     int32_t GetCopyRecords(int32_t size, std::vector<PhotosPo> &copyRecords);

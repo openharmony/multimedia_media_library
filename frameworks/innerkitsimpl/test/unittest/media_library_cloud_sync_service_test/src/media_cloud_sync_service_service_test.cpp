@@ -1035,8 +1035,19 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_GetMetaModifiedRecor
 {
     CloudMediaPhotosService service;
     int32_t size = 0;
+    int32_t mdirty = 2;
     std::vector<PhotosPo> modifiedRecords;
-    int32_t ret = service.GetMetaModifiedRecords(size, modifiedRecords);
+    int32_t ret = service.GetMetaModifiedRecords(size, modifiedRecords, mdirty);
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_GetMetaModifiedRecords_Test_002, TestSize.Level1)
+{
+    CloudMediaPhotosService service;
+    int32_t size = 0;
+    int32_t sdirty = 6;
+    std::vector<PhotosPo> modifiedRecords;
+    int32_t ret = service.GetMetaModifiedRecords(size, modifiedRecords, sdirty);
     EXPECT_EQ(ret, E_OK);
 }
 

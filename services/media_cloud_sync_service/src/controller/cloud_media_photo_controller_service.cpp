@@ -161,8 +161,14 @@ int32_t CloudMediaPhotoControllerService::GetMetaModifiedRecords(MessageParcel &
         MEDIA_ERR_LOG("GetMetaModifiedRecords param error, size: %{public}d", size);
         return IPC::UserDefineIPC().WriteResponseBody(reply, E_MEDIA_CLOUD_ARGS_INVAILD);
     }
+    bool isInvalidType = reqBody.dirtyType != static_cast<int32_t>(DirtyType::TYPE_MDIRTY) &&
+                         reqBody.dirtyType != static_cast<int32_t>(DirtyType::TYPE_SDIRTY);
+    if (isInvalidType) {
+        MEDIA_ERR_LOG("GetMetaModifiedRecords param error, dirtyType: %{public}d", reqBody.dirtyType);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_MEDIA_CLOUD_ARGS_INVAILD);
+    }
     std::vector<PhotosPo> metaModifiedRecordsPoList;
-    ret = this->photosService_.GetMetaModifiedRecords(reqBody.size, metaModifiedRecordsPoList);
+    ret = this->photosService_.GetMetaModifiedRecords(reqBody.size, metaModifiedRecordsPoList, reqBody.dirtyType);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GetMetaModifiedRecords process error, ret: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
