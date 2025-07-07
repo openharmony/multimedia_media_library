@@ -493,7 +493,9 @@ const std::string PhotoColumn::CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX = BaseColum
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
     "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
     "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC) "
-    "WHERE (subtype = 3 OR (moving_photo_effect_mode = 10 AND subtype = 0));";
+    "WHERE (subtype = " + to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) +
+        " OR (moving_photo_effect_mode = " + to_string(static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) +
+            " AND subtype = " + to_string(static_cast<int32_t>(PhotoSubType::DEFAULT)) + "));";
 
 const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         "CREATE TRIGGER IF NOT EXISTS photos_delete_trigger AFTER UPDATE ON " +
