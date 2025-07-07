@@ -551,6 +551,22 @@ void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         UpdateAllShootingModeAlbums(rdbStore);
         rdbStore->SetOldVersion(VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION);
     }
+
+    if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API18) {
+        MEDIA_INFO_LOG("Start VERSION_ADD_GROUP_TAG_INDEX");
+        AddGroupTagIndex(rdbStore);
+        MEDIA_INFO_LOG("End VERSION_ADD_GROUP_TAG_INDEX");
+
+        MEDIA_INFO_LOG("Start VERSION_IMAGE_FACE_TAG_ID_INDEX");
+        AddImageFaceTagIdIndex(rdbStore);
+        MEDIA_INFO_LOG("End VERSION_IMAGE_FACE_TAG_ID_INDEX");
+
+        MEDIA_INFO_LOG("Start VERSION_ADD_INDEX_FOR_PHOTO_SORT");
+        MediaLibraryRdbStore::AddPhotoSortIndex(rdbStore);
+        MEDIA_INFO_LOG("End VERSION_ADD_INDEX_FOR_PHOTO_SORT");
+
+        rdbStore->SetOldVersion(VERSION_FIX_DB_UPGRADE_FROM_API18);
+    }
 }
 
 void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)

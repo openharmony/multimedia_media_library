@@ -4778,6 +4778,12 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION) {
         PrepareShootingModeAlbum(store);
     }
+
+    if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API18) {
+        MEDIA_INFO_LOG("Start VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME & VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY");
+        FixMdirtyTriggerToUploadDetailTime(store);
+        MEDIA_INFO_LOG("End VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME & VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY");
+    }
 }
 
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
