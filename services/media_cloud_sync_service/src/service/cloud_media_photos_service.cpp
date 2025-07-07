@@ -654,13 +654,15 @@ int32_t CloudMediaPhotosService::GetCreatedRecords(int32_t size, std::vector<Pho
     return ret;
 }
 
-int32_t CloudMediaPhotosService::GetMetaModifiedRecords(int32_t size, std::vector<PhotosPo> &modifiedRecords)
+int32_t CloudMediaPhotosService::GetMetaModifiedRecords(
+    int32_t size, std::vector<PhotosPo> &modifiedRecords, int32_t dirtyType)
 {
-    MEDIA_INFO_LOG("CloudMediaPhotosService::GetMetaModifiedRecords enter");
-    int32_t ret = this->photosDao_.GetMetaModifiedRecords(size, modifiedRecords);
-    MEDIA_INFO_LOG("CloudMediaPhotosService::GetMetaModifiedRecords end, ret: %{public}d, size: %{public}zu",
+    int32_t ret = this->photosDao_.GetMetaModifiedRecords(size, modifiedRecords, dirtyType);
+    MEDIA_INFO_LOG("CloudMediaPhotosService::GetMetaModifiedRecords end,"
+                    "ret: %{public}d, size: %{public}zu, dirtyType: %{public}d",
         ret,
-        modifiedRecords.size());
+        modifiedRecords.size(),
+        dirtyType);
     return ret;
 }
 

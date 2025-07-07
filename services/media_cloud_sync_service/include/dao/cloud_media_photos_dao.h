@@ -80,7 +80,7 @@ public:
     int32_t GetRetryRecords(std::vector<std::string> &cloudIds);
     std::vector<PhotosPo> GetCheckRecords(const std::vector<std::string> cloudIds);
     int32_t GetCreatedRecords(int32_t size, std::vector<PhotosPo> &createdRecords);
-    int32_t GetMetaModifiedRecords(int32_t size, std::vector<PhotosPo> &cloudRecordPoList);
+    int32_t GetMetaModifiedRecords(int32_t size, std::vector<PhotosPo> &cloudRecordPoList, int32_t dirtyType);
     int32_t GetFileModifiedRecords(int32_t size, std::vector<PhotosPo> &cloudRecordPoList);
     int32_t GetDeletedRecordsAsset(int32_t size, std::vector<PhotosPo> &cloudRecordPoList);
     int32_t GetCopyRecords(int32_t size, std::vector<PhotosPo> &copyRecords);
@@ -228,7 +228,7 @@ private:
         ( \
             SELECT * \
             FROM Photos \
-            WHERE dirty IN (2, 6) AND \
+            WHERE dirty = ? AND \
                 cloud_id <> '' AND \
                 cloud_id IS NOT NULL AND \
                 file_id NOT IN ({0}) \

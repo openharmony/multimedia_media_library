@@ -211,14 +211,15 @@ int32_t CloudMediaPhotoHandler::GetCreatedRecords(std::vector<MDKRecord> &record
     return E_OK;
 }
 
-int32_t CloudMediaPhotoHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &records, int32_t size)
+int32_t CloudMediaPhotoHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &records, int32_t size, int32_t dirtyType)
 {
     CloudMdkRecordPhotosReqBody reqBody;
     reqBody.size = size;
+    reqBody.dirtyType = dirtyType;
     CloudMdkRecordPhotosRespBody respBody;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_GET_META_MODIFIED_RECORDS);
-    int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody,
-        respBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CloudMediaPhotoHandler::GetMetaModifiedRecords Call IPC Error");
         return ret;
