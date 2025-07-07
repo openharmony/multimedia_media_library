@@ -2243,8 +2243,12 @@ int32_t MediaLibraryAssetOperations::CreateAssetRealName(int32_t fileId, int32_t
     }
 
     static const int32_t CONFLICT_TIME = 100;
-    name = mediaTypeStr + to_string(MediaFileUtils::UTCTimeSeconds() + CONFLICT_TIME) + "_" +
-        fileNumStr + "." + extension;
+    if (extension.length() == 0) {
+        name = mediaTypeStr + to_string(MediaFileUtils::UTCTimeSeconds() + CONFLICT_TIME) + "_" + fileNumStr;
+    } else {
+        name = mediaTypeStr + to_string(MediaFileUtils::UTCTimeSeconds() + CONFLICT_TIME) + "_" +
+            fileNumStr + "." + extension;
+    }
     return E_OK;
 }
 
