@@ -307,6 +307,7 @@ int32_t CloudSyncConvert::CompensatePropPosition(const CloudMediaPullDataDto &da
 int32_t CloudSyncConvert::CompensatePropHeight(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     int32_t height = data.propertiesHeight;
+    CHECK_AND_PRINT_LOG(height != 0, "height is invalid, height: %{public}d", height);
     CHECK_AND_RETURN_RET_WARN_LOG(height != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find properties::height.");
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, height);
     return E_OK;
@@ -315,6 +316,7 @@ int32_t CloudSyncConvert::CompensatePropHeight(const CloudMediaPullDataDto &data
 int32_t CloudSyncConvert::CompensatePropWidth(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     int32_t width = data.propertiesWidth;
+    CHECK_AND_PRINT_LOG(width != 0, "width is invalid, width: %{public}d", width);
     CHECK_AND_RETURN_RET_WARN_LOG(width != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find properties::width.");
     values.PutInt(PhotoColumn::PHOTO_WIDTH, width);
     return E_OK;
