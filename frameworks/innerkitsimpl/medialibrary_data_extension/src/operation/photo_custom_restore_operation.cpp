@@ -741,7 +741,7 @@ int32_t PhotoCustomRestoreOperation::UpdateUniqueNumber(UniqueNumber &uniqueNumb
     return E_OK;
 }
 
-static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
+static void InsertDateTaken(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
 {
     int64_t dateTaken = metadata->GetDateTaken();
     if (dateTaken != 0) {
@@ -774,6 +774,16 @@ static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, NativeRdb::Valu
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateTaken));
 }
 
+static void FillFileInfo(FileInfo& fileInfo, const std::unique_ptr<Metadata>& data)
+{
+    fileInfo.size = data->GetFileSize();
+    fileInfo.orientation = data->GetOrientation();
+    fileInfo.mimeType = data->GetFileMimeType();
+    fileInfo.shootingMode = data->GetShootingMode();
+    fileInfo.frontCamera = data->GetFrontCamera();
+    fileInfo.movingPhotoEffectMode = 0;
+}
+
 NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     RestoreTaskInfo &restoreTaskInfo, FileInfo &fileInfo)
 {
@@ -793,14 +803,11 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     data->SetFileName(fileInfo.fileName);
     data->SetFileMediaType(fileInfo.mediaType);
     FillMetadata(data);
-    fileInfo.size = data->GetFileSize();
-    fileInfo.orientation = data->GetOrientation();
     InsertDateTaken(data, value);
     value.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
     value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
     value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
-    fileInfo.mimeType = data->GetFileMimeType();
     value.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, data->GetFileExtension());
     value.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.mediaType);
     value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
@@ -814,16 +821,14 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     value.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
     value.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());
     value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, data->GetShootingMode());
-    fileInfo.shootingMode = data->GetShootingMode();
     value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
     value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
     value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
-    fileInfo.frontCamera = data->GetFrontCamera();
     value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, data->GetUserComment());
     value.PutInt(PhotoColumn::PHOTO_QUALITY, 0);
     value.PutString(PhotoColumn::PHOTO_DETAIL_TIME, data->GetDetailTime());
-    fileInfo.movingPhotoEffectMode = 0;
+    FillFileInfo(fileInfo, data);
     return value;
 }
 
