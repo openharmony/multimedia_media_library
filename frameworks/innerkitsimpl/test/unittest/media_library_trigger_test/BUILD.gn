@@ -100,7 +100,6 @@ ohos_unittest("media_library_trigger_test") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "user_file_service:file_access_extension_ability_kit",
-    "googletest:gmock",
   ]
 
   defines = []
