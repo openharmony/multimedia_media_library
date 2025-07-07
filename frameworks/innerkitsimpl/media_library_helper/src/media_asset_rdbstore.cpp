@@ -26,6 +26,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "vision_column.h"
+#include "rdb_sql_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -327,6 +328,8 @@ std::shared_ptr<NativeRdb::ResultSet> MediaAssetRdbStore::QueryRdb(
     }
 
     AddQueryFilter(rdbPredicates);
+    MEDIA_DEBUG_LOG("PhotosApp Predicates Statement is %{public}s",
+        RdbSqlUtils::BuildQueryString(predicates, columns).c_str());
     auto resultSet = rdbStore_->QueryByStep(rdbPredicates, columns, false);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "fail to acquire result from visitor query");
     return resultSet;
