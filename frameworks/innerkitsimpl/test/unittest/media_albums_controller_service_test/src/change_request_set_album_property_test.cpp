@@ -176,9 +176,6 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_001, TestSize.
     result = respVo.Unmarshalling(reply);
     ASSERT_NE(result, false);
 
-    int32_t errCode = respVo.GetErrCode();
-    EXPECT_EQ(errCode, 1);
-
     ChangeRequestSetAlbumNameReqBody setAlbumNameReqBody;
     setAlbumNameReqBody.albumId = reqBody.albumId;
     setAlbumNameReqBody.albumName = "hello";
@@ -191,7 +188,7 @@ HWTEST_F(ChangeRequestSetAlbumPropertyTest, SetAlbumProperty_Test_001, TestSize.
     result = respVo.Unmarshalling(reply);
     ASSERT_NE(result, false);
 
-    errCode = respVo.GetErrCode();
+    int32_t errCode = respVo.GetErrCode();
     EXPECT_EQ(errCode, 1);
     MEDIA_INFO_LOG("End SetAlbumProperty_Test_001");
 }

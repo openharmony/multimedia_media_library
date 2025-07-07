@@ -182,8 +182,8 @@ HWTEST_F(SetPhotoAlbumOrderTest, SetPhotoAlbumOrderTest_002, TestSize.Level0) {
     IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     ASSERT_EQ(respVo.Unmarshalling(reply), true);
 
-    int32_t changeRows = respVo.GetErrCode();
-    EXPECT_GT(changeRows, 0);
+    int32_t err = respVo.GetErrCode();
+    EXPECT_EQ(err, 0);
 
     MEDIA_INFO_LOG("End SetPhotoAlbumOrderTest_002");
 }

@@ -691,7 +691,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level2)
     ASSERT_NE(fileAsset2, nullptr);
 
     TrashFileAsset(fileAsset2, true);
-    AlbumInfo(2, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
 
     // 4. Un-trash the cover photo, the count & cover of trash album should be updated.
     MEDIA_INFO_LOG("Step: un-trash the cover photo");
@@ -700,7 +700,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level2)
 
     // 5. Delete a photo permanently.
     TrashFileAsset(fileAsset2, true);
-    AlbumInfo(2, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
     MEDIA_INFO_LOG("Step: delete a photo permanently");
     DeletePermanentlyFileAsset(fileAsset2->GetId());
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
