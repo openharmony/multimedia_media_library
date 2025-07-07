@@ -28,6 +28,7 @@ template <typename OBJECT_WRITER, typename OBJECT_TYPE>
 class ResultSetReader {
 private:
     std::shared_ptr<NativeRdb::ResultSet> resultSet_;
+    std::vector<std::string> columnNames_;
 
 public:
     ResultSetReader(const std::shared_ptr<NativeRdb::ResultSet> resultSet) : resultSet_(resultSet)
@@ -40,11 +41,13 @@ private:
         OBJECT_TYPE objectPo;
         bool errConn = this->resultSet_ == nullptr;
         CHECK_AND_RETURN_RET(!errConn, objectPo);
+        CHECK_AND_RETURN_RET_LOG(!this->columnNames_.empty(), objectPo, "columnNames_ is empty");
         std::shared_ptr<IObjectWriter> objectWriter = std::make_shared<OBJECT_WRITER>(objectPo);
         // read data from resultSet into PO
         std::map<std::string, MediaColumnType::DataType> columns = objectWriter->GetColumns();
-        for (std::map<std::string, MediaColumnType::DataType>::const_iterator it = columns.begin(); it != columns.end();
-             ++it) {
+        for (const std::string &columnName : this->columnNames_) {
+            auto it = columns.find(columnName);
+            CHECK_AND_CONTINUE_ERR_LOG(it != columns.end(), "column [%{public}s] not found", columnName.c_str());
             const std::string key = it->first;
             MediaColumnType::DataType type = it->second;
             std::variant<int32_t, int64_t, double, std::string> val;
@@ -74,28 +77,33 @@ private:
         // provide the copy of PO
         return objectPo;
     }
+    int32_t LoadColumnNames(std::shared_ptr<NativeRdb::ResultSet> &resultSet)
+    {
+        bool conn = this->resultSet_ != nullptr;
+        CHECK_AND_RETURN_RET_LOG(conn, E_HAS_DB_ERROR, "LoadColumnNames resultSet is null");
+        auto ret = this->resultSet_->GetAllColumnNames(this->columnNames_);
+        MEDIA_INFO_LOG("LoadColumnNames, ret: %{public}d, count: %{public}zu", ret, this->columnNames_.size());
+        return ret;
+    }
 
 public:
-    std::vector<OBJECT_TYPE> ReadRecords()
-    {
-        std::vector<OBJECT_TYPE> records;
-        bool errConn = this->resultSet_ == nullptr;
-        CHECK_AND_RETURN_RET(!errConn, records);
-        while (this->resultSet_->GoToNextRow() == NativeRdb::E_OK) {
-            records.emplace_back(this->ReadRecord());
-        }
-        this->resultSet_->Close();
-        return records;
-    }
     int32_t ReadRecords(std::vector<OBJECT_TYPE> &records)
     {
         bool conn = this->resultSet_ != nullptr;
         CHECK_AND_RETURN_RET_LOG(conn, E_HAS_DB_ERROR, "ReadRecords resultSet is null");
+        int32_t ret = this->LoadColumnNames(this->resultSet_);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "ReadRecords LoadColumnNames failed, ret: %{public}d", ret);
         while (this->resultSet_->GoToNextRow() == NativeRdb::E_OK) {
             records.emplace_back(this->ReadRecord());
         }
         this->resultSet_->Close();
         return E_OK;
+    }
+    std::vector<OBJECT_TYPE> ReadRecords()
+    {
+        std::vector<OBJECT_TYPE> records;
+        this->ReadRecords(records);
+        return records;
     }
 };
 }  // namespace OHOS::Media::ORM
