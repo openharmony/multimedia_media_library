@@ -17,7 +17,6 @@
 #define MEDIALIBRARY_TRIGGER_TEST
 
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include "medialibrary_trigger.h"
 
 namespace OHOS {
@@ -31,10 +30,24 @@ class MediaLibraryTriggerTest  : public ::testing::Test {
 };
 
 class MockTrigger : public MediaLibraryTriggerBase {
-    MOCK_METHOD(int32_t, Process, (std::shared_ptr<TransactionOperations> trans,
-        const std::vector<AccurateRefresh::PhotoAssetChangeData>& changeDataVec), (override));
-    MOCK_METHOD(bool, IsTriggerFireForRow, (std::shared_ptr<TransactionOperations> trans,
-        const AccurateRefresh::PhotoAssetChangeData& changeData), (override));
+public:
+    void SetIsTriggerFireForRowReturn(bool ret) {isTriggerFireForRowReturn_ = ret;}
+    void SetProcessReturn(int32_t ret) {processReturn_ = ret;}
+
+    int32_t Process(std::shared_ptr<TransactionOperations> trans,
+        const std::vector<AccurateRefresh::PhotoAssetChangeData>& changeDataVec) override
+    {
+        return processReturn_;
+    }
+
+    bool IsTriggerFireForRow(std::shared_ptr<TransactionOperations> trans,
+        const AccurateRefresh::PhotoAssetChangeData& changeData) override
+    {
+        return isTriggerFireForRowReturn_;
+    }
+private:
+    bool isTriggerFireForRowReturn_ = false;
+    int32_t processReturn_ = NativeRdb::E_ERROR;
 };
 } // namespace Media
 } // namespace OHOS

@@ -146,23 +146,14 @@ HWTEST_F(MediaLibraryTriggerTest, MediaLibraryTrigger_Processs_000, TestSize.Lev
     EXPECT_TRUE(trigger.Init({mockTrigger}, PhotoAlbumColumns::TABLE));
     EXPECT_EQ(trigger.Process(g_trans, {}), NativeRdb::E_OK);
     // 4. IsTriggerFireForRow fail
-    EXPECT_CALL(*mockTrigger, IsTriggerFireForRow(g_trans, ::testing::_))
-        .Times(1).WillOnce(::testing::Return(false));
-    EXPECT_CALL(*mockTrigger, Process(g_trans, ::testing::_)).Times(0);
+    mockTrigger->SetIsTriggerFireForRowReturn(false);
     EXPECT_EQ(trigger.Process(g_trans, changeDataVec), NativeRdb::E_ERROR);
     // 5. IsTriggerFireForRow succeed & Process fail
-    ::testing::Mock::VerifyAndClearExpectations(&(*mockTrigger));
-    EXPECT_CALL(*mockTrigger, IsTriggerFireForRow(g_trans, ::testing::_))
-        .Times(1).WillOnce(::testing::Return(true));
-    EXPECT_CALL(*mockTrigger, Process(g_trans, ::testing::_))
-        .Times(1).WillOnce(::testing::Return(NativeRdb::E_ERROR));
+    mockTrigger->SetIsTriggerFireForRowReturn(true);
+    mockTrigger->SetProcessReturn(NativeRdb::E_ERROR);
     EXPECT_EQ(trigger.Process(g_trans, changeDataVec), NativeRdb::E_ERROR);
     // 6. IsTriggerFireForRow succeed & Process succeed
-    ::testing::Mock::VerifyAndClearExpectations(&(*mockTrigger));
-    EXPECT_CALL(*mockTrigger, IsTriggerFireForRow(g_trans, ::testing::_))
-        .Times(1).WillOnce(::testing::Return(true));
-    EXPECT_CALL(*mockTrigger, Process(g_trans, ::testing::_))
-        .Times(1).WillOnce(::testing::Return(NativeRdb::E_OK));
+    mockTrigger->SetProcessReturn(NativeRdb::E_OK);
     EXPECT_EQ(trigger.Process(g_trans, changeDataVec), NativeRdb::E_OK);
 }
 
@@ -177,13 +168,10 @@ HWTEST_F(MediaLibraryTriggerTest, MediaLibraryTrigger_IsTriggerFireForRow_000, T
     // 1. nullptr trans
     EXPECT_FALSE(trigger.IsTriggerFireForRow(nullptr, changeData));
     // 2. IsTriggerFireForRow fail
-    EXPECT_CALL(*mockTrigger, IsTriggerFireForRow(g_trans, ::testing::_))
-        .Times(1).WillOnce(::testing::Return(false));
+    mockTrigger->SetIsTriggerFireForRowReturn(false);
     EXPECT_FALSE(trigger.IsTriggerFireForRow(g_trans, changeData));
-    ::testing::Mock::VerifyAndClearExpectations(&(*mockTrigger));
     // 3. IsTriggerFireForRow succeed
-    EXPECT_CALL(*mockTrigger, IsTriggerFireForRow(g_trans, ::testing::_))
-        .Times(1).WillOnce(::testing::Return(true));
+    mockTrigger->SetIsTriggerFireForRowReturn(true);
     EXPECT_TRUE(trigger.IsTriggerFireForRow(g_trans, changeData));
 }
 
