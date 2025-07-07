@@ -1034,6 +1034,15 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_013, T
     EXPECT_NE(res, E_OK);
 }
 
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_019, TestSize.Level1)
+{
+    ThumbnailData data;
+    ThumbnailType thumbType = ThumbnailType::THUMB_ASTC;
+    std::string fileName = ThumbnailGenerateHelper::GetAvailablePath(data.path, thumbType);
+    EXPECT_EQ(fileName, "");
+}
+
+
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_037, TestSize.Level1)
 {
     ThumbRdbOpt opts;
