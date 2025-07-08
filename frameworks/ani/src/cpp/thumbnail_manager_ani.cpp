@@ -44,7 +44,7 @@ shared_ptr<ThumbnailManagerAni> ThumbnailManagerAni::instance_ = nullptr;
 mutex ThumbnailManagerAni::mutex_;
 constexpr int UUID_STR_LENGTH = 37;
 bool ThumbnailManagerAni::init_ = false;
-static constexpr int32_t DEFAULT_FD = -1;
+
 ThumbnailRequestAni::ThumbnailRequestAni(const RequestPhotoParams &params, ani_env *env,
     ani_ref callback) : callback_(env, callback), requestPhotoType(params.type), uri_(params.uri),
     path_(params.path), requestSize_(params.size)
@@ -55,12 +55,12 @@ ThumbnailRequestAni::~ThumbnailRequestAni()
 {
 }
 
-void ThumbnailRequestAni::ReleaseCallbackRef()
+void ThumbnailRequestAni::ReleaseCallbackRef(ani_env *env)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (callback_.callBackRef_ != nullptr) {
-        if (callback_.env_ != nullptr) {
-            callback_.env_->GlobalReference_Delete(callback_.callBackRef_);
+        if (env != nullptr) {
+            env->GlobalReference_Delete(callback_.callBackRef_);
         }
         callback_.callBackRef_ = nullptr;
     }
@@ -219,7 +219,7 @@ void ThumbnailManagerAni::RemovePhotoRequest(const string &requestId)
         }
         // do not need delete from queue, just update remove status.
         ptr->UpdateStatus(ThumbnailStatus::THUMB_REMOVE);
-        ptr->ReleaseCallbackRef();
+        ptr->ReleaseCallbackRef(ptr->callback_.env_);
     }
     thumbRequest_.Erase(requestId);
 }
@@ -576,30 +576,28 @@ bool ThumbnailManagerAni::RequestFastImage(const RequestSharedPtr &request)
     MediaLibraryTracer tracer;
     tracer.Start("ThumbnailManagerAni::RequestFastImage");
     CHECK_COND_RET(request != nullptr, false, "request is nullptr");
-    request->SetFd(DEFAULT_FD);
     Size fastSize;
     if (!GetFastThumbNewSize(request->GetRequestSize(), fastSize)) {
+        ANI_ERR_LOG("Can not get fastThumb size, uri=%{private}s", request->GetUri().c_str());
         return false;
     }
     UniqueFd uniqueFd(OpenThumbnail(request->GetPath(), GetThumbType(fastSize.width, fastSize.height)));
-    if (uniqueFd.Get() < 0) {
+    if (uniqueFd.Get() <= 0) {
         // Can not get fast image in sandbox
-        int32_t outFd = GetPixelMapFromServer(request->GetUri(), request->GetRequestSize(), request->GetPath());
-        if (outFd <= 0) {
-            ANI_ERR_LOG("Can not get thumbnail from server, uri=%{private}s", request->GetUri().c_str());
-            request->error = E_FAIL;
-            return false;
-        }
-        request->SetFd(outFd);
+        uniqueFd = UniqueFd(GetPixelMapFromServer(request->GetUri(), fastSize, request->GetPath()));
+    }
+    if (uniqueFd.Get() <= 0) {
+        ANI_ERR_LOG("Can not get pixelmap from uri, uri=%{public}s", request->GetUri().c_str());
+        request->error = E_FAIL;
+        return false;
     }
 
     ThumbnailType thumbType = GetThumbType(fastSize.width, fastSize.height);
     PixelMapPtr pixelMap = nullptr;
-    if (request->GetFd().Get() == DEFAULT_FD &&
-        (thumbType == ThumbnailType::MTH || thumbType == ThumbnailType::YEAR)) {
+    if (thumbType == ThumbnailType::MTH || thumbType == ThumbnailType::YEAR) {
         pixelMap = CreateThumbnailByAshmem(uniqueFd, fastSize);
     } else {
-        pixelMap = DecodeThumbnail(request->GetFd(), fastSize);
+        pixelMap = DecodeThumbnail(uniqueFd, fastSize);
     }
     if (pixelMap == nullptr) {
         request->error = E_FAIL;
@@ -632,13 +630,8 @@ void ThumbnailManagerAni::DealWithQualityRequest(const RequestSharedPtr &request
     tracer.Start("ThumbnailManagerAni::DealWithQualityRequest");
 
     CHECK_NULL_PTR_RETURN_VOID(request, "request is nullptr");
-    unique_ptr<PixelMap> pixelMapPtr = nullptr;
-    if (request->GetFd().Get() > 0) {
-        pixelMapPtr = DecodeThumbnail(request->GetFd(), request->GetRequestSize());
-    } else {
-        pixelMapPtr = QueryThumbnail(request->GetUri(), request->GetRequestSize(), request->GetPath());
-    }
-
+    unique_ptr<PixelMap> pixelMapPtr =
+        QueryThumbnail(request->GetUri(), request->GetRequestSize(), request->GetPath());
     if (pixelMapPtr == nullptr) {
         ANI_ERR_LOG("Can not get pixelMap");
         request->error = E_FAIL;
@@ -727,7 +720,7 @@ static void UvJsExecute(ani_env *etsEnv, ThumnailUv *uvMsg)
         uvMsg->manager_->AddQualityPhotoRequest(uvMsg->request_);
     } else {
         uvMsg->manager_->DeleteRequestIdFromMap(uvMsg->request_->GetUUID());
-        uvMsg->request_->ReleaseCallbackRef();
+        uvMsg->request_->ReleaseCallbackRef(etsEnv);
     }
     delete uvMsg;
 }

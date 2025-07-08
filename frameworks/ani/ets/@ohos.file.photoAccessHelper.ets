@@ -3533,9 +3533,9 @@ export namespace photoAccessHelper {
             reject(businessError<string>(err.code, err.message));
           } else {
             if (isNullish(ret)) {
-              reject(businessError<string>(-1, "Operation failed"));
-            } else {
               resolve(undefined);
+            } else {
+              reject(businessError<string>(-1, 'Operation failed'));
             }
           }
         });
