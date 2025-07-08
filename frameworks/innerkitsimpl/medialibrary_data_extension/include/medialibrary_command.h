@@ -42,9 +42,9 @@ public:
         const NativeRdb::ValuesBucket &value, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     EXPORT MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
         const std::string &networkId, MediaLibraryApi api = MediaLibraryApi::API_OLD);
-    MediaLibraryCommand(const std::string &tableName);
-    EXPORT MediaLibraryCommand(const NativeRdb::ValuesBucket &value) : insertValue_(value) {}
-    MediaLibraryCommand(const DataShare::DataSharePredicates &pred);
+    MediaLibraryCommand(const std::string &tableName, MediaLibraryApi api = MediaLibraryApi::API_OLD);
+    EXPORT MediaLibraryCommand(const NativeRdb::ValuesBucket &value, MediaLibraryApi api = MediaLibraryApi::API_OLD);
+    MediaLibraryCommand(const DataShare::DataSharePredicates &pred, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     EXPORT MediaLibraryCommand() = delete;
     EXPORT ~MediaLibraryCommand();
     EXPORT MediaLibraryCommand(const MediaLibraryCommand &) = delete;

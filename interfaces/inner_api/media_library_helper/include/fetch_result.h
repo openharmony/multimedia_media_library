@@ -100,7 +100,7 @@ private:
     ResultNapiType resultNapiType_;
     std::shared_ptr<DataShare::DataShareResultSet> resultset_ = nullptr;
     FetchResType fetchResType_;
-    int32_t userId_;
+    int32_t userId_ = -1;
     bool hiddenOnly_ = false;
     bool locationOnly_ = false;
 };
