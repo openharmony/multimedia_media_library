@@ -10973,6 +10973,7 @@ static napi_value StartPickerExtension(napi_env env, napi_callback_info info,
         std::bind(&ModalUICallback::OnDestroy, callback),
     };
     Ace::ModalUIExtensionConfig config;
+    config.isWindowModeFollowHost = true;
     config.isProhibitBack = true;
     int sessionId = uiContent->CreateModalUIExtension(request, extensionCallback, config);
     if (sessionId == 0) {
