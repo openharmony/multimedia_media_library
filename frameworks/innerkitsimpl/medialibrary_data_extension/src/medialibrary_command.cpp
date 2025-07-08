@@ -80,15 +80,17 @@ MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, cons
     ParseTableName();
 }
 
-MediaLibraryCommand::MediaLibraryCommand(const string& tableName)
-{
-    this->SetTableName(tableName);
-}
+MediaLibraryCommand::MediaLibraryCommand(const string &tableName, MediaLibraryApi api)
+    : tableName_(tableName), api_(api)
+{}
 
-MediaLibraryCommand::MediaLibraryCommand(const DataShare::DataSharePredicates &pred)
-{
-    this->SetDataSharePred(pred);
-}
+MediaLibraryCommand::MediaLibraryCommand(const ValuesBucket &value, MediaLibraryApi api)
+    : insertValue_(value), api_(api)
+{}
+
+MediaLibraryCommand::MediaLibraryCommand(const DataSharePredicates &pred, MediaLibraryApi api)
+    : datasharePred_(make_unique<const DataSharePredicates>(pred)), api_(api)
+{}
 
 MediaLibraryCommand::~MediaLibraryCommand() {}
 
