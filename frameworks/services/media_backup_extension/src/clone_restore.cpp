@@ -1129,6 +1129,7 @@ void CloneRestore::GetCloudThumbnailInsertValue(const FileInfo &fileInfo, Native
 
 void CloneRestore::PrepareShootingModeVal(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values)
 {
+    values.Delete(PhotoColumn::PHOTO_SHOOTING_MODE);
     auto it = fileInfo.valMap.find(PhotoColumn::PHOTO_SHOOTING_MODE_TAG);
     if (it == fileInfo.valMap.end()) {
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, "");
@@ -1158,12 +1159,9 @@ void CloneRestore::GetInsertValueFromValMap(const FileInfo &fileInfo, NativeRdb:
             }
             continue;
         }
-        if (columnName == PhotoColumn::PHOTO_SHOOTING_MODE) {
-            PrepareShootingModeVal(fileInfo, values);
-            continue;
-        }
         PrepareCommonColumnVal(values, columnName, columnVal, commonColumnInfoMap);
     }
+    PrepareShootingModeVal(fileInfo, values);
 }
 
 NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, const string &newPath,

@@ -992,6 +992,19 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
     return resultSet;
 }
 
+static void PrintPredicatesInfo(const AbsRdbPredicates& predicates, const vector<string>& columns)
+{
+    string argsInfo;
+    for (const auto& arg : predicates.GetWhereArgs()) {
+        if (!argsInfo.empty()) {
+            argsInfo += ", ";
+        }
+        argsInfo += arg;
+    }
+    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", RdbSqlUtils::BuildQueryString(predicates, columns).c_str());
+    MEDIA_DEBUG_LOG("PhotosApp Predicates Args are %{public}s", argsInfo.c_str());
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryWithFilter(const AbsRdbPredicates &predicates,
     const vector<string> &columns)
 {
@@ -1008,7 +1021,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryWithFilter(const Abs
     DfxTimer dfxTimer(RDB_QUERY, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QueryByPredicates");
-    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", RdbSqlUtils::BuildQueryString(predicates, columns).c_str());
+    PrintPredicatesInfo(predicates, columns);
     auto resultSet = MediaLibraryRdbStore::GetRaw()->QueryByStep(predicates, columns);
     MediaLibraryRestore::GetInstance().CheckResultSet(resultSet);
     if (resultSet == nullptr) {
