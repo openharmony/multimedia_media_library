@@ -73,7 +73,7 @@ public:
     explicit ThumbnailRequestAni(const RequestPhotoParams &params, ani_env *env, ani_ref callback);
     virtual ~ThumbnailRequestAni();
     bool UpdateStatus(ThumbnailStatus status);
-    void ReleaseCallbackRef();
+    void ReleaseCallbackRef(ani_env *env);
     ThumbnailStatus GetStatus();
     bool NeedContinue();
     std::string GetUri() const
