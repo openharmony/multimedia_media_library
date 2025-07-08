@@ -229,7 +229,8 @@ protected:
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "",
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset,
-        const std::string &extraUri = "");
+        const std::string &extraUri = "",
+        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
     static void UpdateOwnerAlbumIdOnMove(MediaLibraryCommand &cmd, int32_t &targetAlbumId, int32_t &oriAlbumId);
     static int32_t SendModifyUserCommentNotify(MediaLibraryCommand &cmd, int32_t rowId,
         const std::string &extraUri = "");
