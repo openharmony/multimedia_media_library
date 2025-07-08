@@ -447,11 +447,6 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumChangeData(napi_env env,
         }
     }
 
-    status = SetValueBool(env, "isDeleted", albumChangeData.isDelete_, result);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("set array named property error: isDeleted");
-    }
-
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         return result;
     }
