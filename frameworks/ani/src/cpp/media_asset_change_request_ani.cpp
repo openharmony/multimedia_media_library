@@ -2811,10 +2811,6 @@ ani_object MediaAssetChangeRequestAni::SetLocation(ani_env *env, ani_object obje
 
 ani_object MediaAssetChangeRequestAni::SetTitle(ani_env *env, ani_object object, ani_string title)
 {
-    if (!MediaLibraryAniUtils::IsSystemApp()) {
-        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return nullptr;
-    }
     string title_str;
     ani_status status = MediaLibraryAniUtils::GetParamStringPathMax(env, title, title_str);
     CHECK_COND_WITH_MESSAGE(env, status == ANI_OK, "Failed to parse args");

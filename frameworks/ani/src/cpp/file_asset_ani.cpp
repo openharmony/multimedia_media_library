@@ -1041,10 +1041,14 @@ ani_object FileAssetAni::PhotoAccessHelperGetThumbnail(ani_env *env, ani_object 
         }
         context->size.width = static_cast<int32_t>(widthValue);
         context->size.height = static_cast<int32_t>(heightValue);
-        if (heightValue <= 0) {
+        if (heightValue == 0 && widthValue == 0) {
+            AniError::ThrowError(env, ERR_INVALID_OUTPUT, __FUNCTION__, __LINE__);
+            return pixelMapAni;
+        }
+        if (heightValue == 0) {
             context->size.height = DEFAULT_THUMB_SIZE;
         }
-        if (widthValue <= 0) {
+        if (widthValue == 0) {
             context->size.width = DEFAULT_THUMB_SIZE;
         }
     }

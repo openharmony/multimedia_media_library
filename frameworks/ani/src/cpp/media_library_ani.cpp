@@ -394,25 +394,21 @@ void ChangeListenerAni::QueryRdbAndNotifyChange(UvChangeMsg *msg)
         wrapper->sharedAssetsRowObjVector_.clear();
         ANI_WARN_LOG("Failed to ParseSharedPhotoAssets, ret: %{public}d", ret);
     }
-    std::thread worker(ExecuteThreadWork, env_, wrapper);
+    std::thread worker(ExecuteThreadWork, vm_, wrapper);
     worker.detach();
 }
 
-void ChangeListenerAni::ExecuteThreadWork(ani_env *env, JsOnChangeCallbackWrapper* wrapper)
+void ChangeListenerAni::ExecuteThreadWork(ani_vm *etsVm, JsOnChangeCallbackWrapper* wrapper)
 {
     lock_guard<mutex> lock(sWorkerMutex_);
     CHECK_IF_EQUAL(wrapper != nullptr, "wrapper is null");
+    CHECK_IF_EQUAL(etsVm != nullptr, "etsVm is null");
     if (wrapper->msg_ == nullptr) {
         delete wrapper;
         ANI_ERR_LOG("msg is null");
         return;
     }
     do {
-        ani_vm *etsVm {};
-        if (env == nullptr || env->GetVM(&etsVm) != ANI_OK) {
-            ANI_ERR_LOG("Get etsVm fail");
-            break;
-        }
         ani_env *etsEnv {};
         ani_option interopEnabled {"--interop=disable", nullptr};
         ani_options aniArgs {1, &interopEnabled};
@@ -1562,7 +1558,9 @@ ani_object MediaLibraryAni::Constructor(ani_env *env, ani_class clazz, ani_objec
     nativeHandle->SetUserId(userId);
     // Initialize the ChangeListener object
     if (nativeHandle->listObj_ == nullptr) {
-        nativeHandle->listObj_ = std::make_unique<ChangeListenerAni>(env);
+        ani_vm *vm = nullptr;
+        CHECK_COND_RET(env->GetVM(&vm) == ANI_OK, result, "GetVM failed");
+        nativeHandle->listObj_ = std::make_unique<ChangeListenerAni>(vm);
     }
 
     bool isAsync = false;
@@ -1601,7 +1599,9 @@ ani_object MediaLibraryAni::Constructor(ani_env *env, ani_class clazz, ani_objec
     nativeHandle->env_ = env;
     // Initialize the ChangeListener object
     if (nativeHandle->listObj_ == nullptr) {
-        nativeHandle->listObj_ = std::make_unique<ChangeListenerAni>(env);
+        ani_vm *vm = nullptr;
+        CHECK_COND_RET(env->GetVM(&vm) == ANI_OK, result, "GetVM failed");
+        nativeHandle->listObj_ = std::make_unique<ChangeListenerAni>(vm);
     }
 
     bool isAsync = true;
@@ -2835,21 +2835,25 @@ static ani_status ParseArgsCreateAssetSystem(ani_env* env, ani_string stringObj,
         return ANI_ERROR;
     }
     std::string displayNameStr;
-    CHECK_COND_WITH_RET_MESSAGE(env,
-        MediaLibraryAniUtils::GetParamStringPathMax(env, stringObj, displayNameStr) == ANI_OK, ANI_ERROR,
-        "Failed to get displayName");
+    if (MediaLibraryAniUtils::GetParamStringPathMax(env, stringObj, displayNameStr) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get displayName");
+        return ANI_ERROR;
+    }
     MediaType mediaType = MediaFileUtils::GetMediaType(displayNameStr);
-    CHECK_COND_WITH_RET_MESSAGE(env, mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO, ANI_ERROR,
-        "Invalid file type");
+    if (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid file type");
+        return ANI_ERROR;
+    }
     asyncContext->valuesBucket.Put(MEDIA_DATA_DB_NAME, displayNameStr);
 
     ani_boolean isUndefined;
     env->Reference_IsUndefined(photoCreateOptions, &isUndefined);
     if (!isUndefined) {
         auto optionsMap = MediaLibraryAniUtils::GetPhotoCreateOptions(env, photoCreateOptions);
-        CHECK_COND_WITH_RET_MESSAGE(env,
-            ParseCreateOptions(asyncContext, optionsMap, PHOTO_CREATE_OPTIONS_PARAM, true) == ANI_OK,
-            ANI_ERROR, "Parse asset create option failed");
+        if (ParseCreateOptions(asyncContext, optionsMap, PHOTO_CREATE_OPTIONS_PARAM, true) != ANI_OK) {
+            AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse asset create option failed");
+            return ANI_ERROR;
+        }
     }
     asyncContext->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
     return ANI_OK;
@@ -2863,11 +2867,15 @@ static ani_status ParseArgsCreatePhotoAssetComponent(ani_env* env, ani_enum_item
     asyncContext->isCreateByComponent = true;
     // Parse photoType.
     int32_t mediaTypeInt;
-    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(
-        env, photoTypeAni, mediaTypeInt) == ANI_OK, ANI_ERROR, "Failed to get photoType");
+    if (MediaLibraryEnumAni::EnumGetValueInt32(env, photoTypeAni, mediaTypeInt) != ANI_OK) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get photoType");
+        return ANI_ERROR;
+    }
     MediaType mediaType = static_cast<MediaType>(mediaTypeInt);
-    CHECK_COND_WITH_RET_MESSAGE(env, mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO,
-        ANI_ERROR, "Invalid photoType");
+    if (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid photoType");
+        return ANI_ERROR;
+    }
 
     // Parse extension.
     std::string extensionStr;
@@ -2884,9 +2892,10 @@ static ani_status ParseArgsCreatePhotoAssetComponent(ani_env* env, ani_enum_item
     env->Reference_IsUndefined(createOptions, &isUndefined);
     if (!isUndefined) {
         auto optionsMap = MediaLibraryAniUtils::GetCreateOptions(env, createOptions);
-        CHECK_COND_WITH_RET_MESSAGE(env,
-            ParseCreateOptions(asyncContext, optionsMap, CREATE_OPTIONS_PARAM, false) == ANI_OK,
-            ANI_ERROR, "Parse asset create option failed");
+        if (ParseCreateOptions(asyncContext, optionsMap, CREATE_OPTIONS_PARAM, false) != ANI_OK) {
+            AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse asset create option failed");
+            return ANI_ERROR;
+        }
     }
     asyncContext->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
     return ANI_OK;
@@ -3018,7 +3027,6 @@ void MediaLibraryAni::RegisterNotifyChange(ani_env *env, const std::string &uri,
     ChangeListenerAni &listObj)
 {
     Uri notifyUri(uri);
-    listObj.SetEnv(env);
     shared_ptr<MediaOnNotifyObserver> observer = make_shared<MediaOnNotifyObserver>(listObj, uri, ref);
     CHECK_NULL_PTR_RETURN_VOID(observer, "observer is nullptr");
     UserFileClient::RegisterObserverExt(notifyUri,

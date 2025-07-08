@@ -76,9 +76,11 @@ public:
     };
 
     explicit ChangeListenerAni(ani_env *env) : env_(env) {}
+    explicit ChangeListenerAni(ani_vm *vm) : vm_(vm) {}
 
     ChangeListenerAni(const ChangeListenerAni &listener)
     {
+        this->vm_ = listener.vm_;
         this->env_ = listener.env_;
         this->cbOnRef_ = listener.cbOnRef_;
         this->cbOffRef_ = listener.cbOffRef_;
@@ -86,6 +88,7 @@ public:
 
     ChangeListenerAni& operator=(const ChangeListenerAni &listener)
     {
+        this->vm_ = listener.vm_;
         this->env_ = listener.env_;
         this->cbOnRef_ = listener.cbOnRef_;
         this->cbOffRef_ = listener.cbOffRef_;
@@ -94,13 +97,9 @@ public:
 
     ~ChangeListenerAni() {}
 
-    void SetEnv(ani_env *env)
-    {
-        this->env_ = env;
-    }
     void OnChange(MediaChangeListener &listener, const ani_ref cbRef);
     void QueryRdbAndNotifyChange(UvChangeMsg* msg);
-    static void ExecuteThreadWork(ani_env* env, JsOnChangeCallbackWrapper* wrapper);
+    static void ExecuteThreadWork(ani_vm* vm, JsOnChangeCallbackWrapper* wrapper);
     static ani_object SolveOnChange(ani_env* env, JsOnChangeCallbackWrapper* wrapper);
     void GetResultSetFromMsg(UvChangeMsg* msg, JsOnChangeCallbackWrapper* wrapper);
     std::shared_ptr<NativeRdb::ResultSet> GetSharedResultSetFromIds(std::vector<string>& Ids, bool isPhoto);
@@ -120,6 +119,7 @@ public:
     std::vector<std::shared_ptr<MediaOnNotifyObserver>> observers_;
 private:
     ani_env *env_ = nullptr;
+    ani_vm *vm_ = nullptr;
     static std::mutex sWorkerMutex_;
     static ani_status SetSharedAssetArray(ani_env* env, const char* fieldStr,
         ChangeListenerAni::JsOnChangeCallbackWrapper* wrapper, ani_object& result, bool isPhoto);
