@@ -160,7 +160,8 @@ private:
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     static int32_t SubmitEffectModeExecute(MediaLibraryCommand &cmd);
-    static int32_t SubmitEditMovingPhotoExecute(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t SubmitEditMovingPhotoExecute(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
+        bool& isAddGraffiti);
     static int32_t GetMovingPhotoCachePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         std::string &imageCachePath, std::string &videoCachePath);
     static bool CheckCacheCmd(MediaLibraryCommand &cmd, int32_t subtype, const std::string &displayName);

@@ -3620,9 +3620,8 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     bool addMovingPhotoGraffiti = false;
     if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
         fileAsset->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
-        errCode = SubmitEditMovingPhotoExecute(cmd, fileAsset);
+        errCode = SubmitEditMovingPhotoExecute(cmd, fileAsset, addMovingPhotoGraffiti);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to SubmitEditMovingPhotoExecute");
-        addMovingPhotoGraffiti = true;
     }
 
     string assetPath = fileAsset->GetFilePath();
@@ -3738,7 +3737,7 @@ int32_t UpdateEffectModeWhenGraffiti(int32_t fileId)
 }
 
 int32_t MediaLibraryPhotoOperations::SubmitEditMovingPhotoExecute(MediaLibraryCommand& cmd,
-    const shared_ptr<FileAsset>& fileAsset)
+    const shared_ptr<FileAsset>& fileAsset, bool& isAddGraffiti)
 {
     MEDIA_INFO_LOG("Moving photo SubmitEditMovingPhotoExecute begin, fileId:%{public}d", fileAsset->GetId());
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
@@ -3767,6 +3766,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditMovingPhotoExecute(MediaLibraryCo
         } else {
             errCode = UpdateEffectModeWhenGraffiti(fileAsset->GetId());
         }
+        isAddGraffiti = true;
         MEDIA_INFO_LOG("Moving photo graffiti editing, which becomes a normal photo, fileId:%{public}d",
             fileAsset->GetId());
     }

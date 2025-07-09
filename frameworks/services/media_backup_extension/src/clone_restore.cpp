@@ -1129,6 +1129,7 @@ void CloneRestore::GetCloudThumbnailInsertValue(const FileInfo &fileInfo, Native
 
 void CloneRestore::PrepareShootingModeVal(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values)
 {
+    values.Delete(PhotoColumn::PHOTO_SHOOTING_MODE);
     auto it = fileInfo.valMap.find(PhotoColumn::PHOTO_SHOOTING_MODE_TAG);
     if (it == fileInfo.valMap.end()) {
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, "");
@@ -1158,12 +1159,9 @@ void CloneRestore::GetInsertValueFromValMap(const FileInfo &fileInfo, NativeRdb:
             }
             continue;
         }
-        if (columnName == PhotoColumn::PHOTO_SHOOTING_MODE) {
-            PrepareShootingModeVal(fileInfo, values);
-            continue;
-        }
         PrepareCommonColumnVal(values, columnName, columnVal, commonColumnInfoMap);
     }
+    PrepareShootingModeVal(fileInfo, values);
 }
 
 NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, const string &newPath,
@@ -1226,26 +1224,7 @@ NativeRdb::ValuesBucket CloneRestore::GetCloudInsertValue(const FileInfo &fileIn
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, fileInfo.sourcePath);
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
     GetCloudThumbnailInsertValue(fileInfo, values);
-
-    unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_,
-        PhotoColumn::PHOTOS_TABLE);
-    for (auto it = fileInfo.valMap.begin(); it != fileInfo.valMap.end(); ++it) {
-        string columnName = it->first;
-        auto columnVal = it->second;
-        if (columnName == PhotoColumn::PHOTO_EDIT_TIME) {
-            PrepareEditTimeVal(values, get<int64_t>(columnVal), fileInfo, commonColumnInfoMap);
-            continue;
-        }
-        if (columnName == PhotoColumn::MEDIA_DATE_TAKEN) {
-            if (get<int64_t>(columnVal) > SECONDS_LEVEL_LIMIT) {
-                values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, get<int64_t>(columnVal));
-            } else {
-                values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, get<int64_t>(columnVal) * MSEC_TO_SEC);
-            }
-            continue;
-        }
-        PrepareCommonColumnVal(values, columnName, columnVal, commonColumnInfoMap);
-    }
+    GetInsertValueFromValMap(fileInfo, values);
     return values;
 }
 

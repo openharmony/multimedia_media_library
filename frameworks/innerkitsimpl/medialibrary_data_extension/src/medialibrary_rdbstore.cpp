@@ -992,6 +992,19 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
     return resultSet;
 }
 
+static void PrintPredicatesInfo(const AbsRdbPredicates& predicates, const vector<string>& columns)
+{
+    string argsInfo;
+    for (const auto& arg : predicates.GetWhereArgs()) {
+        if (!argsInfo.empty()) {
+            argsInfo += ", ";
+        }
+        argsInfo += arg;
+    }
+    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", RdbSqlUtils::BuildQueryString(predicates, columns).c_str());
+    MEDIA_DEBUG_LOG("PhotosApp Predicates Args are %{public}s", argsInfo.c_str());
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryWithFilter(const AbsRdbPredicates &predicates,
     const vector<string> &columns)
 {
@@ -1008,7 +1021,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryWithFilter(const Abs
     DfxTimer dfxTimer(RDB_QUERY, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QueryByPredicates");
-    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", predicates.GetStatement().c_str());
+    PrintPredicatesInfo(predicates, columns);
     auto resultSet = MediaLibraryRdbStore::GetRaw()->QueryByStep(predicates, columns);
     MediaLibraryRestore::GetInstance().CheckResultSet(resultSet);
     if (resultSet == nullptr) {
@@ -1651,6 +1664,11 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INDEX_SCHPT_ALBUM,
     PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED,
     PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
+    PhotoColumn::CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX,
+    PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
+    PhotoColumn::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX,
+    PhotoColumn::CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX,
+    PhotoColumn::CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX,
     PhotoColumn::INDEX_QUERY_THUMBNAIL_WHITE_BLOCKS,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::INDEX_SCHPT_READY,
@@ -1794,11 +1812,6 @@ static const vector<string> onCreateSqlStrs = {
     CustomRecordsColumns::CREATE_TABLE,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
-    PhotoColumn::CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX,
-    PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
-    PhotoColumn::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX,
-    PhotoColumn::CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX,
-    PhotoColumn::CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
