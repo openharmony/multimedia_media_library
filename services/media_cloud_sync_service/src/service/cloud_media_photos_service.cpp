@@ -256,7 +256,7 @@ int32_t CloudMediaPhotosService::DoDataMerge(const CloudMediaPullDataDto &pullDa
 {
     set<int32_t> cloudMapIds;
     bool cloudStd = false;
-    if ((localKeyData.modifyTime != 0) && (cloudKeyData.modifyTime > localKeyData.modifyTime)) {
+    if ((localKeyData.modifyTime != 0) && (cloudKeyData.modifyTime >= localKeyData.modifyTime)) {
         MEDIA_INFO_LOG("cloudStd modify");
         cloudStd = true;
     }
