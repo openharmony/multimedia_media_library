@@ -1105,25 +1105,9 @@ int32_t CloudMediaPhotosService::HandleDetailcode(ErrorDetailCode &errorCode)
 int32_t CloudMediaPhotosService::HandleSameNameUploadFail(
     const PhotosDto &photo, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
-    CloudMediaPullDataDto pullData;
-    pullData.hasAttributes = true;
-    pullData.basicFileName = photo.fileName;
-    pullData.basicSize = photo.size;
-    pullData.attributesMetaDateModified = photo.metaDateModified;
-    pullData.basicEditedTime = photo.editedTimeMs;
-    pullData.basicCreatedTime = photo.createTime;
-    pullData.propertiesRotate = photo.rotation;
-    pullData.propertiesSourcePath = photo.sourcePath;
-    pullData.basicFileType = photo.fileType;
-    KeyData keyData = {0};
-    int32_t ret = GetCloudKeyData(pullData, keyData);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("GetCloudKey data failed");
-        return ret;
-    }
     std::string fileId = std::to_string(photo.fileId);
     std::string path = photo.data;
-    ret = this->photosDao_.HandleSameNameRename(photo, photoRefresh);
+    int32_t ret = this->photosDao_.HandleSameNameRename(photo, photoRefresh);
     if (ret == E_OK) {
         std::string uri = PhotoColumn::PHOTO_CLOUD_URI_PREFIX + to_string(photo.fileId);
         MediaGallerySyncNotify::GetInstance().TryNotify(uri, ChangeType::UPDATE, to_string(photo.fileId));
