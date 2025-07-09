@@ -239,10 +239,10 @@ static napi_value ParseArgsCustomRecords(napi_env env, napi_callback_info info,
 static void CreateCustomRecordsExecute(napi_env env, void* data)
 {
     auto* context = static_cast<CustomRecordAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "async context is null");
     if (context->error != ERR_DEFAULT) {
         return;
     }
-    CHECK_NULL_PTR_RETURN_VOID(context, "async context is null");
     std::vector<DataShare::DataShareValuesBucket> valueBuckets = context->valuesBuckets;
     Uri uri(CUSTOM_RECORDS_CREATE_URI);
     int32_t ret = UserFileClient::BatchInsert(uri, valueBuckets);
@@ -525,6 +525,7 @@ napi_value PhotoAssetCustomRecordManager::JSRemoveCustomRecords(napi_env env, na
 static void JSAddShareCountExecute(napi_env env, void* data)
 {
     auto* context = static_cast<CustomRecordAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "async context is null");
     std::set<int32_t> deduplicationIds(context->fileIds.begin(), context->fileIds.end());
     for (auto id : deduplicationIds) {
         int32_t errcode = 0;
