@@ -26,6 +26,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "vision_column.h"
+#include "rdb_sql_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -315,6 +316,20 @@ bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& 
     return true;
 }
 
+static void PrintPredicatesInfo(const NativeRdb::RdbPredicates& predicates, const vector<string>& columns)
+{
+    string argsInfo;
+    for (const auto& arg : predicates.GetWhereArgs()) {
+        if (!argsInfo.empty()) {
+            argsInfo += ", ";
+        }
+        argsInfo += arg;
+    }
+    MEDIA_DEBUG_LOG("PhotosApp Predicates Statement is %{public}s",
+        RdbSqlUtils::BuildQueryString(predicates, columns).c_str());
+    MEDIA_DEBUG_LOG("PhotosApp Predicates Args are %{public}s", argsInfo.c_str());
+}
+
 std::shared_ptr<NativeRdb::ResultSet> MediaAssetRdbStore::QueryRdb(
     const DataShare::DataSharePredicates& predicates, std::vector<std::string>& columns, OperationObject& object)
 {
@@ -327,6 +342,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaAssetRdbStore::QueryRdb(
     }
 
     AddQueryFilter(rdbPredicates);
+    PrintPredicatesInfo(rdbPredicates, columns);
     auto resultSet = rdbStore_->QueryByStep(rdbPredicates, columns, false);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "fail to acquire result from visitor query");
     return resultSet;
