@@ -1872,7 +1872,7 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
 }
 
 void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, shared_ptr<FileAsset> &fileAsset,
-    const string &extraUri)
+    const string &extraUri, shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     ValueObject value;
     int32_t isFavorite = 0;
@@ -1881,14 +1881,16 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, s
     }
     value.GetInt(isFavorite);
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
-    CHECK_AND_RETURN_LOG(fileAsset != nullptr, "fileAsset is nullptr");
-    if (fileAsset->IsHidden()) {
-        MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
-            rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
+    if (assetRefresh == nullptr) {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
+        CHECK_AND_RETURN_LOG(fileAsset != nullptr, "fileAsset is nullptr");
+        if (fileAsset->IsHidden()) {
+            MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
+        }
+    } else {
+        assetRefresh->RefreshAlbum();
     }
 
     auto watch = MediaLibraryNotify::GetInstance();

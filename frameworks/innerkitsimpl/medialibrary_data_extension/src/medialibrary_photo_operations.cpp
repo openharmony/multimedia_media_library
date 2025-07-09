@@ -2132,11 +2132,11 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
     errCode = SendTrashNotify(cmd, fileAsset->GetId(), extraUri, assetRefresh);
     CHECK_AND_RETURN_RET(errCode != E_OK, rowId);
-    SendFavoriteNotify(cmd, fileAsset, extraUri);
+    SendFavoriteNotify(cmd, fileAsset, extraUri, assetRefresh);
     SendModifyUserCommentNotify(cmd, fileAsset->GetId(), extraUri);
 
     CreateThumbnailFileScan(fileAsset, extraUri, orientationUpdated, isNeedScan);
-
+    assetRefresh->Notify();
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()),
