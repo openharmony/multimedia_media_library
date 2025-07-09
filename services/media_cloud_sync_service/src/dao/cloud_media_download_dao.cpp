@@ -29,6 +29,9 @@
 #include "cloud_media_dao_utils.h"
 #include "cloud_media_sync_utils.h"
 #include "moving_photo_file_utils.h"
+#include "accurate_common_data.h"
+#include "asset_accurate_refresh.h"
+#include "album_accurate_refresh.h"
 
 namespace OHOS::Media::CloudSync {
 NativeRdb::AbsRdbPredicates CloudMediaDownloadDao::GetDownloadThmsConditions(const int32_t type)
@@ -218,8 +221,9 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const
 {
     MEDIA_INFO_LOG("enter UpdateDownloadAsset %{public}d, %{public}s",
         fixFileType, path.c_str());
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "UpdateDownloadAsset Failed to get rdbStore.");
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh =
+        std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "UpdateDownloadAsset Failed to get rdbStore.");
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_FILE_PATH, path);
     NativeRdb::ValuesBucket values;
@@ -229,9 +233,15 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
     }
     int32_t changedRows = -1;
-    int32_t ret = rdbStore->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "UpdateDownloadAsset Failed to Update, ret: %{public}d.", ret);
+    int32_t ret = photoRefresh->Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
+        E_ERR,
+        "UpdateDownloadAsset Failed to Update, ret: %{public}d.",
+        ret);
     CHECK_AND_PRINT_LOG(changedRows > 0, "UpdateDownloadAsset changedRows: %{public}d.", changedRows);
+    photoRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
+        NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
+    photoRefresh->Notify();
     return ret;
 }
 }  // namespace OHOS::Media::CloudSync
