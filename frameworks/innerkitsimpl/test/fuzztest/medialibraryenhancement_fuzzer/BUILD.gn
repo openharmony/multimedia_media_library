@@ -66,6 +66,7 @@ ohos_fuzztest("MediaLibraryEnhancementFuzzTest") {
     "init:libbegetutil",
     "ipc:ipc_core",
     "ipc:ipc_single",
+    "ipc:ipc_napi",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",
