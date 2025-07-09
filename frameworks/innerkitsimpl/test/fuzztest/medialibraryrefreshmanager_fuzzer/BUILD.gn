@@ -64,6 +64,7 @@ ohos_fuzztest("MediaLibraryRefreshManagerFuzzTest") {
     "init:libbegetutil",
     "ipc:ipc_core",
     "ipc:ipc_single",
+    "ipc:ipc_napi",
     "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",
