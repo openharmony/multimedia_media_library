@@ -43,7 +43,7 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_FORM_INFO), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_GALLERY_FORM_INFO), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_ASSET), {{WRITE_PERM}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT), {{WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::REVERT_TO_ORIGINAL), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_OPEN), {}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::UPDATE_GALLERY_FORM_INFO), {{SYSTEMAPI_PERM, WRITE_PERM}}},
