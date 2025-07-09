@@ -243,7 +243,7 @@ public:
     EXPORT int32_t GetStageVideoTaskStatus() const;
 
 private:
-    int32_t userId_;
+    int32_t userId_ = -1;
     std::string albumUri_;
     ResultNapiType resultNapiType_;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> member_;
