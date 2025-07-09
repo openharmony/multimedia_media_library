@@ -231,7 +231,7 @@ private:
             WHERE dirty = ? AND \
                 cloud_id <> '' AND \
                 cloud_id IS NOT NULL AND \
-                file_id NOT IN ({0}) \
+                cloud_id NOT IN ({0}) \
             ORDER BY size ASC \
             LIMIT ? \
         ) \
@@ -254,7 +254,7 @@ private:
                 lcd_visit_time >= 2 AND \
                 cloud_id <> '' AND \
                 cloud_id IS NOT NULL AND \
-                file_id NOT IN ({0}) \
+                cloud_id NOT IN ({0}) \
             ORDER BY size ASC \
             LIMIT ? \
         ) \

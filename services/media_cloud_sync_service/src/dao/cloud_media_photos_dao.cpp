@@ -923,10 +923,10 @@ int32_t CloudMediaPhotosDao::GetMetaModifiedRecords(
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DB_FAIL, "GetMetaModifiedRecords Failed to get rdbStore.");
     /* build predicates */
-    std::string fileIdNotIn = CloudMediaDaoUtils::ToStringWithComma(this->photoModifyFailSet_.ToVector());
-    MEDIA_INFO_LOG("GetMetaModifiedRecords fileIdNotIn:%{public}s", fileIdNotIn.c_str());
+    std::string cloudIdNotIn = CloudMediaDaoUtils::ToStringWithCommaAndQuote(this->photoModifyFailSet_.ToVector());
+    MEDIA_INFO_LOG("GetMetaModifiedRecords cloudIdNotIn:%{public}s", cloudIdNotIn.c_str());
     std::vector<NativeRdb::ValueObject> bindArgs = {dirtyType, size};
-    std::string execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_META_MODIFIED_RECORDS, {fileIdNotIn});
+    std::string execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_META_MODIFIED_RECORDS, {cloudIdNotIn});
     /* query */
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
     // Notify caller if no data is returned, it means all data has been processed.
@@ -966,10 +966,10 @@ int32_t CloudMediaPhotosDao::GetFileModifiedRecords(int32_t size, std::vector<Ph
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DB_FAIL, "GetFileModifiedRecords Failed to get rdbStore.");
     /* build predicates */
-    std::string fileIdNotIn = CloudMediaDaoUtils::ToStringWithComma(this->photoModifyFailSet_.ToVector());
-    MEDIA_INFO_LOG("GetFileModifiedRecords fileIdNotIn:%{public}s", fileIdNotIn.c_str());
+    std::string cloudIdNotIn = CloudMediaDaoUtils::ToStringWithCommaAndQuote(this->photoModifyFailSet_.ToVector());
+    MEDIA_INFO_LOG("GetFileModifiedRecords cloudIdNotIn:%{public}s", cloudIdNotIn.c_str());
     std::vector<NativeRdb::ValueObject> bindArgs = {size};
-    std::string execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS, {fileIdNotIn});
+    std::string execSql = CloudMediaDaoUtils::FillParams(this->SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS, {cloudIdNotIn});
     /* query */
     auto resultSet = rdbStore->QuerySql(execSql, bindArgs);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Failed to query.");
@@ -1007,12 +1007,11 @@ int32_t CloudMediaPhotosDao::GetDeletedRecordsAsset(int32_t size, std::vector<Ph
     queryPredicates.And()->NotEqualTo(PhotoColumn::PHOTO_CLOUD_ID, "");
     queryPredicates.And()->IsNotNull(PhotoColumn::PHOTO_CLOUD_ID);
     if (!photoModifyFailSet_.Empty()) {
-        for (auto &cloudId : photoModifyFailSet_.ToVector()) {
-            MEDIA_DEBUG_LOG("GetDeletedRecords Failed Record: %{public}s", cloudId.c_str());
-        }
         queryPredicates.And()->NotIn(PhotoColumn::PHOTO_CLOUD_ID, photoModifyFailSet_.ToVector());
     }
     queryPredicates.Limit(size);
+    std::string cloudIdNotIn = CloudMediaDaoUtils::ToStringWithCommaAndQuote(this->photoModifyFailSet_.ToVector());
+    MEDIA_INFO_LOG("GetDeletedRecordsAsset cloudIdNotIn:%{public}s", cloudIdNotIn.c_str());
     /* query */
     std::vector<string> queryColums = {};
     auto resultSet = rdbStore->Query(queryPredicates, queryColums);
