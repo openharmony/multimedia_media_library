@@ -59,6 +59,7 @@ ohos_unittest("media_notification_register_manager_test") {
     "data_share:datashare_provider",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "ipc:ipc_napi",
   ]
  
   defines = []

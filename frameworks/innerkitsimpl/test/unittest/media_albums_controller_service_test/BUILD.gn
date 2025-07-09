@@ -143,6 +143,7 @@ ohos_unittest("media_albums_controller_service_test") {
     "image_framework:image_native",
     "init:libbegetutil",
     "ipc:ipc_single",
+    "ipc:ipc_napi",
     "kv_store:distributeddata_inner",
     "libxml2:libxml2",
     "napi:ace_napi",

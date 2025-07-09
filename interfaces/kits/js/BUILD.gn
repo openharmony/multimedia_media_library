@@ -313,6 +313,7 @@ ohos_shared_library("medialibrary_nutils") {
     "ipc:ipc_core",
     "ipc:ipc_single",
     "ipc:rpc",
+    "ipc:ipc_napi",
     "kv_store:distributeddata_inner",
     "libexif:libexif",
     "napi:ace_napi",
@@ -414,6 +415,7 @@ ohos_shared_library("medialibrary") {
     "device_manager:devicemanagersdk",
     "hilog:libhilog",
     "i18n:intl_util",
+    "ipc:ipc_napi",
     "napi:ace_napi",
     "e2fsprogs:libext2_uuid",
   ]
@@ -482,6 +484,7 @@ ohos_shared_library("userfilemanager") {
     "device_manager:devicemanagersdk",
     "hilog:libhilog",
     "i18n:intl_util",
+    "ipc:ipc_napi",
     "napi:ace_napi",
     "e2fsprogs:libext2_uuid",
   ]
@@ -556,6 +559,7 @@ ohos_shared_library("photoaccesshelpernative") {
     "e2fsprogs:libext2_blkid",
     "hilog:libhilog",
     "i18n:intl_util",
+    "ipc:ipc_napi",
     "napi:ace_napi",
     "player_framework:media_client",
   ]
@@ -808,6 +812,7 @@ ohos_shared_library("sendablephotoaccesshelper") {
     "ipc:ipc_core",
     "ipc:ipc_single",
     "ipc:rpc",
+    "ipc:ipc_napi",
     "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",

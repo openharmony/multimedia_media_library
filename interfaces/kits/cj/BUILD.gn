@@ -106,6 +106,7 @@ ohos_shared_library("cj_photoaccesshelper_ffi") {
     "ipc:ipc_core",
     "ipc:ipc_single",
     "ipc:rpc",
+    "ipc:ipc_napi",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "napi:cj_bind_ffi",
