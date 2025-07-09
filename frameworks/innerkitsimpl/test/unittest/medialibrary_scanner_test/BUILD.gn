@@ -59,6 +59,7 @@ ohos_unittest("medialibrary_scanner_test") {
     "data_share:datashare_common",
     "data_share:datashare_provider",
     "hilog:libhilog",
+    "image_framework:image_native",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
