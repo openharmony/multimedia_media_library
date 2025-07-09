@@ -22,6 +22,8 @@
 #include <mutex>
 
 #include "abs_rdb_predicates.h"
+#include "album_accurate_refresh.h"
+#include "asset_accurate_refresh.h"
 #include "cloud_media_asset_download_operation.h"
 #include "cloud_media_asset_types.h"
 #include "cloud_sync_notify_handler.h"
@@ -35,6 +37,9 @@
 #include "medialibrary_command.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#ifdef META_RECOVERY_SUPPORT
+#include "medialibrary_meta_recovery.h"
+#endif
 #include "medialibrary_operation.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
@@ -71,13 +76,16 @@ static const int32_t BATCH_NOTIFY_CLOUD_FILE = 2000;
 static const std::string DELETE_DISPLAY_NAME = "cloud_media_asset_deleted";
 static const int32_t ALBUM_FROM_CLOUD = 2;
 static const int32_t ZERO_ASSET_OF_ALBUM = 0;
-const std::string SQL_DELETE_EMPTY_CLOUD_ALBUMS = "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
+
+const std::string SQL_CONDITION_EMPTY_CLOUD_ALBUMS = "FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
     "( " + PhotoAlbumColumns::ALBUM_IS_LOCAL + " = " + to_string(ALBUM_FROM_CLOUD) + " AND " +
     PhotoAlbumColumns::ALBUM_ID + " NOT IN ( " +
         "SELECT DISTINCT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
         " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
         PhotoColumn::PHOTO_CLEAN_FLAG + " = " + to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) + " ))" +
-    " OR " + PhotoAlbumColumns::ALBUM_DIRTY + " = " + to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED)) + ";";
+    " OR " + PhotoAlbumColumns::ALBUM_DIRTY + " = " + to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED));
+const std::string SQL_QUERY_EMPTY_CLOUD_ALBUMS = "SELECT * " + SQL_CONDITION_EMPTY_CLOUD_ALBUMS;
+const std::string SQL_DELETE_EMPTY_CLOUD_ALBUMS = "DELETE " + SQL_CONDITION_EMPTY_CLOUD_ALBUMS;
 
 CloudMediaAssetManager& CloudMediaAssetManager::GetInstance()
 {
@@ -293,6 +301,10 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
             CHECK_AND_PRINT_LOG(DeleteEditdata(paths[i]) == E_OK, "DeleteEditdata error.");
             CHECK_AND_PRINT_LOG(ThumbnailService::GetInstance()->DeleteThumbnailDirAndAstc(fileIds[i],
                 PhotoColumn::PHOTOS_TABLE, paths[i], dateTakens[i]), "DeleteThumbnailDirAndAstc error.");
+#ifdef META_RECOVERY_SUPPORT
+            CHECK_AND_PRINT_LOG(MediaLibraryMetaRecovery::DeleteMetaDataByPath(paths[i]) == E_OK,
+                "DeleteMetaDataByPath error.");
+#endif
             CloudSyncManager::GetInstance().CleanGalleryDentryFile(paths[i]);
         }
  
@@ -374,6 +386,7 @@ int32_t CloudMediaAssetManager::UpdateCloudAssets(const std::vector<std::string>
 
 void CloudMediaAssetManager::NotifyUpdateAssetsChange(const std::vector<std::string> &notifyFileIds)
 {
+    AccurateRefresh::AssetAccurateRefresh::NotifyForReCheck();
     CHECK_AND_RETURN_LOG(!notifyFileIds.empty(), "notifyFileIds is null.");
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_LOG(watch != nullptr, "watch is null.");
@@ -424,11 +437,16 @@ int32_t CloudMediaAssetManager::DeleteEmptyCloudAlbums()
     MEDIA_INFO_LOG("start DeleteEmptyCloudAlbums.");
     MediaLibraryTracer tracer;
     tracer.Start("DeleteEmptyCloudAlbums");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "DeleteEmptyCloudAlbums failed. rdbStore is null");
-    
-    int32_t ret = rdbStore->ExecuteSql(SQL_DELETE_EMPTY_CLOUD_ALBUMS);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to delete. ret %{public}d.", ret);
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh =
+        std::make_shared<AccurateRefresh::AlbumAccurateRefresh>();
+    CHECK_AND_RETURN_RET_LOG(albumRefresh != nullptr, E_ERR, "DeleteEmptyCloudAlbums failed. albumRefresh is null");
+    int32_t ret = albumRefresh->Init(SQL_QUERY_EMPTY_CLOUD_ALBUMS, std::vector<NativeRdb::ValueObject>());
+    CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_ERR, "Failed to init albumRefresh");
+
+    ret = albumRefresh->ExecuteSql(SQL_DELETE_EMPTY_CLOUD_ALBUMS, AccurateRefresh::RdbOperation::RDB_OPERATION_REMOVE);
+    CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, E_ERR,
+        "Failed to delete. ret %{public}d.", ret);
+    albumRefresh->Notify();
     MEDIA_INFO_LOG("end DeleteEmptyCloudAlbums. ret %{public}d.", ret);
     return E_OK;
 }
