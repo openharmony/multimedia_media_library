@@ -265,6 +265,7 @@ struct JSAsyncContextOutput {
     napi_value error;
     napi_value data;
     bool status;
+    napi_value realErr;
 };
 
 struct NapiClassInfo {
@@ -450,7 +451,8 @@ public:
 
     EXPORT static int TransErrorCode(const std::string &Name, int error);
 
-    static void HandleError(napi_env env, int error, napi_value &errorObj, const std::string &Name);
+    static void HandleError(
+        napi_env env, int error, napi_value &errorObj, const std::string &Name, int32_t realErr = 0);
 
     static void CreateNapiErrorObject(napi_env env, napi_value &errorObj, const int32_t errCode,
         const std::string errMsg);
