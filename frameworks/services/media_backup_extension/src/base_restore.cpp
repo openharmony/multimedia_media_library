@@ -429,7 +429,7 @@ bool BaseRestore::PrepareInsertValue(const int32_t sceneCode, FileInfo &fileInfo
 static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
     int64_t dateTaken = metadata->GetDateTaken();
-    if (dateTaken != 0) {
+    if (dateTaken > 0) {
         bool hasDateTaken = value.HasColumn(PhotoColumn::MEDIA_DATE_TAKEN);
         if (hasDateTaken) {
             value.Delete(PhotoColumn::MEDIA_DATE_TAKEN);
@@ -440,9 +440,9 @@ static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, FileInfo &fileI
     }
 
     int64_t dateAdded = metadata->GetFileDateAdded();
-    if (dateAdded == 0) {
+    if (dateAdded <= 0) {
         int64_t dateModified = metadata->GetFileDateModified();
-        if (dateModified == 0) {
+        if (dateModified <= 0) {
             dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
         } else {
             dateTaken = dateModified;
@@ -561,7 +561,7 @@ void BaseRestore::InsertDetailTime(const std::unique_ptr<Metadata> &metadata, Na
     FileInfo &fileInfo)
 {
     if (fileInfo.detailTime.empty()) {
-        fileInfo.detailTime = MediaFileUtils::StrCreateTimeSafely(
+        fileInfo.detailTime = MediaFileUtils::StrCreateTime(
             PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, fileInfo.dateTaken / MSEC_TO_SEC);
     }
 
