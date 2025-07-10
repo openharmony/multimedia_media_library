@@ -171,8 +171,9 @@ int32_t QueryPosition(int32_t fileId)
 HWTEST_F(MediaLibraryBgTaskProcessorTest, ClearDirtyData_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("ClearDirtyData_test_001 start");
-    auto processor = ClearBetaAndHdcDirtyDataProcessor();
-    processor.ClearDirtyData();
+    auto processor = make_shared<ClearBetaAndHdcDirtyDataProcessor>();
+    ASSERT_NE(processor, nullptr);
+    processor->ClearDirtyData();
     MEDIA_INFO_LOG("ClearDirtyData_test_001 end");
 }
  
