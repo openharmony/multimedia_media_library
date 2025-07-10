@@ -72,6 +72,7 @@ private:
     void DoOperationResultDfxReporter(int32_t mtpMode);
     void DoFileCountInfoDfxReporter(int32_t mtpMode, std::vector<std::string> &result);
     std::string GetSafeAlbumNameWhenChinese(const std::string &displayName);
+    int32_t lastReadResult_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

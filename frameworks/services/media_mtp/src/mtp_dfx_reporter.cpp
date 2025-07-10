@@ -21,6 +21,7 @@
 
 #include "hisysevent.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 #include "mtp_manager.h"
 #include "mtp_constants.h"
 
@@ -68,6 +69,7 @@ void MtpDfxReporter::Init()
     for (const auto& key : ObjMediaPropTypeMap) {
         operationStats[key.first] = {0, 0};
     }
+    lastReadResult_ = 0;
 }
 
 void MtpDfxReporter::DoFileCountInfoStatistics(const FileCountInfo &fileCountInfo)
@@ -201,6 +203,13 @@ void MtpDfxReporter::DoSendResponseResultDfxReporter(uint16_t operationCode, int
 {
     if (operationResult == 0) {
         return;
+    }
+    if (operationMode == readmode && operationResult == E_USB_DISCONNECT) {
+        if (lastReadResult_ == E_USB_DISCONNECT) {
+            MEDIA_DEBUG_LOG("DoSendResponseResultDfxReporter is called, operationResult is E_USB_DISCONNECT");
+            return;
+        }
+        lastReadResult_ = operationResult;
     }
     MEDIA_INFO_LOG("MtpDfxReporter operationCode:0x%{public}x, operationResult:%{public}d", operationCode,
         operationResult);
