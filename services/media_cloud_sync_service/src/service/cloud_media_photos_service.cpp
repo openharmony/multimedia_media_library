@@ -257,11 +257,9 @@ int32_t CloudMediaPhotosService::DoDataMerge(const CloudMediaPullDataDto &pullDa
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
     set<int32_t> cloudMapIds;
-    bool cloudStd = false;
-    if ((localKeyData.modifyTime != 0) && (cloudKeyData.modifyTime > localKeyData.modifyTime)) {
-        MEDIA_INFO_LOG("cloudStd modify");
-        cloudStd = true;
-    }
+    bool cloudStd = (localKeyData.modifyTime != 0) && (cloudKeyData.modifyTime >= localKeyData.modifyTime);
+    MEDIA_INFO_LOG("cloudStd %{public}d, cloud modifyTime: %{public}" PRId64 ", local modifyTime: %{public}" PRId64,
+        cloudStd, cloudKeyData.modifyTime, localKeyData.modifyTime);
 
     int32_t ret = this->photosDao_.ConflictDataMerge(
         pullData, localKeyData.filePath, cloudStd, cloudMapIds, refreshAlbums, photoRefresh);
