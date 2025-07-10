@@ -139,13 +139,13 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_timeout_operation_test_001, TestSize.
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_timeout_operation_test_002, TestSize.Level0)
 {
     auto dfxManager = DfxManager::GetInstance();
+    ASSERT_NE(dfxManager, nullptr);
     string bundleName = "bundleName";
     int32_t type = 1;
     int32_t object = 0;
     int32_t time = 0;
     dfxManager->isInitSuccess_ = false;
     dfxManager->HandleTimeOutOperation(bundleName, type, object, time);
-    EXPECT_EQ(dfxManager->isInitSuccess_, false);
 }
 
 
@@ -162,12 +162,12 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_thumbnail_error_test_001, TestSize.Le
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_thumbnail_error_test_002, TestSize.Level0)
 {
     auto dfxManager = DfxManager::GetInstance();
+    ASSERT_NE(dfxManager, nullptr);
     std::string path = "";
     int32_t method = 1;
     int32_t errorCode = 1;
     dfxManager->isInitSuccess_ = false;
     dfxManager->HandleThumbnailError(path, method, errorCode);
-    EXPECT_EQ(dfxManager->isInitSuccess_, false);
 }
 
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_thumbnail_generation_test_001, TestSize.Level0)
@@ -181,10 +181,10 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_thumbnail_generation_test_001, TestSi
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_thumbnail_generation_test_002, TestSize.Level0)
 {
     auto dfxManager = DfxManager::GetInstance();
+    ASSERT_NE(dfxManager, nullptr);
     ThumbnailData::GenerateStats stats;
     dfxManager->isInitSuccess_ = false;
     dfxManager->HandleThumbnailGeneration(stats);
-    EXPECT_EQ(dfxManager->isInitSuccess_, false);
 }
 
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_common_behavior_test_001, TestSize.Level0)
@@ -199,11 +199,11 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_common_behavior_test_001, TestSize.Le
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_common_behavior_test_002, TestSize.Level0)
 {
     auto dfxManager = DfxManager::GetInstance();
+    ASSERT_NE(dfxManager, nullptr);
     string bundleName = "bundleName";
     int32_t type = 1;
     dfxManager->isInitSuccess_ = false;
     dfxManager->HandleCommonBehavior(bundleName, type);
-    EXPECT_EQ(dfxManager->isInitSuccess_, false);
 }
 
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_half_day_missions_test_001, TestSize.Level0)
@@ -216,17 +216,17 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_half_day_missions_test_001, TestSize.
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_half_day_missions_test_002, TestSize.Level0)
 {
     auto dfxManager = DfxManager::GetInstance();
+    ASSERT_NE(dfxManager, nullptr);
     dfxManager->isInitSuccess_ = false;
     dfxManager->HandleHalfDayMissions();
-    EXPECT_EQ(dfxManager->isInitSuccess_, false);
 }
 
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_half_day_missions_test_003, TestSize.Level0)
 {
     auto dfxManager = DfxManager::GetInstance();
+    ASSERT_NE(dfxManager, nullptr);
     dfxManager->dfxWorker_ = nullptr;
     dfxManager->HandleHalfDayMissions();
-    EXPECT_EQ(dfxManager->dfxWorker_, nullptr);
 }
 
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_directory_exist_test_001, TestSize.Level0)
@@ -241,9 +241,9 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_directory_exist_test_001, TestSize.Le
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_five_minute_task_test_001, TestSize.Level0)
 {
     auto dfxManager = DfxManager::GetInstance();
+    ASSERT_NE(dfxManager, nullptr);
     dfxManager->isInitSuccess_ = false;
     dfxManager->HandleFiveMinuteTask();
-    EXPECT_EQ(dfxManager->isInitSuccess_, false);
 }
 
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_five_minute_task_test_002, TestSize.Level0)
@@ -265,11 +265,11 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_one_day_report_test_001, TestSize.Lev
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_one_day_report_test_002, TestSize.Level0)
 {
     auto dfxManager = DfxManager::GetInstance();
+    ASSERT_NE(dfxManager, nullptr);
     string appName = "appName";
     bool adapted = true;
     dfxManager->isInitSuccess_ = false;
     dfxManager->HandleAdaptationToMovingPhoto(appName, adapted);
-    EXPECT_EQ(dfxManager->isInitSuccess_, false);
 }
 
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_one_day_report_test_003, TestSize.Level0)

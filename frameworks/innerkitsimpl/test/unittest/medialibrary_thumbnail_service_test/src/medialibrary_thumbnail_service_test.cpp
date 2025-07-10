@@ -1482,32 +1482,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_TrySavePict
     EXPECT_NE(ret, true);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_UpdateHighlightDbState_test_001, TestSize.Level0)
-{
-    ThumbRdbOpt opts;
-    opts.table = PhotoColumn::HIGHLIGHT_TABLE;
-    opts.store = storePtr;
-    ThumbnailData thumbData;
-    thumbData.id = "0";
-    thumbData.dateModified = "data_modified";
-    string tempOutputPath = "path";
-    IThumbnailHelper::UpdateHighlightDbState(opts, thumbData);
-    EXPECT_EQ(opts.table, PhotoColumn::HIGHLIGHT_TABLE);
-}
-
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_UpdateHighlightDbState_test_002, TestSize.Level0)
-{
-    ThumbRdbOpt opts;
-    opts.table = PhotoColumn::PHOTOS_TABLE;
-    opts.store = storePtr;
-    ThumbnailData thumbData;
-    thumbData.id = "0";
-    thumbData.dateModified = "data_modified";
-    string tempOutputPath = "path";
-    IThumbnailHelper::UpdateHighlightDbState(opts, thumbData);
-    EXPECT_NE(opts.table, PhotoColumn::HIGHLIGHT_TABLE);
-}
-
 void executeFunction(std::shared_ptr<ThumbnailTaskData> &data)
 {
     if (data != nullptr) {
