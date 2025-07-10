@@ -20,6 +20,7 @@
 #include "albums_refresh_manager.h"
 #include "ability_context_impl.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_kvstore_manager.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_tracer.h"
 #include "media_log.h"
@@ -57,12 +58,13 @@ std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 static const int32_t NUM_BYTES = 8;
 static const int32_t MAX_BYTE_VALUE = 256;
 static const int32_t SEED_SIZE = 1024;
+static const int32_t VAL_ONE = 1;
 FuzzedDataProvider *provider = nullptr;
 
 static inline Uri FuzzUri()
 {
     int32_t value = provider->ConsumeIntegralInRange<int32_t>(0,
-        static_cast<uint8_t>(Media::EXTENSION_FUZZER_URI_LISTS.size()));
+        static_cast<uint8_t>(Media::EXTENSION_FUZZER_URI_LISTS.size() - VAL_ONE));
     return Uri(Media::EXTENSION_FUZZER_URI_LISTS[value]);
 }
 
@@ -231,5 +233,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
     /* Run your code on data */
     OHOS::RefreshNotifyInfoTest();
+    OHOS::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
     return 0;
 }
