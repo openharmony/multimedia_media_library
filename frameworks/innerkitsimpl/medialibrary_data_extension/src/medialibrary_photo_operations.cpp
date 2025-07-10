@@ -1582,7 +1582,7 @@ static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState
     SkipNotifyIfBurstMember(notifyUris);
     for (auto &notifyUri : notifyUris) {
         watch->Notify(notifyUri, assetNotifyType);
-        watch->Notify(notifyUri, albumNotifyType, 0, true);
+        watch->Notify(notifyUri, albumNotifyType, 0);
         watch->Notify(notifyUri, hiddenAlbumNotifyType, hiddenAlbumId);
         if (!hiddenState) {
             watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_ADD);
