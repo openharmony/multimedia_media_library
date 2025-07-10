@@ -170,7 +170,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && path.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", path.c_str());
     string tempInternal = isHighQualityPicture ? "high_" :"low_";
-    string tempOutputPath = path.substr(0, lastSlash) + tempInternal + path.substr(lastSlash + 1);
+    string tempOutputPath = path.substr(0, lastSlash + 1) + tempInternal + path.substr(lastSlash + 1);
     int32_t ret = MediaFileUtils::CreateAsset(tempOutputPath);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_HAS_FS_ERROR,
         "Failed to create temp filters file %{private}s", tempOutputPath.c_str());
