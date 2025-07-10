@@ -1030,7 +1030,8 @@ static void SaveScanMetaDate(NativeRdb::ValuesBucket &values, const std::string 
     data->SetFileName(displayName);
     data->SetFileTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
     data->SetFileExtension(MediaFileUtils::GetExtensionFromPath(displayName));
-    data->SetFileMimeType(MediaFileUtils::GetMediaType(displayName));
+    data->SetFileMimeType(MediaFileUtils::GetMimeTypeFromDisplayName(displayName));
+    data->SetFileMediaType(MediaFileUtils::GetMediaType(displayName));
     data->SetFileSize(statInfo.st_size);
     data->SetFileDateModified(static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim)));
     if (isMovingPhoto) {
