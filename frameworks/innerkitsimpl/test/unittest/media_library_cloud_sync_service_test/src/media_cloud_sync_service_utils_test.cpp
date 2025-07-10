@@ -164,7 +164,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CommonPath_Test, TestSize.Level1)
 
     EXPECT_EQ(CloudMediaSyncUtils::GetEditDataPath(""), "");
     EXPECT_EQ(CloudMediaSyncUtils::GetEditDataPath("/storage/cloud/files/user/test"),
-              "/storage/cloud/files/user/test/editdata");
+              "/storage/cloud/files/.editData/user/test/editdata");
 
     EXPECT_EQ(CloudMediaSyncUtils::GetMovingPhotoVideoPath(""), "");
     EXPECT_EQ(CloudMediaSyncUtils::GetMovingPhotoVideoPath("test"), "");

@@ -94,6 +94,7 @@ int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, s
     CloudMediaSyncUtils::RemoveEditDataParentPath(localPath, prefixCloud);  // ?是否是沙箱路径
     CloudMediaSyncUtils::RemoveMetaDataPath(localPath, prefixCloud);        // ?是否是沙箱路径
     CloudMediaSyncUtils::InvalidVideoCache(localPath);
+    CloudMediaSyncUtils::RemoveEditDataPath(localPath);
     CloudMediaSyncUtils::RemoveMovingPhoto(localPath);
     return E_OK;
 }
@@ -155,6 +156,7 @@ int32_t CloudMediaPhotosService::ClearLocalData(const CloudMediaPullDataDto &pul
     if (isLocal) {
         CloudMediaSyncUtils::RemoveThmParentPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
         CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
+        CloudMediaSyncUtils::RemoveEditDataPath(pullData.localPath);
         CloudMediaSyncUtils::RemoveMovingPhoto(pullData.localPath);
         if (pullData.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
             CloudMediaSyncUtils::InvalidVideoCache(pullData.localPath);

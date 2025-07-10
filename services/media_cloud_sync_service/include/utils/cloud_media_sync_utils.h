@@ -43,6 +43,7 @@ public:
     static void RemoveMetaDataPath(const std::string &path, const std::string &prefixCloud);
     static void InvalidVideoCache(const std::string &localPath);
     static void RemoveMovingPhoto(const std::string &localPath);
+    static void RemoveEditDataPath(const std::string &localPath);
     static uint32_t GenerateCloudIdWithHash(PhotoAlbumPo &record);
     static int32_t FillPhotosDto(PhotosDto &photosDto, const std::string &path, const int32_t &orientation,
         const int32_t &thumbState);
