@@ -35,9 +35,9 @@ int32_t ThumbnailGenerationPostProcess::PostProcess(ThumbnailData& data, const T
 {
     CHECK_AND_RETURN_RET_INFO_LOG(!data.rdbUpdateCache.IsEmpty(), E_OK, "RdbUpdateCache is empty, no need update.");
     int32_t err = E_OK;
-    bool hasGeneratedThumb = HasGeneratedThumb(data);
-    MEDIA_INFO_LOG("HasGeneratedThumb: %{public}d", hasGeneratedThumb);
-    if (!hasGeneratedThumb) {
+    bool needUpdateThumbnailVisible = NeedUpdateThumbnailVisible(data);
+    MEDIA_INFO_LOG("NeedUpdateThumbnailVisible: %{public}d", needUpdateThumbnailVisible);
+    if (!needUpdateThumbnailVisible) {
         err = UpdateCachedRdbValue(data, opts);
         CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
         data.rdbUpdateCache.Clear();
@@ -115,15 +115,12 @@ int32_t ThumbnailGenerationPostProcess::GetNotifyType(const ThumbnailData& data,
     return E_OK;
 }
 
-bool ThumbnailGenerationPostProcess::HasGeneratedThumb(const ThumbnailData& data)
+bool ThumbnailGenerationPostProcess::NeedUpdateThumbnailVisible(const ThumbnailData& data)
 {
     ValueObject valueObject;
-    bool hasThumbReadyColumn = data.rdbUpdateCache.GetObject(PhotoColumn::PHOTO_THUMBNAIL_READY, valueObject);
-    CHECK_AND_RETURN_RET_INFO_LOG(hasThumbReadyColumn, false, "Do not cache thumbnail_ready value in photos table");
-
-    int64_t thumbReady;
-    valueObject.GetLong(thumbReady);
-    return thumbReady != static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY);
+    bool hasThumbVisibleColumn = data.rdbUpdateCache.GetObject(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, valueObject);
+    CHECK_AND_RETURN_RET_INFO_LOG(hasThumbVisibleColumn, false, "Have not cache thumbnail_visible, no need to notify");
+    return true;
 }
 
 } // namespace Media
