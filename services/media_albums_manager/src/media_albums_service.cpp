@@ -690,6 +690,7 @@ int32_t MediaAlbumsService::GetPhotoIndex(GetPhotoIndexReqBody &reqBody, QueryRe
         to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     const string &photoId = reqBody.photoId;
     const string &albumId = reqBody.albumId;
+    MEDIA_INFO_LOG("GetPhotoIndex photoId:%{public}s, albumId:%{public}s", photoId.c_str(), albumId.c_str());
 
     MediaLibraryCommand cmd(predicates);
     shared_ptr<NativeRdb::ResultSet> resSet = nullptr;
