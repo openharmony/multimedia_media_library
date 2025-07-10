@@ -184,6 +184,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
         changeData.operation_ = operation;
         changeData.isDelete_ = true;
         changeData.version_ = MediaFileUtils::UTCTimeMilliSeconds();
+        changeData.infoAfterChange_ = ChangeInfo();
     }
     return ACCURATE_REFRESH_RET_OK;
 }
