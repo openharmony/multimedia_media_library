@@ -218,8 +218,10 @@ int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden,
     auto ret = albumRefresh_.Update(changedRows, values, predicates);
     ACCURATE_DEBUG("Update[%{public}d, %{public}d] type: %{public}d, albumId: %{public}d, isHidden: %{public}d", ret,
         changedRows, albumInfo.albumSubType_, albumInfo.albumId_, isHidden);
-    if (!isHidden && ret == ACCURATE_REFRESH_RET_OK) {
-        CheckNotifyOldNotification(notifyAlbumType, albumInfo, type);
+    if (ret == ACCURATE_REFRESH_RET_OK) {
+        if (!isHidden) {
+            CheckNotifyOldNotification(notifyAlbumType, albumInfo, type);
+        }
         AlbumAccurateRefreshManager::GetInstance().SetAlbumAccurateRefresh(albumInfo.albumId_, isHidden);
     } else {
         AlbumAccurateRefreshManager::GetInstance().RemoveAccurateRefreshAlbum(albumInfo.albumId_, isHidden);
