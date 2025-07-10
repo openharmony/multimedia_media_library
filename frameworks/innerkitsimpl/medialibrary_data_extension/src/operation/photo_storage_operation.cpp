@@ -114,7 +114,7 @@ void PhotoStorageOperation::GetTotalThumbnailSize(std::shared_ptr<MediaLibraryRd
     std::string sql = "SELECT "
                       "SUM(thumbnail_size) AS total_thumbnail_size, "
                       "COUNT(thumbnail_size) AS thumbnail_count "
-                      "FROM tab_photo_ext";
+                      "FROM tab_photos_ext";
 
     auto statsResult = rdbStore->QuerySql(sql);
     if (statsResult && (statsResult->GoToFirstRow() == NativeRdb::E_OK)) {
@@ -131,7 +131,7 @@ void PhotoStorageOperation::GetTotalEditdataSize(std::shared_ptr<MediaLibraryRdb
     std::string sql = "SELECT "
                       "SUM(editdata_size) AS total_editdata_size, "
                       "COUNT(editdata_size) AS editdata_count "
-                      "FROM tab_photo_ext";
+                      "FROM tab_photos_ext";
 
     auto statsResult = rdbStore->QuerySql(sql);
     if (statsResult && (statsResult->GoToFirstRow() == NativeRdb::E_OK)) {
