@@ -588,6 +588,7 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAlbumsWithUri(napi_env env, napi
 
 napi_value MediaAlbumChangeRequestNapi::JSAddAssets(napi_env env, napi_callback_info info)
 {
+    MEDIA_INFO_LOG("enter");
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_ONE) == napi_ok,
