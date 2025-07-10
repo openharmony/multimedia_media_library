@@ -112,9 +112,7 @@ int32_t CloudMediaAlbumHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
     OnFetchRecordsAlbumReqBody req;
     OnFetchRecordsAlbumRespBody resp;
     MEDIA_INFO_LOG("OnFetchRecords %{public}zu records", records.size());
-    Json::FastWriter writer;
     for (auto record : records) {
-        std::string json = writer.write(record.ToJsonValue());
         auto cloudId = record.GetRecordId();
         OnFetchRecordsAlbumReqBody::AlbumReqData data;
         data.cloudId = cloudId;
@@ -124,7 +122,6 @@ int32_t CloudMediaAlbumHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
         data.isDelete = record.GetIsDelete();
         req.albums.emplace_back(data);
         MEDIA_INFO_LOG("OnFetchRecords AlbumReqData:%{public}s", data.ToString().c_str());
-        MEDIA_INFO_LOG("OnFetchRecords Record:%{private}s", json.c_str());
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_FETCH_RECORDS);
     int32_t ret =
@@ -173,16 +170,12 @@ int32_t CloudMediaAlbumHandler::GetCreatedRecords(std::vector<MDKRecord> &record
     std::vector<CloudMdkRecordPhotoAlbumVo> createdRecord = respBody.GetPhotoAlbumRecords();
     CloudAlbumDataConvert dataConvertor{CloudAlbumOperationType::PHOTO_ALBUM_CREATE};
     std::map<std::string, MDKRecordField> data;
-    Json::FastWriter writer;
     for (auto it = createdRecord.begin(); it != createdRecord.end(); ++it) {
         std::shared_ptr<MDKRecord> dkRecord = dataConvertor.ConvertToMdkRecord(*it);
         if (dkRecord != nullptr) {
             dkRecord->GetRecordData(data);
             data["albumId"] = MDKRecordField(dkRecord->GetRecordId());
             dkRecord->SetRecordData(data);
-            Json::Value json = dkRecord->ToJsonValue();
-            std::string jsonStr = writer.write(json);
-            MEDIA_INFO_LOG("GetCreatedRecords JSON: %{private}s", jsonStr.c_str());
             records.push_back(*dkRecord);
         } else {
             MEDIA_ERR_LOG("CloudMediaAlbumHandler::GetCreatedRecords ConvertToMdkRecord Error");
@@ -208,13 +201,9 @@ int32_t CloudMediaAlbumHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &r
     std::vector<CloudMdkRecordPhotoAlbumVo> createdRecord = respBody.GetPhotoAlbumRecords();
     MEDIA_INFO_LOG("Enter CloudMediaAlbumHandler::GetMetaModifiedRecords size: %{public}zu", createdRecord.size());
     CloudAlbumDataConvert dataConvertor{CloudAlbumOperationType::PHOTO_ALBUM_METADATA_MODIF};
-    Json::FastWriter writer;
     for (auto it = createdRecord.begin(); it != createdRecord.end(); ++it) {
         std::shared_ptr<MDKRecord> dkRecord = dataConvertor.ConvertToMdkRecord(*it);
         if (dkRecord != nullptr) {
-            Json::Value json = dkRecord->ToJsonValue();
-            std::string jsonStr = writer.write(json);
-            MEDIA_INFO_LOG("GetMetaModifiedRecords JSON: %{private}s", jsonStr.c_str());
             records.push_back(*dkRecord);
             dkRecord = nullptr;
         }
@@ -242,13 +231,9 @@ int32_t CloudMediaAlbumHandler::GetDeletedRecords(std::vector<MDKRecord> &record
     }
     std::vector<CloudMdkRecordPhotoAlbumVo> createdRecord = respBody.GetPhotoAlbumRecords();
     CloudAlbumDataConvert dataConvertor{CloudAlbumOperationType::PHOTO_ALBUM_DELETE};
-    Json::FastWriter writer;
     for (auto it = createdRecord.begin(); it != createdRecord.end(); ++it) {
         std::shared_ptr<MDKRecord> dkRecord = dataConvertor.ConvertToMdkRecord(*it);
         if (dkRecord != nullptr) {
-            Json::Value json = dkRecord->ToJsonValue();
-            std::string jsonStr = writer.write(json);
-            MEDIA_INFO_LOG("GetDeletedRecords JSON: %{private}s", jsonStr.c_str());
             records.push_back(*dkRecord);
             dkRecord = nullptr;
         }
