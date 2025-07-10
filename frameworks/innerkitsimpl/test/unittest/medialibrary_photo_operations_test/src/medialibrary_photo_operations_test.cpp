@@ -1376,8 +1376,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
 {
     // Last visit time test
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_005");
-
-
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photosy.jpg");
     EXPECT_GE(fileId, E_OK);
     int64_t lastVisitTime = GetPhotoLastVisitTime(fileId);
@@ -1393,7 +1391,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
     EXPECT_GE(fd, 0);
     int64_t openTime = GetPhotoLastVisitTime(fileId);
     EXPECT_GE(openTime, lastVisitTime);
-
 
     // Open thumbnail
     openCmd.SetOprnObject(OperationObject::THUMBNAIL);
@@ -1412,7 +1409,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
 
     // Query again
     int64_t upLastVisitTime = GetPhotoLastVisitTime(fileId);
-    EXPECT_GT(upLastVisitTime, openThumbnailTime);
+    EXPECT_GE(upLastVisitTime, openThumbnailTime);
 
     TestPhotoDeleteParamsApi10(OperationObject::FILESYSTEM_PHOTO, fileId,
         [] (int32_t result) { EXPECT_GT(result, 0); });

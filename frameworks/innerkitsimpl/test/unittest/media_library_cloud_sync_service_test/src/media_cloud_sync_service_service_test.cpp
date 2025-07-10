@@ -666,69 +666,64 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDfxService_SyncStart_Test_001, Tes
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDfxService_UpdateMetaStat_Test_001, TestSize.Level1)
 {
-    CloudMediaDfxService service;
+    auto service = std::make_shared<CloudMediaDfxService>();
+    ASSERT_NE(service, nullptr);
     uint32_t index = 1;
     uint64_t diff = 10;
-    service.UpdateMetaStat(index, diff);
-    EXPECT_EQ(index, 1);
-    EXPECT_EQ(diff, 10);
+    service->UpdateMetaStat(index, diff);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDfxService_UpdateAttachmentStat_Test_001, TestSize.Level1)
 {
-    CloudMediaDfxService service;
+    auto service = std::make_shared<CloudMediaDfxService>();
+    ASSERT_NE(service, nullptr);
     uint32_t index = 1;
     uint64_t diff = 10;
-    service.UpdateAttachmentStat(index, diff);
-    EXPECT_EQ(index, 1);
-    EXPECT_EQ(diff, 10);
+    service->UpdateAttachmentStat(index, diff);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDfxService_UpdateAlbumStat_Test_001, TestSize.Level1)
 {
-    CloudMediaDfxService service;
+    auto service = std::make_shared<CloudMediaDfxService>();
+    ASSERT_NE(service, nullptr);
     uint32_t index = 1;
     uint64_t diff = 10;
-    service.UpdateAlbumStat(index, diff);
-    EXPECT_EQ(index, 1);
-    EXPECT_EQ(diff, 10);
+    service->UpdateAlbumStat(index, diff);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDfxService_UpdateUploadMetaStat_Test_001, TestSize.Level1)
 {
-    CloudMediaDfxService service;
+    auto service = std::make_shared<CloudMediaDfxService>();
+    ASSERT_NE(service, nullptr);
     uint32_t index = 1;
     uint64_t diff = 10;
-    service.UpdateUploadMetaStat(index, diff);
-    EXPECT_EQ(index, 1);
-    EXPECT_EQ(diff, 10);
+    service->UpdateUploadMetaStat(index, diff);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDfxService_UpdateUploadDetailError_Test_001, TestSize.Level1)
 {
-    CloudMediaDfxService service;
+    auto service = std::make_shared<CloudMediaDfxService>();
+    ASSERT_NE(service, nullptr);
     int32_t error = -1;
-    service.UpdateUploadDetailError(error);
-    EXPECT_EQ(error, -1);
+    service->UpdateUploadDetailError(error);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDfxService_SyncEnd_Test_001, TestSize.Level1)
 {
-    CloudMediaDfxService service;
+    auto service = std::make_shared<CloudMediaDfxService>();
+    ASSERT_NE(service, nullptr);
     int32_t stopReason = 1;
-    service.SyncEnd(stopReason);
-    EXPECT_EQ(stopReason, 1);
+    service->SyncEnd(stopReason);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDfxService_ReportSyncFault_Test_001, TestSize.Level1)
 {
-    CloudMediaDfxService service;
+    auto service = std::make_shared<CloudMediaDfxService>();
+    ASSERT_NE(service, nullptr);
     std::string funcName = "test";
     int32_t lineNum = 20;
     SyncFaultEvent event;
-    service.ReportSyncFault(funcName, lineNum, event);
-    EXPECT_EQ(funcName, "test");
-    EXPECT_EQ(lineNum, 20);
+    service->ReportSyncFault(funcName, lineNum, event);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_GetDownloadThmNum_Test_001, TestSize.Level1)
