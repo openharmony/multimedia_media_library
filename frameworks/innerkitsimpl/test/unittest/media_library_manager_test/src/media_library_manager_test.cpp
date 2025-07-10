@@ -1426,7 +1426,10 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_004 enter");
     vector<string> perms{
+        "ohos.permission.WRITE_MEDIA",
         "ohos.permission.READ_IMAGEVIDEO",
+        "ohos.permission.WRITE_IMAGEVIDEO",
+        "ohos.permission.SHORT_TERM_WRITE_IMAGEVIDEO",
     };
     uint64_t tokenId = 0;
     PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);

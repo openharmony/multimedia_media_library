@@ -762,10 +762,7 @@ HWTEST_F(CloudMediaPhotoHandlerTest, GetDeletedRecords_001, TestSize.Level1)
     std::vector<std::string> datas = {data};
     TestUtils::PhotosDao dao;
     std::vector<ORM::PhotosPo> photos = dao.QueryPhotosByFilePaths(datas);
-    EXPECT_EQ(photos.size(), datas.size());
-    if (photos.size() != datas.size()) {
-        return;
-    }
+    ASSERT_EQ(photos.size(), datas.size());
     ORM::PhotosPo photo = photos[0];
     EXPECT_TRUE(photo.dateTrashed.value_or(0) > 0);
     EXPECT_TRUE(photo.dirty.value_or(-1) == static_cast<int32_t>(DirtyType::TYPE_SYNCED));
@@ -887,10 +884,7 @@ HWTEST_F(CloudMediaPhotoHandlerTest, GetCheckRecords, TestSize.Level1)
     EXPECT_EQ(ret, 0);
     EXPECT_EQ(checkRecords.size(), 1);
     auto record = checkRecords.find("373b364a41e54ebf912b3414aeabe963507a901b2b1a4332939d51ed54ff97cc");
-    EXPECT_TRUE(record != checkRecords.end());
-    if (record == checkRecords.end()) {
-        return;
-    }
+    ASSERT_TRUE(record != checkRecords.end());
     EXPECT_TRUE(std::find(cloudIds.begin(), cloudIds.end(), cloudIds[0]) != cloudIds.end());
     EXPECT_EQ(path, record->second.path);
     EXPECT_EQ(fileName, record->second.fileName);
