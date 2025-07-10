@@ -803,6 +803,7 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(napi_env env, na
         changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::DELETE_ASSETS);
     }
     RETURN_NAPI_UNDEFINED(env);
+    NAPI_INFO_LOG("end");
 }
 
 napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callback_info info)
