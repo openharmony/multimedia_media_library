@@ -1390,14 +1390,7 @@ int64_t MediaFileUtils::UTCTimeNanoSeconds()
 string MediaFileUtils::StrCreateTime(const string &format, int64_t time)
 {
     char strTime[DEFAULT_TIME_SIZE] = "";
-    auto tm = localtime(&time);
-    (void)strftime(strTime, sizeof(strTime), format.c_str(), tm);
-    return strTime;
-}
-
-string MediaFileUtils::StrCreateTimeSafely(const string &format, int64_t time)
-{
-    char strTime[DEFAULT_TIME_SIZE] = "";
+    CHECK_AND_RETURN_RET_LOG(time > 0, strTime, "invalid time: %{public}" PRId64, time);
     struct tm localTm;
     CHECK_AND_RETURN_RET_LOG(localtime_noenv_r(&time, &localTm) != nullptr, strTime,
         "localtime_noenv_r error: %{public}d", errno);
