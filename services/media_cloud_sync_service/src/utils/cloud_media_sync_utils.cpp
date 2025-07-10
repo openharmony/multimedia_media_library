@@ -271,7 +271,7 @@ std::string CloudMediaSyncUtils::GetEditDataPath(const std::string &localPath)
     if (parentPath.empty()) {
         return "";
     }
-    return localPath + "/editdata";
+    return parentPath + "/editdata";
 }
 
 std::string CloudMediaSyncUtils::GetMovingPhotoVideoPath(const std::string &localPath)
@@ -293,17 +293,22 @@ std::string CloudMediaSyncUtils::GetMovingPhotoTmpPath(const std::string &localP
     return tempDownloadParent + localPath.substr(ROOT_MEDIA_DIR.length());
 }
 
-void CloudMediaSyncUtils::RemoveMovingPhoto(const std::string &localPath)
+void CloudMediaSyncUtils::RemoveEditDataPath(const std::string &localPath)
 {
-    MEDIA_ERR_LOG("RemoveMovingPhoto EditDataPath: %{public}s", GetEditDataPath(localPath).c_str());
-    if (unlink(GetEditDataPath(localPath).c_str()) != 0 && errno != ENOENT) {
+    std::string editDataPath = GetEditDataPath(localPath);
+    MEDIA_INFO_LOG("RemoveEditDataPath EditDataPath: %{public}s", editDataPath.c_str());
+    if (unlink(editDataPath.c_str()) != 0 && errno != ENOENT) {
         MEDIA_ERR_LOG("unlink editData failed, errno %{public}d", errno);
     }
-    MEDIA_ERR_LOG("RemoveMovingPhoto MovingPhotoVideoPath: %{public}s", GetMovingPhotoVideoPath(localPath).c_str());
+}
+
+void CloudMediaSyncUtils::RemoveMovingPhoto(const std::string &localPath)
+{
+    MEDIA_INFO_LOG("RemoveMovingPhoto MovingPhotoVideoPath: %{public}s", GetMovingPhotoVideoPath(localPath).c_str());
     if (unlink(GetMovingPhotoVideoPath(localPath).c_str()) != 0 && errno != ENOENT) {
         MEDIA_ERR_LOG("unlink moving photo's video failed, errno %{public}d", errno);
     }
-    MEDIA_ERR_LOG("RemoveMovingPhoto ExtraDataPath: %{public}s", GetMovingPhotoExtraDataPath(localPath).c_str());
+    MEDIA_INFO_LOG("RemoveMovingPhoto ExtraDataPath: %{public}s", GetMovingPhotoExtraDataPath(localPath).c_str());
     if (unlink(GetMovingPhotoExtraDataPath(localPath).c_str()) != 0 && errno != ENOENT) {
         MEDIA_ERR_LOG("unlink moving photo's video failed, errno %{public}d", errno);
     }
