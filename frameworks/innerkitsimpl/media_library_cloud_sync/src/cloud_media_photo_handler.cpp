@@ -67,10 +67,7 @@ int32_t CloudMediaPhotoHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
     OnFetchRecordsReqBody reqBody;
     OnFetchRecordsRespBody respBody;
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_DATA_MODIFY, userId_};
-    Json::FastWriter writer;
     for (auto record : records) {
-        std::string json = writer.write(record.ToJsonValue());
-        MEDIA_INFO_LOG("OnFetchRecords record json: %{private}s", json.c_str());
         OnFetchPhotosVo onFetchPhotoVo;
         if (dataConvertor.ConverMDKRecordToOnFetchPhotosVo(record, onFetchPhotoVo) != E_OK) {
             MEDIA_ERR_LOG("OnFetchRecords ConverMDKRecordToOnFetchPhotosVo error, recordId: %{public}s",
@@ -99,10 +96,7 @@ int32_t CloudMediaPhotoHandler::OnDentryFileInsert(
     OnDentryFileReqBody reqBody;
     OnDentryFileRespBody respBody;
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_DATA_MODIFY, userId_};
-    Json::FastWriter writer;
     for (auto record : records) {
-        std::string json = writer.write(record.ToJsonValue());
-        MEDIA_INFO_LOG("OnDentryFileInsert Record: %{private}s", json.c_str());
         OnFetchPhotosVo onDentryRecord;
         if (dataConvertor.ConverMDKRecordToOnFetchPhotosVo(record, onDentryRecord) != E_OK) {
             MEDIA_ERR_LOG("OnDentryFileInsert ConverMDKRecordToOnFetchPhotosVo error");
@@ -187,14 +181,10 @@ int32_t CloudMediaPhotoHandler::GetCreatedRecords(std::vector<MDKRecord> &record
     }
     std::vector<CloudMdkRecordPhotosVo> createdRecords = respBody.GetPhotosRecords();
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_CREATE, userId_};
-    Json::FastWriter writer;
     for (auto &record : createdRecords) {
         MDKRecord dkRecord;
         ret = dataConvertor.ConvertToMdkRecord(record, dkRecord);
         if (ret == E_OK) {
-            Json::Value json = dkRecord.ToJsonValue();
-            std::string jsonStr = writer.write(json);
-            MEDIA_INFO_LOG("GetCreatedRecords JSON: %{private}s", jsonStr.c_str());
             records.push_back(dkRecord);
         } else {
             MEDIA_ERR_LOG("GetCreatedRecords ReportFailure, ret: %{public}d, photosVo: %{public}s",
@@ -227,7 +217,6 @@ int32_t CloudMediaPhotoHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &r
     std::vector<CloudMdkRecordPhotosVo> metaModifiedRecord = respBody.GetPhotosRecords();
     MEDIA_INFO_LOG("Enter CloudMediaPhotoHandler::GetMetaModifiedRecords size: %{public}zu", metaModifiedRecord.size());
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_METADATA_MODIFY, userId_};
-    Json::FastWriter writer;
     for (auto &record : metaModifiedRecord) {
         MDKRecord dkRecord;
         MEDIA_INFO_LOG("SetUpdateSourceAlbum CloudMdkRecordPhotosVo: %{public}s", record.ToString().c_str());
@@ -237,9 +226,6 @@ int32_t CloudMediaPhotoHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &r
             dkRecord.GetRecordId().c_str(),
             ret);
         if (ret == E_OK) {
-            Json::Value json = dkRecord.ToJsonValue();
-            std::string jsonStr = writer.write(json);
-            MEDIA_INFO_LOG("GetMetaModifiedRecords JSON: %{private}s", jsonStr.c_str());
             records.push_back(dkRecord);
             if (!record.removeAlbumCloudId.empty()) {
                 ret = dataConvertor.InsertAlbumIdChanges(dkRecord, records, record);
@@ -274,15 +260,11 @@ int32_t CloudMediaPhotoHandler::GetFileModifiedRecords(std::vector<MDKRecord> &r
     }
     std::vector<CloudMdkRecordPhotosVo> fileModifiedRecord = respBody.GetPhotosRecords();
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_DATA_MODIFY, userId_};
-    Json::FastWriter writer;
     for (auto &record : fileModifiedRecord) {
         MDKRecord dkRecord;
         ret = dataConvertor.ConvertToMdkRecord(record, dkRecord);
         if (ret == E_OK) {
             records.push_back(dkRecord);
-            Json::Value json = dkRecord.ToJsonValue();
-            std::string jsonStr = writer.write(json);
-            MEDIA_INFO_LOG("GetFileModifiedRecords JSON: %{private}s", jsonStr.c_str());
             if (!record.removeAlbumCloudId.empty()) {
                 ret = dataConvertor.InsertAlbumIdChanges(dkRecord, records, record);
             }
@@ -316,14 +298,10 @@ int32_t CloudMediaPhotoHandler::GetDeletedRecords(std::vector<MDKRecord> &record
     }
     std::vector<CloudMdkRecordPhotosVo> deletedRecord = respBody.GetPhotosRecords();
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_DELETE, userId_};
-    Json::FastWriter writer;
     for (auto &record : deletedRecord) {
         MDKRecord dkRecord;
         ret = dataConvertor.ConvertToMdkRecord(record, dkRecord);
         if (ret == E_OK) {
-            Json::Value json = dkRecord.ToJsonValue();
-            std::string jsonStr = writer.write(json);
-            MEDIA_INFO_LOG("GetDeletedRecords JSON: %{private}s", jsonStr.c_str());
             records.push_back(dkRecord);
         } else {
             MEDIA_ERR_LOG("GetDeletedRecords ReportFailure, ret: %{public}d, photosVo: %{public}s",
@@ -356,15 +334,11 @@ int32_t CloudMediaPhotoHandler::GetCopyRecords(std::vector<MDKRecord> &records, 
     std::vector<CloudMdkRecordPhotosVo> copyRecord = respBody.GetPhotosRecords();
     MEDIA_INFO_LOG("CloudMediaPhotoHandler::GetCopyRecords result count: %{public}zu", copyRecord.size());
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_DATA_MODIFY, userId_};
-    Json::FastWriter writer;
     for (auto &record : copyRecord) {
         MDKRecord dkRecord;
         ret = dataConvertor.ConvertToMdkRecord(record, dkRecord);
         if (ret == E_OK) {
             dkRecord.SetSrcRecordId(record.originalAssetCloudId);
-            Json::Value json = dkRecord.ToJsonValue();
-            std::string jsonStr = writer.write(json);
-            MEDIA_INFO_LOG("GetCopyRecords JSON: %{private}s", jsonStr.c_str());
             records.push_back(dkRecord);
         } else {
             MEDIA_ERR_LOG(
