@@ -1217,21 +1217,19 @@ static string GetUriWithoutSeg(const string &oldUri)
 
 static int32_t UpdateDirtyWithoutIsTemp(RdbPredicates &predicates)
 {
+    predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
+    predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
     ValuesBucket valuesBucketDirty;
     valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-    int32_t updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(valuesBucketDirty, predicates);
-    return updateDirtyRows;
+    return MediaLibraryRdbStore::UpdateWithDateTime(valuesBucketDirty, predicates);
 }
 
-static int32_t UpdateThirdPartyPhotoDirtyFlag(ValuesBucket &values, RdbPredicates &predicates,
-    int32_t &updateDirtyRows, AccurateRefresh::AssetAccurateRefresh &assetRefresh)
+static int32_t UpdateThirdPartyPhotoDirtyFlag(
+    ValuesBucket &values, const RdbPredicates &predicates, AccurateRefresh::AssetAccurateRefresh &assetRefresh)
 {
     values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
     values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-    updateDirtyRows = assetRefresh.UpdateWithDateTime(values, predicates);
-    CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR,
-        "update third party photo temp, dirty flag, watermark type and camera shot key fail.");
-    return updateDirtyRows;
+    return assetRefresh.UpdateWithDateTime(values, predicates);
 }
 
 static void UpdateValuesBucketForExt(MediaLibraryCommand &cmd, ValuesBucket &values)
@@ -1271,7 +1269,7 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
             fileId.c_str(), ret);
     }
 
-    int32_t updateDirtyRows = 0;
+    int32_t updateRows = 0;
     AccurateRefresh::AssetAccurateRefresh assetRefresh;
     do {
         if (cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW))) {
@@ -1279,7 +1277,9 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
             // The photo saved by third-party apps, whether of low or high quality, should set dirty to TYPE_NEW
             // Every subtype of photo saved by third-party apps, should set dirty to TYPE_NEW
             // Need to change the quality to high quality before updating
-            UpdateThirdPartyPhotoDirtyFlag(values, predicates, updateDirtyRows, assetRefresh);
+            updateRows = UpdateThirdPartyPhotoDirtyFlag(values, predicates, assetRefresh);
+            CHECK_AND_RETURN_RET_LOG(updateRows >= 0, E_ERR,
+                "update third party photo temp, dirty flag, watermark type and camera shot key fail.");
             break;
         }
 
@@ -1291,27 +1291,23 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
                 to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
             predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::BURST)));
             values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-            updateDirtyRows = assetRefresh.UpdateWithDateTime(values, predicates);
-            CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR,
+            updateRows = assetRefresh.UpdateWithDateTime(values, predicates);
+            CHECK_AND_RETURN_RET_LOG(updateRows >= 0, E_ERR,
                 "burst photo update temp, dirty flag, watermark type and camera shot key fail.");
             break;
         }
 
-        int32_t updateIsTempRows = assetRefresh.UpdateWithDateTime(values, predicates);
-        CHECK_AND_RETURN_RET_LOG(updateIsTempRows >= 0, E_ERR, "update temp flag fail.");
+        updateRows = assetRefresh.UpdateWithDateTime(values, predicates);
+        CHECK_AND_RETURN_RET_LOG(updateRows >= 0, E_ERR, "update temp flag fail.");
         if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            predicates.EqualTo(PhotoColumn::PHOTO_QUALITY,
-                to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
-            predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
-                to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
-            updateDirtyRows = UpdateDirtyWithoutIsTemp(predicates);
+            int32_t updateDirtyRows = UpdateDirtyWithoutIsTemp(predicates);
             CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR, "update dirty flag fail.");
         }
     } while (0);
 
     assetRefresh.RefreshAlbum(static_cast<NotifyAlbumType>(SYS_ALBUM | USER_ALBUM | SOURCE_ALBUM));
     assetRefresh.Notify();
-    return updateDirtyRows;
+    return updateRows;
 }
 
 int32_t MediaLibraryPhotoOperations::CalSingleEditDataSize(const std::string &fileId)
@@ -1474,7 +1470,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     int32_t ret = UpdateIsTempAndDirty(cmd, fileId, fileType, getPicRet, photoExtInfo);
 
     tracer.Finish();
-    CHECK_AND_RETURN_RET(ret >= 0, 0);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, 0, "UpdateIsTempAndDirty failed, ret: %{public}d", ret);
     if (photoExtInfo.oldFilePath != "") {
         UpdateEditDataPath(photoExtInfo.oldFilePath, photoExtInfo.extension);
     }
