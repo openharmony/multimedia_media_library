@@ -256,7 +256,7 @@ int32_t CloudMediaPhotosService::DoDataMerge(const CloudMediaPullDataDto &pullDa
 {
     set<int32_t> cloudMapIds;
     bool cloudStd = (localKeyData.modifyTime != 0) && (cloudKeyData.modifyTime >= localKeyData.modifyTime);
-    MEDIA_INFO_LOG("cloudStd %{public}d, cloud modifyTime: %{public}" PRId64 ", local modifyTime: " PRId64,
+    MEDIA_INFO_LOG("cloudStd %{public}d, cloud modifyTime: %{public}" PRId64 ", local modifyTime: %{public}" PRId64,
         cloudStd, cloudKeyData.modifyTime, localKeyData.modifyTime);
 
     int32_t ret = this->photosDao_.ConflictDataMerge(
