@@ -82,7 +82,8 @@ int32_t CloudMediaSyncUtils::FillPhotosDto(
     CloudSync::CloudFileDataDto dtoThm;
     CloudMediaFileUtils::GetParentPathAndFilename(thumbLocalPath, dtoThm.path, dtoThm.fileName);
     bool isValid = data.thmSize != 0 && data.lcdSize != 0;
-    CHECK_AND_PRINT_LOG(isValid, "invalid size, thmSize: %{public}d, lcdSize: %{public}d", data.thmSize, data.lcdSize);
+    CHECK_AND_PRINT_LOG(isValid, "invalid size, thmSize: %{public}" PRId64", lcdSize: %{public}" PRId64,
+        data.thmSize, data.lcdSize);
     dtoThm.size = (data.thmSize <= 0) ? DEFAULT_SIZE : data.thmSize;
     photosDto.attachment["thumbnail"] = dtoThm;
 
