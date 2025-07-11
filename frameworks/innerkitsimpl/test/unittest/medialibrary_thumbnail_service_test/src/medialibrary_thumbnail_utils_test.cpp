@@ -249,5 +249,15 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, ConvertStrToInt32_test_001, TestSize.Le
     EXPECT_EQ(res, false);
 }
 
+HWTEST_F(MediaLibraryThumbnailUtilsTest, CreateOutputPath_test_001, TestSize.Level0)
+{
+    ThumbnailData data;
+    auto res = ThumbnailUtils::CreateOutputPath(data, THUMBNAIL_LCD_SUFFIX);
+    EXPECT_EQ(res, "");
+    data.tracks = "tracks";
+    res = ThumbnailUtils::CreateOutputPath(data, THUMBNAIL_LCD_SUFFIX);
+    EXPECT_EQ(res, "");
+}
+
 } // namespace Media
 } // namespace OHOS

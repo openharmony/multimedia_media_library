@@ -90,6 +90,7 @@ public:
     EXPORT static bool QueryHighlightTriggerPath(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static std::string GetHighlightValue(const std::string &str, const std::string &key);
     EXPORT static bool GetHighlightTracks(ThumbRdbOpt &opts, std::vector<int> &trackInfos, int32_t &err);
+    EXPORT static std::string CreateOutputPath(const ThumbnailData &data, const std::string &suffix);
 
     EXPORT static bool QueryLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount,
         int &err);
