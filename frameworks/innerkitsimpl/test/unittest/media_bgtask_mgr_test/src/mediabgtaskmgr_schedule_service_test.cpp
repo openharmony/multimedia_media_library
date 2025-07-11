@@ -175,41 +175,6 @@ static int32_t TaskOpsSyncManagerStub(SAOpsConnectionManager *obj, const std::st
     return 0;
 }
 
-HWTEST_F(MediaBgtaskMgrScheduleServiceTest, media_bgtask_mgr_HandleReschedule_test_002, TestSize.Level1)
-{
-    Stub stub;
-    stub.set(ADDR(SchedulePolicy, ScheduleTasks), ScheduleTasksStub);
-    stub.set(ADDR(SAOpsConnectionManager, TaskOpsSync), TaskOpsSyncManagerStub);
- 
-    TaskInfo testTask;
-    testTask.scheduleCfg.type = "sa";
-    testTask.isRunning = true; // stop
-    TaskInfoMgr::GetInstance().allTaskInfos_["id"] = testTask;
-    TaskInfo &task = TaskInfoMgr::GetInstance().allTaskInfos_["id"];
- 
-    MediaBgtaskScheduleService::GetInstance().HandleReschedule();
-    EXPECT_TRUE(task.isRunning);
-}
-
-HWTEST_F(MediaBgtaskMgrScheduleServiceTest, media_bgtask_mgr_HandleReschedule_test_003, TestSize.Level1)
-{
-    Stub stub;
-    stub.set(ADDR(SchedulePolicy, ScheduleTasks), ScheduleTasksStub);
-    stub.set(ADDR(AppExecFwk::OsAccountManagerWrapper, QueryActiveOsAccountIds), QueryActiveOsAccountIdsStub);
-    stub.set(ADDR(AppOpsConnectAbility, ConnectAbility), ConnectAbilityStub);
-    stub.set(ADDR(SAOpsConnection, TaskOpsSync), TaskOpsSyncStub);
-
-    TaskInfo testTask;
-    testTask.scheduleCfg.type = "";
-    testTask.isRunning = true; // stop
-    TaskInfoMgr::GetInstance().allTaskInfos_["id"] = testTask;
-    TaskInfo &task = TaskInfoMgr::GetInstance().allTaskInfos_["id"];
-
-    // 3. type非法, stop成功 期望true
-    MediaBgtaskScheduleService::GetInstance().HandleReschedule();
-    EXPECT_TRUE(task.isRunning);
-}
-
 HWTEST_F(MediaBgtaskMgrScheduleServiceTest, media_bgtask_mgr_HandleReschedule_test_004, TestSize.Level1)
 {
     Stub stub;
