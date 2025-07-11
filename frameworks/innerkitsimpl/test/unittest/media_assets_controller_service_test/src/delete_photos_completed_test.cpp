@@ -106,7 +106,7 @@ static void InsertAssetIntoPhotosTable()
         "'/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg', 175258, 'cam_pic', 'cam_pic.jpg', 1, " +
         "'com.ohos.camera', '相机', 1501924205218, 0, 1501924205, 0, 0, 0, 0, " +
         "1280, 960, 0, '1' )"); // cam, pic, shootingmode = 1
-    MediaFileUtils::CreateFile("/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg");
+    system("mkdir -p /storage/cloud/files/Photo/16/ && touch /storage/cloud/files/Photo/16/IMG_1501924305_000.jpg");
 }
 
 void DeletePhotosCompletedTest::SetUpTestCase(void)
