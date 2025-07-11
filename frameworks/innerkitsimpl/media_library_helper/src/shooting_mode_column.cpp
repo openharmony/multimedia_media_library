@@ -33,8 +33,7 @@ using namespace std;
 using namespace NativeRdb;
 
 template <class T>
-void ShootingModeAlbum::GetMovingPhotoAlbumPredicates(const int32_t albumId,
-    T& predicates, const bool hiddenState)
+void ShootingModeAlbum::GetMovingPhotoAlbumPredicates(T& predicates, const bool hiddenState)
 {
     PhotoQueryFilter::Config config {};
     config.hiddenConfig = hiddenState ? PhotoQueryFilter::ConfigType::INCLUDE : PhotoQueryFilter::ConfigType::EXCLUDE;
@@ -90,12 +89,12 @@ void ShootingModeAlbum::GetGeneralShootingModeAlbumPredicates(const ShootingMode
 }
 
 template <class T>
-void ShootingModeAlbum::GetShootingModeAlbumPredicates(const int32_t albumId, const ShootingModeAlbumType type,
+void ShootingModeAlbum::GetShootingModeAlbumPredicates(const ShootingModeAlbumType type,
     T& predicates, const bool hiddenState)
 {
     switch (type) {
         case ShootingModeAlbumType::MOVING_PICTURE: {
-            GetMovingPhotoAlbumPredicates(albumId, predicates, hiddenState);
+            GetMovingPhotoAlbumPredicates(predicates, hiddenState);
             return;
         }
         case ShootingModeAlbumType::BURST_MODE_ALBUM: {
@@ -220,10 +219,10 @@ string ShootingModeAlbum::MapShootingModeTagToShootingMode(const string& tag)
     return "";
 }
 
-template void ShootingModeAlbum::GetMovingPhotoAlbumPredicates<DataShare::DataSharePredicates>(const int32_t albumId,
+template void ShootingModeAlbum::GetMovingPhotoAlbumPredicates<DataShare::DataSharePredicates>(
     DataShare::DataSharePredicates& predicates, const bool hiddenState);
 
-template void ShootingModeAlbum::GetMovingPhotoAlbumPredicates<NativeRdb::RdbPredicates>(const int32_t albumId,
+template void ShootingModeAlbum::GetMovingPhotoAlbumPredicates<NativeRdb::RdbPredicates>(
     NativeRdb::RdbPredicates& predicates, const bool hiddenState);
 
 template void ShootingModeAlbum::GetBurstModeAlbumPredicates<DataShare::DataSharePredicates>(
@@ -250,10 +249,10 @@ template void ShootingModeAlbum::GetGeneralShootingModeAlbumPredicates<DataShare
 template void ShootingModeAlbum::GetGeneralShootingModeAlbumPredicates<NativeRdb::RdbPredicates>(
     const ShootingModeAlbumType type, NativeRdb::RdbPredicates& predicates, const bool hiddenState);
 
-template void ShootingModeAlbum::GetShootingModeAlbumPredicates<DataShare::DataSharePredicates>(const int32_t albumId,
+template void ShootingModeAlbum::GetShootingModeAlbumPredicates<DataShare::DataSharePredicates>(
     const ShootingModeAlbumType type, DataShare::DataSharePredicates& predicates, const bool hiddenState);
 
-template void ShootingModeAlbum::GetShootingModeAlbumPredicates<NativeRdb::RdbPredicates>(const int32_t albumId,
+template void ShootingModeAlbum::GetShootingModeAlbumPredicates<NativeRdb::RdbPredicates>(
     const ShootingModeAlbumType type, NativeRdb::RdbPredicates& predicates, const bool hiddenState);
 
 } // namespace OHOS::Media

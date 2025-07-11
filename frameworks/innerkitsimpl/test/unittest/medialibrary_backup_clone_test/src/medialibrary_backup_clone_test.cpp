@@ -3343,5 +3343,42 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_te
     EXPECT_EQ(cloneAnalysisData->successCnt_, 1);
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_insert_value_from_val_map_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_get_insert_value_from_val_map_test_001");
+    FileInfo fileInfo;
+    fileInfo.valMap[PhotoColumn::PHOTO_EDIT_TIME] = int64_t(123456789);
+    fileInfo.valMap[PhotoColumn::MEDIA_DATE_TAKEN] = int64_t(987654321);
+    fileInfo.valMap[MediaColumn::MEDIA_MIME_TYPE] = string("image/jpeg");
+    fileInfo.valMap[PhotoColumn::PHOTO_SHOOTING_MODE] = string("-1");
+    fileInfo.valMap[PhotoColumn::PHOTO_SHOOTING_MODE_TAG] = string("23");
+    NativeRdb::ValuesBucket values;
+    restoreService->GetInsertValueFromValMap(fileInfo, values);
+    string shootingMode;
+    ValueObject valueObject;
+    if (values.GetObject(PhotoColumn::PHOTO_SHOOTING_MODE, valueObject)) {
+        valueObject.GetString(shootingMode);
+    }
+    EXPECT_EQ(shootingMode, "1");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_insert_value_from_val_map_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_get_insert_value_from_val_map_test_001");
+    FileInfo fileInfo;
+    fileInfo.valMap[PhotoColumn::PHOTO_EDIT_TIME] = int64_t(123456789);
+    fileInfo.valMap[PhotoColumn::MEDIA_DATE_TAKEN] = int64_t(987654321);
+    fileInfo.valMap[MediaColumn::MEDIA_MIME_TYPE] = string("image/jpeg");
+    fileInfo.valMap[PhotoColumn::PHOTO_SHOOTING_MODE] = string("-1");
+    NativeRdb::ValuesBucket values;
+    restoreService->GetInsertValueFromValMap(fileInfo, values);
+    string shootingMode;
+    ValueObject valueObject;
+    if (values.GetObject(PhotoColumn::PHOTO_SHOOTING_MODE, valueObject)) {
+        valueObject.GetString(shootingMode);
+    }
+    EXPECT_EQ(shootingMode, "");
+}
 } // namespace Media
 } // namespace OHOS
