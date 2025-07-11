@@ -112,9 +112,7 @@ const PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSET_URI, ASSET_DATE
     0, // hidden time
     0,
     ASSET_DISPLAY_NAME,
-    ASSET_PATH,
-    "com.test.owner.package",
-    "test_owner_package"
+    ASSET_PATH
 };
 
 void SetTables()
