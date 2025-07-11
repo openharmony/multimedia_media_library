@@ -5598,8 +5598,10 @@ static void PhotoAccessHelperCommitEditExecute(napi_env env, void *data)
     }
     MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, COMMIT_REQUEST);
     Uri uri(fileUri);
-    UniqueFd fd(UserFileClient::OpenFile(uri, "rw"));
+    int32_t realErr = 0;
+    UniqueFd fd(UserFileClient::OpenFileWithErrCode(uri, "rw", realErr));
     if (fd.Get() <= 0) {
+        context->SaveRealErr(realErr);
         if (fd.Get() == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
         } else {

@@ -38,10 +38,18 @@ void NapiError::SaveError(int32_t ret)
     }
 }
 
+void NapiError::SaveRealErr(int32_t ret)
+{
+    if (ret < 0) {
+        realErr = MediaLibraryNapiUtils::TransErrorCode(apiName, ret);
+    }
+    NAPI_ERR_LOG("SaveRealErr errCode:%{public}d realErr:%{public}d", ret, realErr);
+}
+
 void NapiError::HandleError(napi_env env, napi_value &errorObj)
 {
     // deal with context->error
-    MediaLibraryNapiUtils::HandleError(env, error, errorObj, apiName);
+    MediaLibraryNapiUtils::HandleError(env, error, errorObj, apiName, realErr);
 }
 
 void NapiError::ThrowError(napi_env env, int32_t err, const std::string &errMsg)
