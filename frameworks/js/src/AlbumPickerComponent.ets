@@ -21,6 +21,8 @@ export struct AlbumPickerComponent {
   albumPickerOptions?: AlbumPickerOptions | undefined;
   onAlbumClick?: (albumInfo: AlbumInfo) => boolean;
   onEmptyAreaClick?: EmptyAreaClickCallback;
+  @Watch('onChanged') albumPickerController?: AlbumPickerController; 
+  private proxy: UIExtensionProxy | undefined;
 
   build() {
     Row() {
@@ -31,8 +33,10 @@ export struct AlbumPickerComponent {
             targetPage: 'albumPage',
             themeColorMode: this.albumPickerOptions?.themeColorMode,
             filterType: this.albumPickerOptions?.filterType,
+            fontSize: this.albumPickerOptions?.fontSize,
           }
         }).height('100%').width('100%').onRemoteReady((proxy) => {
+          this.proxy = proxy;
           console.info('AlbumPickerComponent onRemoteReady');
         }).onReceive((data) => {
           let wantParam: Record<string, Object> = data as Record<string, Object>;
@@ -46,6 +50,16 @@ export struct AlbumPickerComponent {
     .height('100%')
   }
 }
+
+private onChanged(): void {
+  if (!this.proxy) {
+    return;
+  }
+  let data = this.albumPickerController?.data;
+  if (data?.has('SET_FONT_SIZE')) {
+    this.proxy.send({ 'fontSize': data?.get('SET_FONT_SIZE') as number | string });
+    console.info('AlbumPickerComponent onChanged: SET_FONT_SIZE');
+  }
 
 private handleOnReceive(wantParam: Record<string, Object>): void {
   let dataType = wantParam.dataType. as string;
@@ -71,9 +85,19 @@ export type EmptyAreaClickCallback = () => void;
 export class AlbumPickerOptions {
   public themeColorMode?: PickerColorMode;
   public filterType?: photoAccessHelper.PhotoViewMIMETypes;
+  public fontSize?: number | string;
 }
 
 export class AlbumInfo {
   public uri?: string;
   public albumName?: string;
+}
+
+@Observed
+export class AlbumPickerController {
+  data?: Map<string, Object>;
+
+  setFontSize(fontSize: number | string) {
+    this.data = new Map([['SET_FONT_SIZE', fontSize]]);
+  }
 }
