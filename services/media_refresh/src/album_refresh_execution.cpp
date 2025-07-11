@@ -667,12 +667,14 @@ void AlbumRefreshExecution::CheckNotifyOldNotification(NotifyAlbumType notifyAlb
     }
 }
 
-int32_t AlbumRefreshExecution::RefreshAllAlbum()
+int32_t AlbumRefreshExecution::RefreshAllAlbum(NotifyAlbumType notifyAlbumType)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null");
     ACCURATE_DEBUG("force update all albums");
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
+    MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(rdbStore, AlbumOperationType::DEFAULT, {}, notifyAlbumType);
+    MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, {}, notifyAlbumType & USER_ALBUM);
+    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {}, notifyAlbumType & SOURCE_ALBUM);
     return ACCURATE_REFRESH_RET_OK;
 }
 

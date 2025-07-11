@@ -1442,7 +1442,7 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
         CHECK_AND_RETURN_RET_LOG(fileResultVideo != nullptr, E_HAS_DB_ERROR, "Failed to query fileResultVideo");
         SetImageVideoCount(newCount, fileResultVideo, data, values);
     }
-    if (data.shouldUpdateDateModified) {
+    if (data.shouldUpdateDateModified || (!hiddenState && newCount != data.albumCount)) {
         values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     }
     return E_SUCCESS;
