@@ -427,6 +427,21 @@ bool ThumbnailUtils::CompressImage(const shared_ptr<PixelMap> &pixelMap, vector<
     return true;
 }
 
+string ThumbnailUtils::CreateOutputPath(const ThumbnailData &data, const string &suffix)
+{
+    string outputPath;
+    if (data.tracks.empty()) {
+        CHECK_AND_RETURN_RET_LOG(SaveFileCreateDir(data.path, suffix, outputPath) == E_OK,
+            "", "SaveFileCreateDir failed. path: %{public}s suffix: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str(), suffix.c_str());
+    } else {
+        CHECK_AND_RETURN_RET_LOG(SaveFileCreateDirHighlight(data.path, suffix, outputPath, data.timeStamp) == E_OK,
+            "", "SaveFileCreateDirHighlight failed. path: %{public}s suffix: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str(), suffix.c_str());
+    }
+    return outputPath;
+}
+
 bool ThumbnailUtils::CompressPicture(ThumbnailData &data, const std::shared_ptr<Picture>& picture,
     const bool isSourceEx, string &tempOutputPath)
 {
@@ -437,13 +452,10 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, const std::shared_ptr<
         static_cast<uint8_t>(data.thumbnailQuality));
 
     MEDIA_INFO_LOG("CompressPicture %{public}s", DfxUtils::GetSafePath(data.path).c_str());
-    auto outputPath = GetThumbnailPath(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX);
+    auto outputPath = CreateOutputPath(data, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX);
+    CHECK_AND_RETURN_RET_LOG(!outputPath.empty(), false, "CreateOutputPath failed");
     CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPictureValid(picture), false,
         "Pictrue is invalid. path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
-    int ret = SaveFileCreateDir(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX, outputPath);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, false,
-        "CompressPicture failed, SaveFileCreateDir failed, path: %{public}s, isSourceEx: %{public}d",
-        DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
     size_t lastSlash = outputPath.rfind('/');
     if (lastSlash == string::npos || outputPath.size() <= lastSlash + 1) {
         MEDIA_ERR_LOG("CompressPicture failed, failed to check outputPath: %{public}s, isSourceEx: %{public}d",
@@ -452,8 +464,7 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, const std::shared_ptr<
     }
     tempOutputPath = outputPath.substr(0, lastSlash) + "/temp_" + data.dateModified + "_" +
         outputPath.substr(lastSlash + 1);
-    ret = MediaFileUtils::CreateAsset(tempOutputPath);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, false,
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateAsset(tempOutputPath) == E_SUCCESS, false,
         "CompressPicture failed, failed to create temp filter file: %{public}s, isSourceEx: %{public}d",
         DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
     Media::ImagePacker imagePacker;
@@ -479,7 +490,8 @@ bool ThumbnailUtils::SaveAfterPacking(ThumbnailData &data, const bool isSourceEx
             DfxUtils::GetSafePath(tempOutputPath).c_str());
         return false;
     }
-    auto outputPath = GetThumbnailPath(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX);
+    auto outputPath = CreateOutputPath(data, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX);
+    CHECK_AND_RETURN_RET_LOG(!outputPath.empty(), false, "CreateOutputPath failed");
     int ret = rename(tempOutputPath.c_str(), outputPath.c_str());
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, false,
         "SaveAfterPacking failed, failed to rename temp filters file: %{public}s",
