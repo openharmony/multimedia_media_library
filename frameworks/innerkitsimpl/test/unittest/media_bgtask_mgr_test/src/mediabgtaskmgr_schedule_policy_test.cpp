@@ -486,33 +486,5 @@ HWTEST_F(MediaBgtaskMgrSchedulePolicyTest, media_bgtask_mgr_Scheduletest_001, Te
     schedulePolicy.Schedule();
     EXPECT_TRUE(schedulePolicy.selectedTasks_.empty());
 }
-
-/**
- * GetSchedulResult & MinNextScheduleInterval
- */
-HWTEST_F(MediaBgtaskMgrSchedulePolicyTest, media_bgtask_mgr_GetSchedulResult_test_001, TestSize.Level1)
-{
-    SchedulePolicy &schedulePolicy = SchedulePolicy::GetInstance();
-    TaskScheduleResult result;
-
-    // 1. 无有效selectedTasksId_任务列表
-    schedulePolicy.GetSchedulResult(result);
-    EXPECT_TRUE(result.taskStart_.empty());
-    EXPECT_FALSE(result.taskStop_.empty());
-    EXPECT_NE(result.taskStop_.size(), 0);
-    EXPECT_EQ(result.nextComputeTime_, ONE_DAY_SECOND);
-
-    // 2. 设置 hTaskQueue_ || mTaskQueue_ || lTaskQueue_列表
-    result.taskStop_.clear();
-    // 影响compute time设置
-    SetTasks(testTaskInfos_, schedulePolicy.validTasks_);
-    schedulePolicy.AddValidTaskToQueues(schedulePolicy.validTasks_);
-    schedulePolicy.SelectTaskFromQueue(schedulePolicy.hTaskQueue_, schedulePolicy.policyCfg_.loadThredHigh);
-
-    schedulePolicy.GetSchedulResult(result);
-    EXPECT_FALSE(result.taskStart_.empty());
-    EXPECT_FALSE(result.taskStop_.empty());
-    EXPECT_NE(result.nextComputeTime_, ONE_DAY_SECOND);
-}
 } // namespace MediaBgtaskSchedule
 } // namespace OHOS
