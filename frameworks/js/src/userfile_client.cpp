@@ -351,19 +351,14 @@ int UserFileClient::OpenFile(Uri &uri, const std::string &mode, const int32_t us
     return GetDataShareHelperByUser(userId)->OpenFile(uri, mode);
 }
 
-int UserFileClient::OpenFileWithErrCode(Uri &uri, const std::string &mode, const int32_t userId)
+int UserFileClient::OpenFileWithErrCode(Uri &uri, const std::string &mode, int32_t &realErr, const int32_t userId)
 {
     if (!IsValid(userId)) {
         NAPI_ERR_LOG("Open file fail, helper null, userId is %{public}d", userId);
         return E_FAIL;
     }
     uri = MultiUserUriRecognition(uri, userId);
-    int32_t errCode = 0;
-    int fd = GetDataShareHelperByUser(userId)->OpenFileWithErrCode(uri, mode, errCode);
-    if (errCode != 0) {
-        return -std::abs(errCode);
-    }
-    return fd;
+    return GetDataShareHelperByUser(userId)->OpenFileWithErrCode(uri, mode, realErr);
 }
 
 int UserFileClient::Update(Uri &uri, const DataSharePredicates &predicates,

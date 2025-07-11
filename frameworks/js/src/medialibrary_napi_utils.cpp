@@ -791,7 +791,8 @@ int MediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
     return error;
 }
 
-void MediaLibraryNapiUtils::HandleError(napi_env env, int error, napi_value &errorObj, const string &Name)
+void MediaLibraryNapiUtils::HandleError(
+    napi_env env, int error, napi_value &errorObj, const string &Name, int32_t realErr)
 {
     if (error == ERR_DEFAULT) {
         return;
@@ -803,6 +804,9 @@ void MediaLibraryNapiUtils::HandleError(napi_env env, int error, napi_value &err
         errMsg = jsErrMap.at(error);
     } else {
         error = JS_INNER_FAIL;
+        if (realErr != 0 && jsErrMap.count(realErr) > 0) {
+            errMsg = jsErrMap.at(realErr);
+        }
     }
     CreateNapiErrorObject(env, errorObj, error, errMsg);
     errMsg = Name + " " + errMsg;
