@@ -529,8 +529,10 @@ bool AlbumRefreshExecution::CalAlbumCover(AlbumChangeInfo &albumInfo, const Albu
     }
 
     // 普通cover 更新
+    auto coverFileId = MediaLibraryDataManagerUtils::GetFileIdNumFromPhotoUri(albumInfo.coverUri_);
     if (IsValidCover(refreshInfo.deltaAddCover_) && refreshInfo.removeFileIds.size() == 0) { // 新增场景
-        bool isRefresh = dateTimeForAddCover >= albumInfo.coverDateTime_;
+        bool isRefresh = dateTimeForAddCover > albumInfo.coverDateTime_ ||
+            (dateTimeForAddCover == albumInfo.coverDateTime_ && refreshInfo.deltaAddCover_.fileId_ > coverFileId);
         if (isRefresh) {
             albumInfo.coverInfo_ = refreshInfo.deltaAddCover_;
             albumInfo.coverDateTime_ = dateTimeForAddCover;
@@ -542,7 +544,6 @@ bool AlbumRefreshExecution::CalAlbumCover(AlbumChangeInfo &albumInfo, const Albu
             albumInfo.albumId_, isRefresh, albumInfo.coverInfo_.fileId_, refreshInfo.deltaAddCover_.fileId_);
     } else if (!IsValidCover(refreshInfo.deltaAddCover_) && refreshInfo.removeFileIds.size() > 0) { // 删除场景
         // 当前cover没有removeCover新
-        auto coverFileId = MediaLibraryDataManagerUtils::GetFileIdNumFromPhotoUri(albumInfo.coverUri_);
         bool isForceRefresh = refreshInfo.removeFileIds.find(coverFileId) != refreshInfo.removeFileIds.end();
         if (coverFileId <= 0 || isForceRefresh) {
             forceRefreshAlbums_.insert(albumInfo.albumId_);
@@ -565,9 +566,12 @@ bool AlbumRefreshExecution::CalAlbumCover(AlbumChangeInfo &albumInfo, const Albu
 bool AlbumRefreshExecution::CalAlbumHiddenCover(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo)
 {
     bool isRefreshHiddenAlbum = false;
+    auto coverFileId = MediaLibraryDataManagerUtils::GetFileIdNumFromPhotoUri(albumInfo.hiddenCoverUri_);
     if (IsValidCover(refreshInfo.deltaAddHiddenCover_) && refreshInfo.removeHiddenFileIds.size() == 0) {
         // 新增场景
-        bool isRefresh = refreshInfo.deltaAddHiddenCover_.hiddenTime_ >= albumInfo.hiddenCoverDateTime_;
+        bool isRefresh = refreshInfo.deltaAddHiddenCover_.hiddenTime_ > albumInfo.hiddenCoverDateTime_ ||
+            (refreshInfo.deltaAddHiddenCover_.hiddenTime_ == albumInfo.hiddenCoverDateTime_ &&
+            refreshInfo.deltaAddHiddenCover_.fileId_ > coverFileId);
         if (isRefresh) {
             albumInfo.hiddenCoverInfo_ = refreshInfo.deltaAddHiddenCover_;
             albumInfo.hiddenCoverDateTime_ = refreshInfo.deltaAddHiddenCover_.hiddenTime_;
@@ -581,7 +585,6 @@ bool AlbumRefreshExecution::CalAlbumHiddenCover(AlbumChangeInfo &albumInfo, cons
     } else if (!IsValidCover(refreshInfo.deltaAddHiddenCover_) && refreshInfo.removeHiddenFileIds.size() > 0) {
         // 删除场景
         // 当前cover没有removeCover新
-        auto coverFileId = MediaLibraryDataManagerUtils::GetFileIdNumFromPhotoUri(albumInfo.hiddenCoverUri_);
         bool isRefresh = refreshInfo.removeHiddenFileIds.find(coverFileId) != refreshInfo.removeHiddenFileIds.end();
         if (coverFileId <= 0 || isRefresh) {
             forceRefreshHiddenAlbums_.insert(albumInfo.albumId_);
