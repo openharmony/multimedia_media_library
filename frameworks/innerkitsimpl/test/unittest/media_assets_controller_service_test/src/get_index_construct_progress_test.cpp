@@ -50,7 +50,9 @@ static const string SQL_INSERT_PHOTO =
     ", " + MediaColumn::MEDIA_DATE_MODIFIED + ", " + MediaColumn::MEDIA_DATE_TAKEN + ", " +
     MediaColumn::MEDIA_DURATION + ", " + MediaColumn::MEDIA_IS_FAV + ", " + MediaColumn::MEDIA_DATE_TRASHED + ", " +
     MediaColumn::MEDIA_HIDDEN + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH + ", " +
-    PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_SHOOTING_MODE + ")";
+    PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_SHOOTING_MODE + ", " + PhotoColumn::MEDIA_TIME_PENDING +
+    ", " + PhotoColumn::PHOTO_CLEAN_FLAG + ", " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + ")";
+
 static const string VALUES_END = ") ";
 
 static int32_t ClearTable(const string &table)
@@ -125,11 +127,11 @@ static void InsertAsset(string displayName)
     // data, size,
     // title, display_name, media_type,
     // owner_package, package_name, date_added, date_modified, date_taken, duration, is_favorite, date_trashed, hidden
-    // height, width, edit_time, shooting_mode
+    // height, width, edit_time, shooting_mode, time_pending, clean_flag, burst_cover_level
     std::string insertSql = SQL_INSERT_PHOTO + " VALUES (" + "'/storage/cloud/files/Photo/16/" + displayName +
                             ".jpg', 175258, '" + displayName + "', '" + displayName + ".jpg', 1, " +
                             "'com.ohos.camera', '相机', 1501924205218, 0, 1501924205, 0, 0, 0, 0, " +
-                            "1280, 960, 0, '1'" + VALUES_END;
+                            "1280, 960, 0, '1', 0, 0, 1" + VALUES_END;
     int32_t ret = g_rdbStore->ExecuteSql(insertSql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Execute sql %{public}s failed", insertSql.c_str());
