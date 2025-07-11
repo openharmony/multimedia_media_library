@@ -62,12 +62,14 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static std::atomic<int> number(0);
 static const int32_t EXIT_TASK = 1;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static constexpr int32_t ALBUM_FROM_CLOUD = 2;
 
 void CleanTestTables()
 {
     vector<string> dropTableList = {
         PhotoColumn::PHOTOS_TABLE,
-        MEDIALIBRARY_TABLE
+        MEDIALIBRARY_TABLE,
+        PhotoAlbumColumns::TABLE,
     };
     for (auto &dropTable : dropTableList) {
         string dropSql = "DROP TABLE " + dropTable + ";";
@@ -85,6 +87,7 @@ void SetTables()
     vector<string> createTableSqlList = {
         PhotoColumn::CREATE_PHOTO_TABLE,
         CREATE_MEDIA_TABLE,
+        PhotoAlbumColumns::CREATE_TABLE,
     };
     for (auto &createTableSql : createTableSqlList) {
         int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
@@ -177,6 +180,19 @@ int32_t SetPosition(const int64_t fileId)
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     int32_t rows = 0;
     int32_t ret = g_rdbStore->Update(rows, valuesBucket, predicates);
+    return ret;
+}
+
+int32_t InsertCloudAlbumINDb()
+{
+    int64_t albumId = 0;
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::USER);
+    valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
+    valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_IS_LOCAL, ALBUM_FROM_CLOUD);
+    int32_t ret = g_rdbStore->Insert(albumId, PhotoAlbumColumns::TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("Insert cloud albumId is %{public}s", to_string(albumId).c_str());
     return ret;
 }
 
@@ -516,6 +532,9 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
 
     ret = instance.UpdateCloudMediaAssets();
     EXPECT_EQ(ret, E_OK);
+    ret = instance.DeleteEmptyCloudAlbums();
+    EXPECT_EQ(ret, E_ERR);
+    InsertCloudAlbumINDb();
     ret = instance.DeleteEmptyCloudAlbums();
     EXPECT_EQ(ret, E_OK);
     ret = instance.UpdateLocalAlbums();
