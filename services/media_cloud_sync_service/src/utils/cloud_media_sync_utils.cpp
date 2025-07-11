@@ -71,6 +71,7 @@ int32_t CloudMediaSyncUtils::FillPhotosDto(
 int32_t CloudMediaSyncUtils::FillPhotosDto(
     CloudSync::PhotosDto &photosDto, const CloudSync::CloudMediaPullDataDto &data)
 {
+    constexpr uint64_t DEFAULT_SIZE = 2 * 1024 * 1024; // thumbnail and lcd default size is 2MB
     bool isRotation = data.propertiesRotate != ROTATE_ANGLE_0;
     std::string thumbSuffix = isRotation ? THUMBNAIL_THUMB_EX_SUFFIX : THUMBNAIL_THUMB_SUFFIX;
     std::string lcdSuffix = isRotation ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX;
@@ -80,12 +81,14 @@ int32_t CloudMediaSyncUtils::FillPhotosDto(
 
     CloudSync::CloudFileDataDto dtoThm;
     CloudMediaFileUtils::GetParentPathAndFilename(thumbLocalPath, dtoThm.path, dtoThm.fileName);
-    dtoThm.size = data.thmSize;
+    bool isValid = data.thmSize != 0 && data.lcdSize != 0;
+    CHECK_AND_PRINT_LOG(isValid, "invalid size, thmSize: %{public}d, lcdSize: %{public}d", data.thmSize, data.lcdSize);
+    dtoThm.size = (data.thmSize <= 0) ? DEFAULT_SIZE : data.thmSize;
     photosDto.attachment["thumbnail"] = dtoThm;
 
     CloudSync::CloudFileDataDto dtoLcd;
     CloudMediaFileUtils::GetParentPathAndFilename(lcdLocalPath, dtoLcd.path, dtoLcd.fileName);
-    dtoLcd.size = data.lcdSize;
+    dtoLcd.size = (data.lcdSize <= 0) ? DEFAULT_SIZE : data.lcdSize;
     photosDto.attachment["lcd"] = dtoLcd;
 
     return E_OK;
