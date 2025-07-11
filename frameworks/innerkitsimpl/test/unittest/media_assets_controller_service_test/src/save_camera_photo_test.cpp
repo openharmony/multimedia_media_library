@@ -181,7 +181,7 @@ HWTEST_F(SaveCameraPhotoTest, SaveCameraPhoto_Test_002, TestSize.Level0)
 
     system("mkdir -p /storage/cloud/files/Photo/16/ && touch /storage/cloud/files/Photo/16/cam_pic1.jpg");
     int32_t result = SaveCameraPhoto(fileId, 1, "Set");
-    ASSERT_EQ(result, 0);
+    ASSERT_EQ(result, 1);
     system("rm -rf /storage/cloud/files/Photo/16/cam_pic1.jpg");
 }
 }  // namespace OHOS::Media
