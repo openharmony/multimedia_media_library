@@ -58,6 +58,8 @@ int32_t UpdateInvalidMimeTypePrecessor::GetCountOfAllAssets(int32_t &assetsCount
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "GetCountOfAllAssets failed. rdbStore is null.");
     std::vector<std::string> columns = { COLUMN_COUNT };
     AbsRdbPredicates predicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    predicates.NotLike(MediaColumn::MEDIA_MIME_TYPE, "image/%");
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "GetCountOfAllAssets failed. rdbStore is null.");
 
@@ -76,7 +78,7 @@ int32_t UpdateInvalidMimeTypePrecessor::UpdateInvalidMimeType()
 
     int32_t assetsCount = 0;
     CHECK_AND_RETURN_RET_LOG(GetCountOfAllAssets(assetsCount) == E_OK, E_ERR, "Failed to GetCountOfAllAssets.");
-
+    CHECK_AND_RETURN_RET_INFO_LOG(assetsCount > 0, E_OK, "no Invalid mimeType.");
     AbsRdbPredicates predicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
     predicates.NotLike(MediaColumn::MEDIA_MIME_TYPE, "image/%");

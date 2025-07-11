@@ -446,7 +446,7 @@ static void GetCloudMediaAssetStatusExecute(napi_env env, void* data)
     GetCloudMediaAssetStatusReqBody rspBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_ASSET_STATUS);
     int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
-    if (ret < 0) {
+    if (ret != 0) {
         context->SaveError(ret);
         NAPI_ERR_LOG("Get cloud media asset status failed, err: %{public}d", ret);
         return;
