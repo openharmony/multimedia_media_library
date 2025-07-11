@@ -3396,7 +3396,8 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     std::shared_ptr<Media::Picture> resultPicture = nullptr;
 
     PhotoExtInfo photoExtInfo = {"", MIME_TYPE_JPEG, "", "", nullptr};
-    int32_t getPicRet = GetPicture(fileId, photoExtInfo.picture, false, uri, photoExtInfo.isHighQualityPicture);
+    string photoId;
+    int32_t getPicRet = GetPicture(fileId, photoExtInfo.picture, false, photoId, photoExtInfo.isHighQualityPicture);
     SavePicture(fileType, fileId, getPicRet, photoExtInfo, resultPicture);
     string path = MediaFileUri::GetPathFromUri(uri, true);
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId, resultPicture);
