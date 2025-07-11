@@ -490,6 +490,17 @@ static void AddHistoryPanoramaModeAlbumData(const shared_ptr<MediaLibraryRdbStor
     MEDIA_INFO_LOG("End add panorama mode album data");
 }
 
+static void AddHistoryAIHighPixelModeAlbumData(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("Start to add ai high pixel mode album data");
+    const string highPixelModeAlbumType = to_string(static_cast<int32_t>(ShootingModeAlbumType::HIGH_PIXEL));
+    const string sql = "UPDATE Photos SET shooting_mode = " + highPixelModeAlbumType +
+        " WHERE shooting_mode_tag = " + AI_HIGH_PIXEL_TAG;
+    int ret = store->ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End add ai high pixel mode album data");
+}
+
 static void UpdateAllShootingModeAlbums(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
 {
     vector<int32_t> albumIds;
@@ -567,6 +578,7 @@ void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION) {
         AddShootingModeAlbumIndex(rdbStore);
         AddHistoryPanoramaModeAlbumData(rdbStore);
+        AddHistoryAIHighPixelModeAlbumData(rdbStore);
         UpdateAllShootingModeAlbums(rdbStore);
         rdbStore->SetOldVersion(VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION);
     }
