@@ -709,7 +709,7 @@ export namespace photoAccessHelper {
     }
     getAllObjects(): Promise<Array<T>> {
       return new Promise<Array<T>>((resolve: (v: Array<T>) => void, reject: RejectString) => {
-        let blockQueue: BlockingQueue<Array<T>> = new ArrayBlockingQueue<Array<T>>(2);
+        let blockQueue: containers.BlockingQueue<Array<T>> = new containers.ArrayBlockingQueue<Array<T>>(2);
         let cb = (): Array<T> => {
           let result = this.getAllObjectsSync()
           blockQueue.push(result)
@@ -1202,7 +1202,7 @@ export namespace photoAccessHelper {
 
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
       return new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void, reject: RejectString) => {
-        let blockQueue: BlockingQueue<FetchResult<PhotoAsset>> = new ArrayBlockingQueue<FetchResult<PhotoAsset>>(2);
+        let blockQueue: containers.BlockingQueue<FetchResult<PhotoAsset>> = new containers.ArrayBlockingQueue<FetchResult<PhotoAsset>>(2);
         let cb = (): FetchResult<PhotoAsset> => {
           let result = this.getAssetsInner(options)
           blockQueue.push(result)
