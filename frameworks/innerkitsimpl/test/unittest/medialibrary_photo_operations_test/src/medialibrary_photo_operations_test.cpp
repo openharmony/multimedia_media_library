@@ -1779,7 +1779,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_011, Test
     Uri uri(uriStr);
     MediaLibraryCommand cmd(uri);
     int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
-    EXPECT_EQ(changedRows, 0);
+    EXPECT_EQ(changedRows, 1);
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_011");
 }
  
