@@ -768,7 +768,7 @@ static void GetResultSetFromDbFuzzer()
     GetResultSetFromDbReqBody reqBody;
     reqBody.columnName = FDP->ConsumeBytesAsString(NUM_BYTES);
     reqBody.value = FDP->ConsumeBytesAsString(NUM_BYTES);
-    reqBody.columns = { FDP->ConsumeBytesAsString(NUM_BYTES) };
+    reqBody.columns = {FDP->ConsumeBytesAsString(NUM_BYTES)};
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
@@ -779,7 +779,7 @@ static void GetResultSetFromPhotosExtendFuzzer()
 {
     GetResultSetFromPhotosExtendReqBody reqBody;
     reqBody.value = FDP->ConsumeBytesAsString(NUM_BYTES);
-    reqBody.columns = { FDP->ConsumeBytesAsString(NUM_BYTES) };
+    reqBody.columns = {FDP->ConsumeBytesAsString(NUM_BYTES)};
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
@@ -836,7 +836,7 @@ static void CheckUriPermissionInnerFuzzer()
     reqBody.targetTokenId = FDP->ConsumeIntegral<int64_t>();
     reqBody.uriType = FDP->ConsumeBytesAsString(NUM_BYTES);
     reqBody.fileIds = {FDP->ConsumeBytesAsString(NUM_BYTES)};
-    reqBody.columns = { FDP->ConsumeBytesAsString(NUM_BYTES) }; 
+    reqBody.columns = {FDP->ConsumeBytesAsString(NUM_BYTES)};
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
