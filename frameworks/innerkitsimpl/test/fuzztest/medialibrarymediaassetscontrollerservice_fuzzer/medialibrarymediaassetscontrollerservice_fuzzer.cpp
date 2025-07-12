@@ -371,8 +371,6 @@ static void CreateAssetFuzzer()
     MessageParcel reply;
     reqBody.Marshalling(data);
     mediaAssetsControllerService->PublicCreateAsset(data, reply);
-
-
     CreateAssetReqBody sysReqBody;
     sysReqBody.mediaType = MEDIA_TYPE_IMAGE;
     sysReqBody.photoSubtype = FDP->ConsumeIntegral<int32_t>();
@@ -400,8 +398,6 @@ static void CreateAssetForAppFuzzer()
     reqBody.Marshalling(data);
     mediaAssetsControllerService->PublicCreateAssetForApp(data, reply);
     mediaAssetsControllerService->SystemCreateAssetForApp(data, reply);
-
-
     reqBody.ownerAlbumId = to_string(FDP->ConsumeIntegral<int32_t>());
     MessageParcel album_data;
     MessageParcel album_reply;
@@ -601,8 +597,7 @@ static void IsEditedFuzzer()
 static void StartAssetAnalysisFuzzer()
 {
     StartAssetAnalysisReqBody reqBody;
-    std::vector<std::string> fileIds{"111111","222222", to_string(FDP->ConsumeIntegral<int32_t>())};
-
+    std::vector<std::string> fileIds{"111111", "222222", to_string(FDP->ConsumeIntegral<int32_t>())};
     reqBody.predicates.In("Photos.file_id", fileIds);
     MessageParcel data;
     MessageParcel reply;
@@ -773,7 +768,7 @@ static void GetResultSetFromDbFuzzer()
     GetResultSetFromDbReqBody reqBody;
     reqBody.columnName = FDP->ConsumeBytesAsString(NUM_BYTES);
     reqBody.value = FDP->ConsumeBytesAsString(NUM_BYTES);
-    reqBody.columns = {FDP->ConsumeBytesAsString(NUM_BYTES)};
+    reqBody.columns = { FDP->ConsumeBytesAsString(NUM_BYTES) };
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
@@ -784,8 +779,7 @@ static void GetResultSetFromPhotosExtendFuzzer()
 {
     GetResultSetFromPhotosExtendReqBody reqBody;
     reqBody.value = FDP->ConsumeBytesAsString(NUM_BYTES);
-    reqBody.columns = {FDP->ConsumeBytesAsString(NUM_BYTES)};
-
+    reqBody.columns = { FDP->ConsumeBytesAsString(NUM_BYTES) };
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
@@ -842,9 +836,7 @@ static void CheckUriPermissionInnerFuzzer()
     reqBody.targetTokenId = FDP->ConsumeIntegral<int64_t>();
     reqBody.uriType = FDP->ConsumeBytesAsString(NUM_BYTES);
     reqBody.fileIds = {FDP->ConsumeBytesAsString(NUM_BYTES)};
-    reqBody.columns = {FDP->ConsumeBytesAsString(NUM_BYTES)}; 
-   
-
+    reqBody.columns = { FDP->ConsumeBytesAsString(NUM_BYTES) }; 
     MessageParcel data;
     MessageParcel reply;
     reqBody.Marshalling(data);
@@ -915,7 +907,7 @@ static void GetBurstAssetsFuzzer()
     mediaAssetsControllerService->GetBurstAssets(data, reply, context);
 }
 
-static void MediaAssetsControllerServiceFuzzer()
+static void MediaAssetsControllerServiceFirstFuzzer()
 {
     FormInfoFuzzer();
     CommitEditedAssetFuzzer();
@@ -956,6 +948,10 @@ static void MediaAssetsControllerServiceFuzzer()
     RetainCloudMediaAssetFuzzer();
     GetCloudMediaAssetStatusFuzzer();
     GetEditDataFuzzer();
+}
+
+static void MediaAssetsControllerServiceSecondFuzzer()
+{
     RequestEditDataFuzzer();
     IsEditedFuzzer();
     StartAssetAnalysisFuzzer();
@@ -1014,5 +1010,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
     OHOS::FDP = &fdp;
     OHOS::MediaAssetsControllerServiceFuzzer();
+    OHOS::MediaAssetsControllerServiceSecondFuzzer();
     return 0;
 }
