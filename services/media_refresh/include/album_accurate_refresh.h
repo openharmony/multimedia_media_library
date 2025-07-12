@@ -68,7 +68,6 @@ protected:
     int32_t UpdateModifiedDatasInner(const std::vector<int> &albumIds, RdbOperation operation) override;
     std::string GetReturningKeyName() override;
     bool IsValidTable(std::string tableName) override;
-    void SetDataManagerTransaction(std::shared_ptr<TransactionOperations> trans) override;
 
 private:
     int32_t DeleteCommon(std::function<int32_t(NativeRdb::ValuesBucket &)> updateExe);

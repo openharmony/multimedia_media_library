@@ -271,7 +271,8 @@ const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
 const std::string PHOTO_ALBUM_NOTIFY_FUNC =
     "SELECT photo_album_notify_func((SELECT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
     " FROM " + PhotoColumn::PHOTOS_TABLE +
-    " WHERE " + MediaColumn::MEDIA_ID + " = NEW." + MediaColumn::MEDIA_ID + "));";
+    " WHERE " + MediaColumn::MEDIA_ID + " = NEW." + MediaColumn::MEDIA_ID +
+    "), (SELECT file FROM pragma_database_list));";
 
 const std::string DELETED_SOURCE_ALBUM_BY_LPATH_WHERE_CLAUSE =
     " WHERE LOWER(" + PhotoAlbumColumns::ALBUM_LPATH + ") = LOWER(" + SELECT_LPATH_BY_ALBUM_NAME_OR_BUNDLE_NAME +

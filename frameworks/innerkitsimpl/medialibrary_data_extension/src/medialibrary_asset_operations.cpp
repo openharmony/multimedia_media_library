@@ -1085,26 +1085,17 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<Transaction
     FillAssetInfo(cmd, fileAsset);
 
     int64_t outRowId = -1;
-    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        AccurateRefresh::AssetAccurateRefresh refresh(trans);
-        int32_t errCode = refresh.Insert(cmd, outRowId);
-        if (errCode != AccurateRefresh::ACCURATE_REFRESH_RET_OK) {
-            MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
-            return E_HAS_DB_ERROR;
-        }
-    } else {
-        int32_t errCode = trans->Insert(cmd, outRowId);
-        if (errCode != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
-            return E_HAS_DB_ERROR;
-        }
+    int32_t errCode = trans->Insert(cmd, outRowId);
+    if (errCode != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
+        return E_HAS_DB_ERROR;
     }
     MEDIA_INFO_LOG("insert success, rowId = %{public}d", (int)outRowId);
     auto fileId = outRowId;
     ValuesBucket valuesBucket = GetOwnerPermissionBucket(cmd, fileId, callingUid);
     int64_t tmpOutRowId = -1;
     MediaLibraryCommand cmdPermission(Uri(MEDIALIBRARY_GRANT_URIPERM_URI), valuesBucket);
-    int32_t errCode = trans->Insert(cmdPermission, tmpOutRowId);
+    errCode = trans->Insert(cmdPermission, tmpOutRowId);
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
