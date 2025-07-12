@@ -298,7 +298,7 @@ int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType)
     MediaLibraryTracer tracer;
     tracer.Start("AssetAccurateRefresh::RefreshAlbum");
     if (dataManager_.CheckIsExceed()) {
-        return RefreshAllAlbum();
+        return RefreshAllAlbum(notifyAlbumType);
     }
     auto assetChangeDatas = dataManager_.GetChangeDatas();
     if (assetChangeDatas.empty()) {
@@ -454,9 +454,9 @@ int32_t AssetAccurateRefresh::NotifyForReCheck()
     return ACCURATE_REFRESH_RET_OK;
 }
 
-int32_t AssetAccurateRefresh::RefreshAllAlbum()
+int32_t AssetAccurateRefresh::RefreshAllAlbum(NotifyAlbumType notifyAlbumType)
 {
-    return albumRefreshExe_.RefreshAllAlbum();
+    return albumRefreshExe_.RefreshAllAlbum(notifyAlbumType);
 }
 }  // namespace Media::AccurateRefresh
 }  // namespace OHOS
