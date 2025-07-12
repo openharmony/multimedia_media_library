@@ -34,6 +34,8 @@ group("media_library_fuzztest") {
     "medialibraryextensionquery_fuzzer:MediaLibraryExtensionQueryFuzzTest",
     "medialibraryextensionregisterobserver_fuzzer:MediaLibraryExtensionRegisterObserverFuzzTest",
     "medialibraryextensionunregisterobserver_fuzzer:MediaLibraryExtensionUnregisterObserverFuzzTest",
+    "medialibrarymediaalbumscontrollerservice_fuzzer:MediaLibraryMediaAlbumsControllerServiceFuzzTest",
+    "medialibrarymediaassetscontrollerservice_fuzzer:MediaLibraryMediaAssetsControllerServiceFuzzTest",
     "medialibraryextensionupdate_fuzzer:MediaLibraryExtensionUpdateFuzzTest",
     "medialibrarymediaphotoassetproxy_fuzzer:MediaLibraryMediaPhotoAssetProxyFuzzTest",
     "medialibrarymetarecover_fuzzer:MediaLibraryMetaRecoverFuzzTest",
