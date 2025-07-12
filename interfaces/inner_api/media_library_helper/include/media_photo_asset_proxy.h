@@ -47,7 +47,7 @@ class PhotoAssetProxy {
 public:
     PhotoAssetProxy();
     PhotoAssetProxy(std::shared_ptr<DataShare::DataShareHelper> dataShareHelper, CameraShotType cameraShotType,
-        uint32_t callingUid, int32_t userId);
+        uint32_t callingUid, int32_t userId, uint32_t callingTokenId);
     ~PhotoAssetProxy();
 
     EXPORT std::unique_ptr<FileAsset> GetFileAsset();
@@ -80,6 +80,7 @@ private:
     CameraShotType cameraShotType_ = CameraShotType::IMAGE;
     uint32_t callingUid_ {0};
     int32_t userId_ {0};
+    uint32_t callingTokenId_ {0};
     PhotoSubType subType_ = PhotoSubType::DEFAULT;
     bool isMovingPhotoVideoSaved_ = false;
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;

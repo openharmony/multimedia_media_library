@@ -1076,13 +1076,13 @@ int64_t MediaLibraryManager::GetMovingPhotoDateModified(const string &uri)
 }
 
 shared_ptr<PhotoAssetProxy> MediaLibraryManager::CreatePhotoAssetProxy(CameraShotType cameraShotType,
-    uint32_t callingUid, int32_t userId)
+    uint32_t callingUid, int32_t userId, uint32_t callingTokenId)
 {
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
     MEDIA_INFO_LOG("dataShareHelper is ready, ret = %{public}d.", dataShareHelper != nullptr);
     shared_ptr<PhotoAssetProxy> photoAssetProxy = make_shared<PhotoAssetProxy>(dataShareHelper, cameraShotType,
-        callingUid, userId);
+        callingUid, userId, callingTokenId);
     return photoAssetProxy;
 }
 

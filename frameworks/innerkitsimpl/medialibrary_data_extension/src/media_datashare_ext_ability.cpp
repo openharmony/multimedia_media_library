@@ -641,36 +641,6 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     return E_SUCCESS;
 }
 
-static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd, const string &mode)
-{
-    auto ret = false;
-    string unifyMode = mode;
-    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE || cmd.GetTableName() == AudioColumn::AUDIOS_TABLE ||
-        cmd.GetTableName() == MEDIALIBRARY_TABLE) {
-        std::vector<std::string> columns;
-        DatashareBusinessError businessError;
-        int errCode = businessError.GetCode();
-        string clientAppId = GetClientAppId();
-        string fileId = MediaFileUtils::GetIdFromUri(uri.ToString());
-        bool cond = (clientAppId.empty() || fileId.empty());
-        CHECK_AND_RETURN_RET(!cond, false);
-
-        DataSharePredicates predicates;
-        predicates.And()->EqualTo("file_id", fileId);
-        predicates.And()->EqualTo("owner_appid", clientAppId);
-        auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
-        CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, ret, "queryResultSet is nullptr");
-        auto count = 0;
-        queryResultSet->GetRowCount(count);
-        if (count != 0) {
-            ret = true;
-            CollectPermissionInfo(cmd, unifyMode, true,
-                PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
-        }
-    }
-    return ret;
-}
-
 static bool AddOwnerCheck(MediaLibraryCommand &cmd, DataSharePredicates &appidPredicates)
 {
     bool cond = (cmd.GetTableName() != PhotoColumn::PHOTOS_TABLE &&
@@ -726,15 +696,9 @@ int MediaDataShareExtAbility::CheckPermissionForOpenFile(const Uri &uri,
     CHECK_AND_EXECUTE(err == E_SUCCESS, err = CheckOpenFilePermission(command, unifyMode));
 
     if (err == E_PERMISSION_DENIED) {
-        err = UriPermissionOperations::CheckUriPermission(command.GetUriStringWithoutSegment(), unifyMode);
-        if (!CheckIsOwner(uri, command, unifyMode)) {
-            MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
-            CollectPermissionInfo(command, unifyMode, false,
-                PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
-            return err;
-        } else {
-            return E_OK;
-        }
+        MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
+        CollectPermissionInfo(command, unifyMode, false,
+            PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
     }
     return err;
 }
