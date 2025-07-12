@@ -35,9 +35,6 @@ namespace Media::AccurateRefresh {
 
 class EXPORT AssetAccurateRefresh : public AccurateRefreshBase {
 public:
-    using AccurateRefreshBase::Insert;
-    using AccurateRefreshBase::BatchInsert;
-    using AccurateRefreshBase::ExecuteSql;
     AssetAccurateRefresh() : AccurateRefreshBase(nullptr) {}
     AssetAccurateRefresh(std::shared_ptr<TransactionOperations> trans);
     virtual ~AssetAccurateRefresh() {}
@@ -68,17 +65,6 @@ public:
     int32_t LogicalDeleteReplaceByUpdate(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
     int32_t LogicalDeleteReplaceByUpdate(const NativeRdb::AbsRdbPredicates &predicates, int32_t &deletedRows) override;
 
-    int32_t Insert(MediaLibraryCommand &cmd, int64_t &outRowId) override;
-    int32_t Insert(int64_t &outRowId, const std::string &table, NativeRdb::ValuesBucket &value) override;
-    int32_t BatchInsert(int64_t &changedRows, const std::string &table,
-        std::vector<NativeRdb::ValuesBucket> &values) override;
-    int32_t ExecuteForLastInsertedRowId(const std::string &sql,
-        const std::vector<NativeRdb::ValueObject> &bindArgs, RdbOperation operation) override;
-    int32_t ExecuteSql(const std::string &sql,
-        const std::vector<NativeRdb::ValueObject> &bindArgs, RdbOperation operation) override;
-    int32_t ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
-        const std::vector<NativeRdb::ValueObject> &bindArgs, RdbOperation operation) override;
-
     int32_t SetContentChanged(int32_t fileId, bool isChanged);
     int32_t SetThumbnailStatus(int32_t fileId, int32_t status);
     static int32_t NotifyForReCheck();
@@ -87,7 +73,6 @@ protected:
     int32_t UpdateModifiedDatasInner(const std::vector<int> &fileIds, RdbOperation operation) override;
     std::string GetReturningKeyName() override;
     bool IsValidTable(std::string tableName) override;
-    void SetDataManagerTransaction(std::shared_ptr<TransactionOperations> trans) override;
 private:
     int32_t DeleteCommon(std::function<int32_t(NativeRdb::ValuesBucket &)> updateExe);
     int32_t RefreshAllAlbum(NotifyAlbumType notifyAlbumType);
