@@ -179,6 +179,9 @@ public:
         UpdateAlbumData &data, NativeRdb::ValuesBucket &values, const bool hiddenState);
     EXPORT static bool QueryShootingModeAlbumIdByType(ShootingModeAlbumType type, int32_t& albumId);
     EXPORT static bool QueryAllShootingModeAlbumIds(std::vector<int32_t>& albumIds);
+    EXPORT static void TransformOwnerAppIdToTokenId(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
+    EXPORT static void CleanAmbiguousColumn(std::vector<std::string> &columns,
+        DataShare::DataSharePredicates &predicates, const std::string tableName);
 
 private:
     static std::atomic<bool> isNeedRefreshAlbum;

@@ -57,35 +57,6 @@ static void CollectPermissionInfo(MediaLibraryCommand &cmd, const string &mode,
     }
 }
 
-static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd, const string &mode)
-{
-    auto ret = false;
-    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE || cmd.GetTableName() == AudioColumn::AUDIOS_TABLE ||
-        cmd.GetTableName() == MEDIALIBRARY_TABLE) {
-        std::vector<std::string> columns;
-        DatashareBusinessError businessError;
-        int errCode = businessError.GetCode();
-        string clientAppId = GetClientAppId();
-        string fileId = MediaFileUtils::GetIdFromUri(uri.ToString());
-        bool cond = (clientAppId.empty() || fileId.empty());
-        CHECK_AND_RETURN_RET(!cond, false);
-
-        DataSharePredicates predicates;
-        predicates.And()->EqualTo("file_id", fileId);
-        predicates.And()->EqualTo("owner_appid", clientAppId);
-        auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
-        CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, ret, "queryResultSet is nullptr");
-        auto count = 0;
-        queryResultSet->GetRowCount(count);
-        if (count != 0) {
-            ret = true;
-            CollectPermissionInfo(cmd, mode, true,
-                PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
-        }
-    }
-    return ret;
-}
-
 int32_t PermissionCheck::VerifyOpenFilePermissions(uint32_t businessCode, const PermissionHeaderReq &data)
 {
     std::string openUri = data.getOpenUri();
@@ -117,13 +88,10 @@ int32_t PermissionCheck::VerifyOpenFilePermissions(uint32_t businessCode, const 
     }
     auto ret = permissionCheck->CheckPermission(businessCode, data);
     if (ret != E_SUCCESS) {
-        if (!CheckIsOwner(uri, command, mode)) {
-            MEDIA_ERR_LOG("Permission Denied! err = %{public}d", ret);
-            CollectPermissionInfo(command, mode, false,
-                PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
-            return E_PERMISSION_DENIED;
-        }
-        MEDIA_INFO_LOG("Check owner permission success");
+        MEDIA_ERR_LOG("Permission Denied! err = %{public}d", ret);
+        CollectPermissionInfo(command, mode, false,
+            PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
+        return E_PERMISSION_DENIED;
     }
     MEDIA_INFO_LOG("VerifyPermissions API code=%{public}d success", businessCode);
     return E_SUCCESS;

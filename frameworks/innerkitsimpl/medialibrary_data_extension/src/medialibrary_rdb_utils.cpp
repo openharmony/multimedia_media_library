@@ -2862,6 +2862,40 @@ void MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(vector<string>& columns)
     }
 }
 
+void MediaLibraryRdbUtils::CleanAmbiguousColumn(std::vector<std::string> &columns,
+    DataShare::DataSharePredicates &predicates, const std::string tableName)
+{
+    int FIELD_IDX = 0;
+    int VALUE_IDX = 1;
+    vector<DataShare::OperationItem> operationItemsNew;
+    auto operationItems = predicates.GetOperationList();
+    for (DataShare::OperationItem item : operationItems) {
+        if (item.singleParams.empty()) {
+            operationItemsNew.push_back(item);
+            continue;
+        }
+        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_ID) {
+            vector<DataShare::SingleValue::Type> newSingleParam;
+            newSingleParam.push_back(tableName + "." + MediaColumn::MEDIA_ID);
+            for (size_t i = VALUE_IDX; i < item.singleParams.size(); i++) {
+                newSingleParam.push_back(item.singleParams[i]);
+            }
+            operationItemsNew.push_back({ item.operation, newSingleParam, move(item.multiParams)});
+            continue;
+        }
+        operationItemsNew.push_back(item);
+    }
+    predicates = DataShare::DataSharePredicates(operationItemsNew);
+    transform(columns.begin(), columns.end(), columns.begin(),
+        [tableName](const std::string &column) {
+            if (column == MediaColumn::MEDIA_ID) {
+                return tableName + "." + column;
+            } else {
+                return column;
+            }
+        });
+}
+
 vector<string> GetPhotoAndKnowledgeConnection()
 {
     vector<string> clauses;
@@ -3139,6 +3173,63 @@ void MediaLibraryRdbUtils::TransformAppId2TokenId(const shared_ptr<MediaLibraryR
     }
     MEDIA_INFO_LOG("TransformAppId2TokenId updatecount:%{public}zu, successcount:%{public}d",
         tokenIdMap.size(), successCount);
+}
+
+static shared_ptr<NativeRdb::ResultSet> QueryNeedTransformOwnerAppid(const shared_ptr<MediaLibraryRdbStore> &store)
+{
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.IsNotNull(MediaColumn::MEDIA_OWNER_APPID);
+    vector<string> columns{
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_OWNER_APPID,
+    };
+    return store->Query(rdbPredicate, columns);
+}
+
+void MediaLibraryRdbUtils::TransformOwnerAppIdToTokenId(const shared_ptr<MediaLibraryRdbStore> &store)
+{
+    MEDIA_INFO_LOG("TransformOwnerAppId2TokenId start!");
+    auto resultSet = QueryNeedTransformOwnerAppid(store);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "TransformOwnerAppId2TokenId failed");
+    int32_t successCount = 0;
+    std::map<std::string, int64_t> tokenIdMap;
+    vector<ValuesBucket> values;
+    while (resultSet->GoToNextRow() == E_OK) {
+        string appId;
+        GetStringFromResultSet(resultSet, MediaColumn::MEDIA_OWNER_APPID, appId);
+        int32_t fileId = 0;
+        GetIntFromResultSet(resultSet, MediaColumn::MEDIA_ID, fileId);
+        if (appId.empty() || fileId == 0) {
+            MEDIA_ERR_LOG("failed to get resultset!");
+            continue;
+        }
+        int64_t tokenId = 0;
+        if (tokenIdMap.find(appId) != tokenIdMap.end()) {
+            tokenId = tokenIdMap[appId];
+        } else {
+            if (PermissionUtils::GetMainTokenId(appId, tokenId) != E_OK) {
+                MEDIA_ERR_LOG("failed to get maintokenId : %{public}s", appId.c_str());
+                continue;
+            }
+            tokenIdMap.emplace(appId, tokenId);
+        }
+        ValuesBucket insertValue;
+        insertValue.PutString(AppUriPermissionColumn::APP_ID, appId);
+        insertValue.PutLong(AppUriPermissionColumn::SOURCE_TOKENID, tokenId);
+        insertValue.PutLong(AppUriPermissionColumn::TARGET_TOKENID, tokenId);
+        insertValue.PutInt(AppUriPermissionColumn::FILE_ID, fileId);
+        insertValue.PutInt(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
+        insertValue.PutInt(AppUriPermissionColumn::PERMISSION_TYPE,
+            AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE);
+        insertValue.PutLong(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+        values.push_back(insertValue);
+    }
+    resultSet->Close();
+    if (values.size() > 0) {
+        int64_t rowId = 0;
+        int32_t ret = store->BatchInsert(rowId, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE, values);
+        MEDIA_INFO_LOG("TransformOwnerAppId2TokenId end, rowId : %{public}ld", static_cast<long>(rowId));
+    }
 }
 
 void MediaLibraryRdbUtils::UpdateSystemAlbumExcludeSource(bool shouldNotify)
