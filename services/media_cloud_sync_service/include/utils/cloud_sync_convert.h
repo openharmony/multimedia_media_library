@@ -66,7 +66,7 @@ public:
     static int32_t CompensatePropPosition(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropHeight(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropWidth(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
-    static int32_t CompensateFormattedDate(uint64_t dateAdded, NativeRdb::ValuesBucket &values);
+    static int32_t CompensateFormattedDate(const int64_t createTime, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropDataAdded(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropDetailTime(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropSourcePath(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
@@ -88,9 +88,6 @@ public:
     static int32_t CompensateBasicSubtype(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateBasicBurstCoverLevel(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateDuration(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
-
-private:
-    static std::string StrCreateTime(const std::string &format, int64_t time);
 };
 
 }  // namespace OHOS::Media::CloudSync

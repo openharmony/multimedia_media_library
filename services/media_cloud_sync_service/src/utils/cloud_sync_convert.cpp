@@ -29,10 +29,10 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "shooting_mode_column.h"
+#include "media_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
 const int32_t FIRST_MATCH_PARAM = 1;
-const int32_t SECOND_MATCH_PARAM = 2;
 
 constexpr size_t DEFAULT_TIME_SIZE = 32;
 static bool convertToLong(const std::string &str, int64_t &value)
@@ -322,19 +322,11 @@ int32_t CloudSyncConvert::CompensatePropWidth(const CloudMediaPullDataDto &data,
     return E_OK;
 }
 
-std::string CloudSyncConvert::StrCreateTime(const std::string &format, int64_t time)
+int32_t CloudSyncConvert::CompensateFormattedDate(const int64_t createTime, NativeRdb::ValuesBucket &values)
 {
-    char strTime[DEFAULT_TIME_SIZE] = "";
-    auto tm = localtime(&time);
-    (void)strftime(strTime, sizeof(strTime), format.c_str(), tm);
-    return strTime;
-}
-
-int32_t CloudSyncConvert::CompensateFormattedDate(uint64_t dateAdded, NativeRdb::ValuesBucket &values)
-{
-    std::string year = StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded);
-    std::string month = StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded);
-    std::string day = StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded);
+    std::string year = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, createTime);
+    std::string month = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, createTime);
+    std::string day = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, createTime);
     values.PutString(PhotoColumn::PHOTO_DATE_YEAR, year);
     values.PutString(PhotoColumn::PHOTO_DATE_MONTH, month);
     values.PutString(PhotoColumn::PHOTO_DATE_DAY, day);
@@ -363,7 +355,7 @@ int32_t CloudSyncConvert::CompensatePropDataAdded(const CloudMediaPullDataDto &d
         createTime = dataAdded;
     }
     values.PutLong(PhotoColumn::MEDIA_DATE_TAKEN, createTime);
-    CompensateFormattedDate(dataAdded / MILLISECOND_TO_SECOND, values);
+    CompensateFormattedDate(createTime / MILLISECOND_TO_SECOND, values);
     return E_OK;
 }
 
