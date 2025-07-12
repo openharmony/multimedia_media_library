@@ -189,7 +189,6 @@ static void ChangeRequestSetDisplayLevelFuzzer()
     MessageParcel reply;
     reqBody.Marshalling(data);
     mediaAlbumsControllerService->ChangeRequestSetDisplayLevel(data, reply);
-    // mediaAlbumsControllerService->ChangeRequestResetCoverUri(data, reply);
 }
 
 static void ChangeRequestDismissFuzzer()
@@ -482,8 +481,6 @@ static void AlbumGetAssetsFuzzer()
     OHOS::Media::IPC::IPCContext context(option, FDP->ConsumeIntegral<int32_t>());
     mediaAlbumsControllerService->AlbumGetAssets(data, reply, context);
 }
-
-
 
 static void MediaAlbumsControllerServiceFuzzer()
 {
