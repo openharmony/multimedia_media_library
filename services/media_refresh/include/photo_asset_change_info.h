@@ -98,10 +98,10 @@ private:
 };
 
 enum ThumbnailChangeStatus : int32_t {
-    THUMBNAIL_NOT_CHANGE = 0,
-    THUMBNAIL_NOT_EXISTS,
+    THUMBNAIL_NOT_EXISTS = 0,
     THUMBNAIL_ADD,
     THUMBNAIL_UPDATE,
+    THUMBNAIL_NOT_CHANGE,
 };
 
 class EXPORT PhotoAssetChangeData : public AccurateRefreshChangeData<PhotoAssetChangeInfo> {
@@ -119,13 +119,13 @@ public:
 
 public:
     bool isContentChanged_ = false;
-    int32_t thumbnailChangeStatus_ = 0;
+    int32_t thumbnailChangeStatus_ = ThumbnailChangeStatus::THUMBNAIL_NOT_EXISTS;
 };
 
 class PhotoAssetContentInfo {
 public:
     bool isContentChanged_ = false;
-    int32_t thumbnailChangeStatus_ = 0;
+    int32_t thumbnailChangeStatus_ = ThumbnailChangeStatus::THUMBNAIL_NOT_EXISTS;
 };
 
 } // namespace Media
