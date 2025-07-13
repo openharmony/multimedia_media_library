@@ -488,7 +488,8 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetDisplayLevel(MessageParcel
     PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
     PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
     int32_t albumId = atoi(reqBody.albumId.c_str());
-    bool cond = PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) &&
+    bool cond = (PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) ||
+        PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype)) &&
         MediaFileUtils::CheckDisplayLevel(reqBody.displayLevel) && albumId > 0;
     if (!cond) {
         MEDIA_ERR_LOG("params is invalid");

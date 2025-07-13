@@ -127,6 +127,15 @@ void MediaLibraryUnitTestUtils::CleanTestFiles()
     MEDIA_INFO_LOG("CleanTestFiles Delete retVal: %{public}d, deletedRows: %{public}d", ret, deletedRows);
 }
 
+void MediaLibraryUnitTestUtils::ClearTable(const string &table)
+{
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    NativeRdb::RdbPredicates predicates(table);
+    int32_t rows = 0;
+    int32_t ret = rdbStore->Delete(rows, predicates);
+    MEDIA_INFO_LOG("CleanTable Delete retVal: %{public}d, deletedRows: %{public}d", ret, rows);
+}
+
 void MediaLibraryUnitTestUtils::CleanBundlePermission()
 {
     std::lock_guard<std::mutex> lock(Mutex_);

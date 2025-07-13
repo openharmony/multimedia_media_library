@@ -43,6 +43,10 @@ const std::string FACE_AESTHETICS_SCORE = "aesthetics_score";
 const std::string BEAUTY_BOUNDER_VERSION = "beauty_bounder_version";
 const std::string IS_EXCLUDED = "is_excluded";
 const std::string IS_PRIMARY_FACE = "is_primary_face";
+const std::string JOINT_BEAUTY_BOUNDER_X = "joint_beauty_bounder_x";
+const std::string JOINT_BEAUTY_BOUNDER_Y = "joint_beauty_bounder_y";
+const std::string JOINT_BEAUTY_BOUNDER_WIDTH = "joint_beauty_bounder_width";
+const std::string JOINT_BEAUTY_BOUNDER_HEIGHT = "joint_beauty_bounder_height";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_IMAGE_FACE_COLUMN_H

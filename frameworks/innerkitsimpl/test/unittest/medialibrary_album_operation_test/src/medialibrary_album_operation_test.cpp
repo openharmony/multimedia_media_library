@@ -549,13 +549,13 @@ void CreatTestImage()
     }
 }
 
-void InsertAlbumTestData(AlbumColumn &column)
+void InsertAlbumTestData(AlbumColumn &column, const PhotoAlbumSubType &subType = PhotoAlbumSubType::PORTRAIT)
 {
     Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
     MediaLibraryCommand cmd(analysisAlbumUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
-    valuesBucket.Put(ALBUM_SUBTYPE, PORTRAIT);
+    valuesBucket.Put(ALBUM_SUBTYPE, subType);
     valuesBucket.Put(COVER_URI, column.coverUri);
     valuesBucket.Put(COUNT, column.count);
     valuesBucket.Put(TAG_ID, column.tagId);
