@@ -4324,6 +4324,20 @@ static void UpdateSourceAlbumAndAlbumBundlenameTriggers(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddBestFaceBoundingColumnForGroupAlbum(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start add best face bounding column for group album");
+
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + JOINT_BEAUTY_BOUNDER_X + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + JOINT_BEAUTY_BOUNDER_Y + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + JOINT_BEAUTY_BOUNDER_WIDTH + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + JOINT_BEAUTY_BOUNDER_HEIGHT + " REAL",
+    };
+
+    ExecSqls(sqls, store);
+}
+
 static void AddDetailTimeToPhotos(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4770,6 +4784,23 @@ static void DropInsertSourcePhotoUpdateAlbumIdTrigger(RdbStore &store)
     MEDIA_INFO_LOG("drop trigger insert_source_photo_update_album_id_trigger end");
 }
 
+static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION) {
+        PrepareShootingModeAlbum(store);
+    }
+
+    if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API18) {
+        MEDIA_INFO_LOG("Start VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME & VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY");
+        FixMdirtyTriggerToUploadDetailTime(store);
+        MEDIA_INFO_LOG("End VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME & VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY");
+    }
+
+    if (oldVersion < VERSION_ADD_BEST_FACE_BOUNDING) {
+        AddBestFaceBoundingColumnForGroupAlbum(store);
+    }
+}
+
 static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
@@ -4819,19 +4850,7 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
         DropInsertSourcePhotoUpdateAlbumIdTrigger(store);
     }
 
-    if (oldVersion < VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION) {
-        PrepareShootingModeAlbum(store);
-    }
-
-    if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API18) {
-        MEDIA_INFO_LOG("Start VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME & VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY");
-        FixMdirtyTriggerToUploadDetailTime(store);
-        MEDIA_INFO_LOG("End VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME & VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY");
-    }
-
-    if (oldVersion < VERSION_READD_INSERT_TRIGGER) {
-        ReAddInsertTrigger(store);
-    }
+    UpgradeExtensionPart8(store, oldVersion);
 }
 
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)

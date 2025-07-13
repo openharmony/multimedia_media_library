@@ -113,6 +113,7 @@ ohos_unittest("media_albums_controller_service_test") {
     "./src/media_albums_controller_test.cpp",
     "./src/query_albums_test.cpp",
     "./src/set_photo_album_order_test.cpp",
+    "./src/album_dismiss_assets_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
