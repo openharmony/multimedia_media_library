@@ -982,7 +982,8 @@ napi_value MediaAlbumChangeRequestNapi::JSSetDisplayLevel(napi_env env, napi_cal
     auto photoAlbum = asyncContext->objectInfo->photoAlbum_;
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "PhotoAlbum is nullptr");
     CHECK_COND_WITH_MESSAGE(env,
-        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         "Only portrait album can set album display level");
     photoAlbum->SetDisplayLevel(displayLevel);
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_DISPLAY_LEVEL);
