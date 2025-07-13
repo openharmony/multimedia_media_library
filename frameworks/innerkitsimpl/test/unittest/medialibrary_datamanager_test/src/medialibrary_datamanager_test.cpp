@@ -33,6 +33,7 @@
 #include "vision_image_face_column.h"
 #include "result_set_utils.h"
 #include "photo_map_column.h"
+#include "vision_photo_map_column.h"
 #define private public
 #include "medialibrary_data_manager.h"
 #include "photo_day_month_year_operation.h"
@@ -47,11 +48,18 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static constexpr int32_t NOT_DISPLAY_FOR_BACKGROUND = -1;
+
 namespace {
     shared_ptr<FileAsset> g_pictures = nullptr;
     shared_ptr<FileAsset> g_download = nullptr;
 }
 
+struct PortraitData {
+    int64_t fileId;
+    string title;
+    string path;
+};
 
 void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
 {
@@ -89,6 +97,107 @@ string ReturnUri(string UriType, string MainUri, string SubUri = "")
     } else {
         return (UriType + "/" + MainUri + "/" + SubUri);
     }
+}
+
+PortraitData InsertPortraitToPhotos(size_t val)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    int64_t fileId = -1;
+    int64_t timestamp = 1752000000000;
+    string title = "IMG_000";
+    string displayName = title + ".jpg";
+    string data = "/storage/cloud/files/photo/" + to_string(val) + "/" + title + ".jpg";
+    NativeRdb::ValuesBucket valuesBucket;
+    valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, data);
+    valuesBucket.PutString(MediaColumn::MEDIA_TITLE, title);
+    valuesBucket.PutString(MediaColumn::MEDIA_NAME, displayName);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_ADDED, timestamp);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, timestamp);
+    valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
+    valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_IS_TEMP, 0);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 1);
+    EXPECT_NE((rdbStore == nullptr), true);
+    int32_t ret = rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
+    PortraitData portraitData;
+    portraitData.fileId = fileId;
+    portraitData.title = title;
+    portraitData.path = data;
+    return portraitData;
+}
+
+void InsertGroupPhotoToImageFace(int64_t fileId, const vector<string> &tagIds)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    int64_t rowId = -1;
+    size_t totalFaces = tagIds.size();
+    for (size_t faceId = 0; faceId < totalFaces; faceId++) {
+        NativeRdb::ValuesBucket valuesBucket;
+        valuesBucket.PutInt(MediaColumn::MEDIA_ID, fileId);
+        valuesBucket.PutInt(FACE_ID, faceId);
+        valuesBucket.PutInt(TOTAL_FACES, totalFaces);
+        valuesBucket.PutString(TAG_ID, tagIds[faceId]);
+        EXPECT_NE((rdbStore == nullptr), true);
+        int32_t ret = rdbStore->Insert(rowId, VISION_IMAGE_FACE_TABLE, valuesBucket);
+        EXPECT_EQ(ret, E_OK);
+    }
+}
+
+vector<PortraitData> PrepareGroupPhotoData(const vector<string> &tagIds)
+{
+    const int imageCount = 5;
+    vector<PortraitData> portraits;
+    for (size_t index = 0; index < imageCount; index++) {
+        PortraitData portrait = InsertPortraitToPhotos(index);
+        portraits.push_back(portrait);
+        InsertGroupPhotoToImageFace(portrait.fileId, tagIds);
+    }
+    return portraits;
+}
+
+void InsertPortraitsToAlbum(const vector<PortraitData> &portraitData, int64_t albumId, int64_t coverIndex,
+    CoverSatisfiedType coverSatisfiedType)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    int64_t rowId = -1;
+    for (PortraitData data : portraitData) {
+        NativeRdb::ValuesBucket valuesBucket;
+        valuesBucket.PutInt(MAP_ALBUM, albumId);
+        valuesBucket.PutInt(MAP_ASSET, data.fileId);
+        EXPECT_NE((rdbStore == nullptr), true);
+        int32_t ret = rdbStore->Insert(rowId, ANALYSIS_PHOTO_MAP_TABLE, valuesBucket);
+        EXPECT_EQ(ret, E_OK);
+    }
+
+    int32_t changedRows = -1;
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::UPDATE);
+    NativeRdb::ValuesBucket updateValues;
+    updateValues.PutString(COVER_URI, "coverUri");
+    updateValues.PutInt(IS_COVER_SATISFIED, static_cast<int>(coverSatisfiedType));
+    cmd.SetValueBucket(updateValues);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    int32_t ret = rdbStore->Update(cmd, changedRows);
+    EXPECT_EQ(ret, E_OK);
+}
+
+int64_t CreateSmartAlbum(const string &tagId,
+    const PhotoAlbumSubType &subtype = PhotoAlbumSubType::PORTRAIT)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    int64_t albumId = -1;
+    NativeRdb::ValuesBucket valuesBucket;
+    valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SMART);
+    valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, subtype);
+    valuesBucket.PutString(TAG_ID, tagId);
+    valuesBucket.PutString(GROUP_TAG, tagId);
+    EXPECT_NE(rdbStore, nullptr);
+    int32_t ret = rdbStore->Insert(albumId, ANALYSIS_ALBUM_TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("InsertAlbum albumId is %{public}s", to_string(albumId).c_str());
+    return albumId;
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateAsset_Test_001, TestSize.Level2)
@@ -1009,14 +1118,15 @@ void ClearAnalysisAlbumTable()
     EXPECT_EQ(err, E_OK);
 }
 
-void CreatePortraitAlbum(const string &albumName, const string &tag)
+void CreateSmartAlbum(const string &albumName, const string &tag,
+    const PhotoAlbumSubType &subtype = PhotoAlbumSubType::PORTRAIT, const int32_t &displayLevel = 1)
 {
     MEDIA_INFO_LOG("Create portrait album");
     Uri uri(PAH_INSERT_ANA_PHOTO_ALBUM);
     MediaLibraryCommand cmd(uri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SMART);
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, subtype);
     valuesBucket.Put(TAG_ID, tag);
     valuesBucket.Put(GROUP_TAG, tag);
     if (albumName != "") {
@@ -1075,10 +1185,10 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_
         "ser_1711000000000000002",
         "ser_1711000000000000003"
     };
-    CreatePortraitAlbum(albumName1, tags[0]);
-    CreatePortraitAlbum("", tags[1]);
-    CreatePortraitAlbum("", tags[2]);
-    CreatePortraitAlbum(albumName2, tags[3]);
+    CreateSmartAlbum(albumName1, tags[0]);
+    CreateSmartAlbum("", tags[1]);
+    CreateSmartAlbum("", tags[2]);
+    CreateSmartAlbum(albumName2, tags[3]);
 
     MEDIA_INFO_LOG("Query albums and check result");
     CheckResult(QueryAlbumWithName(), 2, {albumName1, albumName2});
@@ -1097,13 +1207,220 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_
         "ser_1711000000000000001",
         "ser_1711000000000000002"
     };
-    CreatePortraitAlbum("", tags[0]);
-    CreatePortraitAlbum("", tags[1]);
-    CreatePortraitAlbum("", tags[2]);
+    CreateSmartAlbum("", tags[0]);
+    CreateSmartAlbum("", tags[1]);
+    CreateSmartAlbum("", tags[2]);
 
     MEDIA_INFO_LOG("Query albums and check result");
     CheckResult(QueryAlbumWithName(), 0, {});
     MEDIA_INFO_LOG("Get_Protrait_Album_NAME_NOT_NULL_test_002 End");
+}
+
+void ClearAllTable()
+{
+    MediaLibraryUnitTestUtils::ClearTable(PhotoColumn::PHOTOS_TABLE);
+    MediaLibraryUnitTestUtils::ClearTable(VISION_IMAGE_FACE_TABLE);
+    MediaLibraryUnitTestUtils::ClearTable(ANALYSIS_PHOTO_MAP_TABLE);
+    MediaLibraryUnitTestUtils::ClearTable(ANALYSIS_ALBUM_TABLE);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Group_Photo_Album_NAME_COUNT_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Get_Group_Photo_Album_NAME_COUNT_test_001 Start");
+    MEDIA_INFO_LOG("Clear all table");
+    ClearAllTable();
+    const string albumName1 = "album_1";
+    const string albumName2 = "album_2";
+
+    MEDIA_INFO_LOG("Create portrait albums");
+    vector<string> tags = {
+        "ser_1711000000000000000, ser_1711000000000000001",
+        "ser_1711000000000000001, ser_1711000000000000002",
+        "ser_1711000000000000002, ser_1711000000000000003",
+        "ser_1711000000000000003, ser_1711000000000000003"
+    };
+
+    CreateSmartAlbum(albumName1, tags[0], PhotoAlbumSubType::GROUP_PHOTO);
+    CreateSmartAlbum("", tags[1], PhotoAlbumSubType::GROUP_PHOTO);
+    CreateSmartAlbum("", tags[2], PhotoAlbumSubType::GROUP_PHOTO);
+    CreateSmartAlbum(albumName2, tags[3], PhotoAlbumSubType::GROUP_PHOTO);
+
+    MEDIA_INFO_LOG("Query albums and check result");
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY, MediaLibraryApi::API_10);
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_ID};
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::GROUP_PHOTO);
+    int errCode = 0;
+    int count = -1;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    auto resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    EXPECT_NE(resultSet, nullptr);
+    resultSet->GetRowCount(count);
+    EXPECT_EQ(count, 4);
+
+    auto ret = resultSet->GoToFirstRow();
+    EXPECT_EQ(ret, 0);
+    int colIndex = -1;
+    resultSet->GetColumnIndex(PhotoAlbumColumns::ALBUM_ID, colIndex);
+    int32_t albumId = -1;
+    ret = resultSet->GetInt(colIndex, albumId);
+    EXPECT_EQ(ret, 0);
+    EXPECT_GT(albumId, 0);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    auto albumIdResultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    EXPECT_NE(albumIdResultSet, nullptr);
+    albumIdResultSet->GetRowCount(count);
+    EXPECT_EQ(count, 1);
+    MEDIA_INFO_LOG("Get_Group_Photo_Album_NAME_COUNT_test_001 End");
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Group_Photo_Album_NAME_COUNT_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Get_Group_Photo_Album_NAME_COUNT_test_002 Start");
+    MEDIA_INFO_LOG("Clear all table");
+    ClearAllTable();
+    const string albumName1 = "album_1";
+    const string albumName2 = "album_2";
+
+    MEDIA_INFO_LOG("Create portrait albums");
+    vector<string> tags = {
+        "ser_1711000000000000000, ser_1711000000000000001",
+        "ser_1711000000000000001, ser_1711000000000000002",
+        "ser_1711000000000000002, ser_1711000000000000003",
+        "ser_1711000000000000003, ser_1711000000000000003"
+    };
+
+    CreateSmartAlbum(albumName1, tags[0], PhotoAlbumSubType::GROUP_PHOTO, -1);
+    CreateSmartAlbum("", tags[1], PhotoAlbumSubType::GROUP_PHOTO);
+    CreateSmartAlbum("", tags[2], PhotoAlbumSubType::GROUP_PHOTO);
+    CreateSmartAlbum(albumName2, tags[3], PhotoAlbumSubType::GROUP_PHOTO);
+
+    MEDIA_INFO_LOG("Query albums and check result");
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY, MediaLibraryApi::API_10);
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_ID};
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::GROUP_PHOTO);
+    predicates.NotEqualTo(USER_DISPLAY_LEVEL, NOT_DISPLAY_FOR_BACKGROUND);
+    int errCode = 0;
+    int count = -1;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    auto resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    EXPECT_NE(resultSet, nullptr);
+    resultSet->GetRowCount(count);
+    EXPECT_EQ(count, 3);
+    MEDIA_INFO_LOG("Get_Group_Photo_Album_NAME_COUNT_test_002 End");
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Group_Photo_Album_NAME_COUNT_test_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Get_Group_Photo_Album_NAME_COUNT_test_003 Start");
+    MEDIA_INFO_LOG("Clear all table");
+    ClearAllTable();
+    const string albumName1 = "album_1";
+    const string albumName2 = "album_2";
+
+    MEDIA_INFO_LOG("Create portrait albums");
+    vector<string> tags = {
+        "ser_1711000000000000000, ser_1711000000000000001",
+        "ser_1711000000000000001, ser_1711000000000000002",
+        "ser_1711000000000000002, ser_1711000000000000003",
+        "ser_1711000000000000003, ser_1711000000000000003"
+    };
+
+    CreateSmartAlbum(albumName1, tags[0], PhotoAlbumSubType::GROUP_PHOTO);
+    CreateSmartAlbum("", tags[1], PhotoAlbumSubType::GROUP_PHOTO);
+    CreateSmartAlbum("", tags[2], PhotoAlbumSubType::GROUP_PHOTO);
+    CreateSmartAlbum(albumName2, tags[3], PhotoAlbumSubType::GROUP_PHOTO);
+
+    MEDIA_INFO_LOG("Query albums and check result");
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY, MediaLibraryApi::API_10);
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_ID};
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::GROUP_PHOTO);
+    predicates.SetWhereClause("user_display_level");
+    int errCode = 0;
+    int count = -1;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    auto resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    EXPECT_NE(resultSet, nullptr);
+    resultSet->GetRowCount(count);
+    EXPECT_EQ(count, 4);
+
+    MEDIA_INFO_LOG("Get_Group_Photo_Album_NAME_COUNT_test_003 End");
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Group_Photo_Album_Asset_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Get_Group_Photo_Album_Asset_test_001 Start");
+    MEDIA_INFO_LOG("Clear all table");
+    ClearAllTable();
+    const string groupTag = "ser_1711000000000000000,ser_1711000000000000001";
+    const vector<string> tagIds = {"ser_1711000000000000000", "ser_1711000000000000001"};
+    vector<PortraitData> portraits = PrepareGroupPhotoData(tagIds);
+    int64_t portraitAlbumId1 = CreateSmartAlbum(tagIds[0]);
+    int64_t portraitAlbumId2 = CreateSmartAlbum(tagIds[1]);
+    int64_t albumId = CreateSmartAlbum(groupTag, PhotoAlbumSubType::GROUP_PHOTO);
+    EXPECT_GT(portraitAlbumId1, 0);
+    EXPECT_GT(portraitAlbumId2, 0);
+    EXPECT_GT(albumId, 0);
+
+    InsertPortraitsToAlbum(portraits, portraitAlbumId1, 1, CoverSatisfiedType::DEFAULT_SETTING);
+    InsertPortraitsToAlbum(portraits, portraitAlbumId2, 1, CoverSatisfiedType::DEFAULT_SETTING);
+    InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
+
+    MEDIA_INFO_LOG("Query albums and check result");
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_MAP, OperationType::QUERY, MediaLibraryApi::API_10);
+    vector<string> columns = {PhotoColumn::MEDIA_ID};
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    int errCode = 0;
+    int count = -1;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    auto resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    EXPECT_NE(resultSet, nullptr);
+    resultSet->GetRowCount(count);
+    EXPECT_EQ(count, 5);
+
+    MEDIA_INFO_LOG("Get_Group_Photo_Album_Asset_test_001 End");
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Group_Photo_Album_Asset_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Get_Group_Photo_Album_Asset_test_002 Start");
+    MEDIA_INFO_LOG("Clear all table");
+    ClearAllTable();
+    const string groupTag = "ser_1711000000000000000,ser_1711000000000000001";
+    const vector<string> tagIds = {"ser_1711000000000000000", "ser_1711000000000000001"};
+    vector<PortraitData> portraits = PrepareGroupPhotoData(tagIds);
+    int64_t portraitAlbumId1 = CreateSmartAlbum(tagIds[0]);
+    int64_t portraitAlbumId2 = CreateSmartAlbum(tagIds[1]);
+    int64_t albumId = CreateSmartAlbum(groupTag, PhotoAlbumSubType::GROUP_PHOTO);
+    EXPECT_GT(portraitAlbumId1, 0);
+    EXPECT_GT(portraitAlbumId2, 0);
+    EXPECT_GT(albumId, 0);
+
+    InsertPortraitsToAlbum(portraits, portraitAlbumId1, 1, CoverSatisfiedType::DEFAULT_SETTING);
+    InsertPortraitsToAlbum(portraits, portraitAlbumId2, 1, CoverSatisfiedType::DEFAULT_SETTING);
+    InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
+
+    MEDIA_INFO_LOG("Query albums and check result");
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_MAP, OperationType::QUERY, MediaLibraryApi::API_10);
+    vector<string> columns = {MEDIA_DATA_DB_DATE_ADDED_TO_SECOND,
+        MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND,
+        MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND,
+        MEDIA_DATA_DB_DATE_TAKEN_TO_SECOND};
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    int errCode = 0;
+    int count = -1;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    auto resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    EXPECT_NE(resultSet, nullptr);
+    resultSet->GetRowCount(count);
+    EXPECT_EQ(count, 5);
+
+    MEDIA_INFO_LOG("Get_Group_Photo_Album_Asset_test_002 End");
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001, TestSize.Level2)

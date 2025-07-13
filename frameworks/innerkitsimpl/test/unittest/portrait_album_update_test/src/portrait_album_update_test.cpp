@@ -123,12 +123,13 @@ string GetCoverUri(PortraitData data)
     return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(data.fileId), extrUri);
 }
 
-int64_t CreatePortraitAlbum(const string &tagId)
+int64_t CreateSmartAlbum(const string &tagId,
+    const PhotoAlbumSubType &subtype = PhotoAlbumSubType::PORTRAIT)
 {
     int64_t albumId = -1;
     ValuesBucket valuesBucket;
     valuesBucket.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
-    valuesBucket.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
+    valuesBucket.PutInt(ALBUM_SUBTYPE, subtype);
     valuesBucket.PutString(TAG_ID, tagId);
     valuesBucket.PutString(GROUP_TAG, tagId);
     EXPECT_NE(g_rdbStore, nullptr);
@@ -175,6 +176,23 @@ void InsertPortraitToImageFace(int64_t fileId, int totalFaces, const string &tag
         valuesBucket.PutInt(FACE_ID, faceId);
         valuesBucket.PutInt(TOTAL_FACES, totalFaces);
         valuesBucket.PutString(TAG_ID, tagId);
+        EXPECT_NE((g_rdbStore == nullptr), true);
+        int32_t ret = g_rdbStore->Insert(rowId, VISION_IMAGE_FACE_TABLE, valuesBucket);
+        EXPECT_EQ(ret, E_OK);
+    }
+}
+
+void InsertGroupPhotoToImageFace(int64_t fileId, const vector<string> &tagIds)
+{
+    ASSERT_NE(g_rdbStore, nullptr);
+    int64_t rowId = -1;
+    size_t totalFaces = tagIds.size();
+    for (size_t faceId = 0; faceId < totalFaces; faceId++) {
+        ValuesBucket valuesBucket;
+        valuesBucket.PutInt(MediaColumn::MEDIA_ID, fileId);
+        valuesBucket.PutInt(FACE_ID, faceId);
+        valuesBucket.PutInt(TOTAL_FACES, totalFaces);
+        valuesBucket.PutString(TAG_ID, tagIds[faceId]);
         EXPECT_NE((g_rdbStore == nullptr), true);
         int32_t ret = g_rdbStore->Insert(rowId, VISION_IMAGE_FACE_TABLE, valuesBucket);
         EXPECT_EQ(ret, E_OK);
@@ -296,6 +314,18 @@ vector<PortraitData> PreparePortraitData(const string &tagId)
     return portraits;
 }
 
+vector<PortraitData> PrepareGroupPhotoData(const vector<string> &tagIds)
+{
+    const int imageCount = 5;
+    vector<PortraitData> portraits;
+    for (size_t index = 0; index < imageCount; index++) {
+        PortraitData portrait = InsertPortraitToPhotos();
+        portraits.push_back(portrait);
+        InsertGroupPhotoToImageFace(portrait.fileId, tagIds);
+    }
+    return portraits;
+}
+
 int32_t GetCount(const shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     int32_t count = GetInt32Val(COUNT, resultSet);
@@ -338,12 +368,45 @@ void CheckAlbum(int64_t albumId, int count, int64_t coverId, CoverSatisfiedType 
     EXPECT_EQ(GetIsCoverSatisfied(resultSet), coverSatisfiedType);
 }
 
+void CheckGroupPhotoAlbum(int64_t albumId, int count)
+{
+    shared_ptr<NativeRdb::ResultSet> resultSet = QueryPortraitAlbumInfo(albumId);
+    EXPECT_NE(resultSet, nullptr);
+    EXPECT_EQ(GetCount(resultSet), count);
+}
+
+HWTEST_F(PortraitAlbumUpdateTest, group_photo_album_update_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("group_photo_album_update_test_001 Start");
+    const string groupTag = "ser_1711000000000000000,ser_1711000000000000001";
+    const vector<string> tagIds = {"ser_1711000000000000000", "ser_1711000000000000001"};
+    vector<PortraitData> portraits = PrepareGroupPhotoData(tagIds);
+    int64_t albumId = CreateSmartAlbum(groupTag, PhotoAlbumSubType::GROUP_PHOTO);
+    EXPECT_GT(albumId, 0);
+    vector<string> albumIds = { to_string(albumId) };
+
+    InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
+    CheckGroupPhotoAlbum(albumId, 5);
+
+    TrashPortrait(portraits[0].fileId);
+    TrashPortrait(portraits[1].fileId);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
+    CheckGroupPhotoAlbum(albumId, 3);
+
+    TrashPortrait(portraits[3].fileId);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, albumIds);
+    CheckGroupPhotoAlbum(albumId, 2);
+
+    MEDIA_INFO_LOG("portrait_album_update_test_001 End");
+}
+
 HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_001 Start");
     const string tagId = "ser_1711000000000000000";
     vector<PortraitData> portraits = PreparePortraitData(tagId);
-    int64_t albumId = CreatePortraitAlbum(tagId);
+    int64_t albumId = CreateSmartAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<string> albumIds = { to_string(albumId) };
 
@@ -368,7 +431,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_002, TestSize.Level
     MEDIA_INFO_LOG("portrait_album_update_test_002 Start");
     const string tagId = "ser_1711000000000000000";
     vector<PortraitData> portraits = PreparePortraitData(tagId);
-    int64_t albumId = CreatePortraitAlbum(tagId);
+    int64_t albumId = CreateSmartAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<string> albumIds = { to_string(albumId) };
 
@@ -396,7 +459,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_003, TestSize.Level
     MEDIA_INFO_LOG("portrait_album_update_test_003 Start");
     const string tagId = "ser_1711000000000000000";
     vector<PortraitData> portraits = PreparePortraitData(tagId);
-    int64_t albumId = CreatePortraitAlbum(tagId);
+    int64_t albumId = CreateSmartAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<string> albumIds = { to_string(albumId) };
 
@@ -464,7 +527,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_004, TestSize.Level
 {
     MEDIA_INFO_LOG("portrait_album_update_test_004 Start");
     const string tagId = "ser_1711000000000000000";
-    int64_t albumId = CreatePortraitAlbum(tagId);
+    int64_t albumId = CreateSmartAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<PortraitData> portraits = PreparePortraitData(tagId);
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
@@ -476,7 +539,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_005, TestSize.Level
 {
     MEDIA_INFO_LOG("portrait_album_update_test_005 Start");
     const string tagId = "ser_1711000000000000000";
-    int64_t albumId = CreatePortraitAlbum(tagId);
+    int64_t albumId = CreateSmartAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<PortraitData> portraits = PreparePortraitData(tagId);
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
@@ -488,7 +551,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_006, TestSize.Level
 {
     MEDIA_INFO_LOG("portrait_album_update_test_006 Start");
     const string tagId = "ser_1711000000000000000";
-    int64_t albumId = CreatePortraitAlbum(tagId);
+    int64_t albumId = CreateSmartAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<PortraitData> portraits = PreparePortraitData(tagId);
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "/0/fake/fake.jpg"; // invalid uri, get empty fileId
@@ -500,7 +563,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_007, TestSize.Level
 {
     MEDIA_INFO_LOG("portrait_album_update_test_007 Start");
     const string tagId = "ser_1711000000000000000";
-    int64_t albumId = CreatePortraitAlbum(tagId);
+    int64_t albumId = CreateSmartAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<PortraitData> portraits = PreparePortraitData(tagId);
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
@@ -528,7 +591,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_008, TestSize.Level
 {
     MEDIA_INFO_LOG("portrait_album_update_test_008 Start");
     const string tagId = "ser_1711000000000000000";
-    int64_t albumId = CreatePortraitAlbum(tagId);
+    int64_t albumId = CreateSmartAlbum(tagId);
     EXPECT_GT(albumId, 0);
     vector<PortraitData> portraits = PreparePortraitData(tagId);
     vector<string> albumIds = { to_string(albumId) };

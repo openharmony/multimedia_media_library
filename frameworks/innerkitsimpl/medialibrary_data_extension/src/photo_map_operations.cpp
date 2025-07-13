@@ -52,6 +52,12 @@ using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 
 constexpr int32_t ALBUM_IS_REMOVED = 1;
+unordered_map<string, string> dateTypeSecondsMap = {
+    {MEDIA_DATA_DB_DATE_ADDED_TO_SECOND, "CAST(P.date_added / 1000 AS BIGINT) AS date_added_s"},
+    {MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND, "CAST(P.date_trashed / 1000 AS BIGINT) AS date_trashed_s"},
+    {MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND, "CAST(P.date_modified / 1000 AS BIGINT) AS date_modified_s"},
+    {MEDIA_DATA_DB_DATE_TAKEN_TO_SECOND, "CAST(P.date_taken / 1000 AS BIGINT) AS date_taken_s"}
+};
 
 static int32_t InsertAnalysisAsset(const DataShareValuesBucket &value,
     std::shared_ptr<TransactionOperations> trans)
@@ -255,11 +261,17 @@ static void GetDismissAssetsPredicates(NativeRdb::RdbPredicates &rdbPredicate, v
 int32_t DoDismissAssets(int32_t subtype, const string &albumId, const vector<string> &assetIds)
 {
     int32_t deleteRow = 0;
+    int32_t secondDeleteRow = 0;
     if (subtype == PhotoAlbumSubType::GROUP_PHOTO) {
         NativeRdb::RdbPredicates rdbPredicate { VISION_IMAGE_FACE_TABLE };
         rdbPredicate.In(MediaColumn::MEDIA_ID, assetIds);
         deleteRow = MediaLibraryRdbStore::Delete(rdbPredicate);
-        if (deleteRow != 0 && MediaLibraryDataManagerUtils::IsNumber(albumId)) {
+
+        NativeRdb::RdbPredicates mapTablePredicate { ANALYSIS_PHOTO_MAP_TABLE };
+        mapTablePredicate.EqualTo(MAP_ALBUM, albumId);
+        mapTablePredicate.And()->In(MAP_ASSET, assetIds);
+        secondDeleteRow = MediaLibraryRdbStore::Delete(mapTablePredicate);
+        if (deleteRow != 0 && secondDeleteRow != 0 && MediaLibraryDataManagerUtils::IsNumber(albumId)) {
             MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(atoi(albumId.c_str()));
         }
         return deleteRow;
@@ -409,7 +421,12 @@ shared_ptr<OHOS::NativeRdb::ResultSet> QueryGroupPhotoAlbumAssets(const string &
 {
     string strColumns;
     for (size_t i = 0; i < columns.size(); i++) {
-        strColumns.append("P." + columns[i]);
+        string column = columns[i];
+        if (dateTypeSecondsMap.find(column) != dateTypeSecondsMap.end()) {
+            strColumns.append(dateTypeSecondsMap[column]);
+        } else {
+            strColumns.append("P." + column);
+        }
         if (i != columns.size() - 1) {
             strColumns.append(", ");
         }
@@ -430,7 +447,8 @@ shared_ptr<OHOS::NativeRdb::ResultSet> QueryGroupPhotoAlbumAssets(const string &
         ") INNER JOIN " + ANALYSIS_PHOTO_MAP_TABLE + " ON " + MAP_ALBUM + " = AA." + PhotoAlbumColumns::ALBUM_ID +
         " AND " + MAP_ASSET + " = F." + MediaColumn::MEDIA_ID + " INNER JOIN " + PhotoColumn::PHOTOS_TABLE +
         " P ON P." + MediaColumn::MEDIA_ID + " = F." + MediaColumn::MEDIA_ID + " AND " +
-        MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " + MediaColumn::MEDIA_HIDDEN + " = 0 AND " +
+        MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " + PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 AND " + MediaColumn::MEDIA_HIDDEN + " = 0 AND " +
         MediaColumn::MEDIA_TIME_PENDING + " = 0 GROUP BY P." + MediaColumn::MEDIA_ID +
         " HAVING COUNT(" + GROUP_TAG + ") = " + TOTAL_FACES + " AND " +
         " COUNT(DISTINCT " + GROUP_TAG +") = " + to_string(albumTagCount) + ";";
