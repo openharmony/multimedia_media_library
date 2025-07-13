@@ -706,7 +706,7 @@ HWTEST_F(AssetAccurateRefreshTest, Insert_002, TestSize.Level2)
     assetChangeData.operation_ = RDB_OPERATION_ADD;
     assetChangeData.infoAfterChange_ = queryAssetInfo;
     assetChangeData.isContentChanged_ = false;
-    assetChangeData.thumbnailChangeStatus_ = 0;
+    assetChangeData.thumbnailChangeStatus_ = ThumbnailChangeStatus::THUMBNAIL_NOT_EXISTS;
     assetChangeData.isDelete_ = false;
     EXPECT_TRUE(changeDatasMap.size() == 1);
     auto iter = changeDatasMap.begin();
