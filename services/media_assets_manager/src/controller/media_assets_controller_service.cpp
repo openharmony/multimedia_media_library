@@ -59,12 +59,14 @@
 #include "rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_vision_operations.h"
+#include "media_app_uri_permission_column.h"
 #include "cloud_media_asset_manager.h"
 #include "request_content_vo.h"
 #include "get_cloud_enhancement_pair_vo.h"
 #include "query_cloud_enhancement_task_state_vo.h"
 #include "query_cloud_enhancement_task_state_dto.h"
 #include "vision_photo_map_column.h"
+#include "permission_utils.h"
 #include "photo_map_operations.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -1016,12 +1018,19 @@ int32_t MediaAssetsControllerService::GetAssets(
     }
     GetAssetsDto dto = GetAssetsDto::Create(reqBody);
     if (context.GetByPassCode() == E_PERMISSION_DB_BYPASS) {
-        string clientAppId = GetClientAppId();
-        if (clientAppId.empty()) {
-            MEDIA_ERR_LOG("clientAppId is empty");
+        int64_t tokenId = static_cast<int64_t>(PermissionUtils::GetTokenId());
+        if (tokenId == 0) {
+            MEDIA_ERR_LOG("Get tokenId fail");
             return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
         }
-        dto.predicates.And()->EqualTo("owner_appid", clientAppId);
+        string caluse = AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "." + AppUriPermissionColumn::FILE_ID +
+                " = " + PhotoColumn::PHOTOS_TABLE + "." + AppUriPermissionColumn::FILE_ID;
+        dto.predicates.InnerJoin(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE)->On({caluse});
+        dto.predicates.EqualTo(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "." +
+            AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE);
+        dto.predicates.EqualTo(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "." +
+            AppUriPermissionColumn::TARGET_TOKENID, tokenId);
+        MediaLibraryRdbUtils::CleanAmbiguousColumn(dto.columns, dto.predicates, PhotoColumn::PHOTOS_TABLE);
     }
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
     auto resultSet = MediaAssetsService::GetInstance().GetAssets(dto);
@@ -1052,12 +1061,19 @@ int32_t MediaAssetsControllerService::GetBurstAssets(
     }
     GetAssetsDto dto = GetAssetsDto::Create(reqBody);
     if (context.GetByPassCode() == E_PERMISSION_DB_BYPASS) {
-        string clientAppId = GetClientAppId();
-        if (clientAppId.empty()) {
-            MEDIA_ERR_LOG("clientAppId is empty");
+        int64_t tokenId = static_cast<int64_t>(PermissionUtils::GetTokenId());
+        if (tokenId == 0) {
+            MEDIA_ERR_LOG("Get tokenId fail");
             return IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
         }
-        dto.predicates.And()->EqualTo("owner_appid", clientAppId);
+        string caluse = AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "." + AppUriPermissionColumn::FILE_ID +
+                " = " + PhotoColumn::PHOTOS_TABLE + "." + AppUriPermissionColumn::FILE_ID;
+        dto.predicates.InnerJoin(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE)->On({caluse});
+        dto.predicates.EqualTo(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "." +
+            AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE);
+        dto.predicates.EqualTo(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "." +
+            AppUriPermissionColumn::TARGET_TOKENID, tokenId);
+        MediaLibraryRdbUtils::CleanAmbiguousColumn(dto.columns, dto.predicates, PhotoColumn::PHOTOS_TABLE);
     }
     dto.predicates.OrderByAsc(MediaColumn::MEDIA_NAME);
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);

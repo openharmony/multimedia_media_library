@@ -531,6 +531,11 @@ void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 
         rdbStore->SetOldVersion(VERSION_FIX_DB_UPGRADE_FROM_API18);
     }
+
+    if (oldVersion < VERSION_TRANSFER_OWNERAPPID_TO_TOKENID) {
+        MediaLibraryRdbUtils::TransformOwnerAppIdToTokenId(rdbStore);
+        rdbStore->SetOldVersion(VERSION_TRANSFER_OWNERAPPID_TO_TOKENID);
+    }
 }
 
 void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
