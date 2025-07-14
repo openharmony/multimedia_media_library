@@ -135,7 +135,7 @@ struct RefreshAlbumData {
     int32_t albumSubtype;
 };
 
-struct UpdatePortraitData{
+struct UpdateAlbumDataWithCache {
     int32_t albumCount;
     string albumCoverUri;
 };
@@ -422,6 +422,11 @@ static inline int32_t GetPortraitFileCount(const shared_ptr<ResultSet> &resultSe
     return GetIntValFromColumn(resultSet, MEDIA_COLUMN_COUNT_DISTINCT_FILE_ID);
 }
 
+static inline int32_t GetGroupPhotoFileCount(const shared_ptr<ResultSet> &resultSet)
+{
+    return GetIntValFromColumn(resultSet, MEDIA_COLUMN_COUNT_DISTINCT_FILE_ID);
+}
+
 static inline int32_t GetAlbumCount(const shared_ptr<ResultSet> &resultSet, const string &column)
 {
     return GetIntValFromColumn(resultSet, column);
@@ -527,6 +532,8 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const UpdateAlb
     int32_t newCount;
     if (subtype == PORTRAIT) {
         newCount = GetPortraitFileCount(fileResult);
+    } else if (subtype == GROUP_PHOTO) {
+        newCount = GetGroupPhotoFileCount(fileResult);
     } else {
         newCount = GetFileCount(fileResult);
     }
@@ -559,6 +566,12 @@ static void SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const Upda
             albumId, MediaFileUtils::GetUriWithoutDisplayname(oldCover).c_str(),
             MediaFileUtils::GetUriWithoutDisplayname(newCover).c_str());
     }
+}
+
+static void SetGroupPhotoCover(const shared_ptr<ResultSet> &fileResult, const UpdateAlbumData &data,
+    ValuesBucket &values, int newCount)
+{
+    SetPortraitCover(fileResult, data, values, newCount);
 }
 
 static void SetCoverDateTime(const shared_ptr<ResultSet> &fileResult, const UpdateAlbumData &data,
@@ -1064,6 +1077,11 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     predicates.Distinct();
 }
 
+static void GetGroupPhotoAlbumCountPredicates(const string &albumId, RdbPredicates &predicates)
+{
+    GetPortraitAlbumCountPredicates(albumId, predicates);
+}
+
 static bool IsCoverValid(const shared_ptr<MediaLibraryRdbStore>& rdbStore, const string &albumId, const string &fileId)
 {
     if (fileId.empty()) {
@@ -1118,6 +1136,13 @@ static bool IsCoverValid(const shared_ptr<MediaLibraryRdbStore>& rdbStore, const
 }
 
 static inline bool ShouldUpdatePortraitAlbumCover(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
+    const string &albumId, const string &fileId, const uint8_t isCoverSatisfied)
+{
+    return isCoverSatisfied == static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING) ||
+        !IsCoverValid(rdbStore, albumId, fileId);
+}
+
+static inline bool ShouldUpdateGroupPhotoAlbumCover(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const string &albumId, const string &fileId, const uint8_t isCoverSatisfied)
 {
     return isCoverSatisfied == static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING) ||
@@ -1180,7 +1205,13 @@ static shared_ptr<ResultSet> QueryPortraitAlbumCover(const shared_ptr<MediaLibra
     return resultSet;
 }
 
-static void SetPortraitValuesWithCache(shared_ptr<UpdatePortraitData> portraitData,
+static shared_ptr<ResultSet> QueryGroupPhotoAlbumCover(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const string &albumId)
+{
+    return QueryPortraitAlbumCover(rdbStore, albumId);
+}
+
+static void SetPortraitValuesWithCache(shared_ptr<UpdateAlbumDataWithCache> portraitData,
     const UpdateAlbumData &data, ValuesBucket &values)
 {
     if (data.albumCount != portraitData->albumCount) {
@@ -1197,11 +1228,17 @@ static void SetPortraitValuesWithCache(shared_ptr<UpdatePortraitData> portraitDa
     }
 }
 
+static void SetGroupPhotoValuesWithCache(shared_ptr<UpdateAlbumDataWithCache> portraitData,
+    const UpdateAlbumData &data, ValuesBucket &values)
+{
+    SetPortraitValuesWithCache(portraitData, data, values);
+}
+
 static void UpdatePortraitCache(const shared_ptr<MediaLibraryRdbStore> rdbStore, const ValuesBucket &values,
-    const UpdateAlbumData &data, map<int32_t, shared_ptr<UpdatePortraitData>> &portraitCacheMap)
+    const UpdateAlbumData &data, map<int32_t, shared_ptr<UpdateAlbumDataWithCache>> &portraitCacheMap)
 {
     // get update data
-    auto portraitData = make_shared<UpdatePortraitData>();
+    auto portraitData = make_shared<UpdateAlbumDataWithCache>();
     portraitData->albumCount = data.albumCount;
     portraitData->albumCoverUri = data.albumCoverUri;
     ValueObject valueObject;
@@ -1224,6 +1261,12 @@ static void UpdatePortraitCache(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         portraitCacheMap[albumId] = portraitData;
     }
     resultSet->Close();
+}
+
+static void UpdateGroupPhotoCache(const shared_ptr<MediaLibraryRdbStore> rdbStore, const ValuesBucket &values,
+    const UpdateAlbumData &data, map<int32_t, shared_ptr<UpdateAlbumDataWithCache>> &portraitCacheMap)
+{
+    UpdatePortraitCache(rdbStore, values, data, portraitCacheMap);
 }
 
 static int32_t SetPortraitUpdateValues(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
@@ -1251,6 +1294,34 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<MediaLibraryRdbStore>& r
     CHECK_AND_RETURN_RET_LOG(coverResult != nullptr, E_HAS_DB_ERROR,
         "Failed to query Portrait Album Cover");
     SetPortraitCover(coverResult, data, values, newCount);
+    return E_SUCCESS;
+}
+
+static int32_t SetGroupPhotoUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const UpdateAlbumData &data, ValuesBucket &values)
+{
+    const vector<string> countColumns = {
+        MEDIA_COLUMN_COUNT_DISTINCT_FILE_ID
+    };
+
+    string coverUri = data.albumCoverUri;
+    string coverId = GetPhotoId(coverUri);
+    uint8_t isCoverSatisfied = data.isCoverSatisfied;
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    string albumId = to_string(data.albumId);
+    GetGroupPhotoAlbumCountPredicates(albumId, predicates);
+    shared_ptr<ResultSet> countResult = QueryGoToFirst(rdbStore, predicates, countColumns);
+    CHECK_AND_RETURN_RET_LOG(countResult != nullptr, E_HAS_DB_ERROR, "Failed to query GroupPhoto Album Count");
+
+    int32_t newCount = SetCount(countResult, data, values, false, PhotoAlbumSubType::PORTRAIT);
+    if (!ShouldUpdateGroupPhotoAlbumCover(rdbStore, albumId, coverId, isCoverSatisfied)) {
+        return E_SUCCESS;
+    }
+    shared_ptr<ResultSet> coverResult = QueryGroupPhotoAlbumCover(rdbStore, albumId);
+    CHECK_AND_RETURN_RET_LOG(coverResult != nullptr, E_HAS_DB_ERROR,
+        "Failed to query GroupPhoto Album Cover");
+    SetGroupPhotoCover(coverResult, data, values, newCount);
     return E_SUCCESS;
 }
 
@@ -1442,7 +1513,7 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
         CHECK_AND_RETURN_RET_LOG(fileResultVideo != nullptr, E_HAS_DB_ERROR, "Failed to query fileResultVideo");
         SetImageVideoCount(newCount, fileResultVideo, data, values);
     }
-    if (data.shouldUpdateDateModified) {
+    if (data.shouldUpdateDateModified || (!hiddenState && newCount != data.albumCount)) {
         values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     }
     return E_SUCCESS;
@@ -1542,7 +1613,7 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore> rd
 
 static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
     const UpdateAlbumData &data, std::shared_ptr<TransactionOperations> trans,
-    map<int32_t, shared_ptr<UpdatePortraitData>> &portraitCacheMap)
+    map<int32_t, shared_ptr<UpdateAlbumDataWithCache>> &portraitCacheMap)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdatePortraitAlbumIfNeeded");
@@ -1563,6 +1634,42 @@ static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore
             return setRet;
         }
         UpdatePortraitCache(rdbStore, values, data, portraitCacheMap);
+    }
+    if (values.IsEmpty()) {
+        return E_SUCCESS;
+    }
+
+    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    int32_t changedRows = 0;
+    int updateRet = trans->Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG(updateRet == NativeRdb::E_OK, updateRet,
+        "Failed to update album count and cover! album id: %{public}d, err: %{public}d", albumId, updateRet);
+    return E_SUCCESS;
+}
+
+static int32_t UpdateGroupPhotoAlbumIfNeed(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
+    const UpdateAlbumData &data, std::shared_ptr<TransactionOperations> trans,
+    map<int32_t, shared_ptr<UpdateAlbumDataWithCache>> &pgroupPhotoCacheMap)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateGroupPhotoAlbumIfNeed");
+    CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
+    auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
+    CHECK_AND_RETURN_RET(subtype == PhotoAlbumSubType::GROUP_PHOTO, E_SUCCESS);
+    ValuesBucket values;
+    int32_t albumId = data.albumId;
+    auto it = pgroupPhotoCacheMap.find(data.albumId);
+    if (it != pgroupPhotoCacheMap.end()) {
+        SetGroupPhotoValuesWithCache(it->second, data, values);
+    } else {
+        int setRet = SetGroupPhotoUpdateValues(rdbStore, data, values);
+        if (setRet != E_SUCCESS) {
+            MEDIA_ERR_LOG("Failed to set group Photo album update values! album id: %{public}d, err: %{public}d",
+                albumId, setRet);
+            return setRet;
+        }
+        UpdateGroupPhotoCache(rdbStore, values, data, pgroupPhotoCacheMap);
     }
     if (values.IsEmpty()) {
         return E_SUCCESS;
@@ -2107,7 +2214,8 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLib
 
     // For each row
     int32_t err = NativeRdb::E_OK;
-    map<int32_t, shared_ptr<UpdatePortraitData>> portraitCacheMap;
+    map<int32_t, shared_ptr<UpdateAlbumDataWithCache>> portraitCacheMap;
+    map<int32_t, shared_ptr<UpdateAlbumDataWithCache>> groupPhotoCacheMap;
     for (auto data : datas) {
         int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
         std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
@@ -2116,7 +2224,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLib
             if (subtype == PhotoAlbumSubType::PORTRAIT) {
                 UpdatePortraitAlbumIfNeeded(rdbStore, data, trans, portraitCacheMap);
             } else if (subtype == PhotoAlbumSubType::GROUP_PHOTO) {
-                MEDIA_INFO_LOG("No need to update group photo");
+                UpdateGroupPhotoAlbumIfNeed(rdbStore, data, trans, groupPhotoCacheMap);
             } else {
                 PrintHighlightAlbumInfo(subtype, data.albumId);
                 UpdateAnalysisAlbumIfNeeded(rdbStore, data, false, trans);

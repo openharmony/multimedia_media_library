@@ -48,16 +48,16 @@ int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, s
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
     std::string cloudId = data.cloudId;
-    MEDIA_INFO_LOG("Delete cloudId: %{public}s.", cloudId.c_str());
     std::string localPath = data.localPath;
-
     bool isLocal = CloudMediaSyncUtils::FileIsLocal(data.localPosition);
+    MEDIA_INFO_LOG("Delete cloudId: %{public}s, localPath: %{public}s, isLocal: %{public}d",
+        cloudId.c_str(), localPath.c_str(), isLocal);
     if (isLocal && CloudMediaSyncUtils::IsLocalDirty(data.localDirty, true)) {
         MEDIA_ERR_LOG("local record dirty, ignore cloud delete");
         return this->photosDao_.ClearCloudInfo(cloudId);
     }
 
-    if (CloudMediaFileUtils::LocalWriteOpen(localPath)) {
+    if (isLocal && CloudMediaFileUtils::LocalWriteOpen(localPath)) {
         int32_t ret = this->photosDao_.SetRetry(cloudId);
         if (ret != E_OK) {
             std::string errMsg = "update retry flag failed, ret = " + to_string(ret);

@@ -43,6 +43,7 @@ const std::string LANDMARK_X = "x";
 const std::string LANDMARK_Y = "y";
 const std::string COLUMN_INTEGRITY_CHECK = "quick_check";
 const std::string SQL_QUOTES = "\"";
+const int32_t ARG_COUNT = 2;
 
 const std::vector<uint32_t> HEX_MAX = { 0xff, 0xffff, 0xffffff, 0xffffffff };
 static SafeMap<int32_t, int32_t> fileIdOld2NewForCloudEnhancement;
@@ -64,7 +65,7 @@ int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     if (isMediaLibrary) {
         config.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
         config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
-        config.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
+        config.SetScalarFunction("photo_album_notify_func", ARG_COUNT, PhotoAlbumNotifyFunc);
         config.SetScalarFunction("begin_generate_highlight_thumbnail", STAMP_PARAM, BeginGenerateHighlightThumbnail);
     }
     int32_t err;
