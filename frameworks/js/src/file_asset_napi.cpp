@@ -2981,7 +2981,7 @@ static napi_value HandleGettingDetailTimeKey(napi_env env, const shared_ptr<File
             if (dateTaken > SECONDS_LEVEL_LIMIT) {
                 dateTaken = dateTaken / MSEC_TO_SEC;
             }
-            string detailTime = MediaFileUtils::StrCreateTimeSafely(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+            string detailTime = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
             napi_create_string_utf8(env, detailTime.c_str(), NAPI_AUTO_LENGTH, &jsResult);
             UpdateDetailTimeByDateTaken(env, fileAssetPtr, detailTime, dateTaken);
         } else {

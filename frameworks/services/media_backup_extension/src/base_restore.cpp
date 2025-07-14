@@ -393,16 +393,16 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
 static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
     int64_t dateTaken = metadata->GetDateTaken();
-    if (dateTaken != 0) {
+    if (dateTaken > 0) {
         value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
         fileInfo.dateTaken = dateTaken;
         return;
     }
 
     int64_t dateAdded = metadata->GetFileDateAdded();
-    if (dateAdded == 0) {
+    if (dateAdded <= 0) {
         int64_t dateModified = metadata->GetFileDateModified();
-        if (dateModified == 0) {
+        if (dateModified <= 0) {
             dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
         } else {
             dateTaken = dateModified;

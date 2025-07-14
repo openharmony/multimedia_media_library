@@ -96,19 +96,22 @@ int32_t EnhancementDatabaseOperations::Update(ValuesBucket &rdbValues, AbsRdbPre
     return E_OK;
 }
 
-static void HandleDateAdded(const int64_t dateAdded, const MediaType type, ValuesBucket &outValues)
+static void HandleDateAdded(const MediaType type, ValuesBucket &outValues,
+    shared_ptr<NativeRdb::ResultSet> resultSet)
 {
+    int64_t dateAdded = GetInt64Val(PhotoColumn::MEDIA_DATE_ADDED, resultSet);
+    int64_t dateTaken = GetInt64Val(PhotoColumn::MEDIA_DATE_TAKEN, resultSet);
     outValues.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
     if (type != MEDIA_TYPE_PHOTO) {
         return;
     }
     outValues.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateTaken));
     outValues.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateTaken));
     outValues.PutString(PhotoColumn::PHOTO_DATE_DAY,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
-    outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateAdded);
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateTaken));
+    outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
 }
 
 static void SetOwnerAlbumId(ValuesBucket &assetInfo, shared_ptr<NativeRdb::ResultSet> resultSet)
@@ -139,7 +142,6 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
     CHECK_AND_RETURN_RET_LOG(fileAsset.GetPath().empty() || !MediaFileUtils::IsFileExists(fileAsset.GetPath()),
         E_FILE_EXIST, "file %{private}s exists now", fileAsset.GetPath().c_str());
     const string& displayName = fileAsset.GetDisplayName();
-    int64_t nowTime = MediaFileUtils::UTCTimeMilliSeconds();
     ValuesBucket assetInfo;
     assetInfo.PutInt(MediaColumn::MEDIA_TYPE, fileAsset.GetMediaType());
     string extension = ScannerUtils::GetFileExtension(displayName);
@@ -151,7 +153,7 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
     assetInfo.PutString(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
-    HandleDateAdded(nowTime, MEDIA_TYPE_PHOTO, assetInfo);
+    HandleDateAdded(MEDIA_TYPE_PHOTO, assetInfo, resultSet);
     // Set subtype if source image is moving photo
     assetInfo.PutInt(MediaColumn::MEDIA_HIDDEN, info->hidden);
     if (info->subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
