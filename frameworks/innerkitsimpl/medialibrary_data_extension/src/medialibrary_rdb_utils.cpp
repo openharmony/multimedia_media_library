@@ -1513,7 +1513,11 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
         CHECK_AND_RETURN_RET_LOG(fileResultVideo != nullptr, E_HAS_DB_ERROR, "Failed to query fileResultVideo");
         SetImageVideoCount(newCount, fileResultVideo, data, values);
     }
-    if (data.shouldUpdateDateModified || (!hiddenState && newCount != data.albumCount)) {
+
+    // album datemodified can be update only when the number of user and source album is updated.
+    bool userOrSourceAlbumUpdated = !hiddenState && newCount != data.albumCount &&
+        (data.albumSubtype == USER_GENERIC || data.albumSubtype == SOURCE_GENERIC);
+    if (data.shouldUpdateDateModified || userOrSourceAlbumUpdated) {
         values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     }
     return E_SUCCESS;

@@ -19,6 +19,7 @@
 #include "shooting_mode_album_test.h"
 
 #include <thread>
+#include "datashare_predicates.h"
 #include "fetch_result.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -267,5 +268,100 @@ HWTEST_F(ShootingModeAlbumTest, query_shooting_mode_album_index_001, TestSize.Le
     string index = ShootingModeAlbum::GetQueryAssetsIndex(type);
     EXPECT_EQ(index, PhotoColumn::PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX);
     MEDIA_INFO_LOG("query_shooting_mode_album_index_001 end");
+}
+
+HWTEST_F(ShootingModeAlbumTest, GetShootingModeAlbumPredicates_Test_001, TestSize.Level1)
+{
+    NativeRdb::RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::MOVING_PICTURE, rdbPredicates, false);
+    vector<string> args = rdbPredicates.GetWhereArgs();
+    EXPECT_GT(args.size(), 0);
+    rdbPredicates.Clear();
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::BURST_MODE_ALBUM, rdbPredicates, false);
+    args = rdbPredicates.GetWhereArgs();
+    EXPECT_GT(args.size(), 0);
+    rdbPredicates.Clear();
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::FRONT_CAMERA_ALBUM, rdbPredicates, false);
+    args = rdbPredicates.GetWhereArgs();
+    EXPECT_GT(args.size(), 0);
+    rdbPredicates.Clear();
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::RAW_IMAGE_ALBUM, rdbPredicates, false);
+    args = rdbPredicates.GetWhereArgs();
+    EXPECT_GT(args.size(), 0);
+    rdbPredicates.Clear();
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::PORTRAIT, rdbPredicates, false);
+    args = rdbPredicates.GetWhereArgs();
+    EXPECT_GT(args.size(), 0);
+}
+
+HWTEST_F(ShootingModeAlbumTest, GetShootingModeAlbumPredicates_Test_002, TestSize.Level1)
+{
+    DataShare::DataSharePredicates dataSharePredicates1;
+    DataShare::DataSharePredicates dataSharePredicates2;
+    DataShare::DataSharePredicates dataSharePredicates3;
+    DataShare::DataSharePredicates dataSharePredicates4;
+    DataShare::DataSharePredicates dataSharePredicates5;
+
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::MOVING_PICTURE, dataSharePredicates1, false);
+    auto args = dataSharePredicates1.GetOperationList();
+    EXPECT_GT(args.size(), 0);
+
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::BURST_MODE_ALBUM, dataSharePredicates2, false);
+    args = dataSharePredicates2.GetOperationList();
+    EXPECT_GT(args.size(), 0);
+
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::FRONT_CAMERA_ALBUM, dataSharePredicates3, false);
+    args = dataSharePredicates3.GetOperationList();
+    EXPECT_GT(args.size(), 0);
+
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::RAW_IMAGE_ALBUM, dataSharePredicates4, false);
+    args = dataSharePredicates4.GetOperationList();
+    EXPECT_GT(args.size(), 0);
+
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::PORTRAIT, dataSharePredicates5, false);
+    args = dataSharePredicates5.GetOperationList();
+    EXPECT_GT(args.size(), 0);
+}
+
+HWTEST_F(ShootingModeAlbumTest, AlbumNameToShootingModeAlbumType_Test_001, TestSize.Level1)
+{
+    ShootingModeAlbumType result;
+    bool ret = ShootingModeAlbum::AlbumNameToShootingModeAlbumType("1", result);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(result, ShootingModeAlbumType::PORTRAIT);
+
+    ret = ShootingModeAlbum::AlbumNameToShootingModeAlbumType("-1", result);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(ShootingModeAlbumTest, AlbumNameToShootingModeAlbumType_Test_002, TestSize.Level1)
+{
+    vector<ShootingModeAlbumType> result = ShootingModeAlbum::GetShootingModeAlbumOfAsset(
+        static_cast<int>(PhotoSubType::BURST), "image/x-adobe-dng", 0, "1", "1");
+    EXPECT_EQ(result.size(), 4);
+
+    result = ShootingModeAlbum::GetShootingModeAlbumOfAsset(
+        static_cast<int>(PhotoSubType::MOVING_PHOTO), "image/x-adobe-dng", 0, "1", "1");
+    EXPECT_EQ(result.size(), 4);
+}
+
+HWTEST_F(ShootingModeAlbumTest, MapShootingModeTagToShootingMode_Test_001, TestSize.Level1)
+{
+    string shootingMode = ShootingModeAlbum::MapShootingModeTagToShootingMode(PORTRAIT_ALBUM_TAG);
+    EXPECT_EQ(shootingMode, "1");
+
+    shootingMode = ShootingModeAlbum::MapShootingModeTagToShootingMode("-1");
+    EXPECT_EQ(shootingMode, "");
 }
 } // namespace OHOS::Media
