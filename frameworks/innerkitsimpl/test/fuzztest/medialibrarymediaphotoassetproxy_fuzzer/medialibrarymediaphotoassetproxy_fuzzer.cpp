@@ -88,7 +88,8 @@ void CreateDataHelper(int32_t systemAbilityId)
 static shared_ptr<Media::PhotoAssetProxy> Init()
 {
     shared_ptr<Media::PhotoAssetProxy> photoAssetProxy = make_shared<Media::PhotoAssetProxy>(sDataShareHelper_,
-        FuzzCameraShotType(), provider->ConsumeIntegral<int32_t>(), provider->ConsumeIntegral<int32_t>());
+        FuzzCameraShotType(), provider->ConsumeIntegral<int32_t>(), provider->ConsumeIntegral<int32_t>(),
+        provider->ConsumeIntegral<uint32_t>());
     return photoAssetProxy;
 }
 
