@@ -16,13 +16,17 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_MEDIALIBRARY_ANI_ENUM_COMM_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_MEDIALIBRARY_ANI_ENUM_COMM_H
 
-#include <map>
 #include <memory>
+#include <map>
 #include <set>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "data_query.h"
 #include "location_column.h"
+#include "datashare_helper.h"
+#include "photo_album_column.h"
 #include "media_column.h"
 #include "medialibrary_db_const.h"
 
@@ -214,7 +218,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DATE_YEAR",                 PhotoColumn::PHOTO_DATE_YEAR),
     std::make_pair("DATE_MONTH",                PhotoColumn::PHOTO_DATE_MONTH),
     std::make_pair("DATE_DAY",                  PhotoColumn::PHOTO_DATE_DAY),
-    std::make_pair("PENDING",                   PENDING_STATUS),
+    std::make_pair("PENDING",                   "pending"),
     std::make_pair("DATE_ADDED_MS",             MEDIA_DATA_DB_DATE_ADDED_MS),
     std::make_pair("DATE_MODIFIED_MS",          MEDIA_DATA_DB_DATE_MODIFIED_MS),
     std::make_pair("DATE_TRASHED_MS",           MEDIA_DATA_DB_DATE_TRASHED_MS),
@@ -306,6 +310,6 @@ const std::set<std::string> TIME_COLUMN = {
     MEDIA_DATA_DB_DATE_TRASHED,
 };
 
-} // Media
-} // OHOS
+} // namespace Media
+} // namespace OHOS
 #endif // FRAMEWORKS_ANI_SRC_INCLUDE_MEDIALIBRARY_ANI_ENUM_COMM_H

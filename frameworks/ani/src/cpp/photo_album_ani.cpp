@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define MLOG_TAG "PhotoAlbumAni"
 #include "photo_album_ani.h"
 
 #include "ani_class_name.h"
@@ -20,8 +20,6 @@
 #include "file_asset_ani.h"
 #include "media_file_utils.h"
 #include "media_library_enum_ani.h"
-#include "medialibrary_client_errno.h"
-#include "medialibrary_ani_log.h"
 #include "medialibrary_ani_utils.h"
 #include "medialibrary_tracer.h"
 #include "photo_map_column.h"
@@ -29,11 +27,9 @@
 #include "userfile_client.h"
 #include "album_operation_uri.h"
 
-using namespace std;
-using namespace OHOS::DataShare;
-
 namespace OHOS::Media {
-
+using DataSharePredicates = OHOS::DataShare::DataSharePredicates;
+using DataShareValuesBucket = OHOS::DataShare::DataShareValuesBucket;
 struct PhotoAlbumAttributes {
     PhotoAlbumType albumType;
     PhotoAlbumSubType albumSubtype;
@@ -41,6 +37,7 @@ struct PhotoAlbumAttributes {
     std::string albumUri;
     int32_t count;
     std::string coverUri;
+    std::string lPath;
 };
 
 thread_local PhotoAlbum *PhotoAlbumAni::pAlbumData_ = nullptr;
@@ -51,6 +48,7 @@ PhotoAlbumAni::~PhotoAlbumAni() = default;
 
 ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_class cls;
     if (ANI_OK != env->FindClass(PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE.c_str(), &cls)) {
         ANI_ERR_LOG("Failed to find class: %{public}s", PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE.c_str());
@@ -69,35 +67,39 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
         ani_native_function {"getFaceIdInner", nullptr, reinterpret_cast<void *>(PhotoAccessHelperGetFaceId)},
         ani_native_function {"getImageCount", nullptr, reinterpret_cast<void *>(GetImageCount)},
         ani_native_function {"getVideoCount", nullptr, reinterpret_cast<void *>(GetVideoCount)},
+        ani_native_function {"getSharedPhotoAssets", nullptr,
+            reinterpret_cast<void *>(PhotoAccessGetSharedPhotoAssets)},
+        ani_native_function {"getdateAdded", nullptr, reinterpret_cast<void *>(GetdateAdded)},
+        ani_native_function {"getdateModified", nullptr, reinterpret_cast<void *>(GetdateModified)},
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE.c_str());
         return ANI_ERROR;
     }
-
-    ANI_INFO_LOG("PhotoAccessInit ok");
     return ANI_OK;
 }
 
 ani_object PhotoAlbumAni::CreatePhotoAlbumAni(ani_env *env, std::unique_ptr<PhotoAlbum> &albumData)
 {
     if (albumData == nullptr) {
+        ANI_ERR_LOG("Input albumData is nullptr");
         return nullptr;
     }
 
-    ani_class cls {};
+    AniPhotoAlbumOperator photoAlbumOperator;
     if (albumData->GetResultNapiType() == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
-        CHECK_COND_RET(MediaLibraryAniUtils::FindClass(env, PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE, &cls) == ANI_OK,
-            nullptr, "Can't find class");
+        photoAlbumOperator.clsName = PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE;
     } else {
-        CHECK_COND_RET(MediaLibraryAniUtils::FindClass(env, UFM_ANI_CLASS_PHOTO_ALBUM_HANDLE, &cls) == ANI_OK,
-            nullptr, "Can't find class");
+        photoAlbumOperator.clsName = UFM_ANI_CLASS_PHOTO_ALBUM_HANDLE;
     }
+    CHECK_COND_RET(InitAniPhotoAlbumOperator(env, photoAlbumOperator) == ANI_OK,
+        nullptr, "InitAniPhotoAlbumOperator fail");
 
     pAlbumData_ = albumData.release();
-    ani_object result = PhotoAlbumAniConstructor(env, cls);
+    ani_object result = PhotoAlbumAniConstructor(env, photoAlbumOperator);
     pAlbumData_ = nullptr;
+    CHECK_COND_RET(result != nullptr, nullptr, "PhotoAlbumAniConstructor return nullptr");
     return result;
 }
 
@@ -108,19 +110,58 @@ ani_object PhotoAlbumAni::CreatePhotoAlbumAni(ani_env *env, std::shared_ptr<Phot
         return nullptr;
     }
 
-    ani_class cls {};
-    CHECK_COND_RET(MediaLibraryAniUtils::FindClass(env, PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE, &cls) == ANI_OK,
-        nullptr, "Can't find class");
+    AniPhotoAlbumOperator photoAlbumOperator;
+    photoAlbumOperator.clsName = PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE;
+    CHECK_COND_RET(InitAniPhotoAlbumOperator(env, photoAlbumOperator) == ANI_OK,
+        nullptr, "InitAniPhotoAlbumOperator fail");
 
-    ani_object result = PhotoAlbumAniConstructor(env, cls);
-    PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, result);
-    CHECK_COND_RET(photoAlbumAni != nullptr, nullptr, "PhotoAlbumAni is nullptr");
-    photoAlbumAni->photoAlbumPtr = albumData;
+    pAlbumData_ = albumData.get();
+    ani_object result = PhotoAlbumAniConstructor(env, photoAlbumOperator);
+    pAlbumData_ = nullptr;
+    CHECK_COND_RET(result != nullptr, nullptr, "PhotoAlbumAniConstructor return nullptr");
+    return result;
+}
+
+ani_status PhotoAlbumAni::InitAniPhotoAlbumOperator(ani_env *env, AniPhotoAlbumOperator &photoAlbumOperator)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_STATUS_RET(env->FindClass(photoAlbumOperator.clsName.c_str(), &(photoAlbumOperator.cls)),
+        "Can't find class: %{public}s", photoAlbumOperator.clsName.c_str());
+    CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<ctor>", nullptr, &(photoAlbumOperator.ctor)),
+        "Can't find method <ctor>");
+    if (photoAlbumOperator.clsName.compare(PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE) == 0) {
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>albumType", nullptr,
+            &(photoAlbumOperator.setAlbumType)), "No <set>albumType");
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>albumSubtype", nullptr,
+            &(photoAlbumOperator.setAlbumSubtype)), "No <set>subtype");
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>albumName", nullptr,
+            &(photoAlbumOperator.setAlbumName)), "No <set>albumName");
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>albumUri", nullptr,
+            &(photoAlbumOperator.setAlbumUri)), "No <set>albumUri");
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>count", nullptr,
+            &(photoAlbumOperator.setCount)), "No <set>count");
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>coverUri", nullptr,
+            &(photoAlbumOperator.setCoverUri)), "No <set>coverUri");
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>lpath", nullptr,
+            &(photoAlbumOperator.setLPath)), "No <set>lPath");
+    }
+    return ANI_OK;
+}
+
+ani_object PhotoAlbumAni::CreatePhotoAlbumAni(ani_env *env, std::unique_ptr<PhotoAlbum> &albumData,
+    const AniPhotoAlbumOperator &photoAlbumOperator)
+{
+    CHECK_COND_RET(albumData != nullptr, nullptr, "albumData is nullptr");
+    pAlbumData_ = albumData.release();
+    ani_object result = PhotoAlbumAniConstructor(env, photoAlbumOperator);
+    pAlbumData_ = nullptr;
+    CHECK_COND_RET(result != nullptr, nullptr, "PhotoAlbumAniConstructor with Operator return nullptr");
     return result;
 }
 
 PhotoAlbumAni* PhotoAlbumAni::UnwrapPhotoAlbumObject(ani_env *env, ani_object object)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     ani_long photoAlbum {};
     if (ANI_OK != env->Object_GetFieldByName_Long(object, "nativePhotoAlbum", &photoAlbum)) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
@@ -139,9 +180,9 @@ void PhotoAlbumAni::SetPhotoAlbumAniProperties()
     photoAlbumPtr = shared_ptr<PhotoAlbum>(pAlbumData_);
 }
 
-static ani_status GetPhotoAlbumAttributes(ani_env *env, ani_object object, PhotoAlbumAttributes &attrs)
+static ani_status GetPhotoAlbumAttributes(ani_env *env, unique_ptr<PhotoAlbumAni> &photoAlbumAni,
+    PhotoAlbumAttributes &attrs)
 {
-    PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
     CHECK_COND_RET(photoAlbumAni != nullptr, ANI_ERROR, "PhotoAlbumAni is nullptr");
     auto photoAlbum = photoAlbumAni->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, ANI_ERROR, "PhotoAlbum is nullptr");
@@ -152,67 +193,70 @@ static ani_status GetPhotoAlbumAttributes(ani_env *env, ani_object object, Photo
     attrs.albumUri = photoAlbum->GetAlbumUri();
     attrs.count = photoAlbum->GetCount();
     attrs.coverUri = photoAlbum->GetCoverUri();
+    attrs.lPath = photoAlbum->GetLPath();
     return ANI_OK;
 }
 
-static ani_status BindAniAttributes(ani_env *env, ani_class cls, ani_object object)
+static ani_status BindAniAttributes(ani_env *env, const AniPhotoAlbumOperator &opt, ani_object object,
+    const PhotoAlbumAttributes &attrs)
 {
-    PhotoAlbumAttributes attrs;
-    CHECK_STATUS_RET(GetPhotoAlbumAttributes(env, object, attrs), "GetPhotoAlbumAttributes fail");
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    if (opt.clsName.compare(PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE) == 0) {
+        ani_enum_item albumType = 0;
+        CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, attrs.albumType, albumType), "Get albumType index fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumType, albumType), "<set>albumType fail");
 
-    ani_method albumTypeSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>albumType", nullptr, &albumTypeSetter), "No <set>albumType");
-    ani_enum_item albumType = 0;
-    CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, attrs.albumType, albumType), "Get albumType index fail");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, albumTypeSetter, albumType), "<set>albumType fail");
+        ani_enum_item albumSubtype = 0;
+        CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, attrs.albumSubtype, albumSubtype),
+            "Get albumSubtype index fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumSubtype, albumSubtype),
+            "<set>albumSubtype fail");
 
-    ani_method albumSubtypeSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>albumSubtype", nullptr, &albumSubtypeSetter), "No <set>subtype");
-    ani_enum_item albumSubtype = 0;
-    CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, attrs.albumSubtype, albumSubtype),
-        "Get albumSubtype index fail");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, albumSubtypeSetter, albumSubtype), "<set>albumType fail");
+        ani_string albumName {};
+        CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.albumName, albumName),
+            "ToAniString albumName fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumName, albumName), "<set>albumName fail");
 
-    ani_method albumNameSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>albumName", nullptr, &albumNameSetter), "No <set>albumName");
-    ani_string albumName {};
-    CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.albumName, albumName), "ToAniString albumName fail");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, albumNameSetter, albumName), "<set>albumName fail");
+        ani_string albumUri {};
+        CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.albumUri, albumUri),
+            "ToAniString albumUri fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumUri, albumUri), "<set>albumUri fail");
 
-    ani_method albumUriSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>albumUri", nullptr, &albumUriSetter), "No <set>albumUri");
-    ani_string albumUri {};
-    CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.albumUri, albumUri), "ToAniString albumUri fail");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, albumUriSetter, albumUri), "<set>albumUri fail");
+        ani_double count = static_cast<ani_double>(attrs.count);
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setCount, count), "<set>count fail");
 
-    ani_method countSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>count", nullptr, &countSetter), "No <set>count");
-    ani_double count = static_cast<ani_double>(attrs.count);
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, countSetter, count), "<set>count fail");
+        ani_string coverUri {};
+        CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.coverUri, coverUri),
+            "ToAniString coverUri fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setCoverUri, coverUri), "<set>coverUri fail");
 
-    ani_method coverUriSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>coverUri", nullptr, &coverUriSetter), "No <set>coverUri");
-    ani_string coverUri {};
-    CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.coverUri, coverUri), "ToAniString coverUri fail");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, coverUriSetter, coverUri), "<set>coverUri fail");
+        ani_string lPath {};
+        CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.lPath, lPath), "ToAniString lPath fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setLPath, lPath), "<set>lPath fail");
+    }
     return ANI_OK;
 }
 
-ani_object PhotoAlbumAni::PhotoAlbumAniConstructor(ani_env *env, ani_class clazz)
+ani_object PhotoAlbumAni::PhotoAlbumAniConstructor(ani_env *env, const AniPhotoAlbumOperator &opt)
 {
-    ani_method ctor {};
-    CHECK_COND_RET(env->Class_FindMethod(clazz, "<ctor>", nullptr, &ctor) == ANI_OK, nullptr,
-        "Failed to find method: <ctor>");
-
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     unique_ptr<PhotoAlbumAni> obj = make_unique<PhotoAlbumAni>();
+    CHECK_COND_RET(obj != nullptr, nullptr, "PhotoAlbumAni is nullptr");
     obj->env_ = env;
     if (pAlbumData_ != nullptr) {
         obj->SetPhotoAlbumAniProperties();
     }
+
+    PhotoAlbumAttributes attrs;
+    CHECK_COND_RET(GetPhotoAlbumAttributes(env, obj, attrs) == ANI_OK, nullptr, "GetPhotoAlbumAttributes fail");
+
     ani_object albumHandle {};
-    CHECK_COND_RET(env->Object_New(clazz, ctor, &albumHandle, reinterpret_cast<ani_long>(obj.release())) == ANI_OK,
-        nullptr, "New PhotoAlbumHandle Fail");
-    CHECK_COND_RET(BindAniAttributes(env, clazz, albumHandle) == ANI_OK, nullptr, "PhotoAlbum BindAniAttributes Fail");
+    CHECK_COND_RET(env->Object_New(opt.cls, opt.ctor, &albumHandle,
+        reinterpret_cast<ani_long>(obj.get())) == ANI_OK, nullptr, "New PhotoAlbumHandle Fail");
+    (void)obj.release();
+
+    CHECK_COND_RET(BindAniAttributes(env, opt, albumHandle, attrs) == ANI_OK,
+        nullptr, "PhotoAlbum BindAniAttributes Fail");
     return albumHandle;
 }
 
@@ -229,6 +273,7 @@ void PhotoAlbumAni::PhotoAlbumAniDestructor(ani_env *env, ani_object object)
 static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbum,
     DataSharePredicates &predicates, const bool hiddenOnly)
 {
+    CHECK_COND_RET(photoAlbum != nullptr, E_INVALID_ARGUMENTS, "photoAlbum is nullptr");
     auto albumId = photoAlbum->GetAlbumId();
     auto subType = photoAlbum->GetPhotoAlbumSubType();
     bool isLocationAlbum = subType == PhotoAlbumSubType::GEOGRAPHY_LOCATION;
@@ -263,7 +308,7 @@ static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbu
         }
         return MediaLibraryAniUtils::GetAnalysisAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
     }
-    
+
     if ((type != PhotoAlbumType::SYSTEM) || (subType == PhotoAlbumSubType::USER_GENERIC) ||
         (subType == PhotoAlbumSubType::ANY)) {
         return E_INVALID_ARGUMENTS;
@@ -274,6 +319,7 @@ static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbu
 static ani_status ParseArgsGetPhotoAssets(ani_env *env, ani_object object, ani_object fetchOptions,
     unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
     context->objectInfo = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
     if (context->objectInfo == nullptr) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, __FUNCTION__, __LINE__);
@@ -288,6 +334,10 @@ static ani_status ParseArgsGetPhotoAssets(ani_env *env, ani_object object, ani_o
     }
 
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (photoAlbum == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return ANI_INVALID_ARGS;
+    }
     auto ret = GetPredicatesByAlbumTypes(photoAlbum, context->predicates, photoAlbum->GetHiddenOnly());
     if (ret != E_SUCCESS) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
@@ -308,6 +358,7 @@ static ani_status ParseArgsGetPhotoAssets(ani_env *env, ani_object object, ani_o
 
 static bool IsFeaturedSinglePortraitAlbum(const shared_ptr<PhotoAlbum>& photoAlbum)
 {
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
     constexpr int portraitAlbumId = 0;
     return photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::CLASSIFY &&
         photoAlbum->GetAlbumName().compare(to_string(portraitAlbumId)) == 0;
@@ -335,20 +386,31 @@ static void ConvertColumnsForPortrait(unique_ptr<PhotoAlbumAniContext> &context)
 
 static void PhotoAccessGetPhotoAssetsExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     Uri uri(PAH_QUERY_PHOTO_MAP);
     ConvertColumnsForPortrait(context);
     int32_t errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    int32_t userId = DEFAULT_USER_ID;
+    if (context->objectInfo != nullptr) {
+        shared_ptr<PhotoAlbum> photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+        if (photoAlbum != nullptr) {
+            userId = photoAlbum->GetUserId();
+        }
+    }
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode, userId);
     if (resultSet == nullptr) {
         context->SaveError(E_HAS_DB_ERROR);
         return;
     }
     context->fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    CHECK_NULL_PTR_RETURN_VOID(context->fetchResult, "context->fetchResult is nullptr");
     context->fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    context->fetchResult->SetUserId(userId);
 }
 
 static ani_object GetPhotoAssetsComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
     ani_object fetchRes {};
     ani_object errorObj {};
     if (context->fetchResult != nullptr) {
@@ -381,17 +443,28 @@ ani_object PhotoAlbumAni::PhotoAccessGetPhotoAssets(ani_env *env, ani_object obj
 
 static ani_object PhotoAccessGetPhotoAssetsExecuteSync(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
     Uri uri(PAH_QUERY_PHOTO_MAP);
     ConvertColumnsForPortrait(context);
     int32_t errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    CHECK_COND_RET(resultSet != nullptr, nullptr, "Query failed, resultSet is nullptr");
     CHECK_NULLPTR_RET(resultSet);
     auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    CHECK_COND_RET(fetchResult != nullptr, nullptr, "Failed to create FetchResult");
     fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
 
     std::vector<std::unique_ptr<FileAsset>> fileAssetArray;
     auto file = fetchResult->GetFirstObject();
+    int32_t userId = DEFAULT_USER_ID;
+    if (context->objectInfo != nullptr) {
+        shared_ptr<PhotoAlbum> photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+        if (photoAlbum != nullptr) {
+            userId = photoAlbum->GetUserId();
+        }
+    }
     while (file != nullptr) {
+        file->SetUserId(userId);
         fileAssetArray.push_back(move(file));
         file = fetchResult->GetNextObject();
     }
@@ -416,15 +489,21 @@ ani_object PhotoAlbumAni::PhotoAccessGetPhotoAssetsSync(ani_env *env, ani_object
 
 void SyncAlbumName(ani_env *env, ani_object object, std::shared_ptr<PhotoAlbum> &photoAlbum)
 {
+    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is nullptr");
     std::string albumName = "";
     CHECK_IF_EQUAL(MediaLibraryAniUtils::GetProperty(env, object, "albumName", albumName) == ANI_OK,
         "Failed to get albumName");
     CHECK_IF_EQUAL(!albumName.empty(), "Get empty albumName");
+    CHECK_IF_EQUAL(MediaFileUtils::CheckAlbumName(albumName) == E_OK, "Invalid albumName");
     photoAlbum->SetAlbumName(albumName);
 }
 
 static ani_status ParseArgsCommitModify(ani_env *env, ani_object object, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    if (context == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return ANI_INVALID_ARGS;
+    }
     context->objectInfo = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
     if (context->objectInfo == nullptr) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, __FUNCTION__, __LINE__);
@@ -454,6 +533,7 @@ static ani_status ParseArgsCommitModify(ani_env *env, ani_object object, unique_
 
 static void CommitModifyExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     string commitModifyUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
         UFM_UPDATE_PHOTO_ALBUM : PAH_UPDATE_PHOTO_ALBUM;
     Uri uri(commitModifyUri);
@@ -464,6 +544,7 @@ static void CommitModifyExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &
 
 static void CommitModifyComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     ani_object errorObj {};
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, errorObj);
@@ -477,6 +558,10 @@ void PhotoAlbumAni::PhotoAccessHelperCommitModify(ani_env *env, ani_object objec
     tracer.Start("PhotoAccessHelperCommitModify");
 
     unique_ptr<PhotoAlbumAniContext> context = make_unique<PhotoAlbumAniContext>();
+    if (context == nullptr) {
+        AniError::ThrowError(env, JS_INNER_FAIL);
+        return;
+    }
     CHECK_IF_EQUAL(ParseArgsCommitModify(env, object, context) == ANI_OK, "ParseArgsCommitModify fail");
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     CommitModifyExecute(env, context);
@@ -485,7 +570,8 @@ void PhotoAlbumAni::PhotoAccessHelperCommitModify(ani_env *env, ani_object objec
 
 static ani_status GetAssetsIdArray(ani_env *env, ani_object photoAssets, std::vector<string> &assetsArray)
 {
-    ani_boolean isArray = MediaLibraryAniUtils::isArray(env, photoAssets);
+    CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is nullptr");
+    ani_boolean isArray = MediaLibraryAniUtils::IsArray(env, photoAssets);
     if (isArray == ANI_FALSE) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array type");
         return ANI_INVALID_ARGS;
@@ -523,6 +609,10 @@ static ani_status GetAssetsIdArray(ani_env *env, ani_object photoAssets, std::ve
 static ani_status ParseArgsAddAssets(ani_env *env, ani_object object, ani_object photoAssets,
     unique_ptr<PhotoAlbumAniContext> &context)
 {
+    if (context == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return ANI_INVALID_ARGS;
+    }
     context->objectInfo = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
     if (context->objectInfo == nullptr) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, __FUNCTION__, __LINE__);
@@ -557,6 +647,8 @@ static ani_status ParseArgsAddAssets(ani_env *env, ani_object object, ani_object
 
 static bool FetchNewCount(unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_COND_RET(context != nullptr, false, "context is nullptr");
+    CHECK_COND_RET(context->objectInfo != nullptr, false, "context->objectInfo is nullptr");
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     if (photoAlbum == nullptr) {
         ANI_ERR_LOG("photoAlbum is nullptr");
@@ -600,13 +692,13 @@ static bool FetchNewCount(unique_ptr<PhotoAlbumAniContext> &context)
 
 static void PhotoAlbumAddAssetsExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
-    if (context->valuesBuckets.empty()) {
+    if (context == nullptr || context->valuesBuckets.empty()) {
         return;
     }
     string addAssetsUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
         UFM_PHOTO_ALBUM_ADD_ASSET : PAH_PHOTO_ALBUM_ADD_ASSET;
     Uri uri(addAssetsUri);
-    
+
     auto changedRows = UserFileClient::BatchInsert(uri, context->valuesBuckets);
     if (changedRows < 0) {
         context->SaveError(changedRows);
@@ -621,9 +713,11 @@ static void PhotoAlbumAddAssetsExecute(ani_env *env, unique_ptr<PhotoAlbumAniCon
 
 static void PhotoAlbumAddAssetsComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     ani_object errorObj {};
     if (context->error == ERR_DEFAULT) {
         auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+        CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is nullptr");
         photoAlbum->SetCount(context->newCount);
         photoAlbum->SetImageCount(context->newImageCount);
         photoAlbum->SetVideoCount(context->newVideoCount);
@@ -635,10 +729,12 @@ static void PhotoAlbumAddAssetsComplete(ani_env *env, unique_ptr<PhotoAlbumAniCo
 
 void PhotoAlbumAni::PhotoAccessHelperAddAssets(ani_env *env, ani_object object, ani_object photoAssets)
 {
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperAddAssets");
 
     unique_ptr<PhotoAlbumAniContext> context = make_unique<PhotoAlbumAniContext>();
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     CHECK_IF_EQUAL(ParseArgsAddAssets(env, object, photoAssets, context) == ANI_OK, "ParseArgsAddAssets fail");
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     PhotoAlbumAddAssetsExecute(env, context);
@@ -648,6 +744,7 @@ void PhotoAlbumAni::PhotoAccessHelperAddAssets(ani_env *env, ani_object object, 
 static ani_status ParseArgsRemoveAssets(ani_env *env, ani_object object, ani_object photoAssets,
     unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_COND_RET(context != nullptr, ANI_INVALID_ARGS, "context is nullptr");
     context->objectInfo = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
     if (context->objectInfo == nullptr) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, __FUNCTION__, __LINE__);
@@ -677,7 +774,9 @@ static ani_status ParseArgsRemoveAssets(ani_env *env, ani_object object, ani_obj
 
 static void PhotoAlbumRemoveAssetsExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     if (context->predicates.GetOperationList().empty()) {
+        ANI_ERR_LOG("Invalid input: operation list is empty");
         return;
     }
 
@@ -686,6 +785,7 @@ static void PhotoAlbumRemoveAssetsExecute(ani_env *env, unique_ptr<PhotoAlbumAni
     Uri uri(removeAssetsUri);
     auto deletedRows = UserFileClient::Delete(uri, context->predicates);
     if (deletedRows < 0) {
+        ANI_ERR_LOG("Remove assets failed: %{public}d", deletedRows);
         context->SaveError(deletedRows);
         return;
     }
@@ -698,9 +798,12 @@ static void PhotoAlbumRemoveAssetsExecute(ani_env *env, unique_ptr<PhotoAlbumAni
 
 static void PhotoAlbumRemoveAssetsComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     ani_object errorObj {};
     if (context->error == ERR_DEFAULT) {
+        CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "context->objectInfo is nullptr");
         auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+        CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is nullptr");
         photoAlbum->SetCount(context->newCount);
         photoAlbum->SetImageCount(context->newImageCount);
         photoAlbum->SetVideoCount(context->newVideoCount);
@@ -716,6 +819,7 @@ void PhotoAlbumAni::PhotoAccessHelperRemoveAssets(ani_env *env, ani_object objec
     tracer.Start("PhotoAccessHelperRemoveAssets");
 
     unique_ptr<PhotoAlbumAniContext> context = make_unique<PhotoAlbumAniContext>();
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     CHECK_IF_EQUAL(ParseArgsRemoveAssets(env, object, photoAssets, context) == ANI_OK, "ParseArgsRemoveAssets fail");
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     PhotoAlbumRemoveAssetsExecute(env, context);
@@ -725,6 +829,7 @@ void PhotoAlbumAni::PhotoAccessHelperRemoveAssets(ani_env *env, ani_object objec
 static ani_status TrashAlbumParseArgs(ani_env *env, ani_object object, ani_object photoAssets,
     unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_COND_RET(context != nullptr, ANI_INVALID_ARGS, "context is nullptr");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return ANI_ERROR;
@@ -759,6 +864,7 @@ static ani_status TrashAlbumParseArgs(ani_env *env, ani_object object, ani_objec
 
 static void TrashAlbumExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context, const std::string &optUri)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     if (context->predicates.GetOperationList().empty()) {
         ANI_ERR_LOG("Operation list is empty.");
         return;
@@ -775,6 +881,7 @@ static void TrashAlbumExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &co
 
 static void TrashAlbumComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     ani_object errorObj {};
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, errorObj);
@@ -784,6 +891,7 @@ static void TrashAlbumComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &c
 
 static void RecoverPhotosExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     std::string uri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
         UFM_RECOVER_PHOTOS : PAH_RECOVER_PHOTOS;
     TrashAlbumExecute(env, context, uri);
@@ -800,6 +908,7 @@ void PhotoAlbumAni::PhotoAccessHelperRecoverPhotos(ani_env *env, ani_object obje
     tracer.Start("PhotoAccessHelperRecoverPhotos");
 
     unique_ptr<PhotoAlbumAniContext> context = make_unique<PhotoAlbumAniContext>();
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     CHECK_IF_EQUAL(TrashAlbumParseArgs(env, object, photoAssets, context) == ANI_OK, "TrashAlbumParseArgs fail");
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     RecoverPhotosExecute(env, context);
@@ -808,6 +917,7 @@ void PhotoAlbumAni::PhotoAccessHelperRecoverPhotos(ani_env *env, ani_object obje
 
 static void DeletePhotosExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     std::string uri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
         UFM_DELETE_PHOTOS : PAH_DELETE_PHOTOS;
     TrashAlbumExecute(env, context, uri);
@@ -824,6 +934,7 @@ void PhotoAlbumAni::PhotoAccessHelperDeletePhotos(ani_env *env, ani_object objec
     tracer.Start("PhotoAccessHelperDeletePhotos");
 
     unique_ptr<PhotoAlbumAniContext> context = make_unique<PhotoAlbumAniContext>();
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     CHECK_IF_EQUAL(TrashAlbumParseArgs(env, object, photoAssets, context) == ANI_OK, "TrashAlbumParseArgs fail");
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     DeletePhotosExecute(env, context);
@@ -833,6 +944,7 @@ void PhotoAlbumAni::PhotoAccessHelperDeletePhotos(ani_env *env, ani_object objec
 static ani_status ParseArgsSetCoverUri(ani_env *env, ani_object object, ani_string uri,
     unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_COND_RET(context != nullptr, ANI_INVALID_ARGS, "context is nullptr");
     context->objectInfo = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
     if (context->objectInfo == nullptr) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, __FUNCTION__, __LINE__);
@@ -841,7 +953,7 @@ static ani_status ParseArgsSetCoverUri(ani_env *env, ani_object object, ani_stri
 
     std::string coverUri;
     CHECK_STATUS_RET(MediaLibraryAniUtils::GetParamStringPathMax(env, uri, coverUri), "Parse coverUri failed.");
-    
+
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "Only system apps can update album cover");
         return ANI_ERROR;
@@ -863,6 +975,7 @@ void PhotoAlbumAni::PhotoAccessHelperSetCoverUri(ani_env *env, ani_object object
     tracer.Start("PhotoAccessHelperSetCoverUri");
 
     unique_ptr<PhotoAlbumAniContext> context = make_unique<PhotoAlbumAniContext>();
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     CHECK_IF_EQUAL(ParseArgsSetCoverUri(env, object, uri, context) == ANI_OK, "ParseArgsSetCoverUri fail");
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     CommitModifyExecute(env, context);
@@ -871,7 +984,10 @@ void PhotoAlbumAni::PhotoAccessHelperSetCoverUri(ani_env *env, ani_object object
 
 static void PhotoAccessHelperGetFaceIdExec(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "objectInfo is null");
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbumInstance is null");
     PhotoAlbumSubType albumSubType = photoAlbum->GetPhotoAlbumSubType();
     if (albumSubType != PhotoAlbumSubType::PORTRAIT && albumSubType != PhotoAlbumSubType::GROUP_PHOTO) {
         ANI_WARN_LOG("albumSubType: %{public}d, not support getFaceId", albumSubType);
@@ -901,6 +1017,7 @@ static void PhotoAccessHelperGetFaceIdExec(ani_env *env, unique_ptr<PhotoAlbumAn
 static ani_string GetFaceIdComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
     ani_string result {};
+    CHECK_COND_RET(context != nullptr, result, "context is nullptr");
     ani_object errorObj {};
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, errorObj);
@@ -922,6 +1039,7 @@ ani_string PhotoAlbumAni::PhotoAccessHelperGetFaceId(ani_env *env, ani_object ob
     }
 
     unique_ptr<PhotoAlbumAniContext> context = make_unique<PhotoAlbumAniContext>();
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
     context->objectInfo = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
     if (context->objectInfo == nullptr) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, __FUNCTION__, __LINE__);
@@ -952,4 +1070,63 @@ ani_double PhotoAlbumAni::GetVideoCount(ani_env *env, ani_object object)
     int32_t videoCount = photoAlbumAni->GetPhotoAlbumInstance()->GetVideoCount();
     return static_cast<ani_double>(videoCount);
 }
+
+ani_object PhotoAlbumAni::PhotoAccessGetSharedPhotoAssets(ani_env *env, ani_object object, ani_object options)
+{
+    ANI_DEBUG_LOG("%{public}s is called", __func__);
+    ani_object returnObj {};
+    CHECK_COND_RET(env != nullptr, returnObj, "env is null");
+    auto asyncContext = std::make_unique<PhotoAlbumAniContext>();
+    CHECK_COND_WITH_RET_MESSAGE(env, asyncContext != nullptr, returnObj, "asyncContext is nullptr");
+    CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsGetPhotoAssets(env, object, options, asyncContext) == ANI_OK,
+        returnObj, "objectInfo is nullptr");
+
+    Uri uri(PAH_QUERY_PHOTO_MAP);
+    ConvertColumnsForPortrait(asyncContext);
+
+    PhotoAlbumAniContext* context = static_cast<PhotoAlbumAniContext*>(asyncContext.get());
+    CHECK_COND_WITH_RET_MESSAGE(env, context != nullptr, returnObj, "context is nullptr");
+    shared_ptr<NativeRdb::ResultSet> resultSet = UserFileClient::QueryRdb(uri,
+        context->predicates, context->fetchColumn);
+    CHECK_NULLPTR_RET(resultSet);
+
+    int err = resultSet->GoToFirstRow();
+    CHECK_COND_RET(err == ANI_OK, returnObj, "GoToFirstRow failed %{public}d", err);
+
+    std::vector<MediaLibraryAniUtils::VarMap> array;
+    do {
+        MediaLibraryAniUtils::VarMap object;
+        CHECK_COND_RET(MediaLibraryAniUtils::GetNextRowObject(env, resultSet, true, object) == ANI_OK,
+            returnObj, "GetNextRowObject failed");
+        array.push_back(object);
+    } while (!resultSet->GoToNextRow());
+    resultSet->Close();
+    ani_object aniArray;
+    CHECK_COND_RET(MediaLibraryAniUtils::ToAniVariantArray(env, array, aniArray) == ANI_OK, returnObj,
+        "ToAniVariantArray failed");
+    return aniArray;
+}
+
+ani_double PhotoAlbumAni::GetdateAdded(ani_env *env, ani_object object)
+{
+    PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
+    if (photoAlbumAni == nullptr || photoAlbumAni->GetPhotoAlbumInstance() == nullptr) {
+        ANI_ERR_LOG("photoAlbumAni or photoAlbum is nullptr");
+        return 0;
+    }
+    auto dateAdded = photoAlbumAni->GetPhotoAlbumInstance()->GetDateAdded();
+    return static_cast<ani_double>(dateAdded);
+}
+
+ani_double PhotoAlbumAni::GetdateModified(ani_env *env, ani_object object)
+{
+    PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
+    if (photoAlbumAni == nullptr || photoAlbumAni->GetPhotoAlbumInstance() == nullptr) {
+        ANI_ERR_LOG("photoAlbumAni or photoAlbum is nullptr");
+        return 0;
+    }
+    auto dateModified = photoAlbumAni->GetPhotoAlbumInstance()->GetDateModified();
+    return static_cast<ani_double>(dateModified);
+}
+
 } // namespace OHOS::Media
