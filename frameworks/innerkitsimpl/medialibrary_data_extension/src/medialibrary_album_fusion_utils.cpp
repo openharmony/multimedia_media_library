@@ -730,18 +730,30 @@ static int32_t UpdateCoverInfoForAlbum(const std::shared_ptr<MediaLibraryRdbStor
         return E_DB_FAIL;
     }
     const std::string QUERY_ALBUM_COVER_INFO =
-        "SELECT cover_uri FROM PhotoAlbum WHERE album_id = " + to_string(ownerAlbumId) +
+        "SELECT cover_uri, cover_uri_source FROM PhotoAlbum WHERE album_id = " + to_string(ownerAlbumId) +
         " AND cover_uri like 'file://media/Photo/" + to_string(oldAssetId) + "%'";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_ALBUM_COVER_INFO);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr) {
         MEDIA_INFO_LOG("No need to update cover_uri");
         return E_OK;
+    }
+    auto ret = resultSet->GoToNextRow();
+    if (ret == NativeRdb::E_OK) {
+        int32_t coverUriSource = 0;
+        GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::COVER_URI_SOURCE, coverUriSource);
+        if (coverUriSource >= CoverUriSource::MANUAL_CLOUD_COVER) {
+            MEDIA_INFO_LOG("Manual cover do not update cover_uri");
+            return E_OK;
+        }
+    } else {
+        MEDIA_ERR_LOG("ResultSet GoToNextRow error, ret:%{public}d, ownerAlbumId:%{public}d", ret, ownerAlbumId);
+        return E_HAS_DB_ERROR;
     }
     string newCoverUri = MediaLibraryFormMapOperations::GetUriByFileId(newAssetId, targetPath);
     MEDIA_INFO_LOG("New cover uri is %{public}s", targetPath.c_str());
     const std::string UPDATE_ALBUM_COVER_URI =
         "UPDATE PhotoAlbum SET cover_uri = '" + newCoverUri +"' WHERE album_id = " + to_string(ownerAlbumId);
-    int32_t ret = upgradeStore->ExecuteSql(UPDATE_ALBUM_COVER_URI);
+    ret = upgradeStore->ExecuteSql(UPDATE_ALBUM_COVER_URI);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "update cover uri failed, ret = %{public}d, target album is %{public}d", ret, ownerAlbumId);
     return E_OK;
