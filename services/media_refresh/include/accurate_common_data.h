@@ -25,7 +25,7 @@ namespace Media::AccurateRefresh {
 const std::string EMPTY_STR = "";
 const int32_t INVALID_INT32_VALUE = -1;
 const int64_t INVALID_INT64_VALUE = -1;
-
+const std::size_t MAX_DATA_LENGTH = 1000;
 const int32_t ACCURATE_REFRESH_RET_OK = 0;
 
 const int32_t ACCURATE_REFRESH_BASE = 0x10000;

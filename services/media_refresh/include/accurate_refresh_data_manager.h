@@ -64,7 +64,6 @@ private:
     std::size_t GetCurrentDataLength();
 
 protected:
-    const std::size_t MAX_DATA_LENGTH = 1000;
     std::map<int32_t, ChangeData> changeDatas_;
     std::shared_ptr<TransactionOperations> trans_;
     bool isExceed_ = false;

@@ -292,6 +292,11 @@ vector<int32_t> AccurateRefreshBase::GetReturningKeys(const pair<int32_t, Result
         return keys;
     }
 
+    if (retWithResults.second.changed >= MAX_DATA_LENGTH) {
+        MEDIA_WARN_LOG("returning total length: %{publid}d, exceed data size", retWithResults.second.changed);
+        return vector<int32_t>(MAX_DATA_LENGTH);
+    }
+
     int32_t count = 0;
     auto ret = resultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK || count <= 0) {
