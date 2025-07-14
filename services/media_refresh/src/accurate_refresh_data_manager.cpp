@@ -32,7 +32,7 @@ namespace Media::AccurateRefresh {
 template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const AbsRdbPredicates &predicates)
 {
-    CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
+    CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshDataManager::Init predicates");
     auto initDatas = GetInfosByPredicates(predicates);
@@ -46,7 +46,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const AbsRdbPre
 template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const string sql, const vector<ValueObject> bindArgs)
 {
-    CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
+    CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     CHECK_AND_RETURN_RET_LOG(!sql.empty(), ACCURATE_REFRESH_INPUT_PARA_ERR, "input sql empty");
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshDataManager::Init sql");
@@ -73,7 +73,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const string sq
 template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const vector<int32_t> &keys)
 {
-    CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(keys.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
+    CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(keys.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     CHECK_AND_RETURN_RET_LOG(!keys.empty(), ACCURATE_REFRESH_INPUT_PARA_ERR, "input keys empty");
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshDataManager::Init keys");
@@ -94,7 +94,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasI
         MEDIA_WARN_LOG("input keys empty or operation error");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
-    CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(keys.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
+    CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(keys.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     auto ret = ACCURATE_REFRESH_RET_OK;
     switch (operation) {
         case RDB_OPERATION_REMOVE:
@@ -112,7 +112,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasI
         default:
             return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
-    CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(true), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
+    CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(true), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     return ret;
 }
 
@@ -120,7 +120,7 @@ template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::InsertInitChangeInfos(
     const vector<ChangeInfo> &changeInfos)
 {
-    CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(changeInfos.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
+    CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(changeInfos.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     for (auto const &changeInfo : changeInfos) {
         auto key = GetChangeInfoKey(changeInfo);
         if (changeDatas_.find(key) != changeDatas_.end()) {
@@ -132,7 +132,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::InsertInitChangeInfo
         changeData.infoBeforeChange_ = changeInfo;
         changeDatas_.insert_or_assign(key, changeData); // 插入新值或者替换已有
     }
-    CHECK_AND_RETURN_RET_LOG(!CheckIsExceed(true), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
+    CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(true), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     return ACCURATE_REFRESH_RET_OK;
 }
 
