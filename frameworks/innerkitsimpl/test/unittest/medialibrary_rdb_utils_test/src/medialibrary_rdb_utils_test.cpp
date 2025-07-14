@@ -403,5 +403,19 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_GetAlbumSubtypeArgument_tes
     EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_GetAlbumSubtypeArgument_test_001:stop");
 }
+
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_QueryAllShootingModeAlbumIds_test_001,
+    testing::ext::TestSize.Level1)
+{
+    vector<int32_t> albumIds;
+    bool ret = MediaLibraryRdbUtils::QueryAllShootingModeAlbumIds(albumIds);
+    EXPECT_FALSE(ret);
+    EXPECT_EQ(albumIds.size(), 0);
+
+    albumIds.clear();
+    ret = MediaLibraryRdbUtils::QueryAllShootingModeAlbumIds(albumIds);
+    EXPECT_FALSE(ret);
+    EXPECT_EQ(albumIds.size(), 0);
+}
 } // namespace Media
 } // namespace OHOS

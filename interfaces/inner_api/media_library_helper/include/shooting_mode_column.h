@@ -70,7 +70,7 @@ enum class ShootingModeAlbumType : int32_t {
 class ShootingModeAlbum {
 public:
     template <class T>
-    EXPORT static void GetMovingPhotoAlbumPredicates(const int32_t albumId, T& predicates,
+    EXPORT static void GetMovingPhotoAlbumPredicates(T& predicates,
         const bool hiddenState);
 
     template <class T>
@@ -87,7 +87,7 @@ public:
         const bool hiddenState);
 
     template <class T>
-    EXPORT static void GetShootingModeAlbumPredicates(const int32_t albumId, const ShootingModeAlbumType type,
+    EXPORT static void GetShootingModeAlbumPredicates(const ShootingModeAlbumType type,
         T& predicates, const bool hiddenState);
 
     EXPORT static bool AlbumNameToShootingModeAlbumType(const std::string& albumName,

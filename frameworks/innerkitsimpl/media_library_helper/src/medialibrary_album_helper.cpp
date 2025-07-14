@@ -40,7 +40,7 @@ bool MediaLibraryAlbumHelper::GetAnalysisAlbumPredicates(const int32_t albumId, 
                 predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(0));
                 return false;
             }
-            ShootingModeAlbum::GetShootingModeAlbumPredicates(albumId, type, predicates, hiddenState);
+            ShootingModeAlbum::GetShootingModeAlbumPredicates(type, predicates, hiddenState);
             return true;
         }
         default: {

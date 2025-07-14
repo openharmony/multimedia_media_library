@@ -1123,8 +1123,7 @@ static int32_t NapiGetAnalysisAlbumPredicates(const shared_ptr<PhotoAlbum>& phot
             NAPI_ERR_LOG("Invalid shooting mode album name: %{public}s", photoAlbum->GetAlbumName().c_str());
             return E_INVALID_ARGUMENTS;
         }
-        ShootingModeAlbum::GetShootingModeAlbumPredicates(photoAlbum->GetAlbumId(), type,
-            predicates, photoAlbum->GetHiddenOnly());
+        ShootingModeAlbum::GetShootingModeAlbumPredicates(type, predicates, photoAlbum->GetHiddenOnly());
         return E_SUCCESS;
     }
     string albumName = photoAlbum->GetAlbumName();
