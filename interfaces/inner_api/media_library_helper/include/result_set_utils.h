@@ -35,7 +35,6 @@ public:
         int32_t index = 0;
         err = resultSet->GetColumnIndex(columnName, index);
         if (err) {
-            COMMON_ERR_LOG("get column index err %{public}d columnName:%{public}s", err, columnName.c_str());
             return DefaultVariantVal(type);
         }
 
