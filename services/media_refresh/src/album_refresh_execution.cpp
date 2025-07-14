@@ -693,7 +693,7 @@ bool AlbumRefreshExecution::CheckSetHiddenAlbumInfo(AlbumChangeInfo &albumInfo)
         albumInfo.hiddenCoverInfo_ = albumInfo.coverInfo_;
         albumInfo.hiddenCoverUri_ = albumInfo.coverUri_;
         albumInfo.hiddenCoverDateTime_ = albumInfo.coverDateTime_;
-        ACCURATE_DEBUG("hiddenCount_[%{public}d], hiddenCover[%{public}s], dateTime[%{public}" PRID64 "]",
+        ACCURATE_DEBUG("hiddenCount_[%{public}d], hiddenCover[%{public}s], dateTime[%{public}" PRId64 "]",
             albumInfo.count_, MediaFileUtils::DesensitizeUri(albumInfo.coverUri_).c_str(), albumInfo.coverDateTime_);
         return true;
     }
