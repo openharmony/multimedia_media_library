@@ -45,9 +45,13 @@ bool PhotoAlbumDao::CheckAlbumNameUnique(const std::string &albumName, const std
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, true,
         "Media_Restore: mediaLibraryRdb_ is null.");
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
-    bool cond = (resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET_LOG(!cond, true, "Media_Restore: Query resultSql is null.");
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, true, "Media_Restore: resultSet is nullptr");
+    if (resultSet->GoToNextRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return true;
+    }
     int32_t count = GetInt32Val("count", resultSet);
+    resultSet->Close();
     return count == 0;
 }
 
@@ -107,6 +111,7 @@ std::vector<PhotoAlbumDao::PhotoAlbumRowData> PhotoAlbumDao::GetPhotoAlbums()
         }
         // Check if there are more rows to fetch.
         resultSet->GetRowCount(rowCount);
+        resultSet->Close();
         offset += pageSize;
     } while (rowCount > 0);
     return result;
@@ -131,9 +136,13 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, albumRowData,
         "Media_Restore: mediaLibraryRdb_ is null.");
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET_LOG(!cond, albumRowData, "Media_Restore: can not find the PhotoAlbum info by"
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, albumRowData, "Media_Restore: can not find the PhotoAlbum info by"
         " lPath [%{public}s] in PhotoAlbum table.", lPath.c_str());
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Media_Restore: can not find the PhotoAlbum info by"
+            " lPath [%{public}s] in PhotoAlbum table.", lPath.c_str());
+        return albumRowData;
+    }
 
     albumRowData.albumId = GetInt32Val(this->FIELD_NAME_ALBUM_ID, resultSet);
     albumRowData.albumName = GetStringVal(this->FIELD_NAME_ALBUM_NAME, resultSet);
@@ -142,6 +151,7 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
     albumRowData.albumSubType = GetInt32Val(this->FIELD_NAME_ALBUM_SUBTYPE, resultSet);
     albumRowData.lPath = GetStringVal(this->FIELD_NAME_LPATH, resultSet);
     albumRowData.priority = GetInt32Val(this->FIELD_NAME_PRIORITY, resultSet);
+    resultSet->Close();
     // cache the PhotoAlbum info by lPath
     this->photoAlbumCache_.Insert(StringUtils::ToLower(lPath), albumRowData);
     MEDIA_INFO_LOG("Media_Restore: add the PhotoAlbum info by lPath into cache."

@@ -38,14 +38,17 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileInAlbum(const FileInfo &fileInfo
         fileInfo.lPath, maxFileId, fileInfo.displayName, fileInfo.fileSize, pictureFlag, fileInfo.orientation};
     std::string querySql = this->SQL_PHOTOS_FIND_SAME_FILE_IN_ALBUM;
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, rowData, "Media_Restore: mediaLibraryRdb_ is null.");
-
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, rowData);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, rowData);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return rowData;
+    }
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
     rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
     rowData.position = GetInt32Val("position", resultSet);
+    resultSet->Close();
     return rowData;
 }
 
@@ -64,12 +67,16 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileWithoutAlbum(const FileInfo &fil
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, rowData, "Media_Restore: mediaLibraryRdb_ is null.");
 
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, rowData);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, rowData);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return rowData;
+    }
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
     rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
     rowData.position = GetInt32Val("position", resultSet);
+    resultSet->Close();
     return rowData;
 }
 
@@ -86,12 +93,16 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileWithCloudId(const FileInfo &file
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, rowData, "Media_Restore: mediaLibraryRdb_ is null.");
 
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, rowData);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, rowData);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return rowData;
+    }
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
     rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
     rowData.position = GetInt32Val("position", resultSet);
+    resultSet->Close();
     return rowData;
 }
 
@@ -105,11 +116,15 @@ PhotosDao::PhotosBasicInfo PhotosDao::GetBasicInfo()
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, basicInfo,
         "Media_Restore: mediaLibraryRdb_ is null.");
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET_WARN_LOG(!cond, basicInfo,
-        "Media_Restore: GetBasicInfo resultSet is null. querySql: %{public}s", querySql.c_str());
+    CHECK_AND_RETURN_RET_WARN_LOG(resultSet != nullptr, basicInfo, "Media_Restore: resultSet is null.");
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_WARN_LOG("Media_Restore: GetBasicInfo resultSet is null. querySql: %{public}s", querySql.c_str());
+        resultSet->Close();
+        return basicInfo;
+    }
     basicInfo.maxFileId = GetInt32Val("max_file_id", resultSet);
     basicInfo.count = GetInt32Val("count", resultSet);
+    resultSet->Close();
     MEDIA_INFO_LOG("Media_Restore: max_file_id: %{public}d, count: %{public}d", basicInfo.maxFileId, basicInfo.count);
     return basicInfo;
 }
@@ -163,12 +178,16 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileBySourcePath(const FileInfo &fil
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, rowData, "Media_Restore: mediaLibraryRdb_ is null.");
 
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, rowData);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, rowData);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return rowData;
+    }
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
     rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
     rowData.position = GetInt32Val("position", resultSet);
+    resultSet->Close();
     return rowData;
 }
 

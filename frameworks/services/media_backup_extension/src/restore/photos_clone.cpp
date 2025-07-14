@@ -50,9 +50,13 @@ int32_t PhotosClone::GetPhotosRowCountInPhotoMap()
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
         "Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, 0);
-    return GetInt32Val("count", resultSet);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, 0);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return 0;
+    }
+    int32_t count = GetInt32Val("count", resultSet);
+    return count;
 }
 
 /**
@@ -64,9 +68,13 @@ int32_t PhotosClone::GetCloudPhotosRowCountInPhotoMap()
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
         "singleCloud Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, 0);
-    return GetInt32Val("count", resultSet);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, 0);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return 0;
+    }
+    int32_t count = GetInt32Val("count", resultSet);
+    return count;
 }
 
 /**
@@ -78,9 +86,13 @@ int32_t PhotosClone::GetPhotosRowCountNotInPhotoMap()
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
         "Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, 0);
-    return GetInt32Val("count", resultSet);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, 0);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return 0;
+    }
+    int32_t count = GetInt32Val("count", resultSet);
+    return count;
 }
 
 /**
@@ -92,9 +104,13 @@ int32_t PhotosClone::GetCloudPhotosRowCountNotInPhotoMap()
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
         "singleCloud Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, 0);
-    return GetInt32Val("count", resultSet);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, 0);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return 0;
+    }
+    int32_t count = GetInt32Val("count", resultSet);
+    return count;
 }
 
 /**
@@ -247,6 +263,7 @@ std::vector<PhotosDao::PhotosRowData> PhotosClone::FindDuplicateBurstKey()
         // Check if there are more rows to fetch.
         resultSet->GetRowCount(rowCount);
         offset += pageSize;
+        resultSet->Close();
     } while (rowCount > 0);
     return result;
 }
@@ -327,8 +344,12 @@ int32_t PhotosClone::GetNoNeedMigrateCount()
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
         "Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, 0);
-    return GetInt32Val("count", resultSet);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, 0);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return 0;
+    }
+    int32_t count = GetInt32Val("count", resultSet);
+    return count;
 }
 }  // namespace OHOS::Media
