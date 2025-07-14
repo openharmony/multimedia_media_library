@@ -178,6 +178,10 @@ int32_t MediaObserverManager::RemoveObserverWithUri(const NotifyUriType &uri,
     if (observersIter->second.empty()) {
         observers_.erase(observersIter);
     }
+    ret = RemoveObsDeathRecipient(dataObserver->AsObject());
+    if (ret != E_OK) {
+        MEDIA_WARN_LOG("failed to remove obsDeathRecipient");
+    }
     return E_OK;
 }
 
