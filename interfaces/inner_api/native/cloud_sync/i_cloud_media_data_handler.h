@@ -37,7 +37,7 @@ public:
     virtual int32_t GetCheckRecords(const std::vector<std::string> &cloudIds,
         std::unordered_map<std::string, CloudCheckData> &checkRecords) = 0;
     virtual int32_t GetCreatedRecords(std::vector<MDKRecord> &records, int32_t size) = 0;
-    virtual int32_t GetMetaModifiedRecords(std::vector<MDKRecord> &records, int32_t size, int32_t dirtyType = 0) = 0;
+    virtual int32_t GetMetaModifiedRecords(std::vector<MDKRecord> &records, int32_t size, int32_t dirtyType = 2) = 0;
     virtual int32_t GetFileModifiedRecords(std::vector<MDKRecord> &records, int32_t size) = 0;
     virtual int32_t GetDeletedRecords(std::vector<MDKRecord> &records, int32_t size) = 0;
     virtual int32_t GetCopyRecords(std::vector<MDKRecord> &records, int32_t size) = 0;

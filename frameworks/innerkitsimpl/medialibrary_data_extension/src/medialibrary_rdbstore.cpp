@@ -134,6 +134,8 @@ const std::string RDB_CONFIG = "/data/storage/el2/base/preferences/rdb_config.xm
 
 const std::string RDB_OLD_VERSION = "rdb_old_version";
 
+const std::string SLAVE = "slave";
+
 constexpr ssize_t RDB_WAL_LIMIT_SIZE = 1024 * 1024 * 1024; /* default wal file maximum size : 1GB */
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
@@ -142,7 +144,13 @@ std::mutex MediaLibraryRdbStore::reconstructLock_;
 
 int32_t oldVersion_ = -1;
 
+constexpr int32_t POS_ALBUM_ID = 0;
+
+constexpr int32_t POS_PATH = 1;
+
 const int TRASH_ALBUM_TYPE_VALUES = 2;
+
+const int32_t ARG_COUNT = 2;
 const std::string TRASH_ALBUM_NAME_VALUES = "TrashAlbum";
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
@@ -249,8 +257,13 @@ const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<s
         MEDIA_ERR_LOG("Invalid input: args must contain at least 1 strings");
         return "";
     }
-
-    std::string albumId = args[0].c_str();
+    std::string path = args[POS_PATH].c_str();
+    size_t slavePosition = path.find(SLAVE);
+    if (slavePosition != string::npos) {
+        MEDIA_DEBUG_LOG("not notify slave db");
+        return "";
+    }
+    std::string albumId = args[POS_ALBUM_ID].c_str();
     if (!all_of(albumId.begin(), albumId.end(), ::isdigit)) {
         MEDIA_ERR_LOG("Invalid albunId PhotoAlbumNotifyFunc Abortion");
         return "";
@@ -290,7 +303,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetScalarFunction("REGEXP_REPLACE", REGEXP_REPLACE_PARAM_NUM, RegexReplaceFunc);
     config_.SetScalarFunction("begin_generate_highlight_thumbnail", STAMP_PARAM, BeginGenerateHighlightThumbnail);
     config_.SetWalLimitSize(RDB_WAL_LIMIT_SIZE);
-    config_.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
+    config_.SetScalarFunction("photo_album_notify_func", ARG_COUNT, PhotoAlbumNotifyFunc);
 }
 
 bool g_upgradeErr = false;
@@ -1758,6 +1771,9 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_HIGHLIGHT_COVER_INFO_TABLE,
     CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
     CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
+    CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+    CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER,
+    INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
     CREATE_SOURCE_ALBUM_INDEX,
     FormMap::CREATE_FORM_MAP_TABLE,
     CREATE_DICTIONARY_INDEX,
@@ -4308,6 +4324,20 @@ static void UpdateSourceAlbumAndAlbumBundlenameTriggers(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddBestFaceBoundingColumnForGroupAlbum(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start add best face bounding column for group album");
+
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + JOINT_BEAUTY_BOUNDER_X + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + JOINT_BEAUTY_BOUNDER_Y + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + JOINT_BEAUTY_BOUNDER_WIDTH + " REAL",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + JOINT_BEAUTY_BOUNDER_HEIGHT + " REAL",
+    };
+
+    ExecSqls(sqls, store);
+}
+
 static void AddDetailTimeToPhotos(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4519,6 +4549,21 @@ static void FixMdirtyTriggerToUploadDetailTime(RdbStore &store)
     };
     ExecSqls(sqls, store);
     MEDIA_INFO_LOG("End updating mdirty trigger to upload detail_time");
+}
+
+static void ReAddInsertTrigger(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start readd insert trigger");
+    const vector<string> sqls = {
+        DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        DROP_INSERT_SOURCE_PHOTO_UPDATE_ALBUM_ID_TRIGGER,
+        CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER,
+        DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("End readd insert trigger");
 }
 
 static void UpgradeFromAPI15(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
@@ -4739,6 +4784,23 @@ static void DropInsertSourcePhotoUpdateAlbumIdTrigger(RdbStore &store)
     MEDIA_INFO_LOG("drop trigger insert_source_photo_update_album_id_trigger end");
 }
 
+static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION) {
+        PrepareShootingModeAlbum(store);
+    }
+
+    if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API18) {
+        MEDIA_INFO_LOG("Start VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME & VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY");
+        FixMdirtyTriggerToUploadDetailTime(store);
+        MEDIA_INFO_LOG("End VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME & VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY");
+    }
+
+    if (oldVersion < VERSION_ADD_BEST_FACE_BOUNDING) {
+        AddBestFaceBoundingColumnForGroupAlbum(store);
+    }
+}
+
 static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
@@ -4788,15 +4850,7 @@ static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
         DropInsertSourcePhotoUpdateAlbumIdTrigger(store);
     }
 
-    if (oldVersion < VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION) {
-        PrepareShootingModeAlbum(store);
-    }
-
-    if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API18) {
-        MEDIA_INFO_LOG("Start VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME & VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY");
-        FixMdirtyTriggerToUploadDetailTime(store);
-        MEDIA_INFO_LOG("End VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME & VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY");
-    }
+    UpgradeExtensionPart8(store, oldVersion);
 }
 
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)

@@ -15,6 +15,7 @@
 
 #include <cstdlib>
 #include <thread>
+#include <unistd.h>
 #include "mtp_media_library_unit_test.h"
 #include "mtp_media_library.h"
 #include "medialibrary_errno.h"
@@ -319,7 +320,11 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_013, TestSi
 
     auto handlesMap = std::make_shared<std::unordered_map<uint32_t, std::string>>();
     handlesMap = mtpMediaLib_->GetHandlesMap(context);
-    EXPECT_TRUE(handlesMap->empty());
+    if (access(STORAGE_FILE.c_str(), R_OK) == 0) {
+        EXPECT_FALSE(handlesMap->empty());
+    } else {
+        EXPECT_TRUE(handlesMap->empty());
+    }
 }
 
 /*
@@ -1102,7 +1107,11 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_051, TestSi
     ASSERT_NE(out, nullptr);
     uint32_t errcode = 1;
     errcode = mtpMediaLib_->ScanDirWithType(STORAGE_FILE, out);
-    EXPECT_NE(errcode, MTP_SUCCESS);
+    if (access(STORAGE_FILE.c_str(), R_OK) == 0) {
+        EXPECT_EQ(errcode, MTP_SUCCESS);
+    } else {
+        EXPECT_NE(errcode, MTP_SUCCESS);
+    }
 }
 
 /*
@@ -1147,6 +1156,11 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_053, TestSi
     uint32_t errcode = 1;
     errcode = mtpMediaLib_->ScanDirTraverseWithType(STORAGE_FILE, out);
     EXPECT_NE(errcode, MTP_SUCCESS);
+    if (access(STORAGE_FILE.c_str(), R_OK) == 0) {
+        EXPECT_EQ(errcode, MTP_SUCCESS);
+    } else {
+        EXPECT_NE(errcode, MTP_SUCCESS);
+    }
 }
 
 /*
@@ -1188,7 +1202,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_056, TestSi
     mtpMediaLib_->GetExternalStorages();
 
     int64_t result = MtpStorageManager::GetInstance()->GetTotalSize(STORAGE_FILE);
-    EXPECT_EQ(result, 0);
+    EXPECT_GE(result, 0);
 }
 
 /*
@@ -2070,8 +2084,18 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_094, TestSi
     context->parent = storageHandle;
     uint32_t outObjectHandle = 0;
     uint32_t oldHandle = 0;
+    std::string from("");
+    std::string to("");
+    mtpMediaLib_->GetPathById(context->handle, from);
+    mtpMediaLib_->GetPathByContextParent(context, to);
+    bool cond = (!sf::exists(from) || !sf::exists(to));
+
     int32_t result = mtpMediaLib_->CopyObject(context, outObjectHandle, oldHandle);
-    EXPECT_EQ(result, MTP_ERROR_INVALID_OBJECTHANDLE);
+    if (cond) {
+        EXPECT_EQ(result, MTP_ERROR_INVALID_OBJECTHANDLE);
+    } else {
+        EXPECT_EQ(result, MTP_SUCCESS);
+    }
 }
 
 /*

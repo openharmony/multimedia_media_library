@@ -34,11 +34,6 @@ namespace Media::AccurateRefresh {
 
 AlbumAccurateRefresh::AlbumAccurateRefresh(std::shared_ptr<TransactionOperations> trans) : AccurateRefreshBase(trans)
 {
-    SetDataManagerTransaction(trans);
-}
-
-void AlbumAccurateRefresh::SetDataManagerTransaction(std::shared_ptr<TransactionOperations> trans)
-{
     dataManager_.SetTransaction(trans);
 }
 

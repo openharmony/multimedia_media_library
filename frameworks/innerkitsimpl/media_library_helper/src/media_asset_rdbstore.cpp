@@ -38,6 +38,7 @@ namespace Media {
 
 const std::string MEDIA_LIBRARY_STARTUP_PARAM_PREFIX = "multimedia.medialibrary.startup.";
 constexpr uint32_t BASE_USER_RANGE = 200000;
+const int32_t ARG_COUNT = 2;
 const std::unordered_set<OperationObject> OPERATION_OBJECT_SET = {
     OperationObject::UFM_PHOTO,
     OperationObject::UFM_AUDIO,
@@ -141,7 +142,7 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     config.SetRoleType(RoleType::VISITOR);
     config.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
-    config.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
+    config.SetScalarFunction("photo_album_notify_func", ARG_COUNT, PhotoAlbumNotifyFunc);
     config.SetCollatorLocales("zh_CN");
 
     MediaLibraryDataCallBack rdbDataCallBack;

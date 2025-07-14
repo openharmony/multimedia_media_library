@@ -39,6 +39,7 @@ private:
     const std::string DATABASE_PATH =
         "/data/app/el2/100/database/com.ohos.medialibrary.medialibrarydata/rdb/media_library.db";
     const std::string BUNDLE_NAME = "com.ohos.medialibrary.medialibrarydata";
+    const int32_t ARG_COUNT = 2;
 
 public:
     std::shared_ptr<NativeRdb::RdbStore> GetRdbStore(int32_t &errCode)
@@ -49,7 +50,7 @@ public:
         config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
         config.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
         config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
-        config.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
+        config.SetScalarFunction("photo_album_notify_func", ARG_COUNT, PhotoAlbumNotifyFunc);
         RdbCallback cb;
         std::shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, cb, errCode);
         return store;

@@ -1343,7 +1343,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_05
     mtpMedialibraryManager_->dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     ASSERT_NE(mtpMedialibraryManager_->dataShareHelper_, nullptr);
 
-    int32_t id = 100000001;
+    int32_t id = 100555551;
     shared_ptr<FileAsset> outFileAsset;
     int32_t res = mtpMedialibraryManager_->GetAssetById(id, outFileAsset);
 
