@@ -179,6 +179,7 @@ void OthersCloneRestore::HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> 
         return;
     }
     GetDbInfo(sceneCode, mediaDbInfo, resultSet);
+    resultSet->Close();
 }
 
 void OthersCloneRestore::GetCloneDbInfos(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo)

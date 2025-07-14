@@ -284,6 +284,7 @@ std::vector<FileInfo> UpgradeRestore::QueryAudioFileInfosFromAudio(int32_t offse
             result.emplace_back(tmpInfo);
         }
     }
+    resultSet->Close();
     return result;
 }
 
@@ -607,9 +608,11 @@ std::vector<int32_t> UpgradeRestore::GetCloudPhotoMinIds()
         "WHERE (row_num - 1) % 200 = 0 ;";
     std::vector<NativeRdb::ValueObject> params = { hasLowQualityImage_, shouldIncludeSd_ };
     auto resultSet = galleryRdb_->QuerySql(querySql, params);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, minIds);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         minIds.emplace_back(GetInt32Val("_id", resultSet));
     }
+    resultSet->Close();
     int64_t endGetCloudPhotoMinIds = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("TimeCost: GetCloudPhotoMinIds cost: %{public}" PRId64,
         endGetCloudPhotoMinIds - startGetCloudPhotoMinIds);
@@ -631,9 +634,12 @@ std::vector<int32_t> UpgradeRestore::GetLocalPhotoMinIds()
         "WHERE (row_num - 1) % 200 = 0 ;";
     std::vector<NativeRdb::ValueObject> params = { hasLowQualityImage_, shouldIncludeSd_ };
     auto resultSet = galleryRdb_->QuerySql(querySql, params);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, minIds);
+
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         minIds.emplace_back(GetInt32Val("_id", resultSet));
     }
+    resultSet->Close();
     int64_t endGetLocalPhotoMinIds = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("TimeCost: GetLocalPhotoMinIds cost: %{public}" PRId64,
         endGetLocalPhotoMinIds - startGetLocalPhotoMinIds);
@@ -757,6 +763,7 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t minId)
         FileInfo tmpInfo;
         CHECK_AND_EXECUTE(!ParseResultSetFromGallery(resultSet, tmpInfo), result.emplace_back(tmpInfo));
     }
+    resultSet->Close();
     return result;
 }
 
@@ -772,6 +779,7 @@ std::vector<FileInfo> UpgradeRestore::QueryCloudFileInfos(int32_t minId)
         FileInfo tmpInfo;
         CHECK_AND_EXECUTE(!ParseResultSetFromGallery(resultSet, tmpInfo),  result.emplace_back(tmpInfo));
     }
+    resultSet->Close();
     return result;
 }
 
@@ -818,6 +826,7 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfosFromExternal(int32_t offset,
             }
         }
     }
+    resultSet->Close();
     return result;
 }
 

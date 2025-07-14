@@ -1554,7 +1554,11 @@ void CloneRestore::BatchQueryAlbum(vector<AlbumInfo> &albumInfos, const string &
             PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(albumInfo.albumSubType) + " AND " +
             PhotoAlbumColumns::ALBUM_NAME + " = '" + albumInfo.albumName + "'";
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-        CHECK_AND_CONTINUE(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK);
+        CHECK_AND_CONTINUE(resultSet != nullptr);
+        if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+            resultSet->Close();
+            continue;
+        }
         albumInfo.albumIdNew = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
         CHECK_AND_CONTINUE(albumInfo.albumIdNew > 0);
         albumIdMap[albumInfo.albumIdOld] = albumInfo.albumIdNew;
@@ -2494,6 +2498,7 @@ std::vector<PortraitAlbumDfx> CloneRestore::QueryAllPortraitAlbum(int32_t& offse
         result.push_back(dfxInfo);
     }
     resultSet->GetRowCount(rowCount);
+    resultSet->Close();
     return result;
 }
 

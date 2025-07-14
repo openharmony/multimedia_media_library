@@ -237,7 +237,7 @@ std::unordered_set<int32_t> SearchIndexClone::ExecuteIdQuery(const std::string& 
 {
     std::unordered_set<int32_t> result;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(destRdb_, querySql);
-    if (!resultSet) return result;
+    CHECK_AND_RETURN_RET(resultSet != nullptr, result);
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = 0;
@@ -245,6 +245,7 @@ std::unordered_set<int32_t> SearchIndexClone::ExecuteIdQuery(const std::string& 
             result.insert(fileId);
         }
     }
+    resultSet->Close();
     return result;
 }
 
