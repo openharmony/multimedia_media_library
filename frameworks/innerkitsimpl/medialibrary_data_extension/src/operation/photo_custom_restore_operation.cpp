@@ -723,7 +723,7 @@ int32_t PhotoCustomRestoreOperation::UpdateUniqueNumber(UniqueNumber &uniqueNumb
 static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
 {
     int64_t dateTaken = metadata->GetDateTaken();
-    if (dateTaken != 0) {
+    if (dateTaken > 0) {
         value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
         value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
             MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateTaken));
@@ -734,9 +734,9 @@ static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, NativeRdb::Valu
         return;
     }
     int64_t dateAdded = metadata->GetFileDateAdded();
-    if (dateAdded == 0) {
+    if (dateAdded <= 0) {
         int64_t dateModified = metadata->GetFileDateModified();
-        if (dateModified == 0) {
+        if (dateModified <= 0) {
             dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
         } else {
             dateTaken = dateModified;
