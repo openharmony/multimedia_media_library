@@ -31,6 +31,7 @@
 #include "sendable_medialibrary_napi_utils.h"
 #include "sendable_fetch_file_result_napi.h"
 #include "sendable_file_asset_napi.h"
+#include "shooting_mode_column.h"
 #include "userfile_client.h"
 #include "album_operation_uri.h"
 
@@ -410,22 +411,50 @@ napi_value GetStringArg(napi_env env, napi_callback_info info, SendablePhotoAlbu
     return result;
 }
 
+static int32_t NapiGetAnalysisAlbumPredicates(const shared_ptr<PhotoAlbum>& photoAlbum,
+    DataSharePredicates& predicates)
+{
+    PhotoAlbumSubType subType = photoAlbum->GetPhotoAlbumSubType();
+    if (subType == PhotoAlbumSubType::PORTRAIT) {
+        SendableMediaLibraryNapiUtils::GetPortraitAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
+        return E_SUCCESS;
+    }
+    if (subType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
+        return SendableMediaLibraryNapiUtils::GetAllLocationPredicates(predicates);
+    }
+    if (subType == PhotoAlbumSubType::SHOOTING_MODE) {
+        ShootingModeAlbumType type {};
+        if (!ShootingModeAlbum::AlbumNameToShootingModeAlbumType(photoAlbum->GetAlbumName(), type)) {
+            NAPI_ERR_LOG("Invalid shooting mode album name: %{public}s", photoAlbum->GetAlbumName().c_str());
+            return E_INVALID_ARGUMENTS;
+        }
+        ShootingModeAlbum::GetShootingModeAlbumPredicates(type, predicates, photoAlbum->GetHiddenOnly());
+        return E_SUCCESS;
+    }
+    string albumName = photoAlbum->GetAlbumName();
+    if (SendableMediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(albumName, predicates)) {
+        return SendableMediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
+            photoAlbum->GetAlbumId(), predicates);
+    }
+    SendableMediaLibraryNapiUtils::GetAnalysisPhotoMapPredicates(photoAlbum->GetAlbumId(), predicates);
+    return E_SUCCESS;
+}
+
 static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbum,
     DataSharePredicates &predicates, const bool hiddenOnly)
 {
-    auto albumId = photoAlbum->GetAlbumId();
-    auto subType = photoAlbum->GetPhotoAlbumSubType();
+    int32_t albumId = photoAlbum->GetAlbumId();
+    PhotoAlbumSubType subType = photoAlbum->GetPhotoAlbumSubType();
     bool isLocationAlbum = subType == PhotoAlbumSubType::GEOGRAPHY_LOCATION;
     if (albumId <= 0 && !isLocationAlbum) {
+        NAPI_ERR_LOG("Invalid album ID");
         return E_INVALID_ARGUMENTS;
     }
-    auto type = photoAlbum->GetPhotoAlbumType();
+    PhotoAlbumType type = photoAlbum->GetPhotoAlbumType();
     if ((!PhotoAlbum::CheckPhotoAlbumType(type)) || (!PhotoAlbum::CheckPhotoAlbumSubType(subType))) {
+        NAPI_ERR_LOG("Invalid album type or subtype: type=%{public}d, subType=%{public}d", static_cast<int>(type),
+            static_cast<int>(subType));
         return E_INVALID_ARGUMENTS;
-    }
-
-    if (type == PhotoAlbumType::SMART && subType == PhotoAlbumSubType::PORTRAIT) {
-        return SendableMediaLibraryNapiUtils::GetPortraitAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
     }
 
     if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
@@ -438,22 +467,16 @@ static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbu
     }
 
     if (type == PhotoAlbumType::SMART) {
-        if (isLocationAlbum) {
-            return SendableMediaLibraryNapiUtils::GetAllLocationPredicates(predicates);
-        }
-        auto albumName = photoAlbum->GetAlbumName();
-        if (SendableMediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(albumName, predicates)) {
-            return SendableMediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
-                photoAlbum->GetAlbumId(), predicates);
-        }
-        return SendableMediaLibraryNapiUtils::GetAnalysisAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
+        return NapiGetAnalysisAlbumPredicates(photoAlbum, predicates);
     }
 
-    if ((type != PhotoAlbumType::SYSTEM) || (subType == PhotoAlbumSubType::USER_GENERIC) ||
-        (subType == PhotoAlbumSubType::ANY)) {
-        return E_INVALID_ARGUMENTS;
+    if (type == PhotoAlbumType::SYSTEM) {
+        return SendableMediaLibraryNapiUtils::GetSystemAlbumPredicates(subType, predicates, hiddenOnly);
     }
-    return SendableMediaLibraryNapiUtils::GetSystemAlbumPredicates(subType, predicates, hiddenOnly);
+
+    NAPI_ERR_LOG("Invalid album type and subtype: type=%{public}d, subType=%{public}d", static_cast<int>(type),
+        static_cast<int>(subType));
+    return E_INVALID_ARGUMENTS;
 }
 
 static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
