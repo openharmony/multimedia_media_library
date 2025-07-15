@@ -11274,7 +11274,7 @@ static void JSGetPhotoAlbumsWithoutSubtypeExecute(napi_env env, void *data)
         if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
             context->SaveError(errCode);
         } else {
-            context->SaveError(E_HAS_DB_ERROR);
+            context->SaveError(E_INNER_FAIL);
         }
         return;
     }
@@ -11282,6 +11282,45 @@ static void JSGetPhotoAlbumsWithoutSubtypeExecute(napi_env env, void *data)
     context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
     context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
     context->fetchPhotoAlbumResult->SetUserId(context->userId);
+}
+
+static void GetNapiPhotoAlbumResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchPhotoAlbumResult));
+    if (fileResult == nullptr) {
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Failed to create js object for Fetch Photo Album Result");
+        return;
+    }
+    jsContext->data = fileResult;
+    jsContext->status = true;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+}
+
+static void GetPhotoAlbumsWithoutSubtypeCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetPhotoAlbumsWithoutSubtypeCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    if (context->error != ERR_DEFAULT  || context->fetchPhotoAlbumResult == nullptr) {
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        context->HandleError(env, jsContext->error);
+    } else {
+        GetNapiPhotoAlbumResult(env, context, jsContext);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
 }
 
 napi_value MediaLibraryNapi::PhotoAccessGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callback_info info)
@@ -11295,7 +11334,7 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoAlbumsWithoutSubtype(napi_env en
 
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetPhotoAlbumsWithoutSubtype",
-        JSGetPhotoAlbumsWithoutSubtypeExecute, JSGetPhotoAlbumsCompleteCallback);
+        JSGetPhotoAlbumsWithoutSubtypeExecute, GetPhotoAlbumsWithoutSubtypeCompleteCallback);
 }
 
 static napi_value AddDefaultAlbumOrderColumns(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context,
@@ -11378,7 +11417,7 @@ static void JSGetPhotoAlbumOrderExecute(napi_env env, void *data)
         if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
             context->SaveError(errCode);
         } else {
-            context->SaveError(E_HAS_DB_ERROR);
+            context->SaveError(E_INNER_FAIL);
         }
         return;
     }
