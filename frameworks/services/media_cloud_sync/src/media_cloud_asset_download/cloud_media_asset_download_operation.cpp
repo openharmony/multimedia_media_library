@@ -277,6 +277,7 @@ CloudMediaAssetDownloadOperation::DownloadFileData CloudMediaAssetDownloadOperat
 
 void CloudMediaAssetDownloadOperation::StartFileCacheFailed()
 {
+    SetTaskStatus(Status::PAUSE_FOR_CLOUD_ERROR);
     downloadId_ = DOWNLOAD_ID_DEFAULT;
     if (isCache_) {
         ClearData(cacheForDownload_);
@@ -291,8 +292,6 @@ void CloudMediaAssetDownloadOperation::StartFileCacheFailed()
         return;
     }
     readyForDownload_ = data;
-    // prepare the data and then set task status
-    SetTaskStatus(Status::PAUSE_FOR_CLOUD_ERROR);
 }
 
 void CloudMediaAssetDownloadOperation::StartBatchDownload()
