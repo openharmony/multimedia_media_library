@@ -203,7 +203,7 @@ private:
             PhotoAlbum.cloud_id AS album_cloud_id, \
             PhotoAlbum.lpath AS lpath \
         FROM DATA \
-            INNER JOIN PhotoAlbum \
+            LEFT JOIN PhotoAlbum \
             ON DATA.owner_album_id = PhotoAlbum.album_id \
         ;";
     const std::string SQL_PHOTOS_GET_COPY_RECORDS = "\
@@ -220,7 +220,7 @@ private:
             PhotoAlbum.cloud_id AS album_cloud_id, \
             PhotoAlbum.lpath AS lpath \
         FROM DATA \
-            INNER JOIN PhotoAlbum \
+            LEFT JOIN PhotoAlbum \
             ON DATA.owner_album_id = PhotoAlbum.album_id \
         ;";
     const std::string SQL_PHOTOS_GET_META_MODIFIED_RECORDS = "\
@@ -239,7 +239,7 @@ private:
             PhotoAlbum.cloud_id AS album_cloud_id, \
             PhotoAlbum.lpath AS lpath \
         FROM DATA \
-            INNER JOIN PhotoAlbum \
+            LEFT JOIN PhotoAlbum \
             ON DATA.owner_album_id = PhotoAlbum.album_id \
         ;";
     const std::string SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS = "\
@@ -262,7 +262,7 @@ private:
             PhotoAlbum.cloud_id AS album_cloud_id, \
             PhotoAlbum.lpath AS lpath \
         FROM DATA \
-            INNER JOIN PhotoAlbum \
+            LEFT JOIN PhotoAlbum \
             ON DATA.owner_album_id = PhotoAlbum.album_id \
         ;";
 };
