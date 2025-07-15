@@ -133,6 +133,8 @@ private:
         const std::string &fileId, const std::string &type);
     void UpdateAllAlbumsCountForCloud(const std::vector<std::string> &albums);
     void UpdateAlbumCountInternal(const std::vector<std::string> &subtypes);
+    int32_t FixAlbumIdToBeOtherAlbumId(
+        int32_t &albumId, SafeMap<std::string, std::pair<int32_t, std::string>> &lpathToIdMap);
     void GetSourceAlbumFromPath(const CloudMediaPullDataDto &pullData, int32_t &albumId, std::set<int32_t> &cloudMapIds,
         SafeMap<std::string, std::pair<int32_t, std::string>> &lpathToIdMap);
     int32_t GetSourceAlbumForMerge(const CloudMediaPullDataDto &pullData, std::vector<std::string> &albumCloudIds,
