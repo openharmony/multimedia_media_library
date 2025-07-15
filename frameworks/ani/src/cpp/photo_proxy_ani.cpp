@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#include "ani_class_name.h"
-#include "medialibrary_ani_log.h"
 #include "photo_proxy_ani.h"
+#include "ani_class_name.h"
+#include "medialibrary_ani_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -26,18 +26,22 @@ PhotoProxyAni::PhotoProxyAni() : env_(nullptr), wrapper_(nullptr)
 
 PhotoProxyAni::~PhotoProxyAni()
 {
-    if (wrapper_ != nullptr) {
+    if (wrapper_ != nullptr && env_!= nullptr) {
         env_->GlobalReference_Delete(wrapper_);
         wrapper_ = nullptr;
     }
-    if (photoProxy_) {
+    if (photoProxy_ != nullptr) {
         photoProxy_ = nullptr;
+    }
+    if (env_ != nullptr) {
+        env_ = nullptr;
     }
 }
 
-ani_status PhotoProxyAni::PhotoProxyAniInit(ani_env *env)
+ani_status PhotoProxyAni::Init(ani_env *env)
 {
-    static const char *className = ANI_CLASS_PHOTO_PROXY.c_str();
+    static const char *className = PAH_ANI_CLASS_PHOTO_PROXY_HANDLE.c_str();
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
@@ -62,11 +66,13 @@ ani_status PhotoProxyAni::PhotoProxyAniInit(ani_env *env)
 ani_object PhotoProxyAni::PhotoProxyAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz)
 {
     ANI_DEBUG_LOG("PhotoProxyAniConstructor is called");
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     std::unique_ptr<PhotoProxyAni> nativeHandle = std::make_unique<PhotoProxyAni>();
+    CHECK_COND_RET(nativeHandle != nullptr, nullptr, "Failed to create PhotoProxyAni");
     nativeHandle->env_ = env;
     nativeHandle->photoProxy_ = sPhotoProxy_;
 
-    static const char *className = ANI_CLASS_PHOTO_PROXY.c_str();
+    static const char *className = PAH_ANI_CLASS_PHOTO_PROXY_HANDLE.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
@@ -81,11 +87,11 @@ ani_object PhotoProxyAni::PhotoProxyAniConstructor(ani_env *env, [[maybe_unused]
 
     // wrap nativeHandle to aniObject
     ani_object aniObject;
-    if (ANI_OK !=env->Object_New(cls, ctor, &aniObject, reinterpret_cast<ani_long>(nativeHandle.release()))) {
+    if (ANI_OK != env->Object_New(cls, ctor, &aniObject, reinterpret_cast<ani_long>(nativeHandle.get()))) {
         ANI_ERR_LOG("New PhotoProxy Fail");
         return nullptr;
     }
-
+    (void)nativeHandle.release();
     return aniObject;
 }
 

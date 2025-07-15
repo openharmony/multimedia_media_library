@@ -45,7 +45,8 @@ static const std::map<PhotoPositionType, int32_t> ANI_PHOTOPOSITIONTYPE_INDEX_MA
 static const std::map<PhotoAlbumType, int32_t> ANI_PHOTOALBUMTYPE_INDEX_MAP = {
     {PhotoAlbumType::USER, 0},
     {PhotoAlbumType::SYSTEM, 1},
-    {PhotoAlbumType::SMART, 2},
+    {PhotoAlbumType::SOURCE, 2},
+    {PhotoAlbumType::SMART, 3},
 };
 
 static const std::map<PhotoAlbumSubType, int32_t> ANI_PHOTOALBUMSUBTYPE_INDEX_MAP = {
@@ -127,7 +128,7 @@ ani_status MediaLibraryEnumAni::ToAniEnum(ani_env *env, MediaType value, ani_enu
     ani_int enumIndex = static_cast<ani_int>(it->second);
 
     ani_enum aniEnum {};
-    CHECK_STATUS_RET(env->FindEnum(ANI_CLASS_ENUM_PHOTO_TYPE.c_str(), &aniEnum), "Find Enum Fail");
+    CHECK_STATUS_RET(env->FindEnum(PAH_ANI_CLASS_ENUM_PHOTO_TYPE.c_str(), &aniEnum), "Find Enum Fail");
     CHECK_STATUS_RET(env->Enum_GetEnumItemByIndex(aniEnum, enumIndex, &aniEnumItem), "Find Enum item Fail");
     return ANI_OK;
 }
@@ -141,7 +142,7 @@ ani_status MediaLibraryEnumAni::ToAniEnum(ani_env *env, PhotoSubType value, ani_
     ani_int enumIndex = static_cast<ani_int>(it->second);
 
     ani_enum aniEnum {};
-    CHECK_STATUS_RET(env->FindEnum(ANI_CLASS_ENUM_PHOTO_SUBTYPE.c_str(), &aniEnum), "Find Enum Fail");
+    CHECK_STATUS_RET(env->FindEnum(PAH_ANI_CLASS_ENUM_PHOTO_SUBTYPE.c_str(), &aniEnum), "Find Enum Fail");
     CHECK_STATUS_RET(env->Enum_GetEnumItemByIndex(aniEnum, enumIndex, &aniEnumItem), "Find Enum item Fail");
     return ANI_OK;
 }
@@ -155,7 +156,7 @@ ani_status MediaLibraryEnumAni::ToAniEnum(ani_env *env, DynamicRangeType value, 
     ani_int enumIndex = static_cast<ani_int>(it->second);
 
     ani_enum aniEnum {};
-    CHECK_STATUS_RET(env->FindEnum(ANI_CLASS_ENUM_DYNAMIC_RANGE_TYPE.c_str(), &aniEnum), "Find Enum Fail");
+    CHECK_STATUS_RET(env->FindEnum(PAH_ANI_CLASS_ENUM_DYNAMIC_RANGE_TYPE.c_str(), &aniEnum), "Find Enum Fail");
     CHECK_STATUS_RET(env->Enum_GetEnumItemByIndex(aniEnum, enumIndex, &aniEnumItem), "Find Enum item Fail");
     return ANI_OK;
 }
@@ -169,7 +170,7 @@ ani_status MediaLibraryEnumAni::ToAniEnum(ani_env *env, PhotoPositionType value,
     ani_int enumIndex = static_cast<ani_int>(it->second);
 
     ani_enum aniEnum {};
-    CHECK_STATUS_RET(env->FindEnum(ANI_CLASS_ENUM_POSITION_TYPE.c_str(), &aniEnum), "Find Enum Fail");
+    CHECK_STATUS_RET(env->FindEnum(PAH_ANI_CLASS_ENUM_POSITION_TYPE.c_str(), &aniEnum), "Find Enum Fail");
     CHECK_STATUS_RET(env->Enum_GetEnumItemByIndex(aniEnum, enumIndex, &aniEnumItem), "Find Enum item Fail");
     return ANI_OK;
 }
@@ -183,7 +184,7 @@ ani_status MediaLibraryEnumAni::ToAniEnum(ani_env *env, PhotoAlbumType value, an
     ani_int enumIndex = static_cast<ani_int>(it->second);
 
     ani_enum aniEnum {};
-    CHECK_STATUS_RET(env->FindEnum(ANI_CLASS_ENUM_ALBUM_TYPE.c_str(), &aniEnum), "Find Enum Fail");
+    CHECK_STATUS_RET(env->FindEnum(PAH_ANI_CLASS_ENUM_ALBUM_TYPE.c_str(), &aniEnum), "Find Enum Fail");
     CHECK_STATUS_RET(env->Enum_GetEnumItemByIndex(aniEnum, enumIndex, &aniEnumItem), "Find Enum item Fail");
     return ANI_OK;
 }
@@ -197,7 +198,7 @@ ani_status MediaLibraryEnumAni::ToAniEnum(ani_env *env, PhotoAlbumSubType value,
     ani_int enumIndex = static_cast<ani_int>(it->second);
 
     ani_enum aniEnum {};
-    CHECK_STATUS_RET(env->FindEnum(ANI_CLASS_ENUM_ALBUM_SUBTYPE.c_str(), &aniEnum), "Find Enum Fail");
+    CHECK_STATUS_RET(env->FindEnum(PAH_ANI_CLASS_ENUM_ALBUM_SUBTYPE.c_str(), &aniEnum), "Find Enum Fail");
     CHECK_STATUS_RET(env->Enum_GetEnumItemByIndex(aniEnum, enumIndex, &aniEnumItem), "Find Enum item Fail");
     return ANI_OK;
 }
@@ -211,7 +212,7 @@ ani_status MediaLibraryEnumAni::ToAniEnum(ani_env *env, NotifyType value, ani_en
     ani_int enumIndex = static_cast<ani_int>(it->second);
 
     ani_enum aniEnum {};
-    CHECK_STATUS_RET(env->FindEnum(ANI_CLASS_ENUM_NOTIFY_TYPE.c_str(), &aniEnum), "Find Enum Fail");
+    CHECK_STATUS_RET(env->FindEnum(PAH_ANI_CLASS_ENUM_NOTIFY_TYPE.c_str(), &aniEnum), "Find Enum Fail");
     CHECK_STATUS_RET(env->Enum_GetEnumItemByIndex(aniEnum, enumIndex, &aniEnumItem), "Find Enum item Fail");
     return ANI_OK;
 }
@@ -226,7 +227,7 @@ ani_status MediaLibraryEnumAni::ToAniEnum(ani_env *env, MovingPhotoEffectMode va
     ani_int enumIndex = static_cast<ani_int>(it->second);
 
     ani_enum aniEnum {};
-    CHECK_STATUS_RET(env->FindEnum(ANI_CLASS_ENUM_MOVING_PHOTO_EFFECT_MODE.c_str(), &aniEnum), "Find Enum Fail");
+    CHECK_STATUS_RET(env->FindEnum(PAH_ANI_CLASS_ENUM_MOVING_PHOTO_EFFECT_MODE.c_str(), &aniEnum), "Find Enum Fail");
     CHECK_STATUS_RET(env->Enum_GetEnumItemByIndex(aniEnum, enumIndex, &aniEnumItem), "Find Enum item Fail");
     return ANI_OK;
 }
@@ -241,7 +242,8 @@ ani_status MediaLibraryEnumAni::ToAniEnum(ani_env *env, CloudEnhancementTaskStag
     ani_int enumIndex = static_cast<ani_int>(it->second);
 
     ani_enum aniEnum {};
-    CHECK_STATUS_RET(env->FindEnum(ANI_CLASS_ENUM_MOVING_PHOTO_EFFECT_MODE.c_str(), &aniEnum), "Find Enum Fail");
+    CHECK_STATUS_RET(env->FindEnum(PAH_ANI_CLASS_ENUM_CLOUD_ENHANCEMENT_TASK_STAGE.c_str(),
+        &aniEnum), "Find Enum Fail");
     CHECK_STATUS_RET(env->Enum_GetEnumItemByIndex(aniEnum, enumIndex, &aniEnumItem), "Find Enum item Fail");
     return ANI_OK;
 }
