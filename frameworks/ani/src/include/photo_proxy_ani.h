@@ -26,7 +26,7 @@ public:
     PhotoProxyAni();
     ~PhotoProxyAni();
 
-    static ani_status PhotoProxyAniInit(ani_env *env);
+    static ani_status Init(ani_env *env);
 
     sptr<PhotoProxy> photoProxy_;
     static thread_local sptr<PhotoProxy> sPhotoProxy_;

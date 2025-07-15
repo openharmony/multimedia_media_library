@@ -16,17 +16,34 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_PHOTO_ALBUM_ANI_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_PHOTO_ALBUM_ANI_H
 
-#include <ani.h>
-#include "photo_album.h"
+#include <memory>
+#include <vector>
+#include <string>
+
+#include "ani_error.h"
 #include "datashare_predicates.h"
 #include "datashare_values_bucket.h"
 #include "fetch_result.h"
 #include "file_asset.h"
-#include "ani_error.h"
+#include "photo_album.h"
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+
+struct AniPhotoAlbumOperator {
+    std::string clsName;
+    ani_class cls {};
+    ani_method ctor {};
+    ani_method setAlbumType {};
+    ani_method setAlbumSubtype {};
+    ani_method setAlbumName {};
+    ani_method setAlbumUri {};
+    ani_method setCount {};
+    ani_method setCoverUri {};
+    ani_method setLPath {};
+};
+
 class PhotoAlbumAni {
 public:
     EXPORT PhotoAlbumAni();
@@ -35,14 +52,16 @@ public:
     EXPORT static ani_status PhotoAccessInit(ani_env *env);
     EXPORT static ani_object CreatePhotoAlbumAni(ani_env *env, std::unique_ptr<PhotoAlbum> &albumData);
     EXPORT static ani_object CreatePhotoAlbumAni(ani_env *env, std::shared_ptr<PhotoAlbum> &albumData);
+    EXPORT static ani_status InitAniPhotoAlbumOperator(ani_env *env, AniPhotoAlbumOperator &photoAlbumOperator);
+    EXPORT static ani_object CreatePhotoAlbumAni(ani_env *env, std::unique_ptr<PhotoAlbum> &albumData,
+        const AniPhotoAlbumOperator &photoAlbumOperator);
     EXPORT static PhotoAlbumAni* UnwrapPhotoAlbumObject(ani_env *env, ani_object object);
 
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
 
 private:
     EXPORT void SetPhotoAlbumAniProperties();
-    EXPORT static ani_object PhotoAlbumAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz);
-    EXPORT static ani_object CreateEmptyPhotoAlbumAni(ani_env *env, ani_class clazz);
+    EXPORT static ani_object PhotoAlbumAniConstructor(ani_env *env, const AniPhotoAlbumOperator &opt);
     EXPORT static void PhotoAlbumAniDestructor(ani_env *env, ani_object object);
 
     EXPORT static ani_object PhotoAccessGetPhotoAssets(ani_env *env, ani_object object, ani_object fetchOptions);
@@ -56,6 +75,9 @@ private:
     EXPORT static ani_string PhotoAccessHelperGetFaceId(ani_env *env, ani_object object);
     EXPORT static ani_double GetImageCount(ani_env *env, ani_object object);
     EXPORT static ani_double GetVideoCount(ani_env *env, ani_object object);
+    EXPORT static ani_object PhotoAccessGetSharedPhotoAssets(ani_env *env, ani_object object, ani_object options);
+    EXPORT static ani_double GetdateAdded(ani_env *env, ani_object object);
+    EXPORT static ani_double GetdateModified(ani_env *env, ani_object object);
 
     ani_env *env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
@@ -82,5 +104,4 @@ struct PhotoAlbumAniContext : public AniError {
 
 } // namespace Media
 } // namespace OHOS
-
 #endif // FRAMEWORKS_ANI_SRC_INCLUDE_PHOTO_ALBUM_ANI_H
