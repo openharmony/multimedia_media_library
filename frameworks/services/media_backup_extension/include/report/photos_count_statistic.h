@@ -48,7 +48,7 @@ public:
     std::vector<AlbumMediaStatisticInfo> Load();
 
 private:
-    int32_t GetCount(const std::string &query);
+    int32_t GetCount(const std::string &query, const std::vector<NativeRdb::ValueObject> &args = {});
     int32_t QueryTotalCount(SearchCondition searchCondition);
     int32_t QueryAllRestoreCount(SearchCondition searchCondition);
     int32_t QueryPicturesTotalCount(SearchCondition searchCondition);
