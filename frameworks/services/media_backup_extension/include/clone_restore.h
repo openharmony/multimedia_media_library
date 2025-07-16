@@ -112,7 +112,6 @@ private:
     void GetQueryWhereClause(const std::string &tableName,
         const std::unordered_map<std::string, std::string> &columnInfoMap);
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
-    void BatchNotifyPhoto(const std::vector<FileInfo> &fileInfos);
     void UpdateAlbumOrderColumns(const AlbumInfo &albumInfo, const string &tableName);
     void UpdateSystemAlbumColumns(const string &tableName);
     void InsertAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
