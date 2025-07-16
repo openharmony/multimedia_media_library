@@ -35,6 +35,7 @@
 #include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
 #include "medialibrary_rdb_utils.h"
+#include "medialibrary_kvstore_manager.h"
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 #define private public
@@ -522,6 +523,11 @@ static int32_t AddSeed()
     MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
     return Media::E_OK;
 }
+
+static inline void ClearKvStore()
+{
+    Media::MediaLibraryKvStoreManager::GetInstance()::CloseAllKvStore();
+}
 #endif
 } // namespace OHOS
 
@@ -548,6 +554,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::CloudEnhancementGetCountTest();
     OHOS::EnhancementServiceAdpterTest();
     OHOS::EnhancementServiceCallbackTest();
+    OHOS::ClearKvStore();
 #endif
     int sleepTime = 100;
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));

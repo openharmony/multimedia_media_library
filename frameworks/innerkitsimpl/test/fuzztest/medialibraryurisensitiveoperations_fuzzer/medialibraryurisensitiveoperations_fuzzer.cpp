@@ -40,6 +40,7 @@
 #include "rdb_utils.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
+#include "medialibrary_kvstore_manager.h"
 
 namespace OHOS {
 using namespace std;
@@ -215,6 +216,11 @@ static void Init()
     g_rdbStore = rdbStore;
     SetTables();
 }
+
+static inline void ClearKvStore()
+{
+    Media::MediaLibraryKvStoreManager::GetInstance()::CloseAllKvStore();
+}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -231,5 +237,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         return 0;
     }
     OHOS::UriSensitiveOperationsFuzzer();
+    OHOS::ClearKvStore();
     return 0;
 }

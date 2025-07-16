@@ -34,6 +34,7 @@
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_unistore.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_kvstore_manager.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "userfile_manager_types.h"
@@ -223,6 +224,11 @@ static void Init()
     g_rdbStore = rdbStore;
     SetTables();
 }
+
+static inline void ClearKvStore()
+{
+    Media::MediaLibraryKvStoreManager::GetInstance()::CloseAllKvStore();
+}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -239,5 +245,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         return 0;
     }
     OHOS::AppUriPermissionOperationsFuzzer();
+    OHOS::ClearKvStore();
     return 0;
 }

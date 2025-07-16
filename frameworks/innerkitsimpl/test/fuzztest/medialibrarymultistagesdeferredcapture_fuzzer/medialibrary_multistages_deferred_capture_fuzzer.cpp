@@ -28,6 +28,7 @@
 #include "deferred_photo_proc_session.h"
 #include "deferred_photo_proc_adapter.h"
 #include "multistages_capture_deferred_photo_proc_session_callback.h"
+#include "medialibrary_kvstore_manager.h"
 
 namespace OHOS {
 using namespace std;
@@ -113,6 +114,10 @@ static void MultistagesCaptureDeferredPhotoProcSessionCallbackTest()
     callback->OnError(photoId, errCode);
 }
 
+static inline void ClearKvStore()
+{
+    Media::MediaLibraryKvStoreManager::GetInstance()::CloseAllKvStore();
+}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -133,5 +138,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
     OHOS::MultistagesCaptureDeferredPhotoProcAdapterTest();
     OHOS::MultistagesCaptureDeferredPhotoProcSessionCallbackTest();
+    OHOS::ClearKvStore();
     return 0;
 }
