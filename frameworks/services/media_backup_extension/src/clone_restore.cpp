@@ -1423,20 +1423,6 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
     BackupDatabaseUtils::UpdateAssociateFileId(mediaLibraryRdb_, fileInfos);
 }
 
-void CloneRestore::BatchNotifyPhoto(const vector<FileInfo> &fileInfos)
-{
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_LOG(watch != nullptr, "Get MediaLibraryNotify instance failed");
-    for (const auto &fileInfo : fileInfos) {
-        bool cond = (!fileInfo.needMove || fileInfo.cloudPath.empty());
-        CHECK_AND_CONTINUE(!cond);
-        string extraUri = MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.cloudPath);
-        string notifyUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-            to_string(fileInfo.fileIdNew), extraUri);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
-    }
-}
-
 void CloneRestore::UpdateAlbumOrderColumns(const AlbumInfo &albumInfo, const string &tableName)
 {
     CHECK_AND_RETURN(tableName == PhotoAlbumColumns::TABLE);
@@ -2066,7 +2052,6 @@ void CloneRestore::RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap
         "start restore photo, offset: %{public}d, isRelatedToPhotoMap: %{public}d", offset, isRelatedToPhotoMap);
     vector<FileInfo> fileInfos = QueryFileInfos(offset, isRelatedToPhotoMap);
     CHECK_AND_EXECUTE(InsertPhoto(fileInfos) == E_OK, AddToPhotosFailedOffsets(offset));
-    BatchNotifyPhoto(fileInfos);
     RestoreImageFaceInfo(fileInfos);
 
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
@@ -2082,7 +2067,6 @@ void CloneRestore::RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhoto
     vector<FileInfo> fileInfos = QueryCloudFileInfos(offset, isRelatedToPhotoMap);
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, fileInfos, SourceType::PHOTOS) == E_OK,
         AddToPhotosFailedOffsets(offset));
-    BatchNotifyPhoto(fileInfos);
     RestoreImageFaceInfo(fileInfos);
 
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
