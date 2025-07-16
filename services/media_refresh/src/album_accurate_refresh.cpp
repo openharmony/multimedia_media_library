@@ -98,10 +98,10 @@ int32_t AlbumAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &a
     }
 
     int32_t err = dataManager_.UpdateModifiedDatasInner(modifiedAlbumIds, operation);
-    CHECK_AND_RETURN_RET_LOG(err == ACCURATE_REFRESH_RET_OK, err,
+    CHECK_AND_RETURN_RET_WARN_LOG(err == ACCURATE_REFRESH_RET_OK, err,
         "UpdateModifiedDatasInner failed, err:%{public}d", err);
     err = dataManager_.PostProcessModifiedDatas(modifiedAlbumIds);
-    CHECK_AND_RETURN_RET_LOG(err == ACCURATE_REFRESH_RET_OK, err,
+    CHECK_AND_RETURN_RET_WARN_LOG(err == ACCURATE_REFRESH_RET_OK, err,
         "PostProcessModifiedDatas failed, err:%{public}d", err);
     return ACCURATE_REFRESH_RET_OK;
 }

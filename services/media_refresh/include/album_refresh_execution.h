@@ -91,6 +91,7 @@ private:
     void CheckUpdateAlbumInfo(const AlbumChangeInfo &albumInfo, bool isHidden);
     void CheckUpdateValues(const AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
         NativeRdb::ValuesBucket &values);
+    bool CheckSetHiddenAlbumInfo(AlbumChangeInfo &albumInfo);
 
 private:
     // 系统相册

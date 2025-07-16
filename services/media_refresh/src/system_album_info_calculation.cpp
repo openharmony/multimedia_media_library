@@ -35,22 +35,27 @@ bool SystemAlbumInfoCalculation::CalAlbumRefreshInfo(const PhotoAssetChangeData 
         refreshInfo.assetModifiedCnt_++;
         ret = true;
     }
-    
-    if (UpdateCount(assetChangeData, isHiddenSystemAsset_, refreshInfo.deltaHiddenCount_)) {
-        refreshInfo.hiddenAssetModifiedCnt_++;
-        ret = true;
-    }
-    
+
     if (UpdateCount(assetChangeData, isVideoAsset_, refreshInfo.deltaVideoCount_)) {
         ret = true;
     }
 
-    // cover/hidden cover更新
     if (UpdateCover(assetChangeData, isSystemAsset_, isNewerAsset_, refreshInfo.deltaAddCover_,
         refreshInfo.removeFileIds)) {
         ret = true;
     }
     
+    // 隐藏相册不需要计算
+    if (subType_ == PhotoAlbumSubType::HIDDEN) {
+        return ret;
+    }
+
+    // hidden 信息更新
+    if (UpdateCount(assetChangeData, isHiddenSystemAsset_, refreshInfo.deltaHiddenCount_)) {
+        refreshInfo.hiddenAssetModifiedCnt_++;
+        ret = true;
+    }
+
     if (UpdateCover(assetChangeData, isHiddenSystemAsset_, isNewerHiddenAsset_, refreshInfo.deltaAddHiddenCover_,
         refreshInfo.removeHiddenFileIds)) {
         ret = true;
