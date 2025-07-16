@@ -148,7 +148,7 @@ ani_object MovingPhotoAni::Constructor(ani_env *env, [[maybe_unused]] ani_class 
     }
 
     ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "l:", &ctor)) {
         ANI_ERR_LOG("Failed to find method: %{public}s", "ctor");
         return nullptr;
     }

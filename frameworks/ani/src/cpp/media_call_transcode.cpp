@@ -36,13 +36,13 @@ static ani_status CreateAniBooleanObject(ani_env *env, bool value, ani_object &a
         return ANI_ERROR;
     }
     ani_class cls {};
-    ani_status status = env->FindClass("Lstd/core/Boolean;", &cls);
+    ani_status status = env->FindClass("std.core.Boolean", &cls);
     if (status != ANI_OK) {
-        ANI_ERR_LOG("Failed to find class std/core/Boolean");
+        ANI_ERR_LOG("Failed to find class std.core.Boolean");
         return status;
     }
     ani_method ctor {};
-    status = env->Class_FindMethod(cls, "<ctor>", "Z:V", &ctor);
+    status = env->Class_FindMethod(cls, "<ctor>", "z:", &ctor);
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to find method: ctor");
         return status;

@@ -474,19 +474,19 @@ static ani_status SetValueArray(ani_env *env, const char *fieldStr, const std::l
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_class cls {};
-    static const std::string className = "Lescompat/Array;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Array");
+    static const std::string className = "escompat.Array";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Array");
 
     ani_method arrayConstructor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V", &arrayConstructor),
-        "Can't find method <ctor> in Lescompat/Array");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "i:", &arrayConstructor),
+        "Can't find method <ctor> in escompat.Array");
 
     ani_object aniArray {};
     CHECK_STATUS_RET(env->Object_New(cls, arrayConstructor, &aniArray, list.size()), "New aniArray failed");
 
     ani_method setMethod {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "ILstd/core/Object;:V", &setMethod),
-        "Can't find method $_set in Lescompat/Array.");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "iC{std.core.Object}:", &setMethod),
+        "Can't find method $_set in escompat.Array.");
 
     ani_int elementIndex = 0;
     for (auto uri : list) {
@@ -1490,7 +1490,7 @@ static int32_t ParseUserIdFormCbInfo(ani_env *env, ani_object userIdObject)
     }
     ani_double result;
     ani_class doubleClass;
-    env->FindClass("Lstd/core/Double;", &doubleClass);
+    env->FindClass("std.core.Double", &doubleClass);
     ani_boolean isDouble;
     env->Object_InstanceOf(userIdObject, doubleClass, &isDouble);
     if (!isDouble) {
@@ -1517,14 +1517,14 @@ static ani_status CheckWhetherAsync(ani_env *env, ani_object userIdObject, bool 
         return ANI_OK;
     } else {
         ani_class doubleClass;
-        status = env->FindClass("Lstd/core/Double;", &doubleClass);
+        status = env->FindClass("std.core.Double", &doubleClass);
         ani_boolean isDouble;
         status = env->Object_InstanceOf(userIdObject, doubleClass, &isDouble);
         if (isDouble) {
             return ANI_OK;
         }
         ani_class booleanClass;
-        status = env->FindClass("Lstd/core/Boolean;", &booleanClass);
+        status = env->FindClass("std.core.Boolean", &booleanClass);
         ani_boolean isBoolean;
         status = env->Object_InstanceOf(userIdObject, booleanClass, &isBoolean);
         if (isBoolean) {
@@ -1571,7 +1571,7 @@ ani_object MediaLibraryAni::Constructor(ani_env *env, ani_class clazz, ani_objec
     }
 
     ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(clazz, "<ctor>", "J:V", &ctor)) {
+    if (ANI_OK != env->Class_FindMethod(clazz, "<ctor>", "l:", &ctor)) {
         ANI_ERR_LOG("Failed to find method: %{public}s", "ctor");
         return result;
     }
@@ -1611,7 +1611,7 @@ ani_object MediaLibraryAni::Constructor(ani_env *env, ani_class clazz, ani_objec
     }
 
     ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(clazz, "<ctor>", "J:V", &ctor)) {
+    if (ANI_OK != env->Class_FindMethod(clazz, "<ctor>", "l:", &ctor)) {
         ANI_ERR_LOG("Failed to find method: %{public}s", "ctor");
         return result;
     }
@@ -1680,7 +1680,7 @@ ani_object MediaLibraryAni::CreateNewInstance(ani_env *env, ani_class clazz, ani
     if (argc > ARG_CONTEXT && !isAsync) {
         argc = ARGS_TWO;
         ani_class doubleClass;
-        env->FindClass("Lstd/core/Double;", &doubleClass);
+        env->FindClass("std.core.Double", &doubleClass);
         ani_boolean isDouble;
         env->Object_InstanceOf(userIdObject, doubleClass, &isDouble);
         if (isDouble) {
@@ -2133,19 +2133,19 @@ static ani_status ToAniPhotoAlbumsMap(ani_env *env, const std::unordered_map<int
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_class cls {};
-    static const std::string className = "Lescompat/Map;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Map");
+    static const std::string className = "escompat.Map";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Map");
 
     ani_method mapConstructor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "Lstd/core/Object;:V", &mapConstructor),
-        "Can't find method <ctor> in Lescompat/Map");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "C{std.core.Object}:", &mapConstructor),
+        "Can't find method <ctor> in escompat.Map");
 
     CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, nullptr), "Call method <ctor> fail");
 
     ani_method setMethod {};
     CHECK_STATUS_RET(
-        env->Class_FindMethod(cls, "set", "Lstd/core/Object;Lstd/core/Object;:Lescompat/Map;", &setMethod),
-        "Can't find method set in Lescompat/Map");
+        env->Class_FindMethod(cls, "set", "C{std.core.Object}C{std.core.Object}:C{escompat.Map}", &setMethod),
+        "Can't find method set in escompat.Map");
 
     for (const auto &[key, value] : albumMap) {
         ani_object aniKey {};

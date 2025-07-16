@@ -588,7 +588,7 @@ static ani_status GetAssetsIdArray(ani_env *env, ani_object photoAssets, std::ve
 
     for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
         ani_ref asset {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(photoAssets, "$_get", "I:Lstd/core/Object;", &asset, i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(photoAssets, "$_get", "i:C{std.core.Object}", &asset, i),
             "Call method $_get failed.");
 
         FileAssetAni *obj = FileAssetAni::Unwrap(env, static_cast<ani_object>(asset));
