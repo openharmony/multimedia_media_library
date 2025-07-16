@@ -55,7 +55,6 @@ public:
     EXPORT static void DeleteAllCloudMediaAssetsAsync(bool needReportSchedule);
     EXPORT static void StartDeleteCloudMediaAssets();
     EXPORT static void StopDeleteCloudMediaAssets();
-    EXPORT int32_t CheckCloudSyncStatus();
     EXPORT void RestartForceRetainCloudAssets();
     EXPORT static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
 
@@ -83,10 +82,10 @@ private:
     EXPORT int32_t UpdateBothLocalAndCloudAssets();
     EXPORT static std::string GetEditDataDirPath(const std::string &path);
     EXPORT static int32_t DeleteEditdata(const std::string &path);
-    EXPORT bool HasDataForUpdate(std::vector<std::string> &updateFileIds);
+    EXPORT bool HasDataForUpdate(std::vector<std::string> &updateFileIds, const std::string &lastFileId);
     EXPORT int32_t UpdateCloudAssets(const std::vector<std::string> &updateFileIds);
     EXPORT void NotifyUpdateAssetsChange(const std::vector<std::string> &notifyFileIds);
-    EXPORT bool HasLocalAndCloudAssets(std::vector<std::string> &updateFileIds);
+    EXPORT bool HasLocalAndCloudAssets(std::vector<std::string> &updateFileIds, const std::string &lastFileId);
     EXPORT int32_t UpdateLocalAndCloudAssets(const std::vector<std::string> &updateFileIds);
     EXPORT void SetCloudsyncStatusKey(const int32_t statusKey);
     EXPORT void TryToStartSync();
@@ -97,7 +96,6 @@ private:
     static std::atomic<TaskDeleteState> doDeleteTask_;
     static std::mutex deleteMutex_;
     static std::mutex updateMutex_;
-    static std::atomic<bool> isCleaning_;
 };
 } // namespace Media
 } // namespace OHOS
