@@ -116,7 +116,7 @@ static void MultistagesCaptureDeferredPhotoProcSessionCallbackTest()
 
 static inline void ClearKvStore()
 {
-    Media::MediaLibraryKvStoreManager::GetInstance()::CloseAllKvStore();
+    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 }
 } // namespace OHOS
 

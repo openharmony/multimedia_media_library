@@ -305,7 +305,7 @@ static int32_t AddSeed()
 
 static inline void ClearKvStore()
 {
-    MediaLibraryKvStoreManager::GetInstance()::CloseAllKvStore();
+    MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 }
 } // namespace Media
 } // namespace OHOS
