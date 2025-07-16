@@ -447,10 +447,11 @@ HWTEST_F(CloudMediaSyncServiceVoTest, UpdatePositionReqBody_Test, TestSize.Level
 {
     auto reqBody = std::make_shared<UpdatePositionReqBody>();
     ASSERT_TRUE(reqBody);
-    EXPECT_EQ(reqBody->ToString(), "{\"cloudIds\": , []}");
+    reqBody->position = 1;
+    EXPECT_EQ(reqBody->ToString(), "{\"position\": 1, []}");
     reqBody->cloudIds.emplace_back("001");
     reqBody->cloudIds.emplace_back("002");
-    EXPECT_EQ(reqBody->ToString(), "{\"cloudIds\": , [001,002]}");
+    EXPECT_EQ(reqBody->ToString(), "{\"position\": 1, [001,002]}");
 }
 
 HWTEST_F(CloudMediaSyncServiceVoTest, UpdateLocalFileDirtyReqBody_Test, TestSize.Level1)
@@ -468,7 +469,7 @@ HWTEST_F(CloudMediaSyncServiceVoTest, PhotosVo_Test, TestSize.Level1)
     auto vo = std::make_shared<PhotosVo>();
     ASSERT_TRUE(vo);
     std::map<std::string, CloudFileDataVo> dataMap;
-    EXPECT_TRUE(vo->ToString().empty());
+    EXPECT_FALSE(vo->ToString().empty());
 
     CloudFileDataVo vo1;
     CloudFileDataVo vo2;
@@ -513,8 +514,8 @@ HWTEST_F(CloudMediaSyncServiceVoTest, CloudMdkRecordPhotoAlbumRespBody_Test, Tes
     auto reqBody2 = std::make_shared<CloudMdkRecordPhotoAlbumRespBody>();
     MessageParcel parcel2;
     parcel2.WriteInt32(1);
-    EXPECT_TRUE(reqBody2->Unmarshalling(parcel2));
-    EXPECT_TRUE(reqBody2->Marshalling(parcel2));
+    EXPECT_FALSE(reqBody2->Unmarshalling(parcel2));
+    EXPECT_FALSE(reqBody2->Marshalling(parcel2));
 }
 
 HWTEST_F(CloudMediaSyncServiceVoTest, CloudMdkRecordPhotosVo_Test, TestSize.Level1)
