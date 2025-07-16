@@ -526,6 +526,20 @@ int32_t CloudMediaPhotosDao::GetSourceAlbumForMerge(const CloudMediaPullDataDto 
     return E_OK;
 }
 
+int32_t CloudMediaPhotosDao::FixAlbumIdToBeOtherAlbumId(
+    int32_t &albumId, SafeMap<std::string, std::pair<int32_t, std::string>> &lpathToIdMap)
+{
+    CHECK_AND_RETURN_RET(albumId == 0, E_OK);
+    std::string lPath = "/Pictures/其它";
+    std::transform(lPath.begin(), lPath.end(), lPath.begin(), ::tolower);
+    std::pair<int32_t, std::string> val;
+    if (lpathToIdMap.Find(lPath, val)) {
+        albumId = val.first;
+    }
+    MEDIA_INFO_LOG("FixAlbumId Lpath %{public}s, albumId %{public}d", lPath.c_str(), albumId);
+    return E_OK;
+}
+
 void CloudMediaPhotosDao::GetSourceAlbumFromPath(const CloudMediaPullDataDto &pullData, int32_t &albumId,
     std::set<int32_t> &cloudMapIds, SafeMap<std::string, std::pair<int32_t, std::string>> &lpathToIdMap)
 {
@@ -651,9 +665,8 @@ int32_t CloudMediaPhotosDao::UpdateFixDB(const CloudMediaPullDataDto &data, Nati
     bool isHide = false;
     int32_t ret = E_OK;
     ret = GetSourceAlbum(data, albumId, albumIds, isHide, albumCloudToLocalMap);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("UpdateFixDB cloudId: %{public}s cannot get sourceAlbum", data.cloudId.c_str());
-    }
+    CHECK_AND_RETURN_RET_LOG(
+        ret == E_OK, ret, "UpdateFixDB cloudId: %{public}s cannot get sourceAlbum", data.cloudId.c_str());
     MEDIA_INFO_LOG("UpdateFixDB cloudId: %{public}s, isHide: %{public}d, album: %{public}d",
         data.cloudId.c_str(),
         isHide,
@@ -687,6 +700,7 @@ int32_t CloudMediaPhotosDao::UpdateFixDB(const CloudMediaPullDataDto &data, Nati
     if (albumId == 0 && !isHide) {
         GetSourceAlbumFromPath(data, albumId, albumIds, lpathToIdMap);
     }
+    this->FixAlbumIdToBeOtherAlbumId(albumId, lpathToIdMap);
     refreshAlbums.emplace(std::to_string(albumId));
     MEDIA_INFO_LOG(
         "UpdateFixDB needFix %{public}d  %{public}d  %{public}d %{public}d", needFix, isHide, hidden, albumId);
