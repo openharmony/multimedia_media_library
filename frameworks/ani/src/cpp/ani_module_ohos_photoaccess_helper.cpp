@@ -37,7 +37,7 @@ namespace OHOS::Media::Ani {
 ani_status GlobalFunctionInit(ani_env *env)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    const char *namespaceName = "L@ohos/file/photoAccessHelper/photoAccessHelper;";
+    const char *namespaceName = "@ohos.file.photoAccessHelper.photoAccessHelper";
     ani_namespace ns;
     if (ANI_OK != env->FindNamespace(namespaceName, &ns)) {
         ANI_ERR_LOG("Not found namespace: %{public}s", namespaceName);

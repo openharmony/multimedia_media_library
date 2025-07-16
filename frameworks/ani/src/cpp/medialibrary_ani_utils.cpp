@@ -62,14 +62,14 @@ struct AniArrayOperator {
 static ani_status InitAniArrayOperator(ani_env *env, AniArrayOperator &arrayOperator)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const std::string className = "Lescompat/Array;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &(arrayOperator.cls)), "Can't find Lescompat/Array.");
+    static const std::string className = "escompat.Array";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &(arrayOperator.cls)), "Can't find escompat.Array.");
 
-    CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "<ctor>", "I:V", &(arrayOperator.ctorMethod)),
-        "Can't find method <ctor> in Lescompat/Array.");
+    CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "<ctor>", "i:", &(arrayOperator.ctorMethod)),
+        "Can't find method <ctor> in escompat.Array.");
 
-    CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "$_set", "ILstd/core/Object;:V",
-        &(arrayOperator.setMethod)), "Can't find method $_set in Lescompat/Array.");
+    CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "$_set", "iC{std.core.Object}:",
+        &(arrayOperator.setMethod)), "Can't find method $_set in escompat.Array.");
     return ANI_OK;
 }
 
@@ -78,12 +78,12 @@ ani_boolean MediaLibraryAniUtils::IsArray(ani_env *env, ani_object object)
     CHECK_COND_RET(env != nullptr, ANI_FALSE, "env is nullptr");
     ani_boolean isArray = ANI_FALSE;
     ani_class cls {};
-    static const std::string className = "Lescompat/Array;";
-    CHECK_COND_RET(ANI_OK == env->FindClass(className.c_str(), &cls), isArray, "Can't find Lescompat/Array.");
+    static const std::string className = "escompat.Array";
+    CHECK_COND_RET(ANI_OK == env->FindClass(className.c_str(), &cls), isArray, "Can't find escompat.Array.");
 
     ani_static_method isArrayMethod {};
     CHECK_COND_RET(ANI_OK == env->Class_FindStaticMethod(cls, "isArray", nullptr, &isArrayMethod), isArray,
-        "Can't find method isArray in Lescompat/Array.");
+        "Can't find method isArray in escompat.Array.");
 
     CHECK_COND_RET(ANI_OK == env->Class_CallStaticMethod_Boolean(cls, isArrayMethod, &isArray, object),
         isArray, "Call method isArray failed.");
@@ -121,12 +121,12 @@ ani_status MediaLibraryAniUtils::GetBool(ani_env *env, ani_object arg, bool &val
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
-    static const std::string className = "Lstd/core/Boolean;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lstd/core/Boolean.");
+    static const std::string className = "std.core.Boolean";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Boolean");
 
     ani_method method {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "valueOf", nullptr, &method),
-        "Can't find method valueOf in Lstd/core/Boolean.");
+        "Can't find method valueOf in std.core.Boolean.");
 
     ani_boolean result = 0;
     CHECK_STATUS_RET(env->Object_CallMethod_Boolean(arg, method, &result), "Call method valueOf failed.");
@@ -145,12 +145,12 @@ ani_status MediaLibraryAniUtils::GetByte(ani_env *env, ani_object arg, uint8_t &
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
-    static const std::string className = "Lstd/core/Byte;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lstd/core/Byte.");
+    static const std::string className = "std.core.Byte";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Byte.");
 
     ani_method method {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "unboxed", nullptr, &method),
-        "Can't find method unboxed in Lstd/core/Byte.");
+        "Can't find method unboxed in std.core.Byte.");
 
     ani_byte result;
     CHECK_STATUS_RET(env->Object_CallMethod_Byte(arg, method, &result), "Call method unboxed failed.");
@@ -169,12 +169,12 @@ ani_status MediaLibraryAniUtils::GetShort(ani_env *env, ani_object arg, int16_t 
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
-    static const std::string className = "Lstd/core/Short;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lstd/core/Short.");
+    static const std::string className = "std.core.Short";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Short.");
 
     ani_method method {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "unboxed", nullptr, &method),
-        "Can't find method unboxed in Lstd/core/Short.");
+        "Can't find method unboxed in std.core.Short.");
 
     ani_short result;
     CHECK_STATUS_RET(env->Object_CallMethod_Short(arg, method, &result), "Call method unboxed failed.");
@@ -193,12 +193,12 @@ ani_status MediaLibraryAniUtils::GetInt32(ani_env *env, ani_object arg, int32_t 
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
-    static const std::string className = "Lstd/core/Int;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lstd/core/Int.");
+    static const std::string className = "std.core.Int";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Int.");
 
     ani_method method {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "unboxed", nullptr, &method),
-        "Can't find method unboxed in Lstd/core/Int.");
+        "Can't find method unboxed in std.core.Int.");
 
     ani_int result;
     CHECK_STATUS_RET(env->Object_CallMethod_Int(arg, method, &result), "Call method unboxed failed.");
@@ -217,12 +217,12 @@ ani_status MediaLibraryAniUtils::GetUint32(ani_env *env, ani_object arg, uint32_
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
-    static const std::string className = "Lstd/core/Int;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lstd/core/Int.");
+    static const std::string className = "std.core.Int";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Int.");
 
     ani_method method {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "unboxed", nullptr, &method),
-        "Can't find method unboxed in Lstd/core/Int.");
+        "Can't find method unboxed in std.core.Int.");
 
     ani_int result;
     CHECK_STATUS_RET(env->Object_CallMethod_Int(arg, method, &result), "Call method unboxed failed.");
@@ -241,12 +241,12 @@ ani_status MediaLibraryAniUtils::GetInt64(ani_env *env, ani_object arg, int64_t 
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
-    static const std::string className = "Lstd/core/Int;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lstd/core/Int.");
+    static const std::string className = "std.core.Int";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Int.");
 
     ani_method method {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "toLong", ":l", &method),
-        "Can't find method toLong in Lstd/core/Int.");
+        "Can't find method toLong in std.core.Int.");
 
     ani_long result;
     CHECK_STATUS_RET(env->Object_CallMethod_Long(arg, method, &result), "Call method unboxed failed.");
@@ -265,12 +265,12 @@ ani_status MediaLibraryAniUtils::GetFloat(ani_env *env, ani_object arg, float &v
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
-    static const std::string className = "Lstd/core/Float;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lstd/core/Float.");
+    static const std::string className = "std.core.Float";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Float.");
 
     ani_method method {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "unboxed", nullptr, &method),
-        "Can't find method unboxed in Lstd/core/Float.");
+        "Can't find method unboxed in std.core.Float.");
 
     ani_float result;
     CHECK_STATUS_RET(env->Object_CallMethod_Float(arg, method, &result), "Call method unboxed failed.");
@@ -289,12 +289,12 @@ ani_status MediaLibraryAniUtils::GetDouble(ani_env *env, ani_object arg, double 
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
-    static const std::string className = "Lstd/core/Double;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lstd/core/Double.");
+    static const std::string className = "std.core.Double";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Double.");
 
     ani_method method {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "unboxed", nullptr, &method),
-        "Can't find method unboxed in Lstd/core/Double.");
+        "Can't find method unboxed in std.core.Double.");
 
     ani_double result;
     CHECK_STATUS_RET(env->Object_CallMethod_Double(arg, method, &result), "Call method unboxed failed.");
@@ -376,12 +376,12 @@ ani_status MediaLibraryAniUtils::GetParamStringPathMax(ani_env *env, ani_object 
 ani_status MediaLibraryAniUtils::ToAniBooleanObject(ani_env *env, bool src, ani_object &aniObj)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const char *className = "Lstd/core/Boolean;";
+    static const char *className = "std.core.Boolean;";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
 
     ani_method ctor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "Z:V", &ctor), "Failed to find method: ctor");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "z:", &ctor), "Failed to find method: ctor");
 
     ani_boolean aniBool = src ? ANI_TRUE : ANI_FALSE;
     CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, aniBool), "New bool Object Fail");
@@ -391,12 +391,12 @@ ani_status MediaLibraryAniUtils::ToAniBooleanObject(ani_env *env, bool src, ani_
 ani_status MediaLibraryAniUtils::ToAniIntObject(ani_env *env, int32_t src, ani_object &aniObj)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const char *className = "Lstd/core/Int;";
+    static const char *className = "std.core.Int;";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
 
     ani_method ctor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V", &ctor), "Failed to find method: ctor");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "i:", &ctor), "Failed to find method: ctor");
 
     CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, static_cast<ani_int>(src)), "New int32 Object Fail");
     return ANI_OK;
@@ -405,12 +405,12 @@ ani_status MediaLibraryAniUtils::ToAniIntObject(ani_env *env, int32_t src, ani_o
 ani_status MediaLibraryAniUtils::ToAniNumberObject(ani_env *env, int32_t src, ani_object &aniObj)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const char *className = "Lstd/core/Double;";
+    static const char *className = "std.core.Double";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
 
     ani_method ctor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "D:V", &ctor), "Failed to find method: ctor");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "d:", &ctor), "Failed to find method: ctor");
 
     CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, static_cast<ani_double>(src)), "New number Object Fail");
     return ANI_OK;
@@ -419,12 +419,12 @@ ani_status MediaLibraryAniUtils::ToAniNumberObject(ani_env *env, int32_t src, an
 ani_status MediaLibraryAniUtils::ToAniDoubleObject(ani_env *env, double src, ani_object &aniObj)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const char *className = "Lstd/core/Double;";
+    static const char *className = "std.core.Double;";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
 
     ani_method ctor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "D:V", &ctor), "Failed to find method: ctor");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "d:", &ctor), "Failed to find method: ctor");
 
     CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, static_cast<ani_double>(src)), "New double Object Fail");
     return ANI_OK;
@@ -433,12 +433,12 @@ ani_status MediaLibraryAniUtils::ToAniDoubleObject(ani_env *env, double src, ani
 ani_status MediaLibraryAniUtils::ToAniLongObject(ani_env *env, int64_t src, ani_object &aniObj)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const char *className = "Lescompat/BigInt;";
+    static const char *className = "escompat.BigInt";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
 
     ani_method ctor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor), "Failed to find method: ctor");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "l:", &ctor), "Failed to find method: ctor");
 
     CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, static_cast<ani_long>(src)), "New int64_t Object Fail");
     return ANI_OK;
@@ -456,7 +456,7 @@ ani_status MediaLibraryAniUtils::GetUint32Array(ani_env *env, ani_object arg, st
 
     for (int i = 0; i < static_cast<ani_int>(length); i++) {
         ani_ref value;
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "I:Lstd/core/Object;", &value, (ani_int)i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &value, (ani_int)i),
             "Call method $_get failed.");
 
         uint32_t uValue = 0;
@@ -479,7 +479,7 @@ ani_status MediaLibraryAniUtils::GetInt32Array(ani_env *env, ani_object arg, std
 
     for (int i = 0; i < static_cast<ani_int>(length); i++) {
         ani_ref ref;
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "I:Lstd/core/Object;", &ref, (ani_int)i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &ref, (ani_int)i),
             "Call method $_get failed.");
 
         int32_t value = 0;
@@ -538,7 +538,7 @@ ani_status MediaLibraryAniUtils::GetStringArray(ani_env *env, ani_object arg, st
 
     for (int i = 0; i < static_cast<ani_int>(length); i++) {
         ani_ref value {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "I:Lstd/core/Object;", &value, (ani_int)i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &value, (ani_int)i),
             "Call method $_get failed.");
 
         std::string sValue;
@@ -579,7 +579,7 @@ ani_status MediaLibraryAniUtils::GetObjectArray(ani_env *env, ani_object arg, st
 
     for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
         ani_ref value {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "I:Lstd/core/Object;", &value, i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &value, i),
             "Call method $_get failed.");
         array.emplace_back(static_cast<ani_object>(value));
     }
@@ -591,19 +591,19 @@ ani_status MediaLibraryAniUtils::ToAniMap(ani_env *env, const std::map<std::stri
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_class cls {};
-    static const std::string className = "Lescompat/Map;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Map");
+    static const std::string className = "escompat.Map";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Map");
 
     ani_method mapConstructor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "Lstd/core/Object;:V", &mapConstructor),
-        "Can't find method <ctor> in Lescompat/Map");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "C{std.core.Object}:", &mapConstructor),
+        "Can't find method <ctor> in escompat.Map");
 
     CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, nullptr), "Call method <ctor> fail");
 
     ani_method setMethod {};
     CHECK_STATUS_RET(
-        env->Class_FindMethod(cls, "set", "Lstd/core/Object;Lstd/core/Object;:Lescompat/Map;", &setMethod),
-        "Can't find method set in Lescompat/Map");
+        env->Class_FindMethod(cls, "set", "C{std.core.Object}C{std.core.Object}:C{escompat.Map}", &setMethod),
+        "Can't find method set in escompat.Map");
 
     for (const auto &[key, value] : map) {
         ani_string aniKey {};
@@ -622,16 +622,16 @@ ani_status MediaLibraryAniUtils::MakeAniArray(ani_env* env, uint32_t size, ani_o
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(size < std::numeric_limits<int>::max(), ANI_ERROR, "size is too large");
     ani_class cls {};
-    static const std::string className = "Lescompat/Array;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Array");
+    static const std::string className = "escompat.Array";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Array");
 
     ani_method arrayConstructor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V", &arrayConstructor),
-        "Can't find method <ctor> in Lescompat/Array");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "i:", &arrayConstructor),
+        "Can't find method <ctor> in escompat.Array");
 
     CHECK_STATUS_RET(env->Object_New(cls, arrayConstructor, &aniArray, size), "New aniArray failed");
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "ILstd/core/Object;:V", &setMethod),
-        "Can't find method $_set in Lescompat/Array.");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "iC{std.core.Object}:", &setMethod),
+        "Can't find method $_set in escompat.Array.");
     return ANI_OK;
 }
 
@@ -647,7 +647,7 @@ ani_status MediaLibraryAniUtils::GetAniValueArray(ani_env *env, ani_object arg, 
 
     for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
         ani_ref asset {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "I:Lstd/core/Object;", &asset, i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &asset, i),
             "Call method $_get failed.");
         array.push_back(static_cast<ani_object>(asset));
     }
@@ -835,7 +835,7 @@ ani_status MediaLibraryAniUtils::GetUriArrayFromAssets(ani_env *env, ani_object 
 
     for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
         ani_ref asset {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "I:Lstd/core/Object;", &asset, i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &asset, i),
             "Call method $_get failed.");
 
         FileAssetAni *obj = FileAssetAni::Unwrap(env, static_cast<ani_object>(asset));
@@ -866,7 +866,7 @@ ani_status MediaLibraryAniUtils::GetArrayFromAssets(ani_env *env, ani_object arg
 
     for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
         ani_ref asset {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "I:Lstd/core/Object;", &asset, i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &asset, i),
             "Call method $_get failed.");
 
         FileAssetAni *obj = FileAssetAni::Unwrap(env, static_cast<ani_object>(asset));
@@ -963,7 +963,7 @@ ani_status MediaLibraryAniUtils::GetPhotoAlbumAniArray(ani_env *env, ani_object 
 
     for (int i = 0; i < static_cast<ani_int>(length); i++) {
         ani_ref value {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "I:Lstd/core/Object;", &value, (ani_int)i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &value, (ani_int)i),
             "Call method $_get failed.");
 
         array.emplace_back(PhotoAlbumAni::UnwrapPhotoAlbumObject(env, (ani_object)value));
@@ -1037,7 +1037,7 @@ DataSharePredicates* MediaLibraryAniUtils::UnwrapPredicate(ani_env *env, const a
 {
     CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     ani_class cls {};
-    static const std::string className = "L@ohos/data/dataSharePredicates/dataSharePredicates/DataSharePredicates;";
+    static const std::string className = "@ohos.data.dataSharePredicates.dataSharePredicates.DataSharePredicates";
     CHECK_COND_RET(env->FindClass(className.c_str(), &cls) == ANI_OK, nullptr, "Can't find class DataSharePredicates");
 
     ani_method getMethod {};
@@ -1801,7 +1801,7 @@ ani_status MediaLibraryAniUtils::CreateAniErrorObject(ani_env *env, ani_object &
     const string &errMsg)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const std::string className = "L@ohos/file/photoAccessHelper/MediaLibraryAniError;";
+    static const std::string className = "@ohos.file.photoAccessHelper.MediaLibraryAniError";
     ani_class cls {};
     ani_status status = env->FindClass(className.c_str(), &cls);
     if (status != ANI_OK) {
@@ -1810,7 +1810,7 @@ ani_status MediaLibraryAniUtils::CreateAniErrorObject(ani_env *env, ani_object &
     }
 
     ani_method ctor {};
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "DLstd/core/String;:V", &ctor)) {
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "dC{std.core.String}:", &ctor)) {
         ANI_ERR_LOG("Can't find <ctor> from class %{public}s", className.c_str());
         return ANI_ERROR;
     }
@@ -1896,7 +1896,7 @@ ani_status MediaLibraryAniUtils::ParseAssetIdArray(ani_env *env, ani_object phot
     idArray.clear();
     for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
         ani_ref asset {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(photoAssets, "$_get", "I:Lstd/core/Object;", &asset, i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(photoAssets, "$_get", "i:C{std.core.Object}", &asset, i),
             "Call method $_get failed.");
 
         FileAssetAni *obj = FileAssetAni::Unwrap(env, static_cast<ani_object>(asset));
@@ -2447,19 +2447,19 @@ ani_status MediaLibraryAniUtils::VariantMapToAniMap(ani_env *env, const VarMap &
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
     ani_class cls {};
-    static const std::string className = "Lescompat/Map;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Map");
+    static const std::string className = "escompat.Map";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Map");
 
     ani_method mapConstructor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "Lstd/core/Object;:V", &mapConstructor),
-        "Can't find method <ctor> in Lescompat/Map");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "C{std.core.Object}:", &mapConstructor),
+        "Can't find method <ctor> in escompat.Map");
 
     CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, nullptr), "Call method <ctor> fail");
 
     ani_method setMethod {};
     CHECK_STATUS_RET(
-        env->Class_FindMethod(cls, "set", "Lstd/core/Object;Lstd/core/Object;:Lescompat/Map;", &setMethod),
-        "Can't find method set in Lescompat/Map");
+        env->Class_FindMethod(cls, "set", "C{std.core.Object}C{std.core.Object}:C{escompat.Map}", &setMethod),
+        "Can't find method set in escompat.Map");
 
     ani_ref setResult {};
     for (const auto &[key, value] : map) {

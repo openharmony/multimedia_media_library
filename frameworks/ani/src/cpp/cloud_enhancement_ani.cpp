@@ -441,12 +441,12 @@ void CloudEnhancementAni::SubmitCloudEnhancementTasks(ani_env *env, ani_object a
     double triMode = 0;
     if (!isUndefined) {
         ani_class doubleClass;
-        env->FindClass("Lstd/core/Double;", &doubleClass);
+        env->FindClass("std.core.Double", &doubleClass);
         ani_boolean isDouble;
         env->Object_InstanceOf(triggerMode, doubleClass, &isDouble);
         if (isDouble) {
             ani_double result;
-            env->Object_CallMethodByName_Double(triggerMode, "unboxed", ":D", &result);
+            env->Object_CallMethodByName_Double(triggerMode, "unboxed", ":d", &result);
             CHECK_ARGS_RET_VOID(env, MediaLibraryAniUtils::GetDouble(env, result, triMode), OHOS_INVALID_PARAM_CODE);
         }
     }
