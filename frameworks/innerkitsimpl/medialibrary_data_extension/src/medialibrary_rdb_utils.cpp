@@ -546,6 +546,11 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const UpdateAlb
             MEDIA_INFO_LOG("AccurateRefresh Update album contains hidden: %{public}d", newCount != 0);
             values.PutInt(PhotoAlbumColumns::CONTAINS_HIDDEN, newCount != 0);
         }
+        if (data.albumSubtype == static_cast<int32_t>(PhotoAlbumSubType::HIDDEN)) {
+            const string &otherColumn = hiddenState ? PhotoAlbumColumns::ALBUM_COUNT : PhotoAlbumColumns::HIDDEN_COUNT;
+            values.PutInt(otherColumn, newCount);
+            MEDIA_INFO_LOG("AccurateRefresh Update album other count");
+        }
     }
     return newCount;
 }
@@ -586,6 +591,17 @@ static void SetCoverDateTime(const shared_ptr<ResultSet> &fileResult, const Upda
         MEDIA_INFO_LOG("AccurateRefresh Update album[%{public}d] subType[%{public}d]", data.albumId, data.albumSubtype);
         return;
     }
+    if (data.albumSubtype == PhotoAlbumSubType::HIDDEN) {
+        int64_t oldCoverDateTime = data.coverDateTime;
+        int64_t coverDateTime = GetPhotosHiddenTime(fileResult);
+        if (coverDateTime != oldCoverDateTime) {
+            values.PutLong(PhotoAlbumColumns::COVER_DATE_TIME, coverDateTime);
+            values.PutLong(PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME, coverDateTime);
+        }
+        MEDIA_INFO_LOG("AccurateRefresh Update album %{public}d, old coverDateTime(%{public}" PRId64 ")," \
+            "cover/hiddenCoverDateTime(%{public}" PRId64 ")", data.albumId, oldCoverDateTime, coverDateTime);
+        return;
+    }
     if (hiddenState) {
         int64_t oldHiddenCoverDateTime = data.hiddenCoverDateTime;
         int64_t hiddenCoverDateTime = GetPhotosHiddenTime(fileResult);
@@ -599,8 +615,6 @@ static void SetCoverDateTime(const shared_ptr<ResultSet> &fileResult, const Upda
         int64_t coverDateTime;
         if (data.albumSubtype == PhotoAlbumSubType::VIDEO || data.albumSubtype == PhotoAlbumSubType::IMAGE) {
             coverDateTime = GetPhotosDateAdded(fileResult);
-        } else if (data.albumSubtype == PhotoAlbumSubType::HIDDEN) {
-            coverDateTime = GetPhotosHiddenTime(fileResult);
         } else {
             coverDateTime = GetPhotosDateTaken(fileResult);
         }
@@ -629,6 +643,12 @@ static void SetCover(const shared_ptr<ResultSet> &fileResult, const UpdateAlbumD
             MediaFileUtils::GetUriWithoutDisplayname(newCover).c_str());
         values.PutString(targetColumn, newCover);
         SetCoverDateTime(fileResult, data, values, hiddenState);
+        if (data.albumSubtype == static_cast<int32_t>(PhotoAlbumSubType::HIDDEN)) {
+            const string &otherColumn = hiddenState ? PhotoAlbumColumns::ALBUM_COVER_URI :
+                PhotoAlbumColumns::HIDDEN_COVER;
+            values.PutString(otherColumn, newCover);
+            MEDIA_INFO_LOG("AccurateRefresh Update album other cover");
+        }
     }
 }
 

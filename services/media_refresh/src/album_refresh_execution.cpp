@@ -478,6 +478,9 @@ bool AlbumRefreshExecution::CalAlbumInfo(AlbumChangeInfo &albumInfo, const Album
 bool AlbumRefreshExecution::CalHiddenAlbumInfo(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
     int32_t subType)
 {
+    if (CheckSetHiddenAlbumInfo(albumInfo)) {
+        return false;
+    }
     // 隐藏信息需要刷新 && 不能增量刷新
     if (refreshInfo.IsAlbumHiddenInfoRefresh() &&
         !AlbumAccurateRefreshManager::GetInstance().IsAlbumAccurateRefresh(albumInfo.albumId_, true)) {
@@ -681,6 +684,20 @@ int32_t AlbumRefreshExecution::RefreshAllAlbum(NotifyAlbumType notifyAlbumType)
     MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, {}, notifyAlbumType & USER_ALBUM);
     MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {}, notifyAlbumType & SOURCE_ALBUM);
     return ACCURATE_REFRESH_RET_OK;
+}
+
+bool AlbumRefreshExecution::CheckSetHiddenAlbumInfo(AlbumChangeInfo &albumInfo)
+{
+    if (albumInfo.albumSubType_ == PhotoAlbumSubType::HIDDEN) {
+        albumInfo.hiddenCount_ = albumInfo.count_;
+        albumInfo.hiddenCoverInfo_ = albumInfo.coverInfo_;
+        albumInfo.hiddenCoverUri_ = albumInfo.coverUri_;
+        albumInfo.hiddenCoverDateTime_ = albumInfo.coverDateTime_;
+        ACCURATE_DEBUG("hiddenCount_[%{public}d], hiddenCover[%{public}s], dateTime[%{public}" PRId64 "]",
+            albumInfo.count_, MediaFileUtils::DesensitizeUri(albumInfo.coverUri_).c_str(), albumInfo.coverDateTime_);
+        return true;
+    }
+    return false;
 }
 
 } // namespace Media
