@@ -29,6 +29,7 @@
 #include "multistages_photo_capture_manager.h"
 #include "multistages_video_capture_manager.h"
 #include "multistages_capture_request_task_manager.h"
+#include "medialibrary_kvstore_manager.h"
 
 namespace OHOS {
 using namespace std;
@@ -141,6 +142,11 @@ static void MultistagesVideoCaptureManagerTest()
     int32_t fileId = InsertAsset(videoId);
     instance.AddVideo(videoId, std::to_string(fileId), filePath);
 }
+
+static inline void ClearKvStore()
+{
+    Media::MediaLibraryKvStoreManager::GetInstance()::CloseAllKvStore();
+}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -163,5 +169,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::MultistagesMovingPhotoCaptureManagerTest();
     OHOS::MultistagesPhotoCaptureManagerTest();
     OHOS::MultistagesVideoCaptureManagerTest();
+    OHOS::ClearKvStore();
     return 0;
 }

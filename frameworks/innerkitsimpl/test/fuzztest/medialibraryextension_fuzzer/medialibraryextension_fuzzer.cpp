@@ -29,6 +29,7 @@
 #include "datashare_values_bucket.h"
 #include "media_datashare_ext_ability.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_kvstore_manager.h"
 #include "media_datashare_stub_impl.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -267,6 +268,10 @@ static inline MediaDataShareExtAbility Init()
     return {(*runtime)};
 }
 
+static inline void ClearKvStore()
+{
+    Media::MediaLibraryKvStoreManager::GetInstance()::CloseAllKvStore();
+}
 } // namespace OHOS
 
 /* Fuzzer entry point */
@@ -301,5 +306,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 #endif
     int sleepTime = 100;
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
+    OHOS::ClearKvStore();
     return 0;
 }
