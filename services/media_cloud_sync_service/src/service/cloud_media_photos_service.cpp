@@ -1207,7 +1207,7 @@ int32_t CloudMediaPhotosService::GetUniqueIdsByTrans(int32_t dataSize, int32_t &
 {
     int32_t ret;
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
-    std::function<int(void) func = [&]()->int {
+    std::function<int(void)> func = [&]()->int {
         ret = MediaLibraryAssetOperations::CreateAssetUniqueIds(MediaType::MEDIA_TYPE_IMAGE, dataSize, uniqueId,
             trans);
         return ret;
