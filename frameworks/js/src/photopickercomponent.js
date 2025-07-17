@@ -224,7 +224,7 @@ export class PhotoPickerComponent extends ViewPU {
             Column.width('100%');
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k, d;
+            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k, d, f;
             SecurityUIExtensionComponent.create({
                 parameters: {
                     errorRevokeIndex: this.revokeIndex,
@@ -265,6 +265,7 @@ export class PhotoPickerComponent extends ViewPU {
                     gridEndOffset: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.gridEndOffset,
                     singleLineConfig: null === (k = this.pickerOptions) || void 0 === k ? void 0 : this.getSingleLineConfig(k.singleLineConfig),
                     uiComponentColorMode: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.uiComponentColorMode,
+                    combinedMediaTypeFilter: null === (f = this.pickerOptions) || void 0 === f ? void 0 : f.combinedMediaTypeFilter,
                 }
             });
             SecurityUIExtensionComponent.height('100%');
