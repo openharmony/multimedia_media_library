@@ -2194,11 +2194,8 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t 
         " WHERE " + ASSET_MEDIA_TYPE + "='" + typeString + "';";
     lock_guard<mutex> lock(g_uniqueNumberLock);
     int32_t errCode;
-    if (trans == nullptr) {
-        errCode = rdbStore->ExecuteSql(updateSql);
-    } else {
-        errCode = trans->ExecuteSql(updateSql);
-    }
+    CHECK_AND_EXECUTE(trans == nullptr, errCode = trans->ExecuteSql(updateSql));
+    CHECK_AND_EXECUTE(trans != nullptr, errCode = rdbStore->ExecuteSql(updateSql));
     CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "CreateAssetUniqueIds ExecuteSql err, ret=%{public}d", errCode);
 
     auto resultSet = rdbStore->QuerySql(querySql);
