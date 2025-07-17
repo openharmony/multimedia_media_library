@@ -125,24 +125,20 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFile(const FileInfo &fileInfo, const
     CHECK_AND_RETURN_RET(maxFileId > 0, rowData);
     if (!fileInfo.uniqueId.empty()) {
         rowData = this->FindSameFileWithCloudId(fileInfo, maxFileId);
-        return rowData;
+        CHECK_AND_RETURN_RET(!rowData.IsValid(), rowData);
     }
     if (fileInfo.lPath.empty()) {
         rowData = this->FindSameFileWithoutAlbum(fileInfo, maxFileId);
         MEDIA_ERR_LOG("Media_Restore: FindSameFile - lPath is empty, DB Info: %{public}s, Object: %{public}s",
-            this->ToString(rowData).c_str(),
-            this->ToString(fileInfo).c_str());
+            this->ToString(rowData).c_str(), this->ToString(fileInfo).c_str());
         return rowData;
     }
     rowData = this->FindSameFileInAlbum(fileInfo, maxFileId);
-    bool cond = (!rowData.data.empty() || rowData.fileId != 0);
-    CHECK_AND_RETURN_RET(!cond, rowData);
+    CHECK_AND_RETURN_RET(!rowData.IsValid(), rowData);
 
     rowData = this->FindSameFileBySourcePath(fileInfo, maxFileId);
-    cond = (!rowData.data.empty() || rowData.fileId != 0);
-    CHECK_AND_RETURN_RET_WARN_LOG(!cond, rowData,
-        "Media_Restore: FindSameFile - find Photos by sourcePath, "
-        "DB Info: %{public}s, Object: %{public}s",
+    CHECK_AND_RETURN_RET_WARN_LOG(!rowData.IsValid(), rowData,
+        "Media_Restore: FindSameFile - find Photos by sourcePath, DB Info: %{public}s, Object: %{public}s",
         this->ToString(rowData).c_str(), this->ToString(fileInfo).c_str());
     return rowData;
 }

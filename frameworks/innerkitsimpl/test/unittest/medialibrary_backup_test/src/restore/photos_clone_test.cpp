@@ -17,34 +17,49 @@
 
 #include "photos_clone_test.h"
 
-#include <string>
-
 #define private public
-#include "photos_clone.h"
-#undef private
-
-#include "photo_album_dao.h"
-#include "backup_const.h"
-#include "userfile_manager_types.h"
+#include "database_utils.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 #include "media_log.h"
+#include "photos_clone.h"
+#include "userfile_manager_types.h"
+#undef private
 
 using namespace testing::ext;
 
 namespace OHOS::Media {
+const int32_t TEST_FILE_ID = 1;
+const int32_t TEST_ALBUM_ID = 10;
+const int64_t TEST_FILE_SIZE = 1024;
+const std::string TEST_ALBUM_NAME = "Camera";
+const std::string TEST_ALBUM_LPATH = "/DCIM/Camera";
+const std::string TEST_DATA = "/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg";
+const std::string TEST_DISPLAY_NAME = "test.jpg";
+const std::string TEST_CLOUD_ID = "cloudid";
+
+static std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
 void PhotosCloneTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("SetUpTestCase");
+    MEDIA_INFO_LOG("Start Init");
+    MediaLibraryUnitTestUtils::Init();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    ASSERT_NE(g_rdbStore, nullptr);
 }
 
 void PhotosCloneTest::TearDownTestCase(void)
 {
     MEDIA_INFO_LOG("TearDownTestCase");
+    PhotosCloneTestUtils::ClearAllData();
 }
 
 // SetUp:Execute before each test case
 void PhotosCloneTest::SetUp()
-{}
+{
+    PhotosCloneTestUtils::ClearAllData();
+}
 
 void PhotosCloneTest::TearDown(void)
 {}
@@ -265,5 +280,131 @@ HWTEST_F(PhotosCloneTest, GetNoNeedMigrateCount_Test, TestSize.Level0)
     auto count = PhotosClone().GetNoNeedMigrateCount();
     EXPECT_EQ(count, 0);
     MEDIA_INFO_LOG("GetNoNeedMigrateCount_Test end");
+}
+
+HWTEST_F(PhotosCloneTest, FindSameFile_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindSameFile_Test_001 start");
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    FileInfo fileInfo;
+    PhotosDao::PhotosRowData rowData = photosClone.FindSameFile(fileInfo);
+    EXPECT_EQ(rowData.IsValid(), false); // no data in target db
+    MEDIA_INFO_LOG("FindSameFile_Test_001 end");
+}
+
+HWTEST_F(PhotosCloneTest, FindSameFile_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindSameFile_Test_002 start");
+    PhotosCloneTestUtils::InsertAlbum();
+    PhotosCloneTestUtils::InsertPhoto();
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    FileInfo fileInfo;
+    fileInfo.fileSize = TEST_FILE_SIZE;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.displayName = TEST_DISPLAY_NAME;
+    fileInfo.lPath = TEST_ALBUM_LPATH;
+
+    PhotosDao::PhotosRowData rowData = photosClone.FindSameFile(fileInfo);
+    EXPECT_EQ(rowData.IsValid(), true); // source: without cloud_id - dst: without cloud_id
+    MEDIA_INFO_LOG("FindSameFile_Test_002 end");
+}
+
+HWTEST_F(PhotosCloneTest, FindSameFile_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindSameFile_Test_003 start");
+    PhotosCloneTestUtils::InsertAlbum();
+    PhotosCloneTestUtils::InsertPhoto(TEST_CLOUD_ID);
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    FileInfo fileInfo;
+    fileInfo.fileSize = TEST_FILE_SIZE;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.displayName = TEST_DISPLAY_NAME;
+    fileInfo.uniqueId = TEST_CLOUD_ID;
+
+    PhotosDao::PhotosRowData rowData = photosClone.FindSameFile(fileInfo);
+    EXPECT_EQ(rowData.IsValid(), true); // source: with cloud_id - dst: with cloud_id
+    MEDIA_INFO_LOG("FindSameFile_Test_003 end");
+}
+
+HWTEST_F(PhotosCloneTest, FindSameFile_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindSameFile_Test_004 start");
+    PhotosCloneTestUtils::InsertAlbum();
+    PhotosCloneTestUtils::InsertPhoto();
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    FileInfo fileInfo;
+    fileInfo.fileSize = TEST_FILE_SIZE;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.displayName = TEST_DISPLAY_NAME;
+    fileInfo.uniqueId = TEST_CLOUD_ID;
+    fileInfo.lPath = TEST_ALBUM_LPATH;
+
+    PhotosDao::PhotosRowData rowData = photosClone.FindSameFile(fileInfo);
+    EXPECT_EQ(rowData.IsValid(), true); // source: with cloud_id - dst: without cloud_id
+    MEDIA_INFO_LOG("FindSameFile_Test_004 end");
+}
+
+HWTEST_F(PhotosCloneTest, FindSameFile_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindSameFile_Test_005 start");
+    PhotosCloneTestUtils::InsertAlbum();
+    PhotosCloneTestUtils::InsertPhoto();
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    FileInfo fileInfo;
+    fileInfo.fileSize = TEST_FILE_SIZE;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.displayName = TEST_DISPLAY_NAME;
+    fileInfo.uniqueId = TEST_CLOUD_ID;
+
+    PhotosDao::PhotosRowData rowData = photosClone.FindSameFile(fileInfo);
+    EXPECT_EQ(rowData.IsValid(), false); // source: with cloud_id, no lpath - dst: not found
+    MEDIA_INFO_LOG("FindSameFile_Test_005 end");
+}
+
+void PhotosCloneTestUtils::ClearAllData()
+{
+    ClearPhotosData();
+    ClearPhotoAlbumData();
+}
+
+void PhotosCloneTestUtils::ClearPhotosData()
+{
+    const std::string CLEAR_PHOTOS_SQL = "DELETE FROM Photos";
+    DatabaseUtils::ExecuteSql(g_rdbStore->GetRaw(), CLEAR_PHOTOS_SQL);
+}
+
+void PhotosCloneTestUtils::ClearPhotoAlbumData()
+{
+    const std::string CLEAR_PHOTO_ALBUM_SQL = "DELETE FROM PhotoAlbum WHERE album_type <> ?";
+    const std::vector<NativeRdb::ValueObject> BIND_ARGS = { static_cast<int32_t>(PhotoAlbumType::SYSTEM) };
+    DatabaseUtils::ExecuteSql(g_rdbStore->GetRaw(), CLEAR_PHOTO_ALBUM_SQL, BIND_ARGS);
+}
+
+void PhotosCloneTestUtils::InsertPhoto(const std::string &cloudId)
+{
+    const std::string INSERT_SQL = "INSERT INTO Photos (file_id, data, size, display_name, owner_album_id, cloud_id) "
+        " VALUES (?, ?, ?, ?, ?, ?)";
+    const std::vector<NativeRdb::ValueObject> BIND_ARGS = { TEST_FILE_ID, TEST_DATA, TEST_FILE_SIZE, TEST_DISPLAY_NAME,
+        TEST_ALBUM_ID, cloudId };
+    DatabaseUtils::ExecuteSql(g_rdbStore->GetRaw(), INSERT_SQL, BIND_ARGS);
+}
+
+void PhotosCloneTestUtils::InsertAlbum()
+{
+    const std::string INSERT_SQL = "INSERT INTO PhotoAlbum (album_id, album_name, lpath, album_type, album_subtype) "
+        " VALUES (?, ?, ?, ?, ?)";
+    const std::vector<NativeRdb::ValueObject> BIND_ARGS = { TEST_ALBUM_ID, TEST_ALBUM_NAME, TEST_ALBUM_LPATH,
+        static_cast<int32_t>(PhotoAlbumType::SOURCE), static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC) };
+    DatabaseUtils::ExecuteSql(g_rdbStore->GetRaw(), INSERT_SQL, BIND_ARGS);
 }
 }  // namespace OHOS::Media
