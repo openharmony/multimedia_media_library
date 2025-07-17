@@ -2070,6 +2070,7 @@ void HandleUpdateIndex(MediaLibraryCommand &cmd, string id)
 
 static int32_t UpdateAlbumDateModified(int32_t albumId)
 {
+    CHECK_AND_RETURN_RET_LOG(albumId > 0, E_ERR, "Update date modified albumId err. albumId=%{public}d.", albumId);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET(rdbStore != nullptr, E_HAS_DB_ERROR);
     MediaLibraryCommand updateCmd(OperationObject::PHOTO_ALBUM, OperationType::UPDATE);
@@ -2282,6 +2283,7 @@ const static vector<string> EDITED_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_SUBTYPE,
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
     PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
+    PhotoColumn::PHOTO_OWNER_ALBUM_ID,
 };
 
 static int32_t CheckFileAssetStatus(const shared_ptr<FileAsset>& fileAsset, bool checkMovingPhoto = false)
@@ -2702,6 +2704,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
     errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d",
         fileAsset->GetId());
+    UpdateAlbumDateModified(fileAsset->GetOwnerAlbumId());
     ScanFile(path, false, true, true);
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     return E_OK;
