@@ -924,6 +924,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.mimeTypeFilter = parseMimeTypeFilter(option.mimeTypeFilter);
     config.parameters.fileSizeFilter = option.fileSizeFilter;
     config.parameters.videoDurationFilter = option.videoDurationFilter;
+    config.parameters.combinedMediaTypeFilter = option.combinedMediaTypeFilter;
     config.parameters.isPc = deviceinfo.deviceType === '2in1';
   }
 
