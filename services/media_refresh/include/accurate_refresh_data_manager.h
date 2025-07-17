@@ -39,22 +39,26 @@ public:
     int32_t Init(const std::vector<int32_t> &keys);
 
     virtual int32_t UpdateModifiedDatas() = 0;
-    int32_t UpdateModifiedDatasInner(const std::vector<int32_t> &keys, RdbOperation operation);
+    int32_t UpdateModifiedDatasInner(const std::vector<int32_t> &keys, RdbOperation operation,
+        PendingInfo &pendingInfo);
     virtual int32_t PostProcessModifiedDatas(const std::vector<int32_t> &keys) = 0;
-    std::vector<ChangeData> GetChangeDatas();
+    // 根据isCheckUpdate在数据获取时进行一次刷新处理，解决多线程问题
+    std::vector<ChangeData> GetChangeDatas(bool isCheckUpdate = false);
     virtual std::vector<int32_t> GetInitKeys() = 0;
     void SetTransaction(std::shared_ptr<TransactionOperations> trans);
-    bool CheckIsExceed(bool isLengthChanged = false);
-    bool CheckIsExceed(std::size_t length);
+    // 外部接口数据无法获取修改前后数据进行精准计算
+    bool CheckIsForRecheck();
  
 protected:
-    int32_t InsertInitChangeInfos(const std::vector<ChangeInfo> &changeInfos);
+    int32_t InsertInitChangeInfos(const std::vector<ChangeInfo> &changeInfos, PendingInfo pendingInfo = PendingInfo());
+    bool CheckIsExceed(bool isLengthChanged = false);
+    bool CheckIsExceed(std::size_t length);
 
 private:
     int32_t CheckAndUpdateOperation(RdbOperation &newOperation, RdbOperation oldOperation);
-    int32_t UpdateModifiedDatasForRemove(const std::vector<int32_t> &keys);
-    int32_t UpdateModifiedDatasForUpdate(const std::vector<int32_t> &keys);
-    int32_t UpdateModifiedDatasForAdd(const std::vector<int32_t> &keys);
+    int32_t UpdateModifiedDatasForRemove(const std::vector<int32_t> &keys, PendingInfo &pendingInfo);
+    int32_t UpdateModifiedDatasForUpdate(const std::vector<int32_t> &keys, PendingInfo &pendingInfo);
+    int32_t UpdateModifiedDatasForAdd(const std::vector<int32_t> &keys, PendingInfo &pendingInfo);
     bool IsValidChangeInfo(const ChangeInfo &changeInfo);
 
     virtual int32_t GetChangeInfoKey(const ChangeInfo &changeInfo) = 0;
@@ -62,11 +66,18 @@ private:
     virtual std::vector<ChangeInfo> GetInfosByPredicates(const NativeRdb::AbsRdbPredicates &predicates) = 0;
     virtual std::vector<ChangeInfo> GetInfosByResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet) = 0;
     std::size_t GetCurrentDataLength();
+    // before数据插入后处理
+    virtual void PostInsertBeforeData(ChangeData &changeData, PendingInfo &pendingInfo) {}
+    // after数据插入后处理
+    virtual void PostInsertAfterData(ChangeData &changeData, PendingInfo &pendingInfo, bool isAdd = false) {}
+    // 资产数据在更新相册时，可能需要刷新，解决多线程问题
+    virtual bool CheckUpdateDataForMultiThread(ChangeData &changeData) { return false; }
 
 protected:
     std::map<int32_t, ChangeData> changeDatas_;
     std::shared_ptr<TransactionOperations> trans_;
     bool isExceed_ = false;
+    bool isForRecheck_ = false;
 };
 
 } // namespace Media

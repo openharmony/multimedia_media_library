@@ -16,7 +16,11 @@
 #ifndef OHOS_MEDIALIBRARY_ALBUM_ASSET_HELPER
 #define OHOS_MEDIALIBRARY_ALBUM_ASSET_HELPER
 
+#include <functional>
+
 #include "photo_asset_change_info.h"
+#include "album_change_info.h"
+#include "album_accurate_refresh_manager.h"
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
@@ -53,6 +57,8 @@ public:
         PhotoAssetChangeInfo &addCover, std::unordered_set<int32_t> &removeFileIds);
     static bool UpdateCount(const PhotoAssetChangeData &assetChangeData,
         std::function<bool(PhotoAssetChangeInfo)> isAlbumAsset, int32_t &count);
+    static bool CalAlbumRefreshInfo(std::function<bool(AlbumRefreshInfo &)> calFunc, AlbumRefreshInfo &refreshInfo,
+        int32_t albumId, bool isHidden, AlbumRefreshTimestamp &assetTimestamp);
 };
 
 } // namespace Media

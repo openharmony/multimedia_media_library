@@ -12,10 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "AccurateRefresh::AlbumAssetHelper"
 
 #include "album_asset_helper.h"
 #include "userfile_manager_types.h"
 #include "medialibrary_type_const.h"
+#include "accurate_debug_log.h"
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
@@ -110,6 +112,36 @@ bool AlbumAssetHelper::UpdateCount(const PhotoAssetChangeData &assetChangeData,
     }
     
     return ret;
+}
+
+bool AlbumAssetHelper::CalAlbumRefreshInfo(std::function<bool(AlbumRefreshInfo &refreshInfo)> calFunc,
+    AlbumRefreshInfo &refreshInfo, int32_t albumId, bool isHidden, AlbumRefreshTimestamp &assetTimestamp)
+{
+    auto &isForceRefresh = isHidden ? refreshInfo.isHiddenForceRefresh_ : refreshInfo.isForceRefresh_;
+    if (isForceRefresh) {
+        ACCURATE_DEBUG("already force refresh[%{public}d, %{public}d]", albumId, isHidden);
+        return true;
+    }
+    // refreshInfo记录计算时的album全量刷新时间戳
+    auto &albumRefreshTimestamp = isHidden ? refreshInfo.albumHiddenRefreshTimestamp_ :
+        refreshInfo.albumRefreshTimestamp_;
+    if (albumRefreshTimestamp.start_ == INVALID_INT64_VALUE || albumRefreshTimestamp.end_ == INVALID_INT64_VALUE) {
+        albumRefreshTimestamp = AlbumAccurateRefreshManager::GetInstance().GetRefreshTimestamp(albumId, isHidden);
+    }
+    auto action = AlbumAccurateRefreshManager::GetInstance().GetRefreshAction(albumRefreshTimestamp, assetTimestamp);
+    ACCURATE_DEBUG("set force refresh[%{public}d, %{public}d] albumRefreshTimestamp: %{public}s, "
+        "assetTimestamp: %{public}s, action: %{public}d", albumId, isHidden, albumRefreshTimestamp.ToString().c_str(),
+        assetTimestamp.ToString().c_str(), action);
+    if (action == AssetRefreshAlbumAction::ACCURATE_REFRESH) {
+        return calFunc(refreshInfo);
+    } else if (action == AssetRefreshAlbumAction::IGNORE) {
+        return false;
+    }
+
+    // AssetRefreshAlbumAction::FORCE_REFRESH
+    isForceRefresh = true;
+    ACCURATE_DEBUG("set force refresh[%{public}d, %{public}d] ", albumId, isHidden);
+    return true;
 }
 
 } // namespace Media
