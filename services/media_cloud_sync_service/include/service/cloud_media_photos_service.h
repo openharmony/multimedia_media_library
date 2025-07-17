@@ -119,6 +119,7 @@ private:
     int32_t HandleSameCloudResource(const PhotosDto &photo);
     int32_t HandleDuplicatedResource(const PhotosDto &photo);
     std::string GetCloudPath(const std::string &filePath);
+    int32_t GetUniqueIdsByTrans(int32_t dataSize, int32_t &uniqueId);
 
 private:
     CloudMediaPhotoServiceProcessor processor_;

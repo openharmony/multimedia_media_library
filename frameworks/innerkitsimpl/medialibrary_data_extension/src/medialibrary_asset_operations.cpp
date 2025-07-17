@@ -2164,7 +2164,8 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueId(int32_t type,
     return GetInt32Val(UNIQUE_NUMBER, resultSet);
 }
 
-int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t num, int32_t &startUniqueNumber)
+int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t num, int32_t &startUniqueNumber,
+    std::shared_ptr<TransactionOperations> trans)
 {
     if (num == 0) {
         return E_OK;
@@ -2192,7 +2193,9 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t 
     const string querySql = "SELECT " + UNIQUE_NUMBER + " FROM " + ASSET_UNIQUE_NUMBER_TABLE +
         " WHERE " + ASSET_MEDIA_TYPE + "='" + typeString + "';";
     lock_guard<mutex> lock(g_uniqueNumberLock);
-    int32_t errCode = rdbStore->ExecuteSql(updateSql);
+    int32_t errCode = E_OK;
+    CHECK_AND_EXECUTE(trans == nullptr, errCode = trans->ExecuteSql(updateSql));
+    CHECK_AND_EXECUTE(trans != nullptr, errCode = rdbStore->ExecuteSql(updateSql));
     CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "CreateAssetUniqueIds ExecuteSql err, ret=%{public}d", errCode);
 
     auto resultSet = rdbStore->QuerySql(querySql);
