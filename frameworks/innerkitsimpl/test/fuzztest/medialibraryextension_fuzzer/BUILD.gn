@@ -26,7 +26,10 @@ ohos_fuzztest("MediaLibraryExtensionFuzzTest") {
 
   sources = [ "../../../test/fuzztest/medialibraryextension_fuzzer/medialibraryextension_fuzzer.cpp" ]
 
-  deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
 
   external_deps = [
     "ability_base:configuration",
