@@ -47,6 +47,7 @@
 #include "userfile_manager_types.h"
 #include "medialibrary_operation.h"
 #include "datashare_helper.h"
+#include "medialibrary_kvstore_manager.h"
 
 #define private public
 #include "medialibrary_common_utils.h"
@@ -364,6 +365,11 @@ static void ScannerUtilsTest()
     path = FDP->ConsumeBool() ? ROOT_MEDIA_DIR + "Pictures": FDP->ConsumeBytesAsString(NUM_BYTES);
     Media::ScannerUtils::CheckSkipScanList(path);
 }
+
+static inline void ClearKvStore()
+{
+    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
+}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -398,5 +404,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::CommonUtilsTest();
     OHOS::CloudSyncUtilsTest();
     OHOS::ScannerUtilsTest();
+    OHOS::ClearKvStore();
     return 0;
 }
