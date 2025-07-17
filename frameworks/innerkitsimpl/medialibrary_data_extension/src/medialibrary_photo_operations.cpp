@@ -2852,14 +2852,14 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     CHECK_AND_RETURN_RET_LOG(DoRevertFilters(fileAsset, path, sourcePath) == E_OK, E_FAIL,
         "Failed to DoRevertFilters to photo");
 
-    ScanFile(path, true, true, true);
-    if (revertMovingPhotoGraffiti) {
-        UpdateAndNotifyMovingPhotoAlbum();
-    }
     // revert cloud enhancement ce_available
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
 #endif
+    ScanFile(path, true, true, true);
+    if (revertMovingPhotoGraffiti) {
+        UpdateAndNotifyMovingPhotoAlbum();
+    }
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     MEDIA_INFO_LOG("end to do revertEdit");
     return E_OK;
@@ -3635,11 +3635,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     if (isWriteGpsAdvanced) {
         MultiStagesPhotoCaptureManager::UpdateLocation(cmd.GetValueBucket(), true, assetPath, id);
     }
-    ScanFile(assetPath, false, true, true);
-    MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(id);
-    if (addMovingPhotoGraffiti) {
-        UpdateAndNotifyMovingPhotoAlbum();
-    }
+
     // delete cloud enhacement task
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     vector<string> fileId;
@@ -3647,6 +3643,11 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     vector<string> photoId;
     EnhancementManager::GetInstance().CancelTasksInternal(fileId, photoId, CloudEnhancementAvailableType::EDIT);
 #endif
+    ScanFile(assetPath, false, true, true);
+    MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(id);
+    if (addMovingPhotoGraffiti) {
+        UpdateAndNotifyMovingPhotoAlbum();
+    }
     NotifyFormMap(id, assetPath, false);
     MediaLibraryVisionOperations::EditCommitOperation(cmd);
     MEDIA_INFO_LOG("SubmitEditCacheExecute success, isWriteGpsAdvanced: %{public}d.", isWriteGpsAdvanced);
