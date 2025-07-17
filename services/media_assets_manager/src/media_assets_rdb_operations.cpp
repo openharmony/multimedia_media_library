@@ -199,6 +199,7 @@ int32_t MediaAssetsRdbOperations::CommitEditInsert(const string& editData, int32
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         MediaColumn::MEDIA_DATE_TAKEN,
+        PhotoColumn::PHOTO_OWNER_ALBUM_ID,
     };
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
     CHECK_AND_RETURN_RET(resultSet != nullptr, E_INVALID_VALUES);
