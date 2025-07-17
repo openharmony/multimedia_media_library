@@ -51,20 +51,20 @@ bool GetPhotoAlbumObjectReqBody::Marshalling(MessageParcel &parcel) const
     return true;
 }
 
-bool GetPhotoAlbumObjectRsqBody::Unmarshalling(MessageParcel &parcel)
+bool GetPhotoAlbumObjectRspBody::Unmarshalling(MessageParcel &parcel)
 {
     this->resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
     if (this->resultSet == nullptr) {
-        MEDIA_ERR_LOG("GetPhotoAlbumObjectRsqBody ReadFromParcel failed");
+        MEDIA_ERR_LOG("GetPhotoAlbumObjectRspBody ReadFromParcel failed");
         return false;
     }
     return true;
 }
  
-bool GetPhotoAlbumObjectRsqBody::Marshalling(MessageParcel &parcel) const
+bool GetPhotoAlbumObjectRspBody::Marshalling(MessageParcel &parcel) const
 {
     if (this->resultSet == nullptr || !DataShare::DataShareResultSet::Marshal(this->resultSet, parcel)) {
-        MEDIA_ERR_LOG("GetPhotoAlbumObjectRsqBody Marshalling failed");
+        MEDIA_ERR_LOG("GetPhotoAlbumObjectRspBody Marshalling failed");
         return false;
     }
     return true;

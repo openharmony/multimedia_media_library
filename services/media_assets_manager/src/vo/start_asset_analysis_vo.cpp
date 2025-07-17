@@ -26,7 +26,7 @@ bool StartAssetAnalysisReqBody::Unmarshalling(MessageParcel &parcel)
     if (!DataShare::DataSharePredicates::Unmarshal(this->predicates, parcel)) {
         return false;
     }
-    return true;
+    return parcel.ReadString(this->uri);
 }
 
 bool StartAssetAnalysisReqBody::Marshalling(MessageParcel &parcel) const
@@ -34,7 +34,7 @@ bool StartAssetAnalysisReqBody::Marshalling(MessageParcel &parcel) const
     if (!DataShare::DataSharePredicates::Marshal(this->predicates, parcel)) {
         return false;
     }
-    return true;
+    return parcel.WriteString(this->uri);
 }
 
 

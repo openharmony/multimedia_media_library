@@ -11261,14 +11261,14 @@ static void JSGetPhotoAlbumsWithoutSubtypeExecute(napi_env env, void *data)
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     GetPhotoAlbumObjectReqBody reqBody;
-    GetPhotoAlbumObjectRsqBody rsqBody;
+    GetPhotoAlbumObjectRspBody rspBody;
     shared_ptr<DataShareResultSet> resultSet;
     reqBody.predicates = context->predicates;
     reqBody.columns = context->fetchColumn;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_PHOTO_ALBUMS);
 
-    int32_t errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rsqBody);
-    resultSet = rsqBody.resultSet;
+    int32_t errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    resultSet = rspBody.resultSet;
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
         if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
@@ -11404,14 +11404,14 @@ static void JSGetPhotoAlbumOrderExecute(napi_env env, void *data)
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     GetPhotoAlbumObjectReqBody reqBody;
-    GetPhotoAlbumObjectRsqBody rsqBody;
+    GetPhotoAlbumObjectRspBody rspBody;
     shared_ptr<DataShareResultSet> resultSet;
     reqBody.predicates = context->predicates;
     reqBody.columns = context->fetchColumn;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_PHOTO_ALBUM_ORDER);
 
-    int32_t errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rsqBody);
-    resultSet = rsqBody.resultSet;
+    int32_t errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    resultSet = rspBody.resultSet;
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
         if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
