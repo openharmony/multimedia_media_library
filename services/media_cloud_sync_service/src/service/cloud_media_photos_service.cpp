@@ -1213,9 +1213,7 @@ int32_t CloudMediaPhotosService::GetUniqueIdsByTrans(int32_t dataSize, int32_t &
         return ret;
     };
     ret = trans->RetryTrans(func);
-    if (ret != E_OK) {
-        uniqueId = 0;
-    }
+    CHECK_AND_EXECUTE(ret == E_OK, uniqueId = 0);
     MEDIA_INFO_LOG("GetUniqueIdsByTrans end, uniqueId: %{public}d", uniqueId);
     return ret;
 }
