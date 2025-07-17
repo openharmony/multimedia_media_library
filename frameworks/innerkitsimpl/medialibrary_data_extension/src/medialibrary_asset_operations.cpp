@@ -2193,7 +2193,7 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t 
     const string querySql = "SELECT " + UNIQUE_NUMBER + " FROM " + ASSET_UNIQUE_NUMBER_TABLE +
         " WHERE " + ASSET_MEDIA_TYPE + "='" + typeString + "';";
     lock_guard<mutex> lock(g_uniqueNumberLock);
-    int32_t errCode;
+    int32_t errCode = E_OK;
     CHECK_AND_EXECUTE(trans == nullptr, errCode = trans->ExecuteSql(updateSql));
     CHECK_AND_EXECUTE(trans != nullptr, errCode = rdbStore->ExecuteSql(updateSql));
     CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "CreateAssetUniqueIds ExecuteSql err, ret=%{public}d", errCode);
