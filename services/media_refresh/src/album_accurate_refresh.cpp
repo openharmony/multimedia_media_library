@@ -56,19 +56,14 @@ int32_t AlbumAccurateRefresh::Init(const string &sql, const vector<ValueObject> 
     return dataManager_.Init(sql, bindArgs);
 }
 
-int32_t AlbumAccurateRefresh::Init(const std::vector<PhotoAlbumSubType> &systemTypes, const vector<int32_t> &albumIds)
-{
-    return dataManager_.InitAlbumInfos(systemTypes, albumIds);
-}
-
 int32_t AlbumAccurateRefresh::Init(const std::vector<int32_t> &albumIds)
 {
-    return dataManager_.InitAlbumInfos(vector<PhotoAlbumSubType>(), albumIds);
+    return dataManager_.InitAlbumInfos(albumIds);
 }
 
 int32_t AlbumAccurateRefresh::Notify()
 {
-    if (dataManager_.CheckIsExceed()) {
+    if (dataManager_.CheckIsForRecheck()) {
         return NotifyForReCheck();
     }
     return Notify(dataManager_.GetChangeDatas());
@@ -89,7 +84,8 @@ int32_t AlbumAccurateRefresh::NotifyAddAlbums(const vector<string> &albumIdsStr)
     return Notify(dataManager_.GetAlbumDatasFromAddAlbum(albumIdsStr));
 }
 
-int32_t AlbumAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &albumIds, RdbOperation operation)
+int32_t AlbumAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &albumIds, RdbOperation operation,
+    PendingInfo pendingInfo)
 {
     auto modifiedAlbumIds = albumIds;
     if (modifiedAlbumIds.empty()) {
@@ -97,7 +93,7 @@ int32_t AlbumAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &a
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
 
-    int32_t err = dataManager_.UpdateModifiedDatasInner(modifiedAlbumIds, operation);
+    int32_t err = dataManager_.UpdateModifiedDatasInner(modifiedAlbumIds, operation, pendingInfo);
     CHECK_AND_RETURN_RET_WARN_LOG(err == ACCURATE_REFRESH_RET_OK, err,
         "UpdateModifiedDatasInner failed, err:%{public}d", err);
     err = dataManager_.PostProcessModifiedDatas(modifiedAlbumIds);
@@ -111,7 +107,7 @@ int32_t AlbumAccurateRefresh::UpdateModifiedDatas()
     return dataManager_.UpdateModifiedDatas();
 }
 
-map<int32_t, AlbumChangeInfo> AlbumAccurateRefresh::GetInitAlbumInfos()
+unordered_map<int32_t, AlbumChangeInfo> AlbumAccurateRefresh::GetInitAlbumInfos()
 {
     return dataManager_.GetInitAlbumInfos();
 }

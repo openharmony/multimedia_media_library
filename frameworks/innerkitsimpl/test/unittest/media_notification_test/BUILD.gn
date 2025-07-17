@@ -66,6 +66,7 @@ ohos_unittest("media_notification_test") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/asset_change_notify_execution.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_change_notify_execution.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_accurate_refresh_manager.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/multi_thread_asset_change_info_mgr.cpp",
   ]
 
   sources += media_notification_source
