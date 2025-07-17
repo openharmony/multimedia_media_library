@@ -906,7 +906,7 @@ int32_t SendableMediaLibraryNapiUtils::GetPortraitAlbumPredicates(const int32_t 
     return E_SUCCESS;
 }
 
-int32_t SendableMediaLibraryNapiUtils::GetAnalysisAlbumPredicates(const int32_t albumId,
+int32_t SendableMediaLibraryNapiUtils::GetAnalysisPhotoMapPredicates(const int32_t albumId,
     DataSharePredicates &predicates)
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
