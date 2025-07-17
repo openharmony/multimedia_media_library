@@ -60,6 +60,7 @@ NotifyTaskWorker::~NotifyTaskWorker() {}
 
 void NotifyTaskWorker::StartWorker()
 {
+    MEDIA_INFO_LOG("StartWorker");
     isThreadRunning_ = true;
     std::thread([this]() { this->HandleNotifyTaskPeriod(); }).detach();
 }
