@@ -2165,7 +2165,7 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueId(int32_t type,
 }
 
 int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t num, int32_t &startUniqueNumber,
-        std::shared_ptr<TransactionOperations> trans)
+    std::shared_ptr<TransactionOperations> trans)
 {
     if (num == 0) {
         return E_OK;
