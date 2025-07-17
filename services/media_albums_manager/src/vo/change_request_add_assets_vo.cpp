@@ -27,9 +27,9 @@ bool ChangeRequestAddAssetsReqBody::Unmarshalling(MessageParcel &parcel)
     CHECK_AND_RETURN_RET(status, status);
     parcel.ReadInt32(this->albumId);
     CHECK_AND_RETURN_RET(status, status);
-    parcel.ReadInt32(this->isHighlight);
+    parcel.ReadBool(this->isHighlight);
     CHECK_AND_RETURN_RET(status, status);
-    parcel.ReadInt32(this->isHiddenOnly);
+    parcel.ReadBool(this->isHiddenOnly);
     CHECK_AND_RETURN_RET(status, status);
 
     return true;
@@ -41,9 +41,9 @@ bool ChangeRequestAddAssetsReqBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     parcel.WriteInt32(this->albumId);
     CHECK_AND_RETURN_RET(status, status);
-    parcel.WriteInt32(this->isHighlight);
+    parcel.WriteBool(this->isHighlight);
     CHECK_AND_RETURN_RET(status, status);
-    parcel.WriteInt32(this->isHiddenOnly);
+    parcel.WriteBool(this->isHiddenOnly);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }

@@ -24,10 +24,8 @@
 #include "create_album_vo.h"
 #include "delete_highlight_albums_vo.h"
 #include "set_subtitle_vo.h"
-#include "media_file_utils.h"
 #include "photo_album.h"
 #include "set_highlight_user_action_data_dto.h"
-#include "userfile_manager_types.h"
 #include "story_album_column.h"
 #include "set_highlight_user_action_data_vo.h"
 #include "change_request_set_album_name_vo.h"
@@ -46,18 +44,6 @@
 #include "change_request_merge_album_vo.h"
 #include "change_request_place_before_vo.h"
 #include "change_request_set_order_position_vo.h"
-#include "vision_photo_map_column.h"
-#include "photo_map_operations.h"
-#include "photo_album_column.h"
-#include "photo_map_column.h"
-#include "result_set_utils.h"
-#include "medialibrary_photo_operations.h"
-#include "medialibrary_album_operations.h"
-#include "vision_album_column.h"
-#include "medialibrary_analysis_album_operations.h"
-#include "rdb_utils.h"
-#include "medialibrary_rdbstore.h"
-#include "medialibrary_data_manager.h"
 #include "album_commit_modify_vo.h"
 #include "album_commit_modify_dto.h"
 #include "album_add_assets_vo.h"
@@ -73,15 +59,19 @@
 #include "get_order_position_vo.h"
 #include "get_face_id_vo.h"
 #include "permission_common.h"
-#include "photo_album_column.h"
-#include "medialibrary_rdb_utils.h"
-#include "medialibrary_vision_operations.h"
 #include "get_albums_by_ids_vo.h"
-#include "rdb_utils.h"
 #include "get_photo_album_object_vo.h"
 #include "set_photo_album_order_vo.h"
 #include "set_photo_album_order_dto.h"
 #include "change_request_move_assets_dto.h"
+#include "change_request_add_assets_dto.h"
+#include "change_request_recover_assets_dto.h"
+#include "change_request_delete_assets_dto.h"
+#include "change_request_dismiss_assets_dto.h"
+#include "change_request_merge_album_dto.h"
+#include "change_request_place_before_dto.h"
+#include "change_request_remove_assets_dto.h"
+#include "change_request_set_order_position_dto.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -545,72 +535,21 @@ int32_t MediaAlbumsControllerService::ChangeRequestResetCoverUri(MessageParcel &
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
-std::shared_ptr<OHOS::NativeRdb::ResultSet>  QueryOperation(
-    DataShare::DataSharePredicates &predicates, std::vector<std::string> &fetchColumns)
-{
-    NativeRdb::RdbPredicates rdbPredicates =
-        RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
-    std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet =
-        MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, fetchColumns);
-    if (resultSet == nullptr) {
-        return nullptr;
-    }
-    int32_t numRows = 0;
-    resultSet->GetRowCount(numRows);
-    if (numRows == 0) {
-        return nullptr;
-    }
-    resultSet->GoToFirstRow();
-    return resultSet;
-}
-
 int32_t MediaAlbumsControllerService::AddAssets(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AddAssets");
     ChangeRequestAddAssetsReqBody reqBody;
     ChangeRequestAddAssetsRspBody rspBody;
-    std::vector<DataShare::DataShareValuesBucket> valuesBuckets;
-    DataShare::DataSharePredicates predicates;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AddAssets Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
-    if (reqBody.isHighlight) {
-        for (auto asset : reqBody.assets) {
-            DataShare::DataShareValuesBucket pair;
-            pair.Put(MAP_ALBUM, reqBody.albumId);
-            pair.Put(MAP_ASSET, asset);
-            valuesBuckets.push_back(pair);
-        }
-        ret = PhotoMapOperations::AddHighlightPhotoAssets(valuesBuckets);
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    } else {
-        for (auto asset : reqBody.assets) {
-            DataShare::DataShareValuesBucket pair;
-            pair.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, reqBody.albumId);
-            pair.Put(PhotoColumn::MEDIA_ID, asset);
-            valuesBuckets.push_back(pair);
-        }
-        ret = PhotoMapOperations::AddPhotoAssets(valuesBuckets);
-    }
+    ChangeRequestAddAssetsDto dto;
+    dto.FromVo(reqBody);
 
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, reqBody.albumId);
-    std::vector<std::string> fetchColumns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COUNT,
-        PhotoAlbumColumns::ALBUM_IMAGE_COUNT, PhotoAlbumColumns::ALBUM_VIDEO_COUNT };
-    auto resultSet = QueryOperation(predicates, fetchColumns);
-    if (reqBody.isHiddenOnly) {
-        rspBody.imageCount = -1;
-        rspBody.videoCount = -1;
-    } else {
-        rspBody.imageCount =
-            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet, TYPE_INT32));
-        rspBody.videoCount =
-            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet, TYPE_INT32));
-    }
-    rspBody.albumCount =
-        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, resultSet, TYPE_INT32));
+    ret = MediaAlbumsService::GetInstance().AddAssets(dto, rspBody);
     return  IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
 
@@ -618,36 +557,17 @@ int32_t MediaAlbumsControllerService::RemoveAssets(MessageParcel &data, MessageP
 {
     MEDIA_INFO_LOG("enter RemoveAssets");
     ChangeRequestRemoveAssetsReqBody reqBody;
+    ChangeRequestRemoveAssetsRspBody rspBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("RemoveAssets Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    ChangeRequestRemoveAssetsRspBody rspBody;
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(reqBody.albumId));
-    predicates.And()->In(PhotoColumn::MEDIA_ID, reqBody.assets);
-    NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoMap::TABLE);
-    ret = PhotoMapOperations::RemovePhotoAssets(rdbPredicate);
 
-    DataShare::DataSharePredicates queuePredicates;
-    queuePredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, reqBody.albumId);
-    std::vector<std::string> fetchColumns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COUNT,
-        PhotoAlbumColumns::ALBUM_IMAGE_COUNT, PhotoAlbumColumns::ALBUM_VIDEO_COUNT };
-    auto resultSet = QueryOperation(queuePredicates, fetchColumns);
-
-    if (reqBody.isHiddenOnly) {
-        rspBody.imageCount = -1;
-        rspBody.videoCount = -1;
-    } else {
-        rspBody.imageCount =
-            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet, TYPE_INT32));
-        rspBody.videoCount =
-            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet, TYPE_INT32));
-    }
-    rspBody.albumCount =
-        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, resultSet, TYPE_INT32));
-    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    ChangeRequestRemoveAssetsDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().RemoveAssets(dto, rspBody);
+    return  IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::MoveAssets(MessageParcel &data, MessageParcel &reply)
@@ -681,9 +601,10 @@ int32_t MediaAlbumsControllerService::RecoverAssets(MessageParcel &data, Message
         MEDIA_ERR_LOG("RecoverAssets Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    DataShare::DataSharePredicates predicates;
-    predicates.In(PhotoColumn::MEDIA_ID, reqBody.assets);
-    ret = MediaLibraryAlbumOperations::RecoverPhotoAssets(predicates);
+
+    ChangeRequestRecoverAssetsDto dto;
+    dto.assets = reqBody.assets;
+    ret = MediaAlbumsService::GetInstance().RecoverAssets(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
@@ -697,56 +618,25 @@ int32_t MediaAlbumsControllerService::DeleteAssets(MessageParcel &data, MessageP
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
-    DataShare::DataSharePredicates predicates;
-    predicates.In(PhotoColumn::MEDIA_ID, reqBody.assets);
-    predicates.GreaterThan(PhotoColumn::MEDIA_DATE_TRASHED, 0);
-    ret = MediaLibraryAlbumOperations::DeletePhotoAssets(predicates, false, false);
+    ChangeRequestDeleteAssetsDto dto;
+    dto.assets = reqBody.assets;
+    ret = MediaAlbumsService::GetInstance().DeleteAssets(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
 int32_t MediaAlbumsControllerService::DismissAssets(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter DismissAssets");
-    const int32_t PORTRAIT_REMOVED = -3;
-    const std::string TAG_ID = "tag_id";
     ChangeRequestDismissAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DismissAssets Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MAP_ALBUM, to_string(reqBody.albumId));
-    predicates.And()->In(MAP_ASSET, reqBody.assets);
-    predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(reqBody.photoAlbumSubType));
-    NativeRdb::RdbPredicates rdbPredicate =
-        RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, ANALYSIS_PHOTO_MAP_TABLE);
-    ret = PhotoMapOperations::DismissAssets(rdbPredicate);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("DismissAssets Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-    if (reqBody.photoAlbumSubType == PhotoAlbumSubType::PORTRAIT) {
-        DataShare::DataShareValuesBucket updateValues;
-        updateValues.Put(TAG_ID, std::to_string(PORTRAIT_REMOVED));
-        NativeRdb::ValuesBucket value = RdbDataShareAdapter::RdbUtils::ToValuesBucket(updateValues);
-        DataShare::DataSharePredicates updatePredicates;
-        std::string selection = std::to_string(reqBody.albumId);
-        for (size_t i = 0; i < reqBody.assets.size(); ++i) {
-            selection += "," + reqBody.assets[i];
-        }
-        updatePredicates.SetWhereClause(selection);
-        NativeRdb::RdbPredicates rdbPredicateUpdate =
-            RdbDataShareAdapter::RdbUtils::ToPredicates(updatePredicates, VISION_IMAGE_FACE_TABLE);
 
-        MediaLibraryCommand cmd(OperationObject::VISION_IMAGE_FACE, OperationType::UPDATE, MediaLibraryApi::API_10);
-        cmd.SetValueBucket(value);
-        cmd.SetDataSharePred(updatePredicates);
-        cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicateUpdate.GetWhereClause());
-        cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicateUpdate.GetWhereArgs());
-        auto dataManager = MediaLibraryDataManager::GetInstance();
-        dataManager->HandleAnalysisFaceUpdate(cmd, value, updatePredicates);
-    }
+    ChangeRequestDismissAssetsDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().DismissAssets(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
@@ -760,15 +650,9 @@ int32_t MediaAlbumsControllerService::MergeAlbum(MessageParcel &data, MessagePar
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_ID, reqBody.albumId);
-    valuesBucket.Put(TARGET_ALBUM_ID, reqBody.targetAlbumId);
-    NativeRdb::ValuesBucket value = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
-    if (value.IsEmpty()) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager Update:Input parameter is invalid ");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-    ret = MediaLibraryAlbumOperations::MergePortraitAlbums(value);
+    ChangeRequestMergeAlbumDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().MergeAlbum(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
@@ -782,50 +666,25 @@ int32_t MediaAlbumsControllerService::PlaceBefore(MessageParcel &data, MessagePa
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_ID, reqBody.albumId);
-    valuesBucket.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, reqBody.referenceAlbumId);
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_TYPE, reqBody.albumType);
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, reqBody.albumSubType);
-    NativeRdb::ValuesBucket value = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
-    if (value.IsEmpty()) {
-        MEDIA_ERR_LOG("PlaceBefore:Input parameter is invalid ");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-
-    ret = MediaLibraryAlbumOperations::OrderSingleAlbum(value);
+    ChangeRequestPlaceBeforeDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().PlaceBefore(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
 int32_t MediaAlbumsControllerService::SetOrderPosition(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter PlaceBefore");
-    const string mapTable = ANALYSIS_PHOTO_MAP_TABLE;
     ChangeRequestSetOrderPositionReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("PlaceBefore Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_MAP, OperationType::UPDATE_ORDER, MediaLibraryApi::API_10);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(ORDER_POSITION, reqBody.orderString);
-    NativeRdb::ValuesBucket value = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
-    if (value.IsEmpty()) {
-        MEDIA_ERR_LOG("PlaceBefore:Input parameter is invalid ");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
-    }
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(mapTable + "." + MAP_ALBUM, reqBody.albumId)
-        ->And()
-        ->In(mapTable + "." + MAP_ASSET, reqBody.assetIds);
-    NativeRdb::RdbPredicates rdbPredicate =
-        RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, ANALYSIS_PHOTO_MAP_TABLE);
-    cmd.SetValueBucket(value);
-    cmd.SetDataSharePred(predicates);
-    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    ret = MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
+
+    ChangeRequestSetOrderPositionDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().SetOrderPosition(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
@@ -1011,9 +870,6 @@ int32_t MediaAlbumsControllerService::GetAlbumsByIds(MessageParcel &data, Messag
 {
     GetAlbumsByIdsReqBody reqBody;
     GetAlbumsByIdsRspBody rspBody;
-    std::shared_ptr<NativeRdb::ResultSet> resultSet;
-    std::vector<std::string> columns = reqBody.columns;
-    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1021,17 +877,9 @@ int32_t MediaAlbumsControllerService::GetAlbumsByIds(MessageParcel &data, Messag
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
-    NativeRdb::RdbPredicates rdbPredicates =
-        RdbDataShareAdapter::RdbUtils::ToPredicates(reqBody.predicates, PhotoAlbumColumns::TABLE);
-    if (rdbPredicates.GetOrder().empty()) {
-        rdbPredicates.OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
-    }
-    resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
-    if (resultSet != nullptr) {
-        auto bridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
-        rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
-    }
-
+    GetAlbumsByIdsDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().GetAlbumsByIds(dto, rspBody);
     return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
 
@@ -1158,7 +1006,7 @@ int32_t MediaAlbumsControllerService::AlbumGetAssets(
         }
         dto.predicates.And()->EqualTo("owner_appid", clientAppId);
     }
-    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
+
     auto resultSet = MediaAlbumsService::GetInstance().AlbumGetAssets(dto);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
@@ -1172,23 +1020,17 @@ int32_t MediaAlbumsControllerService::AlbumGetAssets(
 int32_t MediaAlbumsControllerService::GetPhotoAlbumObject(MessageParcel &data, MessageParcel &reply)
 {
     GetPhotoAlbumObjectReqBody reqBody;
-    GetPhotoAlbumObjectRsqBody rsqBody;
+    GetPhotoAlbumObjectRspBody rspBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GetPhotoAlbumObject Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    std::vector<std::string> columns = reqBody.columns;
-    std::shared_ptr<NativeRdb::ResultSet> resultSet;
 
-    NativeRdb::RdbPredicates rdbPredicates =
-        RdbDataShareAdapter::RdbUtils::ToPredicates(reqBody.predicates, PhotoAlbumColumns::TABLE);
-    resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
-    if (resultSet != nullptr) {
-        auto bridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
-        rsqBody.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
-    }
-    return IPC::UserDefineIPC().WriteResponseBody(reply, rsqBody, ret);
+    GetPhotoAlbumObjectDto dto;
+    dto.FromVo(reqBody);
+    ret = MediaAlbumsService::GetInstance().GetPhotoAlbumObject(dto, rspBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::UpdatePhotoAlbumOrder(MessageParcel &data, MessageParcel &reply)
