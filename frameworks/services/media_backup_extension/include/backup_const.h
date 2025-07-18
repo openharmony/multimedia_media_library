@@ -624,6 +624,11 @@ struct ImageFaceTbl {
     std::optional<int32_t> faceEyeClose;
     std::optional<double> faceExpression;
     std::optional<std::string> preferredGrade;
+    std::optional<double> jointBeautyBounderX;
+    std::optional<double> jointBeautyBounderY;
+    std::optional<double> jointBeautyBounderWidth;
+    std::optional<double> jointBeautyBounderHeight;
+    std::optional<std::string> groupVersion;
 };
 
 struct AnalysisPhotoMapTbl {
