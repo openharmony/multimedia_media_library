@@ -153,6 +153,7 @@ config("media_data_extension_public_config") {
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/enhancement_service",
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/utils",
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/dfx",
+      "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/dfx",
     ]
     include_dirs += include_cloud_enhancement
   }
@@ -685,7 +686,11 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_accurate_refresh_manager.cpp",
   ]
 
-  accurate_refresh_server_source = [ "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/controller/media_refresh_controller_service.cpp" ]
+  accurate_refresh_server_source = [
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/controller/media_refresh_controller_service.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/dfx/dfx_refresh_manager.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/dfx/dfx_refresh_hander.cpp",
+  ]
 
   sources += media_scan_source
   sources += media_fuse_source

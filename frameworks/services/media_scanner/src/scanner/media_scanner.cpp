@@ -38,6 +38,7 @@
 #include "medialibrary_notify_new.h"
 #include "asset_accurate_refresh.h"
 #include "medialibrary_photo_operations.h"
+#include "refresh_business_name.h"
 
 namespace OHOS {
 namespace Media {
@@ -278,7 +279,8 @@ int32_t MediaScannerObj::Commit()
     string tableName;
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
-    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::SCAN_FILE_BUSSINESS_NAME);
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
         uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_, true, assetRefresh);
         if (!isSkipAlbumUpdate_) {

@@ -1099,5 +1099,434 @@ HWTEST_F(AssetAccurateRefreshTest, Update_Exceed_011, TestSize.Level2)
     // 总共999条
     EXPECT_TRUE(assetRefresh.dataManager_.changeDatas_.size() == 999);
 }
+
+HWTEST_F(AssetAccurateRefreshTest, Init_012, TestSize.Level2)
+{
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>("Init_012");
+    AssetAccurateRefresh assetRefresh("Init_012", trans);
+    EXPECT_TRUE(assetRefresh.trans_ != nullptr);
+    EXPECT_TRUE(assetRefresh.dataManager_.trans_ != nullptr);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Insert_013, TestSize.Level2)
+{
+    AssetAccurateRefresh assetRefresh("Insert_013");
+    int64_t outRowId = 0;
+    auto assetInfo = GetFavoriteVideoAsset();
+    assetInfo.fileId_ = 10001;
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(outRowId > 0);
+    
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
+
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    assetChangeData.isContentChanged_ = false;
+    assetChangeData.thumbnailChangeStatus_ = 0;
+    assetChangeData.isDelete_ = false;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos =
+        { FAVORITE_ALBUM_INFO, VIDEO_ALBUM_INFO, GetUserInsertInfo(FAVORITE_VIDEO_ASSET_ALBUM_ID)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+
+    // Notify
+    assetRefresh.Notify();
+    EXPECT_TRUE(CheckInsertNotifyInfos(assetRefresh, assetChangeData, albumChangeDatas));
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Insert_014, TestSize.Level2)
+{
+    AssetAccurateRefresh assetRefresh("Insert_014");
+    int64_t outRowId = 0;
+    auto assetInfo = GetVideoAsset();
+    assetInfo.fileId_ = 2001;
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(outRowId > 1);
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
+
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos = { VIDEO_ALBUM_INFO, GetUserInsertInfo(assetInfo.ownerAlbumId_)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+
+    // Notify
+    assetRefresh.Notify();
+    EXPECT_TRUE(CheckInsertNotifyInfos(assetRefresh, assetChangeData, albumChangeDatas));
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Insert_015, TestSize.Level2)
+{
+    AssetAccurateRefresh assetRefresh("Insert_015");
+    int64_t outRowId = 0;
+    auto assetInfo = GetFavoriteImageAsset();
+    assetInfo.fileId_ = 30001;
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(outRowId > 1);
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
+
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos =
+        { FAVORITE_ALBUM_INFO, IMAGE_ALBUM_INFO, GetUserInsertInfo(assetInfo.ownerAlbumId_)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+
+    // Notify
+    assetRefresh.Notify();
+    EXPECT_TRUE(CheckInsertNotifyInfos(assetRefresh, assetChangeData, albumChangeDatas));
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Insert_016, TestSize.Level2)
+{
+    AssetAccurateRefresh assetRefresh("Insert_016");
+    int64_t outRowId = 0;
+    auto assetInfo = GetImageAsset();
+    assetInfo.fileId_ = 40001;
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(outRowId > 1);
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
+
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos = { IMAGE_ALBUM_INFO, GetUserInsertInfo(assetInfo.ownerAlbumId_)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+
+    // Notify
+    assetRefresh.Notify();
+    EXPECT_TRUE(CheckInsertNotifyInfos(assetRefresh, assetChangeData, albumChangeDatas));
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Insert_017, TestSize.Level2)
+{
+    AssetAccurateRefresh assetRefresh("Insert_017");
+    int64_t outRowId = 0;
+    auto assetInfo = GetFavoriteVideoHiddenAsset();
+    assetInfo.fileId_ = 50001;
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(outRowId > 1);
+    // 资产数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
+
+    // 资产data manager信息
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos =
+        { FAVORITE_ALBUM_INFO, VIDEO_ALBUM_INFO, HIDDEN_ALBUM_INFO, GetUserInsertInfo(assetInfo.ownerAlbumId_)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+    
+    // Notify
+    assetRefresh.Notify();
+    // 资产通知
+    auto notifyAssetInfos = assetRefresh.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAssetInfos.size() == 1);
+    EXPECT_TRUE(CheckInsertAssetNotifyInfo(*(notifyAssetInfos.begin()), assetChangeData,
+        Notification::ASSET_OPERATION_ADD_HIDDEN));
+    
+    auto notifyAlbumInfos = assetRefresh.albumRefreshExe_.albumRefresh_.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAlbumInfos.size() == 1);
+    EXPECT_TRUE(CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE_HIDDEN,
+        albumChangeDatas, 4));
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Insert_018, TestSize.Level2)
+{
+    AssetAccurateRefresh assetRefresh("Insert_018");
+    int64_t outRowId = 0;
+    auto assetInfo = GetCloudAsset();
+    assetInfo.fileId_ = 90001;
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(outRowId > 1);
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
+
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos =
+        { IMAGE_ALBUM_INFO, CLOUD_ENHANCEMENT_ALBUM_INFO, GetUserInsertInfo(assetInfo.ownerAlbumId_)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+    
+    // Notify
+    assetRefresh.Notify();
+    // 资产通知
+    auto notifyAssetInfos = assetRefresh.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAssetInfos.size() == 1);
+    EXPECT_TRUE(CheckInsertAssetNotifyInfo(*(notifyAssetInfos.begin()), assetChangeData,
+        Notification::ASSET_OPERATION_ADD));
+    
+    auto notifyAlbumInfos = assetRefresh.albumRefreshExe_.albumRefresh_.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAlbumInfos.size() == 1);
+    EXPECT_TRUE(
+        CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE, albumChangeDatas, 3));
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Insert_019, TestSize.Level2)
+{
+    AssetAccurateRefresh assetRefresh("Insert_019");
+    int64_t outRowId = 0;
+    auto assetInfo = GetTrashAsset();
+    assetInfo.fileId_ = 100001;
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(outRowId > 1);
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
+
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos = { TRASH_ALBUM_INFO };
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+    
+    // Notify
+    assetRefresh.Notify();
+    // 资产通知
+    auto notifyAssetInfos = assetRefresh.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAssetInfos.size() == 1);
+    EXPECT_TRUE(CheckInsertAssetNotifyInfo(*(notifyAssetInfos.begin()), assetChangeData,
+        Notification::ASSET_OPERATION_ADD_TRASH));
+    
+    auto notifyAlbumInfos = assetRefresh.albumRefreshExe_.albumRefresh_.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAlbumInfos.size() == 1);
+    EXPECT_TRUE(CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE_TRASH,
+        albumChangeDatas, 1));
+}
+
+// trash 非封面
+HWTEST_F(AssetAccurateRefreshTest, Update_020, TestSize.Level2)
+{
+    PrepareNormalAssets();
+    // 修改1个
+    ModifyAssetDateTime(12345); // dateTaken时间小于所有的相册coverDateTime
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+    ValuesBucket value;
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh("Update_020");
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(FAVORITE_IMAGE_ASSET_FILE_ID);
+    EXPECT_TRUE(queryAssetInfo.dateTrashedMs_ == dataTrashTime);
+
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_UPDATE;
+    assetChangeData.infoBeforeChange_ = GetFavoriteImageAsset();
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos = { FAVORITE_ALBUM_INFO, IMAGE_ALBUM_INFO, TRASH_ALBUM_INFO,
+        GetUserInsertInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    
+    // 刷新信息和数据库信息
+    auto refreshAlbumsMap = assetRefresh.albumRefreshExe_.refreshAlbums_;
+    AlbumChangeInfo refreshAlbumInfo = FAVORITE_ALBUM_INFO;
+    refreshAlbumInfo.count_--;
+    refreshAlbumInfo.imageCount_--;
+    CheckAlbumInfo(refreshAlbumsMap, FAVORITE_ALBUM_INFO, refreshAlbumInfo, RDB_OPERATION_UPDATE, albumChangeDatas);
+
+    refreshAlbumInfo = IMAGE_ALBUM_INFO;
+    refreshAlbumInfo.count_--;
+    refreshAlbumInfo.imageCount_--;
+    CheckAlbumInfo(refreshAlbumsMap, IMAGE_ALBUM_INFO, refreshAlbumInfo, RDB_OPERATION_UPDATE, albumChangeDatas);
+    
+    refreshAlbumInfo = GetUserInsertInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID);
+    refreshAlbumInfo.count_--;
+    refreshAlbumInfo.imageCount_--;
+    CheckAlbumInfo(refreshAlbumsMap, GetUserInsertInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID), refreshAlbumInfo,
+        RDB_OPERATION_UPDATE, albumChangeDatas);
+    // trash不更新封面
+    refreshAlbumInfo = TRASH_ALBUM_INFO;
+    refreshAlbumInfo.count_++;
+    refreshAlbumInfo.imageCount_++;
+    CheckAlbumInfo(refreshAlbumsMap, TRASH_ALBUM_INFO, refreshAlbumInfo, RDB_OPERATION_UPDATE, albumChangeDatas);
+    
+    // Notify
+    assetRefresh.Notify();
+    // 资产通知
+    auto notifyAssetInfos = assetRefresh.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAssetInfos.size() == 2);
+    CheckAssetNotifyInfo(notifyAssetInfos, Notification::ASSET_OPERATION_UPDATE_ADD_TRASH, assetChangeData);
+    CheckAssetNotifyInfo(notifyAssetInfos, Notification::ASSET_OPERATION_UPDATE_REMOVE_NORMAL, assetChangeData);
+
+    auto notifyAlbumInfos = assetRefresh.albumRefreshExe_.albumRefresh_.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAlbumInfos.size() == 2);
+    EXPECT_TRUE(
+        CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE_TRASH, albumChangeDatas, 1));
+    EXPECT_TRUE(
+        CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE, albumChangeDatas, 3));
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Update_Exceed_021, TestSize.Level2)
+{
+    PrepareNormalAssets();
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+    ValuesBucket value;
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh("Update_Exceed_021");
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+
+    // 修改changeDatas_的数量
+    auto &changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData changeData;
+    // 总共1000条
+    for (int i = 0; i < 999; ++i) {
+        changeDatasMap.insert_or_assign(1000000 + i, changeData);
+    }
+    ValuesBucket newValue;
+    newValue.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+    ret = assetRefresh.Update(changedRow, newValue, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+    // 总共1000条
+    EXPECT_TRUE(assetRefresh.dataManager_.CheckIsExceed());
+    EXPECT_TRUE(assetRefresh.dataManager_.changeDatas_.empty());
+    EXPECT_TRUE(assetRefresh.RefreshAlbum() == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(assetRefresh.Notify() == ACCURATE_REFRESH_RET_OK);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Update_Exceed_022, TestSize.Level2)
+{
+    PrepareNormalAssets();
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+    ValuesBucket value;
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh("Update_Exceed_022");
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+
+    // 修改changeDatas_的数量
+    auto &changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData changeData;
+    // 总共999条
+    for (int i = 0; i < 998; ++i) {
+        changeDatasMap.insert_or_assign(1000000 + i, changeData);
+    }
+    ValuesBucket newValue;
+    newValue.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+    ret = assetRefresh.Update(changedRow, newValue, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+    EXPECT_TRUE(!assetRefresh.dataManager_.CheckIsExceed());
+    // 总共999条
+    EXPECT_TRUE(assetRefresh.dataManager_.changeDatas_.size() == 999);
+}
 } // namespace Media
 } // namespace OHOS

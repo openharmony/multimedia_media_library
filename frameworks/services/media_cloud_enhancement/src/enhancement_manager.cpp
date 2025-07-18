@@ -35,6 +35,7 @@
 #include "medialibrary_async_worker.h"
 #include "medialibrary_subscriber.h"
 #include "asset_accurate_refresh.h"
+#include "refresh_business_name.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -491,7 +492,8 @@ int32_t EnhancementManager::AddServiceTask(MediaEnhanceBundleHandle* mediaEnhanc
         isAuto ? static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO) :
         static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL));
     rdbValues.PutInt(PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, hasCloudWatermark ? YES : NO);
-    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::SUBMIT_CLOUD_ENHANCEMENT_TASKS_BUSSINESS_NAME);
     int32_t errCode = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates, assetRefresh);
     if (errCode != E_OK) {
         EnhancementTaskManager::RemoveEnhancementTask(photoId);
@@ -942,7 +944,8 @@ int32_t EnhancementManager::HandleCancelAllOperation()
         GenerateCancelAllUpdatePredicates(fileId, updatePredicates);
         ValuesBucket rdbValues;
         rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
-        auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+        auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+            AccurateRefresh::CANCELALL_CLOUDE_ENHANCEMENT_BUSSINESS_NAME);
         int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, updatePredicates, assetRefresh);
         if (ret != E_OK) {
             MEDIA_ERR_LOG("update ce_available error, photoId: %{public}s", photoId.c_str());

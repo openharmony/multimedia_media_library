@@ -51,6 +51,9 @@
 #include "vision_column_comm.h"
 #include "medialibrary_photo_operations.h"
 #include "rdb_predicates.h"
+#include "dfx_refresh_manager.h"
+#include "media_file_utils.h"
+#include "refresh_business_name.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -404,9 +407,13 @@ int32_t MediaAlbumsService::AlbumRecoverAssets(const AlbumRecoverAssetsDto& reco
 
 std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetAssets(const AlbumGetAssetsDto &dto)
 {
+    auto startTime = MediaFileUtils::UTCTimeMilliSeconds();
     NativeRdb::RdbPredicates predicates =
         RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
     auto resultSet = PhotoMapOperations::QueryPhotoAssets(predicates, dto.columns);
+    auto totalCostTime = MediaFileUtils::UTCTimeMilliSeconds() - startTime;
+    AccurateRefresh::DfxRefreshManager::QueryStatementReport(
+        AccurateRefresh::GET_ASSETS_BUSSINESS_NAME, totalCostTime, predicates.GetStatement());
     CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to query album assets");
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
     return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
@@ -561,6 +568,8 @@ int32_t MediaAlbumsService::QueryAlbums(QueryAlbumsDto &dto)
     std::shared_ptr<NativeRdb::ResultSet> resultSet;
     std::vector<std::string> &columns = dto.columns;
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
+    auto startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    std::string sqlStr = "";
     MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY);
     if (dto.albumType == PhotoAlbumType::SMART) {
         if (dto.albumSubType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
@@ -568,6 +577,7 @@ int32_t MediaAlbumsService::QueryAlbums(QueryAlbumsDto &dto)
             const auto &locations = PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS;
             columns.insert(columns.end(), locations.begin(), locations.end());
             resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
+            sqlStr = rdbPredicate.GetStatement();
         } else if (dto.albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
             columns = PhotoAlbumColumns::CITY_DEFAULT_FETCH_COLUMNS;
             std::string onClause = PhotoAlbumColumns::ALBUM_NAME  + " = " + CITY_ID;
@@ -576,6 +586,7 @@ int32_t MediaAlbumsService::QueryAlbums(QueryAlbumsDto &dto)
             AddPhotoAlbumTypeFilter(dto.predicates, dto.albumType, dto.albumSubType);
             GenerateAnalysisCmd(cmd, dto.predicates);
             resultSet = MediaLibraryDataManager::QueryAnalysisAlbum(cmd, columns, dto.predicates);
+            sqlStr = cmd.GetAbsRdbPredicates()->GetStatement();
         } else {
             AddDefaultPhotoAlbumColumns(columns);
             if (dto.albumSubType == PhotoAlbumSubType::HIGHLIGHT ||
@@ -588,6 +599,7 @@ int32_t MediaAlbumsService::QueryAlbums(QueryAlbumsDto &dto)
             AddPhotoAlbumTypeFilter(dto.predicates, dto.albumType, dto.albumSubType);
             GenerateAnalysisCmd(cmd, dto.predicates);
             resultSet = MediaLibraryDataManager::QueryAnalysisAlbum(cmd, columns, dto.predicates);
+            sqlStr = cmd.GetAbsRdbPredicates()->GetStatement();
         }
     } else {
         AddNoSmartFetchColumns(columns);
@@ -597,8 +609,11 @@ int32_t MediaAlbumsService::QueryAlbums(QueryAlbumsDto &dto)
             rdbPredicate.OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
         }
         resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
+        sqlStr = rdbPredicate.GetStatement();
     }
-
+    int64_t totalCostTime = MediaFileUtils::UTCTimeMilliSeconds() - startTime;
+    AccurateRefresh::DfxRefreshManager::QueryStatementReport(
+        AccurateRefresh::DEAL_ALBUMS_BUSSINESS_NAME, totalCostTime, sqlStr);
     LogQueryParams(dto.predicates, columns);
 
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet nullptr");
