@@ -48,7 +48,7 @@ bool ChangeRequestAddAssetsReqBody::Marshalling(MessageParcel &parcel) const
     return true;
 }
 
-bool ChangeRequestAddAssetsRspBody::Unmarshalling(MessageParcel &parcel)
+bool ChangeRequestAddAssetsRespBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadInt32(this->albumCount);
     CHECK_AND_RETURN_RET(status, status);
@@ -59,7 +59,7 @@ bool ChangeRequestAddAssetsRspBody::Unmarshalling(MessageParcel &parcel)
     return true;
 }
 
-bool ChangeRequestAddAssetsRspBody::Marshalling(MessageParcel &parcel) const
+bool ChangeRequestAddAssetsRespBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = parcel.WriteInt32(this->albumCount);
     CHECK_AND_RETURN_RET(status, status);

@@ -75,22 +75,22 @@ public:
     int32_t QueryHiddenAlbums(QueryAlbumsDto &dto);
     int32_t GetOrderPosition(const GetOrderPositionDto& getOrderPositionDto, GetOrderPositionRespBody& resp);
     int32_t GetFaceId(int32_t albumId, std::string& groupTag);
-    int32_t GetPhotoIndex(GetPhotoIndexReqBody &reqBody, QueryResultRspBody &rspBody);
-    int32_t GetMediaAnalysisServiceProcess(GetAnalysisProcessReqBody &reqBody, QueryResultRspBody &rspBody);
-    int32_t GetAnalysisProcess(GetAnalysisProcessReqBody &reqBody, QueryResultRspBody &rspBody);
-    int32_t GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqBody, QueryResultRspBody &rspBody);
+    int32_t GetPhotoIndex(GetPhotoIndexReqBody &reqBody, QueryResultRespBody &respBody);
+    int32_t GetMediaAnalysisServiceProcess(GetAnalysisProcessReqBody &reqBody, QueryResultRespBody &respBody);
+    int32_t GetAnalysisProcess(GetAnalysisProcessReqBody &reqBody, QueryResultRespBody &respBody);
+    int32_t GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqBody, QueryResultRespBody &respBody);
     int32_t UpdatePhotoAlbumOrder(const SetPhotoAlbumOrderDto& setPhotoAlbumOrderDto);
     int32_t MoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto);
-    int32_t AddAssets(ChangeRequestAddAssetsDto &addAssetsDto, ChangeRequestAddAssetsRspBody &rspBody);
-    int32_t RemoveAssets(ChangeRequestRemoveAssetsDto &removeAssetsDto, ChangeRequestRemoveAssetsRspBody &rspBody);
+    int32_t AddAssets(ChangeRequestAddAssetsDto &addAssetsDto, ChangeRequestAddAssetsRespBody &respBody);
+    int32_t RemoveAssets(ChangeRequestRemoveAssetsDto &removeAssetsDto, ChangeRequestRemoveAssetsRespBody &respBody);
     int32_t RecoverAssets(ChangeRequestRecoverAssetsDto &recoverAssetsDto);
     int32_t DeleteAssets(ChangeRequestDeleteAssetsDto &deleteAssetsDto);
     int32_t DismissAssets(ChangeRequestDismissAssetsDto &dismissAssetsDto);
     int32_t MergeAlbum(ChangeRequestMergeAlbumDto &mergeAlbumDto);
     int32_t PlaceBefore(ChangeRequestPlaceBeforeDto &placeBeforeDto);
     int32_t SetOrderPosition(ChangeRequestSetOrderPositionDto &setOrderPositionDto);
-    int32_t GetAlbumsByIds(GetAlbumsByIdsDto &getAlbumsByIdsDto, GetAlbumsByIdsRspBody &rspBody);
-    int32_t GetPhotoAlbumObject(GetPhotoAlbumObjectDto &getPhotoAlbumObjectDto, GetPhotoAlbumObjectRspBody &rspBody);
+    int32_t GetAlbumsByIds(GetAlbumsByIdsDto &getAlbumsByIdsDto, GetAlbumsByIdsRespBody &respBody);
+    int32_t GetPhotoAlbumObject(GetPhotoAlbumObjectDto &getPhotoAlbumObjectDto, GetPhotoAlbumObjectRespBody &respBody);
 
 private:
     int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);

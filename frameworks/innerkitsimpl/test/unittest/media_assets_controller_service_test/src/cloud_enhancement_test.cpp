@@ -105,7 +105,7 @@ static int32_t ServicePublicCreateAsset(const std::string &ext, const std::strin
     auto service = make_shared<MediaAssetsControllerService>();
     service->PublicCreateAsset(data, reply);
 
-    IPC::MediaRespVo<CreateAssetRspBody> respVo;
+    IPC::MediaRespVo<CreateAssetRespBody> respVo;
     if (respVo.Unmarshalling(reply) != true) {
         MEDIA_ERR_LOG("respVo.Unmarshalling failed");
         return -1;

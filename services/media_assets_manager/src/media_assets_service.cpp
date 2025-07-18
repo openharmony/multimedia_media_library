@@ -1171,7 +1171,7 @@ int32_t MediaAssetsService::SyncCloudEnhancementTaskStatus()
     return EnhancementManager::GetInstance().HandleSyncOperation();
 }
 
-int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRspBody &rsp)
+int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRespBody &resp)
 {
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, req.fileId);
@@ -1193,13 +1193,13 @@ int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, Query
     resultSet->GetColumnIndex(PhotoColumn::PHOTO_ID, indexOfPhotoId);
     std::string photoId;
     resultSet->GetString(indexOfPhotoId, photoId);
-    rsp.photoId = photoId;
+    resp.photoId = photoId;
 
     int columnIndexQuality = -1;
     resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
     int currentPhotoQuality = HIGH_QUALITY_IMAGE;
     resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
-    rsp.photoQuality = currentPhotoQuality;
+    resp.photoQuality = currentPhotoQuality;
     return E_SUCCESS;
 }
 
@@ -1391,7 +1391,7 @@ int32_t MediaAssetsService::RetainCloudMediaAsset()
     return instance.ForceRetainDownloadCloudMedia();
 }
 
-int32_t MediaAssetsService::IsEdited(const IsEditedDto &dto, IsEditedRspBody &rspBody)
+int32_t MediaAssetsService::IsEdited(const IsEditedDto &dto, IsEditedRespBody &respBody)
 {
     DataShare::DataSharePredicates predicates;
     vector<string> columns = { PhotoColumn::PHOTO_EDIT_TIME };
@@ -1400,29 +1400,29 @@ int32_t MediaAssetsService::IsEdited(const IsEditedDto &dto, IsEditedRspBody &rs
     cmd.SetDataSharePred(predicates);
     auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
-    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_OK;
 }
 
-int32_t MediaAssetsService::RequestEditData(const RequestEditDataDto &dto, RequestEditDataRspBody &rspBody)
+int32_t MediaAssetsService::RequestEditData(const RequestEditDataDto &dto, RequestEditDataRespBody &respBody)
 {
     NativeRdb::RdbPredicates rdbPredicate =
         RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
 
     auto resultSet = MediaLibraryRdbStore::QueryEditDataExists(rdbPredicate);
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
-    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_OK;
 }
 
-int32_t MediaAssetsService::GetEditData(const GetEditDataDto &dto, GetEditDataRspBody &rspBody)
+int32_t MediaAssetsService::GetEditData(const GetEditDataDto &dto, GetEditDataRespBody &respBody)
 {
     NativeRdb::RdbPredicates rdbPredicate =
         RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
 
     auto resultSet = MediaLibraryRdbStore::QueryEditDataExists(rdbPredicate);
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
-    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_OK;
 }
 
@@ -1433,27 +1433,27 @@ int32_t MediaAssetsService::GetCloudMediaAssetStatus(string &status)
     return E_OK;
 }
 
-int32_t MediaAssetsService::StartAssetAnalysis(const StartAssetAnalysisDto &dto, StartAssetAnalysisRspBody &rspBody)
+int32_t MediaAssetsService::StartAssetAnalysis(const StartAssetAnalysisDto &dto, StartAssetAnalysisRespBody &respBody)
 {
     Uri uri(dto.uri);
     MediaLibraryCommand cmd(uri);
     cmd.SetDataSharePred(dto.predicates);
     auto resultSet = MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(cmd);
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
-    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_OK;
 }
 
 int32_t MediaAssetsService::GetCloudEnhancementPair(
-    const GetCloudEnhancementPairDto &dto, GetCloudEnhancementPairRespBody &rspBody)
+    const GetCloudEnhancementPairDto &dto, GetCloudEnhancementPairRespBody &respBody)
 {
     shared_ptr<NativeRdb::ResultSet> result = MediaAssetsService::GetInstance().GetCloudEnhancementPair(dto.photoUri);
     auto resultSetBridge = RdbUtils::ToResultSetBridge(result);
-    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_OK;
 }
 
-int32_t MediaAssetsService::GetFilePathFromUri(const std::string &virtualId, GetFilePathFromUriRspBody &rspBody)
+int32_t MediaAssetsService::GetFilePathFromUri(const std::string &virtualId, GetFilePathFromUriRespBody &respBody)
 {
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_ID, virtualId);
@@ -1474,11 +1474,11 @@ int32_t MediaAssetsService::GetFilePathFromUri(const std::string &virtualId, Get
     }
 
     auto resultSetBridge = RdbUtils::ToResultSetBridge(resultSet);
-    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_OK;
 }
 
-int32_t MediaAssetsService::GetUriFromFilePath(const std::string &tempPath, GetUriFromFilePathRspBody &rspBody)
+int32_t MediaAssetsService::GetUriFromFilePath(const std::string &tempPath, GetUriFromFilePathRespBody &respBody)
 {
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, tempPath);
@@ -1499,7 +1499,7 @@ int32_t MediaAssetsService::GetUriFromFilePath(const std::string &tempPath, GetU
     }
 
     auto resultSetBridge = RdbUtils::ToResultSetBridge(resultSet);
-    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_OK;
 }
 } // namespace OHOS::Media

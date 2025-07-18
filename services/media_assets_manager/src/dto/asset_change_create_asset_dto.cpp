@@ -24,11 +24,11 @@ AssetChangeCreateAssetDto AssetChangeCreateAssetDto::Create(const AssetChangeReq
     return dto;
 }
 
-AssetChangeRspBody AssetChangeCreateAssetDto::CreateRspBody()
+AssetChangeRespBody AssetChangeCreateAssetDto::CreateRespBody()
 {
-    AssetChangeRspBody rspBody;
-    rspBody.fileId = this->fileId;
-    rspBody.outUri = this->outUri;
-    return rspBody;
+    AssetChangeRespBody respBody;
+    respBody.fileId = this->fileId;
+    respBody.outUri = this->outUri;
+    return respBody;
 }
 }  // namespace OHOS::Media

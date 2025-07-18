@@ -46,14 +46,14 @@ bool QueryAlbumsReqBody::Marshalling(MessageParcel &parcel) const
     return DataShare::DataSharePredicates::Marshal(this->predicates, parcel);
 }
 
-bool QueryAlbumsRspBody::Unmarshalling(MessageParcel &parcel)
+bool QueryAlbumsRespBody::Unmarshalling(MessageParcel &parcel)
 {
     this->resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
     CHECK_AND_RETURN_RET_LOG(this->resultSet != nullptr, false, "resultSet nullptr");
     return true;
 }
 
-bool QueryAlbumsRspBody::Marshalling(MessageParcel &parcel) const
+bool QueryAlbumsRespBody::Marshalling(MessageParcel &parcel) const
 {
     CHECK_AND_RETURN_RET_LOG(this->resultSet != nullptr, false, "resultSet nullptr");
     return DataShare::DataShareResultSet::Marshal(this->resultSet, parcel);

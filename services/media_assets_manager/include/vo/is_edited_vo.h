@@ -33,7 +33,7 @@ public:  // functions of Parcelable.
     bool Marshalling(MessageParcel &parcel) const override;
 };
 
-class IsEditedRspBody : public IPC::IMediaParcelable {
+class IsEditedRespBody : public IPC::IMediaParcelable {
 public:
     std::shared_ptr<DataShare::DataShareResultSet> resultSet;
 

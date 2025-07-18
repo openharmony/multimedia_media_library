@@ -37,7 +37,7 @@ public:  // basic functions
     std::string ToString() const;
 };
 
-class StartAssetAnalysisRspBody : public IPC::IMediaParcelable {
+class StartAssetAnalysisRespBody : public IPC::IMediaParcelable {
 public:
     std::shared_ptr<DataShare::DataShareResultSet> resultSet;
 

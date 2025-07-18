@@ -681,7 +681,7 @@ int32_t MediaAlbumsService::GetFaceId(int32_t albumId, string& groupTag)
     return this->rdbOperation_.GetFaceId(albumId, groupTag);
 }
 
-int32_t MediaAlbumsService::GetPhotoIndex(GetPhotoIndexReqBody &reqBody, QueryResultRspBody &rspBody)
+int32_t MediaAlbumsService::GetPhotoIndex(GetPhotoIndexReqBody &reqBody, QueryResultRespBody &respBody)
 {
     DataShare::DataSharePredicates &predicates = reqBody.predicates;
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
@@ -707,11 +707,11 @@ int32_t MediaAlbumsService::GetPhotoIndex(GetPhotoIndexReqBody &reqBody, QueryRe
         return E_FAIL;
     }
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resSet);
-    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_SUCCESS;
 }
 
-int32_t MediaAlbumsService::GetAnalysisProcess(GetAnalysisProcessReqBody &reqBody, QueryResultRspBody &rspBody)
+int32_t MediaAlbumsService::GetAnalysisProcess(GetAnalysisProcessReqBody &reqBody, QueryResultRespBody &respBody)
 {
     std::string tableName;
     DataShare::DataSharePredicates predicates;
@@ -753,11 +753,11 @@ int32_t MediaAlbumsService::GetAnalysisProcess(GetAnalysisProcessReqBody &reqBod
         return E_FAIL;
     }
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resSet);
-    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_SUCCESS;
 }
 
-int32_t MediaAlbumsService::GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqBody, QueryResultRspBody &rspBody)
+int32_t MediaAlbumsService::GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqBody, QueryResultRespBody &respBody)
 {
     std::vector<std::string> columns;
     DataShare::DataSharePredicates predicates;
@@ -806,7 +806,7 @@ int32_t MediaAlbumsService::GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqB
         return E_FAIL;
     }
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resSet);
-    rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_SUCCESS;
 }
 
@@ -874,7 +874,7 @@ int32_t MediaAlbumsService::MoveAssets(ChangeRequestMoveAssetsDto &moveAssetsDto
     return ret;
 }
 
-int32_t MediaAlbumsService::AddAssets(ChangeRequestAddAssetsDto &addAssetsDto, ChangeRequestAddAssetsRspBody &rspBody)
+int32_t MediaAlbumsService::AddAssets(ChangeRequestAddAssetsDto &addAssetsDto, ChangeRequestAddAssetsRespBody &respBody)
 {
     std::vector<DataShare::DataShareValuesBucket> valuesBuckets;
     if (addAssetsDto.isHighlight) {
@@ -899,17 +899,17 @@ int32_t MediaAlbumsService::AddAssets(ChangeRequestAddAssetsDto &addAssetsDto, C
     CHECK_AND_RETURN_RET(resultSet != nullptr, E_ERR);
     if (resultSet->GoToFirstRow() == E_OK) {
         if (!addAssetsDto.isHiddenOnly) {
-            rspBody.imageCount = GetInt32Val(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet);
-            rspBody.videoCount = GetInt32Val(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet);
+            respBody.imageCount = GetInt32Val(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet);
+            respBody.videoCount = GetInt32Val(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet);
         }
-        rspBody.albumCount = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
+        respBody.albumCount = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
     }
     resultSet->Close();
     return ret;
 }
 
 int32_t MediaAlbumsService::RemoveAssets(
-    ChangeRequestRemoveAssetsDto &removeAssetsDto, ChangeRequestRemoveAssetsRspBody &rspBody)
+    ChangeRequestRemoveAssetsDto &removeAssetsDto, ChangeRequestRemoveAssetsRespBody &respBody)
 {
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(removeAssetsDto.albumId));
@@ -921,10 +921,10 @@ int32_t MediaAlbumsService::RemoveAssets(
     CHECK_AND_RETURN_RET(resultSet != nullptr, E_ERR);
     if (resultSet->GoToFirstRow() == E_OK) {
         if (!removeAssetsDto.isHiddenOnly) {
-            rspBody.imageCount = GetInt32Val(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet);
-            rspBody.videoCount = GetInt32Val(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet);
+            respBody.imageCount = GetInt32Val(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet);
+            respBody.videoCount = GetInt32Val(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet);
         }
-        rspBody.albumCount = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
+        respBody.albumCount = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
     }
     resultSet->Close();
     return ret;
@@ -1038,7 +1038,7 @@ int32_t MediaAlbumsService::SetOrderPosition(ChangeRequestSetOrderPositionDto &s
     return MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumPortraitsOrder(cmd);
 }
 
-int32_t MediaAlbumsService::GetAlbumsByIds(GetAlbumsByIdsDto &getAlbumsByIdsDto, GetAlbumsByIdsRspBody &rspBody)
+int32_t MediaAlbumsService::GetAlbumsByIds(GetAlbumsByIdsDto &getAlbumsByIdsDto, GetAlbumsByIdsRespBody &respBody)
 {
     std::vector<std::string> columns = getAlbumsByIdsDto.columns;
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
@@ -1052,14 +1052,14 @@ int32_t MediaAlbumsService::GetAlbumsByIds(GetAlbumsByIdsDto &getAlbumsByIdsDto,
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
     if (resultSet != nullptr) {
         auto bridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
-        rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
+        respBody.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
     }
 
     return E_OK;
 }
 
 int32_t MediaAlbumsService::GetPhotoAlbumObject(
-    GetPhotoAlbumObjectDto &getPhotoAlbumObjectDto, GetPhotoAlbumObjectRspBody &rspBody)
+    GetPhotoAlbumObjectDto &getPhotoAlbumObjectDto, GetPhotoAlbumObjectRespBody &respBody)
 {
     std::vector<std::string> columns = getPhotoAlbumObjectDto.columns;
     NativeRdb::RdbPredicates rdbPredicates =
@@ -1068,7 +1068,7 @@ int32_t MediaAlbumsService::GetPhotoAlbumObject(
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
     if (resultSet != nullptr) {
         auto bridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
-        rspBody.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
+        respBody.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
     }
     return E_OK;
 }

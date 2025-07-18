@@ -99,7 +99,7 @@ static int32_t ServiceCreateAsset(CreateAssetReqBody &reqBody, ServiceCall call)
     MessageParcel reply;
     call(data, reply);
 
-    IPC::MediaRespVo<CreateAssetRspBody> respVo;
+    IPC::MediaRespVo<CreateAssetRespBody> respVo;
     if (respVo.Unmarshalling(reply) != true) {
         MEDIA_ERR_LOG("respVo.Unmarshalling failed");
         return -1;

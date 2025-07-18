@@ -42,7 +42,7 @@ public:
 public:
     CreateAssetDto(const CreateAssetReqBody &reqBody);
     CreateAssetDto(const CreateAssetForAppReqBody &reqBody);
-    CreateAssetRspBody GetRspBody();
+    CreateAssetRespBody GetRespBody();
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_ASSETS_MANAGER_CREATE_ASSET_DTO_H

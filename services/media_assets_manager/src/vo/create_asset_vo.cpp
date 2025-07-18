@@ -49,14 +49,14 @@ bool CreateAssetReqBody::Marshalling(MessageParcel &parcel) const
     return parcel.WriteString(this->cameraShotKey);
 }
 
-bool CreateAssetRspBody::Unmarshalling(MessageParcel &parcel)
+bool CreateAssetRespBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadInt32(this->fileId);
     CHECK_AND_RETURN_RET(status, status);
     return parcel.ReadString(this->outUri);
 }
 
-bool CreateAssetRspBody::Marshalling(MessageParcel &parcel) const
+bool CreateAssetRespBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = parcel.WriteInt32(this->fileId);
     CHECK_AND_RETURN_RET(status, status);

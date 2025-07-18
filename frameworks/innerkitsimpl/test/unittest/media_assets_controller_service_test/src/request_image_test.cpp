@@ -133,7 +133,7 @@ HWTEST_F(RequestImageTest, QueryPhotoStatus_Test_001, TestSize.Level0)
  
     auto service = make_shared<MediaAssetsControllerService>();
     service->QueryPhotoStatus(data, reply);
-    IPC::MediaRespVo<QueryPhotoRspBody> resp;
+    IPC::MediaRespVo<QueryPhotoRespBody> resp;
     bool isValid = resp.Unmarshalling(reply);
     ASSERT_EQ(isValid, true);
     EXPECT_EQ(resp.GetBody().photoId, photoId);
