@@ -1821,7 +1821,7 @@ ani_status MediaLibraryAniUtils::CreateAniErrorObject(ani_env *env, ani_object &
         return ANI_ERROR;
     }
 
-    if (ANI_OK != env->Object_New(cls, ctor, &errorObj, (ani_double)errCode, error_msg)) {
+    if (ANI_OK != env->Object_New(cls, ctor, &errorObj, (ani_int)errCode, error_msg)) {
         ANI_ERR_LOG("New MediaLibraryAniError object failed.");
         return ANI_ERROR;
     }
