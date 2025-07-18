@@ -42,7 +42,8 @@ namespace Media::AccurateRefresh {
 
 mutex AlbumRefreshExecution::albumRefreshMtx_;
 
-std::unordered_map<PhotoAlbumSubType, SystemAlbumInfoCalculation> AlbumRefreshExecution::systemTypeAlbumCalculations_ = {
+std::unordered_map<PhotoAlbumSubType, SystemAlbumInfoCalculation>
+    AlbumRefreshExecution::systemTypeAlbumCalculations_ = {
     { PhotoAlbumSubType::FAVORITE, { FavoriteAssetHelper::IsAsset, FavoriteAssetHelper::IsVideoAsset,
         FavoriteAssetHelper::IsHiddenAsset, FavoriteAssetHelper::IsNewerAsset,
         FavoriteAssetHelper::IsNewerHiddenAsset, PhotoAlbumSubType::FAVORITE }},
@@ -113,7 +114,7 @@ int32_t AlbumRefreshExecution::CalRefreshInfos(const vector<PhotoAssetChangeData
     {
         MediaLibraryTracer tracer;
         tracer.Start("AlbumRefreshExecution::CalRefreshInfos owner albumId");
-        ownerAlbumRefreshInfos_ = OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(assetChangeDatas);
+        ownerAlbumRefreshInfos_ = OwnerAlbumInfoCalculation::CalOwnerAlbumRefreshInfo(assetChangeDatas);
         albumRefreshInfos_.insert(systemAlbumRefreshInfos_.begin(), systemAlbumRefreshInfos_.end());
         albumRefreshInfos_.insert(ownerAlbumRefreshInfos_.begin(), ownerAlbumRefreshInfos_.end());
         if (IS_ACCURATE_DEBUG) {
@@ -488,7 +489,7 @@ bool AlbumRefreshExecution::CalHiddenAlbumInfo(AlbumChangeInfo &albumInfo, const
         ACCURATE_DEBUG("force update album[%{public}d] hidden info", albumInfo.albumId_);
         return false;
     }
-    if (refreshInfo.IsAlbumHiddenInfoRefresh() ) {
+    if (refreshInfo.IsAlbumHiddenInfoRefresh()) {
         bool isTimestampMatch = AlbumAccurateRefreshManager::GetInstance().IsRefreshTimestampMatch(albumInfo.albumId_,
             true, refreshInfo.albumHiddenRefreshTimestamp_);
         bool isAccurateRefresh = AlbumAccurateRefreshManager::GetInstance().IsAlbumAccurateRefresh(albumInfo.albumId_,
@@ -715,19 +716,21 @@ bool AlbumRefreshExecution::CheckSetHiddenAlbumInfo(AlbumChangeInfo &albumInfo)
 
 void AlbumRefreshExecution::CheckInitSystemCalculation()
 {
-    if (systemAlbumCalculations_.empty()) {
-        lock_guard<mutex> lock(albumRefreshMtx_);
-        if (systemAlbumCalculations_.empty()) {
-            vector<string> subTypes;
-            for (auto calculation : systemTypeAlbumCalculations_) {
-                auto albumId = MediaLibraryRdbUtils::GetAlbumIdBySubType(calculation.first);
-                if (albumId <= 0) {
-                    MEDIA_ERR_LOG("no subType[%{public}d] calculation.", calculation.first);
-                    continue;
-                }
-                systemAlbumCalculations_.insert_or_assign(albumId, calculation.second);
-            }
+    if (!systemAlbumCalculations_.empty()) {
+        return;
+    }
+    lock_guard<mutex> lock(albumRefreshMtx_);
+    if (!systemAlbumCalculations_.empty()) {
+        return;
+    }
+    vector<string> subTypes;
+    for (auto calculation : systemTypeAlbumCalculations_) {
+        auto albumId = MediaLibraryRdbUtils::GetAlbumIdBySubType(calculation.first);
+        if (albumId <= 0) {
+            MEDIA_ERR_LOG("no subType[%{public}d] calculation.", calculation.first);
+            continue;
         }
+        systemAlbumCalculations_.insert_or_assign(albumId, calculation.second);
     }
 }
 
