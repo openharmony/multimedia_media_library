@@ -16,6 +16,8 @@
 #ifndef OHOS_MEDIA_PHOTOS_CLONE_TEST_H
 #define OHOS_MEDIA_PHOTOS_CLONE_TEST_H
 
+#include <string>
+
 #include "gtest/gtest.h"
 
 namespace OHOS::Media {
@@ -25,6 +27,15 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
+};
+
+class PhotosCloneTestUtils {
+public:
+    static void ClearAllData();
+    static void ClearPhotosData();
+    static void ClearPhotoAlbumData();
+    static void InsertPhoto(const std::string &cloudId = "");
+    static void InsertAlbum();
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTOS_CLONE_TEST_H
