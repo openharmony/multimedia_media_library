@@ -665,8 +665,8 @@ int32_t CloudMediaPhotosDao::UpdateFixDB(const CloudMediaPullDataDto &data, Nati
     bool isHide = false;
     int32_t ret = E_OK;
     ret = GetSourceAlbum(data, albumId, albumIds, isHide, albumCloudToLocalMap);
-    CHECK_AND_RETURN_RET_LOG(
-        ret == E_OK, ret, "UpdateFixDB cloudId: %{public}s cannot get sourceAlbum", data.cloudId.c_str());
+    CHECK_AND_PRINT_LOG(
+        ret == E_OK, "UpdateFixDB cloudId: %{public}s cannot get sourceAlbum", data.cloudId.c_str());
     MEDIA_INFO_LOG("UpdateFixDB cloudId: %{public}s, isHide: %{public}d, album: %{public}d",
         data.cloudId.c_str(),
         isHide,
