@@ -1579,7 +1579,7 @@ HWTEST_F(AssetAccurateRefreshTest, IgnoreRefreshAlbum_021, TestSize.Level2)
     auto trashAlbumInfo = AccurateRefresh::GetAlbumInfo(TRASH_ALBUM_ID, g_rdbStore);
     auto imageAlbumInfo = AccurateRefresh::GetAlbumInfo(IMAGE_ALBUM_ID, g_rdbStore);
     auto ownerAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID, g_rdbStore);
-    EXPECT_TRUE(favoriteAlbumInfo.count_ == FAVORITE_ALBUM_COUNT;
+    EXPECT_TRUE(favoriteAlbumInfo.count_ == FAVORITE_ALBUM_COUNT);
     EXPECT_TRUE(trashAlbumInfo.count_ == TRASH_ALBUM_COUNT);
     EXPECT_TRUE(imageAlbumInfo.count_ == IMAGE_ALBUM_COUNT);
     EXPECT_TRUE(ownerAlbumInfo.count_ == USER_ALBUM_COUNT);
