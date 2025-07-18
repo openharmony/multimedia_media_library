@@ -28,6 +28,7 @@
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
 #include "album_accurate_refresh.h"
+#include "refresh_business_name.h"
 using namespace std;
 namespace OHOS::Media {
 constexpr int64_t INVALID_SIZE = 0;
@@ -285,7 +286,8 @@ int32_t MediaLibraryPtpOperations::DeletePtpPhoto(NativeRdb::RdbPredicates &rdbP
     bool isBurstCover = false;
     bool isLastBurstPhoto = false;
     vector<int32_t> burstFileIds;
-    auto assetRefresh = std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    auto assetRefresh = std::make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::DELETE_PERMANENTLY_BUSSINESS_NAME);
     if (subType == static_cast<int32_t>(PhotoSubType::BURST)) {
         isBurstCover = burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER);
         ret = GetBurstPhotosInfo(burstKey, isLastBurstPhoto, burstFileIds);
@@ -384,7 +386,7 @@ int32_t MediaLibraryPtpOperations::DeletePtpAlbum(NativeRdb::RdbPredicates &pred
         }
     }
     MediaLibraryAssetOperations::DeletePermanently(deletePhotoPredicates, true);
-    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
+    AccurateRefresh::AlbumAccurateRefresh albumRefresh(AccurateRefresh::DELETE_PTP_ALBUM_BUSSINESS_NAME);
     int deleteRow = -1;
     albumRefresh.LogicalDeleteReplaceByUpdate(predicates, deleteRow);
     CHECK_AND_RETURN_RET_LOG(deleteRow > 0, E_ERR, "delete album fail");

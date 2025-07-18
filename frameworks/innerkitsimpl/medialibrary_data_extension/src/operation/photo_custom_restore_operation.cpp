@@ -45,6 +45,7 @@
 #include "scanner_utils.h"
 #include "shooting_mode_column.h"
 #include "userfile_manager_types.h"
+#include "refresh_business_name.h"
 
 using namespace std;
 namespace OHOS::Media {
@@ -328,7 +329,7 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     int32_t sameFileNum = 0;
     vector<FileInfo> insertRestoreFiles = BatchInsert(restoreTaskInfo, destRestoreFiles, sameFileNum, isFirst);
     int32_t successFileNum = RenameFiles(insertRestoreFiles);
-    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::CUSTOM_RESTORE_BUSSINESS_NAME);
     errCode = BatchUpdateTimePending(insertRestoreFiles, assetRefresh);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "BatchUpdateTimePending failed. errCode: %{public}d", errCode);
     assetRefresh.RefreshAlbum();

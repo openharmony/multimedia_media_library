@@ -86,6 +86,7 @@
 #include "data_secondary_directory_uri.h"
 #include "medialibrary_restore.h"
 #include "cloud_sync_helper.h"
+#include "refresh_business_name.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -2949,8 +2950,8 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     vector<string> photoIds;
     EnhancementManager::GetInstance().RemoveTasksInternal(fileParams.ids, photoIds);
 #endif
-
-    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::DELETE_PHOTOS_BUSSINESS_NAME);
     deletedRows = DeleteDbByIds(predicates.GetTableName(), fileParams.ids, compatible, assetRefresh);
     CHECK_AND_RETURN_RET_LOG(deletedRows > 0, deletedRows,
         "Failed to delete files in db, deletedRows: %{public}d, ids size: %{public}zu",
@@ -3203,7 +3204,8 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     if (assetRefresh == nullptr) {
-        assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+        assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+            AccurateRefresh::DELETE_PHOTOS_COMPLETED_BUSSINESS_NAME);
     }
     MEDIA_DEBUG_LOG("DeletePermanently begin");
     MediaLibraryTracer tracer;

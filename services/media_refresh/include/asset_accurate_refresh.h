@@ -35,8 +35,14 @@ namespace Media::AccurateRefresh {
 
 class EXPORT AssetAccurateRefresh : public AccurateRefreshBase {
 public:
-    AssetAccurateRefresh() : AccurateRefreshBase(nullptr) {}
+    AssetAccurateRefresh() : AccurateRefreshBase() {};
     AssetAccurateRefresh(std::shared_ptr<TransactionOperations> trans);
+    AssetAccurateRefresh(const std::string &targetBusiness) : AccurateRefreshBase(targetBusiness, nullptr) {}
+    AssetAccurateRefresh(const std::string &targetBusiness, std::shared_ptr<TransactionOperations> trans);
+    void SetDfxRefreshManager(std::shared_ptr<DfxRefreshManager> dfxRefreshManager)
+    {
+        refreshManager = dfxRefreshManager;
+    }
     virtual ~AssetAccurateRefresh() {}
     // 初始化datamanager，新增场景下使用，不需要初始化数据，Init只需要执行一次
     int32_t Init() override;
@@ -81,6 +87,7 @@ private:
     AssetDataManager dataManager_;
     AlbumRefreshExecution albumRefreshExe_;
     AssetChangeNotifyExecution notifyExe_;
+    std::shared_ptr<DfxRefreshManager> refreshManager;
 };
 } // namespace Media
 } // namespace OHOS

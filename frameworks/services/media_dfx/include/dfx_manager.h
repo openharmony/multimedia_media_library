@@ -96,6 +96,8 @@ public:
 
     bool HandleReportTaskCompleteMissions();
 
+    void HandleAccurateRefreshTimeOut(const AccurateRefreshDfxDataPoint& reportData);
+
     int32_t Start(const std::string &taskExtra) override;
     int32_t Stop(const std::string &taskExtra) override;
 

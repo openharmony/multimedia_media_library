@@ -96,6 +96,18 @@ struct PhotoErrorCount {
     std::vector<int32_t> photoErrorCounts;    // 图片故障数量
 };
 
+struct AccurateRefreshDfxDataPoint {
+    std::string targetBusiness;
+    std::string sqlStr;
+    int32_t totalCostTime = 0;
+    int32_t standardCostTime = 0;
+    int32_t photoOperationTotalTime = 0;
+    int32_t albumOperationTotalTime = 0;
+    std::vector<int32_t> albumId;
+    std::string albumOperationTime;
+    std::string albumHiddenInfoOperationTime;
+};
+
 class DfxReporter {
 public:
     DfxReporter();
@@ -134,6 +146,7 @@ public:
         const std::string& syncInfo);
     void ReportPhotoSizeAndResolutionInfo(const QuerySizeAndResolution& querySizeAndResolution,
         const std::string& photoMimeType);
+    void ReportAccurateRefreshResult(const AccurateRefreshDfxDataPoint& reportData);
 };
 } // namespace Media
 } // namespace OHOS
