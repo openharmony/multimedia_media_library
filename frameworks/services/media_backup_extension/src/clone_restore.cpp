@@ -2892,8 +2892,28 @@ NativeRdb::ValuesBucket CloneRestore::CreateValuesBucketFromImageFaceTbl(const I
     PutIfPresent(values, IMAGE_FACE_COL_FACE_EYE_CLOSE, imageFaceTbl.faceEyeClose);
     PutIfPresent(values, IMAGE_FACE_COL_FACE_EXPRESSION, imageFaceTbl.faceExpression);
     PutIfPresent(values, IMAGE_FACE_COL_PREFERRED_GRADE, imageFaceTbl.preferredGrade);
-
+    PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_X, imageFaceTbl.jointBeautyBounderX);
+    PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_Y, imageFaceTbl.jointBeautyBounderY);
+    PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_WIDTH, imageFaceTbl.jointBeautyBounderWidth);
+    PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_HEIGHT, imageFaceTbl.jointBeautyBounderHeight);
+    PutIfPresent(values, IMAGE_FACE_COL_GROUP_VERSION, imageFaceTbl.groupVersion);
     return values;
+}
+
+void ParseImageFaceResultSet1(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, ImageFaceTbl& imageFaceTbl)
+{
+    imageFaceTbl.preferredGrade = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        IMAGE_FACE_COL_PREFERRED_GRADE);
+    imageFaceTbl.jointBeautyBounderX = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_X);
+    imageFaceTbl.jointBeautyBounderY = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_Y);
+    imageFaceTbl.jointBeautyBounderWidth = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_WIDTH);
+    imageFaceTbl.jointBeautyBounderHeight = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_HEIGHT);
+    imageFaceTbl.groupVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        IMAGE_FACE_COL_GROUP_VERSION);
 }
 
 void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,
@@ -2944,8 +2964,7 @@ void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::Resu
         IMAGE_FACE_COL_FACE_EYE_CLOSE);
     imageFaceTbl.faceExpression = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
         IMAGE_FACE_COL_FACE_EXPRESSION);
-    imageFaceTbl.preferredGrade = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
-        IMAGE_FACE_COL_PREFERRED_GRADE);
+    ParseImageFaceResultSet1(resultSet, imageFaceTbl);
 }
 
 void CloneRestore::ReportPortraitCloneStat(int32_t sceneCode)

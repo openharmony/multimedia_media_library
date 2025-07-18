@@ -4338,6 +4338,16 @@ static void AddBestFaceBoundingColumnForGroupAlbum(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddGroupVersion(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start add group_version column");
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + GROUP_VERSION + " TEXT"
+    };
+
+    ExecSqls(sqls, store);
+}
+
 static void AddDetailTimeToPhotos(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4798,6 +4808,10 @@ static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_BEST_FACE_BOUNDING) {
         AddBestFaceBoundingColumnForGroupAlbum(store);
+    }
+
+    if (oldVersion < VERSION_ADD_GROUP_VERSION) {
+        AddGroupVersion(store);
     }
 }
 
