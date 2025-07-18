@@ -90,7 +90,8 @@ std::unordered_map<std::string, std::string> TabOldPhotosClient::GetResultSetFro
     reqBody.columns = columns;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_URIS_BY_OLD_URIS);
     MEDIA_INFO_LOG("before IPC::UserDefineIPCClient().Call, INNER_GET_URIS_BY_OLD_URIS");
-    int32_t result = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, respBody);
+    int32_t result =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, respBody);
     CHECK_AND_RETURN_RET_LOG(result == E_OK, resultMap, "GetResultSetFromTabOldPhotos IPC Call Failed");
     auto fileIds_size = respBody.fileIds.size();
     auto datas_size = respBody.datas.size();
