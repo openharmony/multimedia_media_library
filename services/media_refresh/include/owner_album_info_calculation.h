@@ -52,7 +52,7 @@ private:
     static bool IsOwnerAlbumInfoChange(const PhotoAssetChangeData &assetChangeData,
         std::function<bool(PhotoAssetChangeInfo, int32_t)> isAlbumAsset, int32_t albumId);
     static void UpdateOwnerRefreshInfo(int32_t albumId, const PhotoAssetChangeData &assetChangeData,
-        std::unordered_map<int32_t, AlbumRefreshInfo> ownerAlbumInfos);
+        std::unordered_map<int32_t, AlbumRefreshInfo> &ownerAlbumInfos);
 };
 
 } // namespace Media

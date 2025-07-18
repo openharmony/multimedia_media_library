@@ -52,7 +52,7 @@ unordered_map<int32_t, AlbumRefreshInfo> OwnerAlbumInfoCalculation::CalOwnerAlbu
 }
 
 void OwnerAlbumInfoCalculation::UpdateOwnerRefreshInfo(int32_t albumId, const PhotoAssetChangeData &assetChangeData,
-    std::unordered_map<int32_t, AlbumRefreshInfo> ownerAlbumInfos)
+    std::unordered_map<int32_t, AlbumRefreshInfo> &ownerAlbumInfos)
 {
     auto refreshInfoIter = ownerAlbumInfos.find(albumId);
     if (refreshInfoIter != ownerAlbumInfos.end()) {
