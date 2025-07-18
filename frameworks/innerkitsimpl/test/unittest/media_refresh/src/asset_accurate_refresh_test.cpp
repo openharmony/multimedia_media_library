@@ -186,8 +186,10 @@ void PrepareAlbumData()
     AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_ASSET_ALBUM_ID, false, albumTimestamp);
 
     values.push_back(GetUserInsertAlbum(FAVORITE_VIDEO_HIDDEN_ASSET_ALBUM_ID));
-    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_VIDEO_HIDDEN_ASSET_ALBUM_ID, true, albumTimestamp);
-    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_VIDEO_HIDDEN_ASSET_ALBUM_ID, false, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_VIDEO_HIDDEN_ASSET_ALBUM_ID, true,
+        albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_VIDEO_HIDDEN_ASSET_ALBUM_ID, false,
+        albumTimestamp);
 
     values.push_back(GetUserInsertAlbum(VIDEO_HIDDEN_ASSET_ALBUM_ID));
     AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(VIDEO_HIDDEN_ASSET_ALBUM_ID, true, albumTimestamp);

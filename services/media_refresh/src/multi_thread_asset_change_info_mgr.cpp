@@ -66,7 +66,7 @@ bool MultiThreadAssetChangeInfoMgr::CheckInsertAfterInfo(PhotoAssetChangeInfo& i
         multiThreadChangeData.isMultiOperation_ = true;
         multiThreadChangeData.infoBefore_ = PhotoAssetChangeInfo();
     }
-    if (multiThreadChangeData.count_ == 1) {
+    if (!multiThreadChangeData.isMultiOperation_) {
         assetChangeDataMap_.erase(iter);
         ACCURATE_DEBUG("no multi thread, remove fieldId[%{public}d]", info.fileId_);
         return false;

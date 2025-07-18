@@ -25,7 +25,7 @@ namespace Media::AccurateRefresh {
 
 class OwnerAlbumInfoCalculation {
 public:
-    static std::unordered_map<int32_t, AlbumRefreshInfo> CalOwnerAlbumInfo(
+    static std::unordered_map<int32_t, AlbumRefreshInfo> CalOwnerAlbumRefreshInfo(
         const std::vector<PhotoAssetChangeData> &assetChangeDatas);
 
 private:
@@ -36,7 +36,7 @@ private:
         const PhotoAssetChangeInfo &currentAssetInfo, int32_t albumId);
     static bool IsNewerHiddenAsset(const PhotoAssetChangeInfo &compareAssetInfo,
         const PhotoAssetChangeInfo &currentAssetInfo, int32_t albumId);
-    static bool CalOwnerAlbumInfo(const PhotoAssetChangeData &assetChangeData, int32_t albumId,
+    static bool CalOwnerAlbumRefreshInfo(const PhotoAssetChangeData &assetChangeData, int32_t albumId,
         AlbumRefreshInfo &refreshInfo);
     static bool UpdateCover(const PhotoAssetChangeData &assetChangeData,
         std::function<bool(const PhotoAssetChangeInfo&, int32_t)> isAsset, int32_t albumId,
@@ -51,6 +51,8 @@ private:
         AlbumRefreshInfo& refreshInfo);
     static bool IsOwnerAlbumInfoChange(const PhotoAssetChangeData &assetChangeData,
         std::function<bool(PhotoAssetChangeInfo, int32_t)> isAlbumAsset, int32_t albumId);
+    static void UpdateOwnerRefreshInfo(int32_t albumId, const PhotoAssetChangeData &assetChangeData,
+        std::unordered_map<int32_t, AlbumRefreshInfo> ownerAlbumInfos);
 };
 
 } // namespace Media

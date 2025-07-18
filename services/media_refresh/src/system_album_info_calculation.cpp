@@ -114,7 +114,7 @@ bool SystemAlbumInfoCalculation::UpdateRefreshHiddenInfo(const PhotoAssetChangeD
 }
 
 bool SystemAlbumInfoCalculation::IsSystemAlbumInfoChange(const PhotoAssetChangeData &assetChangeData,
-        std::function<bool(PhotoAssetChangeInfo)> isAlbumAsset)
+    std::function<bool(PhotoAssetChangeInfo)> isAlbumAsset)
 {
     return isAlbumAsset(assetChangeData.infoBeforeChange_) != isAlbumAsset(assetChangeData.infoAfterChange_);
 }

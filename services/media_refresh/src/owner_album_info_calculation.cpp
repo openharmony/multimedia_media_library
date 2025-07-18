@@ -24,7 +24,7 @@ using namespace std;
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
-unordered_map<int32_t, AlbumRefreshInfo> OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(
+unordered_map<int32_t, AlbumRefreshInfo> OwnerAlbumInfoCalculation::CalOwnerAlbumRefreshInfo(
     const std::vector<PhotoAssetChangeData> &assetChangeDatas)
 {
     unordered_map<int32_t, AlbumRefreshInfo> ownerAlbumInfos;
@@ -40,31 +40,29 @@ unordered_map<int32_t, AlbumRefreshInfo> OwnerAlbumInfoCalculation::CalOwnerAlbu
 
         // 更新initAlbumId
         if (initAlbumId != INVALID_INT32_VALUE) {
-            auto iterInitAlbumInfo = ownerAlbumInfos.find(initAlbumId);
-            if (iterInitAlbumInfo != ownerAlbumInfos.end()) {
-                CalOwnerAlbumInfo(assetChangeData, initAlbumId, iterInitAlbumInfo->second);
-            } else {
-                AlbumRefreshInfo initRefreshInfo;
-                if (CalOwnerAlbumInfo(assetChangeData, initAlbumId, initRefreshInfo)) {
-                    ownerAlbumInfos.emplace(initAlbumId, initRefreshInfo);
-                }
-            }
+            UpdateOwnerRefreshInfo(initAlbumId, assetChangeData, ownerAlbumInfos);
         }
 
         // 更新modifiedAlbumId; 如果和initAlbumId相同，则不需要再次处理
         if (modifiedAlbumId != INVALID_INT32_VALUE && initAlbumId != modifiedAlbumId) {
-            auto iterModifiedAlbumInfo = ownerAlbumInfos.find(modifiedAlbumId);
-            if (iterModifiedAlbumInfo != ownerAlbumInfos.end()) {
-                CalOwnerAlbumInfo(assetChangeData, modifiedAlbumId, iterModifiedAlbumInfo->second);
-            } else {
-                AlbumRefreshInfo modifedRefreshInfo;
-                if (CalOwnerAlbumInfo(assetChangeData, modifiedAlbumId, modifedRefreshInfo)) {
-                    ownerAlbumInfos.emplace(modifiedAlbumId, modifedRefreshInfo);
-                }
-            }
+            UpdateOwnerRefreshInfo(modifiedAlbumId, assetChangeData, ownerAlbumInfos);
         }
     }
     return ownerAlbumInfos;
+}
+
+void OwnerAlbumInfoCalculation::UpdateOwnerRefreshInfo(int32_t albumId, const PhotoAssetChangeData &assetChangeData,
+    std::unordered_map<int32_t, AlbumRefreshInfo> ownerAlbumInfos)
+{
+    auto refreshInfoIter = ownerAlbumInfos.find(albumId);
+    if (refreshInfoIter != ownerAlbumInfos.end()) {
+        CalOwnerAlbumRefreshInfo(assetChangeData, albumId, refreshInfoIter->second);
+    } else {
+        AlbumRefreshInfo refreshInfo;
+        if (CalOwnerAlbumRefreshInfo(assetChangeData, albumId, refreshInfo)) {
+            ownerAlbumInfos.emplace(albumId, refreshInfo);
+        }
+    }
 }
 
 bool OwnerAlbumInfoCalculation::IsOwnerAlbumAsset(const PhotoAssetChangeInfo &assetInfo, int32_t albumId)
@@ -122,7 +120,7 @@ bool OwnerAlbumInfoCalculation::UpdateCount(const PhotoAssetChangeData &assetCha
     return AlbumAssetHelper::UpdateCount(assetChangeData, isAlbumAsset, count);
 }
 
-bool OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(const PhotoAssetChangeData &assetChangeData, int32_t albumId,
+bool OwnerAlbumInfoCalculation::CalOwnerAlbumRefreshInfo(const PhotoAssetChangeData &assetChangeData, int32_t albumId,
     AlbumRefreshInfo &refreshInfo)
 {
     bool ret = false;
@@ -168,7 +166,7 @@ bool OwnerAlbumInfoCalculation::UpdateRefreshNormalInfo(const PhotoAssetChangeDa
 }
 
 bool OwnerAlbumInfoCalculation::UpdateRefreshHiddenInfo(const PhotoAssetChangeData &assetChangeData, int32_t albumId,
-AlbumRefreshInfo& refreshInfo)
+    AlbumRefreshInfo& refreshInfo)
 {
     bool ret = false;
     if (UpdateCount(assetChangeData, IsOwnerAlbumHiddenAsset, albumId,
@@ -184,7 +182,7 @@ AlbumRefreshInfo& refreshInfo)
 }
 
 bool OwnerAlbumInfoCalculation::IsOwnerAlbumInfoChange(const PhotoAssetChangeData &assetChangeData,
-        std::function<bool(PhotoAssetChangeInfo, int32_t)> isAlbumAsset, int32_t albumId)
+    std::function<bool(PhotoAssetChangeInfo, int32_t)> isAlbumAsset, int32_t albumId)
 {
     return isAlbumAsset(assetChangeData.infoBeforeChange_, albumId) !=
         isAlbumAsset(assetChangeData.infoAfterChange_, albumId);

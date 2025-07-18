@@ -75,7 +75,7 @@ public:
 
 private:
     std::unordered_map<int32_t, AlbumRefreshTimestamp> accurateRefreshAlbums_;
-    std::unordered_map<int32_t, AlbumRefreshTimestamp> accurateRefreshHiddenAlbums_; 
+    std::unordered_map<int32_t, AlbumRefreshTimestamp> accurateRefreshHiddenAlbums_;
     bool isForceRefresh_ = false;
 };
 
