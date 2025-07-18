@@ -46,7 +46,7 @@ void GetUrisByOldUrisInnerReqBody::Convert2Dto(GetUrisByOldUrisInnerDto &dto)
     return;
 }
 
-bool GetUrisByOldUrisInnerRspBody::Unmarshalling(MessageParcel &parcel)
+bool GetUrisByOldUrisInnerRespBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = ITypesUtil::Unmarshalling(this->fileIds, parcel);
     CHECK_AND_RETURN_RET(status, status);
@@ -61,7 +61,7 @@ bool GetUrisByOldUrisInnerRspBody::Unmarshalling(MessageParcel &parcel)
     return true;
 }
 
-bool GetUrisByOldUrisInnerRspBody::Marshalling(MessageParcel &parcel) const
+bool GetUrisByOldUrisInnerRespBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = ITypesUtil::Marshalling(this->fileIds, parcel);
     CHECK_AND_RETURN_RET(status, status);
@@ -76,7 +76,7 @@ bool GetUrisByOldUrisInnerRspBody::Marshalling(MessageParcel &parcel) const
     return true;
 }
 
-void GetUrisByOldUrisInnerRspBody::InitByDto(const GetUrisByOldUrisInnerDto &dto)
+void GetUrisByOldUrisInnerRespBody::InitByDto(const GetUrisByOldUrisInnerDto &dto)
 {
     this->fileIds = dto.fileIds;
     this->datas = dto.datas;

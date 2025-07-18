@@ -36,7 +36,7 @@ public:  // functions of Parcelable.
     bool Marshalling(MessageParcel &parcel) const override;
 };
 
-class GetPhotoAlbumObjectRspBody : public IPC::IMediaParcelable {
+class GetPhotoAlbumObjectRespBody : public IPC::IMediaParcelable {
 public:
     std::shared_ptr<DataShare::DataShareResultSet> resultSet;
  

@@ -30,7 +30,7 @@ public:  // functions of Parcelable.
     bool Marshalling(MessageParcel &parcel) const override;
 };
 
-class ChangeRequestRemoveAssetsRspBody : public IPC::IMediaParcelable {
+class ChangeRequestRemoveAssetsRespBody : public IPC::IMediaParcelable {
 public:
     int32_t albumCount {-1};
     int32_t imageCount {-1};

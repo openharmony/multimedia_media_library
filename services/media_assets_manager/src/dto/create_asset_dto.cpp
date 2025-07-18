@@ -40,11 +40,11 @@ CreateAssetDto::CreateAssetDto(const CreateAssetForAppReqBody &reqBody)
     this->ownerAlbumId = reqBody.ownerAlbumId;
 }
 
-CreateAssetRspBody CreateAssetDto::GetRspBody()
+CreateAssetRespBody CreateAssetDto::GetRespBody()
 {
-    CreateAssetRspBody rspBody;
-    rspBody.fileId = this->fileId;
-    rspBody.outUri = this->outUri;
-    return rspBody;
+    CreateAssetRespBody respBody;
+    respBody.fileId = this->fileId;
+    respBody.outUri = this->outUri;
+    return respBody;
 }
 }  // namespace OHOS::Media

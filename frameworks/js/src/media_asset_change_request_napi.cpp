@@ -1809,13 +1809,13 @@ int32_t MediaAssetChangeRequestNapi::CreateAssetBySecurityComponent(string &asse
 
     AssetChangeReqBody reqBody;
     reqBody.values = RdbDataShareAdapter::RdbUtils::ToValuesBucket(creationValuesBucket_);
-    AssetChangeRspBody rspBody;
+    AssetChangeRespBody respBody;
     // create asset by security component
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_CREATE_ASSET);
-    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
     CHECK_COND_RET(ret == E_OK, ret, "createAssetUri failed");
-    assetUri = rspBody.outUri;
-    return rspBody.fileId;
+    assetUri = respBody.outUri;
+    return respBody.fileId;
 }
 
 int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(bool isCreation, AddResourceMode mode)
@@ -1931,7 +1931,7 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(
     int32_t ret{E_FAIL};
     SubmitCacheReqBody reqBody;
     reqBody.isWriteGpsAdvanced = isWriteGpsAdvanced;
-    SubmitCacheRspBody rspBody;
+    SubmitCacheRespBody respBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SUBMIT_CACHE);
     if (isCreation) {
         bool isValid = false;
@@ -1944,7 +1944,7 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(
         }
         HandleValueBucketForSetLocation(fileAsset_, creationValuesBucket_, isWriteGpsAdvanced);
         reqBody.values = RdbDataShareAdapter::RdbUtils::ToValuesBucket(creationValuesBucket_);
-        ret = IPC::UserDefineIPCClient().SetUserId(userId).Call(businessCode, reqBody, rspBody);
+        ret = IPC::UserDefineIPCClient().SetUserId(userId).Call(businessCode, reqBody, respBody);
     } else {
         DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset_->GetId());
@@ -1962,14 +1962,14 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(
         reqBody.values = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
         std::unordered_map<std::string, std::string> headerMap{
             {MediaColumn::MEDIA_ID, to_string(fileAsset_->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
-        ret = IPC::UserDefineIPCClient().SetUserId(userId).SetHeader(headerMap).Call(businessCode, reqBody, rspBody);
+        ret = IPC::UserDefineIPCClient().SetUserId(userId).SetHeader(headerMap).Call(businessCode, reqBody, respBody);
     }
-    if (rspBody.fileId > 0 && isCreation) {
-        SetNewFileAsset(rspBody.fileId, rspBody.outUri);
+    if (respBody.fileId > 0 && isCreation) {
+        SetNewFileAsset(respBody.fileId, respBody.outUri);
     }
     cacheFileName_.clear();
     cacheMovingPhotoVideoName_.clear();
-    return ret == E_OK ? rspBody.fileId : ret;
+    return ret == E_OK ? respBody.fileId : ret;
 }
 
 static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)

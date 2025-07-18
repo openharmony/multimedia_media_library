@@ -127,7 +127,7 @@ public:
     int32_t QueryCloudEnhancementTaskState(const std::string& photoUri, QueryCloudEnhancementTaskStateDto& dto);
     std::shared_ptr<NativeRdb::ResultSet> GetCloudEnhancementPair(const std::string& photoUri);
     int32_t SyncCloudEnhancementTaskStatus();
-    int32_t QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRspBody &rsp);
+    int32_t QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRespBody &resp);
     int32_t LogMovingPhoto(const AdaptedReqBody &req);
     int32_t ConvertFormat(const ConvertFormatDto &convertFormatDto);
     int32_t GetResultSetFromDb(const GetResultSetFromDbDto &getResultSetFromDbDto, GetResultSetFromDbRespBody &resp);
@@ -144,14 +144,14 @@ public:
     int32_t PauseDownloadCloudMedia();
     int32_t CancelDownloadCloudMedia();
     int32_t RetainCloudMediaAsset();
-    int32_t IsEdited(const IsEditedDto &dto, IsEditedRspBody &rspBody);
-    int32_t RequestEditData(const RequestEditDataDto &dto, RequestEditDataRspBody &rspBody);
-    int32_t GetEditData(const GetEditDataDto &dto, GetEditDataRspBody &rspBody);
+    int32_t IsEdited(const IsEditedDto &dto, IsEditedRespBody &respBody);
+    int32_t RequestEditData(const RequestEditDataDto &dto, RequestEditDataRespBody &respBody);
+    int32_t GetEditData(const GetEditDataDto &dto, GetEditDataRespBody &respBody);
     int32_t GetCloudMediaAssetStatus(std::string &status);
-    int32_t StartAssetAnalysis(const StartAssetAnalysisDto &dto, StartAssetAnalysisRspBody &rspBody);
-    int32_t GetCloudEnhancementPair(const GetCloudEnhancementPairDto &dto, GetCloudEnhancementPairRespBody &rspBody);
-    int32_t GetFilePathFromUri(const std::string &virtualId, GetFilePathFromUriRspBody &rspBody);
-    int32_t GetUriFromFilePath(const std::string &tempPath, GetUriFromFilePathRspBody &rspBody);
+    int32_t StartAssetAnalysis(const StartAssetAnalysisDto &dto, StartAssetAnalysisRespBody &respBody);
+    int32_t GetCloudEnhancementPair(const GetCloudEnhancementPairDto &dto, GetCloudEnhancementPairRespBody &respBody);
+    int32_t GetFilePathFromUri(const std::string &virtualId, GetFilePathFromUriRespBody &respBody);
+    int32_t GetUriFromFilePath(const std::string &tempPath, GetUriFromFilePathRespBody &respBody);
 
 private:
     MediaAssetsRdbOperations rdbOperation_;

@@ -2215,18 +2215,18 @@ static std::shared_ptr<DataShare::DataShareResultSet> CallQueryAnalysisData(
     int32_t userId = context->objectPtr != nullptr ? context->objectPtr->GetUserId() : -1;
     if (context->businessCode != 0) {
         GetAssetAnalysisDataReqBody reqBody;
-        GetAssetAnalysisDataRspBody rspBody;
+        GetAssetAnalysisDataRespBody respBody;
         reqBody.fileId = context->objectInfo->GetFileId();
         reqBody.analysisType = context->analysisType;
         reqBody.analysisTotal = analysisTotal;
         std::string lang = Global::I18n::LocaleConfig::GetSystemLanguage();
         reqBody.language = (lang.find(LANGUAGE_ZH) == 0 || lang.find(LANGUAGE_ZH_TR) == 0) ? LANGUAGE_ZH : LANGUAGE_EN;
-        int32_t errCode = IPC::UserDefineIPCClient().SetUserId(userId).Call(context->businessCode, reqBody, rspBody);
+        int32_t errCode = IPC::UserDefineIPCClient().SetUserId(userId).Call(context->businessCode, reqBody, respBody);
         if (errCode != 0) {
             NAPI_INFO_LOG("IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
             return nullptr;
         }
-        return rspBody.resultSet;
+        return respBody.resultSet;
     }
 
     int32_t errCode = 0;
@@ -5083,11 +5083,11 @@ static void PhotoAccessHelperIsEditedExecute(napi_env env, void *data)
     } else {
         NAPI_INFO_LOG("PhotoAccessHelperIsEditedExecute need ipc");
         IsEditedReqBody reqBody;
-        IsEditedRspBody rspBody;
+        IsEditedRespBody respBody;
         uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_IS_EDITED);
         reqBody.fileId = fileId;
-        errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
-        finalResultSet = rspBody.resultSet;
+        errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+        finalResultSet = respBody.resultSet;
     }
     int64_t editTime = 0;
     if (!GetEditTimeFromResultSet(finalResultSet, editTime)) {
@@ -5154,18 +5154,18 @@ napi_value FileAssetNapi::PhotoAccessHelperIsEdited(napi_env env, napi_callback_
 static void QueryPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
 {
     RequestEditDataReqBody reqBody;
-    RequestEditDataRspBody rspBody;
+    RequestEditDataRespBody respBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_REQUEST_EDIT_DATA);
     reqBody.predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
 
     NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
-    IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
     NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
-    if (rspBody.resultSet == nullptr || rspBody.resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (respBody.resultSet == nullptr || respBody.resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         NAPI_ERR_LOG("Query failed");
         return;
     }
-    if (rspBody.resultSet->GetInt(0, hasEditData) != NativeRdb::E_OK) {
+    if (respBody.resultSet->GetInt(0, hasEditData) != NativeRdb::E_OK) {
         NAPI_ERR_LOG("Can not get hasEditData");
         return;
     }
@@ -5174,18 +5174,18 @@ static void QueryPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
 static void GetPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
 {
     GetEditDataReqBody reqBody;
-    GetEditDataRspBody rspBody;
+    GetEditDataRespBody respBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_EDIT_DATA);
     reqBody.predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
 
     NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
-    IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
     NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
-    if (rspBody.resultSet == nullptr || rspBody.resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (respBody.resultSet == nullptr || respBody.resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         NAPI_ERR_LOG("Query failed");
         return;
     }
-    if (rspBody.resultSet->GetInt(0, hasEditData) != NativeRdb::E_OK) {
+    if (respBody.resultSet->GetInt(0, hasEditData) != NativeRdb::E_OK) {
         NAPI_ERR_LOG("Can not get hasEditData");
         return;
     }

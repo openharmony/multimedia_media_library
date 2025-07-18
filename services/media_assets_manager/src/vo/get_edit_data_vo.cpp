@@ -45,28 +45,28 @@ std::string GetEditDataReqBody::ToString() const
     return ss.str();
 }
 
-bool GetEditDataRspBody::Unmarshalling(MessageParcel &parcel)
+bool GetEditDataRespBody::Unmarshalling(MessageParcel &parcel)
 {
     this->resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
     if (this->resultSet == nullptr) {
-        MEDIA_ERR_LOG("GetEditDataRspBody ReadFromParcel failed");
+        MEDIA_ERR_LOG("GetEditDataRespBody ReadFromParcel failed");
         return false;
     }
-    MEDIA_INFO_LOG("GetEditDataRspBody ReadFromParcel success");
+    MEDIA_INFO_LOG("GetEditDataRespBody ReadFromParcel success");
     return true;
 }
 
-bool GetEditDataRspBody::Marshalling(MessageParcel &parcel) const
+bool GetEditDataRespBody::Marshalling(MessageParcel &parcel) const
 {
     if (this->resultSet == nullptr || !DataShare::DataShareResultSet::Marshal(this->resultSet, parcel)) {
-        MEDIA_ERR_LOG("GetEditDataRspBody Marshalling failed");
+        MEDIA_ERR_LOG("GetEditDataRespBody Marshalling failed");
         return false;
     }
-    MEDIA_INFO_LOG("GetEditDataRspBody Marshalling success");
+    MEDIA_INFO_LOG("GetEditDataRespBody Marshalling success");
     return true;
 }
 
-std::string GetEditDataRspBody::ToString() const
+std::string GetEditDataRespBody::ToString() const
 {
     std::stringstream ss;
     // todo: add the content of GetAssetsRespBody

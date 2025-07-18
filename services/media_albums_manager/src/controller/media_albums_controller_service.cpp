@@ -539,7 +539,7 @@ int32_t MediaAlbumsControllerService::AddAssets(MessageParcel &data, MessageParc
 {
     MEDIA_INFO_LOG("enter AddAssets");
     ChangeRequestAddAssetsReqBody reqBody;
-    ChangeRequestAddAssetsRspBody rspBody;
+    ChangeRequestAddAssetsRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AddAssets Read Request Error");
@@ -549,15 +549,15 @@ int32_t MediaAlbumsControllerService::AddAssets(MessageParcel &data, MessageParc
     ChangeRequestAddAssetsDto dto;
     dto.FromVo(reqBody);
 
-    ret = MediaAlbumsService::GetInstance().AddAssets(dto, rspBody);
-    return  IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    ret = MediaAlbumsService::GetInstance().AddAssets(dto, respBody);
+    return  IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::RemoveAssets(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RemoveAssets");
     ChangeRequestRemoveAssetsReqBody reqBody;
-    ChangeRequestRemoveAssetsRspBody rspBody;
+    ChangeRequestRemoveAssetsRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("RemoveAssets Read Request Error");
@@ -566,8 +566,8 @@ int32_t MediaAlbumsControllerService::RemoveAssets(MessageParcel &data, MessageP
 
     ChangeRequestRemoveAssetsDto dto;
     dto.FromVo(reqBody);
-    ret = MediaAlbumsService::GetInstance().RemoveAssets(dto, rspBody);
-    return  IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    ret = MediaAlbumsService::GetInstance().RemoveAssets(dto, respBody);
+    return  IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::MoveAssets(MessageParcel &data, MessageParcel &reply)
@@ -820,11 +820,11 @@ int32_t MediaAlbumsControllerService::AlbumRecoverAssets(MessageParcel &data, Me
 int32_t MediaAlbumsControllerService::QueryAlbums(MessageParcel &data, MessageParcel &reply)
 {
     QueryAlbumsReqBody reqBody;
-    QueryAlbumsRspBody rspBody;
+    QueryAlbumsRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CreateAssetForApp Read Request Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
     }
 
     QueryAlbumsDto dto;
@@ -835,21 +835,21 @@ int32_t MediaAlbumsControllerService::QueryAlbums(MessageParcel &data, MessagePa
     ret = MediaAlbumsService::GetInstance().QueryAlbums(dto);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("QueryAlbums failed, ret:%{public}d", ret);
-        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
     }
 
-    rspBody.resultSet = dto.resultSet;
-    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody);
+    respBody.resultSet = dto.resultSet;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
 int32_t MediaAlbumsControllerService::QueryHiddenAlbums(MessageParcel &data, MessageParcel &reply)
 {
     QueryAlbumsReqBody reqBody;
-    QueryAlbumsRspBody rspBody;
+    QueryAlbumsRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CreateAssetForApp Read Request Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
     }
 
     QueryAlbumsDto dto;
@@ -859,17 +859,17 @@ int32_t MediaAlbumsControllerService::QueryHiddenAlbums(MessageParcel &data, Mes
     ret = MediaAlbumsService::GetInstance().QueryHiddenAlbums(dto);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("QueryHiddenAlbums failed, ret:%{public}d", ret);
-        return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
     }
 
-    rspBody.resultSet = dto.resultSet;
-    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody);
+    respBody.resultSet = dto.resultSet;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
 int32_t MediaAlbumsControllerService::GetAlbumsByIds(MessageParcel &data, MessageParcel &reply)
 {
     GetAlbumsByIdsReqBody reqBody;
-    GetAlbumsByIdsRspBody rspBody;
+    GetAlbumsByIdsRespBody respBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -879,8 +879,8 @@ int32_t MediaAlbumsControllerService::GetAlbumsByIds(MessageParcel &data, Messag
 
     GetAlbumsByIdsDto dto;
     dto.FromVo(reqBody);
-    ret = MediaAlbumsService::GetInstance().GetAlbumsByIds(dto, rspBody);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    ret = MediaAlbumsService::GetInstance().GetAlbumsByIds(dto, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::GetOrderPosition(MessageParcel &data, MessageParcel &reply)
@@ -950,9 +950,9 @@ int32_t MediaAlbumsControllerService::GetPhotoIndex(MessageParcel &data, Message
         MEDIA_ERR_LOG("GetPhotoIndex Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    QueryResultRspBody rspBody;
-    ret = MediaAlbumsService::GetInstance().GetPhotoIndex(reqBody, rspBody);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    QueryResultRespBody respBody;
+    ret = MediaAlbumsService::GetInstance().GetPhotoIndex(reqBody, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::GetAnalysisProcess(MessageParcel &data, MessageParcel &reply)
@@ -963,9 +963,9 @@ int32_t MediaAlbumsControllerService::GetAnalysisProcess(MessageParcel &data, Me
         MEDIA_ERR_LOG("GetAnalysisProcess Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    QueryResultRspBody rspBody;
-    ret = MediaAlbumsService::GetInstance().GetAnalysisProcess(reqBody, rspBody);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    QueryResultRespBody respBody;
+    ret = MediaAlbumsService::GetInstance().GetAnalysisProcess(reqBody, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::GetHighlightAlbumInfo(MessageParcel &data, MessageParcel &reply)
@@ -976,9 +976,9 @@ int32_t MediaAlbumsControllerService::GetHighlightAlbumInfo(MessageParcel &data,
         MEDIA_ERR_LOG("GetHighlightAlbumInfo Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    QueryResultRspBody rspBody;
-    ret = MediaAlbumsService::GetInstance().GetHighlightAlbumInfo(reqBody, rspBody);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    QueryResultRespBody respBody;
+    ret = MediaAlbumsService::GetInstance().GetHighlightAlbumInfo(reqBody, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::AlbumGetAssets(
@@ -1020,7 +1020,7 @@ int32_t MediaAlbumsControllerService::AlbumGetAssets(
 int32_t MediaAlbumsControllerService::GetPhotoAlbumObject(MessageParcel &data, MessageParcel &reply)
 {
     GetPhotoAlbumObjectReqBody reqBody;
-    GetPhotoAlbumObjectRspBody rspBody;
+    GetPhotoAlbumObjectRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GetPhotoAlbumObject Read Request Error");
@@ -1029,8 +1029,8 @@ int32_t MediaAlbumsControllerService::GetPhotoAlbumObject(MessageParcel &data, M
 
     GetPhotoAlbumObjectDto dto;
     dto.FromVo(reqBody);
-    ret = MediaAlbumsService::GetInstance().GetPhotoAlbumObject(dto, rspBody);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+    ret = MediaAlbumsService::GetInstance().GetPhotoAlbumObject(dto, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::UpdatePhotoAlbumOrder(MessageParcel &data, MessageParcel &reply)
