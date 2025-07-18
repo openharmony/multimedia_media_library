@@ -142,6 +142,12 @@ const std::string IMAGE_FACE_COL_FACE_SATURATION = "face_saturation";
 const std::string IMAGE_FACE_COL_FACE_EYE_CLOSE = "face_eye_close";
 const std::string IMAGE_FACE_COL_FACE_EXPRESSION = "face_expression";
 const std::string IMAGE_FACE_COL_PREFERRED_GRADE = "preferred_grade";
+const std::string IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_X = "joint_beauty_bounder_x";
+const std::string IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_Y = "joint_beauty_bounder_y";
+const std::string IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_WIDTH = "joint_beauty_bounder_width";
+const std::string IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_HEIGHT = "joint_beauty_bounder_height";
+const std::string IMAGE_FACE_COL_GROUP_VERSION = "group_version";
+
 
 // video_face_tbl COL_NAME
 const std::string ANALYSIS_VIDEO_FACE_TABLE = "tab_analysis_video_face";
