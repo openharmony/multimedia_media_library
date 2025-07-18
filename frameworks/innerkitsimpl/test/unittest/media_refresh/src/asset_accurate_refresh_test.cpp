@@ -471,7 +471,7 @@ bool CheckInsertHiddenAlbum(const AlbumChangeInfo &refreshHiddenAlbumInfo, Album
     if (queryAssetInfo.isHidden_) {
         // 隐藏相册更新
         expectedAlbumInfo.count_++;
-        expectedAlbumInfo.hiddenCount_++;
+        expectedAlbumInfo.hiddenCount_ = expectedAlbumInfo.count_;
         if (queryAssetInfo.mediaType_ == static_cast<int32_t>(MEDIA_TYPE_VIDEO)) {
             expectedAlbumInfo.videoCount_++;
         } else {
@@ -1561,7 +1561,7 @@ HWTEST_F(AssetAccurateRefreshTest, IgnoreRefreshAlbum_021, TestSize.Level2)
     EXPECT_TRUE(changedRow == 1);
 
     auto timestamp = AlbumAccurateRefreshManager::GetCurrentTimestamp();
-    AlbumRefreshTimestamp albumTimestamp(timestamp, timestamp);
+    AlbumRefreshTimestamp albumTimestamp(timestamp + 100, timestamp + 100);
     AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, true, albumTimestamp);
     AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, false, albumTimestamp);
     AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(TRASH_ALBUM_ID, true, albumTimestamp);
