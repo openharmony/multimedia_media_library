@@ -61,6 +61,7 @@
 #include "rdb_sql_utils.h"
 #include "medialibrary_restore.h"
 #include "album_accurate_refresh_manager.h"
+#include "refresh_business_name.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -406,7 +407,7 @@ static int32_t ForEachRow(const shared_ptr<MediaLibraryRdbStore> rdbStore, std::
     int32_t err = NativeRdb::E_OK;
     for (auto data : datas) {
         std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
-        AccurateRefresh::AlbumAccurateRefresh albumRefresh(trans);
+        AccurateRefresh::AlbumAccurateRefresh albumRefresh(AccurateRefresh::COMMIT_EDITE_ASSET_BUSSINESS_NAME, trans);
         std::function<int(void)> transFunc = [&]()->int {
             // Ignore failure here, try to iterate rows as much as possible.
             func(rdbStore, data, hiddenState, albumRefresh);
@@ -2009,7 +2010,7 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         predicatesPhotos.And()->In(MediaColumn::MEDIA_ID, fileAssetsIds);
         ValuesBucket values;
         values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
-        AccurateRefresh::AssetAccurateRefresh assetRefresh;
+        AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::UPDATE_TRASHED_ASSETONALBUM_BUSSINESS_NAME);
         int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicatesPhotos);
         CHECK_AND_CONTINUE_ERR_LOG(changedRows >= 0,
             "Update failed on trashed, album id is: %{public}s", albumId.c_str());

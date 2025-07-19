@@ -34,8 +34,10 @@ namespace Media::AccurateRefresh {
 
 class EXPORT AlbumAccurateRefresh : public AccurateRefreshBase {
 public:
-    AlbumAccurateRefresh() : AccurateRefreshBase(nullptr) {}
+    AlbumAccurateRefresh() : AccurateRefreshBase() {};
     AlbumAccurateRefresh(std::shared_ptr<TransactionOperations> trans);
+    AlbumAccurateRefresh(const std::string &targetBusiness) : AccurateRefreshBase(targetBusiness, nullptr) {}
+    AlbumAccurateRefresh(const std::string &targetBusiness, std::shared_ptr<TransactionOperations> trans);
     virtual ~AlbumAccurateRefresh() {}
     // init的查询语句
     int32_t Init() override;
@@ -47,10 +49,11 @@ public:
     int32_t UpdateModifiedDatas();
 
     // notify album change infos based on init datas and modified datas.
-    int32_t Notify();
+    int32_t Notify(std::shared_ptr<DfxRefreshManager> dfxRefreshManager = nullptr);
 
     // 根据传递的assetChangeDatas进行通知，不需要dataManager_处理
-    int32_t Notify(std::vector<AlbumChangeData> albumChangeDatas);
+    int32_t Notify(std::vector<AlbumChangeData> albumChangeDatas,
+        std::shared_ptr<DfxRefreshManager> dfxRefreshManager = nullptr);
 
     int32_t NotifyAddAlbums(const std::vector<std::string> &albumIdsStr);
 

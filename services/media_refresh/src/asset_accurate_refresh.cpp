@@ -25,6 +25,8 @@
 #include "medialibrary_notify_new.h"
 #include "accurate_debug_log.h"
 #include "medialibrary_tracer.h"
+#include "dfx_refresh_manager.h"
+#include "dfx_refresh_hander.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -35,6 +37,12 @@ namespace Media::AccurateRefresh {
 mutex AssetAccurateRefresh::assetQueryMutex_;
 
 AssetAccurateRefresh::AssetAccurateRefresh(std::shared_ptr<TransactionOperations> trans) : AccurateRefreshBase(trans)
+{
+    dataManager_.SetTransaction(trans);
+}
+
+AssetAccurateRefresh::AssetAccurateRefresh(const std::string &targetBusiness,
+    std::shared_ptr<TransactionOperations> trans) : AccurateRefreshBase(targetBusiness, trans)
 {
     dataManager_.SetTransaction(trans);
 }
@@ -70,16 +78,22 @@ int32_t AssetAccurateRefresh::Init(const vector<int32_t> &fileIds)
 // refresh album based on init datas and modified datas.
 int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType)
 {
+    if (dfxRefreshManager_ != nullptr) {
+        albumRefreshExe_.SetDfxRefreshManager(dfxRefreshManager_);
+    }
     MediaLibraryTracer tracer;
     tracer.Start("AssetAccurateRefresh::RefreshAlbum");
     if (dataManager_.CheckIsForRecheck()) {
         dataManager_.ClearMultiThreadChangeDatas();
-        return RefreshAllAlbum(notifyAlbumType);
+        int32_t ret = RefreshAllAlbum(notifyAlbumType);
+        DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
+        return ret;
     }
     auto assetChangeDatas = dataManager_.GetChangeDatas(true);
     if (assetChangeDatas.empty()) {
         MEDIA_WARN_LOG("change data empty.");
         dataManager_.ClearMultiThreadChangeDatas();
+        DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return ACCURATE_REFRESH_CHANGE_DATA_EMPTY;
     }
     auto ret = RefreshAlbum(assetChangeDatas, notifyAlbumType);
@@ -93,6 +107,7 @@ int32_t AssetAccurateRefresh::RefreshAlbum(const vector<PhotoAssetChangeData> &a
 {
     if (assetChangeDatas.empty()) {
         MEDIA_WARN_LOG("input asset change datas empty.");
+        DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
     auto diffCount = assetChangeDatas.size();
@@ -104,10 +119,11 @@ int32_t AssetAccurateRefresh::RefreshAlbum(const vector<PhotoAssetChangeData> &a
     }
     if (diffCount == 0) {
         MEDIA_WARN_LOG("asset change datas are same, no need refresh album.");
+        DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return ACCURATE_REFRESH_RET_OK;
     }
-
-    return albumRefreshExe_.RefreshAlbum(assetChangeDatas, notifyAlbumType);
+    int32_t ret = albumRefreshExe_.RefreshAlbum(assetChangeDatas, notifyAlbumType);
+    return ret;
 }
 
 // notify assest change infos based on init datas and modified datas.
@@ -116,6 +132,7 @@ int32_t AssetAccurateRefresh::Notify()
     MediaLibraryTracer tracer;
     tracer.Start("AssetAccurateRefresh::RefreshAlbum");
     if (dataManager_.CheckIsForRecheck()) {
+        DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return NotifyForReCheck();
     }
     // 相册通知
@@ -130,10 +147,12 @@ int32_t AssetAccurateRefresh::Notify(const std::vector<PhotoAssetChangeData> &as
 {
     if (assetChangeDatas.empty()) {
         MEDIA_WARN_LOG("assetChangeDatas empty.");
+        DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
 
     notifyExe_.Notify(assetChangeDatas);
+    DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
     return ACCURATE_REFRESH_RET_OK;
 }
 
@@ -181,11 +200,14 @@ int32_t AssetAccurateRefresh::LogicalDeleteReplaceByUpdate(MediaLibraryCommand &
 
 int32_t AssetAccurateRefresh::LogicalDeleteReplaceByUpdate(const AbsRdbPredicates &predicates, int32_t &deletedRows)
 {
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
     if (!IsValidTable(predicates.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-    return DeleteCommon(
+    int32_t ret = DeleteCommon(
         [&](ValuesBucket &values) { return Update(deletedRows, values, predicates, RDB_OPERATION_REMOVE); });
+    DfxRefreshHander::SetOptEndTimeHander(predicates, dfxRefreshManager_);
+    return ret;
 }
 
 int32_t AssetAccurateRefresh::DeleteCommon(function<int32_t(ValuesBucket &)> updateExe)

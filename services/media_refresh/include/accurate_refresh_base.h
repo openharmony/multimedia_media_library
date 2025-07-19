@@ -24,6 +24,9 @@
 #include "values_bucket.h"
 #include "medialibrary_command.h"
 #include "medialibrary_rdb_transaction.h"
+#include "dfx_refresh_manager.h"
+#include "media_log.h"
+#include "media_file_utils.h"
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
@@ -31,7 +34,14 @@ namespace Media::AccurateRefresh {
 
 class EXPORT AccurateRefreshBase {
 public:
-    AccurateRefreshBase(std::shared_ptr<TransactionOperations> trans): trans_(trans) {}
+    AccurateRefreshBase() {}
+    AccurateRefreshBase(std::shared_ptr<TransactionOperations> trans) : trans_(trans) {}
+    AccurateRefreshBase(const std::string &targetBusiness, std::shared_ptr<TransactionOperations> trans) : trans_(trans)
+    {
+        dfxRefreshManager_ = std::make_shared<AccurateRefresh::DfxRefreshManager>(targetBusiness);
+        dfxRefreshManager_->SetStartTime();
+    }
+    virtual ~AccurateRefreshBase();
     // init的查询语句
     virtual int32_t Init() = 0;
     virtual int32_t Init(const NativeRdb::AbsRdbPredicates &predicates) = 0;
@@ -71,6 +81,8 @@ public:
         const std::vector<NativeRdb::ValueObject> &bindArgs, RdbOperation operation);
     int32_t ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
         const std::vector<NativeRdb::ValueObject> &bindArgs, RdbOperation operation);
+    std::shared_ptr<DfxRefreshManager> GetDfxRefreshManager();
+    void CloseDfxReport();
 
 protected:
     // 数据库操作后，触发更新修改后的数据
@@ -78,10 +90,12 @@ protected:
         PendingInfo pendingInfo = PendingInfo()) = 0;
     virtual std::string GetReturningKeyName() = 0;
     virtual bool IsValidTable(std::string tableName) = 0;
+    std::shared_ptr<DfxRefreshManager> dfxRefreshManager_;
 protected:
     std::shared_ptr<TransactionOperations> trans_;
 private:
     std::vector<int32_t> GetReturningKeys(const std::pair<int32_t, NativeRdb::Results> &retWithResults);
+    bool isReport_ = true;
 };
 } // namespace Media
 } // namespace OHOS

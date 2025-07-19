@@ -45,6 +45,7 @@
 #include "dfx_manager.h"
 #include "dfx_const.h"
 #include "asset_accurate_refresh.h"
+#include "refresh_business_name.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -365,7 +366,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
 
     RdbPredicates predicatesPhotos(PhotoColumn::PHOTOS_TABLE);
     predicatesPhotos.In(MediaColumn::MEDIA_ID, idWhereArgs);
-    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::REMOTE_ASSETS_BUSSINESS_NAME);
     MediaLibraryPhotoOperations::UpdateSourcePath(idWhereArgs);
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());

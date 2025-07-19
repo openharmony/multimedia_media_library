@@ -25,12 +25,19 @@
 #include "medialibrary_notify_new.h"
 #include "accurate_debug_log.h"
 #include "medialibrary_tracer.h"
+#include "dfx_refresh_hander.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
+
+AlbumAccurateRefresh::AlbumAccurateRefresh(const std::string &targetBusiness,
+    std::shared_ptr<TransactionOperations> trans) : AccurateRefreshBase(targetBusiness, trans)
+{
+    dataManager_.SetTransaction(trans);
+}
 
 AlbumAccurateRefresh::AlbumAccurateRefresh(std::shared_ptr<TransactionOperations> trans) : AccurateRefreshBase(trans)
 {
@@ -61,21 +68,28 @@ int32_t AlbumAccurateRefresh::Init(const std::vector<int32_t> &albumIds)
     return dataManager_.InitAlbumInfos(albumIds);
 }
 
-int32_t AlbumAccurateRefresh::Notify()
+int32_t AlbumAccurateRefresh::Notify(std::shared_ptr<DfxRefreshManager> dfxRefreshManager)
 {
     if (dataManager_.CheckIsForRecheck()) {
         return NotifyForReCheck();
     }
-    return Notify(dataManager_.GetChangeDatas());
+    return Notify(dataManager_.GetChangeDatas(), dfxRefreshManager);
 }
 
-int32_t AlbumAccurateRefresh::Notify(vector<AlbumChangeData> albumChangeDatas)
+int32_t AlbumAccurateRefresh::Notify(vector<AlbumChangeData> albumChangeDatas,
+    std::shared_ptr<DfxRefreshManager> dfxRefreshManager)
 {
     if (albumChangeDatas.empty()) {
         MEDIA_WARN_LOG("albumChangeDatas empty.");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
     notifyExe_.Notify(albumChangeDatas);
+    if (dfxRefreshManager != nullptr) {
+        dfxRefreshManager->SetEndTime();
+    } else if (dfxRefreshManager_ != nullptr) {
+        dfxRefreshManager_->SetEndTime();
+    }
+
     return ACCURATE_REFRESH_RET_OK;
 }
 
@@ -92,7 +106,7 @@ int32_t AlbumAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &a
         MEDIA_WARN_LOG("modifiedAlbumIds empty.");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
-
+    DfxRefreshHander::SetAlbumIdHander(albumIds, dfxRefreshManager_);
     int32_t err = dataManager_.UpdateModifiedDatasInner(modifiedAlbumIds, operation, pendingInfo);
     CHECK_AND_RETURN_RET_WARN_LOG(err == ACCURATE_REFRESH_RET_OK, err,
         "UpdateModifiedDatasInner failed, err:%{public}d", err);
@@ -129,12 +143,15 @@ int32_t AlbumAccurateRefresh::LogicalDeleteReplaceByUpdate(MediaLibraryCommand &
 
 int32_t AlbumAccurateRefresh::LogicalDeleteReplaceByUpdate(const AbsRdbPredicates &predicates, int &deletedRows)
 {
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
     if (!IsValidTable(predicates.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-    return DeleteCommon([&](ValuesBucket& values) {
+    int32_t ret = DeleteCommon([&](ValuesBucket& values) {
         return Update(deletedRows, values, predicates, RDB_OPERATION_REMOVE);
     });
+    DfxRefreshHander::SetOptEndTimeHander(predicates, dfxRefreshManager_);
+    return ret;
 }
 
 int32_t AlbumAccurateRefresh::DeleteCommon(function<int32_t(ValuesBucket&)> updateExe)
