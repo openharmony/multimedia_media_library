@@ -34,6 +34,8 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
+mutex AssetAccurateRefresh::assetQueryMutex_;
+
 AssetAccurateRefresh::AssetAccurateRefresh(std::shared_ptr<TransactionOperations> trans) : AccurateRefreshBase(trans)
 {
     dataManager_.SetTransaction(trans);
@@ -56,17 +58,20 @@ int32_t AssetAccurateRefresh::Init(const AbsRdbPredicates &predicates)
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
 
+    std::lock_guard<std::mutex> lock(assetQueryMutex_);
     return dataManager_.Init(predicates);
 }
 
 int32_t AssetAccurateRefresh::Init(const string &sql, const vector<ValueObject> bindArgs)
 {
+    std::lock_guard<std::mutex> lock(assetQueryMutex_);
     return dataManager_.Init(sql, bindArgs);
 }
 
 // 增删场景下初始化数据
 int32_t AssetAccurateRefresh::Init(const vector<int32_t> &fileIds)
 {
+    std::lock_guard<std::mutex> lock(assetQueryMutex_);
     return dataManager_.Init(fileIds);
 }
 
@@ -78,18 +83,22 @@ int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType)
     }
     MediaLibraryTracer tracer;
     tracer.Start("AssetAccurateRefresh::RefreshAlbum");
-    if (dataManager_.CheckIsExceed()) {
+    if (dataManager_.CheckIsForRecheck()) {
+        dataManager_.ClearMultiThreadChangeDatas();
         int32_t ret = RefreshAllAlbum(notifyAlbumType);
         DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return ret;
     }
-    auto assetChangeDatas = dataManager_.GetChangeDatas();
+    auto assetChangeDatas = dataManager_.GetChangeDatas(true);
     if (assetChangeDatas.empty()) {
         MEDIA_WARN_LOG("change data empty.");
+        dataManager_.ClearMultiThreadChangeDatas();
         DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return ACCURATE_REFRESH_CHANGE_DATA_EMPTY;
     }
-    return RefreshAlbum(assetChangeDatas, notifyAlbumType);
+    auto ret = RefreshAlbum(assetChangeDatas, notifyAlbumType);
+    dataManager_.ClearMultiThreadChangeDatas();
+    return ret;
 }
 
 // 根据传递的assetChangeDatas更新相册，不需要dataManager_处理
@@ -122,7 +131,7 @@ int32_t AssetAccurateRefresh::Notify()
 {
     MediaLibraryTracer tracer;
     tracer.Start("AssetAccurateRefresh::RefreshAlbum");
-    if (dataManager_.CheckIsExceed()) {
+    if (dataManager_.CheckIsForRecheck()) {
         DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return NotifyForReCheck();
     }
@@ -147,7 +156,8 @@ int32_t AssetAccurateRefresh::Notify(const std::vector<PhotoAssetChangeData> &as
     return ACCURATE_REFRESH_RET_OK;
 }
 
-int32_t AssetAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &fileIds, RdbOperation operation)
+int32_t AssetAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &fileIds, RdbOperation operation,
+    PendingInfo pendingInfo)
 {
     auto modifiedFileIds = fileIds;
     if (modifiedFileIds.empty()) {
@@ -155,7 +165,11 @@ int32_t AssetAccurateRefresh::UpdateModifiedDatasInner(const std::vector<int> &f
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
 
-    int32_t err = dataManager_.UpdateModifiedDatasInner(modifiedFileIds, operation);
+    int32_t err = ACCURATE_REFRESH_RET_OK;
+    {
+        std::lock_guard<std::mutex> lock(assetQueryMutex_);
+        err = dataManager_.UpdateModifiedDatasInner(modifiedFileIds, operation, pendingInfo);
+    }
     CHECK_AND_RETURN_RET_WARN_LOG(err == ACCURATE_REFRESH_RET_OK, err,
         "UpdateModifiedDatasInner failed, err:%{public}d", err);
     err = dataManager_.PostProcessModifiedDatas(modifiedFileIds);

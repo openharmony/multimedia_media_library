@@ -3239,6 +3239,7 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     vector<shared_ptr<FileAsset>> subFileAssetVector;
     std::set<int32_t> changedAlbumIds;
     GetAssetVectorFromResultSet(resultSet, columns, fileAssetVector);
+    resultSet->Close();
     for (auto& fileAssetPtr : fileAssetVector) {
         DeleteLocalPhotoPermanently(fileAssetPtr, subFileAssetVector, assetRefresh);
         changedAlbumIds.insert(fileAssetPtr->GetOwnerAlbumId());

@@ -115,4 +115,25 @@ HWTEST_F(CloudMediaHandlerClientTest, CloudMediaPhotoHandler_Test, TestSize.Leve
     auto result = handler->GetTraceId();
     EXPECT_EQ(result, "00001");
 }
+
+HWTEST_F(CloudMediaHandlerClientTest, CloudMediaPhotoHandler_IsServerNoResponse_Test, TestSize.Level1)
+{
+    auto handler = std::make_shared<CloudMediaPhotoHandler>();
+    ASSERT_TRUE(handler);
+    std::vector<MDKRecord> records;
+    std::vector<CloudMetaData> newData;
+    std::vector<CloudMetaData> fdirtyData;
+    std::vector<std::string> failedRecords;
+    std::vector<int32_t> stats = {0, 0, 0, 0, 0};
+    auto result = handler->IsServerNoResponse(records, newData, fdirtyData, failedRecords, stats);
+    EXPECT_EQ(result, false);
+    MDKRecord record;
+    record.SetRecordId("001");
+    records.push_back(record);
+    result = handler->IsServerNoResponse(records, newData, fdirtyData, failedRecords, stats);
+    EXPECT_EQ(result, true);
+    stats = {1, 0, 0, 0, 0};
+    result = handler->IsServerNoResponse(records, newData, fdirtyData, failedRecords, stats);
+    EXPECT_EQ(result, false);
+}
 }
