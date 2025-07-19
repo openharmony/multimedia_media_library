@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-#define MLOG_TAG "AlbumAccurateRefreshTest"
-
-#include "album_accurate_refresh_test.h"
+#define MLOG_TAG "AssetAccurateRefreshTest"
+#include "asset_accurate_refresh_test.h"
 
 #include <chrono>
 #include <thread>
@@ -24,28 +23,20 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_unittest_utils.h"
-#include "userfile_manager_types.h"
-#include "values_bucket.h"
-#include "uri.h"
-#include "medialibrary_rdb_transaction.h"
+#include "medialibrary_type_const.h"
 
-#include "media_log.h"
+#include "accurate_debug_log.h"
 #define protected public
 #define private public
-#include "album_accurate_refresh.h"
+#include "asset_accurate_refresh.h"
+#include "multi_thread_asset_change_info_mgr.h"
 #undef protected
 #undef private
 
-#include "album_change_info.h"
-#include "result_set_utils.h"
-#include "abs_rdb_predicates.h"
-#include "accurate_common_data.h"
-#include "accurate_debug_log.h"
 #include "accurate_refresh_test_util.h"
 
 namespace OHOS {
 namespace Media {
-
 using namespace std;
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
@@ -54,273 +45,83 @@ using namespace AccurateRefresh;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-static constexpr int32_t NUMBER_TWO = 2;
 
 namespace {
-
-
-const string insertSql = "INSERT INTO " + PhotoAlbumColumns::TABLE + "( \
-            album_id, album_type, album_subtype, count, image_count, video_count, cover_uri, hidden_count, \
-            hidden_cover, cover_date_time, hidden_cover_date_time, dirty) \
-            VALUES (" +
-            to_string(FAVORITE_ALBUM_INFO.albumId_) + " , " +
-            to_string(PhotoAlbumType::SYSTEM) + " , " +
-            to_string(PhotoAlbumSubType::FAVORITE) + " , " +
-            to_string(FAVORITE_ALBUM_INFO.count_) + " , " +
-            to_string(FAVORITE_ALBUM_INFO.imageCount_) + " , " +
-            to_string(FAVORITE_ALBUM_INFO.videoCount_) + " , '" +
-            FAVORITE_ALBUM_INFO.coverUri_ + "' , " +
-            to_string(FAVORITE_ALBUM_INFO.hiddenCount_) + " , '" +
-            FAVORITE_ALBUM_INFO.hiddenCoverUri_ + "' , " +
-            to_string(FAVORITE_ALBUM_INFO.coverDateTime_) + " , " +
-            to_string(FAVORITE_ALBUM_INFO.hiddenCoverDateTime_) + " , " +
-            to_string(FAVORITE_ALBUM_INFO.dirty_) + " )";
-const string insertSqlWithArgs = "INSERT INTO " + PhotoAlbumColumns::TABLE + "( \
-            album_id, album_type, album_subtype, count, image_count, video_count, cover_uri, hidden_count, \
-            hidden_cover, cover_date_time, hidden_cover_date_time, dirty) \
-            VALUES (" +
-            to_string(FAVORITE_ALBUM_INFO.albumId_) + " , " +
-            to_string(PhotoAlbumType::SYSTEM) + " , " +
-            to_string(PhotoAlbumSubType::FAVORITE) + " , " +
-            "?" + " , " +
-            to_string(FAVORITE_ALBUM_INFO.imageCount_) + " , " +
-            to_string(FAVORITE_ALBUM_INFO.videoCount_) + " , '" +
-            FAVORITE_ALBUM_INFO.coverUri_ + "' , " +
-            to_string(FAVORITE_ALBUM_INFO.hiddenCount_) + " , '" +
-            FAVORITE_ALBUM_INFO.hiddenCoverUri_ + "' , " +
-            to_string(FAVORITE_ALBUM_INFO.coverDateTime_) + " , " +
-            to_string(FAVORITE_ALBUM_INFO.hiddenCoverDateTime_) + " , " +
-            to_string(FAVORITE_ALBUM_INFO.dirty_) + " )";
-
-vector<ValuesBucket> GetBatchInsertValues()
-{
-    vector<ValuesBucket> values;
-    values.push_back(GetFavoriteInsertAlbum());
-    values.push_back(GetTrashInsertAlbum());
-    return values;
-}
-
-int32_t GetPhotoAlbumTotalCount()
-{
-    RdbPredicates queryPredicates(PhotoAlbumColumns::TABLE);
-
-    int32_t count;
-    auto resultSet = g_rdbStore->QueryByStep(queryPredicates, { "COUNT(1)" });
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int colIndex = 0;
-        resultSet->GetInt(colIndex, count);
-        ACCURATE_DEBUG("count: %{public}d", count);
-    }
-    return count;
-}
-
-void PrepareAlbumData()
-{
-    auto values = GetBatchInsertValues();
-    int64_t insertNums = 0;
-    auto ret = g_rdbStore->BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values);
-    ACCURATE_DEBUG("ret: %{public}d, insert values: %{public}" PRId64, ret, insertNums);
-}
-
-void PrepareHiddenData()
-{
-    auto values = GetHiddenInsertAlbum();
-    int64_t insertNums = 0;
-    auto ret = g_rdbStore->Insert(insertNums, PhotoAlbumColumns::TABLE, values);
-    ACCURATE_DEBUG("ret: %{public}d, insert values: %{public}" PRId64, ret, insertNums);
-}
-
-bool CheckInsertChangeData(const map<int32_t, AlbumChangeData> albumChangeDatas, const AlbumChangeInfo &albumInfo)
-{
-    auto iter = albumChangeDatas.find(albumInfo.albumId_);
-    if (iter == albumChangeDatas.end()) {
-        MEDIA_ERR_LOG("no album ID");
-        return false;
-    }
-
-    auto dataManagerChangeData = iter->second;
-    return CheckAlbumChangeData(dataManagerChangeData, RDB_OPERATION_ADD, AlbumChangeInfo(), albumInfo);
-}
-
-bool CheckInsertResult(const AlbumAccurateRefresh &albumRefresh, const AlbumChangeInfo &albumInfo)
-{
-    auto dataManagerPtr = albumRefresh.dataManager_;
-    auto &albumChangeDatas = dataManagerPtr.changeDatas_;
-    if (albumChangeDatas.size() != 1) {
-        MEDIA_ERR_LOG("data size error");
-        return false;
-    }
-    if (!CheckInsertChangeData(albumChangeDatas, albumInfo)) {
-        MEDIA_ERR_LOG("changeData wrong");
-        return false;
-    }
-    return true;
-}
-
-bool CheckInsertNotify(const AlbumAccurateRefresh &albumRefresh, const AlbumChangeInfo &albumInfo)
-{
-    auto notifyInfos = albumRefresh.notifyExe_.notifyInfos_;
-    if (notifyInfos.size() != 1) {
-        MEDIA_ERR_LOG("notify size error.");
-        return false;
-    }
+// 新增
+// 普通资产（收藏、视频、隐藏、图片）
     
-    auto iter = notifyInfos.begin();
-    if (iter->first != Notification::AlbumRefreshOperation::ALBUM_OPERATION_ADD) {
-        MEDIA_ERR_LOG("operation type error.");
-        return false;
-    }
+const int32_t ASSET_FILE_ID = 0; // 数据库插入后才有值
+const string ASSET_URI = "uri"; // 跟file_id关联
+const string ASSET_DATE_DAY = "20250525";
+const int64_t ASSET_DATE_TRASH = 123451234567;
+const int32_t ASSET_MEDIA_TYPE_VIDEO = static_cast<int32_t>(MEDIA_TYPE_VIDEO);
+const int32_t ASSET_MEDIA_TYPE_IMAGE = static_cast<int32_t>(MEDIA_TYPE_IMAGE);
+const int32_t ASSET_STRONG_ASSOCIATION_NORMAL = static_cast<int32_t>(StrongAssociationType::NORMAL);
+const int32_t ASSET_STRONG_ASSOCIATION_CLOUD = static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT);
+const int32_t ASSET_THUMBNAIL_VISIBLE = 1;
+const int64_t ASSET_DATE_ADDED = 123456;
+const int64_t ASSET_DATE_TAKEN = 123456;
+const int32_t ASSET_SUBTYPE_DEFAULT = static_cast<int32_t>(PhotoSubType::DEFAULT);
+const int32_t ASSET_SYNC_STATUS_VISIBLE = static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE);
+const int32_t ASSET_CLEAN_FLAG_NO = static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN);
+const int32_t ASSET_BURST_COVER_LEVEL = static_cast<int32_t>(BurstCoverLevelType::COVER);
+const string ASSET_DISPLAY_NAME = "asset_display_name";
+const string ASSET_PATH = "asset_path";
+const string OWNER_ALBUM_URI_ = "file://media/PhotoAlbum/";
+const int64_t ASSET_HIDDEN_TIME = 54321;
 
-    auto albumChangeDatas = iter->second;
-    if (albumChangeDatas.size() != 1) {
-        MEDIA_ERR_LOG("albumChangeDatas size error.");
-        return false;
-    }
+const int32_t FAVORITE_VIDEO_ASSET_ALBUM_ID = 100;
+const int32_t FAVORITE_VIDEO_ASSET_FILE_ID = 10000;
 
-    return CheckAlbumChangeData(albumChangeDatas[0], RDB_OPERATION_ADD, AlbumChangeInfo(), albumInfo);
-}
+const int32_t VIDEO_ASSET_ALBUM_ID = 200;
+const int32_t VIDEO_ASSET_FILE_ID = 2000;
 
-bool CheckBatchInsertResult(const AlbumAccurateRefresh &albumRefresh, const AlbumChangeInfo &favoriteAlbumInfo,
-    const AlbumChangeInfo &trashAlbumInfo)
-{
-    auto dataManagerPtr = albumRefresh.dataManager_;
-    auto &albumChangeDatas = dataManagerPtr.changeDatas_;
-    if (albumChangeDatas.size() != NUMBER_TWO) {
-        MEDIA_ERR_LOG("data size error");
-        return false;
-    }
-    
-    if (!CheckInsertChangeData(albumChangeDatas, favoriteAlbumInfo)) {
-        MEDIA_ERR_LOG("favorite album changeData wrong");
-        return false;
-    }
+const int32_t FAVORITE_IMAGE_ASSET_ALBUM_ID = 300;
+const int32_t FAVORITE_IMAGE_ASSET_FILE_ID = 30000;
 
-    if (!CheckInsertChangeData(albumChangeDatas, trashAlbumInfo)) {
-        MEDIA_ERR_LOG("trash album changeData wrong");
-        return false;
-    }
-    return true;
-}
+const int32_t IMAGE_ASSET_ALBUM_ID = 400;
+const int32_t IMAGE_ASSET_FILE_ID = 40000;
 
-bool CheckUpdateResult(const AlbumAccurateRefresh &albumRefresh, const AlbumChangeInfo &infoBefore,
-    const AlbumChangeInfo &infoAfter)
-{
-    auto dataManagerPtr = albumRefresh.dataManager_;
-    auto &albumChangeDatas = dataManagerPtr.changeDatas_;
-    if (albumChangeDatas.size() != 1) {
-        MEDIA_ERR_LOG("data size error");
-        return false;
-    }
-    auto iter = albumChangeDatas.begin();
-    return CheckAlbumChangeData(iter->second, RDB_OPERATION_UPDATE, infoBefore, infoAfter);
-}
+const int32_t FAVORITE_VIDEO_HIDDEN_ASSET_ALBUM_ID = 500;
+const int32_t FAVORITE_VIDEO_HIDDEN_ASSET_FILE_ID = 50000;
 
-bool CheckDeleteResult(const AlbumAccurateRefresh &albumRefresh, RdbOperation operation,
-    const AlbumChangeInfo &infoBefore, const AlbumChangeInfo &infoAfter)
-{
-    auto dataManagerPtr = albumRefresh.dataManager_;
-    auto &albumChangeDatas = dataManagerPtr.changeDatas_;
-    if (albumChangeDatas.size() != 1) {
-        MEDIA_ERR_LOG("data size error");
-        return false;
-    }
-    auto iter = albumChangeDatas.begin();
-    return CheckAlbumChangeData(iter->second, operation, infoBefore, infoAfter, operation == RDB_OPERATION_REMOVE);
-}
+const int32_t VIDEO_HIDDEN_ASSET_ALBUM_ID = 600;
 
-bool CheckBatchInsertNotify(const AlbumAccurateRefresh &albumRefresh, const AlbumChangeInfo &favoriteAlbumInfo,
-    const AlbumChangeInfo &trashAlbumInfo)
-{
-    auto notifyInfos = albumRefresh.notifyExe_.notifyInfos_;
-    if (notifyInfos.size() != 1) {
-        MEDIA_ERR_LOG("notify size error.");
-        return false;
-    }
-    
-    auto iter = notifyInfos.begin();
-    if (iter->first != Notification::AlbumRefreshOperation::ALBUM_OPERATION_ADD) {
-        MEDIA_ERR_LOG("operation type error.");
-        return false;
-    }
+const int32_t FAVORITE_IMAGE_HIDDEN_ASSET_ALBUM_ID = 700;
 
-    auto albumChangeDatas = iter->second;
-    if (albumChangeDatas.size() != NUMBER_TWO) {
-        MEDIA_ERR_LOG("albumChangeDatas size error.");
-        return false;
-    }
+const int32_t IMAGE_HIDDEN_ASSET_ALBUM_ID = 800;
 
-    for (auto const &changeData : albumChangeDatas) {
-        if (changeData.infoAfterChange_.albumId_ == favoriteAlbumInfo.albumId_) {
-            if (!CheckAlbumChangeData(changeData, RDB_OPERATION_ADD, AlbumChangeInfo(), favoriteAlbumInfo)) {
-                MEDIA_ERR_LOG("favorite album info error.");
-                return false;
-            }
-        } else if (changeData.infoAfterChange_.albumId_ == trashAlbumInfo.albumId_) {
-            if (!CheckAlbumChangeData(changeData, RDB_OPERATION_ADD, AlbumChangeInfo(), trashAlbumInfo)) {
-                MEDIA_ERR_LOG("trash album info error.");
-                return false;
-            }
-        } else {
-            MEDIA_ERR_LOG("no album Id.");
-            return false;
-        }
-    }
-    return true;
-}
+const int32_t IMAGE_CLOUD_ASSET_ALBUM_ID = 900;
+const int32_t IMAGE_CLOUD_ASSET_FILE_ID = 90000;
 
-bool CheckUpdateNotify(const AlbumAccurateRefresh &albumRefresh, Notification::AlbumRefreshOperation operation,
-    const AlbumChangeInfo &infoBefore, const AlbumChangeInfo &infoAfter)
-{
-    auto notifyInfos = albumRefresh.notifyExe_.notifyInfos_;
-    if (notifyInfos.size() != 1) {
-        MEDIA_ERR_LOG("notify size error.");
-        return false;
-    }
-    
-    auto iter = notifyInfos.begin();
-    if (iter->first != operation) {
-        MEDIA_ERR_LOG("operation type error.");
-        return false;
-    }
+const int32_t IMAGE_TRASH_ASSET_ALBUM_ID = 1000;
+const int32_t IMAGE_TRASH_ASSET_FILE_ID = 100000;
 
-    auto albumChangeDatas = iter->second;
-    if (albumChangeDatas.size() != 1) {
-        MEDIA_ERR_LOG("albumChangeDatas size error.");
-        return false;
-    }
-
-    return CheckAlbumChangeData(albumChangeDatas[0], RDB_OPERATION_UPDATE, infoBefore, infoAfter);
-}
-
-bool CheckDeleteNotify(const AlbumAccurateRefresh &albumRefresh, Notification::AlbumRefreshOperation operation,
-    const AlbumChangeInfo &infoBefore, const AlbumChangeInfo &infoAfter)
-{
-    auto notifyInfos = albumRefresh.notifyExe_.notifyInfos_;
-    if (notifyInfos.size() != 1) {
-        MEDIA_ERR_LOG("notify size error.");
-        return false;
-    }
-    
-    auto iter = notifyInfos.begin();
-    if (iter->first != operation) {
-        MEDIA_ERR_LOG("operation type error.");
-        return false;
-    }
-
-    auto albumChangeDatas = iter->second;
-    if (albumChangeDatas.size() != 1) {
-        MEDIA_ERR_LOG("albumChangeDatas size error.");
-        return false;
-    }
-
-    return CheckAlbumChangeData(albumChangeDatas[0], RDB_OPERATION_UNDEFINED, infoBefore, infoAfter, true);
-}
+const PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSET_URI, ASSET_DATE_DAY,
+    "uri", // owner album uri
+    false, // isFavorite
+    ASSET_MEDIA_TYPE_IMAGE, // default image
+    false, // isHidden
+    0,  // dateTrash
+    ASSET_STRONG_ASSOCIATION_NORMAL,
+    ASSET_THUMBNAIL_VISIBLE, ASSET_DATE_ADDED, ASSET_DATE_TAKEN, ASSET_SUBTYPE_DEFAULT, ASSET_SYNC_STATUS_VISIBLE,
+    ASSET_CLEAN_FLAG_NO,
+    0, // timePending
+    false, // isTemp
+    ASSET_BURST_COVER_LEVEL,
+    0, // owner album id
+    0, // hidden time
+    0,
+    ASSET_DISPLAY_NAME,
+    ASSET_PATH
+};
 
 void SetTables()
 {
-    // 创建Album表
+    // 创建Photos/PhotoAlbum表
     vector<string> createTableSqlList = {
-        CREATE_PHOTO_ALBUM_TABLE
+        CREATE_PHOTO_ALBUM_TABLE,
+        CREATE_PHOTO_TABLE,
     };
     for (auto &createTableSql : createTableSqlList) {
         if (g_rdbStore == nullptr) {
@@ -337,10 +138,91 @@ void SetTables()
     MEDIA_INFO_LOG("SetTables");
 }
 
+void PrepareAlbumData()
+{
+    vector<ValuesBucket> values;
+    values.push_back(GetFavoriteInsertAlbum());
+    auto timestamp = AlbumAccurateRefreshManager::GetCurrentTimestamp();
+    AlbumRefreshTimestamp albumTimestamp(timestamp, timestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, false, albumTimestamp);
+
+    values.push_back(GetHiddenInsertAlbum());
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(HIDDEN_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(HIDDEN_ALBUM_ID, false, albumTimestamp);
+
+    values.push_back(GetTrashInsertAlbum());
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(TRASH_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(TRASH_ALBUM_ID, false, albumTimestamp);
+
+    values.push_back(GetVideoInsertAlbum());
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(VIDEO_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(VIDEO_ALBUM_ID, false, albumTimestamp);
+
+    values.push_back(GetImageInsertAlbum());
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_ALBUM_ID, false, albumTimestamp);
+
+    values.push_back(GetCloudEnhancementInsertAlbum());
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(CLOUD_ENHANCEMENT_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(CLOUD_ENHANCEMENT_ALBUM_ID, false, albumTimestamp);
+
+    values.push_back(GetUserInsertAlbum(FAVORITE_VIDEO_ASSET_ALBUM_ID));
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_VIDEO_ASSET_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_VIDEO_ASSET_ALBUM_ID, false,
+        albumTimestamp);
+
+    values.push_back(GetUserInsertAlbum(VIDEO_ASSET_ALBUM_ID));
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(VIDEO_ASSET_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(VIDEO_ASSET_ALBUM_ID, false, albumTimestamp);
+
+    values.push_back(GetUserInsertAlbum(FAVORITE_IMAGE_ASSET_ALBUM_ID));
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_IMAGE_ASSET_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_IMAGE_ASSET_ALBUM_ID, false,
+        albumTimestamp);
+
+    values.push_back(GetUserInsertAlbum(IMAGE_ASSET_ALBUM_ID));
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_ASSET_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_ASSET_ALBUM_ID, false, albumTimestamp);
+
+    values.push_back(GetUserInsertAlbum(FAVORITE_VIDEO_HIDDEN_ASSET_ALBUM_ID));
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_VIDEO_HIDDEN_ASSET_ALBUM_ID, true,
+        albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_VIDEO_HIDDEN_ASSET_ALBUM_ID, false,
+        albumTimestamp);
+
+    values.push_back(GetUserInsertAlbum(VIDEO_HIDDEN_ASSET_ALBUM_ID));
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(VIDEO_HIDDEN_ASSET_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(VIDEO_HIDDEN_ASSET_ALBUM_ID, false, albumTimestamp);
+
+    values.push_back(GetUserInsertAlbum(FAVORITE_IMAGE_HIDDEN_ASSET_ALBUM_ID));
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_IMAGE_HIDDEN_ASSET_ALBUM_ID, true,
+        albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_IMAGE_HIDDEN_ASSET_ALBUM_ID, false,
+        albumTimestamp);
+
+    values.push_back(GetUserInsertAlbum(IMAGE_HIDDEN_ASSET_ALBUM_ID));
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_HIDDEN_ASSET_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_HIDDEN_ASSET_ALBUM_ID, false, albumTimestamp);
+
+    values.push_back(GetUserInsertAlbum(IMAGE_CLOUD_ASSET_ALBUM_ID));
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_CLOUD_ASSET_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_CLOUD_ASSET_ALBUM_ID, false, albumTimestamp);
+
+    values.push_back(GetUserInsertAlbum(IMAGE_TRASH_ASSET_ALBUM_ID));
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_TRASH_ASSET_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_TRASH_ASSET_ALBUM_ID, false, albumTimestamp);
+
+    int64_t insertNums = 0;
+    auto ret = g_rdbStore->BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values);
+    ACCURATE_DEBUG("ret: %{public}d, insert values: %{public}" PRId64, ret, insertNums);
+}
+
 void CleanTestTables()
 {
     vector<string> dropTableList = {
         PhotoAlbumColumns::TABLE,
+        PhotoColumn::PHOTOS_TABLE,
     };
     for (auto &dropTable : dropTableList) {
         string dropSql = "DROP TABLE " + dropTable + ";";
@@ -353,24 +235,462 @@ void CleanTestTables()
     }
 }
 
-int32_t GetAlbumCount(PhotoAlbumSubType subType)
+// 收藏、视频、非隐藏
+PhotoAssetChangeInfo GetFavoriteVideoAsset()
 {
-    return AccurateRefresh::GetAlbumCount(subType, g_rdbStore);
+    PhotoAssetChangeInfo assetChangeInfo = NORMAL_ASSET;
+    assetChangeInfo.isFavorite_ = true;
+    assetChangeInfo.fileId_ = FAVORITE_VIDEO_ASSET_FILE_ID;
+    assetChangeInfo.ownerAlbumId_ = FAVORITE_VIDEO_ASSET_ALBUM_ID;
+    assetChangeInfo.ownerAlbumUri_ = OWNER_ALBUM_URI_ + to_string(FAVORITE_VIDEO_ASSET_ALBUM_ID);
+    assetChangeInfo.mediaType_ = ASSET_MEDIA_TYPE_VIDEO;
+
+    return assetChangeInfo;
 }
 
-int32_t GetAlbumDirtyType(PhotoAlbumSubType subType)
+// 非收藏、视频、非隐藏
+PhotoAssetChangeInfo GetVideoAsset()
 {
-    return AccurateRefresh::GetAlbumDirtyType(subType, g_rdbStore);
+    PhotoAssetChangeInfo assetChangeInfo = NORMAL_ASSET;
+    assetChangeInfo.fileId_ = VIDEO_ASSET_FILE_ID;
+    assetChangeInfo.ownerAlbumId_ = VIDEO_ASSET_ALBUM_ID;
+    assetChangeInfo.ownerAlbumUri_ = OWNER_ALBUM_URI_ + to_string(VIDEO_ASSET_ALBUM_ID);
+    assetChangeInfo.mediaType_ = ASSET_MEDIA_TYPE_VIDEO;
+    return assetChangeInfo;
 }
 
-AlbumChangeInfo GetAlbumInfo(PhotoAlbumSubType subType)
+// 收藏、图片(MEDIA_TYPE_IMAGE)、非隐藏
+PhotoAssetChangeInfo GetFavoriteImageAsset()
 {
-    return AccurateRefresh::GetAlbumInfo(subType, g_rdbStore);
+    PhotoAssetChangeInfo assetChangeInfo = NORMAL_ASSET;
+    assetChangeInfo.isFavorite_ = true;
+    assetChangeInfo.fileId_ = FAVORITE_IMAGE_ASSET_FILE_ID;
+    assetChangeInfo.ownerAlbumId_ = FAVORITE_IMAGE_ASSET_ALBUM_ID;
+    assetChangeInfo.ownerAlbumUri_ = OWNER_ALBUM_URI_ + to_string(FAVORITE_IMAGE_ASSET_ALBUM_ID);
+    return assetChangeInfo;
+}
+
+// 非收藏、图片、非隐藏
+PhotoAssetChangeInfo GetImageAsset()
+{
+    PhotoAssetChangeInfo assetChangeInfo = NORMAL_ASSET;
+    assetChangeInfo.fileId_ = IMAGE_ASSET_FILE_ID;
+    assetChangeInfo.ownerAlbumId_ = IMAGE_ASSET_ALBUM_ID;
+    assetChangeInfo.ownerAlbumUri_ = OWNER_ALBUM_URI_ + to_string(IMAGE_ASSET_ALBUM_ID);
+    return assetChangeInfo;
+}
+
+// 收藏、视频、隐藏
+PhotoAssetChangeInfo GetFavoriteVideoHiddenAsset()
+{
+    PhotoAssetChangeInfo assetChangeInfo = NORMAL_ASSET;
+    assetChangeInfo.isFavorite_ = true;
+    assetChangeInfo.fileId_ = FAVORITE_VIDEO_HIDDEN_ASSET_FILE_ID;
+    assetChangeInfo.ownerAlbumId_ = FAVORITE_VIDEO_HIDDEN_ASSET_ALBUM_ID;
+    assetChangeInfo.ownerAlbumUri_ = OWNER_ALBUM_URI_ + to_string(FAVORITE_VIDEO_HIDDEN_ASSET_ALBUM_ID);
+    assetChangeInfo.mediaType_ = ASSET_MEDIA_TYPE_VIDEO;
+    assetChangeInfo.isHidden_ = true;
+    assetChangeInfo.hiddenTime_ = ASSET_HIDDEN_TIME;
+    return assetChangeInfo;
+}
+
+// 云同步资产
+PhotoAssetChangeInfo GetCloudAsset()
+{
+    PhotoAssetChangeInfo assetChangeInfo = NORMAL_ASSET;
+    assetChangeInfo.fileId_ = IMAGE_CLOUD_ASSET_FILE_ID;
+    assetChangeInfo.ownerAlbumId_ = IMAGE_CLOUD_ASSET_ALBUM_ID;
+    assetChangeInfo.ownerAlbumUri_ = OWNER_ALBUM_URI_ + to_string(IMAGE_HIDDEN_ASSET_ALBUM_ID);
+    assetChangeInfo.strongAssociation_ = ASSET_STRONG_ASSOCIATION_CLOUD;
+    return assetChangeInfo;
+}
+
+// 回收站资产
+PhotoAssetChangeInfo GetTrashAsset()
+{
+    PhotoAssetChangeInfo assetChangeInfo = NORMAL_ASSET;
+    assetChangeInfo.fileId_ = IMAGE_TRASH_ASSET_FILE_ID;
+    assetChangeInfo.ownerAlbumId_ = IMAGE_TRASH_ASSET_ALBUM_ID;
+    assetChangeInfo.ownerAlbumUri_ = OWNER_ALBUM_URI_ + to_string(IMAGE_HIDDEN_ASSET_ALBUM_ID);
+    assetChangeInfo.dateTrashedMs_ = ASSET_DATE_TRASH;
+    return assetChangeInfo;
+}
+
+ValuesBucket GetAssetInsertValue(PhotoAssetChangeInfo assetInfo)
+{
+    ValuesBucket value;
+    value.PutInt(PhotoColumn::MEDIA_ID, assetInfo.fileId_);
+    value.PutString(PhotoColumn::PHOTO_DATE_DAY, assetInfo.dateDay_);
+    value.PutInt(PhotoColumn::MEDIA_IS_FAV, static_cast<int32_t>(assetInfo.isFavorite_));
+    value.PutInt(PhotoColumn::MEDIA_TYPE, assetInfo.mediaType_);
+    value.PutInt(PhotoColumn::MEDIA_HIDDEN, assetInfo.isHidden_);
+    value.PutLong(PhotoColumn::MEDIA_DATE_TRASHED, assetInfo.dateTrashedMs_);
+    value.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, assetInfo.strongAssociation_);
+    value.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, assetInfo.thumbnailVisible_);
+    value.PutLong(PhotoColumn::MEDIA_DATE_ADDED, assetInfo.dateAddedMs_);
+    value.PutLong(PhotoColumn::MEDIA_DATE_TAKEN, assetInfo.dateTakenMs_);
+    value.PutInt(PhotoColumn::PHOTO_SUBTYPE, assetInfo.subType_);
+    value.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, assetInfo.syncStatus_);
+    value.PutInt(PhotoColumn::PHOTO_CLEAN_FLAG, assetInfo.cleanFlag_);
+    value.PutInt(PhotoColumn::MEDIA_TIME_PENDING, assetInfo.timePending_);
+    value.PutInt(PhotoColumn::PHOTO_IS_TEMP, assetInfo.isTemp_);
+    value.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, assetInfo.burstCoverLevel_);
+    value.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, assetInfo.ownerAlbumId_);
+    value.PutLong(PhotoColumn::PHOTO_HIDDEN_TIME, assetInfo.hiddenTime_);
+    value.PutString(PhotoColumn::MEDIA_NAME, assetInfo.displayName_);
+    value.PutString(PhotoColumn::MEDIA_FILE_PATH, assetInfo.path_);
+    return value;
+}
+
+PhotoAssetChangeInfo GetAssetInfo(int32_t fileId = 0)
+{
+    RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
+    queryPredicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+
+    auto resultSet = g_rdbStore->QueryByStep(queryPredicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
+    EXPECT_TRUE(resultSet != nullptr);
+    auto assetInfos = PhotoAssetChangeInfo::GetInfoFromResult(resultSet, PhotoAssetChangeInfo::GetPhotoAssetColumns());
+    if (assetInfos.size() == 1) {
+        ACCURATE_DEBUG("assetInfo: %{public}s", assetInfos[0].ToString().c_str());
+        return assetInfos[0];
+    }
+    ACCURATE_DEBUG("asset info wrong: %{public}zu.", assetInfos.size());
+    return PhotoAssetChangeInfo();
+}
+
+bool CheckAssetEqual(const PhotoAssetChangeInfo &changeInfo1, const PhotoAssetChangeInfo &changeInfo2)
+{
+    ACCURATE_DEBUG("%{public}s", changeInfo1.ToString().c_str());
+    ACCURATE_DEBUG("%{public}s", changeInfo2.ToString().c_str());
+    return changeInfo1.fileId_ == changeInfo2.fileId_;
+}
+
+bool CheckAssetChangeData(const PhotoAssetChangeData &changeData1, const PhotoAssetChangeData &changeData2)
+{
+    if (changeData1.isContentChanged_ != changeData2.isContentChanged_) {
+        MEDIA_ERR_LOG("isContentChanged_(%{public}d/%{public}d) wrong", changeData1.isContentChanged_,
+            changeData2.isContentChanged_);
+        return false;
+    }
+
+    if (changeData1.isDelete_ != changeData2.isDelete_) {
+        MEDIA_ERR_LOG("isDelete_(%{public}d/%{public}d) wrong", changeData1.isDelete_, changeData2.isDelete_);
+        return false;
+    }
+
+    if (changeData1.operation_ != changeData2.operation_) {
+        MEDIA_ERR_LOG("operation_(%{public}d/%{public}d) wrong", changeData1.operation_, changeData2.operation_);
+        return false;
+    }
+
+    if (changeData1.infoBeforeChange_.ownerAlbumId_ != changeData2.infoBeforeChange_.ownerAlbumId_) {
+        MEDIA_ERR_LOG("ownerAlbumId_(%{public}d/%{public}d) wrong", changeData1.infoBeforeChange_.ownerAlbumId_,
+            changeData2.infoBeforeChange_.ownerAlbumId_);
+        return false;
+    }
+
+    if (changeData1.infoAfterChange_.ownerAlbumId_ != changeData2.infoAfterChange_.ownerAlbumId_) {
+        MEDIA_ERR_LOG("ownerAlbumId_(%{public}d/%{public}d) wrong", changeData1.infoAfterChange_.ownerAlbumId_,
+            changeData2.infoAfterChange_.ownerAlbumId_);
+        return false;
+    }
+    return true;
+}
+
+bool CheckInsertAlbumInfo(const AlbumChangeInfo &refreshAlbumInfo, AlbumChangeInfo initAlbumInfo,
+    const PhotoAssetChangeInfo &queryAssetInfo, map<int32_t, AlbumChangeData> &albumChangeDatas)
+{
+    // 数据信息
+    auto expectedAlbumInfo = initAlbumInfo;
+    if (!queryAssetInfo.isHidden_) {
+        // 普通资产数量更新
+        expectedAlbumInfo.count_++;
+        if (queryAssetInfo.mediaType_ == static_cast<int32_t>(MEDIA_TYPE_VIDEO)) {
+            expectedAlbumInfo.videoCount_++;
+        } else if (queryAssetInfo.mediaType_ == static_cast<int32_t>(MEDIA_TYPE_IMAGE)) {
+            expectedAlbumInfo.imageCount_++;
+        }
+        // 封面更新
+        // 视频和图片为date_added，其它为dateTaken
+        bool isDateAdded = initAlbumInfo.albumId_ == IMAGE_ALBUM_ID || initAlbumInfo.albumId_ == VIDEO_ALBUM_ID;
+        auto queryAssetCoverDateTime = isDateAdded ? queryAssetInfo.dateAddedMs_ : queryAssetInfo.dateTakenMs_;
+        if (queryAssetCoverDateTime > initAlbumInfo.coverDateTime_) {
+            expectedAlbumInfo.coverDateTime_ = queryAssetCoverDateTime;
+            expectedAlbumInfo.coverUri_ = queryAssetInfo.uri_;
+            if (!CheckAssetEqual(refreshAlbumInfo.coverInfo_, queryAssetInfo)) {
+                MEDIA_ERR_LOG("cover info wrong");
+                return false;
+            }
+        } else {
+            if (!CheckAssetEqual(refreshAlbumInfo.coverInfo_, initAlbumInfo.coverInfo_)) {
+                MEDIA_ERR_LOG("cover info wrong");
+                return false;
+            }
+        }
+    } else {
+        // 隐藏资产数量更新
+        expectedAlbumInfo.hiddenCount_++;
+        // 隐藏资产封面更新
+        if (queryAssetInfo.hiddenTime_ > initAlbumInfo.hiddenCoverDateTime_) {
+            expectedAlbumInfo.hiddenCoverDateTime_ = queryAssetInfo.hiddenTime_;
+            expectedAlbumInfo.hiddenCoverUri_ = queryAssetInfo.uri_;
+            if (!CheckAssetEqual(refreshAlbumInfo.hiddenCoverInfo_, queryAssetInfo)) {
+                MEDIA_ERR_LOG("hidden cover info wrong");
+                return false;
+            }
+        } else {
+            if (!CheckAssetEqual(refreshAlbumInfo.hiddenCoverInfo_, initAlbumInfo.hiddenCoverInfo_)) {
+                MEDIA_ERR_LOG("hidden cover info wrong");
+                return false;
+            }
+        }
+    }
+    if (!IsEqualAlbumInfo(refreshAlbumInfo, expectedAlbumInfo)) {
+        MEDIA_ERR_LOG("album info wrong");
+        return false;
+    }
+    AlbumChangeData albumChangeData;
+    albumChangeData.infoBeforeChange_ = initAlbumInfo;
+    albumChangeData.infoAfterChange_ = expectedAlbumInfo;
+    albumChangeData.isDelete_ = false;
+    albumChangeDatas.emplace(initAlbumInfo.albumId_, albumChangeData);
+    
+    // 数据库信息
+    auto queryAlbumInfo = GetAlbumInfo(refreshAlbumInfo.albumId_, g_rdbStore);
+    if (!IsEqualAlbumInfo(refreshAlbumInfo, queryAlbumInfo)) {
+        MEDIA_ERR_LOG("database album info wrong");
+        return false;
+    }
+    return true;
+}
+
+bool CheckInsertHiddenAlbum(const AlbumChangeInfo &refreshHiddenAlbumInfo, AlbumChangeInfo initHiddenAlbumInfo,
+    const PhotoAssetChangeInfo &queryAssetInfo, map<int32_t, AlbumChangeData> &albumChangeDatas)
+{
+    AlbumChangeInfo expectedAlbumInfo = initHiddenAlbumInfo;
+    if (queryAssetInfo.isHidden_) {
+        // 隐藏相册更新
+        expectedAlbumInfo.count_++;
+        expectedAlbumInfo.hiddenCount_ = expectedAlbumInfo.count_;
+        if (queryAssetInfo.mediaType_ == static_cast<int32_t>(MEDIA_TYPE_VIDEO)) {
+            expectedAlbumInfo.videoCount_++;
+        } else {
+            expectedAlbumInfo.imageCount_++;
+        }
+        if (refreshHiddenAlbumInfo.hiddenCoverDateTime_ < queryAssetInfo.hiddenTime_) {
+            expectedAlbumInfo.hiddenCoverDateTime_ = queryAssetInfo.hiddenTime_;
+            expectedAlbumInfo.hiddenCoverUri_ = queryAssetInfo.uri_;
+            if (!CheckAssetEqual(refreshHiddenAlbumInfo.coverInfo_, queryAssetInfo)) {
+                MEDIA_ERR_LOG("hidden cover info not refresh");
+                return false;
+            }
+        } else {
+            if (!CheckAssetEqual(refreshHiddenAlbumInfo.coverInfo_, initHiddenAlbumInfo.coverInfo_)) {
+                MEDIA_ERR_LOG("hidden cover info wrong");
+                return false;
+            }
+        }
+    } else {
+        MEDIA_ERR_LOG("not hidden asset.");
+        return false;
+    }
+    if (!IsEqualAlbumInfo(refreshHiddenAlbumInfo, expectedAlbumInfo)) {
+        return false;
+    }
+    AlbumChangeData albumChangeData;
+    albumChangeData.infoBeforeChange_ = initHiddenAlbumInfo;
+    albumChangeData.infoAfterChange_ = expectedAlbumInfo;
+    albumChangeData.isDelete_ = false;
+    albumChangeDatas.emplace(initHiddenAlbumInfo.albumId_, albumChangeData);
+    return true;
+}
+
+bool CheckInsertAlbumInfos(const AssetAccurateRefresh &assetRefresh, const vector<AlbumChangeInfo> &initAlbumInfos,
+    const PhotoAssetChangeInfo &queryAssetInfo, map<int32_t, AlbumChangeData> &albumChangeDatas)
+{
+    // 刷新相册ID
+    EXPECT_TRUE(assetRefresh.albumRefreshExe_.forceRefreshAlbums_.empty());
+    auto forceRefreshHiddenAlbums = assetRefresh.albumRefreshExe_.forceRefreshHiddenAlbums_;
+    EXPECT_TRUE(forceRefreshHiddenAlbums.empty());
+
+    // 刷新信息和数据库信息
+    auto refreshAlbumsMap = assetRefresh.albumRefreshExe_.refreshAlbums_;
+    for (auto &albumInfo : initAlbumInfos) {
+        auto albumId = albumInfo.albumId_;
+        if (refreshAlbumsMap.find(albumId) == refreshAlbumsMap.end()) {
+            MEDIA_ERR_LOG("no album id, albumId:%{public}d", albumId);
+            return false;
+        }
+        auto albumInfoIter = refreshAlbumsMap.find(albumId);
+        if (albumInfoIter == refreshAlbumsMap.end()) {
+            MEDIA_ERR_LOG("no album info, albumId:%{public}d", albumId);
+            return false;
+        }
+        // 隐藏相册计算方式不同
+        if (albumId == HIDDEN_ALBUM_ID) {
+            if (!CheckInsertHiddenAlbum(albumInfoIter->second.second, albumInfo, queryAssetInfo, albumChangeDatas)) {
+                MEDIA_ERR_LOG("hidden album info wrong, albumId:%{public}d", albumId);
+                return false;
+            }
+            continue;
+        }
+        if (!CheckInsertAlbumInfo(albumInfoIter->second.second, albumInfo, queryAssetInfo, albumChangeDatas)) {
+            MEDIA_ERR_LOG("album info wrong, albumId:%{public}d", albumId);
+            return false;
+        }
+        ACCURATE_DEBUG("refrehInfo: %{public}s", albumInfoIter->second.second.ToString().c_str());
+    }
+    ACCURATE_DEBUG("return true");
+    return true;
+}
+
+bool CheckAlbumChangeDatas(const AlbumChangeData &notifyChangeData, const AlbumChangeData &expectedChangeData)
+{
+    return CheckAlbumChangeData(notifyChangeData, expectedChangeData.operation_, expectedChangeData.infoBeforeChange_,
+        expectedChangeData.infoAfterChange_, expectedChangeData.isDelete_);
+}
+
+bool CheckInsertAssetNotifyInfo(pair<Notification::AssetRefreshOperation, vector<PhotoAssetChangeData>> notifyInfos,
+    const PhotoAssetChangeData &assetChangeData, Notification::AssetRefreshOperation operation)
+{
+    auto assetOperation = notifyInfos.first;
+    if (assetOperation != operation) {
+        MEDIA_ERR_LOG("notify asset operation wrong: %{public}d", assetOperation);
+        return false;
+    }
+    auto photoAssetChangeDataVec = notifyInfos.second;
+    if (photoAssetChangeDataVec.size() != 1) {
+        MEDIA_ERR_LOG("notify asset change info size wrong: %{public}zu", photoAssetChangeDataVec.size());
+        return false;
+    }
+    if (!CheckAssetChangeData(photoAssetChangeDataVec[0], assetChangeData)) {
+        MEDIA_ERR_LOG("asset change data wrong.");
+        return false;
+    }
+    return true;
+}
+
+bool CheckInsertNotifyAlbumInfos(map<Notification::AlbumRefreshOperation, vector<AlbumChangeData>> notifyAlbumInfos,
+    Notification::AlbumRefreshOperation operation, const map<int32_t, AlbumChangeData> albumChangeDatas,
+    int64_t notifySize)
+{
+    auto iter = notifyAlbumInfos.find(operation);
+    if (iter == notifyAlbumInfos.end()) {
+        MEDIA_ERR_LOG("notify album operation wrong: %{public}d", operation);
+        return false;
+    }
+    
+    auto albumChangeDataVec = iter->second;
+    if (notifySize != albumChangeDataVec.size()) {
+        MEDIA_ERR_LOG("notify size wrong");
+        return false;
+    }
+    for (auto &albumChangeData : albumChangeDataVec) {
+        auto albumId = albumChangeData.infoAfterChange_.albumId_;
+        auto expectedAlbumChangeIter = albumChangeDatas.find(albumId);
+        if (expectedAlbumChangeIter == albumChangeDatas.end()) {
+            MEDIA_ERR_LOG("no albumId:%{public}d", albumId);
+            return false;
+        }
+        if (!CheckAlbumChangeDatas(albumChangeData, expectedAlbumChangeIter->second)) {
+            MEDIA_ERR_LOG("album change data wrong: %{public}d", albumId);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool CheckInsertNotifyInfos(const AssetAccurateRefresh &assetRefresh, const PhotoAssetChangeData &assetChangeData,
+    const map<int32_t, AlbumChangeData> albumChangeDatas)
+{
+    auto notifyAssetInfos = assetRefresh.notifyExe_.notifyInfos_;
+    if (notifyAssetInfos.size() != 1) {
+        MEDIA_ERR_LOG("notify asset change type size wrong: %{public}zu", notifyAssetInfos.size());
+        return false;
+    }
+    if (!CheckInsertAssetNotifyInfo(*(notifyAssetInfos.begin()), assetChangeData, Notification::ASSET_OPERATION_ADD)) {
+        MEDIA_ERR_LOG("asset notify info wrong.");
+        return false;
+    }
+
+    auto notifyAlbumInfos = assetRefresh.albumRefreshExe_.albumRefresh_.notifyExe_.notifyInfos_;
+    if (notifyAlbumInfos.size() != 1) {
+        MEDIA_ERR_LOG("notify album change type size wrong: %{public}zu", notifyAlbumInfos.size());
+        return false;
+    }
+    if (!CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE, albumChangeDatas,
+        albumChangeDatas.size())) {
+        MEDIA_ERR_LOG("notify album info wrong.");
+        return false;
+    }
+
+    return true;
+}
+
+bool CheckAlbumInfo(const unordered_map<int32_t, pair<AlbumRefreshInfo, AlbumChangeInfo>> &refreshAlbums_,
+    const AlbumChangeInfo &initAlbumInfo,
+    const AlbumChangeInfo &expectedAlbumInfo, RdbOperation operation, map<int32_t, AlbumChangeData> &albumChangeDatas)
+{
+    auto refreshIter = refreshAlbums_.find(expectedAlbumInfo.albumId_);
+    if (refreshIter == refreshAlbums_.end()) {
+        MEDIA_ERR_LOG("No refresh album id: %{public}d", expectedAlbumInfo.albumId_);
+        return false;
+    }
+    if (!IsEqualAlbumInfo(expectedAlbumInfo, refreshIter->second.second)) {
+        MEDIA_ERR_LOG("refresh album info wrong");
+        return false;
+    }
+    AlbumChangeData albumChangeData;
+    albumChangeData.infoBeforeChange_ = initAlbumInfo;
+    albumChangeData.infoAfterChange_ = expectedAlbumInfo;
+    albumChangeData.operation_ = operation;
+    albumChangeData.isDelete_ = false;
+    albumChangeDatas.emplace(expectedAlbumInfo.albumId_, albumChangeData);
+    return true;
+}
+bool CheckAssetNotifyInfo(const map<Notification::AssetRefreshOperation, vector<PhotoAssetChangeData>> &notifyInfos,
+    Notification::AssetRefreshOperation operation, const PhotoAssetChangeData &assetChangeData)
+{
+    auto iter = notifyInfos.find(operation);
+    if (iter == notifyInfos.end()) {
+        MEDIA_ERR_LOG("no operation: %{public}d", operation);
+        return false;
+    }
+    auto assetChangeDatas = iter->second;
+    for (auto assetChangeData : assetChangeDatas) {
+        if (CheckAssetChangeData(assetChangeData, assetChangeData)) {
+            return true;
+        }
+    }
+    MEDIA_ERR_LOG("no equal asset change data.");
+    return false;
+}
+void PrepareNormalAssets()
+{
+    vector<ValuesBucket> values;
+    values.push_back(GetAssetInsertValue(GetFavoriteImageAsset()));
+    values.push_back(GetAssetInsertValue(GetFavoriteVideoAsset()));
+    values.push_back(GetAssetInsertValue(GetImageAsset()));
+    int64_t insertNums = 0;
+    auto ret = g_rdbStore->BatchInsert(insertNums, PhotoColumn::PHOTOS_TABLE, values);
+    ACCURATE_DEBUG("ret: %{public}d, insert values: %{public}" PRId64, ret, insertNums);
+}
+
+void ModifyAssetDateTime(int64_t dateTaken)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.NotEqualTo(PhotoColumn::MEDIA_ID, 0);
+    ValuesBucket value;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TAKEN, dateTaken);
+    value.PutInt(PhotoColumn::MEDIA_DATE_ADDED, dateTaken);
+    int32_t changedRows = 0;
+    auto ret = g_rdbStore->Update(changedRows, value, predicates);
+    ACCURATE_DEBUG("ret: %{public}d, insert values: %{public}d", ret, changedRows);
 }
 
 } // namespace
 
-void AlbumAccurateRefreshTest::SetUpTestCase()
+void AssetAccurateRefreshTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -381,11 +701,12 @@ void AlbumAccurateRefreshTest::SetUpTestCase()
     SetTables();
 }
 
-void AlbumAccurateRefreshTest::SetUp()
+void AssetAccurateRefreshTest::SetUp()
 {
+    PrepareAlbumData();
 }
 
-void AlbumAccurateRefreshTest::TearDownTestCase()
+void AssetAccurateRefreshTest::TearDownTestCase()
 {
     CleanTestTables();
     g_rdbStore = nullptr;
@@ -394,1959 +715,995 @@ void AlbumAccurateRefreshTest::TearDownTestCase()
     MEDIA_INFO_LOG("Clean is finish");
 }
 
-void AlbumAccurateRefreshTest::TearDown()
+void AssetAccurateRefreshTest::TearDown()
 {
     MEDIA_INFO_LOG("TearDown start");
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(0));
+    RdbPredicates alumPredicates(PhotoAlbumColumns::TABLE);
+    alumPredicates.NotEqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(0));
     
     int deleteRows = 0;
-    g_rdbStore->Delete(deleteRows, predicates);
+    g_rdbStore->Delete(deleteRows, alumPredicates);
+    MEDIA_INFO_LOG("delete album: %{public}d", deleteRows);
+
+    RdbPredicates photosPredicates(PhotoColumn::PHOTOS_TABLE);
+    photosPredicates.GreaterThan(PhotoColumn::MEDIA_ID, to_string(0));
+    g_rdbStore->Delete(deleteRows, photosPredicates);
+    MEDIA_INFO_LOG("delete Photos: %{public}d", deleteRows);
     MEDIA_INFO_LOG("TearDown end");
 }
 
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Init_001, TestSize.Level2)
+HWTEST_F(AssetAccurateRefreshTest, Init_001, TestSize.Level2)
 {
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Init_001");
-    AlbumAccurateRefresh albumRefresh(trans);
-    EXPECT_TRUE(albumRefresh.trans_ != nullptr);
-    EXPECT_TRUE(albumRefresh.dataManager_.trans_ != nullptr);
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>("Init_001");
+    AssetAccurateRefresh assetRefresh(trans);
+    EXPECT_TRUE(assetRefresh.trans_ != nullptr);
+    EXPECT_TRUE(assetRefresh.dataManager_.trans_ != nullptr);
 }
 
-// 测试用例初始化运行时，创建PhotoAlbum表，里面包含系统相册、用户相册、来源相册内容
-// Init查询PhotoAlbum表中的数据，进行判断
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Insert_cmd_002, TestSize.Level2)
+HWTEST_F(AssetAccurateRefreshTest, Insert_002, TestSize.Level2)
 {
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    ValuesBucket values;
-    cmd.SetValueBucket(GetFavoriteInsertAlbum());
-    AlbumAccurateRefresh albumRefresh;
-    int64_t changeRow = 0;
-    auto ret = albumRefresh.Insert(cmd, changeRow);
-
+    AssetAccurateRefresh assetRefresh("Insert_002");
+    int64_t outRowId = 0;
+    auto assetInfo = GetFavoriteVideoAsset();
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRow == 1);
-
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefresh, albumInfo));
+    EXPECT_TRUE(outRowId > 0);
     
-    // 通知结果
-    albumRefresh.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefresh, albumInfo));
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
+
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    assetChangeData.isContentChanged_ = false;
+    assetChangeData.thumbnailChangeStatus_ = ThumbnailChangeStatus::THUMBNAIL_NOT_EXISTS;
+    assetChangeData.isDelete_ = false;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos =
+        { FAVORITE_ALBUM_INFO, VIDEO_ALBUM_INFO, GetUserInsertInfo(FAVORITE_VIDEO_ASSET_ALBUM_ID)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+
+    // Notify
+    assetRefresh.Notify();
+    EXPECT_TRUE(CheckInsertNotifyInfos(assetRefresh, assetChangeData, albumChangeDatas));
 }
 
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Insert_Trans_cmd_003, TestSize.Level2)
+HWTEST_F(AssetAccurateRefreshTest, Insert_003, TestSize.Level2)
 {
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    cmd.SetValueBucket(GetTrashInsertAlbum());
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Insert_Trans_cmd_003");
-    AlbumAccurateRefresh albumRefresh(trans);
-    int64_t changeRow = 0;
-    std::function<int(void)> transFunc = [&]()->int {
-        albumRefresh.Insert(cmd, changeRow);
-        return ACCURATE_REFRESH_RET_OK;
-    };
-    // trans查询
-    auto ret = trans->RetryTrans(transFunc);
+    AssetAccurateRefresh assetRefresh("Insert_003");
+    int64_t outRowId = 0;
+    auto assetInfo = GetVideoAsset();
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    MEDIA_INFO_LOG("albulmInfo: %{public}s", albumInfo.ToString().c_str());
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, TRASH_ALBUM_INFO));
+    EXPECT_TRUE(outRowId > 1);
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
 
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefresh, albumInfo));
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
 
-    // 通知结果
-    albumRefresh.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefresh, albumInfo));
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos = { VIDEO_ALBUM_INFO, GetUserInsertInfo(assetInfo.ownerAlbumId_)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+
+    // Notify
+    assetRefresh.Notify();
+    EXPECT_TRUE(CheckInsertNotifyInfos(assetRefresh, assetChangeData, albumChangeDatas));
 }
 
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Insert_004, TestSize.Level2)
+HWTEST_F(AssetAccurateRefreshTest, Insert_004, TestSize.Level2)
 {
-    ValuesBucket values = GetFavoriteInsertAlbum();
-    AlbumAccurateRefresh albumRefresh;
-    int64_t changeRow = 0;
-    auto ret = albumRefresh.Insert(changeRow, PhotoAlbumColumns::TABLE, values);
+    AssetAccurateRefresh assetRefresh("Insert_004");
+    int64_t outRowId = 0;
+    auto assetInfo = GetFavoriteImageAsset();
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefresh, albumInfo));
-    
-    // 通知结果
-    albumRefresh.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefresh, albumInfo));
+    EXPECT_TRUE(outRowId > 1);
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
+
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos =
+        { FAVORITE_ALBUM_INFO, IMAGE_ALBUM_INFO, GetUserInsertInfo(assetInfo.ownerAlbumId_)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+
+    // Notify
+    assetRefresh.Notify();
+    EXPECT_TRUE(CheckInsertNotifyInfos(assetRefresh, assetChangeData, albumChangeDatas));
 }
 
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Insert_Trans_005, TestSize.Level2)
+HWTEST_F(AssetAccurateRefreshTest, Insert_005, TestSize.Level2)
 {
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Insert_Trans_005");
-    AlbumAccurateRefresh albumRefresh(trans);
-    int64_t changeRow = 0;
-    ValuesBucket values = GetFavoriteInsertAlbum();
-    std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefresh.Insert(changeRow, PhotoAlbumColumns::TABLE, values);
-        return ret;
-    };
-    // trans查询
-    auto ret = trans->RetryTrans(transFunc);
+    AssetAccurateRefresh assetRefresh("Insert_005");
+    int64_t outRowId = 0;
+    auto assetInfo = GetImageAsset();
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefresh, favoriteAlbumInfo));
-    // 通知结果
-    albumRefresh.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefresh, favoriteAlbumInfo));
+    EXPECT_TRUE(outRowId > 1);
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
+
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos = { IMAGE_ALBUM_INFO, GetUserInsertInfo(assetInfo.ownerAlbumId_)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+
+    // Notify
+    assetRefresh.Notify();
+    EXPECT_TRUE(CheckInsertNotifyInfos(assetRefresh, assetChangeData, albumChangeDatas));
 }
 
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_cmd_006, TestSize.Level2)
+HWTEST_F(AssetAccurateRefreshTest, Insert_006, TestSize.Level2)
 {
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    int64_t insertNums = 0;
-    AlbumAccurateRefresh albumRefresh;
-    auto values = GetBatchInsertValues();
-    auto ret = albumRefresh.BatchInsert(cmd, insertNums, values);
+    AssetAccurateRefresh assetRefresh("Insert_006");
+    int64_t outRowId = 0;
+    auto assetInfo = GetFavoriteVideoHiddenAsset();
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(insertNums == values.size());
+    EXPECT_TRUE(outRowId > 1);
+    // 资产数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
 
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, FAVORITE_ALBUM_INFO));
-    AlbumChangeInfo trashAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    EXPECT_TRUE(IsEqualAlbumInfo(trashAlbumInfo, TRASH_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckBatchInsertResult(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
+    // 资产data manager信息
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos =
+        { FAVORITE_ALBUM_INFO, VIDEO_ALBUM_INFO, HIDDEN_ALBUM_INFO, GetUserInsertInfo(assetInfo.ownerAlbumId_)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
     
-    // 通知结果
-    albumRefresh.Notify();
-
-    EXPECT_TRUE(CheckBatchInsertNotify(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
+    // Notify
+    assetRefresh.Notify();
+    // 资产通知
+    auto notifyAssetInfos = assetRefresh.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAssetInfos.size() == 1);
+    EXPECT_TRUE(CheckInsertAssetNotifyInfo(*(notifyAssetInfos.begin()), assetChangeData,
+        Notification::ASSET_OPERATION_ADD_HIDDEN));
+    
+    auto notifyAlbumInfos = assetRefresh.albumRefreshExe_.albumRefresh_.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAlbumInfos.size() == 1);
+    EXPECT_TRUE(CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE_HIDDEN,
+        albumChangeDatas, 4));
 }
 
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_Trans_cmd_007, TestSize.Level2)
+HWTEST_F(AssetAccurateRefreshTest, Insert_007, TestSize.Level2)
 {
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    int64_t insertNums = 0;
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_BatchInsert_Trans_cmd_007");
-    AlbumAccurateRefresh albumRefresh(trans);
-    auto values = GetBatchInsertValues();
-    std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefresh.BatchInsert(cmd, insertNums, values);
-        return ret;
-    };
-    // trans查询
-    auto ret = trans->RetryTrans(transFunc);
-    
+    AssetAccurateRefresh assetRefresh("Insert_007");
+    int64_t outRowId = 0;
+    auto assetInfo = GetCloudAsset();
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(insertNums == values.size());
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, FAVORITE_ALBUM_INFO));
-    AlbumChangeInfo trashAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    EXPECT_TRUE(IsEqualAlbumInfo(trashAlbumInfo, TRASH_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckBatchInsertResult(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
-    
-    // 通知结果
-    albumRefresh.Notify();
+    EXPECT_TRUE(outRowId > 1);
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
 
-    EXPECT_TRUE(CheckBatchInsertNotify(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos =
+        { IMAGE_ALBUM_INFO, CLOUD_ENHANCEMENT_ALBUM_INFO, GetUserInsertInfo(assetInfo.ownerAlbumId_)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+    
+    // Notify
+    assetRefresh.Notify();
+    // 资产通知
+    auto notifyAssetInfos = assetRefresh.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAssetInfos.size() == 1);
+    EXPECT_TRUE(CheckInsertAssetNotifyInfo(*(notifyAssetInfos.begin()), assetChangeData,
+        Notification::ASSET_OPERATION_ADD));
+    
+    auto notifyAlbumInfos = assetRefresh.albumRefreshExe_.albumRefresh_.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAlbumInfos.size() == 1);
+    EXPECT_TRUE(
+        CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE, albumChangeDatas, 3));
 }
 
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_008, TestSize.Level2)
+HWTEST_F(AssetAccurateRefreshTest, Insert_008, TestSize.Level2)
 {
-    int64_t insertNums = 0;
-    AlbumAccurateRefresh albumRefresh;
-    auto values = GetBatchInsertValues();
-    auto ret = albumRefresh.BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values);
+    AssetAccurateRefresh assetRefresh("Insert_008");
+    int64_t outRowId = 0;
+    auto assetInfo = GetTrashAsset();
+    auto value = GetAssetInsertValue(assetInfo);
+    auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(insertNums == values.size());
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, FAVORITE_ALBUM_INFO));
-    AlbumChangeInfo trashAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    EXPECT_TRUE(IsEqualAlbumInfo(trashAlbumInfo, TRASH_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckBatchInsertResult(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
-    
-    // 通知结果
-    albumRefresh.Notify();
+    EXPECT_TRUE(outRowId > 1);
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(assetInfo.fileId_);
+    EXPECT_TRUE(CheckAssetEqual(assetInfo, queryAssetInfo));
 
-    EXPECT_TRUE(CheckBatchInsertNotify(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_ADD;
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos = { TRASH_ALBUM_INFO };
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    EXPECT_TRUE(CheckInsertAlbumInfos(assetRefresh, initAlbumInfos, queryAssetInfo, albumChangeDatas));
+    
+    // Notify
+    assetRefresh.Notify();
+    // 资产通知
+    auto notifyAssetInfos = assetRefresh.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAssetInfos.size() == 1);
+    EXPECT_TRUE(CheckInsertAssetNotifyInfo(*(notifyAssetInfos.begin()), assetChangeData,
+        Notification::ASSET_OPERATION_ADD_TRASH));
+    
+    auto notifyAlbumInfos = assetRefresh.albumRefreshExe_.albumRefresh_.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAlbumInfos.size() == 1);
+    EXPECT_TRUE(CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE_TRASH,
+        albumChangeDatas, 1));
 }
 
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_Trans_009, TestSize.Level2)
+// trash 非封面
+HWTEST_F(AssetAccurateRefreshTest, Update_009, TestSize.Level2)
 {
-    int64_t insertNums = 0;
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_BatchInsert_Trans_009");
-    AlbumAccurateRefresh albumRefresh(trans);
-    auto values = GetBatchInsertValues();
-    std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefresh.BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values);
-        return ret;
-    };
-    auto ret = trans->RetryTrans(transFunc);
-    
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(insertNums == values.size());
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, FAVORITE_ALBUM_INFO));
-    AlbumChangeInfo trashAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    EXPECT_TRUE(IsEqualAlbumInfo(trashAlbumInfo, TRASH_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckBatchInsertResult(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
-    
-    // 通知结果
-    albumRefresh.Notify();
+    PrepareNormalAssets();
+    // 修改1个
+    ModifyAssetDateTime(12345); // dateTaken时间小于所有的相册coverDateTime
 
-    EXPECT_TRUE(CheckBatchInsertNotify(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_cmd_010, TestSize.Level2)
-{
-    PrepareAlbumData();
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    auto predicates = cmd.GetAbsRdbPredicates();
-    predicates->SetWhereClause(PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?");
-    predicates->SetWhereArgs({ to_string(PhotoAlbumSubType::FAVORITE) });
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
     ValuesBucket value;
-    auto newCount = FAVORITE_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = FAVORITE_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    cmd.SetValueBucket(value);
-
-    AlbumAccurateRefresh albumRefreshUpdate;
-    int32_t changeRows = 0;
-    auto ret = albumRefreshUpdate.Update(cmd, changeRows);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh("Update_009");
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    AlbumChangeInfo updateAlbumInfo = FAVORITE_ALBUM_INFO;
-    updateAlbumInfo.count_ = newCount;
-    updateAlbumInfo.imageCount_ = imageCount;
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, updateAlbumInfo));
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == newCount);
+    EXPECT_TRUE(changedRow == 1);
+    // 数据库
+    auto queryAssetInfo = GetAssetInfo(FAVORITE_IMAGE_ASSET_FILE_ID);
+    EXPECT_TRUE(queryAssetInfo.dateTrashedMs_ == dataTrashTime);
 
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckUpdateResult(albumRefreshUpdate, FAVORITE_ALBUM_INFO, favoriteAlbumInfo));
+    // data manager
+    auto changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData assetChangeData;
+    assetChangeData.operation_ = RDB_OPERATION_UPDATE;
+    assetChangeData.infoBeforeChange_ = GetFavoriteImageAsset();
+    assetChangeData.infoAfterChange_ = queryAssetInfo;
+    EXPECT_TRUE(changeDatasMap.size() == 1);
+    auto iter = changeDatasMap.begin();
+    EXPECT_TRUE(CheckAssetChangeData(iter->second, assetChangeData));
 
-    // 通知结果
-    albumRefreshUpdate.Notify();
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    // 相册刷新信息和数据库信息、通知信息
+    vector<AlbumChangeInfo> initAlbumInfos = { FAVORITE_ALBUM_INFO, IMAGE_ALBUM_INFO, TRASH_ALBUM_INFO,
+        GetUserInsertInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID)};
+    map<int32_t, AlbumChangeData> albumChangeDatas;
+    
+    // 刷新信息和数据库信息
+    auto refreshAlbumsMap = assetRefresh.albumRefreshExe_.refreshAlbums_;
+    AlbumChangeInfo refreshAlbumInfo = FAVORITE_ALBUM_INFO;
+    refreshAlbumInfo.count_--;
+    refreshAlbumInfo.imageCount_--;
+    CheckAlbumInfo(refreshAlbumsMap, FAVORITE_ALBUM_INFO, refreshAlbumInfo, RDB_OPERATION_UPDATE, albumChangeDatas);
 
-    EXPECT_TRUE(CheckUpdateNotify(albumRefreshUpdate, Notification::ALBUM_OPERATION_UPDATE, FAVORITE_ALBUM_INFO,
-        favoriteAlbumInfo));
+    refreshAlbumInfo = IMAGE_ALBUM_INFO;
+    refreshAlbumInfo.count_--;
+    refreshAlbumInfo.imageCount_--;
+    CheckAlbumInfo(refreshAlbumsMap, IMAGE_ALBUM_INFO, refreshAlbumInfo, RDB_OPERATION_UPDATE, albumChangeDatas);
+    
+    refreshAlbumInfo = GetUserInsertInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID);
+    refreshAlbumInfo.count_--;
+    refreshAlbumInfo.imageCount_--;
+    CheckAlbumInfo(refreshAlbumsMap, GetUserInsertInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID), refreshAlbumInfo,
+        RDB_OPERATION_UPDATE, albumChangeDatas);
+    // trash不更新封面
+    refreshAlbumInfo = TRASH_ALBUM_INFO;
+    refreshAlbumInfo.count_++;
+    refreshAlbumInfo.imageCount_++;
+    CheckAlbumInfo(refreshAlbumsMap, TRASH_ALBUM_INFO, refreshAlbumInfo, RDB_OPERATION_UPDATE, albumChangeDatas);
+    
+    // Notify
+    assetRefresh.Notify();
+    // 资产通知
+    auto notifyAssetInfos = assetRefresh.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAssetInfos.size() == 2);
+    CheckAssetNotifyInfo(notifyAssetInfos, Notification::ASSET_OPERATION_UPDATE_ADD_TRASH, assetChangeData);
+    CheckAssetNotifyInfo(notifyAssetInfos, Notification::ASSET_OPERATION_UPDATE_REMOVE_NORMAL, assetChangeData);
+
+    auto notifyAlbumInfos = assetRefresh.albumRefreshExe_.albumRefresh_.notifyExe_.notifyInfos_;
+    EXPECT_TRUE(notifyAlbumInfos.size() == 2);
+    EXPECT_TRUE(
+        CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE_TRASH, albumChangeDatas, 1));
+    EXPECT_TRUE(
+        CheckInsertNotifyAlbumInfos(notifyAlbumInfos, Notification::ALBUM_OPERATION_UPDATE, albumChangeDatas, 3));
 }
 
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Trans_cmd_011, TestSize.Level2)
+HWTEST_F(AssetAccurateRefreshTest, Update_Exceed_010, TestSize.Level2)
 {
-    PrepareAlbumData();
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    auto predicates = cmd.GetAbsRdbPredicates();
-    predicates->SetWhereClause(PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?");
-    predicates->SetWhereArgs({ to_string(PhotoAlbumSubType::FAVORITE) });
+    PrepareNormalAssets();
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
     ValuesBucket value;
-    auto newCount = FAVORITE_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = FAVORITE_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    cmd.SetValueBucket(value);
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Update_Trans_cmd_011");
-    AlbumAccurateRefresh albumRefreshUpdate(trans);
-    int32_t changeRows = 0;
-    std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefreshUpdate.Update(cmd, changeRows);
-        return ret;
-    };
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh("Update_Exceed_010");
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    AlbumChangeInfo updateAlbumInfo = FAVORITE_ALBUM_INFO;
-    updateAlbumInfo.count_ = newCount;
-    updateAlbumInfo.imageCount_ = imageCount;
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, updateAlbumInfo));
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == newCount);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckUpdateResult(albumRefreshUpdate, FAVORITE_ALBUM_INFO, favoriteAlbumInfo));
-
-    // 通知结果
-    albumRefreshUpdate.Notify();
-
-    EXPECT_TRUE(CheckUpdateNotify(albumRefreshUpdate, Notification::ALBUM_OPERATION_UPDATE, FAVORITE_ALBUM_INFO,
-        favoriteAlbumInfo));
-}
-
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_012, TestSize.Level2)
-{
-    PrepareAlbumData();
-    ValuesBucket value;
-    auto newCount = TRASH_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = TRASH_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    string whereClause = PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?";
-    vector<string> args = { to_string(PhotoAlbumSubType::TRASH) };
-
-    AlbumAccurateRefresh albumRefreshUpdate;
-    int32_t changeRows = 0;
-    auto ret = albumRefreshUpdate.Update(changeRows, PhotoAlbumColumns::TABLE, value, whereClause, args);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    // 数据库执行结果
-    AlbumChangeInfo trashAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    AlbumChangeInfo updateAlbumInfo = TRASH_ALBUM_INFO;
-    updateAlbumInfo.count_ = newCount;
-    updateAlbumInfo.imageCount_ = imageCount;
-    EXPECT_TRUE(IsEqualAlbumInfo(trashAlbumInfo, updateAlbumInfo));
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::TRASH) == newCount);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckUpdateResult(albumRefreshUpdate, TRASH_ALBUM_INFO, trashAlbumInfo));
-
-    // 通知结果
-    albumRefreshUpdate.Notify();
-
-    EXPECT_TRUE(CheckUpdateNotify(albumRefreshUpdate, Notification::ALBUM_OPERATION_UPDATE_TRASH, TRASH_ALBUM_INFO,
-        trashAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Trans_013, TestSize.Level2)
-{
-    PrepareAlbumData();
-    ValuesBucket value;
-    auto newCount = TRASH_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = TRASH_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    string whereClause = PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?";
-    vector<string> args = { to_string(PhotoAlbumSubType::TRASH) };
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Update_Trans_cmd_011");
-    AlbumAccurateRefresh albumRefreshUpdate(trans);
-    int32_t changeRows = 0;
-    std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefreshUpdate.Update(changeRows, PhotoAlbumColumns::TABLE, value, whereClause, args);
-        return ret;
-    };
-
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    // 数据库执行结果
-    AlbumChangeInfo trashAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    AlbumChangeInfo updateAlbumInfo = TRASH_ALBUM_INFO;
-    updateAlbumInfo.count_ = newCount;
-    updateAlbumInfo.imageCount_ = imageCount;
-    EXPECT_TRUE(IsEqualAlbumInfo(trashAlbumInfo, updateAlbumInfo));
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::TRASH) == newCount);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckUpdateResult(albumRefreshUpdate, TRASH_ALBUM_INFO, trashAlbumInfo));
-
-    // 通知结果
-    albumRefreshUpdate.Notify();
-
-    EXPECT_TRUE(CheckUpdateNotify(albumRefreshUpdate, Notification::ALBUM_OPERATION_UPDATE_TRASH, TRASH_ALBUM_INFO,
-        trashAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_014, TestSize.Level2)
-{
-    PrepareHiddenData();
-    ValuesBucket value;
-    auto newCount = HIDDEN_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = HIDDEN_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
-
-    AlbumAccurateRefresh albumRefreshUpdate;
-    int32_t changeRows = 0;
-    auto ret = albumRefreshUpdate.Update(changeRows, value, predicates);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    // 数据库执行结果
-    AlbumChangeInfo hiddenAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::HIDDEN);
-    AlbumChangeInfo updateAlbumInfo = HIDDEN_ALBUM_INFO;
-    updateAlbumInfo.count_ = newCount;
-    updateAlbumInfo.imageCount_ = imageCount;
-    EXPECT_TRUE(IsEqualAlbumInfo(hiddenAlbumInfo, updateAlbumInfo));
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::HIDDEN) == newCount);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckUpdateResult(albumRefreshUpdate, HIDDEN_ALBUM_INFO, hiddenAlbumInfo));
-
-    // 通知结果
-    albumRefreshUpdate.Notify();
-
-    EXPECT_TRUE(CheckUpdateNotify(albumRefreshUpdate, Notification::ALBUM_OPERATION_UPDATE_HIDDEN,
-        HIDDEN_ALBUM_INFO, hiddenAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Trans_015, TestSize.Level2)
-{
-    PrepareHiddenData();
-    ValuesBucket value;
-    auto newCount = HIDDEN_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = HIDDEN_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Update_Trans_015");
-    AlbumAccurateRefresh albumRefreshUpdate(trans);
-    int32_t changeRows = 0;
-    std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefreshUpdate.Update(changeRows, value, predicates);
-        return ret;
-    };
-
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-
-    // 数据库执行结果
-    AlbumChangeInfo hiddenAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::HIDDEN);
-    AlbumChangeInfo updateAlbumInfo = HIDDEN_ALBUM_INFO;
-    updateAlbumInfo.count_ = newCount;
-    updateAlbumInfo.imageCount_ = imageCount;
-    EXPECT_TRUE(IsEqualAlbumInfo(hiddenAlbumInfo, updateAlbumInfo));
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::HIDDEN) == newCount);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckUpdateResult(albumRefreshUpdate, HIDDEN_ALBUM_INFO, hiddenAlbumInfo));
-
-    // 通知结果
-    albumRefreshUpdate.Notify();
-
-    EXPECT_TRUE(CheckUpdateNotify(albumRefreshUpdate, Notification::ALBUM_OPERATION_UPDATE_HIDDEN, HIDDEN_ALBUM_INFO,
-        hiddenAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_cmd_016, TestSize.Level2)
-{
-    PrepareAlbumData();
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    auto predicates = cmd.GetAbsRdbPredicates();
-    predicates->SetWhereClause(PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?");
-    predicates->SetWhereArgs({ to_string(PhotoAlbumSubType::FAVORITE) });
-
-    AlbumAccurateRefresh albumRefreshDel;
-    int32_t changeRows = 0;
-    auto ret = albumRefreshDel.LogicalDeleteReplaceByUpdate(cmd, changeRows);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    auto updateAlbumInfo = FAVORITE_ALBUM_INFO;
-    updateAlbumInfo.dirty_ = static_cast<int32_t>(DirtyType::TYPE_DELETED);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, updateAlbumInfo));
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_Trans_cmd_017, TestSize.Level2)
-{
-    ACCURATE_DEBUG("");
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-    EXPECT_TRUE(GetAlbumDirtyType(PhotoAlbumSubType::FAVORITE) == static_cast<int32_t>(DirtyType::TYPE_NEW));
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    auto predicates = cmd.GetAbsRdbPredicates();
-    predicates->SetWhereClause(PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?");
-    predicates->SetWhereArgs({ to_string(PhotoAlbumSubType::FAVORITE) });
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Delete_Trans_cmd_017");
-    AlbumAccurateRefresh albumRefreshDel(trans);
-    int32_t changeRows = 0;
-    function<int32_t()> transFunc = [&] () -> int32_t {
-        auto ret = albumRefreshDel.LogicalDeleteReplaceByUpdate(cmd, changeRows);
-        return ret;
-    };
-
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    auto updateAlbumInfo = FAVORITE_ALBUM_INFO;
-    updateAlbumInfo.dirty_ = static_cast<int32_t>(DirtyType::TYPE_DELETED);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, updateAlbumInfo));
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_018, TestSize.Level2)
-{
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-    EXPECT_TRUE(GetAlbumDirtyType(PhotoAlbumSubType::FAVORITE) == static_cast<int32_t>(DirtyType::TYPE_NEW));
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::FAVORITE));
-
-    AlbumAccurateRefresh albumRefreshDel;
-    int32_t changeRows = 0;
-    auto ret = albumRefreshDel.LogicalDeleteReplaceByUpdate(predicates, changeRows);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    auto updateAlbumInfo = FAVORITE_ALBUM_INFO;
-    updateAlbumInfo.dirty_ = static_cast<int32_t>(DirtyType::TYPE_DELETED);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, updateAlbumInfo));
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_Trans_019, TestSize.Level2)
-{
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-    EXPECT_TRUE(GetAlbumDirtyType(PhotoAlbumSubType::FAVORITE) == static_cast<int32_t>(DirtyType::TYPE_NEW));
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::FAVORITE));
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Delete_Trans_019");
-    AlbumAccurateRefresh albumRefreshDel(trans);
-    int32_t changeRows = 0;
-    function<int32_t()> transFunc = [&] () -> int32_t {
-        auto ret = albumRefreshDel.LogicalDeleteReplaceByUpdate(predicates, changeRows);
-        return ret;
-    };
-
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    auto updateAlbumInfo = FAVORITE_ALBUM_INFO;
-    updateAlbumInfo.dirty_ = static_cast<int32_t>(DirtyType::TYPE_DELETED);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, updateAlbumInfo));
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_020, TestSize.Level2)
-{
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-    
-    AlbumAccurateRefresh albumRefreshDel;
-    int32_t changeRows = 0;
-    string whereClause = PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?";
-    vector<string> args = { to_string(PhotoAlbumSubType::FAVORITE) };
-    auto ret = albumRefreshDel.Delete(changeRows, PhotoAlbumColumns::TABLE, whereClause, args);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-
-     // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_Trans_021, TestSize.Level2)
-{
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Delete_Trans_021");
-    AlbumAccurateRefresh albumRefreshDel(trans);
-    int32_t changeRows = 0;
-    string whereClause = PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?";
-    vector<string> args = { to_string(PhotoAlbumSubType::FAVORITE) };
-    function<int32_t()> transFunc = [&] () -> int32_t {
-        auto ret = albumRefreshDel.Delete(changeRows, PhotoAlbumColumns::TABLE, whereClause, args);
-        return ret;
-    };
-
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_022, TestSize.Level2)
-{
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::FAVORITE));
-    
-    AlbumAccurateRefresh albumRefreshDel;
-    int32_t changeRows = 0;
-    auto ret = albumRefreshDel.Delete(changeRows, predicates);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_Trans_023, TestSize.Level2)
-{
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::FAVORITE));
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Delete_Trans_023");
-    AlbumAccurateRefresh albumRefreshDel(trans);
-    int32_t changeRows = 0;
-    string whereClause = PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?";
-    vector<string> args = { to_string(PhotoAlbumSubType::FAVORITE) };
-    function<int32_t()> transFunc = [&] () -> int32_t {
-        auto ret = albumRefreshDel.Delete(changeRows, predicates);
-        return ret;
-    };
-
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_024, TestSize.Level2)
-{
-    AlbumAccurateRefresh albumRefreshExe;
-    albumRefreshExe.Init();
-    auto ret = albumRefreshExe.ExecuteSql(insertSql, RdbOperation::RDB_OPERATION_ADD);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_Trans_025, TestSize.Level2)
-{
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Exe_Trans_024");
-    AlbumAccurateRefresh albumRefreshExe(trans);
-    albumRefreshExe.Init();
-    function<int32_t()> transFunc = [&]() -> int32_t {
-        return albumRefreshExe.ExecuteSql(insertSql, RdbOperation::RDB_OPERATION_ADD);
-    };
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_026, TestSize.Level2)
-{
-    vector<ValueObject> args = {to_string(FAVORITE_ALBUM_INFO.count_)};
-
-    AlbumAccurateRefresh albumRefreshExe;
-    albumRefreshExe.Init();
-    auto changedRowId =
-        albumRefreshExe.ExecuteForLastInsertedRowId(insertSqlWithArgs, args, RdbOperation::RDB_OPERATION_ADD);
-    ACCURATE_DEBUG("changedRowId: %{public}d", changedRowId);
-    EXPECT_TRUE(changedRowId > 0);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_027, TestSize.Level2)
-{
-    vector<ValueObject> args = {to_string(FAVORITE_ALBUM_INFO.count_)};
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Exe_Trans_024");
-    AlbumAccurateRefresh albumRefreshExe(trans);
-    albumRefreshExe.Init();
-    int32_t changedRowId = 0;
-    function<int32_t()> transFunc = [&]() -> int32_t {
-        changedRowId =
-            albumRefreshExe.ExecuteForLastInsertedRowId(insertSqlWithArgs, args, RdbOperation::RDB_OPERATION_ADD);
-        if (changedRowId != E_HAS_DB_ERROR) {
-            return ACCURATE_REFRESH_RET_OK;
-        } else {
-            return E_HAS_DB_ERROR;
-        }
-    };
-    auto ret = trans->RetryTrans(transFunc);
-    
-    ACCURATE_DEBUG("changedRowId: %{public}d", changedRowId);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changedRowId > 0);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_028, TestSize.Level2)
-{
-    vector<ValueObject> args = {to_string(FAVORITE_ALBUM_INFO.count_)};
-
-    AlbumAccurateRefresh albumRefreshExe;
-    albumRefreshExe.Init();
-    auto ret = albumRefreshExe.ExecuteSql(insertSqlWithArgs, args, RdbOperation::RDB_OPERATION_ADD);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_029, TestSize.Level2)
-{
-    vector<ValueObject> args = {to_string(FAVORITE_ALBUM_INFO.count_)};
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Exe_Trans_024");
-    AlbumAccurateRefresh albumRefreshExe(trans);
-    albumRefreshExe.Init();
-
-    function<int32_t()> transFunc = [&]() -> int32_t {
-        auto ret = albumRefreshExe.ExecuteSql(insertSqlWithArgs, args, RdbOperation::RDB_OPERATION_ADD);
-        return ret;
-    };
-    auto ret = trans->RetryTrans(transFunc);
-
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_030, TestSize.Level2)
-{
-    vector<ValueObject> args = {to_string(FAVORITE_ALBUM_INFO.count_)};
-
-    AlbumAccurateRefresh albumRefreshExe;
-    albumRefreshExe.Init();
-    int64_t outValue = 0;
-    auto ret =
-        albumRefreshExe.ExecuteForChangedRowCount(outValue, insertSqlWithArgs, args, RdbOperation::RDB_OPERATION_ADD);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(outValue == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_031, TestSize.Level2)
-{
-    vector<ValueObject> args = {to_string(FAVORITE_ALBUM_INFO.count_)};
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Exe_Trans_024");
-    AlbumAccurateRefresh albumRefreshExe(trans);
-    albumRefreshExe.Init();
-    int64_t outValue = 0;
-    function<int32_t()> transFunc = [&]() -> int32_t {
-        auto ret =albumRefreshExe.ExecuteForChangedRowCount(outValue, insertSqlWithArgs, args,
-            RdbOperation::RDB_OPERATION_ADD);
-        return ret;
-    };
-    auto ret = trans->RetryTrans(transFunc);
-
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(outValue == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Init_034, TestSize.Level2)
-{
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Init_034");
-    AlbumAccurateRefresh albumRefresh("AlbumAccurateRefreshTest_Init_034", trans);
-    EXPECT_TRUE(albumRefresh.trans_ != nullptr);
-    EXPECT_TRUE(albumRefresh.dataManager_.trans_ != nullptr);
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Insert_cmd_35, TestSize.Level2)
-{
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    ValuesBucket values;
-    cmd.SetValueBucket(GetPhotoAlbumInsertValue(FAVORITE_ALBUM_INFO_TOW));
-    AlbumAccurateRefresh albumRefresh("AlbumAccurateRefreshTest_Insert_cmd_35");
-    int64_t changeRow = 0;
-    auto ret = albumRefresh.Insert(cmd, changeRow);
-
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRow == 101);
-
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO_TOW));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefresh, albumInfo));
-    
-    // 通知结果
-    albumRefresh.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefresh, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Insert_Trans_cmd_036, TestSize.Level2)
-{
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    cmd.SetValueBucket(GetPhotoAlbumInsertValue(TRASH_ALBUM_INFO_TOW));
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Insert_Trans_cmd_036");
-    AlbumAccurateRefresh albumRefresh("AlbumAccurateRefreshTest_Insert_Trans_cmd_036", trans);
-    int64_t changeRow = 0;
-    std::function<int(void)> transFunc = [&]()->int {
-        albumRefresh.Insert(cmd, changeRow);
-        return ACCURATE_REFRESH_RET_OK;
-    };
-    // trans查询
-    auto ret = trans->RetryTrans(transFunc);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    MEDIA_INFO_LOG("albulmInfo: %{public}s", albumInfo.ToString().c_str());
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, TRASH_ALBUM_INFO_TOW));
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefresh, albumInfo));
-
-    // 通知结果
-    albumRefresh.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefresh, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Insert_037, TestSize.Level2)
-{
-    ValuesBucket values = GetPhotoAlbumInsertValue(FAVORITE_ALBUM_INFO_TOW);
-    AlbumAccurateRefresh albumRefresh("AlbumAccurateRefreshTest_Insert_037");
-    int64_t changeRow = 0;
-    auto ret = albumRefresh.Insert(changeRow, PhotoAlbumColumns::TABLE, values);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO_TOW));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefresh, albumInfo));
-    
-    // 通知结果
-    albumRefresh.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefresh, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Insert_Trans_038, TestSize.Level2)
-{
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Insert_Trans_038");
-    AlbumAccurateRefresh albumRefresh("AlbumAccurateRefreshTest_Insert_Trans_038", trans);
-    int64_t changeRow = 0;
-    ValuesBucket values = GetPhotoAlbumInsertValue(FAVORITE_ALBUM_INFO_TOW);
-    std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefresh.Insert(changeRow, PhotoAlbumColumns::TABLE, values);
-        return ret;
-    };
-    // trans查询
-    auto ret = trans->RetryTrans(transFunc);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, FAVORITE_ALBUM_INFO_TOW));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefresh, favoriteAlbumInfo));
-    // 通知结果
-    albumRefresh.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefresh, favoriteAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_cmd_039, TestSize.Level2)
-{
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    int64_t insertNums = 0;
-    AlbumAccurateRefresh albumRefresh("AlbumAccurateRefreshTest_BatchInsert_cmd_039");
-    vector<ValuesBucket> values;
-    values.push_back(GetPhotoAlbumInsertValue(FAVORITE_ALBUM_INFO_TOW));
-    values.push_back(GetPhotoAlbumInsertValue(TRASH_ALBUM_INFO_TOW));
-    auto ret = albumRefresh.BatchInsert(cmd, insertNums, values);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(insertNums == values.size());
-
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, FAVORITE_ALBUM_INFO_TOW));
-    AlbumChangeInfo trashAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    EXPECT_TRUE(IsEqualAlbumInfo(trashAlbumInfo, TRASH_ALBUM_INFO_TOW));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckBatchInsertResult(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
-    
-    // 通知结果
-    albumRefresh.Notify();
-
-    EXPECT_TRUE(CheckBatchInsertNotify(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_Trans_cmd_040, TestSize.Level2)
-{
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    int64_t insertNums = 0;
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_BatchInsert_Trans_cmd_040");
-    AlbumAccurateRefresh albumRefresh("AlbumAccurateRefreshTest_BatchInsert_Trans_cmd_040", trans);
-    vector<ValuesBucket> values;
-    values.push_back(GetPhotoAlbumInsertValue(FAVORITE_ALBUM_INFO_TOW));
-    values.push_back(GetPhotoAlbumInsertValue(TRASH_ALBUM_INFO_TOW));
-    std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefresh.BatchInsert(cmd, insertNums, values);
-        return ret;
-    };
-    // trans查询
-    auto ret = trans->RetryTrans(transFunc);
-    
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(insertNums == values.size());
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, FAVORITE_ALBUM_INFO_TOW));
-    AlbumChangeInfo trashAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    EXPECT_TRUE(IsEqualAlbumInfo(trashAlbumInfo, TRASH_ALBUM_INFO_TOW));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckBatchInsertResult(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
-    
-    // 通知结果
-    albumRefresh.Notify();
-
-    EXPECT_TRUE(CheckBatchInsertNotify(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_041, TestSize.Level2)
-{
-    int64_t insertNums = 0;
-    AlbumAccurateRefresh albumRefresh("AlbumAccurateRefreshTest_BatchInsert_041");
-    vector<ValuesBucket> values;
-    values.push_back(GetPhotoAlbumInsertValue(FAVORITE_ALBUM_INFO_TOW));
-    values.push_back(GetPhotoAlbumInsertValue(TRASH_ALBUM_INFO_TOW));
-    auto ret = albumRefresh.BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(insertNums == values.size());
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, FAVORITE_ALBUM_INFO_TOW));
-    AlbumChangeInfo trashAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    EXPECT_TRUE(IsEqualAlbumInfo(trashAlbumInfo, TRASH_ALBUM_INFO_TOW));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckBatchInsertResult(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
-    
-    // 通知结果
-    albumRefresh.Notify();
-
-    EXPECT_TRUE(CheckBatchInsertNotify(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_Trans_042, TestSize.Level2)
-{
-    int64_t insertNums = 0;
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_BatchInsert_Trans_042");
-    AlbumAccurateRefresh albumRefresh("AlbumAccurateRefreshTest_BatchInsert_Trans_042", trans);
-    vector<ValuesBucket> values;
-    values.push_back(GetPhotoAlbumInsertValue(FAVORITE_ALBUM_INFO_TOW));
-    values.push_back(GetPhotoAlbumInsertValue(TRASH_ALBUM_INFO_TOW));
-    std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefresh.BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values);
-        return ret;
-    };
-    auto ret = trans->RetryTrans(transFunc);
-    
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(insertNums == values.size());
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, FAVORITE_ALBUM_INFO_TOW));
-    AlbumChangeInfo trashAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    EXPECT_TRUE(IsEqualAlbumInfo(trashAlbumInfo, TRASH_ALBUM_INFO_TOW));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckBatchInsertResult(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
-    
-    // 通知结果
-    albumRefresh.Notify();
-
-    EXPECT_TRUE(CheckBatchInsertNotify(albumRefresh, favoriteAlbumInfo, trashAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_cmd_043, TestSize.Level2)
-{
-    PrepareAlbumData();
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    auto predicates = cmd.GetAbsRdbPredicates();
-    predicates->SetWhereClause(PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?");
-    predicates->SetWhereArgs({ to_string(PhotoAlbumSubType::FAVORITE) });
-    ValuesBucket value;
-    auto newCount = FAVORITE_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = FAVORITE_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    cmd.SetValueBucket(value);
-
-    AlbumAccurateRefresh albumRefreshUpdate("AlbumAccurateRefreshTest_Update_cmd_043");
-    int32_t changeRows = 0;
-    auto ret = albumRefreshUpdate.Update(cmd, changeRows);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    AlbumChangeInfo updateAlbumInfo = FAVORITE_ALBUM_INFO;
-    updateAlbumInfo.count_ = newCount;
-    updateAlbumInfo.imageCount_ = imageCount;
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, updateAlbumInfo));
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == newCount);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckUpdateResult(albumRefreshUpdate, FAVORITE_ALBUM_INFO, favoriteAlbumInfo));
-
-    // 通知结果
-    albumRefreshUpdate.Notify();
-
-    EXPECT_TRUE(CheckUpdateNotify(albumRefreshUpdate, Notification::ALBUM_OPERATION_UPDATE, FAVORITE_ALBUM_INFO,
-        favoriteAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Trans_cmd_044, TestSize.Level2)
-{
-    PrepareAlbumData();
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    auto predicates = cmd.GetAbsRdbPredicates();
-    predicates->SetWhereClause(PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?");
-    predicates->SetWhereArgs({ to_string(PhotoAlbumSubType::FAVORITE) });
-    ValuesBucket value;
-    auto newCount = FAVORITE_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = FAVORITE_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    cmd.SetValueBucket(value);
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Update_Trans_cmd_044");
-    AlbumAccurateRefresh albumRefreshUpdate("AlbumAccurateRefreshTest_Update_Trans_cmd_044", trans);
-    int32_t changeRows = 0;
-    std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefreshUpdate.Update(cmd, changeRows);
-        return ret;
-    };
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    AlbumChangeInfo updateAlbumInfo = FAVORITE_ALBUM_INFO;
-    updateAlbumInfo.count_ = newCount;
-    updateAlbumInfo.imageCount_ = imageCount;
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, updateAlbumInfo));
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == newCount);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckUpdateResult(albumRefreshUpdate, FAVORITE_ALBUM_INFO, favoriteAlbumInfo));
-
-    // 通知结果
-    albumRefreshUpdate.Notify();
-    EXPECT_TRUE(CheckUpdateNotify(albumRefreshUpdate, Notification::ALBUM_OPERATION_UPDATE, FAVORITE_ALBUM_INFO,
-        favoriteAlbumInfo));
-}
-
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_045, TestSize.Level2)
-{
-    PrepareAlbumData();
-    ValuesBucket value;
-    auto newCount = TRASH_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = TRASH_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    string whereClause = PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?";
-    vector<string> args = { to_string(PhotoAlbumSubType::TRASH) };
-
-    AlbumAccurateRefresh albumRefreshUpdate("AlbumAccurateRefreshTest_Update_045");
-    int32_t changeRows = 0;
-    auto ret = albumRefreshUpdate.Update(changeRows, PhotoAlbumColumns::TABLE, value, whereClause, args);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    // 数据库执行结果
-    AlbumChangeInfo trashAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    AlbumChangeInfo updateAlbumInfo = TRASH_ALBUM_INFO;
-    updateAlbumInfo.count_ = newCount;
-    updateAlbumInfo.imageCount_ = imageCount;
-    EXPECT_TRUE(IsEqualAlbumInfo(trashAlbumInfo, updateAlbumInfo));
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::TRASH) == newCount);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckUpdateResult(albumRefreshUpdate, TRASH_ALBUM_INFO, trashAlbumInfo));
-
-    // 通知结果
-    albumRefreshUpdate.Notify();
-
-    EXPECT_TRUE(CheckUpdateNotify(albumRefreshUpdate, Notification::ALBUM_OPERATION_UPDATE_TRASH, TRASH_ALBUM_INFO,
-        trashAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Trans_046, TestSize.Level2)
-{
-    PrepareAlbumData();
-    ValuesBucket value;
-    auto newCount = TRASH_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = TRASH_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    string whereClause = PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?";
-    vector<string> args = { to_string(PhotoAlbumSubType::TRASH) };
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Update_Trans_046");
-    AlbumAccurateRefresh albumRefreshUpdate("AlbumAccurateRefreshTest_Update_Trans_046", trans);
-    int32_t changeRows = 0;
-    std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefreshUpdate.Update(changeRows, PhotoAlbumColumns::TABLE, value, whereClause, args);
-        return ret;
-    };
-
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    // 数据库执行结果
-    AlbumChangeInfo trashAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::TRASH);
-    AlbumChangeInfo updateAlbumInfo = TRASH_ALBUM_INFO;
-    updateAlbumInfo.count_ = newCount;
-    updateAlbumInfo.imageCount_ = imageCount;
-    EXPECT_TRUE(IsEqualAlbumInfo(trashAlbumInfo, updateAlbumInfo));
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::TRASH) == newCount);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckUpdateResult(albumRefreshUpdate, TRASH_ALBUM_INFO, trashAlbumInfo));
-
-    // 通知结果
-    albumRefreshUpdate.Notify();
-    EXPECT_TRUE(CheckUpdateNotify(albumRefreshUpdate, Notification::ALBUM_OPERATION_UPDATE_TRASH, TRASH_ALBUM_INFO,
-        trashAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_047, TestSize.Level2)
-{
-    PrepareHiddenData();
-    ValuesBucket value;
-    auto newCount = HIDDEN_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = HIDDEN_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
-
-    AlbumAccurateRefresh albumRefreshUpdate("AlbumAccurateRefreshTest_Update_047");
-    int32_t changeRows = 0;
-    auto ret = albumRefreshUpdate.Update(changeRows, value, predicates);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    // 数据库执行结果
-    AlbumChangeInfo hiddenAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::HIDDEN);
-    AlbumChangeInfo updateAlbumInfo = HIDDEN_ALBUM_INFO;
-    updateAlbumInfo.count_ = newCount;
-    updateAlbumInfo.imageCount_ = imageCount;
-    EXPECT_TRUE(IsEqualAlbumInfo(hiddenAlbumInfo, updateAlbumInfo));
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::HIDDEN) == newCount);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckUpdateResult(albumRefreshUpdate, HIDDEN_ALBUM_INFO, hiddenAlbumInfo));
-
-    // 通知结果
-    albumRefreshUpdate.Notify();
-
-    EXPECT_TRUE(CheckUpdateNotify(albumRefreshUpdate, Notification::ALBUM_OPERATION_UPDATE_HIDDEN,
-        HIDDEN_ALBUM_INFO, hiddenAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Trans_048, TestSize.Level2)
-{
-    PrepareHiddenData();
-    ValuesBucket value;
-    auto newCount = HIDDEN_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = HIDDEN_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Update_Trans_048");
-    AlbumAccurateRefresh albumRefreshUpdate("AlbumAccurateRefreshTest_Update_Trans_048", trans);
-    int32_t changeRows = 0;
-    std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefreshUpdate.Update(changeRows, value, predicates);
-        return ret;
-    };
-
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-
-    // 数据库执行结果
-    AlbumChangeInfo hiddenAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::HIDDEN);
-    AlbumChangeInfo updateAlbumInfo = HIDDEN_ALBUM_INFO;
-    updateAlbumInfo.count_ = newCount;
-    updateAlbumInfo.imageCount_ = imageCount;
-    EXPECT_TRUE(IsEqualAlbumInfo(hiddenAlbumInfo, updateAlbumInfo));
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::HIDDEN) == newCount);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckUpdateResult(albumRefreshUpdate, HIDDEN_ALBUM_INFO, hiddenAlbumInfo));
-
-    // 通知结果
-    albumRefreshUpdate.Notify();
-
-    EXPECT_TRUE(CheckUpdateNotify(albumRefreshUpdate, Notification::ALBUM_OPERATION_UPDATE_HIDDEN, HIDDEN_ALBUM_INFO,
-        hiddenAlbumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_cmd_049, TestSize.Level2)
-{
-    PrepareAlbumData();
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    auto predicates = cmd.GetAbsRdbPredicates();
-    predicates->SetWhereClause(PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?");
-    predicates->SetWhereArgs({ to_string(PhotoAlbumSubType::FAVORITE) });
-
-    AlbumAccurateRefresh albumRefreshDel("AlbumAccurateRefreshTest_Delete_cmd_049");
-    int32_t changeRows = 0;
-    auto ret = albumRefreshDel.LogicalDeleteReplaceByUpdate(cmd, changeRows);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    auto updateAlbumInfo = FAVORITE_ALBUM_INFO;
-    updateAlbumInfo.dirty_ = static_cast<int32_t>(DirtyType::TYPE_DELETED);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, updateAlbumInfo));
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_Trans_cmd_050, TestSize.Level2)
-{
-    ACCURATE_DEBUG("");
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-    EXPECT_TRUE(GetAlbumDirtyType(PhotoAlbumSubType::FAVORITE) == static_cast<int32_t>(DirtyType::TYPE_NEW));
-    Uri uri("");
-    MediaLibraryCommand cmd(uri);
-    cmd.SetTableName(PhotoAlbumColumns::TABLE);
-    auto predicates = cmd.GetAbsRdbPredicates();
-    predicates->SetWhereClause(PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?");
-    predicates->SetWhereArgs({ to_string(PhotoAlbumSubType::FAVORITE) });
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Delete_Trans_cmd_050");
-    AlbumAccurateRefresh albumRefreshDel("AlbumAccurateRefreshTest_Delete_Trans_cmd_050", trans);
-    int32_t changeRows = 0;
-    function<int32_t()> transFunc = [&] () -> int32_t {
-        auto ret = albumRefreshDel.LogicalDeleteReplaceByUpdate(cmd, changeRows);
-        return ret;
-    };
-
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    auto updateAlbumInfo = FAVORITE_ALBUM_INFO;
-    updateAlbumInfo.dirty_ = static_cast<int32_t>(DirtyType::TYPE_DELETED);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, updateAlbumInfo));
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_051, TestSize.Level2)
-{
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-    EXPECT_TRUE(GetAlbumDirtyType(PhotoAlbumSubType::FAVORITE) == static_cast<int32_t>(DirtyType::TYPE_NEW));
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::FAVORITE));
-
-    AlbumAccurateRefresh albumRefreshDel("AlbumAccurateRefreshTest_Delete_051");
-    int32_t changeRows = 0;
-    auto ret = albumRefreshDel.LogicalDeleteReplaceByUpdate(predicates, changeRows);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    auto updateAlbumInfo = FAVORITE_ALBUM_INFO;
-    updateAlbumInfo.dirty_ = static_cast<int32_t>(DirtyType::TYPE_DELETED);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, updateAlbumInfo));
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_Trans_052, TestSize.Level2)
-{
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-    EXPECT_TRUE(GetAlbumDirtyType(PhotoAlbumSubType::FAVORITE) == static_cast<int32_t>(DirtyType::TYPE_NEW));
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::FAVORITE));
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Delete_Trans_052");
-    AlbumAccurateRefresh albumRefreshDel("AlbumAccurateRefreshTest_Delete_Trans_052", trans);
-    int32_t changeRows = 0;
-    function<int32_t()> transFunc = [&] () -> int32_t {
-        auto ret = albumRefreshDel.LogicalDeleteReplaceByUpdate(predicates, changeRows);
-        return ret;
-    };
-
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-
-    // 数据库执行结果
-    AlbumChangeInfo favoriteAlbumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    auto updateAlbumInfo = FAVORITE_ALBUM_INFO;
-    updateAlbumInfo.dirty_ = static_cast<int32_t>(DirtyType::TYPE_DELETED);
-    EXPECT_TRUE(IsEqualAlbumInfo(favoriteAlbumInfo, updateAlbumInfo));
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_053, TestSize.Level2)
-{
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-    
-    AlbumAccurateRefresh albumRefreshDel("AlbumAccurateRefreshTest_Delete_053");
-    int32_t changeRows = 0;
-    string whereClause = PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?";
-    vector<string> args = { to_string(PhotoAlbumSubType::FAVORITE) };
-    auto ret = albumRefreshDel.Delete(changeRows, PhotoAlbumColumns::TABLE, whereClause, args);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-
-     // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_Trans_054, TestSize.Level2)
-{
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Delete_Trans_054");
-    AlbumAccurateRefresh albumRefreshDel("AlbumAccurateRefreshTest_Delete_Trans_054", trans);
-    int32_t changeRows = 0;
-    string whereClause = PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?";
-    vector<string> args = { to_string(PhotoAlbumSubType::FAVORITE) };
-    function<int32_t()> transFunc = [&] () -> int32_t {
-        auto ret = albumRefreshDel.Delete(changeRows, PhotoAlbumColumns::TABLE, whereClause, args);
-        return ret;
-    };
-
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_055, TestSize.Level2)
-{
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::FAVORITE));
-    
-    AlbumAccurateRefresh albumRefreshDel("AlbumAccurateRefreshTest_Delete_055");
-    int32_t changeRows = 0;
-    auto ret = albumRefreshDel.Delete(changeRows, predicates);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Delete_Trans_056, TestSize.Level2)
-{
-    PrepareAlbumData();
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 2);
-
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::FAVORITE));
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Delete_Trans_056");
-    AlbumAccurateRefresh albumRefreshDel("AlbumAccurateRefreshTest_Delete_Trans_056", trans);
-    int32_t changeRows = 0;
-    string whereClause = PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?";
-    vector<string> args = { to_string(PhotoAlbumSubType::FAVORITE) };
-    function<int32_t()> transFunc = [&] () -> int32_t {
-        auto ret = albumRefreshDel.Delete(changeRows, predicates);
-        return ret;
-    };
-
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckDeleteResult(albumRefreshDel, RDB_OPERATION_REMOVE, FAVORITE_ALBUM_INFO, AlbumChangeInfo()));
-    // 通知结果
-    albumRefreshDel.Notify();
-    EXPECT_TRUE(CheckDeleteNotify(albumRefreshDel, Notification::ALBUM_OPERATION_REMOVE, FAVORITE_ALBUM_INFO,
-        AlbumChangeInfo()));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_057, TestSize.Level2)
-{
-    AlbumAccurateRefresh albumRefreshExe("AlbumAccurateRefreshTest_Exe_057");
-    albumRefreshExe.Init();
-    auto ret = albumRefreshExe.ExecuteSql(insertSql, RdbOperation::RDB_OPERATION_ADD);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_Trans_058, TestSize.Level2)
-{
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Exe_Trans_058");
-    AlbumAccurateRefresh albumRefreshExe("AlbumAccurateRefreshTest_Exe_Trans_058", trans);
-    albumRefreshExe.Init();
-    function<int32_t()> transFunc = [&]() -> int32_t {
-        return albumRefreshExe.ExecuteSql(insertSql, RdbOperation::RDB_OPERATION_ADD);
-    };
-    auto ret = trans->RetryTrans(transFunc);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_059, TestSize.Level2)
-{
-    vector<ValueObject> args = {to_string(FAVORITE_ALBUM_INFO.count_)};
-
-    AlbumAccurateRefresh albumRefreshExe("AlbumAccurateRefreshTest_Exe_059");
-    albumRefreshExe.Init();
-    auto changedRowId =
-        albumRefreshExe.ExecuteForLastInsertedRowId(insertSqlWithArgs, args, RdbOperation::RDB_OPERATION_ADD);
-    ACCURATE_DEBUG("changedRowId: %{public}d", changedRowId);
-    EXPECT_TRUE(changedRowId > 0);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_060, TestSize.Level2)
-{
-    vector<ValueObject> args = {to_string(FAVORITE_ALBUM_INFO.count_)};
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Exe_060");
-    AlbumAccurateRefresh albumRefreshExe("AlbumAccurateRefreshTest_Exe_060", trans);
-    albumRefreshExe.Init();
-    int32_t changedRowId = 0;
-    function<int32_t()> transFunc = [&]() -> int32_t {
-        changedRowId =
-            albumRefreshExe.ExecuteForLastInsertedRowId(insertSqlWithArgs, args, RdbOperation::RDB_OPERATION_ADD);
-        if (changedRowId != E_HAS_DB_ERROR) {
-            return ACCURATE_REFRESH_RET_OK;
-        } else {
-            return E_HAS_DB_ERROR;
-        }
-    };
-    auto ret = trans->RetryTrans(transFunc);
-    
-    ACCURATE_DEBUG("changedRowId: %{public}d", changedRowId);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changedRowId > 0);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_061, TestSize.Level2)
-{
-    vector<ValueObject> args = {to_string(FAVORITE_ALBUM_INFO.count_)};
-
-    AlbumAccurateRefresh albumRefreshExe("AlbumAccurateRefreshTest_Exe_061");
-    albumRefreshExe.Init();
-    auto ret = albumRefreshExe.ExecuteSql(insertSqlWithArgs, args, RdbOperation::RDB_OPERATION_ADD);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_062, TestSize.Level2)
-{
-    vector<ValueObject> args = {to_string(FAVORITE_ALBUM_INFO.count_)};
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Exe_062");
-    AlbumAccurateRefresh albumRefreshExe("AlbumAccurateRefreshTest_Exe_062", trans);
-    albumRefreshExe.Init();
-
-    function<int32_t()> transFunc = [&]() -> int32_t {
-        auto ret = albumRefreshExe.ExecuteSql(insertSqlWithArgs, args, RdbOperation::RDB_OPERATION_ADD);
-        return ret;
-    };
-    auto ret = trans->RetryTrans(transFunc);
-
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_063, TestSize.Level2)
-{
-    vector<ValueObject> args = {to_string(FAVORITE_ALBUM_INFO.count_)};
-
-    AlbumAccurateRefresh albumRefreshExe("AlbumAccurateRefreshTest_Exe_063");
-    albumRefreshExe.Init();
-    int64_t outValue = 0;
-    auto ret =
-        albumRefreshExe.ExecuteForChangedRowCount(outValue, insertSqlWithArgs, args, RdbOperation::RDB_OPERATION_ADD);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(outValue == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_064, TestSize.Level2)
-{
-    vector<ValueObject> args = {to_string(FAVORITE_ALBUM_INFO.count_)};
-
-    std::shared_ptr<TransactionOperations> trans =
-        make_shared<TransactionOperations>("AlbumAccurateRefreshTest_Exe_064");
-    AlbumAccurateRefresh albumRefreshExe("AlbumAccurateRefreshTest_Exe_064", trans);
-    albumRefreshExe.Init();
-    int64_t outValue = 0;
-    function<int32_t()> transFunc = [&]() -> int32_t {
-        auto ret =albumRefreshExe.ExecuteForChangedRowCount(outValue, insertSqlWithArgs, args,
-            RdbOperation::RDB_OPERATION_ADD);
-        return ret;
-    };
-    auto ret = trans->RetryTrans(transFunc);
-
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(outValue == 1);
-    EXPECT_TRUE(GetPhotoAlbumTotalCount() == 1);
-    EXPECT_TRUE(GetAlbumCount(PhotoAlbumSubType::FAVORITE) == FAVORITE_ALBUM_INFO.count_);
-    // 数据库执行结果
-    AlbumChangeInfo albumInfo = GetAlbumInfo(PhotoAlbumSubType::FAVORITE);
-    EXPECT_TRUE(IsEqualAlbumInfo(albumInfo, FAVORITE_ALBUM_INFO));
-    // 操作前后数据结果
-    EXPECT_TRUE(CheckInsertResult(albumRefreshExe, albumInfo));
-    
-    // 通知结果
-    albumRefreshExe.Notify();
-    EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
-}
-
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Exceed_065, TestSize.Level2)
-{
-    PrepareHiddenData();
-    ValuesBucket value;
-    auto newCount = HIDDEN_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = HIDDEN_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
-
-    AlbumAccurateRefresh albumRefreshUpdate("AlbumAccurateRefreshTest_Update_Exceed_065");
-    int32_t changeRows = 0;
-    auto ret = albumRefreshUpdate.Update(changeRows, value, predicates);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
-    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    auto &changeDatasMap = albumRefreshUpdate.dataManager_.changeDatas_;
-    AlbumChangeData changeData;
+    EXPECT_TRUE(changedRow == 1);
+
+    // 修改changeDatas_的数量
+    auto &changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData changeData;
     // 总共1000条
     for (int i = 0; i < 999; ++i) {
         changeDatasMap.insert_or_assign(1000000 + i, changeData);
     }
-
     ValuesBucket newValue;
-    newCount = HIDDEN_ALBUM_COUNT;
-    newValue.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    imageCount = HIDDEN_ALBUM_IMAGE_COUNT;
-    newValue.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    ret = albumRefreshUpdate.Update(changeRows, value, predicates);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
+    newValue.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+    ret = assetRefresh.Update(changedRow, newValue, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
+    EXPECT_TRUE(changedRow == 1);
     // 总共1000条
-    EXPECT_TRUE(albumRefreshUpdate.dataManager_.CheckIsExceed());
-    EXPECT_TRUE(albumRefreshUpdate.dataManager_.changeDatas_.empty());
-    EXPECT_TRUE(albumRefreshUpdate.Notify() == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(assetRefresh.dataManager_.CheckIsExceed());
+    EXPECT_TRUE(assetRefresh.dataManager_.changeDatas_.empty());
+    EXPECT_TRUE(assetRefresh.RefreshAlbum() == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(assetRefresh.Notify() == ACCURATE_REFRESH_RET_OK);
 }
 
-HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Exceed_066, TestSize.Level2)
+HWTEST_F(AssetAccurateRefreshTest, Update_Exceed_011, TestSize.Level2)
 {
-    PrepareHiddenData();
+    PrepareNormalAssets();
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
     ValuesBucket value;
-    auto newCount = HIDDEN_ALBUM_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    auto imageCount = HIDDEN_ALBUM_IMAGE_COUNT - 1;
-    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
-
-    AlbumAccurateRefresh albumRefreshUpdate("AlbumAccurateRefreshTest_Update_Exceed_066");
-    int32_t changeRows = 0;
-    auto ret = albumRefreshUpdate.Update(changeRows, value, predicates);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh;
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
-    auto &changeDatasMap = albumRefreshUpdate.dataManager_.changeDatas_;
-    AlbumChangeData changeData;
+    EXPECT_TRUE(changedRow == 1);
+
+    // 修改changeDatas_的数量
+    auto &changeDatasMap = assetRefresh.dataManager_.changeDatas_;
+    PhotoAssetChangeData changeData;
     // 总共999条
     for (int i = 0; i < 998; ++i) {
         changeDatasMap.insert_or_assign(1000000 + i, changeData);
     }
-
     ValuesBucket newValue;
-    newCount = HIDDEN_ALBUM_COUNT;
-    newValue.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
-    imageCount = HIDDEN_ALBUM_IMAGE_COUNT;
-    newValue.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
-    ret = albumRefreshUpdate.Update(changeRows, value, predicates);
-    ACCURATE_DEBUG("ret: %{public}d", ret);
+    newValue.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+    ret = assetRefresh.Update(changedRow, newValue, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
-    EXPECT_TRUE(changeRows == 1);
+    EXPECT_TRUE(changedRow == 1);
+    EXPECT_TRUE(!assetRefresh.dataManager_.CheckIsExceed());
     // 总共999条
-    EXPECT_TRUE(!albumRefreshUpdate.dataManager_.CheckIsExceed());
+    EXPECT_TRUE(assetRefresh.dataManager_.changeDatas_.size() == 999);
 }
+
+HWTEST_F(AssetAccurateRefreshTest, Update_MultiThread_012, TestSize.Level2)
+{
+    PrepareNormalAssets();
+
+    std::thread taskTrash([]() {
+        ACCURATE_DEBUG("taskTrash start");
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+        ValuesBucket value;
+        int64_t dataTrashTime = 1000000;
+        value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+        AssetAccurateRefresh assetRefresh("Update_MultiThread_012");
+        int32_t changedRow = 0;
+        auto ret = assetRefresh.Update(changedRow, value, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+        std::this_thread::sleep_for(chrono::milliseconds(300));
+        // album 刷新
+        assetRefresh.RefreshAlbum();
+        ACCURATE_DEBUG("taskTrash end");
+        assetRefresh.Notify();
+    });
+
+    std::thread taskFavorite([]() {
+        ACCURATE_DEBUG("taskFavorite start");
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+        ValuesBucket value;
+        value.PutInt(PhotoColumn::MEDIA_IS_FAV, 0);
+        AssetAccurateRefresh assetRefresh("Update_MultiThread_012");
+        int32_t changedRow = 0;
+        auto ret = assetRefresh.Update(changedRow, value, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+        // album 刷新
+        std::this_thread::sleep_for(chrono::milliseconds(100));
+        assetRefresh.RefreshAlbum();
+        ACCURATE_DEBUG("taskFavorite end");
+        assetRefresh.Notify();
+    });
+    taskTrash.join();
+    taskFavorite.join();
+
+    auto favoriteAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_ALBUM_ID, g_rdbStore);
+    auto trashAlbumInfo = AccurateRefresh::GetAlbumInfo(TRASH_ALBUM_ID, g_rdbStore);
+    auto imageAlbumInfo = AccurateRefresh::GetAlbumInfo(IMAGE_ALBUM_ID, g_rdbStore);
+    auto ownerAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID, g_rdbStore);
+    EXPECT_TRUE(favoriteAlbumInfo.count_ == FAVORITE_ALBUM_COUNT - 1);
+    EXPECT_TRUE(trashAlbumInfo.count_ == TRASH_ALBUM_COUNT + 1);
+    EXPECT_TRUE(imageAlbumInfo.count_ == IMAGE_ALBUM_COUNT - 1);
+    EXPECT_TRUE(ownerAlbumInfo.count_ == USER_ALBUM_COUNT - 1);
+}
+
+void InsertAndUpdateMultiThread(int32_t delayTime)
+{
+    {
+        RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+        vector<string> albumIds = {
+            to_string(FAVORITE_ALBUM_ID),
+            to_string(IMAGE_ALBUM_ID),
+            to_string(FAVORITE_IMAGE_ASSET_ALBUM_ID)
+        };
+        predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
+        ValuesBucket value;
+        value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, 0);
+        int32_t changedRows = 0;
+        auto ret = g_rdbStore->Update(changedRows, value, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    }
+
+    bool isRefreshAllInsert = false;
+    std::thread taskInsert([&]() {
+        AssetAccurateRefresh assetRefresh("InsertAndUpdateMultiThread");
+        int64_t outRowId = 0;
+        auto assetInfo = GetFavoriteImageAsset();
+        auto value = GetAssetInsertValue(assetInfo);
+        auto ret = assetRefresh.Insert(outRowId, PhotoColumn::PHOTOS_TABLE, value);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        isRefreshAllInsert = assetRefresh.dataManager_.isForRecheck_;
+        if (isRefreshAllInsert) {
+            std::this_thread::sleep_for(chrono::milliseconds(200));
+        }
+        // album 刷新
+        assetRefresh.RefreshAlbum();
+        // Notify
+        assetRefresh.Notify();
+    });
+
+    int changedRow = 0;
+    bool isRefreshAllUpdate = false;
+    std::thread taskUpdate([&]() {
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+        ValuesBucket value;
+        value.PutInt(PhotoColumn::MEDIA_IS_FAV, 0);
+        AssetAccurateRefresh assetRefresh("InsertAndUpdateMultiThread");
+        std::this_thread::sleep_for(chrono::milliseconds(delayTime));
+        auto ret = assetRefresh.Update(changedRow, value, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        isRefreshAllUpdate = assetRefresh.dataManager_.isForRecheck_;
+        // refresh all时，放在最后处理，才能获取准确的结果
+        if (isRefreshAllUpdate) {
+            std::this_thread::sleep_for(chrono::milliseconds(200));
+        }
+        // album 刷新
+        assetRefresh.RefreshAlbum();
+        // Notify
+        assetRefresh.Notify();
+    });
+    taskInsert.join();
+    taskUpdate.join();
+    auto favoriteAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_ALBUM_ID, g_rdbStore);
+    auto imageAlbumInfo = AccurateRefresh::GetAlbumInfo(IMAGE_ALBUM_ID, g_rdbStore);
+    auto ownerAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID, g_rdbStore);
+
+    // refresh all时，会把数据都刷成0
+    if (isRefreshAllInsert || isRefreshAllUpdate) {
+        EXPECT_TRUE(favoriteAlbumInfo.count_ == 0);
+        EXPECT_TRUE(imageAlbumInfo.count_ == 0);
+        EXPECT_TRUE(ownerAlbumInfo.count_ == 0);
+        ACCURATE_DEBUG("refresh all");
+        return;
+    }
+
+    if (changedRow == 1) {
+        EXPECT_TRUE(imageAlbumInfo.count_ == 1);
+        EXPECT_TRUE(ownerAlbumInfo.count_ == 1);
+        ACCURATE_DEBUG("update");
+    } else {
+        EXPECT_TRUE(favoriteAlbumInfo.count_ == 1);
+        EXPECT_TRUE(imageAlbumInfo.count_ == 1);
+        EXPECT_TRUE(ownerAlbumInfo.count_ == 1);
+        ACCURATE_DEBUG("no update");
+    }
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Insert_MultiThread_013, TestSize.Level2)
+{
+    InsertAndUpdateMultiThread(0);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Insert_MultiThread_014, TestSize.Level2)
+{
+    InsertAndUpdateMultiThread(5);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Insert_MultiThread_015, TestSize.Level2)
+{
+    InsertAndUpdateMultiThread(10);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Insert_MultiThread_016, TestSize.Level2)
+{
+    InsertAndUpdateMultiThread(15);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, Update_MultiThread_017, TestSize.Level2)
+{
+    PrepareNormalAssets();
+
+    std::thread taskTrash([]() {
+        ACCURATE_DEBUG("taskTrash start");
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+        ValuesBucket value;
+        int64_t dataTrashTime = 1000000;
+        value.PutLong(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+        AssetAccurateRefresh assetRefresh("Update_MultiThread_017");
+        int32_t changedRow = 0;
+        auto ret = assetRefresh.Update(changedRow, value, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+
+        ValuesBucket value2;
+        value2.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+        ret = assetRefresh.Update(changedRow, value2, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+
+        std::this_thread::sleep_for(chrono::milliseconds(300));
+        // album 刷新
+        assetRefresh.RefreshAlbum();
+        ACCURATE_DEBUG("taskTrash end");
+        assetRefresh.Notify();
+    });
+
+    std::thread taskFavorite([]() {
+        ACCURATE_DEBUG("taskFavorite start");
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+        ValuesBucket value;
+        value.PutInt(PhotoColumn::MEDIA_IS_FAV, 0);
+        AssetAccurateRefresh assetRefresh("Update_MultiThread_017");
+        int32_t changedRow = 0;
+        auto ret = assetRefresh.Update(changedRow, value, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+        // album 刷新
+        std::this_thread::sleep_for(chrono::milliseconds(100));
+        assetRefresh.RefreshAlbum();
+        ACCURATE_DEBUG("taskFavorite end");
+        assetRefresh.Notify();
+    });
+    taskTrash.join();
+    taskFavorite.join();
+
+    auto favoriteAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_ALBUM_ID, g_rdbStore);
+    auto trashAlbumInfo = AccurateRefresh::GetAlbumInfo(TRASH_ALBUM_ID, g_rdbStore);
+    auto imageAlbumInfo = AccurateRefresh::GetAlbumInfo(IMAGE_ALBUM_ID, g_rdbStore);
+    auto ownerAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID, g_rdbStore);
+    EXPECT_TRUE(favoriteAlbumInfo.count_ == FAVORITE_ALBUM_COUNT - 1);
+    EXPECT_TRUE(trashAlbumInfo.count_ == TRASH_ALBUM_COUNT);
+    EXPECT_TRUE(imageAlbumInfo.count_ == IMAGE_ALBUM_COUNT);
+    EXPECT_TRUE(ownerAlbumInfo.count_ == USER_ALBUM_COUNT);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, MultiThread_Clear_018, TestSize.Level2)
+{
+    PrepareNormalAssets();
+    std::thread taskTrash([]() {
+        ACCURATE_DEBUG("taskTrash start");
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+        ValuesBucket value;
+        int64_t dataTrashTime = 1000000;
+        value.PutLong(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+        AssetAccurateRefresh assetRefresh("MultiThread_Clear_018");
+        int32_t changedRow = 0;
+        auto ret = assetRefresh.Update(changedRow, value, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+
+        ValuesBucket value2;
+        value2.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+        ret = assetRefresh.Update(changedRow, value2, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+        auto infos = MultiThreadAssetChangeInfoMgr::GetInstance().GetAssetChangeData(FAVORITE_IMAGE_ASSET_FILE_ID);
+        EXPECT_TRUE(infos.first.fileId_ == FAVORITE_IMAGE_ASSET_FILE_ID);
+        EXPECT_TRUE(infos.second.fileId_ == FAVORITE_IMAGE_ASSET_FILE_ID);
+        auto multiAssetMap = MultiThreadAssetChangeInfoMgr::GetInstance().assetChangeDataMap_;
+        auto iter = multiAssetMap.find(FAVORITE_IMAGE_ASSET_FILE_ID);
+        EXPECT_TRUE(iter != multiAssetMap.end());
+        auto data = iter->second;
+        EXPECT_TRUE(data.count_ >= 2);
+        EXPECT_TRUE(data.isMultiOperation_);
+        ACCURATE_DEBUG("count[%{public}d]", data.count_);
+        std::this_thread::sleep_for(chrono::milliseconds(100));
+    });
+
+    std::thread taskTrash2([]() {
+        ACCURATE_DEBUG("taskTrash start");
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+        ValuesBucket value;
+        int64_t dataTrashTime = 1000000;
+        value.PutLong(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+        AssetAccurateRefresh assetRefresh("MultiThread_Clear_018");
+        int32_t changedRow = 0;
+        auto ret = assetRefresh.Update(changedRow, value, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+
+        ValuesBucket value2;
+        value2.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+        ret = assetRefresh.Update(changedRow, value2, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+        auto infos = MultiThreadAssetChangeInfoMgr::GetInstance().GetAssetChangeData(FAVORITE_IMAGE_ASSET_FILE_ID);
+        EXPECT_TRUE(infos.first.fileId_ == FAVORITE_IMAGE_ASSET_FILE_ID);
+        EXPECT_TRUE(infos.second.fileId_ == FAVORITE_IMAGE_ASSET_FILE_ID);
+        auto multiAssetMap = MultiThreadAssetChangeInfoMgr::GetInstance().assetChangeDataMap_;
+        auto iter = multiAssetMap.find(FAVORITE_IMAGE_ASSET_FILE_ID);
+        EXPECT_TRUE(iter != multiAssetMap.end());
+        auto data = iter->second;
+        EXPECT_TRUE(data.count_ >= 2);
+        EXPECT_TRUE(data.isMultiOperation_);
+        ACCURATE_DEBUG("count[%{public}d]", data.count_);
+        std::this_thread::sleep_for(chrono::milliseconds(100));
+    });
+
+    taskTrash.join();
+    taskTrash2.join();
+    auto infos = MultiThreadAssetChangeInfoMgr::GetInstance().GetAssetChangeData(FAVORITE_IMAGE_ASSET_FILE_ID);
+    EXPECT_TRUE(infos.first.fileId_ == INVALID_INT32_VALUE);
+    EXPECT_TRUE(infos.second.fileId_ == INVALID_INT32_VALUE);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, MultiThread_Clear_019, TestSize.Level2)
+{
+    PrepareNormalAssets();
+    std::thread taskTrash([]() {
+        ACCURATE_DEBUG("taskTrash start");
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+        ValuesBucket value;
+        int64_t dataTrashTime = 1000000;
+        value.PutLong(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+        shared_ptr<AssetAccurateRefresh> assetRefresh = make_shared<AssetAccurateRefresh>("MultiThread_Clear_019");
+        int32_t changedRow = 0;
+        auto ret = assetRefresh->Update(changedRow, value, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+
+        ValuesBucket value2;
+        value2.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+        ret = assetRefresh->Update(changedRow, value2, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+        auto infos = MultiThreadAssetChangeInfoMgr::GetInstance().GetAssetChangeData(FAVORITE_IMAGE_ASSET_FILE_ID);
+        EXPECT_TRUE(infos.first.fileId_ == FAVORITE_IMAGE_ASSET_FILE_ID);
+        EXPECT_TRUE(infos.second.fileId_ == FAVORITE_IMAGE_ASSET_FILE_ID);
+        auto multiAssetMap = MultiThreadAssetChangeInfoMgr::GetInstance().assetChangeDataMap_;
+        auto iter = multiAssetMap.find(FAVORITE_IMAGE_ASSET_FILE_ID);
+        EXPECT_TRUE(iter != multiAssetMap.end());
+        auto data = iter->second;
+        EXPECT_TRUE(data.count_ >= 2);
+        EXPECT_TRUE(data.isMultiOperation_);
+        ACCURATE_DEBUG("count[%{public}d]", data.count_);
+        std::this_thread::sleep_for(chrono::milliseconds(100));
+    });
+
+    std::thread taskTrash2([]() {
+        ACCURATE_DEBUG("taskTrash start");
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+        ValuesBucket value;
+        int64_t dataTrashTime = 1000000;
+        value.PutLong(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+        shared_ptr<AssetAccurateRefresh> assetRefresh = make_shared<AssetAccurateRefresh>("MultiThread_Clear_019");
+        int32_t changedRow = 0;
+        auto ret = assetRefresh->Update(changedRow, value, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+
+        ValuesBucket value2;
+        value2.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+        ret = assetRefresh->Update(changedRow, value2, predicates);
+        EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+        EXPECT_TRUE(changedRow == 1);
+        auto infos = MultiThreadAssetChangeInfoMgr::GetInstance().GetAssetChangeData(FAVORITE_IMAGE_ASSET_FILE_ID);
+        EXPECT_TRUE(infos.first.fileId_ == FAVORITE_IMAGE_ASSET_FILE_ID);
+        EXPECT_TRUE(infos.second.fileId_ == FAVORITE_IMAGE_ASSET_FILE_ID);
+        auto multiAssetMap = MultiThreadAssetChangeInfoMgr::GetInstance().assetChangeDataMap_;
+        auto iter = multiAssetMap.find(FAVORITE_IMAGE_ASSET_FILE_ID);
+        EXPECT_TRUE(iter != multiAssetMap.end());
+        auto data = iter->second;
+        EXPECT_TRUE(data.count_ >= 2);
+        EXPECT_TRUE(data.isMultiOperation_);
+        ACCURATE_DEBUG("count[%{public}d]", data.count_);
+        std::this_thread::sleep_for(chrono::milliseconds(100));
+    });
+
+    taskTrash.join();
+    taskTrash2.join();
+    auto infos = MultiThreadAssetChangeInfoMgr::GetInstance().GetAssetChangeData(FAVORITE_IMAGE_ASSET_FILE_ID);
+    EXPECT_TRUE(infos.first.fileId_ == INVALID_INT32_VALUE);
+    EXPECT_TRUE(infos.second.fileId_ == INVALID_INT32_VALUE);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, AccurateRefreshAlbum_020, TestSize.Level2)
+{
+    PrepareNormalAssets();
+
+    ACCURATE_DEBUG("taskTrash start");
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+    ValuesBucket value;
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh("AccurateRefreshAlbum_020");
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    ACCURATE_DEBUG("taskTrash end");
+    assetRefresh.Notify();
+
+    auto favoriteAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_ALBUM_ID, g_rdbStore);
+    auto trashAlbumInfo = AccurateRefresh::GetAlbumInfo(TRASH_ALBUM_ID, g_rdbStore);
+    auto imageAlbumInfo = AccurateRefresh::GetAlbumInfo(IMAGE_ALBUM_ID, g_rdbStore);
+    auto ownerAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID, g_rdbStore);
+    EXPECT_TRUE(favoriteAlbumInfo.count_ == FAVORITE_ALBUM_COUNT - 1);
+    EXPECT_TRUE(trashAlbumInfo.count_ == TRASH_ALBUM_COUNT + 1);
+    EXPECT_TRUE(imageAlbumInfo.count_ == IMAGE_ALBUM_COUNT - 1);
+    EXPECT_TRUE(ownerAlbumInfo.count_ == USER_ALBUM_COUNT - 1);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, IgnoreRefreshAlbum_021, TestSize.Level2)
+{
+    PrepareNormalAssets();
+
+    ACCURATE_DEBUG("taskTrash start");
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+    ValuesBucket value;
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh("IgnoreRefreshAlbum_021");
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+
+    auto timestamp = AlbumAccurateRefreshManager::GetCurrentTimestamp();
+    AlbumRefreshTimestamp albumTimestamp(timestamp + 100, timestamp + 100);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, false, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(TRASH_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(TRASH_ALBUM_ID, false, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(IMAGE_ALBUM_ID, false, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_IMAGE_ASSET_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_IMAGE_ASSET_ALBUM_ID, false,
+        albumTimestamp);
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    ACCURATE_DEBUG("taskTrash end");
+    assetRefresh.Notify();
+
+    auto favoriteAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_ALBUM_ID, g_rdbStore);
+    auto trashAlbumInfo = AccurateRefresh::GetAlbumInfo(TRASH_ALBUM_ID, g_rdbStore);
+    auto imageAlbumInfo = AccurateRefresh::GetAlbumInfo(IMAGE_ALBUM_ID, g_rdbStore);
+    auto ownerAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID, g_rdbStore);
+    EXPECT_TRUE(favoriteAlbumInfo.count_ == FAVORITE_ALBUM_COUNT);
+    EXPECT_TRUE(trashAlbumInfo.count_ == TRASH_ALBUM_COUNT);
+    EXPECT_TRUE(imageAlbumInfo.count_ == IMAGE_ALBUM_COUNT);
+    EXPECT_TRUE(ownerAlbumInfo.count_ == USER_ALBUM_COUNT);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, ForceRefreshAlbum_021, TestSize.Level2)
+{
+    PrepareNormalAssets();
+
+    ACCURATE_DEBUG("taskTrash start");
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+    ValuesBucket value;
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh("ForceRefreshAlbum_021");
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+
+    auto iter = assetRefresh.dataManager_.changeDatas_.find(FAVORITE_IMAGE_ASSET_FILE_ID);
+    EXPECT_TRUE(iter != assetRefresh.dataManager_.changeDatas_.end());
+    auto changeData = iter->second;
+    auto timestampStart = changeData.infoBeforeChange_.timestamp_;
+    AlbumRefreshTimestamp albumTimestamp(timestampStart - 100, timestampStart);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, false, albumTimestamp);
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    ACCURATE_DEBUG("taskTrash end");
+    assetRefresh.Notify();
+
+    auto favoriteAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_ALBUM_ID, g_rdbStore);
+    auto trashAlbumInfo = AccurateRefresh::GetAlbumInfo(TRASH_ALBUM_ID, g_rdbStore);
+    auto imageAlbumInfo = AccurateRefresh::GetAlbumInfo(IMAGE_ALBUM_ID, g_rdbStore);
+    auto ownerAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID, g_rdbStore);
+    EXPECT_TRUE(favoriteAlbumInfo.count_ == 0);
+    EXPECT_TRUE(trashAlbumInfo.count_ == TRASH_ALBUM_COUNT + 1);
+    EXPECT_TRUE(imageAlbumInfo.count_ == IMAGE_ALBUM_COUNT - 1);
+    EXPECT_TRUE(ownerAlbumInfo.count_ == USER_ALBUM_COUNT - 1);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, ForceRefreshAlbum_022, TestSize.Level2)
+{
+    PrepareNormalAssets();
+
+    ACCURATE_DEBUG("taskTrash start");
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+    ValuesBucket value;
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh("ForceRefreshAlbum_022");
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+
+    auto iter = assetRefresh.dataManager_.changeDatas_.find(FAVORITE_IMAGE_ASSET_FILE_ID);
+    EXPECT_TRUE(iter != assetRefresh.dataManager_.changeDatas_.end());
+    auto changeData = iter->second;
+    auto timestampStart = changeData.infoBeforeChange_.timestamp_;
+    auto timestampEnd = changeData.infoAfterChange_.timestamp_;
+    AlbumRefreshTimestamp albumTimestamp(timestampStart - 100, timestampEnd + 100);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, false, albumTimestamp);
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    ACCURATE_DEBUG("taskTrash end");
+    assetRefresh.Notify();
+
+    auto favoriteAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_ALBUM_ID, g_rdbStore);
+    auto trashAlbumInfo = AccurateRefresh::GetAlbumInfo(TRASH_ALBUM_ID, g_rdbStore);
+    auto imageAlbumInfo = AccurateRefresh::GetAlbumInfo(IMAGE_ALBUM_ID, g_rdbStore);
+    auto ownerAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID, g_rdbStore);
+    EXPECT_TRUE(favoriteAlbumInfo.count_ == 0);
+    EXPECT_TRUE(trashAlbumInfo.count_ == TRASH_ALBUM_COUNT + 1);
+    EXPECT_TRUE(imageAlbumInfo.count_ == IMAGE_ALBUM_COUNT - 1);
+    EXPECT_TRUE(ownerAlbumInfo.count_ == USER_ALBUM_COUNT - 1);
+}
+
+HWTEST_F(AssetAccurateRefreshTest, ForceRefreshAlbum_023, TestSize.Level2)
+{
+    PrepareNormalAssets();
+
+    ACCURATE_DEBUG("taskTrash start");
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
+    ValuesBucket value;
+    int64_t dataTrashTime = 1000000;
+    value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
+    AssetAccurateRefresh assetRefresh("ForceRefreshAlbum_023");
+    int32_t changedRow = 0;
+    auto ret = assetRefresh.Update(changedRow, value, predicates);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changedRow == 1);
+
+    auto iter = assetRefresh.dataManager_.changeDatas_.find(FAVORITE_IMAGE_ASSET_FILE_ID);
+    EXPECT_TRUE(iter != assetRefresh.dataManager_.changeDatas_.end());
+    auto changeData = iter->second;
+    auto timestampEnd = changeData.infoAfterChange_.timestamp_;
+    AlbumRefreshTimestamp albumTimestamp(timestampEnd, timestampEnd + 100);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, true, albumTimestamp);
+    AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, false, albumTimestamp);
+
+    // album 刷新
+    assetRefresh.RefreshAlbum();
+    ACCURATE_DEBUG("taskTrash end");
+    assetRefresh.Notify();
+
+    auto favoriteAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_ALBUM_ID, g_rdbStore);
+    auto trashAlbumInfo = AccurateRefresh::GetAlbumInfo(TRASH_ALBUM_ID, g_rdbStore);
+    auto imageAlbumInfo = AccurateRefresh::GetAlbumInfo(IMAGE_ALBUM_ID, g_rdbStore);
+    auto ownerAlbumInfo = AccurateRefresh::GetAlbumInfo(FAVORITE_IMAGE_ASSET_ALBUM_ID, g_rdbStore);
+    EXPECT_TRUE(favoriteAlbumInfo.count_ == 0);
+    EXPECT_TRUE(trashAlbumInfo.count_ == TRASH_ALBUM_COUNT + 1);
+    EXPECT_TRUE(imageAlbumInfo.count_ == IMAGE_ALBUM_COUNT - 1);
+    EXPECT_TRUE(ownerAlbumInfo.count_ == USER_ALBUM_COUNT - 1);
+}
+
 } // namespace Media
 } // namespace OHOS
