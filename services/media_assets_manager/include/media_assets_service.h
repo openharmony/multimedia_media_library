@@ -52,6 +52,20 @@
 #include "close_asset_vo.h"
 #include "get_uris_by_old_uris_inner_dto.h"
 #include "restore_dto.h"
+#include "cloud_media_asset_types.h"
+#include "is_edited_dto.h"
+#include "is_edited_vo.h"
+#include "request_edit_data_dto.h"
+#include "request_edit_data_vo.h"
+#include "get_edit_data_dto.h"
+#include "get_edit_data_vo.h"
+#include "start_asset_analysis_dto.h"
+#include "start_asset_analysis_vo.h"
+#include "get_cloud_enhancement_pair_dto.h"
+#include "get_cloud_enhancement_pair_vo.h"
+#include "get_cloud_enhancement_pair_dto.h"
+#include "get_filepath_from_uri_vo.h"
+#include "get_uri_from_filepath_vo.h"
 
 namespace OHOS::Media {
 class MediaAssetsService {
@@ -82,9 +96,9 @@ public:
     int32_t SetOrientation(const int32_t fileId, const int32_t orientation);
     int32_t SetVideoEnhancementAttr(const int32_t fileId, const std::string &photoId, const std::string &path);
     int32_t SetSupportedWatermarkType(const int32_t fileId, const int32_t watermarkType);
-    std::shared_ptr<DataShare::DataShareResultSet> GetAssets(const GetAssetsDto &dto);
-    std::shared_ptr<DataShare::DataShareResultSet> GetAllDuplicateAssets(const GetAssetsDto &dto);
-    std::shared_ptr<DataShare::DataShareResultSet> GetDuplicateAssetsToDelete(const GetAssetsDto &dto);
+    std::shared_ptr<DataShare::DataShareResultSet> GetAssets(GetAssetsDto &dto);
+    std::shared_ptr<DataShare::DataShareResultSet> GetAllDuplicateAssets(GetAssetsDto &dto);
+    std::shared_ptr<DataShare::DataShareResultSet> GetDuplicateAssetsToDelete(GetAssetsDto &dto);
     int32_t GetIndexConstructProgress(std::string &indexProgress);
     int32_t CreateAsset(CreateAssetDto &dto);
     int32_t CreateAssetForApp(CreateAssetDto &dto);
@@ -113,7 +127,7 @@ public:
     int32_t QueryCloudEnhancementTaskState(const std::string& photoUri, QueryCloudEnhancementTaskStateDto& dto);
     std::shared_ptr<NativeRdb::ResultSet> GetCloudEnhancementPair(const std::string& photoUri);
     int32_t SyncCloudEnhancementTaskStatus();
-    int32_t QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRspBody &rsp);
+    int32_t QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRespBody &resp);
     int32_t LogMovingPhoto(const AdaptedReqBody &req);
     int32_t ConvertFormat(const ConvertFormatDto &convertFormatDto);
     int32_t GetResultSetFromDb(const GetResultSetFromDbDto &getResultSetFromDbDto, GetResultSetFromDbRespBody &resp);
@@ -126,6 +140,18 @@ public:
     int32_t GetUrisByOldUrisInner(GetUrisByOldUrisInnerDto& getUrisByOldUrisInnerDto);
     int32_t Restore(const RestoreDto &dto);
     int32_t StopRestore(const std::string &keyPath);
+    int32_t StartDownloadCloudMedia(CloudMediaDownloadType downloadType);
+    int32_t PauseDownloadCloudMedia();
+    int32_t CancelDownloadCloudMedia();
+    int32_t RetainCloudMediaAsset();
+    int32_t IsEdited(const IsEditedDto &dto, IsEditedRespBody &respBody);
+    int32_t RequestEditData(const RequestEditDataDto &dto, RequestEditDataRespBody &respBody);
+    int32_t GetEditData(const GetEditDataDto &dto, GetEditDataRespBody &respBody);
+    int32_t GetCloudMediaAssetStatus(std::string &status);
+    int32_t StartAssetAnalysis(const StartAssetAnalysisDto &dto, StartAssetAnalysisRespBody &respBody);
+    int32_t GetCloudEnhancementPair(const GetCloudEnhancementPairDto &dto, GetCloudEnhancementPairRespBody &respBody);
+    int32_t GetFilePathFromUri(const std::string &virtualId, GetFilePathFromUriRespBody &respBody);
+    int32_t GetUriFromFilePath(const std::string &tempPath, GetUriFromFilePathRespBody &respBody);
 
 private:
     MediaAssetsRdbOperations rdbOperation_;

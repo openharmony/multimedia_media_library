@@ -27,7 +27,7 @@ public:
     std::string outUri;
 
     static AssetChangeCreateAssetDto Create(const AssetChangeReqBody &req);
-    AssetChangeRspBody CreateRspBody();
+    AssetChangeRespBody CreateRespBody();
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_ASSETS_MANAGER_ASSET_CHANGE_CREATE_ASSET_DTO_H

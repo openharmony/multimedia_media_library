@@ -41,14 +41,14 @@ bool GetAssetAnalysisDataReqBody::Marshalling(MessageParcel &parcel) const
     return parcel.WriteBool(this->analysisTotal);
 }
 
-bool GetAssetAnalysisDataRspBody::Unmarshalling(MessageParcel &parcel)
+bool GetAssetAnalysisDataRespBody::Unmarshalling(MessageParcel &parcel)
 {
     this->resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
     CHECK_AND_RETURN_RET_LOG(this->resultSet != nullptr, false, "resultSet nullptr");
     return true;
 }
 
-bool GetAssetAnalysisDataRspBody::Marshalling(MessageParcel &parcel) const
+bool GetAssetAnalysisDataRespBody::Marshalling(MessageParcel &parcel) const
 {
     CHECK_AND_RETURN_RET_LOG(this->resultSet != nullptr, false, "resultSet nullptr");
     return DataShare::DataShareResultSet::Marshal(this->resultSet, parcel);

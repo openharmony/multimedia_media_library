@@ -231,7 +231,7 @@ int32_t GetAssetAnalysisData(int32_t fileId, int32_t analysisType, bool analysis
     auto service = make_shared<MediaAssetsControllerService>();
     service->GetAssetAnalysisData(data, reply);
 
-    IPC::MediaRespVo<GetAssetAnalysisDataRspBody> respVo;
+    IPC::MediaRespVo<GetAssetAnalysisDataRespBody> respVo;
     if (respVo.Unmarshalling(reply) != true) {
         MEDIA_ERR_LOG("respVo.Unmarshalling failed");
         return -1;

@@ -192,10 +192,10 @@ static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
     reqBody.highlightAlbumInfoType = context->highlightAlbumInfoType;
     reqBody.albumId = context->albumId;
     reqBody.subType = static_cast<int32_t>(context->subType);
-    QueryResultRspBody rspBody;
+    QueryResultRespBody respBody;
     errCode = IPC::UserDefineIPCClient().Call(
-        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO), reqBody, rspBody);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = rspBody.resultSet;
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO), reqBody, respBody);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = respBody.resultSet;
     if (resultSet != nullptr) {
         context->highlightAlbumInfo = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
     }
