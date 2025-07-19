@@ -93,6 +93,7 @@
 #include "medialibrary_object_utils.h"
 #include "media_column.h"
 #include "media_old_photos_column.h"
+#include "cloud_media_asset_manager.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -588,8 +589,9 @@ int32_t MediaAssetsService::CancelPhotoUriPermissionInner(
     return errCode;
 }
 
-std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAssets(const GetAssetsDto &dto)
+std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAssets(GetAssetsDto &dto)
 {
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
     cmd.SetDataSharePred(dto.predicates);
     // MEDIALIBRARY_TABLE just for RdbPredicates
@@ -604,8 +606,9 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAssets(con
     return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 }
 
-std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAllDuplicateAssets(const GetAssetsDto &dto)
+std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAllDuplicateAssets(GetAssetsDto &dto)
 {
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
     RdbPredicates predicates = RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
     auto resultSet = DuplicatePhotoOperation::GetAllDuplicateAssets(predicates, dto.columns);
     CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to query duplicate assets");
@@ -613,8 +616,9 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetAllDuplica
     return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 }
 
-std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetDuplicateAssetsToDelete(const GetAssetsDto &dto)
+std::shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::GetDuplicateAssetsToDelete(GetAssetsDto &dto)
 {
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
     RdbPredicates predicates = RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
     auto resultSet = DuplicatePhotoOperation::GetDuplicateAssetsToDelete(predicates, dto.columns);
     CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to query duplicate assets for delete");
@@ -1167,7 +1171,7 @@ int32_t MediaAssetsService::SyncCloudEnhancementTaskStatus()
     return EnhancementManager::GetInstance().HandleSyncOperation();
 }
 
-int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRspBody &rsp)
+int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRespBody &resp)
 {
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, req.fileId);
@@ -1189,13 +1193,13 @@ int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, Query
     resultSet->GetColumnIndex(PhotoColumn::PHOTO_ID, indexOfPhotoId);
     std::string photoId;
     resultSet->GetString(indexOfPhotoId, photoId);
-    rsp.photoId = photoId;
+    resp.photoId = photoId;
 
     int columnIndexQuality = -1;
     resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
     int currentPhotoQuality = HIGH_QUALITY_IMAGE;
     resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
-    rsp.photoQuality = currentPhotoQuality;
+    resp.photoQuality = currentPhotoQuality;
     return E_SUCCESS;
 }
 
@@ -1361,5 +1365,141 @@ int32_t MediaAssetsService::StopRestore(const std::string &keyPath)
     values.PutString("keyPath", keyPath);
     MediaLibraryCommand cmd(values);
     return MediaLibraryPhotoOperations::CancelCustomRestore(cmd);
+}
+
+int32_t MediaAssetsService::StartDownloadCloudMedia(CloudMediaDownloadType downloadType)
+{
+    CloudMediaAssetManager &instance = CloudMediaAssetManager::GetInstance();
+    return instance.StartDownloadCloudAsset(downloadType);
+}
+
+int32_t MediaAssetsService::PauseDownloadCloudMedia()
+{
+    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
+    return instance.PauseDownloadCloudAsset(CloudMediaTaskPauseCause::USER_PAUSED);
+}
+
+int32_t MediaAssetsService::CancelDownloadCloudMedia()
+{
+    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
+    return instance.CancelDownloadCloudAsset();
+}
+
+int32_t MediaAssetsService::RetainCloudMediaAsset()
+{
+    CloudMediaAssetManager &instance = CloudMediaAssetManager::GetInstance();
+    return instance.ForceRetainDownloadCloudMedia();
+}
+
+int32_t MediaAssetsService::IsEdited(const IsEditedDto &dto, IsEditedRespBody &respBody)
+{
+    DataShare::DataSharePredicates predicates;
+    vector<string> columns = { PhotoColumn::PHOTO_EDIT_TIME };
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(dto.fileId));
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.SetDataSharePred(predicates);
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::RequestEditData(const RequestEditDataDto &dto, RequestEditDataRespBody &respBody)
+{
+    NativeRdb::RdbPredicates rdbPredicate =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
+
+    auto resultSet = MediaLibraryRdbStore::QueryEditDataExists(rdbPredicate);
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::GetEditData(const GetEditDataDto &dto, GetEditDataRespBody &respBody)
+{
+    NativeRdb::RdbPredicates rdbPredicate =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
+
+    auto resultSet = MediaLibraryRdbStore::QueryEditDataExists(rdbPredicate);
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::GetCloudMediaAssetStatus(string &status)
+{
+    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
+    status = instance.GetCloudMediaAssetTaskStatus();
+    return E_OK;
+}
+
+int32_t MediaAssetsService::StartAssetAnalysis(const StartAssetAnalysisDto &dto, StartAssetAnalysisRespBody &respBody)
+{
+    Uri uri(dto.uri);
+    MediaLibraryCommand cmd(uri);
+    cmd.SetDataSharePred(dto.predicates);
+    auto resultSet = MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(cmd);
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::GetCloudEnhancementPair(
+    const GetCloudEnhancementPairDto &dto, GetCloudEnhancementPairRespBody &respBody)
+{
+    shared_ptr<NativeRdb::ResultSet> result = MediaAssetsService::GetInstance().GetCloudEnhancementPair(dto.photoUri);
+    auto resultSetBridge = RdbUtils::ToResultSetBridge(result);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::GetFilePathFromUri(const std::string &virtualId, GetFilePathFromUriRespBody &respBody)
+{
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_ID, virtualId);
+    predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
+
+    MediaLibraryCommand cmd(MEDIALIBRARY_TABLE);
+    cmd.SetDataSharePred(predicates);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, MEDIALIBRARY_TABLE);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+    vector<string> columns = { MEDIA_DATA_DB_FILE_PATH };
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
+    shared_ptr<NativeRdb::ResultSet> resultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("GetFilePathFromUri query resultSet is nullptr");
+        return E_ERR;
+    }
+
+    auto resultSetBridge = RdbUtils::ToResultSetBridge(resultSet);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::GetUriFromFilePath(const std::string &tempPath, GetUriFromFilePathRespBody &respBody)
+{
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MEDIA_DATA_DB_FILE_PATH, tempPath);
+    predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
+
+    MediaLibraryCommand cmd(MEDIALIBRARY_TABLE);
+    cmd.SetDataSharePred(predicates);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, MEDIALIBRARY_TABLE);
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+    vector<string> columns = { MEDIA_DATA_DB_ID };
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
+    shared_ptr<NativeRdb::ResultSet> resultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("GetUriFromFilePath query resultSet is nullptr");
+        return E_ERR;
+    }
+
+    auto resultSetBridge = RdbUtils::ToResultSetBridge(resultSet);
+    respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_OK;
 }
 } // namespace OHOS::Media

@@ -34,7 +34,7 @@ public:
     void Convert2Dto(CheckUriPermissionInnerDto &dto);
 };
 
-class CheckUriPermissionInnerRspBody : public IPC::IMediaParcelable {
+class CheckUriPermissionInnerRespBody : public IPC::IMediaParcelable {
 public:
     std::vector<std::string> fileIds{};
     std::vector<int32_t> permissionTypes{};

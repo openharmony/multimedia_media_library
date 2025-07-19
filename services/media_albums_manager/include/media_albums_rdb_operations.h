@@ -24,6 +24,8 @@
 #include "medialibrary_rdb_transaction.h"
 #include "set_highlight_user_action_data_dto.h"
 #include "change_request_move_assets_dto.h"
+#include "change_request_add_assets_dto.h"
+#include "change_request_remove_assets_dto.h"
 
 namespace OHOS::Media {
 
@@ -36,6 +38,8 @@ public:
     int32_t SetHighlightUserActionData(const SetHighlightUserActionDataDto& dto);
     int32_t GetFaceId(int32_t albumId, std::string& groupTag);
     std::shared_ptr<NativeRdb::ResultSet> MoveAssetsGetAlbumInfo(const ChangeRequestMoveAssetsDto &moveAssetsDto);
+    std::shared_ptr<NativeRdb::ResultSet> AddAssetsGetAlbumInfo(const ChangeRequestAddAssetsDto &addAssetsDto);
+    std::shared_ptr<NativeRdb::ResultSet> RemoveAssetsGetAlbumInfo(const ChangeRequestRemoveAssetsDto &removeAssetsDto);
 };
 
 } // namespace OHOS::Media

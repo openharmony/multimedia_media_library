@@ -51,28 +51,28 @@ std::string GetAlbumsByIdsReqBody::ToString() const
     return ss.str();
 }
 
-bool GetAlbumsByIdsRspBody::Unmarshalling(MessageParcel &parcel)
+bool GetAlbumsByIdsRespBody::Unmarshalling(MessageParcel &parcel)
 {
     this->resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
     if (this->resultSet == nullptr) {
-        MEDIA_ERR_LOG("GetAlbumsByIdsRspBody ReadFromParcel failed");
+        MEDIA_ERR_LOG("GetAlbumsByIdsRespBody ReadFromParcel failed");
         return false;
     }
-    MEDIA_INFO_LOG("GetAlbumsByIdsRspBody ReadFromParcel success");
+    MEDIA_INFO_LOG("GetAlbumsByIdsRespBody ReadFromParcel success");
     return true;
 }
 
-bool GetAlbumsByIdsRspBody::Marshalling(MessageParcel &parcel) const
+bool GetAlbumsByIdsRespBody::Marshalling(MessageParcel &parcel) const
 {
     if (this->resultSet == nullptr || !DataShare::DataShareResultSet::Marshal(this->resultSet, parcel)) {
-        MEDIA_ERR_LOG("GetAlbumsByIdsRspBody Marshalling failed");
+        MEDIA_ERR_LOG("GetAlbumsByIdsRespBody Marshalling failed");
         return false;
     }
-    MEDIA_INFO_LOG("GetAlbumsByIdsRspBody Marshalling success");
+    MEDIA_INFO_LOG("GetAlbumsByIdsRespBody Marshalling success");
     return true;
 }
 
-std::string GetAlbumsByIdsRspBody::ToString() const
+std::string GetAlbumsByIdsRespBody::ToString() const
 {
     std::stringstream ss;
     // todo: add the content of GetAssetsRespBody
