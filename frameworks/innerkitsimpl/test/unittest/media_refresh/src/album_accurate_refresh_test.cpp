@@ -1337,6 +1337,82 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Exe_031, TestSize.Le
     EXPECT_TRUE(CheckInsertNotify(albumRefreshExe, albumInfo));
 }
 
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Exceed_032, TestSize.Level2)
+{
+    PrepareHiddenData();
+    ValuesBucket value;
+    auto newCount = HIDDEN_ALBUM_COUNT - 1;
+    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
+    auto imageCount = HIDDEN_ALBUM_IMAGE_COUNT - 1;
+    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
+
+    AlbumAccurateRefresh albumRefreshUpdate;
+    int32_t changeRows = 0;
+    auto ret = albumRefreshUpdate.Update(changeRows, value, predicates);
+    ACCURATE_DEBUG("ret: %{public}d", ret);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changeRows == 1);
+    auto &changeDatasMap = albumRefreshUpdate.dataManager_.changeDatas_;
+    AlbumChangeData changeData;
+    // 总共1000条
+    for (int i = 0; i < 999; ++i) {
+        changeDatasMap.insert_or_assign(1000000 + i, changeData);
+    }
+
+    ValuesBucket newValue;
+    newCount = HIDDEN_ALBUM_COUNT;
+    newValue.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
+    imageCount = HIDDEN_ALBUM_IMAGE_COUNT;
+    newValue.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
+    ret = albumRefreshUpdate.Update(changeRows, value, predicates);
+    ACCURATE_DEBUG("ret: %{public}d", ret);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changeRows == 1);
+    // 总共1000条
+    EXPECT_TRUE(albumRefreshUpdate.dataManager_.CheckIsExceed());
+    EXPECT_TRUE(albumRefreshUpdate.dataManager_.changeDatas_.empty());
+    EXPECT_TRUE(albumRefreshUpdate.Notify() == ACCURATE_REFRESH_RET_OK);
+}
+
+HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Update_Exceed_033, TestSize.Level2)
+{
+    PrepareHiddenData();
+    ValuesBucket value;
+    auto newCount = HIDDEN_ALBUM_COUNT - 1;
+    value.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
+    auto imageCount = HIDDEN_ALBUM_IMAGE_COUNT - 1;
+    value.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
+
+    AlbumAccurateRefresh albumRefreshUpdate;
+    int32_t changeRows = 0;
+    auto ret = albumRefreshUpdate.Update(changeRows, value, predicates);
+    ACCURATE_DEBUG("ret: %{public}d", ret);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changeRows == 1);
+    auto &changeDatasMap = albumRefreshUpdate.dataManager_.changeDatas_;
+    AlbumChangeData changeData;
+    // 总共999条
+    for (int i = 0; i < 998; ++i) {
+        changeDatasMap.insert_or_assign(1000000 + i, changeData);
+    }
+
+    ValuesBucket newValue;
+    newCount = HIDDEN_ALBUM_COUNT;
+    newValue.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
+    imageCount = HIDDEN_ALBUM_IMAGE_COUNT;
+    newValue.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, imageCount);
+    ret = albumRefreshUpdate.Update(changeRows, value, predicates);
+    ACCURATE_DEBUG("ret: %{public}d", ret);
+    EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
+    EXPECT_TRUE(changeRows == 1);
+    // 总共999条
+    EXPECT_TRUE(!albumRefreshUpdate.dataManager_.CheckIsExceed());
+}
+
 HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_Init_034, TestSize.Level2)
 {
     std::shared_ptr<TransactionOperations> trans =
