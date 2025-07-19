@@ -607,7 +607,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_Start_Fuse_test_001, TestSize.Level1
 }
 
 HWTEST_F(MediaLibraryFuseTest, MediaLibrary_DoGetAttr_test_001, TestSize.Level1) {
-    std::string path = "/mnt/data/100/media_fuse/Photo/1/IMG_1743563768_000/0000.jpg";
+    std::string path = "/mnt/data/100/media_fuse/Photo/00000/00000/00000.jpg";
 
     struct stat stbuf;
     (void)memset_s(&stbuf, sizeof(stbuf), 0, sizeof(stbuf));
