@@ -143,13 +143,13 @@ std::shared_ptr<PermissionCheck> PermissionCheck::BuildPermissionCheckChain(uint
         }
         compositePermChain->AddCheck(singlePermCheck);
     }
-    MEDIA_INFO_LOG("BuildPermissionCheckChain: %{public}d end", businessCode);
+    MEDIA_DEBUG_LOG("BuildPermissionCheckChain: %{public}d end", businessCode);
     return compositePermChain;
 }
 
 int32_t PermissionCheck::VerifyPermissions(uint32_t businessCode, const PermissionHeaderReq &data)
 {
-    MEDIA_INFO_LOG("VerifyPermissions API code=%{public}d", businessCode);
+    MEDIA_DEBUG_LOG("VerifyPermissions API code=%{public}d", businessCode);
     if (businessCode == static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_OPEN)) {
         auto ret = VerifyOpenFilePermissions(businessCode, data);
         MEDIA_INFO_LOG("Verify OpenFile Permissions ret=%{public}d, API code=%{public}d", ret, businessCode);
