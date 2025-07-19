@@ -24,6 +24,9 @@
 #include "dfx_timer.h"
 #include "dfx_const.h"
 #include "medialibrary_tracer.h"
+#include "dfx_refresh_manager.h"
+#include "photo_album_column.h"
+#include "dfx_refresh_hander.h"
 #include "album_accurate_refresh_manager.h"
 
 using namespace std;
@@ -32,6 +35,12 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
+AccurateRefreshBase::~AccurateRefreshBase()
+{
+    if (isReport_) {
+        DfxRefreshHander::DfxRefreshReportHander(dfxRefreshManager_);
+    }
+}
 
 int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
 {
@@ -41,6 +50,7 @@ int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
     PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::Insert cmd");
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
     vector<int32_t> keys;
     #ifdef MEDIA_REFRESH_TEST
         pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
@@ -73,6 +83,7 @@ int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
         ACCURATE_DEBUG("Insert key: %{public}" PRId64, outRowId);
     #endif
     UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD, pendingInfo);
+    DfxRefreshHander::SetOptEndTimeHander(cmd, dfxRefreshManager_);
     return ACCURATE_REFRESH_RET_OK;
 }
 
@@ -84,6 +95,7 @@ int32_t AccurateRefreshBase::Insert(int64_t &outRowId, const string &table, Valu
     PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::Insert talbe");
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
     vector<int32_t> keys;
     #ifdef MEDIA_REFRESH_TEST
         pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
@@ -116,15 +128,19 @@ int32_t AccurateRefreshBase::Insert(int64_t &outRowId, const string &table, Valu
         ACCURATE_DEBUG("Insert key: %{public}" PRId64, outRowId);
     #endif
     UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD, pendingInfo);
+    DfxRefreshHander::SetOptEndTimeHander(table, dfxRefreshManager_);
     return ACCURATE_REFRESH_RET_OK;
 }
 
 int32_t AccurateRefreshBase::BatchInsert(MediaLibraryCommand &cmd, int64_t& changedRows, vector<ValuesBucket>& values)
 {
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
     if (!IsValidTable(cmd.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-    return BatchInsert(changedRows, cmd.GetTableName(), values);
+    int32_t ret = BatchInsert(changedRows, cmd.GetTableName(), values);
+    DfxRefreshHander::SetOptEndTimeHander(cmd, dfxRefreshManager_);
+    return ret;
 }
 
 int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &table,
@@ -155,6 +171,7 @@ int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &tab
 }
 int32_t AccurateRefreshBase::Update(MediaLibraryCommand &cmd, int32_t &changedRows)
 {
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
     // 保持和 medialibrary_rdbstore.cpp medialibrary_rdb_transaction.cpp 处理一致
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
@@ -164,21 +181,27 @@ int32_t AccurateRefreshBase::Update(MediaLibraryCommand &cmd, int32_t &changedRo
     }
 
     DfxTimer dfxTimer(DfxType::RDB_UPDATE_BY_CMD, INVALID_DFX, RDB_TIME_OUT, false);
-    return UpdateWithNoDateTime(changedRows, cmd.GetValueBucket(), *(cmd.GetAbsRdbPredicates()));
+    int32_t ret = UpdateWithNoDateTime(changedRows, cmd.GetValueBucket(), *(cmd.GetAbsRdbPredicates()));
+    DfxRefreshHander::SetOptEndTimeHander(cmd, dfxRefreshManager_);
+    return ret;
 }
 
 int32_t AccurateRefreshBase::Update(int32_t &changedRows, const string &table, const ValuesBucket &value,
     const string &whereClause, const vector<string> &args)
 {
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
     AbsRdbPredicates predicates(table);
     predicates.SetWhereClause(whereClause);
     predicates.SetWhereArgs(args);
-    return UpdateWithNoDateTime(changedRows, value, predicates);
+    int32_t ret = UpdateWithNoDateTime(changedRows, value, predicates);
+    DfxRefreshHander::SetOptEndTimeHander(predicates, dfxRefreshManager_);
+    return ret;
 }
 
 int32_t AccurateRefreshBase::Update(int32_t &changedRows, const ValuesBucket &value, const AbsRdbPredicates &predicates,
     RdbOperation operation)
 {
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
     // medialibrary_rdb_transaction.cpp 处理一致
     ValuesBucket checkValue = value;
     if (trans_) {
@@ -187,8 +210,9 @@ int32_t AccurateRefreshBase::Update(int32_t &changedRows, const ValuesBucket &va
             checkValue.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
         }
     }
-
-    return UpdateWithNoDateTime(changedRows, checkValue, predicates, operation);
+    int32_t ret = UpdateWithNoDateTime(changedRows, checkValue, predicates, operation);
+    DfxRefreshHander::SetOptEndTimeHander(predicates, dfxRefreshManager_);
+    return ret;
 }
 
 int32_t AccurateRefreshBase::UpdateWithNoDateTime(int32_t &changedRows, const ValuesBucket &value,
@@ -256,6 +280,7 @@ int32_t AccurateRefreshBase::Delete(int32_t &deletedRows, const AbsRdbPredicates
     }
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::Delete");
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
     auto ret = Init(predicates);
     if (ret != ACCURATE_REFRESH_RET_OK) {
         MEDIA_WARN_LOG("no Init.");
@@ -277,6 +302,7 @@ int32_t AccurateRefreshBase::Delete(int32_t &deletedRows, const AbsRdbPredicates
     deletedRows = retWithResults.second.changed;
     ACCURATE_DEBUG("deletedRows: %{public}d", deletedRows);
     UpdateModifiedDatasInner(keys, RDB_OPERATION_REMOVE);
+    DfxRefreshHander::SetOptEndTimeHander(predicates, dfxRefreshManager_);
     return ACCURATE_REFRESH_RET_OK;
 }
 
@@ -314,7 +340,10 @@ vector<int32_t> AccurateRefreshBase::GetReturningKeys(const pair<int32_t, Result
 
 int32_t AccurateRefreshBase::ExecuteSql(const string &sql, RdbOperation operation)
 {
-    return ExecuteSql(sql, vector<ValueObject>(), operation);
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
+    int32_t ret = ExecuteSql(sql, vector<ValueObject>(), operation);
+    DfxRefreshHander::SetOptEndTimeHander(PhotoAlbumColumns::TABLE, dfxRefreshManager_);
+    return ret;
 }
 
 int32_t AccurateRefreshBase::ExecuteForLastInsertedRowId(const string &sql, const vector<ValueObject> &bindArgs,
@@ -322,6 +351,7 @@ int32_t AccurateRefreshBase::ExecuteForLastInsertedRowId(const string &sql, cons
 {
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::ExecuteForLastInsertedRowId");
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->Execute(sql, bindArgs, GetReturningKeyName());
@@ -342,6 +372,7 @@ int32_t AccurateRefreshBase::ExecuteForLastInsertedRowId(const string &sql, cons
         rowId = keys.back();
     }
     ACCURATE_DEBUG("ExecuteForLastInsertedRowId: %{public}d", rowId);
+    DfxRefreshHander::SetOptEndTimeHander(PhotoAlbumColumns::TABLE, dfxRefreshManager_);
     return rowId;
 }
 
@@ -349,6 +380,7 @@ int32_t AccurateRefreshBase::ExecuteSql(const string &sql, const vector<ValueObj
 {
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::ExecuteSql");
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->Execute(sql, bindArgs, GetReturningKeyName());
@@ -362,6 +394,7 @@ int32_t AccurateRefreshBase::ExecuteSql(const string &sql, const vector<ValueObj
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     ACCURATE_DEBUG("ExecuteSql: %{public}d", retWithResults.second.changed);
     UpdateModifiedDatasInner(keys, operation);
+    DfxRefreshHander::SetOptEndTimeHander(PhotoAlbumColumns::TABLE, dfxRefreshManager_);
     return ACCURATE_REFRESH_RET_OK;
 }
 
@@ -400,6 +433,16 @@ int32_t AccurateRefreshBase::UpdateWithDateTime(ValuesBucket &values, const AbsR
         ACCURATE_ERR("ret: 0x%{public}x", ret);
     }
     return changedRows;
+}
+
+std::shared_ptr<DfxRefreshManager> AccurateRefreshBase::GetDfxRefreshManager()
+{
+    return dfxRefreshManager_;
+}
+
+void AccurateRefreshBase::CloseDfxReport()
+{
+    isReport_ = false;
 }
 
 } // namespace Media

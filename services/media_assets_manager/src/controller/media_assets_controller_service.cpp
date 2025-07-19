@@ -94,6 +94,8 @@
 #include "close_asset_vo.h"
 #include "stop_restore_vo.h"
 #include "medialibrary_file_operations.h"
+#include "dfx_timer.h"
+#include "dfx_const.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -496,6 +498,9 @@ int32_t MediaAssetsControllerService::OnRemoteRequest(
 int32_t MediaAssetsControllerService::RemoveFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RemoveFormInfo");
+    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::REMOVE_FORM_INFO);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(DfxType::RDB_DELETE, operationCode, timeout, true);
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -512,6 +517,9 @@ int32_t MediaAssetsControllerService::RemoveFormInfo(MessageParcel &data, Messag
 int32_t MediaAssetsControllerService::RemoveGalleryFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RemoveGalleryFormInfo");
+    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::REMOVE_GALLERY_FORM_INFO);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(DfxType::RDB_DELETE, operationCode, timeout, true);
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -528,6 +536,9 @@ int32_t MediaAssetsControllerService::RemoveGalleryFormInfo(MessageParcel &data,
 int32_t MediaAssetsControllerService::SaveFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SaveFormInfo");
+    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::SAVE_FORM_INFO);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(DfxType::RDB_INSERT, operationCode, timeout, true);
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -551,6 +562,9 @@ int32_t MediaAssetsControllerService::SaveFormInfo(MessageParcel &data, MessageP
 int32_t MediaAssetsControllerService::SaveGalleryFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SaveGalleryFormInfo");
+    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::SAVE_GALLERY_FORM_INFO);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(DfxType::RDB_BATCHINSERT, operationCode, timeout, true);
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -734,6 +748,9 @@ int32_t MediaAssetsControllerService::AssetChangeSetUserComment(MessageParcel &d
 int32_t MediaAssetsControllerService::AssetChangeSetLocation(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeSetLocation");
+    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_LOCATION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(DfxType::RDB_UPDATE, operationCode, timeout, true);
     AssetChangeReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -775,6 +792,9 @@ int32_t MediaAssetsControllerService::AssetChangeSetTitle(MessageParcel &data, M
 int32_t MediaAssetsControllerService::AssetChangeSetEditData(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeSetEditData");
+    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_EDIT_DATA);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(DfxType::RDB_UPDATE, operationCode, timeout, true);
     AssetChangeReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -820,6 +840,9 @@ int32_t MediaAssetsControllerService::AssetChangeSubmitCache(MessageParcel &data
 int32_t MediaAssetsControllerService::AssetChangeCreateAsset(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeCreateAsset");
+    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_CREATE_ASSET);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(DfxType::RDB_INSERT, operationCode, timeout, true);
     AssetChangeReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);

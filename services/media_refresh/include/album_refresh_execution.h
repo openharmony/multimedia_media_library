@@ -28,6 +28,7 @@
 #include "userfile_manager_types.h"
 #include "album_accurate_refresh.h"
 #include "system_album_info_calculation.h"
+#include "dfx_refresh_manager.h"
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
@@ -38,6 +39,10 @@ public:
         NotifyAlbumType notifyAlbumType = NO_NOTIFY);
     int32_t Notify();
     int32_t RefreshAllAlbum(NotifyAlbumType notifyAlbumType);
+    void SetDfxRefreshManager(std::shared_ptr<DfxRefreshManager> dfxRefreshManager)
+    {
+        dfxRefreshManager_ = dfxRefreshManager;
+    }
 
 private:
     std::vector<int32_t> GetAlbumIds();
@@ -108,6 +113,8 @@ private:
     std::unordered_map<int32_t, AlbumChangeInfo> initAlbumInfos_;
 
     AlbumAccurateRefresh albumRefresh_;
+
+    std::shared_ptr<DfxRefreshManager> dfxRefreshManager_;
 
     // 需要刷新的相册信息
     std::unordered_map<int32_t, std::pair<AlbumRefreshInfo, AlbumChangeInfo>> refreshAlbums_;

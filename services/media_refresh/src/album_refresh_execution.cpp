@@ -33,6 +33,8 @@
 #include "medialibrary_data_manager_utils.h"
 #include "media_file_utils.h"
 #include "medialibrary_tracer.h"
+#include "dfx_refresh_manager.h"
+#include "dfx_refresh_hander.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -165,7 +167,7 @@ int32_t AlbumRefreshExecution::CalAlbumsInfos()
 
 int32_t AlbumRefreshExecution::Notify()
 {
-    albumRefresh_.Notify();
+    albumRefresh_.Notify(dfxRefreshManager_);
     return ACCURATE_REFRESH_RET_OK;
 }
 
@@ -198,6 +200,7 @@ int32_t AlbumRefreshExecution::UpdateAllAlbums(NotifyAlbumType notifyAlbumType)
 
 int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden, NotifyAlbumType notifyAlbumType)
 {
+    DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
     const auto &iter = initAlbumInfos_.find(albumId);
     if (iter == initAlbumInfos_.end()) {
         MEDIA_WARN_LOG("no album info.");
@@ -232,7 +235,7 @@ int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden,
         }
         refreshRecord.RefreshAlbumEnd();
     }
-
+    DfxRefreshHander::SetAlbumIdAndOptTimeHander(albumId, isHidden, dfxRefreshManager_);
     return ACCURATE_REFRESH_RET_OK;
 }
 
@@ -280,6 +283,7 @@ int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumT
     MediaLibraryTracer tracer;
     tracer.Start("AlbumRefreshExecution::AccurateUpdateAlbums");
     for (auto &iter : refreshAlbums_) {
+        DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
         auto &albumInfo = iter.second.second;
         ACCURATE_DEBUG("## Update type: %{public}d, albumId: %{public}d start", albumInfo.albumSubType_,
             albumInfo.albumId_);
@@ -318,6 +322,8 @@ int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumT
         }
         ACCURATE_DEBUG("## Update type: %{public}d, albumId: %{public}d end", albumInfo.albumSubType_,
             albumInfo.albumId_);
+        DfxRefreshHander::SetOptEndTimeHander(predicates, dfxRefreshManager_);
+        DfxRefreshHander::SetAlbumIdHander(albumInfo.albumId_, dfxRefreshManager_);
     }
     return ACCURATE_REFRESH_RET_OK;
 }

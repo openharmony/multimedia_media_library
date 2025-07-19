@@ -742,7 +742,7 @@ HWTEST_F(AssetAccurateRefreshTest, Init_001, TestSize.Level2)
 
 HWTEST_F(AssetAccurateRefreshTest, Insert_002, TestSize.Level2)
 {
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("Insert_002");
     int64_t outRowId = 0;
     auto assetInfo = GetFavoriteVideoAsset();
     auto value = GetAssetInsertValue(assetInfo);
@@ -781,7 +781,7 @@ HWTEST_F(AssetAccurateRefreshTest, Insert_002, TestSize.Level2)
 
 HWTEST_F(AssetAccurateRefreshTest, Insert_003, TestSize.Level2)
 {
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("Insert_003");
     int64_t outRowId = 0;
     auto assetInfo = GetVideoAsset();
     auto value = GetAssetInsertValue(assetInfo);
@@ -815,7 +815,7 @@ HWTEST_F(AssetAccurateRefreshTest, Insert_003, TestSize.Level2)
 
 HWTEST_F(AssetAccurateRefreshTest, Insert_004, TestSize.Level2)
 {
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("Insert_004");
     int64_t outRowId = 0;
     auto assetInfo = GetFavoriteImageAsset();
     auto value = GetAssetInsertValue(assetInfo);
@@ -850,7 +850,7 @@ HWTEST_F(AssetAccurateRefreshTest, Insert_004, TestSize.Level2)
 
 HWTEST_F(AssetAccurateRefreshTest, Insert_005, TestSize.Level2)
 {
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("Insert_005");
     int64_t outRowId = 0;
     auto assetInfo = GetImageAsset();
     auto value = GetAssetInsertValue(assetInfo);
@@ -884,7 +884,7 @@ HWTEST_F(AssetAccurateRefreshTest, Insert_005, TestSize.Level2)
 
 HWTEST_F(AssetAccurateRefreshTest, Insert_006, TestSize.Level2)
 {
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("Insert_006");
     int64_t outRowId = 0;
     auto assetInfo = GetFavoriteVideoHiddenAsset();
     auto value = GetAssetInsertValue(assetInfo);
@@ -928,7 +928,7 @@ HWTEST_F(AssetAccurateRefreshTest, Insert_006, TestSize.Level2)
 
 HWTEST_F(AssetAccurateRefreshTest, Insert_007, TestSize.Level2)
 {
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("Insert_007");
     int64_t outRowId = 0;
     auto assetInfo = GetCloudAsset();
     auto value = GetAssetInsertValue(assetInfo);
@@ -972,7 +972,7 @@ HWTEST_F(AssetAccurateRefreshTest, Insert_007, TestSize.Level2)
 
 HWTEST_F(AssetAccurateRefreshTest, Insert_008, TestSize.Level2)
 {
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("Insert_008");
     int64_t outRowId = 0;
     auto assetInfo = GetTrashAsset();
     auto value = GetAssetInsertValue(assetInfo);
@@ -1025,7 +1025,7 @@ HWTEST_F(AssetAccurateRefreshTest, Update_009, TestSize.Level2)
     ValuesBucket value;
     int64_t dataTrashTime = 1000000;
     value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("Update_009");
     int32_t changedRow = 0;
     auto ret = assetRefresh.Update(changedRow, value, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1098,7 +1098,7 @@ HWTEST_F(AssetAccurateRefreshTest, Update_Exceed_010, TestSize.Level2)
     ValuesBucket value;
     int64_t dataTrashTime = 1000000;
     value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("Update_Exceed_010");
     int32_t changedRow = 0;
     auto ret = assetRefresh.Update(changedRow, value, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1165,7 +1165,7 @@ HWTEST_F(AssetAccurateRefreshTest, Update_MultiThread_012, TestSize.Level2)
         ValuesBucket value;
         int64_t dataTrashTime = 1000000;
         value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-        AssetAccurateRefresh assetRefresh;
+        AssetAccurateRefresh assetRefresh("Update_MultiThread_012");
         int32_t changedRow = 0;
         auto ret = assetRefresh.Update(changedRow, value, predicates);
         EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1183,7 +1183,7 @@ HWTEST_F(AssetAccurateRefreshTest, Update_MultiThread_012, TestSize.Level2)
         predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
         ValuesBucket value;
         value.PutInt(PhotoColumn::MEDIA_IS_FAV, 0);
-        AssetAccurateRefresh assetRefresh;
+        AssetAccurateRefresh assetRefresh("Update_MultiThread_012");
         int32_t changedRow = 0;
         auto ret = assetRefresh.Update(changedRow, value, predicates);
         EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1226,7 +1226,7 @@ void InsertAndUpdateMultiThread(int32_t delayTime)
 
     bool isRefreshAllInsert = false;
     std::thread taskInsert([&]() {
-        AssetAccurateRefresh assetRefresh;
+        AssetAccurateRefresh assetRefresh("InsertAndUpdateMultiThread");
         int64_t outRowId = 0;
         auto assetInfo = GetFavoriteImageAsset();
         auto value = GetAssetInsertValue(assetInfo);
@@ -1249,7 +1249,7 @@ void InsertAndUpdateMultiThread(int32_t delayTime)
         predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
         ValuesBucket value;
         value.PutInt(PhotoColumn::MEDIA_IS_FAV, 0);
-        AssetAccurateRefresh assetRefresh;
+        AssetAccurateRefresh assetRefresh("InsertAndUpdateMultiThread");
         std::this_thread::sleep_for(chrono::milliseconds(delayTime));
         auto ret = assetRefresh.Update(changedRow, value, predicates);
         EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1321,7 +1321,7 @@ HWTEST_F(AssetAccurateRefreshTest, Update_MultiThread_017, TestSize.Level2)
         ValuesBucket value;
         int64_t dataTrashTime = 1000000;
         value.PutLong(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-        AssetAccurateRefresh assetRefresh;
+        AssetAccurateRefresh assetRefresh("Update_MultiThread_017");
         int32_t changedRow = 0;
         auto ret = assetRefresh.Update(changedRow, value, predicates);
         EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1346,7 +1346,7 @@ HWTEST_F(AssetAccurateRefreshTest, Update_MultiThread_017, TestSize.Level2)
         predicates.EqualTo(PhotoColumn::MEDIA_ID, FAVORITE_IMAGE_ASSET_FILE_ID);
         ValuesBucket value;
         value.PutInt(PhotoColumn::MEDIA_IS_FAV, 0);
-        AssetAccurateRefresh assetRefresh;
+        AssetAccurateRefresh assetRefresh("Update_MultiThread_017");
         int32_t changedRow = 0;
         auto ret = assetRefresh.Update(changedRow, value, predicates);
         EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1380,7 +1380,7 @@ HWTEST_F(AssetAccurateRefreshTest, MultiThread_Clear_018, TestSize.Level2)
         ValuesBucket value;
         int64_t dataTrashTime = 1000000;
         value.PutLong(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-        AssetAccurateRefresh assetRefresh;
+        AssetAccurateRefresh assetRefresh("MultiThread_Clear_018");
         int32_t changedRow = 0;
         auto ret = assetRefresh.Update(changedRow, value, predicates);
         EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1411,7 +1411,7 @@ HWTEST_F(AssetAccurateRefreshTest, MultiThread_Clear_018, TestSize.Level2)
         ValuesBucket value;
         int64_t dataTrashTime = 1000000;
         value.PutLong(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-        AssetAccurateRefresh assetRefresh;
+        AssetAccurateRefresh assetRefresh("MultiThread_Clear_018");
         int32_t changedRow = 0;
         auto ret = assetRefresh.Update(changedRow, value, predicates);
         EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1452,7 +1452,7 @@ HWTEST_F(AssetAccurateRefreshTest, MultiThread_Clear_019, TestSize.Level2)
         ValuesBucket value;
         int64_t dataTrashTime = 1000000;
         value.PutLong(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-        shared_ptr<AssetAccurateRefresh> assetRefresh = make_shared<AssetAccurateRefresh>();
+        shared_ptr<AssetAccurateRefresh> assetRefresh = make_shared<AssetAccurateRefresh>("MultiThread_Clear_019");
         int32_t changedRow = 0;
         auto ret = assetRefresh->Update(changedRow, value, predicates);
         EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1483,7 +1483,7 @@ HWTEST_F(AssetAccurateRefreshTest, MultiThread_Clear_019, TestSize.Level2)
         ValuesBucket value;
         int64_t dataTrashTime = 1000000;
         value.PutLong(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-        shared_ptr<AssetAccurateRefresh> assetRefresh = make_shared<AssetAccurateRefresh>();
+        shared_ptr<AssetAccurateRefresh> assetRefresh = make_shared<AssetAccurateRefresh>("MultiThread_Clear_019");
         int32_t changedRow = 0;
         auto ret = assetRefresh->Update(changedRow, value, predicates);
         EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1524,7 +1524,7 @@ HWTEST_F(AssetAccurateRefreshTest, AccurateRefreshAlbum_020, TestSize.Level2)
     ValuesBucket value;
     int64_t dataTrashTime = 1000000;
     value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("AccurateRefreshAlbum_020");
     int32_t changedRow = 0;
     auto ret = assetRefresh.Update(changedRow, value, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1554,7 +1554,7 @@ HWTEST_F(AssetAccurateRefreshTest, IgnoreRefreshAlbum_021, TestSize.Level2)
     ValuesBucket value;
     int64_t dataTrashTime = 1000000;
     value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("IgnoreRefreshAlbum_021");
     int32_t changedRow = 0;
     auto ret = assetRefresh.Update(changedRow, value, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1597,7 +1597,7 @@ HWTEST_F(AssetAccurateRefreshTest, ForceRefreshAlbum_021, TestSize.Level2)
     ValuesBucket value;
     int64_t dataTrashTime = 1000000;
     value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("ForceRefreshAlbum_021");
     int32_t changedRow = 0;
     auto ret = assetRefresh.Update(changedRow, value, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1636,7 +1636,7 @@ HWTEST_F(AssetAccurateRefreshTest, ForceRefreshAlbum_022, TestSize.Level2)
     ValuesBucket value;
     int64_t dataTrashTime = 1000000;
     value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("ForceRefreshAlbum_022");
     int32_t changedRow = 0;
     auto ret = assetRefresh.Update(changedRow, value, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
@@ -1676,7 +1676,7 @@ HWTEST_F(AssetAccurateRefreshTest, ForceRefreshAlbum_023, TestSize.Level2)
     ValuesBucket value;
     int64_t dataTrashTime = 1000000;
     value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh("ForceRefreshAlbum_023");
     int32_t changedRow = 0;
     auto ret = assetRefresh.Update(changedRow, value, predicates);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
