@@ -21,12 +21,18 @@
 #include "medialibrary_unistore_manager.h"
 #include "accurate_debug_log.h"
 #include "medialibrary_tracer.h"
+#include "media_file_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
+
+AssetDataManager::~AssetDataManager()
+{
+    ClearMultiThreadChangeDatas();
+}
 
 int32_t AssetDataManager::UpdateModifiedDatas()
 {
@@ -172,6 +178,73 @@ int32_t AssetDataManager::UpdateNotifyInfo()
             content.thumbnailChangeStatus_);
     }
     return ACCURATE_REFRESH_RET_OK;
+}
+
+void AssetDataManager::PostInsertBeforeData(PhotoAssetChangeData &changeData, PendingInfo &pendingInfo)
+{
+    UpdatePendingInfo(changeData, pendingInfo);
+    if (changeData.infoBeforeChange_.fileId_ == INVALID_INT32_VALUE) {
+        MEDIA_ERR_LOG("invalid fileId");
+        return;
+    }
+
+    MultiThreadAssetChangeInfoMgr::GetInstance().CheckInsertBeforeInfo(changeData.infoBeforeChange_);
+}
+
+void AssetDataManager::PostInsertAfterData(PhotoAssetChangeData &changeData, PendingInfo &pendingInfo, bool isAdd)
+{
+    UpdatePendingInfo(changeData, pendingInfo);
+    if (changeData.infoAfterChange_.fileId_ == INVALID_INT32_VALUE) {
+        MEDIA_ERR_LOG("invalid fileId");
+        return;
+    }
+    if (MultiThreadAssetChangeInfoMgr::GetInstance().CheckInsertAfterInfo(changeData.infoAfterChange_, isAdd)) {
+        multiThreadAssetIds_.insert(changeData.infoAfterChange_.fileId_);
+        changeData.isMultiOperation_ = true;
+    }
+}
+
+bool AssetDataManager::CheckUpdateDataForMultiThread(PhotoAssetChangeData &changeData)
+{
+    if (!changeData.isMultiOperation_) {
+        return false;
+    }
+    auto infos = MultiThreadAssetChangeInfoMgr::GetInstance().GetAndUpdateAssetChangeData(changeData.GetFileId());
+    changeData.infoBeforeChange_ = infos.first;
+    changeData.infoAfterChange_ = infos.second;
+    changeData.isMultiOperation_ = false;
+    ClearMultiThreadChangeData(changeData.GetFileId());
+    return true;
+}
+
+void AssetDataManager::ClearMultiThreadChangeData(int32_t fileId)
+{
+    MultiThreadAssetChangeInfoMgr::GetInstance().ClearMultiThreadChangeData(fileId);
+    multiThreadAssetIds_.erase(fileId);
+}
+
+void AssetDataManager::ClearMultiThreadChangeDatas()
+{
+    if (multiThreadAssetIds_.empty()) {
+        return;
+    }
+    for (auto fileId : multiThreadAssetIds_) {
+        MultiThreadAssetChangeInfoMgr::GetInstance().ClearMultiThreadChangeData(fileId);
+    }
+    multiThreadAssetIds_.clear();
+}
+
+void AssetDataManager::UpdatePendingInfo(PhotoAssetChangeData &changeData, PendingInfo &pendingInfo)
+{
+    if (pendingInfo.start_ != INVALID_INT64_VALUE && changeData.infoBeforeChange_.timestamp_ == INVALID_INT64_VALUE) {
+        changeData.infoBeforeChange_.timestamp_ = pendingInfo.start_;
+    }
+    if (pendingInfo.end_ != INVALID_INT64_VALUE && changeData.infoAfterChange_.timestamp_ == INVALID_INT64_VALUE) {
+        changeData.infoAfterChange_.timestamp_ = pendingInfo.end_;
+    }
+    ACCURATE_DEBUG("start[%{public}" PRId64 "], end[%{public}" PRId64 "], pendingInfo[%{public}" PRId64 \
+        ", %{public}" PRId64 "]", changeData.infoBeforeChange_.timestamp_, changeData.infoAfterChange_.timestamp_,
+        pendingInfo.start_, pendingInfo.end_);
 }
 
 } // namespace Media

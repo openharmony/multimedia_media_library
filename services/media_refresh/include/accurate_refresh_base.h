@@ -74,7 +74,8 @@ public:
 
 protected:
     // 数据库操作后，触发更新修改后的数据
-    virtual int32_t UpdateModifiedDatasInner(const std::vector<int32_t> &keys, RdbOperation operation);
+    virtual int32_t UpdateModifiedDatasInner(const std::vector<int32_t> &keys, RdbOperation operation,
+        PendingInfo pendingInfo = PendingInfo()) = 0;
     virtual std::string GetReturningKeyName() = 0;
     virtual bool IsValidTable(std::string tableName) = 0;
 protected:

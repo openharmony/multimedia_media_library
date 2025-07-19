@@ -162,11 +162,13 @@ ValuesBucket AlbumChangeInfo::GetUpdateValues(const AlbumChangeInfo &oldAlbumInf
     }
     if (coverUri_ != oldAlbumInfo.coverUri_ && coverUri_ != EMPTY_STR) {
         values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri_);
-        ss << "coverUri_: " << oldAlbumInfo.coverUri_ << " -> " << coverUri_ << ", ";
+        ss << "coverUri_: " << MediaFileUtils::DesensitizeUri(oldAlbumInfo.coverUri_) << " -> ";
+        ss << MediaFileUtils::DesensitizeUri(coverUri_) << ", ";
     }
     if (hiddenCoverUri_ != oldAlbumInfo.hiddenCoverUri_ && hiddenCoverUri_ != EMPTY_STR) {
         values.PutString(PhotoAlbumColumns::HIDDEN_COVER, hiddenCoverUri_);
-        ss << "hiddenCoverUri_: " << oldAlbumInfo.hiddenCoverUri_ << " -> " << hiddenCoverUri_ << ", ";
+        ss << "hiddenCoverUri_: " << MediaFileUtils::DesensitizeUri(oldAlbumInfo.hiddenCoverUri_) << " -> ";
+        ss << MediaFileUtils::DesensitizeUri(hiddenCoverUri_) << ", ";
     }
     if (coverDateTime_ != oldAlbumInfo.coverDateTime_ && coverDateTime_ != INVALID_INT64_VALUE) {
         values.PutLong(PhotoAlbumColumns::COVER_DATE_TIME, coverDateTime_);
@@ -262,6 +264,54 @@ shared_ptr<AlbumChangeInfo> AlbumChangeInfo::Unmarshalling(Parcel &parcel)
     return nullptr;
 }
 
+template <typename T>
+void GetDiff(const T &value, const T &compareValue, const std::string &name, std::stringstream &ss)
+{
+    if (value != compareValue) {
+        ss << name << ": " << value << " -> " << compareValue << ", ";
+    }
+}
+#define GET_ALBUM_DIFF(member) GetDiff(album.member, compare.member, #member, ss)
+string AlbumChangeInfo::GetAlbumDiff(const AlbumChangeInfo &album, const AlbumChangeInfo &compare)
+{
+    stringstream ss;
+    if (album.albumId_ != compare.albumId_) {
+        ss << "diff album info albumId: " << album.albumId_ << ", compare albumId: " << compare.albumId_;
+        return ss.str();
+    }
+    ss << "albumId[" << album.albumId_ << "]: ";
+    GET_ALBUM_DIFF(lpath_);
+    GET_ALBUM_DIFF(imageCount_);
+    GET_ALBUM_DIFF(videoCount_);
+    GET_ALBUM_DIFF(albumType_);
+    GET_ALBUM_DIFF(albumSubType_);
+    GET_ALBUM_DIFF(albumName_);
+    GET_ALBUM_DIFF(albumUri_);
+    GET_ALBUM_DIFF(count_);
+    GET_ALBUM_DIFF(hiddenCount_);
+    GET_ALBUM_DIFF(isCoverChange_);
+    GET_ALBUM_DIFF(isHiddenCoverChange_);
+    GET_ALBUM_DIFF(coverDateTime_);
+    GET_ALBUM_DIFF(hiddenCoverDateTime_);
+    GET_ALBUM_DIFF(dirty_);
+    GET_ALBUM_DIFF(coverUriSource_);
+
+    if (album.coverUri_ != compare.coverUri_) {
+        ss << "coverUri_: " << MediaFileUtils::DesensitizeUri(album.coverUri_) << " -> ";
+        ss << MediaFileUtils::DesensitizeUri(compare.coverUri_) << ", ";
+    }
+
+    if (album.hiddenCoverUri_ != compare.hiddenCoverUri_) {
+        ss << "hiddenCoverUri_: " << MediaFileUtils::DesensitizeUri(album.hiddenCoverUri_) << " -> ";
+        ss << MediaFileUtils::DesensitizeUri(compare.hiddenCoverUri_);
+    }
+    return ss.str();
+}
+string AlbumChangeInfo::GetDataDiff(const AlbumChangeInfo &compare)
+{
+    return GetAlbumDiff(*this, compare);
+}
+
 shared_ptr<AlbumChangeData> AlbumChangeData::Unmarshalling(Parcel &parcel)
 {
     shared_ptr<AlbumChangeData> albumChangeData = make_shared<AlbumChangeData>();
@@ -294,11 +344,19 @@ string AlbumRefreshInfo::ToString() const
         ss << "deltaCount_: " << deltaCount_ << ", deltaVideoCount_: " << deltaVideoCount_;
         ss << ", deltaAddCover_ fileId: " << deltaAddCover_.fileId_ << ", remove asset size: " << removeFileIds.size();
         ss << ", assetModifiedCnt_: " << assetModifiedCnt_;
+        ss << ", album timestamp: " << albumRefreshTimestamp_.ToString();
     }
     if (IsAlbumHiddenInfoRefresh()) {
         ss << ", deltaHiddenCount_: " << deltaHiddenCount_ << ", deltaAddHiddenCover_ fileId: ";
         ss << deltaAddHiddenCover_.fileId_ <<  ", remove hidden asset size: " << removeHiddenFileIds.size();
         ss << ", hiddenAssetModifiedCnt_: " << hiddenAssetModifiedCnt_;
+        ss << ", album hidden timestamp: " << albumHiddenRefreshTimestamp_.ToString();
+    }
+    if (isForceRefresh_) {
+        ss << ", isForceRefresh_: " << isForceRefresh_;
+    }
+    if (isHiddenForceRefresh_) {
+        ss << ", isHiddenForceRefresh_: " << isHiddenForceRefresh_;
     }
     
     return ss.str();

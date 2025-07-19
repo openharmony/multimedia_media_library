@@ -33,6 +33,7 @@ template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const AbsRdbPredicates &predicates)
 {
     CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
+    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshDataManager::Init predicates");
     auto initDatas = GetInfosByPredicates(predicates);
@@ -40,7 +41,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const AbsRdbPre
         MEDIA_WARN_LOG("init data empty");
         return ACCURATE_REFRESH_INIT_EMPTY;
     }
-    return InsertInitChangeInfos(initDatas);
+    return InsertInitChangeInfos(initDatas, pendingInfo);
 }
 
 template <typename ChangeInfo, typename ChangeData>
@@ -48,6 +49,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const string sq
 {
     CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     CHECK_AND_RETURN_RET_LOG(!sql.empty(), ACCURATE_REFRESH_INPUT_PARA_ERR, "input sql empty");
+    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshDataManager::Init sql");
     shared_ptr<ResultSet> resultSet;
@@ -67,7 +69,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const string sq
         return ACCURATE_REFRESH_INIT_EMPTY;
     }
 
-    return InsertInitChangeInfos(initDatas);
+    return InsertInitChangeInfos(initDatas, pendingInfo);
 }
 
 template <typename ChangeInfo, typename ChangeData>
@@ -75,6 +77,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const vector<in
 {
     CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(keys.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     CHECK_AND_RETURN_RET_LOG(!keys.empty(), ACCURATE_REFRESH_INPUT_PARA_ERR, "input keys empty");
+    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshDataManager::Init keys");
     auto initDatas = GetInfoByKeys(keys);
@@ -83,12 +86,12 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const vector<in
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
     
-    return InsertInitChangeInfos(initDatas);
+    return InsertInitChangeInfos(initDatas, pendingInfo);
 }
 
 template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasInner(const vector<int32_t> &keys,
-    RdbOperation operation)
+    RdbOperation operation, PendingInfo &pendingInfo)
 {
     if (keys.empty() || operation == RDB_OPERATION_UNDEFINED) {
         MEDIA_WARN_LOG("input keys empty or operation error");
@@ -98,15 +101,15 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasI
     auto ret = ACCURATE_REFRESH_RET_OK;
     switch (operation) {
         case RDB_OPERATION_REMOVE:
-            ret = UpdateModifiedDatasForRemove(keys);
+            ret = UpdateModifiedDatasForRemove(keys, pendingInfo);
             break;
 
         case RDB_OPERATION_ADD:
-            ret = UpdateModifiedDatasForAdd(keys);
+            ret = UpdateModifiedDatasForAdd(keys, pendingInfo);
             break;
 
         case RDB_OPERATION_UPDATE:
-            ret = UpdateModifiedDatasForUpdate(keys);
+            ret = UpdateModifiedDatasForUpdate(keys, pendingInfo);
             break;
 
         default:
@@ -118,7 +121,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasI
 
 template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::InsertInitChangeInfos(
-    const vector<ChangeInfo> &changeInfos)
+    const vector<ChangeInfo> &changeInfos, PendingInfo pendingInfo)
 {
     CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(changeInfos.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     for (auto const &changeInfo : changeInfos) {
@@ -130,6 +133,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::InsertInitChangeInfo
         }
         ChangeData changeData;
         changeData.infoBeforeChange_ = changeInfo;
+        PostInsertBeforeData(changeData, pendingInfo);
         changeDatas_.insert_or_assign(key, changeData); // 插入新值或者替换已有
     }
     CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(true), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
@@ -166,9 +170,12 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::CheckAndUpdateOperat
 }
 
 template <typename ChangeInfo, typename ChangeData>
-int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForRemove(const vector<int32_t> &keys)
+int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForRemove(const vector<int32_t> &keys,
+    PendingInfo &pendingInfo)
 {
     ACCURATE_DEBUG("keys size: %{public}zu", keys.size());
+    auto timestamp = AlbumAccurateRefreshManager::GetCurrentTimestamp();
+    pendingInfo.end_ = timestamp;
     for (auto key : keys) {
         auto iter = changeDatas_.find(key);
         if (iter == changeDatas_.end()) {
@@ -183,14 +190,17 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
         }
         changeData.operation_ = operation;
         changeData.isDelete_ = true;
-        changeData.version_ = MediaFileUtils::UTCTimeMilliSeconds();
+        changeData.version_ = timestamp;
         changeData.infoAfterChange_ = ChangeInfo();
+        PostInsertAfterData(changeData, pendingInfo);
+        ACCURATE_INFO("[remove] info: %{public}s", changeData.infoBeforeChange_.ToString(true).c_str());
     }
     return ACCURATE_REFRESH_RET_OK;
 }
 
 template <typename ChangeInfo, typename ChangeData>
-int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForUpdate(const vector<int32_t> &keys)
+int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForUpdate(const vector<int32_t> &keys,
+    PendingInfo &pendingInfo)
 {
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshDataManager::UpdateModifiedDatasForUpdate");
@@ -200,6 +210,8 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
         MEDIA_WARN_LOG("modifiedDatas empty");
         return ACCURATE_REFRESH_MODIFY_EMPTY;
     }
+    auto timestamp = AlbumAccurateRefreshManager::GetCurrentTimestamp();
+    pendingInfo.end_ = timestamp;
     for (auto modifiedInfo : modifiedDatas) {
         // 找到key
         auto key = GetChangeInfoKey(modifiedInfo);
@@ -207,6 +219,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
         auto iter = changeDatas_.find(key);
         if (iter == changeDatas_.end()) {
             MEDIA_WARN_LOG("data no init.");
+            isForRecheck_ = true;
             return ACCURATE_REFRESH_MODIFIED_NO_INIT;
         }
         ChangeData &changeData = iter->second;
@@ -219,23 +232,26 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
             return ret;
         }
         changeData.operation_ = operation;
-        changeData.version_ = MediaFileUtils::UTCTimeMilliSeconds();
+        changeData.version_ = timestamp;
 
         // 更新infoAfterChange_
         if (IsValidChangeInfo(changeData.infoAfterChange_)) {
             MEDIA_INFO_LOG("operate duplicate modified key: %{public}d", key);
         }
         changeData.infoAfterChange_ = modifiedInfo;
+        PostInsertAfterData(changeData, pendingInfo);
         ACCURATE_INFO("operation_: %{public}d isDelete: %{public}d", changeData.operation_, changeData.isDelete_);
-        ACCURATE_INFO("before: %{public}s", changeData.infoBeforeChange_.ToString(true).c_str());
-        ACCURATE_INFO("after: %{public}s", changeData.infoAfterChange_.ToString(true).c_str());
+        ACCURATE_INFO("[update] info before: %{public}s", changeData.infoBeforeChange_.ToString(true).c_str());
+        ACCURATE_INFO("change: %{public}s",
+            changeData.infoBeforeChange_.GetDataDiff(changeData.infoAfterChange_).c_str());
     }
 
     return ACCURATE_REFRESH_RET_OK;
 }
 
 template <typename ChangeInfo, typename ChangeData>
-int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForAdd(const vector<int32_t> &keys)
+int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasForAdd(const vector<int32_t> &keys,
+    PendingInfo &pendingInfo)
 {
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshDataManager::UpdateModifiedDatasForAdd");
@@ -245,6 +261,8 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
         MEDIA_WARN_LOG("modifiedDatas empty");
         return ACCURATE_REFRESH_MODIFY_EMPTY;
     }
+    auto timestamp = AlbumAccurateRefreshManager::GetCurrentTimestamp();
+    pendingInfo.end_ = timestamp;
     for (auto &modifiedInfo : modifiedDatas) {
         // 找到key
         auto key = GetChangeInfoKey(modifiedInfo);
@@ -259,8 +277,10 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
         ChangeData changeData;
         changeData.infoAfterChange_ = modifiedInfo;
         changeData.operation_ = RDB_OPERATION_ADD;
-        changeData.version_ = MediaFileUtils::UTCTimeMilliSeconds();
+        changeData.version_ = timestamp;
+        PostInsertAfterData(changeData, pendingInfo, true);
         changeDatas_.emplace(key, changeData);
+        ACCURATE_INFO("[add] info: %{public}s", changeData.infoAfterChange_.ToString(true).c_str());
     }
 
     return ACCURATE_REFRESH_RET_OK;
@@ -273,10 +293,13 @@ bool AccurateRefreshDataManager<ChangeInfo, ChangeData>::IsValidChangeInfo(const
 }
 
 template <typename ChangeInfo, typename ChangeData>
-vector<ChangeData> AccurateRefreshDataManager<ChangeInfo, ChangeData>::GetChangeDatas()
+vector<ChangeData> AccurateRefreshDataManager<ChangeInfo, ChangeData>::GetChangeDatas(bool isCheckUpdate)
 {
     vector<ChangeData> changeDatas;
-    for (const auto &data: changeDatas_) {
+    for (auto &data: changeDatas_) {
+        if (isCheckUpdate) {
+            CheckUpdateDataForMultiThread(data.second);
+        }
         changeDatas.push_back(data.second);
     }
     return changeDatas;
@@ -320,6 +343,12 @@ bool AccurateRefreshDataManager<ChangeInfo, ChangeData>::CheckIsExceed(size_t le
         changeDatas_.clear();
     }
     return isExceed_;
+}
+
+template <typename ChangeInfo, typename ChangeData>
+bool AccurateRefreshDataManager<ChangeInfo, ChangeData>::CheckIsForRecheck()
+{
+    return isForRecheck_ || CheckIsExceed();
 }
 
 template class AccurateRefreshDataManager<PhotoAssetChangeInfo, PhotoAssetChangeData>;

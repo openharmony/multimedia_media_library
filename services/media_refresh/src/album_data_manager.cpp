@@ -28,21 +28,17 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
-int32_t AlbumDataManager::InitAlbumInfos(const std::vector<PhotoAlbumSubType> &systemTypes, const vector<int> &albumIds)
+int32_t AlbumDataManager::InitAlbumInfos(const vector<int> &albumIds)
 {
-    if (systemTypes.empty() && albumIds.empty()) {
-        MEDIA_WARN_LOG("systemTypes and albumIds empty.");
+    if (albumIds.empty()) {
+        MEDIA_WARN_LOG("albumIds empty.");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
 
     MediaLibraryTracer tracer;
     tracer.Start("AlbumDataManager::InitAlbumInfos");
-    vector<string> systemTypesStr;
-    for (auto const &type : systemTypes) {
-        systemTypesStr.push_back(to_string(static_cast<int> (type)));
-    }
 
-    auto initDatas = GetAlbumInfos(albumIds, systemTypesStr);
+    auto initDatas = GetAlbumInfos(albumIds);
     if (initDatas.empty()) {
         MEDIA_WARN_LOG("initDatas empty.");
     } else {
@@ -174,9 +170,9 @@ vector<AlbumChangeInfo> AlbumDataManager::GetAlbumInfos(const vector<int32_t> &a
     return albumInfos;
 }
 
-map<int32_t, AlbumChangeInfo> AlbumDataManager::GetInitAlbumInfos()
+unordered_map<int32_t, AlbumChangeInfo> AlbumDataManager::GetInitAlbumInfos()
 {
-    map<int32_t, AlbumChangeInfo> initAlbumInfos;
+    unordered_map<int32_t, AlbumChangeInfo> initAlbumInfos;
     for (auto &item : changeDatas_) {
         initAlbumInfos.emplace(item.first, item.second.infoBeforeChange_);
     }

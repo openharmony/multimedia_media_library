@@ -19,7 +19,7 @@
 #include <functional>
 #include <string>
 #include <vector>
-
+#include <unordered_map>
 
 #include "abs_rdb_predicates.h"
 
@@ -43,9 +43,6 @@ public:
     int32_t Init(const std::string &sql, const std::vector<NativeRdb::ValueObject> bindArgs) override;
     int32_t Init(const std::vector<int32_t> &albumIds) override;
     
-    // 增删场景下初始化数据
-    int32_t Init(const std::vector<PhotoAlbumSubType> &systemTypes, const std::vector<int32_t> &albumIds);
-
     // 更新modified数据信息；数据库操作只是缓存数据，需要执行这个函数触发对比修改前后的数据
     int32_t UpdateModifiedDatas();
 
@@ -57,7 +54,7 @@ public:
 
     int32_t NotifyAddAlbums(const std::vector<std::string> &albumIdsStr);
 
-    std::map<int32_t, AlbumChangeInfo> GetInitAlbumInfos();
+    std::unordered_map<int32_t, AlbumChangeInfo> GetInitAlbumInfos();
     
     using AccurateRefreshBase::LogicalDeleteReplaceByUpdate;
     int32_t LogicalDeleteReplaceByUpdate(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
@@ -65,7 +62,8 @@ public:
     static int32_t NotifyForReCheck();
 
 protected:
-    int32_t UpdateModifiedDatasInner(const std::vector<int> &albumIds, RdbOperation operation) override;
+    int32_t UpdateModifiedDatasInner(const std::vector<int> &albumIds, RdbOperation operation,
+        PendingInfo pendingInfo = PendingInfo()) override;
     std::string GetReturningKeyName() override;
     bool IsValidTable(std::string tableName) override;
 
