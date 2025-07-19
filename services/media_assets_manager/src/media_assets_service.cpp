@@ -1469,7 +1469,7 @@ int32_t MediaAssetsService::GetFilePathFromUri(const std::string &virtualId, Get
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
     shared_ptr<NativeRdb::ResultSet> resultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("query resultSet is nullptr");
+        MEDIA_ERR_LOG("GetFilePathFromUri query resultSet is nullptr");
         return E_ERR;
     }
 
@@ -1494,7 +1494,7 @@ int32_t MediaAssetsService::GetUriFromFilePath(const std::string &tempPath, GetU
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
     shared_ptr<NativeRdb::ResultSet> resultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("query resultSet is nullptr");
+        MEDIA_ERR_LOG("GetUriFromFilePath query resultSet is nullptr");
         return E_ERR;
     }
 

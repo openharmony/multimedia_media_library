@@ -955,7 +955,7 @@ int32_t MediaAlbumsService::DismissAssets(ChangeRequestDismissAssetsDto &dismiss
         RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, ANALYSIS_PHOTO_MAP_TABLE);
     int32_t ret = PhotoMapOperations::DismissAssets(rdbPredicate);
     if (ret < 0) {
-        MEDIA_ERR_LOG("DismissAssets Error");
+        MEDIA_ERR_LOG("DismissAssets Error, ret: %{public}d", ret);
         return ret;
     }
     if (dismissAssetsDto.photoAlbumSubType == PhotoAlbumSubType::PORTRAIT) {
@@ -991,7 +991,7 @@ int32_t MediaAlbumsService::MergeAlbum(ChangeRequestMergeAlbumDto &mergeAlbumDto
     valuesBucket.Put(TARGET_ALBUM_ID, mergeAlbumDto.targetAlbumId);
     NativeRdb::ValuesBucket value = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
     if (value.IsEmpty()) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager Update:Input parameter is invalid ");
+        MEDIA_ERR_LOG("MergeAlbum:Input parameter is invalid ");
         return E_INVALID_VALUES;
     }
     return MediaLibraryAlbumOperations::MergePortraitAlbums(value);
