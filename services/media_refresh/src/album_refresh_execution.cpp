@@ -44,7 +44,8 @@ namespace Media::AccurateRefresh {
 
 mutex AlbumRefreshExecution::albumRefreshMtx_;
 
-std::map<PhotoAlbumSubType, SystemAlbumInfoCalculation> AlbumRefreshExecution::systemAlbumCalculations_ = {
+std::unordered_map<PhotoAlbumSubType, SystemAlbumInfoCalculation>
+    AlbumRefreshExecution::systemTypeAlbumCalculations_ = {
     { PhotoAlbumSubType::FAVORITE, { FavoriteAssetHelper::IsAsset, FavoriteAssetHelper::IsVideoAsset,
         FavoriteAssetHelper::IsHiddenAsset, FavoriteAssetHelper::IsNewerAsset,
         FavoriteAssetHelper::IsNewerHiddenAsset, PhotoAlbumSubType::FAVORITE }},
@@ -66,11 +67,14 @@ std::map<PhotoAlbumSubType, SystemAlbumInfoCalculation> AlbumRefreshExecution::s
         PhotoAlbumSubType::CLOUD_ENHANCEMENT }}
 };
 
+std::unordered_map<int32_t, SystemAlbumInfoCalculation> AlbumRefreshExecution::systemAlbumCalculations_;
+
 int32_t AlbumRefreshExecution::RefreshAlbum(const vector<PhotoAssetChangeData> &assetChangeDatas,
     NotifyAlbumType notifyAlbumType)
 {
     // 计算影响相册和refresh info，结果放入systemAlbumInfos_和ownerAlbumInfos_
     CalRefreshInfos(assetChangeDatas);
+    CHECK_AND_RETURN_RET_INFO_LOG(!albumRefreshInfos_.empty(), ACCURATE_REFRESH_RET_OK, "no refresh album");
 
     // 相册执行逻辑只能串行执行
     lock_guard<mutex> lock(albumRefreshMtx_);
@@ -86,22 +90,23 @@ int32_t AlbumRefreshExecution::RefreshAlbum(const vector<PhotoAssetChangeData> &
 
 int32_t AlbumRefreshExecution::CalRefreshInfos(const vector<PhotoAssetChangeData> &assetChangeDatas)
 {
+    CheckInitSystemCalculation();
     // 计算系统相册信息
     {
         MediaLibraryTracer tracer;
         tracer.Start("AlbumRefreshExecution::CalRefreshInfos system");
         for (auto &item : systemAlbumCalculations_) {
             for (auto const &assetChangeData : assetChangeDatas) {
-                const PhotoAlbumSubType &subType = item.first;
+                const auto &albumId = item.first;
                 SystemAlbumInfoCalculation &calculation = item.second;
-                auto subTypeInfoIter = systemAlbumInfos_.find(subType);
-                if (subTypeInfoIter != systemAlbumInfos_.end()) {
-                    calculation.CalAlbumRefreshInfo(assetChangeData, subTypeInfoIter->second);
+                auto subTypeInfoIter = systemAlbumRefreshInfos_.find(albumId);
+                if (subTypeInfoIter != systemAlbumRefreshInfos_.end()) {
+                    calculation.CalAlbumRefreshInfo(assetChangeData, subTypeInfoIter->second, albumId);
                     continue;
                 }
                 AlbumRefreshInfo refreshInfo;
-                if (calculation.CalAlbumRefreshInfo(assetChangeData, refreshInfo)) {
-                    systemAlbumInfos_.emplace(subType, refreshInfo);
+                if (calculation.CalAlbumRefreshInfo(assetChangeData, refreshInfo, albumId)) {
+                    systemAlbumRefreshInfos_.emplace(albumId, refreshInfo);
                 }
             }
         }
@@ -111,15 +116,13 @@ int32_t AlbumRefreshExecution::CalRefreshInfos(const vector<PhotoAssetChangeData
     {
         MediaLibraryTracer tracer;
         tracer.Start("AlbumRefreshExecution::CalRefreshInfos owner albumId");
-        ownerAlbumInfos_ = OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(assetChangeDatas);
+        ownerAlbumRefreshInfos_ = OwnerAlbumInfoCalculation::CalOwnerAlbumRefreshInfo(assetChangeDatas);
+        albumRefreshInfos_.insert(systemAlbumRefreshInfos_.begin(), systemAlbumRefreshInfos_.end());
+        albumRefreshInfos_.insert(ownerAlbumRefreshInfos_.begin(), ownerAlbumRefreshInfos_.end());
         if (IS_ACCURATE_DEBUG) {
-            for (auto const &systemInfo : systemAlbumInfos_) {
-                ACCURATE_INFO("subType: %{public}d, refreshInfo: %{public}s", systemInfo.first,
-                    systemInfo.second.ToString().c_str());
-            }
-            for (auto const &ownerInfo : ownerAlbumInfos_) {
-                ACCURATE_INFO("albumId: %{public}d, refreshInfo: %{public}s", ownerInfo.first,
-                    ownerInfo.second.ToString().c_str());
+            for (auto const &albumInfo : albumRefreshInfos_) {
+                ACCURATE_INFO("albumId: %{public}d, refreshInfo: %{public}s", albumInfo.first,
+                    albumInfo.second.ToString().c_str());
             }
         }
     }
@@ -132,7 +135,7 @@ int32_t AlbumRefreshExecution::CalAlbumsInfos()
     MediaLibraryTracer tracer;
     tracer.Start("AlbumRefreshExecution::CalAlbumsInfos");
     // 查询相册数据
-    albumRefresh_.Init(GetAlbumSubTypes(), GetOwnerAlbumIds());
+    albumRefresh_.Init(GetAlbumIds());
     initAlbumInfos_ = albumRefresh_.GetInitAlbumInfos();
     if (initAlbumInfos_.empty()) {
         ACCURATE_DEBUG("empty album Info, insert.");
@@ -142,21 +145,15 @@ int32_t AlbumRefreshExecution::CalAlbumsInfos()
     // 修改数据
     for (auto item : initAlbumInfos_) {
         auto &albumInfo = item.second;
-        auto subType = albumInfo.albumSubType_;
-        auto calAlbumInfoIter = systemAlbumInfos_.find(static_cast<PhotoAlbumSubType>(subType));
-        AlbumRefreshInfo refreshInfo;
-        if (calAlbumInfoIter == systemAlbumInfos_.end()) {
-            auto albumId = albumInfo.albumId_;
-            auto calOwnerAlbumInfoIter = ownerAlbumInfos_.find(albumId);
-            if (calOwnerAlbumInfoIter == ownerAlbumInfos_.end()) {
-                MEDIA_ERR_LOG("no album found");
-                return ACCURATE_REFRESH_ALBUM_NO_MATCH;
-            }
-            refreshInfo = calOwnerAlbumInfoIter->second;
-        } else {
-            refreshInfo = calAlbumInfoIter->second;
+        auto albumId = albumInfo.albumId_;
+        auto calAlbumInfoIter = albumRefreshInfos_.find(static_cast<PhotoAlbumSubType>(albumId));
+        if (calAlbumInfoIter == albumRefreshInfos_.end()) {
+            MEDIA_ERR_LOG("no album[%{public}d] found", albumInfo.albumId_);
+            continue;
         }
+        AlbumRefreshInfo &refreshInfo = calAlbumInfoIter->second;
         auto albumInfoBefore = albumInfo;
+        auto subType = albumInfo.albumSubType_;
         bool isAccurateRefresh = CalAlbumInfos(albumInfo, refreshInfo, subType);
         ACCURATE_INFO("albumInfo: %{public}s", albumInfoBefore.ToString(true).c_str());
         if (isAccurateRefresh) {
@@ -174,19 +171,10 @@ int32_t AlbumRefreshExecution::Notify()
     return ACCURATE_REFRESH_RET_OK;
 }
 
-vector<PhotoAlbumSubType> AlbumRefreshExecution::GetAlbumSubTypes()
-{
-    vector<PhotoAlbumSubType> systemTypes;
-    for (auto const &item : systemAlbumInfos_) {
-        systemTypes.push_back(item.first);
-    }
-    return systemTypes;
-}
-
-vector<int32_t> AlbumRefreshExecution::GetOwnerAlbumIds()
+vector<int32_t> AlbumRefreshExecution::GetAlbumIds()
 {
     vector<int32_t> albumIds;
-    for (auto const &item : ownerAlbumInfos_) {
+    for (auto const &item : albumRefreshInfos_) {
         albumIds.push_back(item.first);
     }
     return albumIds;
@@ -218,7 +206,7 @@ int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden,
         MEDIA_WARN_LOG("no album info.");
         return ACCURATE_REFRESH_ALBUM_INFO_NULL;
     }
-
+    AlbumRefreshTimestampRecord refreshRecord(albumId, isHidden);
     MediaLibraryTracer tracer;
     tracer.Start("AlbumRefreshExecution::ForceUpdateAlbums " + to_string(albumId) + (isHidden ? " hidden" : ""));
     ACCURATE_DEBUG("force update albumId[%{public}d], isHidden[%{public}d]", albumId, isHidden);
@@ -230,6 +218,7 @@ int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden,
     if (values.IsEmpty()) {
         MEDIA_ERR_LOG("albumId[%{public}d], subType[%{public}d], hidden[%{public}d] no need update.", albumId, subtype,
             isHidden);
+        refreshRecord.ClearRecord();
         return ACCURATE_REFRESH_RET_OK;
     }
 
@@ -238,15 +227,13 @@ int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden,
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumInfo.albumId_));
     int32_t changedRows = 0;
     auto ret = albumRefresh_.Update(changedRows, values, predicates);
-    ACCURATE_DEBUG("Update[%{public}d, %{public}d] type: %{public}d, albumId: %{public}d, isHidden: %{public}d", ret,
-        changedRows, albumInfo.albumSubType_, albumInfo.albumId_, isHidden);
+    ACCURATE_DEBUG("ret: %{public}d, changed: %{public}d, type: %{public}d, albumId: %{public}d, isHidden: %{public}d",
+        ret, changedRows, albumInfo.albumSubType_, albumInfo.albumId_, isHidden);
     if (ret == ACCURATE_REFRESH_RET_OK) {
         if (!isHidden) {
             CheckNotifyOldNotification(notifyAlbumType, albumInfo, type);
         }
-        AlbumAccurateRefreshManager::GetInstance().SetAlbumAccurateRefresh(albumInfo.albumId_, isHidden);
-    } else {
-        AlbumAccurateRefreshManager::GetInstance().RemoveAccurateRefreshAlbum(albumInfo.albumId_, isHidden);
+        refreshRecord.RefreshAlbumEnd();
     }
     DfxRefreshHander::SetAlbumIdAndOptTimeHander(albumId, isHidden, dfxRefreshManager_);
     return ACCURATE_REFRESH_RET_OK;
@@ -285,8 +272,7 @@ void AlbumRefreshExecution::CheckUpdateValues(const AlbumChangeInfo &albumInfo, 
     ValuesBucket &values)
 {
     if ((albumInfo.albumSubType_ == PhotoAlbumSubType::USER_GENERIC ||
-        albumInfo.albumSubType_ == PhotoAlbumSubType::SOURCE_GENERIC) &&
-        (refreshInfo.assetRenameCnt > 0 || refreshInfo.assetModifiedCnt_ > 0)) {
+        albumInfo.albumSubType_ == PhotoAlbumSubType::SOURCE_GENERIC) && refreshInfo.assetModifiedCnt_ > 0) {
         values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
         ACCURATE_DEBUG("album date modified.");
     }
@@ -463,13 +449,27 @@ bool AlbumRefreshExecution::CalAlbumInfos(AlbumChangeInfo &albumInfo, const Albu
 bool AlbumRefreshExecution::CalAlbumInfo(AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
     int32_t subType)
 {
-    // 普通信息需要刷新 && 不能增量刷新
-    if (refreshInfo.IsAlbumInfoRefresh() &&
-        !AlbumAccurateRefreshManager::GetInstance().IsAlbumAccurateRefresh(albumInfo.albumId_, false)) {
+    // 计算结果需要forceRefresh
+    if (refreshInfo.isForceRefresh_) {
         forceRefreshAlbums_.insert(albumInfo.albumId_);
         ClearAlbumInfo(albumInfo);
-        ACCURATE_DEBUG("init force update album[%{public}d] info", albumInfo.albumId_);
+        ACCURATE_DEBUG("force refresh album[%{public}d] info", albumInfo.albumId_);
         return false;
+    }
+    // 增量计算后相册有变化
+    if (refreshInfo.IsAlbumInfoRefresh()) {
+        bool isTimestampMatch = AlbumAccurateRefreshManager::GetInstance().IsRefreshTimestampMatch(albumInfo.albumId_,
+            false, refreshInfo.albumRefreshTimestamp_);
+        bool isAccurateRefresh = AlbumAccurateRefreshManager::GetInstance().IsAlbumAccurateRefresh(albumInfo.albumId_,
+            false);
+        // 增量计算时间戳不匹配 || 不能增量刷新（需要全量刷新）
+        if (!isTimestampMatch || !isAccurateRefresh) {
+            forceRefreshAlbums_.insert(albumInfo.albumId_);
+            ClearAlbumInfo(albumInfo);
+            ACCURATE_DEBUG("force refresh album[%{public}d] info, isTimestampMatch[%{public}d], "
+                "isAccurateRefresh[%{public}d]", albumInfo.albumId_, isTimestampMatch, isAccurateRefresh);
+            return false;
+        }
     }
 
     // 更新count
@@ -488,13 +488,25 @@ bool AlbumRefreshExecution::CalHiddenAlbumInfo(AlbumChangeInfo &albumInfo, const
     if (CheckSetHiddenAlbumInfo(albumInfo)) {
         return false;
     }
-    // 隐藏信息需要刷新 && 不能增量刷新
-    if (refreshInfo.IsAlbumHiddenInfoRefresh() &&
-        !AlbumAccurateRefreshManager::GetInstance().IsAlbumAccurateRefresh(albumInfo.albumId_, true)) {
+        // 计算结果需要forceRefresh || 增量计算后相册有变化（增量计算时间戳不匹配 || 不能增量刷新)
+    if (refreshInfo.isHiddenForceRefresh_) {
         forceRefreshHiddenAlbums_.insert(albumInfo.albumId_);
         ClearHiddenAlbumInfo(albumInfo);
-        ACCURATE_DEBUG("init force update album[%{public}d] hidden info", albumInfo.albumId_);
+        ACCURATE_DEBUG("force update album[%{public}d] hidden info", albumInfo.albumId_);
         return false;
+    }
+    if (refreshInfo.IsAlbumHiddenInfoRefresh()) {
+        bool isTimestampMatch = AlbumAccurateRefreshManager::GetInstance().IsRefreshTimestampMatch(albumInfo.albumId_,
+            true, refreshInfo.albumHiddenRefreshTimestamp_);
+        bool isAccurateRefresh = AlbumAccurateRefreshManager::GetInstance().IsAlbumAccurateRefresh(albumInfo.albumId_,
+            true);
+        if (!isTimestampMatch || !isAccurateRefresh) {
+            forceRefreshHiddenAlbums_.insert(albumInfo.albumId_);
+            ClearHiddenAlbumInfo(albumInfo);
+            ACCURATE_DEBUG("force update album[%{public}d] hidden info, isTimestampMatch[%{public}d], "
+                "isAccurateRefresh[%{public}d]", albumInfo.albumId_, isTimestampMatch, isAccurateRefresh);
+            return false;
+        }
     }
     bool isRefreshHiddenAlbumCount = CalAlbumHiddenCount(albumInfo, refreshInfo);
     // 更新hiddenCoverUri、dateTimeForHiddenCover
@@ -687,6 +699,7 @@ int32_t AlbumRefreshExecution::RefreshAllAlbum(NotifyAlbumType notifyAlbumType)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null");
     ACCURATE_DEBUG("force update all albums");
+    lock_guard<mutex> lock(albumRefreshMtx_);
     MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(rdbStore, AlbumOperationType::DEFAULT, {}, notifyAlbumType);
     MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, {}, notifyAlbumType & USER_ALBUM);
     MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {}, notifyAlbumType & SOURCE_ALBUM);
@@ -705,6 +718,26 @@ bool AlbumRefreshExecution::CheckSetHiddenAlbumInfo(AlbumChangeInfo &albumInfo)
         return true;
     }
     return false;
+}
+
+void AlbumRefreshExecution::CheckInitSystemCalculation()
+{
+    if (!systemAlbumCalculations_.empty()) {
+        return;
+    }
+    lock_guard<mutex> lock(albumRefreshMtx_);
+    if (!systemAlbumCalculations_.empty()) {
+        return;
+    }
+    vector<string> subTypes;
+    for (auto calculation : systemTypeAlbumCalculations_) {
+        auto albumId = MediaLibraryRdbUtils::GetAlbumIdBySubType(calculation.first);
+        if (albumId <= 0) {
+            MEDIA_ERR_LOG("no subType[%{public}d] calculation.", calculation.first);
+            continue;
+        }
+        systemAlbumCalculations_.insert_or_assign(albumId, calculation.second);
+    }
 }
 
 } // namespace Media

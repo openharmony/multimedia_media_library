@@ -36,7 +36,8 @@ public:
         int32_t subType) :isSystemAsset_(isSystemAsset), isVideoAsset_(isVideoAsset),
         isHiddenSystemAsset_(isHiddenSystemAsset), isNewerAsset_(isNewerAsset),
         isNewerHiddenAsset_(isNewerHiddenAsset_), subType_(subType) { }
-    bool CalAlbumRefreshInfo(const PhotoAssetChangeData &assetChangeData, AlbumRefreshInfo &refreshInfo);
+    bool CalAlbumRefreshInfo(const PhotoAssetChangeData &assetChangeData, AlbumRefreshInfo &refreshInfo,
+        int32_t albumId);
 
 private:
     bool UpdateCover(const PhotoAssetChangeData &assetChangeData,
@@ -45,6 +46,10 @@ private:
         PhotoAssetChangeInfo &addCover, std::unordered_set<int32_t> &removeFileIds);
     bool UpdateCount(const PhotoAssetChangeData &assetChangeData,
         std::function<bool(PhotoAssetChangeInfo)> isSystemAsset, int32_t &count);
+    bool UpdateRefreshNormalInfo(const PhotoAssetChangeData &assetChangeData, AlbumRefreshInfo& refreshInfo);
+    bool UpdateRefreshHiddenInfo(const PhotoAssetChangeData &assetChangeData, AlbumRefreshInfo& refreshInfo);
+    bool IsSystemAlbumInfoChange(const PhotoAssetChangeData &assetChangeData,
+        std::function<bool(PhotoAssetChangeInfo)> isAlbumAsset);
 
 public:
     std::function<bool(const PhotoAssetChangeInfo&)> isSystemAsset_;

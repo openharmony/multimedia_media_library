@@ -83,6 +83,12 @@ void AlbumChangeNotifyExecution::InsertNotifyInfo(AlbumRefreshOperation operatio
 {
     AlbumChangeData albumChangeData = changeData;
     ACCURATE_DEBUG("origin data: %{public}s", changeData.ToString(true).c_str());
+    // screenshot do not need to send notify
+    bool isSrceenshot =
+        albumChangeData.infoBeforeChange_.albumSubType_ == static_cast<int32_t>(PhotoAlbumSubType::SCREENSHOT) ||
+        albumChangeData.infoAfterChange_.albumSubType_ == static_cast<int32_t>(PhotoAlbumSubType::SCREENSHOT);
+    CHECK_AND_RETURN_LOG(!isSrceenshot, "album subtype is screenshot(1029)");
+    // end
     if (operation == ALBUM_OPERATION_ADD) {
         albumChangeData.infoBeforeChange_.albumId_ = INVALID_INT32_VALUE;
         ACCURATE_DEBUG("modify remove data: %{public}s", albumChangeData.ToString(true).c_str());

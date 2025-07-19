@@ -209,7 +209,13 @@ int32_t CloudMediaDataHandler::OnFetchRecords(const std::vector<MDKRecord> &reco
         return E_IPC_INVAL_ARG;
     }
     CLOUD_SYNC_HANDLER_WRITE_LOCK;
-    return this->dataHandler_->OnFetchRecords(records, newData, fdirtyData, failedRecords, stats);
+    int32_t ret = this->dataHandler_->OnFetchRecords(records, newData, fdirtyData, failedRecords, stats);
+    CHECK_AND_RETURN_RET_LOG(ret != E_IPC_DISCONNECTED,
+        E_SERVER_NO_RESPONSE,
+        "OnFetchRecords failed! IPC disconnected. tableName: %{public}s, ret: %{public}d",
+        this->tableName_.c_str(),
+        ret);
+    return ret;
 }
 
 int32_t CloudMediaDataHandler::OnDentryFileInsert(
@@ -220,7 +226,13 @@ int32_t CloudMediaDataHandler::OnDentryFileInsert(
         return E_IPC_INVAL_ARG;
     }
     CLOUD_SYNC_HANDLER_WRITE_LOCK;
-    return this->dataHandler_->OnDentryFileInsert(records, failedRecords);
+    int32_t ret = this->dataHandler_->OnDentryFileInsert(records, failedRecords);
+    CHECK_AND_RETURN_RET_LOG(ret != E_IPC_DISCONNECTED,
+        E_SERVER_NO_RESPONSE,
+        "OnDentryFileInsert failed! IPC disconnected. tableName: %{public}s, ret: %{public}d",
+        this->tableName_.c_str(),
+        ret);
+    return ret;
 }
 
 int32_t CloudMediaDataHandler::GetRetryRecords(std::vector<std::string> &records)

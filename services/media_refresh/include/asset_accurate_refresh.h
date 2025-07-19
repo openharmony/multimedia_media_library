@@ -17,6 +17,7 @@
 #define OHOS_MEDIALIBRARY_ASSET_ACCURATE_REFRESH_H
 
 #include <functional>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -76,7 +77,8 @@ public:
     static int32_t NotifyForReCheck();
 
 protected:
-    int32_t UpdateModifiedDatasInner(const std::vector<int> &fileIds, RdbOperation operation) override;
+    int32_t UpdateModifiedDatasInner(const std::vector<int> &fileIds, RdbOperation operation,
+        PendingInfo pendingInfo = PendingInfo()) override;
     std::string GetReturningKeyName() override;
     bool IsValidTable(std::string tableName) override;
 private:
@@ -88,6 +90,8 @@ private:
     AlbumRefreshExecution albumRefreshExe_;
     AssetChangeNotifyExecution notifyExe_;
     std::shared_ptr<DfxRefreshManager> refreshManager;
+    // 资产数据查询锁，查询资产信息放入MultiThreadAssetChangeInfoMgr中，防止同一资产多线程访问
+    static std::mutex assetQueryMutex_;
 };
 } // namespace Media
 } // namespace OHOS

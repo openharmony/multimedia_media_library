@@ -27,6 +27,7 @@
 #include "dfx_refresh_manager.h"
 #include "photo_album_column.h"
 #include "dfx_refresh_hander.h"
+#include "album_accurate_refresh_manager.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -46,6 +47,7 @@ int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
     if (!IsValidTable(cmd.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
+    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::Insert cmd");
     DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
@@ -80,7 +82,7 @@ int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
         keys.push_back(static_cast<int32_t> (outRowId));
         ACCURATE_DEBUG("Insert key: %{public}" PRId64, outRowId);
     #endif
-    UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD);
+    UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD, pendingInfo);
     DfxRefreshHander::SetOptEndTimeHander(cmd, dfxRefreshManager_);
     return ACCURATE_REFRESH_RET_OK;
 }
@@ -90,6 +92,7 @@ int32_t AccurateRefreshBase::Insert(int64_t &outRowId, const string &table, Valu
     if (!IsValidTable(table)) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
+    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::Insert talbe");
     DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
@@ -124,7 +127,7 @@ int32_t AccurateRefreshBase::Insert(int64_t &outRowId, const string &table, Valu
         keys.push_back(static_cast<int32_t> (outRowId));
         ACCURATE_DEBUG("Insert key: %{public}" PRId64, outRowId);
     #endif
-    UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD);
+    UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD, pendingInfo);
     DfxRefreshHander::SetOptEndTimeHander(table, dfxRefreshManager_);
     return ACCURATE_REFRESH_RET_OK;
 }
@@ -146,6 +149,7 @@ int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &tab
     if (!IsValidTable(table)) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
+    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::BatchInsert");
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
@@ -162,7 +166,7 @@ int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &tab
     }
     changedRows = retWithResults.second.changed;
     vector<int32_t> keys = GetReturningKeys(retWithResults);
-    UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD);
+    UpdateModifiedDatasInner(keys, RDB_OPERATION_ADD, pendingInfo);
     return ACCURATE_REFRESH_RET_OK;
 }
 int32_t AccurateRefreshBase::Update(MediaLibraryCommand &cmd, int32_t &changedRows)
@@ -217,7 +221,6 @@ int32_t AccurateRefreshBase::UpdateWithNoDateTime(int32_t &changedRows, const Va
     if (!IsValidTable(predicates.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::UpdateWithNoDateTime");
     // 初始化Init数据
@@ -300,11 +303,6 @@ int32_t AccurateRefreshBase::Delete(int32_t &deletedRows, const AbsRdbPredicates
     ACCURATE_DEBUG("deletedRows: %{public}d", deletedRows);
     UpdateModifiedDatasInner(keys, RDB_OPERATION_REMOVE);
     DfxRefreshHander::SetOptEndTimeHander(predicates, dfxRefreshManager_);
-    return ACCURATE_REFRESH_RET_OK;
-}
-
-int32_t AccurateRefreshBase::UpdateModifiedDatasInner(const vector<int32_t> &keys, RdbOperation operation)
-{
     return ACCURATE_REFRESH_RET_OK;
 }
 

@@ -166,6 +166,16 @@ protected:
     bool isSystem_ = false;
 };
 
+class PendingInfo {
+public:
+    PendingInfo() : start_(INVALID_INT64_VALUE), end_(INVALID_INT64_VALUE) {}
+    PendingInfo(int64_t start) : start_(start), end_(INVALID_INT64_VALUE) {}
+    PendingInfo(int64_t start, int64_t end) : start_(start), end_(end) {}
+public:
+    int64_t start_;
+    int64_t end_;
+};
+
 } // namespace Media
 } // namespace OHOS
 
