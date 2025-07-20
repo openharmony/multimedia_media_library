@@ -30,9 +30,11 @@
 #include "uri.h"
 #include "vision_db_sqls_more.h"
 #include "album_operation_uri.h"
+#include "asset_accurate_refresh.h"
 
 using namespace std;
 using namespace testing::ext;
+using namespace OHOS::Media::AccurateRefresh;
 
 namespace OHOS {
 namespace Media {
@@ -1485,7 +1487,8 @@ HWTEST_F(MediaLibraryAlbumOperationTest, UpdateCoverUriEXecute_test_001, TestSiz
     int32_t albumId = -1;
     string fileId = "0";
     string coverUri = "file://media/Photo" + fileId;
-    bool ret = MediaLibraryAlbumOperations::UpdateCoverUriExecute(albumId, coverUri, fileId, 0);
+    AlbumAccurateRefresh albumRefresh;
+    bool ret = MediaLibraryAlbumOperations::UpdateCoverUriExecute(albumId, coverUri, fileId, 0, albumRefresh);
     EXPECT_EQ(ret, 0);
     MEDIA_INFO_LOG("UpdateCoverUriEXecute_test_001 End");
 }
