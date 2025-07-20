@@ -1327,7 +1327,7 @@ bool MediaLibraryAlbumOperations::IsManunalCloudCover(const string &fileId, stri
 }
 
 int32_t MediaLibraryAlbumOperations::UpdateCoverUriExecute(int32_t albumId,
-    const string &coverUri, const string &fileId, int64_t coverDateTime)
+    const string &coverUri, const string &fileId, int64_t coverDateTime, AlbumAccurateRefresh& albumRefresh)
 {
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     ValuesBucket values;
@@ -1357,7 +1357,7 @@ int32_t MediaLibraryAlbumOperations::UpdateCoverUriExecute(int32_t albumId,
         " AND " + PhotoColumn::PHOTO_SYNC_STATUS + " = 0 AND " + PhotoColumn::PHOTO_CLEAN_FLAG + " = 0)";
 
     predicates.SetWhereClause(CHECK_COVER_VALID);
-    int32_t changedRows = OHOS::Media::MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
+    int32_t changedRows = albumRefresh.UpdateWithDateTime(values, predicates);
     CHECK_AND_PRINT_LOG(changedRows >= 0, "Update photo album failed: %{public}d", changedRows);
 
     return changedRows;
@@ -1419,11 +1419,13 @@ int32_t MediaLibraryAlbumOperations::UpdateAlbumCoverUri(const ValuesBucket &val
     auto coverDateTime = GetCoverDateTime(fileId, albumSubtype);
 
     // 3.update cover uri
-    auto updateRows = UpdateCoverUriExecute(albumId, coverUri, fileId, coverDateTime);
+    AlbumAccurateRefresh albumRefresh;
+    auto updateRows = UpdateCoverUriExecute(albumId, coverUri, fileId, coverDateTime, albumRefresh);
     CHECK_AND_RETURN_RET_LOG(updateRows == 1, E_ERR,
         "update coverUri failed ,maybe cover is invalid, updateRows = %{public}d", updateRows);
 
     // 4.notify photoalbum update
+    albumRefresh.Notify();
     const int32_t notIdArgs = 0;
     ret = NotifyAlbumUpdate(rdbPredicates, notIdArgs);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Notify album update failed");
@@ -1448,7 +1450,7 @@ int32_t MediaLibraryAlbumOperations::ResetCoverUri(const ValuesBucket &values, c
         PhotoAlbumColumns::COVER_URI_SOURCE + " > " + to_string(CoverUriSource::DEFAULT_COVER);
 
     newPredicates.SetWhereClause(UPDATE_CONDITION);
-    
+
     int32_t changedRows = OHOS::Media::MediaLibraryRdbStore::UpdateWithDateTime(updateValues, newPredicates);
     CHECK_AND_PRINT_LOG(changedRows >= 0, "Update photo album failed: %{public}d", changedRows);
 
