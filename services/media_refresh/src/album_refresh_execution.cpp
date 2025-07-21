@@ -297,16 +297,6 @@ int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumT
         NotifyType type = NOTIFY_INVALID;
         ValuesBucket values = albumInfo.GetUpdateValues(initAlbumInfo, type);
         CheckUpdateValues(albumInfo, iter.second.first, values);
-
-        /***************************************************************************/
-        if (forceRefreshAlbums_.find(albumInfo.albumId_) == forceRefreshAlbums_.end()) {
-            CheckUpdateAlbumInfo(albumInfo, false);
-        }
-        if (forceRefreshHiddenAlbums_.find(albumInfo.albumId_) == forceRefreshHiddenAlbums_.end()) {
-            CheckUpdateAlbumInfo(albumInfo, true);
-        }
-        /***************************************************************************/
-
         if (values.IsEmpty()) {
             MEDIA_ERR_LOG("no need update.");
             continue;
