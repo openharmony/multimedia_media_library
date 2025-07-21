@@ -1118,22 +1118,26 @@ void ClearAnalysisAlbumTable()
     EXPECT_EQ(err, E_OK);
 }
 
-void CreateSmartAlbum(const string &albumName, const string &tag,
+int64_t CreateSmartAlbum(const string &albumName, const string &tag,
     const PhotoAlbumSubType &subtype = PhotoAlbumSubType::PORTRAIT, const int32_t &displayLevel = 1)
 {
-    MEDIA_INFO_LOG("Create portrait album");
-    Uri uri(PAH_INSERT_ANA_PHOTO_ALBUM);
-    MediaLibraryCommand cmd(uri);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SMART);
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, subtype);
-    valuesBucket.Put(TAG_ID, tag);
-    valuesBucket.Put(GROUP_TAG, tag);
+    MEDIA_INFO_LOG("Create smart album");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    int64_t albumId = -1;
+    NativeRdb::ValuesBucket valuesBucket;
+    valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SMART);
+    valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, subtype);
+    valuesBucket.PutInt(USER_DISPLAY_LEVEL, displayLevel);
+    valuesBucket.PutString(TAG_ID, tag);
+    valuesBucket.PutString(GROUP_TAG, tag);
     if (albumName != "") {
         valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, albumName);
     }
-    auto ret = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
-    EXPECT_GT(ret, 0);
+    EXPECT_NE(rdbStore, nullptr);
+    int32_t ret = rdbStore->Insert(albumId, ANALYSIS_ALBUM_TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("InsertAlbum albumId is %{public}s", to_string(albumId).c_str());
+    return albumId;
 }
 
 shared_ptr<DataShare::DataShareResultSet> QueryAlbumWithName()
