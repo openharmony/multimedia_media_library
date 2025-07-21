@@ -26,7 +26,7 @@ bool StartAssetAnalysisReqBody::Unmarshalling(MessageParcel &parcel)
     if (!DataShare::DataSharePredicates::Unmarshal(this->predicates, parcel)) {
         return false;
     }
-    return true;
+    return parcel.ReadString(this->uri);
 }
 
 bool StartAssetAnalysisReqBody::Marshalling(MessageParcel &parcel) const
@@ -34,7 +34,7 @@ bool StartAssetAnalysisReqBody::Marshalling(MessageParcel &parcel) const
     if (!DataShare::DataSharePredicates::Marshal(this->predicates, parcel)) {
         return false;
     }
-    return true;
+    return parcel.WriteString(this->uri);
 }
 
 
@@ -45,28 +45,28 @@ std::string StartAssetAnalysisReqBody::ToString() const
     return ss.str();
 }
 
-bool StartAssetAnalysisRspBody::Unmarshalling(MessageParcel &parcel)
+bool StartAssetAnalysisRespBody::Unmarshalling(MessageParcel &parcel)
 {
     this->resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
     if (this->resultSet == nullptr) {
-        MEDIA_ERR_LOG("StartAssetAnalysisRspBody ReadFromParcel failed");
+        MEDIA_ERR_LOG("StartAssetAnalysisRespBody ReadFromParcel failed");
         return false;
     }
-    MEDIA_INFO_LOG("StartAssetAnalysisRspBody ReadFromParcel success");
+    MEDIA_INFO_LOG("StartAssetAnalysisRespBody ReadFromParcel success");
     return true;
 }
 
-bool StartAssetAnalysisRspBody::Marshalling(MessageParcel &parcel) const
+bool StartAssetAnalysisRespBody::Marshalling(MessageParcel &parcel) const
 {
     if (this->resultSet == nullptr || !DataShare::DataShareResultSet::Marshal(this->resultSet, parcel)) {
-        MEDIA_ERR_LOG("StartAssetAnalysisRspBody Marshalling failed");
+        MEDIA_ERR_LOG("StartAssetAnalysisRespBody Marshalling failed");
         return false;
     }
-    MEDIA_INFO_LOG("StartAssetAnalysisRspBody Marshalling success");
+    MEDIA_INFO_LOG("StartAssetAnalysisRespBody Marshalling success");
     return true;
 }
 
-std::string StartAssetAnalysisRspBody::ToString() const
+std::string StartAssetAnalysisRespBody::ToString() const
 {
     std::stringstream ss;
     // todo: add the content of GetAssetsRespBody

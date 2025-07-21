@@ -35,16 +35,16 @@ bool GetUriFromFilePathReqBody::Marshalling(MessageParcel &parcel) const
     return true;
 }
 
-bool GetUriFromFilePathRspBody::Unmarshalling(MessageParcel &parcel)
+bool GetUriFromFilePathRespBody::Unmarshalling(MessageParcel &parcel)
 {
     this->resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
     bool cond = this->resultSet == nullptr;
     CHECK_AND_RETURN_RET_LOG(!cond, false, "ReadFromParcel failed");
-    MEDIA_INFO_LOG("GetUriFromFilePathRspBody ReadFromParcel success");
+    MEDIA_INFO_LOG("GetUriFromFilePathRespBody ReadFromParcel success");
     return true;
 }
 
-bool GetUriFromFilePathRspBody::Marshalling(MessageParcel &parcel) const
+bool GetUriFromFilePathRespBody::Marshalling(MessageParcel &parcel) const
 {
     bool cond = this->resultSet == nullptr || !DataShare::DataShareResultSet::Marshal(this->resultSet, parcel);
     CHECK_AND_RETURN_RET_LOG(!cond, false, "Marshalling failed");

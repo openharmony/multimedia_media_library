@@ -36,7 +36,7 @@ public:  // basic functions
     std::string ToString() const;
 };
 
-class RequestEditDataRspBody : public IPC::IMediaParcelable {
+class RequestEditDataRespBody : public IPC::IMediaParcelable {
 public:
     std::shared_ptr<DataShare::DataShareResultSet> resultSet;
 

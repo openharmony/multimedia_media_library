@@ -468,14 +468,14 @@ HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_Test_011, TestSize.Level0)
     auto service = make_shared<MediaAssetsControllerService>();
     service->AssetChangeCreateAsset(data, reply);
 
-    IPC::MediaRespVo<AssetChangeRspBody> respVo;
+    IPC::MediaRespVo<AssetChangeRespBody> respVo;
     ASSERT_EQ(respVo.Unmarshalling(reply), true);
 
     MEDIA_INFO_LOG("AssetChangeCreateAsset ErrCode:%{public}d", respVo.GetErrCode());
     ASSERT_EQ(respVo.GetErrCode(), 0);
 
-    AssetChangeRspBody rspBody = respVo.GetBody();
-    ASSERT_GT(rspBody.fileId, 0);
+    AssetChangeRespBody respBody = respVo.GetBody();
+    ASSERT_GT(respBody.fileId, 0);
 }
 
 HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_Test_012, TestSize.Level0)
@@ -486,7 +486,7 @@ HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_Test_012, TestSize.Level0)
     MessageParcel reply;
     service->AssetChangeCreateAsset(data, reply);
 
-    IPC::MediaRespVo<AssetChangeRspBody> respVo;
+    IPC::MediaRespVo<AssetChangeRespBody> respVo;
     ASSERT_EQ(respVo.Unmarshalling(reply), true);
     MEDIA_INFO_LOG("AssetChangeCreateAsset ErrCode:%{public}d", respVo.GetErrCode());
     ASSERT_LT(respVo.GetErrCode(), 0);
@@ -498,7 +498,7 @@ HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_Test_012, TestSize.Level0)
 
     service->AssetChangeCreateAsset(data1, reply1);
 
-    IPC::MediaRespVo<AssetChangeRspBody> respVo1;
+    IPC::MediaRespVo<AssetChangeRespBody> respVo1;
     ASSERT_EQ(respVo1.Unmarshalling(reply1), true);
 
     MEDIA_INFO_LOG("AssetChangeCreateAsset ErrCode1:%{public}d", respVo1.GetErrCode());

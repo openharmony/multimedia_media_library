@@ -1259,7 +1259,7 @@ static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     int32_t albumId = photoAlbum->GetAlbumId();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_ADD_ASSETS);
     ChangeRequestAddAssetsReqBody reqBody;
-    ChangeRequestAddAssetsRspBody rspBody;
+    ChangeRequestAddAssetsRespBody respBody;
     reqBody.albumId = albumId;
     int32_t ret = 0;
 
@@ -1275,7 +1275,7 @@ static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     } else {
         reqBody.isHighlight = false;
         NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
-        ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+        ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
     }
     changeRequest->ClearAddAssetArray();
     if (ret < 0) {
@@ -1289,9 +1289,9 @@ static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     }
 
     NAPI_INFO_LOG("Add %{public}d asset(s) into album %{public}d", ret, albumId);
-    photoAlbum->SetVideoCount(rspBody.videoCount);
-    photoAlbum->SetImageCount(rspBody.imageCount);
-    photoAlbum->SetCount(rspBody.albumCount);
+    photoAlbum->SetVideoCount(respBody.videoCount);
+    photoAlbum->SetImageCount(respBody.imageCount);
+    photoAlbum->SetCount(respBody.albumCount);
     return true;
 }
 
@@ -1307,13 +1307,13 @@ static bool RemoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     int32_t albumId = photoAlbum->GetAlbumId();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_REMOVE_ASSETS);
     ChangeRequestRemoveAssetsReqBody reqBody;
-    ChangeRequestRemoveAssetsRspBody rspBody;
+    ChangeRequestRemoveAssetsRespBody respBody;
     reqBody.albumId = albumId;
     reqBody.isHiddenOnly = photoAlbum->GetHiddenOnly();
     for (const auto& asset : changeRequest->GetRemoveAssetArray()) {
         reqBody.assets.push_back(asset);
     }
-    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
     changeRequest->ClearRemoveAssetArray();
     if (ret < 0) {
         context.SaveError(ret);
@@ -1322,9 +1322,9 @@ static bool RemoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     }
 
     NAPI_INFO_LOG("Remove %{public}d asset(s) from album %{public}d", ret, albumId);
-    photoAlbum->SetVideoCount(rspBody.videoCount);
-    photoAlbum->SetImageCount(rspBody.imageCount);
-    photoAlbum->SetCount(rspBody.albumCount);
+    photoAlbum->SetVideoCount(respBody.videoCount);
+    photoAlbum->SetImageCount(respBody.imageCount);
+    photoAlbum->SetCount(respBody.albumCount);
     return true;
 }
 

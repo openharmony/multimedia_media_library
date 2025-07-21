@@ -35,28 +35,28 @@ bool IsEditedReqBody::Marshalling(MessageParcel &parcel) const
     return true;
 }
 
-bool IsEditedRspBody::Unmarshalling(MessageParcel &parcel)
+bool IsEditedRespBody::Unmarshalling(MessageParcel &parcel)
 {
     this->resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
     if (this->resultSet == nullptr) {
-        MEDIA_ERR_LOG("IsEditedRspBody ReadFromParcel failed");
+        MEDIA_ERR_LOG("IsEditedRespBody ReadFromParcel failed");
         return false;
     }
-    MEDIA_INFO_LOG("IsEditedRspBody ReadFromParcel success");
+    MEDIA_INFO_LOG("IsEditedRespBody ReadFromParcel success");
     return true;
 }
 
-bool IsEditedRspBody::Marshalling(MessageParcel &parcel) const
+bool IsEditedRespBody::Marshalling(MessageParcel &parcel) const
 {
     if (this->resultSet == nullptr || !DataShare::DataShareResultSet::Marshal(this->resultSet, parcel)) {
-        MEDIA_ERR_LOG("IsEditedRspBody Marshalling failed");
+        MEDIA_ERR_LOG("IsEditedRespBody Marshalling failed");
         return false;
     }
-    MEDIA_INFO_LOG("IsEditedRspBody Marshalling success");
+    MEDIA_INFO_LOG("IsEditedRespBody Marshalling success");
     return true;
 }
 
-std::string IsEditedRspBody::ToString() const
+std::string IsEditedRespBody::ToString() const
 {
     std::stringstream ss;
     // todo: add the content of GetAssetsRespBody
