@@ -234,6 +234,7 @@ ohos_shared_library("medialibrary_ani_utils") {
 }
 
 ohos_shared_library("photo_access_helper_ani") {
+  shlib_type = "ani"
   configs = [ ":ani_config" ]
 
   sources = [ "src/cpp/ani_module_ohos_photoaccess_helper.cpp" ]
@@ -279,6 +280,7 @@ ohos_shared_library("photo_access_helper_ani") {
 }
 
 ohos_shared_library("userfile_manager_ani") {
+  shlib_type = "ani"
   configs = [ ":ani_config" ]
 
   sources = [ "src/cpp/ani_module_ohos_userfile_manager.cpp" ]
