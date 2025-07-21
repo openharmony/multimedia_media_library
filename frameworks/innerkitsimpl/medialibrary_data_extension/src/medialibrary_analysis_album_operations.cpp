@@ -62,9 +62,10 @@ const string GROUP_MERGE_SQL_PRE = "SELECT " + ALBUM_ID + ", " + COVER_URI + ", 
     + TAG_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_SUBTYPE + " = " + to_string(GROUP_PHOTO) +
     " AND (INSTR(" + TAG_ID + ", '";
 static std::mutex updateGroupPhotoAlbumMutex;
-const string GROUP_ALBUM_FAVORITE_ORDER_CLAUSE = " CASE user_display_level WHEN '3' THEN 1 ELSE 2 END ";
-const string GROUP_ALBUM_NAME_ORDER_CLAUSE =
-    " CASE WHEN album_name IS NOT NULL AND album_name <> '' THEN 0 ELSE 1 END ";
+const string GROUP_ALBUM_FAVORITE_ORDER_CLAUSE = " CASE WHEN user_display_level = 3 THEN 1 ELSE 2 END ";
+const string GROUP_ALBUM_USER_NAME_ORDER_CLAUSE = " CASE WHEN rename_operation = 2 THEN 1 ELSE 2 END ";
+const string GROUP_ALBUM_SYSTEM_NAME_ORDER_CLAUSE =
+    " CASE WHEN album_name IS NULL OR album_name = '' THEN 2 ELSE 1 END ";
 
 static int32_t ExecSqls(const vector<string> &sqls, const shared_ptr<MediaLibraryUnistore> &store)
 {
@@ -350,8 +351,8 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAnalysisAlbumOperations::Query
 
     rdbPredicates.SetWhereClause(clause);
     rdbPredicates.OrderByAsc(GROUP_ALBUM_FAVORITE_ORDER_CLAUSE);
-    rdbPredicates.OrderByDesc(RENAME_OPERATION);
-    rdbPredicates.OrderByAsc(GROUP_ALBUM_NAME_ORDER_CLAUSE);
+    rdbPredicates.OrderByAsc(GROUP_ALBUM_USER_NAME_ORDER_CLAUSE);
+    rdbPredicates.OrderByAsc(GROUP_ALBUM_SYSTEM_NAME_ORDER_CLAUSE);
     rdbPredicates.OrderByDesc(COUNT);
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
     return resultSet;
