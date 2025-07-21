@@ -746,8 +746,8 @@ static int32_t UpdateCoverInfoForAlbum(const std::shared_ptr<MediaLibraryRdbStor
             return E_OK;
         }
     } else {
-        MEDIA_ERR_LOG("ResultSet GoToNextRow error, ret:%{public}d, ownerAlbumId:%{public}d", ret, ownerAlbumId);
-        return E_HAS_DB_ERROR;
+        MEDIA_INFO_LOG("ResultSet GoToNextRow error, ret:%{public}d, ownerAlbumId:%{public}d", ret, ownerAlbumId);
+        return E_OK;
     }
     string newCoverUri = MediaLibraryFormMapOperations::GetUriByFileId(newAssetId, targetPath);
     MEDIA_INFO_LOG("New cover uri is %{public}s", targetPath.c_str());

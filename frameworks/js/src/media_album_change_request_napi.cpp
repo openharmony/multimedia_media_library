@@ -1146,10 +1146,10 @@ napi_value MediaAlbumChangeRequestNapi::JSResetCoverUri(napi_env env, napi_callb
         MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "photoAlbum is null");
     auto subtype = static_cast<int32_t>(photoAlbum->GetPhotoAlbumSubType());
     CHECK_COND_WITH_ERR_MESSAGE(env,
-        PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        (PhotoAlbum::IsSystemAlbum(photoAlbum->GetPhotoAlbumType()) &&
-        !PhotoAlbum::IsHiddenAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) ||
-        PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        !(photoAlbum->GetHiddenOnly()) &&
+        (PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsSystemAlbum(photoAlbum->GetPhotoAlbumType()) ||
+        PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())),
         MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
         "can't reset album cover of album subtype:" + to_string(subtype));
     photoAlbum->SetCoverUriSource(static_cast<int32_t>(CoverUriSource::DEFAULT_COVER));
