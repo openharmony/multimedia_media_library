@@ -56,7 +56,7 @@ void CheckUriPermissionInnerReqBody::Convert2Dto(CheckUriPermissionInnerDto &dto
     return;
 }
 
-bool CheckUriPermissionInnerRspBody::Unmarshalling(MessageParcel &parcel)
+bool CheckUriPermissionInnerRespBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = ITypesUtil::Unmarshalling(this->fileIds, parcel);
     CHECK_AND_RETURN_RET(status, status);
@@ -65,7 +65,7 @@ bool CheckUriPermissionInnerRspBody::Unmarshalling(MessageParcel &parcel)
     return true;
 }
 
-bool CheckUriPermissionInnerRspBody::Marshalling(MessageParcel &parcel) const
+bool CheckUriPermissionInnerRespBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = ITypesUtil::Marshalling(this->fileIds, parcel);
     CHECK_AND_RETURN_RET(status, status);
@@ -74,7 +74,7 @@ bool CheckUriPermissionInnerRspBody::Marshalling(MessageParcel &parcel) const
     return true;
 }
 
-void CheckUriPermissionInnerRspBody::InitByDto(const CheckUriPermissionInnerDto &dto)
+void CheckUriPermissionInnerRespBody::InitByDto(const CheckUriPermissionInnerDto &dto)
 {
     this->fileIds = dto.outFileIds;
     this->permissionTypes = dto.permissionTypes;

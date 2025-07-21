@@ -29,7 +29,7 @@ public:
 
 public:
     static SubmitCacheDto Create(const SubmitCacheReqBody &req);
-    SubmitCacheRspBody CreateRspBody();
+    SubmitCacheRespBody CreateRespBody();
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_ASSETS_MANAGER_SUBMIT_CACHE_DTO_H

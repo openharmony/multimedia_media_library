@@ -35,7 +35,7 @@ bool GetFilePathFromUriReqBody::Marshalling(MessageParcel &parcel) const
     return true;
 }
 
-bool GetFilePathFromUriRspBody::Unmarshalling(MessageParcel &parcel)
+bool GetFilePathFromUriRespBody::Unmarshalling(MessageParcel &parcel)
 {
     this->resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
     bool cond = this->resultSet == nullptr;
@@ -44,7 +44,7 @@ bool GetFilePathFromUriRspBody::Unmarshalling(MessageParcel &parcel)
     return true;
 }
 
-bool GetFilePathFromUriRspBody::Marshalling(MessageParcel &parcel) const
+bool GetFilePathFromUriRespBody::Marshalling(MessageParcel &parcel) const
 {
     bool cond = this->resultSet == nullptr || !DataShare::DataShareResultSet::Marshal(this->resultSet, parcel);
     CHECK_AND_RETURN_RET_LOG(!cond, false, "Marshalling failed");

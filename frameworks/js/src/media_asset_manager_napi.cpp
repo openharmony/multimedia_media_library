@@ -374,21 +374,21 @@ MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId
     }
     QueryPhotoReqBody reqBody;
     reqBody.fileId = std::to_string(fileId);
-    QueryPhotoRspBody rspBody;
+    QueryPhotoRespBody respBody;
     std::unordered_map<std::string, std::string> headerMap {
         {MediaColumn::MEDIA_ID, reqBody.fileId }, {URI_TYPE, TYPE_PHOTOS}};
     int ret = IPC::UserDefineIPCClient().SetUserId(userId).SetHeader(headerMap).Call(
-        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_PHOTO_STATUS), reqBody, rspBody);
+        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_PHOTO_STATUS), reqBody, respBody);
     if (ret < 0) {
         NAPI_ERR_LOG("ret = %{public}d", ret);
         return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     }
-    photoId = rspBody.photoId;
-    if (rspBody.photoQuality == LOW_QUALITY_IMAGE) {
+    photoId = respBody.photoId;
+    if (respBody.photoQuality == LOW_QUALITY_IMAGE) {
         NAPI_INFO_LOG("query photo status : lowQuality");
         return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
     }
-    NAPI_INFO_LOG("query photo status quality: %{public}d", rspBody.photoQuality);
+    NAPI_INFO_LOG("query photo status quality: %{public}d", respBody.photoQuality);
     return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
 }
 

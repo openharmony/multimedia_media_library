@@ -85,18 +85,19 @@ std::unordered_map<std::string, std::string> TabOldPhotosClient::GetResultSetFro
         DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, resultMap, "dataShareHelper is nullptr");
     GetUrisByOldUrisInnerReqBody reqBody;
-    GetUrisByOldUrisInnerRspBody rspBody;
+    GetUrisByOldUrisInnerRespBody respBody;
     reqBody.uris = uris;
     reqBody.columns = columns;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_URIS_BY_OLD_URIS);
     MEDIA_INFO_LOG("before IPC::UserDefineIPCClient().Call, INNER_GET_URIS_BY_OLD_URIS");
-    int32_t result = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+    int32_t result =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, respBody);
     CHECK_AND_RETURN_RET_LOG(result == E_OK, resultMap, "GetResultSetFromTabOldPhotos IPC Call Failed");
-    auto fileIds_size = rspBody.fileIds.size();
-    auto datas_size = rspBody.datas.size();
-    auto displayNames_size = rspBody.displayNames.size();
-    auto oldFileIds_size = rspBody.oldFileIds.size();
-    auto oldDatas_size = rspBody.oldDatas.size();
+    auto fileIds_size = respBody.fileIds.size();
+    auto datas_size = respBody.datas.size();
+    auto displayNames_size = respBody.displayNames.size();
+    auto oldFileIds_size = respBody.oldFileIds.size();
+    auto oldDatas_size = respBody.oldDatas.size();
     bool isValid = true;
     isValid &= fileIds_size == datas_size;
     isValid &= datas_size == displayNames_size;
@@ -104,13 +105,13 @@ std::unordered_map<std::string, std::string> TabOldPhotosClient::GetResultSetFro
     isValid &= oldFileIds_size == oldDatas_size;
     CHECK_AND_RETURN_RET_LOG(isValid, resultMap, "GetResultSetFromTabOldPhotos Failed");
     std::vector<TabOldPhotosClient::TabOldPhotosClientObj> dataMapping;
-    for (size_t i = 0; i < rspBody.fileIds.size(); i++) {
+    for (size_t i = 0; i < respBody.fileIds.size(); i++) {
         TabOldPhotosClient::TabOldPhotosClientObj obj;
-        obj.fileId = rspBody.fileIds[i];
-        obj.data = rspBody.datas[i];
-        obj.displayName = rspBody.displayNames[i];
-        obj.oldFileId = rspBody.oldFileIds[i];
-        obj.oldData = rspBody.oldDatas[i];
+        obj.fileId = respBody.fileIds[i];
+        obj.data = respBody.datas[i];
+        obj.displayName = respBody.displayNames[i];
+        obj.oldFileId = respBody.oldFileIds[i];
+        obj.oldData = respBody.oldDatas[i];
         dataMapping.emplace_back(obj);
     }
     std::vector<TabOldPhotosClient::RequestUriObj> uriList = this->Parse(uris);

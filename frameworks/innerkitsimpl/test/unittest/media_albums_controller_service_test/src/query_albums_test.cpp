@@ -162,7 +162,7 @@ int32_t ServiceQueryAlbumsCount(QueryAlbumsReqBody &reqBody, ServiceCall call)
     MessageParcel reply;
     call(data, reply);
 
-    IPC::MediaRespVo<QueryAlbumsRspBody> respVo;
+    IPC::MediaRespVo<QueryAlbumsRespBody> respVo;
     if (respVo.Unmarshalling(reply) != true) {
         MEDIA_ERR_LOG("respVo.Unmarshalling failed");
         return -1;

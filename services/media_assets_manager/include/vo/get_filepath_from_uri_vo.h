@@ -33,7 +33,7 @@ public:  // functions of Parcelable.
     bool Marshalling(MessageParcel &parcel) const override;
 };
 
-class GetFilePathFromUriRspBody : public IPC::IMediaParcelable {
+class GetFilePathFromUriRespBody : public IPC::IMediaParcelable {
 public:
     std::shared_ptr<DataShare::DataShareResultSet> resultSet;
 

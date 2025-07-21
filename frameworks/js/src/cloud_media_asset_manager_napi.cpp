@@ -443,18 +443,18 @@ static void GetCloudMediaAssetStatusExecute(napi_env env, void* data)
 
     auto* context = static_cast<CloudMediaAssetAsyncContext*>(data);
     GetCloudMediaAssetStatusReqBody reqBody;
-    GetCloudMediaAssetStatusReqBody rspBody;
+    GetCloudMediaAssetStatusReqBody respBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_ASSET_STATUS);
-    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
     if (ret != 0) {
         context->SaveError(ret);
         NAPI_ERR_LOG("Get cloud media asset status failed, err: %{public}d", ret);
         return;
     }
 
-    NAPI_INFO_LOG("Get cloud media asset, res: %{public}s.", rspBody.status.c_str());
+    NAPI_INFO_LOG("Get cloud media asset, res: %{public}s.", respBody.status.c_str());
     std::vector<std::string> type;
-    if (!SplitUriString(rspBody.status, type)) {
+    if (!SplitUriString(respBody.status, type)) {
         NAPI_ERR_LOG("GetType failed");
         return;
     }

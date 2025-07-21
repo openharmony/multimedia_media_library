@@ -191,7 +191,7 @@ HWTEST_F(GetDataAnalysisProcessTest, GetLabelAnalysisProgress_Test_001, TestSize
     reqBody.Marshalling(data);
     auto service = make_shared<MediaAlbumsControllerService>();
     service->GetAnalysisProcess(data, reply);
-    IPC::MediaRespVo<QueryResultRspBody> resp;
+    IPC::MediaRespVo<QueryResultRespBody> resp;
     bool isValid = resp.Unmarshalling(reply);
     ASSERT_EQ(isValid, true);
     EXPECT_EQ(resp.GetErrCode(), E_SUCCESS);
@@ -234,7 +234,7 @@ HWTEST_F(GetDataAnalysisProcessTest, GetFaceAnalysisProgress_TEST_002, TestSize.
     reqBody.Marshalling(data);
     auto service = make_shared<MediaAlbumsControllerService>();
     service->GetAnalysisProcess(data, reply);
-    IPC::MediaRespVo<QueryResultRspBody> resp;
+    IPC::MediaRespVo<QueryResultRespBody> resp;
     bool isValid = resp.Unmarshalling(reply);
     ASSERT_EQ(isValid, true);
     EXPECT_EQ(resp.GetErrCode(), E_SUCCESS);
@@ -294,7 +294,7 @@ HWTEST_F(GetDataAnalysisProcessTest, GetHighlightAnalysisProgressTest_TEST_002, 
     reqBody.Marshalling(data);
     auto service = make_shared<MediaAlbumsControllerService>();
     service->GetAnalysisProcess(data, reply);
-    IPC::MediaRespVo<QueryResultRspBody> resp;
+    IPC::MediaRespVo<QueryResultRespBody> resp;
     bool isValid = resp.Unmarshalling(reply);
     ASSERT_EQ(isValid, true);
     EXPECT_EQ(resp.GetErrCode(), E_SUCCESS);

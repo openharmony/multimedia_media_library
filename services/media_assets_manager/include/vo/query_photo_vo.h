@@ -30,7 +30,7 @@ public:  // functions of Parcelable.
     bool Marshalling(MessageParcel &parcel) const override;
 };
 
-class QueryPhotoRspBody : public IPC::IMediaParcelable {
+class QueryPhotoRespBody : public IPC::IMediaParcelable {
 public:
     std::string photoId;
     int32_t photoQuality;
