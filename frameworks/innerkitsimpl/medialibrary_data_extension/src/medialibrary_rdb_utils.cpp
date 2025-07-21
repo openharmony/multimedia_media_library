@@ -3451,17 +3451,14 @@ bool MediaLibraryRdbUtils::QueryAllShootingModeAlbumIds(vector<int32_t>& albumId
 int32_t MediaLibraryRdbUtils::GetAlbumIdBySubType(PhotoAlbumSubType subtype)
 {
     if (subType2AlbumIdMap.empty()) {
-        unique_lock<mutex> lock(sRefreshAlbumMutex_);
-        if (subType2AlbumIdMap.empty()) {
-            auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-            CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "Failed to get rdbStore");
-            auto albumResult = GetSystemAlbum(rdbStore, SYSTEM_ALBUMS, PHOTO_ALBUM_INFO_COLUMNS);
-            CHECK_AND_RETURN_RET_LOG(albumResult != nullptr, E_ERR, "album result is null");
-            while (albumResult->GoToNextRow() == E_OK) {
-                auto albumId = GetAlbumId(albumResult);
-                auto albumSubtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
-                subType2AlbumIdMap.insert_or_assign(albumSubtype, albumId);
-            }
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "Failed to get rdbStore");
+        auto albumResult = GetSystemAlbum(rdbStore, SYSTEM_ALBUMS, PHOTO_ALBUM_INFO_COLUMNS);
+        CHECK_AND_RETURN_RET_LOG(albumResult != nullptr, E_ERR, "album result is null");
+        while (albumResult->GoToNextRow() == E_OK) {
+            auto albumId = GetAlbumId(albumResult);
+            auto albumSubtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
+            subType2AlbumIdMap.insert_or_assign(albumSubtype, albumId);
         }
     }
     auto iter = subType2AlbumIdMap.find(subtype);
