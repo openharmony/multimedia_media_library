@@ -187,6 +187,9 @@ bool BackgroundCloudFileProcessor::DownloadCloudFilesSync()
     DownloadFiles downloadFiles;
     ParseDownloadFiles(resultSet, downloadFiles);
     CHECK_AND_RETURN_RET_LOG(!downloadFiles.uris.empty(), true, "No cloud files need to be downloaded");
+    if (resultSet != nullptr) {
+        resultSet->Close();
+    }
     int32_t ret = AddDownloadTask(downloadFiles);
     CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to add download task! err: %{public}d", ret);
     return true;
@@ -298,8 +301,9 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFi
         " AND " + PhotoColumn::MEDIA_FILE_PATH + " IS NOT NULL AND " + PhotoColumn::MEDIA_FILE_PATH + " != '' AND " +
         MediaColumn::MEDIA_SIZE + " > 0 AND " + PhotoColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) +
         " AND " + MediaColumn::MEDIA_DATE_TAKEN + " > " + std::to_string(currentMilliSecond - downloadMilliSecond) +
-        " ORDER BY " + MediaColumn::MEDIA_DATE_TAKEN + " DESC LIMIT " + std::to_string(downloadNum);
-
+        " ORDER BY " + MediaColumn::MEDIA_DATE_TAKEN + " DESC, " + PhotoColumn::MEDIA_ID + " DESC LIMIT " +
+        std::to_string(downloadNum);
+    MEDIA_DEBUG_LOG("ParseDownloadFiles SQL limit downloadNum: %{public}" PRId64, downloadNum);
     return uniStore->QuerySql(sql);
 }
 
@@ -335,6 +339,7 @@ void BackgroundCloudFileProcessor::GetDownloadNum(int64_t &downloadNum)
             > (HALF * downloadInterval_));
         CHECK_AND_EXECUTE(!cond, downloadNum++);
     }
+    MEDIA_DEBUG_LOG("GetDownloadNum downloadNum: %{public}" PRId64, downloadNum);
 }
 
 void BackgroundCloudFileProcessor::DownloadLatestFinished()
@@ -384,18 +389,18 @@ void BackgroundCloudFileProcessor::ParseDownloadFiles(std::shared_ptr<NativeRdb:
 
         int32_t position =
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_POSITION, resultSet, TYPE_INT32));
-        if (position != static_cast<int32_t>(POSITION_CLOUD))
+        if (position != static_cast<int32_t>(POSITION_CLOUD)) {
             continue;
-
-        std::string uri = "";
+        }
         int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_ID, resultSet, TYPE_INT32));
-
+        MEDIA_DEBUG_LOG("ParseDownloadFiles fileId: %{public}d", fileId);
         std::string displayName =
             get<std::string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_NAME, resultSet, TYPE_STRING));
         if (displayName.empty()) {
             MEDIA_WARN_LOG("Failed to get cloud file displayName!");
             continue;
         }
+        std::string uri = "";
         uri = MediaFileUri::GetPhotoUri(to_string(fileId), path, displayName);
 
         int64_t cnt = GetDownloadCnt(uri);
@@ -403,18 +408,16 @@ void BackgroundCloudFileProcessor::ParseDownloadFiles(std::shared_ptr<NativeRdb:
             downloadLatestFinished = false;
             downloadFiles.uris.push_back(uri);
             downloadFiles.mediaType = MEDIA_TYPE_IMAGE;
-
             CheckAndUpdateDownloadCnt(uri, cnt);
-
             if ((int64_t)downloadFiles.uris.size() >= downloadNum) {
                 break;
             }
         }
     }
-
     if (downloadLatestFinished) {
         DownloadLatestFinished();
     }
+    MEDIA_DEBUG_LOG("ParseDownloadFiles downloadLatestFinished: %{public}d", downloadLatestFinished);
 }
 
 void BackgroundCloudFileProcessor::removeFinishedResult(const std::vector<std::string>& downloadingPaths)
