@@ -1668,8 +1668,10 @@ void UpgradeRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCover
         ->EndWrap();
         NativeRdb::ValuesBucket updateBucket;
         updateBucket.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE,
-            static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER));
+            static_cast<int32_t>(CoverUriSource::MANUAL_LOCAL_COVER));
         updateBucket.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, albumCoverInfo.coverUri);
+        auto dateModified = MediaFileUtils::UTCTimeMilliSeconds();
+        updateBucket.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, to_string(dateModified) + ",");
         BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, updateBucket, predicates);
         if (changeRows != 1) {
             MEDIA_ERR_LOG("UpdatePhotoAlbumCoverUri failed, expected count 1, but got %{public}d", changeRows);
