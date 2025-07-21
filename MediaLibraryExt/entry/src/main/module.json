@@ -9,6 +9,7 @@
       "default",
       "phone",
       "tablet",
+      "wearable",
       "2in1"
     ],
     "compressNativeLibs": true,
