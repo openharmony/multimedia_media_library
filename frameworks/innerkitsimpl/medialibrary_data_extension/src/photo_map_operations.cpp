@@ -463,13 +463,6 @@ shared_ptr<OHOS::NativeRdb::ResultSet> PhotoMapOperations::QueryPhotoAssets(cons
     if (rdbPredicate.GetWhereArgs().size() <= 0) {
         return nullptr;
     }
-    string albumId = rdbPredicate.GetWhereArgs()[0];
-    string tagId;
-    int32_t isRemoved;
-    if (IsQueryGroupPhotoAlbumAssets(albumId, tagId, isRemoved)) {
-        CHECK_AND_RETURN_RET(isRemoved != ALBUM_IS_REMOVED, nullptr);
-        return QueryGroupPhotoAlbumAssets(albumId, tagId, columns);
-    }
     return MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
 }
 } // namespace OHOS::Media
