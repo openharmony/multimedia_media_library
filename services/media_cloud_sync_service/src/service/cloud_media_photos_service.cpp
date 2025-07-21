@@ -444,14 +444,17 @@ int32_t CloudMediaPhotosService::CreateEntry(const std::vector<CloudMediaPullDat
     int32_t ret;
     std::vector<CloudMediaPullDataDto> allPullDatas = pullDatas;
     PullRecordsConflictProc(allPullDatas, refreshAlbums, stats, failedRecords, photoRefresh);
-    GetUniqueIdsByTrans(allPullDatas.size(), uniqueId);
+    ret = MediaLibraryAssetOperations::CreateAssetUniqueIds(MediaType::MEDIA_TYPE_IMAGE, allPullDatas.size(), uniqueId);
+    if (ret != E_OK) {
+        uniqueId = 0;
+    }
     for (auto insertData : allPullDatas) {
         MEDIA_DEBUG_LOG("CreateEntry insert of record %{public}s", insertData.cloudId.c_str());
-        uniqueId++;
         int32_t mediaType =
             (insertData.basicFileType == FILE_TYPE_VIDEO) ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
         std::string extension = ScannerUtils::GetFileExtension(insertData.basicFileName);
         ret = MediaLibraryAssetOperations::CreateAssetPathById(uniqueId, mediaType, extension, insertData.localPath);
+        uniqueId++;
         if (ret != E_OK) {
             MEDIA_ERR_LOG("CreateEntry Generate File Path err %{public}d", ret);
             dataFail++;
@@ -1201,21 +1204,6 @@ int32_t CloudMediaPhotosService::ReportFailure(const ReportFailureDto &failureDt
             break;
     }
     return this->NotifyUploadErr(failureDto.errorCode, std::to_string(failureDto.fileId));
-}
-
-int32_t CloudMediaPhotosService::GetUniqueIdsByTrans(int32_t dataSize, int32_t &uniqueId)
-{
-    int32_t ret;
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
-    std::function<int(void)> func = [&]()->int {
-        ret = MediaLibraryAssetOperations::CreateAssetUniqueIds(MediaType::MEDIA_TYPE_IMAGE, dataSize, uniqueId,
-            trans);
-        return ret;
-    };
-    ret = trans->RetryTrans(func);
-    CHECK_AND_EXECUTE(ret == E_OK, uniqueId = 0);
-    MEDIA_INFO_LOG("GetUniqueIdsByTrans end, uniqueId: %{public}d", uniqueId);
-    return ret;
 }
 
 }  // namespace OHOS::Media::CloudSync

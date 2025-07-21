@@ -2165,8 +2165,7 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueId(int32_t type,
     return GetInt32Val(UNIQUE_NUMBER, resultSet);
 }
 
-int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t num, int32_t &startUniqueNumber,
-    std::shared_ptr<TransactionOperations> trans)
+int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t num, int32_t &startUniqueNumber)
 {
     if (num == 0) {
         return E_OK;
@@ -2195,22 +2194,27 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t 
         " WHERE " + ASSET_MEDIA_TYPE + "='" + typeString + "';";
     lock_guard<mutex> lock(g_uniqueNumberLock);
     int32_t errCode = E_OK;
-    CHECK_AND_EXECUTE(trans == nullptr, errCode = trans->ExecuteSql(updateSql));
-    CHECK_AND_EXECUTE(trans != nullptr, errCode = rdbStore->ExecuteSql(updateSql));
-    CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "CreateAssetUniqueIds ExecuteSql err, ret=%{public}d", errCode);
-
-    auto resultSet = rdbStore->QuerySql(querySql);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "CreateAssetUniqueIds resultSet is null");
-    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("CreateAssetUniqueIds first row empty");
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    std::function<int(void)> func = [&]()->int {
+        errCode = trans->ExecuteSql(updateSql);
+        CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "CreateAssetUniqueIds ExecuteSql err, ret=%{public}d",
+            errCode);
+        auto resultSet = trans->QueryByStep(querySql);
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "CreateAssetUniqueIds resultSet is null");
+        if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("CreateAssetUniqueIds first row empty");
+            resultSet->Close();
+            return E_HAS_DB_ERROR;
+        }
+        int32_t endUniqueNumber = GetInt32Val(UNIQUE_NUMBER, resultSet);
         resultSet->Close();
-        return E_HAS_DB_ERROR;
-    }
-    int32_t endUniqueNumber = GetInt32Val(UNIQUE_NUMBER, resultSet);
-    resultSet->Close();
-    startUniqueNumber = endUniqueNumber - num;
-    MEDIA_INFO_LOG("CreateAssetUniqueIds type: %{public}d, num: %{public}d, startUniqueNumber: %{public}d",
-        type, num, startUniqueNumber);
+        startUniqueNumber = endUniqueNumber - num;
+        MEDIA_INFO_LOG("CreateAssetUniqueIds type: %{public}d, num: %{public}d, startUniqueNumber: %{public}d",
+            type, num, startUniqueNumber);
+        return E_OK;
+    };
+    errCode = trans->RetryTrans(func);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "CreateAssetUniqueIds err, ret=%{public}d", errCode);
     return E_OK;
 }
 
