@@ -37,6 +37,7 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_rdb_transaction.h"
+#include "medialibrary_unittest_utils.h"
 #include "story_cover_info_column.h"
 #include "story_play_info_column.h"
 #include "power_efficiency_manager.h"
@@ -75,8 +76,18 @@ void MediaLibraryRdbUtilsTest::SetUpTestCase(void)
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::SetUpTestCase");
 }
 
+void ClearPhotos()
+{
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    int32_t deletedRows = -1;
+    auto ret = rdbStore->Delete(deletedRows, predicates);
+    MEDIA_INFO_LOG("ClearPhotos Delete retVal: %{public}d, deletedRows: %{public}d", ret, deletedRows);
+}
+
 void MediaLibraryRdbUtilsTest::TearDownTestCase(void)
 {
+    ClearPhotos();
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::TearDownTestCase");
 }
 
@@ -437,6 +448,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_TransformOwnerAppIdToTokenI
     testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_TransformOwnerAppIdToTokenId_test_001:start");
+    MediaLibraryUnitTestUtils::Init();
     int32_t id1 = CreateSingleImage("TransformOwnerAppIdTest1.jpg", "");
     RdbPredicates predicates(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     predicates.EqualTo(AppUriPermissionColumn::FILE_ID, id1);
