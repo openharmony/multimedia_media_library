@@ -52,7 +52,7 @@ static const string addResourceByFileUriSignature = "C{" + PAH_ANI_CLASS_ENUM_RE
     "C{std.core.String}:";
 static const string addResourceByArrayBufferSignature = "C{" + PAH_ANI_CLASS_ENUM_RESOURCE_TYPE + "}" +
     "C{escompat.ArrayBuffer}:";
-static const string addResourceByPhotoProxySignature = PAH_ANI_CLASS_ENUM_RESOURCE_TYPE +
+static const string addResourceByPhotoProxySignature = "C{" + PAH_ANI_CLASS_ENUM_RESOURCE_TYPE + "}" +
     "C{@ohos.file.photoAccessHelper.photoAccessHelper.PhotoProxy}:";
 static const string saveCameraPhotoByImageFileTypeSignature = "C{" + PAH_ANI_CLASS_ENUM_IMAGEFILE_TYPE + "}:";
 const std::array mediaAssetChangeMethods = {
