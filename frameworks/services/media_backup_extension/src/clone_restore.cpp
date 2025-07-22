@@ -446,6 +446,8 @@ void CloneRestore::RestoreAlbum()
         ANALYSIS_SEARCH_INDEX_TABLE, SEARCH_IDX_COL_ID);
     maxAnalysisAlbumId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
         ANALYSIS_ALBUM_TABLE, ANALYSIS_COL_ALBUM_ID);
+    maxBeautyFileId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
+        ANALYSIS_BEAUTY_SCORE_TABLE, BEAUTY_SCORE_COL_FILE_ID); 
 
     for (const auto &tableName : CLONE_ALBUMS) {
         if (!IsReadyForRestore(tableName)) {
@@ -1754,7 +1756,7 @@ void CloneRestore::RestoreSearchIndexData()
 
 void CloneRestore::RestoreBeautyScoreData()
 {
-    BeautyScoreClone beautyScoreClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_);
+    BeautyScoreClone beautyScoreClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_, maxBeautyFileId_);
     beautyScoreClone.CloneBeautyScoreInfo();
 }
 

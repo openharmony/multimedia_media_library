@@ -179,6 +179,17 @@ const std::string BEAUTY_SCORE_COL_SELECTED_ALGO_VERSION = "selected_algo_versio
 const std::string BEAUTY_SCORE_COL_SELECTED_STATUS = "selected_status";
 const std::string BEAUTY_SCORE_COL_NEGATIVE_FLAG = "negative_flag";
 const std::string BEAUTY_SCORE_COL_NEGATIVE_ALGO_VERSION = "negative_algo_version";
+const std::string BEAUTY_SCORE_COL_AESTHETICS_ALL_VERSION = "aesthetics_all_version";
+const std::string BEAUTY_SCORE_COL_AESTHETICS_SCORE_ALL = "aesthetics_score_all";
+const std::string BEAUTY_SCORE_COL_IS_FILTERED_HARD = "is_filtered_hard";
+const std::string BEAUTY_SCORE_COL_CLARITY_SCORE_ALL = "clarity_score_all";
+const std::string BEAUTY_SCORE_COL_SATURATION_SCORE_ALL = "saturation_score_all";
+const std::string BEAUTY_SCORE_COL_LUMINANCE_SCORE_ALL = "luminance_score_all";
+const std::string BEAUTY_SCORE_COL_SEMANTICS_SCORE = "semantics_score";
+const std::string BEAUTY_SCORE_COL_IS_BLACK_WHITE_STRIPE = "is_black_white_stripe";
+const std::string BEAUTY_SCORE_COL_IS_BLURRY = "is_blurry";
+const std::string BEAUTY_SCORE_COL_IS_MOSAIC = "is_mosaic";
+
 
 const std::string QUERY_FACE_TAG_COUNT = "SELECT count(1) AS count FROM " + VISION_FACE_TAG_TABLE;
 const std::string QUERY_IMAGE_FACE_COUNT = "SELECT count(1) AS count FROM " + VISION_IMAGE_FACE_TABLE;
