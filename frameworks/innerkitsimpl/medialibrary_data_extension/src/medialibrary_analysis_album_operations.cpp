@@ -570,7 +570,7 @@ int32_t MediaLibraryAnalysisAlbumOperations::SetGroupCoverUri(const ValuesBucket
         return E_INVALID_VALUES;
     }
     std::string updateForSetCoverUri = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
-        "', " + IS_COVER_SATISFIED + " = " + to_string(static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING)) +
+        "', " + IS_COVER_SATISFIED + " = " + to_string(static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING)) +
         " WHERE " + ALBUM_ID + " = " + targetAlbumId;
     vector<string> updateSqls = { updateForSetCoverUri };
     err = ExecSqls(updateSqls, uniStore);
