@@ -367,7 +367,7 @@
 		"loadLevel": 1,
 		"loadScale": 16,
 		"startCondition": {
-			"reScheduleInterval": 30,
+			"reScheduleInterval": 720,
 			"conditionArray": [{
 				"isCharging": 1,
 				"screenOff": 1
