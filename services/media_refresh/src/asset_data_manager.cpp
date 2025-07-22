@@ -99,7 +99,7 @@ vector<PhotoAssetChangeInfo> AssetDataManager::GetInfosByPredicates(const AbsRdb
     MediaLibraryTracer tracer;
     tracer.Start("AssetDataManager::GetInfosByPredicates");
     shared_ptr<ResultSet> resultSet;
-    if (trans_ != nullptr) {
+    if (CanTransOperate()) {
         resultSet = trans_->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     } else {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
