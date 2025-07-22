@@ -231,7 +231,7 @@ static int32_t NapiGetAnalysisAlbumPredicates(const shared_ptr<PhotoAlbum>& phot
     DataSharePredicates& predicates)
 {
     PhotoAlbumSubType subType = photoAlbum->GetPhotoAlbumSubType();
-    if (subType == PhotoAlbumSubType::PORTRAIT) {
+    if (subType == PhotoAlbumSubType::PORTRAIT || subType == PhotoAlbumSubType::GROUP_PHOTO) {
         MediaLibraryAniUtils::GetPortraitAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
         return E_SUCCESS;
     }
@@ -345,6 +345,7 @@ static void ConvertColumnsForPortrait(unique_ptr<PhotoAlbumAniContext> &context)
 
     shared_ptr<PhotoAlbum> photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     if (photoAlbum == nullptr || (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT &&
+        photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::GROUP_PHOTO &&
         !IsFeaturedSinglePortraitAlbum(photoAlbum))) {
         return;
     }

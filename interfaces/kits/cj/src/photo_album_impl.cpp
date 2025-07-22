@@ -175,6 +175,7 @@ static bool IsFeaturedSinglePortraitAlbum(const shared_ptr<PhotoAlbum>& photoAlb
 static void ConvertColumnsForPortrait(const shared_ptr<PhotoAlbum>& photoAlbumPtr, vector<string> &fetchColumn)
 {
     if (photoAlbumPtr == nullptr || (photoAlbumPtr->GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT &&
+        photoAlbumPtr->GetPhotoAlbumSubType() != PhotoAlbumSubType::GROUP_PHOTO &&
         !IsFeaturedSinglePortraitAlbum(photoAlbumPtr))) {
         return;
     }

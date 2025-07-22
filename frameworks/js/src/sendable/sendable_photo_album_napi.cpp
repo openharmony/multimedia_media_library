@@ -415,7 +415,7 @@ static int32_t NapiGetAnalysisAlbumPredicates(const shared_ptr<PhotoAlbum>& phot
     DataSharePredicates& predicates)
 {
     PhotoAlbumSubType subType = photoAlbum->GetPhotoAlbumSubType();
-    if (subType == PhotoAlbumSubType::PORTRAIT) {
+    if (subType == PhotoAlbumSubType::PORTRAIT || subType == PhotoAlbumSubType::GROUP_PHOTO) {
         SendableMediaLibraryNapiUtils::GetPortraitAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
         return E_SUCCESS;
     }
@@ -520,7 +520,8 @@ void ConvertColumnsForPortrait(SendablePhotoAlbumNapiAsyncContext *context)
         return;
     }
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
-    if (photoAlbum != nullptr && photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
+    if (photoAlbum != nullptr && (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT ||
+        photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO)) {
         for (size_t i = 0; i < context->fetchColumn.size(); i++) {
             context->fetchColumn[i] = PhotoColumn::PHOTOS_TABLE + "." + context->fetchColumn[i];
         }
