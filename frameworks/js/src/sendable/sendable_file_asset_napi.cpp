@@ -532,7 +532,7 @@ static bool CheckDisplayNameInCommitModify(SendableFileAssetAsyncContext *contex
 {
     if (context->resultNapiType != ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         if (context->objectPtr->GetMediaType() != MediaType::MEDIA_TYPE_FILE) {
-            if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
+            if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName(), true) != E_OK) {
                 context->error = JS_E_DISPLAYNAME;
                 return false;
             }
@@ -541,6 +541,11 @@ static bool CheckDisplayNameInCommitModify(SendableFileAssetAsyncContext *contex
                 context->error = JS_E_DISPLAYNAME;
                 return false;
             }
+        }
+    } else {
+        if (MediaFileUtils::CheckTitleCompatible(context->objectPtr->GetTitle()) != E_OK) {
+            context->error = JS_E_DISPLAYNAME;
+            return false;
         }
     }
     return true;
