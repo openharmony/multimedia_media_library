@@ -35,7 +35,7 @@ namespace Media {
 // BetaVersion will upload the DB, and the true uploadDBFlag indicates that uploading is enabled.
 const std::string KEY_HIVIEW_VERSION_TYPE = "const.logsystem.versiontype";
 int64_t g_lastTime = MediaFileUtils::UTCTimeMilliSeconds();
-const int32_t HALF_HOUR_MS = 1800000;
+const int32_t TWELVE_HOUR_MS = 12*60*3600;
 const int32_t MAX_FILE_SIZE_MB = 10240;
 const int32_t MegaByte = 1024 * 1024;
 const int32_t LARGE_FILE_SIZE_MB = 200;
@@ -46,10 +46,7 @@ int32_t UploadDbFileProcessor::Start(const std::string &taskExtra)
 {
     MEDIA_INFO_LOG("Start begin");
     ffrt::submit([this]() {
-        if (IsBetaVersion() && uploadDBFlag.load() && IsLastHalfHourDb()) {
-            MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile");
-            UploadDBFile();
-        }
+        CheckHalfDayMissions();
         RemoveTaskName(taskName_);
         ReportTaskComplete(taskName_);
     });
@@ -68,10 +65,10 @@ bool UploadDbFileProcessor::IsBetaVersion()
     return isBetaVersion;
 }
 
-bool UploadDbFileProcessor::IsLastHalfHourDb()
+bool UploadDbFileProcessor::IsTwelveHoursAgo()
 {
     int64_t curTime = MediaFileUtils::UTCTimeMilliSeconds();
-    if (curTime - g_lastTime >= HALF_HOUR_MS) {
+    if (curTime - g_lastTime >= TWELVE_HOUR_MS) {
         g_lastTime = curTime;
         return true;
     }
@@ -80,7 +77,7 @@ bool UploadDbFileProcessor::IsLastHalfHourDb()
 
 void UploadDbFileProcessor::CheckHalfDayMissions()
 {
-    if (IsBetaVersion() && uploadDBFlag.load() && IsLastHalfHourDb()) {
+    if (IsBetaVersion() && uploadDBFlag.load() && IsTwelveHoursAgo()) {
         MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile");
         UploadDBFile();
     }
