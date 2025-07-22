@@ -53,7 +53,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const string sq
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshDataManager::Init sql");
     shared_ptr<ResultSet> resultSet;
-    if (trans_ != nullptr) {
+    if (CanTransOperate()) {
         resultSet = trans_->QueryByStep(sql, bindArgs);
     } else {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -349,6 +349,12 @@ template <typename ChangeInfo, typename ChangeData>
 bool AccurateRefreshDataManager<ChangeInfo, ChangeData>::CheckIsForRecheck()
 {
     return isForRecheck_ || CheckIsExceed();
+}
+
+template <typename ChangeInfo, typename ChangeData>
+bool AccurateRefreshDataManager<ChangeInfo, ChangeData>::CanTransOperate()
+{
+    return trans_ != nullptr && trans_->GetIsOperate();
 }
 
 template class AccurateRefreshDataManager<PhotoAssetChangeInfo, PhotoAssetChangeData>;

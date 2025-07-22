@@ -125,7 +125,7 @@ vector<AlbumChangeInfo> AlbumDataManager::GetInfosByPredicates(const AbsRdbPredi
     MediaLibraryTracer tracer;
     tracer.Start("AlbumDataManager::GetInfosByPredicates");
     shared_ptr<ResultSet> resultSet;
-    if (trans_ != nullptr) {
+    if (CanTransOperate()) {
         resultSet = trans_->QueryByStep(predicates, AlbumChangeInfo::GetAlbumInfoColumns());
     } else {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();

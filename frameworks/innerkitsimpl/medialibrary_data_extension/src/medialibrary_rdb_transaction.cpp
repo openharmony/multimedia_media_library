@@ -257,7 +257,7 @@ int32_t TransactionOperations::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
         MediaLibraryRestore::GetInstance().CheckRestore(ret);
         return E_HAS_DB_ERROR;
     }
-
+    isOperate_ = true;
     MEDIA_DEBUG_LOG("rdbStore_->Insert end, rowId = %d, ret = %{public}d", (int)rowId, ret);
     return ret;
 }
@@ -370,7 +370,7 @@ int32_t TransactionOperations::Insert(
         MediaLibraryRestore::GetInstance().CheckRestore(ret);
         return E_HAS_DB_ERROR;
     }
-
+    isOperate_ = true;
     MEDIA_DEBUG_LOG("transaction_->Insert end, rowId = %d, ret = %{public}d", (int)rowId, ret);
     return ret;
 }
@@ -432,7 +432,9 @@ pair<int32_t, NativeRdb::Results> TransactionOperations::BatchInsert(
         refRows.Put(value);
     }
 
-    return transaction_->BatchInsert(table, refRows, { returningField });
+    pair<int32_t, NativeRdb::Results> result = transaction_->BatchInsert(table, refRows, { returningField });
+    SetIsOperate(result);
+    return result;
 }
 
 pair<int32_t, NativeRdb::Results> TransactionOperations::Update(
@@ -443,7 +445,9 @@ pair<int32_t, NativeRdb::Results> TransactionOperations::Update(
         return {E_HAS_DB_ERROR, -1};
     }
 
-    return transaction_->Update(values, predicates, { returningField });
+    pair<int32_t, NativeRdb::Results> result = transaction_->Update(values, predicates, { returningField });
+    SetIsOperate(result);
+    return result;
 }
 
 pair<int32_t, NativeRdb::Results> TransactionOperations::Delete(const AbsRdbPredicates &predicates,
@@ -454,7 +458,9 @@ pair<int32_t, NativeRdb::Results> TransactionOperations::Delete(const AbsRdbPred
         return {E_HAS_DB_ERROR, -1};
     }
 
-    return transaction_->Delete(predicates, { returningField });
+    pair<int32_t, NativeRdb::Results> result = transaction_->Delete(predicates, { returningField });
+    SetIsOperate(result);
+    return result;
 }
 
 pair<int32_t, NativeRdb::Results> TransactionOperations::Execute(const string &sql,
@@ -467,7 +473,9 @@ pair<int32_t, NativeRdb::Results> TransactionOperations::Execute(const string &s
     string execSql = sql;
     execSql.append(" returning ").append(returningField);
     MEDIA_INFO_LOG("AccurateRefresh, sql:%{public}s", execSql.c_str());
-    return transaction_->ExecuteExt(execSql, args);
+    pair<int32_t, NativeRdb::Results> result = transaction_->ExecuteExt(execSql, args);
+    SetIsOperate(result);
+    return result;
 }
 
 shared_ptr<ResultSet> TransactionOperations::QueryByStep(const AbsRdbPredicates &predicates,
@@ -491,5 +499,17 @@ shared_ptr<ResultSet> TransactionOperations::QueryByStep(const string &sql, cons
     auto resultSet = transaction_->QueryByStep(sql, args);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "resultSet is null.");
     return resultSet;
+}
+
+bool TransactionOperations::GetIsOperate()
+{
+    return isOperate_;
+}
+
+void TransactionOperations::SetIsOperate(const pair<int32_t, NativeRdb::Results> &result)
+{
+    if (result.first == NativeRdb::E_OK) {
+        isOperate_ = true;
+    }
 }
 } // namespace OHOS::Media

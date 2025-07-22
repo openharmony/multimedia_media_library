@@ -87,6 +87,11 @@ public:
         const std::vector<std::string> &columns);
     EXPORT std::shared_ptr<NativeRdb::ResultSet> QueryByStep(const std::string &sql,
         const std::vector<NativeRdb::ValueObject> &args = {});
+    EXPORT bool GetIsOperate();
+
+private:
+    void SetIsOperate(const std::pair<int32_t, NativeRdb::Results> &result);
+
 private:
     std::shared_ptr<OHOS::NativeRdb::Transaction> transaction_ = nullptr;
     std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore_;
@@ -94,6 +99,8 @@ private:
     std::string funcName_ = "";
     bool isSkipCloudSync_ = false;
     DfxTransaction reporter_;
+    // 接入精准刷新框架时，查询修改前的数据不用事务，防止事务升级
+    bool isOperate_ = false;
 };
 } // namespace OHOS::Media
 
