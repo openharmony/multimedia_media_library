@@ -1659,14 +1659,6 @@ static const string &TriggerDeleteAudioClearAppUriPermission()
     return TRIGGER_AUDIO_DELETE_APP_URI_PERMISSION;
 }
 
-static const string& AddStatusColumnForRefreshAlbumTable()
-{
-    static const string ADD_STATUS_COLUMN_FOR_REFRESH_ALBUM_TABLE =
-        "ALTER TABLE " + ALBUM_REFRESH_TABLE + " ADD COLUMN " +
-        ALBUM_REFRESH_STATUS + " INT DEFAULT 0 NOT NULL";
-    return ADD_STATUS_COLUMN_FOR_REFRESH_ALBUM_TABLE;
-}
-
 static const vector<string> onCreateSqlStrs = {
     CREATE_MEDIA_TABLE,
     PhotoColumn::CREATE_PHOTO_TABLE,
@@ -1821,7 +1813,6 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::INDEX_HIGHLIGHT_FILEID,
     PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
-    AddStatusColumnForRefreshAlbumTable(),
     PhotoColumn::INDEX_LATITUDE,
     PhotoColumn::INDEX_LONGITUDE,
     CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
@@ -4338,6 +4329,16 @@ static void AddBestFaceBoundingColumnForGroupAlbum(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddGroupVersion(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start add group_version column");
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + GROUP_VERSION + " TEXT"
+    };
+
+    ExecSqls(sqls, store);
+}
+
 static void AddDetailTimeToPhotos(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4798,6 +4799,10 @@ static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_BEST_FACE_BOUNDING) {
         AddBestFaceBoundingColumnForGroupAlbum(store);
+    }
+
+    if (oldVersion < VERSION_ADD_GROUP_VERSION) {
+        AddGroupVersion(store);
     }
 }
 

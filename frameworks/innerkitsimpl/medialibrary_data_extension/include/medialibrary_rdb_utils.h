@@ -182,11 +182,13 @@ public:
     EXPORT static void TransformOwnerAppIdToTokenId(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
     EXPORT static void CleanAmbiguousColumn(std::vector<std::string> &columns,
         DataShare::DataSharePredicates &predicates, const std::string tableName);
+    EXPORT static int32_t GetAlbumIdBySubType(PhotoAlbumSubType subtype);
 
 private:
     static std::atomic<bool> isNeedRefreshAlbum;
     static std::atomic<bool> isInRefreshTask;
     static std::mutex sRefreshAlbumMutex_;
+    static std::map<PhotoAlbumSubType, int32_t> subType2AlbumIdMap;
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIALIBRARY_RDB_UTILS_H

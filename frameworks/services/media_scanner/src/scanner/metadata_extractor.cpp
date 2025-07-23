@@ -143,56 +143,56 @@ static int32_t offsetTimeToSeconds(const string& offsetStr, int32_t& offsetTime)
     return E_OK;
 }
 
-static void setSubSecondTime(unique_ptr<ImageSource>& imageSource, int64_t& timeStamp)
+static void ExtractDetailTimeMetadata(const unique_ptr<ImageSource> &imageSource, unique_ptr<Metadata> &data)
 {
-    uint32_t err = E_ERR;
-    string subTimeString;
-    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_SUBSEC_TIME_ORIGINAL, subTimeString);
-    if (err == E_OK && !subTimeString.empty()) {
-        for (size_t i = 0; i < subTimeString.size(); i++) {
-            if (!isdigit(subTimeString[i])) {
-                MEDIA_WARN_LOG("Invalid subTime format");
-                return;
-            }
-        }
-        int32_t subTime = 0;
-        const int32_t subTimeSize = 3;
-        if (subTimeString.size() > subTimeSize) {
-            subTime = stoi(subTimeString.substr(0, subTimeSize));
-        } else {
-            subTime = stoi(subTimeString);
-        }
-        timeStamp = timeStamp + subTime;
-        MEDIA_DEBUG_LOG("Set subTime from SubsecTimeOriginal in exif");
-    } else {
-        MEDIA_DEBUG_LOG("get SubsecTimeOriginalNot fail ,Not Set subTime");
-    }
-}
-
-static void ExtractDetailTimeMetadata(unique_ptr<ImageSource>& imageSource, unique_ptr<Metadata>& data)
-{
-    uint32_t err = E_ERR;
     string timeString;
-    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL, timeString);
+    uint32_t err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL, timeString);
     if (err == E_OK && !timeString.empty() && timeString.compare(ZEROTIMESTRING) != 0) {
         data->SetDetailTime(timeString);
         MEDIA_DEBUG_LOG("Set detail_time from DateTimeOriginal in exif");
         return;
     }
-    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME, timeString);
-    if (err == E_OK && !timeString.empty() && timeString.compare(ZEROTIMESTRING) != 0) {
-        data->SetDetailTime(timeString);
-        MEDIA_DEBUG_LOG("Set detail_time from DateTime in exif");
-        return;
+    if (data->GetForAdd()) {
+        err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME, timeString);
+        if (err == E_OK && !timeString.empty() && timeString.compare(ZEROTIMESTRING) != 0) {
+            data->SetDetailTime(timeString);
+            MEDIA_DEBUG_LOG("Set detail_time from DateTime in exif");
+            return;
+        }
     }
-    int64_t dateTaken = data->GetDateTaken() / MSEC_TO_SEC;
-    data->SetDetailTime(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken));
+    if (data->GetDetailTime().empty()) {
+        int64_t dateTaken = data->GetDateTaken() / MSEC_TO_SEC;
+        data->SetDetailTime(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken));
+    }
 }
 
-static void GetDateTakenByExif(unique_ptr<ImageSource>& imageSource, int64_t& timeStamp)
+static void SetSubSecondTime(const unique_ptr<ImageSource> &imageSource, const std::string &key, int64_t &timeStamp)
 {
-    string dateString;
+    string subTimeString;
+    uint32_t err = imageSource->GetImagePropertyString(0, key, subTimeString);
+    if (err == E_OK && !subTimeString.empty()) {
+        for (size_t i = 0; i < subTimeString.size(); i++) {
+            if (!isdigit(subTimeString[i])) {
+                MEDIA_WARN_LOG("Invalid subTime format:%{public}s", subTimeString.c_str());
+                return;
+            }
+        }
+        const int32_t subTimeSize = 3;
+        int32_t subTime = 0;
+        if (subTimeString.size() > subTimeSize) {
+            subTime = stoi(subTimeString.substr(0, subTimeSize));
+        } else {
+            subTime = stoi(subTimeString);
+        }
+        MEDIA_DEBUG_LOG("subTime:%{public}d from %{public}s in exif", subTime, key.c_str());
+        timeStamp += subTime;
+    }
+}
+
+static int64_t GetShootingTimeStampByExif(const unique_ptr<ImageSource> &imageSource)
+{
     string timeString;
+    int64_t timeStamp = 0;
     int32_t offsetTime = 0;
     string offsetString;
     uint32_t err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL, timeString);
@@ -200,55 +200,86 @@ static void GetDateTakenByExif(unique_ptr<ImageSource>& imageSource, int64_t& ti
         err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_OFFSET_TIME_ORIGINAL, offsetString);
         if (err == E_OK && offsetTimeToSeconds(offsetString, offsetTime) == E_OK) {
             timeStamp = (convertUTCTimeStrToTimeStamp(timeString) + offsetTime) * MSEC_TO_SEC;
-            MEDIA_DEBUG_LOG("Set date_taken from DateTimeOriginal and OffsetTimeOriginal in exif");
+            MEDIA_DEBUG_LOG("Get timeStamp from DateTimeOriginal and OffsetTimeOriginal in exif");
         } else {
             timeStamp = (convertTimeStrToTimeStamp(timeString)) * MSEC_TO_SEC;
-            MEDIA_DEBUG_LOG("Set date_taken from DateTimeOriginal in exif");
+            MEDIA_DEBUG_LOG("Get timeStamp from DateTimeOriginal in exif");
         }
         if (timeStamp > 0) {
-            return;
+            SetSubSecondTime(imageSource, PHOTO_DATA_IMAGE_SUBSEC_TIME_ORIGINAL, timeStamp);
+            MEDIA_DEBUG_LOG("OriginalTimeStamp:%{public}ld in exif", static_cast<long>(timeStamp));
+            return timeStamp;
         }
     }
-    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME, timeString);
-    if (err == E_OK && !timeString.empty() && timeString.compare(ZEROTIMESTRING) != 0) {
-        err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_OFFSET_TIME_ORIGINAL, offsetString);
-        if (err == E_OK && offsetTimeToSeconds(offsetString, offsetTime) == E_OK) {
-            timeStamp = (convertUTCTimeStrToTimeStamp(timeString) + offsetTime) * MSEC_TO_SEC;
-            MEDIA_DEBUG_LOG("Set date_taken from DateTime and OffsetTimeOriginal in exif");
-        } else {
-            timeStamp = (convertTimeStrToTimeStamp(timeString)) * MSEC_TO_SEC;
-            MEDIA_DEBUG_LOG("Set date_taken from DateTime in exif");
-        }
-        if (timeStamp > 0) {
-            return;
-        }
-    }
+
+    string dateString;
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_DATE_STAMP, dateString);
     if (err == E_OK && !dateString.empty()) {
         err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_TIME_STAMP, timeString);
         string fullTimeString = dateString + " " + timeString;
         if (err == E_OK && !timeString.empty() && fullTimeString.compare(ZEROTIMESTRING) != 0) {
             timeStamp = convertUTCTimeStrToTimeStamp(fullTimeString) * MSEC_TO_SEC;
-            MEDIA_DEBUG_LOG("Set date_taken from GPSTimeStamp in exif");
-            return;
+            if (timeStamp > 0) {
+                SetSubSecondTime(imageSource, PHOTO_DATA_IMAGE_SUBSEC_TIME_ORIGINAL, timeStamp);
+                MEDIA_DEBUG_LOG("GPSTimeStamp:%{public}ld in exif", static_cast<long>(timeStamp));
+                return timeStamp;
+            }
         }
     }
+    return timeStamp;
 }
 
-static void ExtractDateTakenMetadata(unique_ptr<ImageSource>& imageSource, unique_ptr<Metadata>& data)
+static int64_t GetModifiedTimeStampByExif(const unique_ptr<ImageSource> &imageSource)
 {
+    string dateString;
+    string timeString;
     int64_t timeStamp = 0;
-    GetDateTakenByExif(imageSource, timeStamp);
-    MEDIA_INFO_LOG("GetDateTakenByExif datetaken:%{public}ld", static_cast<long>(timeStamp));
-    if (timeStamp > 0) {
-        setSubSecondTime(imageSource, timeStamp);
-        data->SetDateTaken(timeStamp);
+    int32_t offsetTime = 0;
+    string offsetString;
+    uint32_t err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME, timeString);
+    if (err == E_OK && !timeString.empty() && timeString.compare(ZEROTIMESTRING) != 0) {
+        err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_OFFSET_TIME, offsetString);
+        if (err == E_OK && offsetTimeToSeconds(offsetString, offsetTime) == E_OK) {
+            timeStamp = (convertUTCTimeStrToTimeStamp(timeString) + offsetTime) * MSEC_TO_SEC;
+            MEDIA_DEBUG_LOG("Get timeStamp from DateTime and OffsetTime in exif");
+        } else {
+            timeStamp = (convertTimeStrToTimeStamp(timeString)) * MSEC_TO_SEC;
+            MEDIA_DEBUG_LOG("Get timeStamp from DateTime in exif");
+        }
+        if (timeStamp > 0) {
+            SetSubSecondTime(imageSource, PHOTO_DATA_IMAGE_SUBSEC_TIME, timeStamp);
+            MEDIA_DEBUG_LOG("TimeStamp:%{public}ld in exif", static_cast<long>(timeStamp));
+            return timeStamp;
+        }
+    }
+    return timeStamp;
+}
+
+static void ExtractDateTakenMetadata(const unique_ptr<ImageSource> &imageSource, unique_ptr<Metadata> &data)
+{
+    bool forAdd = data->GetForAdd();
+    int64_t shootingTimeStamp = GetShootingTimeStampByExif(imageSource);
+    if (shootingTimeStamp > 0) {
+        data->SetDateTaken(shootingTimeStamp);
+        MEDIA_INFO_LOG(
+            "forAdd:%{public}d, shootingTimeStamp:%{public}ld", forAdd, static_cast<long>(shootingTimeStamp));
         return;
     }
-    // use modified time as date taken time when date taken not set
-    data->SetDateTaken((data->GetDateTaken() == 0 || data->GetForAdd()) ?
-        data->GetFileDateModified() : data->GetDateTaken());
-    MEDIA_INFO_LOG("Set date_taken use modified time");
+    if (!forAdd) {
+        if (data->GetDateTaken() <= 0) {
+            data->SetDateTaken(data->GetFileDateModified());
+            MEDIA_INFO_LOG("using fileDateModified:%{public}ld", static_cast<long>(data->GetFileDateModified()));
+        }
+        return;
+    }
+    int64_t modifiedTimeStamp = GetModifiedTimeStampByExif(imageSource);
+    if (modifiedTimeStamp > 0) {
+        data->SetDateTaken(modifiedTimeStamp);
+        MEDIA_INFO_LOG("using modifiedTimeStamp:%{public}ld", static_cast<long>(modifiedTimeStamp));
+        return;
+    }
+    data->SetDateTaken(data->GetFileDateModified());
+    MEDIA_INFO_LOG("no exif time, using fileDateModified:%{public}ld", static_cast<long>(data->GetFileDateModified()));
 }
 
 static string GetCompatibleUserComment(const string& userComment)

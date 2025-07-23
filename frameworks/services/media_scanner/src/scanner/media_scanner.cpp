@@ -38,6 +38,7 @@
 #include "medialibrary_notify_new.h"
 #include "asset_accurate_refresh.h"
 #include "medialibrary_photo_operations.h"
+#include "refresh_business_name.h"
 
 namespace OHOS {
 namespace Media {
@@ -275,10 +276,12 @@ static void UpdateAndNotifyShootingModeAlbumOfAsset(std::unique_ptr<Metadata>& d
 
 int32_t MediaScannerObj::Commit()
 {
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     string tableName;
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
-    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::SCAN_FILE_BUSSINESS_NAME);
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
         uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_, true, assetRefresh);
         if (!isSkipAlbumUpdate_) {
@@ -315,6 +318,12 @@ int32_t MediaScannerObj::Commit()
     // notify change
     mediaScannerDb_->NotifyDatabaseChange(data_->GetFileMediaType());
     data_ = nullptr;
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t duration = endTime - startTime;
+    // 在CPU占用率80%, 运行脚本一直执行连拍100次操作, 查看极端场景下用时大于400ms的频率
+    if (duration > 400) {
+        MEDIA_HILOG(HILOG_IMPL, LOG_INFO, "Process duration: %llu milliseconds", duration);
+    }
 
     return E_OK;
 }

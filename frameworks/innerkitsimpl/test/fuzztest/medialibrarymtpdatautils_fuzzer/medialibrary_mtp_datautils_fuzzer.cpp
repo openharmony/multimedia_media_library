@@ -263,10 +263,12 @@ static void GetMtpOneRowPropTest()
 {
     shared_ptr<vector<uint16_t>> properties = make_shared<vector<uint16_t>>(FuzzVectorUInt16());
     uint32_t parentId = provider->ConsumeIntegral<uint32_t>();
-    unordered_map<uint32_t, std::string>::iterator it;
+    std::unordered_map<uint32_t, std::string> umap{
+        {provider->ConsumeIntegral<uint32_t>(), provider->ConsumeBytesAsString(NUM_BYTES)}
+    };
     shared_ptr<vector<Property>> outProps = make_shared<vector<Property>>();
     int32_t storageId = provider->ConsumeIntegral<int32_t>();
-    MtpDataUtils::GetMtpOneRowProp(properties, parentId, it, outProps, storageId);
+    MtpDataUtils::GetMtpOneRowProp(properties, parentId, umap.begin(), outProps, storageId);
 }
 
 static void SetMtpPropertyTest()

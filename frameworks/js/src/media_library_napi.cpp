@@ -5902,10 +5902,10 @@ static void GetPhotoIndexExec(napi_env env, void *data, ResultNapiType type)
     reqBody.photoId = context->fetchColumn[0];
     reqBody.albumId = context->fetchColumn[1];
     reqBody.isAnalysisAlbum = context->isAnalysisAlbum;
-    QueryResultRspBody rspBody;
+    QueryResultRespBody respBody;
     errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(
-        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PHOTO_INDEX), reqBody, rspBody);
-    auto resultSet = rspBody.resultSet;
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PHOTO_INDEX), reqBody, respBody);
+    auto resultSet = respBody.resultSet;
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet is nullptr");
         context->SaveError(errCode);
@@ -6797,10 +6797,10 @@ static void GetMediaAnalysisServiceProgress(nlohmann::json& jsonObj, unordered_m
     int errCode = 0;
     GetAnalysisProcessReqBody reqBody;
     reqBody.analysisType = AnalysisType::ANALYSIS_LABEL;
-    QueryResultRspBody rspBody;
+    QueryResultRespBody respBody;
     errCode = IPC::UserDefineIPCClient().Call(
-        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, rspBody);
-    shared_ptr<DataShare::DataShareResultSet> ret = rspBody.resultSet;
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, respBody);
+    shared_ptr<DataShare::DataShareResultSet> ret = respBody.resultSet;
     if (ret == nullptr) {
         NAPI_ERR_LOG("ret is nullptr");
         return;
@@ -6869,10 +6869,10 @@ static std::string GetFaceAnalysisProgress()
     int errCode = 0;
     GetAnalysisProcessReqBody reqBody;
     reqBody.analysisType = AnalysisType::ANALYSIS_FACE;
-    QueryResultRspBody rspBody;
+    QueryResultRespBody respBody;
     errCode = IPC::UserDefineIPCClient().Call(
-        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, rspBody);
-    shared_ptr<DataShare::DataShareResultSet> ret = rspBody.resultSet;
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, respBody);
+    shared_ptr<DataShare::DataShareResultSet> ret = respBody.resultSet;
     if (ret == nullptr) {
         NAPI_ERR_LOG("ret is nullptr");
         return "";
@@ -6916,10 +6916,10 @@ static std::string GetHighlightAnalysisProgress()
     int errCode = 0;
     GetAnalysisProcessReqBody reqBody;
     reqBody.analysisType = AnalysisType::ANALYSIS_HIGHLIGHT;
-    QueryResultRspBody rspBody;
+    QueryResultRespBody respBody;
     errCode = IPC::UserDefineIPCClient().Call(
-        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, rspBody);
-    shared_ptr<DataShare::DataShareResultSet> ret = rspBody.resultSet;
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, respBody);
+    shared_ptr<DataShare::DataShareResultSet> ret = respBody.resultSet;
     if (ret == nullptr) {
         NAPI_ERR_LOG("ret is nullptr");
         return "";
@@ -7673,13 +7673,13 @@ static void JSGetPhotoAlbumsByIdsExecute(napi_env env, void *data)
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     GetAlbumsByIdsReqBody reqBody;
-    GetAlbumsByIdsRspBody rspBody;
+    GetAlbumsByIdsRespBody respBody;
     shared_ptr<DataShareResultSet> resultSet;
     reqBody.predicates = context->predicates;
     reqBody.columns = context->fetchColumn;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_GET_ALBUMS_BY_IDS);
-    int errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
-    resultSet = rspBody.resultSet;
+    int errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    resultSet = respBody.resultSet;
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
@@ -8824,17 +8824,17 @@ static std::shared_ptr<DataShareResultSet> CallPahGetAlbums(MediaLibraryAsyncCon
 {
     if (context->businessCode != 0) {
         QueryAlbumsReqBody reqBody;
-        QueryAlbumsRspBody rspBody;
+        QueryAlbumsRespBody respBody;
         reqBody.albumType = context->photoAlbumType;
         reqBody.albumSubType = context->photoAlbumSubType;
         reqBody.columns = context->fetchColumn;
         reqBody.predicates = context->predicates;
-        errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode, reqBody, rspBody);
+        errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode, reqBody, respBody);
         if (errCode != 0) {
             NAPI_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
             return nullptr;
         }
-        return rspBody.resultSet;
+        return respBody.resultSet;
     }
 
     if (context->photoAlbumType != PhotoAlbumType::SMART) {
@@ -9009,14 +9009,14 @@ static int32_t CallPhotoAccessCreateAsset(MediaLibraryAsyncContext* context, std
         reqBody.extension = extension;
     }
 
-    CreateAssetRspBody rspBody;
-    int32_t errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode, reqBody, rspBody);
+    CreateAssetRespBody respBody;
+    int32_t errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode, reqBody, respBody);
     if (errCode != 0) {
         NAPI_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
         return errCode;
     }
-    outUri = rspBody.outUri;
-    return rspBody.fileId;
+    outUri = respBody.outUri;
+    return respBody.fileId;
 }
 
 static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
@@ -9354,14 +9354,14 @@ static int32_t CallPhotoAccessCreateAssetForApp(MediaLibraryAsyncContext* contex
     reqBody.appId = appId;
     reqBody.ownerAlbumId = ownerAlbumId;
 
-    CreateAssetForAppRspBody rspBody;
-    int32_t errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode, reqBody, rspBody);
+    CreateAssetForAppRespBody respBody;
+    int32_t errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode, reqBody, respBody);
     if (errCode != 0) {
         NAPI_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
         return errCode;
     }
-    outUri = rspBody.outUri;
-    return rspBody.fileId;
+    outUri = respBody.outUri;
+    return respBody.fileId;
 }
 
 static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
@@ -9437,7 +9437,7 @@ static void JSStartAssetAnalysisExecute(napi_env env, void *data)
     context->taskId = ForegroundAnalysisMeta::GetIncTaskId();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS);
     StartAssetAnalysisReqBody reqBody;
-    StartAssetAnalysisRspBody rspBody;
+    StartAssetAnalysisRespBody respBody;
     std::vector<std::string> fileIds;
     for (const auto &uri : context->uris) {
         std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUriString(uri);
@@ -9448,9 +9448,9 @@ static void JSStartAssetAnalysisExecute(napi_env env, void *data)
     if (!fileIds.empty()) {
         reqBody.predicates.In(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID, fileIds);
     }
-    int errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(businessCode, reqBody, rspBody);
-    if (rspBody.resultSet != nullptr) {
-        rspBody.resultSet->Close();
+    int errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(businessCode, reqBody, respBody);
+    if (respBody.resultSet != nullptr) {
+        respBody.resultSet->Close();
     }
     if (errCode != E_OK) {
         context->SaveError(errCode);
@@ -10190,16 +10190,16 @@ static std::shared_ptr<DataShareResultSet> CallPahGetHiddenAlbums(MediaLibraryAs
 {
     if (context->businessCode != 0) {
         QueryAlbumsReqBody reqBody;
-        QueryAlbumsRspBody rspBody;
+        QueryAlbumsRespBody respBody;
         reqBody.columns = context->fetchColumn;
         reqBody.predicates = context->predicates;
         reqBody.hiddenAlbumFetchMode = context->hiddenAlbumFetchMode;
-        errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode, reqBody, rspBody);
+        errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode, reqBody, respBody);
         if (errCode != 0) {
             NAPI_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
             return nullptr;
         }
-        return rspBody.resultSet;
+        return respBody.resultSet;
     }
 
     Uri uri(PAH_QUERY_HIDDEN_ALBUM);
@@ -11261,20 +11261,20 @@ static void JSGetPhotoAlbumsWithoutSubtypeExecute(napi_env env, void *data)
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     GetPhotoAlbumObjectReqBody reqBody;
-    GetPhotoAlbumObjectRsqBody rsqBody;
+    GetPhotoAlbumObjectRespBody respBody;
     shared_ptr<DataShareResultSet> resultSet;
     reqBody.predicates = context->predicates;
     reqBody.columns = context->fetchColumn;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_PHOTO_ALBUMS);
 
-    int32_t errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rsqBody);
-    resultSet = rsqBody.resultSet;
+    int32_t errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    resultSet = respBody.resultSet;
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
         if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
             context->SaveError(errCode);
         } else {
-            context->SaveError(E_HAS_DB_ERROR);
+            context->SaveError(E_INNER_FAIL);
         }
         return;
     }
@@ -11282,6 +11282,45 @@ static void JSGetPhotoAlbumsWithoutSubtypeExecute(napi_env env, void *data)
     context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
     context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
     context->fetchPhotoAlbumResult->SetUserId(context->userId);
+}
+
+static void GetNapiPhotoAlbumResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchPhotoAlbumResult));
+    if (fileResult == nullptr) {
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Failed to create js object for Fetch Photo Album Result");
+        return;
+    }
+    jsContext->data = fileResult;
+    jsContext->status = true;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+}
+
+static void GetPhotoAlbumsWithoutSubtypeCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetPhotoAlbumsWithoutSubtypeCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    if (context->error != ERR_DEFAULT  || context->fetchPhotoAlbumResult == nullptr) {
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        context->HandleError(env, jsContext->error);
+    } else {
+        GetNapiPhotoAlbumResult(env, context, jsContext);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
 }
 
 napi_value MediaLibraryNapi::PhotoAccessGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callback_info info)
@@ -11295,7 +11334,7 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoAlbumsWithoutSubtype(napi_env en
 
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetPhotoAlbumsWithoutSubtype",
-        JSGetPhotoAlbumsWithoutSubtypeExecute, JSGetPhotoAlbumsCompleteCallback);
+        JSGetPhotoAlbumsWithoutSubtypeExecute, GetPhotoAlbumsWithoutSubtypeCompleteCallback);
 }
 
 static napi_value AddDefaultAlbumOrderColumns(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context,
@@ -11365,20 +11404,20 @@ static void JSGetPhotoAlbumOrderExecute(napi_env env, void *data)
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     GetPhotoAlbumObjectReqBody reqBody;
-    GetPhotoAlbumObjectRsqBody rsqBody;
+    GetPhotoAlbumObjectRespBody respBody;
     shared_ptr<DataShareResultSet> resultSet;
     reqBody.predicates = context->predicates;
     reqBody.columns = context->fetchColumn;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_PHOTO_ALBUM_ORDER);
 
-    int32_t errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rsqBody);
-    resultSet = rsqBody.resultSet;
+    int32_t errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    resultSet = respBody.resultSet;
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
         if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
             context->SaveError(errCode);
         } else {
-            context->SaveError(E_HAS_DB_ERROR);
+            context->SaveError(E_INNER_FAIL);
         }
         return;
     }

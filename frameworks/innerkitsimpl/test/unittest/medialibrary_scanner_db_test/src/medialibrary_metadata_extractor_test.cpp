@@ -139,6 +139,56 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_002, Test
     EXPECT_EQ(ret, E_OK);
 }
 
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_003, TestSize.Level1)
+{
+    unique_ptr<Metadata> metadata = make_unique<Metadata>();
+    string path = "/storage/cloud/100/files/Documents/CreateImageLcdTest_001.jpg";
+    metadata->SetFileMediaType(MEDIA_TYPE_IMAGE);
+    metadata->SetFilePath(path);
+    metadata->SetForAdd(false);
+
+    int64_t dateTaken = 1753081131111L;
+    metadata->SetDateTaken(dateTaken);
+    int64_t dateModified = 1753081131222L;
+    metadata->SetFileDateModified(dateModified);
+    int32_t ret = MetadataExtractor::ExtractImageMetadata(metadata);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(metadata->GetDateTaken(), dateTaken);
+
+    dateTaken = -1753081131333L;
+    metadata->SetDateTaken(dateTaken);
+    dateModified = 1753081131444L;
+    metadata->SetFileDateModified(dateModified);
+    ret = MetadataExtractor::ExtractImageMetadata(metadata);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(metadata->GetDateTaken(), dateModified);
+}
+
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_004, TestSize.Level1)
+{
+    unique_ptr<Metadata> metadata = make_unique<Metadata>();
+    string path = "/storage/cloud/100/files/Documents/CreateImageLcdTest_001.jpg";
+    metadata->SetFileMediaType(MEDIA_TYPE_IMAGE);
+    metadata->SetFilePath(path);
+    metadata->SetForAdd(true);
+
+    int64_t dateTaken = 1753081131555L;
+    metadata->SetDateTaken(dateTaken);
+    int64_t dateModified = 1753081131666L;
+    metadata->SetFileDateModified(dateModified);
+    int32_t ret = MetadataExtractor::ExtractImageMetadata(metadata);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(metadata->GetDateTaken(), dateModified);
+
+    dateTaken = -1753081131777L;
+    metadata->SetDateTaken(dateTaken);
+    dateModified = 1753081131888L;
+    metadata->SetFileDateModified(dateModified);
+    ret = MetadataExtractor::ExtractImageMetadata(metadata);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(metadata->GetDateTaken(), dateModified);
+}
+
 HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_001, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();

@@ -48,6 +48,9 @@
 #include "album_accurate_refresh.h"
 #include "metadata_extractor.h"
 #include "moving_photo_file_utils.h"
+#include "asset_accurate_refresh.h"
+#include "album_accurate_refresh.h"
+#include "refresh_business_name.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -746,8 +749,8 @@ static int32_t UpdateCoverInfoForAlbum(const std::shared_ptr<MediaLibraryRdbStor
             return E_OK;
         }
     } else {
-        MEDIA_ERR_LOG("ResultSet GoToNextRow error, ret:%{public}d, ownerAlbumId:%{public}d", ret, ownerAlbumId);
-        return E_HAS_DB_ERROR;
+        MEDIA_INFO_LOG("ResultSet GoToNextRow error, ret:%{public}d, ownerAlbumId:%{public}d", ret, ownerAlbumId);
+        return E_OK;
     }
     string newCoverUri = MediaLibraryFormMapOperations::GetUriByFileId(newAssetId, targetPath);
     MEDIA_INFO_LOG("New cover uri is %{public}s", targetPath.c_str());
@@ -995,7 +998,8 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
         return E_FAIL;
     }
 
-    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::CLONE_SINGLE_ASSET_BUSSINESS_NAME);
     string displayName = title + "." + suffix;
     int32_t ownerAlbumId;
     GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_OWNER_ALBUM_ID, ownerAlbumId);
@@ -1263,7 +1267,8 @@ int32_t MediaLibraryAlbumFusionUtils::ConvertFormatAsset(const int64_t &assetId,
         return E_INVALID_VALUES;
     }
 
-    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::CONVERT_FORMAT_ASSET_BUSSINESS_NAME);
     string displayName = title + "." + extension;
     int64_t newAssetId = -1;
     int32_t err = ConvertFormatFileSync(rdbStore, assetRefresh, resultSet, displayName, newAssetId);

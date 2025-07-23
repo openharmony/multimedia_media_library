@@ -140,14 +140,14 @@ string MediaLibraryManager::CreateAsset(const string &displayName)
     reqBody.photoSubtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
     reqBody.displayName = displayName;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_ASSET);
-    CreateAssetRspBody rspBody;
+    CreateAssetRespBody respBody;
     int32_t errCode =
-        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, respBody);
     if (errCode != 0) {
         MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
         return "";
     }
-    string outUri = rspBody.outUri;
+    string outUri = respBody.outUri;
     return outUri;
 }
 
@@ -280,14 +280,14 @@ std::shared_ptr<DataShareResultSet> GetResultSetFromPhotos(const string &value, 
     reqBody.value = value;
     reqBody.columns = columns;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_PHOTOS);
-    GetResultSetFromDbRespBody rspBody;
+    GetResultSetFromDbRespBody respBody;
     int32_t errCode =
-        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, respBody);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("errCode: %{public}d", errCode);
         return nullptr;
     }
-    return rspBody.resultSet;
+    return respBody.resultSet;
 }
 
 std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(string columnName, const string &value,
@@ -314,14 +314,14 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
     reqBody.value = value;
     reqBody.columns = columns;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_DB);
-    GetResultSetFromDbRespBody rspBody;
+    GetResultSetFromDbRespBody respBody;
     int32_t errCode =
-        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, respBody);
     if (errCode != 0) {
         MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
         return nullptr;
     }
-    return rspBody.resultSet;
+    return respBody.resultSet;
 }
 
 static int32_t SolvePath(const string &filePath, string &tempPath, string &userId)
@@ -367,7 +367,7 @@ int32_t MediaLibraryManager::CheckResultSet(std::shared_ptr<DataShareResultSet> 
 static std::shared_ptr<DataShareResultSet> GetFilePathResultSetFromDb(const string &virId, sptr<IRemoteObject> token)
 {
     GetFilePathFromUriReqBody reqBody;
-    GetFilePathFromUriRspBody rspBody;
+    GetFilePathFromUriRespBody respBody;
     reqBody.virtualId = virId;
 
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_FILEPATH_FROM_URI);
@@ -375,11 +375,11 @@ static std::shared_ptr<DataShareResultSet> GetFilePathResultSetFromDb(const stri
         DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "dataShareHelper is null");
     int32_t errCode =
-        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, respBody);
     if (errCode != 0) {
         MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
     }
-    return rspBody.resultSet;
+    return respBody.resultSet;
 }
 
 int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &filePath, string userId)
@@ -427,7 +427,7 @@ static std::shared_ptr<DataShareResultSet> GetUriResultSetFromDb(
     const string &tempPath, sptr<IRemoteObject> token)
 {
     GetUriFromFilePathReqBody reqBody;
-    GetUriFromFilePathRspBody rspBody;
+    GetUriFromFilePathRespBody respBody;
     reqBody.tempPath = tempPath;
 
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_URI_FROM_FILEPATH);
@@ -435,11 +435,11 @@ static std::shared_ptr<DataShareResultSet> GetUriResultSetFromDb(
         DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "dataShareHelper is null");
     int32_t errCode =
-        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, rspBody);
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, respBody);
     if (errCode != 0) {
         MEDIA_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
     }
-    return rspBody.resultSet;
+    return respBody.resultSet;
 }
 
 int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fileUri, string &userId)

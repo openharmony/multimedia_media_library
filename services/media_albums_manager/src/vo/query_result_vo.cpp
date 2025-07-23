@@ -23,24 +23,24 @@
 #include "media_log.h"
 
 namespace OHOS::Media {
-bool QueryResultRspBody::Unmarshalling(MessageParcel &parcel)
+bool QueryResultRespBody::Unmarshalling(MessageParcel &parcel)
 {
     this->resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
     if (this->resultSet == nullptr) {
-        MEDIA_ERR_LOG("QueryResultRspBody ReadFromParcel failed");
+        MEDIA_ERR_LOG("QueryResultRespBody ReadFromParcel failed");
         return false;
     }
-    MEDIA_INFO_LOG("QueryResultRspBody ReadFromParcel success");
+    MEDIA_INFO_LOG("QueryResultRespBody ReadFromParcel success");
     return true;
 }
 
-bool QueryResultRspBody::Marshalling(MessageParcel &parcel) const
+bool QueryResultRespBody::Marshalling(MessageParcel &parcel) const
 {
     if (this->resultSet == nullptr || !DataShare::DataShareResultSet::Marshal(this->resultSet, parcel)) {
-        MEDIA_ERR_LOG("QueryResultRspBody Marshalling failed");
+        MEDIA_ERR_LOG("QueryResultRespBody Marshalling failed");
         return false;
     }
-    MEDIA_INFO_LOG("QueryResultRspBody Marshalling success");
+    MEDIA_INFO_LOG("QueryResultRespBody Marshalling success");
     return true;
 }
 }  // namespace OHOS::Media

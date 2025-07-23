@@ -28,6 +28,7 @@
 #include "result_set_utils.h"
 #include "userfile_client.h"
 #include "album_operation_uri.h"
+#include "shooting_mode_column.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -226,22 +227,50 @@ void PhotoAlbumAni::PhotoAlbumAniDestructor(ani_env *env, ani_object object)
     delete photoAlbum;
 }
 
+static int32_t NapiGetAnalysisAlbumPredicates(const shared_ptr<PhotoAlbum>& photoAlbum,
+    DataSharePredicates& predicates)
+{
+    PhotoAlbumSubType subType = photoAlbum->GetPhotoAlbumSubType();
+    if (subType == PhotoAlbumSubType::PORTRAIT || subType == PhotoAlbumSubType::GROUP_PHOTO) {
+        MediaLibraryAniUtils::GetPortraitAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
+        return E_SUCCESS;
+    }
+    if (subType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
+        return MediaLibraryAniUtils::GetAllLocationPredicates(predicates);
+    }
+    if (subType == PhotoAlbumSubType::SHOOTING_MODE) {
+        ShootingModeAlbumType type {};
+        if (!ShootingModeAlbum::AlbumNameToShootingModeAlbumType(photoAlbum->GetAlbumName(), type)) {
+            ANI_ERR_LOG("Invalid shooting mode album name: %{public}s", photoAlbum->GetAlbumName().c_str());
+            return E_INVALID_ARGUMENTS;
+        }
+        ShootingModeAlbum::GetShootingModeAlbumPredicates(type, predicates, photoAlbum->GetHiddenOnly());
+        return E_SUCCESS;
+    }
+    string albumName = photoAlbum->GetAlbumName();
+    if (MediaLibraryAniUtils::IsFeaturedSinglePortraitAlbum(albumName, predicates)) {
+        return MediaLibraryAniUtils::GetFeaturedSinglePortraitAlbumPredicates(
+            photoAlbum->GetAlbumId(), predicates);
+    }
+    MediaLibraryAniUtils::GetAnalysisPhotoMapPredicates(photoAlbum->GetAlbumId(), predicates);
+    return E_SUCCESS;
+}
+
 static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbum,
     DataSharePredicates &predicates, const bool hiddenOnly)
 {
-    auto albumId = photoAlbum->GetAlbumId();
-    auto subType = photoAlbum->GetPhotoAlbumSubType();
+    int32_t albumId = photoAlbum->GetAlbumId();
+    PhotoAlbumSubType subType = photoAlbum->GetPhotoAlbumSubType();
     bool isLocationAlbum = subType == PhotoAlbumSubType::GEOGRAPHY_LOCATION;
     if (albumId <= 0 && !isLocationAlbum) {
+        ANI_ERR_LOG("Invalid album ID");
         return E_INVALID_ARGUMENTS;
     }
-    auto type = photoAlbum->GetPhotoAlbumType();
+    PhotoAlbumType type = photoAlbum->GetPhotoAlbumType();
     if ((!PhotoAlbum::CheckPhotoAlbumType(type)) || (!PhotoAlbum::CheckPhotoAlbumSubType(subType))) {
+        ANI_ERR_LOG("Invalid album type or subtype: type=%{public}d, subType=%{public}d", static_cast<int>(type),
+            static_cast<int>(subType));
         return E_INVALID_ARGUMENTS;
-    }
-
-    if (type == PhotoAlbumType::SMART && subType == PhotoAlbumSubType::PORTRAIT) {
-        return MediaLibraryAniUtils::GetPortraitAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
     }
 
     if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
@@ -253,22 +282,16 @@ static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbu
     }
 
     if (type == PhotoAlbumType::SMART) {
-        if (isLocationAlbum) {
-            return MediaLibraryAniUtils::GetAllLocationPredicates(predicates);
-        }
-        auto albumName = photoAlbum->GetAlbumName();
-        if (MediaLibraryAniUtils::IsFeaturedSinglePortraitAlbum(albumName, predicates)) {
-            return MediaLibraryAniUtils::GetFeaturedSinglePortraitAlbumPredicates(
-                photoAlbum->GetAlbumId(), predicates);
-        }
-        return MediaLibraryAniUtils::GetAnalysisAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
+        return NapiGetAnalysisAlbumPredicates(photoAlbum, predicates);
     }
-    
-    if ((type != PhotoAlbumType::SYSTEM) || (subType == PhotoAlbumSubType::USER_GENERIC) ||
-        (subType == PhotoAlbumSubType::ANY)) {
-        return E_INVALID_ARGUMENTS;
+
+    if (type == PhotoAlbumType::SYSTEM) {
+        return MediaLibraryAniUtils::GetSystemAlbumPredicates(subType, predicates, hiddenOnly);
     }
-    return MediaLibraryAniUtils::GetSystemAlbumPredicates(subType, predicates, hiddenOnly);
+
+    ANI_ERR_LOG("Invalid album type and subtype: type=%{public}d, subType=%{public}d", static_cast<int>(type),
+        static_cast<int>(subType));
+    return E_INVALID_ARGUMENTS;
 }
 
 static ani_status ParseArgsGetPhotoAssets(ani_env *env, ani_object object, ani_object fetchOptions,
@@ -322,6 +345,7 @@ static void ConvertColumnsForPortrait(unique_ptr<PhotoAlbumAniContext> &context)
 
     shared_ptr<PhotoAlbum> photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     if (photoAlbum == nullptr || (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT &&
+        photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::GROUP_PHOTO &&
         !IsFeaturedSinglePortraitAlbum(photoAlbum))) {
         return;
     }

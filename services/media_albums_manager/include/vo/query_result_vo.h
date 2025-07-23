@@ -22,7 +22,7 @@
 #include "i_media_parcelable.h"
  
 namespace OHOS::Media {
-class QueryResultRspBody : public IPC::IMediaParcelable {
+class QueryResultRespBody : public IPC::IMediaParcelable {
 public:
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
  

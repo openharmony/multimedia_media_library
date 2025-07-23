@@ -121,7 +121,7 @@ std::string InnerServiceCreateAsset(CreateAssetReqBody &reqBody, ServiceCall cal
     MessageParcel reply;
     call(data, reply);
 
-    IPC::MediaRespVo<CreateAssetRspBody> respVo;
+    IPC::MediaRespVo<CreateAssetRespBody> respVo;
     if (respVo.Unmarshalling(reply) != true) {
         MEDIA_ERR_LOG("respVo.Unmarshalling failed");
         return "";
@@ -173,7 +173,7 @@ std::unordered_map<std::string, std::string> GetUrisByOldUrisInner(std::vector<s
     auto service = make_shared<MediaAssetsControllerService>();
     service->GetUrisByOldUrisInner(data, reply);
 
-    IPC::MediaRespVo<GetUrisByOldUrisInnerRspBody> respVo;
+    IPC::MediaRespVo<GetUrisByOldUrisInnerRespBody> respVo;
     if (respVo.Unmarshalling(reply) != true) {
         MEDIA_ERR_LOG("respVo.Unmarshalling failed");
         return resultMap;
@@ -261,7 +261,7 @@ int32_t CheckUrisPermissionInner(std::vector<std::string>& fileIds,
     auto service = make_shared<MediaAssetsControllerService>();
     service->CheckUriPermissionInner(data, reply);
 
-    IPC::MediaRespVo<CheckUriPermissionInnerRspBody> respVo;
+    IPC::MediaRespVo<CheckUriPermissionInnerRespBody> respVo;
     if (respVo.Unmarshalling(reply) != true) {
         MEDIA_ERR_LOG("respVo.Unmarshalling failed");
         return -1;

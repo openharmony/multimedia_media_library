@@ -62,12 +62,12 @@ bool AssetChangeReqBody::Marshalling(MessageParcel &parcel) const
         values);
 }
 
-bool AssetChangeRspBody::Unmarshalling(MessageParcel &parcel)
+bool AssetChangeRespBody::Unmarshalling(MessageParcel &parcel)
 {
     return ITypesUtil::Unmarshal(parcel, fileId, outUri);
 }
 
-bool AssetChangeRspBody::Marshalling(MessageParcel &parcel) const
+bool AssetChangeRespBody::Marshalling(MessageParcel &parcel) const
 {
     return ITypesUtil::Marshal(parcel, fileId, outUri);
 }

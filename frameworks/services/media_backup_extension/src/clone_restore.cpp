@@ -1423,20 +1423,6 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
     BackupDatabaseUtils::UpdateAssociateFileId(mediaLibraryRdb_, fileInfos);
 }
 
-void CloneRestore::BatchNotifyPhoto(const vector<FileInfo> &fileInfos)
-{
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_LOG(watch != nullptr, "Get MediaLibraryNotify instance failed");
-    for (const auto &fileInfo : fileInfos) {
-        bool cond = (!fileInfo.needMove || fileInfo.cloudPath.empty());
-        CHECK_AND_CONTINUE(!cond);
-        string extraUri = MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.cloudPath);
-        string notifyUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-            to_string(fileInfo.fileIdNew), extraUri);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
-    }
-}
-
 void CloneRestore::UpdateAlbumOrderColumns(const AlbumInfo &albumInfo, const string &tableName)
 {
     CHECK_AND_RETURN(tableName == PhotoAlbumColumns::TABLE);
@@ -2066,7 +2052,6 @@ void CloneRestore::RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap
         "start restore photo, offset: %{public}d, isRelatedToPhotoMap: %{public}d", offset, isRelatedToPhotoMap);
     vector<FileInfo> fileInfos = QueryFileInfos(offset, isRelatedToPhotoMap);
     CHECK_AND_EXECUTE(InsertPhoto(fileInfos) == E_OK, AddToPhotosFailedOffsets(offset));
-    BatchNotifyPhoto(fileInfos);
     RestoreImageFaceInfo(fileInfos);
 
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
@@ -2082,7 +2067,6 @@ void CloneRestore::RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhoto
     vector<FileInfo> fileInfos = QueryCloudFileInfos(offset, isRelatedToPhotoMap);
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, fileInfos, SourceType::PHOTOS) == E_OK,
         AddToPhotosFailedOffsets(offset));
-    BatchNotifyPhoto(fileInfos);
     RestoreImageFaceInfo(fileInfos);
 
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
@@ -2908,8 +2892,28 @@ NativeRdb::ValuesBucket CloneRestore::CreateValuesBucketFromImageFaceTbl(const I
     PutIfPresent(values, IMAGE_FACE_COL_FACE_EYE_CLOSE, imageFaceTbl.faceEyeClose);
     PutIfPresent(values, IMAGE_FACE_COL_FACE_EXPRESSION, imageFaceTbl.faceExpression);
     PutIfPresent(values, IMAGE_FACE_COL_PREFERRED_GRADE, imageFaceTbl.preferredGrade);
-
+    PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_X, imageFaceTbl.jointBeautyBounderX);
+    PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_Y, imageFaceTbl.jointBeautyBounderY);
+    PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_WIDTH, imageFaceTbl.jointBeautyBounderWidth);
+    PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_HEIGHT, imageFaceTbl.jointBeautyBounderHeight);
+    PutIfPresent(values, IMAGE_FACE_COL_GROUP_VERSION, imageFaceTbl.groupVersion);
     return values;
+}
+
+void ParseImageFaceResultSet1(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, ImageFaceTbl& imageFaceTbl)
+{
+    imageFaceTbl.preferredGrade = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        IMAGE_FACE_COL_PREFERRED_GRADE);
+    imageFaceTbl.jointBeautyBounderX = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_X);
+    imageFaceTbl.jointBeautyBounderY = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_Y);
+    imageFaceTbl.jointBeautyBounderWidth = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_WIDTH);
+    imageFaceTbl.jointBeautyBounderHeight = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+        IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_HEIGHT);
+    imageFaceTbl.groupVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        IMAGE_FACE_COL_GROUP_VERSION);
 }
 
 void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,
@@ -2960,8 +2964,7 @@ void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::Resu
         IMAGE_FACE_COL_FACE_EYE_CLOSE);
     imageFaceTbl.faceExpression = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
         IMAGE_FACE_COL_FACE_EXPRESSION);
-    imageFaceTbl.preferredGrade = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
-        IMAGE_FACE_COL_PREFERRED_GRADE);
+    ParseImageFaceResultSet1(resultSet, imageFaceTbl);
 }
 
 void CloneRestore::ReportPortraitCloneStat(int32_t sceneCode)

@@ -49,6 +49,7 @@
 #include "media_refresh_album_column.h"
 #include "cloud_media_dao_const.h"
 #include "asset_accurate_refresh.h"
+#include "refresh_business_name.h"
 
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaDataDao::UpdateDirty(const std::string &cloudId, int32_t dirtyType)
@@ -81,7 +82,7 @@ int32_t CloudMediaDataDao::UpdatePosition(const std::vector<std::string> &cloudI
     values.PutInt(PhotoColumn::PHOTO_POSITION, position);
 
     int32_t changedRows = DEFAULT_VALUE;
-    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::UPDATE_POSITION_BUSSINESS_NAME);
     int32_t ret = assetRefresh.Update(changedRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, ret,
         "Failed to UpdatePosition, ret: %{public}d.", ret);

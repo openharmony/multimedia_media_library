@@ -19,7 +19,7 @@
 #include <functional>
 #include <string>
 #include <vector>
-
+#include <unordered_map>
 
 #include "abs_rdb_predicates.h"
 
@@ -34,8 +34,10 @@ namespace Media::AccurateRefresh {
 
 class EXPORT AlbumAccurateRefresh : public AccurateRefreshBase {
 public:
-    AlbumAccurateRefresh() : AccurateRefreshBase(nullptr) {}
+    AlbumAccurateRefresh() : AccurateRefreshBase() {};
     AlbumAccurateRefresh(std::shared_ptr<TransactionOperations> trans);
+    AlbumAccurateRefresh(const std::string &targetBusiness) : AccurateRefreshBase(targetBusiness, nullptr) {}
+    AlbumAccurateRefresh(const std::string &targetBusiness, std::shared_ptr<TransactionOperations> trans);
     virtual ~AlbumAccurateRefresh() {}
     // init的查询语句
     int32_t Init() override;
@@ -43,21 +45,19 @@ public:
     int32_t Init(const std::string &sql, const std::vector<NativeRdb::ValueObject> bindArgs) override;
     int32_t Init(const std::vector<int32_t> &albumIds) override;
     
-    // 增删场景下初始化数据
-    int32_t Init(const std::vector<PhotoAlbumSubType> &systemTypes, const std::vector<int32_t> &albumIds);
-
     // 更新modified数据信息；数据库操作只是缓存数据，需要执行这个函数触发对比修改前后的数据
     int32_t UpdateModifiedDatas();
 
     // notify album change infos based on init datas and modified datas.
-    int32_t Notify();
+    int32_t Notify(std::shared_ptr<DfxRefreshManager> dfxRefreshManager = nullptr);
 
     // 根据传递的assetChangeDatas进行通知，不需要dataManager_处理
-    int32_t Notify(std::vector<AlbumChangeData> albumChangeDatas);
+    int32_t Notify(std::vector<AlbumChangeData> albumChangeDatas,
+        std::shared_ptr<DfxRefreshManager> dfxRefreshManager = nullptr);
 
     int32_t NotifyAddAlbums(const std::vector<std::string> &albumIdsStr);
 
-    std::map<int32_t, AlbumChangeInfo> GetInitAlbumInfos();
+    std::unordered_map<int32_t, AlbumChangeInfo> GetInitAlbumInfos();
     
     using AccurateRefreshBase::LogicalDeleteReplaceByUpdate;
     int32_t LogicalDeleteReplaceByUpdate(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
@@ -65,7 +65,8 @@ public:
     static int32_t NotifyForReCheck();
 
 protected:
-    int32_t UpdateModifiedDatasInner(const std::vector<int> &albumIds, RdbOperation operation) override;
+    int32_t UpdateModifiedDatasInner(const std::vector<int> &albumIds, RdbOperation operation,
+        PendingInfo pendingInfo = PendingInfo()) override;
     std::string GetReturningKeyName() override;
     bool IsValidTable(std::string tableName) override;
 

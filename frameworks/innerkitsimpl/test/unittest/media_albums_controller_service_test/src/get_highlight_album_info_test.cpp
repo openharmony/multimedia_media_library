@@ -95,7 +95,7 @@ HWTEST_F(GetHightlightAlbumInfoTest, GetHightlightAlbumInfoTest_Test_001, TestSi
 
     auto service = make_shared<MediaAlbumsControllerService>();
     service->GetHighlightAlbumInfo(data, reply);
-    IPC::MediaRespVo<QueryResultRspBody> resp;
+    IPC::MediaRespVo<QueryResultRespBody> resp;
     bool isValid = resp.Unmarshalling(reply);
     ASSERT_EQ(isValid, true);
     EXPECT_EQ(resp.GetErrCode(), E_ERR);

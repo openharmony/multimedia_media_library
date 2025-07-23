@@ -25,11 +25,11 @@ SubmitCacheDto SubmitCacheDto::Create(const SubmitCacheReqBody &req)
     return dto;
 }
 
-SubmitCacheRspBody SubmitCacheDto::CreateRspBody()
+SubmitCacheRespBody SubmitCacheDto::CreateRespBody()
 {
-    SubmitCacheRspBody rspBody;
-    rspBody.fileId = this->fileId;
-    rspBody.outUri = this->outUri;
-    return rspBody;
+    SubmitCacheRespBody respBody;
+    respBody.fileId = this->fileId;
+    respBody.outUri = this->outUri;
+    return respBody;
 }
 }  // namespace OHOS::Media

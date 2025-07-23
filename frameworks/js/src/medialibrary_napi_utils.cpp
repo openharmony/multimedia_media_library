@@ -1357,7 +1357,8 @@ string MediaLibraryNapiUtils::ParseColumnNeedCompatible(shared_ptr<DataShare::Da
     if (vcFeatures.back() == BINARY_FEATURE_END_FLAG) {
         result = FeatureDeserializeToStr(vcFeatures);
     } else {
-        result = GetStringValueByColumn(resultSet, columnName);
+        string feature(vcFeatures.begin(), vcFeatures.end());
+        result = feature;
     }
     return result;
 }

@@ -153,6 +153,7 @@ config("media_data_extension_public_config") {
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/enhancement_service",
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/utils",
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/dfx",
+      "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/dfx",
     ]
     include_dirs += include_cloud_enhancement
   }
@@ -524,6 +525,14 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_order_position_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/set_photo_album_order_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_move_assets_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_add_assets_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_dismiss_assets_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_merge_album_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_place_before_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_remove_assets_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_set_order_position_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_albums_by_ids_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_photo_album_object_dto.cpp",
   ]
 
   media_permission_check_source = [
@@ -683,9 +692,14 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/asset_change_notify_execution.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_change_notify_execution.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_accurate_refresh_manager.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/multi_thread_asset_change_info_mgr.cpp",
   ]
 
-  accurate_refresh_server_source = [ "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/controller/media_refresh_controller_service.cpp" ]
+  accurate_refresh_server_source = [
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/controller/media_refresh_controller_service.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/dfx/dfx_refresh_manager.cpp",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/dfx/dfx_refresh_hander.cpp",
+  ]
 
   sources += media_scan_source
   sources += media_fuse_source

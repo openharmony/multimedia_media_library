@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "accurate_refresh_data_manager.h"
 #include "abs_rdb_predicates.h"
@@ -36,10 +37,10 @@ public:
         : AccurateRefreshDataManager<AlbumChangeInfo, AlbumChangeData>(trans) {}
     virtual ~AlbumDataManager() {}
     // 增删场景下初始化数据
-    int32_t InitAlbumInfos(const std::vector<PhotoAlbumSubType> &systemTypes, const std::vector<int> &albumIds);
+    int32_t InitAlbumInfos(const std::vector<int> &albumIds);
     int32_t UpdateModifiedDatas() override;
     int32_t PostProcessModifiedDatas(const std::vector<int32_t> &keys) override;
-    std::map<int32_t, AlbumChangeInfo> GetInitAlbumInfos();
+    std::unordered_map<int32_t, AlbumChangeInfo> GetInitAlbumInfos();
     std::vector<int32_t> GetInitKeys() override;
     static std::vector<AlbumChangeData> GetAlbumDatasFromAddAlbum(const std::vector<std::string> &albumIdsStr);
 

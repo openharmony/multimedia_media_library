@@ -17,7 +17,7 @@
 #define OHOS_MEDIALIBRARY_ALBUM_REFRESH_EXECUTION_H
 
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <set>
 #include <sstream>
@@ -28,6 +28,7 @@
 #include "userfile_manager_types.h"
 #include "album_accurate_refresh.h"
 #include "system_album_info_calculation.h"
+#include "dfx_refresh_manager.h"
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
@@ -38,10 +39,13 @@ public:
         NotifyAlbumType notifyAlbumType = NO_NOTIFY);
     int32_t Notify();
     int32_t RefreshAllAlbum(NotifyAlbumType notifyAlbumType);
+    void SetDfxRefreshManager(std::shared_ptr<DfxRefreshManager> dfxRefreshManager)
+    {
+        dfxRefreshManager_ = dfxRefreshManager;
+    }
 
 private:
-    std::vector<PhotoAlbumSubType> GetAlbumSubTypes();
-    std::vector<int32_t> GetOwnerAlbumIds();
+    std::vector<int32_t> GetAlbumIds();
     // 计算相册增量信息
     int32_t CalRefreshInfos(const std::vector<PhotoAssetChangeData> &assetChangeDatas);
 
@@ -91,21 +95,29 @@ private:
     void CheckUpdateAlbumInfo(const AlbumChangeInfo &albumInfo, bool isHidden);
     void CheckUpdateValues(const AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,
         NativeRdb::ValuesBucket &values);
+    bool CheckSetHiddenAlbumInfo(AlbumChangeInfo &albumInfo);
+    void CheckInitSystemCalculation();
 
 private:
     // 系统相册
-    static std::map<PhotoAlbumSubType, SystemAlbumInfoCalculation> systemAlbumCalculations_;
-    std::map<PhotoAlbumSubType, AlbumRefreshInfo> systemAlbumInfos_;
+    static std::unordered_map<PhotoAlbumSubType, SystemAlbumInfoCalculation> systemTypeAlbumCalculations_;
+    static std::unordered_map<int32_t, SystemAlbumInfoCalculation> systemAlbumCalculations_;
+    std::unordered_map<int32_t, AlbumRefreshInfo> systemAlbumRefreshInfos_;
 
     // 用户相册和来源相册
-    std::map<int32_t, AlbumRefreshInfo> ownerAlbumInfos_;
+    std::unordered_map<int32_t, AlbumRefreshInfo> ownerAlbumRefreshInfos_;
+
+    // 所有相册refreshInfo
+    std::unordered_map<int32_t, AlbumRefreshInfo> albumRefreshInfos_;
     // 修改前相册信息
-    std::map<int32_t, AlbumChangeInfo> initAlbumInfos_;
+    std::unordered_map<int32_t, AlbumChangeInfo> initAlbumInfos_;
 
     AlbumAccurateRefresh albumRefresh_;
 
+    std::shared_ptr<DfxRefreshManager> dfxRefreshManager_;
+
     // 需要刷新的相册信息
-    std::map<int32_t, std::pair<AlbumRefreshInfo, AlbumChangeInfo>> refreshAlbums_;
+    std::unordered_map<int32_t, std::pair<AlbumRefreshInfo, AlbumChangeInfo>> refreshAlbums_;
 
     // 需要强制刷新的相册信息
     std::set<int32_t> forceRefreshAlbums_;

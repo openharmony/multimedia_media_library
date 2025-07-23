@@ -23,19 +23,19 @@ class ChangeRequestAddAssetsReqBody : public IPC::IMediaParcelable {
 public:
     std::vector<std::string> assets;
     int32_t albumId {-1};
-    int32_t isHighlight {0};
-    int32_t isHiddenOnly {0};
+    bool isHighlight {false};
+    bool isHiddenOnly {false};
 
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
 };
 
-class ChangeRequestAddAssetsRspBody : public IPC::IMediaParcelable {
+class ChangeRequestAddAssetsRespBody : public IPC::IMediaParcelable {
 public:
     int32_t albumCount {0};
-    int32_t imageCount {0};
-    int32_t videoCount {0};
+    int32_t imageCount {-1};
+    int32_t videoCount {-1};
 
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;

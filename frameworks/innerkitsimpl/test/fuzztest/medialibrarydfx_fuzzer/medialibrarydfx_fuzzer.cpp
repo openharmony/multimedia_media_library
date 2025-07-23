@@ -26,6 +26,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_kvstore_manager.h"
 #include "photo_album_column.h"
 
 #define private public
@@ -239,6 +240,11 @@ static int32_t AddSeed()
     MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
     return Media::E_OK;
 }
+
+static inline void ClearKvStore()
+{
+    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
+}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -260,5 +266,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::DfxTimerFuzzer();
     OHOS::DfxTransactionFuzzer();
     OHOS::DfxWorkerFuzzer();
+    OHOS::ClearKvStore();
     return 0;
 }

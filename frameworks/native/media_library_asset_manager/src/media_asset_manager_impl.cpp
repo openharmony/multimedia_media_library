@@ -276,22 +276,22 @@ MultiStagesCapturePhotoStatus MediaAssetManagerImpl::QueryPhotoStatus(int32_t fi
     }
 
     QueryPhotoReqBody reqBody;
-    QueryPhotoRspBody rspBody;
+    QueryPhotoRespBody respBody;
     reqBody.fileId = std::to_string(fileId);
     std::unordered_map<std::string, std::string> headerMap {
         {MediaColumn::MEDIA_ID, reqBody.fileId }, {URI_TYPE, TYPE_PHOTOS}
     };
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_QUERY_PHOTO_STATUS);
     int errCode = IPC::UserInnerIPCClient().SetHeader(headerMap)
-        .SetDataShareHelper(sDataShareHelper_).Call(businessCode, reqBody, rspBody);
+        .SetDataShareHelper(sDataShareHelper_).Call(businessCode, reqBody, respBody);
     if (errCode < 0) {
         MEDIA_ERR_LOG("UserInnerIPCClient Call errCode:%{public}d", errCode);
         return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     }
 
-    photoId = rspBody.photoId;
-    MEDIA_ERR_LOG("Query photo status quality: %{public}d", rspBody.photoQuality);
-    if (rspBody.photoQuality == LOW_QUALITY_IMAGE) {
+    photoId = respBody.photoId;
+    MEDIA_ERR_LOG("Query photo status quality: %{public}d", respBody.photoQuality);
+    if (respBody.photoQuality == LOW_QUALITY_IMAGE) {
         return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
     }
     return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;

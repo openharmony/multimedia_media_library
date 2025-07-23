@@ -36,7 +36,7 @@ public:  // functions of Parcelable.
     bool Marshalling(MessageParcel &parcel) const override;
 };
 
-class CreateAssetRspBody : public IPC::IMediaParcelable {
+class CreateAssetRespBody : public IPC::IMediaParcelable {
 public:
     int32_t fileId{-1};
     std::string outUri;
@@ -63,7 +63,7 @@ public:  // functions of Parcelable.
     bool Marshalling(MessageParcel &parcel) const override;
 };
 
-using CreateAssetForAppRspBody = CreateAssetRspBody;
+using CreateAssetForAppRespBody = CreateAssetRespBody;
 
 } // namespace OHOS::Media
 #endif // OHOS_MEDIA_ASSETS_MANAGER_CREATE_ASSET_VO_H

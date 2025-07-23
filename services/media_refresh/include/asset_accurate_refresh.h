@@ -17,6 +17,7 @@
 #define OHOS_MEDIALIBRARY_ASSET_ACCURATE_REFRESH_H
 
 #include <functional>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -35,8 +36,14 @@ namespace Media::AccurateRefresh {
 
 class EXPORT AssetAccurateRefresh : public AccurateRefreshBase {
 public:
-    AssetAccurateRefresh() : AccurateRefreshBase(nullptr) {}
+    AssetAccurateRefresh() : AccurateRefreshBase() {};
     AssetAccurateRefresh(std::shared_ptr<TransactionOperations> trans);
+    AssetAccurateRefresh(const std::string &targetBusiness) : AccurateRefreshBase(targetBusiness, nullptr) {}
+    AssetAccurateRefresh(const std::string &targetBusiness, std::shared_ptr<TransactionOperations> trans);
+    void SetDfxRefreshManager(std::shared_ptr<DfxRefreshManager> dfxRefreshManager)
+    {
+        refreshManager = dfxRefreshManager;
+    }
     virtual ~AssetAccurateRefresh() {}
     // 初始化datamanager，新增场景下使用，不需要初始化数据，Init只需要执行一次
     int32_t Init() override;
@@ -70,7 +77,8 @@ public:
     static int32_t NotifyForReCheck();
 
 protected:
-    int32_t UpdateModifiedDatasInner(const std::vector<int> &fileIds, RdbOperation operation) override;
+    int32_t UpdateModifiedDatasInner(const std::vector<int> &fileIds, RdbOperation operation,
+        PendingInfo pendingInfo = PendingInfo()) override;
     std::string GetReturningKeyName() override;
     bool IsValidTable(std::string tableName) override;
 private:
@@ -81,6 +89,9 @@ private:
     AssetDataManager dataManager_;
     AlbumRefreshExecution albumRefreshExe_;
     AssetChangeNotifyExecution notifyExe_;
+    std::shared_ptr<DfxRefreshManager> refreshManager;
+    // 资产数据查询锁，查询资产信息放入MultiThreadAssetChangeInfoMgr中，防止同一资产多线程访问
+    static std::mutex assetQueryMutex_;
 };
 } // namespace Media
 } // namespace OHOS

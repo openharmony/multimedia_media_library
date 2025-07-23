@@ -159,7 +159,7 @@ static void SaveCheckPermission(const string &fileId, map<std::string, pair<bool
 }
 
 static int32_t QueryGrantedIndex(CheckUriPermissionInnerReqBody &reqBody,
-    CheckUriPermissionInnerRspBody &rspBody,
+    CheckUriPermissionInnerRespBody &respBody,
     map<string, pair<bool, bool>> &permissionMap, uint32_t businessCode,
     const std::shared_ptr<DataShare::DataShareHelper> &helper)
 {
@@ -168,15 +168,15 @@ static int32_t QueryGrantedIndex(CheckUriPermissionInnerReqBody &reqBody,
     CHECK_AND_RETURN_RET_LOG(helper != nullptr, E_ERR,
         "Failed to checkPhotoUriPermission, datashareHelper is nullptr");
     MEDIA_INFO_LOG("before IPC::UserDefineIPCClient().Call, INNER_CHECK_URI_PERMISSION");
-    int32_t result = IPC::UserInnerIPCClient().SetDataShareHelper(helper).Call(businessCode, reqBody, rspBody);
+    int32_t result = IPC::UserInnerIPCClient().SetDataShareHelper(helper).Call(businessCode, reqBody, respBody);
     CHECK_AND_RETURN_RET_LOG(result == E_OK, E_ERR, "queryResultSet is null!");
-    auto fileIds_size = rspBody.fileIds.size();
-    auto permissionTypes_size = rspBody.permissionTypes.size();
+    auto fileIds_size = respBody.fileIds.size();
+    auto permissionTypes_size = respBody.permissionTypes.size();
     bool isValid = (fileIds_size == permissionTypes_size);
     CHECK_AND_RETURN_RET_LOG(isValid, E_ERR, "QueryGrantedIndex Failed");
-    for (size_t i = 0; i < rspBody.fileIds.size(); i++) {
-        string fileId = rspBody.fileIds[i];
-        int32_t permissionType = rspBody.permissionTypes[i];
+    for (size_t i = 0; i < respBody.fileIds.size(); i++) {
+        string fileId = respBody.fileIds[i];
+        int32_t permissionType = respBody.permissionTypes[i];
         SaveCheckPermission(fileId, permissionMap, static_cast<PhotoPermissionType>(permissionType));
     }
     return E_SUCCESS;
@@ -284,17 +284,17 @@ int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId,
         CheckUriPermissionInnerReqBody photoReq;
         MakePredicatesForCheckPhotoUriPermission(tokenId,
             TableType::TYPE_PHOTOS, photoIds, photoReq);
-        CheckUriPermissionInnerRspBody photoRsp;
+        CheckUriPermissionInnerRespBody photoResp;
         uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_PHOTO_URI_PERMISSION);
-        ret = QueryGrantedIndex(photoReq, photoRsp, photoPermissionMap, businessCode, dataShareHelper_);
+        ret = QueryGrantedIndex(photoReq, photoResp, photoPermissionMap, businessCode, dataShareHelper_);
     }
     if (audioIds.size() > 0) {
         CheckUriPermissionInnerReqBody audioReq;
         MakePredicatesForCheckPhotoUriPermission(tokenId,
             TableType::TYPE_AUDIOS, audioIds, audioReq);
-        CheckUriPermissionInnerRspBody audioRsp;
+        CheckUriPermissionInnerRespBody audioResp;
         uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_AUDIO_URI_PERMISSION);
-        ret = QueryGrantedIndex(audioReq, audioRsp, audioPermissionMap, businessCode, dataShareHelper_);
+        ret = QueryGrantedIndex(audioReq, audioResp, audioPermissionMap, businessCode, dataShareHelper_);
     }
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "query db fail!");
 
@@ -530,21 +530,21 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromP
     reqBody.value = value;
     reqBody.columns = columns;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_PHOTOS_EXTEND);
-    GetResultSetFromDbRespBody rspBody;
+    GetResultSetFromDbRespBody respBody;
     int32_t errCode =
-        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
     if (errCode != E_OK) {
         MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
         if (ForceReconnect()) {
             errCode =
-                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
         }
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("errCode: %{public}d", errCode);
             return nullptr;
         }
     }
-    return rspBody.resultSet;
+    return respBody.resultSet;
 }
 
 std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromDb(string columnName,
@@ -560,21 +560,21 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromD
     reqBody.value = value;
     reqBody.columns = columns;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_DB_EXTEND);
-    GetResultSetFromDbRespBody rspBody;
+    GetResultSetFromDbRespBody respBody;
     int32_t errCode =
-        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
     if (errCode != E_OK) {
         MEDIA_WARN_LOG("errCode: %{public}d, reconnect and retry", errCode);
         if (ForceReconnect()) {
             errCode =
-                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, rspBody);
+                IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
         }
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("errCode: %{public}d", errCode);
             return nullptr;
         }
     }
-    return rspBody.resultSet;
+    return respBody.resultSet;
 }
 
 static bool CheckPermissionType(const string &fileId, map<string, pair<bool, bool>> &permissionMap,

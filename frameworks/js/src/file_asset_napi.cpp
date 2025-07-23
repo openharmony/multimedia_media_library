@@ -2161,7 +2161,8 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
     { ANALYSIS_OCR, { OCR, PAH_QUERY_ANA_OCR, { OCR_TEXT, OCR_TEXT_MSG, OCR_WIDTH, OCR_HEIGHT } } },
     { ANALYSIS_FACE, { FACE, PAH_QUERY_ANA_FACE, { FACE_ID, TAG_ID, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT,
         LANDMARKS, PITCH, YAW, ROLL, PROB, TOTAL_FACES, FEATURES, FACE_OCCLUSION, BEAUTY_BOUNDER_X, BEAUTY_BOUNDER_Y,
-        BEAUTY_BOUNDER_WIDTH, BEAUTY_BOUNDER_HEIGHT, FACE_AESTHETICS_SCORE} } },
+        BEAUTY_BOUNDER_WIDTH, BEAUTY_BOUNDER_HEIGHT, FACE_AESTHETICS_SCORE, JOINT_BEAUTY_BOUNDER_X,
+        JOINT_BEAUTY_BOUNDER_Y, JOINT_BEAUTY_BOUNDER_WIDTH, JOINT_BEAUTY_BOUNDER_HEIGHT} } },
     { ANALYSIS_OBJECT, { OBJECT, PAH_QUERY_ANA_OBJECT, { OBJECT_ID, OBJECT_LABEL, OBJECT_SCALE_X, OBJECT_SCALE_Y,
         OBJECT_SCALE_WIDTH, OBJECT_SCALE_HEIGHT, PROB, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
     { ANALYSIS_RECOMMENDATION, { RECOMMENDATION, PAH_QUERY_ANA_RECOMMENDATION, { RECOMMENDATION_ID,
@@ -2215,18 +2216,18 @@ static std::shared_ptr<DataShare::DataShareResultSet> CallQueryAnalysisData(
     int32_t userId = context->objectPtr != nullptr ? context->objectPtr->GetUserId() : -1;
     if (context->businessCode != 0) {
         GetAssetAnalysisDataReqBody reqBody;
-        GetAssetAnalysisDataRspBody rspBody;
+        GetAssetAnalysisDataRespBody respBody;
         reqBody.fileId = context->objectInfo->GetFileId();
         reqBody.analysisType = context->analysisType;
         reqBody.analysisTotal = analysisTotal;
         std::string lang = Global::I18n::LocaleConfig::GetSystemLanguage();
         reqBody.language = (lang.find(LANGUAGE_ZH) == 0 || lang.find(LANGUAGE_ZH_TR) == 0) ? LANGUAGE_ZH : LANGUAGE_EN;
-        int32_t errCode = IPC::UserDefineIPCClient().SetUserId(userId).Call(context->businessCode, reqBody, rspBody);
+        int32_t errCode = IPC::UserDefineIPCClient().SetUserId(userId).Call(context->businessCode, reqBody, respBody);
         if (errCode != 0) {
             NAPI_INFO_LOG("IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
             return nullptr;
         }
-        return rspBody.resultSet;
+        return respBody.resultSet;
     }
 
     int32_t errCode = 0;
@@ -5083,11 +5084,11 @@ static void PhotoAccessHelperIsEditedExecute(napi_env env, void *data)
     } else {
         NAPI_INFO_LOG("PhotoAccessHelperIsEditedExecute need ipc");
         IsEditedReqBody reqBody;
-        IsEditedRspBody rspBody;
+        IsEditedRespBody respBody;
         uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_IS_EDITED);
         reqBody.fileId = fileId;
-        errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
-        finalResultSet = rspBody.resultSet;
+        errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+        finalResultSet = respBody.resultSet;
     }
     int64_t editTime = 0;
     if (!GetEditTimeFromResultSet(finalResultSet, editTime)) {
@@ -5154,18 +5155,18 @@ napi_value FileAssetNapi::PhotoAccessHelperIsEdited(napi_env env, napi_callback_
 static void QueryPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
 {
     RequestEditDataReqBody reqBody;
-    RequestEditDataRspBody rspBody;
+    RequestEditDataRespBody respBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_REQUEST_EDIT_DATA);
     reqBody.predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
 
     NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
-    IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
     NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
-    if (rspBody.resultSet == nullptr || rspBody.resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (respBody.resultSet == nullptr || respBody.resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         NAPI_ERR_LOG("Query failed");
         return;
     }
-    if (rspBody.resultSet->GetInt(0, hasEditData) != NativeRdb::E_OK) {
+    if (respBody.resultSet->GetInt(0, hasEditData) != NativeRdb::E_OK) {
         NAPI_ERR_LOG("Can not get hasEditData");
         return;
     }
@@ -5174,18 +5175,18 @@ static void QueryPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
 static void GetPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
 {
     GetEditDataReqBody reqBody;
-    GetEditDataRspBody rspBody;
+    GetEditDataRespBody respBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_EDIT_DATA);
     reqBody.predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
 
     NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
-    IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
     NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
-    if (rspBody.resultSet == nullptr || rspBody.resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (respBody.resultSet == nullptr || respBody.resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         NAPI_ERR_LOG("Query failed");
         return;
     }
-    if (rspBody.resultSet->GetInt(0, hasEditData) != NativeRdb::E_OK) {
+    if (respBody.resultSet->GetInt(0, hasEditData) != NativeRdb::E_OK) {
         NAPI_ERR_LOG("Can not get hasEditData");
         return;
     }

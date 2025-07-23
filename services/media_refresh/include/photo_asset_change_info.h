@@ -74,6 +74,7 @@ public:
     std::string displayName_ = EMPTY_STR;
     std::string path_ = EMPTY_STR;
     int32_t dirty_ = INVALID_INT32_VALUE;
+    int64_t timestamp_ = INVALID_INT64_VALUE;
 
     std::string ToString(bool isDetail = false) const;
     bool Marshalling(Parcel &parcel) const override;
@@ -90,6 +91,9 @@ public:
     PhotoAssetChangeInfo& operator=(const PhotoAssetChangeInfo &info);
     bool operator==(const PhotoAssetChangeInfo &info) const;
     bool operator!=(const PhotoAssetChangeInfo &info) const;
+    std::string GetDataDiff(const PhotoAssetChangeInfo &compare);
+private:
+    std::string GetAssetDiff(const PhotoAssetChangeInfo &asset, const PhotoAssetChangeInfo &compare);
 
 private:
     static const std::vector<std::string> photoAssetColumns_;
@@ -98,10 +102,10 @@ private:
 };
 
 enum ThumbnailChangeStatus : int32_t {
-    THUMBNAIL_NOT_CHANGE = 0,
-    THUMBNAIL_NOT_EXISTS,
+    THUMBNAIL_NOT_EXISTS = 0,
     THUMBNAIL_ADD,
     THUMBNAIL_UPDATE,
+    THUMBNAIL_NOT_CHANGE,
 };
 
 class EXPORT PhotoAssetChangeData : public AccurateRefreshChangeData<PhotoAssetChangeInfo> {
@@ -116,16 +120,18 @@ public:
             std::to_string(isContentChanged_) + ", thumbnailChangeStatus_: " +
             std::to_string(thumbnailChangeStatus_);
     }
+    int32_t GetFileId();
 
 public:
     bool isContentChanged_ = false;
-    int32_t thumbnailChangeStatus_ = 0;
+    int32_t thumbnailChangeStatus_ = ThumbnailChangeStatus::THUMBNAIL_NOT_EXISTS;
+    bool isMultiOperation_ = false;
 };
 
 class PhotoAssetContentInfo {
 public:
     bool isContentChanged_ = false;
-    int32_t thumbnailChangeStatus_ = 0;
+    int32_t thumbnailChangeStatus_ = ThumbnailChangeStatus::THUMBNAIL_NOT_EXISTS;
 };
 
 } // namespace Media

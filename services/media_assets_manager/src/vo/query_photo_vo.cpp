@@ -27,7 +27,7 @@ bool QueryPhotoReqBody::Marshalling(MessageParcel &parcel) const
     return parcel.WriteString(this->fileId);
 }
 
-bool QueryPhotoRspBody::Unmarshalling(MessageParcel &parcel)
+bool QueryPhotoRespBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadString(this->photoId);
     CHECK_AND_RETURN_RET(status, status);
@@ -35,7 +35,7 @@ bool QueryPhotoRspBody::Unmarshalling(MessageParcel &parcel)
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
-bool QueryPhotoRspBody::Marshalling(MessageParcel &parcel) const
+bool QueryPhotoRespBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = parcel.WriteString(this->photoId);
     CHECK_AND_RETURN_RET(status, status);

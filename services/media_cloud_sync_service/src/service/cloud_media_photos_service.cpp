@@ -450,11 +450,11 @@ int32_t CloudMediaPhotosService::CreateEntry(const std::vector<CloudMediaPullDat
     }
     for (auto insertData : allPullDatas) {
         MEDIA_DEBUG_LOG("CreateEntry insert of record %{public}s", insertData.cloudId.c_str());
-        uniqueId++;
         int32_t mediaType =
             (insertData.basicFileType == FILE_TYPE_VIDEO) ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
         std::string extension = ScannerUtils::GetFileExtension(insertData.basicFileName);
         ret = MediaLibraryAssetOperations::CreateAssetPathById(uniqueId, mediaType, extension, insertData.localPath);
+        uniqueId++;
         if (ret != E_OK) {
             MEDIA_ERR_LOG("CreateEntry Generate File Path err %{public}d", ret);
             dataFail++;

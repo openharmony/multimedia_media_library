@@ -39,7 +39,7 @@ public:  // basic functions
     std::string ToString() const;
 };
 
-class GetAlbumsByIdsRspBody : public IPC::IMediaParcelable {
+class GetAlbumsByIdsRespBody : public IPC::IMediaParcelable {
 public:
     std::shared_ptr<DataShare::DataShareResultSet> resultSet;
 
