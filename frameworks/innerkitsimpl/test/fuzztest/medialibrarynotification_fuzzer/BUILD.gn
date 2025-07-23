@@ -1,0 +1,102 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
+
+ohos_fuzztest("MediaLibraryNotificationFuzzTest") {
+  module_out_path = "media_library/media_library"
+  fuzz_config_file = "."
+
+  include_dirs = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/event_handler",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/register_manager",
+    "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/data",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/include/register_manger",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_TEST_PATH}/unittest/get_self_permissions/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include/data",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/include",
+    "./include",
+    "../get_self_permissions/include",
+  ]
+
+  sources = [
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/register_manager/media_observer_manager.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/register_manager/notify_register_permission.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/register_manager/observer_callback_recipient.cpp",
+    "${MEDIALIB_TEST_PATH}/unittest/get_self_permissions/src/get_self_permissions.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/src/notify_task_worker.cpp",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/src/notification_classification.cpp",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/src/notification_distribution.cpp",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/src/notification_merging.cpp",
+    "${MEDIALIB_NOTIFICATION_MERGING_PATH}/src/medialibrary_notify_new.cpp",
+    "./medialibrarynotification_fuzzer.cpp",
+  ]
+
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
+
+  external_deps = [
+    "hitrace:hitrace_meter",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libprivacy_sdk",
+    "access_token:libnativetoken_shared",
+    "access_token:libtokensetproc_shared",
+    "ability_base:zuri",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:ability_manager",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "data_share:datashare_common",
+    "data_share:datashare_provider",
+    "device_manager:devicemanagersdk",
+    "dfs_service:cloudsync_kit_inner",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "kv_store:distributeddata_inner",
+    "napi:ace_napi",
+    "player_framework:media_client",
+    "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
+    "ability_runtime:dataobs_manager",
+    "app_file_service:fileuri_native",
+    "data_share:datashare_consumer",
+    "e2fsprogs:libext2_uuid",
+    "image_framework:image_native",
+    "user_file_service:file_access_extension_ability_kit",
+    "ipc:ipc_napi",
+  ]
+
+  defines = []
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.filemanagement_dfs_service)) {
+    defines += [ "CLOUD_SYNC_MANAGER" ]
+    external_deps += [ "dfs_service:cloudsync_kit_inner" ]
+  }
+}
