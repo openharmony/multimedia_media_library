@@ -235,6 +235,7 @@ export class PhotoPickerComponent extends ViewPU {
                     mimeTypeFilter: this.parseMimeTypeFilter(null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.mimeTypeFilter),
                     fileSizeFilter: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.fileSizeFilter,
                     videoDurationFilter: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.videoDurationFilter,
+                    photoViewMimeTypeFileSizeFilters: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.photoViewMimeTypeFileSizeFilters,
                     maxSelectNumber: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.maxSelectNumber,
                     isPhotoTakingSupported: null === (n = this.pickerOptions) || void 0 === n ? void 0 : n.isPhotoTakingSupported,
                     isEditSupported: !1,
