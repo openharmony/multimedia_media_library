@@ -116,6 +116,8 @@ public:
         const std::string &whereClause, const std::vector<std::string> &args);
     EXPORT std::string ObtainDistributedTableName(const std::string &device, const std::string &table, int &errCode);
     EXPORT int Backup(const std::string &databasePath, const std::vector<uint8_t> &encryptKey = {});
+    EXPORT int Backup(const std::string &databasePath, bool integrityCheck,
+        const std::vector<uint8_t> &encryptKey = {});
     EXPORT int Sync(const DistributedRdb::SyncOption &option, const NativeRdb::AbsRdbPredicates &predicate,
         const DistributedRdb::AsyncBrief &async);
     EXPORT std::shared_ptr<NativeRdb::ResultSet> QueryByStep(const std::string &sql,
