@@ -447,7 +447,7 @@ void CloneRestore::RestoreAlbum()
     maxAnalysisAlbumId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
         ANALYSIS_ALBUM_TABLE, ANALYSIS_COL_ALBUM_ID);
     maxBeautyFileId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
-        ANALYSIS_BEAUTY_SCORE_TABLE, BEAUTY_SCORE_COL_FILE_ID); 
+        ANALYSIS_BEAUTY_SCORE_TABLE, BEAUTY_SCORE_COL_FILE_ID);
 
     for (const auto &tableName : CLONE_ALBUMS) {
         if (!IsReadyForRestore(tableName)) {

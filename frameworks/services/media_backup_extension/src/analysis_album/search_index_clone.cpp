@@ -77,7 +77,8 @@ bool SearchIndexClone::Clone()
 
     for (size_t i = 0; i < oldFileIds.size(); i += SQL_BATCH_SIZE) {
         auto batch_begin = oldFileIds.begin() + i;
-        auto batch_end = (i + SQL_BATCH_SIZE < oldFileIds.size()) ? (oldFileIds.begin() + i + SQL_BATCH_SIZE) : oldFileIds.end();
+        auto batch_end = ((i + SQL_BATCH_SIZE < oldFileIds.size()) ?
+            (oldFileIds.begin() + i + SQL_BATCH_SIZE) : oldFileIds.end());
         std::vector<int32_t> batchOldFileIds(batch_begin, batch_end);
 
         if (batchOldFileIds.empty()) {
