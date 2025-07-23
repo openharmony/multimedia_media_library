@@ -16,6 +16,7 @@
 
 #include "metadata_extractor.h"
 
+#include <charconv>
 #include <fcntl.h>
 #include "directory_ex.h"
 #include "hitrace_meter.h"
@@ -143,6 +144,24 @@ static int32_t offsetTimeToSeconds(const string& offsetStr, int32_t& offsetTime)
     return E_OK;
 }
 
+static void SetSubSecondTime(const unique_ptr<ImageSource> &imageSource, const std::string &key, int64_t &timeStamp)
+{
+    string subTimeStr;
+    uint32_t err = imageSource->GetImagePropertyString(0, key, subTimeStr);
+    if (err == E_OK && !subTimeStr.empty()) {
+        const size_t millisecondPrecision = 3;
+        const size_t subTimeSize = std::min(millisecondPrecision, subTimeStr.size());
+        int32_t subTime = 0;
+        auto [ptr, ec] = std::from_chars(subTimeStr.data(), subTimeStr.data() + subTimeSize, subTime);
+        if (ec == std::errc() && ptr == subTimeStr.data() + subTimeSize) {
+            MEDIA_DEBUG_LOG("subTime:%{public}d from %{public}s in exif", subTime, key.c_str());
+            timeStamp += subTime;
+        } else {
+            MEDIA_WARN_LOG("Invalid subTime format:%{public}s", subTimeStr.c_str());
+        }
+    }
+}
+
 static void ExtractDetailTimeMetadata(const unique_ptr<ImageSource> &imageSource, unique_ptr<Metadata> &data)
 {
     string timeString;
@@ -163,29 +182,6 @@ static void ExtractDetailTimeMetadata(const unique_ptr<ImageSource> &imageSource
     if (data->GetDetailTime().empty()) {
         int64_t dateTaken = data->GetDateTaken() / MSEC_TO_SEC;
         data->SetDetailTime(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken));
-    }
-}
-
-static void SetSubSecondTime(const unique_ptr<ImageSource> &imageSource, const std::string &key, int64_t &timeStamp)
-{
-    string subTimeString;
-    uint32_t err = imageSource->GetImagePropertyString(0, key, subTimeString);
-    if (err == E_OK && !subTimeString.empty()) {
-        for (size_t i = 0; i < subTimeString.size(); i++) {
-            if (!isdigit(subTimeString[i])) {
-                MEDIA_WARN_LOG("Invalid subTime format:%{public}s", subTimeString.c_str());
-                return;
-            }
-        }
-        const int32_t subTimeSize = 3;
-        int32_t subTime = 0;
-        if (subTimeString.size() > subTimeSize) {
-            subTime = stoi(subTimeString.substr(0, subTimeSize));
-        } else {
-            subTime = stoi(subTimeString);
-        }
-        MEDIA_DEBUG_LOG("subTime:%{public}d from %{public}s in exif", subTime, key.c_str());
-        timeStamp += subTime;
     }
 }
 
