@@ -405,23 +405,89 @@ static int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const Merg
     return E_OK;
 }
 
-static int32_t UpdateForMergeGroupAlbums(const shared_ptr<MediaLibraryRdbStore> store, const vector<int> &deleteId,
-    const std::unordered_map<string, MergeAlbumInfo> updateMap)
+static int32_t DeleteRepeatRecordInMap(const vector<string> &deleteAlbumIds)
+{
+    RdbPredicates rdbPredicates(ANALYSIS_PHOTO_MAP_TABLE);
+    rdbPredicates.In(MAP_ALBUM, deleteAlbumIds);
+    int32_t deleteRow = MediaLibraryRdbStore::Delete(rdbPredicates);
+    MEDIA_INFO_LOG("deleted row = %{public}d", deleteRow);
+    return deleteRow < 0 ? E_ERR : E_OK;
+}
+
+static string GetSqlsForInsertFileIdInAnalysisAlbumMap(const MergeAlbumInfo &updateMap)
+{
+    string defaultOrderPosition = "-1";
+    string sql = "SELECT Distinct map_asset, " + std::to_string(updateMap.albumId) + ", " +
+        defaultOrderPosition + " FROM AnalysisPhotoMap WHERE map_album IN (";
+    vector<string> deleteAlbumIds = updateMap.repeatedAlbumIds;
+    string strDeleteAlbumIds;
+    if (deleteAlbumIds.size() == 0) {
+        MEDIA_WARN_LOG("There are no duplicate albums that need to be deleted.");
+        return "";
+    }
+    for (int i = 0; i < deleteAlbumIds.size(); i++) {
+        strDeleteAlbumIds += deleteAlbumIds[i];
+        if (i != deleteAlbumIds.size() - 1) {
+            strDeleteAlbumIds += ", ";
+        }
+    }
+    sql = sql + strDeleteAlbumIds + ")";
+    return sql;
+}
+
+static int32_t InsertNewRecordInMap(const shared_ptr<MediaLibraryRdbStore> store, const MergeAlbumInfo &updateMap)
+{
+    vector<string> insertSqls;
+    string insertSql = "INSERT OR REPLACE INTO AnalysisPhotoMap(map_asset, map_album, order_position) ";
+    string queryClause = GetSqlsForInsertFileIdInAnalysisAlbumMap(updateMap);
+    CHECK_AND_RETURN_RET_LOG(queryClause != "", E_ERR, "fail to construct querySql.");
+    insertSql += queryClause;
+    insertSqls.push_back(insertSql);
+    int ret = ExecSqls(insertSqls, store);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "fail to insert new record in analysisPhotoMap.");
+    return E_OK;
+}
+
+static int32_t UpdateAnalysisPhotoMapForMergeGroupPhoto(const shared_ptr<MediaLibraryRdbStore> store,
+    const std::unordered_map<string, MergeAlbumInfo> updateMaps)
+{
+    for (const auto it : updateMaps) {
+        int32_t ret = InsertNewRecordInMap(store, it.second);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("failed to insert newRecord");
+            continue;
+        }
+        ret = DeleteRepeatRecordInMap(it.second.repeatedAlbumIds);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("failed to delete repeat record");
+            continue;
+        }
+        MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(it.second.albumId);
+    }
+    return E_OK;
+}
+
+static int32_t UpdateForMergeGroupAlbums(const shared_ptr<MediaLibraryRdbStore> store, const vector<string> &deleteId,
+    const std::unordered_map<string, MergeAlbumInfo> updateMaps)
 {
     for (auto it : deleteId) {
         RdbPredicates rdbPredicates(ANALYSIS_ALBUM_TABLE);
-        rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(it));
+        rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, it);
         MediaLibraryRdbStore::Delete(rdbPredicates);
     }
     vector<string> updateSqls;
-    for (auto it : updateMap) {
+    for (auto it : updateMaps) {
         string sql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + TAG_ID + " = '" + it.first + "', " +
             GROUP_TAG + " = '" + it.first + "', " + COVER_URI + " = '" + it.second.coverUri + "', " +
             IS_REMOVED + " = 0, " + IS_COVER_SATISFIED  + " = " + to_string(it.second.isCoverSatisfied) +
             " WHERE " + ALBUM_ID + " = " + to_string(it.second.albumId);
         updateSqls.push_back(sql);
     }
-    return ExecSqls(updateSqls, store);
+    int ret = ExecSqls(updateSqls, store);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "fail to update analysisAlbum");
+    ret = UpdateAnalysisPhotoMapForMergeGroupPhoto(store, updateMaps);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "fail to update analysisPhotoMap.");
+    return E_OK;
 }
 
 static string ReorderTagId(string target, const vector<MergeAlbumInfo> &mergeAlbumInfo)
@@ -441,7 +507,6 @@ static string ReorderTagId(string target, const vector<MergeAlbumInfo> &mergeAlb
         }
     }
 
-    CHECK_AND_RETURN_RET(!splitResult.empty(), reordererTagId);
     string newTagId = mergeAlbumInfo[0].groupTag + "|" + mergeAlbumInfo[1].groupTag;
     splitResult.push_back(newTagId);
     std::sort(splitResult.begin(), splitResult.end());
@@ -479,7 +544,7 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
     auto resultSet = uniStore->QuerySql(queryTagId);
     CHECK_AND_RETURN_RET(resultSet != nullptr, E_HAS_DB_ERROR);
 
-    std::vector<int> deleteId;
+    std::vector<string> deleteId;
     std::unordered_map<string, MergeAlbumInfo> updateMap;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         MergeAlbumInfo info;
@@ -488,7 +553,7 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
         string reorderedTagId = ReorderTagId(info.tagId, mergeAlbumInfo);
         auto it = updateMap.find(reorderedTagId);
         if (reorderedTagId.empty()) {
-            deleteId.push_back(info.albumId);
+            continue;
         } else if (it == updateMap.end()) {
             updateMap.insert(std::make_pair(reorderedTagId, info));
         } else {
@@ -496,10 +561,12 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
             if (it->second.coverUri.empty()) {
                 updateMap[reorderedTagId].coverUri = info.coverUri;
                 updateMap[reorderedTagId].isCoverSatisfied = info.isCoverSatisfied;
-                deleteId.push_back(info.albumId);
+                updateMap[reorderedTagId].repeatedAlbumIds.push_back(std::to_string(info.albumId));
+                deleteId.push_back(std::to_string(info.albumId));
                 continue;
             } else if (info.coverUri.empty()) {
-                deleteId.push_back(info.albumId);
+                deleteId.push_back(std::to_string(info.albumId));
+                updateMap[reorderedTagId].repeatedAlbumIds.push_back(std::to_string(info.albumId));
                 continue;
             } else if (GetMergeAlbumCoverUri(newInfo, info, it->second) != E_OK) {
                 return E_HAS_DB_ERROR;
@@ -509,7 +576,8 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
                 updateMap[reorderedTagId].isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING);
             }
             updateMap[reorderedTagId].coverUri = newInfo.coverUri;
-            deleteId.push_back(info.albumId);
+            updateMap[reorderedTagId].repeatedAlbumIds.push_back(std::to_string(info.albumId));
+            deleteId.push_back(std::to_string(info.albumId));
         }
     }
     return UpdateForMergeGroupAlbums(uniStore, deleteId, updateMap);
