@@ -23,6 +23,7 @@
 #include "datashare_helper.h"
 #include "medialibrary_ani_utils.h"
 #include "media_asset_data_handler_ani.h"
+#include "progress_handler.h"
 #include "userfile_manager_types.h"
 
 namespace OHOS {
@@ -41,11 +42,9 @@ enum ProgressReturnInfoType : int32_t {
 
 struct AssetHandler;
 using ThreadFunctionOnData = std::function<void(AssetHandler*)>;
-struct ProgressHandler;
-using ThreadFunctionOnProgress = std::function<void(ProgressHandler*)>;
 
 struct AssetHandler {
-    ani_env *env;
+    ani_vm *etsVm;
     std::string photoId;
     std::string requestId;
     std::string requestUri;
@@ -55,28 +54,10 @@ struct AssetHandler {
     bool needsExtraInfo = false;
     bool isError = false;
 
-    AssetHandler(ani_env *env, const std::string &photoId, const std::string &requestId, const std::string &uri,
+    AssetHandler(ani_vm *etsVm, const std::string &photoId, const std::string &requestId, const std::string &uri,
         const std::shared_ptr<AniMediaAssetDataHandler> &handler, ThreadFunctionOnData func)
-        : env(env), photoId(photoId), requestId(requestId), requestUri(uri), dataHandler(handler),
+        : etsVm(etsVm), photoId(photoId), requestId(requestId), requestUri(uri), dataHandler(handler),
         threadSafeFunc(func) {}
-};
-
-struct RetProgressValue {
-    int32_t progress;
-    int32_t type;
-    std::string errorMsg;
-    RetProgressValue() : progress(0), type(0), errorMsg("") {}
-};
-
-struct ProgressHandler {
-    ani_env *env;
-    ThreadFunctionOnProgress progressFunc;
-    std::string requestId;
-    RetProgressValue retProgressValue;
-    ani_ref progressRef;
-    ProgressHandler(ani_env *env, ThreadFunctionOnProgress func, const std::string &requestId,
-        ani_ref progressRef) : env(env), progressFunc(func),
-        requestId(requestId), progressRef(progressRef) {}
 };
 
 struct MediaAssetManagerAniContext : AniError {
@@ -189,6 +170,8 @@ private:
     static void RequestVideoFileExecute(ani_env *env, unique_ptr<MediaAssetManagerAniContext> &context);
     static void CancelRequestExecute(unique_ptr<MediaAssetManagerAniContext> &context);
     static void CancelRequestComplete(ani_env *env, unique_ptr<MediaAssetManagerAniContext> &context);
+    static ani_status CreateMovingPhotoHandlerInfo(
+        ani_env *env, std::unique_ptr<MediaAssetManagerAniContext> &context);
 public:
     static inline SafeMap<std::string, ProgressHandler*> progressHandlerMap_;
 };

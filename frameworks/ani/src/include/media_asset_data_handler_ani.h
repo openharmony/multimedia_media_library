@@ -19,6 +19,7 @@
 #include <ani.h>
 #include <string>
 #include <mutex>
+#include "progress_handler.h"
 
 namespace OHOS {
 namespace Media {
@@ -75,6 +76,10 @@ public:
     void SetCompatibleMode(const CompatibleMode &compatibleMode);
     std::string GetRequestId();
     void SetRequestId(std::string requestId);
+    ani_ref GetProgressHandlerRef();
+    void SetProgressHandlerRef(ani_ref &progressHandlerRef);
+    ThreadFunctionOnProgress GetThreadsafeFunction();
+    void SetThreadsafeFunction(ThreadFunctionOnProgress &threadsafeFunction);
 private:
     ani_env *env_ = nullptr;
     ani_ref dataHandlerRef_ = nullptr;
@@ -84,6 +89,8 @@ private:
     SourceMode sourceMode_;
     NotifyMode notifyMode_ = NotifyMode::FAST_NOTIFY;
     CompatibleMode compatibleMode_;
+    ani_ref progressHandlerRef_ = nullptr;
+    ThreadFunctionOnProgress threadsafeFunction_ = nullptr;
     std::string requestId_;
     static std::mutex dataHandlerRefMutex_;
 };

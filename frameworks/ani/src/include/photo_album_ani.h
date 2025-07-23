@@ -58,7 +58,8 @@ public:
     EXPORT static PhotoAlbumAni* UnwrapPhotoAlbumObject(ani_env *env, ani_object object);
 
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
-
+    bool GetHiddenOnly() const;
+    int32_t GetAlbumId() const;
 private:
     EXPORT void SetPhotoAlbumAniProperties();
     EXPORT static ani_object PhotoAlbumAniConstructor(ani_env *env, const AniPhotoAlbumOperator &opt);
@@ -100,6 +101,10 @@ struct PhotoAlbumAniContext : public AniError {
     ResultNapiType resultNapiType;
 
     PhotoAlbumAni *objectInfo;
+    int32_t businessCode;
+    std::vector<std::string> assetsArray;
+    bool isSystemApi{false};
+    std::vector<std::string> uris;
 };
 
 } // namespace Media

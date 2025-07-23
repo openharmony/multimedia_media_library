@@ -55,6 +55,8 @@ struct FileAssetContext : public AniError {
     std::string userComment;
     std::string uri;
     char* editDataBuffer;
+
+    uint32_t businessCode = 0;
 };
 
 struct FileAssetAniMethod {

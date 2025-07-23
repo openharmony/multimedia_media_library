@@ -2156,6 +2156,7 @@ export namespace photoAccessHelper {
     createAssetsForAppWithAlbum(source: PhotoCreationSource, albumUri: string, isAuthorized: boolean,
       photoCreationConfigs: Array<PhotoCreationConfig>): Promise<Array<string>>;
     getAlbumsByIds(albumIds: Array<number>): Promise<Map<number, Album>>;
+    updateGalleryFormInfo(info: GalleryFormInfo): Promise<void>;
   }
 
   interface AppInfo {
@@ -2932,6 +2933,27 @@ export namespace photoAccessHelper {
       });
     }
 
+    updateGalleryFormInfo(info: GalleryFormInfo): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.updateGalleryFormInfoInner(info);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code as int, err.message));
+          }
+        });
+      });
+    }
+
     saveGalleryFormInfo(info: GalleryFormInfo): Promise<void> {
       return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
         let cb = (): MediaLibraryAniError | undefined => {
@@ -3177,6 +3199,7 @@ export namespace photoAccessHelper {
     native getPhotoIndexInner(photoUri: string, albumUri: string, options: FetchOptions): number;
     native PhotoAccessRemoveFormInfo(info: FormInfo): void;
     native removeGalleryFormInfoInner(info: GalleryFormInfo): void;
+    native updateGalleryFormInfoInner(info: GalleryFormInfo): void;
     native getSupportedPhotoFormatsInner(photoType: PhotoType): Array<string>;
     native startAssetAnalysisInner(type: AnalysisType, assetUris?: Array<string>): number;
   }

@@ -25,6 +25,7 @@
 #include "rdb_store.h"
 #include "uri.h"
 #include "safe_map.h"
+#include "message_parcel.h"
 
 namespace OHOS {
 namespace Media {
@@ -66,6 +67,9 @@ public:
     EXPORT static void SetUserId(const int32_t userId);
     EXPORT static int32_t GetUserId();
     EXPORT static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelperByUser(const int32_t userId);
+    EXPORT static std::pair<bool, std::shared_ptr<DataShare::DataShareResultSet>> QueryAccessibleViaSandBox(Uri &uri,
+        const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns,
+        int &errCode, const int32_t userId);
 private:
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(ani_env *env,
         ani_object object, const int32_t userId);
