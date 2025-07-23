@@ -168,7 +168,6 @@ private:
     NativeRdb::AbsRdbPredicates GetUpdateRecordCondition(const std::string &cloudId);
     int32_t UpdatePhoto(const std::string &whereClause, const std::vector<std::string> &whereArgs,
         NativeRdb::ValuesBucket &values, int32_t &changeRows);
-    int32_t DeletePhoto(const std::string &whereClause, const std::vector<std::string> &whereArgs, int32_t &deleteRows);
 
 private:
     CloudMediaCommonDao commonDao_;
