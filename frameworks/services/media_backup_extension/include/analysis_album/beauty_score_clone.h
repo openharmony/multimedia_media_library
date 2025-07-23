@@ -30,7 +30,6 @@
 
 namespace OHOS {
 namespace Media {
-constexpr size_t SQL_BATCH_SIZE = 1000;
 struct BeautyScoreTbl {
     std::optional<int32_t> id;
     std::optional<int32_t> file_id;
