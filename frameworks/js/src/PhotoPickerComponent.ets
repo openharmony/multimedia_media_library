@@ -168,6 +168,7 @@ export struct PhotoPickerComponent {
             mimeTypeFilter: this.parseMimeTypeFilter(this.pickerOptions?.mimeTypeFilter),
             fileSizeFilter: this.pickerOptions?.fileSizeFilter,
             videoDurationFilter: this.pickerOptions?.videoDurationFilter,
+            photoViewMimeTypeFileSizeFilters: this.pickerOptions?.photoViewMimeTypeFileSizeFilters,
             maxSelectNumber: this.pickerOptions?.maxSelectNumber as number,
             isPhotoTakingSupported: this.pickerOptions?.isPhotoTakingSupported as boolean,
             isEditSupported: false,

@@ -924,6 +924,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.mimeTypeFilter = parseMimeTypeFilter(option.mimeTypeFilter);
     config.parameters.fileSizeFilter = option.fileSizeFilter;
     config.parameters.videoDurationFilter = option.videoDurationFilter;
+    config.parameters.photoViewMimeTypeFileSizeFilters = option.photoViewMimeTypeFileSizeFilters;
     config.parameters.combinedMediaTypeFilter = option.combinedMediaTypeFilter;
     config.parameters.isPc = deviceinfo.deviceType === '2in1';
   }
@@ -1048,6 +1049,10 @@ function VideoDurationFilter() {
   this.videoDuration = -1;
 }
 
+function FileSizeFilterArray() {
+  this.photoViewMimeTypeFileSizeFilters = [];
+}
+
 function BaseSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
@@ -1158,6 +1163,7 @@ export default {
   MimeTypeFilter: MimeTypeFilter,
   FileSizeFilter: FileSizeFilter,
   VideoDurationFilter: VideoDurationFilter,
+  PhotoViewMimeTypeFileSizeFilters: FileSizeFilterArray,
   FilterOperator: FilterOperator,
   DeliveryMode: photoAccessHelper.DeliveryMode,
   SourceMode: photoAccessHelper.SourceMode,
