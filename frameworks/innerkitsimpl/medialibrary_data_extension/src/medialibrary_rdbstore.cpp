@@ -5410,6 +5410,16 @@ int MediaLibraryRdbStore::Backup(const std::string &databasePath, const std::vec
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Backup(databasePath, encryptKey); });
 }
 
+int MediaLibraryRdbStore::Backup(const std::string &databasePath, bool integrityCheck,
+    const std::vector<uint8_t> &encryptKey)
+{
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), E_HAS_DB_ERROR,
+        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+    return ExecSqlWithRetry([&]() {
+        return MediaLibraryRdbStore::GetRaw()->Backup(databasePath, encryptKey, integrityCheck);
+    });
+}
+
 int MediaLibraryRdbStore::Sync(const DistributedRdb::SyncOption &option, const AbsRdbPredicates &predicate,
     const DistributedRdb::AsyncBrief &async)
 {
