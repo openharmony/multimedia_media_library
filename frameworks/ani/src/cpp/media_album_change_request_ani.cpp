@@ -25,8 +25,28 @@
 #include "photo_album_ani.h"
 #include "vision_photo_map_column.h"
 #include "album_operation_uri.h"
+#include "user_define_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "delete_albums_vo.h"
+#include "change_request_set_album_name_vo.h"
+#include "change_request_set_cover_uri_vo.h"
+#include "change_request_dismiss_vo.h"
+#include "change_request_set_display_level_vo.h"
+#include "change_request_set_is_me_vo.h"
+#include "change_request_add_assets_vo.h"
+#include "change_request_remove_assets_vo.h"
+#include "change_request_move_assets_vo.h"
+#include "change_request_recover_assets_vo.h"
+#include "change_request_delete_assets_vo.h"
+#include "change_request_dismiss_assets_vo.h"
+#include "change_request_merge_album_vo.h"
+#include "change_request_place_before_vo.h"
+#include "change_request_set_order_position_vo.h"
 
 namespace OHOS::Media {
+static const int32_t VALUE_IS_ME = 1;
+static const int32_t VALUE_IS_REMOVED = 1;
+
 ani_status MediaAlbumChangeRequestAni::Init(ani_env *env)
 {
     CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is null");
@@ -250,50 +270,48 @@ ani_status MediaAlbumChangeRequestAni::SetAlbumName(ani_env *env, ani_object obj
     aniContext->objectInfo = Unwrap(env, object);
     CHECK_COND_RET(aniContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
 
-    string albumName;
-    CHECK_COND_WITH_RET_MESSAGE(env,
-        MediaLibraryAniUtils::GetParamStringPathMax(env, name, albumName) == ANI_OK, ANI_INVALID_ARGS,
-        "Failed to get name");
-    auto photoAlbum = aniContext->objectInfo->GetPhotoAlbumInstance();
-    CHECK_COND_WITH_RET_MESSAGE(env, MediaFileUtils::CheckAlbumName(albumName) == E_OK, ANI_INVALID_ARGS,
-        "Invalid album name");
-    CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is null");
-    CHECK_COND_WITH_RET_MESSAGE(env,
-        PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        ANI_INVALID_ARGS, "Only user album, highlight, smart portrait album and group photo can set album name");
-    photoAlbum->SetAlbumName(albumName);
-    aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_ALBUM_NAME);
+    auto changeRequest = aniContext->objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, ANI_ERROR, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, ANI_ERROR, "photoAlbum is nullptr");
+    ChangeRequestSetAlbumNameReqBody reqBody;
+    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
+    reqBody.albumName = photoAlbum->GetAlbumName();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ALBUM_NAME);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        ANI_ERR_LOG("Failed to set album name, err: %{public}d", changedRows);
+        return ANI_INVALID_ARGS;
+    }
     return ANI_OK;
 }
 
 ani_status MediaAlbumChangeRequestAni::SetCoverUri(ani_env *env, ani_object object, ani_string coverUri)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
-    if (!MediaLibraryAniUtils::IsSystemApp()) {
-        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return ANI_ERROR;
-    }
     auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
     CHECK_COND_RET(aniContext != nullptr, ANI_ERROR, "aniContext is null");
     aniContext->objectInfo = Unwrap(env, object);
     CHECK_COND_RET(aniContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
     auto photoAlbum = aniContext->objectInfo->GetPhotoAlbumInstance();
-    string coverUriStr;
-    CHECK_COND_WITH_RET_MESSAGE(env,
-        MediaLibraryAniUtils::GetParamStringPathMax(env, coverUri, coverUriStr) == ANI_OK, ANI_INVALID_ARGS,
-        "Failed to get coverUri");
-    CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is null");
-    CHECK_COND_WITH_RET_MESSAGE(env,
-        PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        ANI_INVALID_ARGS, "Only user album, highlight, smart portrait album and group photo can set cover uri");
-    photoAlbum->SetCoverUri(coverUriStr);
-    aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_COVER_URI);
+    CHECK_COND_RET(photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is nullptr");
+
+    ChangeRequestSetCoverUriReqBody reqBody;
+    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
+    reqBody.coverUri = photoAlbum->GetCoverUri();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_COVER_URI);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        ANI_ERR_LOG("Failed to set cover uri, err: %{public}d", changedRows);
+        aniContext->error = ANI_INVALID_ARGS;
+        return ANI_INVALID_ARGS;
+    }
     return ANI_OK;
 }
 
@@ -551,61 +569,72 @@ ani_status MediaAlbumChangeRequestAni::RecoverAssets(ani_env *env, ani_object ob
 ani_status MediaAlbumChangeRequestAni::SetDisplayLevel(ani_env *env, ani_object object, ani_int displayLevel)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
-    if (!MediaLibraryAniUtils::IsSystemApp()) {
-        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return ANI_ERROR;
-    }
     auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
     CHECK_COND_RET(aniContext != nullptr, ANI_ERROR, "aniContext is null");
     aniContext->objectInfo = Unwrap(env, object);
     CHECK_COND_RET(aniContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
-    CHECK_COND_WITH_RET_MESSAGE(env, MediaFileUtils::CheckDisplayLevel(displayLevel),
-        ANI_INVALID_ARGS, "Invalid display level");
     auto photoAlbum = aniContext->objectInfo->photoAlbum_;
     CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "PhotoAlbum is nullptr");
-    CHECK_COND_WITH_RET_MESSAGE(env,
-        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        ANI_INVALID_ARGS, "Only portrait album can set album display level");
-    photoAlbum->SetDisplayLevel(displayLevel);
-    aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_DISPLAY_LEVEL);
+    ChangeRequestSetCoverUriReqBody reqBody;
+    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
+    reqBody.coverUri = photoAlbum->GetCoverUri();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_COVER_URI);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        ANI_ERR_LOG("Failed to set cover uri, err: %{public}d", changedRows);
+        aniContext->error = ANI_INVALID_ARGS;
+        return ANI_INVALID_ARGS;
+    }
     return ANI_OK;
 }
 
 ani_status MediaAlbumChangeRequestAni::SetIsMe(ani_env *env, ani_object object)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
-    if (!MediaLibraryAniUtils::IsSystemApp()) {
-        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return ANI_ERROR;
-    }
     auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
     CHECK_COND_RET(aniContext != nullptr, ANI_ERROR, "aniContext is null");
     aniContext->objectInfo = Unwrap(env, object);
     CHECK_COND_RET(aniContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
     auto photoAlbum = aniContext->objectInfo->GetPhotoAlbumInstance();
-    CHECK_COND_WITH_RET_MESSAGE(env,
-        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        ANI_INVALID_ARGS, "Only portrait album can set is me");
-    aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_IS_ME);
+    CHECK_COND_RET(photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is nullptr");
+    ChangeRequestSetIsMeReqBody reqBody;
+    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
+    reqBody.isMe = VALUE_IS_ME;
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_IS_ME);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        ANI_ERR_LOG("Failed to set album name, err: %{public}d", changedRows);
+        return ANI_INVALID_ARGS;
+    }
     return ANI_OK;
 }
 
 ani_status MediaAlbumChangeRequestAni::Dismiss(ani_env *env, ani_object object)
 {
-    if (!MediaLibraryAniUtils::IsSystemApp()) {
-        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return ANI_ERROR;
-    }
     auto asyncContext = make_unique<MediaAlbumChangeRequestContext>();
     CHECK_COND_RET(asyncContext != nullptr, ANI_ERROR, "asyncContext is null");
     asyncContext->objectInfo = Unwrap(env, object);
     CHECK_COND_RET(asyncContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, ANI_ERROR, "photoAlbum is null");
-    CHECK_COND_WITH_RET_MESSAGE(env,
-        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        ANI_INVALID_ARGS, "Only group photo can be dismissed");
-    asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::DISMISS);
+    ChangeRequesDismissReqBody reqBody;
+    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
+    reqBody.isRemoved = VALUE_IS_REMOVED;
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        ANI_ERR_LOG("Failed to set album name, err: %{public}d", changedRows);
+        return ANI_INVALID_ARGS;
+    }
     return ANI_OK;
 }
 
@@ -669,9 +698,10 @@ ani_status MediaAlbumChangeRequestAni::DeleteAlbums(ani_env *env, ani_class claz
             "Only user and highlight album can be deleted");
         deleteIds.push_back(to_string(obj->GetPhotoAlbumInstance()->GetAlbumId()));
     }
-    aniContext->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
-    Uri deleteAlbumUri(PAH_DELETE_PHOTO_ALBUM);
-    int ret = UserFileClient::Delete(deleteAlbumUri, aniContext->predicates);
+    DeleteAlbumsReqBody reqBody;
+    reqBody.albumIds = deleteIds;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS);
+    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         ANI_ERR_LOG("Failed to delete albums, err: %{public}d", ret);
         aniContext->ThrowError(env, ret, "Failed to delete albums");
@@ -779,43 +809,6 @@ static bool CreateAlbumExecute(MediaAlbumChangeRequestContext& context)
     return true;
 }
 
-static bool FetchNewCount(MediaAlbumChangeRequestContext& context, shared_ptr<PhotoAlbum>& album)
-{
-    if (album == nullptr) {
-        ANI_ERR_LOG("Album is null");
-        context.SaveError(E_FAIL);
-        return false;
-    }
-
-    Uri queryUri(PAH_QUERY_PHOTO_ALBUM);
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, album->GetAlbumId());
-    vector<string> fetchColumns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COUNT,
-        PhotoAlbumColumns::ALBUM_IMAGE_COUNT, PhotoAlbumColumns::ALBUM_VIDEO_COUNT };
-    int errCode = 0;
-    auto resultSet = UserFileClient::Query(queryUri, predicates, fetchColumns, errCode);
-    if (resultSet == nullptr) {
-        ANI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
-        context.SaveError(E_HAS_DB_ERROR);
-        return false;
-    }
-    if (resultSet->GoToFirstRow() != 0) {
-        ANI_ERR_LOG("go to first row failed when fetch new count");
-        context.SaveError(E_HAS_DB_ERROR);
-        return false;
-    }
-
-    bool hiddenOnly = album->GetHiddenOnly();
-    int imageCount = hiddenOnly ? -1 :
-        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet, TYPE_INT32));
-    int videoCount = hiddenOnly ? -1 :
-        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet, TYPE_INT32));
-    album->SetCount(
-        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, resultSet, TYPE_INT32)));
-    album->SetImageCount(imageCount);
-    album->SetVideoCount(videoCount);
-    return true;
-}
 
 static bool AddAssetsExecute(MediaAlbumChangeRequestContext& context)
 {
@@ -824,43 +817,40 @@ static bool AddAssetsExecute(MediaAlbumChangeRequestContext& context)
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is null");
     int32_t albumId = photoAlbum->GetAlbumId();
-    vector<DataShare::DataShareValuesBucket> valuesBuckets;
-    string batchInsertUri;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_ADD_ASSETS);
+    ChangeRequestAddAssetsReqBody reqBody;
+    ChangeRequestAddAssetsRspBody rspBody;
+    reqBody.albumId = albumId;
+    int32_t ret = 0;
+
+    for (const auto& asset : changeRequest->GetAddAssetArray()) {
+        reqBody.assets.push_back(asset);
+    }
     if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT ||
         photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
-            ANI_INFO_LOG("Add Assets on highlight album");
-        for (const auto& asset : changeRequest->GetAddAssetArray()) {
-            DataShare::DataShareValuesBucket pair;
-            pair.Put(MAP_ALBUM, albumId);
-            pair.Put(MAP_ASSET, asset);
-            valuesBuckets.push_back(pair);
-        }
-        batchInsertUri = PAH_INSERT_HIGHLIGHT_ALBUM;
+        ANI_INFO_LOG("Add Assets on highlight album");
+        reqBody.isHighlight = true;
+        ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     } else {
-        for (const auto& asset : changeRequest->GetAddAssetArray()) {
-            DataShare::DataShareValuesBucket pair;
-            pair.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
-            pair.Put(PhotoColumn::MEDIA_ID, asset);
-            valuesBuckets.push_back(pair);
-        }
-        batchInsertUri = PAH_PHOTO_ALBUM_ADD_ASSET;
+        reqBody.isHighlight = false;
+        ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+        ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
     }
-
-    Uri addAssetsUri(batchInsertUri);
-    int ret = UserFileClient::BatchInsert(addAssetsUri, valuesBuckets);
     changeRequest->ClearAddAssetArray();
     if (ret < 0) {
         context.SaveError(ret);
         ANI_ERR_LOG("Failed to add assets into album %{public}d, err: %{public}d", albumId, ret);
         return false;
     }
-    if (batchInsertUri == PAH_INSERT_HIGHLIGHT_ALBUM) {
+    if (reqBody.isHighlight) {
         ANI_INFO_LOG("Add %{public}d asset(s) into highlight album %{public}d", ret, albumId);
         return true;
     }
 
     ANI_INFO_LOG("Add %{public}d asset(s) into album %{public}d", ret, albumId);
-    FetchNewCount(context, photoAlbum);
+    photoAlbum->SetVideoCount(rspBody.videoCount);
+    photoAlbum->SetImageCount(rspBody.imageCount);
+    photoAlbum->SetCount(rspBody.albumCount);
     return true;
 }
 
@@ -871,12 +861,15 @@ static bool RemoveAssetsExecute(MediaAlbumChangeRequestContext& context)
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is null");
     int32_t albumId = photoAlbum->GetAlbumId();
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
-    predicates.And()->In(PhotoColumn::MEDIA_ID, changeRequest->GetRemoveAssetArray());
-
-    Uri removeAssetsUri(PAH_PHOTO_ALBUM_REMOVE_ASSET);
-    int ret = UserFileClient::Delete(removeAssetsUri, predicates);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_REMOVE_ASSETS);
+    ChangeRequestRemoveAssetsReqBody reqBody;
+    ChangeRequestRemoveAssetsRspBody rspBody;
+    reqBody.albumId = albumId;
+    reqBody.isHiddenOnly = photoAlbum->GetHiddenOnly();
+    for (const auto& asset : changeRequest->GetRemoveAssetArray()) {
+        reqBody.assets.push_back(asset);
+    }
+    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
     changeRequest->ClearRemoveAssetArray();
     if (ret < 0) {
         context.SaveError(ret);
@@ -885,7 +878,9 @@ static bool RemoveAssetsExecute(MediaAlbumChangeRequestContext& context)
     }
 
     ANI_INFO_LOG("Remove %{public}d asset(s) from album %{public}d", ret, albumId);
-    FetchNewCount(context, photoAlbum);
+    photoAlbum->SetVideoCount(rspBody.videoCount);
+    photoAlbum->SetImageCount(rspBody.imageCount);
+    photoAlbum->SetCount(rspBody.albumCount);
     return true;
 }
 
@@ -898,45 +893,48 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestContext& context)
     int32_t albumId = photoAlbum->GetAlbumId();
     auto moveMap = changeRequest->GetMoveMap();
     changeRequest->ClearMoveMap();
-
+    ChangeRequestMoveAssetsReqBody reqBody;
+    ChangeRequestMoveAssetsRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_MOVE_ASSETS);
     for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
         auto targetPhotoAlbum = iter->first;
         CHECK_COND_RET(targetPhotoAlbum != nullptr, false, "targetPhotoAlbum is nullptr");
+        bool isTargetHiddenOnly = targetPhotoAlbum->GetHiddenOnly();
         int32_t targetAlbumId = targetPhotoAlbum->GetAlbumId();
         vector<string> moveAssetArray = iter->second;
-        DataShare::DataSharePredicates predicates;
-        predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
-        predicates.And()->In(PhotoColumn::MEDIA_ID, moveAssetArray);
-
-        DataShare::DataShareValuesBucket valuesBuckets;
-        valuesBuckets.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, targetAlbumId);
-        string uri = PAH_BATCH_UPDATE_OWNER_ALBUM_ID;
-        MediaLibraryAniUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-        Uri moveAssetsUri(uri);
-        int ret = UserFileClient::Update(moveAssetsUri, predicates, valuesBuckets);
+        reqBody.albumId = albumId;
+        reqBody.targetAlbumId = targetAlbumId;
+        for (const auto& asset : moveAssetArray) {
+            reqBody.assets.push_back(asset);
+        }
+        int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
         if (ret < 0) {
             context.SaveError(ret);
             ANI_ERR_LOG("Failed to move assets into album %{public}d, err: %{public}d", targetAlbumId, ret);
             return false;
         }
         ANI_INFO_LOG("Move %{public}d asset(s) into album %{public}d", ret, targetAlbumId);
-        FetchNewCount(context, targetPhotoAlbum);
+        targetPhotoAlbum->SetVideoCount(isTargetHiddenOnly ? -1 : respBody.targetAlbumVideoCount);
+        targetPhotoAlbum->SetImageCount(isTargetHiddenOnly ? -1 : respBody.targetAlbumImageCount);
+        targetPhotoAlbum->SetCount(respBody.targetAlbumCount);
     }
-    FetchNewCount(context, photoAlbum);
+    bool isHiddenOnly = photoAlbum->GetHiddenOnly();
+    photoAlbum->SetVideoCount(isHiddenOnly ? -1 : respBody.albumVideoCount);
+    photoAlbum->SetImageCount(isHiddenOnly ? -1 : respBody.albumImageCount);
+    photoAlbum->SetCount(respBody.albumCount);
     return true;
 }
 
 static bool RecoverAssetsExecute(MediaAlbumChangeRequestContext& context)
 {
     CHECK_COND_RET(context.objectInfo != nullptr, false, "objectInfo is nullptr");
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    predicates.In(PhotoColumn::MEDIA_ID, context.objectInfo->GetRecoverAssetArray());
-    valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_RECOVER_ASSETS);
+    ChangeRequestRecoverAssetsReqBody reqBody;
 
-    Uri recoverAssetsUri(PAH_RECOVER_PHOTOS);
-    int ret = UserFileClient::Update(recoverAssetsUri, predicates, valuesBucket);
-    context.objectInfo->ClearRecoverAssetArray();
+    for (const auto& asset : context.objectInfo->GetRecoverAssetArray()) {
+        reqBody.assets.push_back(asset);
+    }
+    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         context.SaveError(ret);
         ANI_ERR_LOG("Failed to recover assets, err: %{public}d", ret);
@@ -954,13 +952,12 @@ static bool RecoverAssetsExecute(MediaAlbumChangeRequestContext& context)
 static bool DeleteAssetsExecute(MediaAlbumChangeRequestContext& context)
 {
     CHECK_COND_RET(context.objectInfo != nullptr, false, "objectInfo is nullptr");
-    DataShare::DataSharePredicates predicates;
-    predicates.In(PhotoColumn::MEDIA_ID, context.objectInfo->GetDeleteAssetArray());
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, 0);
-
-    Uri deleteAssetsUri(PAH_DELETE_PHOTOS);
-    int ret = UserFileClient::Update(deleteAssetsUri, predicates, valuesBucket, context.objectInfo->GetUserId());
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DELETE_ASSETS);
+    ChangeRequestDeleteAssetsReqBody reqBody;
+    for (const auto& asset : context.objectInfo->GetDeleteAssetArray()) {
+        reqBody.assets.push_back(asset);
+    }
+    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     context.objectInfo->ClearDeleteAssetArray();
     if (ret < 0) {
         context.SaveError(ret);
@@ -979,21 +976,20 @@ static bool DeleteAssetsExecute(MediaAlbumChangeRequestContext& context)
 static bool OrderAlbumExecute(MediaAlbumChangeRequestContext& context)
 {
     CHECK_COND_RET(context.objectInfo != nullptr, false, "objectInfo is nullptr");
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is null");
     auto referenceAlum = context.objectInfo->GetReferencePhotoAlbumInstance();
-    Uri updateAlbumUri(PAH_ORDER_ALBUM);
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_ID, photoAlbum->GetAlbumId());
     int32_t referenceAlbumId = -1;
     if (referenceAlum != nullptr) {
         referenceAlbumId = referenceAlum->GetAlbumId();
     }
-    valuesBucket.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, referenceAlbumId);
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_TYPE, photoAlbum->GetPhotoAlbumType());
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, photoAlbum->GetPhotoAlbumSubType());
-    int32_t result = UserFileClient::Update(updateAlbumUri, predicates, valuesBucket);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_PLACE_BEFORE);
+    ChangeRequestPlaceBeforeReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.referenceAlbumId = referenceAlbumId;
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (result < 0) {
         context.SaveError(result);
         ANI_ERR_LOG("Failed to order albums err: %{public}d", result);
@@ -1005,57 +1001,25 @@ static bool OrderAlbumExecute(MediaAlbumChangeRequestContext& context)
 static bool MergeAlbumExecute(MediaAlbumChangeRequestContext& context)
 {
     CHECK_COND_RET(context.objectInfo != nullptr, false, "objectInfo is nullptr");
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is null");
     auto targetAlum = context.objectInfo->GetTargetPhotoAlbumInstance();
     CHECK_COND_RET(targetAlum != nullptr, false, "targetAlum is null");
-    Uri updateAlbumUri(PAH_PORTRAIT_MERGE_ALBUM);
-    valuesBucket.Put(ALBUM_ID, photoAlbum->GetAlbumId());
     int32_t targetAlbumId = -1;
     if (targetAlum != nullptr) {
         targetAlbumId = targetAlum->GetAlbumId();
     }
-    valuesBucket.Put(TARGET_ALBUM_ID, targetAlbumId);
-    int32_t result = UserFileClient::Update(updateAlbumUri, predicates, valuesBucket);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_MERGE_ALBUM);
+    ChangeRequestMergeAlbumReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.targetAlbumId = targetAlbumId;
+    int result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (result < 0) {
         context.SaveError(result);
         ANI_ERR_LOG("Failed to merge albums err: %{public}d", result);
         return false;
     }
     return true;
-}
-
-static void UpdateTabAnalysisImageFace(std::shared_ptr<PhotoAlbum>& photoAlbum,
-    MediaAlbumChangeRequestContext& context)
-{
-    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
-    if (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT) {
-        return;
-    }
-
-    std::string updateUri = PAH_UPDATE_ANA_FACE;
-    MediaLibraryAniUtils::UriAppendKeyValue(updateUri, API_VERSION, std::to_string(MEDIA_API_VERSION_V10));
-    MediaLibraryAniUtils::UriAppendKeyValue(updateUri, MEDIA_OPERN_KEYWORD, UPDATE_DISMISS_ASSET);
-    Uri updateFaceUri(updateUri);
-
-    DataShare::DataShareValuesBucket updateValues;
-    updateValues.Put(MediaAlbumChangeRequestAni::TAG_ID,
-        std::to_string(MediaAlbumChangeRequestAni::PORTRAIT_REMOVED));
-
-    DataShare::DataSharePredicates updatePredicates;
-    CHECK_NULL_PTR_RETURN_VOID(context.objectInfo, "context.objectInfo is null");
-    std::vector<std::string> dismissAssetArray = context.objectInfo->GetDismissAssetArray();
-    std::string selection = std::to_string(photoAlbum->GetAlbumId());
-    for (size_t i = 0; i < dismissAssetArray.size(); ++i) {
-        selection += "," + dismissAssetArray[i];
-    }
-    updatePredicates.SetWhereClause(selection);
-    int updatedRows = UserFileClient::Update(updateFaceUri, updatePredicates, updateValues);
-    if (updatedRows <= 0) {
-        ANI_WARN_LOG("Failed to update tab_analysis_image_face, err: %{public}d", updatedRows);
-    }
 }
 
 static bool DismissAssetExecute(MediaAlbumChangeRequestContext& context)
@@ -1066,20 +1030,18 @@ static bool DismissAssetExecute(MediaAlbumChangeRequestContext& context)
 
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is null");
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MAP_ALBUM, to_string(photoAlbum->GetAlbumId()));
-    predicates.And()->In(MAP_ASSET, context.objectInfo->GetDismissAssetArray());
-    predicates.And()->EqualTo(ALBUM_SUBTYPE, to_string(photoAlbum->GetPhotoAlbumSubType()));
-
-    auto deletedRows = UserFileClient::Delete(uri, predicates);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS_ASSETS);
+    ChangeRequestDismissAssetsReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.photoAlbumSubType = static_cast<int32_t>(photoAlbum->GetPhotoAlbumSubType());
+    for (const auto& asset : context.objectInfo->GetDismissAssetArray()) {
+        reqBody.assets.push_back(asset);
+    }
+    int deletedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (deletedRows < 0) {
         context.SaveError(deletedRows);
         ANI_ERR_LOG("Failed to dismiss asset err: %{public}d", deletedRows);
         return false;
-    }
-
-    if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
-        UpdateTabAnalysisImageFace(photoAlbum, context);
     }
 
     context.objectInfo->ClearDismissAssetArray();
@@ -1089,7 +1051,6 @@ static bool DismissAssetExecute(MediaAlbumChangeRequestContext& context)
 static bool SetOrderPositionExecute(MediaAlbumChangeRequestContext &context)
 {
     CHECK_COND_RET(context.objectInfo != nullptr, false, "objectInfo is nullptr");
-    DataShare::DataSharePredicates predicates;
     const auto &photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is null");
     const auto &pairs = context.objectInfo->GetIdOrderPositionPairs();
@@ -1104,14 +1065,12 @@ static bool SetOrderPositionExecute(MediaAlbumChangeRequestContext &context)
         ids.push_back(assetId);
     }
     orderString << "END";
-    predicates.EqualTo(mapTable + "." + MAP_ALBUM, photoAlbum->GetAlbumId())
-        ->And()
-        ->In(mapTable + "." + MAP_ASSET, ids);
-
-    Uri updateAlbumUri(PAH_UPDATE_ORDER_ANA_ALBUM);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(ORDER_POSITION, orderString.str());
-    int32_t result = UserFileClient::Update(updateAlbumUri, predicates, valuesBucket);
+    ChangeRequestSetOrderPositionReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.orderString  = orderString.str();
+    reqBody.assetIds = ids;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ORDER_POSITION);
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (result < 0) {
         context.SaveError(result);
         ANI_ERR_LOG("Failed to set order position err: %{public}d", result);

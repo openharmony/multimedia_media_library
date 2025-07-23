@@ -20,23 +20,30 @@
 
 #include "access_token.h"
 #include "accesstoken_kit.h"
+#include "adapted_vo.h"
 #include "ani_class_name.h"
 #include "directory_ex.h"
 #include "file_uri.h"
 #include "ipc_skeleton.h"
+#include "media_asset_rdbstore.h"
 #include "media_call_transcode.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_library_ani.h"
 #include "medialibrary_ani_utils.h"
 #include "medialibrary_ani_utils_ext.h"
+#include "medialibrary_business_code.h"
 #include "medialibrary_tracer.h"
+#include "medialibrary_operation.h"
 #include "moving_photo_ani.h"
+#include "moving_photo_call_transcoder.h"
 #include "permission_utils.h"
 #include "picture_handle_client.h"
+#include "query_photo_vo.h"
 #include "userfile_client.h"
 #include "image_source_taihe_ani.h"
 #include "picture_taihe_ani.h"
+#include "user_define_ipc_client.h"
 
 namespace OHOS::Media {
 static std::mutex multiStagesCaptureLock;
@@ -50,6 +57,9 @@ const int32_t MAX_URI_SIZE = 384; // 256 for display name and 128 for relative p
 const int32_t REQUEST_ID_MAX_LEN = 64;
 
 const std::string HIGH_TEMPERATURE = "high_temperature";
+
+static const std::string URI_TYPE = "uriType";
+static const std::string TYPE_PHOTOS = "1";
 
 static std::map<std::string, std::shared_ptr<MultiStagesTaskObserver>> multiStagesObserverMap;
 static std::map<std::string, std::map<std::string, AssetHandler*>> inProcessUriMap;
@@ -98,8 +108,12 @@ static AssetHandler* CreateAssetHandler(ani_env *env, unique_ptr<MediaAssetManag
     const std::shared_ptr<AniMediaAssetDataHandler> &handler, ThreadFunctionOnData func)
 {
     CHECK_COND_RET(context != nullptr, nullptr, "context is null");
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    ani_vm *etsVm = nullptr;
+    CHECK_COND_RET(env->GetVM(&etsVm) == ANI_OK && etsVm != nullptr, nullptr, "Failed to get ani_vm");
+
     AssetHandler *assetHandler =
-        new AssetHandler(env, context->photoId, context->requestId, context->photoUri, handler, func);
+        new AssetHandler(etsVm, context->photoId, context->requestId, context->photoUri, handler, func);
     CHECK_COND_RET(assetHandler != nullptr, nullptr, "assetHandler is null");
     ANI_DEBUG_LOG("[AssetHandler create] photoId: %{public}s, requestId: %{public}s, uri: %{public}s, %{public}p",
         context->photoId.c_str(), context->requestId.c_str(), context->photoUri.c_str(), assetHandler);
@@ -222,13 +236,15 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, ani_env *env,
     mediaAssetDataHandler->SetCompatibleMode(context->compatibleMode);
     mediaAssetDataHandler->SetNotifyMode(notifyMode);
     mediaAssetDataHandler->SetRequestId(context->requestId);
+    mediaAssetDataHandler->SetProgressHandlerRef(context->progressHandlerRef);
+    mediaAssetDataHandler->SetThreadsafeFunction(context->onProgressPtr);
 
     AssetHandler *assetHandler = CreateAssetHandler(env, context, mediaAssetDataHandler, threadSafeFunc);
     CHECK_COND_RET(assetHandler != nullptr, nullptr, "assetHandler is null");
     assetHandler->photoQuality = context->photoQuality;
     assetHandler->needsExtraInfo = context->needsExtraInfo;
-    ANI_INFO_LOG("Add %{public}d, %{public}s, %{public}s, %{public}p", notifyMode, context->photoUri.c_str(),
-        context->requestId.c_str(), assetHandler);
+    ANI_INFO_LOG("Add %{public}d, %{public}s, %{public}s, %{public}p", notifyMode,
+        MediaFileUtils::DesensitizeUri(context->photoUri).c_str(), context->requestId.c_str(), assetHandler);
 
     switch (notifyMode) {
         case NotifyMode::FAST_NOTIFY: {
@@ -249,7 +265,8 @@ static void DeleteDataHandler(NotifyMode notifyMode, const std::string &requestU
 {
     std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(requestUri);
-    ANI_INFO_LOG("Rmv %{public}d, %{public}s, %{public}s", notifyMode, requestUri.c_str(), requestId.c_str());
+    ANI_INFO_LOG("Rmv %{public}d, %{public}s, %{public}s", notifyMode,
+        MediaFileUtils::DesensitizeUri(requestUri).c_str(), requestId.c_str());
     if (notifyMode == NotifyMode::WAIT_FOR_HIGH_QUALITY) {
         DeleteInProcessMapRecord(uriLocal, requestId);
     }
@@ -380,7 +397,7 @@ static ani_status GetCompatibleMode(ani_env *env, ani_object requestOptions, Com
         AniError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "invalid compatible mode value");
         return ANI_INVALID_ARGS;
     }
-#ifndef USE_VIDEO_PROCESSING_ENGINE
+#if !defined(USE_VIDEO_PROCESSING_ENGINE) || !defined(USE_VIDEO_PROCESSING_ENGINE_EXT)
     if (static_cast<CompatibleMode>(mode) == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
         ANI_ERR_LOG("current environment not support transcoder");
         AniError::ThrowError(env, OHOS_NOT_SUPPORT_TRANSCODER_CODE, "not support transcoder");
@@ -569,22 +586,18 @@ ani_status MediaAssetManagerAni::CreateOnDataPreparedThreadSafeFunc(ThreadFuncti
 {
     threadSafeFunc = [](AssetHandler* assetHandler) {
         CHECK_IF_EQUAL(assetHandler != nullptr, "assetHandler is null");
-        CHECK_IF_EQUAL(assetHandler->env != nullptr, "assetHandler env is null");
-
-        ani_vm *etsVm {};
-        CHECK_IF_EQUAL(assetHandler->env->GetVM(&etsVm) == ANI_OK, "Get etsVm fail");
+        CHECK_IF_EQUAL(assetHandler->etsVm != nullptr, "assetHandler etsVm is null");
 
         ani_env *etsEnv {};
         ani_option interopEnabled {"--interop=disable", nullptr};
         ani_options aniArgs {1, &interopEnabled};
-        CHECK_IF_EQUAL(etsVm != nullptr, "etsVm is null");
-        CHECK_IF_EQUAL(etsVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &etsEnv) == ANI_OK,
+        CHECK_IF_EQUAL(assetHandler->etsVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &etsEnv) == ANI_OK,
             "AttachCurrentThread fail");
 
         // Do OnDataPrepared in thread
         MediaAssetManagerAni::OnDataPrepared(etsEnv, assetHandler);
 
-        CHECK_IF_EQUAL(etsVm->DetachCurrentThread() == ANI_OK, "DetachCurrentThread fail");
+        CHECK_IF_EQUAL(assetHandler->etsVm->DetachCurrentThread() == ANI_OK, "DetachCurrentThread fail");
     };
     return ANI_OK;
 }
@@ -593,22 +606,18 @@ ani_status MediaAssetManagerAni::CreateOnProgressThreadSafeFunc(ThreadFunctionOn
 {
     progressFunc = [](ProgressHandler* progressHandler) {
         CHECK_IF_EQUAL(progressHandler != nullptr, "progressHandler is null");
-        CHECK_IF_EQUAL(progressHandler->env != nullptr, "progressHandler env is null");
-
-        ani_vm *etsVm {};
-        CHECK_IF_EQUAL(progressHandler->env->GetVM(&etsVm) == ANI_OK, "Get etsVm fail");
+        CHECK_IF_EQUAL(progressHandler->etsVm != nullptr, "progressHandler etsVm is null");
 
         ani_env *etsEnv {};
         ani_option interopEnabled {"--interop=disable", nullptr};
         ani_options aniArgs {1, &interopEnabled};
-        CHECK_IF_EQUAL(etsVm != nullptr, "etsVm is null");
-        CHECK_IF_EQUAL(etsVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &etsEnv) == ANI_OK,
+        CHECK_IF_EQUAL(progressHandler->etsVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &etsEnv) == ANI_OK,
             "AttachCurrentThread fail");
 
         // Do OnProgress in thread
         MediaAssetManagerAni::OnProgress(etsEnv, progressHandler);
 
-        CHECK_IF_EQUAL(etsVm->DetachCurrentThread() == ANI_OK, "DetachCurrentThread fail");
+        CHECK_IF_EQUAL(progressHandler->etsVm->DetachCurrentThread() == ANI_OK, "DetachCurrentThread fail");
     };
     return ANI_OK;
 }
@@ -793,31 +802,29 @@ void MediaAssetManagerAni::WriteDataToDestPath(WriteData &writeData, ani_object 
         ANI_ERR_LOG("get source file fd failed %{public}d", srcFd);
         return;
     }
+    UniqueFd uniqueSrcFd(srcFd);
     struct stat statSrc;
-    if (fstat(srcFd, &statSrc) == -1) {
-        close(srcFd);
+    if (fstat(uniqueSrcFd.Get(), &statSrc) == -1) {
         MediaLibraryAniUtils::ToAniBooleanObject(writeData.env, false, resultAniValue);
         ANI_ERR_LOG("File get stat failed, %{public}d", errno);
         return;
     }
     int destFd = GetFdFromSandBoxUri(writeData.destUri);
     if (destFd < 0) {
-        close(srcFd);
         MediaLibraryAniUtils::ToAniBooleanObject(writeData.env, false, resultAniValue);
         ANI_ERR_LOG("get dest fd failed %{public}d", destFd);
         return;
     }
+    UniqueFd uniqueDestFd(destFd);
     ANI_INFO_LOG("WriteDataToDestPath compatibleMode %{public}d", writeData.compatibleMode);
     if (writeData.compatibleMode == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
         isTranscoderMap_.Insert(requestId, true);
         MediaCallTranscode::RegisterCallback(NotifyOnProgress);
-        MediaCallTranscode::CallTranscodeHandle(writeData.env, srcFd, destFd, resultAniValue,
-            statSrc.st_size, requestId);
+        auto ret = MediaCallTranscode::DoTranscode(uniqueSrcFd, uniqueDestFd, statSrc.st_size, requestId);
+        MediaLibraryAniUtils::ToAniBooleanObject(writeData.env, ret, resultAniValue);
     } else {
-        SendFile(writeData.env, srcFd, destFd, resultAniValue, statSrc.st_size);
+        SendFile(writeData.env, uniqueSrcFd.Get(), uniqueDestFd.Get(), resultAniValue, statSrc.st_size);
     }
-    close(srcFd);
-    close(destFd);
     return;
 }
 
@@ -878,8 +885,10 @@ static ani_object GetAniValueOfMedia(ani_env *env, const std::shared_ptr<AniMedi
         MovingPhotoParam movingPhotoParam;
         movingPhotoParam.compatibleMode = dataHandler->GetCompatibleMode();
         movingPhotoParam.requestId = dataHandler->GetRequestId();
+        movingPhotoParam.progressHandlerRef = dataHandler->GetProgressHandlerRef();
+        movingPhotoParam.threadsafeFunction = dataHandler->GetThreadsafeFunction();
         aniValueOfMedia = MovingPhotoAni::NewMovingPhotoAni(env, dataHandler->GetRequestUri(),
-            dataHandler->GetSourceMode(), movingPhotoParam, MediaAssetManagerAni::NotifyOnProgress);
+            dataHandler->GetSourceMode(), movingPhotoParam);
     } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
         MediaAssetManagerAni::GetPictureAniObject(dataHandler->GetRequestUri(), aniValueOfMedia,
             dataHandler->GetSourceMode() == SourceMode::ORIGINAL_MODE, env, isPicture);
@@ -1003,24 +1012,25 @@ void CallPreparedCallbackAfterProgress(ani_env *env, ProgressHandler *progressHa
     DeleteAssetHandlerSafe(assetHandler, env);
 }
 
-void CallProgressCallback(ani_env *env, ProgressHandler &progressHandler, int32_t process)
+void CallProgressCallback(ani_env *env, ProgressHandler *progressHandler, int32_t process)
 {
-    ani_double processAni = static_cast<ani_double>(process);
     CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
+    ani_double processAni = static_cast<ani_double>(process);
+    CHECK_NULL_PTR_RETURN_VOID(progressHandler, "progressHandler is nullptr");
 
-    if (progressHandler.progressRef == nullptr) {
+    if (progressHandler->progressRef == nullptr) {
         ANI_ERR_LOG("Ets processHandler reference is null");
-        DeleteProcessHandlerSafe(&progressHandler, env);
+        DeleteProcessHandlerSafe(progressHandler, env);
         return;
     }
-    ani_object progressHandlerAni = static_cast<ani_object>(progressHandler.progressRef);
+    ani_object progressHandlerAni = static_cast<ani_object>(progressHandler->progressRef);
     ani_method onProgressRef {};
     ani_status status = MediaLibraryAniUtils::FindClassMethod(env, PAH_ANI_CLASS_MEDIA_PROGRESS_HANDLER,
         std::string(ON_PROGRESS_FUNC), &onProgressRef);
     if (status != ANI_OK) {
         ANI_ERR_LOG("onProgressRef Object_GetPropertyByName_Ref fail, ani status: %{public}d",
             static_cast<int>(status));
-        DeleteProcessHandlerSafe(&progressHandler, env);
+        DeleteProcessHandlerSafe(progressHandler, env);
         return;
     }
 
@@ -1080,10 +1090,10 @@ void MediaAssetManagerAni::OnProgress(ani_env *env, ProgressHandler *progressHan
         ANI_INFO_LOG("progressHandler->progressRef == nullptr");
         return;
     }
-    CallProgressCallback(env, *progressHandler, process);
+    CallProgressCallback(env, progressHandler, process);
 }
 
-MultiStagesCapturePhotoStatus MediaAssetManagerAni::QueryPhotoStatus(int fileId,
+static MultiStagesCapturePhotoStatus QueryViaSandBox(int fileId,
     const string& photoUri, std::string &photoId, bool hasReadPermission, int32_t userId)
 {
     photoId = "";
@@ -1099,25 +1109,33 @@ MultiStagesCapturePhotoStatus MediaAssetManagerAni::QueryPhotoStatus(int fileId,
     }
     Uri uri(queryUri);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-        ANI_ERR_LOG("query resultSet is nullptr");
+    OperationObject object = OperationObject::UNKNOWN_OBJECT;
+    auto mediaAssetRdbStore = MediaAssetRdbStore::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(mediaAssetRdbStore != nullptr, MultiStagesCapturePhotoStatus::QUERY_INNER_FAIL,
+        "mediaAssetRdbStore is null");
+    if (mediaAssetRdbStore->IsQueryAccessibleViaSandBox(uri, object, predicates) && userId == DEFAULT_USER_ID) {
+        shared_ptr<DataShare::DataShareResultSet> resultSet = mediaAssetRdbStore->Query(
+            predicates, fetchColumn, object, errCode);
+        if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+            ANI_ERR_LOG("query resultSet is nullptr");
+            return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+        }
+        int indexOfPhotoId = -1;
+        resultSet->GetColumnIndex(PhotoColumn::PHOTO_ID, indexOfPhotoId);
+        resultSet->GetString(indexOfPhotoId, photoId);
+
+        int columnIndexQuality = -1;
+        resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
+        int currentPhotoQuality = HIGH_QUALITY_IMAGE;
+        resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
+        if (currentPhotoQuality == LOW_QUALITY_IMAGE) {
+            ANI_INFO_LOG("query photo status : lowQuality");
+            return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
+        }
+        ANI_INFO_LOG("query photo status quality: %{public}d", currentPhotoQuality);
         return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     }
-    int indexOfPhotoId = -1;
-    resultSet->GetColumnIndex(PhotoColumn::PHOTO_ID, indexOfPhotoId);
-    resultSet->GetString(indexOfPhotoId, photoId);
-
-    int columnIndexQuality = -1;
-    resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
-    int currentPhotoQuality = HIGH_QUALITY_IMAGE;
-    resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
-    if (currentPhotoQuality == LOW_QUALITY_IMAGE) {
-        ANI_INFO_LOG("query photo status : lowQuality");
-        return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
-    }
-    ANI_INFO_LOG("query photo status quality: %{public}d", currentPhotoQuality);
-    return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+    return MultiStagesCapturePhotoStatus::QUERY_INNER_FAIL;
 }
 
 void MediaAssetManagerAni::ProcessImage(const int fileId, const int deliveryMode)
@@ -1148,7 +1166,9 @@ static ProgressHandler* InsertProgressHandler(ani_env *env, unique_ptr<MediaAsse
     CHECK_COND_RET(context != nullptr, nullptr, "context is null");
     ani_ref dataHandlerRef = context->progressHandlerRef;
     ThreadFunctionOnProgress threadSafeFunc = context->onProgressPtr;
-    ProgressHandler *progressHandler = new ProgressHandler(env, threadSafeFunc, context->requestId,
+    ani_vm *etsVm {};
+    CHECK_COND_RET(env != nullptr && env->GetVM(&etsVm) == ANI_OK, nullptr, "Get etsVm fail");
+    ProgressHandler *progressHandler = new ProgressHandler(etsVm, threadSafeFunc, context->requestId,
         dataHandlerRef);
     CHECK_COND_RET(progressHandler != nullptr, nullptr, "progressHandler is null");
     MediaAssetManagerAni::progressHandlerMap_.EnsureInsert(context->requestId, progressHandler);
@@ -1191,6 +1211,33 @@ void MediaAssetManagerAni::RegisterTaskObserver(ani_env *env, unique_ptr<MediaAs
 
     InsertDataHandler(NotifyMode::WAIT_FOR_HIGH_QUALITY, env, context);
     MediaAssetManagerAni::ProcessImage(context->fileId, static_cast<int32_t>(context->deliveryMode));
+}
+
+MultiStagesCapturePhotoStatus MediaAssetManagerAni::QueryPhotoStatus(int fileId,
+    const string& photoUri, std::string &photoId, bool hasReadPermission, int32_t userId)
+{
+    MultiStagesCapturePhotoStatus status = QueryViaSandBox(fileId, photoUri, photoId, hasReadPermission, userId);
+    if (status != MultiStagesCapturePhotoStatus::QUERY_INNER_FAIL) {
+        return status;
+    }
+    QueryPhotoReqBody reqBody;
+    reqBody.fileId = std::to_string(fileId);
+    QueryPhotoRspBody rspBody;
+    std::unordered_map<std::string, std::string> headerMap {
+        {MediaColumn::MEDIA_ID, reqBody.fileId }, {URI_TYPE, TYPE_PHOTOS}};
+    int ret = IPC::UserDefineIPCClient().SetUserId(userId).SetHeader(headerMap).Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_PHOTO_STATUS), reqBody, rspBody);
+    if (ret < 0) {
+        ANI_ERR_LOG("ret = %{public}d", ret);
+        return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+    }
+    photoId = rspBody.photoId;
+    if (rspBody.photoQuality == LOW_QUALITY_IMAGE) {
+        ANI_INFO_LOG("query photo status : lowQuality");
+        return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
+    }
+    ANI_INFO_LOG("query photo status quality: %{public}d", rspBody.photoQuality);
+    return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
 }
 
 void MediaAssetManagerAni::OnHandleRequestImage(ani_env *env, unique_ptr<MediaAssetManagerAniContext> &context)
@@ -1251,10 +1298,10 @@ void MediaAssetManagerAni::RequestExecute(ani_env *env, unique_ptr<MediaAssetMan
         DataShare::DataShareValuesBucket valuesBucket;
         string result;
         valuesBucket.Put("adapted", context->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO);
-        UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result, context->userId);
-        if (context->compatibleMode == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
-            OnHandleProgress(env, context);
-        }
+        AdaptedReqBody reqBody;
+        reqBody.adapted = context->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO;
+        IPC::UserDefineIPCClient().SetUserId(context->userId).Call(
+            static_cast<uint32_t>(MediaLibraryBusinessCode::LOG_MOVING_PHOTO), reqBody);
     }
 }
 
@@ -1394,6 +1441,36 @@ static std::string GenerateRequestId()
     return str;
 }
 
+ani_status MediaAssetManagerAni::CreateMovingPhotoHandlerInfo(ani_env *env,
+    std::unique_ptr<MediaAssetManagerAniContext> &context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+
+    if (context->compatibleMode != CompatibleMode::COMPATIBLE_FORMAT_MODE) {
+        return ANI_OK;
+    }
+    context->onProgressPtr = [](ProgressHandler* progressHandler) {
+        CHECK_IF_EQUAL(progressHandler != nullptr, "progressHandler is null");
+        CHECK_IF_EQUAL(progressHandler->etsVm != nullptr, "progressHandler etsVm is null");
+
+        ani_env *etsEnv {};
+        ani_option interopEnabled {"--interop=disable", nullptr};
+        ani_options aniArgs {1, &interopEnabled};
+        CHECK_IF_EQUAL(progressHandler->etsVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &etsEnv) == ANI_OK,
+            "AttachCurrentThread fail");
+
+        MovingPhotoCallTranscoder::OnProgress(etsEnv, progressHandler);
+
+        CHECK_IF_EQUAL(progressHandler->etsVm->DetachCurrentThread() == ANI_OK, "DetachCurrentThread fail");
+    };
+    if (context->mediaAssetProgressHandler != nullptr) {
+        CHECK_COND_RET(CreateProgressHandlerRef(env, context, context->progressHandlerRef) == ANI_OK, ANI_ERROR,
+            "CreateProgressHandlerRef failed");
+    }
+    return ANI_OK;
+}
+
 ani_string MediaAssetManagerAni::RequestMovingPhoto(ani_env *env, [[maybe_unused]] ani_class clazz,
     ani_object context, ani_object asset, ani_object requestOptions, ani_object dataHandler)
 {
@@ -1413,6 +1490,10 @@ ani_string MediaAssetManagerAni::RequestMovingPhoto(ani_env *env, [[maybe_unused
     if (CreateDataHandlerRef(env, aniContext, aniContext->dataHandlerRef2) != ANI_OK ||
         CreateOnDataPreparedThreadSafeFunc(aniContext->onDataPreparedPtr2) != ANI_OK) {
         ANI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
+        return nullptr;
+    }
+    if (CreateMovingPhotoHandlerInfo(env, aniContext) != ANI_OK) {
+        ANI_ERR_LOG("CreateMovingPhotoHandlerInfo failed");
         return nullptr;
     }
     aniContext->requestId = GenerateRequestId();

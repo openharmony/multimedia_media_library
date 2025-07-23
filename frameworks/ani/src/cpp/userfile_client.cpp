@@ -45,13 +45,31 @@ static std::string GetMediaLibraryDataUri(const int32_t userId)
     return mediaLibraryDataUri;
 }
 
+void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value)
+{
+    std::string uriKey = key + '=';
+    if (uri.find(uriKey) != std::string::npos) {
+        return;
+    }
+
+    char queryMark = (uri.find('?') == std::string::npos) ? '?' : '&';
+    std::string append = queryMark + key + '=' + value;
+
+    size_t posJ = uri.find('#');
+    if (posJ == std::string::npos) {
+        uri += append;
+    } else {
+        uri.insert(posJ, append);
+    }
+}
+
 static Uri MultiUserUriRecognition(Uri &uri, const int32_t userId)
 {
     if (userId == DEFAULT_USER_ID) {
         return uri;
     }
     std::string uriString = uri.ToString();
-    MediaLibraryAniUtils::UriAppendKeyValue(uriString, USER_STR, to_string(userId));
+    UriAppendKeyValue(uriString, USER_STR, to_string(userId));
     return Uri(uriString);
 }
 
@@ -394,6 +412,17 @@ void UserFileClient::SetUserId(const int32_t userId)
 int32_t UserFileClient::GetUserId()
 {
     return userId_;
+}
+
+std::pair<bool, std::shared_ptr<DataShare::DataShareResultSet>> UserFileClient::QueryAccessibleViaSandBox(Uri &uri,
+    const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns,
+    int &errCode, const int32_t userId)
+{
+    OperationObject object = OperationObject::UNKNOWN_OBJECT;
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) && userId == -1) {
+        return {true, MediaAssetRdbStore::GetInstance()->Query(predicates, columns, object, errCode)};
+    }
+    return {false, nullptr};
 }
 } // namespace Media
 } // namespace OHOS

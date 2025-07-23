@@ -19,12 +19,17 @@
 #include <string>
 #include "ani_error.h"
 #include "media_library_enum_ani.h"
+#include "progress_handler.h"
 
 namespace OHOS {
 namespace Media {
 struct MovingPhotoParam {
     std::string requestId;
     CompatibleMode compatibleMode;
+    ani_ref progressHandlerRef;
+    ThreadFunctionOnProgress threadsafeFunction;
+    MovingPhotoParam() : requestId(""), compatibleMode(CompatibleMode::ORIGINAL_FORMAT_MODE),
+        progressHandlerRef(nullptr), threadsafeFunction(nullptr) {}
 };
 struct MovingPhotoAsyncContext;
 
@@ -34,13 +39,13 @@ public:
     ~MovingPhotoAni() = default;
     static ani_status Init(ani_env *env);
     static MovingPhotoAni* Unwrap(ani_env *env, ani_object object);
-    static int32_t OpenReadOnlyFile(const std::string& uri, bool isReadImage);
-    static int32_t OpenReadOnlyLivePhoto(const std::string& destLivePhotoUri);
+    static int32_t OpenReadOnlyFile(const std::string& uri, bool isReadImage, int32_t position);
+    static int32_t OpenReadOnlyLivePhoto(const std::string& destLivePhotoUri, int32_t position);
     static int32_t OpenReadOnlyMetadata(const std::string& movingPhotoUri);
     static ani_object NewMovingPhotoAni(ani_env *env, const std::string& photoUri, SourceMode sourceMode,
-        MovingPhotoParam movingPhotoParam,
-        const std::function<void(int, int, std::string)> callbacks = [](int, int, std::string) {});
+        MovingPhotoParam &movingPhotoParam);
     static void SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context);
+    static void RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context);
     std::string GetUriInner();
     SourceMode GetSourceMode();
     static int32_t GetFdFromUri(const std::string &uri);
@@ -49,15 +54,21 @@ public:
     void SetRequestId(const std::string &requestId);
     CompatibleMode GetCompatibleMode();
     void SetCompatibleMode(const CompatibleMode compatibleMode);
-    void SetMovingPhotoCallback(const std::function<void(int, int, std::string)> callback);
-    std::function<void(int, int, std::string)> GetMovingPhotoCallback();
+    ani_ref GetProgressHandlerRef();
+    void SetProgressHandlerRef(ani_ref &progressHandlerRef);
+    ani_vm *GetEtsVm() const;
+    void SetEtsVm(ani_vm *etsVm);
+    ThreadFunctionOnProgress GetThreadsafeFunction() const;
+    void SetThreadsafeFunction(ThreadFunctionOnProgress threadsafeFunction);
+    static int32_t DoMovingPhotoTranscode(int32_t &videoFd, MovingPhotoAsyncContext* context);
+    static void AfterTranscoder(void *context, int32_t errCode);
 
 private:
     static ani_object Constructor(ani_env *env, [[maybe_unused]] ani_class clazz, ani_string photoUriAni);
 
-    static ani_object RequestContentByImageFileAndVideoFile(ani_env *env, ani_object object,
+    static void RequestContentByImageFileAndVideoFile(ani_env *env, ani_object object,
         ani_string imageFileUri, ani_string videoFileUri);
-    static ani_object RequestContentByResourceTypeAndFile(ani_env *env, ani_object object,
+    static void RequestContentByResourceTypeAndFile(ani_env *env, ani_object object,
         ani_enum_item resourceTypeAni, ani_string fileUri);
     static ani_object RequestContentByResourceType(ani_env *env, ani_object object,
         ani_enum_item resourceTypeAni);
@@ -66,6 +77,9 @@ private:
     std::string photoUri_;
     SourceMode sourceMode_ = SourceMode::EDITED_MODE;
     CompatibleMode compatibleMode_ = CompatibleMode::COMPATIBLE_FORMAT_MODE;
+    ani_ref progressHandlerRef_ = nullptr;
+    ani_vm *etsVm_ = nullptr;
+    ThreadFunctionOnProgress threadsafeFunction_ = nullptr;
     std::string requestId_;
 };
 
@@ -89,6 +103,14 @@ struct MovingPhotoAsyncContext : public AniError {
     RequestContentMode requestContentMode = UNDEFINED;
     void* arrayBufferData = nullptr;
     size_t arrayBufferLength = 0;
+    int32_t position = 0;
+    // for transcode
+    ani_ref progressHandlerRef = nullptr;
+    ani_vm *etsVm = nullptr;
+    ThreadFunctionOnProgress threadsafeFunction = nullptr;
+    std::condition_variable cv;
+    std::mutex mutex;
+    std::atomic_bool isTranscoder {false};
 };
 } // namespace Media
 } // namespace OHOS

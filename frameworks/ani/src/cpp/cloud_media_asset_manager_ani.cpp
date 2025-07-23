@@ -24,6 +24,13 @@
 #include "medialibrary_ani_utils.h"
 #include "medialibrary_tracer.h"
 #include "userfile_client.h"
+#include "start_download_cloud_media_vo.h"
+#include "retain_cloud_media_asset_vo.h"
+#include "medialibrary_business_code.h"
+#include "user_define_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "get_cloudmedia_asset_status_vo.h"
+#include "user_define_ipc_client.h"
 
 namespace OHOS::Media {
 const size_t TYPE_SIZE = 6;
@@ -122,18 +129,12 @@ static void StartDownloadCloudMediaExecute(ani_env *env, void* data)
 
     auto* context = static_cast<CloudMediaAssetAsyncAniContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
-    auto downloadType = context->cloudMediaDownloadType;
-    string uriStr;
-    if (downloadType == static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE)) {
-        uriStr = CMAM_CLOUD_MEDIA_ASSET_TASK_START_FORCE;
-    } else if (downloadType == static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_GENTLE)) {
-        uriStr = CMAM_CLOUD_MEDIA_ASSET_TASK_START_GENTLE;
-    } else {
-        ANI_ERR_LOG("cloudMediaDownloadType error, err type: %{public}d", downloadType);
-        return;
-    }
-    Uri startUri(uriStr);
-    int32_t changedRows = UserFileClient::Update(startUri, context->predicates, context->valuesBucket);
+    StartDownloadCloudMediaReqBody reqBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::START_DOWNLOAD_CLOUDMEDIA);
+    reqBody.cloudMediaType = context->cloudMediaDownloadType;
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    ANI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
     if (changedRows < 0) {
         context->SaveError(changedRows);
         ANI_ERR_LOG("Start download cloud media failed, err: %{public}d", changedRows);
@@ -190,8 +191,10 @@ static void PauseDownloadCloudMediaExecute(ani_env *env, void* data)
 
     auto* context = static_cast<CloudMediaAssetAsyncAniContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
-    Uri pauseUri(CMAM_CLOUD_MEDIA_ASSET_TASK_PAUSE);
-    int32_t changedRows = UserFileClient::Update(pauseUri, context->predicates, context->valuesBucket);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAUSE_DOWNLOAD_CLOUDMEDIA);
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode);
+    ANI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
     if (changedRows < 0) {
         context->SaveError(changedRows);
         ANI_ERR_LOG("Pause download cloud media failed, err: %{public}d", changedRows);
@@ -225,8 +228,10 @@ static void CancelDownloadCloudMediaExecute(ani_env *env, void* data)
 
     auto* context = static_cast<CloudMediaAssetAsyncAniContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
-    Uri cancelUri(CMAM_CLOUD_MEDIA_ASSET_TASK_CANCEL);
-    int32_t changedRows = UserFileClient::Update(cancelUri, context->predicates, context->valuesBucket);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CANCEL_DOWNLOAD_CLOUDMEDIA);
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode);
+    ANI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
     if (changedRows < 0) {
         context->SaveError(changedRows);
         ANI_ERR_LOG("Cancel download cloud media failed, err: %{public}d", changedRows);
@@ -260,16 +265,12 @@ static void RetainCloudMediaAssetExecute(ani_env *env, void* data)
 
     auto* context = static_cast<CloudMediaAssetAsyncAniContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
-    auto retainType = context->cloudMediaRetainType;
-    string uriStr;
-    if (retainType == static_cast<int32_t>(CloudMediaRetainType::RETAIN_FORCE)) {
-        uriStr = CMAM_CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE;
-    } else {
-        ANI_ERR_LOG("cloudMediaRetainType error, err type: %{public}d", retainType);
-        return;
-    }
-    Uri retainUri(uriStr);
-    int32_t changedRows = UserFileClient::Update(retainUri, context->predicates, context->valuesBucket);
+    RetainCloudMediaAssetReqBody reqBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::RETAIN_CLOUDMEDIA_ASSET);
+    reqBody.cloudMediaRetainType = context->cloudMediaRetainType;
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    ANI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
     if (changedRows < 0) {
         context->SaveError(changedRows);
         ANI_ERR_LOG("Retain cloud media asset failed, err: %{public}d", changedRows);
@@ -330,11 +331,14 @@ static void GetCloudMediaAssetStatusExecute(ani_env *env, void* data)
 
     auto* context = static_cast<CloudMediaAssetAsyncAniContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
-    Uri getUri(CMAM_CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY);
-    string result = UserFileClient::GetType(getUri);
-    ANI_INFO_LOG("Get cloud media asset, res: %{public}s.", result.c_str());
+
+    GetCloudMediaAssetStatusReqBody reqBody;
+    GetCloudMediaAssetStatusReqBody rspBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_ASSET_STATUS);
+    IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    ANI_INFO_LOG("Get cloud media asset, res: %{public}s.", rspBody.status.c_str());
     std::vector<std::string> type;
-    if (!SplitUriString(result, type)) {
+    if (!SplitUriString(rspBody.status, type)) {
         ANI_ERR_LOG("GetType failed");
         return;
     }
