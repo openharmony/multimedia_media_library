@@ -18,12 +18,15 @@
 
 #include <string>
 #include <vector>
+#include <unordered_set>
+#include <unordered_map>
 
 #include "accurate_refresh_data_manager.h"
 #include "abs_rdb_predicates.h"
 
 #include "accurate_common_data.h"
 #include "photo_asset_change_info.h"
+#include "multi_thread_asset_change_info_mgr.h"
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
@@ -36,14 +39,17 @@ public:
     AssetDataManager(std::shared_ptr<TransactionOperations> trans)
         : AccurateRefreshDataManager<PhotoAssetChangeInfo, PhotoAssetChangeData>(trans)
     {}
-    virtual ~AssetDataManager()
-    {}
+    virtual ~AssetDataManager();
     int32_t UpdateModifiedDatas() override;
     int32_t PostProcessModifiedDatas(const std::vector<int32_t> &keys) override;
     std::vector<int32_t> GetInitKeys() override;
     int32_t SetContentChanged(int32_t fileId, bool isChanged);
     int32_t SetThumbnailStatus(int32_t fileId, int32_t status);
     int32_t UpdateNotifyInfo();
+    // 更新完对应fileId后清除
+    void ClearMultiThreadChangeData(int32_t fileId);
+    // 清除所有的fileId
+    void ClearMultiThreadChangeDatas();
 
 private:
     int32_t UpdateThumbnailChangeStatus(PhotoAssetChangeData &assetChangeData);
@@ -51,9 +57,15 @@ private:
     std::vector<PhotoAssetChangeInfo> GetInfoByKeys(const std::vector<int32_t> &fileIds) override;
     std::vector<PhotoAssetChangeInfo> GetInfosByPredicates(const NativeRdb::AbsRdbPredicates &predicates) override;
     std::vector<PhotoAssetChangeInfo> GetInfosByResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet) override;
+    void PostInsertBeforeData(PhotoAssetChangeData &changeData, PendingInfo &pendingInfo) override;
+    void PostInsertAfterData(PhotoAssetChangeData &changeData, PendingInfo &pendingInfo, bool isAdd = false) override;
+    bool CheckUpdateDataForMultiThread(PhotoAssetChangeData &changeData) override;
+    void UpdatePendingInfo(PhotoAssetChangeData &changeData, PendingInfo &pendingInfo);
 
 private:
-    std::map<int32_t, PhotoAssetContentInfo> contentInfos;
+    std::unordered_map<int32_t, PhotoAssetContentInfo> contentInfos;
+    // 用于清理MultiThreadAssetChangeInfoMgr中的资产信息
+    std::unordered_set<int32_t> multiThreadAssetIds_;
 };
 
 }  // namespace Media::AccurateRefresh

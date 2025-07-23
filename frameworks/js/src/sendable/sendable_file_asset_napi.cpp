@@ -532,7 +532,7 @@ static bool CheckDisplayNameInCommitModify(SendableFileAssetAsyncContext *contex
 {
     if (context->resultNapiType != ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         if (context->objectPtr->GetMediaType() != MediaType::MEDIA_TYPE_FILE) {
-            if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
+            if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName(), true) != E_OK) {
                 context->error = JS_E_DISPLAYNAME;
                 return false;
             }
@@ -541,6 +541,11 @@ static bool CheckDisplayNameInCommitModify(SendableFileAssetAsyncContext *contex
                 context->error = JS_E_DISPLAYNAME;
                 return false;
             }
+        }
+    } else {
+        if (MediaFileUtils::CheckTitleCompatible(context->objectPtr->GetTitle()) != E_OK) {
+            context->error = JS_E_DISPLAYNAME;
+            return false;
         }
     }
     return true;
@@ -822,7 +827,8 @@ static const map<int32_t, struct SendableAnalysisSourceInfo> ANALYSIS_SOURCE_INF
         FILTER_TAG} } },
     { ANALYSIS_OCR, { OCR, PAH_QUERY_ANA_OCR, { OCR_TEXT, OCR_TEXT_MSG, OCR_WIDTH, OCR_HEIGHT } } },
     { ANALYSIS_FACE, { FACE, PAH_QUERY_ANA_FACE, { FACE_ID, TAG_ID, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT,
-        LANDMARKS, PITCH, YAW, ROLL, PROB, TOTAL_FACES, FEATURES, FACE_OCCLUSION } } },
+        LANDMARKS, PITCH, YAW, ROLL, PROB, TOTAL_FACES, FEATURES, FACE_OCCLUSION, JOINT_BEAUTY_BOUNDER_X,
+        JOINT_BEAUTY_BOUNDER_Y, JOINT_BEAUTY_BOUNDER_WIDTH, JOINT_BEAUTY_BOUNDER_HEIGHT} } },
     { ANALYSIS_OBJECT, { OBJECT, PAH_QUERY_ANA_OBJECT, { OBJECT_ID, OBJECT_LABEL, OBJECT_SCALE_X, OBJECT_SCALE_Y,
         OBJECT_SCALE_WIDTH, OBJECT_SCALE_HEIGHT, PROB, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
     { ANALYSIS_RECOMMENDATION, { RECOMMENDATION, PAH_QUERY_ANA_RECOMMENDATION, { RECOMMENDATION_ID,

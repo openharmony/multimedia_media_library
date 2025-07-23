@@ -28,7 +28,7 @@ void CompositePermissionCheck::AddCheck(std::shared_ptr<SinglePermissionCheck> c
 int32_t CompositePermissionCheck::CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    MEDIA_INFO_LOG("CompositePermissionCheck API code=%{public}d", businessCode);
+    MEDIA_DEBUG_LOG("CompositePermissionCheck API code=%{public}d", businessCode);
     int32_t ret = E_SUCCESS;
     for (const auto& check : compositePermChecks_) {
         ret = check->CheckPermission(businessCode, data);

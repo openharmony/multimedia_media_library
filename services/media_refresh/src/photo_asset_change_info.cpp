@@ -297,6 +297,59 @@ bool PhotoAssetChangeInfo::operator!=(const PhotoAssetChangeInfo &info) const
     return !((*this) == info);
 }
 
+template <typename T>
+void GetDiff(const T &value, const T &compareValue, const std::string &name, std::stringstream &ss)
+{
+    if (value != compareValue) {
+        ss << name << ": " << value << " -> " << compareValue << ", ";
+    }
+}
+#define GET_ASSET_DIFF(member) GetDiff(asset.member, compare.member, #member, ss)
+string PhotoAssetChangeInfo::GetAssetDiff(const PhotoAssetChangeInfo &asset, const PhotoAssetChangeInfo &compare)
+{
+    stringstream ss;
+    if (asset.fileId_ != compare.fileId_) {
+        ss << "diff asset info fileId: " << asset.fileId_ << ", compare fileId: " << compare.fileId_;
+        return ss.str();
+    }
+    ss << "asset info fileId[" << asset.fileId_ << "]: ";
+    GET_ASSET_DIFF(uri_);
+    GET_ASSET_DIFF(dateDay_);
+    GET_ASSET_DIFF(ownerAlbumUri_);
+    GET_ASSET_DIFF(isFavorite_);
+    GET_ASSET_DIFF(mediaType_);
+    GET_ASSET_DIFF(isHidden_);
+    GET_ASSET_DIFF(dateTrashedMs_);
+    GET_ASSET_DIFF(strongAssociation_);
+    GET_ASSET_DIFF(thumbnailVisible_);
+    GET_ASSET_DIFF(dateAddedMs_);
+    GET_ASSET_DIFF(dateTakenMs_);
+    GET_ASSET_DIFF(subType_);
+    GET_ASSET_DIFF(syncStatus_);
+    GET_ASSET_DIFF(cleanFlag_);
+    GET_ASSET_DIFF(timePending_);
+    GET_ASSET_DIFF(isTemp_);
+    GET_ASSET_DIFF(burstCoverLevel_);
+    GET_ASSET_DIFF(ownerAlbumId_);
+    GET_ASSET_DIFF(hiddenTime_);
+    GET_ASSET_DIFF(dirty_);
+    if (asset.displayName_ != compare.displayName_) {
+        ss << "displayName_: " << MediaFileUtils::DesensitizePath(asset.displayName_) << " -> ";
+        ss << MediaFileUtils::DesensitizePath(compare.displayName_);
+    }
+
+    if (asset.path_ != compare.path_) {
+        ss << "path_: " << MediaFileUtils::DesensitizePath(asset.path_) << " -> ";
+        ss << MediaFileUtils::DesensitizePath(compare.path_);
+    }
+    return ss.str();
+}
+
+string PhotoAssetChangeInfo::GetDataDiff(const PhotoAssetChangeInfo &compare)
+{
+    return GetAssetDiff(*this, compare);
+}
+
 bool PhotoAssetChangeData::Marshalling(Parcel &parcel) const
 {
     return Marshalling(parcel, false);
@@ -329,6 +382,11 @@ shared_ptr<PhotoAssetChangeData> PhotoAssetChangeData::Unmarshalling(Parcel &par
         return assetChangeData;
     }
     return nullptr;
+}
+
+int32_t PhotoAssetChangeData::GetFileId()
+{
+    return infoBeforeChange_.fileId_ != INVALID_INT32_VALUE ? infoBeforeChange_.fileId_ : infoAfterChange_.fileId_;
 }
 
 } // namespace Media

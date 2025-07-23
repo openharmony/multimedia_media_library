@@ -8,6 +8,7 @@
     "deviceTypes": [
       "phone",
       "tablet",
+      "wearable",
       "2in1"
     ],
     "deliveryWithInstall": true,

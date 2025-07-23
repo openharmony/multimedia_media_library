@@ -33,7 +33,7 @@ public:
 
 private:
     bool IsBetaVersion();
-    bool IsLastHalfHourDb();
+    bool IsTwelveHoursAgo();
     void CheckHalfDayMissions();
     void UploadDBFile();
     void UploadDBFileInner(int64_t totalFileSize);

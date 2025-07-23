@@ -231,7 +231,7 @@ HWTEST_F(GetPhotoIndexTest, GetPhotoIndexTest_Test_001, TestSize.Level0)
     reqBody.Marshalling(data);
     auto service = make_shared<MediaAlbumsControllerService>();
     service->GetPhotoIndex(data, reply);
-    IPC::MediaRespVo<QueryResultRspBody> resp;
+    IPC::MediaRespVo<QueryResultRespBody> resp;
     bool isValid = resp.Unmarshalling(reply);
     ASSERT_EQ(isValid, true);
     EXPECT_NE(resp.GetErrCode(), E_SUCCESS);

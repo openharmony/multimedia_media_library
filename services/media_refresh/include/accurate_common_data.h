@@ -25,7 +25,7 @@ namespace Media::AccurateRefresh {
 const std::string EMPTY_STR = "";
 const int32_t INVALID_INT32_VALUE = -1;
 const int64_t INVALID_INT64_VALUE = -1;
-
+const std::size_t MAX_DATA_LENGTH = 1000;
 const int32_t ACCURATE_REFRESH_RET_OK = 0;
 
 const int32_t ACCURATE_REFRESH_BASE = 0x10000;
@@ -95,6 +95,16 @@ const int32_t ACCURATE_REFRESH_RDB_INSERT_ERR = ACCURATE_REFRESH_RDB_BASE + 1;
 
 const int32_t ACCURATE_REFRESH_RDB_INVALITD_TABLE = ACCURATE_REFRESH_RDB_BASE + 2;
 
+const int32_t MAX_COST_TIME_REPORT = 1000;
+
+const int32_t MAX_COST_TIME_PRINT_LOG = 200;
+
+const size_t MAX_SQLSTR_SIZE = 210;
+
+const size_t MAX_ALBUM_ID_SIZE = 100;
+
+const size_t MAX_ALBUM_OPERATION_SIZE = 50;
+
 enum RdbOperation {
     RDB_OPERATION_UNDEFINED,
     RDB_OPERATION_ADD,
@@ -154,6 +164,16 @@ public:
 
 protected:
     bool isSystem_ = false;
+};
+
+class PendingInfo {
+public:
+    PendingInfo() : start_(INVALID_INT64_VALUE), end_(INVALID_INT64_VALUE) {}
+    PendingInfo(int64_t start) : start_(start), end_(INVALID_INT64_VALUE) {}
+    PendingInfo(int64_t start, int64_t end) : start_(start), end_(end) {}
+public:
+    int64_t start_;
+    int64_t end_;
 };
 
 } // namespace Media

@@ -94,6 +94,7 @@
 #include "video_composition_callback_imp.h"
 #include "medialibrary_data_manager.h"
 #include "shooting_mode_column.h"
+#include "refresh_business_name.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -1112,6 +1113,7 @@ static void HandleQualityAndHidden(NativeRdb::RdbPredicates predicates, const ve
 
 int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 {
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::TRASH_PHOTOS_BUSSINESS_NAME);
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(cmd.GetDataSharePred(),
         PhotoColumn::PHOTOS_TABLE);
     vector<string> notifyUris = rdbPredicate.GetWhereArgs();
@@ -1121,7 +1123,6 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     HandleQualityAndHidden(rdbPredicate, fileIds, albumData);
 
     // 1、AssetRefresh -> Init(rdbPredicate)
-    AccurateRefresh::AssetAccurateRefresh assetRefresh;
 
     UpdateSourcePath(fileIds);
     ValuesBucket values;
@@ -1270,7 +1271,7 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
     }
 
     int32_t updateRows = 0;
-    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::SAVE_CAMERA_PHOTO_BUSSINESS_NAME);
     do {
         if (cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW))) {
             // Only third-party app save photo, it will bring dirty flag
@@ -1596,6 +1597,7 @@ static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState
 
 static int32_t HidePhotos(MediaLibraryCommand &cmd)
 {
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::HIDE_PHOTOS_BUSSINESS_NAME);
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::HidePhotos");
 
@@ -1603,7 +1605,6 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET(hiddenState >= 0, hiddenState);
 
     RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
-    AccurateRefresh::AssetAccurateRefresh assetRefresh;
 
     vector<string> notifyUris = predicates.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
@@ -1667,6 +1668,7 @@ static bool CheckExistsHiddenPhoto(std::shared_ptr<MediaLibraryRdbStore> rdbStor
 
 static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
 {
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::SET_ASSETS_FAVORITE_BUSSINESS_NAME);
     int32_t favoriteState = GetFavoriteState(cmd.GetValueBucket());
     CHECK_AND_RETURN_RET_LOG(favoriteState >= 0, favoriteState, "Failed to get favoriteState");
 
@@ -1675,7 +1677,6 @@ static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
     ValuesBucket values;
     values.Put(PhotoColumn::MEDIA_IS_FAV, favoriteState);
-    AccurateRefresh::AssetAccurateRefresh assetRefresh;
     int32_t updatedRows = assetRefresh.UpdateWithDateTime(values, predicates);
     CHECK_AND_RETURN_RET_LOG(updatedRows >= 0, E_HAS_DB_ERROR, "Failed to set favorite, err: %{public}d", updatedRows);
     assetRefresh.RefreshAlbum();
@@ -1703,6 +1704,7 @@ static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
 
 int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cmd)
 {
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::SET_ASSETS_USER_COMMENT_BUSSINESS_NAME);
     vector<shared_ptr<FileAsset>> fileAssetVector;
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_NAME };
@@ -1896,7 +1898,7 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(targetAlbumId));
 
-    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::UPDATE_SYSTEM_ASSET_BUSSINESS_NAME);
     int32_t changedRows = assetRefresh.UpdateWithDateTime(values, predicates);
     CHECK_AND_RETURN_RET_LOG(changedRows >= 0, changedRows, "Update owner album id fail when move from system album");
     CHECK_AND_EXECUTE(assetString.empty(), MediaAnalysisHelper::AsyncStartMediaAnalysisService(
@@ -1944,7 +1946,7 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
         "Failed to query file asset vector from db, errCode=%{public}d, predicates=%{public}s",
         errCode, cmd.GetAbsRdbPredicates()->ToString().c_str());
 
-    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::MOVE_ASSETS_BUSSINESS_NAME);
     int32_t updateRows = -1;
     assetRefresh.Update(cmd, updateRows);
     CHECK_AND_RETURN_RET_LOG(updateRows >= 0, updateRows,
@@ -2070,6 +2072,7 @@ void HandleUpdateIndex(MediaLibraryCommand &cmd, string id)
 
 static int32_t UpdateAlbumDateModified(int32_t albumId)
 {
+    CHECK_AND_RETURN_RET_LOG(albumId > 0, E_ERR, "Update date modified albumId err. albumId=%{public}d.", albumId);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET(rdbStore != nullptr, E_HAS_DB_ERROR);
     MediaLibraryCommand updateCmd(OperationObject::PHOTO_ALBUM, OperationType::UPDATE);
@@ -2086,6 +2089,8 @@ static int32_t UpdateAlbumDateModified(int32_t albumId)
 
 int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
 {
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh =
+        make_shared<AccurateRefresh::AssetAccurateRefresh>(AccurateRefresh::UPDATE_FILE_ASSTE_BUSSINESS_NAME);
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE,
         PhotoColumn::MEDIA_NAME, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, MediaColumn::MEDIA_HIDDEN,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_ALL_EXIF,
@@ -2110,8 +2115,6 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update allexif failed, allexif=%{private}s",
         fileAsset->GetAllExif().c_str());
 
-    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh =
-        make_shared<AccurateRefresh::AssetAccurateRefresh>();
     int32_t rowId = -1;
     assetRefresh->Update(cmd, rowId);
     if (rowId < 0) {
@@ -2282,6 +2285,7 @@ const static vector<string> EDITED_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_SUBTYPE,
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
     PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
+    PhotoColumn::PHOTO_OWNER_ALBUM_ID,
 };
 
 static int32_t CheckFileAssetStatus(const shared_ptr<FileAsset>& fileAsset, bool checkMovingPhoto = false)
@@ -2702,6 +2706,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
     errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d",
         fileAsset->GetId());
+    UpdateAlbumDateModified(fileAsset->GetOwnerAlbumId());
     ScanFile(path, false, true, true);
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     return E_OK;
@@ -2852,14 +2857,14 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     CHECK_AND_RETURN_RET_LOG(DoRevertFilters(fileAsset, path, sourcePath) == E_OK, E_FAIL,
         "Failed to DoRevertFilters to photo");
 
-    ScanFile(path, true, true, true);
-    if (revertMovingPhotoGraffiti) {
-        UpdateAndNotifyMovingPhotoAlbum();
-    }
     // revert cloud enhancement ce_available
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
 #endif
+    ScanFile(path, true, true, true);
+    if (revertMovingPhotoGraffiti) {
+        UpdateAndNotifyMovingPhotoAlbum();
+    }
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     MEDIA_INFO_LOG("end to do revertEdit");
     return E_OK;
@@ -3396,7 +3401,8 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     std::shared_ptr<Media::Picture> resultPicture = nullptr;
 
     PhotoExtInfo photoExtInfo = {"", MIME_TYPE_JPEG, "", "", nullptr};
-    int32_t getPicRet = GetPicture(fileId, photoExtInfo.picture, false, uri, photoExtInfo.isHighQualityPicture);
+    string photoId;
+    int32_t getPicRet = GetPicture(fileId, photoExtInfo.picture, false, photoId, photoExtInfo.isHighQualityPicture);
     SavePicture(fileType, fileId, getPicRet, photoExtInfo, resultPicture);
     string path = MediaFileUri::GetPathFromUri(uri, true);
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId, resultPicture);
@@ -3634,11 +3640,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     if (isWriteGpsAdvanced) {
         MultiStagesPhotoCaptureManager::UpdateLocation(cmd.GetValueBucket(), true, assetPath, id);
     }
-    ScanFile(assetPath, false, true, true);
-    MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(id);
-    if (addMovingPhotoGraffiti) {
-        UpdateAndNotifyMovingPhotoAlbum();
-    }
+
     // delete cloud enhacement task
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     vector<string> fileId;
@@ -3646,6 +3648,11 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     vector<string> photoId;
     EnhancementManager::GetInstance().CancelTasksInternal(fileId, photoId, CloudEnhancementAvailableType::EDIT);
 #endif
+    ScanFile(assetPath, false, true, true);
+    MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(id);
+    if (addMovingPhotoGraffiti) {
+        UpdateAndNotifyMovingPhotoAlbum();
+    }
     NotifyFormMap(id, assetPath, false);
     MediaLibraryVisionOperations::EditCommitOperation(cmd);
     MEDIA_INFO_LOG("SubmitEditCacheExecute success, isWriteGpsAdvanced: %{public}d.", isWriteGpsAdvanced);
@@ -4296,7 +4303,7 @@ int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd
     int32_t targetAlbumId = 0;
     CHECK_AND_RETURN_RET(
         GetInt32FromValuesBucket(values, PhotoColumn::PHOTO_OWNER_ALBUM_ID, targetAlbumId), E_HAS_DB_ERROR);
-    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::UPDATE_OWNER_ALBUMID_BUSSINESS_NAME);
     int32_t rowId = -1;
     assetRefresh.Update(cmd, rowId);
     CHECK_AND_RETURN_RET_LOG(rowId >= 0, rowId, "Update Photo In database failed, rowId=%{public}d", rowId);

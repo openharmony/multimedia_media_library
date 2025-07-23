@@ -25,6 +25,7 @@
 #include "result_set.h"
 #include "medialibrary_type_const.h"
 #include "values_bucket.h"
+#include "album_accurate_refresh_manager.h"
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
@@ -66,6 +67,7 @@ public:
 
     NativeRdb::ValuesBucket GetUpdateValues(const AlbumChangeInfo &oldAlbumInfo, NotifyType &type);
     std::string ToString(bool isDetail = false) const;
+    string GetDataDiff(const AlbumChangeInfo &compare);
 
     bool Marshalling(Parcel &parcel) const override;
     bool Marshalling(Parcel &parcel, bool isSystem) const;
@@ -76,6 +78,8 @@ public:
     static std::vector<AlbumChangeInfo> GetInfoFromResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::vector<std::string> &columns);
     static ResultSetDataType GetDataType(const std::string &column);
+private:
+    std::string GetAlbumDiff(const AlbumChangeInfo &album, const AlbumChangeInfo &compare);
 
 private:
     static const std::vector<std::string> albumInfoColumns_;
@@ -101,7 +105,10 @@ public:
     std::unordered_set<int32_t> removeHiddenFileIds;
     int32_t assetModifiedCnt_ = 0;
     int32_t hiddenAssetModifiedCnt_ = 0;
-    int32_t assetRenameCnt = 0;
+    bool isForceRefresh_ = false;
+    bool isHiddenForceRefresh_ = false;
+    AlbumRefreshTimestamp albumRefreshTimestamp_;
+    AlbumRefreshTimestamp albumHiddenRefreshTimestamp_;
 
     std::string ToString() const;
     bool IsAlbumInfoRefresh() const

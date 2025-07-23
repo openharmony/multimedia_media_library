@@ -1022,8 +1022,6 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
     int32_t userId = reqVo.GetUserId();
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t ret = E_IPC_SEVICE_NOT_FOUND;
-    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(0, operationCode, timeout, true);
     for (auto &controllerService : this->serviceFactory_.GetAllMediaControllerService()) {
         if (!controllerService->Accept(operationCode)) {
             continue;

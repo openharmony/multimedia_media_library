@@ -24,10 +24,10 @@ using namespace std;
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
-map<int32_t, AlbumRefreshInfo> OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(
+unordered_map<int32_t, AlbumRefreshInfo> OwnerAlbumInfoCalculation::CalOwnerAlbumRefreshInfo(
     const std::vector<PhotoAssetChangeData> &assetChangeDatas)
 {
-    map<int32_t, AlbumRefreshInfo> ownerAlbumInfos;
+    unordered_map<int32_t, AlbumRefreshInfo> ownerAlbumInfos;
     for (auto &assetChangeData : assetChangeDatas) {
         auto initAlbumId = assetChangeData.infoBeforeChange_.ownerAlbumId_;
         auto modifiedAlbumId = assetChangeData.infoAfterChange_.ownerAlbumId_;
@@ -40,29 +40,29 @@ map<int32_t, AlbumRefreshInfo> OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(
 
         // 更新initAlbumId
         if (initAlbumId != INVALID_INT32_VALUE) {
-            auto iterInitAlbumInfo = ownerAlbumInfos.find(initAlbumId);
-            if (iterInitAlbumInfo != ownerAlbumInfos.end()) {
-                CalOwnerAlbumInfo(assetChangeData, initAlbumId, iterInitAlbumInfo->second);
-            } else {
-                AlbumRefreshInfo initRefreshInfo;
-                CalOwnerAlbumInfo(assetChangeData, initAlbumId, initRefreshInfo);
-                ownerAlbumInfos.emplace(initAlbumId, initRefreshInfo);
-            }
+            UpdateOwnerRefreshInfo(initAlbumId, assetChangeData, ownerAlbumInfos);
         }
 
         // 更新modifiedAlbumId; 如果和initAlbumId相同，则不需要再次处理
         if (modifiedAlbumId != INVALID_INT32_VALUE && initAlbumId != modifiedAlbumId) {
-            auto iterModifiedAlbumInfo = ownerAlbumInfos.find(modifiedAlbumId);
-            if (iterModifiedAlbumInfo != ownerAlbumInfos.end()) {
-                CalOwnerAlbumInfo(assetChangeData, modifiedAlbumId, iterModifiedAlbumInfo->second);
-            } else {
-                AlbumRefreshInfo modifedRefreshInfo;
-                CalOwnerAlbumInfo(assetChangeData, modifiedAlbumId, modifedRefreshInfo);
-                ownerAlbumInfos.emplace(modifiedAlbumId, modifedRefreshInfo);
-            }
+            UpdateOwnerRefreshInfo(modifiedAlbumId, assetChangeData, ownerAlbumInfos);
         }
     }
     return ownerAlbumInfos;
+}
+
+void OwnerAlbumInfoCalculation::UpdateOwnerRefreshInfo(int32_t albumId, const PhotoAssetChangeData &assetChangeData,
+    std::unordered_map<int32_t, AlbumRefreshInfo> &ownerAlbumInfos)
+{
+    auto refreshInfoIter = ownerAlbumInfos.find(albumId);
+    if (refreshInfoIter != ownerAlbumInfos.end()) {
+        CalOwnerAlbumRefreshInfo(assetChangeData, albumId, refreshInfoIter->second);
+    } else {
+        AlbumRefreshInfo refreshInfo;
+        if (CalOwnerAlbumRefreshInfo(assetChangeData, albumId, refreshInfo)) {
+            ownerAlbumInfos.emplace(albumId, refreshInfo);
+        }
+    }
 }
 
 bool OwnerAlbumInfoCalculation::IsOwnerAlbumAsset(const PhotoAssetChangeInfo &assetInfo, int32_t albumId)
@@ -120,37 +120,72 @@ bool OwnerAlbumInfoCalculation::UpdateCount(const PhotoAssetChangeData &assetCha
     return AlbumAssetHelper::UpdateCount(assetChangeData, isAlbumAsset, count);
 }
 
-bool OwnerAlbumInfoCalculation::CalOwnerAlbumInfo(const PhotoAssetChangeData &assetChangeData, int32_t albumId,
+bool OwnerAlbumInfoCalculation::CalOwnerAlbumRefreshInfo(const PhotoAssetChangeData &assetChangeData, int32_t albumId,
     AlbumRefreshInfo &refreshInfo)
 {
     bool ret = false;
-    AlbumRefreshInfo beforeRefreshInfo = refreshInfo;
-    // count/hidden count/video count数量更新
+    AlbumRefreshTimestamp assetTimestamp(assetChangeData.infoBeforeChange_.timestamp_,
+        assetChangeData.infoAfterChange_.timestamp_);
+    // 用户相册信息变化
+    if (IsOwnerAlbumInfoChange(assetChangeData, IsOwnerAlbumAsset, albumId)) {
+        function<bool(AlbumRefreshInfo&)> calRefreshInfoFunc = [&assetChangeData, albumId]
+            (AlbumRefreshInfo &refreshInfo) -> bool {
+                return OwnerAlbumInfoCalculation::UpdateRefreshNormalInfo(assetChangeData, albumId, refreshInfo);
+        };
+        ret = AlbumAssetHelper::CalAlbumRefreshInfo(calRefreshInfoFunc, refreshInfo, albumId, false, assetTimestamp);
+    }
+    // 用户相册隐藏信息变化
+    if (IsOwnerAlbumInfoChange(assetChangeData, IsOwnerAlbumHiddenAsset, albumId)) {
+        function<bool(AlbumRefreshInfo&)> calHiddenRefreshInfoFunc = [&assetChangeData, albumId]
+            (AlbumRefreshInfo &refreshInfo) -> bool {
+                return OwnerAlbumInfoCalculation::UpdateRefreshHiddenInfo(assetChangeData, albumId, refreshInfo);
+        };
+        ret = AlbumAssetHelper::CalAlbumRefreshInfo(calHiddenRefreshInfoFunc, refreshInfo, albumId, true,
+            assetTimestamp) || ret;
+    }
+    return ret;
+}
+
+bool OwnerAlbumInfoCalculation::UpdateRefreshNormalInfo(const PhotoAssetChangeData &assetChangeData, int32_t albumId,
+    AlbumRefreshInfo& refreshInfo)
+{
+    bool ret = false;
     if (UpdateCount(assetChangeData, IsOwnerAlbumAsset, albumId, refreshInfo.deltaCount_)) {
         refreshInfo.assetModifiedCnt_++;
         ret = true;
     }
-    
-    if (UpdateCount(assetChangeData, IsOwnerAlbumHiddenAsset, albumId, refreshInfo.deltaHiddenCount_)) {
+    if (UpdateCount(assetChangeData, IsOwnerAlbumVideoAsset, albumId,
+        refreshInfo.deltaVideoCount_)) {
+        ret = true;
+    }
+    if (UpdateCover(assetChangeData, IsOwnerAlbumAsset, albumId, IsNewerAsset,
+        refreshInfo.deltaAddCover_, refreshInfo.removeFileIds)) {
+        ret = true;
+    }
+    return ret;
+}
+
+bool OwnerAlbumInfoCalculation::UpdateRefreshHiddenInfo(const PhotoAssetChangeData &assetChangeData, int32_t albumId,
+    AlbumRefreshInfo& refreshInfo)
+{
+    bool ret = false;
+    if (UpdateCount(assetChangeData, IsOwnerAlbumHiddenAsset, albumId,
+        refreshInfo.deltaHiddenCount_)) {
         refreshInfo.hiddenAssetModifiedCnt_++;
         ret = true;
     }
-    
-    if (UpdateCount(assetChangeData, IsOwnerAlbumVideoAsset, albumId, refreshInfo.deltaVideoCount_)) {
-        ret = true;
-    }
-
-    // cover/hidden cover更新
-    if (UpdateCover(assetChangeData, IsOwnerAlbumAsset, albumId, IsNewerAsset, refreshInfo.deltaAddCover_,
-        refreshInfo.removeFileIds)) {
-        ret = true;
-    }
-    
     if (UpdateCover(assetChangeData, IsOwnerAlbumHiddenAsset, albumId, IsNewerHiddenAsset,
         refreshInfo.deltaAddHiddenCover_, refreshInfo.removeHiddenFileIds)) {
         ret = true;
     }
     return ret;
+}
+
+bool OwnerAlbumInfoCalculation::IsOwnerAlbumInfoChange(const PhotoAssetChangeData &assetChangeData,
+    std::function<bool(PhotoAssetChangeInfo, int32_t)> isAlbumAsset, int32_t albumId)
+{
+    return isAlbumAsset(assetChangeData.infoBeforeChange_, albumId) !=
+        isAlbumAsset(assetChangeData.infoAfterChange_, albumId);
 }
 
 } // namespace Media

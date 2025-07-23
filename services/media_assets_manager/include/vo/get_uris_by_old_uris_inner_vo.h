@@ -32,7 +32,7 @@ public:
     void Convert2Dto(GetUrisByOldUrisInnerDto &dto);
 };
 
-class GetUrisByOldUrisInnerRspBody : public IPC::IMediaParcelable {
+class GetUrisByOldUrisInnerRespBody : public IPC::IMediaParcelable {
 public:
     std::vector<int32_t> fileIds{};
     std::vector<std::string> datas{};

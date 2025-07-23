@@ -86,6 +86,7 @@
 #include "data_secondary_directory_uri.h"
 #include "medialibrary_restore.h"
 #include "cloud_sync_helper.h"
+#include "refresh_business_name.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -2192,21 +2193,28 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t 
     const string querySql = "SELECT " + UNIQUE_NUMBER + " FROM " + ASSET_UNIQUE_NUMBER_TABLE +
         " WHERE " + ASSET_MEDIA_TYPE + "='" + typeString + "';";
     lock_guard<mutex> lock(g_uniqueNumberLock);
-    int32_t errCode = rdbStore->ExecuteSql(updateSql);
-    CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "CreateAssetUniqueIds ExecuteSql err, ret=%{public}d", errCode);
-
-    auto resultSet = rdbStore->QuerySql(querySql);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "CreateAssetUniqueIds resultSet is null");
-    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("CreateAssetUniqueIds first row empty");
+    int32_t errCode = E_OK;
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    std::function<int(void)> func = [&]()->int {
+        errCode = trans->ExecuteSql(updateSql);
+        CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "CreateAssetUniqueIds ExecuteSql err, ret=%{public}d",
+            errCode);
+        auto resultSet = trans->QueryByStep(querySql);
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "CreateAssetUniqueIds resultSet is null");
+        if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("CreateAssetUniqueIds first row empty");
+            resultSet->Close();
+            return E_HAS_DB_ERROR;
+        }
+        int32_t endUniqueNumber = GetInt32Val(UNIQUE_NUMBER, resultSet);
         resultSet->Close();
-        return E_HAS_DB_ERROR;
-    }
-    int32_t endUniqueNumber = GetInt32Val(UNIQUE_NUMBER, resultSet);
-    resultSet->Close();
-    startUniqueNumber = endUniqueNumber - num;
-    MEDIA_INFO_LOG("CreateAssetUniqueIds type: %{public}d, num: %{public}d, startUniqueNumber: %{public}d",
-        type, num, startUniqueNumber);
+        startUniqueNumber = endUniqueNumber - num;
+        MEDIA_INFO_LOG("CreateAssetUniqueIds type: %{public}d, num: %{public}d, startUniqueNumber: %{public}d",
+            type, num, startUniqueNumber);
+        return E_OK;
+    };
+    errCode = trans->RetryTrans(func);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "CreateAssetUniqueIds err, ret=%{public}d", errCode);
     return E_OK;
 }
 
@@ -2946,8 +2954,8 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     vector<string> photoIds;
     EnhancementManager::GetInstance().RemoveTasksInternal(fileParams.ids, photoIds);
 #endif
-
-    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::DELETE_PHOTOS_BUSSINESS_NAME);
     deletedRows = DeleteDbByIds(predicates.GetTableName(), fileParams.ids, compatible, assetRefresh);
     CHECK_AND_RETURN_RET_LOG(deletedRows > 0, deletedRows,
         "Failed to delete files in db, deletedRows: %{public}d, ids size: %{public}zu",
@@ -3200,7 +3208,8 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     if (assetRefresh == nullptr) {
-        assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+        assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+            AccurateRefresh::DELETE_PHOTOS_COMPLETED_BUSSINESS_NAME);
     }
     MEDIA_DEBUG_LOG("DeletePermanently begin");
     MediaLibraryTracer tracer;
@@ -3234,6 +3243,9 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     vector<shared_ptr<FileAsset>> subFileAssetVector;
     std::set<int32_t> changedAlbumIds;
     GetAssetVectorFromResultSet(resultSet, columns, fileAssetVector);
+    if (resultSet != nullptr) {
+        resultSet->Close();
+    }
     for (auto& fileAssetPtr : fileAssetVector) {
         DeleteLocalPhotoPermanently(fileAssetPtr, subFileAssetVector, assetRefresh);
         changedAlbumIds.insert(fileAssetPtr->GetOwnerAlbumId());

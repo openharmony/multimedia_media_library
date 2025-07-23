@@ -317,8 +317,34 @@ static void HandleLocalVersion(std::shared_ptr<DfxReporter> &dfxReporter)
     int32_t dbVersion = DfxDatabaseUtils::QueryDbVersion();
     dfxReporter->ReportCommonVersion(dbVersion);
     int32_t aestheticsVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_aesthetics_score",
-        AESTHETICS_VERSION);
-    dfxReporter->ReportAnalysisVersion("tab_analysis_aesthetics_score", aestheticsVersion);
+        "aesthetics_version");
+    dfxReporter->ReportAnalysisVersion("aesthetics_score", aestheticsVersion);
+    int32_t compositionVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_composition",
+        "composition_version");
+    dfxReporter->ReportAnalysisVersion("composition", compositionVersion);
+    int32_t headVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_head", "head_version");
+    dfxReporter->ReportAnalysisVersion("head", headVersion);
+    int32_t imageFaceVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_image_face", "features_version");
+    dfxReporter->ReportAnalysisVersion("image_face", imageFaceVersion);
+    int32_t labelVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_label", "label_version");
+    dfxReporter->ReportAnalysisVersion("label", labelVersion);
+    int32_t objectVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_object", "object_version");
+    dfxReporter->ReportAnalysisVersion("object", objectVersion);
+    int32_t ocrVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_ocr", "ocr_version");
+    dfxReporter->ReportAnalysisVersion("ocr", ocrVersion);
+    int32_t poseVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_pose", "pose_version");
+    dfxReporter->ReportAnalysisVersion("pose", poseVersion);
+    int32_t recommendationVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_recommendation",
+        "recommendation_version");
+    dfxReporter->ReportAnalysisVersion("recommendation", recommendationVersion);
+    int32_t saliencyDetectVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_saliency_detect",
+        "saliency_version");
+    dfxReporter->ReportAnalysisVersion("saliency_detect", saliencyDetectVersion);
+    int32_t segmentationVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_segmentation",
+        "segmentation_version");
+    dfxReporter->ReportAnalysisVersion("segmentation", segmentationVersion);
+    int32_t videoLabelVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_video_label", "algo_version");
+    dfxReporter->ReportAnalysisVersion("video_label", videoLabelVersion);
 }
 
 void HandleAstcInfo(std::shared_ptr<DfxReporter>& dfxReporter)
@@ -1079,6 +1105,16 @@ bool DfxManager::HandleReportTaskCompleteMissions()
     }
     dfxWorker_->AddTask(statisticTask);
     return true;
+}
+
+void DfxManager::HandleAccurateRefreshTimeOut(const AccurateRefreshDfxDataPoint& reportData)
+{
+    if (!isInitSuccess_) {
+        MEDIA_WARN_LOG("DfxManager not init");
+        return;
+    }
+    MEDIA_INFO_LOG("enter HandleAccurateRefreshTimeOut");
+    dfxReporter_->ReportAccurateRefreshResult(reportData);
 }
 } // namespace Media
 } // namespace OHOS

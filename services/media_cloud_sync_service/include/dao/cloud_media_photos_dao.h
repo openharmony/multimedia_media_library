@@ -133,6 +133,8 @@ private:
         const std::string &fileId, const std::string &type);
     void UpdateAllAlbumsCountForCloud(const std::vector<std::string> &albums);
     void UpdateAlbumCountInternal(const std::vector<std::string> &subtypes);
+    int32_t FixAlbumIdToBeOtherAlbumId(
+        int32_t &albumId, SafeMap<std::string, std::pair<int32_t, std::string>> &lpathToIdMap);
     void GetSourceAlbumFromPath(const CloudMediaPullDataDto &pullData, int32_t &albumId, std::set<int32_t> &cloudMapIds,
         SafeMap<std::string, std::pair<int32_t, std::string>> &lpathToIdMap);
     int32_t GetSourceAlbumForMerge(const CloudMediaPullDataDto &pullData, std::vector<std::string> &albumCloudIds,
@@ -203,7 +205,7 @@ private:
             PhotoAlbum.cloud_id AS album_cloud_id, \
             PhotoAlbum.lpath AS lpath \
         FROM DATA \
-            INNER JOIN PhotoAlbum \
+            LEFT JOIN PhotoAlbum \
             ON DATA.owner_album_id = PhotoAlbum.album_id \
         ;";
     const std::string SQL_PHOTOS_GET_COPY_RECORDS = "\
@@ -220,7 +222,7 @@ private:
             PhotoAlbum.cloud_id AS album_cloud_id, \
             PhotoAlbum.lpath AS lpath \
         FROM DATA \
-            INNER JOIN PhotoAlbum \
+            LEFT JOIN PhotoAlbum \
             ON DATA.owner_album_id = PhotoAlbum.album_id \
         ;";
     const std::string SQL_PHOTOS_GET_META_MODIFIED_RECORDS = "\
@@ -239,7 +241,7 @@ private:
             PhotoAlbum.cloud_id AS album_cloud_id, \
             PhotoAlbum.lpath AS lpath \
         FROM DATA \
-            INNER JOIN PhotoAlbum \
+            LEFT JOIN PhotoAlbum \
             ON DATA.owner_album_id = PhotoAlbum.album_id \
         ;";
     const std::string SQL_PHOTOS_GET_FILE_MODIFIED_RECORDS = "\
@@ -262,7 +264,7 @@ private:
             PhotoAlbum.cloud_id AS album_cloud_id, \
             PhotoAlbum.lpath AS lpath \
         FROM DATA \
-            INNER JOIN PhotoAlbum \
+            LEFT JOIN PhotoAlbum \
             ON DATA.owner_album_id = PhotoAlbum.album_id \
         ;";
 };

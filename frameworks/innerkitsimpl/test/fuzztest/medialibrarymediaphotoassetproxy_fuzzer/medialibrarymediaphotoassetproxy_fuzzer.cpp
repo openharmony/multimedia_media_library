@@ -36,6 +36,7 @@
 #include "rdb_store.h"
 #include "system_ability_definition.h"
 #include "userfilemgr_uri.h"
+#include "medialibrary_kvstore_manager.h"
 
 namespace OHOS {
 using namespace std;
@@ -152,6 +153,11 @@ static void RdbStoreInit()
     g_rdbStore = rdbStore;
     SetTables();
 }
+
+static inline void ClearKvStore()
+{
+    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
+}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -170,5 +176,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         return 0;
     }
     OHOS::MediaLibraryMediaPhotoAssetProxyTest();
+    OHOS::ClearKvStore();
     return 0;
 }

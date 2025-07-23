@@ -26,6 +26,7 @@
 namespace OHOS::Media {
 class StartAssetAnalysisReqBody : public IPC::IMediaParcelable {
 public:
+    std::string uri;
     DataShare::DataSharePredicates predicates;
 
 public:  // functions of Parcelable.
@@ -36,7 +37,7 @@ public:  // basic functions
     std::string ToString() const;
 };
 
-class StartAssetAnalysisRspBody : public IPC::IMediaParcelable {
+class StartAssetAnalysisRespBody : public IPC::IMediaParcelable {
 public:
     std::shared_ptr<DataShare::DataShareResultSet> resultSet;
 

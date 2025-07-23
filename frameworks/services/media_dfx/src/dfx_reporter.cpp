@@ -208,6 +208,7 @@ void DfxReporter::ReportDeleteBehavior(string bundleName, int32_t type, std::str
     if (bundleName == "" || path == "") {
         return;
     }
+    MEDIA_WARN_LOG("%{public}s do %{public}d on %{public}s", bundleName.c_str(), type, path.c_str());
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
         "MEDIALIB_DELETE_BEHAVIOR",
@@ -673,5 +674,28 @@ void DfxReporter::ReportPhotoSizeAndResolutionInfo(const QuerySizeAndResolution&
         MEDIA_ERR_LOG("Report ReportPhotoSizeAndResolutionInfo error: %{public}d", ret);
     }
 }
+
+void DfxReporter::ReportAccurateRefreshResult(const AccurateRefreshDfxDataPoint& reportData)
+{
+    std::string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_TIMEOUT_ERROR",
+        HiviewDFX::HiSysEvent::EventType::FAULT,
+        "BUNDLE_NAME", bundleName,
+        "SQL", reportData.sqlStr,
+        "TARGET_BUSINESS", reportData.targetBusiness,
+        "TOTAL_COST_TIME", reportData.totalCostTime,
+        "STANDARD_COST_TIME", reportData.standardCostTime,
+        "PHOTO_OPERATION_TOTAL_TIME", reportData.photoOperationTotalTime,
+        "ALBUM_OPERATION_TOTAL_TIME", reportData.albumOperationTotalTime,
+        "ALBUM_ID", reportData.albumId,
+        "ALBUM_OPERATION_TIME", reportData.albumOperationTime,
+        "ALBUM_HIDDEN_INFO_OPERATION_TIME", reportData.albumHiddenInfoOperationTime);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportAccurateRefreshService error:%{public}d", ret);
+    }
+}
+
 } // namespace Media
 } // namespace OHOS

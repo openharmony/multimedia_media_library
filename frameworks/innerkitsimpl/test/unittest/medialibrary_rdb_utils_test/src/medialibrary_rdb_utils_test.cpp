@@ -37,6 +37,7 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_rdb_transaction.h"
+#include "medialibrary_unittest_utils.h"
 #include "story_cover_info_column.h"
 #include "story_play_info_column.h"
 #include "power_efficiency_manager.h"
@@ -75,8 +76,18 @@ void MediaLibraryRdbUtilsTest::SetUpTestCase(void)
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::SetUpTestCase");
 }
 
+void ClearPhotos()
+{
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    int32_t deletedRows = -1;
+    auto ret = rdbStore->Delete(deletedRows, predicates);
+    MEDIA_INFO_LOG("ClearPhotos Delete retVal: %{public}d, deletedRows: %{public}d", ret, deletedRows);
+}
+
 void MediaLibraryRdbUtilsTest::TearDownTestCase(void)
 {
+    ClearPhotos();
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::TearDownTestCase");
 }
 
@@ -419,7 +430,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_QueryAllShootingModeAlbumId
     EXPECT_EQ(albumIds.size(), 0);
 }
 
-int32_t CreateSingleImage(string displayname)
+int32_t CreateSingleImage(string displayname, string appId)
 {
     Uri createAssetUri("file://media/Photo/create");
     string relativePath = "Pictures/";
@@ -428,6 +439,7 @@ int32_t CreateSingleImage(string displayname)
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.Put(MEDIA_DATA_DB_NAME, displayname);
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    valuesBucket.Put(MEDIA_DATA_DB_OWNER_APPID, appId);
     MediaLibraryCommand cmd(createAssetUri);
     return MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 }
@@ -436,25 +448,42 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_TransformOwnerAppIdToTokenI
     testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_TransformOwnerAppIdToTokenId_test_001:start");
-    int32_t id1 = CreateSingleImage("TransformOwnerAppIdTest1.jpg");
-    shared_ptr<OHOS::AbilityRuntime::Context> context;
-    auto rdbStore = std::make_shared<MediaLibraryRdbStore>(context);
+    MediaLibraryUnitTestUtils::Init();
+    int32_t id1 = CreateSingleImage("TransformOwnerAppIdTest1.jpg", "");
     RdbPredicates predicates(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     predicates.EqualTo(AppUriPermissionColumn::FILE_ID, id1);
     vector<string> columns;
-    auto resultSet = rdbStore->Query(predicates, columns);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
     int32_t rowCount = 0;
     resultSet->GetRowCount(rowCount);
     resultSet->Close();
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::rowCount:%{public}d", rowCount);
-    MediaLibraryRdbUtils::TransformOwnerAppIdToTokenId(rdbStore);
-    auto resultSetAfter = rdbStore->Query(predicates, columns);
+    MediaLibraryRdbUtils::TransformOwnerAppIdToTokenId(MediaLibraryDataManager::GetInstance()->rdbStore_);
+    auto resultSetAfter = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
     int32_t rowCountAfter = 0;
     resultSetAfter->GetRowCount(rowCountAfter);
     resultSetAfter->Close();
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::rowCount:%{public}d", rowCountAfter);
     EXPECT_EQ((rowCountAfter - rowCount), 0);
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_TransformOwnerAppIdToTokenId_test_001:stop");
+}
+
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_TransformOwnerAppIdToTokenId_test_002,
+    testing::ext::TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_TransformOwnerAppIdToTokenId_test_002:start");
+    int32_t id1 = CreateSingleImage("TransformOwnerAppIdTest2.jpg", "testAppId");
+    MediaLibraryRdbUtils::TransformOwnerAppIdToTokenId(MediaLibraryDataManager::GetInstance()->rdbStore_);
+    RdbPredicates predicates(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    predicates.EqualTo(AppUriPermissionColumn::FILE_ID, id1);
+    vector<string> columns;
+    auto resultSetAfter = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
+    int32_t rowCountAfter = 0;
+    resultSetAfter->GetRowCount(rowCountAfter);
+    resultSetAfter->Close();
+    MEDIA_INFO_LOG("MediaLibraryRestoreTest::rowCount:%{public}d", rowCountAfter);
+    EXPECT_EQ(rowCountAfter, 1);
+    MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_TransformOwnerAppIdToTokenId_test_002:stop");
 }
 } // namespace Media
 } // namespace OHOS

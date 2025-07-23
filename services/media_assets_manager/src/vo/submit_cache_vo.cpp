@@ -31,12 +31,12 @@ bool SubmitCacheReqBody::Marshalling(MessageParcel &parcel) const
     return ITypesUtil::Marshal(parcel, isWriteGpsAdvanced, values);
 }
 
-bool SubmitCacheRspBody::Unmarshalling(MessageParcel &parcel)
+bool SubmitCacheRespBody::Unmarshalling(MessageParcel &parcel)
 {
     return ITypesUtil::Unmarshal(parcel, fileId, outUri);
 }
 
-bool SubmitCacheRspBody::Marshalling(MessageParcel &parcel) const
+bool SubmitCacheRespBody::Marshalling(MessageParcel &parcel) const
 {
     return ITypesUtil::Marshal(parcel, fileId, outUri);
 }

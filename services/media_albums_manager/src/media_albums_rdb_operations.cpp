@@ -120,4 +120,26 @@ shared_ptr<NativeRdb::ResultSet> MediaAlbumsRdbOperations::MoveAssetsGetAlbumInf
         PhotoAlbumColumns::ALBUM_IMAGE_COUNT, PhotoAlbumColumns::ALBUM_VIDEO_COUNT };
     return MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, fetchColumns);
 }
+
+shared_ptr<NativeRdb::ResultSet> MediaAlbumsRdbOperations::AddAssetsGetAlbumInfo(
+    const ChangeRequestAddAssetsDto &addAssetsDto)
+{
+    NativeRdb::RdbPredicates rdbPredicates(PhotoAlbumColumns::TABLE);
+    rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, addAssetsDto.albumId);
+
+    std::vector<std::string> fetchColumns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COUNT,
+        PhotoAlbumColumns::ALBUM_IMAGE_COUNT, PhotoAlbumColumns::ALBUM_VIDEO_COUNT };
+    return MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, fetchColumns);
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaAlbumsRdbOperations::RemoveAssetsGetAlbumInfo(
+    const ChangeRequestRemoveAssetsDto &removeAssetsDto)
+{
+    NativeRdb::RdbPredicates rdbPredicates(PhotoAlbumColumns::TABLE);
+    rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, removeAssetsDto.albumId);
+
+    std::vector<std::string> fetchColumns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COUNT,
+        PhotoAlbumColumns::ALBUM_IMAGE_COUNT, PhotoAlbumColumns::ALBUM_VIDEO_COUNT };
+    return MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, fetchColumns);
+}
 } // namespace OHOS::Media

@@ -68,8 +68,11 @@ void NotificationClassification::ConvertNotification(
 {
     MEDIA_INFO_LOG("ConvertNotification");
     for (NotifyInfoInner notifyInfoInner : notifyInfos) {
-        std::vector<MediaChangeInfo> infos = classificationMap[notifyInfoInner.operationType](notifyInfoInner);
-        mediaChangeInfos.insert(mediaChangeInfos.end(), infos.begin(), infos.end());
+        auto it = classificationMap.find(notifyInfoInner.operationType);
+        if (it != classificationMap.end()) {
+            std::vector<MediaChangeInfo> infos = it->second(notifyInfoInner);
+            mediaChangeInfos.insert(mediaChangeInfos.end(), infos.begin(), infos.end());
+        }
     }
 }
 

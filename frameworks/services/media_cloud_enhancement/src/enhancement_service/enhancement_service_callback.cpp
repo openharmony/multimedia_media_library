@@ -38,6 +38,7 @@
 #include "securec.h"
 #include "moving_photo_file_utils.h"
 #include "asset_accurate_refresh.h"
+#include "refresh_business_name.h"
 
 using namespace std;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
@@ -259,7 +260,8 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
     rdbValues.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
         static_cast<int32_t>(StrongAssociationType::NORMAL));
     rdbValues.PutInt(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, newFileId);
-    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::DEAL_WITH_SUCCESSED_BUSSINESS_NAME);
     int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates, assetRefresh);
     CHECK_AND_PRINT_LOG(ret == E_OK, "update source photo failed. ret: %{public}d, photoId: %{public}s",
         ret, taskId.c_str());
@@ -310,7 +312,8 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
     valueBucket.Put(PhotoColumn::PHOTO_CE_STATUS_CODE, statusCode);
     servicePredicates.NotEqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
-    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::DEAL_WITH_FAILED_BUSSINESS_NAME);
     int32_t ret = EnhancementDatabaseOperations::Update(valueBucket, servicePredicates, assetRefresh);
     CHECK_AND_RETURN_LOG(ret == E_OK, "enhancement callback error: db CE_AVAILABLE status update failed");
     int32_t taskType = EnhancementTaskManager::QueryTaskTypeByPhotoId(taskId);

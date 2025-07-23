@@ -61,6 +61,7 @@
 #include "photo_owner_album_id_operation.h"
 #include "photo_storage_operation.h"
 #include "asset_accurate_refresh.h"
+#include "refresh_business_name.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -359,7 +360,7 @@ int DoCreatePhotoAlbum(const string &albumName, const string &relativePath, cons
     MEDIA_DEBUG_LOG("DoCreatePhotoAlbum InsertSql: %{private}s", sql.c_str());
 
     int64_t lastInsertRowId = 0;
-    AlbumAccurateRefresh albumRefresh;
+    AlbumAccurateRefresh albumRefresh(AccurateRefresh::CREATE_PHOTO_TABLE_BUSSINESS_NAME);
     albumRefresh.Init();
     lastInsertRowId = albumRefresh.ExecuteForLastInsertedRowId(sql, bindArgs, RdbOperation::RDB_OPERATION_ADD);
     CHECK_AND_RETURN_RET_LOG(lastInsertRowId >= 0, lastInsertRowId, "insert fail and rollback");
@@ -568,7 +569,7 @@ int CreatePhotoAlbum(const string &albumName)
     bool isDeleted = false;
     bool isSameName = false;
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
-    AlbumAccurateRefresh albumRefresh(trans);
+    AlbumAccurateRefresh albumRefresh(AccurateRefresh::CREATE_PHOTO_TABLE_BUSSINESS_NAME, trans);
     std::function<int(void)> tryReuseDeleted = [&]()->int {
         id = QueryExistingAlbumByLpath(albumName, isDeleted, isSameName);
         if (id <= 0) {
@@ -591,7 +592,7 @@ int CreatePhotoAlbum(const string &albumName)
         albumRefresh.Notify();
         return id;
     }
-
+    albumRefresh.CloseDfxReport();
     // no existing record available, create a new one
     return DoCreatePhotoAlbum(albumName, "", albumValues);
 }
@@ -671,7 +672,7 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
         MEDIA_ERR_LOG("Update trashed asset failed");
         return E_HAS_DB_ERROR;
     }
-    AlbumAccurateRefresh albumRefresh;
+    AlbumAccurateRefresh albumRefresh(AccurateRefresh::DELETE_PHOTO_ALBUMS_BUSSINESS_NAME);
     int deleteRow = -1;
     albumRefresh.LogicalDeleteReplaceByUpdate(predicates, deleteRow);
     if (deleteRow > 0) {
@@ -1100,13 +1101,22 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckAlbumName(newAlbumName) == E_OK, E_INVALID_ARGS,
         "Check album name failed");
     MEDIA_INFO_LOG("Start to set user album name of id %{public}d", oldAlbumId);
+
     vector<string> fileIdsToUpdateIndex = GetAssetIdsFromOldAlbum(rdbStore, oldAlbumId);
+
     bool argInvalid { false };
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int64_t newAlbumId = -1;
 
-    auto albumRefresh = make_shared<AccurateRefresh::AlbumAccurateRefresh>(trans);
-    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(trans);
+    auto albumRefresh = make_shared<AccurateRefresh::AlbumAccurateRefresh>(
+        AccurateRefresh::RENAME_USER_ALBUM_BUSSINESS_NAME, trans);
+    auto dfxRefreshManager = albumRefresh->GetDfxRefreshManager();
+    albumRefresh->CloseDfxReport();
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
+        AccurateRefresh::RENAME_USER_ALBUM_BUSSINESS_NAME, trans);
+    if (dfxRefreshManager != nullptr) {
+        assetRefresh->SetDfxRefreshManager(dfxRefreshManager);
+    }
     std::function<int(void)> trySetUserAlbumName = [&]()->int {
         newAlbumId = -1;
         int32_t ret = CheckConflictsWithExistingAlbum(newAlbumName, rdbStore);
@@ -1272,7 +1282,7 @@ int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbum(const ValuesBucket &values
 
     int32_t changedRows = 0;
     if (needChangeCover) {
-        AlbumAccurateRefresh albumRefresh;
+        AlbumAccurateRefresh albumRefresh(AccurateRefresh::UPDATE_PHOTO_ALBUM_BUSSINESS_NAME);
         changedRows = CommitModifyUpdateAlbumCoverUri(albumId, rdbPredicates, newAlbumCoverUri, albumRefresh);
         if (changedRows > 0 && !needRename) { // No need to notify if album is to be renamed. Rename process will notify
             albumRefresh.Notify();
@@ -1317,7 +1327,7 @@ bool MediaLibraryAlbumOperations::IsManunalCloudCover(const string &fileId, stri
 }
 
 int32_t MediaLibraryAlbumOperations::UpdateCoverUriExecute(int32_t albumId,
-    const string &coverUri, const string &fileId, int64_t coverDateTime)
+    const string &coverUri, const string &fileId, int64_t coverDateTime, AlbumAccurateRefresh& albumRefresh)
 {
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     ValuesBucket values;
@@ -1347,7 +1357,7 @@ int32_t MediaLibraryAlbumOperations::UpdateCoverUriExecute(int32_t albumId,
         " AND " + PhotoColumn::PHOTO_SYNC_STATUS + " = 0 AND " + PhotoColumn::PHOTO_CLEAN_FLAG + " = 0)";
 
     predicates.SetWhereClause(CHECK_COVER_VALID);
-    int32_t changedRows = OHOS::Media::MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
+    int32_t changedRows = albumRefresh.UpdateWithDateTime(values, predicates);
     CHECK_AND_PRINT_LOG(changedRows >= 0, "Update photo album failed: %{public}d", changedRows);
 
     return changedRows;
@@ -1409,11 +1419,13 @@ int32_t MediaLibraryAlbumOperations::UpdateAlbumCoverUri(const ValuesBucket &val
     auto coverDateTime = GetCoverDateTime(fileId, albumSubtype);
 
     // 3.update cover uri
-    auto updateRows = UpdateCoverUriExecute(albumId, coverUri, fileId, coverDateTime);
+    AlbumAccurateRefresh albumRefresh;
+    auto updateRows = UpdateCoverUriExecute(albumId, coverUri, fileId, coverDateTime, albumRefresh);
     CHECK_AND_RETURN_RET_LOG(updateRows == 1, E_ERR,
         "update coverUri failed ,maybe cover is invalid, updateRows = %{public}d", updateRows);
 
     // 4.notify photoalbum update
+    albumRefresh.Notify();
     const int32_t notIdArgs = 0;
     ret = NotifyAlbumUpdate(rdbPredicates, notIdArgs);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Notify album update failed");
@@ -1438,7 +1450,7 @@ int32_t MediaLibraryAlbumOperations::ResetCoverUri(const ValuesBucket &values, c
         PhotoAlbumColumns::COVER_URI_SOURCE + " > " + to_string(CoverUriSource::DEFAULT_COVER);
 
     newPredicates.SetWhereClause(UPDATE_CONDITION);
-    
+
     int32_t changedRows = OHOS::Media::MediaLibraryRdbStore::UpdateWithDateTime(updateValues, newPredicates);
     CHECK_AND_PRINT_LOG(changedRows >= 0, "Update photo album failed: %{public}d", changedRows);
 
@@ -1603,11 +1615,12 @@ int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicate
     ValuesBucket rdbValues;
     rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);
 
-    AssetAccurateRefresh assetRefresh;
+    AssetAccurateRefresh assetRefresh(AccurateRefresh::RECOVER_ASSETS_BUSSINESS_NAME);
     int32_t changedRows = assetRefresh.UpdateWithDateTime(rdbValues, rdbPredicates);
     if (changedRows < 0) {
         return changedRows;
     }
+
     // set cloud enhancement to available
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().RecoverTrashUpdateInternal(rdbPredicates.GetWhereArgs());
@@ -2181,7 +2194,7 @@ int32_t MediaLibraryAlbumOperations::OrderSingleAlbum(const ValuesBucket &values
     }
     vector<int32_t> changedAlbumIds;
     ObtainNotifyAlbumIds(currentAlbumOrder, referenceAlbumOrder, changedAlbumIds);
-    AlbumAccurateRefresh albumRefresh;
+    AlbumAccurateRefresh albumRefresh(AccurateRefresh::ORDER_SINGLE_ALBUM_BUSSINESS_NAME);
     err = UpdateSortedOrder(albumRefresh, currentAlbumId, referenceAlbumId, currentAlbumOrder, referenceAlbumOrder);
     if (err == E_OK) {
         albumRefresh.Notify();

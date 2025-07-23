@@ -24,6 +24,7 @@
 #include "media_log.h"
 #include "result_set_utils.h"
 #include "thumbnail_utils.h"
+#include "refresh_business_name.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -35,9 +36,9 @@ int32_t ThumbnailGenerationPostProcess::PostProcess(ThumbnailData& data, const T
 {
     CHECK_AND_RETURN_RET_INFO_LOG(!data.rdbUpdateCache.IsEmpty(), E_OK, "RdbUpdateCache is empty, no need update.");
     int32_t err = E_OK;
-    bool needUpdateThumbnailVisible = NeedUpdateThumbnailVisible(data);
-    MEDIA_INFO_LOG("NeedUpdateThumbnailVisible: %{public}d", needUpdateThumbnailVisible);
-    if (!needUpdateThumbnailVisible) {
+    bool hasGeneratedThumb = HasGeneratedThumb(data);
+    MEDIA_INFO_LOG("HasGeneratedThumb: %{public}d", hasGeneratedThumb);
+    if (!hasGeneratedThumb) {
         err = UpdateCachedRdbValue(data, opts);
         CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
         data.rdbUpdateCache.Clear();
@@ -49,7 +50,7 @@ int32_t ThumbnailGenerationPostProcess::PostProcess(ThumbnailData& data, const T
     err = GetNotifyType(data, opts, notifyType);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GetNotifyType failed. err: %{public}d", err);
 
-    AccurateRefresh::AssetAccurateRefresh assetRefresh;
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::THUMBNAIL_GENERATION_BUSSINESS_NAME);
     int32_t changedRows;
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::MEDIA_ID, data.id);
@@ -115,12 +116,15 @@ int32_t ThumbnailGenerationPostProcess::GetNotifyType(const ThumbnailData& data,
     return E_OK;
 }
 
-bool ThumbnailGenerationPostProcess::NeedUpdateThumbnailVisible(const ThumbnailData& data)
+bool ThumbnailGenerationPostProcess::HasGeneratedThumb(const ThumbnailData& data)
 {
     ValueObject valueObject;
-    bool hasThumbVisibleColumn = data.rdbUpdateCache.GetObject(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, valueObject);
-    CHECK_AND_RETURN_RET_INFO_LOG(hasThumbVisibleColumn, false, "Have not cache thumbnail_visible, no need to notify");
-    return true;
+    bool hasThumbReadyColumn = data.rdbUpdateCache.GetObject(PhotoColumn::PHOTO_THUMBNAIL_READY, valueObject);
+    CHECK_AND_RETURN_RET_INFO_LOG(hasThumbReadyColumn, false, "Do not cache thumbnail_ready value in photos table");
+
+    int64_t thumbReady;
+    valueObject.GetLong(thumbReady);
+    return thumbReady != static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY);
 }
 
 } // namespace Media
