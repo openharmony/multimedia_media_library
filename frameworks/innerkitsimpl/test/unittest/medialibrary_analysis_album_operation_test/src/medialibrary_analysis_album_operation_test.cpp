@@ -30,6 +30,7 @@
 #include "result_set_utils.h"
 #include "uri.h"
 #include "vision_db_sqls_more.h"
+#include "rdb_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -72,6 +73,12 @@ struct PortraitData {
 struct PortraitAlbumData {
     int64_t albumId;
     string tag;
+};
+
+struct GroupPhotoAlbumData {
+    int64_t albumId;
+    string groupTag;
+    vector<string> tags;
 };
 
 int GetNumber()
@@ -227,6 +234,64 @@ void InsertAlbumTestData(AlbumColumn &column, const PhotoAlbumSubType &subtype =
     valuesBucket.Put(RENAME_OPERATION, column.renameOperation);
     valuesBucket.Put(IS_COVER_SATISFIED, column.isCoverSatisfied);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+}
+
+vector<GroupPhotoAlbumData> CreateGroupPhotoAlbum(const vector<PortraitAlbumData> &portraitData)
+{
+    vector<GroupPhotoAlbumData> groupPhotoData;
+    for (size_t index = 0; index < portraitData.size(); index++) {
+        GroupPhotoAlbumData data;
+        int64_t albumId = -1;
+        string groupTag;
+        if (index != portraitData.size() - 1) {
+            groupTag = portraitData[index].tag + "," + portraitData[index + 1].tag;
+            data.tags.push_back(portraitData[index].tag);
+            data.tags.push_back(portraitData[index + 1].tag);
+        } else {
+            groupTag = portraitData[0].tag + "," + portraitData[index].tag;
+            data.tags.push_back(portraitData[0].tag);
+            data.tags.push_back(portraitData[index].tag);
+        }
+        ValuesBucket valuesBucket;
+        valuesBucket.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
+        valuesBucket.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::GROUP_PHOTO);
+        valuesBucket.PutString(ALBUM_NAME, portraitData[index].tag);
+        valuesBucket.PutString(TAG_ID, groupTag);
+        valuesBucket.PutString(GROUP_TAG, groupTag);
+        EXPECT_NE(g_rdbStore, nullptr);
+        int32_t ret = g_rdbStore->Insert(albumId, ANALYSIS_ALBUM_TABLE, valuesBucket);
+        EXPECT_EQ(ret, E_OK);
+        MEDIA_INFO_LOG("InsertAlbum albumId is %{public}s", to_string(albumId).c_str());
+        data.albumId = albumId;
+        data.groupTag = groupTag;
+        groupPhotoData.push_back(data);
+    }
+    return groupPhotoData;
+}
+
+void InsertAnalysisPhotoMap(int64_t albumId, int64_t fileId)
+{
+    int defaultOrderPostion = -1;
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(MAP_ALBUM, albumId);
+    valuesBucket.PutInt(MAP_ASSET, fileId);
+    valuesBucket.PutInt(ORDER_POSITION, defaultOrderPostion);
+    EXPECT_NE((g_rdbStore == nullptr), true);
+    int64_t rowId;
+    int32_t ret = g_rdbStore->Insert(rowId, ANALYSIS_PHOTO_MAP_TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
+}
+
+void PrepareGroupPhotoAlbumData(vector<PortraitAlbumData> &portraitData, vector<GroupPhotoAlbumData> &groupAlbumData)
+{
+    portraitData = CreatePortraitAlbum();
+    groupAlbumData = CreateGroupPhotoAlbum(portraitData);
+    size_t groupAlbumCount = groupAlbumData.size();
+    for (size_t index = 0; index < groupAlbumCount; index++) {
+        PortraitData data = InsertPortraitToPhotos();
+        InsertPortraitToImageFace(data.fileId, groupAlbumData[index].tags.size(), groupAlbumData[index].tags);
+        InsertAnalysisPhotoMap(groupAlbumData[index].albumId, data.fileId);
+    }
 }
 
 void ClearTables()
@@ -801,6 +866,34 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetAnalysisAlbumOrderPosition_t
     ret = MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("end  SetAnalysisAlbumOrderPosition_test");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, MergeGroupPhotoAlbum_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start MergeGroupPhotoAlbum_test_001");
+    ASSERT_TRUE(g_rdbStore);
+    ClearTables();
+    vector<PortraitAlbumData> portraitData;
+    vector<GroupPhotoAlbumData> groupAlbumData;
+    PrepareGroupPhotoAlbumData(portraitData, groupAlbumData);
+    size_t portraitDataSize = portraitData.size();
+    size_t groupAlbumDataSize = groupAlbumData.size();
+    EXPECT_GT(portraitDataSize, 2);
+    EXPECT_GT(groupAlbumDataSize, 2);
+
+    vector<MergeAlbumInfo> mergeAlbumInfos;
+    MergeAlbumInfo sourceAlbum;
+    MergeAlbumInfo targetAlbum;
+    sourceAlbum.albumId = portraitData[0].albumId;
+    sourceAlbum.groupTag = portraitData[0].tag;
+    targetAlbum.albumId = portraitData[0].albumId;
+    targetAlbum.groupTag = portraitData[0].tag;
+    mergeAlbumInfos.push_back(sourceAlbum);
+    mergeAlbumInfos.push_back(targetAlbum);
+
+    int32_t ret = MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(mergeAlbumInfos);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("end MergeGroupPhotoAlbum_test_001");
 }
 } // namespace Media
 } // namespace OHOS
