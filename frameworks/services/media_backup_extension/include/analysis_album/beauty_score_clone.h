@@ -32,26 +32,26 @@ namespace OHOS {
 namespace Media {
 struct BeautyScoreTbl {
     std::optional<int32_t> id;
-    std::optional<int32_t> file_id;
-    std::optional<int32_t> aesthetics_score;
-    std::optional<std::string> aesthetics_version;
+    std::optional<int32_t> fileId;
+    std::optional<int32_t> aestheticsScore;
+    std::optional<std::string> aestheticsVersion;
     std::optional<double> prob;
-    std::optional<std::string> analysis_version;
-    std::optional<int32_t> selected_flag;
-    std::optional<std::string> selected_algo_version;
-    std::optional<int32_t> selected_status;
-    std::optional<int32_t> negative_flag;
-    std::optional<std::string> negative_algo_version;
-    std::optional<std::string> aesthetics_all_version;
-    std::optional<int32_t> aesthetics_score_all;
-    std::optional<int32_t> is_filtered_hard;
-    std::optional<double> clarity_score_all;
-    std::optional<double> saturation_score_all;
-    std::optional<double> luminance_score_all;
-    std::optional<double> semantics_score;
-    std::optional<int32_t> is_black_white_stripe;
-    std::optional<int32_t> is_blurry;
-    std::optional<int32_t> is_mosaic;
+    std::optional<std::string> analysisVersion;
+    std::optional<int32_t> selectedFlag;
+    std::optional<std::string> selectedAlgoVersion;
+    std::optional<int32_t> selectedStatus;
+    std::optional<int32_t> negativeFlag;
+    std::optional<std::string> negativeAlgoVersion;
+    std::optional<std::string> aestheticsAllVersion;
+    std::optional<int32_t> aestheticsScoreAll;
+    std::optional<int32_t> isFilteredHard;
+    std::optional<double> clarityScoreAll;
+    std::optional<double> saturationScoreAll;
+    std::optional<double> luminanceScoreAll;
+    std::optional<double> semanticsScore;
+    std::optional<int32_t> isBlackWhiteStripe;
+    std::optional<int32_t> isBlurry;
+    std::optional<int32_t> isMosaic;
 };
 
 class BeautyScoreClone {
