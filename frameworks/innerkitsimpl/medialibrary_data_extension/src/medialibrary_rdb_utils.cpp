@@ -83,6 +83,9 @@ constexpr int32_t CLOUD_POSITION_STATUS = 2;
 constexpr int32_t UPDATE_ALBUM_TIME_OUT = 1000;
 constexpr int32_t PERSIST_READ_IMAGEVIDEO = 1;
 constexpr int32_t PERSIST_READWRITE_IMAGEVIDEO = 4;
+
+const string INTEGRITY_CHECK_COLUMN = "quick_check";
+const std::string DB_INTEGRITY_CHECK = "ok";
 mutex MediaLibraryRdbUtils::sRefreshAlbumMutex_;
 std::map<PhotoAlbumSubType, int32_t> MediaLibraryRdbUtils::subType2AlbumIdMap;
 
@@ -3469,4 +3472,19 @@ int32_t MediaLibraryRdbUtils::GetAlbumIdBySubType(PhotoAlbumSubType subtype)
     return iter->second;
 }
 
+bool MediaLibraryRdbUtils::ExecuteDatabaseQuickCheck(const shared_ptr<MediaLibraryRdbStore> &rdbStore)
+{
+    MEDIA_INFO_LOG("Start ExecuteDatabaseQuickChecky");
+    string checkSql = "PRAGMA " + INTEGRITY_CHECK_COLUMN;
+    vector<string> selectionArgs;
+    auto resultSet = rdbStore->QuerySql(checkSql, selectionArgs);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG ("Check database failed");
+        return false;
+    }
+    std::string result = GetStringVal(INTEGRITY_CHECK_COLUMN, resultSet);
+    MEDIA_INFO_LOG("Check db integrity: %{public}s", result.c_str());
+    resultSet->Close();
+    return result == DB_INTEGRITY_CHECK;
+}
 } // namespace OHOS::Media
