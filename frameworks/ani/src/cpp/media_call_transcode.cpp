@@ -19,7 +19,6 @@
 #include "media_asset_manager_callback.h"
 #include "medialibrary_ani_log.h"
 #include "medialibrary_errno.h"
-#include "unique_fd.h"
 
 namespace OHOS {
 namespace Media {
@@ -29,45 +28,9 @@ static std::mutex transCoderMapMutex_;
 static std::map<std::string, std::shared_ptr<TransCoder>> transCoderMap_;
 static const int32_t INFO_TYPE_ERROR = 2;
 
-static ani_status CreateAniBooleanObject(ani_env *env, bool value, ani_object &aniObj)
+bool MediaCallTranscode::DoTranscode(UniqueFd &uniqueSrcFd, UniqueFd &uniqueDestFd, int64_t size,
+    const std::string &requestId)
 {
-    if (env == nullptr) {
-        ANI_ERR_LOG("env is nullptr");
-        return ANI_ERROR;
-    }
-    ani_class cls {};
-    ani_status status = env->FindClass("std.core.Boolean", &cls);
-    if (status != ANI_OK) {
-        ANI_ERR_LOG("Failed to find class std.core.Boolean");
-        return status;
-    }
-    ani_method ctor {};
-    status = env->Class_FindMethod(cls, "<ctor>", "z:", &ctor);
-    if (status != ANI_OK) {
-        ANI_ERR_LOG("Failed to find method: ctor");
-        return status;
-    }
-    ani_boolean aniBool = value ? ANI_TRUE : ANI_FALSE;
-    status = env->Object_New(cls, ctor, &aniObj, aniBool);
-    if (status != ANI_OK) {
-        ANI_ERR_LOG("New bool Object Fail");
-        return status;
-    }
-    return ANI_OK;
-}
-
-void MediaCallTranscode::CallTranscodeHandle(ani_env *env, int srcFd, int destFd,
-    ani_object &result, off_t &size, std::string requestId)
-{
-    ANI_INFO_LOG("CallTranscodeHandle start");
-    bool ret = DoTranscode(srcFd, destFd, size, requestId);
-    CreateAniBooleanObject(env, ret, result);
-}
-
-bool MediaCallTranscode::DoTranscode(int srcFd, int destFd, off_t &size, std::string requestId)
-{
-    UniqueFd uniqueSrcFd(srcFd);
-    UniqueFd uniqueDestFd(destFd);
     auto transCoder = TransCoderFactory::CreateTransCoder();
     if (transCoder == nullptr) {
         ANI_ERR_LOG("Failed to create TransCoder");
@@ -97,6 +60,10 @@ bool MediaCallTranscode::DoTranscode(int srcFd, int destFd, off_t &size, std::st
     }
     if (transCoder->SetOutputFormat(FORMAT_MPEG_4) != E_OK) {
         ANI_ERR_LOG("Failed to SetOutputFormat");
+        return false;
+    }
+    if (transCoder->SetColorSpace(TRANSCODER_COLORSPACE_BT709_LIMIT) != E_OK) {
+        ANI_ERR_LOG("Failed to SetColorSpace");
         return false;
     }
     if (transCoder->Prepare() != E_OK) {
@@ -149,7 +116,7 @@ void MediaAssetManagerCallback::OnError(int32_t errCode, const std::string &erro
     }
 }
 
-void MediaAssetManagerCallback::SetRequestId(std::string requestId)
+void MediaAssetManagerCallback::SetRequestId(const std::string &requestId)
 {
     requestId_ = requestId;
 }

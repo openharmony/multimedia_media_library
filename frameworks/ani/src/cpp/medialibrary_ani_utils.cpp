@@ -595,7 +595,7 @@ ani_status MediaLibraryAniUtils::ToAniMap(ani_env *env, const std::map<std::stri
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Map");
 
     ani_method mapConstructor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "C{std.core.Object}:", &mapConstructor),
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", ":", &mapConstructor),
         "Can't find method <ctor> in escompat.Map");
 
     CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, nullptr), "Call method <ctor> fail");
@@ -1770,7 +1770,15 @@ int MediaLibraryAniUtils::TransErrorCode(const string &Name, int error)
     ANI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
     // Transfer Server error to JS error code
     if (error <= E_COMMON_START && error >= E_COMMON_END) {
-        error = JS_INNER_FAIL;
+        if (error == -E_CHECK_SYSTEMAPP_FAIL) {
+            error = E_CHECK_SYSTEMAPP_FAIL;
+        } else if (error == E_PARAM_CONVERT_FORMAT) {
+            error = JS_E_PARAM_INVALID;
+        } else if (error == E_INNER_CONVERT_FORMAT || error == E_INNER_FAIL) {
+            error = JS_E_INNER_FAIL;
+        } else {
+            error = JS_INNER_FAIL;
+        }
     } else if (error == E_PERMISSION_DENIED) {
         error = OHOS_PERMISSION_DENIED_CODE;
     } else if (trans2JsError.count(error)) {
@@ -1810,7 +1818,7 @@ ani_status MediaLibraryAniUtils::CreateAniErrorObject(ani_env *env, ani_object &
     }
 
     ani_method ctor {};
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "dC{std.core.String}:", &ctor)) {
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "iC{std.core.String}:", &ctor)) {
         ANI_ERR_LOG("Can't find <ctor> from class %{public}s", className.c_str());
         return ANI_ERROR;
     }
@@ -2043,7 +2051,7 @@ ani_status MediaLibraryAniUtils::AddDefaultAssetColumns(ani_env *env, vector<str
     for (const auto &column : fetchColumn) {
         if (column == PENDING_STATUS) {
             validFetchColumns.insert(MediaColumn::MEDIA_TIME_PENDING);
-        } else if (isValidColumn(column)) {
+        } else if (isValidColumn(column) || (column == MEDIA_SUM_SIZE && IsSystemApp())) {
             validFetchColumns.insert(column);
         } else if (column == MEDIA_DATA_DB_URI) {
             continue;
@@ -2451,7 +2459,7 @@ ani_status MediaLibraryAniUtils::VariantMapToAniMap(ani_env *env, const VarMap &
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Map");
 
     ani_method mapConstructor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "C{std.core.Object}:", &mapConstructor),
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", ":", &mapConstructor),
         "Can't find method <ctor> in escompat.Map");
 
     CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, nullptr), "Call method <ctor> fail");

@@ -245,6 +245,7 @@ public:
     static ani_double StartAssetAnalysis(ani_env *env, ani_object object, ani_enum_item type, ani_object assetUris);
     static void PhotoAccessRemoveFormInfo(ani_env *env, ani_object object, ani_object info);
     static void PhotoAccessRemoveGalleryFormInfo(ani_env *env, ani_object object, ani_object info);
+    static void PhotoAccessUpdateGalleryFormInfo(ani_env *env, ani_object object, ani_object info);
     static ani_object PhotoAccessHelperAgentCreateAssetsWithAlbum(ani_env *env, ani_object object,
     ani_object source, ani_string albumUri, ani_boolean isAuthorized, ani_object photoCreationConfigs);
     static ani_object GetAlbumsByIds(ani_env *env, ani_object object, ani_object albumIds);
@@ -334,6 +335,9 @@ struct MediaLibraryAsyncContext : public AniError {
     int32_t taskId = -1;
     bool isFullAnalysis = false;
     ani_object callback;
+    int32_t userId = -1;
+    uint32_t businessCode = 0;
+    std::string burstKey;
 };
 } // namespace Media
 } // namespace OHOS
