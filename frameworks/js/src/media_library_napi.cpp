@@ -5477,13 +5477,14 @@ static napi_status ParseCreateConfig(napi_env env, napi_value arg,
         } else if (valueType == napi_undefined || valueType == napi_null) {
             continue;
         } else {
-            NAPI_ERR_LOG("ParseCreateConfig failed, valueType %{public}d is unaccepted",
-                static_cast<int>(valueType));
+            NAPI_ERR_LOG("ParseCreateConfig failed, valueType %{public}d is unaccepted", static_cast<int>(valueType));
             return napi_invalid_arg;
         }
     }
     HandleBundleInfo(valuesBucket, isAuthorization, bundleInfo);
-    context.tokenId = bundleInfo.tokenId;
+    if (isAuthorization) {
+        context.tokenId = bundleInfo.tokenId;
+    }
     context.valuesBucketArray.push_back(move(valuesBucket));
     return napi_ok;
 }

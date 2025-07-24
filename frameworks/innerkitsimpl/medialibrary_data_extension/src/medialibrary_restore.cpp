@@ -18,6 +18,7 @@
 #include "medialibrary_restore.h"
 #include "dfx_utils.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_rdb_utils.h"
 #include "medialibrary_tracer.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -172,8 +173,14 @@ void MediaLibraryRestore::DoRdbBackup()
         MediaLibraryTracer tracer;
         tracer.Start("MediaLibraryRestore::DoRdbBackup Backup");
         MediaLibraryRestore::GetInstance().isDoingBackup_ = true;
+        if (!MediaLibraryRdbUtils::ExecuteDatabaseQuickCheck(rdb)) {
+            MediaLibraryRestore::GetInstance().ResetHAModeSwitchStatus();
+            MediaLibraryRestore::GetInstance().isBackuping_ = false;
+            MEDIA_ERR_LOG("DoRdbBackup: QuickCheck fail");
+            return;
+        }
         MEDIA_INFO_LOG("DoRdbBackup: Backup [start]");
-        int errCode = rdb->Backup("");
+        int errCode = rdb->Backup("", false);
         MediaLibraryRestore::GetInstance().isDoingBackup_ = false;
         if (errCode == NativeRdb::E_OK) {
             Acl::AclSetSlaveDatabase();
