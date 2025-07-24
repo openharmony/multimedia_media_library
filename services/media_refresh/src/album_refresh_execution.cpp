@@ -263,9 +263,10 @@ int32_t AlbumRefreshExecution::GetUpdateValues(ValuesBucket &values, const Album
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null");
+    int32_t ret = MediaLibraryRdbUtils::GetUpdateValues(rdbStore, data, values, isHidden);
     type = data.albumCount < data.newTotalCount ? NOTIFY_ALBUM_ADD_ASSET :
         (data.albumCount > data.newTotalCount ? NOTIFY_ALBUM_REMOVE_ASSET : NOTIFY_UPDATE);
-    return MediaLibraryRdbUtils::GetUpdateValues(rdbStore, data, values, isHidden);
+    return ret;
 }
 
 void AlbumRefreshExecution::CheckUpdateValues(const AlbumChangeInfo &albumInfo, const AlbumRefreshInfo &refreshInfo,

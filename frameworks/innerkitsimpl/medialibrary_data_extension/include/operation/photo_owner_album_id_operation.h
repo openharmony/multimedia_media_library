@@ -191,7 +191,7 @@ private:  // sqls
         LEFT JOIN PhotoAlbum \
             ON LOWER(INPUT.lpath)=LOWER(PhotoAlbum.lpath) \
         WHERE PhotoAlbum.lpath IS NULL \
-        LIMIT 1;";
+        LIMIT 1";
     const std::string SQL_PHOTOS_OWNER_ALBUM_ID_UPDATE = "\
         UPDATE Photos \
         SET owner_album_id = ? \

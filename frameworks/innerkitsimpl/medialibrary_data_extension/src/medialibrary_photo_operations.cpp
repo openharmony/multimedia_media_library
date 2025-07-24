@@ -2870,6 +2870,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     return E_OK;
 }
 
+// 与图库约定，图片一键还原失败时，将source文件作为效果图，并在editdata文件中写入EDITDATA，作为一种特殊的编辑保存
 int32_t MediaLibraryPhotoOperations::DoRevertAfterAddFiltersFailed(const std::shared_ptr<FileAsset> &fileAsset,
     const std::string &path, const std::string &sourcePath)
 {
@@ -2883,6 +2884,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertAfterAddFiltersFailed(const std::sh
         "Failed to create editdata file %{private}s", editDataPath.c_str());
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataPath, EDITDATA), E_HAS_FS_ERROR,
         "Failed to write editdata:%{private}s", editDataPath.c_str());
+    UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     return E_OK;
 }
 
@@ -3871,6 +3873,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEffectModeExecute(MediaLibraryCommand
     CHECK_AND_RETURN_RET_LOG(Move(videoCachePath, assetVideoPath) == E_OK, E_HAS_FS_ERROR, "Failed to move video");
     CHECK_AND_RETURN_RET_LOG(UpdateEffectMode(id, effectMode) == E_OK, errCode, "Failed to update effect mode");
     ScanFile(assetPath, true, true, true);
+    MEDIA_INFO_LOG("SubmitEffectModeExecute success.");
     return E_OK;
 }
 

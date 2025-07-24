@@ -18,6 +18,7 @@
 
 #include <sstream>
 
+#include "album_accurate_refresh.h"
 #include "album_plugin_config.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
@@ -25,6 +26,7 @@
 #include "result_set_utils.h"
 #include "media_file_utils.h"
 #include "medialibrary_tracer.h"
+#include "refresh_business_name.h"
 
 namespace OHOS::Media {
 using MediaData = PhotoOwnerAlbumIdOperation::MediaData;
@@ -449,8 +451,7 @@ int32_t PhotoOwnerAlbumIdOperation::CreateAlbum(const MediaData &albumInfo)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoOwnerAlbumIdOperation::CreateAlbum");
-    bool conn = this->rdbStore_ == nullptr;
-    CHECK_AND_RETURN_RET_LOG(!conn, E_OK, "Media_Operation: rdbStore_ is null.");
+    AccurateRefresh::AlbumAccurateRefresh albumRefresh(AccurateRefresh::CREATE_PHOTO_TABLE_BUSSINESS_NAME);
 
     std::string sql = this->SQL_PHOTO_ALBUM_INSERT;
     std::vector<NativeRdb::ValueObject> params = {albumInfo.albumType,
@@ -459,14 +460,14 @@ int32_t PhotoOwnerAlbumIdOperation::CreateAlbum(const MediaData &albumInfo)
         albumInfo.bundleName,
         albumInfo.lPath,
         albumInfo.priority};
-    int32_t err = this->rdbStore_->ExecuteSql(sql, params);
-    conn = err != NativeRdb::E_OK;
+    int32_t err = albumRefresh.ExecuteSql(sql, params, AccurateRefresh::RdbOperation::RDB_OPERATION_ADD);
+    bool conn = err != AccurateRefresh::ACCURATE_REFRESH_RET_OK;
     CHECK_AND_RETURN_RET_LOG(!conn,
         err,
         "Media_Operation: insert photo album failed, err: %{public}d, params: %{public}s.",
         err,
         this->ToStringWithComma(params).c_str());
-
+    albumRefresh.Notify();
     return E_OK;
 }
 
