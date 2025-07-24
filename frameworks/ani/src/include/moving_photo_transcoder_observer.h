@@ -13,24 +13,38 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_ASSET_MANAGER_CALLBACK_H
-#define MEDIA_ASSET_MANAGER_CALLBACK_H
+#ifndef MOVING_PHOTO_TRANSCODER_OBSERVER_H
+#define MOVING_PHOTO_TRANSCODER_OBSERVER_H
 
-#include <string>
+#include <atomic>
+
+#include "moving_photo_call_transcoder.h"
 #include "transcoder.h"
 
 namespace OHOS {
 namespace Media {
-class MediaAssetManagerCallback : public TransCoderCallback {
+
+class MovingPhotoTranscoderObserver : public TransCoderCallback {
 public:
-    MediaAssetManagerCallback() = default;
-    ~MediaAssetManagerCallback() = default;
-    void SetRequestId(const std::string &requestId);
+    MovingPhotoTranscoderObserver() = default;
+    ~MovingPhotoTranscoderObserver();
+    void SetMovingPhotoProgressHandler(const std::shared_ptr<MovingPhotoProgressHandler> &mppHandler);
+    void NotifyProcessInfo();
+    void DoPrepareError();
+    void setTransCoder(const std::shared_ptr<TransCoder> &transCoder)
+    {
+        transCoder_ = transCoder;
+    }
 protected:
     void OnError(int32_t errCode, const std::string &errorMsg) override;
     void OnInfo(int32_t type, int32_t extra) override;
-    std::string requestId_;
+private:
+    std::shared_ptr<MovingPhotoProgressHandler> mppHandler_ { nullptr };
+    std::shared_ptr<TransCoder> transCoder_ { nullptr };
+    std::atomic_bool isPrepareError_ { false };
+    int32_t process_ { -1 };
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIA_ASSET_MANAGER_CALLBACK_H
+
+#endif // MOVING_PHOTO_TRANSCODER_OBSERVER_H

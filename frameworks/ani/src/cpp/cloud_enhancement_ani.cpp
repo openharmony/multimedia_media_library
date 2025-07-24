@@ -31,6 +31,11 @@
 #include "media_enhance_client_c_api.h"
 #include "media_enhance_bundle_c_api.h"
 #endif
+#include "cloud_enhancement_vo.h"
+#include "medialibrary_business_code.h"
+#include "user_define_ipc_client.h"
+#include "get_cloud_enhancement_pair_vo.h"
+#include "query_cloud_enhancement_task_state_vo.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -40,7 +45,6 @@ using namespace OHOS::MediaEnhance;
 
 namespace OHOS {
 namespace Media {
-constexpr int32_t STRONG_ASSOCIATION = 1;
 struct SubmitCloudEnhancementParams {
     ani_object photoAssets;
     ani_boolean hasCloudWatermark;
@@ -410,12 +414,12 @@ static void SubmitCloudEnhancementTasksExecute(std::unique_ptr<CloudEnhancementA
     tracer.Start("SubmitCloudEnhancementTasksExecute");
     CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
 
-    string uriStr = PAH_CLOUD_ENHANCEMENT_ADD;
-    MediaLibraryAniUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, to_string(aniContext->hasCloudWatermark_));
-    MediaLibraryAniUtils::UriAppendKeyValue(uriStr, MEDIA_TRIGGER_MODE_KEYWORD, to_string(aniContext->triggerMode_));
-    Uri addTaskUri(uriStr);
-    aniContext->valuesBucket.Put(PhotoColumn::PHOTO_STRONG_ASSOCIATION, STRONG_ASSOCIATION);
-    int32_t changeRows = UserFileClient::Update(addTaskUri, aniContext->predicates, aniContext->valuesBucket);
+    CloudEnhancementReqBody reqBody;
+    reqBody.hasCloudWatermark = aniContext->hasCloudWatermark_;
+    reqBody.triggerMode = aniContext->triggerMode_;
+    reqBody.fileUris = aniContext->uris;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SUBMIT_CLOUD_ENHANCEMENT_TASKS);
+    int32_t changeRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changeRows < 0) {
         aniContext->SaveError(changeRows);
         ANI_ERR_LOG("Submit cloud enhancement tasks failed, err: %{public}d", changeRows);
@@ -484,11 +488,10 @@ static void PrioritizeCloudEnhancementTaskExecute(std::unique_ptr<CloudEnhanceme
     MediaLibraryTracer tracer;
     tracer.Start("PrioritizeCloudEnhancementTaskExecute");
     CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
-    string uriStr = PAH_CLOUD_ENHANCEMENT_PRIORITIZE;
-    Uri prioritizeTaskUri(uriStr);
-    aniContext->predicates.EqualTo(MediaColumn::MEDIA_ID, aniContext->photoUri);
-    aniContext->valuesBucket.Put(PhotoColumn::PHOTO_STRONG_ASSOCIATION, STRONG_ASSOCIATION);
-    int32_t changedRows = UserFileClient::Update(prioritizeTaskUri, aniContext->predicates, aniContext->valuesBucket);
+    CloudEnhancementReqBody reqBody;
+    reqBody.fileUris.emplace_back(aniContext->photoUri);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PRIORITIZE_CLOUD_ENHANCEMENT_TASK);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changedRows < 0) {
         aniContext->SaveError(changedRows);
         ANI_ERR_LOG("Prioritize cloud enhancement task failed, err: %{public}d", changedRows);
@@ -582,11 +585,12 @@ static void CancelCloudEnhancementTasksExecute(std::unique_ptr<CloudEnhancementA
     tracer.Start("CancelCloudEnhancementTasksExecute");
     CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
 
-    string uriStr = PAH_CLOUD_ENHANCEMENT_CANCEL;
-    Uri cancelTaskUri(uriStr);
-    string fileUri = aniContext->uris.front();
-    aniContext->valuesBucket.Put(MediaColumn::MEDIA_ID, fileUri);
-    int32_t changeRows = UserFileClient::Update(cancelTaskUri, aniContext->predicates, aniContext->valuesBucket);
+    CloudEnhancementReqBody reqBody;
+    reqBody.hasCloudWatermark = aniContext->hasCloudWatermark_;
+    reqBody.triggerMode = aniContext->triggerMode_;
+    reqBody.fileUris = aniContext->uris;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CANCEL_CLOUD_ENHANCEMENT_TASKS);
+    int32_t changeRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changeRows < 0) {
         aniContext->SaveError(changeRows);
         ANI_ERR_LOG("Cancel cloud enhancement tasks failed, err: %{public}d", changeRows);
@@ -619,10 +623,9 @@ static void CancelAllCloudEnhancementTasksExecute(std::unique_ptr<CloudEnhanceme
     tracer.Start("CancelCloudEnhancementTasksExecute");
     CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
 
-    string uriStr = PAH_CLOUD_ENHANCEMENT_CANCEL_ALL;
-    Uri cancelAllTaskUri(uriStr);
-    aniContext->valuesBucket.Put(PhotoColumn::PHOTO_STRONG_ASSOCIATION, STRONG_ASSOCIATION);
-    int32_t changeRows = UserFileClient::Update(cancelAllTaskUri, aniContext->predicates, aniContext->valuesBucket);
+    CloudEnhancementReqBody reqBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CANCEL_ALL_CLOUD_ENHANCEMENT_TASKS);
+    int32_t changeRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changeRows < 0) {
         aniContext->SaveError(changeRows);
         ANI_ERR_LOG("Cancel all cloud enhancement tasks failed, err: %{public}d", changeRows);
@@ -717,26 +720,21 @@ static void QueryCloudEnhancementTaskStateExecute(std::unique_ptr<CloudEnhanceme
     tracer.Start("QueryCloudEnhancementTaskStateExecute");
     CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
 
-    string uriStr = PAH_CLOUD_ENHANCEMENT_QUERY;
-    Uri queryTaskUri(uriStr);
-    vector<string> columns = {
-        MediaColumn::MEDIA_ID, PhotoColumn::PHOTO_ID,
-        PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_CE_STATUS_CODE
-    };
-    int errCode = 0;
-    aniContext->predicates.EqualTo(MediaColumn::MEDIA_ID, aniContext->photoUri);
-    auto resultSet = UserFileClient::Query(queryTaskUri, aniContext->predicates, columns, errCode);
-    if (resultSet == nullptr || resultSet->GoToNextRow() != E_OK) {
-        ANI_ERR_LOG("ResultSet is nullptr, errCode is %{public}d", errCode);
+    QueryCloudEnhancementTaskStateReqBody reqBody;
+    QueryCloudEnhancementTaskStateRespBody respBody;
+    reqBody.photoUri = aniContext->photoUri;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_CLOUD_ENHANCEMENT_TASK_STATE);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (ret < 0) {
         aniContext->SaveError(JS_INNER_FAIL);
+        ANI_ERR_LOG("Failed to query cloud enhancement task state, err: %{public}d", ret);
         return;
     }
-    int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
-    string photoId = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_ID, resultSet, TYPE_STRING));
-    int32_t ceAvailable =
-        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet, TYPE_INT32));
-    int32_t CEErrorCode = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_CE_STATUS_CODE,
-        resultSet, TYPE_INT32));
+    int32_t fileId = respBody.fileId;
+    string photoId = respBody.photoId;
+    int32_t ceAvailable = respBody.ceAvailable;
+    int32_t ceErrorCode = respBody.ceErrorCode;
+
     ANI_INFO_LOG("query fileId: %{public}d, photoId: %{private}s, ceAvailable: %{public}d",
         fileId, photoId.c_str(), ceAvailable);
 
@@ -751,7 +749,7 @@ static void QueryCloudEnhancementTaskStateExecute(std::unique_ptr<CloudEnhanceme
     if (ceAvailable == static_cast<int32_t>(CE_AVAILABLE::FAILED_RETRY) ||
         ceAvailable == static_cast<int32_t>(CE_AVAILABLE::FAILED)) {
         aniContext->cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_FAILED;
-        aniContext->statusCode_ = CEErrorCode;
+        aniContext->statusCode_ = ceErrorCode;
         ANI_INFO_LOG("TASK_STAGE_FAILED, fileId: %{public}d, statusCode: %{public}d", fileId, ceAvailable);
         return;
     }
@@ -798,10 +796,10 @@ static void SyncCloudEnhancementTaskStatusExecute(std::unique_ptr<CloudEnhanceme
     MediaLibraryTracer tracer;
     tracer.Start("SyncCloudEnhancementTaskStatusExecute");
     CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
-    string uriStr = PAH_CLOUD_ENHANCEMENT_SYNC;
-    Uri syncUri(uriStr);
-    aniContext->valuesBucket.Put(PhotoColumn::PHOTO_STRONG_ASSOCIATION, STRONG_ASSOCIATION);
-    int32_t changeRows = UserFileClient::Update(syncUri, aniContext->predicates, aniContext->valuesBucket);
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SYNC_CLOUD_ENHANCEMENT_TASK_STATUS);
+    CloudEnhancementReqBody reqBody;
+    int32_t changeRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (changeRows < 0) {
         aniContext->SaveError(changeRows);
         ANI_ERR_LOG("Sync Cloud Enhancement Task Status Execute, err: %{public}d", changeRows);
@@ -888,15 +886,19 @@ static void GetCloudEnhancementPairExecute(ani_env *env, std::unique_ptr<CloudEn
     tracer.Start("GetCloudEnhancementPairExecute");
     CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
 
-    string uriStr = PAH_CLOUD_ENHANCEMENT_GET_PAIR;
-    Uri getPairUri(uriStr);
-    vector<std::string> columns;
-    int errCode = 0;
-    aniContext->predicates.EqualTo(MediaColumn::MEDIA_ID, aniContext->photoUri);
-    shared_ptr<DataShare::DataShareResultSet> resultSet =
-        UserFileClient::Query(getPairUri, aniContext->predicates, columns, errCode);
+    GetCloudEnhancementPairReqBody reqBody;
+    GetCloudEnhancementPairRespBody respBody;
+    reqBody.photoUri = aniContext->photoUri;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_CLOUD_ENHANCEMENT_PAIR);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (ret < 0) {
+        aniContext->SaveError(ret);
+        ANI_ERR_LOG("Failed to get cloud enhancement pair, err: %{public}d", ret);
+        return;
+    }
+    auto resultSet = respBody.resultSet;
     if (resultSet == nullptr || resultSet->GoToNextRow() != E_OK) {
-        ANI_ERR_LOG("Resultset is nullptr, errCode is %{public}d", errCode);
+        ANI_ERR_LOG("Resultset is nullptr, errCode is %{public}d", ret);
         aniContext->SaveError(JS_INNER_FAIL);
         return;
     }

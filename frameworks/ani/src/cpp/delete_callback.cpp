@@ -18,6 +18,9 @@
 #include "medialibrary_ani_utils.h"
 #include "media_file_utils.h"
 #include "userfile_client.h"
+#include "user_define_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "trash_photos_vo.h"
 
 namespace OHOS {
 namespace Media {
@@ -43,14 +46,10 @@ void DeleteCallback::OnResult(int32_t resultCode, const OHOS::AAFwk::Want &resul
 {
     if (resultCode == DELETE_CODE_SUCCESS) {
         this->resultCode_ = resultCode;
-        string trashUri = PAH_TRASH_PHOTO;
-        MediaLibraryAniUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-        Uri updateAssetUri(trashUri);
-        DataShare::DataSharePredicates predicates;
-        predicates.In(MediaColumn::MEDIA_ID, this->uris_);
-        DataShare::DataShareValuesBucket valuesBucket;
-        valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
-        int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+        TrashPhotosReqBody reqBody;
+        reqBody.uris = this->uris_;
+        uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_TRASH_PHOTOS);
+        int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
         if (changedRows < 0) {
             this->resultCode_ = JS_INNER_FAIL;
         }

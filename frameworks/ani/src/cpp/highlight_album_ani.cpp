@@ -35,6 +35,14 @@
 #include "vision_column.h"
 #include "album_operation_uri.h"
 #include "highlight_column.h"
+#include "user_define_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "delete_highlight_albums_vo.h"
+#include "set_subtitle_vo.h"
+#include "set_highlight_user_action_data_vo.h"
+#include "get_order_position_vo.h"
+#include "get_highlight_album_info_vo.h"
+#include "query_result_vo.h"
 
 namespace OHOS::Media {
 namespace {
@@ -175,37 +183,20 @@ static void GetHighlightAlbumInfoExecute(ani_env *env, unique_ptr<HighlightAlbum
     std::vector<std::string> fetchColumn;
     DataShare::DataSharePredicates predicates;
     if (HIGHLIGHT_ALBUM_INFO_MAP.find(context->highlightAlbumInfoType) != HIGHLIGHT_ALBUM_INFO_MAP.end()) {
-        uriStr = HIGHLIGHT_ALBUM_INFO_MAP.at(context->highlightAlbumInfoType).uriStr;
         fetchColumn = HIGHLIGHT_ALBUM_INFO_MAP.at(context->highlightAlbumInfoType).fetchColumn;
-        string tabStr;
-        if (context->highlightAlbumInfoType == COVER_INFO) {
-            tabStr = HIGHLIGHT_COVER_INFO_TABLE;
-        } else {
-            tabStr = HIGHLIGHT_PLAY_INFO_TABLE;
-        }
-        vector<string> onClause = {
-            tabStr + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
-            HIGHLIGHT_ALBUM_TABLE + "." + ID
-        };
-        predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
     } else {
         ANI_ERR_LOG("Invalid highlightAlbumInfoType");
         return;
     }
-    int32_t albumId = context->albumId;
-    PhotoAlbumSubType subType = context->subType;
-    Uri uri(uriStr);
-    if (subType == PhotoAlbumSubType::HIGHLIGHT) {
-        predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
-    } else if (subType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
-        predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID, to_string(albumId));
-    } else {
-        ANI_ERR_LOG("Invalid highlight album subType");
-        context->error = JS_ERR_PARAMETER_INVALID;
-        return;
-    }
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    GetHighlightAlbumReqBody reqBody;
+    reqBody.highlightAlbumInfoType = context->highlightAlbumInfoType;
+    reqBody.albumId = context->albumId;
+    reqBody.subType = static_cast<int32_t>(context->subType);
+    QueryResultRspBody rspBody;
+    errCode = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO), reqBody, rspBody);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = rspBody.resultSet;
     if (resultSet != nullptr) {
         context->highlightAlbumInfo = MediaLibraryAniUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
     }
@@ -363,40 +354,20 @@ static void SetHighlightUserActionDataExecute(ani_env *env, unique_ptr<Highlight
     MediaLibraryTracer tracer;
     tracer.Start("SetHighlightUserActionDataExecute");
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
-    string userActionType("");
-    if (HIGHLIGHT_USER_ACTION_MAP.find(context->highlightUserActionType) != HIGHLIGHT_USER_ACTION_MAP.end()) {
-        userActionType = HIGHLIGHT_USER_ACTION_MAP.at(context->highlightUserActionType);
-        context->fetchColumn.push_back(userActionType);
-    } else {
-        ANI_ERR_LOG("Invalid highlightUserActionType");
-        return;
-    }
-    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "context->objectInfo is nullptr");
-    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo->GetPhotoAlbumInstance(), "GetPhotoAlbumInstance is nullptr");
-    int albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
-    Uri uri(URI_HIGHLIGHT_ALBUM);
-    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
-    int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
-    if (resultSet != nullptr) {
-        auto count = 0;
-        auto ret = resultSet->GetRowCount(count);
-        if (ret != NativeRdb::E_OK || count == 0 || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-            ANI_ERR_LOG("highlight user action data get rdbstore failed");
-            context->error = JS_INNER_FAIL;
-            return;
-        }
-        int64_t userActionDataCount = get<int64_t>(ResultSetUtils::GetValFromColumn(userActionType,
-            resultSet, TYPE_INT64));
-        context->valuesBucket.Put(userActionType, to_string(userActionDataCount + context->actionData));
-        int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
-        if (changedRows < 0) {
-            context->SaveError(changedRows);
-        }
-        context->changedRows = changedRows;
-    } else {
-        ANI_ERR_LOG("highlight user action data get rdbstore failed");
-        context->error = JS_INNER_FAIL;
+    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "objectInfo is nullptr");
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is nullptr");
+    int32_t albumId = photoAlbum->GetAlbumId();
+    SetHighlightUserActionDataReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.userActionType = context->highlightUserActionType;
+    reqBody.albumType = static_cast<int32_t>(photoAlbum->GetPhotoAlbumType());
+    reqBody.albumSubType = static_cast<int32_t>(photoAlbum->GetPhotoAlbumSubType());
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_HIGH_LIGHT_USER_ACTION_DATA);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        context->SaveError(ret);
+        ANI_ERR_LOG("Submit cloud enhancement tasks failed, err: %{public}d", ret);
         return;
     }
 }
@@ -484,34 +455,20 @@ static void GetOrderPositionExecute(std::unique_ptr<HighlightAlbumAniContext> &c
     const std::string mapTable = ANALYSIS_PHOTO_MAP_TABLE;
     predicates.EqualTo(mapTable + "." + MAP_ALBUM, albumId)->And()->In(mapTable + "." + MAP_ASSET, assetIdArray);
 
-    // start query, deal with result
-    Uri uri(PAH_QUERY_ORDER_ANA_ALBUM);
-    int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
-    if (resultSet == nullptr) {
-        ANI_ERR_LOG("Query failed, error code: %{public}d", errCode);
-        context->error = JS_INNER_FAIL;
-        return;
-    }
-    int count = 0;
-    int ret = resultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK || count <= 0) {
-        ANI_ERR_LOG("GetRowCount failed, error code: %{public}d, count: %{public}d", ret, count);
-        context->error = JS_INNER_FAIL;
-        return;
-    }
+    GetOrderPositionRespBody respBody;
+    GetOrderPositionReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+    reqBody.assetIdArray = context->assetIdArray;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ORDER_POSITION);
 
-    std::unordered_map<std::string, int32_t> idOrderMap;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t mapAsset = get<int32_t>(ResultSetUtils::GetValFromColumn(MAP_ASSET, resultSet, TYPE_INT32));
-        int32_t orderPosition = get<int32_t>(ResultSetUtils::GetValFromColumn(ORDER_POSITION, resultSet, TYPE_INT32));
-        idOrderMap[std::to_string(mapAsset)] = orderPosition;
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (ret == E_OK) {
+        context->orderPositionArray.clear();
+        context->orderPositionArray = respBody.orderPositionArray;
     }
-    context->orderPositionArray.clear();
-    for (std::string& assetId : context->assetIdArray) {
-        context->orderPositionArray.emplace_back(idOrderMap[assetId]);
-    }
-    ANI_INFO_LOG("GetOrderPosition: result size: %{public}d, orderPositionArray size: %{public}d", count,
+    ANI_INFO_LOG("GetOrderPosition: orderPositionArray size: %{public}d",
         static_cast<int>(context->orderPositionArray.size()));
 }
 
@@ -579,14 +536,18 @@ static void SetHighlightSubtitleExecute(std::unique_ptr<HighlightAlbumAniContext
         return;
     }
 
-    auto albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
-    Uri uri(PAH_HIGHLIGHT_SUBTITLE);
-    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
-    context->valuesBucket.Put(SUB_TITLE, context->subtitle);
-    int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
-    if (changedRows < 0) {
-        context->SaveError(changedRows);
-        ANI_ERR_LOG("Failed to set highlight subtitle, err: %{public}d", changedRows);
+    int albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    SetSubtitleReqBody reqBody;
+    reqBody.albumId = to_string(albumId);
+    reqBody.subtitle = context->subtitle;
+    reqBody.albumType = static_cast<int32_t>(photoAlbum->GetPhotoAlbumType());
+    reqBody.albumSubType = static_cast<int32_t>(photoAlbum->GetPhotoAlbumSubType());
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUBTITLE);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        context->SaveError(ret);
+        ANI_ERR_LOG("Failed to set highlight subtitle, err: %{public}d", ret);
         return;
     }
 }
@@ -641,25 +602,27 @@ ani_double HighlightAlbumAni::DeleteHighlightAlbums(ani_env *env, ani_object obj
         returnObj, "Failed to get arrayAlbum");
 
     std::vector<std::string> deleteIds;
+    std::vector<int32_t> photoAlbumTypes;
+    std::vector<int32_t> photoAlbumSubTypes;
     for (const auto& obj : array) {
-        CHECK_COND_WITH_RET_MESSAGE(env, obj != nullptr, returnObj, "obj is null");
         auto photoAlbum = obj->GetPhotoAlbumInstance();
-        CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, returnObj, "photoAlbum is null");
-        CHECK_COND_WITH_RET_MESSAGE(env,
-            PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-            returnObj, "Only user or highlight album can be deleted");
         deleteIds.push_back(std::to_string(photoAlbum->GetAlbumId()));
+        photoAlbumTypes.push_back(static_cast<int32_t>(photoAlbum->GetPhotoAlbumType()));
+        photoAlbumSubTypes.push_back(static_cast<int32_t>(photoAlbum->GetPhotoAlbumSubType()));
     }
-    aniContext->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
-    Uri deleteAlbumUri(PAH_DELETE_PHOTO_ALBUM);
-    int ret = UserFileClient::Delete(deleteAlbumUri, aniContext->predicates);
+
+    DeleteHighLightAlbumsReqBody reqBody;
+    reqBody.albumIds = deleteIds;
+    reqBody.photoAlbumTypes = photoAlbumTypes;
+    reqBody.photoAlbumSubtypes = photoAlbumSubTypes;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_HIGH_LIGHT_ALBUMS);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         ANI_ERR_LOG("Failed to delete albums, err: %{public}d", ret);
         aniContext->ThrowError(env, ret, "Failed to delete albums");
         return returnObj;
     }
-    ANI_INFO_LOG("Delete %{public}d album(s)", ret);
+    ANI_INFO_LOG("Delete highlight album(s): %{public}d", ret);
     CHECK_COND_WITH_RET_MESSAGE(env,
         MediaLibraryAniUtils::ToAniDouble(env, static_cast<double>(ret), returnObj) == ANI_OK,
         returnObj, "ToAniDouble failed");

@@ -52,6 +52,28 @@
 #include "user_photography_info_column.h"
 #include "media_facard_photos_column.h"
 #include "result_set_utils.h"
+#include "user_define_ipc_client.h"
+#include "form_info_vo.h"
+#include "medialibrary_business_code.h"
+#include "create_asset_vo.h"
+#include "create_album_vo.h"
+#include "delete_albums_vo.h"
+#include "trash_photos_vo.h"
+#include "grant_photo_uri_permission_vo.h"
+#include "grant_photo_uris_permission_vo.h"
+#include "cancel_photo_uri_permission_vo.h"
+#include "start_thumbnail_creation_task_vo.h"
+#include "stop_thumbnail_creation_task_vo.h"
+#include "get_index_construct_progress_vo.h"
+#include "get_assets_vo.h"
+#include "query_albums_vo.h"
+#include "get_albums_by_ids_vo.h"
+#include "start_asset_analysis_vo.h"
+#include "get_photo_index_vo.h"
+#include "query_result_vo.h"
+#include "get_analysis_process_vo.h"
+#include "get_photo_album_object_vo.h"
+#include "set_photo_album_order_vo.h"
 
 namespace OHOS {
 namespace Media {
@@ -174,6 +196,8 @@ const std::array photoAccessHelperMethos = {
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessRemoveFormInfo)},
     ani_native_function {"removeGalleryFormInfoInner", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessRemoveGalleryFormInfo)},
+    ani_native_function {"updateGalleryFormInfoInner", nullptr,
+        reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessUpdateGalleryFormInfo)},
     ani_native_function {"startThumbnailCreationTask", nullptr,
         reinterpret_cast<void *>(MediaLibraryAni::PhotoAccessStartCreateThumbnailTask)},
     ani_native_function {"getSupportedPhotoFormatsInner", nullptr,
@@ -728,10 +752,10 @@ static void RemoveGalleryFormInfoExec(ani_env *env, unique_ptr<MediaLibraryAsync
         context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
-    context->predicates.EqualTo(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, formId);
-    string deleteUri = PAH_REMOVE_FACARD_PHOTO;
-    Uri uri(deleteUri);
-    int ret = UserFileClient::Delete(uri, context->predicates);
+    FormInfoReqBody reqBody;
+    reqBody.formIds.emplace_back(formId);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_GALLERY_FORM_INFO);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         if (ret == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -796,10 +820,10 @@ static void RemoveFormInfoExec(ani_env *env, unique_ptr<MediaLibraryAsyncContext
         context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
-    context->predicates.EqualTo(FormMap::FORMMAP_FORM_ID, formId);
-    string deleteUri = PAH_REMOVE_FORM_MAP;
-    Uri uri(deleteUri);
-    int ret = UserFileClient::Delete(uri, context->predicates);
+    FormInfoReqBody reqBody;
+    reqBody.formIds.emplace_back(formId);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_FORM_INFO);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         if (ret == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -963,7 +987,19 @@ static void PhotoAccessGetPhotoIndexExecute(unique_ptr<MediaLibraryAsyncContext>
     MediaLibraryAniUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri uri(queryUri);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    if (context->fetchColumn.size() < 2) { // 2: photoId, albumId
+        context->SaveError(E_ERR);
+        return;
+    }
+    GetPhotoIndexReqBody reqBody;
+    reqBody.predicates = context->predicates;
+    reqBody.photoId = context->fetchColumn[0];
+    reqBody.albumId = context->fetchColumn[1];
+    reqBody.isAnalysisAlbum = context->isAnalysisAlbum;
+    QueryResultRspBody rspBody;
+    errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PHOTO_INDEX), reqBody, rspBody);
+    auto resultSet = rspBody.resultSet;
     if (resultSet == nullptr) {
         context->SaveError(errCode);
         return;
@@ -1247,12 +1283,14 @@ ani_int MediaLibraryAni::PhotoAccessStartCreateThumbnailTask([[maybe_unused]] an
     RegisterThumbnailGenerateObserver(env, asyncContext, requestId);
     CreateThumbnailHandler(env, asyncContext, requestId);
 
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, requestId);
-    string updateUri = PAH_START_GENERATE_THUMBNAILS;
-    MediaLibraryAniUtils::UriAppendKeyValue(updateUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri uri(updateUri);
-    int changedRows = UserFileClient::Update(uri, asyncContext->predicates, valuesBucket);
+    StartThumbnailCreationTaskReqBody reqBody;
+    reqBody.predicates = asyncContext->predicates;
+    reqBody.requestId = requestId;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_START_THUMBNAIL_CREATION_TASK);
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call, %{public}d", requestId);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    ANI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+
     if (changedRows < 0) {
         ReleaseThumbnailTask(requestId);
         asyncContext->SaveError(changedRows);
@@ -1318,12 +1356,12 @@ void MediaLibraryAni::PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_en
 
     ReleaseThumbnailTask(requestId);
 
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, requestId);
-    string updateUri = PAH_STOP_GENERATE_THUMBNAILS;
-    MediaLibraryAniUtils::UriAppendKeyValue(updateUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri uri(updateUri);
-    int changedRows = UserFileClient::Update(uri, asyncContext->predicates, valuesBucket);
+    StopThumbnailCreationTaskReqBody reqBody;
+    reqBody.requestId = requestId;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_STOP_THUMBNAIL_CREATION_TASK);
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    ANI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
     if (changedRows < 0) {
         asyncContext->SaveError(changedRows);
         ANI_ERR_LOG("Stop create thumbnail task, update failed, err: %{public}d", changedRows);
@@ -2137,7 +2175,7 @@ static ani_status ToAniPhotoAlbumsMap(ani_env *env, const std::unordered_map<int
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Map");
 
     ani_method mapConstructor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "C{std.core.Object}:", &mapConstructor),
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", ":", &mapConstructor),
         "Can't find method <ctor> in escompat.Map");
 
     CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, nullptr), "Call method <ctor> fail");
@@ -2292,6 +2330,8 @@ static ani_status ParseArgsGetBurstAssets(ani_env *env, ani_object object, ani_s
         return ANI_INVALID_ARGS;
     }
 
+    context->burstKey = burstKeyStr;
+
     CHECK_STATUS_RET(MediaLibraryAniUtils::AddDefaultAssetColumns(env, context->fetchColumn,
         PhotoColumn::IsPhotoColumn, TYPE_PHOTO), "AddDefaultAssetColumns failed");
 
@@ -2308,9 +2348,9 @@ static bool EasterEgg(unique_ptr<MediaLibraryAsyncContext> &context)
     CHECK_COND_RET(context != nullptr, false, "context is nullptr");
     string queryUri;
     if (context->uri == URI_FIND_ALL_DUPLICATE_ASSETS) {
-        queryUri = PAH_FIND_ALL_DUPLICATE_ASSETS;
+        context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::FIND_ALL_DUPLICATE_ASSETS);
     } else if (context->uri == URI_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE) {
-        queryUri = PAH_FIND_DUPLICATE_ASSETS_TO_DELETE;
+        context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::FIND_DUPLICATE_ASSETS_TO_DELETE);
     } else {
         return false;
     }
@@ -2325,16 +2365,18 @@ static bool EasterEgg(unique_ptr<MediaLibraryAsyncContext> &context)
         "Easter egg operation start: %{public}s, is query count: %{public}d",
         queryUri == PAH_FIND_ALL_DUPLICATE_ASSETS ?
         "find all duplicate assets" : "find all duplicate assets to delete", isQueryCount);
-    int errCode = 0;
-    Uri uri(queryUri);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
-        context->predicates, context->fetchColumn, errCode, GetUserIdFromContext(context));
-    if (resultSet == nullptr) {
+    GetAssetsReqBody reqBody;
+    reqBody.predicates = context->predicates;
+    reqBody.columns = context->fetchColumn;
+    GetAssetsRespBody respBody;
+    int32_t errCode =
+        IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode, reqBody, respBody);
+    if (respBody.resultSet == nullptr) {
         context->SaveError(errCode);
         ANI_ERR_LOG("Easter egg operation failed, errCode: %{public}d", errCode);
         return true;
     }
-    context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(respBody.resultSet));
     CHECK_COND_RET(context->fetchFileResult != nullptr, false, "context->fetchFileResult is nullptr");
     context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     ANI_INFO_LOG(
@@ -2355,29 +2397,34 @@ static void PhotoAccessGetAssetsExecute(ani_env *env, unique_ptr<MediaLibraryAsy
         ANI_ERR_LOG("PhotoAccessGetAssetsExecute EasterEgg false");
         return;
     }
-    string queryUri;
-    switch (context->assetType) {
-        case TYPE_PHOTO: {
-            queryUri = PAH_QUERY_PHOTO;
-            MediaLibraryAniUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-            break;
+    string queryUri = PAH_QUERY_PHOTO;
+    MediaLibraryAniUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(queryUri);
+    int errCode = 0;
+    auto [accessSandbox, resultSet] = UserFileClient::QueryAccessibleViaSandBox(
+        uri, context->predicates, context->fetchColumn, errCode, context->userId);
+    if (accessSandbox) {
+        if (resultSet == nullptr) {
+            ANI_ERR_LOG("QueryAccessibleViaSandBox failed, resultSet is nullptr");
         }
-        default: {
-            context->SaveError(-EINVAL);
-            return;
+    } else {
+        GetAssetsReqBody reqBody;
+        reqBody.predicates = context->predicates;
+        reqBody.columns = context->fetchColumn;
+        reqBody.burstKey = context->burstKey;
+        GetAssetsRespBody respBody;
+        errCode = IPC::UserDefineIPCClient()
+                      .SetUserId(context->userId)
+                      .Call(context->businessCode, reqBody, respBody);
+        if (errCode == E_OK) {
+            resultSet = respBody.resultSet;
+        } else {
+            ANI_ERR_LOG("UserDefineIPCClient Call failed, errCode is %{public}d", errCode);
         }
     }
 
-    Uri uri(queryUri);
-    int errCode = 0;
-    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
-        context->predicates, context->fetchColumn, errCode, GetUserIdFromContext(context));
-    if (resultSet == nullptr && !context->uri.empty() && errCode == E_PERMISSION_DENIED) {
-        Uri queryWithUri(context->uri);
-        resultSet = UserFileClient::Query(queryWithUri, context->predicates, context->fetchColumn, errCode,
-            GetUserIdFromContext(context));
-    }
     if (resultSet == nullptr) {
+        ANI_ERR_LOG("resultSet is nullptr, errCode is %{public}d", errCode);
         context->SaveError(errCode);
         return;
     }
@@ -3287,9 +3334,14 @@ static void SaveFormInfoExec(ani_env *env, unique_ptr<MediaLibraryAsyncContext> 
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     context->resultNapiType = type;
-    string uri = PAH_STORE_FORM_MAP;
-    Uri createFormIdUri(uri);
-    auto ret = UserFileClient::Insert(createFormIdUri, context->valuesBucket);
+    bool isValid = false;
+    string formId = context->valuesBucket.Get(FormMap::FORMMAP_FORM_ID, isValid);
+    string fileUri = context->valuesBucket.Get(FormMap::FORMMAP_URI, isValid);
+    FormInfoReqBody reqBody;
+    reqBody.formIds.emplace_back(formId);
+    reqBody.fileUris.emplace_back(fileUri);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_FORM_INFO);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         if (ret == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -3371,9 +3423,18 @@ static void SaveGalleryFormInfoExec(ani_env *env, unique_ptr<MediaLibraryAsyncCo
     CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     context->resultNapiType = type;
-    string uri = PAH_STORE_FACARD_PHOTO;
-    Uri createFormIdUri(uri);
-    auto ret = UserFileClient::BatchInsert(createFormIdUri, context->valuesBucketArray);
+    vector<string> formIds;
+    vector<string> fileUris;
+    bool isValid = false;
+    for (const auto& valueBucket : context->valuesBucketArray) {
+        formIds.emplace_back(valueBucket.Get(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, isValid));
+        fileUris.emplace_back(valueBucket.Get(TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI, isValid));
+    }
+    FormInfoReqBody reqBody;
+    reqBody.formIds = formIds;
+    reqBody.fileUris = fileUris;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_GALLERY_FORM_INFO);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         if (ret == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -3402,6 +3463,56 @@ static void SaveFormInfoAsyncCallbackComplete(ani_env *env, unique_ptr<MediaLibr
         context->HandleError(env, errorObj);
     }
     context.reset();
+}
+
+static ani_status ParseUpdateGalleryFormInfoOption(ani_env *env, ani_object info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+    MediaLibraryAniUtils::GetProperty(env, info, "formId", context->formId);
+    std::vector<std::string> urisValue {};
+    MediaLibraryAniUtils::GetArrayProperty(env, info, "assetUris", urisValue);
+    for (auto i = 0U; i < urisValue.size(); ++i) {
+        OHOS::DataShare::DataShareValuesBucket bucket;
+        bucket.Put(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, context->formId);
+        bucket.Put(TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI, urisValue[i]);
+        context->valuesBucketArray.push_back(move(bucket));
+    }
+    return ANI_OK;
+}
+
+static ani_status ParseArgsUpdateGalleryFormInfo(ani_env *env, ani_object info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_STATUS_RET(ParseUpdateGalleryFormInfoOption(env, info, context), "Parse formInfo Option failed");
+    return ANI_OK;
+}
+
+static void PhotoAccessUpdateGalleryFormInfoExec(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    RemoveGalleryFormInfoExec(env, context, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    SaveGalleryFormInfoExec(env, context, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+}
+
+void MediaLibraryAni::PhotoAccessUpdateGalleryFormInfo(ani_env *env, ani_object object, ani_object info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessUpdateGalleryFormInfo");
+
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    if (context == nullptr) {
+        return;
+    }
+    context->objectInfo = Unwrap(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return;
+    }
+
+    CHECK_IF_EQUAL(ParseArgsUpdateGalleryFormInfo(env, info, context) == ANI_OK,
+        "ParseArgsUpdateGalleryFormInfo fail");
+    PhotoAccessUpdateGalleryFormInfoExec(env, context);
+    RemoveFormInfoAsyncCallbackComplete(env, context);
 }
 
 void MediaLibraryAni::PhotoAccessSaveGalleryFormInfo(ani_env *env, ani_object object, ani_object info)
@@ -3704,79 +3815,18 @@ ani_object MediaLibraryAni::PhotoAccessHelperAgentCreateAssetsWithMode(ani_env *
     return CreateAssetComplete(env, context);
 }
 
-static bool GetProgressStr(const shared_ptr<DataShare::DataShareResultSet> &resultSet, string &progress)
-{
-    CHECK_COND_RET(resultSet != nullptr, false, "resultSet is nullptr");
-    const vector<string> columns = {
-        PHOTO_COMPLETE_NUM,
-        PHOTO_TOTAL_NUM,
-        VIDEO_COMPLETE_NUM,
-        VIDEO_TOTAL_NUM
-    };
-    int32_t index = 0;
-    string value = "";
-    progress = "{";
-    for (const auto &item : columns) {
-        if (resultSet->GetColumnIndex(item, index) != DataShare::E_OK) {
-            ANI_ERR_LOG("ResultSet GetColumnIndex failed, progressObject=%{public}s", item.c_str());
-            return false;
-        }
-        if (resultSet->GetString(index, value) != DataShare::E_OK) {
-            ANI_ERR_LOG("ResultSet GetString failed, progressObject=%{public}s", item.c_str());
-            return false;
-        }
-        progress += "\"" + item + "\":" + value + ",";
-    }
-    progress = progress.substr(0, progress.length() - 1);
-    progress += "}";
-    ANI_DEBUG_LOG("GetProgressStr progress=%{public}s", progress.c_str());
-    return true;
-}
-
-static bool GetProgressFromResultSet(const shared_ptr<DataShare::DataShareResultSet> &resultSet, string &progress)
-{
-    if (resultSet == nullptr) {
-        ANI_ERR_LOG("ResultSet is null");
-        return false;
-    }
-    int32_t count = 0;
-    int32_t errCode = resultSet->GetRowCount(count);
-    if (errCode != DataShare::E_OK) {
-        ANI_ERR_LOG("Can not get row count from resultSet, errCode=%{public}d", errCode);
-        return false;
-    }
-    if (count == 0) {
-        ANI_ERR_LOG("Can not find index construction progress");
-        return false;
-    }
-    errCode = resultSet->GoToFirstRow();
-    if (errCode != DataShare::E_OK) {
-        ANI_ERR_LOG("ResultSet GotoFirstRow failed, errCode=%{public}d", errCode);
-        return false;
-    }
-
-    return GetProgressStr(resultSet, progress);
-}
-
 static void PhotoAccessGetIndexConstructProgressExec(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
-    string queryUri = MEDIALIBRARY_DATA_URI + "/" + SEARCH_INDEX_CONSTRUCTION_STATUS + "/" + OPRN_QUERY;
-    MediaLibraryAniUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri uri(queryUri);
-    int errCode = 0;
-    string indexProgress;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode,
-        GetUserIdFromContext(context));
-    if (!GetProgressFromResultSet(resultSet, indexProgress)) {
-        if (errCode == E_PERMISSION_DENIED) {
-            context->error = OHOS_PERMISSION_DENIED_CODE;
-        } else {
-            context->SaveError(E_FAIL);
-        }
-    } else {
-        context->indexProgress = indexProgress;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_INDEX_CONSTRUCT_PROGRESS);
+    GetIndexConstructProgressRespBody respBody;
+    int32_t errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Get(businessCode, respBody);
+    if (errCode != E_OK) {
+        ANI_ERR_LOG("get index construct progress failed, errCode is %{public}d", errCode);
+        context->SaveError(errCode);
+        return;
     }
+    context->indexProgress = respBody.indexProgress;
 }
 
 static ani_string GetIndexConstructProgressComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
@@ -3945,14 +3995,28 @@ static ani_status ParseArgsGrantPhotoUrisPermission(ani_env *env, unique_ptr<Med
 static void PhotoAccessGrantPhotoUriPermissionExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
-    string uri = PAH_CREATE_APP_URI_PERMISSION;
-    MediaLibraryAniUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri createUri(uri);
+    GrantUriPermissionReqBody reqBody;
+    bool isValid = false;
+    reqBody.tokenId = context->valuesBucket.Get(AppUriPermissionColumn::TARGET_TOKENID, isValid);
+    CHECK_IF_EQUAL(isValid, "tokenId is empty");
+    reqBody.srcTokenId = context->valuesBucket.Get(AppUriPermissionColumn::SOURCE_TOKENID, isValid);
+    CHECK_IF_EQUAL(isValid, "srcTokenId is empty");
+    reqBody.fileId = context->valuesBucket.Get(AppUriPermissionColumn::FILE_ID, isValid);
+    CHECK_IF_EQUAL(isValid, "fileId is empty");
+    reqBody.permissionType = context->valuesBucket.Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
+    CHECK_IF_EQUAL(isValid, "permissionType is empty");
+    reqBody.hideSensitiveType = context->valuesBucket.Get(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, isValid);
+    CHECK_IF_EQUAL(isValid, "hideSensitiveType is empty");
+    reqBody.uriType = context->valuesBucket.Get(AppUriPermissionColumn::URI_TYPE, isValid);
+    CHECK_IF_EQUAL(isValid, "uriType is empty");
 
-    int result = UserFileClient::Insert(createUri, context->valuesBucket);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GRANT_PHOTO_URI_PERMISSION);
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    ANI_INFO_LOG("GrantPhotoUriPermission ret:%{public}d", result);
     if (result < 0) {
         context->SaveError(result);
-        ANI_ERR_LOG("Insert fail, result: %{public}d.", result);
+        ANI_ERR_LOG("GrantPhotoUriPermission fail, result: %{public}d.", result);
     } else {
         context->retVal = result;
     }
@@ -3996,13 +4060,64 @@ ani_double MediaLibraryAni::PhotoAccessGrantPhotoUriPermission(ani_env *env, ani
     return PhotoUriPermissionComplete(env, context);
 }
 
+static void PhotoAccessGrantPhotoUrisPermissionExecuteEx(unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (context == nullptr) {
+        ANI_ERR_LOG("Async context is null");
+        return;
+    }
+    GrantUrisPermissionReqBody reqBody;
+    bool isValid = false;
+    std::set<std::string> processedColumn;
+    for (const auto& valueBucket : context->valuesBucketArray) {
+        if (processedColumn.find(AppUriPermissionColumn::TARGET_TOKENID) == processedColumn.end()) {
+            reqBody.tokenId = context->valuesBucket.Get(AppUriPermissionColumn::TARGET_TOKENID, isValid);
+            CHECK_IF_EQUAL(isValid, "tokenId is empty");
+            processedColumn.insert(AppUriPermissionColumn::TARGET_TOKENID);
+        }
+        if (processedColumn.find(AppUriPermissionColumn::SOURCE_TOKENID) == processedColumn.end()) {
+            reqBody.srcTokenId = context->valuesBucket.Get(AppUriPermissionColumn::SOURCE_TOKENID, isValid);
+            CHECK_IF_EQUAL(isValid, "srcTokenId is empty");
+            processedColumn.insert(AppUriPermissionColumn::SOURCE_TOKENID);
+        }
+        if (processedColumn.find(AppUriPermissionColumn::PERMISSION_TYPE) == processedColumn.end()) {
+            reqBody.permissionType = context->valuesBucket.Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
+            CHECK_IF_EQUAL(isValid, "permissionType is empty");
+            processedColumn.insert(AppUriPermissionColumn::PERMISSION_TYPE);
+        }
+        if (processedColumn.find(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE) == processedColumn.end()) {
+            reqBody.hideSensitiveType = context->valuesBucket.Get(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, isValid);
+            CHECK_IF_EQUAL(isValid, "hideSensitiveType is empty");
+            processedColumn.insert(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
+        }
+        if (processedColumn.find(AppUriPermissionColumn::URI_TYPE) == processedColumn.end()) {
+            reqBody.uriType = context->valuesBucket.Get(AppUriPermissionColumn::URI_TYPE, isValid);
+            CHECK_IF_EQUAL(isValid, "uriType is empty");
+            processedColumn.insert(AppUriPermissionColumn::URI_TYPE);
+        }
+        reqBody.fileIds.emplace_back(valueBucket.Get(AppUriPermissionColumn::FILE_ID, isValid));
+    }
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GRANT_PHOTO_URIS_PERMISSION);
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    ANI_INFO_LOG("GrantPhotoUrisPermission ret:%{public}d", result);
+    if (result < 0) {
+        context->SaveError(result);
+        ANI_ERR_LOG("GrantPhotoUrisPermission fail, result: %{public}d.", result);
+    } else {
+        context->retVal = result;
+    }
+}
+
 static void PhotoAccessGrantPhotoUrisPermissionExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessGrantPhotoUrisPermissionExecute");
     CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
-
+    if (context->businessCode != 0) {
+        return PhotoAccessGrantPhotoUrisPermissionExecuteEx(context);
+    }
     string uri = PAH_CREATE_APP_URI_PERMISSION;
     MediaLibraryAniUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri createUri(uri);
@@ -4087,14 +4202,26 @@ static void PhotoAccessCancelPhotoUriPermissionExecute(ani_env *env, unique_ptr<
     tracer.Start("PhotoAccessCancelPhotoUriPermissionExecute");
 
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
-    string uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_APP_URI_PERMISSIONOPRN + "/" + OPRN_DELETE;
-    MediaLibraryAniUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri deleteUri(uri);
+    CancelUriPermissionReqBody reqBody;
+    bool isValid = false;
+    reqBody.tokenId = context->valuesBucket.Get(AppUriPermissionColumn::TARGET_TOKENID, isValid);
+    CHECK_IF_EQUAL(isValid, "tokenId is empty");
+    reqBody.srcTokenId = context->valuesBucket.Get(AppUriPermissionColumn::SOURCE_TOKENID, isValid);
+    CHECK_IF_EQUAL(isValid, "srcTokenId is empty");
+    reqBody.fileId = context->valuesBucket.Get(AppUriPermissionColumn::FILE_ID, isValid);
+    CHECK_IF_EQUAL(isValid, "fileId is empty");
+    reqBody.permissionType = context->valuesBucket.Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
+    CHECK_IF_EQUAL(isValid, "permissionType is empty");
+    reqBody.uriType = context->valuesBucket.Get(AppUriPermissionColumn::URI_TYPE, isValid);
+    CHECK_IF_EQUAL(isValid, "uriType is empty");
 
-    int result = UserFileClient::Delete(deleteUri, context->predicates);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CANCEL_PHOTO_URI_PERMISSION);
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    ANI_INFO_LOG("CancelPhotoUriPermission ret:%{public}d", result);
     if (result < 0) {
         context->SaveError(result);
-        ANI_ERR_LOG("delete fail, result: %{public}d.", result);
+        ANI_ERR_LOG("CancelPhotoUriPermission fail, result: %{public}d.", result);
     } else {
         context->retVal = result;
     }
@@ -4210,13 +4337,13 @@ static std::string GetFaceAnalysisProgress()
 {
     string curTotalCount = GetTotalCount();
 
-    Uri uri(URI_USER_PHOTOGRAPHY_INFO);
-    vector<string> column = {
-        HIGHLIGHT_ANALYSIS_PROGRESS
-    };
-    DataShare::DataSharePredicates predicates;
     int errCode = 0;
-    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, column, errCode);
+    GetAnalysisProcessReqBody reqBody;
+    reqBody.analysisType = AnalysisType::ANALYSIS_FACE;
+    QueryResultRspBody rspBody;
+    errCode = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, rspBody);
+    shared_ptr<DataShare::DataShareResultSet> ret = rspBody.resultSet;
     CHECK_COND_RET(ret != nullptr, "", "ret is nullptr");
     if (ret->GoToNextRow() != NativeRdb::E_OK) {
         ret->Close();
@@ -4254,7 +4381,7 @@ static std::string GetHighlightAnalysisProgress()
     unordered_map<int, string> idxToCount = {
         {0, "ClearCount"}, {1, "DeleteCount"}, {2, "NotProduceCount"}, {3, "ProduceCount"}, {4, "PushCount"}
     };
-    Uri uri(URI_HIGHLIGHT_ALBUM);
+
     vector<string> columns = {
         "SUM(CASE WHEN highlight_status = -3 THEN 1 ELSE 0 END) AS ClearCount",
         "SUM(CASE WHEN highlight_status = -2 THEN 1 ELSE 0 END) AS DeleteCount",
@@ -4262,9 +4389,13 @@ static std::string GetHighlightAnalysisProgress()
         "SUM(CASE WHEN highlight_status > 0 THEN 1 ELSE 0 END) AS ProduceCount",
         "SUM(CASE WHEN highlight_status = 1 THEN 1 ELSE 0 END) AS PushCount",
     };
-    DataShare::DataSharePredicates predicates;
     int errCode = 0;
-    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, columns, errCode);
+    GetAnalysisProcessReqBody reqBody;
+    reqBody.analysisType = AnalysisType::ANALYSIS_HIGHLIGHT;
+    QueryResultRspBody rspBody;
+    errCode = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, rspBody);
+    shared_ptr<DataShare::DataShareResultSet> ret = rspBody.resultSet;
     CHECK_COND_RET(ret != nullptr, "", "ret is nullptr");
     if (ret->GoToFirstRow() != NativeRdb::E_OK) {
         ANI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
@@ -4435,12 +4566,10 @@ static void PhotoAccessStartAssetAnalysisExecute(ani_env *env, std::unique_ptr<M
         ANI_INFO_LOG("asset uris are empty");
         return;
     }
-    Uri uri(FOREGROUND_ANALYSIS_ASSETS_MAP.at(asyncContext->analysisType));
-    DataShare::DataSharePredicates predicates;
-    DataShareValuesBucket value;
-    value.Put(FOREGROUND_ANALYSIS_TYPE, AnalysisType::ANALYSIS_SEARCH_INDEX);
     asyncContext->taskId = ForegroundAnalysisMeta::GetIncTaskId();
-    value.Put(FOREGROUND_ANALYSIS_TASK_ID, asyncContext->taskId);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS);
+    StartAssetAnalysisReqBody reqBody;
+    StartAssetAnalysisRspBody rspBody;
     std::vector<std::string> fileIds;
     for (const auto &uri : asyncContext->uris) {
         std::string fileId = MediaLibraryAniUtils::GetFileIdFromUriString(uri);
@@ -4449,9 +4578,12 @@ static void PhotoAccessStartAssetAnalysisExecute(ani_env *env, std::unique_ptr<M
         }
     }
     if (!fileIds.empty()) {
-        predicates.In(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID, fileIds);
+        reqBody.predicates.In(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID, fileIds);
     }
-    int errCode = UserFileClient::Update(uri, predicates, value);
+    int errCode = IPC::UserDefineIPCClient().SetUserId(asyncContext->userId).Call(businessCode, reqBody, rspBody);
+    if (rspBody.resultSet != nullptr) {
+        rspBody.resultSet->Close();
+    }
     if (errCode != E_OK) {
         asyncContext->SaveError(errCode);
         ANI_ERR_LOG("Start assets analysis failed! errCode is = %{public}d", errCode);

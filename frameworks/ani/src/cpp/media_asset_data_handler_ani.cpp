@@ -96,6 +96,26 @@ CompatibleMode AniMediaAssetDataHandler::GetCompatibleMode()
     return compatibleMode_;
 }
 
+ani_ref AniMediaAssetDataHandler::GetProgressHandlerRef()
+{
+    return progressHandlerRef_;
+}
+
+void AniMediaAssetDataHandler::SetProgressHandlerRef(ani_ref &progressHandlerRef)
+{
+    progressHandlerRef_ = progressHandlerRef;
+}
+
+ThreadFunctionOnProgress AniMediaAssetDataHandler::GetThreadsafeFunction()
+{
+    return threadsafeFunction_;
+}
+
+void AniMediaAssetDataHandler::SetThreadsafeFunction(ThreadFunctionOnProgress &threadsafeFunction)
+{
+    threadsafeFunction_ = threadsafeFunction;
+}
+
 void AniMediaAssetDataHandler::EtsOnDataPrepared(ani_env *env, ani_object arg, ani_object extraInfo)
 {
     static const char *className = PAH_ANI_CLASS_MEDIA_MANAGER.c_str();

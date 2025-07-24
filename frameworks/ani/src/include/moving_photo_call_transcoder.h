@@ -13,25 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_CALL_TRANSCODE_H
-#define MEDIA_CALL_TRANSCODE_H
+#ifndef MOVING_PHOTO_CALL_TRANSCODER_H
+#define MOVING_PHOTO_CALL_TRANSCODER_H
 
-#include "ani.h"
 #include <string>
+#include "ani.h"
+#include "progress_handler.h"
 #include "unique_fd.h"
 
 namespace OHOS {
 namespace Media {
-class MediaCallTranscode {
+
+class MovingPhotoCallTranscoder {
 public:
-    MediaCallTranscode() = default;
-    ~MediaCallTranscode() = default;
-    static void CallTranscodeRelease(const std::string &requestId);
-    static bool DoTranscode(UniqueFd &uniqueSrcFd, UniqueFd &uniqueDestFd, int64_t size, const std::string &requestId);
-    using CallbackType = std::function<void(int, int, std::string)>;
-    static void RegisterCallback(const CallbackType &cb);
+    MovingPhotoCallTranscoder() = delete;
+    ~MovingPhotoCallTranscoder() = delete;
+    static bool DoTranscode(const std::shared_ptr<MovingPhotoProgressHandler> &mppHandler);
+    static void OnProgress(ani_env *env, ProgressHandler *progressHandler);
 };
 
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIA_CALL_TRANSCODE_H
+
+#endif // MOVING_PHOTO_CALL_TRANSCODER_H

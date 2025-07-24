@@ -216,6 +216,7 @@ struct MediaAssetChangeRequestAniContext : public AniError {
     std::string realPath;
     int32_t fd;
     int32_t userId_ = -1;
+    std::vector<std::string> fileIds;
 };
 } // namespace Media
 } // namespace OHOS
