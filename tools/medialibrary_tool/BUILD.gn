@@ -76,6 +76,7 @@ ohos_executable("mediatool") {
     "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_napi",
+    "ipc:ipc_single",
     "napi:ace_napi",
     "samgr:samgr_proxy",
   ]

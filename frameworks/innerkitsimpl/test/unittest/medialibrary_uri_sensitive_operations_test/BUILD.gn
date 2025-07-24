@@ -59,6 +59,7 @@ ohos_unittest("medialibrary_uri_sensitive_operations_test") {
     "hitrace:hitrace_meter",
     "image_framework:image_native",
     "ipc:ipc_single",
+    "ipc:ipc_napi",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",
