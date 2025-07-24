@@ -48,6 +48,7 @@ public:
     void SetTransaction(std::shared_ptr<TransactionOperations> trans);
     // 外部接口数据无法获取修改前后数据进行精准计算
     bool CheckIsForRecheck();
+    bool CanTransOperate();
  
 protected:
     int32_t InsertInitChangeInfos(const std::vector<ChangeInfo> &changeInfos, PendingInfo pendingInfo = PendingInfo());
