@@ -416,6 +416,7 @@ ohos_shared_library("medialibrary") {
     "hilog:libhilog",
     "i18n:intl_util",
     "ipc:ipc_napi",
+    "ipc:ipc_single",
     "napi:ace_napi",
     "e2fsprogs:libext2_uuid",
   ]
@@ -485,6 +486,7 @@ ohos_shared_library("userfilemanager") {
     "hilog:libhilog",
     "i18n:intl_util",
     "ipc:ipc_napi",
+    "ipc:ipc_single",
     "napi:ace_napi",
     "e2fsprogs:libext2_uuid",
   ]
