@@ -1705,8 +1705,7 @@ void CloneRestore::RestoreAnalysisTablesData()
         "tab_analysis_segmentation",
         "tab_analysis_object",
         "tab_analysis_saliency_detect",
-        "tab_analysis_recommendation",
-        "tab_analysis_aesthetics_score"
+        "tab_analysis_recommendation"
     };
 
     vector<std::string> totalTypes = {
@@ -1717,8 +1716,7 @@ void CloneRestore::RestoreAnalysisTablesData()
         "segmentation",
         "object",
         "saliency",
-        "recommendation",
-        "aesthetics_score"
+        "recommendation"
     };
 
     for (size_t index = 0; index < analysisTables.size(); index++) {
@@ -1731,6 +1729,7 @@ void CloneRestore::RestoreAnalysisTablesData()
 void CloneRestore::RestoreAnalysisData()
 {
     RestoreSearchIndexData();
+    RestoreBeautyScoreData();
     RestoreVideoFaceData();
     RestoreAnalysisTablesData();
     RestoreHighlightAlbums();
