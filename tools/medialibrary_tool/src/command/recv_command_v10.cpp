@@ -29,6 +29,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "mediatool_uri.h"
 #include "utils/mediatool_command_utils.h"
 #include "userfile_client.h"
 #include "userfile_client_ex.h"
@@ -237,9 +238,27 @@ bool RecvCommandV10::IsMovingPhotoVideoPath(unique_ptr<FileAsset>& movingPhotoAs
     return false;
 }
 
+static bool PathExists(const string& path)
+{
+    std::string lsUriStr = TOOL_LS_PHOTO;
+    Uri lsUri(lsUriStr);
+    DataShare::DataShareValuesBucket values;
+    values.Put(MediaColumn::MEDIA_FILE_PATH, path);
+    string outString;
+    UserFileClient::InsertExt(lsUri, values, outString);
+    return !outString.empty();
+}
+
 int32_t RecvCommandV10::RecvAssets(const ExecEnv& env, const std::string& tableName)
 {
     printf("Table Name: %s\n", tableName.c_str());
+    if (!srcPath_.empty() && !PathExists(srcPath_)) {
+        MEDIA_ERR_LOG("Path does not exist, path: %{public}s",
+            srcPath_.c_str());
+        printf("%s This path does not refer to a valid media asset \n",
+            STR_FAIL.c_str());
+        return Media::E_ERR;
+    }
     std::shared_ptr<DataShare::DataShareResultSet> resultSet;
     auto res = QueryAssets(resultSet, tableName);
     std::shared_ptr<FetchResult<FileAsset>> fetchResult = std::make_shared<FetchResult<FileAsset>>(resultSet);
