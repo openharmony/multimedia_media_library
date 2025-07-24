@@ -140,43 +140,43 @@ std::vector<BeautyScoreTbl> BeautyScoreClone::QueryBeautyScoreTbl(const std::str
 void BeautyScoreClone::ParseBeautyScoreResultSet(
     const std::shared_ptr<NativeRdb::ResultSet>& resultSet, BeautyScoreTbl& beautyScoreTbl)
 {
-    beautyScoreTbl.file_id = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, BEAUTY_SCORE_COL_FILE_ID);
-    beautyScoreTbl.aesthetics_score = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+    beautyScoreTbl.fileId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, BEAUTY_SCORE_COL_FILE_ID);
+    beautyScoreTbl.aestheticsScore = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         BEAUTY_SCORE_COL_AESTHETICS_SCORE);
-    beautyScoreTbl.aesthetics_version = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+    beautyScoreTbl.aestheticsVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         BEAUTY_SCORE_COL_AESTHETICS_VERSION);
     beautyScoreTbl.prob = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, BEAUTY_SCORE_COL_PROB);
-    beautyScoreTbl.analysis_version = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+    beautyScoreTbl.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         BEAUTY_SCORE_COL_ANALYSIS_VERSION);
-    beautyScoreTbl.selected_flag = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+    beautyScoreTbl.selectedFlag = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         BEAUTY_SCORE_COL_SELECTED_FLAG);
-    beautyScoreTbl.selected_algo_version = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+    beautyScoreTbl.selectedAlgoVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         BEAUTY_SCORE_COL_SELECTED_ALGO_VERSION);
-    beautyScoreTbl.selected_status = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+    beautyScoreTbl.selectedStatus = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         BEAUTY_SCORE_COL_SELECTED_STATUS);
-    beautyScoreTbl.negative_flag = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+    beautyScoreTbl.negativeFlag = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         BEAUTY_SCORE_COL_NEGATIVE_FLAG);
-    beautyScoreTbl.negative_algo_version = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+    beautyScoreTbl.negativeAlgoVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         BEAUTY_SCORE_COL_NEGATIVE_ALGO_VERSION);
-    beautyScoreTbl.aesthetics_all_version = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+    beautyScoreTbl.aestheticsAllVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         BEAUTY_SCORE_COL_AESTHETICS_ALL_VERSION);
-    beautyScoreTbl.aesthetics_score_all = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+    beautyScoreTbl.aestheticsScoreAll = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         BEAUTY_SCORE_COL_AESTHETICS_SCORE_ALL);
-    beautyScoreTbl.is_filtered_hard = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+    beautyScoreTbl.isFilteredHard = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         BEAUTY_SCORE_COL_IS_FILTERED_HARD);
-    beautyScoreTbl.clarity_score_all = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+    beautyScoreTbl.clarityScoreAll = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
         BEAUTY_SCORE_COL_CLARITY_SCORE_ALL);
-    beautyScoreTbl.saturation_score_all = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+    beautyScoreTbl.saturationScoreAll = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
         BEAUTY_SCORE_COL_SATURATION_SCORE_ALL);
-    beautyScoreTbl.luminance_score_all = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+    beautyScoreTbl.luminanceScoreAll = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
         BEAUTY_SCORE_COL_LUMINANCE_SCORE_ALL);
-    beautyScoreTbl.semantics_score = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
+    beautyScoreTbl.semanticsScore = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
         BEAUTY_SCORE_COL_SEMANTICS_SCORE);
-    beautyScoreTbl.is_black_white_stripe = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+    beautyScoreTbl.isBlackWhiteStripe = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         BEAUTY_SCORE_COL_IS_BLACK_WHITE_STRIPE);
-    beautyScoreTbl.is_blurry = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+    beautyScoreTbl.isBlurry = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         BEAUTY_SCORE_COL_IS_BLURRY);
-    beautyScoreTbl.is_mosaic = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+    beautyScoreTbl.isMosaic = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         BEAUTY_SCORE_COL_IS_MOSAIC);
 }
 
@@ -244,26 +244,26 @@ NativeRdb::ValuesBucket BeautyScoreClone::CreateValuesBucketFromBeautyScoreTbl(
     NativeRdb::ValuesBucket values;
 
     PutIfPresent(values, BEAUTY_SCORE_COL_ID, beautyScoreTbl.id);
-    PutIfPresent(values, BEAUTY_SCORE_COL_FILE_ID, beautyScoreTbl.file_id);
-    PutIfPresent(values, BEAUTY_SCORE_COL_AESTHETICS_SCORE, beautyScoreTbl.aesthetics_score);
-    PutIfPresent(values, BEAUTY_SCORE_COL_AESTHETICS_VERSION, beautyScoreTbl.aesthetics_version);
+    PutIfPresent(values, BEAUTY_SCORE_COL_FILE_ID, beautyScoreTbl.fileId);
+    PutIfPresent(values, BEAUTY_SCORE_COL_AESTHETICS_SCORE, beautyScoreTbl.aestheticsScore);
+    PutIfPresent(values, BEAUTY_SCORE_COL_AESTHETICS_VERSION, beautyScoreTbl.aestheticsVersion);
     PutIfPresent(values, BEAUTY_SCORE_COL_PROB, beautyScoreTbl.prob);
-    PutIfPresent(values, BEAUTY_SCORE_COL_ANALYSIS_VERSION, beautyScoreTbl.analysis_version);
-    PutIfPresent(values, BEAUTY_SCORE_COL_SELECTED_FLAG, beautyScoreTbl.selected_flag);
-    PutIfPresent(values, BEAUTY_SCORE_COL_SELECTED_ALGO_VERSION, beautyScoreTbl.selected_algo_version);
-    PutIfPresent(values, BEAUTY_SCORE_COL_SELECTED_STATUS, beautyScoreTbl.selected_status);
-    PutIfPresent(values, BEAUTY_SCORE_COL_NEGATIVE_FLAG, beautyScoreTbl.negative_flag);
-    PutIfPresent(values, BEAUTY_SCORE_COL_NEGATIVE_ALGO_VERSION, beautyScoreTbl.negative_algo_version);
-    PutIfPresent(values, BEAUTY_SCORE_COL_AESTHETICS_ALL_VERSION, beautyScoreTbl.aesthetics_all_version);
-    PutWithDefault<int32_t>(values, BEAUTY_SCORE_COL_AESTHETICS_SCORE_ALL, beautyScoreTbl.aesthetics_score_all, 0);
-    PutWithDefault<int32_t>(values, BEAUTY_SCORE_COL_IS_FILTERED_HARD, beautyScoreTbl.is_filtered_hard, 0);
-    PutWithDefault<double>(values, BEAUTY_SCORE_COL_CLARITY_SCORE_ALL, beautyScoreTbl.clarity_score_all, 0);
-    PutWithDefault<double>(values, BEAUTY_SCORE_COL_SATURATION_SCORE_ALL, beautyScoreTbl.saturation_score_all, 0);
-    PutWithDefault<double>(values, BEAUTY_SCORE_COL_LUMINANCE_SCORE_ALL, beautyScoreTbl.luminance_score_all, 0);
-    PutWithDefault<double>(values, BEAUTY_SCORE_COL_SEMANTICS_SCORE, beautyScoreTbl.semantics_score, 0);
-    PutWithDefault<int32_t>(values, BEAUTY_SCORE_COL_IS_BLACK_WHITE_STRIPE, beautyScoreTbl.is_black_white_stripe, 0);
-    PutWithDefault<int32_t>(values, BEAUTY_SCORE_COL_IS_BLURRY, beautyScoreTbl.is_blurry, 0);
-    PutWithDefault<int32_t>(values, BEAUTY_SCORE_COL_IS_MOSAIC, beautyScoreTbl.is_mosaic, 0);
+    PutIfPresent(values, BEAUTY_SCORE_COL_ANALYSIS_VERSION, beautyScoreTbl.analysisVersion);
+    PutIfPresent(values, BEAUTY_SCORE_COL_SELECTED_FLAG, beautyScoreTbl.selectedFlag);
+    PutIfPresent(values, BEAUTY_SCORE_COL_SELECTED_ALGO_VERSION, beautyScoreTbl.selectedAlgoVersion);
+    PutIfPresent(values, BEAUTY_SCORE_COL_SELECTED_STATUS, beautyScoreTbl.selectedStatus);
+    PutIfPresent(values, BEAUTY_SCORE_COL_NEGATIVE_FLAG, beautyScoreTbl.negativeFlag);
+    PutIfPresent(values, BEAUTY_SCORE_COL_NEGATIVE_ALGO_VERSION, beautyScoreTbl.negativeAlgoVersion);
+    PutIfPresent(values, BEAUTY_SCORE_COL_AESTHETICS_ALL_VERSION, beautyScoreTbl.aestheticsAllVersion);
+    PutWithDefault<int32_t>(values, BEAUTY_SCORE_COL_AESTHETICS_SCORE_ALL, beautyScoreTbl.aestheticsScoreAll, 0);
+    PutWithDefault<int32_t>(values, BEAUTY_SCORE_COL_IS_FILTERED_HARD, beautyScoreTbl.isFilteredHard, 0);
+    PutWithDefault<double>(values, BEAUTY_SCORE_COL_CLARITY_SCORE_ALL, beautyScoreTbl.clarityScoreAll, 0);
+    PutWithDefault<double>(values, BEAUTY_SCORE_COL_SATURATION_SCORE_ALL, beautyScoreTbl.saturationScoreAll, 0);
+    PutWithDefault<double>(values, BEAUTY_SCORE_COL_LUMINANCE_SCORE_ALL, beautyScoreTbl.luminanceScoreAll, 0);
+    PutWithDefault<double>(values, BEAUTY_SCORE_COL_SEMANTICS_SCORE, beautyScoreTbl.semanticsScore, 0);
+    PutWithDefault<int32_t>(values, BEAUTY_SCORE_COL_IS_BLACK_WHITE_STRIPE, beautyScoreTbl.isBlackWhiteStripe, 0);
+    PutWithDefault<int32_t>(values, BEAUTY_SCORE_COL_IS_BLURRY, beautyScoreTbl.isBlurry, 0);
+    PutWithDefault<int32_t>(values, BEAUTY_SCORE_COL_IS_MOSAIC, beautyScoreTbl.isMosaic, 0);
 
     return values;
 }
