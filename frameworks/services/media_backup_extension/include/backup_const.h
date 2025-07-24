@@ -720,6 +720,7 @@ const std::string SQL_SELECT_ERROR_BURST_PHOTOS  = "COALESCE(burst_key, '') <> '
 const std::string SQL_SELECT_ERROR_BURST_COVER_PHOTOS  = "COALESCE(burst_key, '') <> '' and NOT EXISTS ( \
         SELECT 1 FROM Photos p1 WHERE p1.burst_key = photos.burst_key AND p1.burst_cover_level = 2)";
 const std::string SQL_SELECT_CLONE_FILE_IDS = "SELECT file_id FROM tab_old_photos";
+constexpr size_t SQL_BATCH_SIZE = 1000;
 } // namespace Media
 } // namespace OHOS
 

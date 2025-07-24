@@ -54,8 +54,8 @@ public:
     int64_t GetTotalTimeCost() const { return totalTimeCost_; }
 
 private:
-    std::vector<AnalysisSearchIndexTbl> QueryAnalysisSearchIndexTbl(int32_t offset,
-        std::string &fileIdClause, const std::vector<std::string>& commonColumns);
+    std::vector<AnalysisSearchIndexTbl> QueryAnalysisSearchIndexTbl(const std::string &fileIdClause,
+        const std::vector<std::string>& commonColumns);
 
     void ParseAnalysisSearchIndexResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,
         AnalysisSearchIndexTbl& analysisSearchIndexTbl);

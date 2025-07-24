@@ -678,7 +678,7 @@ bool BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(int64_t maxAlbumId, const
         return true;
     }
 
-    std::string albumIdCondition = ANALYSIS_COL_ALBUM_ID + " < " + std::to_string(maxAlbumId);
+    std::string albumIdCondition = ANALYSIS_COL_ALBUM_ID + " <= " + std::to_string(maxAlbumId);
     std::string finalWhereClause = albumIdCondition + " AND (" + analysisAlbumWhereClause + ")";
     finalWhereClause += " AND (album_type = 4096 AND album_subtype = 4102)";
 
@@ -1020,6 +1020,7 @@ std::vector<int32_t> BackupDatabaseUtils::QueryIntVec(std::shared_ptr<NativeRdb:
     int32_t columnIndex = -1;
     if (resultSet->GetColumnIndex(columnName, columnIndex) != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Get column index error");
+        resultSet->Close();
         return results;
     }
 
