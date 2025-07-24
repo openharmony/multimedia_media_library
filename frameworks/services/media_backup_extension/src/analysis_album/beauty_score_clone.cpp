@@ -189,15 +189,15 @@ std::vector<BeautyScoreTbl> BeautyScoreClone::ProcessBeautyScoreTbls(
     beautyScoreNewTbls.reserve(beautyScoreTbls.size());
 
     for (const auto& beautyScoreTbl : beautyScoreTbls) {
-        if (beautyScoreTbl.file_id.has_value()) {
-            int32_t oldFileId = beautyScoreTbl.file_id.value();
+        if (beautyScoreTbl.fileId.has_value()) {
+            int32_t oldFileId = beautyScoreTbl.fileId.value();
             const auto it = photoInfoMap_.find(oldFileId);
             if (it != photoInfoMap_.end()) {
                 BeautyScoreTbl updatedScore = beautyScoreTbl;
-                updatedScore.file_id = it->second.fileIdNew;
+                updatedScore.fileId = it->second.fileIdNew;
                 beautyScoreNewTbls.push_back(std::move(updatedScore));
             } else {
-                MEDIA_WARN_LOG("Original file_id %{public}d not found in photoInfoMap_, skipping.", oldFileId);
+                MEDIA_WARN_LOG("Original fileId %{public}d not found in photoInfoMap_, skipping.", oldFileId);
             }
         }
     }
@@ -211,12 +211,12 @@ void BeautyScoreClone::BatchInsertBeautyScores(const std::vector<BeautyScoreTbl>
     valuesBucketsToInsert.reserve(beautyScoreTbls.size());
 
     for (const auto& beautyScoreTbl : beautyScoreTbls) {
-        if (!beautyScoreTbl.file_id.has_value()) {
-            MEDIA_WARN_LOG("BeautyScoreTbl has no file_id, skipping.");
+        if (!beautyScoreTbl.fileId.has_value()) {
+            MEDIA_WARN_LOG("BeautyScoreTbl has no fileId, skipping.");
             continue;
         }
 
-        int32_t currentFileId = beautyScoreTbl.file_id.value();
+        int32_t currentFileId = beautyScoreTbl.fileId.value();
         if (currentFileId <= maxBeautyFileId_) {
             continue;
         }
