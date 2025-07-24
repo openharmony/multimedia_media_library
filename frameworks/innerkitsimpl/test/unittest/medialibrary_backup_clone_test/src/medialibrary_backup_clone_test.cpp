@@ -3172,7 +3172,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_beauty_s
     int32_t newFileId = 60005;
     photoInfoMap[sourceOldFileId] = { .fileIdNew = newFileId };
 
-    BeautyScoreClone beautyScoreClone(cloneSource.cloneStorePtr_, g_rdbStore->GetRaw(), photoInfoMap);
+    BeautyScoreClone beautyScoreClone(cloneSource.cloneStorePtr_, g_rdbStore->GetRaw(), photoInfoMap, 0);
     bool cloneSuccess = beautyScoreClone.CloneBeautyScoreInfo();
     ASSERT_TRUE(cloneSuccess) << "BeautyScoreClone::CloneBeautyScoreInfo failed";
 
