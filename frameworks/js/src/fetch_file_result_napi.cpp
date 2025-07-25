@@ -854,6 +854,11 @@ static napi_value GetAsset(napi_env env, vector<std::unique_ptr<AlbumOrder>> &ar
     return AlbumOrderNapi::CreateAlbumOrderNapi(env, array[index]);
 }
 
+static napi_value GetAsset(napi_env env, vector<std::unique_ptr<PhotoAssetCustomRecord>> &array, int index)
+{
+    return PhotoAssetCustomRecordNapi::CreateCustomRecordNapi(env, array[index]);
+}
+
 template<class T>
 static void GetAssetFromArray(napi_env env, FetchFileResultAsyncContext* context, T& array,
     unique_ptr<JSAsyncContextOutput> &jsContext)
@@ -902,6 +907,9 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
             break;
         case FetchResType::TYPE_ALBUMORDER:
             GetAssetFromArray(env, context, context->fileAlbumOrderArray, jsContext);
+            break;
+        case FetchResType::TYPE_CUSTOMRECORD:
+            GetAssetFromArray(env, context, context->customRecordArray, jsContext);
             break;
         default:
             NAPI_ERR_LOG("unsupported FetchResType");
