@@ -71,6 +71,8 @@ group("media_library_fuzztest") {
     "medialibraryuripermissionoperations_fuzzer:MediaLibraryUriPermissionOperationsFuzzTest",
     "medialibraryurisensitiveoperations_fuzzer:MediaLibraryUriSensitiveOperationsFuzzTest",
     "medialibraryutil_fuzzer:MediaLibraryUtilFuzzTest",
+    "medialibrarynotification_fuzzer:MediaLibraryNotificationFuzzTest",
+    "medialibraryrefresh_fuzzer:MediaLibraryRefreshFuzzTest",
   ]
 
   if (defined(global_parts_info.hdf_drivers_interface_usb) &&
