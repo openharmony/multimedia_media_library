@@ -49,9 +49,17 @@ namespace OHOS::Media::CloudSync {
 DatabaseDataMock CloudMediaAlbumHandlerOnFetchRecordsTest::dbDataMock_;
 int32_t CloudMediaAlbumHandlerOnFetchRecordsTest::otherAlbumDirty_;
 int32_t CloudMediaAlbumHandlerOnFetchRecordsTest::hiddenAlbumDirty_;
+static uint64_t g_shellToken = 0;
+static MediaLibraryMockNativeToken* mockToken = nullptr;
+
 void CloudMediaAlbumHandlerOnFetchRecordsTest::SetUpTestCase(void)
 {
     GTEST_LOG_(INFO) << "CloudMediaAlbumHandlerOnFetchRecordsTest SetUpTestCase";
+    // mock native Token
+    g_shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
+    mockToken = new MediaLibraryMockNativeToken("cloudfileservice");
+
     // Get RdbStore
     int32_t errorCode = 0;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore = MediaLibraryDatabase().GetRdbStore(errorCode);
@@ -111,6 +119,15 @@ void CloudMediaAlbumHandlerOnFetchRecordsTest::TearDownTestCase(void)
     dao.UpdateAlbumDirtyByName(".hiddenAlbum", hiddenAlbumDirty_);
     int32_t ret = dbDataMock_.RestoreDatabase();
     EXPECT_EQ(ret, E_OK) << "CloudMediaAlbumHandlerOnFetchRecordsTest RestoreDatabase failed";
+
+    // revocery shell token
+    if (mockToken != nullptr) {
+        delete mockToken;
+        mockToken = nullptr;
+    }
+    SetSelfTokenID(g_shellToken);
+    MediaLibraryMockTokenUtils::ResetToken();
+    EXPECT_EQ(g_shellToken, IPCSkeleton::GetSelfTokenID());
     GTEST_LOG_(INFO) << "CloudMediaPhotoHandlerTest TearDownTestCase ret: " << ret;
 }
 

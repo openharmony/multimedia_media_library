@@ -18,6 +18,7 @@
 #include "fetch_result.h"
 #include "file_asset.h"
 #include "get_self_permissions.h"
+#include "medialibrary_mock_tocken.h"
 #include "file_uri.h"
 #include "hilog/log.h"
 #include "iservice_registry.h"
@@ -64,7 +65,8 @@ const char ERROR_REQUEST_ID[UUID_STR_MAX_LENGTH] = "00000000-0000-0000-0000-0000
 const std::string ROOT_TEST_MEDIA_DIR =
     "/data/app/el2/100/base/com.ohos.medialibrary.medialibrarydata/haps/";
 const std::string TEST_DISPLAY_NAME = "test_image.png";
-
+static uint64_t g_shellToken = 0;
+static MediaLibraryMockHapToken* mockToken = nullptr;
 static const unsigned char FILE_CONTENT_JPG[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24, 0x5d, 0x54, 0x45, 0x4e, 0x43, 0x20, 0x20, 0x20, 0x0b,
     0x20, 0x20, 0x20,
@@ -81,20 +83,20 @@ MediaLibraryManager* mediaLibraryManager = MediaLibraryManager::GetMediaLibraryM
 void MediaLibraryAssetManagerTest::SetUpTestCase(void)
 {
     vector<string> perms;
+    g_shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
     perms.push_back("ohos.permission.READ_IMAGEVIDEO");
     perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
     perms.push_back("ohos.permission.MEDIA_LOCATION");
     perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryAssetManagerTest", perms, tokenId);
-    ASSERT_TRUE(tokenId != 0);
+    mockToken = new MediaLibraryMockHapToken("com.ohos.medialibrary.medialibrarydata", perms);
+    for (auto &perm : perms) {
+        MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
+    }
 
     MEDIA_INFO_LOG("MediaLibraryAssetManagerTest::SetUpTestCase:: invoked");
     CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
-    if (sDataShareHelper_ == nullptr) {
-        ASSERT_NE(sDataShareHelper_, nullptr);
-        return;
-    }
+    ASSERT_NE(sDataShareHelper_, nullptr);
 
     // make sure board is empty
     ClearAllFile();
@@ -116,6 +118,14 @@ void MediaLibraryAssetManagerTest::TearDownTestCase(void)
     }
     sleep(CLEAN_TIME);
     ClearAllFile();
+
+    if (mockToken != nullptr) {
+        delete mockToken;
+        mockToken = nullptr;
+    }
+    SetSelfTokenID(g_shellToken);
+    MediaLibraryMockTokenUtils::ResetToken();
+    EXPECT_EQ(g_shellToken, IPCSkeleton::GetSelfTokenID());
     MEDIA_INFO_LOG("TearDownTestCase end");
 }
 // SetUp:Execute before each test case
