@@ -488,9 +488,9 @@ int32_t MediaAssetsControllerService::OnRemoteRequest(
 int32_t MediaAssetsControllerService::RemoveFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RemoveFormInfo");
-    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::REMOVE_FORM_INFO);
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_FORM_INFO);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(DfxType::RDB_DELETE, operationCode, timeout, true);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -507,9 +507,9 @@ int32_t MediaAssetsControllerService::RemoveFormInfo(MessageParcel &data, Messag
 int32_t MediaAssetsControllerService::RemoveGalleryFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RemoveGalleryFormInfo");
-    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::REMOVE_GALLERY_FORM_INFO);
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_GALLERY_FORM_INFO);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(DfxType::RDB_DELETE, operationCode, timeout, true);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -526,9 +526,9 @@ int32_t MediaAssetsControllerService::RemoveGalleryFormInfo(MessageParcel &data,
 int32_t MediaAssetsControllerService::SaveFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SaveFormInfo");
-    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::SAVE_FORM_INFO);
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_FORM_INFO);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(DfxType::RDB_INSERT, operationCode, timeout, true);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -552,9 +552,9 @@ int32_t MediaAssetsControllerService::SaveFormInfo(MessageParcel &data, MessageP
 int32_t MediaAssetsControllerService::SaveGalleryFormInfo(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SaveGalleryFormInfo");
-    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::SAVE_GALLERY_FORM_INFO);
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_GALLERY_FORM_INFO);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(DfxType::RDB_BATCHINSERT, operationCode, timeout, true);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -738,9 +738,9 @@ int32_t MediaAssetsControllerService::AssetChangeSetUserComment(MessageParcel &d
 int32_t MediaAssetsControllerService::AssetChangeSetLocation(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeSetLocation");
-    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_LOCATION);
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_LOCATION);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(DfxType::RDB_UPDATE, operationCode, timeout, true);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     AssetChangeReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -782,9 +782,9 @@ int32_t MediaAssetsControllerService::AssetChangeSetTitle(MessageParcel &data, M
 int32_t MediaAssetsControllerService::AssetChangeSetEditData(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeSetEditData");
-    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_EDIT_DATA);
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_EDIT_DATA);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(DfxType::RDB_UPDATE, operationCode, timeout, true);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     AssetChangeReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -830,9 +830,9 @@ int32_t MediaAssetsControllerService::AssetChangeSubmitCache(MessageParcel &data
 int32_t MediaAssetsControllerService::AssetChangeCreateAsset(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter AssetChangeCreateAsset");
-    int32_t operationCode = static_cast<int32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_CREATE_ASSET);
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_CREATE_ASSET);
     int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
-    DfxTimer dfxTimer(DfxType::RDB_INSERT, operationCode, timeout, true);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     AssetChangeReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -859,7 +859,9 @@ int32_t MediaAssetsControllerService::AssetChangeAddImage(MessageParcel &data, M
 {
     MEDIA_INFO_LOG("enter AssetChangeAddImage");
     AddImageReqBody reqBody;
-
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_ADD_IMAGE);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("AssetChangeAddImage Read Request Error");
@@ -977,7 +979,9 @@ int32_t MediaAssetsControllerService::SetVideoEnhancementAttr(MessageParcel &dat
 {
     MEDIA_INFO_LOG("enter SetVideoEnhancementAttr");
     AssetChangeReqBody reqBody;
-
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_VIDEO_ENHANCEMENT_ATTR);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SetVideoEnhancementAttr Read Request Error");
@@ -997,7 +1001,9 @@ int32_t MediaAssetsControllerService::SetSupportedWatermarkType(MessageParcel &d
 {
     MEDIA_INFO_LOG("enter SetSupportedWatermarkType");
     AssetChangeReqBody reqBody;
-
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUPPORTED_WATERMARK_TYPE);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("SetSupportedWatermarkType Read Request Error");
@@ -1102,6 +1108,9 @@ int32_t MediaAssetsControllerService::GetBurstAssets(
 int32_t MediaAssetsControllerService::GetAllDuplicateAssets(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::FIND_ALL_DUPLICATE_ASSETS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1128,6 +1137,9 @@ int32_t MediaAssetsControllerService::GetAllDuplicateAssets(MessageParcel &data,
 int32_t MediaAssetsControllerService::GetDuplicateAssetsToDelete(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::FIND_DUPLICATE_ASSETS_TO_DELETE);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1154,6 +1166,9 @@ int32_t MediaAssetsControllerService::GetDuplicateAssetsToDelete(MessageParcel &
 int32_t MediaAssetsControllerService::GetIndexConstructProgress(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_INDEX_CONSTRUCT_PROGRESS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     std::string indexProgress;
     auto ret = MediaAssetsService::GetInstance().GetIndexConstructProgress(indexProgress);
     if (ret != E_OK) {
@@ -1170,6 +1185,9 @@ int32_t MediaAssetsControllerService::PublicCreateAsset(MessageParcel &data, Mes
     CreateAssetReqBody reqBody;
     CreateAssetRespBody respBody;
     MEDIA_INFO_LOG("enter PublicCreateAsset");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("PublicCreateAsset Read Request Error");
@@ -1189,6 +1207,9 @@ int32_t MediaAssetsControllerService::PublicCreateAsset(MessageParcel &data, Mes
 
 int32_t MediaAssetsControllerService::SystemCreateAsset(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     CreateAssetReqBody reqBody;
     CreateAssetRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1211,6 +1232,9 @@ int32_t MediaAssetsControllerService::SystemCreateAsset(MessageParcel &data, Mes
 
 int32_t MediaAssetsControllerService::PublicCreateAssetForApp(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET_FOR_APP);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     CreateAssetForAppReqBody reqBody;
     CreateAssetForAppRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1232,6 +1256,9 @@ int32_t MediaAssetsControllerService::PublicCreateAssetForApp(MessageParcel &dat
 
 int32_t MediaAssetsControllerService::SystemCreateAssetForApp(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET_FOR_APP);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     CreateAssetForAppReqBody reqBody;
     CreateAssetForAppRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1253,6 +1280,10 @@ int32_t MediaAssetsControllerService::SystemCreateAssetForApp(MessageParcel &dat
 
 int32_t MediaAssetsControllerService::CreateAssetForAppWithAlbum(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(
+        MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET_FOR_APP_WITH_ALBUM);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     CreateAssetForAppReqBody reqBody;
     CreateAssetForAppRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1350,6 +1381,9 @@ int32_t MediaAssetsControllerService::SetAssetsHiddenStatus(MessageParcel &data,
 
 int32_t MediaAssetsControllerService::SetAssetsRecentShowStatus(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_BATCH_SET_RECENT_SHOW);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     ModifyAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1388,6 +1422,9 @@ int32_t MediaAssetsControllerService::SetAssetsUserComment(MessageParcel &data, 
 
 int32_t MediaAssetsControllerService::AddAssetVisitCount(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_ADD_ASSET_VISIT_COUNT);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     AddAssetVisitCountReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1407,6 +1444,9 @@ int32_t MediaAssetsControllerService::AddAssetVisitCount(MessageParcel &data, Me
 
 int32_t MediaAssetsControllerService::GetAssetAnalysisData(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ASSET_ANALYSIS_DATA);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetAssetAnalysisDataReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1502,6 +1542,9 @@ int32_t MediaAssetsControllerService::RevertToOriginal(MessageParcel &data, Mess
 
 int32_t MediaAssetsControllerService::UpdateGalleryFormInfo(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::UPDATE_GALLERY_FORM_INFO);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     MEDIA_INFO_LOG("enter UpdateGalleryFormInfo");
     FormInfoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1529,6 +1572,9 @@ int32_t MediaAssetsControllerService::UpdateGalleryFormInfo(MessageParcel &data,
 int32_t MediaAssetsControllerService::SubmitCloudEnhancementTasks(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SubmitCloudEnhancementTasks");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SUBMIT_CLOUD_ENHANCEMENT_TASKS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     CloudEnhancementReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1556,6 +1602,9 @@ int32_t MediaAssetsControllerService::SubmitCloudEnhancementTasks(MessageParcel 
 int32_t MediaAssetsControllerService::PrioritizeCloudEnhancementTask(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter PrioritizeCloudEnhancementTask");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PRIORITIZE_CLOUD_ENHANCEMENT_TASK);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     CloudEnhancementReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1581,6 +1630,9 @@ int32_t MediaAssetsControllerService::PrioritizeCloudEnhancementTask(MessageParc
 int32_t MediaAssetsControllerService::GrantPhotoUriPermissionInner(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GrantPhotoUriPermissionInner");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GRANT_PHOTO_URI_PERMISSION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GrantUrisPermissionInnerReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1604,6 +1656,9 @@ int32_t MediaAssetsControllerService::GrantPhotoUriPermissionInner(MessageParcel
 int32_t MediaAssetsControllerService::CancelCloudEnhancementTasks(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CancelCloudEnhancementTasks");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CANCEL_CLOUD_ENHANCEMENT_TASKS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     CloudEnhancementReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1644,6 +1699,9 @@ int32_t MediaAssetsControllerService::CancelAllCloudEnhancementTasks(MessageParc
 int32_t MediaAssetsControllerService::StartDownloadCloudMedia(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter StartDownloadCloudMedia");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::START_DOWNLOAD_CLOUDMEDIA);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     StartDownloadCloudMediaReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1666,6 +1724,9 @@ int32_t MediaAssetsControllerService::StartDownloadCloudMedia(MessageParcel &dat
 int32_t MediaAssetsControllerService::PauseDownloadCloudMedia(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter PauseDownloadCloudMedia");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAUSE_DOWNLOAD_CLOUDMEDIA);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     int32_t ret = MediaAssetsService::GetInstance().PauseDownloadCloudMedia();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
@@ -1673,6 +1734,9 @@ int32_t MediaAssetsControllerService::PauseDownloadCloudMedia(MessageParcel &dat
 int32_t MediaAssetsControllerService::CancelDownloadCloudMedia(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CancelDownloadCloudMedia");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CANCEL_DOWNLOAD_CLOUDMEDIA);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     int32_t ret = MediaAssetsService::GetInstance().CancelDownloadCloudMedia();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
@@ -1680,6 +1744,9 @@ int32_t MediaAssetsControllerService::CancelDownloadCloudMedia(MessageParcel &da
 int32_t MediaAssetsControllerService::RetainCloudMediaAsset(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RetainCloudMediaAsset");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::RETAIN_CLOUDMEDIA_ASSET);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     RetainCloudMediaAssetReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1698,6 +1765,9 @@ int32_t MediaAssetsControllerService::RetainCloudMediaAsset(MessageParcel &data,
 int32_t MediaAssetsControllerService::GrantPhotoUriPermission(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GrantPhotoUriPermission");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GRANT_PHOTO_URI_PERMISSION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GrantUriPermissionReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1720,6 +1790,9 @@ int32_t MediaAssetsControllerService::GrantPhotoUriPermission(MessageParcel &dat
 int32_t MediaAssetsControllerService::GrantPhotoUrisPermission(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GrantPhotoUrisPermission");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GRANT_PHOTO_URIS_PERMISSION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GrantUrisPermissionReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1741,6 +1814,9 @@ int32_t MediaAssetsControllerService::GrantPhotoUrisPermission(MessageParcel &da
 
 int32_t MediaAssetsControllerService::CheckUriPermissionInner(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_PHOTO_URI_PERMISSION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     CheckUriPermissionInnerReqBody reqBody;
     CheckUriPermissionInnerRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1760,6 +1836,9 @@ int32_t MediaAssetsControllerService::CheckUriPermissionInner(MessageParcel &dat
 int32_t MediaAssetsControllerService::CancelPhotoUriPermission(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GrantPhotoUriPermission");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_CANCEL_PHOTO_URI_PERMISSION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     CancelUriPermissionReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1782,6 +1861,9 @@ int32_t MediaAssetsControllerService::CancelPhotoUriPermission(MessageParcel &da
 int32_t MediaAssetsControllerService::CancelPhotoUriPermissionInner(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CancelPhotoUriPermissionInner");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_CREATE_ASSET);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     CancelUriPermissionInnerReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1802,6 +1884,9 @@ int32_t MediaAssetsControllerService::CancelPhotoUriPermissionInner(MessageParce
 int32_t MediaAssetsControllerService::StartThumbnailCreationTask(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter StartThumbnailCreationTask");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_START_THUMBNAIL_CREATION_TASK);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     StartThumbnailCreationTaskReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1819,6 +1904,9 @@ int32_t MediaAssetsControllerService::StartThumbnailCreationTask(MessageParcel &
 int32_t MediaAssetsControllerService::StopThumbnailCreationTask(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter StopThumbnailCreationTask");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_STOP_THUMBNAIL_CREATION_TASK);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     StopThumbnailCreationTaskReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1835,6 +1923,9 @@ int32_t MediaAssetsControllerService::StopThumbnailCreationTask(MessageParcel &d
 int32_t MediaAssetsControllerService::IsEdited(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter IsEdited");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_IS_EDITED);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     IsEditedReqBody reqBody;
     IsEditedRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1852,6 +1943,9 @@ int32_t MediaAssetsControllerService::IsEdited(MessageParcel &data, MessageParce
 int32_t MediaAssetsControllerService::RequestEditData(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RequestEditData");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_REQUEST_EDIT_DATA);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     RequestEditDataReqBody reqBody;
     RequestEditDataRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1869,6 +1963,9 @@ int32_t MediaAssetsControllerService::RequestEditData(MessageParcel &data, Messa
 int32_t MediaAssetsControllerService::GetEditData(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetEditData");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_EDIT_DATA);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetEditDataReqBody reqBody;
     GetEditDataRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1886,6 +1983,9 @@ int32_t MediaAssetsControllerService::GetEditData(MessageParcel &data, MessagePa
 int32_t MediaAssetsControllerService::GetCloudMediaAssetStatus(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetCloudMediaAssetStatus");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_ASSET_STATUS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetCloudMediaAssetStatusReqBody reqBody;
     GetCloudMediaAssetStatusReqBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1901,6 +2001,9 @@ int32_t MediaAssetsControllerService::GetCloudMediaAssetStatus(MessageParcel &da
 int32_t MediaAssetsControllerService::StartAssetAnalysis(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter StartAssetAnalysis");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     StartAssetAnalysisReqBody reqBody;
     StartAssetAnalysisRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1918,6 +2021,9 @@ int32_t MediaAssetsControllerService::StartAssetAnalysis(MessageParcel &data, Me
 int32_t MediaAssetsControllerService::RequestContent(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RequestContent");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_REQUEST_CONTENT);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     RequestContentReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1936,6 +2042,9 @@ int32_t MediaAssetsControllerService::RequestContent(MessageParcel &data, Messag
 int32_t MediaAssetsControllerService::GetCloudEnhancementPair(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetCloudEnhancementPair");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_CLOUD_ENHANCEMENT_PAIR);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetCloudEnhancementPairReqBody reqBody;
     GetCloudEnhancementPairRespBody respBody;
 
@@ -1954,6 +2063,9 @@ int32_t MediaAssetsControllerService::GetCloudEnhancementPair(MessageParcel &dat
 int32_t MediaAssetsControllerService::QueryCloudEnhancementTaskState(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter QueryCloudEnhancementTaskState");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_CLOUD_ENHANCEMENT_TASK_STATE);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     QueryCloudEnhancementTaskStateReqBody reqBody;
     QueryCloudEnhancementTaskStateRespBody respBody;
 
@@ -1975,6 +2087,9 @@ int32_t MediaAssetsControllerService::QueryCloudEnhancementTaskState(MessageParc
 int32_t MediaAssetsControllerService::SyncCloudEnhancementTaskStatus(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter SyncCloudEnhancementTaskStatus");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SYNC_CLOUD_ENHANCEMENT_TASK_STATUS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     CloudEnhancementReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1989,6 +2104,9 @@ int32_t MediaAssetsControllerService::SyncCloudEnhancementTaskStatus(MessageParc
 
 int32_t MediaAssetsControllerService::QueryPhotoStatus(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_PHOTO_STATUS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     QueryPhotoReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -2002,6 +2120,9 @@ int32_t MediaAssetsControllerService::QueryPhotoStatus(MessageParcel &data, Mess
 
 int32_t MediaAssetsControllerService::LogMovingPhoto(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::LOG_MOVING_PHOTO);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     AdaptedReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -2015,6 +2136,9 @@ int32_t MediaAssetsControllerService::LogMovingPhoto(MessageParcel &data, Messag
 int32_t MediaAssetsControllerService::GetResultSetFromDb(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetResultSetFromDb");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_DB);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetResultSetFromDbReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -2034,6 +2158,9 @@ int32_t MediaAssetsControllerService::GetResultSetFromDb(MessageParcel &data, Me
 int32_t MediaAssetsControllerService::GetResultSetFromPhotosExtend(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetResultSetFromPhotosExtend");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_PHOTOS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetResultSetFromPhotosExtendReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -2054,6 +2181,9 @@ int32_t MediaAssetsControllerService::GetResultSetFromPhotosExtend(MessageParcel
 int32_t MediaAssetsControllerService::GetMovingPhotoDateModified(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetMovingPhotoDateModified");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_MOVING_PHOTO_DATE_MODIFIED);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetMovingPhotoDateModifiedReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -2068,6 +2198,9 @@ int32_t MediaAssetsControllerService::GetMovingPhotoDateModified(MessageParcel &
 int32_t MediaAssetsControllerService::GetFilePathFromUri(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetFilePathFromUri");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_FILEPATH_FROM_URI);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetFilePathFromUriReqBody reqBody;
     GetFilePathFromUriRespBody respBody;
 
@@ -2084,6 +2217,9 @@ int32_t MediaAssetsControllerService::GetFilePathFromUri(MessageParcel &data, Me
 int32_t MediaAssetsControllerService::GetUriFromFilePath(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetUriFromFilePath");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_URI_FROM_FILEPATH);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetUriFromFilePathReqBody reqBody;
     GetUriFromFilePathRespBody respBody;
 
@@ -2113,6 +2249,9 @@ int32_t MediaAssetsControllerService::CloseAsset(MessageParcel &data, MessagePar
 
 int32_t MediaAssetsControllerService::GetUrisByOldUrisInner(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_URIS_BY_OLD_URIS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetUrisByOldUrisInnerReqBody reqBody;
     GetUrisByOldUrisInnerRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -2132,6 +2271,9 @@ int32_t MediaAssetsControllerService::GetUrisByOldUrisInner(MessageParcel &data,
 int32_t MediaAssetsControllerService::Restore(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter Restore");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     RestoreReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -2154,6 +2296,9 @@ int32_t MediaAssetsControllerService::Restore(MessageParcel &data, MessageParcel
 int32_t MediaAssetsControllerService::StopRestore(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter StopRestore");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE_CANCEL);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     StopRestoreReqBody reqBody;
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
