@@ -269,6 +269,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0014, TestSize.Level1)
     std::shared_ptr<MtpFileObserver> mtpFileObserver = make_shared<MtpFileObserver>();
     ASSERT_NE(mtpFileObserver, nullptr);
     EXPECT_TRUE(mtpFileObserver->StartFileInotify());
+    mtpFileObserver->StopFileInotify();
 }
 
 /*
@@ -305,7 +306,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0016, TestSize.Level1)
     mtpFileObserver->startThread_ = false;
     mtpFileObserver->inotifySuccess_ = true;
     mtpFileObserver->AddFileInotify(REAL_STORAGE_FILE, REAL_DOCUMENT_FILE, context);
-    MtpFileObserver::isRunning_ = false;
+    mtpFileObserver->StopFileInotify();
     EXPECT_TRUE(MtpFileObserver::WatchPathThread(context));
 }
 
@@ -325,7 +326,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0017, TestSize.Level1)
     ASSERT_NE(context, nullptr);
     mtpFileObserver->StartFileInotify();
     MtpFileObserver::EraseFromWatchMap(REAL_DOCUMENT_FILE);
-    MtpFileObserver::isRunning_ = false;
+    mtpFileObserver->StopFileInotify();
     EXPECT_TRUE(MtpFileObserver::WatchPathThread(context));
 }
 
@@ -348,7 +349,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0018, TestSize.Level1)
     MtpFileObserver::watchMap_.insert(std::pair<int, std::string>(1, "/file/Docs/"));
 
     mtpFileObserver->EraseFromWatchMap(path);
-    EXPECT_FALSE(MtpFileObserver::watchMap_.empty());
+    EXPECT_TRUE(MtpFileObserver::watchMap_.empty());
 }
 
 
@@ -370,7 +371,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0019, TestSize.Level1)
     MtpFileObserver::watchMap_.insert(std::pair<int, std::string>(1, "/file/Docs/"));
 
     MtpFileObserver::DealWatchMap(event, path);
-    EXPECT_FALSE(MtpFileObserver::watchMap_.empty());
+    EXPECT_TRUE(MtpFileObserver::watchMap_.empty());
 }
 
 /*
