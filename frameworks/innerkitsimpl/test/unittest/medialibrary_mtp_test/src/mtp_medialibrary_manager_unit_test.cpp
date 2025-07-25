@@ -16,6 +16,7 @@
 #include <thread>
 #include "mtp_medialibrary_manager_unit_test.h"
 #include "mtp_medialibrary_manager.h"
+#include "medialibrary_mock_tocken.h"
 #include "userfile_manager_types.h"
 #include "userfilemgr_uri.h"
 #include "mtp_constants.h"
@@ -35,24 +36,42 @@ namespace Media {
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 static constexpr int STORAGE_MANAGER_UID_TEST = 5003;
 constexpr int32_t MILLI_TO_SECOND = 1000;
+static uint64_t g_shellToken = 0;
+MediaLibraryMockHapToken* mockToken = nullptr;
 
 const std::shared_ptr<MtpMedialibraryManager> mtpMedialibraryManager_ = MtpMedialibraryManager::GetInstance();
 
 void MtpMediaLibraryManagerUnitTest::SetUpTestCase(void)
 {
+    // mock hap token
+    g_shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
+
     vector<string> perms;
     perms.push_back("ohos.permission.READ_IMAGEVIDEO");
     perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MtpDataUtilsUnitTest", perms, tokenId);
-    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saManager == nullptr) {
-        return;
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO");
+    mockToken = new MediaLibraryMockHapToken("com.ohos.medialibrary.medialibrarydata", perms);
+    for (auto &perm : perms) {
+        MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
     }
+
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    ASSERT_NE(saManager, nullptr);
 }
 
 void MtpMediaLibraryManagerUnitTest::TearDownTestCase(void)
 {
+    // recovery shell token id
+    if (mockToken != nullptr) {
+        delete mockToken;
+        mockToken = nullptr;
+    }
+
+    SetSelfTokenID(g_shellToken);
+    MediaLibraryMockTokenUtils::ResetToken();
+    EXPECT_EQ(g_shellToken, IPCSkeleton::GetSelfTokenID());
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
