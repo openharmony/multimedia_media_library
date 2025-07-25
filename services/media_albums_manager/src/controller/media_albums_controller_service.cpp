@@ -72,6 +72,8 @@
 #include "change_request_place_before_dto.h"
 #include "change_request_remove_assets_dto.h"
 #include "change_request_set_order_position_dto.h"
+#include "dfx_timer.h"
+#include "dfx_const.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -283,6 +285,9 @@ static inline PhotoAlbumSubType GetPhotoAlbumSubType(int32_t albumSubType)
 int32_t MediaAlbumsControllerService::DeleteHighlightAlbums(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter DeleteHighlightAlbums");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_HIGH_LIGHT_ALBUMS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     DeleteHighLightAlbumsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -346,6 +351,9 @@ int32_t MediaAlbumsControllerService::CreatePhotoAlbum(MessageParcel &data, Mess
 
 int32_t MediaAlbumsControllerService::SetSubtitle(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUBTITLE);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     SetSubtitleReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -365,6 +373,9 @@ int32_t MediaAlbumsControllerService::SetSubtitle(MessageParcel &data, MessagePa
 
 int32_t MediaAlbumsControllerService::SetHighlightUserActionData(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_HIGH_LIGHT_USER_ACTION_DATA);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     SetHighlightUserActionDataReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -391,6 +402,9 @@ int32_t MediaAlbumsControllerService::SetHighlightUserActionData(MessageParcel &
 
 int32_t MediaAlbumsControllerService::ChangeRequestSetAlbumName(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ALBUM_NAME);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     ChangeRequestSetAlbumNameReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -420,6 +434,9 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetAlbumName(MessageParcel &d
 
 int32_t MediaAlbumsControllerService::ChangeRequestSetCoverUri(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_COVER_URI);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     ChangeRequestSetCoverUriReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -448,6 +465,9 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetCoverUri(MessageParcel &da
 
 int32_t MediaAlbumsControllerService::ChangeRequestSetIsMe(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_IS_ME);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     ChangeRequestSetIsMeReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -469,6 +489,9 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetIsMe(MessageParcel &data, 
 
 int32_t MediaAlbumsControllerService::ChangeRequestSetDisplayLevel(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_DISPLAY_LEVEL);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     ChangeRequestSetDisplayLevelReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -492,6 +515,9 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetDisplayLevel(MessageParcel
 
 int32_t MediaAlbumsControllerService::ChangeRequestDismiss(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     ChangeRequesDismissReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -513,6 +539,9 @@ int32_t MediaAlbumsControllerService::ChangeRequestDismiss(MessageParcel &data, 
 
 int32_t MediaAlbumsControllerService::ChangeRequestResetCoverUri(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_RESET_COVER_URI);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     ChangeRequesDismissReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -627,6 +656,9 @@ int32_t MediaAlbumsControllerService::DeleteAssets(MessageParcel &data, MessageP
 int32_t MediaAlbumsControllerService::DismissAssets(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter DismissAssets");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS_ASSETS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     ChangeRequestDismissAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -643,6 +675,9 @@ int32_t MediaAlbumsControllerService::DismissAssets(MessageParcel &data, Message
 int32_t MediaAlbumsControllerService::MergeAlbum(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter MergeAlbum");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_MERGE_ALBUM);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     ChangeRequestMergeAlbumReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -675,6 +710,9 @@ int32_t MediaAlbumsControllerService::PlaceBefore(MessageParcel &data, MessagePa
 int32_t MediaAlbumsControllerService::SetOrderPosition(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter PlaceBefore");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ORDER_POSITION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     ChangeRequestSetOrderPositionReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -844,6 +882,9 @@ int32_t MediaAlbumsControllerService::QueryAlbums(MessageParcel &data, MessagePa
 
 int32_t MediaAlbumsControllerService::QueryHiddenAlbums(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_HIDDEN_ALBUMS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     QueryAlbumsReqBody reqBody;
     QueryAlbumsRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -868,6 +909,9 @@ int32_t MediaAlbumsControllerService::QueryHiddenAlbums(MessageParcel &data, Mes
 
 int32_t MediaAlbumsControllerService::GetAlbumsByIds(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_GET_ALBUMS_BY_IDS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetAlbumsByIdsReqBody reqBody;
     GetAlbumsByIdsRespBody respBody;
 
@@ -886,6 +930,9 @@ int32_t MediaAlbumsControllerService::GetAlbumsByIds(MessageParcel &data, Messag
 int32_t MediaAlbumsControllerService::GetOrderPosition(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetOrderPosition");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ORDER_POSITION);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetOrderPositionReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -922,6 +969,9 @@ int32_t MediaAlbumsControllerService::GetOrderPosition(MessageParcel &data, Mess
 int32_t MediaAlbumsControllerService::GetFaceId(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter GetFaceId");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_FACE_ID);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetFaceIdReqBody reqBody;
     GetFaceIdRespBody respBody;
 
@@ -944,6 +994,9 @@ int32_t MediaAlbumsControllerService::GetFaceId(MessageParcel &data, MessageParc
 
 int32_t MediaAlbumsControllerService::GetPhotoIndex(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PHOTO_INDEX);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetPhotoIndexReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -957,6 +1010,9 @@ int32_t MediaAlbumsControllerService::GetPhotoIndex(MessageParcel &data, Message
 
 int32_t MediaAlbumsControllerService::GetAnalysisProcess(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetAnalysisProcessReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -970,6 +1026,9 @@ int32_t MediaAlbumsControllerService::GetAnalysisProcess(MessageParcel &data, Me
 
 int32_t MediaAlbumsControllerService::GetHighlightAlbumInfo(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetHighlightAlbumReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
@@ -1019,6 +1078,9 @@ int32_t MediaAlbumsControllerService::AlbumGetAssets(
 
 int32_t MediaAlbumsControllerService::GetPhotoAlbumObject(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_PHOTO_ALBUMS);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     GetPhotoAlbumObjectReqBody reqBody;
     GetPhotoAlbumObjectRespBody respBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
@@ -1035,6 +1097,9 @@ int32_t MediaAlbumsControllerService::GetPhotoAlbumObject(MessageParcel &data, M
 
 int32_t MediaAlbumsControllerService::UpdatePhotoAlbumOrder(MessageParcel &data, MessageParcel &reply)
 {
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SET_PHOTO_ALBUM_ORDER);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
     SetPhotoAlbumOrderReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
