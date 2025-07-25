@@ -218,11 +218,8 @@ bool EnhancementManager::InitAsync()
 
 bool EnhancementManager::Init()
 {
-    static std::mutex m;
-    static int flag = 0;
-    std::lock_guard<std::mutex> lg(m);
-    if (flag) return true;
-    flag = 1;
+    static std::atomic<int> flag{0};
+    if (flag.exchange(1)) return true;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     // restart
     CHECK_AND_RETURN_RET_LOG(LoadService(), false, "load enhancement service error");
