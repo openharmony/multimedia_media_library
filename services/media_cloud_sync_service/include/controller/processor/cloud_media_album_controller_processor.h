@@ -21,12 +21,20 @@
 
 #include "photo_album_po.h"
 #include "cloud_mdkrecord_photo_album_vo.h"
+#include "on_create_records_album_vo.h"
+#include "on_mdirty_records_album_vo.h"
+#include "photo_album_dto.h"
+#include "photo_album_vo.h"
+#include "report_failure_vo.h"
+#include "report_failure_dto.h"
 #include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaAlbumControllerProcessor {
 public:
     CloudMdkRecordPhotoAlbumVo ConvertRecordPoToVo(PhotoAlbumPo record);
+    PhotoAlbumDto ConvertToPhotoAlbumDto(const OnCreateRecordsAlbumReqBodyAlbumData &recordVo);
+    PhotoAlbumDto ConvertToPhotoAlbumDto(const OnMdirtyAlbumRecord &recordVo);
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_ALBUM_CONTROLLER_PROCESSOR_H

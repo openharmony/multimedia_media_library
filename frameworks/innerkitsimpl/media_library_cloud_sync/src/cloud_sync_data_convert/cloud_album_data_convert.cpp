@@ -250,4 +250,48 @@ std::shared_ptr<MDKRecord> CloudAlbumDataConvert::ConvertToMdkRecord(const Cloud
     return record;
 }
 
+void CloudAlbumDataConvert::ConvertErrorTypeDetails(
+    const MDKRecordOperResult &result, std::vector<CloudErrorDetail> &errorDetails)
+{
+    auto errorType = result.GetDKError();
+    if (errorType.errorDetails.empty()) {
+        return;
+    }
+    for (const auto &element : errorType.errorDetails) {
+        CloudErrorDetail detail;
+        detail.domain = element.domain;
+        detail.reason = element.reason;
+        detail.errorCode = element.errorCode;
+        detail.description = element.description;
+        detail.errorPos = element.errorPos;
+        detail.errorParam = element.errorParam;
+        detail.detailCode = element.detailCode;
+        errorDetails.push_back(detail);
+    }
+}
+
+int32_t CloudAlbumDataConvert::ConvertToOnCreateRecord(
+    const std::string &cloudId, const MDKRecordOperResult &result, OnCreateRecordsAlbumReqBodyAlbumData &record)
+{
+    MDKRecordAlbumData data = MDKRecordAlbumData(result.GetDKRecord());
+    record.cloudId = cloudId;
+    std::string newCloudId = data.GetCloudId().value_or("");
+    record.newCloudId = newCloudId;
+    record.isSuccess = result.IsSuccess();
+    record.serverErrorCode = result.GetDKError().serverErrorCode;
+    ConvertErrorTypeDetails(result, record.errorDetails);
+    return E_OK;
+}
+
+
+int32_t CloudAlbumDataConvert::BuildModifyRecord(
+    const std::string &cloudId, const MDKRecordOperResult &result, OnMdirtyAlbumRecord &record)
+{
+    MDKRecordAlbumData data = MDKRecordAlbumData(result.GetDKRecord());
+    record.cloudId = cloudId;
+    record.isSuccess = result.IsSuccess();
+    record.serverErrorCode = result.GetDKError().serverErrorCode;
+    ConvertErrorTypeDetails(result, record.errorDetails);
+    return E_OK;
+}
 }  // namespace OHOS::Media::CloudSync

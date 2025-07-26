@@ -520,8 +520,8 @@ HWTEST_F(CloudMediaPhotoHandlerTest, GetFileModifiedRecords_case001, TestSize.Le
                 std::vector<ORM::PhotosPo> photos = dao.QueryPhotosByCloudId(cloudId);
                 EXPECT_GT(photos.size(), 0);
                 ORM::PhotosPo photo;
-                int32_t ret = dao.GetPhotoByCloudId(photos, cloudId, photo);
-                EXPECT_EQ(ret, 0);
+                int32_t retInside = dao.GetPhotoByCloudId(photos, cloudId, photo);
+                EXPECT_EQ(retInside, 0);
                 EXPECT_EQ(photo.dirty.value_or(-1), static_cast<int32_t>(DirtyType::TYPE_FDIRTY));
                 EXPECT_GT(photo.dateModified.value_or(-1), 0);
             }
@@ -614,8 +614,8 @@ HWTEST_F(CloudMediaPhotoHandlerTest, GetFileModifiedRecords_case002, TestSize.Le
                 std::vector<ORM::PhotosPo> photos = dao.QueryPhotosByCloudId(cloudId);
                 EXPECT_GT(photos.size(), 0);
                 ORM::PhotosPo photo;
-                int32_t ret = dao.GetPhotoByCloudId(photos, cloudId, photo);
-                EXPECT_EQ(ret, 0);
+                int32_t retInside = dao.GetPhotoByCloudId(photos, cloudId, photo);
+                EXPECT_EQ(retInside, 0);
                 EXPECT_EQ(photo.dirty.value_or(-1), static_cast<int32_t>(DirtyType::TYPE_FDIRTY));
                 EXPECT_GT(photo.dateModified.value_or(-1), 0);
             }
@@ -707,8 +707,8 @@ HWTEST_F(CloudMediaPhotoHandlerTest, GetFileModifiedRecords_case003, TestSize.Le
                 std::vector<ORM::PhotosPo> photos = dao.QueryPhotosByCloudId(cloudId);
                 EXPECT_GT(photos.size(), 0);
                 ORM::PhotosPo photo;
-                int32_t ret = dao.GetPhotoByCloudId(photos, cloudId, photo);
-                EXPECT_EQ(ret, 0);
+                int32_t retInside = dao.GetPhotoByCloudId(photos, cloudId, photo);
+                EXPECT_EQ(retInside, 0);
                 EXPECT_EQ(photo.dirty.value_or(-1), static_cast<int32_t>(DirtyType::TYPE_FDIRTY));
                 EXPECT_GT(photo.dateModified.value_or(-1), 0);
             }

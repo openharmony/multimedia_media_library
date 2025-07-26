@@ -38,7 +38,17 @@ std::string PhotoAlbumDto::ToString()
        << "\"isDelete\": " << std::to_string(this->isDelete) << ","
        << "\"isSuccess\": " << std::to_string(this->isSuccess) << ","
        << "\"coverUriSource\": " << std::to_string(this->coverUriSource) << ","
-       << "\"coverCloudId\": " << this->coverCloudId << "}";
+       << "\"coverCloudId\": " << this->coverCloudId << ","
+       << "\"serverErrorCode\": " << serverErrorCode << ","
+       << "\"errorType\": \"" << static_cast<int32_t>(errorType) << "\","
+       << "\"errorDetails\": [";
+    for (uint32_t i = 0; i < errorDetails.size(); ++i) {
+        ss << errorDetails[i].ToString();
+        if (i != errorDetails.size() - 1) {
+            ss << ",";
+        }
+    }
+    ss << "]}";
     return ss.str();
 }
 }  // namespace OHOS::Media::CloudSync

@@ -170,24 +170,23 @@ int32_t CloudMediaAlbumControllerService::GetDeletedRecords(MessageParcel &data,
 
 int32_t CloudMediaAlbumControllerService::OnCreateRecords(MessageParcel &data, MessageParcel &reply)
 {
+    MEDIA_INFO_LOG("enter Album OnCreateRecords");
     OnCreateRecordsAlbumReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("OnCreateRecords Read Req Error");
+        MEDIA_ERR_LOG("OnCreateRecords Album Read Req Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     MEDIA_INFO_LOG("OnCreateRecords %{public}zu", reqBody.albums.size());
     std::vector<PhotoAlbumDto> albumDtoList;
     for (const auto &album : reqBody.albums) {
-        PhotoAlbumDto albumDto;
-        albumDto.cloudId = album.cloudId;
-        albumDto.newCloudId = album.newCloudId;
-        albumDto.isSuccess = album.isSuccess;
-        albumDtoList.emplace_back(albumDto);
+        PhotoAlbumDto albumDto = this->processor_.ConvertToPhotoAlbumDto(album);
         MEDIA_DEBUG_LOG("OnCreateRecords record:%{public}s", albumDto.ToString().c_str());
+        albumDtoList.emplace_back(albumDto);
     }
     FailedSizeResp resp;
     ret = this->albumService_.OnCreateRecords(albumDtoList, resp.failedSize);
+    MEDIA_INFO_LOG("OnCreateRecords Album ret: %{public}d, failedSize:%{public}d", ret, resp.failedSize);
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
 }
 
@@ -201,13 +200,12 @@ int32_t CloudMediaAlbumControllerService::OnMdirtyRecords(MessageParcel &data, M
         MEDIA_ERR_LOG("CloudMediaAlbumControllerService::OnMdirtyRecords Read Req Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    std::vector<OnMdirtyAlbumRecord> albumRecords = reqBody.GetMdirtyRecords();
+    std::vector<OnMdirtyAlbumRecord> records = reqBody.GetMdirtyRecords();
     std::vector<PhotoAlbumDto> albumDtoList;
-    for (const auto &album : albumRecords) {
-        PhotoAlbumDto albumDto;
-        albumDto.cloudId = album.cloudId;
-        albumDto.isSuccess = album.isSuccess;
+    for (const auto &record : records) {
+        PhotoAlbumDto albumDto = this->processor_.ConvertToPhotoAlbumDto(record);
         albumDtoList.emplace_back(albumDto);
+        MEDIA_DEBUG_LOG("OnMdirtyRecords OnModifyRecord: %{public}s", record.ToString().c_str());
     }
     ret = this->albumService_.OnMdirtyRecords(albumDtoList, respBody.failSize);
     MEDIA_INFO_LOG("CloudMediaAlbumControllerService::OnMdirtyRecords end ret: %{public}d, failSize: %{public}d",
