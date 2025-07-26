@@ -218,8 +218,6 @@ bool EnhancementManager::InitAsync()
 
 bool EnhancementManager::Init()
 {
-    static std::atomic<int> flag{0};
-    if (flag.exchange(1)) return true;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     // restart
     CHECK_AND_RETURN_RET_LOG(LoadService(), false, "load enhancement service error");
@@ -267,6 +265,8 @@ bool EnhancementManager::Init()
 void EnhancementManager::InitPhotosSettingsMonitor()
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    static std::atomic<int> flag{0};
+    CHECK_AND_RETURN_LOG(!flag.exchange(1), "Not Init Photos Settings Monitor");
     Uri autoOptionUri(SETTINGS_DATASHARE_AUTO_OPTION_URI);
     Uri waterMarknUri(SETTINGS_DATASHARE_WATER_MARK_URI);
     photosAutoOptionObserver_ = std::make_unique<PhotosAutoOptionObserver>().release();
