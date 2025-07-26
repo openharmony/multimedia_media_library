@@ -40,6 +40,9 @@
 #include "json_file_reader.h"
 #include "mdk_record_utils.h"
 #include "photos_dao.h"
+#include "cloud_album_data_convert.h"
+#include "cloud_file_data_convert.h"
+#include "cloud_data_convert_to_vo.h"
 
 using namespace testing::ext;
 
@@ -672,5 +675,132 @@ HWTEST_F(CloudMediaPhotoAlbumHandlerTest, OnCompletePull, TestSize.Level1)
         EXPECT_TRUE(true);
     }
     */
+}
+
+/**
+* 创建相册记录转换 ConvertToOnCreateRecord 没有异常
+* 期望结果：
+* 转换成功 E_OK
+*/
+HWTEST_F(CloudMediaPhotoAlbumHandlerTest, AlbumDataConvert_ConvertToOnCreateRecord_01, TestSize.Level1)
+{
+    CloudMdkRecordPhotoAlbumVo albumData;
+    albumData.albumType = 2048;
+    albumData.cloudId = "e5647b0f37424ce3951fb93218f99a08ac76a6daa479434893c02fd5a99b9ee3";
+    albumData.albumId = 1001;
+    albumData.albumSubtype = 2049;
+    albumData.isInWhiteList = 0;
+    albumData.lpath = "";
+    albumData.dualAlbumName = "";
+    albumData.albumNameEn = "album1";
+    albumData.dateModified = static_cast<int64_t>(1737529312000);
+    albumData.dateAdded = static_cast<int64_t>(1737529312000);
+    albumData.bundleName = "com.bundle1";
+    albumData.localLanguage = "";
+    CloudAlbumDataConvert cloudAlbumDataConvert{CloudAlbumOperationType::PHOTO_ALBUM_CREATE};
+
+    MDKRecord dkRecord;
+    dkRecord.SetRecordId("001");
+    std::map<std::string, MDKRecordField> data;
+    int32_t albumId = 1002;
+    data["albumId"] = MDKRecordField(albumId);
+    dkRecord.SetRecordData(data);
+
+    int32_t errorCode = ServerErrorCode::ALBUM_NOT_EXIST;
+    MDKError error;
+    error.SetServerError(errorCode);
+    MDKRecordOperResult result;
+    result.SetDKRecord(dkRecord);
+    result.SetDKError(error);
+
+    std::map<std::string, MDKRecordField> dataOut;
+    result.GetDKRecord().GetRecordData(dataOut);
+    MEDIA_INFO_LOG("albumId: %{public}s", dataOut["albumId"].ToJsonValue().toStyledString().c_str());
+    OnCreateRecordsAlbumReqBodyAlbumData recordOut;
+    cloudAlbumDataConvert.ConvertToOnCreateRecord(albumData.cloudId, result, recordOut);
+    EXPECT_EQ(false, recordOut.isSuccess);
+    MEDIA_INFO_LOG("newCloudId: %{public}s", recordOut.newCloudId.c_str());
+    MEDIA_INFO_LOG("OnCreateRecordsAlbumReqBodyAlbumData: %{public}s", recordOut.ToString().c_str());
+    EXPECT_EQ(errorCode, recordOut.serverErrorCode);
+}
+
+/**
+* 创建相册记录转换 ConvertToMdkRecord 没有异常
+* 期望结果：
+* 转换成功
+*/
+HWTEST_F(CloudMediaPhotoAlbumHandlerTest, AlbumDataConvert_ConvertToMdkRecord_01, TestSize.Level1)
+{
+    CloudMdkRecordPhotoAlbumVo albumData;
+    albumData.albumType = 2048;
+    albumData.cloudId = "e5647b0f37424ce3951fb93218f99a08ac76a6daa479434893c02fd5a99b9ee3";
+    albumData.albumId = 1001;
+    albumData.albumSubtype = 2049;
+    albumData.isInWhiteList = 0;
+    albumData.lpath = "";
+    albumData.dualAlbumName = "";
+    albumData.albumNameEn = "album1";
+    albumData.dateModified = static_cast<int64_t>(1737529312000);
+    albumData.dateAdded = static_cast<int64_t>(1737529312000);
+    albumData.bundleName = "com.bundle1";
+    albumData.localLanguage = "";
+    CloudAlbumDataConvert cloudAlbumDataConvert{CloudAlbumOperationType::PHOTO_ALBUM_CREATE};
+    std::map<string, MDKRecordField> map;
+    shared_ptr<MDKRecord> record = make_shared<MDKRecord>();
+    std::map<string, MDKRecordField> dataMap;
+    cloudAlbumDataConvert.HandleAlbumName(map, albumData);
+    cloudAlbumDataConvert.HandleGeneral(map, albumData);
+    cloudAlbumDataConvert.HandleProperties(record, dataMap, albumData);
+    cloudAlbumDataConvert.HandleAlbumLogicType(map, albumData);
+    cloudAlbumDataConvert.HandleType(map, albumData);
+    cloudAlbumDataConvert.HandleAlbumId(map, albumData);
+    cloudAlbumDataConvert.HandleRecordId(record, albumData);
+    cloudAlbumDataConvert.HandlePath(map, albumData);
+    cloudAlbumDataConvert.FillRecordId(record, albumData);
+    cloudAlbumDataConvert.HandleEmptyShow(record, dataMap, albumData);
+    cloudAlbumDataConvert.ConvertToDoubleScreenshot(record, dataMap);
+    std::shared_ptr<MDKRecord> mdkRecord = cloudAlbumDataConvert.ConvertToMdkRecord(albumData);
+    EXPECT_NE(nullptr, mdkRecord);
+}
+
+/**
+* 修改相册记录转换 BuildModifyRecord 没有异常
+* 期望结果：
+* 转换成功 E_OK
+*/
+HWTEST_F(CloudMediaPhotoAlbumHandlerTest, AlbumDataConvert_BuildModifyRecord_01, TestSize.Level1)
+{
+    CloudMdkRecordPhotoAlbumVo albumData;
+    albumData.albumType = 2048;
+    albumData.cloudId = "e5647b0f37424ce3951fb93218f99a08ac76a6daa479434893c02fd5a99b9ee3";
+    albumData.albumId = 1001;
+    albumData.albumSubtype = 2049;
+    albumData.isInWhiteList = 0;
+    albumData.lpath = "";
+    albumData.dualAlbumName = "";
+    albumData.albumNameEn = "album1";
+    albumData.dateModified = static_cast<int64_t>(1737529312000);
+    albumData.dateAdded = static_cast<int64_t>(1737529312000);
+    albumData.bundleName = "com.bundle1";
+    albumData.localLanguage = "";
+    CloudAlbumDataConvert cloudAlbumDataConvert{CloudAlbumOperationType::PHOTO_ALBUM_CREATE};
+    MDKError error;
+    MDKRecordOperResult result;
+    MDKRecord dkRecord;
+    std::map<std::string, MDKRecordField> data;
+    int32_t albumId = 1002;
+    data["albumId"] = MDKRecordField(albumId);
+    dkRecord.GetRecordData(data);
+    dkRecord.SetRecordData(data);
+    result.SetDKRecord(dkRecord);
+    int32_t errorCode = ServerErrorCode::ALBUM_NOT_EXIST;
+    error.SetServerError(errorCode);
+    result.SetDKError(error);
+    OnMdirtyAlbumRecord recordOut;
+    std::vector<CloudErrorDetail> errorDetails;
+    cloudAlbumDataConvert.ConvertErrorTypeDetails(result, errorDetails);
+    int32_t ret = cloudAlbumDataConvert.BuildModifyRecord(albumData.cloudId, result, recordOut);
+    MEDIA_INFO_LOG("OnMdirtyAlbumRecord: %{public}s", recordOut.ToString().c_str());
+    EXPECT_EQ(0, ret);
 }
 }  // namespace OHOS::Media::CloudSync

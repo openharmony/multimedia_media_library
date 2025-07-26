@@ -250,23 +250,21 @@ int32_t CloudMediaAlbumHandler::OnCreateRecords(
     const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
     MEDIA_INFO_LOG("enter CloudMediaAlbumHandler::OnCreateRecords %{public}zu", map.size());
-    if (map.empty()) {
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnCreateRecords Album param error");
     OnCreateRecordsAlbumReqBody reqBody;
+    CloudAlbumDataConvert dataConvertor{CloudAlbumOperationType::PHOTO_ALBUM_CREATE};
     for (auto &entry : map) {
-        const MDKRecordOperResult &result = entry.second;
         if (entry.first.empty()) {
             MEDIA_INFO_LOG("OnCreateRecords is failed");
             continue;
         }
-        MDKRecordAlbumData data(result.GetDKRecord());
-        std::string newCloudId = data.GetCloudId().value_or("");
-        reqBody.AddAlbumData(entry.first, newCloudId, result.IsSuccess());
-        MEDIA_INFO_LOG("OnCreateRecords, IsSuccess: %{public}d, ErrorCode: %{public}d, cloudId: %{public}s",
-            result.IsSuccess(),
-            result.GetDKError().serverErrorCode,
-            entry.first.c_str());
+        OnCreateRecordsAlbumReqBodyAlbumData record;
+        if (dataConvertor.ConvertToOnCreateRecord(entry.first, entry.second, record) != E_OK) {
+            MEDIA_ERR_LOG("OnCreateRecords Album ConvertToOnCreateRecord error");
+            continue;
+        }
+        MEDIA_INFO_LOG("OnCreateRecords Album:%{public}s", record.ToString().c_str());
+        reqBody.albums.emplace_back(record);
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_CREATE_RECORDS);
     FailedSizeResp resp;
@@ -274,6 +272,7 @@ int32_t CloudMediaAlbumHandler::OnCreateRecords(
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
         .Post(operationCode, reqBody, resp);
     failSize = resp.failedSize;
+    MEDIA_INFO_LOG("OnCreateRecords Album Resp:%{public}s Ret:%{public}d", resp.ToString().c_str(), ret);
     return ret;
 }
 
@@ -282,19 +281,19 @@ int32_t CloudMediaAlbumHandler::OnMdirtyRecords(
 {
     MEDIA_INFO_LOG("enter CloudMediaAlbumHandler::OnMdirtyRecords %{public}zu", map.size());
     OnMdirtyRecordsAlbumReqBody reqBody;
+    CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnMdirtyRecords Album param error");
+    CloudAlbumDataConvert dataConvertor{CloudAlbumOperationType::PHOTO_ALBUM_METADATA_MODIF};
+    for (auto &entry : map) {
+        OnMdirtyAlbumRecord record;
+        if (dataConvertor.BuildModifyRecord(entry.first, entry.second, record) != E_OK) {
+            MEDIA_ERR_LOG("OnMdirtyRecords Album BuildModifyRecord error");
+            continue;
+        }
+        MEDIA_INFO_LOG("OnMdirtyRecords Album Record:%{public}s", record.ToString().c_str());
+        reqBody.AddMdirtyRecord(record);
+    }
     OnMdirtyRecordsAlbumRespBody respBody;
     respBody.failSize = 0;
-    for (auto &entry : map) {
-        const MDKRecordOperResult &result = entry.second;
-        OnMdirtyAlbumRecord record;
-        record.cloudId = entry.first;
-        record.isSuccess = result.IsSuccess();
-        reqBody.AddMdirtyRecord(record);
-        MEDIA_INFO_LOG("OnMdirtyRecords, IsSuccess: %{public}d, ErrorCode: %{public}d, cloudId: %{public}s",
-            result.IsSuccess(),
-            result.GetDKError().serverErrorCode,
-            entry.first.c_str());
-    }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_MDIRTY_RECORDS);
     int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
         .Post(operationCode, reqBody, respBody);

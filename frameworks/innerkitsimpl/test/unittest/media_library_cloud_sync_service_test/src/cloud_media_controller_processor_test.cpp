@@ -53,6 +53,46 @@ HWTEST_F(CloudMediaContorllerProcessorTest, CloudMediaAlbumControllerProcessor_C
     EXPECT_EQ(albumVo.bundleName, "");
 }
 
+HWTEST_F(CloudMediaContorllerProcessorTest, CloudMediaAlbumControllerProcessor_ConvertToPhotoAlbumDto_Test_001,
+         TestSize.Level1)
+{
+    CloudMediaAlbumControllerProcessor processor;
+    OnCreateRecordsAlbumReqBodyAlbumData recordVo;
+    recordVo.cloudId = "1acdefg";
+    recordVo.newCloudId = "2acdefg";
+    recordVo.isSuccess = 0;
+    recordVo.errorType = ErrorType::TYPE_UNKNOWN;
+    recordVo.serverErrorCode = ServerErrorCode::ALBUM_NOT_EXIST;
+    CloudErrorDetail detail;
+    detail.detailCode = ErrorDetailCode::SPACE_FULL;
+    std::vector<CloudErrorDetail> errorDetails = {detail};
+    recordVo.errorDetails = errorDetails;
+    PhotoAlbumDto photoAlbumDto = processor.ConvertToPhotoAlbumDto(recordVo);
+    MEDIA_INFO_LOG("albumDto: %{public}s", photoAlbumDto.ToString().c_str());
+    EXPECT_EQ(photoAlbumDto.cloudId, recordVo.cloudId);
+    EXPECT_EQ(photoAlbumDto.newCloudId, recordVo.newCloudId);
+    EXPECT_EQ(photoAlbumDto.serverErrorCode, recordVo.serverErrorCode);
+}
+
+HWTEST_F(CloudMediaContorllerProcessorTest, CloudMediaAlbumControllerProcessor_ConvertToPhotoAlbumDto_Test_002,
+         TestSize.Level1)
+{
+    CloudMediaAlbumControllerProcessor processor;
+    OnMdirtyAlbumRecord recordVo;
+    recordVo.cloudId = "1acdefg";
+    recordVo.isSuccess = 0;
+    recordVo.errorType = ErrorType::TYPE_UNKNOWN;
+    recordVo.serverErrorCode = ServerErrorCode::ALBUM_NOT_EXIST;
+    CloudErrorDetail detail;
+    detail.detailCode = ErrorDetailCode::SPACE_FULL;
+    std::vector<CloudErrorDetail> errorDetails = {detail};
+    recordVo.errorDetails = errorDetails;
+    PhotoAlbumDto photoAlbumDto = processor.ConvertToPhotoAlbumDto(recordVo);
+    MEDIA_INFO_LOG("albumDto: %{public}s", photoAlbumDto.ToString().c_str());
+    EXPECT_EQ(photoAlbumDto.cloudId, recordVo.cloudId);
+    EXPECT_EQ(photoAlbumDto.serverErrorCode, recordVo.serverErrorCode);
+}
+
 HWTEST_F(CloudMediaContorllerProcessorTest, DataControllerProcessor_ConvertPhotosVoToPhotosDto_Test_001,
          TestSize.Level1)
 {

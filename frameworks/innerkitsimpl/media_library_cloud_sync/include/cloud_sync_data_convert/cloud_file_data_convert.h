@@ -37,7 +37,6 @@
 #include "photos_po.h"
 #include "photo_album_dto.h"
 #include "userfile_manager_types.h"
-#include "mdk_record_photos_data.h"
 
 namespace OHOS::Media::CloudSync {
 using namespace OHOS::Media::ORM;

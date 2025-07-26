@@ -1275,6 +1275,44 @@ int32_t CloudMediaPhotosDao::GetSameNamePhotoCount(const PhotosDto &photo, bool 
     return results->GetRowCount(count);
 }
 
+int32_t CloudMediaPhotosDao::HandleNotExistAlbumRecord(const PhotosDto &record)
+{
+    MEDIA_INFO_LOG("enter HandleNotExistAlbumRecord");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL,
+        "OnCreateNotExistRecord Album Failed to get rdbStore.");
+    std::string fileId = to_string(record.fileId);
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    auto results = rdbStore->Query(predicates, {PhotoColumn::PHOTO_OWNER_ALBUM_ID});
+    if (results == nullptr) {
+        return E_RDB;
+    }
+    auto ret = results->GoToNextRow();
+    if (ret != E_OK) {
+        return E_DATA;
+    }
+    int32_t albumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, results);
+    NativeRdb::ValuesBucket valuesBucket;
+    valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_NEW));
+    string whereClause = PhotoAlbumColumns::ALBUM_ID + " = ? AND " + PhotoAlbumColumns::ALBUM_DIRTY + " != ?";
+    vector<std::string> whereArgs = {to_string(albumId), to_string(static_cast<int32_t>(Media::DirtyType::TYPE_NEW))};
+    int32_t changeRows;
+    ret = rdbStore->Update(changeRows, PhotoAlbumColumns::TABLE, valuesBucket, whereClause, whereArgs);
+    MEDIA_INFO_LOG("HandleNotExistAlbumRecord ret:%{public}d, changedRows:%{public}d, cloudId:%{public}s",
+        ret,
+        changeRows,
+        record.cloudId.c_str());
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("album dirty change failed, ret is %{public}d", ret);
+        return E_RDB;
+    }
+    if (changeRows != 0) {
+        MEDIA_ERR_LOG("HandleNotExistAlbumRecord Album Failed to UpdateAlbumAfterUpload.");
+    }
+    return E_DATA;
+}
+
 int32_t CloudMediaPhotosDao::UpdatePhotoCreatedRecord(
     const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)

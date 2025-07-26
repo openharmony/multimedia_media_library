@@ -24,13 +24,16 @@
 #include "media_itypes_utils.h"
 #include "cloud_media_sync_const.h"
 #include "cloud_media_define.h"
+#include "cloud_error_detail_vo.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT OnMdirtyAlbumRecord : public IPC::IMediaParcelable {
 public:
     std::string cloudId;
     bool isSuccess;
-
+    int32_t serverErrorCode;
+    ErrorType errorType;
+    std::vector<CloudErrorDetail> errorDetails;
 public:  // functions of Parcelable.
     virtual ~OnMdirtyAlbumRecord() = default;
     bool Unmarshalling(MessageParcel &parcel) override;

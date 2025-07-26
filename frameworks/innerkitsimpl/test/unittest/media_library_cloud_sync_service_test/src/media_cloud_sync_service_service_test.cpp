@@ -134,8 +134,31 @@ HWTEST_F(CloudMediaSyncServiceTest, AlbumService_OnCreateRecords_Test_002, TestS
     dto1.cloudId = "id1";
     dto1.isSuccess = false;
     PhotoAlbumDto dto2;
-    dto1.cloudId = "id2";
-    dto1.isSuccess = true;
+    dto2.cloudId = "id2";
+    dto2.isSuccess = true;
+
+    std::vector<PhotoAlbumDto> albumDtoList = {dto1, dto2};
+    int32_t failSize = 0;
+    int32_t ret = service.OnCreateRecords(albumDtoList, failSize);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(failSize, 1);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, AlbumService_OnCreateRecords_Test_003, TestSize.Level1)
+{
+    CloudMediaAlbumService service;
+    PhotoAlbumDto dto1;
+    dto1.cloudId = "id1";
+    dto1.isSuccess = false;
+    dto1.errorType = ErrorType::TYPE_UNKNOWN;
+    dto1.serverErrorCode = ServerErrorCode::ALBUM_NOT_EXIST;
+    CloudErrorDetail detail;
+    detail.detailCode = ErrorDetailCode::SPACE_FULL;
+    std::vector<CloudErrorDetail> errorDetails = {detail};
+    dto1.errorDetails = errorDetails;
+    PhotoAlbumDto dto2;
+    dto2.cloudId = "id2";
+    dto2.isSuccess = true;
 
     std::vector<PhotoAlbumDto> albumDtoList = {dto1, dto2};
     int32_t failSize = 0;
@@ -161,8 +184,31 @@ HWTEST_F(CloudMediaSyncServiceTest, AlbumService_OnMdirtyRecords_Test_002, TestS
     dto1.cloudId = "id1";
     dto1.isSuccess = false;
     PhotoAlbumDto dto2;
-    dto1.cloudId = "id2";
-    dto1.isSuccess = true;
+    dto2.cloudId = "id2";
+    dto2.isSuccess = true;
+
+    std::vector<PhotoAlbumDto> albumDtoList = {dto1, dto2};
+    int32_t failSize = 0;
+    int32_t ret = service.OnMdirtyRecords(albumDtoList, failSize);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(failSize, 1);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, AlbumService_OnMdirtyRecords_Test_003, TestSize.Level1)
+{
+    CloudMediaAlbumService service;
+    PhotoAlbumDto dto1;
+    dto1.cloudId = "id1";
+    dto1.isSuccess = false;
+    dto1.errorType = ErrorType::TYPE_UNKNOWN;
+    dto1.serverErrorCode = ServerErrorCode::ALBUM_NOT_EXIST;
+    CloudErrorDetail detail;
+    detail.detailCode = ErrorDetailCode::SPACE_FULL;
+    std::vector<CloudErrorDetail> errorDetails = {detail};
+    dto1.errorDetails = errorDetails;
+    PhotoAlbumDto dto2;
+    dto2.cloudId = "id2";
+    dto2.isSuccess = true;
 
     std::vector<PhotoAlbumDto> albumDtoList = {dto1, dto2};
     int32_t failSize = 0;
@@ -1189,6 +1235,31 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnCreateRecords_Test
     EXPECT_EQ(failedSize, 2);
 }
 
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnCreateRecords_Test_002, TestSize.Level1)
+{
+    CloudMediaPhotosService service;
+    PhotosDto dto1;
+    dto1.isSuccess = true;
+    dto1.localId = -1;
+    PhotosDto dto2;
+    dto2.isSuccess = true;
+    dto2.localId = 1;
+    PhotosDto dto3;
+    dto3.isSuccess = false;
+    dto3.serverErrorCode = ServerErrorCode::ALBUM_NOT_EXIST;
+    dto3.errorType = ErrorType::TYPE_UNKNOWN;
+    CloudErrorDetail detail;
+    detail.detailCode = ErrorDetailCode::SPACE_FULL;
+    std::vector<CloudErrorDetail> errorDetails = {detail};
+    dto3.errorDetails = errorDetails;
+
+    std::vector<PhotosDto> records = {dto1, dto2, dto3};
+    int32_t failedSize = 0;
+    int32_t ret = service.OnCreateRecords(records, failedSize);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(failedSize, 2);
+}
+
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnMdirtyRecords_Test_001, TestSize.Level1)
 {
     CloudMediaPhotosService service;
@@ -1206,6 +1277,31 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnMdirtyRecords_Test
     int32_t failedSize = 0;
     int32_t ret = service.OnMdirtyRecords(records, failedSize);
     EXPECT_EQ(ret, E_SYNC_FAILED_NETWORK_NOT_AVAILABLE);
+    EXPECT_EQ(failedSize, 2);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnMdirtyRecords_Test_002, TestSize.Level1)
+{
+    CloudMediaPhotosService service;
+    PhotosDto dto1;
+    dto1.isSuccess = true;
+    dto1.localId = -1;
+    dto1.cloudId = "id1";
+    PhotosDto dto2;
+    dto2.isSuccess = true;
+    dto2.localId = 1;
+    PhotosDto dto3;
+    dto3.isSuccess = false;
+    dto3.serverErrorCode = ServerErrorCode::ALBUM_NOT_EXIST;
+    dto3.errorType = ErrorType::TYPE_UNKNOWN;
+    CloudErrorDetail detail;
+    detail.detailCode = ErrorDetailCode::SPACE_FULL;
+    std::vector<CloudErrorDetail> errorDetails = {detail};
+    dto3.errorDetails = errorDetails;
+    std::vector<PhotosDto> records = {dto1, dto2, dto3};
+    int32_t failedSize = 0;
+    int32_t ret = service.OnMdirtyRecords(records, failedSize);
+    EXPECT_EQ(ret, E_OK);
     EXPECT_EQ(failedSize, 2);
 }
 

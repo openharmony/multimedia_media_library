@@ -65,6 +65,8 @@ public:
     int32_t GetCreatedAlbum(int32_t size, std::vector<PhotoAlbumPo> &cloudRecordPoList);
     int32_t GetMetaModifiedAlbum(int32_t size, std::vector<PhotoAlbumPo> &cloudRecordPoList);
     int32_t GetDeletedRecordsAlbum(int32_t size, std::vector<PhotoAlbumPo> &cloudRecordPoList);
+    int32_t HandleNotExistAlbumRecord(const PhotoAlbumDto &album);
+    int32_t OnCreateRecord(const PhotoAlbumDto &album);
     int32_t OnCreateRecords(const std::vector<PhotoAlbumDto> &albums, int32_t &failSize);
     int32_t ResetAlbumDirty(
         std::shared_ptr<MediaLibraryRdbStore> rdbStore, const std::string &cloudId, DirtyType dirty);
