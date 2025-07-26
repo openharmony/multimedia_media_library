@@ -89,6 +89,7 @@ void BackupDatabaseHelper::IsFileExist(int32_t sceneCode, const FileInfo &fileIn
     }
     dbStatus = E_OK;
     fileStatus = GetInt32Val(CUSTOM_COUNT, resultSet) > 0 ? E_OK : E_NO_SUCH_FILE;
+    resultSet->Close();
 }
 
 bool BackupDatabaseHelper::HasDb(int32_t dbType)

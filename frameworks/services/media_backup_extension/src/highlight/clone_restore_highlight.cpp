@@ -1188,7 +1188,13 @@ std::vector<NativeRdb::ValueObject> CloneRestoreHighlight::GetHighlightDuplicate
         HIGHLIGHT_STATUS_DELETE
     };
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, QUERY_SQL, params);
-    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), changeIds);
+
+    CHECK_AND_RETURN_RET((resultSet != nullptr), changeIds);
+
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return changeIds;
+    }
 
     do {
         std::optional<int32_t> highlightId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "id");

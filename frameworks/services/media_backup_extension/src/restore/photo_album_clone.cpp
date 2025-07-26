@@ -42,9 +42,15 @@ int32_t PhotoAlbumClone::GetPhotoAlbumCountInOriginalDb()
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
         "Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET_LOG(!cond, 0, "Failed to query album! querySql = %{public}s", querySql.c_str());
-    return GetInt32Val("count", resultSet);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "resultSet is nullptr");
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        MEDIA_ERR_LOG("Failed to query album! querySql = %{public}s", querySql.c_str());
+        return 0;
+    }
+    int32_t count = GetInt32Val("count", resultSet);
+    resultSet->Close();
+    return count;
 }
 
 /**

@@ -65,9 +65,9 @@ std::vector<AlbumMediaStatisticInfo> PhotosCountStatistic::Load()
     return infoList;
 }
 
-int32_t PhotosCountStatistic::GetCount(const std::string &query)
+int32_t PhotosCountStatistic::GetCount(const std::string &query, const std::vector<NativeRdb::ValueObject> &args)
 {
-    return BackupDatabaseUtils::QueryInt(this->mediaLibraryRdb_, query, CUSTOM_COUNT);
+    return BackupDatabaseUtils::QueryInt(this->mediaLibraryRdb_, query, CUSTOM_COUNT, args);
 }
 
 /**
@@ -100,10 +100,7 @@ int32_t PhotosCountStatistic::QueryTotalCount(SearchCondition searchCondition)
         burstType,
         burstType,
         burstType};
-    auto resultSet = this->mediaLibraryRdb_->QuerySql(this->SQL_PHOTOS_ALL_TOTAL_COUNT, params);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, 0);
-    return GetInt32Val("count", resultSet);
+    return this->GetCount(this->SQL_PHOTOS_ALL_TOTAL_COUNT, params);
 }
 
 /**
@@ -136,10 +133,7 @@ int32_t PhotosCountStatistic::QueryAllRestoreCount(SearchCondition searchConditi
         burstType,
         burstType,
         burstType};
-    auto resultSet = this->mediaLibraryRdb_->QuerySql(this->SQL_PHOTOS_ALL_RESTORE_COUNT, params);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, 0);
-    return GetInt32Val("count", resultSet);
+    return this->GetCount(this->SQL_PHOTOS_ALL_RESTORE_COUNT, params);
 }
 
 /**
@@ -172,10 +166,7 @@ int32_t PhotosCountStatistic::QueryPicturesTotalCount(SearchCondition searchCond
         burstType,
         burstType,
         burstType};
-    auto resultSet = this->mediaLibraryRdb_->QuerySql(this->SQL_PHOTOS_PICTURES_TOTAL_COUNT, params);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, 0);
-    return GetInt32Val("count", resultSet);
+    return this->GetCount(this->SQL_PHOTOS_PICTURES_TOTAL_COUNT, params);
 }
 
 /**
@@ -221,6 +212,7 @@ std::vector<AlbumStatisticInfo> PhotosCountStatistic::QueryAlbumCountByName(
         info.lPath = GetStringVal("lpath", resultSet);
         infoList.emplace_back(info);
     }
+    resultSet->Close();
     return infoList;
 }
 
@@ -232,10 +224,7 @@ int32_t PhotosCountStatistic::QueryLiveCount(int32_t searchType)
 {
     std::vector<NativeRdb::ValueObject> params = {searchType};
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, 0, "Media_Restore: mediaLibraryRdb_ is null.");
-    auto resultSet = this->mediaLibraryRdb_->QuerySql(this->SQL_PHOTOS_LIVE_COUNT, params);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, 0);
-    return GetInt32Val("count", resultSet);
+    return this->GetCount(this->SQL_PHOTOS_LIVE_COUNT, params);
 }
 
 AlbumMediaStatisticInfo PhotosCountStatistic::GetAllStatInfo()
