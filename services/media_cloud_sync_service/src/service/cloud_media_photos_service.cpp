@@ -1166,6 +1166,10 @@ int32_t CloudMediaPhotosService::NotifyUploadErr(const int32_t errorCode, const 
             errType = CloudSyncErrType::LCD_SIZE_IS_TOO_LARGE;
             break;
         }
+        case E_DB_ALBUM_NOT_FOUND: {
+            errType = CloudSyncErrType::ALBUM_NOT_FOUND;
+            break;
+        }
         default: {
             errType = CloudSyncErrType::OTHER_ERROR;
         }
