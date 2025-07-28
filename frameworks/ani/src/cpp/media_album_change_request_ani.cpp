@@ -411,8 +411,9 @@ ani_status MediaAlbumChangeRequestAni::SetDisplayLevel(ani_env *env, ani_object 
     auto photoAlbum = aniContext->objectInfo->photoAlbum_;
     CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "PhotoAlbum is nullptr");
     CHECK_COND_WITH_RET_MESSAGE(env,
-        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        ANI_INVALID_ARGS, "Only portrait album can set album display level");
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        ANI_INVALID_ARGS, "Only portrait and groupPhoto album can set album display level");
     photoAlbum->SetDisplayLevel(displayLevel);
     aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_DISPLAY_LEVEL);
     return ANI_OK;
