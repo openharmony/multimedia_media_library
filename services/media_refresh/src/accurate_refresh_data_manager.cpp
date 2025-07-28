@@ -33,7 +33,7 @@ template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const AbsRdbPredicates &predicates)
 {
     CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
-    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
+    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentRefreshTag());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshDataManager::Init predicates");
     auto initDatas = GetInfosByPredicates(predicates);
@@ -49,7 +49,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const string sq
 {
     CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     CHECK_AND_RETURN_RET_LOG(!sql.empty(), ACCURATE_REFRESH_INPUT_PARA_ERR, "input sql empty");
-    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
+    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentRefreshTag());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshDataManager::Init sql");
     shared_ptr<ResultSet> resultSet;
@@ -77,7 +77,7 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::Init(const vector<in
 {
     CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(keys.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     CHECK_AND_RETURN_RET_LOG(!keys.empty(), ACCURATE_REFRESH_INPUT_PARA_ERR, "input keys empty");
-    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
+    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentRefreshTag());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshDataManager::Init keys");
     auto initDatas = GetInfoByKeys(keys);
@@ -174,8 +174,8 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
     PendingInfo &pendingInfo)
 {
     ACCURATE_DEBUG("keys size: %{public}zu", keys.size());
-    auto timestamp = AlbumAccurateRefreshManager::GetCurrentTimestamp();
-    pendingInfo.end_ = timestamp;
+    auto timestamp = MediaFileUtils::UTCTimeMilliSeconds();
+    pendingInfo.end_ = AlbumAccurateRefreshManager::GetCurrentRefreshTag();
     for (auto key : keys) {
         auto iter = changeDatas_.find(key);
         if (iter == changeDatas_.end()) {
@@ -210,8 +210,8 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
         MEDIA_WARN_LOG("modifiedDatas empty");
         return ACCURATE_REFRESH_MODIFY_EMPTY;
     }
-    auto timestamp = AlbumAccurateRefreshManager::GetCurrentTimestamp();
-    pendingInfo.end_ = timestamp;
+    auto timestamp = MediaFileUtils::UTCTimeMilliSeconds();
+    pendingInfo.end_ = AlbumAccurateRefreshManager::GetCurrentRefreshTag();
     for (auto modifiedInfo : modifiedDatas) {
         // 找到key
         auto key = GetChangeInfoKey(modifiedInfo);
@@ -261,8 +261,8 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
         MEDIA_WARN_LOG("modifiedDatas empty");
         return ACCURATE_REFRESH_MODIFY_EMPTY;
     }
-    auto timestamp = AlbumAccurateRefreshManager::GetCurrentTimestamp();
-    pendingInfo.end_ = timestamp;
+    auto timestamp = MediaFileUtils::UTCTimeMilliSeconds();
+    pendingInfo.end_ = AlbumAccurateRefreshManager::GetCurrentRefreshTag();
     for (auto &modifiedInfo : modifiedDatas) {
         // 找到key
         auto key = GetChangeInfoKey(modifiedInfo);
