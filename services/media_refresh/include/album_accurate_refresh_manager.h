@@ -61,7 +61,7 @@ public:
     bool IsRefreshTimestampMatch(int32_t albumId, bool isHidden, AlbumRefreshTimestamp compareTimestamp);
     AssetRefreshAlbumAction GetRefreshAction(AlbumRefreshTimestamp albumTimestamp,
         AlbumRefreshTimestamp compareTimestamp);
-    static int64_t GetCurrentTimestamp();
+    static int64_t GetCurrentRefreshTag();
     void SetForceRefresh(bool isForceRefresh, std::string reason);
 
 private:
@@ -74,9 +74,10 @@ public:
     static std::mutex albumRefreshMutex_;
 
 private:
-    std::unordered_map<int32_t, AlbumRefreshTimestamp> accurateRefreshAlbums_;
-    std::unordered_map<int32_t, AlbumRefreshTimestamp> accurateRefreshHiddenAlbums_;
+    static std::unordered_map<int32_t, AlbumRefreshTimestamp> accurateRefreshAlbums_;
+    static std::unordered_map<int32_t, AlbumRefreshTimestamp> accurateRefreshHiddenAlbums_;
     bool isForceRefresh_ = false;
+    static int64_t refreshTag_;
 };
 
 class AlbumRefreshTimestampRecord {
@@ -85,7 +86,7 @@ public:
     {
         albumId_ = albumId;
         isHidden_ = isHidden;
-        start_ = AlbumAccurateRefreshManager::GetCurrentTimestamp();
+        start_ = AlbumAccurateRefreshManager::GetCurrentRefreshTag();
     }
 
     ~AlbumRefreshTimestampRecord()
@@ -103,7 +104,7 @@ public:
 
     void RefreshAlbumEnd()
     {
-        AlbumRefreshTimestamp timestamp(start_, AlbumAccurateRefreshManager::GetCurrentTimestamp());
+        AlbumRefreshTimestamp timestamp(start_, AlbumAccurateRefreshManager::GetCurrentRefreshTag());
         AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(albumId_, isHidden_, timestamp);
         isRecord = true;
     }
