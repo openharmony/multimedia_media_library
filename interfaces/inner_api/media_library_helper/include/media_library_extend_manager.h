@@ -184,6 +184,8 @@ private:
     int32_t GetPhotoUrisPermission(uint32_t targetTokenId, const std::vector<string> &uris,
         PhotoPermissionType photoPermissionType, std::vector<bool> &result);
     bool ForceReconnect();
+    int32_t QueryGrantedIndex(uint32_t targetTokenId, const std::string &uriType, const std::vector<string> &fileIds,
+        std::map<std::string, pair<bool, bool>> &permissionMap, uint32_t businessCode);
 };
 } // namespace Media
 } // namespace OHOS
