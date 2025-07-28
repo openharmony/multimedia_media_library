@@ -32,6 +32,7 @@ ohos_unittest("medialibrary_queryperf_unittest") {
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
     "./src/medialibrary_queryperf_test.cpp",
   ]
 

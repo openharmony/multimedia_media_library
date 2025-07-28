@@ -30,6 +30,7 @@ if (media_library_feature_mtp) {
     include_dirs = [
       "./include",
       "../get_self_permissions/include",
+      "../medialibrary_unittest_utils/include",
       "${MEDIALIB_MTP_PATH}/include",
       "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
       "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
@@ -45,6 +46,8 @@ if (media_library_feature_mtp) {
 
     sources = [
       "../get_self_permissions/src/get_self_permissions.cpp",
+      "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
+      "src/mtp_medialibrary_manager_unit_test.cpp",
       "src/debug_printf.cpp",
       "src/medialibrary_mtp_unit_test.cpp",
       "src/medialibrary_ptp_unit_test.cpp",
@@ -55,7 +58,6 @@ if (media_library_feature_mtp) {
       "src/mtp_event_test.cpp",
       "src/mtp_file_observer_test.cpp",
       "src/mtp_media_library_unit_test.cpp",
-      "src/mtp_medialibrary_manager_unit_test.cpp",
       "src/mtp_monitor_test.cpp",
       "src/mtp_operation_utils_unit_test.cpp",
       "src/mtp_packet_tools_test.cpp",

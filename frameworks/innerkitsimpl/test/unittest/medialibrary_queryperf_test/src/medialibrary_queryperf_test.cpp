@@ -23,6 +23,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unittest_utils.h"
+#include "medialibrary_mock_tocken.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "mimetype_utils.h"
@@ -46,7 +47,8 @@ std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 const int DATA_COUNT = 1000;
 const int S2MS = 1000;
 const int MS2NS = 1000000;
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static uint64_t g_shellToken = 0;
+static MediaLibraryMockHapToken* mockToken = nullptr;
 
 void MakeTestData()
 {
@@ -96,6 +98,9 @@ void UriAppendKeyValue(string &uri, const string &key, std::string value)
 void MediaLibraryQueryPerfUnitTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
+    // 获取shell的tokenId 并保存
+    g_shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
 
     vector<string> perms;
     perms.push_back("ohos.permission.READ_MEDIA");
@@ -105,9 +110,11 @@ void MediaLibraryQueryPerfUnitTest::SetUpTestCase(void)
     perms.push_back("ohos.permission.MEDIA_LOCATION");
     perms.push_back("ohos.permission.READ_AUDIO");
     perms.push_back("ohos.permission.WRITE_AUDIO");
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryQueryPerfUnitTest", perms, tokenId);
-    ASSERT_TRUE(tokenId != 0);
+    // mock  tokenID
+    mockToken = new MediaLibraryMockHapToken("com.ohos.medialibrary.medialibrarydata", perms);
+    for (auto &perm : perms) {
+        MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
+    }
 
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     ASSERT_TRUE(saManager != nullptr);
@@ -128,8 +135,16 @@ void MediaLibraryQueryPerfUnitTest::TearDownTestCase(void)
     if (sDataShareHelper_ != nullptr) {
         sDataShareHelper_->Release();
     }
+    // 删除权限 恢复shell的tokenId
+    if (mockToken != nullptr) {
+        delete mockToken;
+        mockToken = nullptr;
+    }
+
+    MediaLibraryMockTokenUtils::ResetToken();
+    SetSelfTokenID(g_shellToken);
+    EXPECT_EQ(g_shellToken, IPCSkeleton::GetSelfTokenID());
     MEDIA_INFO_LOG("TearDownTestCase end");
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryQueryPerfUnitTest::SetUp(void) {}
