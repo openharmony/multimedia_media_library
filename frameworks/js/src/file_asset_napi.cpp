@@ -412,7 +412,10 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &i
     } else {
         constructorRef = sConstructor_;
     }
-
+    if (constructorRef == nullptr) {
+        NAPI_ERR_LOG("CreateFileAsset constructorRef is null");
+        return nullptr;
+    }
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
     sFileAsset_ = std::move(iAsset);
