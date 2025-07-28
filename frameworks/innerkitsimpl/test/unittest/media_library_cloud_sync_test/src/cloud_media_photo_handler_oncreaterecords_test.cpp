@@ -44,9 +44,16 @@ using namespace testing::internal;
 using namespace OHOS::Media::ORM;
 namespace OHOS::Media::CloudSync {
 DatabaseDataMock CloudMediaPhotoHandlerOnCreateRecordsTest::dbDataMock_;
+static uint64_t g_shellToken = 0;
+static MediaLibraryMockNativeToken* mockToken = nullptr;
+
 void CloudMediaPhotoHandlerOnCreateRecordsTest::SetUpTestCase(void)
 {
     GTEST_LOG_(INFO) << "CloudMediaPhotoHandlerOnCreateRecordsTest SetUpTestCase";
+    g_shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
+    mockToken = new MediaLibraryMockNativeToken("cloudfileservice");
+
     // Get RdbStore
     int32_t errorCode = 0;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore = MediaLibraryDatabase().GetRdbStore(errorCode);
@@ -59,6 +66,14 @@ void CloudMediaPhotoHandlerOnCreateRecordsTest::TearDownTestCase(void)
 {
     GTEST_LOG_(INFO) << "CloudMediaPhotoHandlerOnCreateRecordsTest TearDownTestCase";
     bool ret = dbDataMock_.Rollback();
+    if (mockToken != nullptr) {
+        delete mockToken;
+        mockToken = nullptr;
+    }
+
+    SetSelfTokenID(g_shellToken);
+    MediaLibraryMockTokenUtils::ResetToken();
+    EXPECT_EQ(g_shellToken, IPCSkeleton::GetSelfTokenID());
     GTEST_LOG_(INFO) << "CloudMediaPhotoHandlerOnCreateRecordsTest TearDownTestCase ret: " << ret;
 }
 

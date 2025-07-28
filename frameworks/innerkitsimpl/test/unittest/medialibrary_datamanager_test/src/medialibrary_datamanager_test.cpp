@@ -23,6 +23,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unittest_utils.h"
+#include "medialibrary_mock_tocken.h"
 #include "medialibrary_uripermission_operations.h"
 #include "uri.h"
 #include "vision_column.h"
@@ -49,6 +50,8 @@ namespace OHOS {
 namespace Media {
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 static constexpr int32_t NOT_DISPLAY_FOR_BACKGROUND = -1;
+static uint64_t g_shellToken = 0;
+static MediaLibraryMockHapToken* mockToken = nullptr;
 
 namespace {
     shared_ptr<FileAsset> g_pictures = nullptr;
@@ -64,17 +67,29 @@ struct PortraitData {
 void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
+    g_shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
+
     vector<string> perms;
     perms.push_back("ohos.permission.MEDIA_LOCATION");
     perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryDataManagerUnitTest", perms, tokenId);
-    ASSERT_TRUE(tokenId != 0);
+    mockToken = new MediaLibraryMockHapToken("com.ohos.medialibrary.medialibrarydata", perms);
+    for (auto &perm : perms) {
+        MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
+    }
 }
 
 void MediaLibraryDataManagerUnitTest::TearDownTestCase(void)
 {
     MediaLibraryUnitTestUtils::CleanTestFiles();
+    if (mockToken != nullptr) {
+        delete mockToken;
+        mockToken = nullptr;
+    }
+
+    SetSelfTokenID(g_shellToken);
+    MediaLibraryMockTokenUtils::ResetToken();
+    EXPECT_EQ(g_shellToken, IPCSkeleton::GetSelfTokenID());
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
