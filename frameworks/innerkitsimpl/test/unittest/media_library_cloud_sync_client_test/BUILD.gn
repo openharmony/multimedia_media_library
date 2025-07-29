@@ -78,6 +78,7 @@ ohos_unittest("media_library_cloud_sync_client_test") {
     "common_event_service:cesfwk_innerkits",
     "device_manager:devicemanagersdk",
     "ipc:ipc_single",
+    "jsoncpp:jsoncpp",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",

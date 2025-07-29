@@ -54,6 +54,7 @@ ohos_unittest("medialibrary_uri_test") {
     "data_share:datashare_common",
     "data_share:datashare_provider",
     "hilog:libhilog",
+    "ipc:ipc_single",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
   ]

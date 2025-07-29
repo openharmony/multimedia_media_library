@@ -84,6 +84,7 @@ ohos_shared_library("native_media_asset_manager") {
     "napi:ace_napi",
     "resource_management:librawfile",
     "ipc:ipc_core",
+    "ipc:ipc_single",
   ]
   output_name = "media_asset_manager"
   output_extension = "so"

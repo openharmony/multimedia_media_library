@@ -47,6 +47,7 @@ ohos_fuzztest("MediaLibraryMetaRecoverFuzzTest") {
     "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
+    "ipc:ipc_single",
   ]
 
   defines = []

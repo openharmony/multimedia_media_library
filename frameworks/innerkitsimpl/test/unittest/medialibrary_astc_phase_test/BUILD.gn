@@ -57,6 +57,7 @@ ohos_unittest("medialibrary_astc_phase_test") {
     "hilog:libhilog",
     "image_framework:image_native",
     "ipc:ipc_single",
+    "ipc:ipc_napi",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
