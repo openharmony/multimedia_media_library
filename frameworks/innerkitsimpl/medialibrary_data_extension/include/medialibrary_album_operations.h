@@ -50,6 +50,7 @@ struct MergeAlbumInfo {
     std::string albumName;
     uint8_t isCoverSatisfied;
     std::string tagId;
+    std::vector<string> repeatedAlbumIds;
 };
 class MediaLibraryAlbumOperations {
 public:

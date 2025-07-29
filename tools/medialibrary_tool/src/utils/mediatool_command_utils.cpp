@@ -58,6 +58,7 @@ bool MediatoolCommandUtils::CheckAndReformatPathParam(const std::string& inputPa
     int32_t ret = QueryActiveUserId(activeUserId);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to get active user: %{public}d", ret);
+        return false;
     }
 
     const string allowedBaseUIDPath = "/storage/media/" + activeUserId + "/local/files/Photo";

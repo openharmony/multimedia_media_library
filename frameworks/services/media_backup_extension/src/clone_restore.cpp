@@ -446,6 +446,8 @@ void CloneRestore::RestoreAlbum()
         ANALYSIS_SEARCH_INDEX_TABLE, SEARCH_IDX_COL_ID);
     maxAnalysisAlbumId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
         ANALYSIS_ALBUM_TABLE, ANALYSIS_COL_ALBUM_ID);
+    maxBeautyFileId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
+        ANALYSIS_BEAUTY_SCORE_TABLE, BEAUTY_SCORE_COL_FILE_ID);
 
     for (const auto &tableName : CLONE_ALBUMS) {
         if (!IsReadyForRestore(tableName)) {
@@ -1540,7 +1542,11 @@ void CloneRestore::BatchQueryAlbum(vector<AlbumInfo> &albumInfos, const string &
             PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(albumInfo.albumSubType) + " AND " +
             PhotoAlbumColumns::ALBUM_NAME + " = '" + albumInfo.albumName + "'";
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-        CHECK_AND_CONTINUE(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK);
+        CHECK_AND_CONTINUE(resultSet != nullptr);
+        if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+            resultSet->Close();
+            continue;
+        }
         albumInfo.albumIdNew = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
         CHECK_AND_CONTINUE(albumInfo.albumIdNew > 0);
         albumIdMap[albumInfo.albumIdOld] = albumInfo.albumIdNew;
@@ -1703,8 +1709,7 @@ void CloneRestore::RestoreAnalysisTablesData()
         "tab_analysis_segmentation",
         "tab_analysis_object",
         "tab_analysis_saliency_detect",
-        "tab_analysis_recommendation",
-        "tab_analysis_aesthetics_score"
+        "tab_analysis_recommendation"
     };
 
     vector<std::string> totalTypes = {
@@ -1715,8 +1720,7 @@ void CloneRestore::RestoreAnalysisTablesData()
         "segmentation",
         "object",
         "saliency",
-        "recommendation",
-        "aesthetics_score"
+        "recommendation"
     };
 
     for (size_t index = 0; index < analysisTables.size(); index++) {
@@ -1729,6 +1733,7 @@ void CloneRestore::RestoreAnalysisTablesData()
 void CloneRestore::RestoreAnalysisData()
 {
     RestoreSearchIndexData();
+    RestoreBeautyScoreData();
     RestoreVideoFaceData();
     RestoreAnalysisTablesData();
     RestoreHighlightAlbums();
@@ -1742,7 +1747,7 @@ void CloneRestore::RestoreSearchIndexData()
 
 void CloneRestore::RestoreBeautyScoreData()
 {
-    BeautyScoreClone beautyScoreClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_);
+    BeautyScoreClone beautyScoreClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_, maxBeautyFileId_);
     beautyScoreClone.CloneBeautyScoreInfo();
 }
 
@@ -2478,6 +2483,7 @@ std::vector<PortraitAlbumDfx> CloneRestore::QueryAllPortraitAlbum(int32_t& offse
         result.push_back(dfxInfo);
     }
     resultSet->GetRowCount(rowCount);
+    resultSet->Close();
     return result;
 }
 

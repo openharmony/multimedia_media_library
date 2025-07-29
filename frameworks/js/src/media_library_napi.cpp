@@ -2932,6 +2932,7 @@ void ChangeListenerNapi::UvQueueWork(JsOnChangeCallbackWrapper* wrapper)
         napi_env env = msg->env_;
         NapiScopeHandler scopeHandler(env);
         if (!scopeHandler.IsValid()) {
+            NAPI_ERR_LOG("scopeHandler is invalid");
             break;
         }
 
@@ -2945,6 +2946,7 @@ void ChangeListenerNapi::UvQueueWork(JsOnChangeCallbackWrapper* wrapper)
         napi_value result[ARGS_ONE];
         result[PARAM0] = ChangeListenerNapi::SolveOnChange(env, wrapper);
         if (result[PARAM0] == nullptr) {
+            NAPI_ERR_LOG("result is nullptr");
             break;
         }
         napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);

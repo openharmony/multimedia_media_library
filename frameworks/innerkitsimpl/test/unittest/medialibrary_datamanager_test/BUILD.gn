@@ -34,6 +34,7 @@ ohos_unittest("medialibrary_datamanager_unittest") {
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
     "./src/medialibrary_datamanager_test.cpp",
   ]
   deps = [

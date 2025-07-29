@@ -36,6 +36,7 @@ bool DbUpgradeUtils::IsTableExists(NativeRdb::RdbStore &store, const std::string
     int rowCount = 0;
     bool isExists = !resultSet->GetRowCount(rowCount) && rowCount > 0;
     MEDIA_INFO_LOG("Media_Restore: tableName=%{public}s, isExists:%{public}d", tableName.c_str(), isExists);
+    resultSet->Close();
     return isExists;
 }
 
@@ -57,6 +58,7 @@ bool DbUpgradeUtils::IsColumnExists(
         tableName.c_str(),
         columnName.c_str(),
         isExists);
+    resultSet->Close();
     return isExists;
 }
 
@@ -72,6 +74,7 @@ std::vector<std::string> DbUpgradeUtils::GetAllTriggers(NativeRdb::RdbStore &sto
         std::string triggerName = GetStringVal("name", resultSet);
         result.emplace_back(triggerName);
     }
+    resultSet->Close();
     return result;
 }
 
@@ -99,6 +102,7 @@ std::vector<std::string> DbUpgradeUtils::GetAllUniqueIndex(NativeRdb::RdbStore &
         std::string uniqueIndexName = GetStringVal("name", resultSet);
         result.emplace_back(uniqueIndexName);
     }
+    resultSet->Close();
     return result;
 }
 

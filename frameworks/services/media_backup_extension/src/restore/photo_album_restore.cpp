@@ -54,6 +54,7 @@ std::vector<PhotoAlbumRestore::GalleryAlbumRowData> PhotoAlbumRestore::GetGaller
         // Check if there are more rows to fetch.
         resultSet->GetRowCount(rowCount);
         offset += pageSize;
+        resultSet->Close();
     } while (rowCount > 0);
     return result;
 }

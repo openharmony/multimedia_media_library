@@ -85,7 +85,7 @@ MediaLibrary_ErrorCode MediaAssetImpl::GetUri(const char** uri)
         uri_ = new(std::nothrow) char[MAX_URI_LENGTH];
         CHECK_AND_RETURN_RET_LOG(uri_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "alloc memory failed!");
     }
-
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     const std::string fileUri = fileAsset_->GetUri();
     int32_t uriLen = static_cast<int32_t>(fileUri.length());
     int32_t len = uriLen < MAX_URI_LENGTH ? uriLen : MAX_URI_LENGTH - 1;
@@ -98,6 +98,7 @@ MediaLibrary_ErrorCode MediaAssetImpl::GetUri(const char** uri)
 
 MediaLibrary_ErrorCode MediaAssetImpl::GetMediaType(MediaLibrary_MediaType* mediaType)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     MediaType type = fileAsset_->GetMediaType();
     MEDIA_INFO_LOG("GetMediaType type: %{public}d", static_cast<int32_t>(type));
     auto itr = g_mediaTypeMapping.find(type);
@@ -110,6 +111,7 @@ MediaLibrary_ErrorCode MediaAssetImpl::GetMediaType(MediaLibrary_MediaType* medi
 
 MediaLibrary_ErrorCode MediaAssetImpl::GetMediaSubType(MediaLibrary_MediaSubType* mediaSubType)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     PhotoSubType subType = static_cast<PhotoSubType>(fileAsset_->GetPhotoSubType());
     MEDIA_INFO_LOG("GetMediaSubType subType: %{public}d", static_cast<int32_t>(subType));
     auto itr = g_photoSubTypeMapping.find(subType);
@@ -126,7 +128,7 @@ MediaLibrary_ErrorCode MediaAssetImpl::GetDisplayName(const char** displayName)
         displayName_ = new(std::nothrow) char[MAX_DISPLAY_NAME_LENGTH];
         CHECK_AND_RETURN_RET_LOG(displayName_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "alloc memory failed!");
     }
-
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     const std::string display = fileAsset_->GetDisplayName();
     int32_t displayNameLen = static_cast<int32_t>(display.length());
     int32_t len = displayNameLen < MAX_DISPLAY_NAME_LENGTH ? displayNameLen : MAX_DISPLAY_NAME_LENGTH - 1;
@@ -139,36 +141,42 @@ MediaLibrary_ErrorCode MediaAssetImpl::GetDisplayName(const char** displayName)
 
 MediaLibrary_ErrorCode MediaAssetImpl::GetSize(uint32_t* size)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     *size = static_cast<uint32_t>(fileAsset_->GetSize());
     return MEDIA_LIBRARY_OK;
 }
 
 MediaLibrary_ErrorCode MediaAssetImpl::GetDateAdded(uint32_t* dateAdded)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     *dateAdded = static_cast<uint32_t>(fileAsset_->GetDateAdded() / MILLI_TO_SECOND);
     return MEDIA_LIBRARY_OK;
 }
 
 MediaLibrary_ErrorCode MediaAssetImpl::GetDateModified(uint32_t* dateModified)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     *dateModified = static_cast<uint32_t>(fileAsset_->GetDateModified() / MILLI_TO_SECOND);
     return MEDIA_LIBRARY_OK;
 }
 
 MediaLibrary_ErrorCode MediaAssetImpl::GetDateAddedMs(uint32_t* dateAddedMs)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     *dateAddedMs = static_cast<uint32_t>(fileAsset_->GetDateModified());
     return MEDIA_LIBRARY_OK;
 }
 
 MediaLibrary_ErrorCode MediaAssetImpl::GetDateModifiedMs(uint32_t* dateModifiedMs)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     *dateModifiedMs = static_cast<uint32_t>(fileAsset_->GetDateModified());
     return MEDIA_LIBRARY_OK;
 }
 
 MediaLibrary_ErrorCode MediaAssetImpl::GetDateTaken(uint32_t* dateTaken)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     *dateTaken = static_cast<uint32_t>(fileAsset_->GetDateTaken());
     return MEDIA_LIBRARY_OK;
 }
@@ -180,30 +188,35 @@ std::shared_ptr<FileAsset> MediaAssetImpl::GetFileAssetInstance() const
 
 MediaLibrary_ErrorCode MediaAssetImpl::GetDuration(uint32_t* duration)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     *duration  = static_cast<uint32_t>(fileAsset_->GetDuration());
     return MEDIA_LIBRARY_OK;
 }
 
 MediaLibrary_ErrorCode MediaAssetImpl::GetWidth(uint32_t* width)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     *width = static_cast<uint32_t>(fileAsset_->GetWidth());
     return MEDIA_LIBRARY_OK;
 }
 
 MediaLibrary_ErrorCode MediaAssetImpl::GetHeight(uint32_t* height)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     *height = static_cast<uint32_t>(fileAsset_->GetHeight());
     return MEDIA_LIBRARY_OK;
 }
 
 MediaLibrary_ErrorCode MediaAssetImpl::GetOrientation(uint32_t* orientation)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     *orientation = static_cast<uint32_t>(fileAsset_->GetOrientation());
     return MEDIA_LIBRARY_OK;
 }
 
 MediaLibrary_ErrorCode MediaAssetImpl::IsFavorite(uint32_t* favorite)
 {
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     *favorite = static_cast<uint32_t>(fileAsset_->IsFavorite());
     return MEDIA_LIBRARY_OK;
 }
@@ -214,7 +227,7 @@ MediaLibrary_ErrorCode MediaAssetImpl::GetTitle(const char** title)
         title_ = new(std::nothrow) char[MAX_TITLE_LENGTH];
         CHECK_AND_RETURN_RET_LOG(title_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "alloc memory failed!");
     }
-
+    CHECK_AND_RETURN_RET_LOG(fileAsset_ != nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "fileAsset is nullptr");
     const std::string titleStr = fileAsset_->GetTitle();
     int32_t titleLen = static_cast<int32_t>(titleStr.length());
     int32_t len = titleLen < MAX_TITLE_LENGTH ? titleLen : MAX_TITLE_LENGTH - 1;

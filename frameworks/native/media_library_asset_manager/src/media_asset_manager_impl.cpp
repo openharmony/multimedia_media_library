@@ -499,6 +499,8 @@ MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeRequestImageSource(OH_MediaA
     OH_MediaLibrary_OnImageDataPrepared callback)
 {
     MEDIA_INFO_LOG("MediaAssetManagerImpl::NativeRequestImageSource Called");
+    CHECK_AND_RETURN_RET_LOG(mediaAsset != nullptr && mediaAsset->mediaAsset_ != nullptr,
+        MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "mediaAsset or mediaAsset_ is null");
     std::shared_ptr<FileAsset> fileAsset_ = mediaAsset->mediaAsset_->GetFileAssetInstance();
     MediaLibraryTracer tracer;
     tracer.Start("NativeRequestImageSource");
@@ -549,6 +551,8 @@ MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeRequestMovingPhoto(OH_MediaA
     NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
     OH_MediaLibrary_OnMovingPhotoDataPrepared callback)
 {
+    CHECK_AND_RETURN_RET_LOG(mediaAsset != nullptr && mediaAsset->mediaAsset_ != nullptr,
+        MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "mediaAsset or mediaAsset_ is null");
     std::shared_ptr<FileAsset> fileAsset_ = mediaAsset->mediaAsset_->GetFileAssetInstance();
     MediaLibraryTracer tracer;
     tracer.Start("NativeRequestMovingPhoto");
