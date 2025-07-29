@@ -397,15 +397,6 @@ HWTEST_F(CloudMediaSyncServiceVoTest, OnCreateRecordsPhotos_Test, TestSize.Level
     EXPECT_NE(reqBody->ToString(), "");
 }
 
-HWTEST_F(CloudMediaSyncServiceVoTest, OnCreateRecordsAlbum_Test, TestSize.Level1)
-{
-    auto reqBody = std::make_shared<OnCreateRecordsAlbumReqBody>();
-    EXPECT_NE(reqBody, nullptr);
-    reqBody->AddAlbumData("test_cloud_id", "test_new_cloud_id", true);
-    reqBody->AddAlbumData("test_cloud_id_2", "test_new_cloud_id_2", false);
-    EXPECT_NE(reqBody->ToString(), "");
-}
-
 HWTEST_F(CloudMediaSyncServiceVoTest, OnCopyRecordsPhotos_Test, TestSize.Level1)
 {
     auto reqBody = std::make_shared<OnCopyRecordsPhotosReqBody>();

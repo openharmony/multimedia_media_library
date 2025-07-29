@@ -21,7 +21,11 @@
 #include "cloud_media_sync_const.h"
 #include "cloud_mdkrecord_photos_vo.h"
 #include "cloud_mdkrecord_photo_album_vo.h"
+#include "on_create_records_album_vo.h"
+#include "on_mdirty_records_album_vo.h"
+#include "cloud_error_detail_vo.h"
 #include "mdk_record.h"
+#include "mdk_record_album_data.h"
 #include "mdk_reference.h"
 #include "mdk_database.h"
 #include "medialibrary_errno.h"
@@ -67,7 +71,13 @@ int32_t ConvertToDoubleScreenshot(std::shared_ptr<MDKRecord> record, std::map<st
 
 std::shared_ptr<MDKRecord> ConvertToMdkRecord(const CloudMdkRecordPhotoAlbumVo &upLoadRecord);
 
+int32_t ConvertToOnCreateRecord(
+    const std::string &cloudId, const MDKRecordOperResult &result, OnCreateRecordsAlbumReqBodyAlbumData &record);
+
+int32_t BuildModifyRecord(
+    const std::string &cloudId, const MDKRecordOperResult &result, OnMdirtyAlbumRecord &record);
 private:
+    void ConvertErrorTypeDetails(const MDKRecordOperResult &result, std::vector<CloudErrorDetail> &errorDetails);
     CloudAlbumOperationType type_;
     static const std::string recordType_;
 };

@@ -26,6 +26,11 @@ bool OnMdirtyAlbumRecord::Unmarshalling(MessageParcel &parcel)
 {
     parcel.ReadString(this->cloudId);
     parcel.ReadBool(this->isSuccess);
+    parcel.ReadInt32(this->serverErrorCode);
+    IPC::ITypeMediaUtil::UnmarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel);
+    int32_t copyRecordErrorType;
+    parcel.ReadInt32(copyRecordErrorType);
+    this->errorType = static_cast<ErrorType>(copyRecordErrorType);
     return true;
 }
 
@@ -33,6 +38,9 @@ bool OnMdirtyAlbumRecord::Marshalling(MessageParcel &parcel) const
 {
     parcel.WriteString(this->cloudId);
     parcel.WriteBool(this->isSuccess);
+    parcel.WriteInt32(this->serverErrorCode);
+    IPC::ITypeMediaUtil::MarshallingParcelable<CloudErrorDetail>(this->errorDetails, parcel);
+    parcel.WriteInt32(static_cast<int32_t>(this->errorType));
     return true;
 }
 
@@ -40,9 +48,18 @@ std::string OnMdirtyAlbumRecord::ToString() const
 {
     std::stringstream ss;
     ss << "{"
-       << "\"cloudId\": \"" << cloudId << "\""
-       << "\"isSuccess\": \"" << isSuccess << "\""
-       << "}";
+       << "\"cloudId\": \"" << cloudId << "\","
+       << "\"isSuccess\": \"" << isSuccess << "\","
+       << "\"serverErrorCode\": " << serverErrorCode << ","
+       << "\"errorType\": \"" << static_cast<int32_t>(errorType) << "\","
+       << "\"errorDetails\": [";
+    for (uint32_t i = 0; i < errorDetails.size(); ++i) {
+        ss << errorDetails[i].ToString();
+        if (i != errorDetails.size() - 1) {
+            ss << ",";
+        }
+    }
+    ss << "]}";
     return ss.str();
 }
 
@@ -72,6 +89,16 @@ std::vector<OnMdirtyAlbumRecord> OnMdirtyRecordsAlbumReqBody::GetMdirtyRecords()
 std::string OnMdirtyRecordsAlbumReqBody::ToString() const
 {
     std::stringstream ss;
+    ss << "{"
+       << "\"records\": [";
+    for (size_t i = 0; i < records.size(); i++) {
+        ss << records[i].ToString();
+        if (i != records.size() - 1) {
+            ss << ", ";
+        }
+    }
+    ss << "]"
+       << "}";
     return ss.str();
 }
 

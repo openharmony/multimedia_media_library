@@ -840,6 +840,7 @@ int32_t CloudFileDataConvert::ConvertFdirtyRecord(
 {
     MDKRecordPhotosData photosData = MDKRecordPhotosData(result.GetDKRecord());
     record.cloudId = cloudId;
+    record.fileId = photosData.GetFileId().value_or(-1);
     auto metaDateModifiedOpt = photosData.GetPhotoMetaDateModified();
     if (metaDateModifiedOpt.has_value()) {
         record.metaDateModified = metaDateModifiedOpt.value();

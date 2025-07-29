@@ -47,4 +47,29 @@ CloudMdkRecordPhotoAlbumVo CloudMediaAlbumControllerProcessor::ConvertRecordPoTo
     recordVo.isInWhiteList = record.isInWhiteList.value_or(false);
     return recordVo;
 }
+
+PhotoAlbumDto CloudMediaAlbumControllerProcessor::ConvertToPhotoAlbumDto(
+    const OnCreateRecordsAlbumReqBodyAlbumData &recordVo)
+{
+    PhotoAlbumDto record;
+    record.cloudId = recordVo.cloudId;
+    record.newCloudId = recordVo.newCloudId;
+    record.isSuccess = recordVo.isSuccess;
+    record.errorType = recordVo.errorType;
+    record.serverErrorCode = recordVo.serverErrorCode;
+    record.errorDetails = recordVo.errorDetails;
+    return record;
+}
+
+PhotoAlbumDto CloudMediaAlbumControllerProcessor::ConvertToPhotoAlbumDto(
+    const OnMdirtyAlbumRecord &recordVo)
+{
+    PhotoAlbumDto record;
+    record.cloudId = recordVo.cloudId;
+    record.isSuccess = recordVo.isSuccess;
+    record.errorType = recordVo.errorType;
+    record.serverErrorCode = recordVo.serverErrorCode;
+    record.errorDetails = recordVo.errorDetails;
+    return record;
+}
 }  // namespace OHOS::Media::CloudSync

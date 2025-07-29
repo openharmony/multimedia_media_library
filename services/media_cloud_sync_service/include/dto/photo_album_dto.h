@@ -19,6 +19,9 @@
 #include <string>
 #include <vector>
 #include "cloud_media_define.h"
+#include "cloud_media_sync_const.h"
+#include "cloud_error_detail_vo.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT PhotoAlbumDto {
@@ -40,7 +43,9 @@ public:
     bool isSuccess;
     int32_t coverUriSource;
     std::string coverCloudId;
-
+    int32_t serverErrorCode;
+    ErrorType errorType;
+    std::vector<CloudErrorDetail> errorDetails;
 public:
     std::string ToString();
 };

@@ -82,7 +82,7 @@ std::string OnCreateRecord::ToString() const
        << "\"localId\": \"" << localId << "\","
        << "\"rotation\": " << rotation << ","
        << "\"fileType\": " << fileType << ","
-       << "\"size\": \"" << size << ","
+       << "\"size\": " << size << ","
        << "\"createTime\": " << createTime << ","
        << "\"modifiedTime\": " << modifiedTime << ","
        << "\"editedTimeMs\": " << editedTimeMs << ","
@@ -92,15 +92,9 @@ std::string OnCreateRecord::ToString() const
        << "\"isSuccess\": \"" << isSuccess << "\","
        << "\"livePhotoCachePath\": \"" << livePhotoCachePath << "\","
        << "\"errorType\": \"" << static_cast<int32_t>(errorType) << "\","
-       << "[";
+       << "\"errorDetails\": [";
     for (uint32_t i = 0; i < errorDetails.size(); ++i) {
-        ss << "{\"reason\": " << errorDetails[i].reason << "\","
-           << "\"errorCode\": " << errorDetails[i].errorCode << "\","
-           << "\"description\": " << errorDetails[i].description << "\","
-           << "\"errorPos\": " << errorDetails[i].errorPos << "\","
-           << "\"errorParam\": " << errorDetails[i].errorParam << "\","
-           << "\"detailCode\": " << errorDetails[i].detailCode << "\""
-           << "}";
+        ss << errorDetails[i].ToString();
         if (i != errorDetails.size() - 1) {
             ss << ",";
         }

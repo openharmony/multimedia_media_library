@@ -38,8 +38,12 @@ public:
     std::vector<PhotoAlbumPo> GetAlbumFileModifiedRecords(int32_t size);  // it's not exist
     std::vector<PhotoAlbumPo> GetAlbumDeletedRecords(int32_t size);
     std::vector<PhotoAlbumPo> GetAlbumCopyRecords(int32_t size);  // it's not exist
-    int32_t OnCreateRecords(std::vector<PhotoAlbumDto> &albumDtoList, int32_t &failSize);
-    int32_t OnMdirtyRecords(std::vector<PhotoAlbumDto> &albumDtoList, int32_t &failSize);
+    int32_t HandleCloudAlbumNotFound(const PhotoAlbumDto &album);
+    int32_t HandleDetailcode(ErrorDetailCode &errorCode);
+    int32_t OnRecordFailedErrorDetails(const PhotoAlbumDto &album);
+    int32_t OnRecordFailed(const PhotoAlbumDto &album);
+    int32_t OnCreateRecords(std::vector<PhotoAlbumDto> &albumDtoList, int32_t &failedSize);
+    int32_t OnMdirtyRecords(std::vector<PhotoAlbumDto> &albumDtoList, int32_t &failedSize);
     int32_t OnFdirtyRecords();
     int32_t OnDeleteRecords(std::vector<PhotoAlbumDto> &albumDtoList, int32_t &failSize);
     int32_t OnCopyRecords();

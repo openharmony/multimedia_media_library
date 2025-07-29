@@ -1072,6 +1072,11 @@ int32_t CloudMediaPhotosService::OnRecordFailed(
         MEDIA_ERR_LOG("renew resource");
         return HandleSameCloudResource(photo);
     }
+    if ((static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::ALBUM_NOT_EXIST)) {
+        MEDIA_ERR_LOG("ALBUM NOT EXIST PhotosService");
+        // Query AlbumId by file id, Set PhotoAlbum record dirty status to new
+        return this->photosDao_.HandleNotExistAlbumRecord(photo);
+    }
     return this->OnRecordFailedErrorDetails(photo, photoRefresh);
 }
 
