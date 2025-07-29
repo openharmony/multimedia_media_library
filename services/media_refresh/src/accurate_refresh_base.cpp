@@ -47,7 +47,7 @@ int32_t AccurateRefreshBase::Insert(MediaLibraryCommand &cmd, int64_t &outRowId)
     if (!IsValidTable(cmd.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
+    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentRefreshTag());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::Insert cmd");
     DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
@@ -92,7 +92,7 @@ int32_t AccurateRefreshBase::Insert(int64_t &outRowId, const string &table, Valu
     if (!IsValidTable(table)) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
+    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentRefreshTag());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::Insert talbe");
     DfxRefreshHander::SetOperationStartTimeHander(dfxRefreshManager_);
@@ -149,7 +149,7 @@ int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &tab
     if (!IsValidTable(table)) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentTimestamp());
+    PendingInfo pendingInfo(AlbumAccurateRefreshManager::GetCurrentRefreshTag());
     MediaLibraryTracer tracer;
     tracer.Start("AccurateRefreshBase::BatchInsert");
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};

@@ -24,6 +24,9 @@ namespace OHOS {
 namespace Media::AccurateRefresh {
 
 std::mutex AlbumAccurateRefreshManager::albumRefreshMutex_;
+std::unordered_map<int32_t, AlbumRefreshTimestamp> AlbumAccurateRefreshManager::accurateRefreshAlbums_;
+std::unordered_map<int32_t, AlbumRefreshTimestamp> AlbumAccurateRefreshManager::accurateRefreshHiddenAlbums_;
+int64_t AlbumAccurateRefreshManager::refreshTag_ = 0;
 
 bool AlbumAccurateRefreshManager::IsAlbumAccurateRefresh(int32_t albumId, bool isHidden)
 {
@@ -92,10 +95,17 @@ AlbumRefreshTimestamp AlbumAccurateRefreshManager::GetRefreshTimestamp(int32_t a
     }
 }
 
-int64_t AlbumAccurateRefreshManager::GetCurrentTimestamp()
+int64_t AlbumAccurateRefreshManager::GetCurrentRefreshTag()
 {
     std::lock_guard<std::mutex> lock(albumRefreshMutex_);
-    return MediaFileUtils::UTCTimeMilliSeconds();
+    refreshTag_++;
+    if (refreshTag_ < 0) {
+        refreshTag_ = 0;
+        accurateRefreshAlbums_.clear();
+        accurateRefreshHiddenAlbums_.clear();
+        MEDIA_INFO_LOG("reset refreshTag_");
+    }
+    return refreshTag_;
 }
 
 bool AlbumAccurateRefreshManager::IsRefreshTimestampMatch(int32_t albumId, bool isHidden,

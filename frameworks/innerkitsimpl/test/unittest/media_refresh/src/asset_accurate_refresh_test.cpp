@@ -142,7 +142,7 @@ void PrepareAlbumData()
 {
     vector<ValuesBucket> values;
     values.push_back(GetFavoriteInsertAlbum());
-    auto timestamp = AlbumAccurateRefreshManager::GetCurrentTimestamp();
+    auto timestamp = AlbumAccurateRefreshManager::GetCurrentRefreshTag();
     AlbumRefreshTimestamp albumTimestamp(timestamp, timestamp);
     AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, true, albumTimestamp);
     AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, false, albumTimestamp);
@@ -1580,7 +1580,7 @@ HWTEST_F(AssetAccurateRefreshTest, IgnoreRefreshAlbum_021, TestSize.Level2)
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
     EXPECT_TRUE(changedRow == 1);
 
-    auto timestamp = AlbumAccurateRefreshManager::GetCurrentTimestamp();
+    auto timestamp = AlbumAccurateRefreshManager::GetCurrentRefreshTag();
     AlbumRefreshTimestamp albumTimestamp(timestamp + 100, timestamp + 100);
     AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, true, albumTimestamp);
     AlbumAccurateRefreshManager::GetInstance().SetRefreshTimestamp(FAVORITE_ALBUM_ID, false, albumTimestamp);
