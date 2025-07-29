@@ -66,7 +66,6 @@ if (media_library_feature_mtp) {
       "src/mtp_ptp_proxy_test.cpp",
       "src/mtp_set_object_prop_test.cpp",
       "src/mtp_storage_manager_unit_test.cpp",
-      "src/mtp_subscriber_unit_test.cpp",
       "src/mtp_test.cpp",
       "src/mtp_unit_test.cpp",
       "src/ptp_album_handles_unit_test.cpp",
