@@ -32,6 +32,7 @@ namespace OHOS {
 namespace Media {
 using FileIdPair = std::pair<int32_t, int32_t>;
 using TagPairOpt = std::pair<std::optional<std::string>, std::optional<std::string>>;
+constexpr int32_t TOTAL_TBL_FACE_ANALYSED = 2;
 class BackupDatabaseUtils {
 public:
     static int32_t InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
