@@ -187,6 +187,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_001, TestSize.Lev
     EXPECT_EQ(access(metaPath.c_str(), F_OK), 0);
 
     // album.json exist
+    remove(META_RECOVERY_ALBUM_PATH.c_str());
     const string META_RECOVERY_ALBUM_PATH = "/storage/cloud/files/.meta/album.json";
     auto result = MediaFileUtils::CreateFile(META_RECOVERY_ALBUM_PATH);
     EXPECT_EQ(result, true);

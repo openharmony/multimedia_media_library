@@ -276,6 +276,7 @@ private:
     CloneRestoreAnalysisData cloneRestoreAnalysisData_;
     int64_t maxSearchId_ {0};
     int64_t maxAnalysisAlbumId_ {0};
+    int64_t maxBeautyFileId_ {0};
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
 };
 

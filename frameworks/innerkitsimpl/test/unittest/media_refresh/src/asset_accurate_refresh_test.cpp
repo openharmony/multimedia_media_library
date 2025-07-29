@@ -688,6 +688,25 @@ void ModifyAssetDateTime(int64_t dateTaken)
     ACCURATE_DEBUG("ret: %{public}d, insert values: %{public}d", ret, changedRows);
 }
 
+void ClearAndRestart()
+{
+    if (!MediaLibraryUnitTestUtils::IsValid()) {
+        MediaLibraryUnitTestUtils::Init();
+    }
+
+    system("rm -rf /storage/cloud/files/*");
+    system("rm -rf /storage/cloud/files/.thumbs");
+    system("rm -rf /storage/cloud/files/.editData");
+    system("rm -rf /storage/cloud/files/.cache");
+    for (const auto &dir : TEST_ROOT_DIRS) {
+        string ROOT_PATH = "/storage/cloud/100/files/";
+        bool ret = MediaFileUtils::CreateDirectory(ROOT_PATH + dir + "/");
+        CHECK_AND_PRINT_LOG(ret, "make %{public}s dir failed, ret=%{public}d", dir.c_str(), ret);
+    }
+    CleanTestTables();
+    SetTables();
+}
+
 } // namespace
 
 void AssetAccurateRefreshTest::SetUpTestCase()
@@ -703,6 +722,7 @@ void AssetAccurateRefreshTest::SetUpTestCase()
 
 void AssetAccurateRefreshTest::SetUp()
 {
+    ClearAndRestart();
     PrepareAlbumData();
 }
 

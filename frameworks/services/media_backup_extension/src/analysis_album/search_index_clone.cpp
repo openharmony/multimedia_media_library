@@ -67,29 +67,30 @@ bool SearchIndexClone::Clone()
         return true;
     }
 
-    std::string fileIdOldInClause = "(" + BackupDatabaseUtils::JoinValues<int>(oldFileIds, ", ") + ")";
-    std::string querySql = "SELECT count(1) AS count FROM " + ANALYSIS_SEARCH_INDEX_TABLE;
-    querySql += " WHERE " + SEARCH_IDX_COL_FILE_ID + " IN " + fileIdOldInClause;
-    int32_t totalNumber = BackupDatabaseUtils::QueryInt(sourceRdb_, querySql, CUSTOM_COUNT);
-    MEDIA_INFO_LOG("QueryAnalysisSearchIndex totalNumber = %{public}d", totalNumber);
-    CHECK_AND_RETURN_RET_LOG(totalNumber >= 0, false, "Failed to query total count for search index");
-
     std::vector<std::string> exclusions(EXCLUDED_ANALYSIS_SEARCH_IDX_COLS.begin(),
         EXCLUDED_ANALYSIS_SEARCH_IDX_COLS.end());
-
     std::vector<std::string> commonColumn = BackupDatabaseUtils::GetCommonColumnInfos(sourceRdb_, destRdb_,
         ANALYSIS_SEARCH_INDEX_TABLE);
     std::vector<std::string> commonColumns = BackupDatabaseUtils::filterColumns(commonColumn, exclusions);
-
     CHECK_AND_RETURN_RET_LOG(!commonColumns.empty(),
         false, "No common columns found for search index table after exclusion.");
 
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        std::vector<AnalysisSearchIndexTbl> analysisSearchIndexTbl = QueryAnalysisSearchIndexTbl(offset,
+    for (size_t i = 0; i < oldFileIds.size(); i += SQL_BATCH_SIZE) {
+        auto batch_begin = oldFileIds.begin() + i;
+        auto batch_end = ((i + SQL_BATCH_SIZE < oldFileIds.size()) ?
+            (oldFileIds.begin() + i + SQL_BATCH_SIZE) : oldFileIds.end());
+        std::vector<int32_t> batchOldFileIds(batch_begin, batch_end);
+
+        if (batchOldFileIds.empty()) {
+            continue;
+        }
+
+        std::string fileIdOldInClause = "(" + BackupDatabaseUtils::JoinValues<int>(batchOldFileIds, ", ") + ")";
+        std::vector<AnalysisSearchIndexTbl> analysisSearchIndexTbl = QueryAnalysisSearchIndexTbl(
             fileIdOldInClause, commonColumns);
 
         if (analysisSearchIndexTbl.empty()) {
-            MEDIA_WARN_LOG("Query returned empty result for offset %{public}d", offset);
+            MEDIA_WARN_LOG("Query returned empty result for batch starting at index %{public}zu", i);
             continue;
         }
         auto searchIdxTbl = ProcessSearchIndexTbls(analysisSearchIndexTbl);
@@ -98,8 +99,7 @@ bool SearchIndexClone::Clone()
 
     totalTimeCost_ = MediaFileUtils::UTCTimeMilliSeconds() - start;
     MEDIA_INFO_LOG("SearchIndexClone::Clone completed. Migrated %{public}lld records. "
-        "Total time: %{public}lld ms",
-        (long long)migratedCount_, (long long)totalTimeCost_);
+        "Total time: %{public}lld ms", (long long)migratedCount_, (long long)totalTimeCost_);
     return true;
 }
 
@@ -126,16 +126,14 @@ std::vector<AnalysisSearchIndexTbl> SearchIndexClone::ProcessSearchIndexTbls(
     return newSearchIndexTbls;
 }
 
-std::vector<AnalysisSearchIndexTbl> SearchIndexClone::QueryAnalysisSearchIndexTbl(int32_t offset,
-    std::string &fileIdClause, const std::vector<std::string>& commonColumns)
+std::vector<AnalysisSearchIndexTbl> SearchIndexClone::QueryAnalysisSearchIndexTbl(
+    const std::string &fileIdClause, const std::vector<std::string>& commonColumns)
 {
     std::vector<AnalysisSearchIndexTbl> result;
-    result.reserve(QUERY_COUNT);
 
     std::string inClause = BackupDatabaseUtils::JoinValues<std::string>(commonColumns, ", ");
     std::string querySql = "SELECT " + inClause + " FROM " + ANALYSIS_SEARCH_INDEX_TABLE;
     querySql += " WHERE " + SEARCH_IDX_COL_FILE_ID + " IN " + fileIdClause;
-    querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(sourceRdb_, querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql for search index is null.");
@@ -173,36 +171,34 @@ void SearchIndexClone::InsertAnalysisSearchIndex(std::vector<AnalysisSearchIndex
     CHECK_AND_RETURN_LOG(destRdb_ != nullptr, "destRdb_ is null for search index insert");
     CHECK_AND_RETURN_LOG(!analysisSearchIndexTbl.empty(), "analysisSearchIndexTbl vector is empty");
 
-    std::vector<int32_t> fileIdsToCheck;
+    std::vector<int32_t> fileIdsToProcess;
+    fileIdsToProcess.reserve(analysisSearchIndexTbl.size());
     for (const auto& entry : analysisSearchIndexTbl) {
         if (entry.fileId.has_value()) {
-            fileIdsToCheck.push_back(entry.fileId.value());
+            fileIdsToProcess.push_back(entry.fileId.value());
         }
     }
+    if (fileIdsToProcess.empty()) {
+        return;
+    }
 
-    auto [protectedIds, overrideIds] = QueryExistingIdsWithStrategy(fileIdsToCheck);
+    auto [protectedIds, overrideIds] = QueryExistingIdsWithStrategy(fileIdsToProcess);
     std::vector<int32_t> overrideDeleteIds;
-    std::vector<AnalysisSearchIndexTbl> overrideEntries;
+    std::vector<AnalysisSearchIndexTbl> finalInsertEntries;
     for (const auto& entry : analysisSearchIndexTbl) {
         if (!entry.fileId.has_value()) continue;
         const int32_t fileId = entry.fileId.value();
         if (protectedIds.count(fileId)) {
             continue;
         }
-
         if (overrideIds.count(fileId)) {
             overrideDeleteIds.push_back(fileId);
-            overrideEntries.push_back(entry);
         }
+        finalInsertEntries.push_back(entry);
     }
-
     if (!overrideDeleteIds.empty()) {
         DeleteOverrideRecords(overrideDeleteIds);
     }
-
-    std::vector<AnalysisSearchIndexTbl> finalInsertEntries;
-    finalInsertEntries.insert(finalInsertEntries.end(), overrideEntries.begin(), overrideEntries.end());
-
     if (!finalInsertEntries.empty()) {
         int32_t insertedRowNum = InsertSearchIndexByTable(finalInsertEntries);
         CHECK_AND_PRINT_LOG(insertedRowNum != E_ERR, "Failed to insert search index batch");
@@ -212,32 +208,47 @@ void SearchIndexClone::InsertAnalysisSearchIndex(std::vector<AnalysisSearchIndex
 
 IdSetPair SearchIndexClone::QueryExistingIdsWithStrategy(const std::vector<int32_t>& fileIds)
 {
-    std::unordered_set<int32_t> protectedIds;  // id <= maxSearchId_
-    std::unordered_set<int32_t> overrideIds;   // id > maxSearchId_
-    const std::string fileIdList = BackupDatabaseUtils::JoinValues(fileIds, ", ");
+    std::unordered_set<int32_t> protectedIds;
+    std::unordered_set<int32_t> overrideIds;
 
-    const std::string protectedQuery = "SELECT " + SEARCH_IDX_COL_FILE_ID +
-        " FROM " + ANALYSIS_SEARCH_INDEX_TABLE +
-        " WHERE " + SEARCH_IDX_COL_FILE_ID + " IN (" + fileIdList + ")" +
-        " AND " + SEARCH_IDX_COL_ID + " <= " + std::to_string(maxSearchId_);
-    auto protectedSet = ExecuteIdQuery(protectedQuery);
+    for (size_t i = 0; i < fileIds.size(); i += SQL_BATCH_SIZE) {
+        auto batch_begin = fileIds.begin() + i;
+        auto batch_end = (i + SQL_BATCH_SIZE < fileIds.size()) ? (fileIds.begin() + i + SQL_BATCH_SIZE) : fileIds.end();
+        std::vector<int32_t> batchFileIds(batch_begin, batch_end);
 
-    const std::string overrideQuery =
-        "SELECT " + SEARCH_IDX_COL_FILE_ID +
-        " FROM " + ANALYSIS_SEARCH_INDEX_TABLE +
-        " WHERE " + SEARCH_IDX_COL_FILE_ID + " IN (" + fileIdList + ")" +
-        " AND " + SEARCH_IDX_COL_ID + " > " + std::to_string(maxSearchId_);
+        if (batchFileIds.empty()) {
+            continue;
+        }
 
-    auto overrideSet = ExecuteIdQuery(overrideQuery);
+        const std::string fileIdList = BackupDatabaseUtils::JoinValues(batchFileIds, ", ");
 
-    return {protectedSet, overrideSet};
+        const std::string protectedQuery = "SELECT " + SEARCH_IDX_COL_FILE_ID +
+            " FROM " + ANALYSIS_SEARCH_INDEX_TABLE +
+            " WHERE " + SEARCH_IDX_COL_FILE_ID + " IN (" + fileIdList + ")" +
+            " AND " + SEARCH_IDX_COL_ID + " <= " + std::to_string(maxSearchId_);
+        auto protectedSetBatch = ExecuteIdQuery(protectedQuery);
+        if (!protectedSetBatch.empty()) {
+            protectedIds.insert(protectedSetBatch.begin(), protectedSetBatch.end());
+        }
+
+        const std::string overrideQuery = "SELECT " + SEARCH_IDX_COL_FILE_ID +
+            " FROM " + ANALYSIS_SEARCH_INDEX_TABLE +
+            " WHERE " + SEARCH_IDX_COL_FILE_ID + " IN (" + fileIdList + ")" +
+            " AND " + SEARCH_IDX_COL_ID + " > " + std::to_string(maxSearchId_);
+        auto overrideSetBatch = ExecuteIdQuery(overrideQuery);
+        if (!overrideSetBatch.empty()) {
+            overrideIds.insert(overrideSetBatch.begin(), overrideSetBatch.end());
+        }
+    }
+
+    return {protectedIds, overrideIds};
 }
 
 std::unordered_set<int32_t> SearchIndexClone::ExecuteIdQuery(const std::string& querySql)
 {
     std::unordered_set<int32_t> result;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(destRdb_, querySql);
-    if (!resultSet) return result;
+    CHECK_AND_RETURN_RET(resultSet != nullptr, result);
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = 0;
@@ -245,22 +256,32 @@ std::unordered_set<int32_t> SearchIndexClone::ExecuteIdQuery(const std::string& 
             result.insert(fileId);
         }
     }
+    resultSet->Close();
     return result;
 }
 
 void SearchIndexClone::DeleteOverrideRecords(const std::vector<int32_t>& fileIds)
 {
-    CHECK_AND_RETURN_LOG(!fileIds.empty(), "fileid empty");
+    CHECK_AND_RETURN_LOG(!fileIds.empty(), "fileIds vector is empty for deletion");
 
-    const std::string fileIdList = BackupDatabaseUtils::JoinValues(fileIds, ", ");
-    const std::string deleteSql =
-        "DELETE FROM " + ANALYSIS_SEARCH_INDEX_TABLE +
-        " WHERE " + SEARCH_IDX_COL_FILE_ID + " IN (" + fileIdList + ")" +
-        " AND " + SEARCH_IDX_COL_ID + " > " + std::to_string(maxSearchId_);
+    for (size_t i = 0; i < fileIds.size(); i += SQL_BATCH_SIZE) {
+        auto batch_begin = fileIds.begin() + i;
+        auto batch_end = (i + SQL_BATCH_SIZE < fileIds.size()) ? (fileIds.begin() + i + SQL_BATCH_SIZE) : fileIds.end();
+        std::vector<int32_t> batchFileIds(batch_begin, batch_end);
 
-    BackupDatabaseUtils::ExecuteSQL(destRdb_, deleteSql);
+        if (batchFileIds.empty()) {
+            continue;
+        }
+
+        const std::string fileIdList = BackupDatabaseUtils::JoinValues(batchFileIds, ", ");
+        const std::string deleteSql =
+            "DELETE FROM " + ANALYSIS_SEARCH_INDEX_TABLE +
+            " WHERE " + SEARCH_IDX_COL_FILE_ID + " IN (" + fileIdList + ")" +
+            " AND " + SEARCH_IDX_COL_ID + " > " + std::to_string(maxSearchId_);
+
+        BackupDatabaseUtils::ExecuteSQL(destRdb_, deleteSql);
+    }
 }
-
 
 int32_t SearchIndexClone::InsertSearchIndexByTable(std::vector<AnalysisSearchIndexTbl>& analysisSearchIndexTbl)
 {

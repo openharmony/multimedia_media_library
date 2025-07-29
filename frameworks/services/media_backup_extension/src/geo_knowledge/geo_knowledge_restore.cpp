@@ -126,6 +126,7 @@ void GeoKnowledgeRestore::RestoreMaps(const std::unordered_map<int32_t, PhotoInf
         std::vector<NativeRdb::ValuesBucket> values;
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
         auto resultSet = BackupDatabaseUtils::QuerySql(galleryRdb_, querySql, params);
+        CHECK_AND_RETURN(resultSet != nullptr);
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             GeoMapInfo geoMapInfo;
             geoMapInfo.fileIdOld = GetInt32Val("_id", resultSet);

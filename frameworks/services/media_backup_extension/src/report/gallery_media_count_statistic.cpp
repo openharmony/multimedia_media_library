@@ -71,9 +71,9 @@ std::vector<AlbumMediaStatisticInfo> GalleryMediaCountStatistic::Load()
     return infoList;
 }
 
-int32_t GalleryMediaCountStatistic::GetCount(const std::string &query)
+int32_t GalleryMediaCountStatistic::GetCount(const std::string &query, const std::vector<NativeRdb::ValueObject> &args)
 {
-    return BackupDatabaseUtils::QueryInt(this->galleryRdb_, query, CUSTOM_COUNT);
+    return BackupDatabaseUtils::QueryInt(this->galleryRdb_, query, CUSTOM_COUNT, args);
 }
 
 int32_t GalleryMediaCountStatistic::QueryGalleryAllCount(SearchCondition searchCondition)
@@ -102,9 +102,7 @@ int32_t GalleryMediaCountStatistic::QueryGalleryAllCount(SearchCondition searchC
         burstType,
         burstType,
         burstType};
-    auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_ALL_GALLERY_COUNT, params);
-    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
-    return GetInt32Val("count", resultSet);
+    return this->GetCount(this->SQL_QUERY_ALL_GALLERY_COUNT, params);
 }
 
 int32_t GalleryMediaCountStatistic::QueryAlbumGalleryCount(SearchCondition searchCondition)
@@ -133,9 +131,7 @@ int32_t GalleryMediaCountStatistic::QueryAlbumGalleryCount(SearchCondition searc
         burstType,
         burstType,
         burstType};
-    auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_ALBUM_GALLERY_COUNT, params);
-    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
-    return GetInt32Val("count", resultSet);
+    return this->GetCount(this->SQL_QUERY_ALBUM_GALLERY_COUNT, params);
 }
 
 /**
@@ -173,9 +169,7 @@ int32_t GalleryMediaCountStatistic::GetGalleryMediaAllRestoreCount(SearchConditi
         burstType,
         burstType,
         burstType};
-    auto resultSet = this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_COUNT, params);
-    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
-    return GetInt32Val("count", resultSet);
+    return this->GetCount(this->SQL_GALLERY_MEDIA_QUERY_COUNT, params);
 }
 
 int32_t GalleryMediaCountStatistic::QueryGalleryCloneCount()
@@ -217,9 +211,7 @@ int32_t GalleryMediaCountStatistic::QueryGallerySdCardCount(SearchCondition sear
         burstType,
         burstType,
         burstType};
-    auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_GALLERY_SD_CARD_COUNT, params);
-    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
-    return GetInt32Val("count", resultSet);
+    return this->GetCount(this->SQL_QUERY_GALLERY_SD_CARD_COUNT, params);
 }
 
 /**
@@ -253,9 +245,7 @@ int32_t GalleryMediaCountStatistic::QueryAlbumAllVideoCount(SearchCondition sear
         burstType,
         burstType,
         burstType};
-    auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_GALLERY_MEDIA_ALL_VIDEO_COUNT, params);
-    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
-    return GetInt32Val("count", resultSet);
+    return this->GetCount(this->SQL_QUERY_GALLERY_MEDIA_ALL_VIDEO_COUNT, params);
 }
 
 /**
@@ -267,9 +257,7 @@ int32_t GalleryMediaCountStatistic::QueryLiveCount(int32_t searchType, int32_t m
 {
     CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
     std::vector<NativeRdb::ValueObject> params = {searchType, mediaType, mediaType};
-    auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_LIVE_COUNT, params);
-    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
-    return GetInt32Val("count", resultSet);
+    return this->GetCount(this->SQL_QUERY_LIVE_COUNT, params);
 }
 
 /**
@@ -281,9 +269,7 @@ int32_t GalleryMediaCountStatistic::QueryTempCount(int32_t searchType, int32_t m
 {
     CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
     std::vector<NativeRdb::ValueObject> params = {searchType, mediaType, mediaType};
-    auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_TEMP_COUNT, params);
-    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
-    return GetInt32Val("count", resultSet);
+    return this->GetCount(this->SQL_QUERY_TEMP_COUNT, params);
 }
 
 /**
@@ -329,6 +315,7 @@ std::vector<AlbumStatisticInfo> GalleryMediaCountStatistic::QueryAlbumCountByNam
         info.albumName = GetStringVal("albumName", resultSet);
         infoList.emplace_back(info);
     }
+    resultSet->Close();
     return infoList;
 }
 
@@ -375,6 +362,7 @@ std::vector<AlbumStatisticInfo> GalleryMediaCountStatistic::QueryAlbumCountByLPa
         info.lPath = GetStringVal("lPath", resultSet);
         infoList.emplace_back(info);
     }
+    resultSet->Close();
     return infoList;
 }
 

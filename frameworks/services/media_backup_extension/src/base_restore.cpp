@@ -1322,14 +1322,18 @@ bool BaseRestore::HasSameAudioFile(const std::shared_ptr<NativeRdb::RdbStore> &r
     querySql += " LIMIT 1";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, false);
-
+    CHECK_AND_RETURN_RET(resultSet != nullptr, false);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return false;
+    }
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     cond = (fileId <= 0 || cloudPath.empty());
     CHECK_AND_RETURN_RET(!cond, false);
     fileInfo.fileIdNew = fileId;
     fileInfo.cloudPath = cloudPath;
+    resultSet->Close();
     return true;
 }
 

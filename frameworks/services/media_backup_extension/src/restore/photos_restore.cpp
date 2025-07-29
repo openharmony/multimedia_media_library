@@ -228,6 +228,7 @@ void PhotosRestore::GetDuplicateData(int32_t duplicateDataCount)
         // Check if there are more rows to fetch.
         resultSet->GetRowCount(rowCount);
         offset += pageSize;
+        resultSet->Close();
     } while (rowCount > 0);
 }
 

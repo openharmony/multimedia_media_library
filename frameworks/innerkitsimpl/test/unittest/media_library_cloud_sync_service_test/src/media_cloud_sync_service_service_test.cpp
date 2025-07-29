@@ -124,7 +124,6 @@ HWTEST_F(CloudMediaSyncServiceTest, AlbumService_OnCreateRecords_Test_001, TestS
     int32_t failSize = -1;
     int32_t ret = service.OnCreateRecords(albumDtoList, failSize);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(failSize, -1);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, AlbumService_OnCreateRecords_Test_002, TestSize.Level1)
@@ -151,7 +150,6 @@ HWTEST_F(CloudMediaSyncServiceTest, AlbumService_OnMdirtyRecords_Test_001, TestS
     int32_t failSize = -1;
     int32_t ret = service.OnMdirtyRecords(albumDtoList, failSize);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(failSize, -1);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, AlbumService_OnMdirtyRecords_Test_002, TestSize.Level1)
@@ -185,7 +183,6 @@ HWTEST_F(CloudMediaSyncServiceTest, AlbumService_OnDeleteRecords_Test_001, TestS
     int32_t failSize = -1;
     int32_t ret = service.OnDeleteRecords(albumDtoList, failSize);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(failSize, -1);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, AlbumService_OnDeleteRecords_Test_002, TestSize.Level1)

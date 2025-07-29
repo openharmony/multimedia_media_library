@@ -32,6 +32,7 @@
 #include "mtp_ptp_const.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_kvstore_manager.h"
 #include "photo_album_column.h"
 #include "header_data.h"
 
@@ -512,6 +513,11 @@ static void VectorInitial()
         MTP_OPERATION_SKIP_CODE
     };
 }
+
+static inline void ClearKvStore()
+{
+    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
+}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -558,6 +564,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::MtpMedialibraryManagerTest(data, size);
     OHOS::DatabaseDataClear();
     OHOS::MtpMedialibraryTest(data, size);
-    
+    OHOS::ClearKvStore();
+
     return 0;
 }

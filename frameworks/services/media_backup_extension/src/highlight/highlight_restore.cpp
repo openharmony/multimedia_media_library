@@ -478,8 +478,12 @@ nlohmann::json HighlightRestore::GetEffectVideoTrack(const std::string &hashCode
         "WHERE hash = ? ORDER BY confidence_probability DESC LIMIT 1";
     std::vector<NativeRdb::ValueObject> params = { hashCode };
     auto resultSet = BackupDatabaseUtils::QuerySql(galleryRdb_, QUERY_SQL, params);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN_RET(!cond, nlohmann::json::array());
+    CHECK_AND_RETURN_RET(resultSet != nullptr, nlohmann::json::array());
+
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return nlohmann::json::array();
+    }
 
     std::string tracks = GetStringVal("tracks", resultSet);
     resultSet->Close();

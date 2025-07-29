@@ -23,6 +23,7 @@
 #include "rdb_store.h"
 #include "result_set_utils.h"
 
+#include "medialibrary_mock_tocken.h"
 #include "media_library_database.h"
 #include "csv_file_reader.h"
 #include "table_writer.h"
