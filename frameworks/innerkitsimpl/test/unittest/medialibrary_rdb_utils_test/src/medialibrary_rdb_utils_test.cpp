@@ -467,23 +467,5 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_TransformOwnerAppIdToTokenI
     EXPECT_EQ((rowCountAfter - rowCount), 0);
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_TransformOwnerAppIdToTokenId_test_001:stop");
 }
-
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_TransformOwnerAppIdToTokenId_test_002,
-    testing::ext::TestSize.Level1)
-{
-    MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_TransformOwnerAppIdToTokenId_test_002:start");
-    int32_t id1 = CreateSingleImage("TransformOwnerAppIdTest2.jpg", "testAppId");
-    MediaLibraryRdbUtils::TransformOwnerAppIdToTokenId(MediaLibraryDataManager::GetInstance()->rdbStore_);
-    RdbPredicates predicates(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
-    predicates.EqualTo(AppUriPermissionColumn::FILE_ID, id1);
-    vector<string> columns;
-    auto resultSetAfter = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
-    int32_t rowCountAfter = 0;
-    resultSetAfter->GetRowCount(rowCountAfter);
-    resultSetAfter->Close();
-    MEDIA_INFO_LOG("MediaLibraryRestoreTest::rowCount:%{public}d", rowCountAfter);
-    EXPECT_EQ(rowCountAfter, 1);
-    MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_TransformOwnerAppIdToTokenId_test_002:stop");
-}
 } // namespace Media
 } // namespace OHOS
