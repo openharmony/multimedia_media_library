@@ -158,22 +158,32 @@ static void SaveCheckPermission(const string &fileId, map<std::string, pair<bool
     }
 }
 
-static int32_t QueryGrantedIndex(CheckUriPermissionInnerReqBody &reqBody,
-    CheckUriPermissionInnerRespBody &respBody,
-    map<string, pair<bool, bool>> &permissionMap, uint32_t businessCode,
-    const std::shared_ptr<DataShare::DataShareHelper> &helper)
+int32_t MediaLibraryExtendManager::QueryGrantedIndex(uint32_t targetTokenId,
+    const std::string &uriType, const std::vector<string> &fileIds,
+    std::map<string, pair<bool, bool>> &permissionMap, uint32_t businessCode)
 {
+    CheckUriPermissionInnerReqBody reqBody;
+    reqBody.targetTokenId = static_cast<int64_t>(targetTokenId);
+    reqBody.uriType = uriType;
+    reqBody.fileIds = fileIds;
     reqBody.columns.emplace_back(AppUriPermissionColumn::FILE_ID);
     reqBody.columns.emplace_back(AppUriPermissionColumn::PERMISSION_TYPE);
-    CHECK_AND_RETURN_RET_LOG(helper != nullptr, E_ERR,
+    CheckUriPermissionInnerRespBody respBody;
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR,
         "Failed to checkPhotoUriPermission, datashareHelper is nullptr");
     MEDIA_INFO_LOG("before IPC::UserDefineIPCClient().Call, INNER_CHECK_URI_PERMISSION");
-    int32_t result = IPC::UserInnerIPCClient().SetDataShareHelper(helper).Call(businessCode, reqBody, respBody);
-    CHECK_AND_RETURN_RET_LOG(result == E_OK, E_ERR, "queryResultSet is null!");
+    int32_t result = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode,
+        reqBody, respBody);
+    if (result != E_SUCCESS && ForceReconnect()) {
+        MEDIA_WARN_LOG("QueryGrantedIndex Failed, reconnect and retry");
+        result = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper_).Call(businessCode, reqBody, respBody);
+    }
+    CHECK_AND_RETURN_RET_LOG(result == E_SUCCESS, E_ERR, "QueryGrantedIndex Failed");
     auto fileIds_size = respBody.fileIds.size();
     auto permissionTypes_size = respBody.permissionTypes.size();
     bool isValid = (fileIds_size == permissionTypes_size);
-    CHECK_AND_RETURN_RET_LOG(isValid, E_ERR, "QueryGrantedIndex Failed");
+    CHECK_AND_RETURN_RET_LOG(isValid, E_ERR, "Failed cause fileIds_size:%{public}d"
+        " not same to permissionTypes_size:%{public}d", fileIds_size, permissionTypes_size);
     for (size_t i = 0; i < respBody.fileIds.size(); i++) {
         string fileId = respBody.fileIds[i];
         int32_t permissionType = respBody.permissionTypes[i];
@@ -257,15 +267,6 @@ static bool CheckPermissionByMap(const string &fileId, uint32_t flag,
     }
 }
 
-static void MakePredicatesForCheckPhotoUriPermission(uint32_t targetTokenId, TableType mediaType,
-    const vector<string> &fileIds, CheckUriPermissionInnerReqBody &reqBody)
-{   
-    reqBody.targetTokenId = (int64_t)targetTokenId;
-    reqBody.uriType = to_string(static_cast<int32_t>(mediaType));
-    reqBody.fileIds = fileIds;
-    return;
-}
-
 int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId,
     const vector<string> &urisSource, vector<bool> &results, const vector<uint32_t> &flags)
 {
@@ -281,20 +282,14 @@ int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId,
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "invalid uri");
     CheckAccessTokenPermission(tokenId, photoIds, audioIds, photoPermissionMap, audioPermissionMap);
     if (photoIds.size() > 0) {
-        CheckUriPermissionInnerReqBody photoReq;
-        MakePredicatesForCheckPhotoUriPermission(tokenId,
-            TableType::TYPE_PHOTOS, photoIds, photoReq);
-        CheckUriPermissionInnerRespBody photoResp;
         uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_PHOTO_URI_PERMISSION);
-        ret = QueryGrantedIndex(photoReq, photoResp, photoPermissionMap, businessCode, dataShareHelper_);
+        ret = QueryGrantedIndex(tokenId, to_string(static_cast<int32_t>(TableType::TYPE_PHOTOS)),
+            photoIds, photoPermissionMap, businessCode);
     }
     if (audioIds.size() > 0) {
-        CheckUriPermissionInnerReqBody audioReq;
-        MakePredicatesForCheckPhotoUriPermission(tokenId,
-            TableType::TYPE_AUDIOS, audioIds, audioReq);
-        CheckUriPermissionInnerRespBody audioResp;
         uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_AUDIO_URI_PERMISSION);
-        ret = QueryGrantedIndex(audioReq, audioResp, audioPermissionMap, businessCode, dataShareHelper_);
+        ret = QueryGrantedIndex(tokenId, to_string(static_cast<int32_t>(TableType::TYPE_AUDIOS)),
+            audioIds, audioPermissionMap, businessCode);
     }
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "query db fail!");
 
