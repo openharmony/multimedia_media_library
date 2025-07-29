@@ -100,6 +100,7 @@ ohos_shared_library("media_library_cloud_sync") {
     "image_framework:image_native",
     "ipc:ipc_single",
     "ipc:ipc_napi",
+    "jsoncpp:jsoncpp",
     "kv_store:distributeddata_inner",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",

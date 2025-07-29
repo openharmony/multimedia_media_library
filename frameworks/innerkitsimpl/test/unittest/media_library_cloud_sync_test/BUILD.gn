@@ -68,6 +68,8 @@ ohos_unittest("media_library_cloud_sync_test") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "ipc:ipc_core",
+    "ipc:ipc_single",
+    "jsoncpp:jsoncpp",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
   ]

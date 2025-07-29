@@ -90,6 +90,7 @@
           "openssl",
           "resource_schedule_service",
           "json",
+          "jsoncpp",
           "cJSON",
           "config_policy",
           "user_file_service",

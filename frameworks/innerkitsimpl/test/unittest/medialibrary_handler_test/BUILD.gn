@@ -38,6 +38,7 @@ ohos_unittest("medialibrary_handler_unittest") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "ipc:ipc_core",
+    "ipc:ipc_single",
   ]
 
   sanitize = {
