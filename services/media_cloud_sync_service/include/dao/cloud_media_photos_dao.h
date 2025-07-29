@@ -114,6 +114,7 @@ public:
     void RemovePhotoModifyFailedRecord(const std::string &cloudId);
     void RemovePhotoCopyFailedRecord(int32_t fileId);
     int32_t ClearPhotoFailedRecords();
+    int32_t HandleNotExistAlbumRecord(const PhotosDto &record);
     int32_t UpdatePhotoCreatedRecord(
         const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);

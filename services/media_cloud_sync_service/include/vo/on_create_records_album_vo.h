@@ -23,6 +23,8 @@
 #include "i_media_parcelable.h"
 #include "media_itypes_utils.h"
 #include "cloud_media_define.h"
+#include "cloud_media_sync_const.h"
+#include "cloud_error_detail_vo.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT OnCreateRecordsAlbumReqBodyAlbumData : public IPC::IMediaParcelable {
@@ -31,7 +33,9 @@ public:
     std::string newCloudId;
     std::string localPath;
     bool isSuccess;
-
+    int32_t serverErrorCode;
+    ErrorType errorType;
+    std::vector<CloudErrorDetail> errorDetails;
 public:  // functions of Parcelable.
     virtual ~OnCreateRecordsAlbumReqBodyAlbumData() = default;
     bool Unmarshalling(MessageParcel &parcel) override;
@@ -45,9 +49,6 @@ class EXPORT OnCreateRecordsAlbumReqBody : public IPC::IMediaParcelable {
 public:
 public:
     std::vector<OnCreateRecordsAlbumReqBodyAlbumData> albums;
-
-public:
-    bool AddAlbumData(std::string cloudId, std::string newCloudId, bool isSuccess);
 
 public:  // functions of Parcelable.
     virtual ~OnCreateRecordsAlbumReqBody() = default;

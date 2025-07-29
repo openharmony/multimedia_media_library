@@ -21,6 +21,28 @@ group("unittest") {
 }
 
 ohos_unittest("media_library_cloud_sync_test") {
+  cflags = [
+    "-std=c++17",
+    "-fno-rtti",
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-strong",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wfloat-equal",
+    "-Wdate-time",
+    "-Werror",
+    "-Wimplicit-fallthrough",
+    "-Wsign-compare",
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+
   module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
@@ -31,10 +53,12 @@ ohos_unittest("media_library_cloud_sync_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/orm",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/orm/po",
     "${MEDIALIB_TEST_PATH}/unittest/get_self_permissions/include/",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync/include/cloud_sync_data_convert/",
   ]
 
   sources = [
     "${MEDIALIB_TEST_PATH}/unittest/get_self_permissions/src/get_self_permissions.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync/src/cloud_sync_data_convert/cloud_album_data_convert.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/cloud_media_album_handler_onfetchrecords_test.cpp",

@@ -360,6 +360,48 @@ int32_t CloudMediaAlbumDao::OnDeleteAlbums(std::vector<std::string> &failedAlbum
     return E_OK;
 }
 
+int32_t CloudMediaAlbumDao::HandleNotExistAlbumRecord(const PhotoAlbumDto &album)
+{
+    MEDIA_INFO_LOG("enter OnCreateNotExistRecord Album id %{public}s", album.cloudId.c_str());
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL,
+        "OnCreateNotExistRecord Album Failed to get rdbStore.");
+    NativeRdb::ValuesBucket valuesBucket;
+    if (album.cloudId != album.newCloudId) {
+        valuesBucket.PutString(PhotoAlbumColumns::ALBUM_CLOUD_ID, album.newCloudId);
+    }
+    valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_NEW));
+    string whereClause = PhotoAlbumColumns::ALBUM_CLOUD_ID + " = ? AND " + PhotoAlbumColumns::ALBUM_DIRTY + " != ?";
+    std::vector<std::string> whereArgs = {album.cloudId, to_string(static_cast<int32_t>(Media::DirtyType::TYPE_NEW))};
+    int32_t changedRows = -1;
+    int32_t ret = rdbStore->Update(changedRows, PhotoAlbumColumns::TABLE, valuesBucket, whereClause, whereArgs);
+    MEDIA_INFO_LOG("OnCreateNotExistRecord Album ret: %{public}d, changedRows %{public}d", ret, changedRows);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("OnCreateNotExistRecord Album Failed to UpdateAlbumAfterUpload.");
+        return E_RDB;
+    }
+    return E_DATA;
+}
+
+int32_t CloudMediaAlbumDao::OnCreateRecord(const PhotoAlbumDto &album)
+{
+    MEDIA_INFO_LOG("enter OnCreateRecord Album id %{public}s", album.cloudId.c_str());
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "OnCreateRecord Album Failed to get rdbStore.");
+    NativeRdb::ValuesBucket valuesBucket;
+    if (album.cloudId != album.newCloudId) {
+        valuesBucket.PutString(PhotoAlbumColumns::ALBUM_CLOUD_ID, album.newCloudId);
+    }
+    valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_SYNCED));
+    std::string whereClause = PhotoAlbumColumns::ALBUM_CLOUD_ID + " = ?";
+    std::vector<std::string> whereArgs = {album.cloudId};
+    int32_t changedRows = -1;
+    int32_t ret = rdbStore->Update(changedRows, PhotoAlbumColumns::TABLE, valuesBucket, whereClause, whereArgs);
+    MEDIA_INFO_LOG("OnCreateRecord Album ret: %{public}d, changedRows %{public}d", ret, changedRows);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "OnCreateRecord Album Failed to UpdateAlbumAfterUpload.");
+    return ret;
+}
+
 int32_t CloudMediaAlbumDao::OnCreateRecords(const std::vector<PhotoAlbumDto> &albums, int32_t &failSize)
 {
     MEDIA_INFO_LOG("enter OnCreateRecords %{public}zu", albums.size());
@@ -642,7 +684,6 @@ int32_t CloudMediaAlbumDao::OnMdirtyAlbumRecords(const std::string &cloudId)
     int32_t ret = rdbStore->Update(changedRows, PhotoAlbumColumns::TABLE, valuesBucket, whereClause, whereArgs);
     MEDIA_INFO_LOG("OnMdirtyAlbumRecords changedRows: %{public}d", changedRows);
     if (ret != E_OK) {
-        InsertAlbumModifyFailedRecord(cloudId);
         MEDIA_ERR_LOG("OnMdirtyAlbumRecords update local records err %{public}d", ret);
         return ret;
     }
