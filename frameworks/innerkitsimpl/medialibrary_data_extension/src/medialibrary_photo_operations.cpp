@@ -3424,16 +3424,20 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     string assetPath = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
 
-    FileUtils::DealPicture(photoExtInfo.format, assetPath, photoExtInfo.picture, photoExtInfo.isHighQualityPicture);
     string editData = "";
     string editDataCameraPath = GetEditDataCameraPath(assetPath);
+    bool existEditData = (ReadEditdataFromFile(editDataCameraPath, editData) == E_OK);
+    if (existEditData) {
+        FileUtils::DealPicture(photoExtInfo.format, GetEditDataSourcePath(assetPath), photoExtInfo.picture, photoExtInfo.isHighQualityPicture);
+    } else {
+        FileUtils::DealPicture(photoExtInfo.format, assetPath, photoExtInfo.picture, photoExtInfo.isHighQualityPicture);
+    }
+
     std::string photoId;
     std::shared_ptr<Media::Picture> picture;
     bool isHighQualityPicture = false;
-    if (ReadEditdataFromFile(editDataCameraPath, editData) == E_OK &&
-        GetPicture(fileId, picture, false, photoId, isHighQualityPicture) == E_OK &&
+    if (existEditData && GetPicture(fileId, picture, false, photoId, isHighQualityPicture) == E_OK &&
         GetTakeEffect(picture, photoId) == E_OK) {
-        MediaFileUtils::CopyFileUtil(assetPath, GetEditDataSourcePath(assetPath));
         int32_t ret = MediaChangeEffect::TakeEffectForPicture(picture, editData);
         FileUtils::DealPicture(photoExtInfo.format, assetPath, picture, isHighQualityPicture);
     }
