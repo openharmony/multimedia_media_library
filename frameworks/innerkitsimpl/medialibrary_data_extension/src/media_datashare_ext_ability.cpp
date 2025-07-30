@@ -778,7 +778,7 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     bool needToResetTime = false;
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
     int err = permissionHandler_->CheckPermission(cmd, permParam);
-    MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
+    MEDIA_INFO_LOG("OperationObject=%{public}d, permissionHandler_ err=%{public}d", cmd.GetOprnObject(), err);
     CHECK_AND_RETURN_RET(err != -E_CHECK_SYSTEMAPP_FAIL, err);
     CHECK_AND_EXECUTE(err == E_SUCCESS, err = HandleShortPermission(cmd, needToResetTime));
 
