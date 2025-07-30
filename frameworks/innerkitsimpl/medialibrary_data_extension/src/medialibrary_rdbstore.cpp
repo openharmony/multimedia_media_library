@@ -4499,7 +4499,7 @@ static void AddEditDataSizeColumn(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoExtColumn::PHOTOS_EXT_TABLE + " ADD COLUMN " + PhotoExtColumn::EDITDATA_SIZE +
-        " INT DEFAULT 0",
+        " BIGINT DEFAULT 0",
     };
     MEDIA_INFO_LOG("Add editdata size column start");
     ExecSqls(sqls, store);
