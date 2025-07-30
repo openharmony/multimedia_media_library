@@ -211,6 +211,17 @@ uint64_t DfxTimer::GetOperationCodeTimeout(uint32_t operationCode)
     return COMMON_TIME_OUT;
 }
 
+DfxTimer::DfxTimer(int32_t object, int64_t timeOut, bool isReport)
+{
+    type_ = -1;
+    object_ = object;
+    start_ = MediaFileUtils::UTCTimeMilliSeconds();
+    timeOut_ = timeOut;
+    isReport_ = isReport;
+    isEnd_ = false;
+    uid_ = -1;
+}
+
 DfxTimer::DfxTimer(int32_t type, int32_t object, int64_t timeOut, bool isReport)
 {
     type_ = type;
