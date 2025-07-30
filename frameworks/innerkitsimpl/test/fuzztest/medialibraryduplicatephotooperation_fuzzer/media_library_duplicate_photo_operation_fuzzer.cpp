@@ -21,7 +21,7 @@
 #include <fuzzer/FuzzedDataProvider.h>
 
 #include "duplicate_photo_operation.h"
-#include "abillity_context_impl.h"
+#include "ability_context_impl.h"
 #include "rdb_predicates.h"
 #include "medialibrary_edbstore.h"
 #include "deferred_photo_proc_adapter.h"
