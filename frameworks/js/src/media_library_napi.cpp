@@ -2284,6 +2284,7 @@ static void JSCreateAssetExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSCreateAssetExecute");
+    NAPI_INFO_LOG("JSCreateAssetExecute start");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     if (!CheckDisplayNameParams(context)) {

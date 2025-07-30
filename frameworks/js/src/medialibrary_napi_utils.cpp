@@ -1565,7 +1565,7 @@ string MediaLibraryNapiUtils::TransferUri(const string &oldUri)
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
         predicates, columns, errCode);
-    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         NAPI_ERR_LOG("Fail to query file asset!");
         return oldUri;
     }
