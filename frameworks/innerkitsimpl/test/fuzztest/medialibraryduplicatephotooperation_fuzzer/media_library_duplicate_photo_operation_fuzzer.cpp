@@ -102,7 +102,7 @@ static int FuzzPermissionType()
 static NativeRdb::RdbPredicates GetRdbPredicates(void)
 {
     string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
-    int32_t fileId =InsertPhotoAsset(photoId);
+    int32_t fileId = InsertPhotoAsset(photoId);
     string appId = provider->ConsumeBytesAsString(NUM_BYTES);
     int32_t permissionType = FuzzPermissionType();
     static DataSharePredicate predicates;

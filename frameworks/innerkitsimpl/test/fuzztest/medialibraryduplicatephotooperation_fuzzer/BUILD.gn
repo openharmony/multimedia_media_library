@@ -23,7 +23,9 @@ ohos_fuzztest("MediaLibraryDuplicatePhotoOperationFuzzTest") {
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
   ]
 
-  sources = [ "./media_library_duplicate_photo_operation_fuzzer.cpp" ]
+  sources = [
+    "./media_library_duplicate_photo_operation_fuzzer.cpp",
+  ]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
