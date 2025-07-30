@@ -29,7 +29,7 @@ const std::vector<std::string> MIMETYPE_FUZZER_LISTS = {
 const std::vector<std::string> DISPLAY_NAME_EXTENSION_FUZZER_LISTS = {
     ".jpg",
     ".hif",
-}
+};
 } // namespace Media
 } // namespace OHOS
 
