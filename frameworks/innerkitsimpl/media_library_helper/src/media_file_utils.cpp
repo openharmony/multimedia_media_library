@@ -20,6 +20,7 @@
 #include <stack>
 #include <dirent.h>
 #include <fcntl.h>
+#include <filesystem>
 #include <fstream>
 #include <ftw.h>
 #include <regex>
@@ -804,12 +805,17 @@ bool MediaFileUtils::ConvertFormatCopy(const std::string &srcFile, const std::st
         return false;
     }
 
+    auto normalizedDstPath = std::filesystem::absolute(dstFile).lexically_normal();
+    if (normalizedDstPath.empty()) {
+        MEDIA_ERR_LOG("Failed to obtain the canonical path for destination path:%{public}s", srcFile.c_str());
+        return false;
+    }
     UniqueFd srcFd(open(absFilePath.c_str(), O_RDONLY));
     if (srcFd.Get() == E_ERR) {
         MEDIA_ERR_LOG("Open failed for source file, errno: %{public}d", errno);
         return false;
     }
-    UniqueFd dstFd(open(dstFile.c_str(), O_WRONLY | O_CREAT, CHOWN_RO_USR_GRP));
+    UniqueFd dstFd(open(normalizedDstPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RO_USR_GRP));
     if (dstFd.Get() == E_ERR) {
         MEDIA_ERR_LOG("Open failed for destination file %{public}d", errno);
         return false;
