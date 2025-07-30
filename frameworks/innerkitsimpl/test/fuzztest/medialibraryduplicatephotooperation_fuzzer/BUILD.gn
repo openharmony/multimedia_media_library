@@ -19,12 +19,15 @@ ohos_fuzztest("MediaLibraryDuplicatePhotoOperationFuzzTest") {
   fuzz_config_file = "."
 
   include_dirs = [
+    ".",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_UTILS_PATH}/include",
   ]
 
   sources = [
     "./media_library_duplicate_photo_operation_fuzzer.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/duplicate_photo_operation.cpp",
   ]
 
   deps = [
