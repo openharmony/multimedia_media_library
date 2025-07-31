@@ -37,13 +37,13 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_operation.h"
-#include "medialibrary_photo_operation.h"
+#include "medialibrary_photo_operations.h"
 #include "medialibrary_unistore.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_kvstore_manager.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
-#include "userfile_manager_types.s"
+#include "userfile_manager_types.h"
 #include "values_bucket.h"
 
 namespace OHOS {
@@ -53,7 +53,7 @@ using namespace DataShare;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::RdbDataShareAdapter;
 
-static const std::string APP_URI_PERMISSION_TABLE = "uriPermission"
+static const std::string APP_URI_PERMISSION_TABLE = "UriPermission"
 static const int32_t NUM_BYTES = 1;
 static const int32_t PERMISSION_DEFAULT = -1;
 static const int32_t MAX_PERMISSION_TYPE = 6;
@@ -75,18 +75,18 @@ static int32_t InsertPhotoAsset(string photoId)
         return E_ERR;
     }
     NativeRdb::ValuesBucket values;
-    values.PutString(Media::photoColumn::PHOTO_ID, photoId);
+    values.PutString(Media::PhotoColumn::PHOTO_ID, photoId);
     values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
 
-    string mimeType = "undefind";
+    string mimeType = "undefined";
     string displayName = ".undefined";
     FuzzMimeTypeAndDisplayNameExtension(mimeType, displayName);
     values.PutString(Media::MediaColumn::MEDIA_NAME, displayName);
     values.PutString(Media::MediaColumn::MEDIA_MIME_TYPE, mimeType);
 
     int64_t fileId = 0;
-    g_rdbStore->Insert(fileId, Media:PhotoColumn::PHOTOS_TABLE, values);
-    retiurn static_cast<int32_t>(fileId);
+    g_rdbStore->Insert(fileId, Media::PhotoColumn::PHOTOS_TABLE, values);
+    return static_cast<int32_t>(fileId);
 }
 
 static int FuzzPermissionType()
@@ -105,7 +105,7 @@ static NativeRdb::RdbPredicates GetRdbPredicates(void)
     int32_t fileId = InsertPhotoAsset(photoId);
     string appId = provider->ConsumeBytesAsString(NUM_BYTES);
     int32_t permissionType = FuzzPermissionType();
-    static DataSharePredicate predicates;
+    static DataSharePredicates predicates;
 
     predicates.And()->EqualTo(Media::AppUriPermissionColumn::APP_ID, appId);
     predicates.And()->EqualTo(Media::AppUriPermissionColumn::FILE_ID, fileId);
@@ -120,8 +120,8 @@ static void DuplicatePhotoOperationTest()
     shared_ptr<DuplicatePhotoOperation> duplicatePhotoOperation =
         make_shared<DuplicatePhotoOperation>();
     
-    RdbPrediacates predicates = GetRdbPredicates();
-    std::vector<string> colums = { provider->ConsumeBytesAsString(NUM_BYTES) };
+    RdbPredicates predicates = GetRdbPredicates();
+    std::vector<string> columns = { provider->ConsumeBytesAsString(NUM_BYTES) };
 
     duplicatePhotoOperation->GetAllDuplicateAssets(predicates, columns);
     duplicatePhotoOperation->GetDuplicateAssetsToDelete(predicates, columns);
@@ -135,7 +135,7 @@ static void SetTables()
         Media::AppUriSensitiveColumn::CREATE_APP_URI_SENSITIVE_TABLE,
     };
     for (auto &createTableSql : createTableSqlList) {
-        int32_t ret = g_rdbStore->EXecuteSql(createTableSql);
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
             return;
@@ -146,23 +146,23 @@ static void SetTables()
 
 static void Init()
 {
-    auto stageContext = std::make_shared<abilityRuntime::ContextImpl>();
-    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::abilityContextImpl>();
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     abilityContextImpl->SetStageContext(stageContext);
     int32_t sceneCode = 0;
-    auto ret = Media::MediaLibrarayDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
+    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
         abilityContextImpl, sceneCode);
-    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraray Mgr failed, ret: %{public}d.", ret);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibrary Mgr failed, ret: %{public}d.", ret);
     auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr.");
         return;
     }
     g_rdbStore = rdbStore;
-    SetTable();
+    SetTables();
 }
 
-static inLine void ClearKvStore()
+static inline void ClearKvStore()
 {
     Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 }
