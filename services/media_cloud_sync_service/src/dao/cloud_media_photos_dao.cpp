@@ -1286,10 +1286,12 @@ int32_t CloudMediaPhotosDao::HandleNotExistAlbumRecord(const PhotosDto &record)
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
     auto results = rdbStore->Query(predicates, {PhotoColumn::PHOTO_OWNER_ALBUM_ID});
     if (results == nullptr) {
+        MEDIA_ERR_LOG("HandleNotExistAlbumRecord Query results is null");
         return E_RDB;
     }
     auto ret = results->GoToNextRow();
     if (ret != E_OK) {
+        MEDIA_ERR_LOG("HandleNotExistAlbumRecord GoToNextRow, ret is %{public}d", ret);
         return E_DATA;
     }
     int32_t albumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, results);
@@ -1307,7 +1309,7 @@ int32_t CloudMediaPhotosDao::HandleNotExistAlbumRecord(const PhotosDto &record)
         MEDIA_ERR_LOG("album dirty change failed, ret is %{public}d", ret);
         return E_RDB;
     }
-    if (changeRows != 0) {
+    if (changeRows == 0) {
         MEDIA_ERR_LOG("HandleNotExistAlbumRecord Album Failed to UpdateAlbumAfterUpload.");
     }
     return E_DATA;
