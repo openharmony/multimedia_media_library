@@ -556,7 +556,8 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const UpdateAlb
         MEDIA_INFO_LOG("AccurateRefresh Album %{public}d Update %{public}s, oldCount: %{public}d, newCount: %{public}d",
             id, targetColumn.c_str(), oldCount, newCount);
         values.PutInt(targetColumn, newCount);
-        if (hiddenState) {
+        bool isHiddenInfoChange = hiddenState || data.albumSubtype == static_cast<int32_t>(PhotoAlbumSubType::HIDDEN);
+        if (isHiddenInfoChange) {
             MEDIA_INFO_LOG("AccurateRefresh Update album contains hidden: %{public}d", newCount != 0);
             values.PutInt(PhotoAlbumColumns::CONTAINS_HIDDEN, newCount != 0);
         }
