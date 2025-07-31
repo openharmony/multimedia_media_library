@@ -34,6 +34,7 @@ static const int64_t MAX_NOTIFY_MILLISECONDS = 10;
 static const int32_t START_NOTIFY_TASK_COUNT = 3;
 static const int32_t MAX_NOTIFY_TASK_COUNT = 23;
 static const size_t MAX_NOTIFY_TASK_INFO_SIZE = 5000;
+static const uint32_t MAX_PARCEL_SIZE = 200 * 1024;
 
 void MediaOnNotifyNewObserver::OnChange(const ChangeInfo &changeInfo)
 {
@@ -42,6 +43,10 @@ void MediaOnNotifyNewObserver::OnChange(const ChangeInfo &changeInfo)
     NAPI_DEBUG_LOG("begin OnChange");
     if (changeInfo.data_ == nullptr || changeInfo.size_ <= 0) {
         NAPI_ERR_LOG("changeInfo.data_ is null or changeInfo.size_ is invalid");
+        return;
+    }
+    if (changeInfo.size_ > MAX_PARCEL_SIZE) {
+        NAPI_ERR_LOG("The size of the parcel exceeds the limit.");
         return;
     }
     uint8_t *parcelData = static_cast<uint8_t *>(malloc(changeInfo.size_));
