@@ -241,7 +241,15 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
 
 bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)
 {
-    return FILE_KEY_WHITE_LIST.find(express) != FILE_KEY_WHITE_LIST.end();
+    if (FILE_KEY_WHITE_LIST.find(express) != FILE_KEY_WHITE_LIST.end()) {
+        return true;
+    }
+
+    auto pos = express.find_first_of(".");
+    if (pos == std::string::npos) {
+        return false;
+    }
+    return FILE_KEY_WHITE_LIST.find(express.substr(pos + 1)) != FILE_KEY_WHITE_LIST.end();
 }
 
 bool MediaLibraryCommonUtils::CheckExpressValidation(std::vector<std::string> &sepratedStr)
