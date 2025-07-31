@@ -93,6 +93,7 @@
 #include "is_edited_vo.h"
 #include "get_edit_data_vo.h"
 #include "convert_format_vo.h"
+#include "qos.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -3921,6 +3922,7 @@ static napi_value ParseArgsPhotoAccessHelperOpen(napi_env env, napi_callback_inf
 
 static void PhotoAccessHelperOpenExecute(napi_env env, void *data)
 {
+    OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperOpenExecute");
 
@@ -3957,6 +3959,7 @@ static void PhotoAccessHelperOpenExecute(napi_env env, void *data)
             context->objectPtr->SetTimePending(UNCLOSE_FILE_TIMEPENDING);
         }
     }
+    OHOS::QOS::ResetThreadQos();
 }
 
 static void PhotoAccessHelperOpenCallbackComplete(napi_env env, napi_status status, void *data)
