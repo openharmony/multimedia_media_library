@@ -21,8 +21,8 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_data_manager_utils.h"
-#include "medialibrary_file_utils.h"
 #include "medialibrary_notify.h"
+#include "media_file_utils.h"
 #include "photo_album_column.h"
 #include "result_set_utils.h"
 #include "story_album_column.h"
@@ -48,9 +48,9 @@ static int32_t GetHighlightId(const string &whereClause, const vector<string> &w
     }
     if (argsIndex > whereArgs.size() - 1) {
         MEDIA_ERR_LOG("whereArgs is invalid");
-        return E_INDEX;
+        return E_HAS_DB_ERROR;
     }
-    auto albumId = whereClause[argsIndex];
+    auto albumId = whereArgs[argsIndex];
     if (MediaLibraryDataManagerUtils::IsNumber(albumId)) {
         return atoi(albumId.c_str());
     }
@@ -60,7 +60,7 @@ static int32_t GetHighlightId(const string &whereClause, const vector<string> &w
 static void GetHighlightAlbumId(const string &id, int32_t &albumId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbDtore is nullptr!");
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr!");
     const std::string queryAlbumId = "SELECT album_id FROM " + HIGHLIGHT_ALBUM_TABLE + " WHERE id = " + id;
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(queryAlbumId);
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr on get highlight album_id");
