@@ -53,7 +53,7 @@ using namespace DataShare;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::RdbDataShareAdapter;
 
-static const std::string APP_URI_PERMISSION_TABLE = "UriPermission"
+static const std::string APP_URI_PERMISSION_TABLE = "UriPermission";
 static const int32_t NUM_BYTES = 1;
 static const int32_t PERMISSION_DEFAULT = -1;
 static const int32_t MAX_PERMISSION_TYPE = 6;
