@@ -28,7 +28,7 @@
 #include "multistages_capture_deferred_photo_proc_session_callback.h"
 
 #include "medialibrary_app_uri_permission_operations.h"
-#include "datashare_predicate.h"
+#include "datashare_predicates.h"
 #include "media_app_uri_permission_column.h"
 #include "media_column.h"
 #include "media_file_utils.h"
