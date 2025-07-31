@@ -173,7 +173,8 @@ void MediaLibraryRestore::DoRdbBackup()
         MediaLibraryTracer tracer;
         tracer.Start("MediaLibraryRestore::DoRdbBackup Backup");
         MediaLibraryRestore::GetInstance().isDoingBackup_ = true;
-        if (!MediaLibraryRdbUtils::ExecuteDatabaseQuickCheck(rdb)) {
+        if (!MediaLibraryRdbUtils::ExecuteDatabaseQuickCheck(rdb)
+            || !MediaLibraryRestore::GetInstance().IsBackuping()) {
             MediaLibraryRestore::GetInstance().ResetHAModeSwitchStatus();
             MediaLibraryRestore::GetInstance().isBackuping_ = false;
             MEDIA_ERR_LOG("DoRdbBackup: QuickCheck fail");
