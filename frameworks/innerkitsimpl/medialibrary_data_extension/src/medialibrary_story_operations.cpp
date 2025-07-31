@@ -35,6 +35,10 @@ namespace OHOS {
 namespace Media {
 static int32_t GetHighlightId(const string &whereClause, const vector<string> &whereArgs)
 {
+    if (whereArgs.empty()) {
+        MEDIA_ERR_LOG("whereArgs is empty");
+        return E_HAS_DB_ERROR;
+    }
     size_t pos = whereClause.find(ID);
     if (pos == string::npos) {
         MEDIA_ERR_LOG("whereClause is invalid");
@@ -66,6 +70,7 @@ static void GetHighlightAlbumId(const string &id, int32_t &albumId)
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr on get highlight album_id");
     CHECK_AND_EXECUTE(resultSet->GoToNextRow() != NativeRdb::E_OK,
         albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet));
+    resultSet->Close();
 }
 
 static void NotifyStoryAlbum(MediaLibraryCommand &cmd)
@@ -73,8 +78,10 @@ static void NotifyStoryAlbum(MediaLibraryCommand &cmd)
     auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     auto id = GetHighlightId(whereClause, whereArgs);
+    CHECK_AND_RETURN_LOG(id > 0, "highlight id invalid");
     int32_t albumId = 0;
     GetHighlightAlbumId(to_string(id), albumId);
+    CHECK_AND_RETURN_LOG(albumId > 0, "highlight album_id invalid");
     MEDIA_INFO_LOG("NotifyStoryAlbum, album id is %{public}d", albumId);
 
     auto watch = MediaLibraryNotify::GetInstance();
