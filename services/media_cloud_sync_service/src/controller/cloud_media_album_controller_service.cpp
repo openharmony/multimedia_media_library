@@ -174,7 +174,7 @@ int32_t CloudMediaAlbumControllerService::OnCreateRecords(MessageParcel &data, M
     OnCreateRecordsAlbumReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("OnCreateRecords Album Read Req Error");
+        MEDIA_ERR_LOG("OnCreateRecords Album Read Req Error ret: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     MEDIA_INFO_LOG("OnCreateRecords %{public}zu", reqBody.albums.size());
