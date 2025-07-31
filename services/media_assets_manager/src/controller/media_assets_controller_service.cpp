@@ -90,6 +90,7 @@
 
 namespace OHOS::Media {
 using namespace std;
+static const size_t FACARD_MAX_REGISTER_OBSERVER = 500;
 
 using SpecialRequestHandle = int32_t (MediaAssetsControllerService::*)(
     MessageParcel &, MessageParcel &, OHOS::Media::IPC::IPCContext &);
@@ -569,6 +570,14 @@ int32_t MediaAssetsControllerService::SaveGalleryFormInfo(MessageParcel &data, M
         || formInfoDto.fileUris.empty();
     ret = cond ? E_GET_PRAMS_FAIL : ret;
     CHECK_AND_PRINT_LOG(!cond, "formIds or fileUris is empty or count not equal");
+    if (formInfoDto.fileUris.size() > FACARD_MAX_REGISTER_OBSERVER) {
+        MEDIA_INFO_LOG("registered uri exceeds the maximum limit, uri size:%{public}d",
+            static_cast<int32_t>(formInfoDto.formIds.size()));
+        formInfoDto.formIds = std::vector<std::string>(formInfoDto.formIds.begin(),
+            formInfoDto.formIds.begin() + FACARD_MAX_REGISTER_OBSERVER);
+        formInfoDto.fileUris = std::vector<std::string>(formInfoDto.fileUris.begin(),
+            formInfoDto.fileUris.begin() + FACARD_MAX_REGISTER_OBSERVER);
+    }
     if (ret == E_OK) {
         ret = MediaAssetsService::GetInstance().SaveGalleryFormInfo(formInfoDto);
     }
@@ -1562,8 +1571,17 @@ int32_t MediaAssetsControllerService::UpdateGalleryFormInfo(MessageParcel &data,
         MEDIA_ERR_LOG("formIds or fileUris is empty or count not equal");
         ret = E_GET_PRAMS_FAIL;
     }
+    if (formInfoDto.formIds.size() > FACARD_MAX_REGISTER_OBSERVER &&
+        formInfoDto.fileUris.size() > FACARD_MAX_REGISTER_OBSERVER) {
+        MEDIA_INFO_LOG("registered uri exceeds the maximum limit, uri size:%{public}d",
+            static_cast<int32_t>(formInfoDto.formIds.size()));
+        formInfoDto.formIds = std::vector<std::string>(formInfoDto.formIds.begin(),
+            formInfoDto.formIds.begin() + FACARD_MAX_REGISTER_OBSERVER);
+        formInfoDto.fileUris = std::vector<std::string>(formInfoDto.fileUris.begin(),
+            formInfoDto.fileUris.begin() + FACARD_MAX_REGISTER_OBSERVER);
+    }
     if (ret == E_OK) {
-        ret = MediaAssetsService::GetInstance().RemoveGalleryFormInfo(reqBody.formIds.front());
+        ret = MediaAssetsService::GetInstance().RemoveGalleryFormInfo(formInfoDto.formIds.front());
         ret = MediaAssetsService::GetInstance().SaveGalleryFormInfo(formInfoDto);
     }
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
