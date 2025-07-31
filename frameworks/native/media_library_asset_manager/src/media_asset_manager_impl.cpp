@@ -29,9 +29,7 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "multistages_capture_manager.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_bundle_manager.h"
 #include "medialibrary_tracer.h"
 #include "file_asset.h"
 #include "oh_media_asset.h"
@@ -402,7 +400,6 @@ std::string MediaAssetManagerImpl::NativeRequestImage(const char* photoUri,
     tracer.Start("NativeRequestImage");
 
     std::unique_ptr<RequestSourceAsyncContext> asyncContext = std::make_unique<RequestSourceAsyncContext>();
-    asyncContext->callingPkgName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     asyncContext->destUri = std::string(destUri);
     asyncContext->requestUri = std::string(photoUri);
     asyncContext->displayName = MediaFileUtils::GetFileName(asyncContext->requestUri);
@@ -444,7 +441,6 @@ std::string MediaAssetManagerImpl::NativeRequestVideo(const char* videoUri,
     tracer.Start("NativeRequestVideo");
 
     std::unique_ptr<RequestSourceAsyncContext> asyncContext = std::make_unique<RequestSourceAsyncContext>();
-    asyncContext->callingPkgName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     asyncContext->destUri = std::string(destUri);
     asyncContext->requestUri = std::string(videoUri);
     asyncContext->displayName = MediaFileUtils::GetFileName(asyncContext->requestUri);
@@ -475,18 +471,47 @@ std::string MediaAssetManagerImpl::NativeRequestVideo(const char* videoUri,
     }
 }
 
+void UriAppendKeyValue(string &uri, const string &key, const string &value)
+{
+    string uriKey = key + '=';
+    if (uri.find(uriKey) != string::npos) {
+        return;
+    }
+
+    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
+    string append = queryMark + key + '=' + value;
+
+    size_t posJ = uri.find('#');
+    if (posJ == string::npos) {
+        uri += append;
+    } else {
+        uri.insert(posJ, append);
+    }
+}
+
 bool MediaAssetManagerImpl::NativeCancelRequest(const std::string &requestId)
 {
     if (requestId.empty()) {
         MEDIA_ERR_LOG("NativeCancel request id is empty.");
         return false;
     }
+    if (sDataShareHelper_ == nullptr) {
+        CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
+        CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ == nullptr, MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR,
+            "sDataShareHelper_ is null");
+    }
 
     std::string photoId = "";
     bool hasFastRequestInProcess = IsFastRequestCanceled(requestId, photoId);
     bool hasMapRecordInProcess = IsMapRecordCanceled(requestId, photoId);
     if (hasFastRequestInProcess || hasMapRecordInProcess) {
-        MultiStagesPhotoCaptureManager::GetInstance().CancelProcessRequest(photoId);
+        std::string uriStr = PAH_CANCEL_PROCESS_IMAGE;
+        UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri updateAssetUri(uriStr);
+        DataShare::DataSharePredicates predicates;
+        DataShare::DatashareBusinessError errCode;
+        std::vector<std::string> columns { photoId };
+        sDataShareHelper_->Query(updateAssetUri, predicates, columns, &errCode);
     } else {
         MEDIA_ERR_LOG("NativeCancel requestId(%{public}s) not in progress.", requestId.c_str());
         return false;
@@ -506,7 +531,6 @@ MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeRequestImageSource(OH_MediaA
     tracer.Start("NativeRequestImageSource");
 
     std::unique_ptr<RequestSourceAsyncContext> asyncContext = std::make_unique<RequestSourceAsyncContext>();
-    asyncContext->callingPkgName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     asyncContext->requestUri = fileAsset_->GetUri();
     asyncContext->displayName = fileAsset_->GetDisplayName();
     asyncContext->fileId = fileAsset_->GetId();
@@ -558,7 +582,6 @@ MediaLibrary_ErrorCode MediaAssetManagerImpl::NativeRequestMovingPhoto(OH_MediaA
     tracer.Start("NativeRequestMovingPhoto");
 
     std::unique_ptr<RequestSourceAsyncContext> asyncContext = std::make_unique<RequestSourceAsyncContext>();
-    asyncContext->callingPkgName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     asyncContext->requestUri = fileAsset_->GetUri();
     asyncContext->fileId = fileAsset_->GetId();
     asyncContext->displayName = fileAsset_->GetDisplayName();
@@ -712,11 +735,10 @@ void MediaAssetManagerImpl::RegisterTaskObserver(const unique_ptr<RequestSourceA
 
     InsertDataHandler(NativeNotifyMode::WAIT_FOR_HIGH_QUALITY, asyncContext);
 
-    ProcessImage(asyncContext->fileId, static_cast<int32_t>(asyncContext->requestOptions.deliveryMode),
-        asyncContext->callingPkgName);
+    ProcessImage(asyncContext->fileId, static_cast<int32_t>(asyncContext->requestOptions.deliveryMode));
 }
 
-void MediaAssetManagerImpl::ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName)
+void MediaAssetManagerImpl::ProcessImage(const int fileId, const int deliveryMode)
 {
     CHECK_AND_RETURN_LOG(sDataShareHelper_ != nullptr, "Get sDataShareHelper_ failed");
     std::string uriStr = PAH_PROCESS_IMAGE;
@@ -724,7 +746,7 @@ void MediaAssetManagerImpl::ProcessImage(const int fileId, const int deliveryMod
     Uri uri(uriStr);
     DataShare::DataSharePredicates predicates;
     DataShare::DatashareBusinessError errCode;
-    std::vector<std::string> columns { std::to_string(fileId), std::to_string(deliveryMode), packageName };
+    std::vector<std::string> columns { std::to_string(fileId), std::to_string(deliveryMode) };
     sDataShareHelper_->Query(uri, predicates, columns, &errCode);
     MEDIA_INFO_LOG("MediaAssetManagerImpl::ProcessImage Called");
 }

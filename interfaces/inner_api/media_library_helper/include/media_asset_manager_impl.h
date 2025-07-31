@@ -49,7 +49,7 @@ private:
     bool OnHandleRequestVideo(const std::unique_ptr<RequestSourceAsyncContext> &asyncContext);
     bool NotifyDataPreparedWithoutRegister(const std::unique_ptr<RequestSourceAsyncContext> &asyncContext);
     void RegisterTaskObserver(const unique_ptr<RequestSourceAsyncContext> &asyncContext);
-    void ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName);
+    void ProcessImage(const int fileId, const int deliveryMode);
     static int32_t WriteFileToPath(const std::string &srcUri, const std::string &destPath, bool isSource);
     static int32_t GetFdFromSandBoxUri(const std::string &sandBoxUri);
 
