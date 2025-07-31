@@ -78,12 +78,7 @@ void AlbumDismissAssetsTest::SetUpTestCase(void)
 
 void AlbumDismissAssetsTest::TearDownTestCase(void)
 {
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
-    ClearTable(VISION_IMAGE_FACE_TABLE);
-    ClearTable(ANALYSIS_PHOTO_MAP_TABLE);
-    ClearTable(ANALYSIS_ALBUM_TABLE);
     MEDIA_INFO_LOG("TearDownTestCase");
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 void AlbumDismissAssetsTest::SetUp()
@@ -93,6 +88,11 @@ void AlbumDismissAssetsTest::SetUp()
 
 void AlbumDismissAssetsTest::TearDown(void)
 {
+    ClearTable(PhotoColumn::PHOTOS_TABLE);
+    ClearTable(VISION_IMAGE_FACE_TABLE);
+    ClearTable(ANALYSIS_PHOTO_MAP_TABLE);
+    ClearTable(ANALYSIS_ALBUM_TABLE);
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
     MEDIA_INFO_LOG("TearDown");
 }
 
