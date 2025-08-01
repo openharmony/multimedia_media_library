@@ -119,7 +119,11 @@ static void DuplicatePhotoOperationTest()
 {
     shared_ptr<DuplicatePhotoOperation> duplicatePhotoOperation =
         make_shared<DuplicatePhotoOperation>();
-    
+    if (duplicatePhotoOperation == nullptr) {
+        MEDIA_ERR_LOG("duplicatePhotoOperation is nullptr.");
+        return;
+    }
+
     RdbPredicates predicates = GetRdbPredicates();
     std::vector<string> columns = { provider->ConsumeBytesAsString(NUM_BYTES) };
 
