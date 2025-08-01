@@ -616,19 +616,8 @@ static bool DeleteDuplicateVisionFaceTags(std::shared_ptr<NativeRdb::RdbStore> m
 static bool UpdateVisionTotalFaceStatus(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     const std::vector<std::string>& affectedFileIds)
 {
-    if (!mediaLibraryRdb) {
-        MEDIA_ERR_LOG("Invalid RdbStore instance");
-        return false;
-    }
-
-    std::ostringstream oss;
-    for (size_t i = 0; i < affectedFileIds.size(); ++i) {
-        oss << "'" << affectedFileIds[i] << "'";
-        if (i < affectedFileIds.size() - 1) oss << ",";
-    }
-    std::string fileIdCondition = IMAGE_FACE_COL_FILE_ID + " IN (" + oss.str() + ")";
     auto totalPredicates = std::make_unique<NativeRdb::AbsRdbPredicates>(VISION_TOTAL_TABLE);
-    totalPredicates->SetWhereClause(fileIdCondition);
+    totalPredicates->In(IMAGE_FACE_COL_FILE_ID, affectedFileIds);
 
     NativeRdb::ValuesBucket values;
     values.PutInt("face", TOTAL_TBL_FACE_ANALYSED);
