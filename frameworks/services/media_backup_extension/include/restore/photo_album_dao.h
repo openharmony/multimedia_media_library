@@ -28,13 +28,14 @@ namespace OHOS::Media {
 class PhotoAlbumDao {
 public:
     struct PhotoAlbumRowData {
-        int32_t albumId;
-        int32_t albumType;
-        int32_t albumSubType;
+        int32_t albumId {0};
+        int32_t albumType {-1};
+        int32_t albumSubType {-1};
         std::string albumName;
         std::string lPath;
         std::string bundleName;
         int32_t priority = 1;
+        bool IsUserAlbum() const;
     };
 
 public:
@@ -45,6 +46,7 @@ public:
     std::vector<PhotoAlbumRowData> GetPhotoAlbums();
     PhotoAlbumRowData GetPhotoAlbum(const std::string &lPath);
     PhotoAlbumRowData GetOrCreatePhotoAlbum(const PhotoAlbumRowData &album);
+    PhotoAlbumRowData GetOrCreatePhotoAlbumForClone(const PhotoAlbumRowData &album);
     int32_t RestoreAlbums(std::vector<PhotoAlbumRowData> &photoAlbums);
     PhotoAlbumRowData BuildAlbumInfoOfRecorders();
     std::string ParseSourcePathToLPath(const std::string &sourcePath);

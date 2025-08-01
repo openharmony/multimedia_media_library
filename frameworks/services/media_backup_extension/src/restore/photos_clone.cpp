@@ -177,8 +177,22 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosClone::FindAlbumInfo(const FileInfo &file
             this->photoAlbumDao_.ToString(albumInfo).c_str());
         return albumInfo;
     }
+    // get album;
+    return buildalbumInfo(lpath);
+}
+
+
+// TODO
+buildalbumInfo(lpath, fileinfo)
+{
     albumInfo = this->photoAlbumDao_.BuildAlbumInfoByLPath(lPath);
-    return this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
+    albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbumForClone(albumInfo);
+    if (albumInfo.albumId == 0 and fileInfo.hidden == 0 && fileInfo.recycledTime == 0) {
+        lpath = "其他";
+        albumInfo = this->photoAlbumDao_.BuildAlbumInfoByLPath(lPath);
+        albumInfo = this->photoAlbumDao_.GetOrCreatePhotoAlbumForClone(albumInfo);
+    }
+    return albumInfo
 }
 
 /**

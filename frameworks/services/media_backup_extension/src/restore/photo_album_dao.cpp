@@ -27,6 +27,12 @@
 #include "userfile_manager_types.h"
 
 namespace OHOS::Media {
+bool PhotoAlbumDao::PhotoAlbumRowData::IsUserAlbum() const
+{
+    return albumType == static_cast<int32_t>(PhotoAlbumType::USER) &&
+        albumSubType == static_cast<int32_t>(PhotoAlbumSubType::USER_GENERIC);
+}
+
 std::string StringUtils::ToLower(const std::string &str)
 {
     std::string lowerStr;
@@ -174,6 +180,26 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
         err, this->SQL_PHOTO_ALBUM_INSERT.c_str(), this->ToString(bindArgs).c_str());
     MEDIA_INFO_LOG("Media_Restore: INSERT INTO PhotoAlbum success, Object: %{public}s", this->ToString(album).c_str());
     return this->GetPhotoAlbum(album.lPath);
+}
+
+/**
+ * @brief Get and cache PhotoAlbum info by lPath, if not found
+ * 1. if the 
+ * a. 
+ * 1. For source album, if not exist in cache and not exist in PhotoAlbum, create it.
+ * 2. For user album, if not exist in cache, skip it
+ */
+PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbumForClone(const PhotoAlbumRowData &album)
+{
+    // validate inputs
+    CHECK_AND_RETURN_RET_LOG(!album.lPath.empty(), album, "Media_Restore: Invalid album data, lPath is empty."
+        " Object: %{public}s", this->ToString(album).c_str());
+    std::unique_lock<std::mutex> lock(this->photoAlbumCreateLock_);
+    // try to get from cache
+    PhotoAlbumDao::PhotoAlbumRowData albumRowData = this->GetPhotoAlbum(album.lPath);
+    CHECK_AND_RETURN_RET(albumRowData.lPath.empty(), albumRowData);
+    // cache the PhotoAlbum info by lPath
+    this->photoAlbumCache_.Insert(StringUtils::ToLower(lPath), album);
 }
 
 std::string PhotoAlbumDao::ToString(const std::vector<NativeRdb::ValueObject> &bindArgs)
