@@ -291,7 +291,7 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
 
     BackupDatabaseUtils::CheckDbIntegrity(mediaRdb_, sceneCode_, "OLD_MEDIA_LIBRARY");
     InitThumbnailStatus();
-    this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
+    this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_, IsCloudRestoreSatisfied());
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreGeoDictionary_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     MEDIA_INFO_LOG("Init db succ.");
@@ -2269,6 +2269,9 @@ void CloneRestore::SetSpecialAttributes(const string &tableName, const shared_pt
     fileInfo.ownerAlbumId = this->photosClone_.FindAlbumId(fileInfo);
     fileInfo.packageName = this->photosClone_.FindPackageName(fileInfo);
     fileInfo.bundleName = this->photosClone_.FindBundleName(fileInfo);
+    MEDIA_INFO_LOG("@test, lPath: %{public}s, owner_album_id: %{public}d, packageName: %{public}s, "
+        "bundleName: %{public}s",
+        fileInfo.lPath.c_str(), fileInfo.ownerAlbumId, fileInfo.packageName.c_str(), fileInfo.bundleName.c_str());
     fileInfo.photoQuality = this->photosClone_.FindPhotoQuality(fileInfo);
     fileInfo.sourcePath = this->photosClone_.FindSourcePath(fileInfo);
     fileInfo.latitude = GetDoubleVal("latitude", resultSet);
