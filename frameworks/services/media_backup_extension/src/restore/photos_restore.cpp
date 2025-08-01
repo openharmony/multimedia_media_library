@@ -350,4 +350,9 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosRestore::GetPhotoAlbumDaoRowData(string& 
 {
     return this->photoAlbumDao_.GetPhotoAlbum(lPath);
 }
+
+std::vector<int32_t> PhotosRestore::GetAlbumIdsFromPhotoAlbumCache()
+{
+    return this->photoAlbumDao_.GetAlbumIdsFromCache();
+}
 }  // namespace OHOS::Media

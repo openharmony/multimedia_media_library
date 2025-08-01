@@ -81,6 +81,7 @@ public:
     int32_t FindCeAvailableByDisplayName(const FileInfo &fileInfo);
     bool FindIsLivePhoto(const FileInfo &fileInfo);
     PhotoAlbumDao::PhotoAlbumRowData GetPhotoAlbumDaoRowData(std::string& lPath);
+    std::vector<int32_t> GetAlbumIdsFromPhotoAlbumCache();
 
     std::string ToLower(const std::string &str)
     {
