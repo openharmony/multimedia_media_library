@@ -251,7 +251,7 @@ private:
                 * \
             FROM Photos \
             WHERE \
-                dirty = 3 AND \
+                (dirty = 3 OR dirty = 8) AND \
                 thumbnail_ready >= 3 AND \
                 lcd_visit_time >= 2 AND \
                 cloud_id <> '' AND \

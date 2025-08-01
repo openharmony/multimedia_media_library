@@ -406,6 +406,12 @@ int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto 
         subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
         values.Delete(PhotoColumn::PHOTO_SUBTYPE);
     }
+    bool isThumbFailDirty = pullData.localDirty == static_cast<int32_t>(DirtyType::TYPE_TDIRTY);
+    if (!(isThumbFailDirty && !mtimeChanged)) {
+        MEDIA_INFO_LOG("upate TYPE_SYNC when not TDIRTY");
+        values.Delete(PhotoColumn::PHOTO_DIRTY);
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
+    }
     NativeRdb::AbsRdbPredicates predicates = this->GetUpdateRecordCondition(pullData.cloudId);
     int32_t changedRows = DEFAULT_VALUE;
     int32_t ret = this->UpdateProxy(changedRows, values, predicates, pullData.cloudId, photoRefresh);
