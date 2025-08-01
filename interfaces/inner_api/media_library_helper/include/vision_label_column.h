@@ -26,6 +26,8 @@ const std::string LABEL_VERSION = "label_version";
 const std::string FEATURE = "feature";
 const std::string SIM_RESULT = "sim_result";
 const std::string SALIENCY_SUB_PROB = "saliency_sub_prob";
+const std::string SEARCH_TAG_TYPE = "search_tag_type";
+const std::string SEARCH_TAG_VECTOR = "search_tag_vector";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_LABEL_COLUMN_H
