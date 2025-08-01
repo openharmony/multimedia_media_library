@@ -2390,12 +2390,13 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_insert_orientation_test, TestSi
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, 90);
     FileInfo fileInfo;
     fileInfo.fileType = MEDIA_TYPE_VIDEO;
+    fileInfo.localMediaId = -1;
     restoreService->BaseRestore::SetValueFromMetaData(fileInfo, values);
-    int32_t orientation;
+    int32_t exifRotate;
     ValueObject valueObject;
-    values.GetObject(PhotoColumn::PHOTO_ORIENTATION, valueObject);
-    valueObject.GetInt(orientation);
-    EXPECT_EQ(orientation, 0);
+    values.GetObject(PhotoColumn::PHOTO_EXIF_ROTATE, valueObject);
+    valueObject.GetInt(exifRotate);
+    EXPECT_EQ(exifRotate, 0);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_set_cover_position_test, TestSize.Level2)

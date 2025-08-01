@@ -18,14 +18,13 @@
 
 #include <securec.h>
 
-#include "exif_metadata.h"
 #include "hdr_type.h"
 #include "image_source.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
-#include "media_exif.h"
+#include "media_image_framework_utils.h"
 #include "media_log.h"
 #include "thumbnail_const.h"
 
@@ -40,12 +39,7 @@ static constexpr int32_t PLANE_U = 1;
 static constexpr int32_t PLANE_V = 2;
 static constexpr uint8_t HDR_PIXEL_SIZE = 2;
 static constexpr uint8_t SDR_PIXEL_SIZE = 1;
-static const std::map<std::string, int32_t> ORIENTATION_INT_MAP = {
-    {"Top-left", 0},
-    {"Bottom-right", 180},
-    {"Right-top", 90},
-    {"Left-bottom", 270},
-};
+
 // LCOV_EXCL_START
 bool ThumbnailImageFrameWorkUtils::IsYuvPixelMap(std::shared_ptr<PixelMap> pixelMap)
 {
@@ -247,20 +241,6 @@ bool ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(sptr<SurfaceBuffer> &surfa
     return true;
 }
 
-int32_t ThumbnailImageFrameWorkUtils::GetPictureOrientation(std::shared_ptr<Picture> picture, int32_t &orientation)
-{
-    CHECK_AND_RETURN_RET_LOG(picture != nullptr, E_ERR, "Picture is nullptr");
-    std::shared_ptr<ExifMetadata> exifMetadata = picture->GetExifMetadata();
-    CHECK_AND_RETURN_RET_LOG(exifMetadata != nullptr, E_ERR, "ExifMetadata is nullptr");
-
-    std::string orientationStr;
-    int32_t err = exifMetadata->GetValue(PHOTO_DATA_IMAGE_ORIENTATION, orientationStr);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Get orientation failed, err:%{public}d", err);
-    CHECK_AND_RETURN_RET_LOG(ORIENTATION_INT_MAP.count(orientationStr) != 0, E_ERR, "Orientation is invalid");
-    orientation = ORIENTATION_INT_MAP.at(orientationStr);
-    return E_OK;
-}
-
 void ThumbnailImageFrameWorkUtils::CopySurfaceBufferInfo(sptr<SurfaceBuffer> &source, sptr<SurfaceBuffer> &dst)
 {
     MediaLibraryTracer tracer;
@@ -367,6 +347,42 @@ std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(con
     float heightScale = (1.0f * desiredSize.height) / pixelMap->GetHeight();
     copySource->scale(widthScale, heightScale);
     return copySource;
+}
+
+bool ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(std::shared_ptr<Picture> picture, int32_t exifRotate)
+{
+    FlipAndRotateInfo info;
+    CHECK_AND_RETURN_RET_LOG(ExifRotateUtils::GetFlipAndRotateInfo(exifRotate, info), false,
+        "ExifRotate:%{public}d is invalid", exifRotate);
+    return FlipAndRotatePicture(picture, info);
+}
+
+bool ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(std::shared_ptr<Picture> picture, const FlipAndRotateInfo &info)
+{
+    CHECK_AND_RETURN_RET_LOG(IsPictureValid(picture), false, "Picture is invalid");
+    auto pixelMap = picture->GetMainPixel();
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, info),
+        false, "FlipAndRotate pixelMap failed");
+
+    auto gainMap = picture->GetGainmapPixelMap();
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(gainMap, info),
+        false, "FlipAndRotate gainMap failed");
+    return true;
+}
+
+bool ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(std::shared_ptr<PixelMap> pixelMap, int32_t exifRotate)
+{
+    FlipAndRotateInfo info;
+    CHECK_AND_RETURN_RET_LOG(ExifRotateUtils::GetFlipAndRotateInfo(exifRotate, info), false,
+        "GetFlipAndRotateInfo failed, exifRotate:%{public}d", exifRotate);
+    return FlipAndRotatePixelMap(pixelMap, info);
+}
+
+bool ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(std::shared_ptr<PixelMap> pixelMap,
+    const FlipAndRotateInfo &info)
+{
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "PixelMap is nullptr");
+    return MediaImageFrameWorkUtils::FlipAndRotatePixelMap(*(pixelMap.get()), info);
 }
 // LCOV_EXCL_STOP
 } // namespace Media

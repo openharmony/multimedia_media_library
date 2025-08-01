@@ -40,6 +40,8 @@ public:
     int32_t QueryDownloadAssetByCloudIds(const std::vector<std::string> &cloudIds, std::vector<PhotosPo> &result);
     int32_t UpdateDownloadAsset(const bool fixFileType, const std::string &path,
         const CloudMediaScanService::ScanResult& scanResult);
+    int32_t UpdateDownloadAssetExifRotateFix(const int32_t fileId, const int32_t exifRotate,
+        const DirtyTypes dirtyType, bool needRegenerateThumbnail);
 
 private:
     NativeRdb::AbsRdbPredicates GetDownloadThmsConditions(const int32_t type);
@@ -81,9 +83,37 @@ private:
         PhotoColumn::PHOTO_IS_RECTIFICATION_COVER,
         PhotoColumn::PHOTO_SHOOTING_MODE_TAG,
         PhotoColumn::PHOTO_FRONT_CAMERA,
+        PhotoColumn::PHOTO_EXIF_ROTATE,
+        MediaColumn::MEDIA_TYPE,
+        MediaColumn::MEDIA_DATE_TAKEN,
     };
     const uint32_t THM_TO_DOWNLOAD_MASK = 0x2;
     const uint32_t LCD_TO_DOWNLOAD_MASK = 0x1;
+
+    const std::string SQL_FIX_EXIF_ROTATE_WITH_REGENERATE_THUMBNAIL = "\
+        UPDATE Photos \
+        SET \
+            exif_rotate = ?, \
+            thumbnail_ready = 2, \
+            lcd_visit_time = 0, \
+            meta_date_modified = strftime('%s000', 'now'), \
+            dirty = CASE \
+                WHEN dirty IN (0, 2, 6, 8) THEN ? \
+                ELSE dirty \
+            END \
+        WHERE file_id = ? \
+        ;";
+    const std::string SQL_FIX_EXIF_ROTATE_WITHOUT_REGENERATE_THUMBNAIL = "\
+        UPDATE Photos \
+        SET \
+            exif_rotate = ?, \
+            meta_date_modified = strftime('%s000', 'now'), \
+            dirty = CASE \
+                WHEN dirty IN (0, 2, 6, 8) THEN ? \
+                ELSE dirty \
+            END \
+        WHERE file_id = ? \
+        ;";
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DOWNLOAD_DAO_H

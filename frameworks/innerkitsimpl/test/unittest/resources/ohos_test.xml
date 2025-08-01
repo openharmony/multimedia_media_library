@@ -40,6 +40,19 @@
     <target name="media_library_helper_test">
         <preparer>
             <option name="push" value="thumbnail_testfile/CreateImageThumbnailTest_001.jpg -> /data/CreateImageThumbnailTest_001.jpg" src="res"/>
+            <option name="push" value="thumbnail_testfile/CreateVideoThumbnailTest_001.mp4 -> /data/local/tmp" src="res"/>
+            <option name="push" value="thumbnail_testfile/HDR_picture.jpg -> /data/local/tmp" src="res"/>
+        </preparer>
+        <cleaner>
+            <option name="shell" value="rm -rf /data/test/*"/>
+            <option name="shell" value="rm -rf /data/test/.*"/>
+        </cleaner>
+    </target>
+    <target name="medialibrary_thumbnail_service_test">
+        <preparer>
+            <option name="push" value="thumbnail_testfile/CreateImageThumbnailTest_001.jpg -> /data/CreateImageThumbnailTest_001.jpg" src="res"/>
+            <option name="push" value="thumbnail_testfile/CreateVideoThumbnailTest_001.mp4 -> /data/local/tmp" src="res"/>
+            <option name="push" value="thumbnail_testfile/HDR_picture.jpg -> /data/local/tmp" src="res"/>
         </preparer>
         <cleaner>
             <option name="shell" value="rm -rf /data/test/*"/>

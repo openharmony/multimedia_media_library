@@ -550,14 +550,12 @@ static void ParseFileUriTest()
 
 static void ThumbnailImageFrameworkUtilsTest()
 {
-    int32_t orientation = 0;
     std::shared_ptr<Media::PixelMap> pixelMap = FuzzNormalPixelMap(true);
     std::shared_ptr<Media::Picture> picture = FuzzPicture(true, false, true);
     Media::ThumbnailImageFrameWorkUtils::IsYuvPixelMap(pixelMap);
     Media::ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap);
     Media::ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
     Media::ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
-    Media::ThumbnailImageFrameWorkUtils::GetPictureOrientation(picture, orientation);
 
     pixelMap = FuzzYuvPixelMap(false);
     picture = FuzzPicture(true, true, false);
@@ -565,7 +563,6 @@ static void ThumbnailImageFrameworkUtilsTest()
     Media::ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap);
     Media::ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
     Media::ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
-    Media::ThumbnailImageFrameWorkUtils::GetPictureOrientation(picture, orientation);
 }
 
 static void ThumbnailFileUtilsTest()

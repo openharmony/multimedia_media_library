@@ -24,6 +24,7 @@
 #include "backup_log_utils.h"
 #include "database_report.h"
 #include "cloud_sync_helper.h"
+#include "exif_rotate_utils.h"
 #include "gallery_db_upgrade.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -966,7 +967,6 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, fileInfo.height);
     values.PutInt(PhotoColumn::PHOTO_WIDTH, fileInfo.width);
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
-    values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation);
     std::string package_name = fileInfo.packageName;
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
@@ -1685,6 +1685,21 @@ void UpgradeRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCover
         if (changeRows != 1) {
             MEDIA_ERR_LOG("UpdatePhotoAlbumCoverUri failed, expected count 1, but got %{public}d", changeRows);
         }
+    }
+}
+
+void UpgradeRestore::SetOrientationAndExifRotate(FileInfo &info, NativeRdb::ValuesBucket &value,
+    std::unique_ptr<Metadata> &data)
+{
+    CHECK_AND_RETURN_RET(info.localMediaId == -1, BaseRestore::SetOrientationAndExifRotate(info, value, data));
+    if (info.orientation == 0 || info.fileType != MediaType::MEDIA_TYPE_IMAGE) {
+        info.exifRotate = 0;
+        value.PutInt(PhotoColumn::PHOTO_ORIENTATION, info.orientation);
+        value.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, 0);
+    } else {
+        ExifRotateUtils::ConvertOrientationToExifRotate(info.orientation, info.exifRotate);
+        value.PutInt(PhotoColumn::PHOTO_ORIENTATION, info.orientation);
+        value.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, info.exifRotate);
     }
 }
 } // namespace Media

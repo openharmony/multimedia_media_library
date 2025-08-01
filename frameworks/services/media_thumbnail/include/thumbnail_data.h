@@ -170,6 +170,7 @@ public:
 
     EXPORT int32_t mediaType {-1};
     EXPORT int32_t orientation {0};
+    EXPORT int32_t exifRotate {0};
     EXPORT int32_t photoHeight {0};
     EXPORT int32_t photoWidth {0};
     EXPORT int32_t dirty {-1};
@@ -185,6 +186,7 @@ public:
     EXPORT bool needCheckWaitStatus {false};
     EXPORT bool needUpdateDb {true};
     EXPORT bool createLowQulityLcd {false};
+    EXPORT bool needGenerateExThumbnail {true};
     EXPORT ThumbnailSource source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;
@@ -215,6 +217,7 @@ public:
     EXPORT int64_t lcdVisitTime { -1 };
     EXPORT std::shared_ptr<Picture> originalPhotoPicture = nullptr;
     EXPORT NativeRdb::ValuesBucket rdbUpdateCache;
+    EXPORT SourceState lastLoadSource {SourceState::BEGIN};
 };
 
 struct ThumbnailDataBatch {

@@ -50,6 +50,8 @@ public:
     EXPORT static int32_t GetKeyFrameThumbnailPixelMap(ThumbRdbOpt &opts, int32_t &timeStamp,
         int32_t &type);
     EXPORT static int32_t CheckLcdSizeAndUpdateStatus(ThumbRdbOpt &opts);
+    EXPORT static int32_t RepairExifRotateBackground(ThumbRdbOpt &opts);
+    EXPORT static int32_t FixThumbnailExifRotateAfterDownloadAsset(ThumbRdbOpt &opts);
 
 private:
     EXPORT static int32_t GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount);

@@ -91,6 +91,7 @@ const std::string CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS " +
     PhotoColumn::PHOTO_SYNC_STATUS + "  INT DEFAULT 0, " +
     PhotoColumn::PHOTO_CLOUD_VERSION + " BIGINT DEFAULT 0, " +
     PhotoColumn::PHOTO_ORIENTATION + " INT DEFAULT 0, " +
+    PhotoColumn::PHOTO_EXIF_ROTATE + " INT DEFAULT 0, " +
     PhotoColumn::PHOTO_LATITUDE + " DOUBLE DEFAULT 0, " +
     PhotoColumn::PHOTO_LONGITUDE + " DOUBLE DEFAULT 0, " +
     PhotoColumn::PHOTO_HEIGHT + " INT, " +

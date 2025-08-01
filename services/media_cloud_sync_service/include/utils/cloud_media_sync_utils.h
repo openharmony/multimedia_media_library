@@ -46,7 +46,7 @@ public:
     static void RemoveEditDataPath(const std::string &localPath);
     static uint32_t GenerateCloudIdWithHash(PhotoAlbumPo &record);
     static int32_t FillPhotosDto(PhotosDto &photosDto, const std::string &path, const int32_t &orientation,
-        const int32_t &thumbState);
+        const int32_t exifRotate, const int32_t &thumbState);
     static int32_t FillPhotosDto(PhotosDto &photosDto, const CloudMediaPullDataDto &data);
     static std::string GetLpathFromSourcePath(const std::string &sourcePath);
     static std::string GetLpath(const CloudMediaPullDataDto &pullData);
@@ -64,6 +64,8 @@ public:
     static bool IsLivePhoto(const PhotosPo &photosPo);
     static int32_t UpdateModifyTime(const std::string &localPath, int64_t localMtime);
     static bool IsUserAlbumPath(const std::string &lpath);
+    static bool CanUpdateExifRotateOnly(int32_t mediaType, int32_t oldExifRotate, int32_t newExifRotate);
+    static int32_t GetExifRotate(int32_t mediaType, const std::string &path);
 };
 } // namespace OHOS::Media::CloudSync
 #endif // OHOS_CLOUD_MEDIA_SYNC_UTILS_H

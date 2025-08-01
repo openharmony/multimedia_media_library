@@ -763,5 +763,15 @@ int32_t FileAsset::GetStageVideoTaskStatus() const
 {
     return GetInt32Member(PhotoColumn::STAGE_VIDEO_TASK_STATUS);
 }
+
+void FileAsset::SetExifRotate(int32_t exifRotate)
+{
+    member_[PhotoColumn::PHOTO_EXIF_ROTATE] = exifRotate;
+}
+
+int32_t FileAsset::GetExifRotate() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_EXIF_ROTATE);
+}
 }  // namespace Media
 }  // namespace OHOS

@@ -304,6 +304,16 @@ int32_t Metadata::GetOrientation() const
     return orientation_;
 }
 
+void Metadata::SetExifRotate(const VariantData &exifRotate)
+{
+    exifRotate_ = std::get<int32_t>(exifRotate);
+}
+
+int32_t Metadata::GetExifRotate() const
+{
+    return exifRotate_;
+}
+
 void Metadata::SetAlbumId(const VariantData &albumId)
 {
     albumId_ = std::get<int32_t>(albumId);

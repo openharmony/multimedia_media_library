@@ -134,6 +134,8 @@ protected:
     int32_t InitDb(bool isUpgrade);
     std::vector<int32_t> GetCloudPhotoMinIds();
     std::vector<int32_t> GetLocalPhotoMinIds();
+    void SetOrientationAndExifRotate(FileInfo &info, NativeRdb::ValuesBucket &value,
+        std::unique_ptr<Metadata> &data) override;
 
 protected:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

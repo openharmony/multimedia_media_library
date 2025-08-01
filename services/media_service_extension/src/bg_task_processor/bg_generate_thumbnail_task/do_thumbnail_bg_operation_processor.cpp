@@ -88,6 +88,9 @@ void DoThumbnailBgOperationProcessor::DoThumbnailBgOperation()
     auto result = dataManager->GenerateThumbnailBackground();
     CHECK_AND_PRINT_LOG(result == E_OK, "GenerateThumbnailBackground faild");
 
+    result = dataManager->RepairExifRotateBackground();
+    CHECK_AND_PRINT_LOG(result == E_OK, "RepairExifRotateBackground faild");
+
     bool isWifiConnected = MedialibrarySubscriber::IsWifiConnected();
     result = dataManager->UpgradeThumbnailBackground(isWifiConnected);
     CHECK_AND_PRINT_LOG(result == E_OK, "UpgradeThumbnailBackground faild");

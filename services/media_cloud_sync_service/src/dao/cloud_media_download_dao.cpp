@@ -250,4 +250,34 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const
     photoRefresh->Notify();
     return ret;
 }
+
+int32_t CloudMediaDownloadDao::UpdateDownloadAssetExifRotateFix(const int32_t fileId,
+    const int32_t exifRotate, const DirtyTypes dirtyType, bool needRegenerateThumbnail)
+{
+    CHECK_AND_RETURN_RET_LOG(dirtyType == DirtyTypes::TYPE_MDIRTY || dirtyType == DirtyTypes::TYPE_FDIRTY,
+        E_ERR, "Not support update this dirtype:%{public}d", dirtyType);
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh =
+        std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL,
+        "UpdateDownloadAssetExifRotateFix Failed to get rdbStore.");
+
+    std::vector<NativeRdb::ValueObject> bindArgs = {
+        exifRotate, std::to_string(static_cast<int32_t>(dirtyType)), fileId,
+    };
+    int32_t ret = 0;
+    if (needRegenerateThumbnail) {
+        ret = photoRefresh->ExecuteSql(this->SQL_FIX_EXIF_ROTATE_WITH_REGENERATE_THUMBNAIL,
+            bindArgs, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+    } else {
+        ret = photoRefresh->ExecuteSql(this->SQL_FIX_EXIF_ROTATE_WITHOUT_REGENERATE_THUMBNAIL,
+            bindArgs, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+    }
+
+    CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
+        E_ERR,
+        "UpdateDownloadAssetExifRotateFix Failed to Update, ret: %{public}d.",
+        ret);
+    photoRefresh->Notify();
+    return E_OK;
+}
 }  // namespace OHOS::Media::CloudSync
