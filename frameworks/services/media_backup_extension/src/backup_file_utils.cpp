@@ -29,6 +29,7 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "media_file_utils.h"
+#include "media_image_framework_utils.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_data_manager_utils.h"
 #include "moving_photo_file_utils.h"
@@ -696,16 +697,16 @@ int32_t BackupFileUtils::GetUserId(const std::string &path)
 }
 
 bool BackupFileUtils::HandleRotateImage(const std::string &sourceFile,
-    const std::string &targetPath, int32_t degrees, bool isLcd)
+    const std::string &targetPath, int32_t exifRotate, bool isLcd)
 {
     uint32_t err = E_OK;
     std::unique_ptr<ImageSource> imageSource = LoadImageSource(sourceFile, err);
     bool cond = (err != E_OK || imageSource == nullptr);
     CHECK_AND_RETURN_RET_LOG(!cond, false, "LoadImageSource error: %{public}d, errno: %{public}d", err, errno);
     if (imageSource->IsHdrImage()) {
-        return BackupFileUtils::HandleHdrImage(std::move(imageSource), targetPath, degrees, isLcd);
+        return BackupFileUtils::HandleHdrImage(std::move(imageSource), targetPath, exifRotate, isLcd);
     } else {
-        return BackupFileUtils::HandleSdrImage(std::move(imageSource), targetPath, degrees, isLcd);
+        return BackupFileUtils::HandleSdrImage(std::move(imageSource), targetPath, exifRotate, isLcd);
     }
 }
 
@@ -720,7 +721,7 @@ unique_ptr<ImageSource> BackupFileUtils::LoadImageSource(const std::string &file
 }
 
 bool BackupFileUtils::HandleHdrImage(std::unique_ptr<ImageSource> imageSource,
-    const std::string &targetPath, int32_t degrees, bool isLcd)
+    const std::string &targetPath, int32_t exifRotate, bool isLcd)
 {
     CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false, "Hdr imagesource null.");
     DecodingOptionsForPicture pictOpts;
@@ -738,14 +739,13 @@ bool BackupFileUtils::HandleHdrImage(std::unique_ptr<ImageSource> imageSource,
     CHECK_AND_RETURN_RET_LOG(pixelMap->GetWidth() * pixelMap->GetHeight() != 0, false,
         "Failed to CreatePicture, pixelMap size invalid, width: %{public}d, height: %{public}d",
         pixelMap->GetWidth(), pixelMap->GetHeight());
-    pixelMap->rotate(static_cast<float>(degrees));
-    gainMap->rotate(static_cast<float>(degrees));
+    CHECK_AND_RETURN_RET_LOG(MediaImageFrameWorkUtils::FlipAndRotatePixelMap(*(pixelMap.get()), exifRotate),
+        false, "Flip and rotate pixelMap failed");
+    CHECK_AND_RETURN_RET_LOG(MediaImageFrameWorkUtils::FlipAndRotatePixelMap(*(gainMap.get()), exifRotate),
+        false, "Flip and rotate gainMap failed");
 
-    if (isLcd) {
-        CHECK_AND_RETURN_RET(EncodePicture(*picture, targetPath + LCD_FILE_NAME), false);
-        return ScalePixelMap(*pixelMap, *imageSource, targetPath + THM_FILE_NAME);
-    }
-    return EncodePicture(*picture, targetPath + THM_FILE_NAME);
+    CHECK_AND_RETURN_RET(!isLcd, EncodePicture(*picture, targetPath + "/" + LCD_FILE_NAME));
+    return EncodePicture(*picture, targetPath + "/" + THM_FILE_NAME);
 }
 
 bool BackupFileUtils::EncodePicture(Picture &picture, const std::string &outFile)
@@ -768,19 +768,17 @@ bool BackupFileUtils::EncodePicture(Picture &picture, const std::string &outFile
 }
 
 bool BackupFileUtils::HandleSdrImage(std::unique_ptr<ImageSource> imageSource,
-    const std::string &targetPath, int32_t degrees, bool isLcd)
+    const std::string &targetPath, int32_t exifRotate, bool isLcd)
 {
     CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false, "Sdr imagesource null.");
     DecodeOptions decodeOpts;
     uint32_t err = ERR_OK;
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
     CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "CreatePixelMap err: %{public}d", err);
-    pixelMap->rotate(static_cast<float>(degrees));
-    if (isLcd) {
-        CHECK_AND_RETURN_RET(EncodePixelMap(*pixelMap, targetPath + LCD_FILE_NAME), false);
-        return ScalePixelMap(*pixelMap, *imageSource, targetPath + THM_FILE_NAME);
-    }
-    return EncodePixelMap(*pixelMap, targetPath + THM_FILE_NAME);
+    CHECK_AND_RETURN_RET_LOG(MediaImageFrameWorkUtils::FlipAndRotatePixelMap(*(pixelMap.get()), exifRotate),
+        false, "Flip and rotate pixelMap failed");
+    CHECK_AND_RETURN_RET(!isLcd, EncodePixelMap(*pixelMap, targetPath + "/" + LCD_FILE_NAME));
+    return EncodePixelMap(*pixelMap, targetPath + "/" + THM_FILE_NAME);
 }
 
 bool BackupFileUtils::ScalePixelMap(PixelMap &pixelMap, ImageSource &imageSource, const std::string &outFile)
@@ -862,6 +860,12 @@ bool BackupFileUtils::IsMovingPhotoExist(const std::string &path)
     string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
     string extraDataPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(path);
     return IsValidFile(videoPath) && IsValidFile(extraDataPath);
+}
+
+bool BackupFileUtils::HasOrientationOrExifRotate(const FileInfo &info)
+{
+    return info.orientation != 0 || (
+        info.exifRotate != 0 && info.exifRotate != static_cast<int32_t>(ExifRotateType::TOP_LEFT));
 }
 } // namespace Media
 } // namespace OHOS

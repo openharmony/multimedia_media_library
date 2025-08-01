@@ -23,6 +23,7 @@
 #include "cloud_media_sync_utils.h"
 #include "cloud_media_dao_utils.h"
 #include "cloud_sync_convert.h"
+#include "exif_rotate_utils.h"
 #define protected public
 #define private public
 #include "cloud_media_uri_utils.h"
@@ -260,11 +261,12 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, FillPhotosDto_Test, TestSize.Level1)
 {
     int32_t thumbState = 0;
     int32_t orientation = 0;
+    int32_t exifRotate = 0;
     std::string path = "test";
     CloudSync::PhotosDto photosDto;
     CloudSync::CloudMediaPullDataDto data;
 
-    auto ret = CloudMediaSyncUtils::FillPhotosDto(photosDto, path, orientation, thumbState);
+    auto ret = CloudMediaSyncUtils::FillPhotosDto(photosDto, path, orientation, exifRotate, thumbState);
     EXPECT_EQ(ret, E_OK);
     ret = CloudMediaSyncUtils::FillPhotosDto(photosDto, data);
     EXPECT_EQ(ret, E_OK);
@@ -524,4 +526,25 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, GetFileIds_Test, TestSize.Level1)
     ret = CloudMediaUriUtils::GetFileIds(uris, fileIds);
     EXPECT_EQ(ret, E_OK);
 }
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, CanUpdateExifRotateOnly_Test, TestSize.Level1)
+{
+    int32_t mediaType = static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO);
+    int32_t oldExifRotate = 0;
+    int32_t newExifRotate = static_cast<int32_t>(ExifRotateType::TOP_RIGHT);
+    int32_t ret = CloudMediaSyncUtils::CanUpdateExifRotateOnly(mediaType, oldExifRotate, newExifRotate);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, GetExifRotate_Test, TestSize.Level1)
+{
+    int32_t mediaType = static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE);
+    string path;
+    int32_t exifRotate = CloudMediaSyncUtils::GetExifRotate(mediaType, path);
+    EXPECT_EQ(exifRotate, 1);
+    mediaType = MediaType::MEDIA_TYPE_VIDEO;
+    exifRotate = CloudMediaSyncUtils::GetExifRotate(mediaType, path);
+    EXPECT_EQ(exifRotate, 1);
+}
+
 }

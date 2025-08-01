@@ -893,5 +893,27 @@ void ThumbnailService::CheckLcdSizeAndUpdateStatus()
     }
 }
 
+int32_t ThumbnailService::RepairExifRotateBackground()
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE
+    };
+    int32_t err = ThumbnailGenerateHelper::RepairExifRotateBackground(opts);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "RepairNoExifRotateBackground failed : %{public}d", err);
+    return E_OK;
+}
+
+int32_t ThumbnailService::FixThumbnailExifRotateAfterDownloadAsset(const std::string &fileId)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .fileId = fileId,
+    };
+    int err = ThumbnailGenerateHelper::FixThumbnailExifRotateAfterDownloadAsset(opts);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "FixThumbnailExifRotateAfterDownloadAsset failed, err: %{public}d", err);
+    return E_OK;
+}
 } // namespace Media
 } // namespace OHOS

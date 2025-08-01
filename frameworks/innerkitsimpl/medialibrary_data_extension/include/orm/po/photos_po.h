@@ -64,6 +64,7 @@ public:
     std::optional<int32_t> originalSubtype;           // PhotoColumn::PHOTO_ORIGINAL_SUBTYPE;
     std::optional<int64_t> coverPosition;             // PhotoColumn::PHOTO_COVER_POSITION;
     std::optional<int32_t> isRectificationCover;      // PhotoColumn::PHOTO_IS_RECTIFICATION_COVER;
+    std::optional<int32_t> exifRotate;                // PhotoColumn::PHOTO_EXIF_ROTATE;
     std::optional<int32_t> movingPhotoEffectMode;     // PhotoColumn::MOVING_PHOTO_EFFECT_MODE;
     std::optional<int32_t> ownerAlbumId;              // PhotoColumn::PHOTO_OWNER_ALBUM_ID;
     std::optional<std::string> originalAssetCloudId;  // PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID;

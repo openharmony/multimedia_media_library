@@ -38,6 +38,7 @@ ohos_unittest("medialibrary_thumbnail_service_test") {
     "./src/medialibrary_thumbnail_generation_post_process_test.cpp",
     "./src/medialibrary_thumbnail_image_framework_test.cpp",
     "./src/medialibrary_thumbnail_kvstore_test.cpp",
+    "./src/medialibrary_thumbnail_rdb_utils_test.cpp",
     "./src/medialibrary_thumbnail_service_test.cpp",
     "./src/medialibrary_thumbnail_source_loading_test.cpp",
     "./src/medialibrary_thumbnail_utils_test.cpp",
