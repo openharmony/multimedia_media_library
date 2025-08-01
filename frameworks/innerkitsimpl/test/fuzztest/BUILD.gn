@@ -33,6 +33,7 @@ group("media_library_fuzztest") {
     "medialibrarycloudmediaassetmanager_fuzzer:MediaLibraryCloudMediaAssetManagerFuzzTest",
     "medialibrarycommon_fuzzer:MediaLibraryCommonFuzzTest",
     "medialibrarydfx_fuzzer:MediaLibraryDfxFuzzTest",
+    "medialibraryduplicatephotooperation_fuzzer:MediaLibraryDuplicatePhotoOperationFuzzTest",
     "medialibraryenhancement_fuzzer:MediaLibraryEnhancementFuzzTest",
     "medialibraryextension_fuzzer:MediaLibraryExtensionFuzzTest",
     "medialibraryextensionbatchinsert_fuzzer:MediaLibraryExtensionBatchInsertFuzzTest",
