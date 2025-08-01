@@ -2709,6 +2709,8 @@ static napi_status SetSubUris(const napi_env& env, ChangeListenerNapi::JsOnChang
 
 string ChangeListenerNapi::GetTrashAlbumUri()
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ChangeListenerNapi::GetTrashAlbumUri");
     if (!trashAlbumUri_.empty()) {
         return trashAlbumUri_;
     }
@@ -2735,10 +2737,13 @@ string ChangeListenerNapi::GetTrashAlbumUri()
 
 napi_value ChangeListenerNapi::SolveOnChange(napi_env env, ChangeListenerNapi::JsOnChangeCallbackWrapper* wrapper)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ChangeListenerNapi::SolveOnChange");
     UvChangeMsg* msg = wrapper->msg_;
     static napi_value result;
     if (msg->changeInfo_.uris_.empty()) {
         napi_get_undefined(env, &result);
+        NAPI_ERR_LOG("changeInfo_.uris_ is empty");
         return result;
     }
     napi_create_object(env, &result);
@@ -2755,6 +2760,7 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, ChangeListenerNapi::J
         if (msg->changeInfo_.uris_.front().ToString().compare(GetTrashAlbumUri()) == 0) {
             if (!MediaLibraryNapiUtils::IsSystemApp()) {
                 napi_get_undefined(env, &result);
+                NAPI_ERR_LOG("tha app is not system");
                 return nullptr;
             }
         }
@@ -2950,6 +2956,8 @@ void ChangeListenerNapi::UvQueueWork(JsOnChangeCallbackWrapper* wrapper)
             NAPI_ERR_LOG("result is nullptr");
             break;
         }
+        MediaLibraryTracer tracer;
+        tracer.Start("ChangeListenerNapi::napi_call_function");
         napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
         if (status != napi_ok) {
             NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
