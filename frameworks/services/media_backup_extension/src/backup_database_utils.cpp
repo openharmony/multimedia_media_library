@@ -613,27 +613,64 @@ static bool DeleteDuplicateVisionFaceTags(std::shared_ptr<NativeRdb::RdbStore> m
     return true;
 }
 
-static bool UpdateDuplicateVisionImageFaces(
-    std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+static bool UpdateVisionTotalFaceStatus(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    const std::vector<std::string>& affectedFileIds)
+{
+    auto totalPredicates = std::make_unique<NativeRdb::AbsRdbPredicates>(VISION_TOTAL_TABLE);
+    totalPredicates->In(IMAGE_FACE_COL_FILE_ID, affectedFileIds);
+
+    NativeRdb::ValuesBucket values;
+    values.PutInt("face", TOTAL_TBL_FACE_ANALYSED);
+    int32_t updatedRows = 0;
+    int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb, updatedRows, values, totalPredicates);
+    if (ret < 0 || updatedRows < 0) {
+        MEDIA_ERR_LOG("Update failed on VISION_TOTAL_TABLE, ret:%{public}d", ret);
+        return false;
+    }
+
+    return true;
+}
+
+static bool UpdateDuplicateVisionImageFaces(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     const std::string& selectTagIdsToDeleteSql)
 {
-    if (selectTagIdsToDeleteSql.empty()) {
-        MEDIA_INFO_LOG("UpdateDuplicateVisionImageFaces: No tag IDs to update.");
-        return true;
+    CHECK_AND_RETURN_RET_LOG(!selectTagIdsToDeleteSql.empty(), true, "No tag IDs to update.");
+    std::string selectFileIdsSql = "SELECT DISTINCT " + IMAGE_FACE_COL_FILE_ID + " FROM " + VISION_IMAGE_FACE_TABLE +
+                                   " WHERE " + FACE_TAG_COL_TAG_ID + " IN (" + selectTagIdsToDeleteSql + ")";
+
+    std::vector<std::string> affectedFileIds;
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = mediaLibraryRdb->QuerySql(selectFileIdsSql);
+    if (resultSet != nullptr) {
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            std::string fileId;
+            int32_t columnIndex;
+            if (resultSet->GetColumnIndex(IMAGE_FACE_COL_FILE_ID, columnIndex) == NativeRdb::E_OK) {
+                resultSet->GetString(columnIndex, fileId);
+                affectedFileIds.push_back(fileId);
+            }
+        }
     }
+
     std::string imageFaceUpdateWhereClause = FACE_TAG_COL_TAG_ID + " IN (" + selectTagIdsToDeleteSql + ")";
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> imageFacePredicates =
+        std::make_unique<NativeRdb::AbsRdbPredicates>(VISION_IMAGE_FACE_TABLE);
+    imageFacePredicates->SetWhereClause(imageFaceUpdateWhereClause);
 
-    std::unique_ptr<NativeRdb::AbsRdbPredicates> updatePredicates =
-            std::make_unique<NativeRdb::AbsRdbPredicates>(VISION_IMAGE_FACE_TABLE);
-    updatePredicates->SetWhereClause(imageFaceUpdateWhereClause);
+    NativeRdb::ValuesBucket imageFaceValues;
+    imageFaceValues.PutString(FACE_TAG_COL_TAG_ID, "-1");
 
-    int32_t updatedRows = 0;
-    NativeRdb::ValuesBucket valuesBucket;
-    valuesBucket.PutString(FACE_TAG_COL_TAG_ID, "-1");
+    int32_t imageFaceUpdatedRows = 0;
+    int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb,
+        imageFaceUpdatedRows, imageFaceValues, imageFacePredicates);
+    bool imageFaceUpdateFailed = (imageFaceUpdatedRows < 0 || ret < 0);
+    CHECK_AND_RETURN_RET_LOG(!imageFaceUpdateFailed, false, "Failed to update VISION_IMAGE_FACE_TABLE");
 
-    int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb, updatedRows, valuesBucket, updatePredicates);
-    bool cond = (updatedRows < 0 || ret < 0);
-    CHECK_AND_RETURN_RET_LOG(!cond, false, "Failed to update tag_id colum value");
+    if (!affectedFileIds.empty()) {
+        if (!UpdateVisionTotalFaceStatus(mediaLibraryRdb, affectedFileIds)) {
+            MEDIA_ERR_LOG("VISION_TOTAL_TABLE update failed");
+            return false;
+        }
+    }
 
     return true;
 }
@@ -725,6 +762,7 @@ void BackupDatabaseUtils::DeleteExistingImageFaceData(std::shared_ptr<NativeRdb:
     for (auto fileId: newFileIds) {
         CHECK_AND_EXECUTE(fileId == -1, realNewFileIds.emplace_back(fileId));
     }
+
     std::string fileIdNewFilterClause = "(" + BackupDatabaseUtils::JoinValues<int>(realNewFileIds, ", ") + ")";
 
     std::string deleteAnalysisPhotoMapSql =
@@ -734,13 +772,27 @@ void BackupDatabaseUtils::DeleteExistingImageFaceData(std::shared_ptr<NativeRdb:
         "SELECT " + IMAGE_FACE_COL_FILE_ID + " FROM " + VISION_IMAGE_FACE_TABLE +
         " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause +
         ") ";
-
-    // 删除 AnalysisPhotoMap 表中的重复记录
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, deleteAnalysisPhotoMapSql);
 
     std::string deleteFaceSql = "DELETE FROM " + VISION_IMAGE_FACE_TABLE +
         " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, deleteFaceSql);
+
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> totalTablePredicates =
+        std::make_unique<NativeRdb::AbsRdbPredicates>(VISION_TOTAL_TABLE);
+
+    std::string fileIdCondition = IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
+    totalTablePredicates->SetWhereClause(fileIdCondition);
+
+    NativeRdb::ValuesBucket totalValues;
+    totalValues.PutInt("face", 0);
+
+    int32_t totalUpdatedRows = 0;
+    int32_t totalRet = BackupDatabaseUtils::Update(mediaLibraryRdb,
+        totalUpdatedRows, totalValues, totalTablePredicates);
+
+    bool totalUpdateFailed = (totalUpdatedRows < 0 || totalRet < 0);
+    CHECK_AND_RETURN_LOG(!totalUpdateFailed, "Failed to update VISION_TOTAL_TABLE face field to 0");
 }
 
 void BackupDatabaseUtils::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,
