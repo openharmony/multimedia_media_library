@@ -31,6 +31,11 @@ using namespace OHOS::DataShare;
 #define EXPORT __attribute__ ((visibility ("default")))
 struct UriParams;
 
+enum class CloudMediaRetainType : int32_t {
+    RETAIN_FORCE = 0,
+    HDC_RETAIN_FORCE,
+};
+
 class MediaLibraryManager {
 public:
     EXPORT MediaLibraryManager() = default;
@@ -231,6 +236,32 @@ public:
 
     sptr<IRemoteObject> InitToken();
     int32_t CheckResultSet(std::shared_ptr<DataShareResultSet> &resultSet);
+
+    /**
+     * @brief Get lpath by albumId, only supports user album and source album
+     *
+     * @param ownerAlbumId a parameter for input
+     * @param lpath a parameter for output
+     * @return errorCode
+     */
+    EXPORT int32_t GetAlbumLpath(uint32_t ownerAlbumId, std::string &lpath);
+
+    /**
+     * @brief Get lpaths by albumType, only supports user album and source album
+     *
+     * @param albumType a parameter for input
+     * @param resultSet a parameter for output, including albumId and lpath
+     * @return errorCode
+     */
+    EXPORT int32_t GetAlbumLpaths(uint32_t albumType, std::shared_ptr<DataShare::ResultSet> &resultSet);
+
+    /**
+     * @brief Retain CloudMediaAsset
+     *
+     * @param retainType a parameter for input, supports RETAIN_FORCE and HDC_RETAIN_FORCE
+     * @return errorCode
+     */
+    EXPORT int32_t RetainCloudMediaAsset(CloudMediaRetainType retainType);
 
 private:
     int32_t ReadMovingPhotoVideo(const string &uri, const string &option);

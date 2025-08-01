@@ -25,6 +25,7 @@
 #include "delete_highlight_albums_vo.h"
 #include "set_subtitle_vo.h"
 #include "photo_album.h"
+#include "photo_album_column.h"
 #include "set_highlight_user_action_data_dto.h"
 #include "story_album_column.h"
 #include "set_highlight_user_action_data_vo.h"
@@ -74,6 +75,7 @@
 #include "change_request_set_order_position_dto.h"
 #include "dfx_timer.h"
 #include "dfx_const.h"
+#include "get_albums_lpath_by_ids_vo.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -199,12 +201,20 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAlbumsControllerService::QueryAlbums
     },
     {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_PAH_QUERY_PHOTO_ALBUMS),
+        &MediaAlbumsControllerService::QueryAlbumsLpaths
+    },
+    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_HIDDEN_ALBUMS),
         &MediaAlbumsControllerService::QueryHiddenAlbums
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_GET_ALBUMS_BY_IDS),
         &MediaAlbumsControllerService::GetAlbumsByIds
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_PAH_QUERY_GET_ALBUMS_BY_IDS),
+        &MediaAlbumsControllerService::GetAlbumsLpathByIds
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ORDER_POSITION),
@@ -1121,5 +1131,73 @@ int32_t MediaAlbumsControllerService::UpdatePhotoAlbumOrder(MessageParcel &data,
 
     ret = MediaAlbumsService::GetInstance().UpdatePhotoAlbumOrder(setPhotoAlbumOrderDto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAlbumsControllerService::QueryAlbumsLpaths(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_DEBUG_LOG("MediaAlbumsControllerService::QueryAlbumsLpaths Start");
+    QueryAlbumsReqBody reqBody;
+    QueryAlbumsRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("QueryAlbumsLpaths Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+    }
+
+    QueryAlbumsDto dto;
+    dto.albumType = reqBody.albumType;
+    dto.albumSubType = reqBody.albumSubType;
+    dto.columns = reqBody.columns;
+    dto.predicates = reqBody.predicates;
+    ret = MediaAlbumsService::GetInstance().QueryAlbumsLpaths(dto);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("QueryAlbumsLpaths failed, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+    }
+    respBody.resultSet = dto.resultSet;
+    MEDIA_DEBUG_LOG("MediaAlbumsControllerService::QueryAlbumsLpaths End");
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+}
+
+int32_t MediaAlbumsControllerService::GetAlbumsLpathByIds(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_DEBUG_LOG("MediaAlbumsControllerService::GetAlbumsLpathByIds Start");
+    GetAlbumsLpathByIdsReqBody reqBody;
+    GetAlbumsLpathByIdsRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetAlbumsLpathByIds Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, std::to_string(reqBody.albumId))
+        ->And()
+        ->BeginWrap()
+        ->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, std::to_string(PhotoAlbumType::USER))
+        ->Or()
+        ->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, std::to_string(PhotoAlbumType::SOURCE))
+        ->EndWrap();
+    
+    QueryAlbumsDto dto;
+    dto.columns = { PhotoAlbumColumns::ALBUM_LPATH };
+    dto.predicates = predicates;
+    ret = MediaAlbumsService::GetInstance().QueryAlbumsLpaths(dto);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetAlbumsLpathByIds failed, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+    }
+
+    if (dto.resultSet == nullptr || dto.resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("GetAlbumsLpathByIds query failed");
+        return E_FAIL;
+    }
+    if (dto.resultSet->GetString(0, respBody.lpath) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("GetAlbumsLpathByIds cannot get lpath");
+        return E_FAIL;
+    }
+    MEDIA_DEBUG_LOG("MediaAlbumsControllerService::GetAlbumsLpathByIds End. lpath: %{public}s",
+        respBody.lpath.c_str());
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 } // namespace OHOS::Media
