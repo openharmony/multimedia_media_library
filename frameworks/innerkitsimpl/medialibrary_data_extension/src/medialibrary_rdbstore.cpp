@@ -5275,6 +5275,17 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
     // !! Do not add upgrade code here !!
 }
 
+static void AddVisionColumnSearchTag(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_SEARCH_TAG) {
+        vector<string> upgradeSqls = {
+            BaseColumn::AlterTableAddTextColumn(VISION_LABEL_TABLE, SEARCH_TAG_TYPE),
+            BaseColumn::AlterTableAddBlobColumn(VISION_LABEL_TABLE, SEARCH_TAG_TYPE),
+        };
+        ExecSqls(upgradeSqls, store);
+    }
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MediaLibraryTracer tracer;
@@ -5337,6 +5348,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeExtension(store, oldVersion);
     UpgradeUriPermissionTable(store, oldVersion);
     UpgradeHighlightAlbumChange(store, oldVersion);
+    AddVisionColumnSearchTag(store, oldVersion);
 
     if (!g_upgradeErr) {
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};
