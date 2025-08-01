@@ -217,7 +217,8 @@ int32_t CloudMediaDownloadDao::QueryDownloadAssetByCloudIds(
     return E_OK;
 }
 
-int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const std::string &path)
+int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const std::string &path,
+    const CloudMediaScanService::ScanResult& scanResult)
 {
     MEDIA_INFO_LOG("enter UpdateDownloadAsset %{public}d, %{public}s",
         fixFileType, path.c_str());
@@ -231,6 +232,11 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const
     if (fixFileType) {
         MEDIA_INFO_LOG("UpdateDownloadAsset file is not real moving photo, need fix subtype");
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
+    }
+    if (scanResult.scanSuccess) {
+        values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, scanResult.shootingMode);
+        values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, scanResult.shootingModeTag);
+        values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, scanResult.frontCamera);
     }
     int32_t changedRows = -1;
     int32_t ret = photoRefresh->Update(changedRows, values, predicates);

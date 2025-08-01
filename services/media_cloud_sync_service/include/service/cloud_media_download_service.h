@@ -50,6 +50,7 @@ private:
         std::string errorMsg;
         std::string fileUri;
         bool needParseCover;
+        bool needScanShootingMode;
     };
 
 private:

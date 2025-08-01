@@ -32,6 +32,7 @@
 #include "cloud_media_asset_manager.h"
 #include "cloud_media_asset_types.h"
 #include "cloud_media_dfx_service.h"
+#include "cloud_media_scan_service.h"
 #include "dfx_const.h"
 #include "media_gallery_sync_notify.h"
 
@@ -281,6 +282,8 @@ CloudMediaDownloadService::OnDownloadAssetData CloudMediaDownloadService::GetOnD
     std::string extraUri = MediaFileUtils::GetExtraUri(photosPo.displayName.value_or(""), photosPo.data.value_or(""));
     assetData.fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
                                                                std::to_string(photosPo.fileId.value_or(0)), extraUri);
+    assetData.needScanShootingMode = (photosPo.shootingModeTag.has_value() && photosPo.shootingModeTag->empty()) ||
+        (photosPo.frontCamera.has_value() && photosPo.frontCamera->empty());
     return assetData;
 }
 
@@ -438,7 +441,15 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         assetData.err = ret;
         return;
     }
-    ret = this->dao_.UpdateDownloadAsset(assetData.fixFileType, assetData.path);
+    CloudMediaScanService::ScanResult scanResult;
+    if (assetData.needScanShootingMode) {
+        CloudMediaScanService().ScanShootingMode(assetData.path, scanResult);
+    }
+    ret = this->dao_.UpdateDownloadAsset(assetData.fixFileType, assetData.path, scanResult);
+    if (scanResult.scanSuccess) {
+        CloudMediaScanService().UpdateAndNotifyShootingModeAlbumIfNeeded(scanResult);
+    }
+
     if (ret != E_OK) {
         MEDIA_INFO_LOG("Failed to Handle HandlePhoto %{public}s", assetData.localPath.c_str());
         assetData.errorMsg = "UpdateDownloadAsset failed";

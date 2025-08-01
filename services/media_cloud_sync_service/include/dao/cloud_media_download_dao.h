@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "cloud_media_scan_service.h"
 #include "rdb_store.h"
 #include "photos_po.h"
 #include "photos_dto.h"
@@ -37,7 +38,8 @@ public:
     int32_t UpdateDownloadThmAndLcd(const std::vector<std::string> &cloudIds);
     int32_t GetFileIdFromCloudId(const std::vector<std::string> &cloudIds, std::vector<std::string> &fileIds);
     int32_t QueryDownloadAssetByCloudIds(const std::vector<std::string> &cloudIds, std::vector<PhotosPo> &result);
-    int32_t UpdateDownloadAsset(const bool fixFileType, const std::string &path);
+    int32_t UpdateDownloadAsset(const bool fixFileType, const std::string &path,
+        const CloudMediaScanService::ScanResult& scanResult);
 
 private:
     NativeRdb::AbsRdbPredicates GetDownloadThmsConditions(const int32_t type);
@@ -77,6 +79,8 @@ private:
         MediaColumn::MEDIA_ID,
         PhotoColumn::PHOTO_COVER_POSITION,
         PhotoColumn::PHOTO_IS_RECTIFICATION_COVER,
+        PhotoColumn::PHOTO_SHOOTING_MODE_TAG,
+        PhotoColumn::PHOTO_FRONT_CAMERA,
     };
     const uint32_t THM_TO_DOWNLOAD_MASK = 0x2;
     const uint32_t LCD_TO_DOWNLOAD_MASK = 0x1;
