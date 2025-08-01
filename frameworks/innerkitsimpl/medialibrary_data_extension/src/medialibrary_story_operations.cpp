@@ -20,12 +20,76 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager_utils.h"
+#include "medialibrary_notify.h"
+#include "media_file_utils.h"
+#include "photo_album_column.h"
+#include "result_set_utils.h"
+#include "story_album_column.h"
+#include "vision_column_comm.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+static int32_t GetHighlightId(const string &whereClause, const vector<string> &whereArgs)
+{
+    if (whereArgs.empty()) {
+        MEDIA_ERR_LOG("whereArgs is empty");
+        return E_HAS_DB_ERROR;
+    }
+    size_t pos = whereClause.find(ID);
+    if (pos == string::npos) {
+        MEDIA_ERR_LOG("whereClause is invalid");
+        return E_HAS_DB_ERROR;
+    }
+    size_t argsIndex = 0;
+    for (size_t i = 0; i < pos; i++) {
+        if (whereClause[i] == '?') {
+            argsIndex++;
+        }
+    }
+    if (argsIndex > whereArgs.size() - 1) {
+        MEDIA_ERR_LOG("whereArgs is invalid");
+        return E_HAS_DB_ERROR;
+    }
+    auto albumId = whereArgs[argsIndex];
+    if (MediaLibraryDataManagerUtils::IsNumber(albumId)) {
+        return atoi(albumId.c_str());
+    }
+    return E_HAS_DB_ERROR;
+}
+
+static void GetHighlightAlbumId(const string &id, int32_t &albumId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr!");
+    const std::string queryAlbumId = "SELECT album_id FROM " + HIGHLIGHT_ALBUM_TABLE + " WHERE id = " + id;
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(queryAlbumId);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr on get highlight album_id");
+    CHECK_AND_EXECUTE(resultSet->GoToNextRow() != NativeRdb::E_OK,
+        albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet));
+    resultSet->Close();
+}
+
+static void NotifyStoryAlbum(MediaLibraryCommand &cmd)
+{
+    auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+    auto id = GetHighlightId(whereClause, whereArgs);
+    CHECK_AND_RETURN_LOG(id > 0, "highlight id invalid");
+    int32_t albumId = 0;
+    GetHighlightAlbumId(to_string(id), albumId);
+    CHECK_AND_RETURN_LOG(albumId > 0, "highlight album_id invalid");
+    MEDIA_INFO_LOG("NotifyStoryAlbum, album id is %{public}d", albumId);
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+        PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);
+}
+
 int32_t MediaLibraryStoryOperations::InsertOperation(MediaLibraryCommand &cmd)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -39,6 +103,7 @@ int32_t MediaLibraryStoryOperations::InsertOperation(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Story Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
+    NotifyStoryAlbum(cmd);
     return static_cast<int32_t>(outRowId);
 }
 
@@ -55,6 +120,7 @@ int32_t MediaLibraryStoryOperations::UpdateOperation(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Story Update db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
+    NotifyStoryAlbum(cmd);
     return static_cast<int32_t>(updateRows);
 }
 
