@@ -93,6 +93,8 @@ protected:
     double GetDataLongitude(const FileInfo &fileInfo, std::unique_ptr<Metadata> &metadata);
     double GetDataLatitude(const FileInfo &fileInfo, std::unique_ptr<Metadata> &metadata);
     virtual void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
+    virtual void SetOrientationAndExifRotate(FileInfo &info, NativeRdb::ValuesBucket &value,
+        std::unique_ptr<Metadata> &data);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
         int64_t &rowNum);
     int32_t MoveDirectory(const std::string &srcDir, const std::string &dstDir, bool deleteOriginalFile = true) const;
@@ -175,6 +177,7 @@ protected:
     void AddToPhotoInfoMap(std::vector<FileInfo> &fileInfos);
     void InsertDetailTime(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
         FileInfo &fileInfo);
+    virtual bool HasExThumbnail(const FileInfo &info);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};

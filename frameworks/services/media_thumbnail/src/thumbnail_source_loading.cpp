@@ -24,6 +24,7 @@
 #include "image_source.h"
 #include "media_exif.h"
 #include "media_file_utils.h"
+#include "media_image_framework_utils.h"
 #include "medialibrary_tracer.h"
 #include "post_proc.h"
 #include "thumbnail_image_framework_utils.h"
@@ -394,6 +395,11 @@ bool SourceLoader::GeneratePixelMapSource(std::unique_ptr<ImageSource> &imageSou
     return true;
 }
 
+bool SourceLoader::IsLoadingOriginalSource()
+{
+    return state_ == SourceState::LOCAL_ORIGIN || state_ == SourceState::CLOUD_ORIGIN;
+}
+
 bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 {
     MediaLibraryTracer tracer;
@@ -436,17 +442,12 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
     }
     tracer.Finish();
 
-    if (data_.orientation == 0) {
-        err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, data_.orientation);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("SourceLoader Failed to get ImageProperty, path: %{public}s",
-                DfxUtils::GetSafePath(data_.path).c_str());
-        }
+    if (data_.isLocalFile && data_.exifRotate == 0 && IsLoadingOriginalSource()) {
+        data_.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+        CHECK_AND_WARN_LOG(MediaImageFrameWorkUtils::GetExifRotate(imageSource, data_.exifRotate) == E_OK,
+            "SourceLoader Failed to get exif rotate, path: %{public}s", DfxUtils::GetSafePath(data_.path).c_str());
     }
 
-    if (data_.mediaType == MEDIA_TYPE_VIDEO) {
-        data_.orientation = 0;
-    }
     DfxManager::GetInstance()->HandleHighMemoryThumbnail(data_.path, MEDIA_TYPE_IMAGE, imageInfo.size.width,
         imageInfo.size.height);
     return true;
@@ -454,11 +455,6 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 
 bool SourceLoader::CreateSourcePixelMap()
 {
-    if ((state_ == SourceState::LOCAL_ORIGIN || state_ == SourceState::CLOUD_ORIGIN) &&
-        data_.mediaType == MEDIA_TYPE_VIDEO) {
-        return CreateVideoFramePixelMap();
-    }
-
     if (GetSourcePath == nullptr) {
         MEDIA_ERR_LOG("GetSourcePath is nullptr.");
         return false;
@@ -470,6 +466,10 @@ bool SourceLoader::CreateSourcePixelMap()
             STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
+
+    CHECK_AND_RETURN_RET(!((state_ == SourceState::LOCAL_ORIGIN || state_ == SourceState::CLOUD_ORIGIN) &&
+        data_.mediaType == MEDIA_TYPE_VIDEO), CreateVideoFramePixelMap());
+
     if (!CreateImagePixelMap(sourcePath)) {
         MEDIA_ERR_LOG("SourceLoader fail to create image pixel map, status:%{public}s, path:%{public}s",
             STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
@@ -487,9 +487,8 @@ bool SourceLoader::CreateSourceFromOriginalPhotoPicture()
         return false;
     }
 
-    int32_t orientation = 0;
-    int32_t err = ThumbnailImageFrameWorkUtils::GetPictureOrientation(
-        data_.originalPhotoPicture, orientation);
+    int32_t exifRotate = 0;
+    int32_t err = MediaImageFrameWorkUtils::GetExifRotate(data_.originalPhotoPicture, exifRotate);
     CHECK_AND_WARN_LOG(err == E_OK, "SourceLoader Failed to get picture orientation, path: %{public}s",
         DfxUtils::GetSafePath(data_.path).c_str());
 
@@ -500,12 +499,8 @@ bool SourceLoader::CreateSourceFromOriginalPhotoPicture()
         isCreateSource = CreateSourceWithWholeOriginalPicture();
     }
     CHECK_AND_RETURN_RET_LOG(isCreateSource, false, "Create source failed");
-    if (data_.orientation == 0 && orientation > 0) {
-        data_.orientation = orientation;
-    }
-    if (data_.mediaType == MEDIA_TYPE_VIDEO) {
-        data_.orientation = 0;
-    }
+    CHECK_AND_EXECUTE(!(data_.exifRotate == 0 && exifRotate > 0), data_.exifRotate = exifRotate);
+    data_.lastLoadSource = SourceState::LOCAL_ORIGIN;
     return true;
 }
 
@@ -618,6 +613,7 @@ bool SourceLoader::RunLoading()
             STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
+    data_.lastLoadSource = state_;
     return true;
 }
 
@@ -662,6 +658,9 @@ bool SourceLoader::IsFinal()
 
 std::string LocalThumbSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
+    CHECK_AND_RETURN_RET_WARN_LOG(!(ThumbnailUtils::IsImageWithExifRotate(data) && data.needGenerateExThumbnail),
+        "", "Need generate Ex thumbnail, can not use rotated thumbnail");
+    CHECK_AND_RETURN_RET_WARN_LOG(data.loaderOpts.decodeInThumbSize, "", "Can not use thumb");
     std::string tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
     if (!IsLocalSourceAvailable(tmpPath)) {
         return "";
@@ -679,6 +678,8 @@ bool LocalThumbSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 
 std::string LocalLcdSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
+    CHECK_AND_RETURN_RET_WARN_LOG(!(ThumbnailUtils::IsImageWithExifRotate(data) && data.needGenerateExThumbnail),
+        "", "Need generate Ex thumbnail, can not use rotated thumbnail");
     std::string tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
     if (!IsLocalSourceAvailable(tmpPath)) {
         return "";
@@ -710,7 +711,8 @@ bool LocalOriginSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 
 std::string CloudThumbSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
-    std::string tmpPath = data.orientation != 0 ?
+    CHECK_AND_RETURN_RET_WARN_LOG(data.loaderOpts.decodeInThumbSize, "", "Can not use thumb");
+    std::string tmpPath = ThumbnailUtils::IsExCloudThumbnail(data) ?
         GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX) : GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     if (!IsCloudSourceAvailable(tmpPath)) {
@@ -733,7 +735,7 @@ bool CloudThumbSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 std::string CloudLcdSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
     std::string tmpPath;
-    if (data.orientation != 0) {
+    if (ThumbnailUtils::IsExCloudThumbnail(data)) {
         tmpPath = GetLcdExPath(data.path);
     } else {
         tmpPath = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);

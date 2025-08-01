@@ -242,6 +242,9 @@ public:
     EXPORT void SetStageVideoTaskStatus(int32_t stageVideoTaskStatus);
     EXPORT int32_t GetStageVideoTaskStatus() const;
 
+    EXPORT void SetExifRotate(int32_t exifRotate);
+    EXPORT int32_t GetExifRotate() const;
+
 private:
     int32_t userId_ = -1;
     std::string albumUri_;

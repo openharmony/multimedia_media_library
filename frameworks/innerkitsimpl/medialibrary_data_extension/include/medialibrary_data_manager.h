@@ -74,6 +74,7 @@ public:
     EXPORT std::string GetType(const Uri &uri);
     EXPORT void NotifyChange(const Uri &uri);
     EXPORT int32_t GenerateThumbnailBackground();
+    EXPORT int32_t RepairExifRotateBackground();
     EXPORT int32_t GenerateHighlightThumbnailBackground();
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates);

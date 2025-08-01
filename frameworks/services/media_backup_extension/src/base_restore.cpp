@@ -32,6 +32,7 @@
 #include "media_column.h"
 #include "media_log.h"
 #include "media_file_utils.h"
+#include "media_image_framework_utils.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_business_code.h"
@@ -527,22 +528,6 @@ static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::Valu
     value.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
 }
 
-static void InsertOrientation(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
-    FileInfo &fileInfo, int32_t sceneCode)
-{
-    bool hasOrientation = value.HasColumn(PhotoColumn::PHOTO_ORIENTATION);
-    if (hasOrientation && fileInfo.fileType != MEDIA_TYPE_VIDEO) {
-        return; // image use orientation in rdb
-    }
-    if (hasOrientation) {
-        value.Delete(PhotoColumn::PHOTO_ORIENTATION);
-    }
-    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata->GetOrientation()); // video use orientation in metadata
-    bool cond = (sceneCode == OTHERS_PHONE_CLONE_RESTORE || sceneCode == I_PHONE_CLONE_RESTORE ||
-        sceneCode == LITE_PHONE_CLONE_RESTORE);
-    CHECK_AND_EXECUTE(!cond, fileInfo.orientation = metadata->GetOrientation());
-}
-
 static void InsertUserComment(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
     FileInfo &fileInfo)
 {
@@ -672,7 +657,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
     value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
     InsertDateAdded(data, value);
-    InsertOrientation(data, value, fileInfo, sceneCode_);
+    SetOrientationAndExifRotate(fileInfo, value, data);
     InsertUserComment(data, value, fileInfo);
     int64_t dateAdded = 0;
     NativeRdb::ValueObject valueObject;
@@ -893,10 +878,10 @@ int32_t BaseRestore::BatchCreateDentryFile(std::vector<FileInfo> &fileInfos, std
         } else {
             dentryInfo.size = THUMB_DENTRY_SIZE;
             if (fileType == DENTRY_INFO_LCD) {
-                dentryInfo.fileType = (fileInfos[i].orientation == 0) ? fileType : LCD_EX_SUFFIX;
+                dentryInfo.fileType = (!HasExThumbnail(fileInfos[i])) ? fileType : LCD_EX_SUFFIX;
                 dentryInfo.fileName = "LCD.jpg";
             } else {
-                dentryInfo.fileType = (fileInfos[i].orientation == 0) ? fileType : THUMB_EX_SUFFIX;
+                dentryInfo.fileType = (!HasExThumbnail(fileInfos[i])) ? fileType : THUMB_EX_SUFFIX;
                 dentryInfo.fileName = "THM.jpg";
             }
         }
@@ -919,7 +904,7 @@ bool BaseRestore::RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t 
 {
     std::string srcPath = GetThumbFile(fileInfo, type, sceneCode);
     CHECK_AND_RETURN_RET(srcPath != "", false);
-    std::string saveNoRotatePath = fileInfo.orientation == ORIETATION_ZERO ? "" : THM_SAVE_WITHOUT_ROTATE_PATH;
+    std::string saveNoRotatePath = !HasExThumbnail(fileInfo) ? "" : THM_SAVE_WITHOUT_ROTATE_PATH;
     std::string dstDirPath = GetThumbnailLocalPath(fileInfo.cloudPath) + saveNoRotatePath;
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dstDirPath), false, "Prepare thumbnail dir path failed");
 
@@ -934,7 +919,7 @@ bool BaseRestore::RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t 
         BackupFileUtils::GarbleFilePath(srcPath, sceneCode).c_str(),
         BackupFileUtils::GarbleFilePath(dstFilePath, sceneCode).c_str(), errCode, errno);
     do {
-        CHECK_AND_BREAK(fileInfo.orientation != ORIETATION_ZERO);
+        CHECK_AND_BREAK(HasExThumbnail(fileInfo));
         std::string rotateDirPath = dstDirPath.replace(dstDirPath.find(THM_SAVE_WITHOUT_ROTATE_PATH),
             THM_SAVE_WITHOUT_ROTATE_PATH.length(), "");
         if (type == MIGRATE_CLOUD_THM_TYPE &&
@@ -942,8 +927,14 @@ bool BaseRestore::RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t 
             rotateThmMigrateFileNumber_++;
             break;
         }
-        CHECK_AND_RETURN_RET_LOG(BackupFileUtils::HandleRotateImage(dstFilePath, rotateDirPath,
-            fileInfo.orientation, type == MIGRATE_CLOUD_LCD_TYPE), false, "Rotate image fail!");
+        if (fileInfo.fileType == MediaType::MEDIA_TYPE_IMAGE) {
+            CHECK_AND_RETURN_RET_LOG(BackupFileUtils::HandleRotateImage(dstFilePath, rotateDirPath,
+                fileInfo.exifRotate, type == MIGRATE_CLOUD_LCD_TYPE), false, "Rotate image fail!");
+        } else {
+            std::string rotateDirFile = rotateDirPath + tmpTargetFileName + ".jpg";
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(dstFilePath, rotateDirFile),
+                false, "Copy file failed!");
+        }
         type == MIGRATE_CLOUD_LCD_TYPE ? rotateLcdMigrateFileNumber_++ : rotateThmMigrateFileNumber_++;
     } while (0);
     if (fileInfo.localMediaId == -1) {
@@ -984,6 +975,12 @@ bool BaseRestore::RestoreLcdAndThumbFromKvdb(const FileInfo &fileInfo, int32_t t
     return false;
 }
 
+bool NeedMoveLocalThumbnail(FileInfo &fileInfo)
+{
+    return fileInfo.fileType == MediaType::MEDIA_TYPE_IMAGE ||
+        !ExifRotateUtils::IsExifRotateWithFlip(fileInfo.exifRotate);
+}
+
 void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
     int32_t sceneCode)
 {
@@ -1003,10 +1000,12 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
             continue;
         }
 
-        CHECK_AND_EXECUTE(RestoreLcdAndThumbFromCloud(fileInfos[i], MIGRATE_CLOUD_LCD_TYPE, sceneCode),
-            RestoreLcdAndThumbFromKvdb(fileInfos[i], MIGRATE_CLOUD_LCD_TYPE, sceneCode));
-        CHECK_AND_EXECUTE(RestoreLcdAndThumbFromCloud(fileInfos[i], MIGRATE_CLOUD_THM_TYPE, sceneCode),
-            RestoreLcdAndThumbFromKvdb(fileInfos[i], MIGRATE_CLOUD_THM_TYPE, sceneCode));
+        if (NeedMoveLocalThumbnail(fileInfos[i])) {
+            CHECK_AND_EXECUTE(RestoreLcdAndThumbFromCloud(fileInfos[i], MIGRATE_CLOUD_LCD_TYPE, sceneCode),
+                RestoreLcdAndThumbFromKvdb(fileInfos[i], MIGRATE_CLOUD_LCD_TYPE, sceneCode));
+            CHECK_AND_EXECUTE(RestoreLcdAndThumbFromCloud(fileInfos[i], MIGRATE_CLOUD_THM_TYPE, sceneCode),
+                RestoreLcdAndThumbFromKvdb(fileInfos[i], MIGRATE_CLOUD_THM_TYPE, sceneCode));
+        }
         fileMoveCount++;
         videoFileMoveCount += fileInfos[i].fileType == MediaType::MEDIA_TYPE_VIDEO;
     }
@@ -2069,6 +2068,22 @@ void BaseRestore::ProcessBurstPhotos()
     BackupDatabaseUtils::UpdateBurstPhotos(mediaLibraryRdb_);
     int64_t endProcess = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("process burst photos end, cost: %{public}" PRId64, endProcess - startProcess);
+}
+
+void BaseRestore::SetOrientationAndExifRotate(FileInfo &info, NativeRdb::ValuesBucket &value,
+    std::unique_ptr<Metadata> &data)
+{
+    CHECK_AND_RETURN_LOG(data != nullptr, "Metadata is nullptr");
+    info.orientation = data->GetOrientation();
+    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, info.orientation);
+    info.exifRotate = data->GetExifRotate();
+    value.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, info.exifRotate);
+}
+
+bool BaseRestore::HasExThumbnail(const FileInfo &info)
+{
+    CHECK_AND_RETURN_RET(info.localMediaId != -1, BackupFileUtils::HasOrientationOrExifRotate(info));
+    return info.fileType == MediaType::MEDIA_TYPE_IMAGE && BackupFileUtils::HasOrientationOrExifRotate(info);
 }
 } // namespace Media
 } // namespace OHOS

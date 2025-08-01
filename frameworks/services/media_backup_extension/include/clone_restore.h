@@ -72,6 +72,7 @@ protected:
     void GetCloudPhotoFileExistFlag(const FileInfo &fileInfo, CloudPhotoFileExistFlag &resultExistFlag);
     void CloudPhotoFilesVerify(const std::vector<FileInfo> &fileInfos, std::vector<FileInfo> &LCDNotFound,
         std::vector<FileInfo> &THMNotFound, unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
+    bool HasExThumbnail(const FileInfo &info) override;
 
 private:
     void RestorePhoto(void) override;
@@ -243,6 +244,8 @@ private:
         const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
     int32_t CheckLcdVisitTime(const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
     void AddToPhotoInfoMaps(std::vector<FileInfo> &fileInfos);
+    void GetOrientationAndExifRotateValue(const shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &fileInfo);
+    void UpdateExistNewAddColumnSet(const std::unordered_map<string, string> &srcColumnInfoMap);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
@@ -278,6 +281,7 @@ private:
     int64_t maxAnalysisAlbumId_ {0};
     int64_t maxBeautyFileId_ {0};
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
+    std::unordered_set<std::string> existNewAddColumnSet_;
 };
 
 template<typename T>

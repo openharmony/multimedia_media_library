@@ -150,7 +150,7 @@ int32_t CloudMediaPhotosService::ClearLocalData(const CloudMediaPullDataDto &pul
     dto.modifiedTime = pullData.modifiedTime;
     dto.originalCloudId = pullData.localOriginalAssetCloudId;
     CloudMediaSyncUtils::FillPhotosDto(
-        dto, pullData.localPath, pullData.localOrientation, pullData.localThumbState);
+        dto, pullData.localPath, pullData.localOrientation, pullData.exifRotate, pullData.localThumbState);
     fdirtyData.emplace_back(dto);
     bool isLocal = CloudMediaSyncUtils::FileIsLocal(pullData.localPosition);
     if (isLocal) {
@@ -554,8 +554,28 @@ void CloudMediaPhotosService::ConvertPullDataToPhotosDto(const CloudMediaPullDat
     dto.mediaType = mediaType;
     dto.modifiedTime = data.attributesEditedTimeMs;
     // new data 不更新 originalCloudId (无)
-    CloudMediaSyncUtils::FillPhotosDto(dto, data.localPath, data.propertiesRotate, data.localThumbState);
+    CloudMediaSyncUtils::FillPhotosDto(dto, data.localPath, data.propertiesRotate,
+        data.exifRotate, data.localThumbState);
     MEDIA_INFO_LOG("ConvertPullDataToPhotosDto NewData: %{public}s", dto.cloudId.c_str());
+}
+
+static void SetPullDataFromPhotosPo(CloudMediaPullDataDto &pullData, const PhotosPo &photo)
+{
+    pullData.localFileId = photo.fileId.value_or(-1);
+    pullData.localPath = photo.data.value_or("");
+    pullData.localSize = photo.size.value_or(0);
+    pullData.localMediaType = photo.mediaType.value_or(-1);
+    pullData.localDateAdded = std::to_string(photo.dateAdded.value_or(-1));
+    pullData.localDateModified = std::to_string(photo.dateModified.value_or(-1));
+    pullData.localDirty = photo.dirty.value_or(-1);
+    pullData.localPosition = photo.position.value_or(-1);
+    pullData.localOwnerAlbumId = std::to_string(photo.ownerAlbumId.value_or(-1));
+    pullData.localOrientation = photo.orientation.value_or(-1);
+    pullData.localThumbState = photo.thumbStatus.value_or(-1);
+    pullData.modifiedTime = photo.dateModified.value_or(-1);
+    pullData.dateTaken = photo.dateTaken.value_or(0);
+    pullData.localOriginalAssetCloudId = photo.originalAssetCloudId.value_or("");
+    pullData.localExifRotate = photo.exifRotate.value_or(0);
 }
 
 int32_t CloudMediaPhotosService::OnFetchRecords(const std::vector<std::string> &cloudIds,
@@ -585,20 +605,7 @@ int32_t CloudMediaPhotosService::OnFetchRecords(const std::vector<std::string> &
             }
             found = true;
             CloudMediaPullDataDto pullData = cloudIdRelativeMap.at(cloudId);
-            pullData.localFileId = photo.fileId.value_or(-1);
-            pullData.localPath = photo.data.value_or("");
-            pullData.localSize = photo.size.value_or(0);
-            pullData.localMediaType = photo.mediaType.value_or(-1);
-            pullData.localDateAdded = std::to_string(photo.dateAdded.value_or(-1));
-            pullData.localDateModified = std::to_string(photo.dateModified.value_or(-1));
-            pullData.localDirty = photo.dirty.value_or(-1);
-            pullData.localPosition = photo.position.value_or(-1);
-            pullData.localOwnerAlbumId = std::to_string(photo.ownerAlbumId.value_or(-1));
-            pullData.localOrientation = photo.orientation.value_or(-1);
-            pullData.localThumbState = photo.thumbStatus.value_or(-1);
-            pullData.modifiedTime = photo.dateModified.value_or(-1);
-            pullData.dateTaken = photo.dateTaken.value_or(0);
-            pullData.localOriginalAssetCloudId = photo.originalAssetCloudId.value_or("");
+            SetPullDataFromPhotosPo(pullData, photo);
             pullData.cloudId = cloudId;
 
             cloudIdRelativeMap[cloudId] = pullData;

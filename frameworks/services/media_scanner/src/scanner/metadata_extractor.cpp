@@ -26,6 +26,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
+#include "media_image_framework_utils.h"
 #include "meta.h"
 #include "meta_key.h"
 #include "nlohmann/json.hpp"
@@ -363,6 +364,14 @@ static void ExtractLocationMetadata(unique_ptr<ImageSource>& imageSource, unique
     }
 }
 
+static void ExtractImageExifRotate(
+    std::unique_ptr<ImageSource> &imageSource, std::unique_ptr<Metadata> &data)
+{
+    int32_t exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+    MediaImageFrameWorkUtils::GetExifRotate(imageSource, exifRotate);
+    data->SetExifRotate(exifRotate);
+}
+
 int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
 {
     uint32_t err = 0;
@@ -393,6 +402,7 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
     if (err == 0) {
         data->SetOrientation(intTempMeta);
     }
+    ExtractImageExifRotate(imageSource, data);
 
     if (imageSource->IsHdrImage()) {
         data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::HDR));
@@ -461,6 +471,19 @@ void PopulateExtractedAVMetadataOne(const std::unordered_map<int32_t, std::strin
     }
 }
 
+int32_t ExtractedAVMetadataExifRotate(const std::unordered_map<int32_t, std::string> &resultMap)
+{
+    int32_t exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+    auto it = resultMap.find(AV_KEY_VIDEO_ROTATE_ORIENTATION);
+    CHECK_AND_RETURN_RET(it != resultMap.end(), exifRotate);
+
+    std::string exifRotateStr = it->second;
+    CHECK_AND_RETURN_RET(!exifRotateStr.empty(), exifRotate);
+
+    exifRotate = stringToNum<int32_t>(exifRotateStr);
+    return exifRotate;
+}
+
 void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::string> &resultMap,
     std::unique_ptr<Metadata> &data)
 {
@@ -489,6 +512,9 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
         intTempMeta = stringToNum<int32_t>(strTemp);
     }
     data->SetOrientation(intTempMeta);
+
+    intTempMeta = ExtractedAVMetadataExifRotate(resultMap);
+    data->SetExifRotate(intTempMeta);
 
     strTemp = resultMap.at(AV_KEY_GENRE);
     if (!strTemp.empty()) {

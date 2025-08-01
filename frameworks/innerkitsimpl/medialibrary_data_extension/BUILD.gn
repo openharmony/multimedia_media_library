@@ -212,6 +212,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_worker.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_worker_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_image_framework_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_rdb_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_service.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_source_loading.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_uri_utils.cpp",

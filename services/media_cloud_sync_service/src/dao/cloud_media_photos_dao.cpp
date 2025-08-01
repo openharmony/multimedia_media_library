@@ -30,6 +30,7 @@
 #include "cloud_media_file_utils.h"
 #include "cloud_media_sync_utils.h"
 #include "cloud_media_operation_code.h"
+#include "exif_rotate_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "moving_photo_file_utils.h"
 #include "result_set.h"
@@ -390,6 +391,11 @@ int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto 
 
     NativeRdb::ValuesBucket values;
     this->GetUpdateRecordValues(pullData, values);
+    if (mtimeChanged) {
+        HandleExifRotateDownloadAsset(pullData, values);
+    } else {
+        HandleExifRotateDownloadMetaData(pullData, values);
+    }
     if (isLocal && mtimeChanged) {
         values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(CloudFilePosition::POSITION_CLOUD));
         values.PutInt(PhotoColumn::PHOTO_THUMB_STATUS, static_cast<int32_t>(ThumbState::TO_DOWNLOAD));
@@ -475,6 +481,7 @@ int32_t CloudMediaPhotosDao::GetInsertParams(const CloudMediaPullDataDto &pullDa
     MEDIA_ERR_LOG("GetInsertParams enter");
     NativeRdb::ValuesBucket values;
     auto ret = CloudSyncConvert().RecordToValueBucket(pullData, values);
+    HandleExifRotateDownloadAsset(pullData, values);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("record to valuebucket failed, ret=%{public}d", ret);
         return ret;
@@ -720,6 +727,46 @@ bool CloudMediaPhotosDao::IsNeededFix(const CloudMediaPullDataDto &data)
         return true;
     }
     return false;
+}
+
+void CloudMediaPhotosDao::HandleExifRotateDownloadAsset(const CloudMediaPullDataDto &data,
+    NativeRdb::ValuesBucket &valuebucket)
+{
+    int32_t exifRotate = data.exifRotate;
+    CHECK_AND_RETURN_WARN_LOG(exifRotate >= 0,
+        "Download with asset, exifRotate: %{public}d is invalid.", exifRotate);
+    int32_t rotate = data.propertiesRotate;
+    int32_t mediaType = data.attributesMediaType;
+    if (mediaType == -1) {
+        mediaType = data.basicFileType == FILE_TYPE_VIDEO ? static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)
+                                                          : static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE);
+    }
+
+    if (mediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) {
+        if (rotate != ROTATE_ANGLE_0) {
+            ExifRotateUtils::ConvertOrientationToExifRotate(rotate, exifRotate);
+        } else if (exifRotate == static_cast<int32_t>(ExifRotateType::RIGHT_TOP) ||
+            exifRotate == static_cast<int32_t>(ExifRotateType::BOTTOM_RIGHT) ||
+            exifRotate == static_cast<int32_t>(ExifRotateType::LEFT_BOTTOM)) {
+            exifRotate = 0;
+        }
+    }
+    valuebucket.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, exifRotate);
+}
+
+void CloudMediaPhotosDao::HandleExifRotateDownloadMetaData(const CloudMediaPullDataDto &data,
+    NativeRdb::ValuesBucket &valuebucket)
+{
+    CHECK_AND_RETURN(data.localExifRotate != data.exifRotate);
+    int32_t mediaType = data.attributesMediaType;
+    if (mediaType == -1) {
+        mediaType = data.basicFileType == FILE_TYPE_VIDEO ? static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)
+                                                          : static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE);
+    }
+
+    CHECK_AND_RETURN(CloudMediaSyncUtils::CanUpdateExifRotateOnly(
+        mediaType, data.localExifRotate, data.exifRotate));
+    valuebucket.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, data.exifRotate);
 }
 
 void CloudMediaPhotosDao::HandleShootingMode(const std::string &cloudId, const NativeRdb::ValuesBucket &valuebucket,

@@ -65,6 +65,7 @@ const std::vector<std::string> PULL_QUERY_COLUMNS = {
     MediaColumn::MEDIA_MIME_TYPE,
     MediaColumn::MEDIA_TYPE,
     PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID,
+    PhotoColumn::PHOTO_EXIF_ROTATE,
 };
 
 struct KeyData {

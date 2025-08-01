@@ -144,6 +144,7 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const PhotosPo &recor
     photosVo.originalSubtype = record.originalSubtype.value_or(0);
     photosVo.coverPosition = record.coverPosition.value_or(0);
     photosVo.isRectificationCover = record.isRectificationCover.value_or(0);
+    photosVo.exifRotate = record.exifRotate.value_or(0);
     photosVo.movingPhotoEffectMode = record.movingPhotoEffectMode.value_or(0);
     photosVo.supportedWatermarkType = record.supportedWatermarkType.value_or(0);
     photosVo.strongAssociation = record.strongAssociation.value_or(0);
@@ -240,6 +241,7 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const OnFetchPhotosVo
     data.attributesMovingPhotoEffectMode = photosVo.movingPhotoEffectMode;
     data.attributesCoverPosition = photosVo.coverPosition;
     data.attributesIsRectificationCover = photosVo.isRectificationCover;
+    data.exifRotate = photosVo.exifRotate;
     data.attributesEditDataCamera = photosVo.editDataCamera;
     data.attributesSupportedWatermarkType = photosVo.supportedWatermarkType;
     data.attributesStrongAssociation = photosVo.strongAssociation;

@@ -4785,6 +4785,17 @@ static void DropInsertSourcePhotoUpdateAlbumIdTrigger(RdbStore &store)
     MEDIA_INFO_LOG("drop trigger insert_source_photo_update_album_id_trigger end");
 }
 
+static void AddExifRotateColumn(RdbStore& store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_EXIF_ROTATE +
+        " INT NOT NULL DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Start add exif_rotate column");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("End add exif_rotate column");
+}
+
 static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION) {
@@ -4803,6 +4814,10 @@ static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_GROUP_VERSION) {
         AddGroupVersion(store);
+    }
+
+    if (oldVersion < VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE) {
+        AddExifRotateColumn(store);
     }
 }
 

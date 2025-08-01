@@ -805,6 +805,7 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     InsertDateTaken(data, value);
     value.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
+    value.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, data->GetExifRotate());
     value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
     value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
     value.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, data->GetFileExtension());

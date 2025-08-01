@@ -140,7 +140,6 @@ private:
     EXPORT static bool IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
-    EXPORT static bool NeedGenerateExFile(ThumbnailData &data);
     EXPORT static bool StorePicture(ThumbnailData &data,
         const std::shared_ptr<Picture>& picture, const bool isSourceEx);
     EXPORT static Size GetLcdDesiredSize(const ThumbnailData& data, const bool isSourceEx);

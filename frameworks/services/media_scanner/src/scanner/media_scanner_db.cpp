@@ -47,6 +47,8 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 
+constexpr double DOUBLE_EPSILON = 1e-15;
+
 MediaScannerDb::MediaScannerDb() {}
 
 unique_ptr<MediaScannerDb> MediaScannerDb::GetDatabaseInstance()
@@ -225,6 +227,40 @@ static void HandleMovingPhoto(const Metadata &metadata, ValuesBucket &values)
     HandleMovingPhotoDirty(metadata, values);
 }
 
+static void SetImageVideoValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &values, bool isInsert,
+    bool skipPhoto)
+{
+    values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(metadata.GetFileName()));
+    values.PutInt(PhotoColumn::PHOTO_HEIGHT, metadata.GetFileHeight());
+    values.PutInt(PhotoColumn::PHOTO_WIDTH, metadata.GetFileWidth());
+    values.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata.GetOrientation());
+    values.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, metadata.GetExifRotate());
+    if (fabs(metadata.GetLongitude()) > DOUBLE_EPSILON || fabs(metadata.GetLatitude()) > DOUBLE_EPSILON) {
+        values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, metadata.GetLongitude());
+        values.PutDouble(PhotoColumn::PHOTO_LATITUDE, metadata.GetLatitude());
+    } else {
+        values.PutNull(PhotoColumn::PHOTO_LONGITUDE);
+        values.PutNull(PhotoColumn::PHOTO_LATITUDE);
+    }
+    if (skipPhoto && !metadata.GetUserComment().empty()) {
+        values.PutString(PhotoColumn::PHOTO_USER_COMMENT, metadata.GetUserComment());
+    }
+    values.PutString(PhotoColumn::PHOTO_ALL_EXIF, metadata.GetAllExif());
+    values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, metadata.GetShootingMode());
+    values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, metadata.GetShootingModeTag());
+    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, metadata.GetLastVisitTime());
+    values.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, metadata.GetDynamicRangeType());
+    values.PutLong(PhotoColumn::PHOTO_COVER_POSITION, metadata.GetCoverPosition());
+    values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, metadata.GetFrontCamera());
+    values.PutString(PhotoColumn::PHOTO_DETAIL_TIME, metadata.GetDetailTime());
+    values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+
+    if (metadata.GetPhotoSubType() != 0) {
+        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
+        HandleMovingPhoto(metadata, values);
+    }
+}
+
 static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &values, bool isInsert,
     bool skipPhoto = true)
 {
@@ -244,35 +280,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     values.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
 
     if (mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO) {
-        values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(metadata.GetFileName()));
-        values.PutInt(PhotoColumn::PHOTO_HEIGHT, metadata.GetFileHeight());
-        values.PutInt(PhotoColumn::PHOTO_WIDTH, metadata.GetFileWidth());
-        values.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata.GetOrientation());
-        constexpr double DOUBLE_EPSILON = 1e-15;
-        if (fabs(metadata.GetLongitude()) > DOUBLE_EPSILON || fabs(metadata.GetLatitude()) > DOUBLE_EPSILON) {
-            values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, metadata.GetLongitude());
-            values.PutDouble(PhotoColumn::PHOTO_LATITUDE, metadata.GetLatitude());
-        } else {
-            values.PutNull(PhotoColumn::PHOTO_LONGITUDE);
-            values.PutNull(PhotoColumn::PHOTO_LATITUDE);
-        }
-        if (skipPhoto && !metadata.GetUserComment().empty()) {
-            values.PutString(PhotoColumn::PHOTO_USER_COMMENT, metadata.GetUserComment());
-        }
-        values.PutString(PhotoColumn::PHOTO_ALL_EXIF, metadata.GetAllExif());
-        values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, metadata.GetShootingMode());
-        values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, metadata.GetShootingModeTag());
-        values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, metadata.GetLastVisitTime());
-        values.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, metadata.GetDynamicRangeType());
-        values.PutLong(PhotoColumn::PHOTO_COVER_POSITION, metadata.GetCoverPosition());
-        values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, metadata.GetFrontCamera());
-        values.PutString(PhotoColumn::PHOTO_DETAIL_TIME, metadata.GetDetailTime());
-        values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
-
-        if (metadata.GetPhotoSubType() != 0) {
-            values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
-            HandleMovingPhoto(metadata, values);
-        }
+        SetImageVideoValuesFromMetaDataApi10(metadata, values, isInsert, skipPhoto);
     } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
         values.PutString(AudioColumn::AUDIO_ALBUM, metadata.GetAlbum());
         values.PutString(AudioColumn::AUDIO_ARTIST, metadata.GetFileArtist());

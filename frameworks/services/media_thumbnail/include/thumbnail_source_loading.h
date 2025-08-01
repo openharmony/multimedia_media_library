@@ -195,6 +195,7 @@ private:
     EXPORT bool CreateSourceFromOriginalPhotoPicture();
     EXPORT bool CreateSourceWithWholeOriginalPicture();
     EXPORT bool CreateSourceWithOriginalPictureMainPixel();
+    EXPORT bool IsLoadingOriginalSource();
 
     bool IsFinal();
 

@@ -79,10 +79,11 @@ public:
     static int32_t GetUserId(const std::string &path);
 
     static bool HandleRotateImage(const std::string &sourceFile, const std::string &targetPath,
-        int32_t degrees, bool isLcd);
+        int32_t exifRotate, bool isLcd);
     static int32_t IsCloneCloudSyncSwitchOn(int32_t sceneCode);
     static bool IsValidFile(const std::string &path);
     static bool IsMovingPhotoExist(const std::string &path);
+    static bool HasOrientationOrExifRotate(const FileInfo &info);
 
 private:
     static const std::string IMAGE_FORMAT;
@@ -100,10 +101,10 @@ private:
 
     static unique_ptr<ImageSource> LoadImageSource(const std::string &file, uint32_t &err);
     static bool HandleHdrImage(std::unique_ptr<ImageSource> imageSource,
-        const std::string &targetPath, int32_t degrees, bool isLcd);
+        const std::string &targetPath, int32_t exifRotate, bool isLcd);
     static bool EncodePicture(Picture &picture, const std::string &outFile);
     static bool HandleSdrImage(std::unique_ptr<ImageSource> imageSource,
-        const std::string &targetPath, int32_t degrees, bool isLcd);
+        const std::string &targetPath, int32_t exifRotate, bool isLcd);
     static bool EncodePixelMap(PixelMap &pixelMap, const std::string &outFile);
     static bool ScalePixelMap(PixelMap &pixelMap, ImageSource &imageSource, const std::string &outFile);
 };
