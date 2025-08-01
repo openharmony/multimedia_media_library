@@ -23,8 +23,11 @@
 #include <utime.h>
 
 #include "cloud_media_file_utils.h"
+#include "exif_rotate_utils.h"
 #include "media_file_utils.h"
+#include "media_image_framework_utils.h"
 #include "media_log.h"
+#include "media_player_framework_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
 #include "cloud_media_sync_const.h"
@@ -36,10 +39,11 @@ using namespace std;
 
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaSyncUtils::FillPhotosDto(
-    CloudSync::PhotosDto &photosDto, const std::string &path, const int32_t &orientation, const int32_t &thumbState)
+    CloudSync::PhotosDto &photosDto, const std::string &path, const int32_t &orientation,
+    const int32_t exifRotate, const int32_t &thumbState)
 {
     MEDIA_INFO_LOG("FillPhotosDto enter %{public}s", path.c_str());
-    bool isRotation = orientation != ROTATE_ANGLE_0;
+    bool isRotation = orientation != ROTATE_ANGLE_0 || exifRotate > static_cast<int32_t>(ExifRotateType::TOP_LEFT);
     std::string thumbSuffix = isRotation ? THUMBNAIL_THUMB_EX_SUFFIX : THUMBNAIL_THUMB_SUFFIX;
     std::string lcdSuffix = isRotation ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX;
 
@@ -72,7 +76,8 @@ int32_t CloudMediaSyncUtils::FillPhotosDto(
     CloudSync::PhotosDto &photosDto, const CloudSync::CloudMediaPullDataDto &data)
 {
     constexpr uint64_t DEFAULT_SIZE = 2 * 1024 * 1024; // thumbnail and lcd default size is 2MB
-    bool isRotation = data.propertiesRotate != ROTATE_ANGLE_0;
+    bool isRotation = data.propertiesRotate != ROTATE_ANGLE_0 ||
+        data.exifRotate > static_cast<int32_t>(ExifRotateType::TOP_LEFT);
     std::string thumbSuffix = isRotation ? THUMBNAIL_THUMB_EX_SUFFIX : THUMBNAIL_THUMB_SUFFIX;
     std::string lcdSuffix = isRotation ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX;
 
@@ -442,5 +447,25 @@ bool CloudMediaSyncUtils::IsUserAlbumPath(const std::string &lpath)
         return false;
     }
     return lpath.substr(0, prefix.size()) == prefix;
+}
+
+bool CloudMediaSyncUtils::CanUpdateExifRotateOnly(int32_t mediaType, int32_t oldExifRotate, int32_t newExifRotate)
+{
+    if (mediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) {
+        return oldExifRotate == 0 && newExifRotate == static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+    } else {
+        return !ExifRotateUtils::IsExifRotateWithFlip(newExifRotate);
+    }
+}
+
+int32_t CloudMediaSyncUtils::GetExifRotate(int32_t mediaType, const std::string &path)
+{
+    int32_t exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+    if (mediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) {
+        MediaImageFrameWorkUtils::GetExifRotate(path, exifRotate);
+    } else {
+        MediaPlayerFrameWorkUtils::GetExifRotate(path, exifRotate);
+    }
+    return exifRotate;
 }
 }  // namespace OHOS::Media::CloudSync

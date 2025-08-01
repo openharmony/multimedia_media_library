@@ -80,6 +80,7 @@ bool OnFetchPhotosVo::MarshallingAttributesInfo(Parcel &parcel) const
     parcel.WriteInt64(this->hiddenTime);
     parcel.WriteInt64(this->coverPosition);
     parcel.WriteInt32(this->isRectificationCover);
+    parcel.WriteInt32(this->exifRotate);
     parcel.WriteBool(this->isDelete);
     return true;
 }
@@ -142,6 +143,7 @@ bool OnFetchPhotosVo::ReadAttributesInfo(Parcel &parcel)
     parcel.ReadInt64(this->hiddenTime);
     parcel.ReadInt64(this->coverPosition);
     parcel.ReadInt32(this->isRectificationCover);
+    parcel.ReadInt32(this->exifRotate);
     parcel.ReadBool(this->isDelete);
     return true;
 }
@@ -218,6 +220,7 @@ void OnFetchPhotosVo::GetAttributesInfo(std::stringstream &ss) const
        << "\"hiddenTime\": \"" << hiddenTime << "\","
        << "\"coverPosition\": \"" << coverPosition << "\","
        << "\"isRectificationCover\": \"" << isRectificationCover << "\","
+       << "\"exifRotate\": \"" << exifRotate << "\","
        << "\"isDelete\": \"" << isDelete << "\","
        << "\"hasAttributes\": \"" << hasAttributes << "\","
        << "\"hasproperties\": \"" << hasproperties << "\","

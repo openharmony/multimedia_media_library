@@ -28,6 +28,7 @@
 #include "clone_restore_geo.h"
 #include "cloud_sync_utils.h"
 #include "database_report.h"
+#include "exif_rotate_utils.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_library_db_upgrade.h"
@@ -127,8 +128,8 @@ const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
             PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, // thumbnail related
             PhotoColumn::PHOTO_LCD_VISIT_TIME, // lcd related
             PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_CE_STATUS_CODE, // cloud enhancement
-            PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
             PhotoColumn::PHOTO_METADATA_FLAGS, // meta recovery related
+            PhotoColumn::PHOTO_EXIF_ROTATE,
         }},
     { PhotoAlbumColumns::TABLE,
         {
@@ -307,6 +308,7 @@ void CloneRestore::RestorePhoto()
         PhotoColumn::PHOTOS_TABLE);
     unordered_map<string, string> dstColumnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaLibraryRdb_,
         PhotoColumn::PHOTOS_TABLE);
+    UpdateExistNewAddColumnSet(srcColumnInfoMap);
     if (!PrepareCommonColumnInfoMap(PhotoColumn::PHOTOS_TABLE, srcColumnInfoMap, dstColumnInfoMap)) {
         MEDIA_ERR_LOG("Prepare common column info failed");
         return;
@@ -584,7 +586,7 @@ void CloneRestore::GetCloudPhotoFileExistFlag(const FileInfo &fileInfo, CloudPho
     std::string astcPath = dirPath + "/THM_ASTC.astc";
     resultExistFlag.isDayAstcExist = MediaFileUtils::IsFileExists(astcPath) ? true : false;
 
-    if (fileInfo.orientation != 0) {
+    if (HasExThumbnail(fileInfo)) {
         std::string exLcdPath = dirPath + "/THM_EX/LCD.jpg";
         resultExistFlag.isExLcdExist = MediaFileUtils::IsFileExists(exLcdPath) ? true : false;
         std::string exThmPath = dirPath + "/THM_EX/THM.jpg";
@@ -606,7 +608,7 @@ void CloneRestore::CloudPhotoFilesVerify(const std::vector<FileInfo> &fileInfos,
         CHECK_AND_EXECUTE(iter == resultExistMap.end(), fileExistFlag = iter->second);
         GetCloudPhotoFileExistFlag(fileInfos[i], fileExistFlag);
         resultExistMap[fileInfos[i].cloudPath] = fileExistFlag;
-        if (fileInfos[i].orientation != 0) {
+        if (HasExThumbnail(fileInfos[i])) {
             CHECK_AND_EXECUTE(fileExistFlag.isExLcdExist, LCDNotFound.push_back(fileInfos[i]));
             CHECK_AND_EXECUTE(fileExistFlag.isExThmExist, THMNotFound.push_back(fileInfos[i]));
         } else {
@@ -1178,6 +1180,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateAdded);
     values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, fileInfo.dateModified);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation); // photos need orientation
+    values.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, fileInfo.exifRotate);
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileInfo.subtype);
     // use owner_album_id to mark the album id which the photo is in.
     values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, fileInfo.ownerAlbumId);
@@ -1210,6 +1213,7 @@ NativeRdb::ValuesBucket CloneRestore::GetCloudInsertValue(const FileInfo &fileIn
     values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateAdded);
     values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, fileInfo.dateModified);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation); // photos need orientation
+    values.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, fileInfo.exifRotate);
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileInfo.subtype);
     // use owner_album_id to mark the album id which the photo is in.
     values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, fileInfo.ownerAlbumId);
@@ -2248,7 +2252,6 @@ void CloneRestore::SetSpecialAttributes(const string &tableName, const shared_pt
     }
     fileInfo.lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
     fileInfo.sourcePath = GetStringVal(PhotoColumn::PHOTO_SOURCE_PATH, resultSet);
-    fileInfo.orientation = GetInt32Val(PhotoColumn::PHOTO_ORIENTATION, resultSet);
     fileInfo.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
     fileInfo.associateFileId = GetInt32Val(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, resultSet);
     fileInfo.photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
@@ -2263,6 +2266,7 @@ void CloneRestore::SetSpecialAttributes(const string &tableName, const shared_pt
     fileInfo.sourcePath = this->photosClone_.FindSourcePath(fileInfo);
     fileInfo.latitude = GetDoubleVal("latitude", resultSet);
     fileInfo.longitude = GetDoubleVal("longitude", resultSet);
+    GetOrientationAndExifRotateValue(resultSet, fileInfo);
 }
 
 bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInfo)
@@ -3120,24 +3124,17 @@ void CloneRestore::BatchUpdateFileInfoData(std::vector<FileInfo> &fileInfos,
 int32_t CloneRestore::CheckThumbReady(const FileInfo &fileInfo,
     const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag)
 {
-    if (fileInfo.orientation == ORIETATION_ZERO) {
-        bool cond = (cloudPhotoFileExistFlag.isThmExist &&
+    bool cond = (cloudPhotoFileExistFlag.isThmExist &&
             cloudPhotoFileExistFlag.isDayAstcExist &&
             cloudPhotoFileExistFlag.isYearAstcExist);
-        CHECK_AND_RETURN_RET(!cond, RESTORE_THUMBNAIL_READY_ALL_SUCCESS);
-    } else {
-        bool cond = (cloudPhotoFileExistFlag.isExThmExist &&
-            cloudPhotoFileExistFlag.isDayAstcExist &&
-            cloudPhotoFileExistFlag.isYearAstcExist);
-        CHECK_AND_RETURN_RET(!cond, RESTORE_THUMBNAIL_READY_ALL_SUCCESS);
-    }
+    CHECK_AND_RETURN_RET(!cond, RESTORE_THUMBNAIL_READY_ALL_SUCCESS);
     return RESTORE_THUMBNAIL_READY_FAIL;
 }
 
 int32_t CloneRestore::CheckThumbStatus(const FileInfo &fileInfo,
     const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag)
 {
-    if (fileInfo.orientation == ORIETATION_ZERO) {
+    if (!HasExThumbnail(fileInfo)) {
         if (cloudPhotoFileExistFlag.isThmExist &&
             cloudPhotoFileExistFlag.isLcdExist) {
                 return RESTORE_THUMBNAIL_STATUS_ALL;
@@ -3206,6 +3203,33 @@ void CloneRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverIn
             MEDIA_ERR_LOG("UpdatePhotoAlbumCoverUri failed, expected count 1, but got %{public}d", changeRows);
         }
     }
+}
+
+void CloneRestore::UpdateExistNewAddColumnSet(const std::unordered_map<string, string> &srcColumnInfoMap)
+{
+    CHECK_AND_EXECUTE(srcColumnInfoMap.find(PhotoColumn::PHOTO_EXIF_ROTATE) == srcColumnInfoMap.end(),
+        existNewAddColumnSet_.emplace(PhotoColumn::PHOTO_EXIF_ROTATE));
+}
+
+void CloneRestore::GetOrientationAndExifRotateValue(const shared_ptr<NativeRdb::ResultSet> &resultSet,
+    FileInfo &fileInfo)
+{
+    fileInfo.orientation = GetInt32Val(PhotoColumn::PHOTO_ORIENTATION, resultSet);
+    if (existNewAddColumnSet_.count(PhotoColumn::PHOTO_EXIF_ROTATE) != 0) {
+        fileInfo.exifRotate = GetInt32Val(PhotoColumn::PHOTO_EXIF_ROTATE, resultSet);
+    } else if (fileInfo.orientation == 0 || fileInfo.fileType != MediaType::MEDIA_TYPE_IMAGE) {
+        fileInfo.exifRotate = 0;
+    } else {
+        ExifRotateUtils::ConvertOrientationToExifRotate(fileInfo.orientation, fileInfo.exifRotate);
+    }
+}
+
+bool CloneRestore::HasExThumbnail(const FileInfo &info)
+{
+    CHECK_AND_RETURN_RET(info.position == static_cast<int32_t>(PhotoPositionType::LOCAL) ||
+        info.position == static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD),
+        BackupFileUtils::HasOrientationOrExifRotate(info));
+    return info.fileType == MediaType::MEDIA_TYPE_IMAGE && BackupFileUtils::HasOrientationOrExifRotate(info);
 }
 } // namespace Media
 } // namespace OHOS

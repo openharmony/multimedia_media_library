@@ -82,6 +82,9 @@ public:
     EXPORT void SetOrientation(const VariantData &orientation);
     EXPORT int32_t GetOrientation() const;
 
+    EXPORT void SetExifRotate(const VariantData &exifRotate);
+    EXPORT int32_t GetExifRotate() const;
+
     EXPORT void SetFileDuration(const VariantData &duration);
     EXPORT int32_t GetFileDuration() const;
 
@@ -212,6 +215,7 @@ private:
     int32_t width_;
     int32_t duration_;
     int32_t orientation_;
+    int32_t exifRotate_ {0};
     string dateYear_;
     string dateMonth_;
     string dateDay_;

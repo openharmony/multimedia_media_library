@@ -21,6 +21,8 @@
 #include "highlight_column.h"
 #include "kvstore.h"
 #include "vision_db_sqls.h"
+
+#include "exif_rotate_utils.h"
 #define private public
 #include "thumbnail_service.h"
 #include "ithumbnail_helper.h"
@@ -257,6 +259,56 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, CreateOutputPath_test_001, TestSize.Lev
     data.tracks = "tracks";
     res = ThumbnailUtils::CreateOutputPath(data, THUMBNAIL_LCD_SUFFIX);
     EXPECT_EQ(res, "");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsExCloudThumbnail_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsExCloudThumbnail_test_001");
+    ThumbnailData data;
+    data.orientation = 1;
+    auto ret = ThumbnailUtils::IsExCloudThumbnail(data);
+    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("IsExCloudThumbnail_test_001 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, HandleImageExifRotate_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("HandleImageExifRotate_test_001");
+    ThumbnailData data;
+    data.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    data.exifRotate = 0;
+    data.orientation = 0;
+    ThumbnailUtils::HandleImageExifRotate(data);
+    EXPECT_EQ(data.exifRotate, static_cast<int32_t>(ExifRotateType::TOP_LEFT));
+    MEDIA_INFO_LOG("HandleImageExifRotate_test_001 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, NeedRotateThumbnail_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("NeedRotateThumbnail_test_001");
+    ThumbnailData data;
+    auto ret = ThumbnailUtils::NeedRotateThumbnail(data);
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("NeedRotateThumbnail_test_001 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsImageWithExifRotate_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsImageWithExifRotate_test_001");
+    ThumbnailData data;
+    auto ret = ThumbnailUtils::IsImageWithExifRotate(data);
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("IsImageWithExifRotate_test_001 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsUseRotatedSource_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsUseRotatedSource_test_001");
+    ThumbnailData data;
+    data.lastLoadSource = SourceState::LOCAL_THUMB;
+    auto ret = ThumbnailUtils::IsUseRotatedSource(data);
+    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("IsUseRotatedSource_test_001 end");
 }
 
 } // namespace Media

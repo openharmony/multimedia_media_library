@@ -586,8 +586,9 @@ bool IThumbnailHelper::TrySavePicture(ThumbnailData &data, const bool isSourceEx
 
 bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    MEDIA_INFO_LOG("Start DoCreateLcd, id: %{public}s, path: %{public}s",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    MEDIA_INFO_LOG("Start DoCreateLcd, id: %{public}s, path: %{public}s, exifRotate:%{public}d, "
+        "position:%{public}d",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position);
     ThumbnailWait thumbnailWait(true);
     WaitStatus ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::LCD, data.dateModified);
     data.needCheckWaitStatus = true;
@@ -597,9 +598,11 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
     }
     CHECK_AND_RETURN_RET_LOG(IsCreateLcdSuccess(opts, data), false,
         "Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
-    if (data.orientation != 0 && !IsCreateLcdExSuccess(opts, data)) {
-        MEDIA_ERR_LOG("Fail to create lcdEx, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
+    if (ThumbnailUtils::NeedRotateThumbnail(data) && data.needGenerateExThumbnail) {
+        CHECK_AND_PRINT_LOG(IsCreateLcdExSuccess(opts, data), "Fail to create lcdEx, path: %{public}s",
+            DfxUtils::GetSafePath(opts.path).c_str());
     }
+
     thumbnailWait.UpdateThumbnailMap();
     data.needCheckWaitStatus = false;
     const std::string hasData = "1";
@@ -665,9 +668,17 @@ bool IThumbnailHelper::StorePictureLowQuality(ThumbnailData &data,
     return false;
 }
 
+bool NeedReverseSize(const ThumbnailData &data)
+{
+    CHECK_AND_RETURN_RET(ThumbnailUtils::NeedRotateThumbnail(data), false);
+    FlipAndRotateInfo info;
+    CHECK_AND_RETURN_RET(ExifRotateUtils::GetFlipAndRotateInfo(data.exifRotate, info), false);
+    return info.orientation % FLAT_ANGLE != 0;
+}
+
 Size IThumbnailHelper::GetLcdDesiredSize(const ThumbnailData& data, const bool isSourceEx)
 {
-    bool shouldReverseSize = !isSourceEx && (data.orientation % FLAT_ANGLE != 0);
+    bool shouldReverseSize = !isSourceEx && NeedReverseSize(data);
     int desiredWidth = shouldReverseSize ? data.lcdDesiredSize.height : data.lcdDesiredSize.width;
     int desiredHeight = shouldReverseSize ? data.lcdDesiredSize.width : data.lcdDesiredSize.height;
     return { desiredWidth, desiredHeight };
@@ -779,19 +790,8 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
     }
 }
 
-bool IThumbnailHelper::NeedGenerateExFile(ThumbnailData &data)
-{
-    return data.isLocalFile || data.isRegenerateStage || data.isUpgradeStage;
-}
-
 bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (!NeedGenerateExFile(data)) {
-        MEDIA_INFO_LOG("Create lcd when cloud loading, no need to create THM_EX, path: %{public}s, id: %{public}s",
-            DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
-        return false;
-    }
-
     string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_EX_SUFFIX);
     string dirName = MediaFileUtils::GetParentPath(fileName);
     if (!MediaFileUtils::CreateDirectory(dirName)) {
@@ -843,12 +843,6 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
 
 bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (!NeedGenerateExFile(data)) {
-        MEDIA_INFO_LOG("Create thumb when cloud loading, no need to create THM_EX, path: %{public}s, id: %{public}s",
-            DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
-        return false;
-    }
-
     string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
     string dirName = MediaFileUtils::GetParentPath(fileName);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dirName), false,
@@ -972,8 +966,9 @@ int32_t IThumbnailHelper::CacheDirtyState(const ThumbRdbOpt &opts, ThumbnailData
 
 bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    MEDIA_INFO_LOG("Start DoCreateThumbnail, id: %{public}s, path: %{public}s",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    MEDIA_INFO_LOG("Start DoCreateThumbnail, id: %{public}s, path: %{public}s, exifRotate:%{public}d, "
+        "position:%{public}d",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position);
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     ThumbnailWait thumbnailWait(true);
     WaitStatus ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB, data.dateModified);
@@ -991,8 +986,9 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    if (data.orientation != 0 && !IsCreateThumbnailExSuccess(opts, data)) {
-        MEDIA_ERR_LOG("Fail to create thumbnailEx, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
+    if (ThumbnailUtils::NeedRotateThumbnail(data) && data.needGenerateExThumbnail) {
+        CHECK_AND_PRINT_LOG(IsCreateThumbnailExSuccess(opts, data), "Fail to create thumbnailEx, path: %{public}s",
+            DfxUtils::GetSafePath(opts.path).c_str());
     }
     thumbnailWait.UpdateThumbnailMap();
     data.needCheckWaitStatus = false;
@@ -1092,24 +1088,25 @@ static bool ScaleLcdToThumbnail(ThumbnailData &data)
         return false;
     }
 
-    if (data.orientation != 0 && data.source.HasPictureSource()) {
+    if (ThumbnailUtils::NeedRotateThumbnail(data) && data.needGenerateExThumbnail && data.source.HasPictureSource()) {
         MEDIA_INFO_LOG("Scale from picture source, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         CHECK_AND_RETURN_RET_LOG(data.source.GetPictureEx() != nullptr, false,
             "Fail to scale, pictureEx is nullptr, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         auto mainPixelMapEx = data.source.GetPictureEx()->GetMainPixel();
         data.source.SetPixelMapEx(mainPixelMapEx);
     }
-    if (data.orientation != 0 && !ThumbnailUtils::ScaleThumbnailFromSource(data, true)) {
-        MEDIA_ERR_LOG("Fail to scale from LCD_EX to THM_EX, path: %{public}s",
-            DfxUtils::GetSafePath(data.path).c_str());
+    if (ThumbnailUtils::NeedRotateThumbnail(data) && data.needGenerateExThumbnail) {
+        CHECK_AND_PRINT_LOG(ThumbnailUtils::ScaleThumbnailFromSource(data, true),
+            "Fail to scale from LCD_EX to THM_EX, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
     }
     return true;
 }
 
 bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s, exifRotate:%{public}d, "
+        "position:%{public}d",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position);
     data.isNeedStoreSize = false;
     bool isPrevStepSuccess = true;
     if (!DoCreateLcd(opts, data)) {
@@ -1154,8 +1151,9 @@ std::string GetAvailableThumbnailSuffix(ThumbnailData &data)
 
 bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    MEDIA_INFO_LOG("Start DoCreateAstc, id: %{public}s, path: %{public}s",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    MEDIA_INFO_LOG("Start DoCreateAstc, id: %{public}s, path: %{public}s, exifRotate:%{public}d, "
+        "position:%{public}d",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position);
     data.loaderOpts.decodeInThumbSize = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
@@ -1221,30 +1219,6 @@ bool GenerateRotatedThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailT
     return true;
 }
 
-unique_ptr<PixelMap> DecodeThumbnailFromFd(int32_t fd)
-{
-    SourceOptions opts;
-    uint32_t err = 0;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, err);
-    if (imageSource == nullptr) {
-        MEDIA_ERR_LOG("Decode thumbnail from fd failed, CreateImageSource err: %{public}d", err);
-        return nullptr;
-    }
-
-    ImageInfo imageInfo;
-    err = imageSource->GetImageInfo(0, imageInfo);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, nullptr,
-        "Decode thumbnail from fd failed, GetImageInfo err: %{public}d", err);
-
-    DecodeOptions decodeOpts;
-    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
-    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
-    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, nullptr,
-        "Decode thumbnail from fd failed, CreatePixelMap err: %{public}d", err);
-    return pixelMap;
-}
-
 bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     ThumbnailWait thumbnailWait(true);
@@ -1253,8 +1227,9 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
         return ret == WaitStatus::WAIT_SUCCESS;
     }
     
-    MEDIA_INFO_LOG("Start DoCreateAstcEx, id: %{public}s, path: %{public}s",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    MEDIA_INFO_LOG("Start DoCreateAstcEx, id: %{public}s, path: %{public}s, exifRotate:%{public}d, "
+        "position:%{public}d",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), data.exifRotate, data.position);
     string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_EX_SUFFIX);
     if (access(fileName.c_str(), F_OK) != 0) {
         MEDIA_ERR_LOG("No available file in THM_EX, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
@@ -1294,6 +1269,63 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
     return isPrevStepSuccess;
 }
 
+bool LoadPixelMapSourceFromThumbnailSource(ThumbnailData &data, unique_ptr<ImageSource> &imageSource)
+{
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false, "ImageSource is nullptr");
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    uint32_t errorCode = 0;
+    unique_ptr<PixelMap> pixelMapPtr = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    CHECK_AND_RETURN_RET_LOG(errorCode == 0 && pixelMapPtr != nullptr, false,
+        "Decode thumbnail from fd failed, CreatePixelMap err: %{public}d", errorCode);
+
+    std::shared_ptr<PixelMap> pixelMap = std::move(pixelMapPtr);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPixelMapValid(pixelMap),
+        false, "PixelMap is invalid");
+
+    data.source.SetPixelMap(pixelMap);
+    ThumbnailUtils::PostProcPixelMapSource(data);
+    return true;
+}
+
+bool LoadPictureSourceFromThumbnailSource(ThumbnailData &data, unique_ptr<ImageSource> &imageSource)
+{
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false, "ImageSource is nullptr");
+    DecodingOptionsForPicture pictureOpts;
+    pictureOpts.desireAuxiliaryPictures = {AuxiliaryPictureType::GAINMAP};
+    uint32_t errorCode = 0;
+    auto picturePtr = imageSource->CreatePicture(pictureOpts, errorCode);
+    CHECK_AND_RETURN_RET_LOG(errorCode == 0 && picturePtr != nullptr, false,
+        "Decode thumbnail from fd failed, CreatePicture err: %{public}d", errorCode);
+
+    std::shared_ptr<Picture> picture = std::move(picturePtr);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPictureValid(picture),
+        false, "Picture is invalid");
+
+    data.source.SetPicture(picture);
+    ThumbnailUtils::PostProcPictureSource(data);
+    return true;
+}
+
+bool LoadSourceFromThumbnailFd(ThumbnailData &data, int32_t fd, ThumbnailType thumbType)
+{
+    SourceOptions opts;
+    uint32_t err = 0;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, err);
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false,
+        "Decode thumbnail from fd failed, CreateImageSource err: %{public}d", err);
+
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false,
+        "Decode thumbnail from fd failed, GetImageInfo err: %{public}d", err);
+    
+    CHECK_AND_RETURN_RET(thumbType == ThumbnailType::LCD && imageSource->IsHdrImage(),
+        LoadPixelMapSourceFromThumbnailSource(data, imageSource));
+    return LoadPictureSourceFromThumbnailSource(data, imageSource);
+}
+
 bool IThumbnailHelper::DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType)
 {
     ThumbnailWait thumbnailWait(true);
@@ -1303,10 +1335,11 @@ bool IThumbnailHelper::DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &dat
         close(fd);
         return ret == WaitStatus::WAIT_SUCCESS;
     }
-    
-    auto dataSourcePtr = DecodeThumbnailFromFd(fd);
-    std::shared_ptr<PixelMap> dataSource = std::move(dataSourcePtr);
-    if (dataSource == nullptr) {
+
+    data.needGenerateExThumbnail = false;
+    data.lastLoadSource = thumbType == ThumbnailType::LCD ? SourceState::CLOUD_LCD : SourceState::CLOUD_THUMB;
+    ThumbnailUtils::HandleImageExifRotate(data);
+    if (!LoadSourceFromThumbnailFd(data, fd, thumbType)) {
         MEDIA_ERR_LOG("GetThumbnailPixelMap failed, dataSource is nullptr, path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
         close(fd);
@@ -1316,8 +1349,6 @@ bool IThumbnailHelper::DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &dat
     }
     close(fd);
 
-    PostProc::RotateInRectangularSteps(*(dataSource.get()), static_cast<float>(data.orientation), true);
-    data.source.SetPixelMap(dataSource);
     if (!GenerateRotatedThumbnail(opts, data, thumbType)) {
         MEDIA_ERR_LOG("GenerateRotatedThumbnail failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         thumbnailWait.UpdateCloudLoadThumbnailMap(thumbType == ThumbnailType::LCD ?

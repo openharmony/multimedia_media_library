@@ -85,6 +85,7 @@ static const std::map<std::string, DataType> PHOTOS_COLUMNS = {
     {PhotoColumn::MOVING_PHOTO_EFFECT_MODE, DataType::INT},
     {PhotoColumn::PHOTO_COVER_POSITION, DataType::LONG},
     {PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, DataType::INT},
+    {PhotoColumn::PHOTO_EXIF_ROTATE, DataType::INT},
     {PhotoColumn::PHOTO_THUMBNAIL_READY, DataType::LONG},
     {PhotoColumn::PHOTO_LCD_SIZE, DataType::STRING},
     {PhotoColumn::PHOTO_THUMB_SIZE, DataType::STRING},
