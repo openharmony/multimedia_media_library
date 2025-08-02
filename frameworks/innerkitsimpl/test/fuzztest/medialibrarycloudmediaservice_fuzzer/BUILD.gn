@@ -55,6 +55,8 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/media_gallery_sync_notify.cpp",
     "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_photo_capture_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/multistages_capture_request_task_manager.cpp",
     "${MEDIALIB_UTILS_PATH}/src/cover_position_parser.cpp",
     "./medialibrarycloudmediaservice_fuzzer.cpp",
   ]
@@ -90,6 +92,7 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
+    "ipc:ipc_napi",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",

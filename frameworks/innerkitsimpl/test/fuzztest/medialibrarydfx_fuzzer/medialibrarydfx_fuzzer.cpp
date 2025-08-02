@@ -35,6 +35,7 @@
 #include "dfx_timer.h"
 #include "dfx_transaction.h"
 #include "dfx_worker.h"
+#include "dfx_reporter.h"
 #undef private
 
 namespace OHOS {
@@ -42,11 +43,14 @@ using namespace std;
 using namespace AbilityRuntime;
 using namespace OHOS::Media;
 static const int32_t NUM_BYTES = 1;
+static const int32_t THUMBNAIL_READY_2 = 2;
+static const int32_t THUMBNAIL_READY_3 = 3;
 static const int32_t MIN_PHOTO_POSITION = 1;
 static const int32_t MIN_DFX_TYPE = 17;
 static const int32_t MAX_PHOTO_THUMB_STATUS = 2;
 static const int32_t MAX_PHOTO_POSITION = 3;
 static const int32_t MAX_DIRTY_TYPE = 8;
+static const int32_t MAX_MEDIA_TYPE = 14;
 static const int32_t MAX_DFX_TYPE = 20;
 static const int32_t MAX_BYTE_VALUE = 256;
 static const int32_t SEED_SIZE = 1024;
@@ -79,6 +83,12 @@ static inline int32_t FuzzPhotoThumbStatus()
     return static_cast<Media::PhotoThumbStatus>(value);
 }
 
+static inline int32_t FuzzMediaType()
+{
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_MEDIA_TYPE);
+    return static_cast<Media::MediaType>(value);
+}
+
 static int32_t InsertAlbumAsset()
 {
     NativeRdb::ValuesBucket values;
@@ -98,10 +108,15 @@ static int32_t InsertPhotoAsset()
     values.PutInt(Media::PhotoColumn::PHOTO_POSITION, FuzzPhotoPosition());
     values.PutInt(Media::PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(FuzzDirtyType()));
     values.PutInt(Media::PhotoColumn::PHOTO_THUMB_STATUS, FuzzPhotoThumbStatus());
-    int64_t thumbnailReady = provider->ConsumeBool() ? 3 : 2;
+    values.PutInt(Media::PhotoColumn::PHOTO_WIDTH, provider->ConsumeIntegral<uint16_t>());
+    values.PutInt(Media::PhotoColumn::PHOTO_HEIGHT, provider->ConsumeIntegral<uint16_t>());
+    values.PutInt(Media::MediaColumn::MEDIA_TYPE, FuzzMediaType());
+    int64_t thumbnailReady = provider->ConsumeBool() ? THUMBNAIL_READY_3 : THUMBNAIL_READY_2;
     values.PutLong(Media::PhotoColumn::PHOTO_THUMBNAIL_READY, thumbnailReady);
+    values.PutLong(Media::MediaColumn::MEDIA_SIZE, provider->ConsumeIntegral<int64_t>());
     values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
     values.PutString(Media::PhotoColumn::PHOTO_CLOUD_ID, provider->ConsumeBytesAsString(NUM_BYTES));
+    values.PutString(Media::MediaColumn::MEDIA_MIME_TYPE, provider->ConsumeBytesAsString(NUM_BYTES));
     int64_t fileId = 0;
     g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
     return static_cast<int32_t>(fileId);
@@ -146,6 +161,15 @@ static void DfxDatabaseUtilsFuzzer()
     bool isLocal = provider->ConsumeBool();
     Media::DfxDatabaseUtils::QueryASTCThumb(isLocal);
     Media::DfxDatabaseUtils::QueryLCDThumb(isLocal);
+    Media::DfxDatabaseUtils::QueryPhotoErrorCount();
+
+    int32_t totalDownload = provider->ConsumeIntegral<int32_t>();
+    Media::DfxDatabaseUtils::QueryTotalCloudThumb(totalDownload);
+
+    string photoMimeType;
+    Media::QuerySizeAndResolution queryInfo;
+    Media::DfxDatabaseUtils::GetPhotoMimeType(photoMimeType);
+    Media::DfxDatabaseUtils::GetSizeAndResolutionInfo(queryInfo);
 }
 
 static void DfxTimerFuzzer()
