@@ -59,6 +59,8 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
     { PhotoColumn::MEDIA_NAME, TYPE_STRING },
     { PhotoColumn::MEDIA_FILE_PATH, TYPE_STRING },
     { PhotoColumn::PHOTO_DIRTY, TYPE_INT32 },
+    { PhotoColumn::PHOTO_POSITION, TYPE_INT32 },
+    { PhotoColumn::MEDIA_SIZE, TYPE_INT64 },
 };
 
 const vector<std::string> PhotoAssetChangeInfo::photoAssetColumns_ = []() {
@@ -130,6 +132,10 @@ vector<PhotoAssetChangeInfo> PhotoAssetChangeInfo::GetInfoFromResult(const share
             assetChangeInfo.path_));
         assetChangeInfo.ownerAlbumUri_ = MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
             to_string(assetChangeInfo.ownerAlbumId_));
+        assetChangeInfo.position_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
+            PhotoColumn::PHOTO_POSITION, resultSet, GetDataType(PhotoColumn::PHOTO_POSITION)));
+        assetChangeInfo.size_ = get<int64_t>(ResultSetUtils::GetValFromColumn(
+            PhotoColumn::MEDIA_SIZE, resultSet, GetDataType(PhotoColumn::MEDIA_SIZE)));
         assetChangeInfos.push_back(assetChangeInfo);
     }
     return assetChangeInfos;
@@ -162,6 +168,7 @@ string PhotoAssetChangeInfo::ToString(bool isDetail) const
         ss << ", hiddenTime_: " << hiddenTime_ << ", thumbnailReady_: " << thumbnailReady_;
         ss << ", displayName_: " << MediaFileUtils::DesensitizePath(displayName_);
         ss << ", path_: " << MediaFileUtils::DesensitizePath(path_) << ", dirty_: " << dirty_;
+        ss << ", position_: " <<position_ << ", size_: " << size_;
     } else {
         ss << "fileId_: " << fileId_ << ", ownerAlbumId_: " << ownerAlbumId_;
     }
@@ -195,6 +202,9 @@ bool PhotoAssetChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
         ret = ret && parcel.WriteInt64(dateAddedMs_);
         ret = ret && parcel.WriteInt64(dateTakenMs_);
         ret = ret && parcel.WriteInt32(ownerAlbumId_);
+        ret = ret && parcel.WriteInt32(position_);
+        ret = ret && parcel.WriteString(displayName_);
+        ret = ret && parcel.WriteInt64(size_);
     }
     return ret;
 }
@@ -221,6 +231,9 @@ bool PhotoAssetChangeInfo::ReadFromParcel(Parcel &parcel)
         ret = ret && parcel.ReadInt64(dateAddedMs_);
         ret = ret && parcel.ReadInt64(dateTakenMs_);
         ret = ret && parcel.ReadInt32(ownerAlbumId_);
+        ret = ret && parcel.ReadInt32(position_);
+        ret = ret && parcel.ReadString(displayName_);
+        ret = ret && parcel.ReadInt64(size_);
     }
     return true;
 }
@@ -261,6 +274,8 @@ PhotoAssetChangeInfo& PhotoAssetChangeInfo::operator=(const PhotoAssetChangeInfo
         uri_ = info.uri_;
         ownerAlbumUri_ = info.ownerAlbumUri_;
         dirty_ = info.dirty_;
+        position_ = info.position_;
+        size_ = info.size_;
     }
     return *this;
 }
@@ -289,7 +304,9 @@ bool PhotoAssetChangeInfo::operator==(const PhotoAssetChangeInfo &info) const
         path_ == info.path_ &&
         uri_ == info.uri_ &&
         ownerAlbumUri_ == info.ownerAlbumUri_ &&
-        dirty_ == info.dirty_;
+        dirty_ == info.dirty_ &&
+        position_ == info.position_ &&
+        size_ == info.size_;
 }
 
 bool PhotoAssetChangeInfo::operator!=(const PhotoAssetChangeInfo &info) const
@@ -333,6 +350,8 @@ string PhotoAssetChangeInfo::GetAssetDiff(const PhotoAssetChangeInfo &asset, con
     GET_ASSET_DIFF(ownerAlbumId_);
     GET_ASSET_DIFF(hiddenTime_);
     GET_ASSET_DIFF(dirty_);
+    GET_ASSET_DIFF(position_);
+    GET_ASSET_DIFF(size_);
     if (asset.displayName_ != compare.displayName_) {
         ss << "displayName_: " << MediaFileUtils::DesensitizePath(asset.displayName_) << " -> ";
         ss << MediaFileUtils::DesensitizePath(compare.displayName_);

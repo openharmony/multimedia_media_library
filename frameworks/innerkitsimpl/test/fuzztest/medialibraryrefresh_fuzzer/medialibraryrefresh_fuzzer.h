@@ -175,7 +175,9 @@ const AccurateRefresh::PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSE
     0, // hidden time
     0,
     ASSET_DISPLAY_NAME,
-    ASSET_PATH
+    ASSET_PATH,
+    1, //local
+    666 //size
 };
 
 const std::vector<PhotoAlbumSubType> PHOTO_ALBUM_SUB_TYPE = {
