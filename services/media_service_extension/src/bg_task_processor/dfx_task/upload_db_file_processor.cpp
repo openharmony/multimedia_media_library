@@ -35,7 +35,7 @@ namespace Media {
 // BetaVersion will upload the DB, and the true uploadDBFlag indicates that uploading is enabled.
 const std::string KEY_HIVIEW_VERSION_TYPE = "const.logsystem.versiontype";
 int64_t g_lastTime = MediaFileUtils::UTCTimeMilliSeconds();
-const int32_t TWELVE_HOUR_MS = 12*60*3600;
+const int32_t TWELVE_HOUR_MS = 12*3600*1000;
 const int32_t MAX_FILE_SIZE_MB = 10240;
 const int32_t MegaByte = 1024 * 1024;
 const int32_t LARGE_FILE_SIZE_MB = 200;
