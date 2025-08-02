@@ -890,8 +890,11 @@ static ani_status ParseArgsRemoveAssets(ani_env *env, ani_object object, ani_obj
         AniError::ThrowError(env, JS_INNER_FAIL);
         return ANI_INVALID_ARGS;
     }
+    context->assetsArray = assetsArray;
     context->predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
-    context->predicates.And()->In(PhotoColumn::MEDIA_ID, assetsArray);
+    auto andPredicates = context->predicates.And();
+    CHECK_COND_RET(andPredicates != nullptr, ANI_INVALID_ARGS, "andPredicates is nullptr");
+    andPredicates->In(PhotoColumn::MEDIA_ID, assetsArray);
     return ANI_OK;
 }
 
@@ -1098,6 +1101,42 @@ void PhotoAlbumAni::PhotoAccessHelperRecoverPhotos(ani_env *env, ani_object obje
     RecoverPhotosComplete(env, context);
 }
 
+static ani_status DeletePhotosParseArgs(ani_env *env, ani_object object, ani_object photoAssets,
+    unique_ptr<PhotoAlbumAniContext> &context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_INVALID_ARGS, "context is nullptr");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return ANI_ERROR;
+    }
+
+    context->objectInfo = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
+    if (context->objectInfo == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, __FUNCTION__, __LINE__);
+        return ANI_INVALID_ARGS;
+    }
+
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (photoAlbum == nullptr) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return ANI_INVALID_ARGS;
+    }
+    if (!PhotoAlbum::IsTrashAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check trash album type");
+        return ANI_INVALID_ARGS;
+    }
+
+    std::vector<string> uris;
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetUriArrayFromAssets(env, photoAssets, uris), "Parse uris fail");
+    if (uris.empty()) {
+        AniError::ThrowError(env, JS_INNER_FAIL);
+        return ANI_INVALID_ARGS;
+    }
+    context->uris = uris;
+    return ANI_OK;
+}
+
 static void DeletePhotosExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
@@ -1125,7 +1164,7 @@ void PhotoAlbumAni::PhotoAccessHelperDeletePhotos(ani_env *env, ani_object objec
 
     unique_ptr<PhotoAlbumAniContext> context = make_unique<PhotoAlbumAniContext>();
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
-    CHECK_IF_EQUAL(TrashAlbumParseArgs(env, object, photoAssets, context) == ANI_OK, "TrashAlbumParseArgs fail");
+    CHECK_IF_EQUAL(DeletePhotosParseArgs(env, object, photoAssets, context) == ANI_OK, "DeletePhotosParseArgs fail");
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     DeletePhotosExecute(env, context);
     DeletePhotosComplete(env, context);
@@ -1154,6 +1193,7 @@ static ani_status ParseArgsSetCoverUri(ani_env *env, ani_object object, ani_stri
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return ANI_INVALID_ARGS;
     }
+    context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SET_COVER_URI);
     context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
     return ANI_OK;
@@ -1239,7 +1279,7 @@ ani_string PhotoAlbumAni::PhotoAccessHelperGetFaceId(ani_env *env, ani_object ob
     return GetFaceIdComplete(env, context);
 }
 
-ani_double PhotoAlbumAni::GetImageCount(ani_env *env, ani_object object)
+ani_int PhotoAlbumAni::GetImageCount(ani_env *env, ani_object object)
 {
     PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
     if (photoAlbumAni == nullptr || photoAlbumAni->GetPhotoAlbumInstance() == nullptr) {
@@ -1247,10 +1287,10 @@ ani_double PhotoAlbumAni::GetImageCount(ani_env *env, ani_object object)
         return 0;
     }
     int32_t imageCount = photoAlbumAni->GetPhotoAlbumInstance()->GetImageCount();
-    return static_cast<ani_double>(imageCount);
+    return static_cast<ani_int>(imageCount);
 }
 
-ani_double PhotoAlbumAni::GetVideoCount(ani_env *env, ani_object object)
+ani_int PhotoAlbumAni::GetVideoCount(ani_env *env, ani_object object)
 {
     PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
     if (photoAlbumAni == nullptr || photoAlbumAni->GetPhotoAlbumInstance() == nullptr) {
@@ -1258,7 +1298,7 @@ ani_double PhotoAlbumAni::GetVideoCount(ani_env *env, ani_object object)
         return 0;
     }
     int32_t videoCount = photoAlbumAni->GetPhotoAlbumInstance()->GetVideoCount();
-    return static_cast<ani_double>(videoCount);
+    return static_cast<ani_int>(videoCount);
 }
 
 ani_object PhotoAlbumAni::PhotoAccessGetSharedPhotoAssets(ani_env *env, ani_object object, ani_object options)
@@ -1297,7 +1337,7 @@ ani_object PhotoAlbumAni::PhotoAccessGetSharedPhotoAssets(ani_env *env, ani_obje
     return aniArray;
 }
 
-ani_double PhotoAlbumAni::GetdateAdded(ani_env *env, ani_object object)
+ani_long PhotoAlbumAni::GetdateAdded(ani_env *env, ani_object object)
 {
     PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
     if (photoAlbumAni == nullptr || photoAlbumAni->GetPhotoAlbumInstance() == nullptr) {
@@ -1305,10 +1345,10 @@ ani_double PhotoAlbumAni::GetdateAdded(ani_env *env, ani_object object)
         return 0;
     }
     auto dateAdded = photoAlbumAni->GetPhotoAlbumInstance()->GetDateAdded();
-    return static_cast<ani_double>(dateAdded);
+    return static_cast<ani_long>(dateAdded);
 }
 
-ani_double PhotoAlbumAni::GetdateModified(ani_env *env, ani_object object)
+ani_long PhotoAlbumAni::GetdateModified(ani_env *env, ani_object object)
 {
     PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
     if (photoAlbumAni == nullptr || photoAlbumAni->GetPhotoAlbumInstance() == nullptr) {
@@ -1316,7 +1356,7 @@ ani_double PhotoAlbumAni::GetdateModified(ani_env *env, ani_object object)
         return 0;
     }
     auto dateModified = photoAlbumAni->GetPhotoAlbumInstance()->GetDateModified();
-    return static_cast<ani_double>(dateModified);
+    return static_cast<ani_long>(dateModified);
 }
 
 } // namespace OHOS::Media

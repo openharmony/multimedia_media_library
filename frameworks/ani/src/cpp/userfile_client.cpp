@@ -16,6 +16,7 @@
 #include "userfile_client.h"
 
 #include "ability.h"
+#include "iservice_registry.h"
 #include "ani_base_context.h"
 #include "media_asset_rdbstore.h"
 #include "medialibrary_ani_log.h"
@@ -31,10 +32,15 @@ using DataShareResultSet = DataShare::DataShareResultSet;
 using DataSharePredicates = DataShare::DataSharePredicates;
 using DatashareBusinessError = DataShare::DatashareBusinessError;
 using DataShareValuesBucket = DataShare::DataShareValuesBucket;
+
+constexpr int32_t BUNDLE_MGR_SERVICE_SYS_ABILITY_ID = 401;
 int32_t UserFileClient::userId_ = DEFAULT_USER_ID;
+string UserFileClient::bundleName_ = "";
 std::string MULTI_USER_URI_FLAG = "user=";
 std::string USER_STR = "user";
 SafeMap<int32_t, std::shared_ptr<DataShare::DataShareHelper>> UserFileClient::dataShareHelperMap_ = {};
+sptr<AppExecFwk::IBundleMgr> UserFileClient::bundleMgr_ = nullptr;
+mutex UserFileClient::bundleMgrMutex_;
 
 static std::string GetMediaLibraryDataUri(const int32_t userId)
 {
@@ -145,6 +151,15 @@ int32_t UserFileClient::UserDefineFunc(const int32_t &userId, MessageParcel &dat
     return GetDataShareHelperByUser(userId)->UserDefineFunc(data, reply, option);
 }
 
+int32_t UserFileClient::UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option)
+{
+    if (!IsValid(GetUserId())) {
+        ANI_ERR_LOG("JS UserDefineFunc fail, helper null %{public}d", GetUserId());
+        return E_FAIL;
+    }
+    return GetDataShareHelperByUser(GetUserId())->UserDefineFunc(data, reply, option);
+}
+
 void UserFileClient::Init(const sptr<IRemoteObject> &token, bool isSetHelper, const int32_t userId)
 {
     if (GetDataShareHelperByUser(userId) == nullptr) {
@@ -210,6 +225,7 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
     }
     return resultSet;
 }
+
 std::shared_ptr<NativeRdb::ResultSet> UserFileClient::QueryRdb(Uri &uri,
     const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns)
 {
@@ -423,6 +439,73 @@ std::pair<bool, std::shared_ptr<DataShare::DataShareResultSet>> UserFileClient::
         return {true, MediaAssetRdbStore::GetInstance()->Query(predicates, columns, object, errCode)};
     }
     return {false, nullptr};
+}
+
+sptr<AppExecFwk::IBundleMgr> UserFileClient::GetSysBundleManager()
+{
+    if (bundleMgr_ != nullptr) {
+        return bundleMgr_;
+    }
+    lock_guard<mutex> lock(bundleMgrMutex_);
+    auto systemAbilityMgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (systemAbilityMgr == nullptr) {
+        ANI_ERR_LOG("Failed to get SystemAbilityManager.");
+        return nullptr;
+    }
+    auto bundleObj = systemAbilityMgr->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+    if (bundleObj == nullptr) {
+        ANI_ERR_LOG("Remote object is nullptr.");
+        return nullptr;
+    }
+    auto bundleMgr = iface_cast<AppExecFwk::IBundleMgr>(bundleObj);
+    if (bundleMgr == nullptr) {
+        ANI_ERR_LOG("Failed to iface_cast");
+        return nullptr;
+    }
+    return bundleMgr;
+}
+
+string UserFileClient::GetBundleName()
+{
+    if (bundleName_ != "") {
+        return bundleName_;
+    }
+    bundleMgr_ = GetSysBundleManager();
+    if (bundleMgr_ == nullptr) {
+        ANI_ERR_LOG("bundleMgr_ is null");
+        return bundleName_;
+    }
+    int32_t uid = static_cast<int32_t>(getuid());
+    string bundleName;
+    auto result = bundleMgr_->GetBundleNameForUid(uid, bundleName);
+    if (!result) {
+        ANI_ERR_LOG("result is false");
+        return bundleName_;
+    }
+    ANI_INFO_LOG("hap bundleName: %{public}s", bundleName.c_str());
+    bundleName_ = bundleName;
+    return bundleName_;
+}
+
+int32_t UserFileClient::RegisterObserverExtProvider(const Uri &uri,
+    std::shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants)
+{
+    if (!IsValid(GetUserId())) {
+        ANI_ERR_LOG("register observer fail, helper null, userId is %{public}d", GetUserId());
+        return E_FAIL;
+    }
+    return
+        GetDataShareHelperByUser(GetUserId())->RegisterObserverExtProvider(uri, std::move(dataObserver), isDescendants);
+}
+
+int32_t UserFileClient::UnregisterObserverExtProvider(const Uri &uri,
+    std::shared_ptr<DataShare::DataShareObserver> dataObserver)
+{
+    if (!IsValid(GetUserId())) {
+        ANI_ERR_LOG("unregister observer fail, helper null, userId is %{public}d", GetUserId());
+        return E_FAIL;
+    }
+    return GetDataShareHelperByUser(GetUserId())->UnregisterObserverExtProvider(uri, std::move(dataObserver));
 }
 } // namespace Media
 } // namespace OHOS

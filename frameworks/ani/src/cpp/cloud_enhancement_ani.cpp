@@ -442,23 +442,15 @@ void CloudEnhancementAni::SubmitCloudEnhancementTasks(ani_env *env, ani_object a
     MediaLibraryTracer tracer;
     tracer.Start("SubmitCloudEnhancementTasks");
 
-    double triMode = 0;
+    int32_t triMode = 0;
     if (!isUndefined) {
-        ani_class doubleClass;
-        env->FindClass("std.core.Double", &doubleClass);
-        ani_boolean isDouble;
-        env->Object_InstanceOf(triggerMode, doubleClass, &isDouble);
-        if (isDouble) {
-            ani_double result;
-            env->Object_CallMethodByName_Double(triggerMode, "unboxed", ":d", &result);
-            CHECK_ARGS_RET_VOID(env, MediaLibraryAniUtils::GetDouble(env, result, triMode), OHOS_INVALID_PARAM_CODE);
-        }
+        CHECK_ARGS_RET_VOID(env, MediaLibraryAniUtils::GetInt32(env, triggerMode, triMode), OHOS_INVALID_PARAM_CODE);
     }
     auto aniContext = make_unique<CloudEnhancementAniContext>();
     SubmitCloudEnhancementParams params;
     params.photoAssets = photoAssets;
     params.hasCloudWatermark = hasCloudWatermark;
-    params.triggerMode = static_cast<int>(triMode);
+    params.triggerMode = triMode;
     CHECK_NULL_PTR_RETURN_VOID(ParseArgsSubmitCloudEnhancementTasks(
         env, aniObject, params, aniContext), "Failed to parse args");
 

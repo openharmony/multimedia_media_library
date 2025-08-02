@@ -581,11 +581,11 @@ ani_status HighlightAlbumAni::SetSubTitle(ani_env *env, ani_object object, ani_o
     return SetHighlightSubtitleComplete(env, context);
 }
 
-ani_double HighlightAlbumAni::DeleteHighlightAlbums(ani_env *env, ani_object object, ani_object context,
+ani_int HighlightAlbumAni::DeleteHighlightAlbums(ani_env *env, ani_object object, ani_object context,
     ani_object albums)
 {
     ANI_DEBUG_LOG("%{public}s is called", __func__);
-    ani_double returnObj {};
+    ani_int returnObj {};
     CHECK_COND_RET(env != nullptr, returnObj, "env is null");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "DeleteHighlightAlbums can be called only by system apps");
@@ -624,8 +624,8 @@ ani_double HighlightAlbumAni::DeleteHighlightAlbums(ani_env *env, ani_object obj
     }
     ANI_INFO_LOG("Delete highlight album(s): %{public}d", ret);
     CHECK_COND_WITH_RET_MESSAGE(env,
-        MediaLibraryAniUtils::ToAniDouble(env, static_cast<double>(ret), returnObj) == ANI_OK,
-        returnObj, "ToAniDouble failed");
+        MediaLibraryAniUtils::ToAniInt(env, ret, returnObj) == ANI_OK,
+        returnObj, "Return value ToAniInt failed");
     return returnObj;
 }
 } // namespace OHOS::Media
