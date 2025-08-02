@@ -569,13 +569,14 @@ static void GetObjectAtPosition(std::unique_ptr<FetchFileResultAniContext>& aniC
     }
 }
 
-ani_object FetchFileResultAni::GetPositionObject(ani_env *env, ani_object fetchFileResultHandle, ani_double index)
+ani_object FetchFileResultAni::GetPositionObject(ani_env *env, ani_object fetchFileResultHandle, ani_int index)
 {
     auto aniContext = make_unique<FetchFileResultAniContext>();
     CHECK_COND_RET(aniContext != nullptr, nullptr, "aniContext is nullptr");
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
     if (CheckIfFFRAniNotEmpty(aniContext->objectInfo)) {
-        aniContext->position = static_cast<int32_t>(index);
+        CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetInt32(env, index, aniContext->position) == ANI_OK,
+            "Failed to get orientation");
         aniContext->objectPtr = aniContext->objectInfo->propertyPtr;
         CHECK_COND_RET(aniContext->objectPtr, nullptr, "propertyPtr is nullptr");
         GetObjectAtPosition(aniContext);
@@ -586,10 +587,10 @@ ani_object FetchFileResultAni::GetPositionObject(ani_env *env, ani_object fetchF
     return nullptr;
 }
 
-ani_double FetchFileResultAni::GetCount([[maybe_unused]] ani_env *env,
+ani_int FetchFileResultAni::GetCount([[maybe_unused]] ani_env *env,
     [[maybe_unused]] ani_object fetchFileResultHandle) // number Double
 {
-    ani_double count = 0.0;
+    ani_int count = 0;
     auto aniContext = make_unique<FetchFileResultAniContext>();
     CHECK_COND_RET(aniContext != nullptr, count, "aniContext is nullptr");
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);

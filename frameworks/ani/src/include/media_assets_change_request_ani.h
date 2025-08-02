@@ -52,6 +52,7 @@ public:
     std::string GetUserComment() const;
     bool GetRecentShowStatus() const;
     ani_status ApplyChanges(ani_env *env) override;
+    void GetFileAssetIds(std::vector<int32_t> &fileIds) const;
 private:
     bool isFavorite_;
     bool isHidden_;

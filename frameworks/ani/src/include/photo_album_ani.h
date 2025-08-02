@@ -74,11 +74,11 @@ private:
     EXPORT static void PhotoAccessHelperDeletePhotos(ani_env *env, ani_object object, ani_object photoAssets);
     EXPORT static void PhotoAccessHelperSetCoverUri(ani_env *env, ani_object object, ani_string uri);
     EXPORT static ani_string PhotoAccessHelperGetFaceId(ani_env *env, ani_object object);
-    EXPORT static ani_double GetImageCount(ani_env *env, ani_object object);
-    EXPORT static ani_double GetVideoCount(ani_env *env, ani_object object);
+    EXPORT static ani_int GetImageCount(ani_env *env, ani_object object);
+    EXPORT static ani_int GetVideoCount(ani_env *env, ani_object object);
     EXPORT static ani_object PhotoAccessGetSharedPhotoAssets(ani_env *env, ani_object object, ani_object options);
-    EXPORT static ani_double GetdateAdded(ani_env *env, ani_object object);
-    EXPORT static ani_double GetdateModified(ani_env *env, ani_object object);
+    EXPORT static ani_long GetdateAdded(ani_env *env, ani_object object);
+    EXPORT static ani_long GetdateModified(ani_env *env, ani_object object);
 
     ani_env *env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;

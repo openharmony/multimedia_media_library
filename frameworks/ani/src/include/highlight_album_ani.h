@@ -54,7 +54,7 @@ private:
     EXPORT static ani_status SetHighlightUserActionData(ani_env *env, ani_object object, ani_enum_item type,
          ani_int actionDataAni);
     EXPORT static ani_status SetSubTitle(ani_env *env, ani_object object, ani_object subTitle);
-    EXPORT static ani_double DeleteHighlightAlbums(ani_env *env, ani_object object, ani_object context,
+    EXPORT static ani_int DeleteHighlightAlbums(ani_env *env, ani_object object, ani_object context,
         ani_object albums);
 
     ani_env *highlightEnv_;

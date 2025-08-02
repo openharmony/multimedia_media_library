@@ -47,14 +47,15 @@ class MediaLibraryAniError extends BusinessError {
 
 export namespace photoAccessHelper {
   loadLibrary("photo_access_helper_ani");
-  native function getPhotoAccessHelperInner(context: Context, userId?: number): PhotoAccessHelper;
+  native function getPhotoAccessHelperInner(context: Context): PhotoAccessHelper;
+  native function getPhotoAccessHelperWithUserIdInner(context: Context, userId: int): PhotoAccessHelper;
 
   export function getPhotoAccessHelper(context: Context): PhotoAccessHelper {
     return getPhotoAccessHelperInner(context);
   }
 
-  export function getPhotoAccessHelper(context: Context, userId: number): PhotoAccessHelper {
-    return getPhotoAccessHelperInner(context, userId);
+  export function getPhotoAccessHelper(context: Context, userId: int): PhotoAccessHelper {
+    return getPhotoAccessHelperWithUserIdInner(context, userId);
   }
 
   export enum PhotoType {
@@ -131,7 +132,7 @@ export namespace photoAccessHelper {
   }
 
   export interface MediaAssetProgressHandler {
-    onProgress(progress: number): void;
+    onProgress(progress: int): void;
   }
 
   export enum SourceMode {
@@ -210,7 +211,7 @@ export namespace photoAccessHelper {
       }
     }
 
-    static onMediaAssetProgress(progress: number, progressHandler: MediaAssetProgressHandler): void {
+    static onMediaAssetProgress(progress: int, progressHandler: MediaAssetProgressHandler): void {
       if (progressHandler !== undefined && progressHandler !== null) {
         progressHandler.onProgress(progress);
       }
@@ -417,7 +418,7 @@ export namespace photoAccessHelper {
     native static loadMovingPhotoInner(context: Context, imageFileUri: string, videoFileUri: string): MovingPhoto;
   }
 
-  export type MemberType = number | string | boolean;
+  export type MemberType = int | long | double | string | boolean;
 
   export interface PhotoAsset {
     readonly uri: string;
@@ -446,8 +447,8 @@ export namespace photoAccessHelper {
     requestEditData(): Promise<string>;
     getEditData(): Promise<MediaAssetEditData>;
     clone(title: string): Promise<PhotoAsset>;
-    requestSource(callback: AsyncCallback<number | undefined>): void;
-    requestSource(): Promise<number>;
+    requestSource(callback: AsyncCallback<int | undefined>): void;
+    requestSource(): Promise<int>;
     commitEditedAsset(editData: string, uri: string, callback: AsyncCallback<void>): void;
     commitEditedAsset(editData: string, uri: string): Promise<void>;
     revertToOriginal(callback: AsyncCallback<void>): void;
@@ -455,7 +456,7 @@ export namespace photoAccessHelper {
     requestPhoto(callback: AsyncCallback<image.PixelMap>): string;
     requestPhoto(options: RequestPhotoOptions, callback: AsyncCallback<image.PixelMap>): string;
     cancelPhotoRequest(requestId: string): void;
-    getKeyFrameThumbnail(beginFrameTimeMs: number, type: ThumbnailType): Promise<image.PixelMap>;
+    getKeyFrameThumbnail(beginFrameTimeMs: long, type: ThumbnailType): Promise<image.PixelMap>;
     isEdited(callback: AsyncCallback<boolean | undefined>): void;
     isEdited(): Promise<boolean>;
     getThumbnailData(type: ThumbnailType): Promise<ArrayBuffer>;
@@ -469,7 +470,7 @@ export namespace photoAccessHelper {
     readonly uri: string = "";
     readonly photoType: PhotoType;
     readonly displayName: string = "";
-    readonly captureId: number = 0;
+    readonly captureId: int = 0;
     private nativePhotoAsset: long = 0;
 
     constructor(context: long) {
@@ -935,9 +936,9 @@ export namespace photoAccessHelper {
       });
     }
 
-    requestSource(callback: AsyncCallback<number | undefined>): void {
-      let cb = (): MediaLibraryAniError | number => {
-        let result: number | MediaLibraryAniError;
+    requestSource(callback: AsyncCallback<int | undefined>): void {
+      let cb = (): MediaLibraryAniError | int => {
+        let result: int | MediaLibraryAniError;
         try {
           result = this.requestSourceSync() ;
         } catch(e) {
@@ -953,16 +954,16 @@ export namespace photoAccessHelper {
            if (isNullish(ret)) {
             callback(businessError(-1, "Operation failed"), undefined);
           } else {
-            callback(businessError(0), ret as number);
+            callback(businessError(0), ret as int);
           }
         }
       });
     }
 
-    requestSource(): Promise<number> {
-      return new Promise<number>((resolve: (v: number) => void, reject: RejectString) => {
-        let cb = (): number | MediaLibraryAniError => {
-          let result: number | MediaLibraryAniError;
+    requestSource(): Promise<int> {
+      return new Promise<int>((resolve: (v: int) => void, reject: RejectString) => {
+        let cb = (): int | MediaLibraryAniError => {
+          let result: int | MediaLibraryAniError;
           try {
             result =  this.requestSourceSync();
           } catch(e) {
@@ -978,7 +979,7 @@ export namespace photoAccessHelper {
             if (isNullish(ret)) {
               reject(businessError<string>(-1, "Operation failed"));
             } else {
-              resolve(ret as number);
+              resolve(ret as int);
             }
           }
         });
@@ -1075,7 +1076,7 @@ export namespace photoAccessHelper {
       return this.requestPhotoSync(callback, options);
     }
 
-    getKeyFrameThumbnail(beginFrameTimeMs: number, type: ThumbnailType): Promise<image.PixelMap> {
+    getKeyFrameThumbnail(beginFrameTimeMs: long, type: ThumbnailType): Promise<image.PixelMap> {
       return new Promise<image.PixelMap>((resolve: (v: image.PixelMap) => void, reject: RejectString) => {
         let cb = (): image.PixelMap | MediaLibraryAniError => {
           let result: image.PixelMap | MediaLibraryAniError;
@@ -1278,12 +1279,12 @@ export namespace photoAccessHelper {
     native requestEditDataSync(): string;
     native getEditDataSync(): MediaAssetEditData;
     native cloneSync(title: string): PhotoAsset;
-    native requestSourceSync(): number;
+    native requestSourceSync(): int;
     native commitEditedAssetSync(editData: string, uri: string): void;
     native revertToOriginalSync(): void;
     native requestPhotoSync(callback: AsyncCallback<image.PixelMap>, options?: RequestPhotoOptions): string;
     native cancelPhotoRequest(requestId: string): void;
-    native getKeyFrameThumbnailSync(beginFrameTimeMs: number, type: ThumbnailType): image.PixelMap;
+    native getKeyFrameThumbnailSync(beginFrameTimeMs: long, type: ThumbnailType): image.PixelMap;
     native isEditedSync(): boolean;
     native getThumbnailDataSync(type: ThumbnailType): ArrayBuffer;
     native getExifSync(): string;
@@ -1332,7 +1333,8 @@ export namespace photoAccessHelper {
     IS_CE_AUTO = 'is_auto',
     OWNER_ALBUM_ID = 'owner_album_id',
     IS_RECENT_SHOW = 'is_recent_show',
-    MEDIA_SUFFIX = 'media_suffix'
+    MEDIA_SUFFIX = 'media_suffix',
+    SUM_SIZE = 'sum(size)'
   }
 
   export enum AlbumKeys {
@@ -1369,7 +1371,7 @@ export namespace photoAccessHelper {
     bundleName?: string;
     appName?: string;
     appId?: string;
-    tokenId?: number;
+    tokenId?: long;
   }
 
   export interface CreateOptions {
@@ -1383,7 +1385,7 @@ export namespace photoAccessHelper {
   }
 
   export interface FetchResult<T> {
-    getCount(): number;
+    getCount(): int;
     isAfterLast(): boolean;
     getFirstObject(callback: AsyncCallback<T | undefined>): void;
     getFirstObject(): Promise<T>;
@@ -1391,8 +1393,8 @@ export namespace photoAccessHelper {
     getNextObject(): Promise<T>;
     getLastObject(callback: AsyncCallback<T | undefined>): void;
     getLastObject(): Promise<T>;
-    getObjectByPosition(index: number, callback: AsyncCallback<T | undefined>): void;
-    getObjectByPosition(index: number): Promise<T>;
+    getObjectByPosition(index: int, callback: AsyncCallback<T | undefined>): void;
+    getObjectByPosition(index: int): Promise<T>;
     getAllObjects(callback: AsyncCallback<Array<T> | undefined>): void;
     getAllObjects(): Promise<Array<T>>;
     close(): void;
@@ -1405,7 +1407,7 @@ export namespace photoAccessHelper {
         this.nativeValue = value;
     }
 
-    native getCount(): number;
+    native getCount(): int;
     native isAfterLast(): boolean;
     getFirstObject(callback: AsyncCallback<T | undefined, void>): void {
       let cb = (): T | MediaLibraryAniError => {
@@ -1557,7 +1559,7 @@ export namespace photoAccessHelper {
       });
     }
 
-    getObjectByPosition(index: number, callback: AsyncCallback<T | undefined>): void {
+    getObjectByPosition(index: int, callback: AsyncCallback<T | undefined>): void {
       let cb = (): MediaLibraryAniError | T => {
         let result: MediaLibraryAniError | T;
         try {
@@ -1581,7 +1583,7 @@ export namespace photoAccessHelper {
       });
     }
 
-    getObjectByPosition(index: number): Promise<T> {
+    getObjectByPosition(index: int): Promise<T> {
       return new Promise<T>((resolve: (v: T) => void, reject: RejectString) => {
         let cb = (): T | MediaLibraryAniError => {
           let result: T | MediaLibraryAniError;
@@ -1667,7 +1669,7 @@ export namespace photoAccessHelper {
     native getNextObjectSync(): T;
     native getLastObjectSync(): T;
     native getAllObjectsSync(): Array<T>;
-    native getObjectByPositionSync(index: number): T;
+    native getObjectByPositionSync(index: int): T;
   }
 
   export enum AlbumType {
@@ -1710,7 +1712,7 @@ export namespace photoAccessHelper {
     readonly albumSubtype: AlbumSubtype;
     albumName: string;
     readonly albumUri: string;
-    readonly count: number;
+    readonly count: int;
     readonly coverUri: string;
     readonly lpath?: string;
 
@@ -1720,10 +1722,10 @@ export namespace photoAccessHelper {
   }
 
   export interface Album extends AbsAlbum {
-    readonly imageCount?: number;
-    readonly videoCount?: number;
-    readonly dateAdded?: number;
-    readonly dateModified?: number;
+    readonly imageCount?: int;
+    readonly videoCount?: int;
+    readonly dateAdded?: long;
+    readonly dateModified?: long;
 
     commitModify(callback: AsyncCallback<void>): void;
     commitModify(): Promise<void>;
@@ -1745,13 +1747,13 @@ export namespace photoAccessHelper {
     readonly albumSubtype: AlbumSubtype;
     albumName: string = '';
     readonly albumUri: string = '';
-    readonly count: number;
+    readonly count: int;
     readonly coverUri: string = '';
     readonly lpath: string | undefined = undefined;
-    readonly imageCount: number | undefined = undefined;
-    readonly videoCount: number | undefined = undefined;
-    readonly dateAdded: number | undefined = undefined;
-    readonly dateModified: number | undefined = undefined;
+    readonly imageCount: int | undefined = undefined;
+    readonly videoCount: int | undefined = undefined;
+    readonly dateAdded: long | undefined = undefined;
+    readonly dateModified: long | undefined = undefined;
     private nativePhotoAlbum: long = 0;
 
     constructor(nativePtr: long) {
@@ -2090,11 +2092,11 @@ export namespace photoAccessHelper {
     native deleteAssetsInner(assets: Array<PhotoAsset>): void;
     native setCoverUriInner(uri: string): void;
     native getFaceIdInner(): string;
-    native getImageCount(): number;
-    native getVideoCount(): number;
+    native getImageCount(): int;
+    native getVideoCount(): int;
     native getSharedPhotoAssets(options: FetchOptions): Array<SharedPhotoAsset>;
-    native getdateAdded(): number;
-    native getdateModified(): number;
+    native getdateAdded(): long;
+    native getdateModified(): long;
   }
 
   export interface PhotoAccessHelper {
@@ -2103,8 +2105,8 @@ export namespace photoAccessHelper {
     getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
     getFileAssetsInfo(options: FetchOptions): Array<FileAssetInfo>;
     startThumbnailCreationTask(predicate: dataSharePredicates.DataSharePredicates,
-      callback: AsyncCallback<void>): number;
-    stopThumbnailCreationTask(taskId: number): void;
+      callback: AsyncCallback<void>): int;
+    stopThumbnailCreationTask(taskId: int): void;
     startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
     getBurstAssets(burstKey: string, options: FetchOptions): Promise<FetchResult<PhotoAsset>>;
     createAsset(displayName: string, callback: AsyncCallback<PhotoAsset | undefined>): void;
@@ -2128,9 +2130,9 @@ export namespace photoAccessHelper {
     getDataAnalysisProgress(analysisType: AnalysisType): Promise<string>;
     getSharedPhotoAssets(options: FetchOptions): Array<SharedPhotoAsset>;
     unRegisterChange(uri: string, callback?: Callback<ChangeData>): void;
-    createAssetsForApp(bundleName: string, appName: string, appId: string,
+    createAssetsForApp(bundleName: string, appName: string, tokenId: long,
       photoCreationConfigs: Array<PhotoCreationConfig>): Promise<Array<string>>;
-    createAssetsForAppWithMode(bundleName: string, appName: string, appId: string, tokenId: number,
+    createAssetsForAppWithMode(bundleName: string, appName: string, appId: string, tokenId: long,
       authorizationMode: AuthorizationMode, photoCreationConfigs: Array<PhotoCreationConfig>): Promise<Array<string>>;
     release(callback: AsyncCallback<void>): void;
     release(): Promise<void>;
@@ -2139,23 +2141,23 @@ export namespace photoAccessHelper {
     saveGalleryFormInfo(info: GalleryFormInfo): Promise<void>;
     applyChanges(mediaChangeRequest: MediaChangeRequest): Promise<void>;
     getIndexConstructProgress(): Promise<string>;
-    grantPhotoUrisPermission(tokenId: number, uriList: Array<string>, photoPermissionType: PhotoPermissionType,
-      hideSensitiveType: HideSensitiveType): Promise<number>;
-    grantPhotoUriPermission(tokenId: number, uri: string, photoPermissionType: PhotoPermissionType,
-      hideSensitiveType: HideSensitiveType): Promise<number>;
-    cancelPhotoUriPermission(tokenId: number, uri: string,
-      photoPermissionType: PhotoPermissionType): Promise<number>;
+    grantPhotoUrisPermission(tokenId: long, uriList: Array<string>, photoPermissionType: PhotoPermissionType,
+      hideSensitiveType: HideSensitiveType): Promise<int>;
+    grantPhotoUriPermission(tokenId: long, uri: string, photoPermissionType: PhotoPermissionType,
+      hideSensitiveType: HideSensitiveType): Promise<int>;
+    cancelPhotoUriPermission(tokenId: long, uri: string,
+      photoPermissionType: PhotoPermissionType): Promise<int>;
     getPhotoIndex(photoUri: string, albumUri: string, options: FetchOptions,
-        callback: AsyncCallback<number | undefined>): void;
-    getPhotoIndex(photoUri: string, albumUri: string, options: FetchOptions): Promise<number>;
+        callback: AsyncCallback<int | undefined>): void;
+    getPhotoIndex(photoUri: string, albumUri: string, options: FetchOptions): Promise<int>;
     removeFormInfo(info: FormInfo, callback: AsyncCallback<void>): void;
     removeFormInfo(info: FormInfo): Promise<void>;
     removeGalleryFormInfo(info: GalleryFormInfo): Promise<void>;
     getSupportedPhotoFormats(photoType: PhotoType): Promise<Array<string>>;
-    startAssetAnalysis(type: AnalysisType, assetUris?: Array<string>): Promise<number>;
+    startAssetAnalysis(type: AnalysisType, assetUris?: Array<string>): Promise<int>;
     createAssetsForAppWithAlbum(source: PhotoCreationSource, albumUri: string, isAuthorized: boolean,
       photoCreationConfigs: Array<PhotoCreationConfig>): Promise<Array<string>>;
-    getAlbumsByIds(albumIds: Array<number>): Promise<Map<number, Album>>;
+    getAlbumsByIds(albumIds: Array<int>): Promise<Map<int, Album>>;
     updateGalleryFormInfo(info: GalleryFormInfo): Promise<void>;
   }
 
@@ -2163,16 +2165,16 @@ export namespace photoAccessHelper {
     bundleName: string;
     appName: string;
     appId: string;
-    tokenId: number;
+    tokenId: long;
   }
 
   interface GrantPhotoUriPermissionParam {
-    tokenId: number;
+    tokenId: long;
     uri: string;
   }
 
   interface GrantPhotoUrisPermissionParam {
-    tokenId: number;
+    tokenId: long;
     uriList: Array<string>;
   }
 
@@ -2247,9 +2249,9 @@ export namespace photoAccessHelper {
     }
 
     getPhotoIndex(photoUri: string, albumUri: string, options: FetchOptions,
-      callback: AsyncCallback<number | undefined>): void {
-      let cb = (): MediaLibraryAniError | number => {
-        let result: MediaLibraryAniError | number;
+      callback: AsyncCallback<int | undefined>): void {
+      let cb = (): MediaLibraryAniError | int => {
+        let result: MediaLibraryAniError | int;
         try {
           result = this.getPhotoIndexInner(photoUri, albumUri, options);
         } catch(e) {
@@ -2265,15 +2267,15 @@ export namespace photoAccessHelper {
           if (isNullish(ret)) {
             callback(businessError(-1, "Operation failed"), undefined);
           } else {
-            callback(businessError(0), ret as number);
+            callback(businessError(0), ret as int);
           }
         }
       });
     }
 
-    getPhotoIndex(photoUri: string, albumUri: string, options: FetchOptions): Promise<number> {
-      return new Promise<number>((resolve: (v: number) => void, reject: RejectString) => {
-        let cb = (): number | MediaLibraryAniError => {
+    getPhotoIndex(photoUri: string, albumUri: string, options: FetchOptions): Promise<int> {
+      return new Promise<int>((resolve: (v: int) => void, reject: RejectString) => {
+        let cb = (): int | MediaLibraryAniError => {
           try {
             return this.getPhotoIndexInner(photoUri, albumUri, options);
           } catch(e) {
@@ -2288,7 +2290,7 @@ export namespace photoAccessHelper {
             if (isNullish(ret)) {
               reject(businessError<string>(-1, "Operation failed"));
             } else {
-              resolve(ret as number);
+              resolve(ret as int);
             }
           }
         });
@@ -2732,13 +2734,13 @@ export namespace photoAccessHelper {
       });
     }
 
-    getAlbumsByIds(albumIds: Array<number>): Promise<Map<number, Album>> {
-      return new Promise<Map<number, Album>>((resolve: (v: Map<number, Album>) => void,
+    getAlbumsByIds(albumIds: Array<int>): Promise<Map<int, Album>> {
+      return new Promise<Map<int, Album>>((resolve: (v: Map<int, Album>) => void,
         reject: RejectString) => {
-        let cb = (): Map<number, Album> | MediaLibraryAniError => {
-          let result: Map<number, Album> | MediaLibraryAniError;
+        let cb = (): Map<int, Album> | MediaLibraryAniError => {
+          let result: Map<int, Album> | MediaLibraryAniError;
           try {
-            result = this.getAlbumsByIdsInner(albumIds);//
+            result = this.getAlbumsByIdsInner(albumIds);
           } catch(e) {
             result = e as MediaLibraryAniError;
           }
@@ -2752,20 +2754,20 @@ export namespace photoAccessHelper {
             if (isNullish(ret)) {
               reject(businessError<string>(-1, "Operation failed"));
             } else {
-              resolve(ret as Map<number, Album>);
+              resolve(ret as Map<int, Album>);
             }
           }
         });
       });
     }
 
-    createAssetsForApp(bundleName: string, appName: string, appId: string,
+    createAssetsForApp(bundleName: string, appName: string, tokenId: long,
       photoCreationConfigs: Array<PhotoCreationConfig>): Promise<Array<string>> {
       let appInfo: AppInfo = {
         bundleName: bundleName,
         appName: appName,
-        appId: appId,
-        tokenId: 0
+        appId: "",
+        tokenId: tokenId
       };
       return new Promise<Array<string>>((resolve: (v: Array<string>) => void, reject: RejectString) => {
         let cb = (): Array<string> | MediaLibraryAniError => {
@@ -2821,7 +2823,7 @@ export namespace photoAccessHelper {
       });
     }
 
-    createAssetsForAppWithMode(bundleName: string, appName: string, appId: string, tokenId: number,
+    createAssetsForAppWithMode(bundleName: string, appName: string, appId: string, tokenId: long,
       authorizationMode: AuthorizationMode, photoCreationConfigs: Array<PhotoCreationConfig>): Promise<Array<string>> {
       let appInfo: AppInfo = {
         bundleName: bundleName,
@@ -3022,15 +3024,15 @@ export namespace photoAccessHelper {
       });
     }
 
-    grantPhotoUrisPermission(tokenId: number, uriList: Array<string>, photoPermissionType: PhotoPermissionType,
-      hideSensitiveType: HideSensitiveType): Promise<number> {
+    grantPhotoUrisPermission(tokenId: long, uriList: Array<string>, photoPermissionType: PhotoPermissionType,
+      hideSensitiveType: HideSensitiveType): Promise<int> {
       let param: GrantPhotoUrisPermissionParam = {
         tokenId: tokenId,
         uriList: uriList
       };
-      return new Promise<number>((resolve: (v: number) => void, reject: RejectString) => {
-        let cb = (): number | MediaLibraryAniError => {
-          let result: number | MediaLibraryAniError;
+      return new Promise<int>((resolve: (v: int) => void, reject: RejectString) => {
+        let cb = (): int | MediaLibraryAniError => {
+          let result: int | MediaLibraryAniError;
           try {
             result = this.grantPhotoUrisPermissionInner(param, photoPermissionType, hideSensitiveType);
           } catch(e) {
@@ -3046,22 +3048,22 @@ export namespace photoAccessHelper {
             if (isNullish(ret)) {
               reject(businessError<string>(-1, "Operation failed"));
             } else {
-              resolve(ret as number);
+              resolve(ret as int);
             }
           }
         });
       });
     }
 
-    grantPhotoUriPermission(tokenId: number, uri: string, photoPermissionType: PhotoPermissionType,
-      hideSensitiveType: HideSensitiveType): Promise<number> {
+    grantPhotoUriPermission(tokenId: long, uri: string, photoPermissionType: PhotoPermissionType,
+      hideSensitiveType: HideSensitiveType): Promise<int> {
       let param: GrantPhotoUriPermissionParam = {
         tokenId: tokenId,
         uri: uri
       };
-      return new Promise<number>((resolve: (v: number) => void, reject: RejectString) => {
-        let cb = (): number | MediaLibraryAniError => {
-          let result: number | MediaLibraryAniError;
+      return new Promise<int>((resolve: (v: int) => void, reject: RejectString) => {
+        let cb = (): int | MediaLibraryAniError => {
+          let result: int | MediaLibraryAniError;
           try {
             result = this.grantPhotoUriPermissionInner(param, photoPermissionType, hideSensitiveType);
           } catch(e) {
@@ -3077,18 +3079,18 @@ export namespace photoAccessHelper {
             if (isNullish(ret)) {
               reject(businessError<string>(-1, "Operation failed"));
             } else {
-              resolve(ret as number);
+              resolve(ret as int);
             }
           }
         });
       });
     }
 
-    cancelPhotoUriPermission(tokenId: number, uri: string,
-      photoPermissionType: PhotoPermissionType): Promise<number> {
-      return new Promise<number>((resolve: (v: number) => void, reject: RejectString) => {
-        let cb = (): number | MediaLibraryAniError => {
-          let result: number | MediaLibraryAniError;
+    cancelPhotoUriPermission(tokenId: long, uri: string,
+      photoPermissionType: PhotoPermissionType): Promise<int> {
+      return new Promise<int>((resolve: (v: int) => void, reject: RejectString) => {
+        let cb = (): int | MediaLibraryAniError => {
+          let result: int | MediaLibraryAniError;
           try {
             result = this.cancelPhotoUriPermissionInner(tokenId, uri, photoPermissionType);
           } catch(e) {
@@ -3104,7 +3106,7 @@ export namespace photoAccessHelper {
             if (isNullish(ret)) {
               reject(businessError<string>(-1, "Operation failed"));
             } else {
-              resolve(ret as number);
+              resolve(ret as int);
             }
           }
         });
@@ -3137,10 +3139,10 @@ export namespace photoAccessHelper {
       });
     }
 
-    startAssetAnalysis(type: AnalysisType, assetUris?: Array<string>): Promise<number> {
-      return new Promise<number>((resolve: (v: number) => void, reject: RejectString) => {
-        let cb = (): number | MediaLibraryAniError => {
-          let result: number | MediaLibraryAniError;
+    startAssetAnalysis(type: AnalysisType, assetUris?: Array<string>): Promise<int> {
+      return new Promise<int>((resolve: (v: int) => void, reject: RejectString) => {
+        let cb = (): int | MediaLibraryAniError => {
+          let result: int | MediaLibraryAniError;
           try {
             result = this.startAssetAnalysisInner(type, assetUris);
           } catch(e) {
@@ -3156,7 +3158,7 @@ export namespace photoAccessHelper {
             if (isNullish(ret)) {
               reject(businessError<string>(-1, "Operation failed"));
             } else {
-              resolve(ret as number);
+              resolve(ret as int);
             }
           }
         });
@@ -3164,9 +3166,9 @@ export namespace photoAccessHelper {
     }
 
     native startThumbnailCreationTask(predicate: dataSharePredicates.DataSharePredicates,
-      callback: AsyncCallback<void>): number;
+      callback: AsyncCallback<void>): int;
     native startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
-    native stopThumbnailCreationTask(taskId: number): void;
+    native stopThumbnailCreationTask(taskId: int): void;
     native registerChange(uri: string, forChildUris: boolean, callback: Callback<ChangeData>): void;
     native unRegisterChange(uri: string, callback?: Callback<ChangeData>): void;
     native getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
@@ -3179,7 +3181,7 @@ export namespace photoAccessHelper {
     native getHiddenAlbumsInner(mode: HiddenPhotosDisplayMode, options?: FetchOptions): FetchResult<Album>;
     native getSharedPhotoAssets(options: FetchOptions): Array<SharedPhotoAsset>;
     native getDataAnalysisProgressInner(analysisType: AnalysisType): string;
-    native getAlbumsByIdsInner(albumIds: Array<number>): Map<number, Album>;
+    native getAlbumsByIdsInner(albumIds: Array<int>): Map<int, Album>;
     native createAssetsForAppInner(appInfo: AppInfo, photoCreationConfigs: Array<PhotoCreationConfig>): Array<string>;
     native createAssetsForAppWithModeInner(appInfo: AppInfo, authorizationMode: AuthorizationMode,
       photoCreationConfigs: Array<PhotoCreationConfig>): Array<string>;
@@ -3191,17 +3193,17 @@ export namespace photoAccessHelper {
     native applyChangesInner(mediaChangeRequest: MediaChangeRequest): void;
     native getIndexConstructProgressInner(): string;
     native grantPhotoUrisPermissionInner(param: GrantPhotoUrisPermissionParam,
-      photoPermissionType: PhotoPermissionType, hideSensitiveType: HideSensitiveType): number;
+      photoPermissionType: PhotoPermissionType, hideSensitiveType: HideSensitiveType): int;
     native grantPhotoUriPermissionInner(param: GrantPhotoUriPermissionParam, photoPermissionType: PhotoPermissionType,
-      hideSensitiveType: HideSensitiveType): number;
-    native cancelPhotoUriPermissionInner(tokenId: number, uri: string,
-      photoPermissionType: PhotoPermissionType): number;
-    native getPhotoIndexInner(photoUri: string, albumUri: string, options: FetchOptions): number;
+      hideSensitiveType: HideSensitiveType): int;
+    native cancelPhotoUriPermissionInner(tokenId: long, uri: string,
+      photoPermissionType: PhotoPermissionType): int;
+    native getPhotoIndexInner(photoUri: string, albumUri: string, options: FetchOptions): int;
     native PhotoAccessRemoveFormInfo(info: FormInfo): void;
     native removeGalleryFormInfoInner(info: GalleryFormInfo): void;
     native updateGalleryFormInfoInner(info: GalleryFormInfo): void;
     native getSupportedPhotoFormatsInner(photoType: PhotoType): Array<string>;
-    native startAssetAnalysisInner(type: AnalysisType, assetUris?: Array<string>): number;
+    native startAssetAnalysisInner(type: AnalysisType, assetUris?: Array<string>): int;
   }
 
   export interface GalleryFormInfo {
@@ -3256,7 +3258,7 @@ export namespace photoAccessHelper {
 
   export class BaseSelectOptions {
     MIMEType: PhotoViewMIMETypes | undefined;
-    maxSelectNumber: number | undefined;
+    maxSelectNumber: int | undefined;
     isSearchSupported: boolean | undefined;
     isPhotoTakingSupported: boolean | undefined;
     recommendationOptions: RecommendationOptions | undefined;
@@ -3413,10 +3415,10 @@ export namespace photoAccessHelper {
       });
     }
 
-    getWriteCacheHandler(): Promise<number> {
-      return new Promise<number>((resolve: (v: number) => void, reject: RejectString) : void => {
-        let cb = (): number | MediaLibraryAniError => {
-          let result: number | MediaLibraryAniError;
+    getWriteCacheHandler(): Promise<int> {
+      return new Promise<int>((resolve: (v: int) => void, reject: RejectString) : void => {
+        let cb = (): int | MediaLibraryAniError => {
+          let result: int | MediaLibraryAniError;
           try {
             result = this.getWriteCacheHandlerInner();
           } catch(e) {
@@ -3432,7 +3434,7 @@ export namespace photoAccessHelper {
             if (isNullish(ret)) {
               reject(businessError<string>(-1, "Operation failed"));
             } else {
-              resolve(ret as number);
+              resolve(ret as int);
             }
           }
         });
@@ -3444,12 +3446,12 @@ export namespace photoAccessHelper {
     native setFavorite(favoriteState: boolean): void;
     native setHidden(hiddenState: boolean): void;
     native setUserComment(userComment: string): void;
-    native setLocation(longitude: number, latitude: number): void;
+    native setLocation(longitude: double, latitude: double): void;
     native setTitle(title: string): void;
 
     native setEditData(editData: MediaAssetEditData): void;
 
-    native getWriteCacheHandlerInner(): number;
+    native getWriteCacheHandlerInner(): int;
 
     native addResource(type: ResourceType, fileUri: string): void;
 
@@ -3467,7 +3469,7 @@ export namespace photoAccessHelper {
 
     native setEffectMode(mode: MovingPhotoEffectMode): void;
 
-    native setOrientation(orientation: number): void;
+    native setOrientation(orientation: int): void;
 
     native setVideoEnhancementAttr(videoEnhancementType: VideoEnhancementType, photoId: string): void;
 
@@ -3564,6 +3566,30 @@ export namespace photoAccessHelper {
       });
     }
 
+    static deleteAlbumsWithUri(context: Context, albumUris: Array<string>): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: RejectString) : void => {
+        let cb = (): undefined | MediaLibraryAniError => {
+          try {
+            return MediaAlbumChangeRequest.deleteAlbumsWithUriSync(context, albumUris);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code as int, err.message));
+          } else {
+            if (isNullish(ret)) {
+              resolve(undefined);
+            } else {
+              reject(businessError<string>(-1, 'Operation failed'));
+            }
+          }
+        });
+      });
+    }
+
     native getAlbum(): Album;
 
     native setCoverUri(coverUri: string): void;
@@ -3574,13 +3600,19 @@ export namespace photoAccessHelper {
 
     native moveAssets(assets: Array<PhotoAsset>, targetAlbum: Album): void;
 
+    native moveAssetsWithUri(assetUris: Array<string>, targetAlbum: Album): void;
+
     native recoverAssets(assets: Array<PhotoAsset>): void;
+
+    native recoverAssetsWithUri(assetUris: Array<string>): void;
 
     native deleteAssets(assets: Array<PhotoAsset>): void;
 
+    native deleteAssetsWithUri(assetUris: Array<string>): void;
+
     native setIsMe(): void;
 
-    native setDisplayLevel(displayLevel: number): void;
+    native setDisplayLevel(displayLevel: int): void;
 
     native dismissAssets(assets: Array<PhotoAsset>): void;
 
@@ -3600,6 +3632,7 @@ export namespace photoAccessHelper {
 
     native nativeConstructor(album: Album): void;
     native static deleteAlbumsSync(context: Context, albums: Array<Album>): void;
+    native static deleteAlbumsWithUriSync(context: Context, albumUris: Array<string>): void;
   }
 
   export class MediaAnalysisAlbumChangeRequest extends MediaAlbumChangeRequest {
@@ -3613,27 +3646,27 @@ export namespace photoAccessHelper {
       }
     }
 
-    native setOrderPosition(assets: Array<PhotoAsset>, position: Array<number>): void;
+    native setOrderPosition(assets: Array<PhotoAsset>, position: Array<int>): void;
   }
 
   export interface SharedPhotoAsset {
-    fileId: number;
+    fileId: int;
     uri: string;
     data: string;
     mediaType: PhotoType;
     displayName: string;
-    size: number;
-    dateAdded: number;
-    dateModified: number;
-    duration: number;
-    width: number;
-    height: number;
-    dateTaken: number;
-    orientation: number;
+    size: long;
+    dateAdded: long;
+    dateModified: long;
+    duration: int;
+    width: int;
+    height: int;
+    dateTaken: long;
+    orientation: int;
     isFavorite: boolean;
     title: string;
     position: PositionType;
-    dateTrashed: number;
+    dateTrashed: long;
     hidden: boolean;
     userComment: string;
     cameraShotKey: string;
@@ -3641,37 +3674,37 @@ export namespace photoAccessHelper {
     dateMonth: string;
     dateDay: string;
     pending: boolean;
-    dateAddedMs: number;
-    dateModifiedMs: number;
-    dateTrashedMs: number;
+    dateAddedMs: long;
+    dateModifiedMs: long;
+    dateTrashedMs: long;
     subtype: PhotoSubtype;
     movingPhotoEffectMode: MovingPhotoEffectMode;
     dynamicRangeType: DynamicRangeType;
     thumbnailReady: boolean;
     lcdSize: string;
     thmSize: string;
-    thumbnailModifiedMs?: number;
+    thumbnailModifiedMs?: long;
     thumbnailVisible: ThumbnailVisibility;
   }
 
   class SharedPhotoAssetHandle implements SharedPhotoAsset {
-    fileId: number;
+    fileId: int;
     uri: string = "";
     data: string = "";
     mediaType: PhotoType;
     displayName: string = "";
-    size: number;
-    dateAdded: number;
-    dateModified: number;
-    duration: number;
-    width: number;
-    height: number;
-    dateTaken: number;
-    orientation: number;
+    size: long;
+    dateAdded: long;
+    dateModified: long;
+    duration: int;
+    width: int;
+    height: int;
+    dateTaken: long;
+    orientation: int;
     isFavorite: boolean;
     title: string = "";
     position: PositionType;
-    dateTrashed: number;
+    dateTrashed: long;
     hidden: boolean;
     userComment: string = "";
     cameraShotKey: string = "";
@@ -3679,39 +3712,39 @@ export namespace photoAccessHelper {
     dateMonth: string = "";
     dateDay: string = "";
     pending: boolean;
-    dateAddedMs: number;
-    dateModifiedMs: number;
-    dateTrashedMs: number;
+    dateAddedMs: long;
+    dateModifiedMs: long;
+    dateTrashedMs: long;
     subtype: PhotoSubtype;
     movingPhotoEffectMode: MovingPhotoEffectMode;
     dynamicRangeType: DynamicRangeType;
     thumbnailReady: boolean;
     lcdSize: string = "";
     thmSize: string = "";
-    thumbnailModifiedMs?: number;
+    thumbnailModifiedMs?: long;
     thumbnailVisible: ThumbnailVisibility;
   }
 
   export interface SharedAlbumAsset {
-    albumId: number;
+    albumId: int;
     albumType: AlbumType;
     albumSubtype: AlbumSubtype;
     albumName: string;
     coverUri: string;
-    count: number;
-    imageCount: number;
-    videoCount: number;
+    count: int;
+    imageCount: int;
+    videoCount: int;
   }
 
   class SharedAlbumAssetHandle implements SharedAlbumAsset {
-    albumId: number;
+    albumId: int;
     albumType: AlbumType;
     albumSubtype: AlbumSubtype;
     albumName: string = "";
     coverUri: string = "";
-    count: number;
-    imageCount: number;
-    videoCount: number;
+    count: int;
+    imageCount: int;
+    videoCount: int;
     coverSharedPhotoAsset: SharedPhotoAsset;
   }
 
@@ -3723,22 +3756,22 @@ export namespace photoAccessHelper {
   }
 
   export interface FileAssetInfo {
-    file_id: number;
+    file_id: int;
     uri: string;
     media_type: PhotoType;
     display_name: string;
-    size: number;
-    date_added: number;
-    date_modified: number;
-    duration: number;
-    width: number;
-    height: number;
-    date_taken: number;
-    orientation: number;
+    size: long;
+    date_added: long;
+    date_modified: long;
+    duration: int;
+    width: int;
+    height: int;
+    date_taken: long;
+    orientation: int;
     is_favorite: boolean;
     title: string;
     position: PositionType;
-    date_trashed: number;
+    date_trashed: long;
     hidden: boolean;
     user_comment: string;
     camera_shot_key: string;
@@ -3746,29 +3779,29 @@ export namespace photoAccessHelper {
     date_month: string;
     date_day: string;
     pending: boolean;
-    date_added_ms: number;
-    date_modified_ms: number;
-    date_trashed_ms: number;
+    date_added_ms: long;
+    date_modified_ms: long;
+    date_trashed_ms: long;
     subtype: PhotoSubtype;
   }
 
   class FileAssetInfoHandle implements FileAssetInfo {
-    file_id: number;
+    file_id: int;
     uri: string = "";
     media_type: PhotoType;
     display_name: string = "";
-    size: number;
-    date_added: number;
-    date_modified: number;
-    duration: number;
-    width: number;
-    height: number;
-    date_taken: number;
-    orientation: number;
+    size: long;
+    date_added: long;
+    date_modified: long;
+    duration: int;
+    width: int;
+    height: int;
+    date_taken: long;
+    orientation: int;
     is_favorite: boolean;
     title: string = "";
     position: PositionType;
-    date_trashed: number;
+    date_trashed: long;
     hidden: boolean;
     user_comment: string = "";
     camera_shot_key: string = "";
@@ -3776,9 +3809,9 @@ export namespace photoAccessHelper {
     date_month: string = "";
     date_day: string = "";
     pending: boolean;
-    date_added_ms: number;
-    date_modified_ms: number;
-    date_trashed_ms: number;
+    date_added_ms: long;
+    date_modified_ms: long;
+    date_trashed_ms: long;
     subtype: PhotoSubtype;
   }
 
@@ -3950,7 +3983,7 @@ export namespace photoAccessHelper {
       });
     }
 
-    setHighlightUserActionData(type: HighlightUserActionType, actionData: number): Promise<void> {
+    setHighlightUserActionData(type: HighlightUserActionType, actionData: int): Promise<void> {
       return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
         let cb = (): MediaLibraryAniError | undefined => {
           try {
@@ -3992,10 +4025,10 @@ export namespace photoAccessHelper {
       });
     }
 
-    static deleteHighlightAlbums(context: Context, albums: Array<Album>): Promise<number> {
-      return new Promise<number>((resolve: (v: number) => void, reject: RejectString) : void => {
-        let cb = (): number | MediaLibraryAniError => {
-          let result: number | MediaLibraryAniError;
+    static deleteHighlightAlbums(context: Context, albums: Array<Album>): Promise<int> {
+      return new Promise<int>((resolve: (v: int) => void, reject: RejectString) : void => {
+        let cb = (): int | MediaLibraryAniError => {
+          let result: int | MediaLibraryAniError;
           try {
             result = HighlightAlbum.deleteHighlightAlbumsInner(context, albums);
           } catch(e) {
@@ -4011,7 +4044,7 @@ export namespace photoAccessHelper {
             if (isNullish(ret)) {
               reject(businessError<string>(-1, "Operation failed"));
             } else {
-              resolve(ret as number);
+              resolve(ret as int);
             }
           }
         });
@@ -4021,9 +4054,9 @@ export namespace photoAccessHelper {
     native nativeConstructor(album: Album): long;
     native getHighlightAlbumInfoInner(type: HighlightAlbumInfoType): string;
     native getHighlightResourceInner(resourceUri: string): ArrayBuffer;
-    native setHighlightUserActionDataInner(type: HighlightUserActionType, actionData: number): void;
+    native setHighlightUserActionDataInner(type: HighlightUserActionType, actionData: int): void;
     native setSubTitleInner(subTitle: string): void;
-    native static deleteHighlightAlbumsInner(context: Context, albums: Array<Album>): number;
+    native static deleteHighlightAlbumsInner(context: Context, albums: Array<Album>): int;
   }
 
   export class AnalysisAlbum {
@@ -4036,10 +4069,10 @@ export namespace photoAccessHelper {
       }
     }
 
-    getOrderPosition(assets: Array<PhotoAsset>): Promise<Array<number>> {
-      return new Promise<Array<number>>((resolve: (v: Array<number>) => void, reject: RejectString) => {
-        let cb = (): Array<number> | MediaLibraryAniError => {
-          let result: Array<number> | MediaLibraryAniError;
+    getOrderPosition(assets: Array<PhotoAsset>): Promise<Array<int>> {
+      return new Promise<Array<int>>((resolve: (v: Array<int>) => void, reject: RejectString) => {
+        let cb = (): Array<int> | MediaLibraryAniError => {
+          let result: Array<int> | MediaLibraryAniError;
           try {
             result = this.getOrderPositionInner(assets);
           } catch(e) {
@@ -4055,7 +4088,7 @@ export namespace photoAccessHelper {
             if (isNullish(ret)) {
               reject(businessError<string>(-1, "Operation failed"));
             } else {
-              resolve(ret as Array<number>);
+              resolve(ret as Array<int>);
             }
           }
         });
@@ -4063,7 +4096,7 @@ export namespace photoAccessHelper {
     }
 
     native nativeConstructor(album: Album): long;
-    native getOrderPositionInner(assets: Array<PhotoAsset>): Array<number>;
+    native getOrderPositionInner(assets: Array<PhotoAsset>): Array<int>;
   }
 
   export enum CloudEnhancementTaskStage {
@@ -4078,24 +4111,24 @@ export namespace photoAccessHelper {
 
   export interface CloudEnhancementTaskState {
     readonly taskStage: CloudEnhancementTaskStage;
-    readonly transferredFileSize?: number;
-    readonly totalFileSize?: number;
-    readonly expectedDuration?: number;
-    readonly statusCode?: number;
+    readonly transferredFileSize?: int;
+    readonly totalFileSize?: int;
+    readonly expectedDuration?: int;
+    readonly statusCode?: int;
   }
 
   class CloudEnhancementTaskStateHandle implements CloudEnhancementTaskState {
     readonly taskStage: CloudEnhancementTaskStage = CloudEnhancementTaskStage.TASK_STAGE_EXCEPTION;
-    readonly transferredFileSize: number | undefined = undefined;
-    readonly totalFileSize: number | undefined = undefined;
-    readonly expectedDuration: number | undefined = undefined;
-    readonly statusCode: number | undefined = undefined;
+    readonly transferredFileSize: int | undefined = undefined;
+    readonly totalFileSize: int | undefined = undefined;
+    readonly expectedDuration: int | undefined = undefined;
+    readonly statusCode: int | undefined = undefined;
     private nativeHandle: long = 0;
 
     private constructor(nativePointer: long) {
       if (this.nativeHandle == 0) {
         this.nativeHandle = nativePointer;
-        let undefinedValue: number = -1;
+        let undefinedValue: int = -1;
         this.transferredFileSize =
           this.getTransferredFileSize() == undefinedValue ? undefined : this.getTransferredFileSize();
         this.totalFileSize = this.getTotalFileSize() == undefinedValue ? undefined : this.getTotalFileSize();
@@ -4104,10 +4137,10 @@ export namespace photoAccessHelper {
       }
     }
 
-    private native getTransferredFileSize(): number;
-    private native getTotalFileSize(): number;
-    private native getExpectedDuration(): number;
-    private native getStatusCode(): number;
+    private native getTransferredFileSize(): int;
+    private native getTotalFileSize(): int;
+    private native getExpectedDuration(): int;
+    private native getStatusCode(): int;
   }
 
   export class CloudEnhancement {
@@ -4143,7 +4176,7 @@ export namespace photoAccessHelper {
     }
 
     submitCloudEnhancementTasks(photoAssets: Array<PhotoAsset>, hasCloudWatermark: boolean,
-      triggerMode?: number): Promise<void> {
+      triggerMode?: int): Promise<void> {
       return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
         let cb = (): MediaLibraryAniError | undefined => {
           try {
@@ -4302,7 +4335,7 @@ export namespace photoAccessHelper {
     }
 
     private native submitCloudEnhancementTasksSync(photoAssets: Array<PhotoAsset>, hasCloudWatermark: boolean,
-                                                   triggerMode?: number): void;
+                                                   triggerMode?: int): void;
     private native prioritizeCloudEnhancementTaskSync(photoAsset: PhotoAsset): void;
     private native cancelCloudEnhancementTasksSync(photoAssets: Array<PhotoAsset>): void;
     private native cancelAllCloudEnhancementTasksSync(): void;

@@ -26,6 +26,8 @@
 #include "uri.h"
 #include "safe_map.h"
 #include "message_parcel.h"
+#include "bundle_mgr_interface.h"
+#include <mutex>
 
 namespace OHOS {
 namespace Media {
@@ -64,17 +66,27 @@ public:
     EXPORT static std::string GetType(Uri &uri);
     EXPORT static int32_t UserDefineFunc(const int32_t &userId, MessageParcel &data, MessageParcel &reply,
         MessageOption &option);
+    EXPORT static int32_t UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option);
     EXPORT static void SetUserId(const int32_t userId);
     EXPORT static int32_t GetUserId();
     EXPORT static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelperByUser(const int32_t userId);
     EXPORT static std::pair<bool, std::shared_ptr<DataShare::DataShareResultSet>> QueryAccessibleViaSandBox(Uri &uri,
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns,
         int &errCode, const int32_t userId);
+    EXPORT static std::string GetBundleName();
+    EXPORT static int32_t RegisterObserverExtProvider(const Uri &uri,
+        std::shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants);
+    EXPORT static int32_t UnregisterObserverExtProvider(const Uri &uri,
+        std::shared_ptr<DataShare::DataShareObserver> dataObserver);
 private:
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(ani_env *env,
         ani_object object, const int32_t userId);
     static int32_t userId_;
+    static std::string bundleName_;
     static SafeMap<int32_t, std::shared_ptr<DataShare::DataShareHelper>> dataShareHelperMap_;
+    static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
+    static sptr<AppExecFwk::IBundleMgr> bundleMgr_;
+    static std::mutex bundleMgrMutex_;
 };
 } // namespace Media
 } // namespace OHOS

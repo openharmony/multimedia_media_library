@@ -325,6 +325,21 @@ MediaAssetChangeRequestAni::MediaAssetChangeRequestAni(FileAssetAni *fileAssetAn
     fileAsset_ = fileAsset;
 }
 
+bool StrIsNumber(const string &str)
+{
+    if (str.empty()) {
+        ANI_ERR_LOG("StrIsNumber input is empty");
+        return false;
+    }
+
+    for (char const &c : str) {
+        if (isdigit(c) == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static void DeleteCache(const std::string &cacheFileName)
 {
     if (cacheFileName.empty()) {
@@ -1045,6 +1060,8 @@ bool PrepareAssetDeletion(ani_env *env, const std::vector<std::string>& uris,
     MediaAssetChangeRequestAniContext& context)
 {
     for (const auto& uri : uris) {
+        std::string userId = MediaLibraryAniUtils::GetUserIdFromUri(uri);
+        context.userId_ = StrIsNumber(userId) ? stoi(userId) : -1;
         if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos) {
             ANI_INFO_LOG("uri error");
             return false;
@@ -1801,13 +1818,8 @@ static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAniContext &context,
 
     // specify mp4 extension for cache file of moving photo video
     std::string extension = "";
-    if (changeRequest->GetIsEditDisplayName()) {
-        extension = isMovingPhotoVideo ? MOVING_PHOTO_VIDEO_EXTENSION
-                                       : MediaFileUtils::GetExtensionFromPath(changeRequest->GetOldDisplayName());
-    } else {
-        extension = isMovingPhotoVideo ? MOVING_PHOTO_VIDEO_EXTENSION
-                                       : MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
-    }
+    extension = isMovingPhotoVideo ? MOVING_PHOTO_VIDEO_EXTENSION
+                                   : MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
     int64_t currentTimestamp = MediaFileUtils::UTCTimeNanoSeconds();
     uint32_t cacheFileId = changeRequest->FetchAddCacheFileId();
     string cacheFileName = to_string(currentTimestamp) + "_" + to_string(cacheFileId) + "." + extension;
@@ -2378,6 +2390,34 @@ static bool SetTitleExecute(MediaAssetChangeRequestAniContext& context)
     return true;
 }
 
+static bool AddFiltersExecute(MediaAssetChangeRequestAniContext &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("AddFiltersExecute");
+
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset->GetId());
+    int ret = changeRequest->PutMediaAssetEditData(valuesBucket);
+    CHECK_COND_RET(ret == E_OK, false, "Failed to put editData");
+    AssetChangeReqBody reqBody;
+    reqBody.values = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_EDIT_DATA);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    ret = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
+    if (ret < 0) {
+        context.SaveError(ret);
+        ANI_ERR_LOG("Failed to add filters, ret: %{public}d", ret);
+        return false;
+    }
+    return true;
+}
+
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAniContext&)> EXECUTE_MAP = {
     { AssetChangeOperation::CREATE_FROM_URI, CreateFromFileUriExecute },
     { AssetChangeOperation::ADD_RESOURCE, AddResourceExecute },
@@ -2394,6 +2434,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_VIDEO_ENHANCEMENT_ATTR, SetVideoEnhancementAttrExecute },
     { AssetChangeOperation::SET_LOCATION, SetLocationExecute },
     { AssetChangeOperation::SET_TITLE, SetTitleExecute },
+    { AssetChangeOperation::ADD_FILTERS, AddFiltersExecute },
 };
 
 static void ApplyAssetChangeRequestExecute(std::unique_ptr<MediaAssetChangeRequestAniContext> &context)
@@ -2541,20 +2582,16 @@ ani_object MediaAssetChangeRequestAni::DiscardCameraPhoto(ani_env *env, ani_obje
 }
 
 ani_object MediaAssetChangeRequestAni::SetOrientation(ani_env *env, ani_object aniObject,
-    ani_double orientation)
+    ani_int orientation)
 {
     auto context = std::make_unique<MediaAssetChangeRequestAniContext>();
     CHECK_COND_WITH_MESSAGE(env, context != nullptr, "context is null");
     context->objectInfo = MediaAssetChangeRequestAni::Unwrap(env, aniObject);
     CHECK_COND_WITH_MESSAGE(env, context->objectInfo != nullptr, "objectInfo is null");
-    double orientationDouble = 0.0;
-    CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetDouble(env, orientation, orientationDouble) == ANI_OK,
-        "Failed to get orientation");
-    int32_t orientationValue = static_cast<int32_t>(orientationDouble);
-    ANI_INFO_LOG("SetOrientation: %{public}d", orientationValue);
+    int32_t orientationValue = 0;
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetInt32(env, orientation, orientationValue) == ANI_OK,
         "Failed to get orientation");
-
+    ANI_INFO_LOG("SetOrientation: %{public}d", orientationValue);
     if (std::find(ORIENTATION_ARRAY.begin(), ORIENTATION_ARRAY.end(), orientationValue) == ORIENTATION_ARRAY.end()) {
         AniError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid orientation value");
         return nullptr;
@@ -2597,24 +2634,20 @@ ani_object MediaAssetChangeRequestAni::SetVideoEnhancementAttr(ani_env *env, ani
     ani_enum_item videoEnhancementType, ani_string photoId)
 {
     auto context = std::make_unique<MediaAssetChangeRequestAniContext>();
+    CHECK_COND_WITH_MESSAGE(env, context != nullptr, "context is null");
+    context->objectInfo = MediaAssetChangeRequestAni::Unwrap(env, aniObject);
+    int32_t enhancementType = 0;
+    string photoIdStr;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, videoEnhancementType,
+        enhancementType) == ANI_OK, "Failed to get enhancementType");
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetString(env, photoId, photoIdStr) == ANI_OK,
+        "Failed to get photoId");
     auto changeRequest = context->objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, nullptr, "changeRequest is nullptr");
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND_RET(fileAsset != nullptr, nullptr, "fileAsset is nullptr");
-
-    AssetChangeReqBody reqBody;
-    reqBody.fileId = fileAsset->GetId();
-    reqBody.photoId = fileAsset->GetPhotoId();
-    reqBody.path = fileAsset->GetPath();
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SET_VIDEO_ENHANCEMENT_ATTR);
-    std::unordered_map<std::string, std::string> headerMap{
-        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
-    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
-    if (changedRows < 0) {
-        context->SaveError(changedRows);
-        ANI_ERR_LOG("Failed to SetVideoEnhancementAttr of asset, err: %{public}d", changedRows);
-        return nullptr;
-    }
+    fileAsset->SetPhotoId(photoIdStr);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_VIDEO_ENHANCEMENT_ATTR);
     return ReturnAniUndefined(env);
 }
 
@@ -2631,9 +2664,9 @@ static void GetWriteCacheHandlerExecute(std::unique_ptr<MediaAssetChangeRequestA
     context->objectInfo->RecordChangeOperation(AssetChangeOperation::GET_WRITE_CACHE_HANDLER);
 }
 
-static ani_double GetWriteCacheHandlerComplete(ani_env *env, unique_ptr<MediaAssetChangeRequestAniContext> &context)
+static ani_int GetWriteCacheHandlerComplete(ani_env *env, unique_ptr<MediaAssetChangeRequestAniContext> &context)
 {
-    ani_double result {};
+    ani_int result {};
     CHECK_COND_RET(env != nullptr, result, "env is null");
     CHECK_COND_RET(context != nullptr, result, "objectInfo is null");
     ani_object errorObj {};
@@ -2642,15 +2675,15 @@ static ani_double GetWriteCacheHandlerComplete(ani_env *env, unique_ptr<MediaAss
             context->error, context->fd);
         context->HandleError(env, errorObj);
     } else {
-        if (MediaLibraryAniUtils::ToAniDouble(env, context->fd, result) != ANI_OK) {
-            ANI_ERR_LOG("ToAniDouble fail");
+        if (MediaLibraryAniUtils::ToAniInt(env, context->fd, result) != ANI_OK) {
+            ANI_ERR_LOG("ToAniInt fail");
         }
     }
     context.reset();
     return result;
 }
 
-ani_double MediaAssetChangeRequestAni::GetWriteCacheHandler(ani_env *env, ani_object aniObject)
+ani_int MediaAssetChangeRequestAni::GetWriteCacheHandler(ani_env *env, ani_object aniObject)
 {
     ANI_DEBUG_LOG("%{public}s is called", __func__);
     ani_double result {};
@@ -2675,7 +2708,8 @@ ani_double MediaAssetChangeRequestAni::GetWriteCacheHandler(ani_env *env, ani_ob
 }
 
 static ani_object ParseArgsDeleteLocalAssetsPermanently(
-    ani_env *env, ani_object aniContext, ani_object assets, unique_ptr<MediaAssetChangeRequestAniContext>& context)
+    ani_env *env, ani_object aniContext, ani_object assets, unique_ptr<MediaAssetChangeRequestAniContext>& context,
+    bool isUri = false)
 {
     ANI_DEBUG_LOG("enter ParseArgsDeleteLocalAssetsPermanently.");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
@@ -2690,7 +2724,7 @@ static ani_object ParseArgsDeleteLocalAssetsPermanently(
     CHECK_COND_WITH_MESSAGE(env, !assetArray.empty(), "array is empty");
 
     if (assetArray.size() > BATCH_DELETE_MAX_NUMBER) {
-        AniError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
+        AniError::ThrowError(env, isUri ? JS_ERR_PARAMETER_INVALID : OHOS_INVALID_PARAM_CODE,
             "Exceeded the maximum batch output quantity, cannot be deleted.");
         return nullptr;
     }
@@ -2860,11 +2894,7 @@ ani_object MediaAssetChangeRequestAni::SetTitle(ani_env *env, ani_object object,
     CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName, true) == E_OK, "Invalid title");
     fileAsset->SetTitle(title_str);
     fileAsset->SetDisplayName(displayName);
-    if (!changeRequest->Contains(AssetChangeOperation::SET_DISPLAY_NAME) &&
-        !changeRequest->Contains(AssetChangeOperation::SET_TITLE)) {
-        changeRequest->RecordChangeOperation(AssetChangeOperation::SET_TITLE);
-        changeRequest->SetOldDisplayName(displayName);
-    }
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_TITLE);
     // Merge the creation and SET_TITLE operations.
     if (changeRequest->Contains(AssetChangeOperation::CREATE_FROM_SCRATCH) ||
         changeRequest->Contains(AssetChangeOperation::CREATE_FROM_URI)) {

@@ -49,6 +49,10 @@ enum class AlbumChangeOperation {
     SET_IS_ME,
     DISMISS,
     SET_ORDER_POSITION,
+    MOVE_ASSETS_WITH_URI,
+    RECOVER_ASSETS_WITH_URI,
+    DELETE_ASSETS_WITH_URI,
+    RESET_COVER_URI,
 };
 
 struct PhotoAlbumPtrCompare {
@@ -97,14 +101,18 @@ public:
     static ani_status AddAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
     static ani_status RemoveAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
     static ani_status RecoverAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
-    static ani_status MoveAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset, ani_object targetAblum);
+    static ani_status MoveAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset, ani_object targetAlbum);
+    static ani_status MoveAssetsWithUri(ani_env *env, ani_object object, ani_object arrayUris, ani_object targetAlbum);
     static ani_status SetDisplayLevel(ani_env *env, ani_object object, ani_int displayLevel);
     static ani_status SetCoverUri(ani_env *env, ani_object object, ani_string coverUri);
     static ani_status SetIsMe(ani_env *env, ani_object object);
     static ani_status Dismiss(ani_env *env, ani_object object);
     static ani_status DeleteAlbums(ani_env *env, ani_class clazz, ani_object context, ani_object arrayAlbum);
+    static ani_status DeleteAlbumsWithUri(ani_env *env, ani_class clazz, ani_object context, ani_object arrayAlbum);
     static ani_status DeleteAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
     static ani_status SetOrderPosition(ani_env *env, ani_object object, ani_object assets, ani_object position);
+    static ani_status RecoverAssetsWithUri(ani_env *env, ani_object object, ani_object uriArray);
+    static ani_status DeleteAssetsWithUri(ani_env *env, ani_object object, ani_object uriArray);
     ani_status ApplyChanges(ani_env *env) override;
     bool CheckChangeOperations(ani_env *env);
 
@@ -133,6 +141,9 @@ struct MediaAlbumChangeRequestContext : public AniError {
     std::vector<AlbumChangeOperation> albumChangeOperations;
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
+    std::vector<std::string> deleteIds;
+    std::vector<int32_t> photoAlbumTypes;
+    std::vector<int32_t> photoAlbumSubtypes;
 };
 
 } // namespace Media

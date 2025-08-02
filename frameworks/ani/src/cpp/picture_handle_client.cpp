@@ -123,7 +123,11 @@ int32_t ParseMainPicture(const uint8_t* addr, uint32_t& offset, uint32_t dataSiz
     }
     offset += dataSize;
 
-    parcel.ParseFrom(reinterpret_cast<uintptr_t>(parcelData), dataSize);
+    if (!parcel.ParseFrom(reinterpret_cast<uintptr_t>(parcelData), dataSize)) {
+        ANI_ERR_LOG("parcelData parse failed!");
+        free(parcelData);
+        return E_ERR;
+    }
     free(parcelData);
     return E_OK;
 }
