@@ -141,6 +141,7 @@ constexpr int32_t USER_COMMENT_MAX_LEN = 420;
 
 static const std::string URI_TYPE = "uriType";
 static const std::string TYPE_PHOTOS = "1";
+static const std::string PHOTO_BUNDLE_NAME = "";
 
 thread_local std::shared_ptr<FileAsset> FileAssetAni::sFileAsset_ = nullptr;
 shared_ptr<ThumbnailManagerAni> FileAssetAni::thumbnailManager_ = nullptr;
@@ -413,8 +414,10 @@ static int32_t CheckSystemApiKeys(ani_env *env, const string &key)
         PhotoColumn::SUPPORTED_WATERMARK_TYPE,
         PhotoColumn::PHOTO_IS_AUTO,
         PhotoColumn::PHOTO_IS_RECENT_SHOW,
+        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
+        MEDIA_SUM_SIZE,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryAniUtils::IsSystemApp()) {
@@ -436,8 +439,8 @@ static ani_object HandleDateTransitionKey(ani_env *env, const string &key, const
 
     auto m = fileAssetPtr->GetMemberMap().at(key);
     if (m.index() == MEMBER_TYPE_INT64) {
-        double val = static_cast<double>(get<int64_t>(m));
-        MediaLibraryAniUtils::ToAniDoubleObject(env, val, aniResult);
+        int64_t val = get<int64_t>(m);
+        MediaLibraryAniUtils::ToAniLongObject(env, val, aniResult);
     } else {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return aniResult;
@@ -540,7 +543,7 @@ static ani_object HandleGettingDetailTimeKey(ani_env *env, const shared_ptr<File
         ani_string aniDetailTime {};
         MediaLibraryAniUtils::ToAniString(env, get<string>(detailTimeValue), aniDetailTime);
         return reinterpret_cast<ani_object>(aniDetailTime);
-    } else {
+    } else if (PHOTO_BUNDLE_NAME != UserFileClient::GetBundleName()) {
         string fileId = MediaFileUtils::GetIdFromUri(fileAssetPtr->GetUri());
         string queryUriStr = PAH_QUERY_PHOTO;
         MediaLibraryAniUtils::UriAppendKeyValue(queryUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
@@ -615,11 +618,11 @@ ani_object FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
         MediaLibraryAniUtils::ToAniString(env, std::get<std::string>(m), aniString);
         return reinterpret_cast<ani_object>(aniString);
     } else if (m.index() == MEMBER_TYPE_INT32) {
-        double val = static_cast<double>(std::get<int32_t>(m));
-        MediaLibraryAniUtils::ToAniDoubleObject(env, val, aniResult);
+        int32_t val = std::get<int32_t>(m);
+        MediaLibraryAniUtils::ToAniIntObject(env, val, aniResult);
     } else if (m.index() == MEMBER_TYPE_INT64) {
-        double val = static_cast<double>(GetCompatDate(inputKey, get<int64_t>(m)));
-        MediaLibraryAniUtils::ToAniDoubleObject(env, val, aniResult);
+        int64_t val = GetCompatDate(inputKey, get<int64_t>(m));
+        MediaLibraryAniUtils::ToAniLongObject(env, val, aniResult);
     } else {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return aniResult;
@@ -740,41 +743,70 @@ static bool CheckDisplayNameInCommitModify(unique_ptr<FileAssetContext> &context
     return true;
 }
 
+static int32_t CallCommitModify(std::unique_ptr<FileAssetContext> &context)
+{
+    if (context == nullptr || context->objectPtr == nullptr) {
+        ANI_ERR_LOG("context is null.");
+        return -1;
+    }
+
+    ModifyAssetsReqBody reqBody;
+    reqBody.title = context->objectPtr->GetTitle();
+    reqBody.fileIds.push_back(context->objectPtr->GetId());
+
+    std::unordered_map<std::string, std::string> headerMap;
+    headerMap[MediaColumn::MEDIA_ID] = to_string(context->objectPtr->GetId());
+    headerMap[URI_TYPE] = TYPE_PHOTOS;
+
+    int32_t errCode = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(context->businessCode, reqBody);
+    if (errCode < 0) {
+        ANI_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
+    }
+    return errCode;
+}
+
 static void CommitModifyExecute(ani_env *env, unique_ptr<FileAssetContext> &context)
 {
     CHECK_NULL_PTR_RETURN_VOID(env, "env is null");
     CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_NULL_PTR_RETURN_VOID(context->objectPtr, "objectPtr is null");
     if (!CheckDisplayNameInCommitModify(context)) {
         return;
     }
-    string uri;
-    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR ||
-        context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
-        BuildCommitModifyUriApi10(context.get(), uri);
-        MediaLibraryAniUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    } else {
-#ifdef MEDIALIBRARY_COMPATIBILITY
-        BuildCommitModifyUriApi9(context.get(), uri);
-#else
-        uri = URI_UPDATE_FILE;
-#endif
-    }
-    CHECK_NULL_PTR_RETURN_VOID(context->objectPtr, "objectPtr is null");
-    OHOS::Uri updateAssetUri(uri);
-    MediaType mediaType = context->objectPtr->GetMediaType();
-    string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
-    DataSharePredicates predicates;
-    DataShareValuesBucket valuesBucket;
-    BuildCommitModifyValuesBucket(context.get(), valuesBucket);
-    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
-    predicates.SetWhereArgs({std::to_string(context->objectPtr->GetId())});
 
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    int32_t changedRows = 0;
+    if (context->businessCode != 0) {
+        changedRows = CallCommitModify(context);
+    } else {
+        string uri;
+        if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR ||
+            context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+            BuildCommitModifyUriApi10(context.get(), uri);
+            MediaLibraryAniUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        } else {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+            BuildCommitModifyUriApi9(context.get(), uri);
+#else
+            uri = URI_UPDATE_FILE;
+#endif
+        }
+    
+        OHOS::Uri updateAssetUri(uri);
+        DataSharePredicates predicates;
+        DataShareValuesBucket valuesBucket;
+        BuildCommitModifyValuesBucket(context.get(), valuesBucket);
+        predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
+        predicates.SetWhereArgs({std::to_string(context->objectPtr->GetId())});
+        changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    }
+
     if (changedRows < 0) {
         context->SaveError(changedRows);
         ANI_ERR_LOG("File asset modification failed, err: %{public}d", changedRows);
     } else {
         context->changedRows = changedRows;
+        MediaType mediaType = context->objectPtr->GetMediaType();
+        string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         UserFileClient::NotifyChange(modifyNotify);
     }
@@ -812,6 +844,7 @@ void FileAssetAni::PhotoAccessHelperCommitModify(ani_env *env, ani_object object
     CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
     context->objectPtr = fileAssetPtr;
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_SET_TITLE);
 
     CommitModifyExecute(env, context);
     CommitModifyCompleteCallback(env, context);
@@ -1159,6 +1192,7 @@ void FileAssetAni::PhotoAccessHelperSetUserComment(ani_env *env, ani_object obje
     auto fileAssetPtr = fileAssetAni->GetFileAssetInstance();
     unique_ptr<FileAssetContext> context = make_unique<FileAssetContext>();
     CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_SET_USER_COMMENT);
     context->objectPtr = fileAssetPtr;
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     context->userComment = userCommentStr;
@@ -1289,6 +1323,7 @@ ani_string FileAssetAni::PhotoAccessHelperGetAnalysisData(ani_env *env, ani_obje
     auto fileAssetPtr = fileAssetAni->GetFileAssetInstance();
     unique_ptr<FileAssetContext> context = make_unique<FileAssetContext>();
     CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ASSET_ANALYSIS_DATA);
     context->objectPtr = fileAssetPtr;
     context->analysisType = value;
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
@@ -1304,6 +1339,26 @@ static void QueryPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
     RequestEditDataReqBody reqBody;
     RequestEditDataRspBody rspBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_REQUEST_EDIT_DATA);
+    reqBody.predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+
+    ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    ANI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+    if (rspBody.resultSet == nullptr || rspBody.resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        ANI_ERR_LOG("Query failed");
+        return;
+    }
+    if (rspBody.resultSet->GetInt(0, hasEditData) != NativeRdb::E_OK) {
+        ANI_ERR_LOG("Can not get hasEditData");
+        return;
+    }
+}
+
+static void GetPhotoEditDataExists(int32_t fileId, int32_t &hasEditData)
+{
+    GetEditDataReqBody reqBody;
+    GetEditDataRspBody rspBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_EDIT_DATA);
     reqBody.predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
 
     ANI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
@@ -1358,6 +1413,46 @@ static void PhotoAccessHelperRequestEditDataExecute(ani_env *env, unique_ptr<Fil
     CHECK_NULL_PTR_RETURN_VOID(context->objectPtr, "context->objectPtr is null");
     int32_t hasEditData = 0;
     QueryPhotoEditDataExists(context->objectPtr->GetId(), hasEditData);
+    if (hasEditData == 0) {
+        context->editDataBuffer = static_cast<char*>(malloc(1));
+        if (context->editDataBuffer == nullptr) {
+            ANI_ERR_LOG("malloc edit data buffer failed");
+            context->SaveError(E_FAIL);
+            return;
+        }
+        context->editDataBuffer[0] = '\0';
+        return;
+    }
+    bool isValid = false;
+    string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
+    if (!isValid) {
+        context->error = OHOS_INVALID_PARAM_CODE;
+        return;
+    }
+    MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, EDIT_DATA_REQUEST);
+    Uri uri(fileUri);
+    UniqueFd uniqueFd(UserFileClient::OpenFile(uri, "r"));
+    if (uniqueFd.Get() <= 0) {
+        if (uniqueFd.Get() == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(uniqueFd.Get());
+        }
+        ANI_ERR_LOG("Photo request edit data failed, ret: %{public}d", uniqueFd.Get());
+    } else {
+        ProcessEditData(context, uniqueFd);
+    }
+}
+
+static void PhotoAccessHelperGetEditDataExecute(ani_env *env, std::unique_ptr<FileAssetContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperGetEditDataExecute");
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is null");
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_NULL_PTR_RETURN_VOID(context->objectPtr, "context->objectPtr is null");
+    int32_t hasEditData = 0;
+    GetPhotoEditDataExists(context->objectPtr->GetId(), hasEditData);
     if (hasEditData == 0) {
         context->editDataBuffer = static_cast<char*>(malloc(1));
         if (context->editDataBuffer == nullptr) {
@@ -1523,7 +1618,7 @@ ani_object FileAssetAni::PhotoAccessHelperGetEditData(ani_env *env, ani_object o
     MediaLibraryAniUtils::UriAppendKeyValue(fileUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     context->valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
 
-    PhotoAccessHelperRequestEditDataExecute(env, context);
+    PhotoAccessHelperGetEditDataExecute(env, context);
     if (context->editDataBuffer != nullptr) {
         editDataObject = GetEditDataObject(env, context->editDataBuffer);
     }
@@ -1679,13 +1774,13 @@ static void PhotoAccessHelperRequestSourceComplete(ani_env *env, unique_ptr<File
     context.reset();
 }
 
-ani_double FileAssetAni::PhotoAccessHelperRequestSource(ani_env *env, ani_object object)
+ani_int FileAssetAni::PhotoAccessHelperRequestSource(ani_env *env, ani_object object)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperRequestSource");
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
 
-    ani_double aniDouble{};
+    ani_int aniInt{};
     auto fileAssetAni = Unwrap(env, object);
     if (fileAssetAni == nullptr || fileAssetAni->fileAssetPtr == nullptr) {
         ANI_ERR_LOG("fileAssetAni is nullptr");
@@ -1710,9 +1805,9 @@ ani_double FileAssetAni::PhotoAccessHelperRequestSource(ani_env *env, ani_object
     MediaLibraryAniUtils::UriAppendKeyValue(fileUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     context->valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
     PhotoAccessHelperRequestSourceExecute(env, context);
-    MediaLibraryAniUtils::ToAniDouble(env, context->fd, aniDouble);
+    MediaLibraryAniUtils::ToAniInt(env, context->fd, aniInt);
     PhotoAccessHelperRequestSourceComplete(env, context);
-    return aniDouble;
+    return aniInt;
 }
 
 static int32_t GetFileUriFd(unique_ptr<FileAssetContext> &context)
@@ -1732,6 +1827,36 @@ static int32_t GetFileUriFd(unique_ptr<FileAssetContext> &context)
         return E_FAIL;
     }
     return fd;
+}
+
+static void CommitEditSetError(std::unique_ptr<FileAssetContext> &context, int32_t ret)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    if (ret != E_SUCCESS) {
+        if (ret == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(ret);
+        }
+        ANI_ERR_LOG("File commit edit execute failed");
+    }
+}
+
+static int32_t CommitEditCall(int32_t fileId, const string& editData)
+{
+    IPC::UserDefineIPCClient client;
+    // db permission
+    std::unordered_map<std::string, std::string> headerMap = {
+        { MediaColumn::MEDIA_ID, to_string(fileId) },
+        { URI_TYPE, TYPE_PHOTOS },
+    };
+    client.SetHeader(headerMap);
+    CommitEditedAssetReqBody reqBody;
+    reqBody.editData = editData;
+    reqBody.fileId = fileId;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::COMMIT_EDITED_ASSET);
+    int32_t ret = client.Call(businessCode, reqBody);
+    return ret;
 }
 
 static void PhotoAccessHelperCommitEditExecute(ani_env *env, unique_ptr<FileAssetContext> &context)
@@ -1772,18 +1897,14 @@ static void PhotoAccessHelperCommitEditExecute(ani_env *env, unique_ptr<FileAsse
             return;
         }
         ANI_INFO_LOG("commit edit asset copy file finished, fileUri:%{public}s", fileUri.c_str());
-        string insertUriStr = PAH_COMMIT_EDIT_PHOTOS;
-        MediaLibraryAniUtils::UriAppendKeyValue(insertUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-        Uri insertUri(insertUriStr);
-        int32_t ret = UserFileClient::Insert(insertUri, context->valuesBucket);
-        if (ret != E_SUCCESS) {
-            if (ret == E_PERMISSION_DENIED) {
-                context->error = OHOS_PERMISSION_DENIED_CODE;
-            } else {
-                context->SaveError(ret);
-            }
-            ANI_ERR_LOG("File commit edit execute failed");
+        string editData = context->valuesBucket.Get(EDIT_DATA, isValid);
+        int32_t fileId = context->valuesBucket.Get(MediaColumn::MEDIA_ID, isValid);
+        if (!isValid) {
+            context->error = OHOS_INVALID_PARAM_CODE;
+            return;
         }
+        int32_t ret = CommitEditCall(fileId, editData);
+        CommitEditSetError(context, ret);
     }
 }
 
@@ -2043,7 +2164,7 @@ static void GetKeyFrameThumbnailExecute(ani_env *env, unique_ptr<FileAssetContex
 }
 
 ani_object FileAssetAni::PhotoAccessHelperGetKeyFrameThumbnail(ani_env *env, ani_object object,
-    ani_double beginFrameTimeMs, ani_enum_item type)
+    ani_long beginFrameTimeMs, ani_enum_item type)
 {
     ani_object pixelMapAni {};
     MediaLibraryTracer tracer;
@@ -2065,8 +2186,8 @@ ani_object FileAssetAni::PhotoAccessHelperGetKeyFrameThumbnail(ani_env *env, ani
         ANI_ERR_LOG("PhotoAsset is nullptr");
         return pixelMapAni;
     }
-    double beginFrameTimeMsValue = 0;
-    if (MediaLibraryAniUtils::GetDouble(env, beginFrameTimeMs, beginFrameTimeMsValue) != ANI_OK) {
+    int64_t beginFrameTimeMsValue = 0;
+    if (MediaLibraryAniUtils::GetInt64(env, beginFrameTimeMs, beginFrameTimeMsValue) != ANI_OK) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return pixelMapAni;
     }
@@ -2170,6 +2291,7 @@ void FileAssetAni::PhotoAccessHelperSetHidden(ani_env *env, ani_object object, a
     auto fileAssetPtr = fileAssetAni->GetFileAssetInstance();
     unique_ptr<FileAssetContext> context = make_unique<FileAssetContext>();
     CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_BATCH_SET_HIDDEN);
     context->objectPtr = fileAssetPtr;
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     context->isHidden = isHidden;
@@ -2432,6 +2554,10 @@ ani_object FileAssetAni::PhotoAccessHelperGetThumbnailData(ani_env *env, ani_obj
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperGetThumbnailData");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
 
     ani_object retObject {};
     auto context = std::make_unique<FileAssetContext>();
@@ -2616,6 +2742,7 @@ ani_status FileAssetAni::PhotoAccessHelperSetPending(ani_env *env, ani_object ob
     CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is null");
     auto context = std::make_unique<FileAssetContext>();
     CHECK_COND_WITH_RET_MESSAGE(env, context != nullptr, ANI_INVALID_ARGS, "context is null");
+    context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_SET_PENDING);
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     auto fileAssetAni = Unwrap(env, object);
     CHECK_COND_WITH_RET_MESSAGE(env, fileAssetAni != nullptr, ANI_INVALID_ARGS, "fileAssetAni is nullptr");

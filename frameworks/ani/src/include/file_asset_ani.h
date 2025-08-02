@@ -95,7 +95,7 @@ public:
     static ani_string PhotoAccessHelperRequestEditData(ani_env *env, ani_object object);
     static ani_object PhotoAccessHelperGetEditData(ani_env *env, ani_object object);
     static ani_object PhotoAccessHelperCloneAsset(ani_env *env, ani_object object, ani_string title);
-    static ani_double PhotoAccessHelperRequestSource(ani_env *env, ani_object object);
+    static ani_int PhotoAccessHelperRequestSource(ani_env *env, ani_object object);
     static void PhotoAccessHelperCommitEditedAsset(ani_env *env, ani_object object,
         ani_string editData, ani_string uri);
     static void PhotoAccessHelperRevertToOriginal(ani_env *env, ani_object object);
@@ -103,7 +103,7 @@ public:
         ani_object option);
     static void PhotoAccessHelperCancelPhotoRequest(ani_env *env, ani_object object, ani_string requestId);
     static ani_object PhotoAccessHelperGetKeyFrameThumbnail(ani_env *env, ani_object object,
-        ani_double beginFrameTimeMs, ani_enum_item type);
+        ani_long beginFrameTimeMs, ani_enum_item type);
     static void PhotoAccessHelperSetHidden(ani_env *env, ani_object object, ani_boolean hiddenState);
     static void PhotoAccessHelperSetFavorite(ani_env *env, ani_object object, ani_boolean favoriteState);
     static ani_boolean PhotoAccessHelperIsEdited(ani_env *env, ani_object object);

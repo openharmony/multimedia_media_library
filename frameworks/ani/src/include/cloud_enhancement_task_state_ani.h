@@ -40,16 +40,16 @@ private:
     CloudEnhancementTaskStage GetCloudEnhancementTaskStage() const;
     void SetCloudEnhancementTaskStage(CloudEnhancementTaskStage cloudEnhancementTaskStage);
 
-    static ani_double GetTransferredFileSize(ani_env *env, ani_object object);
+    static ani_int GetTransferredFileSize(ani_env *env, ani_object object);
     void SetTransferredFileSize(int32_t transferredFileSize);
 
-    static ani_double GetTotalFileSize(ani_env *env, ani_object object);
+    static ani_int GetTotalFileSize(ani_env *env, ani_object object);
     void SetTotalFileSize(int32_t totalFileSize);
 
-    static ani_double GetExpectedDuration(ani_env *env, ani_object object);
+    static ani_int GetExpectedDuration(ani_env *env, ani_object object);
     void SetExpectedDuration(int32_t expectedDuration);
 
-    static ani_double GetStatusCode(ani_env *env, ani_object object);
+    static ani_int GetStatusCode(ani_env *env, ani_object object);
     void SetStatusCode(int32_t statusCode);
 
     CloudEnhancementTaskStage cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_EXCEPTION;
