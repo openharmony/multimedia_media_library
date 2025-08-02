@@ -33,9 +33,6 @@ public:
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
-
-public:  // basic functions
-    std::string ToString() const;
 };
 
 class GetAlbumsLpathByIdsRespBody : public IPC::IMediaParcelable {
@@ -45,9 +42,6 @@ public:
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
-
-public:  // basic functions
-    std::string ToString() const;
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIA_ALBUMS_MANAGER_GET_ALBUMS_LPATH_BY_IDS_VO_H

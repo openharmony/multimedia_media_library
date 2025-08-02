@@ -1188,14 +1188,11 @@ int32_t MediaAlbumsControllerService::GetAlbumsLpathByIds(MessageParcel &data, M
         return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
     }
 
-    if (dto.resultSet == nullptr || dto.resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetAlbumsLpathByIds query failed");
-        return E_FAIL;
-    }
-    if (dto.resultSet->GetString(0, respBody.lpath) != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetAlbumsLpathByIds cannot get lpath");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(dto.resultSet != nullptr && dto.resultSet->GoToFirstRow() == NativeRdb::E_OK, E_FAIL,
+        "GetAlbumsLpathByIds query failed");
+    CHECK_AND_RETURN_RET_LOG(dto.resultSet->GetString(0, respBody.lpath) == NativeRdb::E_OK, E_FAIL,
+        "GetAlbumsLpathByIds cannot get lpath");
+    
     MEDIA_DEBUG_LOG("MediaAlbumsControllerService::GetAlbumsLpathByIds End. lpath: %{public}s",
         respBody.lpath.c_str());
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);

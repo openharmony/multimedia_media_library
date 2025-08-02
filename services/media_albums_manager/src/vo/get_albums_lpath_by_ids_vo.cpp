@@ -35,13 +35,6 @@ bool GetAlbumsLpathByIdsReqBody::Marshalling(MessageParcel &parcel) const
     return true;
 }
 
-std::string GetAlbumsLpathByIdsReqBody::ToString() const
-{
-    std::stringstream ss;
-    // todo: add the content of GetAlbumsLpathByIdsReqBody
-    return ss.str();
-}
-
 bool GetAlbumsLpathByIdsRespBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadString(this->lpath);
@@ -54,13 +47,6 @@ bool GetAlbumsLpathByIdsRespBody::Marshalling(MessageParcel &parcel) const
     bool status = parcel.WriteString(this->lpath);
     CHECK_AND_RETURN_RET(status, status);
     return true;
-}
-
-std::string GetAlbumsLpathByIdsRespBody::ToString() const
-{
-    std::stringstream ss;
-    // todo: add the content of GetAlbumsLpathByIdsRespBody
-    return ss.str();
 }
 // LCOV_EXCL_STOP
 };

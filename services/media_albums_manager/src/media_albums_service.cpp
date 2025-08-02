@@ -1099,8 +1099,6 @@ int32_t MediaAlbumsService::QueryAlbumsLpath(QueryAlbumsDto &dto)
     }
     resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
 
-    LogQueryParams(dto.predicates, columns);
-
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet nullptr");
     auto bridge = RdbUtils::ToResultSetBridge(resultSet);
     dto.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
@@ -1125,8 +1123,6 @@ int32_t MediaAlbumsService::QueryAlbumsLpaths(QueryAlbumsDto &dto)
         }
         resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
     }
-
-    LogQueryParams(dto.predicates, columns);
 
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet nullptr");
     auto bridge = RdbUtils::ToResultSetBridge(resultSet);
