@@ -400,7 +400,8 @@ static void GetRecordsFuzzer()
     std::vector<PhotosPo> cloudRecordPoList;
     std::vector<PhotosPo> copyRecords;
     cloudMediaPhotosDao->GetCreatedRecords(querySize, createdRecords);
-    cloudMediaPhotosDao->GetMetaModifiedRecords(querySize, cloudRecordPoList);
+    int32_t dirtyType = static_cast<int32_t>(FuzzDirtyType());
+    cloudMediaPhotosDao->GetMetaModifiedRecords(querySize, cloudRecordPoList, dirtyType);
     cloudMediaPhotosDao->GetFileModifiedRecords(querySize, cloudRecordPoList);
     cloudMediaPhotosDao->GetCopyRecords(querySize, copyRecords);
 }

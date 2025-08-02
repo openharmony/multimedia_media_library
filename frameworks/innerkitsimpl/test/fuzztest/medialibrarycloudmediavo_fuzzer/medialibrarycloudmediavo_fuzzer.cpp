@@ -394,9 +394,6 @@ static void OnCreateRecordsAlbumVoFuzzer()
     shared_ptr<OnCreateRecordsAlbumReqBody> onCreateRecordsAlbumReqBody = make_shared<OnCreateRecordsAlbumReqBody>();
     CHECK_AND_RETURN_LOG(onCreateRecordsAlbumReqBody != nullptr,
         "onCreateRecordsAlbumReqBody is nullptr");
-    bool isSuccess = provider->ConsumeBool();
-    std::string str = provider->ConsumeBytesAsString(LEN);
-    onCreateRecordsAlbumReqBody->AddAlbumData(str, str, isSuccess);
     onCreateRecordsAlbumReqBody->Marshalling(parcel);
     onCreateRecordsAlbumReqBody->Unmarshalling(parcel);
     onCreateRecordsAlbumReqBody->ToString();
