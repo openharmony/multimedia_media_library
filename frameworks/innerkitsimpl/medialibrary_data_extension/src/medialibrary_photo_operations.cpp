@@ -2861,6 +2861,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
 #endif
+    ThumbnailService::GetInstance()->HasInvalidateThumbnail(to_string(fileId), PhotoColumn::PHOTOS_TABLE);
     ScanFile(path, true, true, true);
     if (revertMovingPhotoGraffiti) {
         UpdateAndNotifyMovingPhotoAlbum();

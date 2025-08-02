@@ -87,6 +87,7 @@
 #include "table_event_handler.h"
 #include "values_buckets.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_notify_new.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -242,15 +243,6 @@ const std::string MediaLibraryRdbStore::RegexReplaceFunc(const std::vector<std::
     return std::regex_replace(input, re, replacement);
 }
 
-void MediaLibraryRdbStore::NotifyAddAlbumAsync(string albumId)
-{
-    // 延时50ms
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
-    albumRefresh.NotifyAddAlbums(vector<string>{ albumId });
-    MEDIA_INFO_LOG("AccurateRefresh NotifyAddAlbumAsync albumId = %{public}s", albumId.c_str());
-}
-
 const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<std::string> &args)
 {
     if (args.size() < 1) {
@@ -275,8 +267,7 @@ const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<s
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX, albumId),
         NotifyType::NOTIFY_ADD);
 
-    std::thread taskThread(NotifyAddAlbumAsync, albumId);
-    taskThread.detach();
+    Notification::MediaLibraryNotifyNew::AddAlbum(albumId);
     MEDIA_INFO_LOG("AccurateRefresh PhotoAlbumNotifyFunc albumId = %{public}s", albumId.c_str());
     return "";
 }

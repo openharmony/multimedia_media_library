@@ -170,7 +170,6 @@ private:
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     EXPORT static const std::string BeginGenerateHighlightThumbnail(const std::vector<std::string>& args);
     EXPORT static const std::string PhotoAlbumNotifyFunc(const std::vector<std::string>& args);
-    static void NotifyAddAlbumAsync(std::string albumId);
     static std::mutex reconstructLock_;
     NativeRdb::RdbStoreConfig config_ {""};
 };
