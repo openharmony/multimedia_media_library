@@ -254,6 +254,7 @@ int32_t CloudFileDataConvert::HandleFileType(
 int32_t CloudFileDataConvert::HandlePosition(
     std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
+    CHECK_AND_RETURN_RET(!(upLoadRecord.latitude == 0 && upLoadRecord.longitude == 0), E_OK);
     std::stringstream latitudestream;
     std::stringstream longitudestream;
     latitudestream.precision(15);   // 15:precision
