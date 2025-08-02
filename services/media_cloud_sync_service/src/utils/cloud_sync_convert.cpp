@@ -32,9 +32,6 @@
 #include "media_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
-const int32_t FIRST_MATCH_PARAM = 1;
-
-constexpr size_t DEFAULT_TIME_SIZE = 32;
 static bool convertToLong(const std::string &str, int64_t &value)
 {
     auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
