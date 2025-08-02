@@ -79,7 +79,7 @@ void MovingPhotoCallTranscoder::OnProgress(ani_env *env, ProgressHandler *progre
     status = env->Class_FindStaticMethod(cls, methodName, nullptr, &etsOnProgress);
     ANI_CHECK_RETURN_LOG(status == ANI_OK, "find static method status: %{public}d", static_cast<int>(status));
 
-    ani_double processAni = static_cast<ani_double>(progressHandler->retProgressValue.progress);
+    ani_int processAni = static_cast<ani_int>(progressHandler->retProgressValue.progress);
     ani_object progressHandlerAni = static_cast<ani_object>(progressHandler->progressRef);
     status = env->Class_CallStaticMethod_Void(cls, etsOnProgress, processAni, progressHandlerAni);
     if (status != ANI_OK) {

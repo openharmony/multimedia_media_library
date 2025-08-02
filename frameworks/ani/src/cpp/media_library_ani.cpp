@@ -96,8 +96,6 @@ const int32_t MAX_QUERY_LIMIT = 15;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
 const int32_t MAX_LEN_LIMIT = 9999;
 const int32_t MAX_QUERY_ALBUM_LIMIT = 500;
-constexpr size_t ARG_CONTEXT = 1;
-constexpr size_t ARGS_TWO = 2;
 
 mutex MediaLibraryAni::sUserFileClientMutex_;
 mutex MediaLibraryAni::sOnOffMutex_;
@@ -207,6 +205,15 @@ const std::array photoAccessHelperMethos = {
 };
 } // namespace
 
+static void SetUserIdFromObjectInfo(unique_ptr<MediaLibraryAsyncContext> &asyncContext)
+{
+    if (asyncContext == nullptr || asyncContext->objectInfo == nullptr) {
+        ANI_ERR_LOG("objectInfo is nullptr");
+        return;
+    }
+    asyncContext->userId = asyncContext->objectInfo->GetUserId();
+}
+
 std::shared_ptr<NativeRdb::ResultSet> ChangeListenerAni::GetSharedResultSetFromIds(std::vector<string>& Ids,
     bool isPhoto)
 {
@@ -236,23 +243,8 @@ void ChangeListenerAni::GetIdsFromUris(std::list<Uri>& listValue, std::vector<st
     }
 }
 
-void ChangeListenerAni::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallbackWrapper* wrapper)
+void ChangeListenerAni::HandleMessageData(UvChangeMsg *msg, ChangeListenerAni::JsOnChangeCallbackWrapper* wrapper)
 {
-    CHECK_NULL_PTR_RETURN_VOID(msg, "msg is nullptr");
-    CHECK_NULL_PTR_RETURN_VOID(wrapper, "wrapper is nullptr");
-    std::vector<string> ids = {};
-    std::shared_ptr<NativeRdb::ResultSet> sharedAssets = nullptr;
-    if (msg->strUri_.find(PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
-        GetIdsFromUris(msg->changeInfo_.uris_, ids, false);
-        sharedAssets = GetSharedResultSetFromIds(ids, false);
-    } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
-        GetIdsFromUris(msg->changeInfo_.uris_, ids, true);
-        sharedAssets = GetSharedResultSetFromIds(ids, true);
-    } else {
-        ANI_DEBUG_LOG("other albums notify");
-    }
-    wrapper->uriSize_ = ids.size();
-    wrapper->sharedAssets_ = sharedAssets;
     shared_ptr<MessageParcel> parcel = make_shared<MessageParcel>();
     CHECK_NULL_PTR_RETURN_VOID(parcel, "parcel is nullptr");
     std::vector<string> extraIds = {};
@@ -273,15 +265,40 @@ void ChangeListenerAni::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallback
                 continue;
             }
             wrapper->extraUris_.push_back(subUri);
-            extraIds.push_back(MediaLibraryAniUtils::GetFileIdFromUriString(subUri));
+            string fileId = MediaLibraryAniUtils::GetFileIdFromUriString(subUri);
+            if (!fileId.empty()) {
+                extraIds.push_back(fileId);
+            }
         }
         if (len > MAX_QUERY_LIMIT) {
             ANI_INFO_LOG("subUri length exceed the limit.");
             wrapper->extraSharedAssets_ = nullptr;
             return;
         }
-        wrapper->extraSharedAssets_ = GetSharedResultSetFromIds(extraIds, true);
+        if (extraIds.size() != 0) {
+            wrapper->extraSharedAssets_ = GetSharedResultSetFromIds(extraIds, true);
+        }
     }
+}
+
+void ChangeListenerAni::GetResultSetFromMsg(UvChangeMsg *msg, ChangeListenerAni::JsOnChangeCallbackWrapper* wrapper)
+{
+    CHECK_NULL_PTR_RETURN_VOID(msg, "msg is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(wrapper, "wrapper is nullptr");
+    std::vector<string> ids = {};
+    std::shared_ptr<NativeRdb::ResultSet> sharedAssets = nullptr;
+    if (msg->strUri_.find(PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
+        GetIdsFromUris(msg->changeInfo_.uris_, ids, false);
+        sharedAssets = GetSharedResultSetFromIds(ids, false);
+    } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
+        GetIdsFromUris(msg->changeInfo_.uris_, ids, true);
+        sharedAssets = GetSharedResultSetFromIds(ids, true);
+    } else {
+        ANI_DEBUG_LOG("other albums notify");
+    }
+    wrapper->uriSize_ = ids.size();
+    wrapper->sharedAssets_ = sharedAssets;
+    HandleMessageData(msg, wrapper);
 }
 
 void ChangeListenerAni::OnChange(MediaChangeListener &listener, const ani_ref cbRef)
@@ -422,7 +439,7 @@ void ChangeListenerAni::QueryRdbAndNotifyChange(UvChangeMsg *msg)
     worker.detach();
 }
 
-void ChangeListenerAni::ExecuteThreadWork(ani_vm *etsVm, JsOnChangeCallbackWrapper* wrapper)
+void ChangeListenerAni::ExecuteThreadWork(ani_vm *etsVm, ChangeListenerAni::JsOnChangeCallbackWrapper* wrapper)
 {
     lock_guard<mutex> lock(sWorkerMutex_);
     CHECK_IF_EQUAL(wrapper != nullptr, "wrapper is null");
@@ -631,7 +648,7 @@ static ani_object CreateChangeDataObject(ani_env *env, ani_class &changeDataCls)
     return changeDataObj;
 }
 
-ani_object ChangeListenerAni::SolveOnChange(ani_env *env, JsOnChangeCallbackWrapper* wrapper)
+ani_object ChangeListenerAni::SolveOnChange(ani_env *env, ChangeListenerAni::JsOnChangeCallbackWrapper* wrapper)
 {
     CHECK_COND_RET(wrapper != nullptr, nullptr, "wrapper is null");
     UvChangeMsg* msg = wrapper->msg_;
@@ -802,6 +819,7 @@ void MediaLibraryAni::PhotoAccessRemoveGalleryFormInfo(ani_env *env, ani_object 
 
     CHECK_IF_EQUAL(ParseArgsRemoveGalleryFormInfo(env, info, context) == ANI_OK,
         "ParseArgsRemoveGalleryFormInfo fail");
+    SetUserIdFromObjectInfo(context);
     PhotoAccessRemoveGalleryFormInfoExec(env, context);
     RemoveFormInfoAsyncCallbackComplete(env, context);
 }
@@ -820,10 +838,10 @@ static void RemoveFormInfoExec(ani_env *env, unique_ptr<MediaLibraryAsyncContext
         context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
-    FormInfoReqBody reqBody;
-    reqBody.formIds.emplace_back(formId);
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_FORM_INFO);
-    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    context->predicates.EqualTo(FormMap::FORMMAP_FORM_ID, formId);
+    string deleteUri = PAH_REMOVE_FORM_MAP;
+    Uri uri(deleteUri);
+    int ret = UserFileClient::Delete(uri, context->predicates);
     if (ret < 0) {
         if (ret == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -889,18 +907,19 @@ void MediaLibraryAni::PhotoAccessRemoveFormInfo(ani_env *env, ani_object object,
     }
 
     CHECK_IF_EQUAL(ParseArgsRemoveFormInfo(env, info, context) == ANI_OK, "ParseArgsRemoveFormInfo fail");
+    SetUserIdFromObjectInfo(context);
     PhotoAccessRemoveFormInfoExec(env, context);
     RemoveFormInfoAsyncCallbackComplete(env, context);
 }
 
-static ani_double GetPhotoIndexAsyncCallbackComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+static ani_int GetPhotoIndexAsyncCallbackComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
 {
     CHECK_COND_RET(env != nullptr, DEFAULT_ERR_ANI_DOUBLE, "env is null");
     CHECK_COND_RET(context != nullptr, DEFAULT_ERR_ANI_DOUBLE, "context is null");
     MediaLibraryTracer tracer;
     tracer.Start("GetPhotoIndexAsyncCallbackComplete");
 
-    ani_double retObj = {};
+    ani_int retObj = {};
     ani_object error = {};
     context->status = false;
     int32_t count = -1;
@@ -915,7 +934,7 @@ static ani_double GetPhotoIndexAsyncCallbackComplete(ani_env *env, unique_ptr<Me
         }
         context->status = true;
     }
-    auto status = MediaLibraryAniUtils::GetDouble(env, count, retObj);
+    auto status = MediaLibraryAniUtils::GetInt32(env, count, retObj);
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to convert int to ani object");
     }
@@ -1008,7 +1027,7 @@ static void PhotoAccessGetPhotoIndexExecute(unique_ptr<MediaLibraryAsyncContext>
     context->fetchFileResult->SetResultNapiType(type);
 }
 
-ani_double MediaLibraryAni::PhotoAccessGetPhotoIndex([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+ani_int MediaLibraryAni::PhotoAccessGetPhotoIndex([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
     ani_string photoUri, ani_string albumUri, ani_object options)
 {
     MediaLibraryTracer tracer;
@@ -1019,6 +1038,7 @@ ani_double MediaLibraryAni::PhotoAccessGetPhotoIndex([[maybe_unused]] ani_env *e
     asyncContext->objectInfo = Unwrap(env, object);
     CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsIndexof(env, photoUri, albumUri, options, asyncContext) == ANI_OK,
         DEFAULT_ERR_ANI_DOUBLE, "Failed to parse args");
+    SetUserIdFromObjectInfo(asyncContext);
     PhotoAccessGetPhotoIndexExecute(asyncContext, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     return GetPhotoIndexAsyncCallbackComplete(env, asyncContext);
 }
@@ -1337,9 +1357,9 @@ static ani_status ParseArgsStopCreateThumbnailTask(ani_env *env, ani_object obje
 }
 
 void MediaLibraryAni::PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_env *env,
-    [[maybe_unused]] ani_object object, ani_double taskId)
+    [[maybe_unused]] ani_object object, ani_int taskId)
 {
-    ANI_DEBUG_LOG("PhotoAccessStopCreateThumbnailTask with taskId: %{public}d", static_cast<int32_t>(taskId));
+    ANI_DEBUG_LOG("PhotoAccessStopCreateThumbnailTask with taskId: %{public}d", taskId);
     std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
 
@@ -1695,50 +1715,56 @@ ani_object MediaLibraryAni::GetUserFileMgr(ani_env *env, ani_object context)
     return Constructor(env, cls, context);
 }
 
-ani_object MediaLibraryAni::CreateNewInstance(ani_env *env, ani_class clazz, ani_object context,
-    ani_object userIdObject, bool isAsync)
+ani_object MediaLibraryAni::CreateNewInstance(ani_env *env, ani_class clazz, ani_object context, bool isAsync)
 {
     CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
-    size_t argc = ARG_CONTEXT;
-    ani_boolean isUndefined;
-    env->Reference_IsUndefined(userIdObject, &isUndefined);
-    if (!isUndefined) {
-        argc = ARGS_TWO;
-    }
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    ani_object Object = nullptr;
     ani_status status = ANI_OK;
     if (isAsync) {
-        argc = ARGS_TWO;
-        status = MediaLibraryAniUtils::ToAniBooleanObject(env, true, userIdObject);
+        status = MediaLibraryAniUtils::ToAniBooleanObject(env, true, Object);
         if (status != ANI_OK) {
             ANI_ERR_LOG("ToAniBooleanObject failed");
             return nullptr;
         }
     }
-    int32_t userId = DEFAULT_USER_ID;
-    if (argc > ARG_CONTEXT && !isAsync) {
-        argc = ARGS_TWO;
-        ani_class doubleClass;
-        env->FindClass("std.core.Double", &doubleClass);
-        ani_boolean isDouble;
-        env->Object_InstanceOf(userIdObject, doubleClass, &isDouble);
-        if (isDouble) {
-            ani_double result;
-            env->Object_CallMethodByName_Double(userIdObject, "unboxed", nullptr, &result);
-            userId = static_cast<int>(result);
-            if (userId != DEFAULT_USER_ID && !MediaLibraryAniUtils::IsSystemApp()) {
-                ANI_ERR_LOG("CreateNewInstance failed, target is not system app");
-                return nullptr;
-            }
-            UserFileClient::SetUserId(userId);
-            ANI_INFO_LOG("CreateNewInstance for other user is %{public}d", userId);
-        }
-    }
     ani_object result = nullptr;
-    result = Constructor(env, clazz, context, userIdObject);
+    result = Constructor(env, clazz, context, Object);
     return result;
 }
 
-ani_object MediaLibraryAni::GetPhotoAccessHelperInner(ani_env *env, ani_object context, ani_object userId)
+ani_object MediaLibraryAni::CreateNewInstanceWithUserId(ani_env *env, ani_class clazz, ani_object context,
+    ani_int userIdObject, bool isAsync)
+{
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    ani_status status = ANI_OK;
+    ani_object Object = nullptr;
+    int32_t userId = DEFAULT_USER_ID;
+    if (isAsync) {
+        status = MediaLibraryAniUtils::ToAniBooleanObject(env, true, Object);
+        if (status != ANI_OK) {
+            ANI_ERR_LOG("ToAniBooleanObject failed");
+            return nullptr;
+        }
+    } else {
+        CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetInt32(env, userIdObject, userId) == ANI_OK,
+            "Failed to get userId");
+        if (userId != DEFAULT_USER_ID && !MediaLibraryAniUtils::IsSystemApp()) {
+            ANI_ERR_LOG("CreateNewInstance failed, target is not system app");
+            return nullptr;
+        }
+        UserFileClient::SetUserId(userId);
+        CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::ToAniIntObject(env, userId, Object) == ANI_OK,
+        "Failed to get userId object");
+        ANI_INFO_LOG("CreateNewInstance for other user is %{public}d", userId);
+    }
+    ani_object result = nullptr;
+    result = Constructor(env, clazz, context, Object);
+    return result;
+}
+
+ani_object MediaLibraryAni::GetPhotoAccessHelperInner(ani_env *env, ani_object context)
 {
     CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     MediaLibraryTracer tracer;
@@ -1751,117 +1777,47 @@ ani_object MediaLibraryAni::GetPhotoAccessHelperInner(ani_env *env, ani_object c
         return nullptr;
     }
 
-    return CreateNewInstance(env, cls, context, userId);
+    return CreateNewInstance(env, cls, context);
 }
 
-static bool ParseLocationAlbumTypes(unique_ptr<MediaLibraryAsyncContext> &context, const int32_t albumSubType)
+ani_object MediaLibraryAni::GetPhotoAccessHelperWithUserIdInner(ani_env *env, ani_object context, ani_int userId)
 {
-    CHECK_COND_RET(context != nullptr, false, "context is nullptr");
-    if (albumSubType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
-        context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_LOCATION;
-        context->fetchColumn.insert(context->fetchColumn.end(),
-            PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS.begin(),
-            PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS.end());
-        MediaLibraryAniUtils::GetAllLocationPredicates(context->predicates);
-        return false;
-    } else if (albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
-        context->fetchColumn = PhotoAlbumColumns::CITY_DEFAULT_FETCH_COLUMNS;
-        context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_CITY;
-        string onClause = PhotoAlbumColumns::ALBUM_NAME  + " = " + CITY_ID;
-        context->predicates.InnerJoin(GEO_DICTIONARY_TABLE)->On({ onClause });
-        context->predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_COUNT, to_string(0));
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("GetPhotoAccessHelperWithUserId");
+
+    static const char *className = PAH_ANI_CLASS_PHOTO_ACCESS_HELPER_HANDLE.c_str();
+    ani_class cls;
+    if (ANI_OK != env->FindClass(className, &cls)) {
+        ANI_ERR_LOG("Failed to find class: %{public}s", className);
+        return nullptr;
+    }
+
+    return CreateNewInstanceWithUserId(env, cls, context, userId);
+}
+
+static bool CheckAlbumFetchColumns(const vector<string> &fetchColumn)
+{
+    for (const auto &column : fetchColumn) {
+        if (!PhotoAlbumColumns::IsPhotoAlbumColumn(column) && column.compare(MEDIA_DATA_DB_URI) != 0) {
+            return false;
+        }
     }
     return true;
 }
 
-static ani_status ParseAlbumTypes(ani_env *env, ani_enum_item albumTypeItem, ani_enum_item albumSubtype,
-    std::unique_ptr<MediaLibraryAsyncContext>& context)
-{
-    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
-    /* Parse the first argument to photo album type */
-    AlbumType albumType;
-    int32_t albumTypeInt;
-    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, albumTypeItem,
-        albumTypeInt) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumType");
-    albumType = static_cast<AlbumType>(albumTypeInt);
-    if (!PhotoAlbum::CheckPhotoAlbumType(static_cast<PhotoAlbumType>(albumTypeInt))) {
-        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return ANI_ERROR;
-    }
-    context->isAnalysisAlbum = (albumTypeInt == PhotoAlbumType::SMART);
-
-    /* Parse the second argument to photo album subType */
-    PhotoAlbumSubType photoAlbumSubType;
-    int32_t albumSubTypeInt;
-    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, albumSubtype,
-        albumSubTypeInt) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumSubtype");
-    photoAlbumSubType = static_cast<PhotoAlbumSubType>(albumSubTypeInt);
-    if (!PhotoAlbum::CheckPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(albumSubTypeInt))) {
-        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return ANI_ERROR;
-    }
-
-    if (!ParseLocationAlbumTypes(context, albumSubTypeInt)) {
-        return ANI_OK;
-    }
-
-    context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(albumTypeInt));
-    if (albumSubTypeInt != ANY) {
-        context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubTypeInt));
-    }
-    if (albumSubTypeInt == PhotoAlbumSubType::SHOOTING_MODE || albumSubTypeInt == PhotoAlbumSubType::GEOGRAPHY_CITY) {
-        context->predicates.OrderByDesc(PhotoAlbumColumns::ALBUM_COUNT);
-    }
-    if (albumSubTypeInt == PhotoAlbumSubType::HIGHLIGHT ||
-        albumSubTypeInt == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
-        context->isHighlightAlbum = albumSubTypeInt;
-        vector<string> onClause = {
-            ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
-            HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
-        };
-        if (albumSubTypeInt == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
-            onClause = {
-                ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
-                HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID,
-            };
-        }
-        context->predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
-        context->predicates.OrderByDesc(MAX_DATE_ADDED + ", " + GENERATE_TIME);
-    }
-    return ANI_OK;
-}
-
-static void RestrictAlbumSubtypeOptions(unique_ptr<MediaLibraryAsyncContext> &context)
-{
-    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
-    if (!MediaLibraryAniUtils::IsSystemApp()) {
-        context->predicates.And()->In(PhotoAlbumColumns::ALBUM_SUBTYPE, vector<string>({
-            to_string(PhotoAlbumSubType::USER_GENERIC),
-            to_string(PhotoAlbumSubType::FAVORITE),
-            to_string(PhotoAlbumSubType::VIDEO),
-            to_string(PhotoAlbumSubType::IMAGE),
-        }));
-    } else {
-        context->predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
-    }
-}
-
 static ani_status AddDefaultPhotoAlbumColumns(ani_env *env, vector<string> &fetchColumn)
 {
-    auto validFetchColumns = PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS;
+    auto columns = PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS;
     for (const auto &column : fetchColumn) {
-        if (PhotoAlbumColumns::IsPhotoAlbumColumn(column)) {
-            validFetchColumns.insert(column);
-        } else if (column.compare(MEDIA_DATA_DB_URI) == 0) {
-            // uri is default property of album
+        if (column.compare(MEDIA_DATA_DB_URI) == 0) {
             continue;
-        } else {
-            ANI_ERR_LOG("unknown columns:%{public}s", column.c_str());
-            AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-            return ANI_ERROR;
+        }
+        if (columns.count(column) == 0) {
+            columns.insert(column);
         }
     }
-    fetchColumn.assign(validFetchColumns.begin(), validFetchColumns.end());
+    fetchColumn.assign(columns.begin(), columns.end());
     return ANI_OK;
 }
 
@@ -1890,37 +1846,166 @@ static ani_status GetAlbumFetchOption(ani_env *env, unique_ptr<MediaLibraryAsync
     return ANI_OK;
 }
 
-static ani_status ParseArgsGetPhotoAlbum(ani_env *env, ani_enum_item albumTypeItem, ani_enum_item albumSubtypeItem,
-    ani_object fetchOptions, std::unique_ptr<MediaLibraryAsyncContext>& context)
+static void AddDefaultPhotoAlbumColumns(vector<string> &fetchColumn)
 {
-    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
-    // Parse fetchOptions if exists.
-    ani_boolean isUndefined;
-    env->Reference_IsUndefined(fetchOptions, &isUndefined);
-    if (!isUndefined) {
-        CHECK_COND_WITH_RET_MESSAGE(env, GetAlbumFetchOption(env, context, fetchOptions) == ANI_OK,
-            ANI_INVALID_ARGS, "GetAlbumFetchOption error");
-    } else {
-        ANI_INFO_LOG("fetchOptions is undefined. There is no need to parse fetchOptions.");
-    }
-    // Parse albumType and albumSubtype
-    CHECK_COND_WITH_RET_MESSAGE(env, ParseAlbumTypes(env, albumTypeItem, albumSubtypeItem,
-        context) == ANI_OK, ANI_INVALID_ARGS, "ParseAlbumTypes error");
-    RestrictAlbumSubtypeOptions(context);
-    if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
-        context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
-        CHECK_COND_WITH_RET_MESSAGE(env, AddDefaultPhotoAlbumColumns(env, context->fetchColumn) == ANI_OK,
-            ANI_INVALID_ARGS, "AddDefaultPhotoAlbumColumns error");
-        AddDefaultColumnsForNonAnalysisAlbums(context);
-        if (context->isHighlightAlbum) {
-            context->fetchColumn.erase(std::remove(context->fetchColumn.begin(), context->fetchColumn.end(),
-                PhotoAlbumColumns::ALBUM_ID), context->fetchColumn.end());
-            context->fetchColumn.push_back(ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " AS " +
-            PhotoAlbumColumns::ALBUM_ID);
+    auto columns = PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS;
+    for (const auto &column : fetchColumn) {
+        if (column.compare(MEDIA_DATA_DB_URI) == 0) {
+            continue;
+        }
+        if (columns.count(column) == 0) {
+            columns.insert(column);
         }
     }
-    return ANI_OK;
+    fetchColumn.assign(columns.begin(), columns.end());
+}
+
+static void AddNoSmartFetchColumns(std::vector<std::string> &fetchColumn)
+{
+    AddDefaultPhotoAlbumColumns(fetchColumn);
+    fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
+    fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
+    fetchColumn.push_back(PhotoAlbumColumns::ALBUM_LPATH);
+    fetchColumn.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
+}
+
+static void RestrictAlbumSubtypeOptions(DataSharePredicates &predicates)
+{
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        auto andPredicates = predicates.And();
+        CHECK_NULL_PTR_RETURN_VOID(andPredicates, "andPredicates is nullptr");
+        andPredicates->In(PhotoAlbumColumns::ALBUM_SUBTYPE, vector<string>({
+            to_string(PhotoAlbumSubType::USER_GENERIC),
+            to_string(PhotoAlbumSubType::FAVORITE),
+            to_string(PhotoAlbumSubType::VIDEO),
+            to_string(PhotoAlbumSubType::IMAGE),
+        }));
+    } else {
+        auto andPredicates = predicates.And();
+        CHECK_NULL_PTR_RETURN_VOID(andPredicates, "andPredicates is nullptr");
+        andPredicates->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
+    }
+}
+
+static void AddPhotoAlbumTypeFilter(DataSharePredicates &predicates, int32_t albumType, int32_t albumSubType)
+{
+    if (albumType != PhotoAlbumType::INVALID) {
+        auto andPredicates = predicates.And();
+        CHECK_NULL_PTR_RETURN_VOID(andPredicates, "andPredicates is nullptr");
+        andPredicates->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(albumType));
+    }
+    if (albumSubType != PhotoAlbumSubType::ANY) {
+        auto andPredicates = predicates.And();
+        CHECK_NULL_PTR_RETURN_VOID(andPredicates, "andPredicates is nullptr");
+        andPredicates->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType));
+        if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE || albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
+            predicates.OrderByDesc(PhotoAlbumColumns::ALBUM_COUNT);
+        }
+    }
+    RestrictAlbumSubtypeOptions(predicates);
+}
+
+static void ApplyTablePrefixToAlbumIdPredicates(DataSharePredicates& predicates)
+{
+    constexpr int32_t fieldIdx = 0;
+    auto& items = predicates.GetOperationList();
+    string targetColumn = "AnalysisAlbum.album_id";
+    std::vector<DataShare::OperationItem> tmpOperations = {};
+    for (const DataShare::OperationItem& item : items) {
+        if (item.singleParams.empty()) {
+            tmpOperations.push_back(item);
+            continue;
+        }
+        if (static_cast<string>(item.GetSingle(fieldIdx)) == PhotoAlbumColumns::ALBUM_ID) {
+            DataShare::OperationItem tmpItem = item;
+            tmpItem.singleParams[fieldIdx] = targetColumn;
+            tmpOperations.push_back(tmpItem);
+            continue;
+        }
+        tmpOperations.push_back(item);
+    }
+    predicates = DataSharePredicates(move(tmpOperations));
+}
+
+static void AddHighlightAlbumPredicates(DataSharePredicates& predicates, int32_t albumSubType)
+{
+    vector<string> onClause = {
+        ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
+        HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
+    };
+    if (albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+        onClause = {
+            ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
+            HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID,
+        };
+    }
+    auto innerJoin = predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE);
+    CHECK_NULL_PTR_RETURN_VOID(innerJoin, "innerJoin is nullptr");
+    innerJoin->On(onClause);
+    predicates.OrderByDesc(MAX_DATE_ADDED + ", " + GENERATE_TIME);
+    ApplyTablePrefixToAlbumIdPredicates(predicates);
+}
+
+static void ReplaceFetchColumn(std::vector<std::string> &fetchColumn,
+    const std::string &oldColumn, const std::string &newColumn)
+{
+    auto it = std::find(fetchColumn.begin(), fetchColumn.end(), oldColumn);
+    if (it != fetchColumn.end()) {
+        it->assign(newColumn);
+    }
+}
+
+static std::shared_ptr<DataShareResultSet> CallPahGetAlbums(unique_ptr<MediaLibraryAsyncContext> &context,
+    int32_t &errCode)
+{
+    CHECK_COND_RET(context, nullptr, "context is nullptr");
+    if (context->businessCode != 0) {
+        QueryAlbumsReqBody reqBody;
+        QueryAlbumsRspBody rspBody;
+        reqBody.albumType = context->photoAlbumType;
+        reqBody.albumSubType = context->photoAlbumSubType;
+        reqBody.columns = context->fetchColumn;
+        reqBody.predicates = context->predicates;
+        errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode, reqBody, rspBody);
+        if (errCode != 0) {
+            ANI_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
+            return nullptr;
+        }
+        return rspBody.resultSet;
+    }
+    if (context->photoAlbumType != PhotoAlbumType::SMART) {
+        Uri uri(PAH_QUERY_PHOTO_ALBUM);
+        AddNoSmartFetchColumns(context->fetchColumn);
+        AddPhotoAlbumTypeFilter(context->predicates, context->photoAlbumType, context->photoAlbumSubType);
+        return UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode, context->userId);
+    }
+    if (context->photoAlbumSubType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
+        Uri uri(PAH_QUERY_GEO_PHOTOS);
+        MediaLibraryAniUtils::GetAllLocationPredicates(context->predicates);
+        const auto &locations = PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS;
+        context->fetchColumn.insert(context->fetchColumn.end(), locations.begin(), locations.end());
+        return UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode, context->userId);
+    }
+    if (context->photoAlbumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
+        context->fetchColumn = PhotoAlbumColumns::CITY_DEFAULT_FETCH_COLUMNS;
+        std::string onClause = PhotoAlbumColumns::ALBUM_NAME  + " = " + CITY_ID;
+        auto innerJoin = context->predicates.InnerJoin(GEO_DICTIONARY_TABLE);
+        CHECK_COND_RET(innerJoin, nullptr, "context is nullptr");
+        innerJoin->On({ onClause });
+        context->predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_COUNT, to_string(0));
+    } else {
+        AddDefaultPhotoAlbumColumns(context->fetchColumn);
+        if (context->photoAlbumSubType == PhotoAlbumSubType::HIGHLIGHT ||
+            context->photoAlbumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+            AddHighlightAlbumPredicates(context->predicates, context->photoAlbumSubType);
+            std::string highLightAlbumId = ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID +
+                " AS " + PhotoAlbumColumns::ALBUM_ID;
+            ReplaceFetchColumn(context->fetchColumn, PhotoAlbumColumns::ALBUM_ID, highLightAlbumId);
+        }
+    }
+    Uri uri(PAH_QUERY_ANA_PHOTO_ALBUM);
+    AddPhotoAlbumTypeFilter(context->predicates, context->photoAlbumType, context->photoAlbumSubType);
+    return UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode, context->userId);
 }
 
 static void GetPhotoAlbumsExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
@@ -1929,21 +2014,8 @@ static void GetPhotoAlbumsExecute(ani_env *env, unique_ptr<MediaLibraryAsyncCont
     MediaLibraryTracer tracer;
     tracer.Start("GetPhotoAlbumsExecute");
 
-    string queryUri;
-    if (context->hiddenOnly || context->hiddenAlbumFetchMode == ASSETS_MODE) {
-        queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-            UFM_QUERY_HIDDEN_ALBUM : PAH_QUERY_HIDDEN_ALBUM;
-    } else if (context->isAnalysisAlbum) {
-        queryUri = context->isLocationAlbum == PhotoAlbumSubType::GEOGRAPHY_LOCATION ?
-            PAH_QUERY_GEO_PHOTOS : PAH_QUERY_ANA_PHOTO_ALBUM;
-    } else {
-        queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-            UFM_QUERY_PHOTO_ALBUM : PAH_QUERY_PHOTO_ALBUM;
-    }
-    Uri uri(queryUri);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode,
-        GetUserIdFromContext(context));
+    std::shared_ptr<DataShareResultSet> resultSet = CallPahGetAlbums(context, errCode);
     if (resultSet == nullptr) {
         ANI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
         if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
@@ -1956,10 +2028,9 @@ static void GetPhotoAlbumsExecute(ani_env *env, unique_ptr<MediaLibraryAsyncCont
 
     context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
     context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
-    context->fetchPhotoAlbumResult->SetHiddenOnly(context->hiddenOnly);
-    context->fetchPhotoAlbumResult->SetLocationOnly(context->isLocationAlbum ==
-        PhotoAlbumSubType::GEOGRAPHY_LOCATION);
-    context->fetchPhotoAlbumResult->SetUserId(GetUserIdFromContext(context));
+    context->fetchPhotoAlbumResult->SetHiddenOnly(false);
+    context->fetchPhotoAlbumResult->SetLocationOnly(false);
+    context->fetchPhotoAlbumResult->SetUserId(context->userId);
 }
 
 static ani_object GetPhotoAlbumsComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
@@ -1985,6 +2056,30 @@ static ani_object GetPhotoAlbumsComplete(ani_env *env, unique_ptr<MediaLibraryAs
     return fetchRes;
 }
 
+static ani_status ParseArgsPahGetAlbums(ani_env *env, ani_enum_item albumTypeItem, ani_enum_item albumSubtypeItem,
+    ani_object fetchOptions, std::unique_ptr<MediaLibraryAsyncContext>& context)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
+    // Parse fetchOptions if exists.
+    ani_boolean isUndefined;
+    env->Reference_IsUndefined(fetchOptions, &isUndefined);
+    if (!isUndefined) {
+        CHECK_COND_WITH_RET_MESSAGE(env, GetAlbumFetchOption(env, context, fetchOptions) == ANI_OK,
+            ANI_INVALID_ARGS, "GetAlbumFetchOption error");
+    } else {
+        ANI_INFO_LOG("fetchOptions is undefined. There is no need to parse fetchOptions.");
+    }
+    // Parse albumType and albumSubtype
+    context->photoAlbumType = PhotoAlbumType::INVALID;
+    context->photoAlbumSubType = PhotoAlbumSubType::ANY;
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, albumTypeItem,
+        context->photoAlbumType) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumType");
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, albumSubtypeItem,
+        context->photoAlbumSubType) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumSubtype");
+    return ANI_OK;
+}
+
 ani_object MediaLibraryAni::GetPhotoAlbums(ani_env *env, ani_object object, ani_enum_item albumTypeItem,
     ani_enum_item albumSubtypeItem, ani_object fetchOptions)
 {
@@ -1992,8 +2087,10 @@ ani_object MediaLibraryAni::GetPhotoAlbums(ani_env *env, ani_object object, ani_
     CHECK_COND_RET(asyncContext != nullptr, nullptr, "asyncContext is nullptr");
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->objectInfo = Unwrap(env, object);
-    CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsGetPhotoAlbum(env, albumTypeItem, albumSubtypeItem,
+    CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsPahGetAlbums(env, albumTypeItem, albumSubtypeItem,
         fetchOptions, asyncContext) == ANI_OK, nullptr, "Failed to parse get albums options");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_PHOTO_ALBUMS);
+    SetUserIdFromObjectInfo(asyncContext);
     GetPhotoAlbumsExecute(env, asyncContext);
     return GetPhotoAlbumsComplete(env, asyncContext);
 }
@@ -2038,9 +2135,11 @@ static ani_status ParseArgsGetPhotoAlbumByIds(ani_env *env, ani_object albumIds,
     CHECK_COND_WITH_RET_MESSAGE(env, GetAlbumIds(env, albumIds, context) == ANI_OK,
         ANI_INVALID_ARGS, "ParseAlbumTypes error");
 
-    RestrictAlbumSubtypeOptions(context);
+    RestrictAlbumSubtypeOptions(context->predicates);
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
         context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
+        CHECK_COND_WITH_RET_MESSAGE(env, CheckAlbumFetchColumns(context->fetchColumn) == true,
+            ANI_INVALID_ARGS, "AddDefaultPhotoAlbumColumns error");
         CHECK_COND_WITH_RET_MESSAGE(env, AddDefaultPhotoAlbumColumns(env, context->fetchColumn) == ANI_OK,
             ANI_INVALID_ARGS, "AddDefaultPhotoAlbumColumns error");
         AddDefaultColumnsForNonAnalysisAlbums(context);
@@ -2077,9 +2176,12 @@ static void SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<DataShareResult
     string countColumn = PhotoAlbumColumns::ALBUM_COUNT;
     string coverColumn = PhotoAlbumColumns::ALBUM_COVER_URI;
     string albumUriPrefix = PhotoAlbumColumns::ALBUM_URI_PREFIX;
+    string coverUriSource = PhotoAlbumColumns::COVER_URI_SOURCE;
     photoAlbumData->SetAlbumUri(albumUriPrefix + to_string(albumId));
     photoAlbumData->SetCount(get<int32_t>(ResultSetUtils::GetValFromColumn(countColumn, resultSet, TYPE_INT32)));
     photoAlbumData->SetCoverUri(get<string>(ResultSetUtils::GetValFromColumn(coverColumn, resultSet, TYPE_STRING)));
+    photoAlbumData->SetCoverUriSource(get<int32_t>(ResultSetUtils::GetValFromColumn(coverUriSource,
+        resultSet, TYPE_INT32)));
 
     // Albums of hidden types (except hidden album itself) don't support image count and video count,
     // return -1 instead
@@ -2121,23 +2223,16 @@ static void GetAlbumsByIdsExecute(ani_env *env, unique_ptr<MediaLibraryAsyncCont
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     MediaLibraryTracer tracer;
-    tracer.Start("GetPhotoAlbumsExecute");
+    tracer.Start("GetAlbumsByIdsExecute");
 
-    string queryUri;
-    if (context->hiddenOnly || context->hiddenAlbumFetchMode == ASSETS_MODE) {
-        queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-            UFM_QUERY_HIDDEN_ALBUM : PAH_QUERY_HIDDEN_ALBUM;
-    } else if (context->isAnalysisAlbum) {
-        queryUri = context->isLocationAlbum == PhotoAlbumSubType::GEOGRAPHY_LOCATION ?
-            PAH_QUERY_GEO_PHOTOS : PAH_QUERY_ANA_PHOTO_ALBUM;
-    } else {
-        queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-            UFM_QUERY_PHOTO_ALBUM : PAH_QUERY_PHOTO_ALBUM;
-    }
-    Uri uri(queryUri);
-    int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode,
-        GetUserIdFromContext(context));
+    GetAlbumsByIdsReqBody reqBody;
+    GetAlbumsByIdsRspBody rspBody;
+    shared_ptr<DataShareResultSet> resultSet;
+    reqBody.predicates = context->predicates;
+    reqBody.columns = context->fetchColumn;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_GET_ALBUMS_BY_IDS);
+    int errCode = IPC::UserDefineIPCClient().Call(businessCode, reqBody, rspBody);
+    resultSet = rspBody.resultSet;
     if (resultSet == nullptr) {
         ANI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
         if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
@@ -2147,13 +2242,23 @@ static void GetAlbumsByIdsExecute(ani_env *env, unique_ptr<MediaLibraryAsyncCont
         }
         return;
     }
-    std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> albumMap;
-    BuildAlbumMap(context->albumMap, resultSet);
+    if (context->albumIds.empty()) {
+        context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
+        context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
+        context->fetchPhotoAlbumResult->SetHiddenOnly(context->hiddenOnly);
+        context->fetchPhotoAlbumResult->SetLocationOnly(context->isLocationAlbum ==
+            PhotoAlbumSubType::GEOGRAPHY_LOCATION);
+        context->fetchPhotoAlbumResult->SetUserId(context->userId);
+    } else {
+        std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> albumMap;
+        BuildAlbumMap(context->albumMap, resultSet);
+    }
 }
 
 static ani_status ToPhotoAlbumAni(ani_env *env, const unique_ptr<PhotoAlbum> &value, ani_object &aniobj)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(value != nullptr, ANI_ERROR, "value is nullptr");
 
     AniPhotoAlbumOperator photoAlbumOperator;
     photoAlbumOperator.clsName = PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE;
@@ -2231,36 +2336,16 @@ ani_object MediaLibraryAni::GetAlbumsByIds(ani_env *env, ani_object object, ani_
     asyncContext->objectInfo = Unwrap(env, object);
     CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsGetPhotoAlbumByIds(env, albumIds, asyncContext) == ANI_OK,
         nullptr, "Failed to parse get albums options");
+    SetUserIdFromObjectInfo(asyncContext);
     GetAlbumsByIdsExecute(env, asyncContext);
     return GetAlbumsByIdsComplete(env, asyncContext);
-}
-
-static ani_status ParseHiddenPhotosDisplayMode(ani_env *env,
-    std::unique_ptr<MediaLibraryAsyncContext>& context, int32_t fetchMode)
-{
-    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
-    auto &predicates = context->predicates;
-    switch (fetchMode) {
-        case ASSETS_MODE:
-            predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::HIDDEN);
-            break;
-        case ALBUMS_MODE:
-            predicates.EqualTo(PhotoAlbumColumns::CONTAINS_HIDDEN, to_string(1));
-            break;
-        default:
-            AniError::ThrowError(
-                env, OHOS_INVALID_PARAM_CODE, "Invalid fetch mode: " + to_string(fetchMode));
-            return ANI_ERROR;
-    }
-    return ANI_OK;
 }
 
 static ani_status ParseArgsGetHiddenAlbums(ani_env *env, ani_enum_item albumModeAni,
     ani_object fetchOptions, std::unique_ptr<MediaLibraryAsyncContext>& context)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-     // Parse fetchOptions if exists.
+    // Parse fetchOptions if exists.
     ani_boolean isUndefined;
     env->Reference_IsUndefined(fetchOptions, &isUndefined);
     if (!isUndefined) {
@@ -2273,18 +2358,68 @@ static ani_status ParseArgsGetHiddenAlbums(ani_env *env, ani_enum_item albumMode
     CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env,
         albumModeAni, fetchMode) == ANI_OK, ANI_ERROR, "Failed to get fetchMode");
     ANI_INFO_LOG("ParseArgsGetHiddenAlbums fetchMode : %{public}d", fetchMode);
-    CHECK_COND_WITH_RET_MESSAGE(env, ParseHiddenPhotosDisplayMode(env, context,
-        fetchMode) == ANI_OK, ANI_INVALID_ARGS, "ParseHiddenPhotosDisplayMode error");
-    CHECK_COND_WITH_RET_MESSAGE(env, AddDefaultPhotoAlbumColumns(env,
-        context->fetchColumn) == ANI_OK, ANI_INVALID_ARGS, "AddDefaultPhotoAlbumColumns error");
-    context->hiddenAlbumFetchMode = fetchMode;
-    if (fetchMode == HiddenPhotosDisplayMode::ASSETS_MODE) {
-        return ANI_OK;
+    if (fetchMode != HiddenPhotosDisplayMode::ASSETS_MODE && fetchMode != HiddenPhotosDisplayMode::ALBUMS_MODE) {
+        ANI_ERR_LOG("Invalid fetch mode: %{public}d", fetchMode);
+        return ANI_ERROR;
     }
-    context->hiddenOnly = true;
-    context->fetchColumn.push_back(PhotoAlbumColumns::HIDDEN_COUNT);
-    context->fetchColumn.push_back(PhotoAlbumColumns::HIDDEN_COVER);
+    CHECK_COND_WITH_RET_MESSAGE(env, CheckAlbumFetchColumns(context->fetchColumn) == true,
+        ANI_INVALID_ARGS, "Invalid fetch column");
+    context->hiddenAlbumFetchMode = fetchMode;
     return ANI_OK;
+}
+
+static std::shared_ptr<DataShareResultSet> CallPahGetHiddenAlbums(unique_ptr<MediaLibraryAsyncContext> &context,
+    int32_t &errCode)
+{
+    if (context->businessCode != 0) {
+        QueryAlbumsReqBody reqBody;
+        QueryAlbumsRspBody rspBody;
+        reqBody.columns = context->fetchColumn;
+        reqBody.predicates = context->predicates;
+        reqBody.hiddenAlbumFetchMode = context->hiddenAlbumFetchMode;
+        errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode, reqBody, rspBody);
+        if (errCode != 0) {
+            ANI_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
+            return nullptr;
+        }
+        return rspBody.resultSet;
+    }
+
+    Uri uri(PAH_QUERY_HIDDEN_ALBUM);
+    AddDefaultPhotoAlbumColumns(context->fetchColumn);
+    if (context->hiddenAlbumFetchMode == ALBUMS_MODE) {
+        context->fetchColumn.push_back(PhotoAlbumColumns::HIDDEN_COUNT);
+        context->fetchColumn.push_back(PhotoAlbumColumns::HIDDEN_COVER);
+        context->predicates.EqualTo(PhotoAlbumColumns::CONTAINS_HIDDEN, to_string(1));
+    } else {
+        context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::HIDDEN);
+    }
+    return UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode, context->userId);
+}
+
+static void GetHiddenAlbumsExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("GetHiddenAlbumsExecute");
+
+    int errCode = 0;
+    std::shared_ptr<DataShareResultSet> resultSet = CallPahGetHiddenAlbums(context, errCode);
+    if (resultSet == nullptr) {
+        ANI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
+        if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
+            context->SaveError(errCode);
+        } else {
+            context->SaveError(E_HAS_DB_ERROR);
+        }
+        return;
+    }
+
+    context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
+    context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
+    context->fetchPhotoAlbumResult->SetHiddenOnly(context->hiddenAlbumFetchMode == ALBUMS_MODE);
+    context->fetchPhotoAlbumResult->SetLocationOnly(false);
+    context->fetchPhotoAlbumResult->SetUserId(context->userId);
 }
 
 ani_object MediaLibraryAni::GetHiddenAlbums([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
@@ -2296,7 +2431,9 @@ ani_object MediaLibraryAni::GetHiddenAlbums([[maybe_unused]] ani_env *env, [[may
     asyncContext->objectInfo = MediaLibraryAni::Unwrap(env, object);
     CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsGetHiddenAlbums(env, albumModeAni,
         fetchOptions, asyncContext) == ANI_OK, nullptr, "Failed to parse get hidden albums options");
-    GetPhotoAlbumsExecute(env, asyncContext);
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_QUERY_HIDDEN_ALBUMS);
+    SetUserIdFromObjectInfo(asyncContext);
+    GetHiddenAlbumsExecute(env, asyncContext);
     return GetPhotoAlbumsComplete(env, asyncContext);
 }
 
@@ -2397,30 +2534,27 @@ static void PhotoAccessGetAssetsExecute(ani_env *env, unique_ptr<MediaLibraryAsy
         ANI_ERR_LOG("PhotoAccessGetAssetsExecute EasterEgg false");
         return;
     }
-    string queryUri = PAH_QUERY_PHOTO;
-    MediaLibraryAniUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    string queryUri;
+    switch (context->assetType) {
+        case TYPE_PHOTO: {
+            queryUri = PAH_QUERY_PHOTO;
+            MediaLibraryAniUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+            break;
+        }
+        default: {
+            context->SaveError(-EINVAL);
+            return;
+        }
+    }
+
     Uri uri(queryUri);
     int errCode = 0;
-    auto [accessSandbox, resultSet] = UserFileClient::QueryAccessibleViaSandBox(
-        uri, context->predicates, context->fetchColumn, errCode, context->userId);
-    if (accessSandbox) {
-        if (resultSet == nullptr) {
-            ANI_ERR_LOG("QueryAccessibleViaSandBox failed, resultSet is nullptr");
-        }
-    } else {
-        GetAssetsReqBody reqBody;
-        reqBody.predicates = context->predicates;
-        reqBody.columns = context->fetchColumn;
-        reqBody.burstKey = context->burstKey;
-        GetAssetsRespBody respBody;
-        errCode = IPC::UserDefineIPCClient()
-                      .SetUserId(context->userId)
-                      .Call(context->businessCode, reqBody, respBody);
-        if (errCode == E_OK) {
-            resultSet = respBody.resultSet;
-        } else {
-            ANI_ERR_LOG("UserDefineIPCClient Call failed, errCode is %{public}d", errCode);
-        }
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
+        context->predicates, context->fetchColumn, errCode, GetUserIdFromContext(context));
+    if (resultSet == nullptr && !context->uri.empty() && errCode == E_PERMISSION_DENIED) {
+        Uri queryWithUri(context->uri);
+        resultSet = UserFileClient::Query(queryWithUri, context->predicates, context->fetchColumn, errCode,
+            GetUserIdFromContext(context));
     }
 
     if (resultSet == nullptr) {
@@ -3383,6 +3517,7 @@ void MediaLibraryAni::PhotoAccessSaveFormInfo(ani_env *env, ani_object object, a
     }
 
     CHECK_ARGS_RET_VOID(env, ParseArgsSaveFormInfo(env, info, context), JS_ERR_PARAMETER_INVALID);
+    SetUserIdFromObjectInfo(context);
     PhotoAccessSaveFormInfoExec(env, context);
     PhotoAccessSaveFormInfoComplete(env, context);
 }
@@ -3423,18 +3558,9 @@ static void SaveGalleryFormInfoExec(ani_env *env, unique_ptr<MediaLibraryAsyncCo
     CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
     CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     context->resultNapiType = type;
-    vector<string> formIds;
-    vector<string> fileUris;
-    bool isValid = false;
-    for (const auto& valueBucket : context->valuesBucketArray) {
-        formIds.emplace_back(valueBucket.Get(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, isValid));
-        fileUris.emplace_back(valueBucket.Get(TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI, isValid));
-    }
-    FormInfoReqBody reqBody;
-    reqBody.formIds = formIds;
-    reqBody.fileUris = fileUris;
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_GALLERY_FORM_INFO);
-    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    string uri = PAH_STORE_FACARD_PHOTO;
+    Uri createFormIdUri(uri);
+    auto ret = UserFileClient::BatchInsert(createFormIdUri, context->valuesBucketArray);
     if (ret < 0) {
         if (ret == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -3602,6 +3728,7 @@ static ani_status ParseCreateConfig(ani_env *env, ani_object photoCreationConfig
     valuesBucket.Put(ASSET_EXTENTION, extension);
 
     HandleBundleInfo(valuesBucket, isAuthorization, bundleInfo);
+    context->tokenId = bundleInfo.tokenId;
     context->valuesBucketArray.push_back(move(valuesBucket));
     return ANI_OK;
 }
@@ -3780,16 +3907,16 @@ ani_object MediaLibraryAni::PhotoAccessHelperAgentCreateAssetsWithMode(ani_env *
     tracer.Start("PhotoAccessHelperAgentCreateAssetsWithMode");
 
     int32_t authorizationModeInt = -1;
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryEnumAni::EnumGetValueInt32(env, authorizationMode, authorizationModeInt) == ANI_OK,
         "Failed to call EnumGetValueInt32 for authorizationMode");
     CHECK_COND_WITH_MESSAGE(env, authorizationModeInt == SaveType::SHORT_IMAGE_PERM, "authorizationMode is error");
 
-    uint32_t tokenId = 0;
-    if (MediaLibraryAniUtils::GetProperty(env, appInfo, TOKEN_ID, tokenId) != ANI_OK) {
-        AniError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid tokenId");
-        return nullptr;
-    }
+    int64_t aniLong = 0;
+    CHECK_COND_WITH_MESSAGE(env, env->Object_GetPropertyByName_Long(appInfo, TOKEN_ID.c_str(), &aniLong) == ANI_OK,
+        "Object_GetPropertyByName_Long failed");
+    uint32_t tokenId = static_cast<uint32_t>(aniLong);
     int ret = Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(
         tokenId, PERM_SHORT_TERM_WRITE_IMAGEVIDEO, SHORT_TERM_PERMISSION_DURATION_300S);
     if (ret != E_SUCCESS) {
@@ -3861,6 +3988,7 @@ ani_string MediaLibraryAni::PhotoAccessGetIndexConstructProgress(ani_env *env, a
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
+    SetUserIdFromObjectInfo(context);
     PhotoAccessGetIndexConstructProgressExec(env, context);
     return GetIndexConstructProgressComplete(env, context);
 }
@@ -3892,6 +4020,7 @@ static ani_status ParseHidenSensitiveType(ani_env *env, ani_enum_item hideSensit
 static ani_status ParseArgsGrantPhotoUriPermission(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context,
     ani_object param, ani_enum_item permissionTypeAni, ani_enum_item hideSensitiveTypeAni)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
     context->isCreateByComponent = false;
     context->needSystemApp = true;
@@ -3901,9 +4030,10 @@ static ani_status ParseArgsGrantPhotoUriPermission(ani_env *env, unique_ptr<Medi
     }
 
     // parse appid or tokenId
-    uint32_t tokenId = 0;
-    CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, param, "tokenId", tokenId), "Failed to parse tokenId");
-    context->valuesBucket.Put(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+    int64_t tokenId = 0;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Long(param, TOKEN_ID.c_str(), &tokenId),
+        "Object_GetPropertyByName_Long failed");
+    context->valuesBucket.Put(AppUriSensitiveColumn::TARGET_TOKENID, tokenId);
     uint32_t srcTokenId = IPCSkeleton::GetCallingTokenID();
     context->valuesBucket.Put(AppUriSensitiveColumn::SOURCE_TOKENID, static_cast<int64_t>(srcTokenId));
 
@@ -3966,9 +4096,10 @@ static ani_status ParseArgsGrantPhotoUrisPermission(ani_env *env, unique_ptr<Med
     }
 
     // parse appid or tokenId
-    uint32_t tokenId = 0;
-    CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, param, "tokenId", tokenId), "Failed to parse tokenId");
-    context->valuesBucket.Put(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+    int64_t tokenId = 0;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Long(param, TOKEN_ID.c_str(), &tokenId),
+        "Object_GetPropertyByName_Long failed");
+    context->valuesBucket.Put(AppUriSensitiveColumn::TARGET_TOKENID, tokenId);
     uint32_t srcTokenId = IPCSkeleton::GetCallingTokenID();
     context->valuesBucket.Put(AppUriSensitiveColumn::SOURCE_TOKENID, static_cast<int64_t>(srcTokenId));
 
@@ -4022,22 +4153,22 @@ static void PhotoAccessGrantPhotoUriPermissionExecute(ani_env *env, unique_ptr<M
     }
 }
 
-static ani_double PhotoUriPermissionComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+static ani_int PhotoUriPermissionComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    ani_double result = -1;
+    ani_int result = -1;
     CHECK_COND_RET(context != nullptr, result, "context is nullptr");
     ani_object error = {};
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, error);
     } else {
-        result = static_cast<ani_double>(context->retVal);
+        result = static_cast<ani_int>(context->retVal);
     }
 
     context.reset();
     return result;
 }
 
-ani_double MediaLibraryAni::PhotoAccessGrantPhotoUriPermission(ani_env *env, ani_object object, ani_object param,
+ani_int MediaLibraryAni::PhotoAccessGrantPhotoUriPermission(ani_env *env, ani_object object, ani_object param,
     ani_enum_item photoPermissionType, ani_enum_item hideSensitiveType)
 {
     MediaLibraryTracer tracer;
@@ -4131,7 +4262,7 @@ static void PhotoAccessGrantPhotoUrisPermissionExecute(ani_env *env, unique_ptr<
     }
 }
 
-ani_double MediaLibraryAni::PhotoAccessGrantPhotoUrisPermission(ani_env *env, ani_object object, ani_object param,
+ani_int MediaLibraryAni::PhotoAccessGrantPhotoUrisPermission(ani_env *env, ani_object object, ani_object param,
     ani_enum_item photoPermissionType, ani_enum_item hideSensitiveType)
 {
     MediaLibraryTracer tracer;
@@ -4157,7 +4288,7 @@ ani_double MediaLibraryAni::PhotoAccessGrantPhotoUrisPermission(ani_env *env, an
 }
 
 static ani_status ParseArgsCancelPhotoUriPermission(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context,
-    ani_double aniTokenId, ani_string aniUri, ani_enum_item photoPermissionType)
+    ani_long aniTokenId, ani_string aniUri, ani_enum_item photoPermissionType)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
@@ -4169,12 +4300,11 @@ static ani_status ParseArgsCancelPhotoUriPermission(ani_env *env, unique_ptr<Med
     }
 
     // parse tokenId
-    uint32_t tokenId = static_cast<uint32_t>(aniTokenId);
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+    context->valuesBucket.Put(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(aniTokenId));
 
     // get caller tokenid
     uint32_t callerTokenId = IPCSkeleton::GetCallingTokenID();
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::SOURCE_TOKENID, static_cast<int64_t>(callerTokenId));
+    context->valuesBucket.Put(AppUriSensitiveColumn::SOURCE_TOKENID, static_cast<int64_t>(callerTokenId));
 
     // parse fileId
     string uri;
@@ -4183,16 +4313,16 @@ static ani_status ParseArgsCancelPhotoUriPermission(ani_env *env, unique_ptr<Med
     if (fileId < 0) {
         return ANI_ERROR;
     }
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::FILE_ID, fileId);
+    context->valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
 
     // parse permissionType
     int32_t permissionType;
     CHECK_STATUS_RET(ParsePermissionType(env, photoPermissionType, permissionType),
         "photoPermissionType is invalid");
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
+    context->valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
     // parsing fileId ensured uri is photo.
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
+    context->valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
     return ANI_OK;
 }
 
@@ -4227,7 +4357,7 @@ static void PhotoAccessCancelPhotoUriPermissionExecute(ani_env *env, unique_ptr<
     }
 }
 
-ani_double MediaLibraryAni::PhotoAccessCancelPhotoUriPermission(ani_env *env, ani_object object, ani_double aniTokenId,
+ani_int MediaLibraryAni::PhotoAccessCancelPhotoUriPermission(ani_env *env, ani_object object, ani_long aniTokenId,
     ani_string aniUri, ani_enum_item photoPermissionType)
 {
     MediaLibraryTracer tracer;
@@ -4257,27 +4387,25 @@ void MediaLibraryAni::SetUserId(const int32_t &userId)
     userId_ = userId;
 }
 
-static void GetMediaAnalysisServiceProgress(nlohmann::json& jsonObj, unordered_map<int, string>& idxToCount,
-    vector<string> columns)
+static void GetMediaAnalysisServiceProgress(nlohmann::json& jsonObj, unordered_map<int, string>& idxToCount)
 {
-    Uri uri(URI_TOTAL);
-    string clause = VISION_TOTAL_TABLE + "." + MediaColumn::MEDIA_ID + " = " + PhotoColumn::PHOTOS_TABLE+ "." +
-        MediaColumn::MEDIA_ID;
-    DataShare::DataSharePredicates predicates;
-    predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ clause });
-    predicates.EqualTo(PhotoColumn::PHOTO_HIDDEN_TIME, 0)->And()
-        ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0)->And()
-        ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
-
     int errCode = 0;
-    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, columns, errCode);
-    CHECK_NULL_PTR_RETURN_VOID(ret, "ret is nullptr");
+    GetAnalysisProcessReqBody reqBody;
+    reqBody.analysisType = AnalysisType::ANALYSIS_LABEL;
+    QueryResultRspBody rspBody;
+    errCode = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, rspBody);
+    shared_ptr<DataShare::DataShareResultSet> ret = rspBody.resultSet;
+    if (ret == nullptr) {
+        ANI_ERR_LOG("DataShareResultSet is nullptr, errCode is %{public}d", errCode);
+        return;
+    }
     if (ret->GoToFirstRow() != NativeRdb::E_OK) {
         ANI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
         ret->Close();
         return;
     }
-    for (size_t i = 0; i < columns.size(); ++i) {
+    for (size_t i = 0; i < idxToCount.size(); ++i) {
         int tmp = 0;
         ret->GetInt(i, tmp);
         jsonObj[idxToCount[i]] = tmp;
@@ -4290,15 +4418,8 @@ static std::string GetLabelAnalysisProgress()
     unordered_map<int, string> idxToCount = {
         {0, "totalCount"}, {1, "finishedCount"}, {2, "LabelCount"}
     };
-    vector<string> columns = {
-        "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 "
-            "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
-            "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount",
-        "SUM(CASE WHEN label != 0 THEN 1 ELSE 0 END) AS LabelCount"
-    };
     nlohmann::json jsonObj;
-    GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
+    GetMediaAnalysisServiceProgress(jsonObj, idxToCount);
     ANI_DEBUG_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
     return jsonObj.dump();
 }
@@ -4381,7 +4502,6 @@ static std::string GetHighlightAnalysisProgress()
     unordered_map<int, string> idxToCount = {
         {0, "ClearCount"}, {1, "DeleteCount"}, {2, "NotProduceCount"}, {3, "ProduceCount"}, {4, "PushCount"}
     };
-
     vector<string> columns = {
         "SUM(CASE WHEN highlight_status = -3 THEN 1 ELSE 0 END) AS ClearCount",
         "SUM(CASE WHEN highlight_status = -2 THEN 1 ELSE 0 END) AS DeleteCount",
@@ -4465,6 +4585,7 @@ ani_string MediaLibraryAni::PhotoAccessHelperGetDataAnalysisProgress(ani_env *en
     context->objectInfo = Unwrap(env, object);
     CHECK_COND_RET(context->objectInfo != nullptr, result, "Failed to get object info");
     MediaLibraryEnumAni::EnumGetValueInt32(env, analysisType, context->analysisType);
+    SetUserIdFromObjectInfo(context);
     GetAnalysisProgressExecute(context);
     return GetDataAnalysisProgressComplete(env, context);
 }
@@ -4590,18 +4711,18 @@ static void PhotoAccessStartAssetAnalysisExecute(ani_env *env, std::unique_ptr<M
     }
 }
 
-static ani_double PhotoAccessStartAssetAnalysisComplete(ani_env *env,
+static ani_int PhotoAccessStartAssetAnalysisComplete(ani_env *env,
     std::unique_ptr<MediaLibraryAsyncContext> &asyncContext)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSStartAssetAnalysisCallback");
-    ani_double retVal = DEFAULT_ERR_ANI_DOUBLE;
+    ani_int retVal = DEFAULT_ERR_ANI_DOUBLE;
     CHECK_COND_RET(env != nullptr, retVal, "env is null");
     CHECK_COND_WITH_RET_MESSAGE(env, asyncContext != nullptr, retVal, "asyncContext is nullptr");
 
     if (asyncContext->error == ERR_DEFAULT) {
-        CHECK_COND_RET(MediaLibraryAniUtils::ToAniDouble(env, asyncContext->taskId, retVal) == ANI_OK,
-            retVal, "ToAniDouble failed");
+        CHECK_COND_RET(MediaLibraryAniUtils::ToAniInt(env, asyncContext->taskId, retVal) == ANI_OK,
+            retVal, "ToAniInt failed");
     } else {
         ani_object error = {};
         asyncContext->HandleError(env, error);
@@ -4611,7 +4732,7 @@ static ani_double PhotoAccessStartAssetAnalysisComplete(ani_env *env,
     return retVal;
 }
 
-ani_double MediaLibraryAni::StartAssetAnalysis(ani_env *env, ani_object object, ani_enum_item type,
+ani_int MediaLibraryAni::StartAssetAnalysis(ani_env *env, ani_object object, ani_enum_item type,
     ani_object assetUris)
 {
     ANI_DEBUG_LOG("%{public}s is called", __func__);

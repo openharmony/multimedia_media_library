@@ -52,6 +52,7 @@ static const string EMPTY_STRING = "";
 using json = nlohmann::json;
 using OperationItem = OHOS::DataShare::OperationItem;
 using DataSharePredicates = OHOS::DataShare::DataSharePredicates;
+static const std::string MULTI_USER_URI_FLAG = "user=";
 
 struct AniArrayOperator {
     ani_class cls {};
@@ -376,7 +377,7 @@ ani_status MediaLibraryAniUtils::GetParamStringPathMax(ani_env *env, ani_object 
 ani_status MediaLibraryAniUtils::ToAniBooleanObject(ani_env *env, bool src, ani_object &aniObj)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const char *className = "std.core.Boolean;";
+    static const char *className = "std.core.Boolean";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
 
@@ -391,7 +392,7 @@ ani_status MediaLibraryAniUtils::ToAniBooleanObject(ani_env *env, bool src, ani_
 ani_status MediaLibraryAniUtils::ToAniIntObject(ani_env *env, int32_t src, ani_object &aniObj)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const char *className = "std.core.Int;";
+    static const char *className = "std.core.Int";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
 
@@ -419,7 +420,7 @@ ani_status MediaLibraryAniUtils::ToAniNumberObject(ani_env *env, int32_t src, an
 ani_status MediaLibraryAniUtils::ToAniDoubleObject(ani_env *env, double src, ani_object &aniObj)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const char *className = "std.core.Double;";
+    static const char *className = "std.core.Double";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
 
@@ -2520,6 +2521,22 @@ ani_status MediaLibraryAniUtils::ToAniVariantArray(ani_env *env, const std::vect
         i++;
     }
     return ANI_OK;
+}
+
+string MediaLibraryAniUtils::GetUserIdFromUri(const string &uri)
+{
+    string userId = "-1";
+    string str = uri;
+    size_t pos = str.find(MULTI_USER_URI_FLAG);
+    if (pos != string::npos) {
+        pos += MULTI_USER_URI_FLAG.length();
+        size_t end = str.find_first_of("&?", pos);
+        if (end == string::npos) {
+            end = str.length();
+        }
+        userId = str.substr(pos, end - pos);
+    }
+    return userId;
 }
 
 template ani_status MediaLibraryAniUtils::GetFetchOption<unique_ptr<MediaLibraryAsyncContext>>(ani_env *env,

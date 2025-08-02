@@ -48,8 +48,8 @@ public:
     static ani_object GetFirstObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_object GetNextObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_object GetLastObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
-    static ani_object GetPositionObject(ani_env *env, ani_object fetchFileResultHandle, ani_double index);
-    static ani_double GetCount([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
+    static ani_object GetPositionObject(ani_env *env, ani_object fetchFileResultHandle, ani_int index);
+    static ani_int GetCount([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
 
     static ani_object CreateFetchFileResult(ani_env *env, std::unique_ptr<FetchResult<FileAsset>> fileResult);
     static ani_object CreateFetchFileResult(ani_env *env, std::unique_ptr<FetchResult<PhotoAlbum>> fileResult);
