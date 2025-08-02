@@ -33,6 +33,7 @@ public:
     EXPORT static void UpdateItem(NotifyInfoInner notifyInfoInner);
     EXPORT static void AddItem(NotifyInfoInner notifyInfoInner);
     EXPORT static void DeleteItem(NotifyInfoInner notifyInfoInner);
+    EXPORT static void AddAlbum(const std::string &albumId);
 };
 } // namespace Notification
 } // namespace Media

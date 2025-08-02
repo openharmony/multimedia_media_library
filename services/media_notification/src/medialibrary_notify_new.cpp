@@ -23,6 +23,7 @@
 #include "userfilemgr_uri.h"
 #include "medialibrary_tracer.h"
 #include "notify_task_worker.h"
+#include "notification_classification.h"
 
 using namespace std;
 
@@ -56,6 +57,11 @@ void MediaLibraryNotifyNew::AddItem(NotifyInfoInner notifyInfoInner)
 void MediaLibraryNotifyNew::DeleteItem(NotifyInfoInner notifyInfoInner)
 {
     MEDIA_INFO_LOG("DeleteItem");
+}
+
+void MediaLibraryNotifyNew::AddAlbum(const std::string &albumId)
+{
+    NotificationClassification::AddAlbum(albumId);
 }
 } // Notification
 } // Media
