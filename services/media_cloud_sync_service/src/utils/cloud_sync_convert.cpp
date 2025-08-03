@@ -299,6 +299,7 @@ int32_t CloudSyncConvert::CompensatePropOrientation(const CloudMediaPullDataDto 
 
 int32_t CloudSyncConvert::CompensatePropPosition(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
+    CHECK_AND_RETURN_RET(!(data.latitude == 0 && data.longitude == 0), E_OK);
     values.PutDouble(PhotoColumn::PHOTO_LATITUDE, data.latitude);
     values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data.longitude);
     return E_OK;
