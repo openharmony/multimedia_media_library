@@ -87,6 +87,7 @@ public:
 
     int32_t Restore()
     {
+        this->maxAlbumId_ = this->QueryMaxAlbumId("PhotoAlbum", "album_id");
         // fetch all albums from galleryRdb
         std::vector<GalleryAlbumRowData> galleryAlbumInfos = this->GetGalleryAlbums();
         TRACE_LOG(galleryAlbumInfos);
@@ -104,14 +105,17 @@ public:
     std::vector<PhotoAlbumDao::PhotoAlbumRowData> GetAlbumsToRestore(
         const std::vector<PhotoAlbumDao::PhotoAlbumRowData> &photoAlbums,
         const std::vector<GalleryAlbumRowData> &galleryAlbums);
+    int32_t GetMaxAlbumId();
 
 private:
     std::vector<GalleryAlbumRowData> GetGalleryAlbums();
+    int32_t QueryMaxAlbumId(const std::string &tableName, const std::string &idName);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     PhotoAlbumDao photoAlbumDao_;
+    int32_t maxAlbumId_ = 0;
 
 private:
     const std::string GALLERY_ALBUM_ID = "albumId";

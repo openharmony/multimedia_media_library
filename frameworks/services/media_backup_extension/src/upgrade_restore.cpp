@@ -750,6 +750,10 @@ void UpgradeRestore::HandleRestData(void)
     BackupFileUtils::DeleteSdDatabase(filePath_);
     int64_t endDeleteDir = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("TimeCost: DeleteDir cost: %{public}" PRId64, endDeleteDir - startDeleteDir);
+    int64_t startDeleteEmptyAlbum = MediaFileUtils::UTCTimeMilliSeconds();
+    this->DeleteEmptyAlbums();
+    int64_t endDeleteEmptyAlbum = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: DeleteEmptyAlbum cost: %{public}" PRId64, endDeleteEmptyAlbum - startDeleteEmptyAlbum);
 }
 
 std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t minId)
@@ -1701,6 +1705,46 @@ void UpgradeRestore::SetOrientationAndExifRotate(FileInfo &info, NativeRdb::Valu
         value.PutInt(PhotoColumn::PHOTO_ORIENTATION, info.orientation);
         value.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, info.exifRotate);
     }
+}
+
+void UpgradeRestore::DeleteEmptyAlbums()
+{
+    const size_t BATCH_SIZE = 200;
+    auto albumIds = this->photosRestore_.GetAlbumIdsFromPhotoAlbumCache();
+    size_t start = 0;
+    int32_t totalDeleteRows = 0;
+    while (start < albumIds.size()) {
+        int32_t deleteRows = 0;
+        int32_t end = std::min(start + BATCH_SIZE, albumIds.size());
+        std::vector<int32_t> batchAlbumIds(albumIds.begin() + start, albumIds.begin() + end);
+        BatchDeleteEmptyAlbums(batchAlbumIds, deleteRows);
+        totalDeleteRows += deleteRows;
+        start += BATCH_SIZE;
+    };
+    MEDIA_INFO_LOG("delete empty photo album, deleted nums: %{public}d", totalDeleteRows);
+}
+
+void UpgradeRestore::BatchDeleteEmptyAlbums(const std::vector<int32_t> &batchAlbumIds, int32_t &deleteRows)
+{
+    NativeRdb::AbsRdbPredicates deletePredicates("PhotoAlbum");
+    int32_t maxAlbumId = this->photoAlbumRestore_.GetMaxAlbumId();
+    std::string whereClause = "album_id > ? AND album_id IN (";
+    for (auto i = 0; i < batchAlbumIds.size(); i++) {
+        if (i != 0) {
+            whereClause += ",";
+        }
+        whereClause += "?";
+    }
+    whereClause += ")";
+    whereClause += "AND NOT EXISTS (SELECT 1 FROM Photos as P WHERE P.owner_album_id = PhotoAlbum.album_id)";
+    deletePredicates.SetWhereClause(whereClause);
+    std::vector<std::string> whereArgs;
+    whereArgs.push_back(to_string(maxAlbumId));
+    for (auto i = 0; i < batchAlbumIds.size(); i++) {
+        whereArgs.push_back(to_string(batchAlbumIds[i]));
+    }
+    deletePredicates.SetWhereArgs(whereArgs);
+    BackupDatabaseUtils::Delete(deletePredicates, deleteRows, mediaLibraryRdb_);
 }
 } // namespace Media
 } // namespace OHOS

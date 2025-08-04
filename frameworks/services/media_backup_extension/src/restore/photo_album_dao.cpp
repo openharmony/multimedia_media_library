@@ -354,4 +354,18 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::BuildAlbumInfoByLPath(const std:
     }
     return this->BuildAlbumInfoByLPath(lPath, albumType, albumSubType);
 }
+
+/**
+ * @brief Get the Album Id Set From Photo Album Cache.
+ */
+std::vector<int32_t> PhotoAlbumDao::GetAlbumIdsFromCache()
+{
+    vector<int32_t> result;
+    SafeMap<std::string, PhotoAlbumDao::PhotoAlbumRowData>::SafeMapCallBack callback =
+        [&](std::string key, PhotoAlbumDao::PhotoAlbumRowData &value) {
+            result.push_back(value.albumId);
+        };
+    photoAlbumCache_.Iterate(callback);
+    return result;
+}
 }  // namespace OHOS::Media
