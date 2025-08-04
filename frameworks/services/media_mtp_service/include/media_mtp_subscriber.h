@@ -12,22 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef OHOS_MTP_SUBSCRIBER_H
-#define OHOS_MTP_SUBSCRIBER_H
+#ifndef OHOS_MEDIA_MTP_SUBSCRIBER_H
+#define OHOS_MEDIA_MTP_SUBSCRIBER_H
 
 #include "common_event_subscriber.h"
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-class MtpSubscriber : public EventFwk::CommonEventSubscriber {
+class MediaMtpSubscriber : public EventFwk::CommonEventSubscriber {
 public:
-    EXPORT virtual ~MtpSubscriber() = default;
-    EXPORT explicit MtpSubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo);
+    EXPORT virtual ~MediaMtpSubscriber() = default;
+    EXPORT explicit MediaMtpSubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo);
 
     EXPORT static bool Subscribe(void);
     EXPORT void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
 };
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MTP_SUBSCRIBER_H
+#endif // OHOS_MEDIA_MTP_SUBSCRIBER_H

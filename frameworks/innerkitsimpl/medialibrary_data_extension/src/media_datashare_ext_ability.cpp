@@ -70,7 +70,7 @@
 #include "system_api_check_handler.h"
 #include "userfilemgr_uri.h"
 #ifdef MEDIALIBRARY_MTP_ENABLE
-#include "mtp_manager.h"
+#include "media_mtp_manager.h"
 #endif
 #include "media_fuse_manager.h"
 #include "highlight_column.h"
@@ -197,7 +197,7 @@ void MediaDataShareExtAbility::InitPermissionHandler()
 void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 {
 #ifdef MEDIALIBRARY_MTP_ENABLE
-    MtpManager::GetInstance().Init();
+    MediaMtpManager::GetInstance().Init();
 #endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().InitAsync();
