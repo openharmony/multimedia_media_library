@@ -702,18 +702,27 @@ void CacheStreamReadThumbDbStatus(ThumbRdbOpt& opts, ThumbnailData& data, Thumbn
         default:
             break;
     }
-}
-
-void CacheThumbStatus(ThumbRdbOpt &opts, ThumbnailType thumbType, ThumbnailData& thumbnailData, int& err,
-    bool& isLocalThumbnailAvailable)
-{
-    if (!isLocalThumbnailAvailable) {
-        CacheStreamReadThumbDbStatus(opts, thumbnailData, thumbType);
-    }
     if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE &&
         !MediaLibraryBundleManager::GetInstance()->GetClientBundleName().empty()) {
-        ThumbnailUtils::CacheVisitTime(opts, thumbnailData);
+        values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     }
+}
+
+void UpdatePhotoLastVisitTimeAsync(ThumbnailData &data, ThumbRdbOpt &opts)
+{
+    auto updatePhotoLastVisitTime = [](std::shared_ptr<ThumbnailTaskData> &taskData) {
+        CHECK_AND_RETURN_LOG(taskData != nullptr, "UpdatePhotoLastVisitTimeAsync task data is nullptr!");
+        ThumbRdbOpt opts = taskData->opts_;
+        ThumbnailData data = taskData->thumbnailData_;
+        NativeRdb::ValuesBucket values;
+        values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+        auto ret = ThumbnailRdbUtils::UpdateRdbStoreById(opts, data.id, values);
+        CHECK_AND_PRINT_LOG(ret == E_OK, "UpdateRdbStoreById err: %{public}d. id: %{public}s path: %{public}s",
+            ret, data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    };
+    ThumbnailGenerateExecute executor = updatePhotoLastVisitTime;
+    IThumbnailHelper::AddThumbnailGenerateTask(executor, opts, data,
+        ThumbnailTaskType::ASYNC_UPDATE_RDB, ThumbnailTaskPriority::LOW);
 }
 
 int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbnailData& data, ThumbRdbOpt &opts, ThumbnailType thumbType)
@@ -736,7 +745,6 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbnailData& data, Thumb
     string absFilePath;
     CHECK_AND_RETURN_RET_LOG(PathToRealPath(fileName, absFilePath), E_ERR,
         "file is not real path, file path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
-
     auto fd = open(absFilePath.c_str(), O_RDONLY);
     dfxTimer.End();
     if (fd < 0) {
@@ -748,11 +756,8 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbnailData& data, Thumb
         IThumbnailHelper::DoRotateThumbnailEx(opts, data, fd, thumbType);
         fileName = GetThumbnailPath(data.path,
             thumbType == ThumbnailType::LCD ? THUMBNAIL_LCD_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
-        if (!PathToRealPath(fileName, absFilePath)) {
-            MEDIA_ERR_LOG("file is not real path, file path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
-            return E_ERR;
-        }
-
+        CHECK_AND_RETURN_RET_LOG(PathToRealPath(fileName, absFilePath), E_ERR,
+            "file is not real path, file path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
         fd = open(absFilePath.c_str(), O_RDONLY);
         if (fd < 0) {
             MEDIA_ERR_LOG("Rotate thumb failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
@@ -761,7 +766,14 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbnailData& data, Thumb
             return -errno;
         }
     }
-    CacheThumbStatus(opts, thumbType, data, err, isLocalThumbnailAvailable);
+    if (!isLocalThumbnailAvailable) {
+        CacheStreamReadThumbDbStatus(opts, data, thumbType);
+        return fd;
+    }
+    if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE &&
+        !MediaLibraryBundleManager::GetInstance()->GetClientBundleName().empty()) {
+        UpdatePhotoLastVisitTimeAsync(data, opts);
+    }
     return fd;
 }
 

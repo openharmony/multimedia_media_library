@@ -333,21 +333,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_CacheLcdInfo_test_001, TestSize.Level1)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_CacheVisitTime_test_001, TestSize.Level1)
-{
-    ASSERT_NE(storePtr, nullptr);
-    ThumbRdbOpt opts = {
-        .store = storePtr,
-        .networkId = "",
-    };
-    ThumbnailData data;
-    bool ret = ThumbnailUtils::CacheVisitTime(opts, data);
-    EXPECT_EQ(ret, false);
-    opts.networkId = "CacheVisitTime";
-    ret = ThumbnailUtils::CacheVisitTime(opts, data);
-    EXPECT_EQ(ret, false);
-}
-
 HWTEST_F(MediaLibraryUtilsTest, medialib_CleanThumbnailInfo_test_001, TestSize.Level1)
 {
     ASSERT_NE(storePtr, nullptr);

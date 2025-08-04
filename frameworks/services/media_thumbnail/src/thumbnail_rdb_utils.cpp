@@ -18,6 +18,7 @@
 
 #include "asset_accurate_refresh.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
 #include "media_log.h"
 
 using namespace std;
@@ -311,6 +312,23 @@ bool ThumbnailRdbUtils::QueryLocalNoExifRotateInfos(ThumbRdbOpt &opts, vector<Th
     CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(opts.store, rdbPredicates, column, infos),
         false, "QueryThumbnailDataInfos failed");
     return true;
+}
+
+int32_t ThumbnailRdbUtils::UpdateRdbStoreById(ThumbRdbOpt &opts, const string &id,
+    const NativeRdb::ValuesBucket &values)
+{
+    CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_RDB_STORE_NULL, "Store is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(!values.IsEmpty(), E_OK, "ValuesBucket is empty");
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(opts.table);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, id);
+    int32_t changedRows = -1;
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateRdbStoreById");
+    int32_t ret = opts.store->Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Store execute update err: %{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(changedRows > 0, E_RDB_UPDATE_NO_ROWS_CHANGED,
+        "Update changedRows: %{public}d", changedRows);
+    return E_OK;
 }
 
 int32_t ThumbnailRdbUtils::UpdateExifRotateAndDirty(const ThumbnailData &data, DirtyType dirtyType)

@@ -30,12 +30,11 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-const std::string THREAD_NAME_FOREGROUND = "ThumbForeground";
-const std::string THREAD_NAME_BACKGROUND = "ThumbBackground";
 
 enum class ThumbnailTaskType {
     FOREGROUND,
     BACKGROUND,
+    ASYNC_UPDATE_RDB,
 };
 
 enum class ThumbnailTaskPriority {

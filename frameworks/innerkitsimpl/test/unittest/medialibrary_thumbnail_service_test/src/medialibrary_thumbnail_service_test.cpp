@@ -1421,16 +1421,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_CacheLcdInfo
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_046, TestSize.Level1)
-{
-    ThumbRdbOpt opts;
-    opts.store = storePtr;
-    ThumbnailData data;
-    int err = E_ERR;
-    auto res = ThumbnailUtils::CacheVisitTime(opts, data);
-    EXPECT_EQ(res, false);
-}
-
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_047, TestSize.Level1)
 {
     ThumbRdbOpt opts;
