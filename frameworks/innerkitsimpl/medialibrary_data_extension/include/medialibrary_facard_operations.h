@@ -79,7 +79,6 @@ public:
     };
     const std::string cloudSyncChangeUri;
     static std::unordered_set<CloudSyncChangeInfo, CloudSyncChangeInfoHash> cloudSyncChanges;
-    static std::shared_ptr<AppExecFwk::EventHandler> deviceHandler_;
     static bool isTaskPosted;
     static std::mutex mtx;
 };
@@ -111,7 +110,6 @@ public:
     };
     const std::string assetChangeUri;
     static std::unordered_set<AssetChangeInfo, AssetChangeInfoHash> assetChanges;
-    static std::shared_ptr<AppExecFwk::EventHandler> deviceHandler_;
     static bool isTaskPosted;
     static std::mutex mtx;
 };
