@@ -50,7 +50,6 @@ using namespace std;
 using namespace Media;
 
 static const int32_t NUM_BYTES = 1;
-static const int32_t MAX_MTP_MODE = 2;
 static const int32_t MAX_BYTE_VALUE = 256;
 static const int32_t SEED_SIZE = 1024;
 FuzzedDataProvider *provider = nullptr;
@@ -58,12 +57,6 @@ FuzzedDataProvider *provider = nullptr;
 static inline vector<uint32_t> FuzzVectorUInt32()
 {
     return {provider->ConsumeIntegral<uint32_t>()};
-}
-
-static inline MtpManager::MtpMode FuzzMtpMode()
-{
-    int32_t mode = provider->ConsumeIntegralInRange<int32_t>(0, MAX_MTP_MODE);
-    return static_cast<MtpManager::MtpMode>(mode);
 }
 
 static MtpOperationContext FuzzMtpOperationContext()
@@ -168,22 +161,6 @@ static void MtpFileObserverTest()
     mtpFileObserver->StopFileInotify();
 }
 
-static void MtpManagerTest()
-{
-    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext());
-    if (context == nullptr) {
-        MEDIA_ERR_LOG("context is nullptr");
-        return;
-    }
-    MtpManager::GetInstance().Init();
-    MtpManager::GetInstance().StartMtpService(FuzzMtpMode());
-    MtpManager::GetInstance().IsMtpMode();
-    string key = "persist.edm.mtp_server_disable";
-    string value = provider->ConsumeBytesAsString(NUM_BYTES);
-    MtpManager::GetInstance().OnMtpParamDisableChanged(key.c_str(), value.c_str(), context.get());
-    MtpManager::GetInstance().StopMtpService();
-}
 
 static void MtpMonitorTest()
 {
@@ -327,7 +304,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::MtpErrorUtilsTest();
     OHOS::MtpEventTest();
     OHOS::MtpFileObserverTest();
-    OHOS::MtpManagerTest();
     OHOS::MtpMonitorTest();
     OHOS::MtpOperationTest();
     OHOS::MtpPacketTest();

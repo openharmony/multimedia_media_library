@@ -52,7 +52,6 @@ ohos_shared_library("media_mtp") {
     "src/mtp_service.cpp",
     "src/mtp_storage_manager.cpp",
     "src/mtp_store_observer.cpp",
-    "src/mtp_subscriber.cpp",
     "src/object_info.cpp",
     "src/packet_payload_factory.cpp",
     "src/payload_data.cpp",
