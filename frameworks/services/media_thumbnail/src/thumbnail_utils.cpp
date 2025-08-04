@@ -977,16 +977,6 @@ bool ThumbnailUtils::UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data,
     return true;
 }
 
-bool ThumbnailUtils::CacheVisitTime(ThumbRdbOpt &opts, ThumbnailData &data)
-{
-    CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, false, "opts.store is nullptr");
-    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, false, "Not photos table!");
-
-    int64_t timeNow = UTCTimeMilliSeconds();
-    data.rdbUpdateCache.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
-    return true;
-}
-
 bool ThumbnailUtils::UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status)
 {
     ValuesBucket values;
