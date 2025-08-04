@@ -20,7 +20,6 @@
 #include "itypes_util.h"
 
 namespace OHOS::Media {
-// LCOV_EXCL_START
 bool GetAlbumsLpathByIdsReqBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadUint32(this->albumId);
@@ -48,5 +47,4 @@ bool GetAlbumsLpathByIdsRespBody::Marshalling(MessageParcel &parcel) const
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
-// LCOV_EXCL_STOP
 };
