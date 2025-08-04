@@ -1166,6 +1166,7 @@ bool SendableFileAssetNapi::HandleParamSet(const string &inputKey, const string 
         NAPI_ERR_LOG("invalid resultNapiType");
         return false;
     }
+    NAPI_INFO_LOG("sendable set: %{public}s", inputKey.c_str());
     return true;
 }
 
