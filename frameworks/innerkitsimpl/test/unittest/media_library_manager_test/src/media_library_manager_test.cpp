@@ -2407,6 +2407,85 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DecodeAstc_test, TestSize.
 }
 
 /**
+ * @tc.number    : MediaLibraryManager_GetAlbumLpath_test_001
+ * @tc.name      : Get lpath by albumId
+ * @tc.desc      : Get lpath by albumId success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAlbumLpath_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAlbumLpath_test_001 enter");
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    uint32_t ownerAlbumId = 1;
+    std::string lpath = "";
+    int32_t ret = mediaLibraryManager->GetAlbumLpath(ownerAlbumId, lpath);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAlbumLpath_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GetAlbumLpaths_test_001
+ * @tc.name      : Get lpaths by albumType
+ * @tc.desc      : Get lpaths by albumType failed
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAlbumLpaths_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAlbumLpaths_test_001 enter");
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    uint32_t albumType = 1024;
+    std::shared_ptr<DataShare::ResultSet> resultSet = nullptr;
+    int32_t ret = mediaLibraryManager->GetAlbumLpaths(albumType, resultSet);
+    EXPECT_EQ(ret, E_FAIL);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAlbumLpaths_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GetAlbumLpaths_test_002
+ * @tc.name      : Get lpaths by albumType
+ * @tc.desc      : Get lpaths by albumType success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAlbumLpaths_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAlbumLpaths_test_002 enter");
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    uint32_t albumType = 0;
+    std::shared_ptr<DataShare::ResultSet> resultSet = nullptr;
+    int32_t ret = mediaLibraryManager->GetAlbumLpaths(albumType, resultSet);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAlbumLpaths_test_002 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GetAlbumLpaths_test_003
+ * @tc.name      : Get lpaths by albumType
+ * @tc.desc      : Get lpaths by albumType success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAlbumLpaths_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAlbumLpaths_test_003 enter");
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    uint32_t albumType = 2048;
+    std::shared_ptr<DataShare::ResultSet> resultSet = nullptr;
+    int32_t ret = mediaLibraryManager->GetAlbumLpaths(albumType, resultSet);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetAlbumLpaths_test_003 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_RetainCloudMediaAsset_test_001
+ * @tc.name      : RetainCloudMediaAsset: HDC_RETAIN_FORCE
+ * @tc.desc      : RetainCloudMediaAsset failed
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_RetainCloudMediaAsset_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_RetainCloudMediaAsset_test_001 enter");
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    CloudMediaRetainType retainType = CloudMediaRetainType::HDC_RETAIN_FORCE;
+    int32_t ret = mediaLibraryManager->RetainCloudMediaAsset(retainType);
+    EXPECT_NE(ret, E_OK);
+    MEDIA_INFO_LOG("MediaLibraryManager_RetainCloudMediaAsset_test_001 exit");
+}
+
+/**
  * @tc.number    : MediaLibraryExtendManager_GetPhotoUrisPermission_test_001
  * @tc.name      : Get 不支持的权限类型
  * @tc.desc      : Get permission fail
