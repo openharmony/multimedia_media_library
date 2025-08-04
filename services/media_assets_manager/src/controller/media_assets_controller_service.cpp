@@ -354,6 +354,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAssetsControllerService::RetainCloudMediaAsset
     },
     {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RETAIN_CLOUDMEDIA_ASSET),
+        &MediaAssetsControllerService::RetainCloudMediaAsset
+    },
+    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GRANT_PHOTO_URI_PERMISSION),
         &MediaAssetsControllerService::GrantPhotoUriPermission
     },
@@ -1771,7 +1775,8 @@ int32_t MediaAssetsControllerService::RetainCloudMediaAsset(MessageParcel &data,
         MEDIA_ERR_LOG("StartDownloadCloudMedia Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    if (reqBody.cloudMediaRetainType == static_cast<int32_t>(CloudMediaRetainType::RETAIN_FORCE)) {
+    if (reqBody.cloudMediaRetainType == static_cast<int32_t>(CloudMediaRetainType::RETAIN_FORCE) ||
+        reqBody.cloudMediaRetainType == static_cast<int32_t>(CloudMediaRetainType::HDC_RETAIN_FORCE)) {
         ret = MediaAssetsService::GetInstance().RetainCloudMediaAsset();
     } else {
         ret = E_INVALID_VALUES;
