@@ -2914,7 +2914,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
         }
         if (MovingPhotoFileUtils::IsMovingPhoto(subtype,
             fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType())) {
-            CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset->GetFilePath(), false) == E_OK, E_FAIL,
+            CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset->GetFilePath(), false, true) == E_OK, E_FAIL,
                 "Failed to add filters to video");
         }
     }
