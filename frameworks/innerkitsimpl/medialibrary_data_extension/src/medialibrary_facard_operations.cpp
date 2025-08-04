@@ -62,16 +62,12 @@ static std::map<ChangeType, int> changeTypeMap = {
 };
  
 bool CardAssetUriObserver::isTaskPosted = false;
-std::shared_ptr<AppExecFwk::EventHandler> CardAssetUriObserver::deviceHandler_ =
-std::make_shared<AppExecFwk::EventHandler>(AppExecFwk::EventRunner::Create("MediaLibraryFacard"));
 std::mutex CardAssetUriObserver::mtx;
 std::unordered_set<
     CardAssetUriObserver::AssetChangeInfo,
     CardAssetUriObserver::AssetChangeInfoHash> CardAssetUriObserver::assetChanges;
 
 bool FaCloudSyncSwitchObserver::isTaskPosted = false;
-std::shared_ptr<AppExecFwk::EventHandler> FaCloudSyncSwitchObserver::deviceHandler_ =
-std::make_shared<AppExecFwk::EventHandler>(AppExecFwk::EventRunner::Create("MediaLibraryCloudSyncFacard"));
 std::mutex FaCloudSyncSwitchObserver::mtx;
 std::unordered_set<
     FaCloudSyncSwitchObserver::CloudSyncChangeInfo,
@@ -120,8 +116,10 @@ void CardAssetUriObserver::PostAssetChangeTask()
 {
     if (!CardAssetUriObserver::isTaskPosted) {
         CardAssetUriObserver::isTaskPosted = true;
-        const int DELAY_MILLISECONDS = 2000;
-        CardAssetUriObserver::deviceHandler_->PostTask([this]() {
+        thread([]() {
+            MEDIA_DEBUG_LOG("CardAssetUriObserver task start");
+            const int DELAY_MILLISECONDS = 2000;
+            this_thread::sleep_for(chrono::milliseconds(DELAY_MILLISECONDS));
             std::lock_guard<std::mutex> lock(CardAssetUriObserver::mtx);
             std::vector<std::string> assetChangeUris;
             std::vector<int> assetChangeTypes;
@@ -140,7 +138,8 @@ void CardAssetUriObserver::PostAssetChangeTask()
                 want, nullptr, userId, AppExecFwk::ExtensionAbilityType::SERVICE);
             CardAssetUriObserver::assetChanges.clear();
             CardAssetUriObserver::isTaskPosted = false;
-            }, "StartExtensionAbility", DELAY_MILLISECONDS);
+            MEDIA_DEBUG_LOG("CardAssetUriObserver task end");
+        }).detach();
     }
 }
 
@@ -148,8 +147,10 @@ void FaCloudSyncSwitchObserver::PostAssetChangeTask()
 {
     if (!FaCloudSyncSwitchObserver::isTaskPosted) {
         FaCloudSyncSwitchObserver::isTaskPosted = true;
-        const int DELAY_MILLISECONDS = 2000;
-        FaCloudSyncSwitchObserver::deviceHandler_->PostTask([this]() {
+        thread([]() {
+            MEDIA_DEBUG_LOG("FaCloudSyncSwitchObserver task start");
+            const int DELAY_MILLISECONDS = 2000;
+            this_thread::sleep_for(chrono::milliseconds(DELAY_MILLISECONDS));
             std::lock_guard<std::mutex> lock(FaCloudSyncSwitchObserver::mtx);
             std::vector<std::string> assetChangeUris;
             std::vector<int> assetChangeTypes;
@@ -168,7 +169,8 @@ void FaCloudSyncSwitchObserver::PostAssetChangeTask()
                 want, nullptr, userId, AppExecFwk::ExtensionAbilityType::SERVICE);
             FaCloudSyncSwitchObserver::cloudSyncChanges.clear();
             FaCloudSyncSwitchObserver::isTaskPosted = false;
-            }, "StartExtensionAbility", DELAY_MILLISECONDS);
+            MEDIA_DEBUG_LOG("FaCloudSyncSwitchObserver task end");
+        }).detach();
     }
 }
 
