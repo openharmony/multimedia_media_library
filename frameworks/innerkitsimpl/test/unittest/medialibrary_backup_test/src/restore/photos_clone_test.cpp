@@ -31,6 +31,7 @@ using namespace testing::ext;
 namespace OHOS::Media {
 const int32_t TEST_FILE_ID = 1;
 const int32_t TEST_ALBUM_ID = 10;
+const int32_t TEST_DELEED_ALBUM_ID = 100;
 const int64_t TEST_FILE_SIZE = 1024;
 const std::string TEST_ALBUM_NAME = "Camera";
 const std::string TEST_ALBUM_LPATH = "/DCIM/Camera";
@@ -212,7 +213,7 @@ HWTEST_F(PhotosCloneTest, FindAlbumId_Test, TestSize.Level0)
     fileInfo.recycledTime = 1;
     fileInfo.sourcePath = "/storage/emulated/0/DCIM/Camera/SVID_20241029_225550_1.mp4";
     auto albumId = PhotosClone().FindAlbumId(fileInfo);
-    EXPECT_EQ(albumId, 0);
+    EXPECT_EQ(albumId, static_cast<int32_t>(PhotoAlbumId::TRASH));
     MEDIA_INFO_LOG("FindAlbumId_Test end");
 }
 
@@ -369,6 +370,69 @@ HWTEST_F(PhotosCloneTest, FindSameFile_Test_005, TestSize.Level0)
     PhotosDao::PhotosRowData rowData = photosClone.FindSameFile(fileInfo);
     EXPECT_EQ(rowData.IsValid(), false); // source: with cloud_id, no lpath - dst: not found
     MEDIA_INFO_LOG("FindSameFile_Test_005 end");
+}
+
+HWTEST_F(PhotosCloneTest, FindAlbumInfo_Test_001, TestSize.Level0)
+{
+    // normal photo, album not exist, will create
+    MEDIA_INFO_LOG("FindAlbumInfo_Test_001 start");
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    FileInfo fileInfo;
+    fileInfo.fileSize = TEST_FILE_SIZE;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.displayName = TEST_DISPLAY_NAME;
+    fileInfo.lPath = TEST_ALBUM_LPATH;
+
+    int32_t albumId = photosClone.FindAlbumId(fileInfo);
+    EXPECT_GT(albumId, 0);
+    std::string packageName = photosClone.FindPackageName(fileInfo);
+    EXPECT_EQ(packageName.empty(), false);
+    MEDIA_INFO_LOG("FindAlbumId_Test_001 end");
+}
+
+HWTEST_F(PhotosCloneTest, FindAlbumId_Test_002, TestSize.Level0)
+{
+    // hidden photo, album not exist, not create, set owner_album_id = HIDDEN
+    MEDIA_INFO_LOG("FindAlbumId_Test_002 start");
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    FileInfo fileInfo;
+    fileInfo.fileSize = TEST_FILE_SIZE;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.displayName = TEST_DISPLAY_NAME;
+    fileInfo.lPath = TEST_ALBUM_LPATH;
+    fileInfo.hidden = 1;
+
+    int32_t albumId = photosClone.FindAlbumId(fileInfo);
+    EXPECT_EQ(albumId, static_cast<int32_t>(PhotoAlbumId::HIDDEN));
+    std::string packageName = photosClone.FindPackageName(fileInfo);
+    EXPECT_EQ(packageName.empty(), true);
+    MEDIA_INFO_LOG("FindAlbumId_Test_002 end");
+}
+
+HWTEST_F(PhotosCloneTest, FindAlbumId_Test_003, TestSize.Level0)
+{
+    // hidden & trashed photo, album not exist, not create, set owner_album_id = TRASH
+    MEDIA_INFO_LOG("FindAlbumId_Test_003 start");
+    PhotosClone photosClone;
+    photosClone.OnStart(g_rdbStore->GetRaw(), nullptr);
+
+    FileInfo fileInfo;
+    fileInfo.fileSize = TEST_FILE_SIZE;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+    fileInfo.displayName = TEST_DISPLAY_NAME;
+    fileInfo.lPath = TEST_ALBUM_LPATH;
+    fileInfo.hidden = 1;
+    fileInfo.recycledTime = 1;
+
+    int32_t albumId = photosClone.FindAlbumId(fileInfo);
+    EXPECT_EQ(albumId, static_cast<int32_t>(PhotoAlbumId::TRASH));
+    std::string packageName = photosClone.FindPackageName(fileInfo);
+    EXPECT_EQ(packageName.empty(), true);
+    MEDIA_INFO_LOG("FindAlbumId_Test_003 end");
 }
 
 void PhotosCloneTestUtils::ClearAllData()
