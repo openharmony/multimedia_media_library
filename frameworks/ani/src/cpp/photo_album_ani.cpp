@@ -661,16 +661,16 @@ static ani_status GetAssetsIdArray(ani_env *env, ani_object photoAssets, std::ve
         return ANI_INVALID_ARGS;
     }
 
-    ani_double length = 0;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(photoAssets, "length", &length),
+    ani_int length = 0;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(photoAssets, "length", &length),
         "Call method <get>length failed.");
     if (length <= 0) {
-        ANI_ERR_LOG("Failed to check array length: %{public}f", length);
+        ANI_ERR_LOG("Failed to check array length: %{public}d", length);
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array length");
         return ANI_INVALID_ARGS;
     }
 
-    for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
+    for (ani_int i = 0; i < length; i++) {
         ani_ref asset {};
         CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(photoAssets, "$_get", "i:C{std.core.Object}", &asset, i),
             "Call method $_get failed.");
