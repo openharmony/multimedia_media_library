@@ -451,11 +451,11 @@ ani_status MediaLibraryAniUtils::GetUint32Array(ani_env *env, ani_object arg, st
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
-    ani_double length;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
+    ani_int length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
         "Call method <get>length failed.");
 
-    for (int i = 0; i < static_cast<ani_int>(length); i++) {
+    for (int i = 0; i < length; i++) {
         ani_ref value;
         CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &value, (ani_int)i),
             "Call method $_get failed.");
@@ -474,11 +474,11 @@ ani_status MediaLibraryAniUtils::GetInt32Array(ani_env *env, ani_object arg, std
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
-    ani_double length;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
+    ani_int length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
         "Call method <get>length failed.");
 
-    for (int i = 0; i < static_cast<ani_int>(length); i++) {
+    for (int i = 0; i < length; i++) {
         ani_ref ref;
         CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &ref, (ani_int)i),
             "Call method $_get failed.");
@@ -533,11 +533,11 @@ ani_status MediaLibraryAniUtils::GetStringArray(ani_env *env, ani_object arg, st
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
-    ani_double length;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
+    ani_int length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
         "Call method <get>length failed.");
 
-    for (int i = 0; i < static_cast<ani_int>(length); i++) {
+    for (int i = 0; i < length; i++) {
         ani_ref value {};
         CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &value, (ani_int)i),
             "Call method $_get failed.");
@@ -574,11 +574,11 @@ ani_status MediaLibraryAniUtils::GetObjectArray(ani_env *env, ani_object arg, st
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
-    ani_double length;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
+    ani_int length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
         "Call method <get>length failed.");
 
-    for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
+    for (ani_int i = 0; i < length; i++) {
         ani_ref value {};
         CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &value, i),
             "Call method $_get failed.");
@@ -642,11 +642,11 @@ ani_status MediaLibraryAniUtils::GetAniValueArray(ani_env *env, ani_object arg, 
     CHECK_COND_RET(MediaLibraryAniUtils::IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(MediaLibraryAniUtils::IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
-    ani_double length;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
+    ani_int length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
         "Call method <get>length failed.");
 
-    for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
+    for (ani_int i = 0; i < length; i++) {
         ani_ref asset {};
         CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &asset, i),
             "Call method $_get failed.");
@@ -830,11 +830,11 @@ ani_status MediaLibraryAniUtils::GetUriArrayFromAssets(ani_env *env, ani_object 
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
-    ani_double length;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
+    ani_int length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
         "Call method <get>length failed.");
 
-    for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
+    for (ani_int i = 0; i < length; i++) {
         ani_ref asset {};
         CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &asset, i),
             "Call method $_get failed.");
@@ -861,11 +861,11 @@ ani_status MediaLibraryAniUtils::GetArrayFromAssets(ani_env *env, ani_object arg
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
-    ani_double length;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
+    ani_int length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
         "Call method <get>length failed.");
 
-    for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
+    for (ani_int i = 0; i < length; i++) {
         ani_ref asset {};
         CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &asset, i),
             "Call method $_get failed.");
@@ -958,11 +958,11 @@ ani_status MediaLibraryAniUtils::GetPhotoAlbumAniArray(ani_env *env, ani_object 
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
-    ani_double length;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
+    ani_int length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
         "Call method <get>length failed.");
 
-    for (int i = 0; i < static_cast<ani_int>(length); i++) {
+    for (int i = 0; i < length; i++) {
         ani_ref value {};
         CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &value, (ani_int)i),
             "Call method $_get failed.");
@@ -1893,17 +1893,17 @@ ani_status MediaLibraryAniUtils::ParseAssetIdArray(ani_env *env, ani_object phot
         return ANI_INVALID_ARGS;
     }
 
-    ani_double length = 0;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(photoAssets, "length", &length),
+    ani_int length = 0;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(photoAssets, "length", &length),
         "Call method <get>length failed.");
     if (length <= 0) {
-        ANI_ERR_LOG("Failed to check array length: %{public}f", length);
+        ANI_ERR_LOG("Failed to check array length: %{public}d", length);
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array length");
         return ANI_INVALID_ARGS;
     }
 
     idArray.clear();
-    for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
+    for (ani_int i = 0; i < length; i++) {
         ani_ref asset {};
         CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(photoAssets, "$_get", "i:C{std.core.Object}", &asset, i),
             "Call method $_get failed.");

@@ -1013,8 +1013,8 @@ static ani_status ParseArgsDeleteAssets(ani_env *env, ani_object assets, std::ve
     ANI_CHECK_RETURN_RET_LOG(env != nullptr, ANI_ERROR, "env is null");
     CHECK_COND_RET(MediaLibraryAniUtils::IsUndefined(env, assets) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(MediaLibraryAniUtils::IsArray(env, assets) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
-    ani_double length;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(assets, "length", &length),
+    ani_int length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(assets, "length", &length),
         "Call method <get>length failed.");
     if (length <= 0) {
         return ANI_ERROR;
