@@ -635,6 +635,8 @@ int32_t MediaAlbumsService::QueryHiddenAlbums(QueryAlbumsDto &dto)
         columns.push_back(PhotoAlbumColumns::HIDDEN_COUNT);
         columns.push_back(PhotoAlbumColumns::HIDDEN_COVER);
         dto.predicates.And()->EqualTo(PhotoAlbumColumns::CONTAINS_HIDDEN, to_string(1));
+        dto.predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::HIDDEN);
+        dto.predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::TRASH);
     } else {
         dto.predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::HIDDEN);
     }
