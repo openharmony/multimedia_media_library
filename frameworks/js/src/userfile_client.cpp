@@ -411,7 +411,6 @@ int32_t UserFileClient::UserDefineFunc(MessageParcel &data, MessageParcel &reply
 int32_t UserFileClient::UserDefineFunc(const int32_t &userId, MessageParcel &data, MessageParcel &reply,
     MessageOption &option)
 {
-    NAPI_INFO_LOG("media-ipc userId: %{public}d", userId);
     if (!IsValid(userId)) {
         NAPI_ERR_LOG("JS UserDefineFunc fail, helper null %{public}d", userId);
         return E_FAIL;
