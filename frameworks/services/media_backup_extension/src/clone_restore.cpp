@@ -601,6 +601,7 @@ void CloneRestore::CloudPhotoFilesVerify(const std::vector<FileInfo> &fileInfos,
     std::vector<FileInfo> &THMNotFound, unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap)
 {
     for (size_t i = 0; i < fileInfos.size(); i++) {
+        CHECK_AND_CONTINUE(fileInfos[i].needMove);
         CloudPhotoFileExistFlag fileExistFlag;
         unordered_map<string, CloudPhotoFileExistFlag>::iterator iter = resultExistMap.find(fileInfos[i].cloudPath);
         CHECK_AND_EXECUTE(iter == resultExistMap.end(), fileExistFlag = iter->second);
@@ -3085,6 +3086,7 @@ void CloneRestore::BatchUpdateFileInfoData(std::vector<FileInfo> &fileInfos,
     unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap)
 {
     for (size_t i = 0; i < fileInfos.size(); i++) {
+        CHECK_AND_CONTINUE(fileInfos[i].needMove);
         CloudPhotoFileExistFlag fileExistFlag;
         unordered_map<string, CloudPhotoFileExistFlag>::iterator iter =
             resultExistMap.find(fileInfos[i].cloudPath);
