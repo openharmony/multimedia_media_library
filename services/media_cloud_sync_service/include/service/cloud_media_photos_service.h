@@ -103,7 +103,6 @@ private:
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
     int32_t OnCreateRecordSuccess(const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh);
-    void DeleteTempLivePhotoFile(const PhotosDto &record);
     void NotifyPhotoInserted(const std::vector<NativeRdb::ValuesBucket> &insertFiles);
     void Notify(const std::string &uri, NotifyType type);
     void ConvertPullDataToPhotosDto(const CloudMediaPullDataDto &data, PhotosDto &dto);

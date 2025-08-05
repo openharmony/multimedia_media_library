@@ -738,20 +738,12 @@ int32_t CloudMediaPhotosService::OnCreateRecords(std::vector<PhotosDto> &records
             err == E_STOP || err == E_BUSINESS_MODE_CHANGED) {
             ret = err;
         }
-        DeleteTempLivePhotoFile(record);
     }
     photoRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
         NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
     photoRefresh->Notify();
     MediaGallerySyncNotify::GetInstance().FinalNotify();
     return ret;
-}
-
-void CloudMediaPhotosService::DeleteTempLivePhotoFile(const PhotosDto &record)
-{
-    if (unlink(record.livePhotoCachePath.c_str()) != 0 && errno != ENOENT) {
-        MEDIA_ERR_LOG("unlink err: %{public}d", errno);
-    }
 }
 
 int32_t CloudMediaPhotosService::OnCreateRecordSuccess(
