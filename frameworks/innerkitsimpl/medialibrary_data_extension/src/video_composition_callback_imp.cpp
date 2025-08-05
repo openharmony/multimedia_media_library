@@ -106,7 +106,7 @@ void VideoCompositionCallbackImpl::onResult(VEFResult result, VEFError errorCode
     if (ret != E_OK) {
         CleanTempFilters(tempFilters_);
     }
-    if (isNeedScan_) {
+    if (isNeedScan_ && MediaFileUtils::IsFileExists(assetPath_)) {
         MediaLibraryObjectUtils::ScanMovingPhotoVideoAsync(assetPath_, true);
     }
     mutex_.lock();

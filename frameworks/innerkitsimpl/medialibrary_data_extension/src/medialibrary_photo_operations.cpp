@@ -3362,7 +3362,6 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET_LOG(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id),
             E_INVALID_VALUES, "Failed to get fileId");
         vector<string> columns = { videoSaveFinishedUri };
-        ScanMovingPhoto(cmd, columns);
 
         vector<string> fileAssetColumns = {PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
             PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_ID,
@@ -3533,6 +3532,11 @@ int32_t MediaLibraryPhotoOperations::CopyVideoFile(const string& assetPath, bool
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileSafe(sourceVideoPath, videoPath), E_HAS_FS_ERROR,
             "Copy sourceVideoPath to videoPath, path:%{private}s", sourceVideoPath.c_str());
     }
+
+    if (MediaFileUtils::IsFileExists(assetPath)) {
+        MediaLibraryObjectUtils::ScanMovingPhotoVideoAsync(assetPath, true);
+    }
+
     return E_OK;
 }
 
