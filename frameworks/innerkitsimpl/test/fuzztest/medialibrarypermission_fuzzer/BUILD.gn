@@ -38,6 +38,7 @@ ohos_fuzztest("MediaLibraryPermissionFuzzTest") {
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_read_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_system_api_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_write_permission_check.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_deprecated_perm_usage.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/pemission_common.cpp",
     "./medialibrarypermission_fuzzer.cpp"
   ]
@@ -75,6 +76,7 @@ ohos_fuzztest("MediaLibraryPermissionFuzzTest") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",
+    "preferences:native_preferences",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",

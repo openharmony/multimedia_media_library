@@ -28,10 +28,13 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_kvstore_manager.h"
 #include "photo_album_column.h"
+#include "photo_file_utils.h"
 
 #define private public
 #include "dfx_collector.h"
 #include "dfx_database_utils.h"
+#include "dfx_deprecated_perm_usage.h"
+#include "dfx_moving_photo.h"
 #include "dfx_timer.h"
 #include "dfx_transaction.h"
 #include "dfx_worker.h"
@@ -54,10 +57,19 @@ static const int32_t MAX_MEDIA_TYPE = 14;
 static const int32_t MAX_DFX_TYPE = 20;
 static const int32_t MAX_BYTE_VALUE = 256;
 static const int32_t SEED_SIZE = 1024;
+static const int64_t MIN_IMAGE_SIZE = 1 * 1000 * 1000;
+static const int64_t MAX_IMAGE_SIZE = 10 * 1000 * 1000;
+static const int32_t MIN_IMAGE_WIDTH = 1024;
+static const int32_t MAX_IMAGE_WIDTH = 1920;
+static const int32_t MIN_IMAGE_HEIGHT = 800;
+static const int32_t MAX_IMAGE_HEIGHT = 1080;
+static const int64_t SEC_TO_MSEC = 1e3;
+static const std::string PHOTO_DIR = "/storage/cloud/files/photo/16/";
 const string TABLE = "PhotoAlbum";
 const string PHOTOS_TABLE = "Photos";
 FuzzedDataProvider *provider = nullptr;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
+static std::atomic<int32_t> g_num{0};
 
 static inline Media::DfxType FuzzDfxType()
 {
@@ -208,6 +220,96 @@ static void DfxWorkerFuzzer()
     dfxWorker->End();
 }
 
+static void DfxDeprecatedPermUsageFuzzer()
+{
+    uint32_t code = provider->ConsumeIntegral<uint32_t>();
+    DfxDeprecatedPermUsage::Record(code, 0);
+
+    uint32_t object = provider->ConsumeIntegral<uint32_t>();
+    uint32_t type = provider->ConsumeIntegral<uint32_t>();
+    DfxDeprecatedPermUsage::Record(object, type);
+
+    DfxDeprecatedPermUsage::Statistics();
+}
+
+static int64_t GetTimestamp()
+{
+    auto now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+    ++g_num;
+    return seconds.count() + g_num.load();
+}
+
+static string GetTitle(int64_t &timestamp)
+{
+    ++g_num;
+    return "IMG_" + to_string(timestamp) + "_" + to_string(g_num.load());
+}
+
+static string InsertPhoto(const int32_t position)
+{
+    int64_t timestamp = GetTimestamp();
+    int64_t timestampMilliSecond = timestamp * SEC_TO_MSEC;
+    string title = GetTitle(timestamp);
+    string displayName = title + ".jpg";
+    string path = PHOTO_DIR + displayName;
+    int64_t imageSize = provider->ConsumeIntegralInRange<int32_t>(MIN_IMAGE_SIZE, MAX_IMAGE_SIZE);
+    int32_t imageWidth = provider->ConsumeIntegralInRange<int32_t>(MIN_IMAGE_WIDTH, MAX_IMAGE_WIDTH);
+    int32_t imageHeight = provider->ConsumeIntegralInRange<int32_t>(MIN_IMAGE_HEIGHT, MAX_IMAGE_HEIGHT);
+    string imageMimeType = "image/jpeg";
+    NativeRdb::ValuesBucket valuesBucket;
+    valuesBucket.PutInt(MediaColumn::MEDIA_TYPE, MEDIA_TYPE_IMAGE);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    valuesBucket.PutInt(PhotoColumn::PHOTO_POSITION, position);
+    valuesBucket.PutLong(MediaColumn::MEDIA_SIZE, imageSize);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_WIDTH, imageWidth);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_HEIGHT, imageHeight);
+    valuesBucket.PutString(MediaColumn::MEDIA_MIME_TYPE, imageMimeType);
+    valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, path);
+    valuesBucket.PutString(MediaColumn::MEDIA_TITLE, title);
+    valuesBucket.PutString(MediaColumn::MEDIA_NAME, displayName);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_ADDED, timestampMilliSecond);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, timestampMilliSecond);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TAKEN, timestampMilliSecond);
+    valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
+    valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
+    valuesBucket.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
+    int64_t fileId = -1;
+    int32_t ret = g_rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    MEDIA_INFO_LOG("ret: %{public}d, fileId: %{public}s", ret, to_string(fileId).c_str());
+    std::system(("touch " + path).c_str());
+    return path;
+}
+
+static void PreparePhoto(const bool hasEditDataCamera, const bool hasEditData, const bool isCloud)
+{
+    int32_t position = isCloud ? 3 : 1;
+    string path = InsertPhoto(position);
+    if (hasEditDataCamera) {
+        string editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(path);
+        std::system(("mkdir -p " + editDataCameraPath).c_str());
+    }
+    if (hasEditData) {
+        string editDataPath = PhotoFileUtils::GetEditDataPath(path);
+        std::system(("mkdir -p " + editDataPath).c_str());
+    }
+}
+
+static void DfxMovingPhotoFuzzer()
+{
+    std::system(("mkdir -p " + PHOTO_DIR).c_str());
+    const int32_t position = provider->ConsumeIntegralInRange<int32_t>(MIN_PHOTO_POSITION, MAX_PHOTO_POSITION);
+    InsertPhoto(position);
+    const uint8_t stateUpperBound = 8;
+    for (uint8_t state = 0; state < stateUpperBound; ++state) {
+        PreparePhoto(state & 0b100, state & 0b010, state & 0b001);
+    }
+    DfxMovingPhoto::AbnormalMovingPhotoStatistics();
+    std::system(("rm -rf " + PHOTO_DIR + "*").c_str());
+}
+
 void SetTables()
 {
     vector<string> createTableSqlList = {
@@ -290,6 +392,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::DfxTimerFuzzer();
     OHOS::DfxTransactionFuzzer();
     OHOS::DfxWorkerFuzzer();
+    OHOS::DfxDeprecatedPermUsageFuzzer();
+    OHOS::DfxMovingPhotoFuzzer();
     OHOS::ClearKvStore();
     return 0;
 }
