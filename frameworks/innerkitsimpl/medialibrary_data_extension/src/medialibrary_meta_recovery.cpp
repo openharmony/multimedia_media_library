@@ -1144,7 +1144,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_pt
             NativeRdb::ValuesBucket valuesBucket;
             SetValuesFromPhotoAlbum(iter, valuesBucket);
             int64_t outRowId = -1;
-            errCode = trans->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+            errCode = trans->Insert(outRowId, PhotoAlbumColumns::TABLE, valuesBucket);
             if (errCode != NativeRdb::E_OK) {
                 MEDIA_ERR_LOG("InsertMetadataInDb: insert album failed, errCode = %{public}d", errCode);
                 return errCode;
