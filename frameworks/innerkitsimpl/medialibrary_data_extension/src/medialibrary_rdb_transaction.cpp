@@ -49,7 +49,6 @@ void TransactionOperations::SetBackupRdbStore(std::shared_ptr<OHOS::NativeRdb::R
 
 int32_t TransactionOperations::Start(bool isBackup)
 {
-    MEDIA_INFO_LOG("Start transaction_, funName is :%{public}s", funcName_.c_str());
     if (isBackup) {
         rdbStore_ = backupRdbStore_;
         if (rdbStore_ == nullptr) {
@@ -113,7 +112,6 @@ int32_t TransactionOperations::Finish()
         MEDIA_ERR_LOG("transaction is null");
         return E_HAS_DB_ERROR;
     }
-    MEDIA_INFO_LOG("Commit transaction, funcName is :%{public}s", funcName_.c_str());
     auto ret = transaction_->Commit();
     transaction_ = nullptr;
     if (ret != NativeRdb::E_OK) {

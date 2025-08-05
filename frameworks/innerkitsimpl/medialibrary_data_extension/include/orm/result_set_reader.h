@@ -82,7 +82,7 @@ private:
         bool conn = this->resultSet_ != nullptr;
         CHECK_AND_RETURN_RET_LOG(conn, E_HAS_DB_ERROR, "LoadColumnNames resultSet is null");
         auto ret = this->resultSet_->GetAllColumnNames(this->columnNames_);
-        MEDIA_INFO_LOG("LoadColumnNames, ret: %{public}d, count: %{public}zu", ret, this->columnNames_.size());
+        MEDIA_DEBUG_LOG("LoadColumnNames, ret: %{public}d, count: %{public}zu", ret, this->columnNames_.size());
         return ret;
     }
 
