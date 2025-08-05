@@ -130,8 +130,10 @@ vector<PhotoAssetChangeInfo> PhotoAssetChangeInfo::GetInfoFromResult(const share
         assetChangeInfo.uri_ = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
             to_string(assetChangeInfo.fileId_), MediaFileUtils::GetExtraUri(assetChangeInfo.displayName_,
             assetChangeInfo.path_));
-        assetChangeInfo.ownerAlbumUri_ = MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
-            to_string(assetChangeInfo.ownerAlbumId_));
+        if (assetChangeInfo.ownerAlbumId_ > 0) {
+            assetChangeInfo.ownerAlbumUri_ = MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
+                to_string(assetChangeInfo.ownerAlbumId_));
+        }
         assetChangeInfo.position_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
             PhotoColumn::PHOTO_POSITION, resultSet, GetDataType(PhotoColumn::PHOTO_POSITION)));
         assetChangeInfo.size_ = get<int64_t>(ResultSetUtils::GetValFromColumn(
