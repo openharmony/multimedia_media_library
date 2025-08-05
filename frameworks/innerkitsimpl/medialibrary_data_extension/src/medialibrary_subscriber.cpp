@@ -31,6 +31,7 @@
 #include "common_event_support.h"
 #include "common_event_utils.h"
 #include "dfx_cloud_manager.h"
+#include "dfx_moving_photo.h"
 
 #include "want.h"
 #include "post_event_utils.h"
@@ -505,6 +506,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (watch != nullptr) {
         watch->DoAging();
     }
+    DfxMovingPhoto::AbnormalMovingPhotoStatistics();
 }
 
 static void PauseBackgroundDownloadCloudMedia()
