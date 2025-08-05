@@ -183,7 +183,7 @@ export namespace userFileManager {
       taskpool.execute(cb).then((ret: NullishType): void => {
         if (ret instanceof MediaLibraryAniError) {
           let err = ret as MediaLibraryAniError;
-          callback(businessError(err.code as int, err.message), undefined);
+          callback(businessError(err.code.toInt(), err.message), undefined);
         } else {
           if (isNullish(ret)) {
             callback(businessError(-1, "Operation failed"), undefined);
@@ -207,7 +207,7 @@ export namespace userFileManager {
         taskpool.execute(cb).then((ret: NullishType): void => {
           if (ret instanceof MediaLibraryAniError) {
             let err = ret as MediaLibraryAniError;
-            reject(businessError<string>(err.code as int, err.message));
+            reject(businessError<string>(err.code.toInt(), err.message));
           } else {
             if (isNullish(ret)) {
               reject(businessError<string>(-1, "Operation failed"));
@@ -233,7 +233,7 @@ export namespace userFileManager {
           callback(businessError(0), undefined);
         } else {
           let err = ret as MediaLibraryAniError;
-          callback(businessError(err.code as int, err.message), undefined);
+          callback(businessError(err.code.toInt(), err.message), undefined);
         }
       });
     }
@@ -253,7 +253,7 @@ export namespace userFileManager {
             resolve(undefined);
           } else {
             let err = ret as MediaLibraryAniError;
-            reject(businessError(err.code as int, err.message));
+            reject(businessError(err.code.toInt(), err.message));
           }
         });
       });
