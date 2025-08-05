@@ -616,6 +616,8 @@ static bool DeleteDuplicateVisionFaceTags(std::shared_ptr<NativeRdb::RdbStore> m
 static bool UpdateVisionTotalFaceStatus(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     const std::vector<std::string>& affectedFileIds)
 {
+    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb != nullptr, false, "RdbStore is null.");
+
     auto totalPredicates = std::make_unique<NativeRdb::AbsRdbPredicates>(VISION_TOTAL_TABLE);
     totalPredicates->In(IMAGE_FACE_COL_FILE_ID, affectedFileIds);
 
@@ -634,7 +636,9 @@ static bool UpdateVisionTotalFaceStatus(std::shared_ptr<NativeRdb::RdbStore> med
 static bool UpdateDuplicateVisionImageFaces(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     const std::string& selectTagIdsToDeleteSql)
 {
+    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb != nullptr, false, "RdbStore is null.");
     CHECK_AND_RETURN_RET_LOG(!selectTagIdsToDeleteSql.empty(), true, "No tag IDs to update.");
+
     std::string selectFileIdsSql = "SELECT DISTINCT " + IMAGE_FACE_COL_FILE_ID + " FROM " + VISION_IMAGE_FACE_TABLE +
                                    " WHERE " + FACE_TAG_COL_TAG_ID + " IN (" + selectTagIdsToDeleteSql + ")";
 
