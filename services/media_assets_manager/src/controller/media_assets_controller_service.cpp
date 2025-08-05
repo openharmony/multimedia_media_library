@@ -1035,7 +1035,6 @@ int32_t MediaAssetsControllerService::SetSupportedWatermarkType(MessageParcel &d
 int32_t MediaAssetsControllerService::GetAssets(
     MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context)
 {
-    MEDIA_INFO_LOG("enter");
     GetAssetsReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
