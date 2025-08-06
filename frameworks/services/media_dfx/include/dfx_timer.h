@@ -35,6 +35,7 @@ private:
     static const std::map<uint32_t, int64_t> operationCodeTimeoutMap;
 
 public:
+    EXPORT DfxTimer(int32_t object, int64_t timeOut, bool isReport);
     EXPORT DfxTimer(int32_t type, int32_t object, int64_t timeOut, bool isReport);
     EXPORT ~DfxTimer();
     void End();

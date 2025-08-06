@@ -38,6 +38,7 @@ ohos_unittest("medialibrary_album_operation_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_analysis_album_operations.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_command.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_deprecated_perm_usage.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
@@ -65,6 +66,7 @@ ohos_unittest("medialibrary_album_operation_test") {
     "data_share:datashare_common",
     "data_share:datashare_provider",
     "hilog:libhilog",
+    "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
     "ipc:ipc_single",
@@ -72,6 +74,7 @@ ohos_unittest("medialibrary_album_operation_test") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",
+    "preferences:native_preferences",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
   ]

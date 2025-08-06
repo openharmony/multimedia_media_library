@@ -388,6 +388,7 @@ struct FileInfo {
     int32_t width {0};
     int64_t dateAdded {0};
     int32_t orientation {0};
+    int32_t exifRotate {0};
     int64_t dateModified {0};
     int32_t mediaAlbumId {-1};  // 单相册id
     int32_t localMediaId {-1};

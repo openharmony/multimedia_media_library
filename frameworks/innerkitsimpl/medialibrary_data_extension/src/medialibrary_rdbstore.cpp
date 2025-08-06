@@ -87,6 +87,7 @@
 #include "table_event_handler.h"
 #include "values_buckets.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_notify_new.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -242,15 +243,6 @@ const std::string MediaLibraryRdbStore::RegexReplaceFunc(const std::vector<std::
     return std::regex_replace(input, re, replacement);
 }
 
-void MediaLibraryRdbStore::NotifyAddAlbumAsync(string albumId)
-{
-    // 延时50ms
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
-    albumRefresh.NotifyAddAlbums(vector<string>{ albumId });
-    MEDIA_INFO_LOG("AccurateRefresh NotifyAddAlbumAsync albumId = %{public}s", albumId.c_str());
-}
-
 const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<std::string> &args)
 {
     if (args.size() < 1) {
@@ -275,8 +267,7 @@ const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<s
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX, albumId),
         NotifyType::NOTIFY_ADD);
 
-    std::thread taskThread(NotifyAddAlbumAsync, albumId);
-    taskThread.detach();
+    Notification::MediaLibraryNotifyNew::AddAlbum(albumId);
     MEDIA_INFO_LOG("AccurateRefresh PhotoAlbumNotifyFunc albumId = %{public}s", albumId.c_str());
     return "";
 }
@@ -4490,7 +4481,7 @@ static void AddEditDataSizeColumn(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoExtColumn::PHOTOS_EXT_TABLE + " ADD COLUMN " + PhotoExtColumn::EDITDATA_SIZE +
-        " INT DEFAULT 0",
+        " BIGINT DEFAULT 0",
     };
     MEDIA_INFO_LOG("Add editdata size column start");
     ExecSqls(sqls, store);
@@ -4785,6 +4776,17 @@ static void DropInsertSourcePhotoUpdateAlbumIdTrigger(RdbStore &store)
     MEDIA_INFO_LOG("drop trigger insert_source_photo_update_album_id_trigger end");
 }
 
+static void AddExifRotateColumn(RdbStore& store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_EXIF_ROTATE +
+        " INT NOT NULL DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Start add exif_rotate column");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("End add exif_rotate column");
+}
+
 static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION) {
@@ -4803,6 +4805,10 @@ static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_GROUP_VERSION) {
         AddGroupVersion(store);
+    }
+
+    if (oldVersion < VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE) {
+        AddExifRotateColumn(store);
     }
 }
 
@@ -5275,6 +5281,17 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
     // !! Do not add upgrade code here !!
 }
 
+static void AddVisionColumnSearchTag(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_SEARCH_TAG) {
+        vector<string> upgradeSqls = {
+            BaseColumn::AlterTableAddTextColumn(VISION_LABEL_TABLE, SEARCH_TAG_TYPE),
+            BaseColumn::AlterTableAddBlobColumn(VISION_LABEL_TABLE, SEARCH_TAG_TYPE),
+        };
+        ExecSqls(upgradeSqls, store);
+    }
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MediaLibraryTracer tracer;
@@ -5337,6 +5354,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeExtension(store, oldVersion);
     UpgradeUriPermissionTable(store, oldVersion);
     UpgradeHighlightAlbumChange(store, oldVersion);
+    AddVisionColumnSearchTag(store, oldVersion);
 
     if (!g_upgradeErr) {
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};

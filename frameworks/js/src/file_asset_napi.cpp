@@ -30,6 +30,7 @@
 #include "datashare_predicates.h"
 #include "datashare_result_set.h"
 #include "datashare_values_bucket.h"
+#include "exif_rotate_utils.h"
 #include "hitrace_meter.h"
 #include "fetch_result.h"
 #include "file_uri.h"
@@ -93,6 +94,7 @@
 #include "is_edited_vo.h"
 #include "get_edit_data_vo.h"
 #include "convert_format_vo.h"
+#include "qos.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -2950,6 +2952,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
         MEDIA_SUM_SIZE,
+        PhotoColumn::PHOTO_EXIF_ROTATE,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryNapiUtils::IsSystemApp()) {
@@ -2962,7 +2965,8 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
 static bool IsSpecialKey(const string &key)
 {
     static const set<string> SPECIAL_KEY = {
-        PENDING_STATUS
+        PENDING_STATUS,
+        PhotoColumn::PHOTO_EXIF_ROTATE,
     };
 
     if (SPECIAL_KEY.find(key) != SPECIAL_KEY.end()) {
@@ -2980,6 +2984,10 @@ static napi_value HandleGettingSpecialKey(napi_env env, const string &key, const
         } else {
             napi_get_boolean(env, true, &jsResult);
         }
+    } else if (key == PhotoColumn::PHOTO_EXIF_ROTATE) {
+        int32_t value = fileAssetPtr->GetExifRotate();
+        int32_t exifRotate = value == 0 ? static_cast<int32_t>(ExifRotateType::TOP_LEFT) : value;
+        napi_create_int32(env, exifRotate, &jsResult);
     }
 
     return jsResult;
@@ -3921,6 +3929,7 @@ static napi_value ParseArgsPhotoAccessHelperOpen(napi_env env, napi_callback_inf
 
 static void PhotoAccessHelperOpenExecute(napi_env env, void *data)
 {
+    OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperOpenExecute");
 
@@ -3957,6 +3966,7 @@ static void PhotoAccessHelperOpenExecute(napi_env env, void *data)
             context->objectPtr->SetTimePending(UNCLOSE_FILE_TIMEPENDING);
         }
     }
+    OHOS::QOS::ResetThreadQos();
 }
 
 static void PhotoAccessHelperOpenCallbackComplete(napi_env env, napi_status status, void *data)

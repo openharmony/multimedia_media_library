@@ -148,7 +148,7 @@ void FaCloudSyncSwitchObserver::PostAssetChangeTask()
     if (!FaCloudSyncSwitchObserver::isTaskPosted) {
         FaCloudSyncSwitchObserver::isTaskPosted = true;
         thread([]() {
-            MEDIA_DEBUG_LOG("FaCloudSyncSwitchObserver task start");
+            MEDIA_INFO_LOG("FaCloudSyncSwitchObserver task start");
             const int DELAY_MILLISECONDS = 2000;
             this_thread::sleep_for(chrono::milliseconds(DELAY_MILLISECONDS));
             std::lock_guard<std::mutex> lock(FaCloudSyncSwitchObserver::mtx);
@@ -156,9 +156,9 @@ void FaCloudSyncSwitchObserver::PostAssetChangeTask()
             std::vector<int> assetChangeTypes;
             for (const auto& change : FaCloudSyncSwitchObserver::cloudSyncChanges) {
                 assetChangeUris.push_back(change.cloudSyncChangeUri);
-                MEDIA_DEBUG_LOG("change.assetChangeUri = %{public}s", change.cloudSyncChangeUri.c_str());
                 assetChangeTypes.push_back(change.cloudSyncChangeType);
-                MEDIA_DEBUG_LOG("change.assetChangeType = %{public}d", change.cloudSyncChangeType);
+                MEDIA_INFO_LOG("change.assetChangeUri = %{public}s, change.assetChangeType = %{public}d",
+                    change.cloudSyncChangeUri.c_str(), change.cloudSyncChangeType);
             }
             AAFwk::Want want;
             want.SetElementName("com.huawei.hmos.photos", "FACardServiceAbility");
@@ -169,7 +169,7 @@ void FaCloudSyncSwitchObserver::PostAssetChangeTask()
                 want, nullptr, userId, AppExecFwk::ExtensionAbilityType::SERVICE);
             FaCloudSyncSwitchObserver::cloudSyncChanges.clear();
             FaCloudSyncSwitchObserver::isTaskPosted = false;
-            MEDIA_DEBUG_LOG("FaCloudSyncSwitchObserver task end");
+            MEDIA_INFO_LOG("FaCloudSyncSwitchObserver task end");
         }).detach();
     }
 }
@@ -191,8 +191,8 @@ void FaCloudSyncSwitchObserver::OnChange()
 {
     std::lock_guard<std::mutex> lock(FaCloudSyncSwitchObserver::mtx);
     const int CLOUD_SYNC_TYPE = 3;
-    MEDIA_DEBUG_LOG("OnChange assetChangeUri = %{public}s", cloudSyncChangeUri.c_str());
-    MEDIA_DEBUG_LOG("OnChange assetChangeType = %{public}d", static_cast<int>(CLOUD_SYNC_TYPE));
+    MEDIA_INFO_LOG("OnChange assetChangeUri = %{public}s, assetChangeType = %{public}d", cloudSyncChangeUri.c_str(),
+        static_cast<int>(CLOUD_SYNC_TYPE));
     FaCloudSyncSwitchObserver::cloudSyncChanges.insert(
         CloudSyncChangeInfo(cloudSyncChangeUri, static_cast<int>(CLOUD_SYNC_TYPE)));
 
@@ -207,7 +207,7 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
     }
     const std::string ASSET_URI_PREFIX = "file://media/";
     const std::string CLOUD_SYNC_SWITCH_URI_PREFIX = "datashareproxy://";
-    MEDIA_DEBUG_LOG("registerUri = %{public}s", registerUri.c_str());
+    MEDIA_INFO_LOG("registerUri = %{public}s", registerUri.c_str());
  
     std::shared_ptr<DataShare::DataShareObserver> observer;
     sptr<FaCloudSyncSwitchObserver> cloudSyncObserver;
@@ -224,7 +224,7 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
         if (cloudSwitchObserver == nullptr) {
             return;
         }
-        MEDIA_DEBUG_LOG("FaCloudSyncuri = %{public}s", cloudSwitchObserver->cloudSyncChangeUri.c_str());
+        MEDIA_INFO_LOG("FaCloudSyncuri = %{public}s", cloudSwitchObserver->cloudSyncChangeUri.c_str());
         formCloudSyncObserversMap[formId].push_back(cloudSwitchObserver);
         cloudSyncObserver = cloudSwitchObserver;
     } else {

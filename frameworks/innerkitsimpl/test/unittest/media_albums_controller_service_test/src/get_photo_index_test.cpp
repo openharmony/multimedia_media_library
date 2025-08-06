@@ -210,16 +210,9 @@ HWTEST_F(GetPhotoIndexTest, GetPhotoIndexTest_Test_001, TestSize.Level0)
     columns = { "album_id", "album_type" };
     resSet = MediaLibraryRdbStore::Query(photoAlbumPredicates, columns);
     EXPECT_NE(resSet, nullptr);
-    rowsCount = 0;
-    std::string album_id = "";
-    while (resSet->GoToNextRow() == NativeRdb::E_OK) {
-        resSet->GetString(0, album_id);
-        std::cout << "album_id = " << album_id << std::endl;
-        ++rowsCount;
-    }
-    EXPECT_EQ(rowsCount, 1);
-    std::cout << "photoAlbum rowsCount = " << rowsCount << std::endl;
-    columns = { photoId, album_id };
+    EXPECT_EQ(resSet->GoToNextRow(), NativeRdb::E_OK);
+    std::string album_id = to_string(GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resSet));
+    
     GetPhotoIndexReqBody reqBody;
     DataShare::DataSharePredicates dataSharePredicates;
     reqBody.predicates = dataSharePredicates;

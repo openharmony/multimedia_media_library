@@ -30,6 +30,7 @@
 #include "medialibrary_meta_recovery.h"
 #endif
 #include "dfx_database_utils.h"
+#include "dfx_deprecated_perm_usage.h"
 #include "vision_aesthetics_score_column.h"
 #include "parameters.h"
 #include "photo_storage_operation.h"
@@ -378,6 +379,7 @@ static void HandleStatistic(DfxData *data)
 #ifdef META_RECOVERY_SUPPORT
     MediaLibraryMetaRecovery::GetInstance().RecoveryStatistic();
 #endif
+    DfxDeprecatedPermUsage::Statistics();
 }
 
 static void CheckPhotoError(std::shared_ptr<DfxReporter>& dfxReporter)

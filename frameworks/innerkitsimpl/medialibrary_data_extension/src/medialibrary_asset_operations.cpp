@@ -105,6 +105,7 @@ constexpr int32_t LOCAL_PHOTO_POSITION = 1;
 constexpr int32_t BOTH_LOCAL_CLOUD_PHOTO_POSITION = 3;
 constexpr int32_t MAX_PROCESS_NUM = 200;
 constexpr int64_t INVALID_SIZE = 0;
+static const std::string ANALYSIS_FILE_PATH = "/storage/cloud/files/highlight/music";
 
 struct DeletedFilesParams {
     vector<string> ids;
@@ -1534,6 +1535,11 @@ static int32_t SolveMovingPhotoVideoCreation(const string &imagePath, const stri
     return E_OK;
 }
 
+static bool IsNotMusicFile(const std::string &path)
+{
+    return (path.find(ANALYSIS_FILE_PATH) == string::npos);
+}
+
 int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &fileAsset, const string &mode,
     MediaLibraryApi api, bool isMovingPhotoVideo, int32_t type)
 {
@@ -1580,7 +1586,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
         return E_HAS_FS_ERROR;
     }
     tracer.Start("AddWatchList");
-    if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos && !isMovingPhotoVideo) {
+    if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos && !isMovingPhotoVideo && IsNotMusicFile(path)) {
         auto watch = MediaLibraryInotify::GetInstance();
         if (watch != nullptr) {
             MEDIA_INFO_LOG("enter inotify, path = %{public}s, fileId = %{public}d",

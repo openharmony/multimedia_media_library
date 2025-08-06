@@ -113,7 +113,9 @@ const PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSET_URI, ASSET_DATE
     0, // hidden time
     0,
     ASSET_DISPLAY_NAME,
-    ASSET_PATH
+    ASSET_PATH,
+    1, // local
+    666 //size
 };
 
 void SetTables()

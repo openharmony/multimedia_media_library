@@ -22,6 +22,7 @@
 #include <fcntl.h>
 
 #include "directory_ex.h"
+#include "exif_rotate_utils.h"
 #include "file_ex.h"
 #include "media_log.h"
 #include "cloud_media_sync_const.h"
@@ -164,6 +165,17 @@ int32_t CloudFileDataConvert::HandleFormattedDate(
     return E_OK;
 }
 
+int32_t CloudFileDataConvert::HandleExifRotate(std::map<std::string, MDKRecordField> &map,
+    const CloudMdkRecordPhotosVo &upLoadRecord)
+{
+    if (upLoadRecord.exifRotate == 0) {
+        MEDIA_INFO_LOG("Upload meta data, do not upload exif rotate uncertain");
+        return E_OK;
+    }
+    map[PhotoColumn::PHOTO_EXIF_ROTATE] = MDKRecordField(upLoadRecord.exifRotate);
+    return E_OK;
+}
+
 int32_t CloudFileDataConvert::HandleUniqueFileds(
     std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
@@ -210,6 +222,8 @@ int32_t CloudFileDataConvert::HandleUniqueFileds(
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleLcdSize err: %{public}d", ret);
     ret = HandleFormattedDate(map, upLoadRecord);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleFormattedDate err: %{public}d", ret);
+    ret = HandleExifRotate(map, upLoadRecord);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleExifRotate err: %{public}d", ret);
     data[FILE_ATTRIBUTES] = MDKRecordField(map);
     data[FILE_LOCAL_ID] = MDKRecordField(upLoadRecord.fileId);
     return ret;
@@ -240,6 +254,7 @@ int32_t CloudFileDataConvert::HandleFileType(
 int32_t CloudFileDataConvert::HandlePosition(
     std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
+    CHECK_AND_RETURN_RET(!(upLoadRecord.latitude == 0 && upLoadRecord.longitude == 0), E_OK);
     std::stringstream latitudestream;
     std::stringstream longitudestream;
     latitudestream.precision(15);   // 15:precision
@@ -496,11 +511,11 @@ int32_t CloudFileDataConvert::HandleContent(
 }
 
 int32_t CloudFileDataConvert::HandleThumbnail(
-    std::map<std::string, MDKRecordField> &recordData, std::string &path, int32_t orientation)
+    std::map<std::string, MDKRecordField> &recordData, std::string &path, bool needUseExDir)
 {
     std::string thumbnailUploadPath;
     std::string thumbnailExPath = GetThumbPath(path, THUMB_EX_SUFFIX);
-    if (orientation == NO_ORIENTATION) {
+    if (!needUseExDir) {
         std::string thumbnailPath = GetThumbPath(path, THUMB_SUFFIX);
         if (access(thumbnailPath.c_str(), F_OK)) {
             UTIL_SYNC_FAULT_REPORT({bundleName_,
@@ -544,12 +559,12 @@ std::string CloudFileDataConvert::GetParentPath(const std::string &path)
 }
 
 int32_t CloudFileDataConvert::HandleLcd(
-    std::map<std::string, MDKRecordField> &recordData, std::string &path, int32_t orientation)
+    std::map<std::string, MDKRecordField> &recordData, std::string &path, bool needUseExDir)
 {
     std::string lcdUploadPath;
     std::string lcdExPath = GetThumbPath(path, LCD_EX_SUFFIX);
     std::string lcdExDir = GetParentPath(lcdExPath);
-    if (orientation == NO_ORIENTATION) {
+    if (!needUseExDir) {
         std::string lcdPath = GetThumbPath(path, LCD_SUFFIX);
         if (access(lcdPath.c_str(), F_OK)) {
             UTIL_SYNC_FAULT_REPORT({bundleName_,
@@ -585,19 +600,26 @@ int32_t CloudFileDataConvert::HandleLcd(
 int32_t CloudFileDataConvert::HandleAttachments(
     std::map<std::string, MDKRecordField> &recordData, const CloudMdkRecordPhotosVo &upLoadRecord)
 {
-    int32_t orientation = (upLoadRecord.mediaType == MEDIA_TYPE_IMAGE) ? upLoadRecord.orientation : NO_ORIENTATION;
+    bool needUseExDir;
+    if (upLoadRecord.mediaType == MEDIA_TYPE_IMAGE) {
+        needUseExDir = upLoadRecord.exifRotate > static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+    } else {
+        needUseExDir = false;
+    }
     /* content */
-    int32_t ret = HandleContent(recordData, upLoadRecord);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("failed to handle content");
+    int32_t ret = E_OK;
+    if (upLoadRecord.dirty == -1 || upLoadRecord.dirty != static_cast<int32_t>(DirtyType::TYPE_TDIRTY)) {
+        MEDIA_INFO_LOG("handle content when not TDIRTY");
+        ret = HandleContent(recordData, upLoadRecord);
+        CHECK_AND_PRINT_LOG(ret == E_OK, "failed to handle content");
     }
 
     /* thumb */
     std::string path = upLoadRecord.data;
-    ret = HandleThumbnail(recordData, path, orientation);
+    ret = HandleThumbnail(recordData, path, needUseExDir);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "HandleThumbnail failed. ret: %{public}d.", ret);
     /* lcd */
-    ret = HandleLcd(recordData, path, orientation);
+    ret = HandleLcd(recordData, path, needUseExDir);
     return ret;
 }
 
@@ -951,6 +973,7 @@ void CloudFileDataConvert::ConvertAttributes(MDKRecordPhotosData &data, OnFetchP
     onFetchPhotoVo.editTime = data.GetEditTime().value_or(0);
     onFetchPhotoVo.coverPosition = data.GetCoverPosition().value_or(0);
     onFetchPhotoVo.isRectificationCover = data.GetIsRectificationCover().value_or(0);
+    onFetchPhotoVo.exifRotate = data.GetExifRotate().value_or(0);
     onFetchPhotoVo.supportedWatermarkType = data.GetSupportedWatermarkType().value_or(0);
     onFetchPhotoVo.strongAssociation = data.GetStrongAssociation().value_or(0);
 }

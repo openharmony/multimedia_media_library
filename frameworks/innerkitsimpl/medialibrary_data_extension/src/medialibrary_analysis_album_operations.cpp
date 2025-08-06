@@ -52,9 +52,9 @@ constexpr int32_t E_INDEX = -1;
 constexpr int32_t ALBUM_IS_ME = 1;
 constexpr int32_t ALBUM_IS_NOT_ME = 0;
 constexpr int32_t ALBUM_IS_REMOVED = 1;
-constexpr int32_t ALBUM_RENAMED_AND_UNREFRESHED = 1;
 constexpr int32_t SINGLE_FACE = 1;
 constexpr int32_t QUERY_GROUP_PHOTO_ALBUM_RELATED_TO_ME = 1;
+constexpr int32_t QUERY_GROUP_PHOTO_ALBUM_REMOVED = 1;
 const string GROUP_PHOTO_TAG = "group_photo_tag";
 const string GROUP_PHOTO_IS_ME = "group_photo_is_me";
 const string GROUP_PHOTO_ALBUM_NAME = "album_name";
@@ -321,34 +321,34 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAnalysisAlbumOperations::Query
     auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     RdbPredicates rdbPredicates(ANALYSIS_ALBUM_TABLE);
-    auto albumId = GetAlbumId(whereClause, whereArgs);
 
-    string clause = "";
+    string clause = PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SMART) + " AND " +
+            PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::GROUP_PHOTO);
+    auto albumId = GetAlbumId(whereClause, whereArgs);
     if (albumId != E_INDEX) {
-        clause = PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SMART) + " AND " +
-            PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::GROUP_PHOTO) + " AND " +
-            PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId) + " AND " +
-            IS_REMOVED + " IS NOT " + to_string(ALBUM_IS_REMOVED) + " AND " +
-            RENAME_OPERATION + " IS NOT " + to_string(ALBUM_RENAMED_AND_UNREFRESHED);
-    } else {
-        clause = PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SMART) + " AND " +
-            PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::GROUP_PHOTO) + " AND " +
-            IS_REMOVED + " IS NOT " + to_string(ALBUM_IS_REMOVED) + " AND " +
-            RENAME_OPERATION + " IS NOT " + to_string(ALBUM_RENAMED_AND_UNREFRESHED);
-        if (whereClause.find(IS_ME) != string::npos) {
-            int32_t value = GetArgsValueByName(IS_ME, whereClause, whereArgs);
-            if (value == QUERY_GROUP_PHOTO_ALBUM_RELATED_TO_ME) {
-                clause += " AND " + IS_ME + " = " + to_string(ALBUM_IS_ME);
-            }
+        clause += " AND " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId);
+    }
+    if (whereClause.find(IS_ME) != string::npos) {
+        int32_t value = GetArgsValueByName(IS_ME, whereClause, whereArgs);
+        if (value == QUERY_GROUP_PHOTO_ALBUM_RELATED_TO_ME) {
+            clause += " AND " + IS_ME + " = " + to_string(ALBUM_IS_ME);
         }
     }
-
-    std::string userDisplayLevelClause = GetUserDisplayLevelClause(whereClause);
-    if (userDisplayLevelClause != "") {
-        auto userDisplayLevelVal = GetArgsValueByName(USER_DISPLAY_LEVEL, whereClause, whereArgs);
-        clause += " AND " + userDisplayLevelClause + to_string(userDisplayLevelVal);
+    if (whereClause.find(IS_REMOVED_EQ) != string::npos) {
+        int32_t value = GetArgsValueByName(IS_REMOVED_EQ, whereClause, whereArgs);
+        if (value == QUERY_GROUP_PHOTO_ALBUM_REMOVED) {
+            clause += " AND " + IS_REMOVED + " = " + to_string(ALBUM_IS_REMOVED);
+        }
+    } else {
+        clause += " AND " + IS_REMOVED + " <> " + to_string(ALBUM_IS_REMOVED) + " OR " + IS_REMOVED + " IS NULL)";
     }
-
+    if (whereClause.find(USER_DISPLAY_LEVEL) != string::npos) {
+        std::string userDisplayLevelClause = GetUserDisplayLevelClause(whereClause);
+        if (userDisplayLevelClause != "") {
+            auto userDisplayLevelVal = GetArgsValueByName(USER_DISPLAY_LEVEL, whereClause, whereArgs);
+            clause += " AND " + userDisplayLevelClause + to_string(userDisplayLevelVal);
+        }
+    }
     rdbPredicates.SetWhereClause(clause);
     rdbPredicates.OrderByAsc(GROUP_ALBUM_FAVORITE_ORDER_CLAUSE);
     rdbPredicates.OrderByAsc(GROUP_ALBUM_USER_NAME_ORDER_CLAUSE);
@@ -710,6 +710,12 @@ void MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(int32_t albu
             updateAlbums.push_back(info);
             break;
         }
+    }
+    if (updateAlbums.empty() && albumId > 0) {
+        GroupPhotoAlbumInfo info;
+        info.albumId = albumId;
+        info.count = 0;
+        updateAlbums.push_back(info);
     }
     UpdateGroupPhotoAlbumInfo(updateAlbums);
 }

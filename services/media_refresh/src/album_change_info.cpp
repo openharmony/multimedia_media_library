@@ -44,6 +44,8 @@ const map<std::string, ResultSetDataType> AlbumChangeInfo::albumInfoCloumnTypes_
     { PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME, TYPE_INT64 },
     { PhotoAlbumColumns::ALBUM_DIRTY, TYPE_INT32 },
     { PhotoAlbumColumns::COVER_URI_SOURCE, TYPE_INT32 },
+    { PhotoAlbumColumns::ALBUM_ORDER, TYPE_INT32 },
+    { PhotoAlbumColumns::ORDER_SECTION, TYPE_INT32},
 };
 
 const vector<std::string> AlbumChangeInfo::albumInfoColumns_ = []() {
@@ -98,6 +100,10 @@ vector<AlbumChangeInfo> AlbumChangeInfo::GetInfoFromResult(
             resultSet, GetDataType(PhotoAlbumColumns::ALBUM_DIRTY)));
         albumChangeInfo.coverUriSource_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
             PhotoAlbumColumns::COVER_URI_SOURCE, resultSet, GetDataType(PhotoAlbumColumns::COVER_URI_SOURCE)));
+        albumChangeInfo.orderSection_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ORDER,
+            resultSet, GetDataType(PhotoAlbumColumns::ALBUMS_ORDER)));
+        albumChangeInfo.albumOrder_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_SECTION,
+            resultSet, GetDataType(PhotoAlbumColumns::ORDER_SECTION)));
         albumChangeInfos.push_back(albumChangeInfo);
     }
 
@@ -116,6 +122,7 @@ string AlbumChangeInfo::ToString(bool isDetail) const
         ss << ", isCoverChange_: " << isCoverChange_ << ", isHiddenCoverChange_: " << isHiddenCoverChange_;
         ss << ", coverDateTime_: " << coverDateTime_ << ", hiddenCoverDateTime_: " << hiddenCoverDateTime_;
         ss << ", dirty_: " << dirty_ << ", coverUriSource_: " << coverUriSource_;
+        ss << ", albumOrder_: " << albumOrder_ << ", orderSection_ " << orderSection_;
         if (isCoverChange_) {
             ss << ", cover info: " << coverInfo_.ToString().c_str();
         }
@@ -178,6 +185,7 @@ ValuesBucket AlbumChangeInfo::GetUpdateValues(const AlbumChangeInfo &oldAlbumInf
         values.PutLong(PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME, hiddenCoverDateTime_);
         ss << "hiddenCoverDateTime_: " << oldAlbumInfo.hiddenCoverDateTime_ << " -> " << hiddenCoverDateTime_;
     }
+
     type = oldAlbumInfo.count_ < count_ ? NOTIFY_ALBUM_ADD_ASSET :
         (oldAlbumInfo.count_ > count_ ? NOTIFY_ALBUM_REMOVE_ASSET : NOTIFY_UPDATE);
     ACCURATE_INFO("Update albumInfo[%{public}d], notifyType[%{public}d]: %{public}s", oldAlbumInfo.albumId_,
@@ -218,6 +226,8 @@ bool AlbumChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
         if (isHiddenCoverChange_) {
             ret = ret && hiddenCoverInfo_.Marshalling(parcel, isSystem);
         }
+        ret = ret && parcel.WriteInt32(orderSection_);
+        ret = ret && parcel.WriteInt32(albumOrder_);
     }
     ret = ret && parcel.WriteInt32(albumId_);
     return ret;
@@ -250,6 +260,8 @@ bool AlbumChangeInfo::ReadFromParcel(Parcel &parcel)
         if (ret && isHiddenCoverChange_) {
             ret = ret && hiddenCoverInfo_.ReadFromParcel(parcel);
         }
+        ret = ret && parcel.ReadInt32(orderSection_);
+        ret = ret && parcel.ReadInt32(albumOrder_);
     }
     ret = ret && parcel.ReadInt32(albumId_);
     return ret;
@@ -295,6 +307,8 @@ string AlbumChangeInfo::GetAlbumDiff(const AlbumChangeInfo &album, const AlbumCh
     GET_ALBUM_DIFF(hiddenCoverDateTime_);
     GET_ALBUM_DIFF(dirty_);
     GET_ALBUM_DIFF(coverUriSource_);
+    GET_ALBUM_DIFF(albumOrder_);
+    GET_ALBUM_DIFF(orderSection_);
 
     if (album.coverUri_ != compare.coverUri_) {
         ss << "coverUri_: " << MediaFileUtils::DesensitizeUri(album.coverUri_) << " -> ";
@@ -329,7 +343,9 @@ bool AlbumChangeData::IsAlbumInfoChange()
         (infoBeforeChange_.count_ != infoAfterChange_.count_) ||
         (infoBeforeChange_.lpath_ != infoAfterChange_.lpath_) ||
         (infoBeforeChange_.albumName_ != infoAfterChange_.albumName_) ||
-        (infoBeforeChange_.dirty_ != infoAfterChange_.dirty_);
+        (infoBeforeChange_.dirty_ != infoAfterChange_.dirty_) ||
+        (infoBeforeChange_.albumOrder_ != infoAfterChange_.albumOrder_) ||
+        (infoBeforeChange_.orderSection_ != infoAfterChange_.orderSection_);
 }
  
 bool AlbumChangeData::IsAlbumHiddenInfoChange()

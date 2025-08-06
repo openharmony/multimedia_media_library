@@ -24,6 +24,7 @@
 #include "userfile_manager_types.h"
 #include "backup_const.h"
 #include "photo_album_dao.h"
+#include "backup_database_utils.h"
 
 namespace OHOS::Media {
 /**
@@ -95,5 +96,24 @@ std::vector<PhotoAlbumDao::PhotoAlbumRowData> PhotoAlbumRestore::GetAlbumsToRest
         result.emplace_back(albumRowData);
     }
     return result;
+}
+
+int32_t PhotoAlbumRestore::QueryMaxAlbumId(const std::string &tableName, const std::string &idName)
+{
+    int32_t maxAlbumId = -1;
+    const std::string QUERY_SQL = "SELECT MAX(" + idName + ") " + idName + " FROM " + tableName;
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, QUERY_SQL);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, -1, "query resultSql is null.");
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        auto albumId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, idName);
+        CHECK_AND_EXECUTE(!albumId.has_value(), maxAlbumId = albumId.value());
+    }
+    resultSet->Close();
+    return maxAlbumId;
+}
+
+int32_t PhotoAlbumRestore::GetMaxAlbumId()
+{
+    return this->maxAlbumId_;
 }
 }  // namespace OHOS::Media

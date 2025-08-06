@@ -47,6 +47,7 @@ bool CloudMdkRecordPhotosVo::MarshallingBasicInfo(Parcel &parcel) const
     parcel.WriteInt32(originalSubtype);  //
     parcel.WriteInt64(coverPosition);
     parcel.WriteInt32(isRectificationCover);
+    parcel.WriteInt32(exifRotate);
     parcel.WriteInt32(movingPhotoEffectMode);
     parcel.WriteInt32(supportedWatermarkType);
     parcel.WriteInt32(strongAssociation);
@@ -108,6 +109,7 @@ bool CloudMdkRecordPhotosVo::ReadBasicInfo(Parcel &parcel)
     parcel.ReadInt32(originalSubtype);
     parcel.ReadInt64(coverPosition);
     parcel.ReadInt32(isRectificationCover);
+    parcel.ReadInt32(exifRotate);
     parcel.ReadInt32(movingPhotoEffectMode);
     parcel.ReadInt32(supportedWatermarkType);
     parcel.ReadInt32(strongAssociation);
@@ -219,6 +221,7 @@ void CloudMdkRecordPhotosVo::GetAttributesInfo(std::stringstream &ss) const
        << "\"frontCamera\": \"" << frontCamera << "\","
        << "\"coverPosition\": " << coverPosition << ","
        << "\"isRectificationCover\": " << isRectificationCover << ","
+       << "\"exifRotate\": " << exifRotate << ","
        << "\"movingPhotoEffectMode\": " << movingPhotoEffectMode << ","
        << "\"supportedWatermarkType\": " << supportedWatermarkType << ","
        << "\"strongAssociation\": " << strongAssociation << ","

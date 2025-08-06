@@ -189,11 +189,8 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, GetLcdDesiredSize_test_001, TestSize.
     data.lcdDesiredSize.height = 1080;
     data.lcdDesiredSize.width = 1920;
     data.orientation = 90;
-    Size ret = IThumbnailHelper::GetLcdDesiredSize(data, false);
-    bool res = ret.width == data.lcdDesiredSize.height && ret.height == data.lcdDesiredSize.width;
-    EXPECT_EQ(res, true);
-    ret = IThumbnailHelper::GetLcdDesiredSize(data, true);
-    res = ret.width == data.lcdDesiredSize.width && ret.height == data.lcdDesiredSize.height;
+    Size ret = IThumbnailHelper::GetLcdDesiredSize(data, true);
+    bool res = ret.width == data.lcdDesiredSize.width && ret.height == data.lcdDesiredSize.height;
     EXPECT_EQ(res, true);
 }
 

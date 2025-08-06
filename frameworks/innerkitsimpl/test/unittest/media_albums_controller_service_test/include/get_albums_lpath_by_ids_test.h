@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,22 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef OHOS_MTP_SUBSCRIBER_H
-#define OHOS_MTP_SUBSCRIBER_H
 
-#include "common_event_subscriber.h"
+#ifndef GET_ALBUMS_LPATH_BY_IDS_TEST_H
+#define GET_ALBUMS_LPATH_BY_IDS_TEST_H
+
+#include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-#define EXPORT __attribute__ ((visibility ("default")))
-class MtpSubscriber : public EventFwk::CommonEventSubscriber {
+class GetAlbumsLpathByIdsTest : public testing::Test {
 public:
-    EXPORT virtual ~MtpSubscriber() = default;
-    EXPORT explicit MtpSubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo);
-
-    EXPORT static bool Subscribe(void);
-    EXPORT void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 };
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MTP_SUBSCRIBER_H
+#endif // GET_ALBUMS_LPATH_BY_IDS_TEST_H

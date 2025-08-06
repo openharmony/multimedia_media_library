@@ -151,6 +151,27 @@ static void UpdateAndNotifyBurstModeAlbum()
     NotifyAnalysisAlbum(to_string(albumId));
 }
 
+static void CheckNeedNotify(const bool isCover, shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    CHECK_AND_RETURN(isCover);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is null.");
+
+    int columnIndex = 0;
+    int64_t dateTrashed = 0;
+    if (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_TRASHED, columnIndex) == NativeRdb::E_OK) {
+        resultSet->GetLong(columnIndex, dateTrashed);
+    }
+    CHECK_AND_RETURN(dateTrashed > 0);
+    int32_t fileId = 0;
+    if (resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnIndex) == NativeRdb::E_OK) {
+        resultSet->GetInt(columnIndex, fileId);
+    }
+    auto watcher = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_INFO_LOG(watcher != nullptr, "watcher is nullptr");
+    watcher->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId)),
+        NotifyType::NOTIFY_REMOVE);
+}
+
 static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::ResultSet> resultSet)
 {
     int32_t count;
@@ -187,6 +208,7 @@ static int32_t UpdateBurstPhoto(const bool isCover, shared_ptr<NativeRdb::Result
             ret = E_HAS_DB_ERROR;
             break;
         }
+        CheckNeedNotify(isCover, resultSet);
     }
     assetRefresh.RefreshAlbum();
     assetRefresh.Notify();
@@ -198,6 +220,7 @@ static shared_ptr<NativeRdb::ResultSet> QueryBurst(const shared_ptr<MediaLibrary
     const string globNameRule1, const string globNameRule2)
 {
     string querySql = "SELECT " + MediaColumn::MEDIA_TITLE + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
+        ", " + MediaColumn::MEDIA_DATE_TRASHED + ", " + MediaColumn::MEDIA_ID +
         " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_TYPE + " = " +
         to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
         to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_BURST_KEY +

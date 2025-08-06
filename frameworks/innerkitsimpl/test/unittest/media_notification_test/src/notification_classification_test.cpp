@@ -500,5 +500,30 @@ HWTEST_F(NotificationClassificationTest, medialib_notification_classification_te
     MEDIA_INFO_LOG("end medialib_notification_classification_test027");
 }
 
+HWTEST_F(NotificationClassificationTest, medialib_notification_classification_test028, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("enter medialib_notification_classification_test028");
+    Notification::NotificationClassification::AddAlbum("albumId");
+    std::vector<Notification::MediaChangeInfo> mediaChangeInfos;
+    const auto& albumChangeData1 = OHOS::Media::Notification::albumChangeData1;
+    const auto& albumChangeData2 = OHOS::Media::Notification::albumChangeData2;
+    auto notifyInfos = Notification::NotificationTestData::buildAlbumNotifyTaskInfo(
+        Notification::NotifyTableType::PHOTO_ALBUM,
+        {albumChangeData1, albumChangeData2},
+        Notification::AlbumRefreshOperation::ALBUM_OPERATION_UPDATE,
+        {Notification::Priority::EMERGENCY, 1}
+    );
+    Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
+    EXPECT_TRUE(!mediaChangeInfos.empty());
+
+    int32_t albumId = albumChangeData1.infoBeforeChange_.albumId_;
+    Notification::NotificationClassification::AddAlbum(to_string(albumId));
+    size_t mediaChangeInfosSize = 2;
+    mediaChangeInfos.clear();
+    Notification::NotificationClassification::ConvertNotification(notifyInfos, mediaChangeInfos);
+    EXPECT_EQ(mediaChangeInfos.size(), mediaChangeInfosSize);
+    MEDIA_INFO_LOG("end medialib_notification_classification_test028");
+}
+
 } // namespace Media
 } // namespace OHOS

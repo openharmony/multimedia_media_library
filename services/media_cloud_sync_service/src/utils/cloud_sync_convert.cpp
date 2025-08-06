@@ -32,9 +32,6 @@
 #include "media_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
-const int32_t FIRST_MATCH_PARAM = 1;
-
-constexpr size_t DEFAULT_TIME_SIZE = 32;
 static bool convertToLong(const std::string &str, int64_t &value)
 {
     auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
@@ -299,6 +296,7 @@ int32_t CloudSyncConvert::CompensatePropOrientation(const CloudMediaPullDataDto 
 
 int32_t CloudSyncConvert::CompensatePropPosition(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
+    CHECK_AND_RETURN_RET(!(data.latitude == 0 && data.longitude == 0), E_OK);
     values.PutDouble(PhotoColumn::PHOTO_LATITUDE, data.latitude);
     values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data.longitude);
     return E_OK;

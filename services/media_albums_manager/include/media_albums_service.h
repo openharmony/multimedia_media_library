@@ -73,6 +73,8 @@ public:
     std::shared_ptr<DataShare::DataShareResultSet> AlbumGetAssets(AlbumGetAssetsDto &dto);
     int32_t QueryAlbums(QueryAlbumsDto &dto);
     int32_t QueryHiddenAlbums(QueryAlbumsDto &dto);
+    int32_t QueryAlbumsLpath(QueryAlbumsDto &dto);
+    int32_t QueryAlbumsLpaths(QueryAlbumsDto &dto);
     int32_t GetOrderPosition(const GetOrderPositionDto& getOrderPositionDto, GetOrderPositionRespBody& resp);
     int32_t GetFaceId(int32_t albumId, std::string& groupTag);
     int32_t GetPhotoIndex(GetPhotoIndexReqBody &reqBody, QueryResultRespBody &respBody);

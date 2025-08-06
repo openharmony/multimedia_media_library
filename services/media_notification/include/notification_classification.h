@@ -34,6 +34,7 @@ public:
     EXPORT ~NotificationClassification();
     EXPORT static void ConvertNotification(std::vector<NotifyInfoInner> &notifyInfos,
         std::vector<MediaChangeInfo> &mediaChangeInfos);
+    EXPORT static void AddAlbum(const std::string &albumId);
 private:
     static MediaChangeInfo BuildMediaChangeInfo(NotifyInfoInner &notifyInfoInner,
         bool isForRecheck, NotifyType notifyType, NotifyUriType notifyUriType);
@@ -64,9 +65,13 @@ private:
     static std::vector<MediaChangeInfo> HandleAlbumUpdateHidden(NotifyInfoInner &notifyInfoInner);
     static std::vector<MediaChangeInfo> HandleAlbumUpdateTrash(NotifyInfoInner &notifyInfoInner);
     static std::vector<MediaChangeInfo> HandleAlbumRecheck(NotifyInfoInner &notifyInfoInner);
+    static std::vector<MediaChangeInfo> HandleAlbumAddAndUpdate(NotifyInfoInner &notifyInfoInner);
 private:
     static std::unordered_map<std::variant<AssetRefreshOperation, AlbumRefreshOperation>,
         std::function<std::vector<MediaChangeInfo>(NotifyInfoInner&)>> classificationMap;
+    // 存储使用触发器创建的albumId
+    static std::unordered_set<int32_t> addAlbumIdSet_;
+    static std::mutex addAlbumIdMutex_;
 };
 } // namespace Notification
 } // namespace Media

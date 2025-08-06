@@ -88,6 +88,7 @@ class PhotoColumn : public MediaColumn {
 public:
     // column only in PhotoTable
     static const std::string PHOTO_ORIENTATION EXPORT;
+    static const std::string PHOTO_EXIF_ROTATE EXPORT;
     static const std::string PHOTO_LATITUDE EXPORT;
     static const std::string PHOTO_LONGITUDE EXPORT;
     static const std::string PHOTO_HEIGHT EXPORT;

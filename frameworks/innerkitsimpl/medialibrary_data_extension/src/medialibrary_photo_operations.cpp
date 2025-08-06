@@ -2861,6 +2861,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
 #endif
+    ThumbnailService::GetInstance()->HasInvalidateThumbnail(to_string(fileId), PhotoColumn::PHOTOS_TABLE);
     ScanFile(path, true, true, true);
     if (revertMovingPhotoGraffiti) {
         UpdateAndNotifyMovingPhotoAlbum();
@@ -2914,7 +2915,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
         }
         if (MovingPhotoFileUtils::IsMovingPhoto(subtype,
             fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType())) {
-            CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset->GetFilePath(), false) == E_OK, E_FAIL,
+            CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset->GetFilePath(), false, true) == E_OK, E_FAIL,
                 "Failed to add filters to video");
         }
     }
@@ -3362,7 +3363,6 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET_LOG(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id),
             E_INVALID_VALUES, "Failed to get fileId");
         vector<string> columns = { videoSaveFinishedUri };
-        ScanMovingPhoto(cmd, columns);
 
         vector<string> fileAssetColumns = {PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
             PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_ID,
@@ -3424,16 +3424,21 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     string assetPath = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
 
-    FileUtils::DealPicture(photoExtInfo.format, assetPath, photoExtInfo.picture, photoExtInfo.isHighQualityPicture);
     string editData = "";
     string editDataCameraPath = GetEditDataCameraPath(assetPath);
+    bool existEditData = (ReadEditdataFromFile(editDataCameraPath, editData) == E_OK);
+    if (existEditData) {
+        FileUtils::DealPicture(photoExtInfo.format, GetEditDataSourcePath(assetPath), photoExtInfo.picture,
+            photoExtInfo.isHighQualityPicture);
+    } else {
+        FileUtils::DealPicture(photoExtInfo.format, assetPath, photoExtInfo.picture, photoExtInfo.isHighQualityPicture);
+    }
+
     std::string photoId;
     std::shared_ptr<Media::Picture> picture;
     bool isHighQualityPicture = false;
-    if (ReadEditdataFromFile(editDataCameraPath, editData) == E_OK &&
-        GetPicture(fileId, picture, false, photoId, isHighQualityPicture) == E_OK &&
+    if (existEditData && GetPicture(fileId, picture, false, photoId, isHighQualityPicture) == E_OK &&
         GetTakeEffect(picture, photoId) == E_OK) {
-        MediaFileUtils::CopyFileUtil(assetPath, GetEditDataSourcePath(assetPath));
         int32_t ret = MediaChangeEffect::TakeEffectForPicture(picture, editData);
         FileUtils::DealPicture(photoExtInfo.format, assetPath, picture, isHighQualityPicture);
     }
@@ -3528,6 +3533,11 @@ int32_t MediaLibraryPhotoOperations::CopyVideoFile(const string& assetPath, bool
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileSafe(sourceVideoPath, videoPath), E_HAS_FS_ERROR,
             "Copy sourceVideoPath to videoPath, path:%{private}s", sourceVideoPath.c_str());
     }
+
+    if (MediaFileUtils::IsFileExists(assetPath)) {
+        MediaLibraryObjectUtils::ScanMovingPhotoVideoAsync(assetPath, true);
+    }
+
     return E_OK;
 }
 

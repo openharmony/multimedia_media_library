@@ -127,6 +127,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
+    "${MEDIALIB_SERVICES_PATH}/media_mtp_service/include",
     "${MEDIALIB_SERVICES_PATH}/media_permission/include",
     "${MEDIALIB_SERVICES_PATH}/media_power_efficiency/include",
     "${MEDIALIB_SERVICES_PATH}/media_visit_count/include",
@@ -212,6 +213,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_worker.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_worker_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_image_framework_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_rdb_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_service.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_source_loading.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_uri_utils.cpp",
@@ -249,7 +251,9 @@ ohos_shared_library("medialibrary_data_extension") {
   media_dfx_source = [
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_analyzer.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_collector.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_deprecated_perm_usage.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_moving_photo.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_timer.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_transaction.cpp",
@@ -369,6 +373,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_dfx_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_download_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_enhance_service.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_scan_service.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/processor/cloud_media_data_service_processor.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/processor/cloud_media_photo_service_processor.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/processor/cloud_media_download_service_processor.cpp",
@@ -392,6 +397,12 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   media_visit_count = [ "${MEDIALIB_SERVICES_PATH}/media_visit_count/src/media_visit_count_manager.cpp" ]
+
+  media_mtp_service = [
+    "${MEDIALIB_SERVICES_PATH}/media_mtp_service/src/media_mtp_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_mtp_service/src/media_mtp_service_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_mtp_service/src/media_mtp_subscriber.cpp",
+  ]
 
   media_ipc_source =
       [ "src/ipc/controller/media_controller_service_factory.cpp" ]
@@ -511,6 +522,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/query_result_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_photo_album_object_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/set_photo_album_order_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_albums_lpath_by_ids_vo.cpp",
   ]
 
   media_albums_manager_dto_source = [
@@ -725,6 +737,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_albums_manager_dto_source
   sources += media_bgtask_source
   sources += media_notification_source
+  sources += media_mtp_service
   sources += accurate_refresh_source
   sources += accurate_refresh_server_source
 
@@ -758,11 +771,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_CLOUD_SYNC_PATH}/include",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
   ]
-
-  if (media_library_feature_mtp) {
-    include_dirs += [ "${MEDIALIB_SERVICES_PATH}/media_mtp/include" ]
-    deps += [ "${MEDIALIB_SERVICES_PATH}/media_mtp:media_mtp" ]
-  }
 
   external_deps = [
     "ability_base:base",
@@ -815,6 +823,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
+    "usb_manager:usbsrv_client",
     "window_manager:libdm",
     "zlib:shared_libz",
   ]

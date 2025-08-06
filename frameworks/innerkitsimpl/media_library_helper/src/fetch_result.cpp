@@ -105,6 +105,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { CustomRecordsColumns::BUNDLE_NAME, TYPE_STRING },
         { CustomRecordsColumns::SHARE_COUNT, TYPE_INT32 },
         { CustomRecordsColumns::LCD_JUMP_COUNT, TYPE_INT32 },
+        { PhotoColumn::PHOTO_EXIF_ROTATE, TYPE_INT32 },
     };
     return RESULT_TYPE_MAP;
 }

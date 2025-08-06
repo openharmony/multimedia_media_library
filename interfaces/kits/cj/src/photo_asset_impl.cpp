@@ -87,6 +87,7 @@ static int32_t CheckSystemApiKeys(const string &key)
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
         MEDIA_SUM_SIZE,
+        PhotoColumn::PHOTO_EXIF_ROTATE,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryNapiUtils::IsSystemApp()) {

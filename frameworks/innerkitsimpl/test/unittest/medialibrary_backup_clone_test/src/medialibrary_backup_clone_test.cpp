@@ -2752,6 +2752,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_stat
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_005");
     FileInfo fileInfo;
     fileInfo.orientation = TEST_ORIENTATION_NINETY;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
     CloudPhotoFileExistFlag resultExistFlag;
     resultExistFlag.isExThmExist = true;
     resultExistFlag.isExLcdExist = true;
@@ -2764,6 +2765,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_stat
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_006");
     FileInfo fileInfo;
     fileInfo.orientation = TEST_ORIENTATION_NINETY;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
     CloudPhotoFileExistFlag resultExistFlag;
     resultExistFlag.isExThmExist = true;
     resultExistFlag.isExLcdExist = false;
@@ -2776,6 +2778,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_stat
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_007");
     FileInfo fileInfo;
     fileInfo.orientation = TEST_ORIENTATION_NINETY;
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
     CloudPhotoFileExistFlag resultExistFlag;
     resultExistFlag.isExThmExist = false;
     resultExistFlag.isExLcdExist = true;

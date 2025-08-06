@@ -514,6 +514,23 @@ static void UpdateAllShootingModeAlbums(const shared_ptr<MediaLibraryRdbStore>& 
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
 }
 
+static void SetExifRotateAfterAddColumn(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("Start to set exif rotate");
+    std::string sql =
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE +
+        " SET " + PhotoColumn::PHOTO_EXIF_ROTATE + " = " +
+        " CASE " +
+            " WHEN exif_rotate = 0 AND media_type = 1 AND orientation = 90 THEN 6 " +
+            " WHEN exif_rotate = 0 AND media_type = 1 AND orientation = 180 THEN 3 " +
+            " WHEN exif_rotate = 0 AND media_type = 1 AND orientation = 270 THEN 8 "
+            " ELSE exif_rotate " +
+        " END ";
+    int ret = store->ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    MEDIA_INFO_LOG("End set exif rotate");
+}
+
 void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API18) {
@@ -535,6 +552,11 @@ void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_TRANSFER_OWNERAPPID_TO_TOKENID) {
         MediaLibraryRdbUtils::TransformOwnerAppIdToTokenId(rdbStore);
         rdbStore->SetOldVersion(VERSION_TRANSFER_OWNERAPPID_TO_TOKENID);
+    }
+
+    if (oldVersion < VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE) {
+        SetExifRotateAfterAddColumn(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE);
     }
 }
 
@@ -1551,6 +1573,14 @@ int32_t MediaLibraryDataManager::GenerateThumbnailBackground()
         return E_THUMBNAIL_SERVICE_NULLPTR;
     }
     return thumbnailService_->GenerateThumbnailBackground();
+}
+
+int32_t MediaLibraryDataManager::RepairExifRotateBackground()
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    CHECK_AND_RETURN_RET_LOG(refCnt_.load() > 0, E_FAIL, "MediaLibraryDataManager is not initialized");
+    CHECK_AND_RETURN_RET_LOG(thumbnailService_ != nullptr, E_THUMBNAIL_SERVICE_NULLPTR, "ThumbnailService is nullptr");
+    return thumbnailService_->RepairExifRotateBackground();
 }
 
 int32_t MediaLibraryDataManager::GenerateHighlightThumbnailBackground()

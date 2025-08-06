@@ -50,7 +50,8 @@ PhotosDto CloudMediaPhotoServiceProcessor::Parse(const PhotosPo &photosPo)
     photosDto.sourcePath = photosPo.sourcePath.value_or("");
     photosDto.mimeType = photosPo.mimeType.value_or("");
     photosDto.mediaType = photosPo.mediaType.value_or(0);
-    CloudMediaSyncUtils::FillPhotosDto(photosDto, photosDto.data, photosDto.orientation, photosDto.thumbStatus);
+    CloudMediaSyncUtils::FillPhotosDto(photosDto, photosDto.data, photosDto.orientation,
+        photosPo.exifRotate.value_or(0), photosDto.thumbStatus);
     CloudMediaFileUtils::GetParentPathAndFilename(photosDto.data, photosDto.path, photosDto.fileName);
     MEDIA_DEBUG_LOG("photosDto: %{public}s", photosDto.ToString().c_str());
     return photosDto;

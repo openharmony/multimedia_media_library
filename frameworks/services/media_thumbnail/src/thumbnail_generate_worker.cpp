@@ -31,8 +31,12 @@ namespace OHOS {
 namespace Media {
 static constexpr int32_t THREAD_NUM_FOREGROUND = 4;
 static constexpr int32_t THREAD_NUM_BACKGROUND = 2;
+static constexpr int32_t THREAD_NUM_ASYNC_UPDATE_RDB = 1;
 constexpr size_t TASK_INSERT_COUNT = 15;
 constexpr size_t CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL = 270000;
+const std::string THREAD_NAME_FOREGROUND = "ThumbForeground";
+const std::string THREAD_NAME_BACKGROUND = "ThumbBackground";
+const std::string THREAD_NAME_ASYNC_UPDATE_RDB = "ThumbAsyncUpdateRdb";
 
 void ThumbnailGeneratorWrapper::BeforeExecute()
 {
@@ -96,26 +100,34 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
     if (!threads_.empty()) {
         return E_OK;
     }
-
     MEDIA_INFO_LOG("threads empty, need to init, taskType:%{public}d", taskType);
     int32_t threadNum;
     std::string threadName;
     taskType_ = taskType;
     CpuAffinityType cpuAffinityType;
     CpuAffinityType cpuAffinityTypeLowPriority;
-    if (taskType == ThumbnailTaskType::FOREGROUND) {
-        threadNum = THREAD_NUM_FOREGROUND;
-        threadName = THREAD_NAME_FOREGROUND;
-        cpuAffinityType = CpuAffinityType::CPU_IDX_9;
-        cpuAffinityTypeLowPriority = CpuAffinityType::CPU_IDX_3;
-    } else if (taskType == ThumbnailTaskType::BACKGROUND) {
-        threadNum = THREAD_NUM_BACKGROUND;
-        threadName = THREAD_NAME_BACKGROUND;
-        cpuAffinityType = CpuAffinityType::CPU_IDX_9;
-        cpuAffinityTypeLowPriority = CpuAffinityType::CPU_IDX_9;
-    } else {
-        MEDIA_ERR_LOG("invalid task type");
-        return E_ERR;
+    switch (taskType) {
+        case ThumbnailTaskType::FOREGROUND:
+            threadNum = THREAD_NUM_FOREGROUND;
+            threadName = THREAD_NAME_FOREGROUND;
+            cpuAffinityType = CpuAffinityType::CPU_IDX_9;
+            cpuAffinityTypeLowPriority = CpuAffinityType::CPU_IDX_3;
+            break;
+        case ThumbnailTaskType::BACKGROUND:
+            threadNum = THREAD_NUM_BACKGROUND;
+            threadName = THREAD_NAME_BACKGROUND;
+            cpuAffinityType = CpuAffinityType::CPU_IDX_9;
+            cpuAffinityTypeLowPriority = CpuAffinityType::CPU_IDX_9;
+            break;
+        case ThumbnailTaskType::ASYNC_UPDATE_RDB:
+            threadNum = THREAD_NUM_ASYNC_UPDATE_RDB;
+            threadName = THREAD_NAME_ASYNC_UPDATE_RDB;
+            cpuAffinityType = CpuAffinityType::CPU_IDX_9;
+            cpuAffinityTypeLowPriority = CpuAffinityType::CPU_IDX_9;
+            break;
+        default:
+            MEDIA_ERR_LOG("invalid task type");
+            return E_ERR;
     }
 
     isThreadRunning_ = true;

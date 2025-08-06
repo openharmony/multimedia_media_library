@@ -316,7 +316,7 @@ vector<int32_t> AccurateRefreshBase::GetReturningKeys(const pair<int32_t, Result
         return keys;
     }
 
-    if (retWithResults.second.changed >= MAX_DATA_LENGTH) {
+    if (static_cast<std::size_t>(retWithResults.second.changed) >= MAX_DATA_LENGTH) {
         MEDIA_WARN_LOG("returning total length: %{publid}d, exceed data size", retWithResults.second.changed);
         return vector<int32_t>(MAX_DATA_LENGTH);
     }
