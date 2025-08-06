@@ -373,6 +373,14 @@ int32_t CloudMediaPhotoHandler::GetCopyRecords(std::vector<MDKRecord> &records, 
     return E_OK;
 }
 
+void CloudMediaPhotoHandler::DeleteTempLivePhotoFile(std::string &livePhotoCachePath)
+{
+    CHECK_AND_RETURN_LOG(!livePhotoCachePath.empty(), "livePhotoCachePath is empty");
+    int result = unlink(livePhotoCachePath.c_str());
+    CHECK_AND_RETURN_LOG(result == 0, "unlink err: %{public}d, result: %{public}d, livePhotoCachePath: %{public}s",
+        errno, result, livePhotoCachePath.c_str());
+}
+
 int32_t CloudMediaPhotoHandler::OnCreateRecords(
     const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
@@ -391,6 +399,7 @@ int32_t CloudMediaPhotoHandler::OnCreateRecords(
         }
         MEDIA_INFO_LOG("OnCreateRecords Record:%{public}s", record.ToString().c_str());
         req.records.emplace_back(record);
+        DeleteTempLivePhotoFile(record.livePhotoCachePath);
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_CREATE_RECORDS);
     FailedSizeResp resp;
@@ -446,6 +455,7 @@ int32_t CloudMediaPhotoHandler::OnFdirtyRecords(
         }
         MEDIA_INFO_LOG("OnFdirtyRecords Record: %{public}s", record.ToString().c_str());
         req.AddRecord(record);
+        DeleteTempLivePhotoFile(record.livePhotoCachePath);
     }
     FailedSizeResp resp;
     resp.failedSize = 0;
