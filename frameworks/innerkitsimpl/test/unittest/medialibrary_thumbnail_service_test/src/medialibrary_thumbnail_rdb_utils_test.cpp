@@ -249,5 +249,18 @@ HWTEST_F(ThumbnailRdbUtilsTest, UpdateExifRotateAndDirty_Test_001, TestSize.Leve
     MEDIA_INFO_LOG("UpdateExifRotateAndDirty_Test_001 end");
 }
 
+HWTEST_F(ThumbnailRdbUtilsTest, UpdateRdbStoreById_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdateRdbStoreById_Test_001");
+    ThumbRdbOpt opts;
+    opts.store = rdbStore;
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    NativeRdb::ValuesBucket values;
+    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+    auto ret = ThumbnailRdbUtils::UpdateRdbStoreById(opts, to_string(id), values);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdateRdbStoreById_Test_001 end");
+}
+
 } // namespace Media
 } // namespace OHOS
