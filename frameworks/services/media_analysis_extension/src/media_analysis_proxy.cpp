@@ -52,7 +52,9 @@ bool MediaAnalysisProxy::SendTransactCmd(int32_t code, MessageParcel &data, Mess
             }
             remoteObject = saMgr->LoadSystemAbility(SAID, minTimeout);
             if (remoteObject == nullptr) {
-                MEDIA_ERR_LOG("Failed to send transact %{public}d due to remote object is null", code);
+                MEDIA_ERR_LOG(
+                    "Failed to send transact %{public}d due to remote object is null, SA will be unloaded", code);
+                saMgr->UnloadSystemAbility(SAID);
                 return false;
             }
         }
@@ -60,7 +62,8 @@ bool MediaAnalysisProxy::SendTransactCmd(int32_t code, MessageParcel &data, Mess
 
     int32_t result = remoteObject->SendRequest(code, data, reply, option);
     if (result != NO_ERROR) {
-        MEDIA_ERR_LOG("receive error transact result: %{public}d, code: %{public}d", result, code);
+        MEDIA_ERR_LOG("receive error transact result: %{public}d, code: %{public}d, SA will be unloaded", result, code);
+        saMgr->UnloadSystemAbility(SAID);
         return false;
     }
     MEDIA_INFO_LOG("send request success, code: %{public}d", code);
