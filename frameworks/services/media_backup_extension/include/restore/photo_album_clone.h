@@ -17,9 +17,9 @@
 
 #include <string>
 
-#include "rdb_store.h"
-#include "photo_album_dao.h"
 #include "backup_const.h"
+#include "photo_album_dao.h"
+#include "rdb_store.h"
 
 namespace OHOS::Media {
 class PhotoAlbumClone {
@@ -28,11 +28,12 @@ public:
      * @brief Restore Start Event Handler.
      */
     void OnStart(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryOriginalRdb,
-        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryTargetRdb)
+        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryTargetRdb, bool isCloudRestoreSatisfied)
     {
         this->mediaLibraryOriginalRdb_ = mediaLibraryOriginalRdb;
         this->mediaLibraryTargetRdb_ = mediaLibraryTargetRdb;
         this->photoAlbumDao_.SetMediaLibraryRdb(mediaLibraryTargetRdb);
+        isCloudRestoreSatisfied_ = isCloudRestoreSatisfied;
     }
 
     int32_t GetPhotoAlbumCountInOriginalDb();
@@ -56,14 +57,17 @@ public:
 
 private:
     std::string ToString(const std::vector<NativeRdb::ValueObject> &bindArgs);
+    std::string GetPhotoAlbumCountQuerySql();
+    std::string GetPhotoAlbumSelectQuerySql();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryTargetRdb_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryOriginalRdb_;
     PhotoAlbumDao photoAlbumDao_;
+    bool isCloudRestoreSatisfied_ {false};
 
 private:
-    const std::string SQL_PHOTO_ALBUM_COUNT_FOR_CLONE = "\
+    const std::string SQL_PHOTO_ALBUM_COUNT_FOR_CLONE_LOCAL = "\
         SELECT COUNT(DISTINCT PhotoAlbum.album_id) AS count \
         FROM PhotoAlbum \
             LEFT JOIN PhotoMap \
@@ -72,9 +76,10 @@ private:
             ON PhotoMap.map_asset=P1.file_id \
             LEFT JOIN Photos AS P2 \
             ON PhotoAlbum.album_id=P2.owner_album_id \
-        WHERE P1.file_id IS NOT NULL AND P1.position IN (1, 3) OR \
-            P2.file_id IS NOT NULL AND P2.position IN (1, 3) ;";
-    const std::string SQL_PHOTO_ALBUM_SELECT_FOR_CLONE = "\
+        WHERE PhotoAlbum.dirty <> ? AND \
+            (P1.file_id IS NOT NULL AND P1.position IN (1, 3) OR \
+            P2.file_id IS NOT NULL AND P2.position IN (1, 3)) ;";
+    const std::string SQL_PHOTO_ALBUM_SELECT_FOR_CLONE_LOCAL = "\
         SELECT DISTINCT PhotoAlbum.* \
         FROM PhotoAlbum \
             LEFT JOIN PhotoMap \
@@ -83,8 +88,35 @@ private:
             ON PhotoMap.map_asset=P1.file_id \
             LEFT JOIN Photos AS P2 \
             ON PhotoAlbum.album_id=P2.owner_album_id \
-        WHERE P1.file_id IS NOT NULL AND P1.position IN (1, 3) OR \
-            P2.file_id IS NOT NULL AND P2.position IN (1, 3) \
+        WHERE PhotoAlbum.dirty <> ? AND \
+            (P1.file_id IS NOT NULL AND P1.position IN (1, 3) OR \
+            P2.file_id IS NOT NULL AND P2.position IN (1, 3)) \
+        ORDER BY PhotoAlbum.album_id \
+        LIMIT ?, ? ;";
+    const std::string SQL_PHOTO_ALBUM_COUNT_FOR_CLONE_LOCAL_AND_CLOUD = "\
+        SELECT COUNT(DISTINCT PhotoAlbum.album_id) AS count \
+        FROM PhotoAlbum \
+            LEFT JOIN PhotoMap \
+            ON PhotoAlbum.album_id = PhotoMap.map_album \
+            LEFT JOIN Photos AS P1 \
+            ON PhotoMap.map_asset=P1.file_id \
+            LEFT JOIN Photos AS P2 \
+            ON PhotoAlbum.album_id=P2.owner_album_id \
+        WHERE PhotoAlbum.dirty <> ? AND \
+            (P1.file_id IS NOT NULL AND P1.position IN (1, 2, 3) OR \
+            P2.file_id IS NOT NULL AND P2.position IN (1, 2, 3)) ;";
+    const std::string SQL_PHOTO_ALBUM_SELECT_FOR_CLONE_LOCAL_AND_CLOUD = "\
+        SELECT DISTINCT PhotoAlbum.* \
+        FROM PhotoAlbum \
+            LEFT JOIN PhotoMap \
+            ON PhotoAlbum.album_id = PhotoMap.map_album \
+            LEFT JOIN Photos AS P1 \
+            ON PhotoMap.map_asset=P1.file_id \
+            LEFT JOIN Photos AS P2 \
+            ON PhotoAlbum.album_id=P2.owner_album_id \
+        WHERE PhotoAlbum.dirty <> ? AND \
+            (P1.file_id IS NOT NULL AND P1.position IN (1, 2, 3) OR \
+            P2.file_id IS NOT NULL AND P2.position IN (1, 2, 3)) \
         ORDER BY PhotoAlbum.album_id \
         LIMIT ?, ? ;";
 };

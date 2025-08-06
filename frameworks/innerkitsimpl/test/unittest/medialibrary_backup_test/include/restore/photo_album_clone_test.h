@@ -26,5 +26,14 @@ public:
     void SetUp();
     void TearDown();
 };
+
+class PhotoAlbumCloneTestUtils {
+public:
+    static void ClearAllData();
+    static void ClearPhotosData();
+    static void ClearPhotoAlbumData();
+    static void InsertPhoto(int32_t position);
+    static void InsertAlbum(int32_t dirty);
+};
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTO_ALBUM_CLONE_TEST_H

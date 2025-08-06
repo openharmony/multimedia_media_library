@@ -14,12 +14,9 @@
  */
 #include "photo_album_clone.h"
 
-#include <string>
-#include <vector>
-
+#include "media_log.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
-#include "media_log.h"
 
 namespace OHOS::Media {
 std::string PhotoAlbumClone::ToString(const std::vector<NativeRdb::ValueObject> &bindArgs)
@@ -33,15 +30,28 @@ std::string PhotoAlbumClone::ToString(const std::vector<NativeRdb::ValueObject> 
     return args;
 }
 
+std::string PhotoAlbumClone::GetPhotoAlbumCountQuerySql()
+{
+    return isCloudRestoreSatisfied_ ? SQL_PHOTO_ALBUM_COUNT_FOR_CLONE_LOCAL_AND_CLOUD :
+        SQL_PHOTO_ALBUM_COUNT_FOR_CLONE_LOCAL;
+}
+
+std::string PhotoAlbumClone::GetPhotoAlbumSelectQuerySql()
+{
+    return isCloudRestoreSatisfied_ ? SQL_PHOTO_ALBUM_SELECT_FOR_CLONE_LOCAL_AND_CLOUD :
+        SQL_PHOTO_ALBUM_SELECT_FOR_CLONE_LOCAL;
+}
+
 /**
  * @brief Get Total Count of PhotoAlbum, for clone.
  */
 int32_t PhotoAlbumClone::GetPhotoAlbumCountInOriginalDb()
 {
-    std::string querySql = this->SQL_PHOTO_ALBUM_COUNT_FOR_CLONE;
+    std::string querySql = GetPhotoAlbumCountQuerySql();
+    std::vector<NativeRdb::ValueObject> bindArgs = { static_cast<int32_t>(DirtyType::TYPE_DELETED) };
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
         "Media_Restore: mediaLibraryOriginalRdb_ is null.");
-    auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
+    auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql, bindArgs);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "resultSet is nullptr");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         resultSet->Close();
@@ -58,8 +68,8 @@ int32_t PhotoAlbumClone::GetPhotoAlbumCountInOriginalDb()
  */
 std::shared_ptr<NativeRdb::ResultSet> PhotoAlbumClone::GetPhotoAlbumInOriginalDb(int32_t offset, int32_t pageSize)
 {
-    std::string querySql = this->SQL_PHOTO_ALBUM_SELECT_FOR_CLONE;
-    std::vector<NativeRdb::ValueObject> bindArgs = {offset, pageSize};
+    std::string querySql = GetPhotoAlbumSelectQuerySql();
+    std::vector<NativeRdb::ValueObject> bindArgs = { static_cast<int32_t>(DirtyType::TYPE_DELETED), offset, pageSize };
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, nullptr,
         "Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql, bindArgs);

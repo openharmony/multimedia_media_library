@@ -34,7 +34,9 @@ public:
         std::string albumName;
         std::string lPath;
         std::string bundleName;
-        int32_t priority = 1;
+        int32_t priority;
+        PhotoAlbumRowData();
+        bool IsValidSourceAlbum();
     };
 
 public:
@@ -45,6 +47,7 @@ public:
     std::vector<PhotoAlbumRowData> GetPhotoAlbums();
     PhotoAlbumRowData GetPhotoAlbum(const std::string &lPath);
     PhotoAlbumRowData GetOrCreatePhotoAlbum(const PhotoAlbumRowData &album);
+    PhotoAlbumRowData GetOrCreatePhotoAlbumForClone(const PhotoAlbumRowData &album);
     int32_t RestoreAlbums(std::vector<PhotoAlbumRowData> &photoAlbums);
     PhotoAlbumRowData BuildAlbumInfoOfRecorders();
     std::string ParseSourcePathToLPath(const std::string &sourcePath);
@@ -65,6 +68,7 @@ private:
     PhotoAlbumRowData BuildAlbumInfoByLPath(
         const std::string &lPath, const int32_t albumType, const int32_t albumSubType);
     size_t FindRootPos(const std::string &path);
+    PhotoAlbumRowData GetOrInsertIntoCache(const PhotoAlbumRowData &album);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;

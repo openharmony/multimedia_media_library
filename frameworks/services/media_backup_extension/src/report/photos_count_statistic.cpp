@@ -39,6 +39,7 @@ std::vector<AlbumMediaStatisticInfo> PhotosCountStatistic::Load()
         // other statistic info.
         this->GetLiveStatInfo(),
         this->GetGalleryAlbumCountInfo(),
+        this->GetGalleryDeletedAlbumCountInfo(),
         // statistic info.
         this->GetImageAlbumInfo(),
         this->GetVideoAlbumInfo(),
@@ -702,6 +703,32 @@ AlbumMediaStatisticInfo PhotosCountStatistic::GetGalleryAlbumCountInfo()
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
     std::string albumName = "相册数量";
+    std::string lPath = "";
+    int32_t period = this->period_;  // 0 - BEFORE, 1 - AFTER
+    int32_t dbType = 1;              // 0 - GALLERY, 1 - MEDIA
+    info.albumName = AlbumNameInfo()
+                         .SetAlbumName(albumName)
+                         .SetLPath(lPath)
+                         .SetCostTime(costTime)
+                         .SetPeriod(period)
+                         .SetDbType(dbType)
+                         .ToString();
+    return info;
+}
+
+AlbumMediaStatisticInfo PhotosCountStatistic::GetGalleryDeletedAlbumCountInfo()
+{
+    AlbumMediaStatisticInfo info;
+    info.sceneCode = this->sceneCode_;
+    info.taskId = this->taskId_;
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    // build the statistic info.
+    std::vector<NativeRdb::ValueObject> params = {static_cast<int32_t>(DirtyType::TYPE_DELETED)};
+    info.totalCount = this->GetCount(SQL_PHOTO_DELETED_ALBUM_COUNT, params);
+    // build the album name.
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t costTime = endTime - startTime;
+    std::string albumName = "DELETED_ALBUM";
     std::string lPath = "";
     int32_t period = this->period_;  // 0 - BEFORE, 1 - AFTER
     int32_t dbType = 1;              // 0 - GALLERY, 1 - MEDIA
