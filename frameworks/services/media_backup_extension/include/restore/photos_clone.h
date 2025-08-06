@@ -97,6 +97,7 @@ private:
         this->photosBasicInfo_ = this->photosDao_.GetBasicInfo();
     }
     PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(const FileInfo &fileInfo);
+    PhotoAlbumDao::PhotoAlbumRowData BuildAlbumInfoByCondition(const FileInfo &fileInfo, const std::string &lPath);
     int32_t FixDuplicateBurstKeyInDifferentAlbum(std::atomic<uint64_t> &totalNumber);
     std::vector<PhotosDao::PhotosRowData> FindDuplicateBurstKey();
     std::string ToString(const std::vector<NativeRdb::ValueObject> &values);

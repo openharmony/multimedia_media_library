@@ -68,6 +68,7 @@ private:
     AlbumMediaStatisticInfo GetTrashedAlbumStatInfo();
     AlbumMediaStatisticInfo GetHiddenAlbumStatInfo();
     AlbumMediaStatisticInfo GetGalleryAlbumCountInfo();
+    AlbumMediaStatisticInfo GetGalleryDeletedAlbumCountInfo();
     AlbumMediaStatisticInfo GetLiveStatInfo();
 
 private:
@@ -145,6 +146,10 @@ private:
                 SELECT DISTINCT map_album \
                 FROM PhotoMap \
             );";
+    const std::string SQL_PHOTO_DELETED_ALBUM_COUNT = "\
+        SELECT COUNT(1) AS count \
+        FROM PhotoAlbum \
+        WHERE dirty = ?;";
     const std::string SQL_PHOTOS_LIVE_COUNT = "\
         SELECT COUNT(1) AS count \
         FROM Photos \

@@ -193,8 +193,17 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosClone::FindAlbumInfo(const FileInfo &file
             this->photoAlbumDao_.ToString(albumInfo).c_str());
         return albumInfo;
     }
-    albumInfo = this->photoAlbumDao_.BuildAlbumInfoByLPath(lPath);
-    return this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
+    return BuildAlbumInfoByCondition(fileInfo, lPath);
+}
+
+PhotoAlbumDao::PhotoAlbumRowData PhotosClone::BuildAlbumInfoByCondition(const FileInfo &fileInfo,
+    const std::string &lPath)
+{
+    PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->photoAlbumDao_.BuildAlbumInfoByLPath(lPath);
+    if (fileInfo.hidden == 0 && fileInfo.recycledTime == 0) {
+        return this->photoAlbumDao_.GetOrCreatePhotoAlbum(albumInfo);
+    }
+    return this->photoAlbumDao_.GetOrCreatePhotoAlbumForClone(albumInfo);
 }
 
 /**
@@ -212,7 +221,11 @@ std::string PhotosClone::FindlPath(const FileInfo &fileInfo)
 int32_t PhotosClone::FindAlbumId(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->FindAlbumInfo(fileInfo);
-    return albumInfo.albumId;
+    bool cond = albumInfo.albumId > static_cast<int32_t>(PhotoAlbumId::DEFAULT) ||
+        (fileInfo.hidden == 0 && fileInfo.recycledTime == 0);
+    CHECK_AND_RETURN_RET(!cond, albumInfo.albumId);
+    return fileInfo.recycledTime != 0 ? static_cast<int32_t>(PhotoAlbumId::TRASH) :
+        static_cast<int32_t>(PhotoAlbumId::HIDDEN);
 }
 
 /**
@@ -221,10 +234,8 @@ int32_t PhotosClone::FindAlbumId(const FileInfo &fileInfo)
 std::string PhotosClone::FindPackageName(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->FindAlbumInfo(fileInfo);
-    // Only provide the package name of the SOURCE album.
-    bool cond = (albumInfo.albumType != static_cast<int32_t>(PhotoAlbumType::SOURCE) ||
-        albumInfo.albumSubType != static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC));
-    CHECK_AND_RETURN_RET(!cond, "");
+    // Only provide the package name of the existing SOURCE album.
+    CHECK_AND_RETURN_RET(albumInfo.IsValidSourceAlbum(), "");
     return albumInfo.albumName;
 }
 
@@ -234,10 +245,8 @@ std::string PhotosClone::FindPackageName(const FileInfo &fileInfo)
 std::string PhotosClone::FindBundleName(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->FindAlbumInfo(fileInfo);
-    // Only provide the bundle name of the SOURCE album.
-    bool cond = (albumInfo.albumType != static_cast<int32_t>(PhotoAlbumType::SOURCE) ||
-        albumInfo.albumSubType != static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC));
-    CHECK_AND_RETURN_RET(!cond, "");
+    // Only provide the bundle name of the existing SOURCE album.
+    CHECK_AND_RETURN_RET(albumInfo.IsValidSourceAlbum(), "");
     return albumInfo.bundleName;
 }
 

@@ -27,6 +27,21 @@
 #include "userfile_manager_types.h"
 
 namespace OHOS::Media {
+PhotoAlbumDao::PhotoAlbumRowData::PhotoAlbumRowData()
+{
+    albumId = static_cast<int32_t>(PhotoAlbumId::DEFAULT);
+    albumType = -1;
+    albumSubType = -1;
+    priority = 1;
+}
+
+bool PhotoAlbumDao::PhotoAlbumRowData::IsValidSourceAlbum()
+{
+    return albumType == static_cast<int32_t>(PhotoAlbumType::SOURCE) &&
+        albumSubType == static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC) &&
+        albumId > static_cast<int32_t>(PhotoAlbumId::DEFAULT);
+}
+
 std::string StringUtils::ToLower(const std::string &str)
 {
     std::string lowerStr;
@@ -184,6 +199,28 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
         err, this->SQL_PHOTO_ALBUM_INSERT.c_str(), this->ToString(bindArgs).c_str());
     MEDIA_INFO_LOG("Media_Restore: INSERT INTO PhotoAlbum success, Object: %{public}s", this->ToString(album).c_str());
     return this->GetPhotoAlbum(album.lPath);
+}
+
+/**
+ * @brief Get and cache PhotoAlbum info by lPath, if not found, insert into cache instead of inserting into database
+ */
+PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbumForClone(const PhotoAlbumRowData &album)
+{
+    // validate inputs
+    CHECK_AND_RETURN_RET_LOG(!album.lPath.empty(), album, "Media_Restore: Invalid album data, lPath is empty."
+        " Object: %{public}s", this->ToString(album).c_str());
+    std::unique_lock<std::mutex> lock(this->photoAlbumCreateLock_);
+    // try to get from cache
+    PhotoAlbumDao::PhotoAlbumRowData albumRowData = this->GetPhotoAlbum(album.lPath);
+    CHECK_AND_RETURN_RET(albumRowData.lPath.empty(), albumRowData);
+    return GetOrInsertIntoCache(album);
+}
+
+PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrInsertIntoCache(const PhotoAlbumRowData &album)
+{
+    std::unique_lock<std::mutex> lock(this->cacheLock_);
+    this->photoAlbumCache_.Insert(StringUtils::ToLower(album.lPath), album);
+    return album;
 }
 
 std::string PhotoAlbumDao::ToString(const std::vector<NativeRdb::ValueObject> &bindArgs)

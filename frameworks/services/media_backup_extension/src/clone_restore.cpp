@@ -292,7 +292,7 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
 
     BackupDatabaseUtils::CheckDbIntegrity(mediaRdb_, sceneCode_, "OLD_MEDIA_LIBRARY");
     InitThumbnailStatus();
-    this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
+    this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_, IsCloudRestoreSatisfied());
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreGeoDictionary_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     MEDIA_INFO_LOG("Init db succ.");

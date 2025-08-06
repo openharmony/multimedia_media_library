@@ -131,6 +131,12 @@ enum PhotoAlbumSubType : int32_t {
     ANY = std::numeric_limits<int32_t>::max()
 };
 
+enum class PhotoAlbumId : int32_t {
+    DEFAULT = 0,
+    TRASH = -3,
+    HIDDEN = -4
+};
+
 enum class PhotoSubType : int32_t {
     DEFAULT,
     SCREENSHOT,
