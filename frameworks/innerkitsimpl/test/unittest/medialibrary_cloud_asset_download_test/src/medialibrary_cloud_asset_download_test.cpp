@@ -706,8 +706,8 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
 
     std::thread t([&]() -> void {
         std::this_thread::sleep_for(chrono::milliseconds(1000));
-        EXPECT_EQ(CloudMediaAssetManager::GetInstance().ForceRetainDownloadCloudMedia(CloudMediaRetainType::RETAIN_FORCE,
-            true), E_OK);
+        EXPECT_EQ(CloudMediaAssetManager::GetInstance().ForceRetainDownloadCloudMedia(
+            CloudMediaRetainType::RETAIN_FORCE, true), E_OK);
         EXPECT_TRUE(system::SetParameter(MEIDA_RESTORE_FLAG, std::to_string(DEFAULT_TIME_STAMP)));
         EXPECT_TRUE(system::SetParameter(MEIDA_BACKUP_FLAG, std::to_string(DEFAULT_TIME_STAMP)));
     });
