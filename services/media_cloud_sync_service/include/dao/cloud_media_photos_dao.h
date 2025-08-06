@@ -202,6 +202,7 @@ private:
                 exif_rotate > 0 AND \
                 date_trashed = 0 AND \
                 time_pending = 0 AND \
+                COALESCE(is_temp, 0) = 0 AND \
                 file_id NOT IN ({0}) \
             ORDER BY size ASC \
             LIMIT ?  \
