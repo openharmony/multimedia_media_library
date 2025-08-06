@@ -299,10 +299,11 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
 {
     CHECK_AND_RETURN_RET_LOG(assetHandler != nullptr, false, "assetHandler is nullptr");
 
-    std::lock_guard<std::mutex> lock(assetHandler->mutex_);
+    std::unique_lock<std::mutex> lock(assetHandler->mutex_);
     auto dataHandler = assetHandler->dataHandler;
     if (dataHandler == nullptr) {
         MEDIA_ERR_LOG("Data handler is nullptr");
+        lock.unlock();
         DeleteAssetHandlerSafe(assetHandler);
         return false;
     }
@@ -312,6 +313,7 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
         AssetHandler *tmp;
         if (!inProcessFastRequests.Find(assetHandler->requestId, tmp)) {
             MEDIA_ERR_LOG("The request has been canceled");
+            lock.unlock();
             DeleteAssetHandlerSafe(assetHandler);
             return false;
         }
@@ -355,10 +357,13 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
         }
     } else {
         MEDIA_ERR_LOG("Return mode type invalid %{public}d", dataHandler->GetReturnDataType());
+        lock.unlock();
+        DeleteAssetHandlerSafe(assetHandler);
         return false;
     }
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     MEDIA_DEBUG_LOG("Delete assetHandler");
+    lock.unlock();
     DeleteAssetHandlerSafe(assetHandler);
     return true;
 }
