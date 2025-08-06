@@ -173,22 +173,22 @@ static void WaitIfBackUpingOrRestoring(const std::string& key, int64_t waitTimeo
     constexpr int64_t defaultValueTime = 0;
     int64_t startTime = system::GetIntParameter(key, defaultValueTime);
     int64_t startTimeTmp = startTime;
-    MEDIA_INFO_LOG("Wait for %{public}s to exit. startTime: %{public}ld", info.c_str(), startTime);
+    MEDIA_INFO_LOG("Wait for %{public}s to exit. startTime: %{public}lld", info.c_str(), startTime);
     while (startTimeTmp > 0) {
         auto nowTime = MediaFileUtils::UTCTimeSeconds();
         if ((nowTime - startTimeTmp) > waitTimeout || (nowTime - startTime) > waitTimeout) {
-            MEDIA_WARN_LOG("[%{public}s] timeout: now: %{public}ld, start time: %{public}ld,"
-                " startTimeTmp: %{public}ld", info.c_str(), nowTime, startTime, startTimeTmp);
+            MEDIA_WARN_LOG("[%{public}s] timeout: now: %{public}lld, start time: %{public}lld,"
+                " startTimeTmp: %{public}lld", info.c_str(), nowTime, startTime, startTimeTmp);
             break;
         }
-        MEDIA_DEBUG_LOG("[%{public}s] waiting: now: %{public}ld, start time: %{public}ld,"
-            " startTimeTmp: %{public}ld", info.c_str(), nowTime, startTime, startTimeTmp);
+        MEDIA_DEBUG_LOG("[%{public}s] waiting: now: %{public}lld, start time: %{public}lld,"
+            " startTimeTmp: %{public}lld", info.c_str(), nowTime, startTime, startTimeTmp);
         std::this_thread::sleep_for(chrono::milliseconds(
             FORCE_RETAIN_CLOUD_MEDIA_WAIT_BACKUP_OR_RESTORE_SLEEP_TIME_MILLISECOND));
         startTimeTmp = system::GetIntParameter(key, defaultValueTime);
     }
 
-    MEDIA_INFO_LOG("the %{public}s has exited, currtime: %{public}ld", info.c_str(), MediaFileUtils::UTCTimeSeconds());
+    MEDIA_INFO_LOG("the %{public}s has exited, currtime: %{public}lld", info.c_str(), MediaFileUtils::UTCTimeSeconds());
 }
 
 static void WaitIfBackUpingOrRestoring()
@@ -398,9 +398,7 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
     auto *taskData = static_cast<DeleteAllCloudMediaAssetsData *>(data);
     CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to get DeleteAllCloudMediaAssetsData.");
     bool needReportSchedule = taskData->needReportSchedule_;
-
     MEDIA_INFO_LOG("enter DeleteAllCloudMediaAssetsOperation, needReportSchedule: %{public}d.", needReportSchedule);
-   
     std::vector<std::string> fileIds;
     fileIds.reserve(BATCH_DELETE_LIMIT_COUNT);
     std::vector<std::string> paths;
@@ -417,7 +415,6 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
                 ret, static_cast<int32_t>(fileIds.size()));
             break;
         }
-
         ret = DeleteBatchCloudFile(fileIds);
         CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "DeleteBatchCloudFile failed!");
         for (size_t i = 0; i < fileIds.size(); i++) {
@@ -805,7 +802,7 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMediaEx(CloudMediaRetain
 
     MEDIA_INFO_LOG("start delete cloud media assets task.");
     doDeleteTask_.store(TaskDeleteState::ACTIVE_DELETE);
-    DeleteAllCloudMediaAssetsAsync();
+    DeleteAllCloudMediaAssetsAsync(false);
 
     CHECK_AND_RETURN_RET_WARN_LOG(updateRet == E_OK, updateRet,
         "exit ForceRetainDownloadCloudMediaEx, Type: %{public}d, updateRet: %{public}d.", retainTypeInt, updateRet);

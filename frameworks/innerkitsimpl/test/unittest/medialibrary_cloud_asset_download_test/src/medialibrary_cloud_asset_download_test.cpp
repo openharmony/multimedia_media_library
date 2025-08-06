@@ -626,8 +626,8 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_018 Start");
     EXPECT_TRUE(system::SetParameter(CLOUD_RETIAN_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
     EXPECT_TRUE(system::SetParameter(HDC_RETIAN_STATUS_KEY, std::to_string(MediaFileUtils::UTCTimeMilliSeconds())));
-    EXPECT_EQ(CloudMediaAssetManager::GetInstance().ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE,
-        true), E_OK);
+    EXPECT_EQ(CloudMediaAssetManager::GetInstance().\
+        ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE, true), E_OK);
     
     EXPECT_TRUE(system::SetParameter(CLOUD_RETIAN_STATUS_KEY, std::to_string(MediaFileUtils::UTCTimeMilliSeconds())));
     EXPECT_TRUE(system::SetParameter(HDC_RETIAN_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
@@ -647,8 +647,8 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
 
     EXPECT_TRUE(system::SetParameter(CLOUD_RETIAN_STATUS_KEY, std::to_string(MediaFileUtils::UTCTimeMilliSeconds())));
     EXPECT_TRUE(system::SetParameter(HDC_RETIAN_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
-    EXPECT_EQ(CloudMediaAssetManager::GetInstance().ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE,
-        true), E_OK);
+    EXPECT_EQ(CloudMediaAssetManager::GetInstance().\
+        ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE, true), E_OK);
     EXPECT_NE(system::GetIntParameter(HDC_RETIAN_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_019 End");
 }
@@ -661,8 +661,8 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     EXPECT_TRUE(system::SetParameter(MEIDA_RESTORE_FLAG, std::to_string(DEFAULT_TIME_STAMP)));
     EXPECT_TRUE(system::SetParameter(MEIDA_BACKUP_FLAG, std::to_string(DEFAULT_TIME_STAMP)));
 
-    EXPECT_EQ(CloudMediaAssetManager::GetInstance().ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE,
-        true), E_OK);
+    EXPECT_EQ(CloudMediaAssetManager::GetInstance().\
+        ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE, true), E_OK);
 
     EXPECT_EQ(system::GetIntParameter(CLOUD_RETIAN_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);
     EXPECT_EQ(system::GetIntParameter(HDC_RETIAN_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);
@@ -681,8 +681,8 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
 
     std::thread t([&]() -> void {
         std::this_thread::sleep_for(chrono::milliseconds(1000));
-        EXPECT_EQ(CloudMediaAssetManager::GetInstance().ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE,
-            true), E_OK);
+        EXPECT_EQ(CloudMediaAssetManager::GetInstance().\
+            ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE, true), E_OK);
         EXPECT_TRUE(system::SetParameter(MEIDA_RESTORE_FLAG, std::to_string(DEFAULT_TIME_STAMP)));
         EXPECT_TRUE(system::SetParameter(MEIDA_BACKUP_FLAG, std::to_string(DEFAULT_TIME_STAMP)));
     });
@@ -711,8 +711,8 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
         EXPECT_TRUE(system::SetParameter(MEIDA_RESTORE_FLAG, std::to_string(DEFAULT_TIME_STAMP)));
         EXPECT_TRUE(system::SetParameter(MEIDA_BACKUP_FLAG, std::to_string(DEFAULT_TIME_STAMP)));
     });
-    EXPECT_EQ(CloudMediaAssetManager::GetInstance().ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE,
-        true), E_OK);
+    EXPECT_EQ(CloudMediaAssetManager::GetInstance().\
+        ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE, true), E_OK);
     
     EXPECT_EQ(system::GetIntParameter(CLOUD_RETIAN_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);
     EXPECT_EQ(system::GetIntParameter(HDC_RETIAN_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);
@@ -729,23 +729,23 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
 
     EXPECT_TRUE(system::SetParameter(CLOUD_RETIAN_STATUS_KEY, std::to_string(MediaFileUtils::UTCTimeMilliSeconds())));
     EXPECT_TRUE(system::SetParameter(HDC_RETIAN_STATUS_KEY, std::to_string(MediaFileUtils::UTCTimeMilliSeconds())));
-    EXPECT_EQ(CloudMediaAssetManager::GetInstance().ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE,
-        false), E_OK);
+    EXPECT_EQ(CloudMediaAssetManager::GetInstance().\
+        ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE, false), E_OK);
 
     EXPECT_TRUE(system::SetParameter(CLOUD_RETIAN_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
     EXPECT_TRUE(system::SetParameter(HDC_RETIAN_STATUS_KEY, std::to_string(MediaFileUtils::UTCTimeMilliSeconds())));
-    EXPECT_EQ(CloudMediaAssetManager::GetInstance().ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE,
-        false), E_OK);
+    EXPECT_EQ(CloudMediaAssetManager::GetInstance().\
+        ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE, false), E_OK);
     
     EXPECT_TRUE(system::SetParameter(CLOUD_RETIAN_STATUS_KEY, std::to_string(MediaFileUtils::UTCTimeMilliSeconds())));
     EXPECT_TRUE(system::SetParameter(HDC_RETIAN_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
-    EXPECT_EQ(CloudMediaAssetManager::GetInstance().ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE,
-        false), E_OK);
+    EXPECT_EQ(CloudMediaAssetManager::GetInstance().\
+        ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE, false), E_OK);
     
     EXPECT_TRUE(system::SetParameter(CLOUD_RETIAN_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
     EXPECT_TRUE(system::SetParameter(HDC_RETIAN_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
-    EXPECT_EQ(CloudMediaAssetManager::GetInstance().ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE,
-        false), E_OK);
+    EXPECT_EQ(CloudMediaAssetManager::GetInstance().\
+        ForceRetainDownloadCloudMedia(CloudMediaRetainType::HDC_RETAIN_FORCE, false), E_OK);
 
     EXPECT_EQ(system::GetIntParameter(CLOUD_RETIAN_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);
     EXPECT_EQ(system::GetIntParameter(HDC_RETIAN_STATUS_KEY, INVALID_TIME_STAMP), DEFAULT_TIME_STAMP);

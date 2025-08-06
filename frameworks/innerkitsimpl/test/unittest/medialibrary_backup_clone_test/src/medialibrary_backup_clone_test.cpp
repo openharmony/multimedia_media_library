@@ -3517,7 +3517,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_insert_value_from_val_map
     EXPECT_EQ(shootingMode, "");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_south_device_exit_timeout_test_001, TestSize.Level2)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_device_exit_timeout_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialib_backup_wait_south_device_exit_timeout_test_001");
     EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, "0"));
@@ -3526,7 +3526,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_south_devic
 }
 
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_south_device_exit_timeout_test_002, TestSize.Level2)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_device_exit_timeout_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialib_backup_wait_south_device_exit_timeout_test_002");
     unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
@@ -3536,11 +3536,12 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_south_devic
     EXPECT_TRUE(cloneRestoreService->WaitSouthDeviceExitTimeout());
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_south_device_exit_timeout_test_003, TestSize.Level2)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_device_exit_timeout_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialib_backup_wait_south_device_exit_timeout_test_003");
     unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
-    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(MediaFileUtils::UTCTimeMilliSeconds())));
+    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY,
+        std::to_string(MediaFileUtils::UTCTimeMilliSeconds())));
     std::thread t([&]() -> void {
         EXPECT_FALSE(cloneRestoreService->WaitSouthDeviceExitTimeout());
     });
