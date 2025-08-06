@@ -205,7 +205,7 @@ const std::map<uint32_t, int64_t> DfxTimer::operationCodeTimeoutMap = {
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_PAH_QUERY_GET_ALBUMS_BY_IDS), 200},
 };
 
-uint64_t DfxTimer::GetOperationCodeTimeout(uint32_t operationCode)
+int64_t DfxTimer::GetOperationCodeTimeout(uint32_t operationCode)
 {
     auto it = DfxTimer::operationCodeTimeoutMap.find(operationCode);
     if (it != DfxTimer::operationCodeTimeoutMap.end()) {

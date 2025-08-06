@@ -40,7 +40,7 @@ public:
     EXPORT ~DfxTimer();
     void End();
     EXPORT void SetCallerUid(int32_t uid);
-    static uint64_t GetOperationCodeTimeout(uint32_t operationCode);
+    static int64_t GetOperationCodeTimeout(uint32_t operationCode);
 };
 } // namespace Media
 } // namespace OHOS
