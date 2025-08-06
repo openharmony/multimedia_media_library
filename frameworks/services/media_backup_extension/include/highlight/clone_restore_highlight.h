@@ -140,6 +140,7 @@ private:
         std::optional<std::string> theme;
         std::optional<int64_t> pinTime;
         std::optional<int32_t> useSubtitle;
+        std::optional<std::string> highlightLocation;
 
         std::string ToString() const
         {
