@@ -71,6 +71,8 @@ static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 
 MediaLibraryManager* MediaAssetManagerImpl::mediaLibraryManager_ = nullptr;
 
+std::mutex MediaAssetManagerImpl::mutex_;
+
 std::shared_ptr<MediaAssetManager> MediaAssetManagerFactory::CreateMediaAssetManager()
 {
     std::shared_ptr<MediaAssetManager> impl = std::make_shared<MediaAssetManagerImpl>();
@@ -299,12 +301,9 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
 {
     CHECK_AND_RETURN_RET_LOG(assetHandler != nullptr, false, "assetHandler is nullptr");
 
-    std::unique_lock<std::mutex> lock(assetHandler->mutex_);
     auto dataHandler = assetHandler->dataHandler;
     if (dataHandler == nullptr) {
         MEDIA_ERR_LOG("Data handler is nullptr");
-        lock.unlock();
-        DeleteAssetHandlerSafe(assetHandler);
         return false;
     }
 
@@ -313,8 +312,6 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
         AssetHandler *tmp;
         if (!inProcessFastRequests.Find(assetHandler->requestId, tmp)) {
             MEDIA_ERR_LOG("The request has been canceled");
-            lock.unlock();
-            DeleteAssetHandlerSafe(assetHandler);
             return false;
         }
     }
@@ -357,14 +354,10 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
         }
     } else {
         MEDIA_ERR_LOG("Return mode type invalid %{public}d", dataHandler->GetReturnDataType());
-        lock.unlock();
-        DeleteAssetHandlerSafe(assetHandler);
         return false;
     }
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     MEDIA_DEBUG_LOG("Delete assetHandler");
-    lock.unlock();
-    DeleteAssetHandlerSafe(assetHandler);
     return true;
 }
 
@@ -719,13 +712,19 @@ bool MediaAssetManagerImpl::OnHandleRequestVideo(
 bool MediaAssetManagerImpl::NotifyDataPreparedWithoutRegister(
     const std::unique_ptr<RequestSourceAsyncContext> &asyncContext)
 {
+    bool ret = false;
     AssetHandler *assetHandler = InsertDataHandler(NativeNotifyMode::FAST_NOTIFY, asyncContext);
     if (assetHandler == nullptr) {
         MEDIA_ERR_LOG("assetHandler is nullptr");
-        return false;
+        return ret;
     }
 
-    return NotifyImageDataPrepared(assetHandler);
+    {
+        std::lock_guard<mutex> lock(MediaAssetManagerImpl::mutex_);
+        ret = NotifyImageDataPrepared(assetHandler);
+        DeleteAssetHandlerSafe(assetHandler);
+    }
+    return ret;
 }
 
 void MediaAssetManagerImpl::RegisterTaskObserver(const unique_ptr<RequestSourceAsyncContext> &asyncContext)
@@ -780,7 +779,11 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
                 int32_t quality = static_cast<int32_t>(MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS);
                 dataHandler->SetPhotoQuality(quality);
             }
-            MediaAssetManagerImpl::NotifyImageDataPrepared(assetHandler);
+            {
+                std::lock_guard<mutex> lock(MediaAssetManagerImpl::mutex_);
+                MediaAssetManagerImpl::NotifyImageDataPrepared(assetHandler);
+                DeleteAssetHandlerSafe(assetHandler);
+            }
         }
     }
 }

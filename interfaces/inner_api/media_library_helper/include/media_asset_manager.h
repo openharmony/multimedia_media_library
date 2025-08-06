@@ -58,7 +58,6 @@ struct AssetHandler {
     std::string requestUri;
     std::string destUri;
     MediaAssetDataHandlerPtr dataHandler;
-    std::mutex mutex_;
 
     AssetHandler(const std::string &photoId, const std::string &requestId, const std::string &uri,
         const std::string &destUri, const MediaAssetDataHandlerPtr &handler)
