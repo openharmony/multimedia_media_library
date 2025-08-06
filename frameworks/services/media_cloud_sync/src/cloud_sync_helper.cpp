@@ -50,14 +50,8 @@ shared_ptr<CloudSyncHelper> CloudSyncHelper::GetInstance()
 
 void CloudSyncHelper::StartSync()
 {
-    lock_guard<mutex> lock(syncMutex_);
-    if (isPending_) {
-        unique_lock<mutex> lock(skipMutex_);
-        skipThread_ = true;
-        skipCond_.notify_all();
-    } else {
-        isPending_ = true;
-    }
+    MEDIA_DEBUG_LOG("CloudSyncHelper StartSync");
+    skipCond_.notify_all();
     ffrt::submit([this]() { OnTimerCallback(); });
 }
 
@@ -133,21 +127,15 @@ bool CloudSyncHelper::IsSyncSwitchOpen()
 void CloudSyncHelper::OnTimerCallback()
 {
     {
-        unique_lock<std::mutex> skipLock(skipMutex_);
-        if (skipCond_.wait_for(skipLock, std::chrono::milliseconds(SYNC_INTERVAL),
-            [this] { return skipThread_; })) {
-            skipThread_ = false;
+        unique_lock<mutex> lock(syncMutex_);
+        if (skipCond_.wait_for(lock, std::chrono::milliseconds(SYNC_INTERVAL)) == std::cv_status::no_timeout) {
+            MEDIA_DEBUG_LOG("skip cloud sync");
             return;
         }
     }
 
     if (!IsSyncSwitchOpen()) {
         return;
-    }
-
-    {
-        unique_lock<mutex> lock(syncMutex_);
-        isPending_ = false;
     }
 
     MEDIA_INFO_LOG("cloud sync manager start sync");

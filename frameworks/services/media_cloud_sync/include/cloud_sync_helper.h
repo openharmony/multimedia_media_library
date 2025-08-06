@@ -51,11 +51,8 @@ private:
     static std::mutex instanceMutex_;
 
     /* delayed trigger */
-    bool isPending_ = false;
     std::mutex syncMutex_;
     std::condition_variable skipCond_;
-    std::mutex skipMutex_;
-    bool skipThread_ = false;
 
     /* sync switch */
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
