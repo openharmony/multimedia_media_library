@@ -208,9 +208,9 @@ static void StartDownloadCloudMediaExecute(napi_env env, void* data)
     StartDownloadCloudMediaReqBody reqBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::START_DOWNLOAD_CLOUDMEDIA);
     reqBody.cloudMediaType = context->cloudMediaDownloadType;
-    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call, retain type: %{public}d", reqBody.cloudMediaType);
     int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call, retain type: %{public}d", reqBody.cloudMediaType);
     if (ret < 0) {
         context->SaveError(ret);
         NAPI_ERR_LOG("Start download cloud media failed, err: %{public}d", ret);

@@ -207,4 +207,23 @@ HWTEST_F(CloudMediaChangeTest, RetainCloudMediaAsset_Test_003, TestSize.Level0) 
     ASSERT_EQ(respVo.Unmarshalling(reply), true);
     ASSERT_LT(respVo.GetErrCode(), 0);
 }
+
+HWTEST_F(CloudMediaChangeTest, RetainCloudMediaAsset_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start RetainCloudMediaAsset_Test_004");
+    MessageParcel data;
+    MessageParcel reply;
+    RetainCloudMediaAssetReqBody reqBody;
+    reqBody.cloudMediaRetainType = 3;
+    auto ret = reqBody.Marshalling(data);
+    EXPECT_EQ(ret, true);
+
+
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->RetainCloudMediaAsset(data, reply);
+
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    ret = respVo.Unmarshalling(reply);
+    EXPECT_EQ(true, ret);
+}
 }  // namespace OHOS::Media

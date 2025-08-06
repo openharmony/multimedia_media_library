@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -60,6 +60,9 @@ namespace Media {
 const std::string DATABASE_PATH = "/data/storage/el2/database/rdb/media_library.db";
 const std::string SINGLE_DIR_NAME = "A";
 const std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
+const std::string BACKUP_FLAG = "multimedia.medialibrary.backupFlag";
+// 同步服务模块使用: 时间戳|0，时间戳表征任务正在清理中，0表示无清理任务
+const std::string CLOUDSYNC_SWITCH_STATUS_KEY = "persist.kernel.cloudsync.switch_status"; // ms
 const std::string THM_SAVE_WITHOUT_ROTATE_PATH = "/THM_EX";
 const std::string THUMB_EX_SUFFIX = "THM_EX/THM";
 const std::string LCD_EX_SUFFIX = "THM_EX/LCD";
@@ -72,6 +75,9 @@ const int32_t APP_TWIN_DATA_USER_ID_START = 128;
 const int32_t APP_TWIN_DATA_USER_ID_END = 147;
 const int32_t SINGLE_LEN_EXTRADATA = 20;
 const double DOUBLE_EPSILON = 1e-15;
+
+static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND = 60 * 60 * 1000;
+static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_SLEEP_TIME_MILLISECOND = 5000;
 
 static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)
 {
@@ -180,6 +186,17 @@ bool BaseRestore::IsRestorePhoto()
 
 void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::string &upgradePath)
 {
+    MEDIA_INFO_LOG("enter StartRestore");
+    if (WaitSouthDeviceExitTimeout()) {
+        MEDIA_ERR_LOG("baseRestore, wait south device cleaning data timeout.");
+        SetErrorCode(RestoreError::RETAIN_FORCE_TIMEOUT);
+        ErrorInfo errorInfo(RestoreError::RETAIN_FORCE_TIMEOUT, 0, "",
+            "baseRestore, wait south device cleaning data timeout.");
+        UpgradeRestoreTaskReport(sceneCode_, taskId_).ReportError(errorInfo);
+        return;
+    }
+    MEDIA_INFO_LOG("StartRestore begin");
+
     backupRestoreDir_ = backupRetoreDir;
     upgradeRestoreDir_ = upgradePath;
     int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
@@ -1617,6 +1634,20 @@ void BaseRestore::StopParameterForClone()
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter cloneFlag, retFlag:%{public}d", retFlag);
 }
 
+void BaseRestore::SetParameterForBackup()
+{
+    auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
+    MEDIA_INFO_LOG("SetParameterForBackup currentTime:%{public}s", currentTime.c_str());
+    bool retFlag = system::SetParameter(BACKUP_FLAG, currentTime);
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter backupFlag, retFlag:%{public}d", retFlag);
+}
+
+void BaseRestore::StopParameterForBackup()
+{
+    bool retFlag = system::SetParameter(BACKUP_FLAG, "0");
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter backupFlag, retFlag:%{public}d", retFlag);
+}
+
 void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType)
 {
     if (sourceType != SourceType::GALLERY) {
@@ -2084,6 +2115,76 @@ bool BaseRestore::HasExThumbnail(const FileInfo &info)
 {
     CHECK_AND_RETURN_RET(info.localMediaId != -1, BackupFileUtils::HasOrientationOrExifRotate(info));
     return info.fileType == MediaType::MEDIA_TYPE_IMAGE && BackupFileUtils::HasOrientationOrExifRotate(info);
+}
+
+inline int64_t GetSouthDeviceSwithStatusTimestamp()
+{
+    constexpr int64_t defaultValueTime = 0;
+    return system::GetIntParameter(CLOUDSYNC_SWITCH_STATUS_KEY.c_str(), defaultValueTime);
+}
+
+bool BaseRestore::WaitSouthDeviceExitTimeout()
+{
+    constexpr int64_t defaultValueTime = 0;
+    int64_t startTime = GetSouthDeviceSwithStatusTimestamp();
+    int64_t startTimeTmp = startTime;
+    MEDIA_INFO_LOG("Wait for the south device to exit. startTime: %{public}ld", startTime);
+    while (startTimeTmp > 0) {
+        auto nowTime = MediaFileUtils::UTCTimeMilliSeconds();
+        int64_t waitTimeout = RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND; // unit: ms
+        if ((nowTime - startTimeTmp) > waitTimeout || (nowTime - startTime) > waitTimeout) {
+            MEDIA_WARN_LOG("[Restore or Backup] timeout: now: %{public}ld, start time: %{public}ld, "
+            "startTimeTmp: %{public}ld", nowTime, startTime, startTimeTmp);
+            return true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(
+            RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_SLEEP_TIME_MILLISECOND));
+        startTimeTmp = GetSouthDeviceSwithStatusTimestamp();
+        MEDIA_DEBUG_LOG("[Restore or Backup] waiting: now: %{public}ld, start time: %{public}ld,"
+            " startTimeTmp: %{public}ld", nowTime, startTime, startTimeTmp);
+    }
+    MEDIA_INFO_LOG("the south device has exited. exitTime: %{public}ld", MediaFileUtils::UTCTimeMilliSeconds());
+    return false;
+}
+
+void BaseRestore::StartBackupEx(std::string& backupExInfo)
+{
+    StartBackup();
+    backupExInfo = GetBackupExInfo();
+}
+
+std::string BaseRestore::GetBackupExInfo()
+{
+    return GetBackupErrorInfoJson().dump();
+}
+
+nlohmann::json BaseRestore::GetBackupErrorInfoJson()
+{
+    int32_t errorCode = errorCode_ == RestoreError::SUCCESS ? STAT_DEFAULT_ERROR_CODE_SUCCESS :
+        STAT_DEFAULT_ERROR_CODE_FAILED;
+    nlohmann::json errorInfoJson = {
+        { STAT_KEY_TYPE, STAT_VALUE_ERROR_INFO },
+        { STAT_KEY_ERROR_CODE, std::to_string(errorCode) },
+        { STAT_KEY_ERROR_INFO, errorInfo_ }
+    };
+    return errorInfoJson;
+}
+
+void BaseRestore::Release(ReleaseScene releaseScene)
+{
+    if (releaseScene == ReleaseScene::BACKUP) {
+        BackupRelease();
+    } else {
+        RestoreRelease();
+    }
+}
+
+void BaseRestore::BackupRelease()
+{
+}
+
+void BaseRestore::RestoreRelease()
+{
 }
 } // namespace Media
 } // namespace OHOS

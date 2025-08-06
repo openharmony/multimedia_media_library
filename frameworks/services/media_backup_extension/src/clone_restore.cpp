@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -233,6 +233,14 @@ CloneRestore::CloneRestore()
 
 void CloneRestore::StartRestore(const string &backupRestoreDir, const string &upgradePath)
 {
+    if (WaitSouthDeviceExitTimeout()) {
+        MEDIA_ERR_LOG("restore, wait south device cleaning data timeout.");
+        SetErrorCode(RestoreError::RETAIN_FORCE_TIMEOUT);
+        ErrorInfo errorInfo(RestoreError::RETAIN_FORCE_TIMEOUT, 0, "",
+            "restore, wait south device cleaning data timeout.");
+        UpgradeRestoreTaskReport(sceneCode_, taskId_).ReportError(errorInfo);
+        return;
+    }
     MEDIA_INFO_LOG("Start clone restore");
     SetParameterForClone();
     GetAccountValid();
@@ -3028,7 +3036,17 @@ void CloneRestore::CloseAllKvStore()
 
 void CloneRestore::StartBackup()
 {
+    MEDIA_INFO_LOG("enter clone backup")
+    if (WaitSouthDeviceExitTimeout()) {
+        MEDIA_ERR_LOG("backup, wait south device cleaning data timeout.");
+        SetErrorCode(RestoreError::RETAIN_FORCE_TIMEOUT);
+        ErrorInfo errorInfo(RestoreError::RETAIN_FORCE_TIMEOUT, 0, "",
+            "backup, wait south device cleaning data timeout.");
+        UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+        return;
+    }
     MEDIA_INFO_LOG("Start clone backup");
+    SetParameterForBackup();
     bool cond = (!BackupKvStore() && !MediaFileUtils::DeleteDir(CLONE_KVDB_BACKUP_DIR));
     CHECK_AND_PRINT_LOG(!cond, "BackupKvStore failed and delete old backup kvdb failed, errno:%{public}d", errno);
     MEDIA_INFO_LOG("End clone backup");
@@ -3232,6 +3250,11 @@ bool CloneRestore::HasExThumbnail(const FileInfo &info)
         info.position == static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD),
         BackupFileUtils::HasOrientationOrExifRotate(info));
     return info.fileType == MediaType::MEDIA_TYPE_IMAGE && BackupFileUtils::HasOrientationOrExifRotate(info);
+}
+
+void CloneRestore::BackupRelease()
+{
+    StopParameterForBackup();
 }
 } // namespace Media
 } // namespace OHOS

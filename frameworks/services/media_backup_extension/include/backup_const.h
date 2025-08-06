@@ -279,6 +279,7 @@ enum RestoreError {
     UPDATE_FAILED,
     PARSE_TRACK_FAILED,
     TABLE_LACK_OF_COLUMN,
+    RETAIN_FORCE_TIMEOUT,
 };
 
 enum class PhotoRelatedType {
@@ -299,6 +300,16 @@ enum CheckSwitchType {
     UPGRADE_FAILED_ON,
 };
 
+enum ReleaseScene : int32_t {
+    BACKUP = 1,
+    RESTORE,
+};
+
+const std::unordered_map<int32_t, ReleaseScene> INT_RELEASE_SCENE_MAP = {
+    { static_cast<int32_t>(ReleaseScene::BACKUP), ReleaseScene::BACKUP },
+    { static_cast<int32_t>(ReleaseScene::RESTORE), ReleaseScene::RESTORE},
+};
+
 const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::INIT_FAILED, "RESTORE_INIT_FAILED" },
     { RestoreError::FILE_INVALID, "DEVICE_FILE_INVALID" },
@@ -317,6 +328,7 @@ const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::UPDATE_FAILED, "RESTORE_UPDATE_FAILED"},
     { RestoreError::PARSE_TRACK_FAILED, "RESTORE_HIGHLIGHT_PARSE_TRACK_FAILED"},
     { RestoreError::TABLE_LACK_OF_COLUMN, "RESTORE_TABLE_LACK_OF_COLUMN"},
+    { RestoreError::RETAIN_FORCE_TIMEOUT, "RETAIN_FORCE_TIMEOUT" },
 };
 
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {

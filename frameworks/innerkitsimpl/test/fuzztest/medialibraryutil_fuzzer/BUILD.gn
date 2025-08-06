@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Copyright (c) 2024-2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -31,6 +31,7 @@ ohos_fuzztest("MediaLibraryUtilFuzzTest") {
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync_utils/cloud_sync_utils.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/settings_data_manager.cpp",
     "${MEDIALIB_UTILS_PATH}/src/cpu_utils.cpp",
     "src/medialibrary_util_fuzzer.cpp",
   ]

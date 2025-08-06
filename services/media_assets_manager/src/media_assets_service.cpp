@@ -1385,10 +1385,10 @@ int32_t MediaAssetsService::CancelDownloadCloudMedia()
     return instance.CancelDownloadCloudAsset();
 }
 
-int32_t MediaAssetsService::RetainCloudMediaAsset()
+int32_t MediaAssetsService::RetainCloudMediaAsset(CloudMediaRetainType retainType)
 {
     CloudMediaAssetManager &instance = CloudMediaAssetManager::GetInstance();
-    return instance.ForceRetainDownloadCloudMedia();
+    return instance.ForceRetainDownloadCloudMedia(retainType);
 }
 
 int32_t MediaAssetsService::IsEdited(const IsEditedDto &dto, IsEditedRespBody &respBody)

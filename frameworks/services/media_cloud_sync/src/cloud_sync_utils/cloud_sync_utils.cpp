@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,6 +21,7 @@
 #include "iservice_registry.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "settings_data_manager.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -69,6 +70,13 @@ bool CloudSyncUtils::IsUnlimitedTrafficStatusOn()
 
 bool CloudSyncUtils::IsCloudSyncSwitchOn()
 {
+    auto switchStatus = SettingsDataManager::GetPhotosSyncSwitchStatus();
+    if (switchStatus != SwitchStatus::NONE) {
+        MEDIA_DEBUG_LOG("GetPhotosSyncSwitchStatus success, switchStatus: %{public}d", static_cast<int>(switchStatus));
+        return switchStatus != SwitchStatus::CLOSE;
+    }
+    MEDIA_DEBUG_LOG("GetPhotosSyncSwitchStatus fail, continue query old sync switch");
+
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper = GetCloudHelper(CLOUD_BASE_URI);
     CHECK_AND_RETURN_RET_LOG(cloudHelper != nullptr, false, "cloudHelper is null");
 
