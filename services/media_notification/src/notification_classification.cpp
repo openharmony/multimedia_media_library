@@ -18,6 +18,7 @@
 #include "notification_classification.h"
 
 #include "media_log.h"
+#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::Media::AccurateRefresh;
@@ -57,6 +58,9 @@ std::unordered_map<std::variant<AssetRefreshOperation, AlbumRefreshOperation>,
         {AlbumRefreshOperation::ALBUM_OPERATION_UPDATE_TRASH, HandleAlbumUpdateTrash},
         {AlbumRefreshOperation::ALBUM_OPERATION_RECHECK, HandleAlbumRecheck},
 };
+std::unordered_set<int32_t> NotificationClassification::addAlbumIdSet_;
+std::mutex NotificationClassification::addAlbumIdMutex_;
+
 NotificationClassification::NotificationClassification()
 {}
 
@@ -237,7 +241,11 @@ std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumRemove(Notif
 
 std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumUpdate(NotifyInfoInner &notifyInfoInner)
 {
+    std::lock_guard<std::mutex> lock(addAlbumIdMutex_);
     MEDIA_INFO_LOG("HandleAlbumUpdate");
+    if (!addAlbumIdSet_.empty()) {
+        return HandleAlbumAddAndUpdate(notifyInfoInner);
+    }
     return {
         BuildMediaChangeInfo(notifyInfoInner, false, NotifyType::NOTIFY_ALBUM_UPDATE, NotifyUriType::PHOTO_ALBUM_URI)};
 }
@@ -262,6 +270,49 @@ std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumRecheck(Noti
     return {BuildMediaChangeInfo(notifyInfoInner, true, NotifyType::NOTIFY_ALBUM_ADD, NotifyUriType::PHOTO_ALBUM_URI),
         BuildMediaChangeInfo(notifyInfoInner, true, NotifyType::NOTIFY_ALBUM_ADD, NotifyUriType::HIDDEN_ALBUM_URI),
         BuildMediaChangeInfo(notifyInfoInner, true, NotifyType::NOTIFY_ALBUM_ADD, NotifyUriType::TRASH_ALBUM_URI)};
+}
+
+std::vector<MediaChangeInfo> NotificationClassification::HandleAlbumAddAndUpdate(NotifyInfoInner &notifyInfoInner)
+{
+    MEDIA_INFO_LOG("HandleAlbumAddAndUpdate");
+    std::vector<MediaChangeInfo> mediaChangeInfo;
+    MediaChangeInfo addMediaChangeInfo;
+    MediaChangeInfo updateMediaChangeInfo;
+
+    for (auto &info : notifyInfoInner.infos) {
+        if (auto infoPtr = std::get_if<AccurateRefresh::AlbumChangeData>(&info)) {
+            if (addAlbumIdSet_.find(infoPtr->infoBeforeChange_.albumId_) != addAlbumIdSet_.end()) {
+                addAlbumIdSet_.erase(infoPtr->infoBeforeChange_.albumId_);
+                infoPtr->infoBeforeChange_.albumId_ = AccurateRefresh::INVALID_INT32_VALUE;
+                addMediaChangeInfo.changeInfos.emplace_back(info);
+                continue;
+            }
+            updateMediaChangeInfo.changeInfos.emplace_back(info);
+        }
+    }
+
+    addMediaChangeInfo.isForRecheck = false;
+    addMediaChangeInfo.notifyUri = NotifyUriType::PHOTO_ALBUM_URI;
+    addMediaChangeInfo.notifyType = NotifyType::NOTIFY_ALBUM_ADD;
+    mediaChangeInfo.emplace_back(addMediaChangeInfo);
+
+    updateMediaChangeInfo.isForRecheck = false;
+    updateMediaChangeInfo.notifyUri = NotifyUriType::PHOTO_ALBUM_URI;
+    updateMediaChangeInfo.notifyType = NotifyType::NOTIFY_ALBUM_UPDATE;
+    mediaChangeInfo.emplace_back(updateMediaChangeInfo);
+
+    return mediaChangeInfo;
+}
+
+void NotificationClassification::AddAlbum(const std::string &albumId)
+{
+    std::lock_guard<std::mutex> lock(addAlbumIdMutex_);
+    MEDIA_INFO_LOG("addAlbumIdSet_ insert albumId: %{public}s", albumId.c_str());
+    if (!MediaLibraryCommonUtils::CanConvertStrToInt32(albumId)) {
+        MEDIA_ERR_LOG("can not convert albumId to int");
+        return;
+    }
+    addAlbumIdSet_.emplace(std::stoi(albumId));
 }
 }  // namespace Notification
 }  // namespace Media

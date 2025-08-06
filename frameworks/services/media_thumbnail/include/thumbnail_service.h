@@ -58,7 +58,7 @@ public:
         std::shared_ptr<Picture> originalPhotoPicture, bool isSync = false);
     EXPORT int32_t CreateThumbnailPastDirtyDataFix(const std::string &fileId);
     EXPORT int32_t CreateLcdPastDirtyDataFix(const std::string &fileId);
-    bool HasInvalidateThumbnail(const std::string &id, const std::string &tableName,
+    EXPORT bool HasInvalidateThumbnail(const std::string &id, const std::string &tableName,
         const std::string &path = "", const std::string &dateTaken = "");
     EXPORT bool DeleteThumbnailDirAndAstc(const std::string &id, const std::string &tableName,
         const std::string &path, const std::string &dateTaken);
@@ -84,6 +84,8 @@ public:
     EXPORT void NotifyTempStatusForReady(const int32_t &currentTemperatureLevel);
     EXPORT int32_t GetCurrentTemperatureLevel();
     EXPORT void CheckLcdSizeAndUpdateStatus();
+    EXPORT int32_t RepairExifRotateBackground();
+    EXPORT int32_t FixThumbnailExifRotateAfterDownloadAsset(const std::string &fileId);
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();

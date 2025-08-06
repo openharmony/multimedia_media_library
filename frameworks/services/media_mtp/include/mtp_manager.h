@@ -15,9 +15,11 @@
 #ifndef OHOS_MTP_MANAGER_H
 #define OHOS_MTP_MANAGER_H
 
+#include <stdint.h>
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+
 class MtpManager {
 public:
     EXPORT MtpManager() = default;
@@ -29,17 +31,14 @@ public:
         MTP_MODE,
         PTP_MODE
     };
-
-    EXPORT void Init();
-    EXPORT void StartMtpService(const MtpMode mode);
-    EXPORT void StopMtpService();
     EXPORT bool IsMtpMode() const { return mtpMode_ == MtpMode::MTP_MODE; }
-    void RegisterMtpParamListener();
-    void RemoveMtpParamListener();
-    static void OnMtpParamDisableChanged(const char *key, const char *value, void *context);
-private:
     MtpMode mtpMode_ { MtpMode::NONE_MODE };
 };
+
+extern "C" {
+    EXPORT void StartMtpService(const uint32_t mode);
+    EXPORT void StopMtpService();
+}
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MTP_MANAGER_H

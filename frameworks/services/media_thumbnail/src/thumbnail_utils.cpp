@@ -27,6 +27,7 @@
 #include "dfx_utils.h"
 #include "directory_ex.h"
 #include "distributed_kv_data_manager.h"
+#include "exif_rotate_utils.h"
 #include "hitrace_meter.h"
 #include "image_packer.h"
 #include "ipc_skeleton.h"
@@ -49,6 +50,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_file_utils.h"
 #include "thumbnail_image_framework_utils.h"
+#include "thumbnail_rdb_utils.h"
 #include "thumbnail_source_loading.h"
 #include "unique_fd.h"
 #include "wifi_device.h"
@@ -66,110 +68,6 @@ namespace Media {
 
 static constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 static const std::string CLOUD_DATASHARE_URI = "datashareproxy://com.huawei.hmos.clouddrive/cloud_sp?Proxy=true";
-
-using HandleFunc = void(*)(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
-const std::unordered_map<std::string, HandleFunc> ThumbnailUtils::RESULT_SET_HANDLER = {
-    {MEDIA_DATA_DB_ID, HandleId},
-    {MEDIA_DATA_DB_FILE_PATH, HandleFilePath},
-    {MEDIA_DATA_DB_DATE_ADDED, HandleDateAdded},
-    {MEDIA_DATA_DB_NAME, HandleDisplayName},
-    {MEDIA_DATA_DB_MEDIA_TYPE, HandleMediaType},
-    {MEDIA_DATA_DB_DATE_TAKEN, HandleDateTaken},
-    {MEDIA_DATA_DB_DATE_MODIFIED, HandleDateModified},
-    {MEDIA_DATA_DB_ORIENTATION, HandleOrientation},
-    {MEDIA_DATA_DB_POSITION, HandlePosition},
-    {MEDIA_DATA_DB_HEIGHT, HandlePhotoHeight},
-    {MEDIA_DATA_DB_WIDTH, HandlePhotoWidth},
-    {MEDIA_DATA_DB_DIRTY, HandleDirty},
-    {MEDIA_DATA_DB_THUMBNAIL_READY, HandleReady},
-    {PhotoColumn::PHOTO_LCD_VISIT_TIME, HandleLcdVisitTime},
-};
-
-void ThumbnailUtils::HandleId(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data)
-{
-    ParseStringResult(resultSet, idx, data.id);
-}
-
-void ThumbnailUtils::HandleFilePath(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int idx, ThumbnailData &data)
-{
-    ParseStringResult(resultSet, idx, data.path);
-}
-
-void ThumbnailUtils::HandleDateAdded(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx,
-    ThumbnailData &data)
-{
-    ParseStringResult(resultSet, idx, data.dateAdded);
-}
-
-void ThumbnailUtils::HandleDisplayName(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int idx, ThumbnailData &data)
-{
-    ParseStringResult(resultSet, idx, data.displayName);
-}
-
-void ThumbnailUtils::HandleDateTaken(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int idx, ThumbnailData &data)
-{
-    ParseStringResult(resultSet, idx, data.dateTaken);
-}
-
-void ThumbnailUtils::HandleDateModified(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int idx, ThumbnailData &data)
-{
-    ParseStringResult(resultSet, idx, data.dateModified);
-}
-
-void ThumbnailUtils::HandleMediaType(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int idx, ThumbnailData &data)
-{
-    data.mediaType = MediaType::MEDIA_TYPE_ALL;
-    ParseInt32Result(resultSet, idx, data.mediaType);
-}
-
-void ThumbnailUtils::HandleOrientation(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int idx, ThumbnailData &data)
-{
-    ParseInt32Result(resultSet, idx, data.orientation);
-}
-
-void ThumbnailUtils::HandlePosition(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int idx, ThumbnailData &data)
-{
-    int position = 0;
-    ParseInt32Result(resultSet, idx, position);
-    data.isLocalFile = (position == static_cast<int32_t>(PhotoPositionType::LOCAL) ||
-        position == static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
-    data.position = position;
-}
-
-void ThumbnailUtils::HandlePhotoHeight(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int idx, ThumbnailData &data)
-{
-    ParseInt32Result(resultSet, idx, data.photoHeight);
-}
-
-void ThumbnailUtils::HandlePhotoWidth(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int idx, ThumbnailData &data)
-{
-    ParseInt32Result(resultSet, idx, data.photoWidth);
-}
-
-void ThumbnailUtils::HandleDirty(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data)
-{
-    ParseInt32Result(resultSet, idx, data.dirty);
-}
-
-void ThumbnailUtils::HandleReady(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data)
-{
-    ParseInt64Result(resultSet, idx, data.thumbnailReady);
-}
-
-void ThumbnailUtils::HandleLcdVisitTime(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int idx, ThumbnailData &data)
-{
-    ParseInt64Result(resultSet, idx, data.lcdVisitTime);
-}
 
 bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
     Size &desiredSize, uint32_t &errCode)
@@ -255,6 +153,7 @@ bool ThumbnailUtils::LoadVideoFrame(ThumbnailData &data, Size &desiredSize, int6
     ConvertDecodeSize(data, {videoWidth, videoHeight}, desiredSize);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
+    param.isSupportFlip = true;
     int32_t queryOption = (timeStamp == AV_FRAME_TIME) ?
         AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC : AVMetadataQueryOption::AV_META_QUERY_CLOSEST;
 
@@ -269,7 +168,6 @@ bool ThumbnailUtils::LoadVideoFrame(ThumbnailData &data, Size &desiredSize, int6
     }
 
     data.source.SetPixelMap(pixelMap);
-    data.orientation = 0;
     data.stats.sourceWidth = pixelMap->GetWidth();
     data.stats.sourceHeight = pixelMap->GetHeight();
     DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, videoWidth, videoHeight);
@@ -280,21 +178,18 @@ bool ThumbnailUtils::ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadat
     int32_t &videoWidth, int32_t &videoHeight)
 {
     auto resultMap = avMetadataHelper->ResolveMetadata();
-    if (resultMap.empty()) {
-        MEDIA_ERR_LOG("map of video size is empty");
-        return false;
-    }
-    int32_t rotation = 0;
-    const std::string strOfRotation = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION);
-    if (strOfRotation.empty()) {
-        // The field of rotation may be empty, and if it is empty, it means rotation is zero
-        MEDIA_INFO_LOG("rotation is zero");
-    } else if (!ConvertStrToInt32(strOfRotation, rotation)) {
-        MEDIA_ERR_LOG("Parse rotation from resultmap error");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(!resultMap.empty(), false, "Map of video size is empty");
+    CHECK_AND_RETURN_RET_LOG(resultMap.count(AVMetadataCode::AV_KEY_VIDEO_ROTATE_ORIENTATION) != 0,
+        false, "Map does not have exif rotate");
 
-    bool needRevolve = ((rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0);
+    FlipAndRotateInfo info;
+    int32_t exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+    std::string strOfExifRotate = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ROTATE_ORIENTATION);
+    CHECK_AND_RETURN_RET_LOG(strOfExifRotate.empty() || (ConvertStrToInt32(strOfExifRotate, exifRotate) &&
+        ExifRotateUtils::GetFlipAndRotateInfo(exifRotate, info)),
+        false, "Parse rotation from resultmap error");
+
+    bool needRevolve = ((info.orientation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0);
     CHECK_AND_RETURN_RET_LOG(ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH),
         needRevolve ? videoWidth : videoHeight), false, "Parse width from resultmap error");
     CHECK_AND_RETURN_RET_LOG(ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT),
@@ -548,9 +443,7 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnailInfo");
     auto resultSet = QueryThumbnailSet(opts);
-    if (!CheckResultSetCount(resultSet, err)) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET(ThumbnailRdbUtils::CheckResultSetCount(resultSet, err), nullptr);
 
     err = resultSet->GoToFirstRow();
     if (err != E_OK) {
@@ -560,7 +453,7 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
         return nullptr;
     }
 
-    ParseQueryResult(resultSet, data, err, column);
+    ThumbnailRdbUtils::ParseQueryResult(resultSet, data, err, column);
     return resultSet;
 }
 
@@ -688,26 +581,9 @@ bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
     if (opts.table == PhotoColumn::PHOTOS_TABLE) {
         rdbPredicates.OrderByAsc(PhotoColumn::PHOTO_LAST_VISIT_TIME);
     }
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
-        return false;
-    }
 
-    err = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
-
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err, column);
-        if (!data.path.empty()) {
-            infos.push_back(data);
-        }
-    } while (resultSet->GoToNextRow() == E_OK);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(opts.store, rdbPredicates, column, infos, err),
+        false, "QueryThumbnailDataInfos failed, err:%{public}d", err);
     return true;
 }
 
@@ -719,35 +595,16 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &i
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_POSITION,
         MEDIA_DATA_DB_ORIENTATION,
+        PhotoColumn::PHOTO_EXIF_ROTATE,
         MEDIA_DATA_DB_DATE_MODIFIED,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_LCD_VISIT_TIME, "0");
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_POSITION, "1");
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("QueryNoLcdInfos failed %{public}d", err);
-        if (err == E_EMPTY_VALUES_BUCKET) {
-            return true;
-        }
-        return false;
-    }
 
-    err = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "QueryNoLcdInfos failed GoToFirstRow %{public}d", err);
-
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err, column);
-        if (!data.path.empty()) {
-            infos.push_back(data);
-        }
-    } while (resultSet->GoToNextRow() == E_OK);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(opts.store, rdbPredicates, column, infos, err),
+        false, "QueryThumbnailDataInfos failed, err:%{public}d", err);
     return true;
 }
 
@@ -768,24 +625,9 @@ bool ThumbnailUtils::QueryLocalNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailDat
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_DIRTY, "1");
     rdbPredicates.Limit(MAXIMUM_LCD_CHECK_NUM);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("QueryLocalNoLcdInfos failed %{public}d", err);
-        if (err == E_EMPTY_VALUES_BUCKET) {
-            return true;
-        }
-        return false;
-    }
 
-    err = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "QueryLocalNoLcdInfos failed GoToFirstRow %{public}d", err);
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err, column);
-        if (!data.path.empty()) {
-            infos.push_back(data);
-        }
-    } while (resultSet->GoToNextRow() == E_OK);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(opts.store, rdbPredicates, column, infos, err),
+        false, "QueryThumbnailDataInfos failed, err:%{public}d", err);
     return true;
 }
 
@@ -800,15 +642,9 @@ bool ThumbnailUtils::QueryNoHighlightPath(ThumbRdbOpt &opts, ThumbnailData &data
     };
     RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
     rdbPredicates.EqualTo(PhotoColumn::MEDIA_ID, data.id);
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("QueryNoHighlightPath failed %{public}d", err);
-        return false;
-    }
 
-    err = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "QueryNoHighlightPath failed GoToFirstRow %{public}d", err);
-    ParseQueryResult(resultSet, data, err, column);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfo(opts.store, rdbPredicates, column, data, err),
+        false, "QueryThumbnailDataInfo failed, err:%{public}d", err);
     return true;
 }
 
@@ -826,7 +662,7 @@ bool ThumbnailUtils::QueryNoHighlightInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER, "0");
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
+    if (!ThumbnailRdbUtils::CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("QueryNoHighlightInfos failed %{public}d", err);
         return err == E_EMPTY_VALUES_BUCKET;
     }
@@ -863,7 +699,7 @@ bool ThumbnailUtils::GetHighlightTracks(ThumbRdbOpt &opts, vector<int> &trackInf
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::MEDIA_ID, opts.row);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
+    if (!ThumbnailRdbUtils::CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("GetHighlightTracks failed %{public}d", err);
         if (err == E_EMPTY_VALUES_BUCKET) {
             return true;
@@ -936,27 +772,9 @@ bool ThumbnailUtils::QueryLocalNoThumbnailInfos(ThumbRdbOpt &opt, vector<Thumbna
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.Limit(THUMBNAIL_QUERY_MIN);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
-    if (opt.store == nullptr) {
-        MEDIA_ERR_LOG("opt.store is nullptr");
-        return false;
-    }
-    shared_ptr<ResultSet> resultSet = opt.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        if (err == E_EMPTY_VALUES_BUCKET) {
-            return true;
-        }
-        return false;
-    }
-    err = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
 
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err, column);
-        if (!data.path.empty()) {
-            infos.push_back(data);
-        }
-    } while (resultSet->GoToNextRow() == E_OK);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(opt.store, rdbPredicates, column, infos, err),
+        false, "QueryThumbnailDataInfos failed, err:%{public}d", err);
     return true;
 }
 
@@ -987,29 +805,8 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
 
     rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
-        if (err == E_EMPTY_VALUES_BUCKET) {
-            return true;
-        }
-        return false;
-    }
-
-    err = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
-
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err, column);
-        if (!data.path.empty()) {
-            infos.push_back(data);
-        }
-    } while (resultSet->GoToNextRow() == E_OK);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(opts.store, rdbPredicates, column, infos, err),
+        false, "QueryThumbnailDataInfos failed, err:%{public}d", err);
     return true;
 }
 
@@ -1019,6 +816,7 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
     vector<string> column = {
         MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_DATE_TAKEN, MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_ORIENTATION, PhotoColumn::PHOTO_EXIF_ROTATE,
     };
 
     RdbPredicates rdbPredicates(opts.table);
@@ -1028,29 +826,9 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
         rdbPredicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, "2");
     }
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
-        if (err == E_EMPTY_VALUES_BUCKET) {
-            return true;
-        }
-        return false;
-    }
 
-    err = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
-
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err, column);
-        if (!data.path.empty()) {
-            infos.push_back(data);
-        }
-    } while (resultSet->GoToNextRow() == E_OK);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(opts.store, rdbPredicates, column, infos, err),
+        false, "QueryThumbnailDataInfos failed, err:%{public}d", err);
     return true;
 }
 
@@ -1079,29 +857,9 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, "1");
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, "0");
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, "0");
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
-        if (err == E_EMPTY_VALUES_BUCKET) {
-            return true;
-        }
-        return false;
-    }
 
-    err = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
-
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err, column);
-        if (!data.path.empty()) {
-            infos.push_back(data);
-        }
-    } while (resultSet->GoToNextRow() == E_OK);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(opts.store, rdbPredicates, column, infos, err),
+        false, "QueryThumbnailDataInfos failed, err:%{public}d", err);
     return true;
 }
 
@@ -1109,7 +867,8 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
 {
     vector<string> column = {
         MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_DATE_TAKEN, MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_ORIENTATION, PhotoColumn::PHOTO_EXIF_ROTATE,
+        MEDIA_DATA_DB_DATE_TAKEN, MEDIA_DATA_DB_DATE_MODIFIED,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.BeginWrap()
@@ -1124,27 +883,9 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         ->EqualTo(PhotoColumn::PHOTO_POSITION, "2")->And()->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, "0")
         ->EndWrap()->EndWrap();
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
-        if (err == E_EMPTY_VALUES_BUCKET) {
-            return true;
-        }
-        return false;
-    }
-    err = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err, column);
-        if (!data.path.empty()) {
-            infos.push_back(data);
-        }
-    } while (resultSet->GoToNextRow() == E_OK);
+
+    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(opts.store, rdbPredicates, column, infos, err),
+        false, "QueryThumbnailDataInfos failed, err:%{public}d", err);
     return true;
 }
 
@@ -1236,16 +977,6 @@ bool ThumbnailUtils::UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data,
     return true;
 }
 
-bool ThumbnailUtils::CacheVisitTime(ThumbRdbOpt &opts, ThumbnailData &data)
-{
-    CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, false, "opts.store is nullptr");
-    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, false, "Not photos table!");
-
-    int64_t timeNow = UTCTimeMilliSeconds();
-    data.rdbUpdateCache.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
-    return true;
-}
-
 bool ThumbnailUtils::UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status)
 {
     ValuesBucket values;
@@ -1288,26 +1019,26 @@ bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool 
     return true;
 }
 
-void PostProcPixelMapSource(ThumbnailData &data)
+void ThumbnailUtils::PostProcPixelMapSource(ThumbnailData &data)
 {
     auto pixelMap = data.source.GetPixelMap();
     if (pixelMap == nullptr) {
         return;
     }
     pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    if (data.orientation != 0) {
-        if (data.isLocalFile || data.isRegenerateStage || data.isUpgradeStage) {
+    if (ThumbnailUtils::NeedRotateThumbnail(data)) {
+        if (data.needGenerateExThumbnail) {
             std::shared_ptr<PixelMap> copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
             data.source.SetPixelMapEx(copySource);
         }
-        PostProc::RotateInRectangularSteps(*(pixelMap.get()), static_cast<float>(data.orientation), true);
+        ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, data.exifRotate);
     }
 
     // PixelMap has been rotated, fix the exif orientation to zero degree.
     pixelMap->ModifyImageProperty(PHOTO_DATA_IMAGE_ORIENTATION, DEFAULT_EXIF_ORIENTATION);
 }
 
-void PostProcPictureSource(ThumbnailData &data)
+void ThumbnailUtils::PostProcPictureSource(ThumbnailData &data)
 {
     auto picture = data.source.GetPicture();
     if (picture == nullptr) {
@@ -1318,13 +1049,12 @@ void PostProcPictureSource(ThumbnailData &data)
     if (pixelMap == nullptr || gainMap == nullptr) {
         return;
     }
-    if (data.orientation != 0) {
-        if (data.isLocalFile || data.isRegenerateStage || data.isUpgradeStage) {
+    if (ThumbnailUtils::NeedRotateThumbnail(data)) {
+        if (data.needGenerateExThumbnail) {
             std::shared_ptr<Picture> copySource = ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
             data.source.SetPictureEx(copySource);
         }
-        pixelMap->rotate(static_cast<float>(data.orientation));
-        gainMap->rotate(static_cast<float>(data.orientation));
+        ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, data.exifRotate);
     }
 }
 
@@ -1693,105 +1423,22 @@ int64_t ThumbnailUtils::UTCTimeMilliSeconds()
     return t.tv_sec * SEC_TO_MSEC + t.tv_nsec / MSEC_TO_NSEC;
 }
 
-bool ThumbnailUtils::CheckResultSetCount(const shared_ptr<ResultSet> &resultSet, int &err)
-{
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr!");
-        return false;
-    }
-    int rowCount = 0;
-    err = resultSet->GetRowCount(rowCount);
-    if (err != E_OK || rowCount < 0) {
-        MEDIA_ERR_LOG("Failed to get row count %{public}d", err);
-        return false;
-    } else if (rowCount == 0) {
-        MEDIA_INFO_LOG("CheckCount No match!");
-        err = E_EMPTY_VALUES_BUCKET;
-        return false;
-    }
-    return true;
-}
-
-void ThumbnailUtils::ParseStringResult(const shared_ptr<ResultSet> &resultSet, int index, string &data)
-{
-    bool isNull = true;
-    int err = resultSet->IsColumnNull(index, isNull);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to check column %{public}d null %{public}d", index, err);
-    }
-
-    if (!isNull) {
-        err = resultSet->GetString(index, data);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("Failed to get column %{public}d string %{public}d", index, err);
-        }
-    }
-}
-
-void ThumbnailUtils::ParseInt32Result(const shared_ptr<ResultSet> &resultSet, int index, int32_t &data)
-{
-    bool isNull = true;
-    int err = resultSet->IsColumnNull(index, isNull);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to check column %{public}d null %{public}d", index, err);
-    }
-
-    if (!isNull) {
-        err = resultSet->GetInt(index, data);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("Failed to get column %{public}d int32 %{public}d", index, err);
-        }
-    }
-}
-
-void ThumbnailUtils::ParseInt64Result(const shared_ptr<ResultSet> &resultSet, int index, int64_t &data)
-{
-    bool isNull = true;
-    int err = resultSet->IsColumnNull(index, isNull);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to check column %{public}d null %{public}d", index, err);
-    }
-
-    if (!isNull) {
-        err = resultSet->GetLong(index, data);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("Failed to get column %{public}d int64 %{public}d", index, err);
-        }
-    }
-}
-
-void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, ThumbnailData &data,
-    int &err, const std::vector<std::string> &column)
-{
-    int index;
-    for (auto &columnValue : column) {
-        err = resultSet->GetColumnIndex(columnValue, index);
-        if (err != NativeRdb::E_OK) {
-            continue;
-        }
-        auto iter = RESULT_SET_HANDLER.find(columnValue);
-        if (iter != RESULT_SET_HANDLER.end()) {
-            iter->second(resultSet, index, data);
-        }
-    }
-}
-
 void ThumbnailUtils::ParseHighlightQueryResult(const shared_ptr<ResultSet> &resultSet, ThumbnailData &data, int &err)
 {
     int index;
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_ID, index);
     if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.id);
+        ThumbnailRdbUtils::ParseStringResult(resultSet, index, data.id);
     }
 
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_VIDEO_TRACKS, index);
     if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.tracks);
+        ThumbnailRdbUtils::ParseStringResult(resultSet, index, data.tracks);
     }
 
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_HIGHLIGHT_TRIGGER, index);
     if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.trigger);
+        ThumbnailRdbUtils::ParseStringResult(resultSet, index, data.trigger);
     }
 }
 
@@ -1929,7 +1576,7 @@ bool ThumbnailUtils::CheckDateTaken(ThumbRdbOpt &opts, ThumbnailData &data)
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
 
     int err;
-    if (!CheckResultSetCount(resultSet, err)) {
+    if (!ThumbnailRdbUtils::CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed, err: %{public}d", err);
         return false;
     }
@@ -1939,7 +1586,7 @@ bool ThumbnailUtils::CheckDateTaken(ThumbRdbOpt &opts, ThumbnailData &data)
     int index;
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_TAKEN, index);
     if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.dateTaken);
+        ThumbnailRdbUtils::ParseStringResult(resultSet, index, data.dateTaken);
     } else {
         MEDIA_ERR_LOG("GetColumnIndex failed, err: %{public}d", err);
         resultSet->Close();
@@ -1966,34 +1613,18 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_ORIENTATION,
+        PhotoColumn::PHOTO_EXIF_ROTATE,
         MEDIA_DATA_DB_POSITION,
         MEDIA_DATA_DB_DATE_TAKEN,
         MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_DIRTY,
     };
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return;
-    }
-    auto resultSet = opts.store->QueryByStep(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("ResultSet is nullptr");
-        return;
-    }
-    err = resultSet->GoToFirstRow();
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Fail to GoToFirstRow");
-        resultSet->Close();
-        return;
-    }
 
-    ParseQueryResult(resultSet, data, err, columns);
-    if (err != NativeRdb::E_OK || data.path.empty()) {
-        MEDIA_ERR_LOG("Fail to query thumbnail data using id: %{public}s, err: %{public}d", id.c_str(), err);
-        resultSet->Close();
-        return;
-    }
-    resultSet->Close();
+    CHECK_AND_RETURN_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfo(opts.store, predicates, columns, data, err),
+        "QueryThumbnailDataInfo failed, err:%{public}d", err);
+    
+    CHECK_AND_RETURN_LOG(err == NativeRdb::E_OK && !data.path.empty(),
+        "Fail to query thumbnail data using id: %{public}s, err: %{public}d", id.c_str(), err);
     data.stats.uri = data.path;
 }
 
@@ -2209,7 +1840,8 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
     vector<string> column = {
         MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_HEIGHT, MEDIA_DATA_DB_WIDTH,
         MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_DATE_TAKEN, MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_ORIENTATION, PhotoColumn::PHOTO_EXIF_ROTATE, MEDIA_DATA_DB_DATE_TAKEN,
+        MEDIA_DATA_DB_DATE_MODIFIED,
     };
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
     if (!IsMobileNetworkEnabled()) {
@@ -2224,28 +1856,9 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
     rdbPredicate.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, "0");
     rdbPredicate.EqualTo(COMPAT_HIDDEN, "0");
     rdbPredicate.Limit(THUMBNAIL_GENERATE_BATCH_COUNT);
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicate, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
-        if (err == E_EMPTY_VALUES_BUCKET) {
-            return true;
-        }
-        return false;
-    }
-    err = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
 
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err, column);
-        if (!data.path.empty()) {
-            infos.push_back(data);
-        }
-    } while (resultSet->GoToNextRow() == E_OK);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(opts.store, rdbPredicate, column, infos, err),
+        false, "QueryThumbnailDataInfos failed, err:%{public}d", err);
     return true;
 }
 
@@ -2308,23 +1921,9 @@ bool ThumbnailUtils::QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbS
     RdbPredicates rdbPredicates(table);
     rdbPredicates.GreaterThanOrEqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "3");
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
-    shared_ptr<ResultSet> resultSet = rdbStorePtr->QueryByStep(rdbPredicates, column);
-    int err = 0;
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
-        if (err == E_EMPTY_VALUES_BUCKET) {
-            return true;
-        }
-        return false;
-    }
-    err = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
 
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err, column);
-        infos.push_back(data);
-    } while (resultSet->GoToNextRow() == E_OK);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailRdbUtils::QueryThumbnailDataInfos(rdbStorePtr, rdbPredicates, column, infos),
+        false, "QueryThumbnailDataInfos failed");
     return true;
 }
 
@@ -2359,5 +1958,33 @@ void ThumbnailUtils::BatchDropThumbnailSize(const ThumbnailDataBatch& dataBatch)
     MediaLibraryPhotoOperations::BatchDropThumbnailSize(photoIds);
 }
 
+bool ThumbnailUtils::IsExCloudThumbnail(const ThumbnailData& data)
+{
+    return ((data.exifRotate != 0 && data.exifRotate != static_cast<int32_t>(ExifRotateType::TOP_LEFT)) ||
+        data.orientation != 0);
+}
+
+void ThumbnailUtils::HandleImageExifRotate(ThumbnailData &data)
+{
+    CHECK_AND_RETURN(data.exifRotate == 0 && data.mediaType == MediaType::MEDIA_TYPE_IMAGE);
+    ExifRotateUtils::ConvertOrientationToExifRotate(data.orientation, data.exifRotate);
+}
+
+bool ThumbnailUtils::NeedRotateThumbnail(const ThumbnailData& data)
+{
+    return IsImageWithExifRotate(data) && !IsUseRotatedSource(data);
+}
+
+bool ThumbnailUtils::IsImageWithExifRotate(const ThumbnailData& data)
+{
+    return data.mediaType == MediaType::MEDIA_TYPE_IMAGE &&
+        data.exifRotate != 0 && data.exifRotate != static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+}
+
+bool ThumbnailUtils::IsUseRotatedSource(const ThumbnailData& data)
+{
+    return data.lastLoadSource == SourceState::LOCAL_THUMB ||
+        data.lastLoadSource == SourceState::LOCAL_LCD;
+}
 } // namespace Media
 } // namespace OHOS

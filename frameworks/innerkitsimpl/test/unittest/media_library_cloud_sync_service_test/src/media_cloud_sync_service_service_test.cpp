@@ -37,6 +37,7 @@
 #include "cloud_media_data_service.h"
 #include "cloud_media_download_service.h"
 #include "cloud_media_photos_service.h"
+#include "cloud_media_scan_service.h"
 #undef private
 
 using namespace testing::ext;
@@ -1833,5 +1834,67 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnRecordFailed_Test_
     photo.errorType = ErrorType::TYPE_NOT_NEED_RETRY;
     ret = service.OnRecordFailed(photo, photoRefresh);
     EXPECT_EQ(ret, E_STOP);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaScanService_FillMetadata_Test_001, TestSize.Level1)
+{
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data = nullptr;
+    int32_t ret = service.FillMetadata(data);
+    EXPECT_NE(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaScanService_FillMetadata_Test_002, TestSize.Level1)
+{
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFilePath("/Invalid/Path/filename.txt");
+    int32_t ret = service.FillMetadata(data);
+    EXPECT_NE(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaScanService_ScanMetaData_Test_001, TestSize.Level1)
+{
+    CloudMediaScanService service;
+    std::unique_ptr<Metadata> data = nullptr;
+    std::string filePath = "/data/filename1.jpg";
+    int32_t ret = service.ScanMetaData(filePath, data);
+    EXPECT_NE(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaScanService_ScanShootingMode_Test_001, TestSize.Level1)
+{
+    CloudMediaScanService service;
+    CloudMediaScanService::ScanResult scanResult;
+    std::string filePath = "/Invalid/Path/filename.txt";
+    int32_t ret = service.ScanShootingMode(filePath, scanResult);
+    EXPECT_NE(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaScanService_ScanShootingMode_Test_002, TestSize.Level1)
+{
+    CloudMediaScanService service;
+    CloudMediaScanService::ScanResult scanResult;
+    std::string filePath = "/data/filename1.jpg";
+    char buffer[] = "xxLIVE_123456789123456";
+    int32_t fd = open(filePath.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0x777);
+    write(fd, buffer, strlen(buffer));
+    close(fd);
+    int32_t ret = service.ScanShootingMode(filePath, scanResult);
+    EXPECT_EQ(ret, E_OK);
+    system("rm -rf /data/filename1.jpg");
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaScanService_UpdateAndNotifyShootingModeAlbumIfNeeded_Test_002,
+    TestSize.Level1)
+{
+    CloudMediaScanService service;
+    CloudMediaScanService::ScanResult scanResult;
+    scanResult.shootingMode = "1";
+    scanResult.frontCamera = "1";
+    service.UpdateAndNotifyShootingModeAlbumIfNeeded(scanResult);
+    EXPECT_EQ(scanResult.shootingMode, "1");
+    EXPECT_EQ(scanResult.frontCamera, "1");
 }
 }

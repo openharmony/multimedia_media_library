@@ -29,6 +29,7 @@ public:
     EXPORT static const std::string &DropIndex();
     EXPORT static std::string AlterTableAddIntColumn(const std::string &table, const std::string &column);
     EXPORT static std::string AlterTableAddTextColumn(const std::string &table, const std::string &column);
+    EXPORT static std::string AlterTableAddBlobColumn(const std::string &table, const std::string &column);
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_BASE_COLUMN_H

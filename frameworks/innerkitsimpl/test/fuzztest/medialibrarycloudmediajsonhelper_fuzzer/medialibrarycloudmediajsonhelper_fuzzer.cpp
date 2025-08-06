@@ -117,8 +117,6 @@ static void JsonPhotosDataTest2()
     PhotoData.GetIsRectificationCover();
     PhotoData.SetSupportedWatermarkType(provider->ConsumeIntegral<int32_t>());
     PhotoData.GetSupportedWatermarkType();
-    PhotoData.SetIsStylePhoto(provider->ConsumeIntegral<int32_t>());
-    PhotoData.GetIsStylePhoto();
     PhotoData.SetStrongAssociation(provider->ConsumeIntegral<int32_t>());
     PhotoData.GetStrongAssociation();
     PhotoData.SetCloudFileId(provider->ConsumeIntegral<int32_t>());

@@ -635,6 +635,8 @@ int32_t MediaAlbumsService::QueryHiddenAlbums(QueryAlbumsDto &dto)
         columns.push_back(PhotoAlbumColumns::HIDDEN_COUNT);
         columns.push_back(PhotoAlbumColumns::HIDDEN_COVER);
         dto.predicates.And()->EqualTo(PhotoAlbumColumns::CONTAINS_HIDDEN, to_string(1));
+        dto.predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::HIDDEN);
+        dto.predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::TRASH);
     } else {
         dto.predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::HIDDEN);
     }
@@ -1084,6 +1086,54 @@ int32_t MediaAlbumsService::GetPhotoAlbumObject(
         auto bridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
         respBody.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
     }
+    return E_OK;
+}
+
+int32_t MediaAlbumsService::QueryAlbumsLpath(QueryAlbumsDto &dto)
+{
+    MEDIA_DEBUG_LOG("MediaAlbumsService::QueryAlbumsLpath Start");
+    std::shared_ptr<NativeRdb::ResultSet> resultSet;
+    std::vector<std::string> &columns = dto.columns;
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
+    NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(dto.predicates, PhotoAlbumColumns::TABLE);
+    if (rdbPredicates.GetOrder().empty()) {
+        rdbPredicates.OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
+    }
+    resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+
+    LogQueryParams(dto.predicates, columns);
+
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet nullptr");
+    auto bridge = RdbUtils::ToResultSetBridge(resultSet);
+    dto.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
+    MEDIA_DEBUG_LOG("MediaAlbumsService::QueryAlbumsLpath End");
+    return E_OK;
+}
+
+int32_t MediaAlbumsService::QueryAlbumsLpaths(QueryAlbumsDto &dto)
+{
+    MEDIA_DEBUG_LOG("MediaAlbumsService::QueryAlbumsLpaths Start");
+    std::shared_ptr<NativeRdb::ResultSet> resultSet;
+    std::vector<std::string> &columns = dto.columns;
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(columns);
+    if (dto.albumType == PhotoAlbumType::USER || dto.albumType == PhotoAlbumType::SOURCE) {
+        dto.predicates.And()
+            ->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, std::to_string(dto.albumType))
+            ->And()
+            ->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, std::to_string(dto.albumSubType));
+        NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(dto.predicates, PhotoAlbumColumns::TABLE);
+        if (rdbPredicates.GetOrder().empty()) {
+            rdbPredicates.OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
+        }
+        resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+    }
+
+    LogQueryParams(dto.predicates, columns);
+
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet nullptr");
+    auto bridge = RdbUtils::ToResultSetBridge(resultSet);
+    dto.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
+    MEDIA_DEBUG_LOG("MediaAlbumsService::QueryAlbumsLpaths End");
     return E_OK;
 }
 } // namespace OHOS::Media

@@ -371,7 +371,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     assetRefresh.Update(deleteRow, values, predicatesPhotos);
-    CHECK_AND_RETURN_RET_LOG(deleteRow > 0, deleteRow,
+    CHECK_AND_RETURN_RET_LOG(deleteRow > 0, E_HAS_DB_ERROR,
         "Update Removed Asset to Trash failed, ret: %{public}d", deleteRow);
 
     assetRefresh.RefreshAlbum();

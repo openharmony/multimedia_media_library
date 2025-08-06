@@ -74,6 +74,10 @@ public:
     bool IsNeededFix(const CloudMediaPullDataDto &data);
     void HandleShootingMode(const std::string &cloudId, const NativeRdb::ValuesBucket &valuebucket,
         std::map<std::string, int> &recordAnalysisAlbumMaps);
+    void HandleExifRotateDownloadAsset(const CloudMediaPullDataDto &data,
+        NativeRdb::ValuesBucket &valuebucket);
+    void HandleExifRotateDownloadMetaData(const CloudMediaPullDataDto &data,
+        NativeRdb::ValuesBucket &valuebucket);
     int32_t GetLocalKeyData(KeyData &localKeyData, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     bool JudgeConflict(const CloudMediaPullDataDto &pullData, const KeyData &localKeyData, const KeyData &cloudKeyData);
     void UpdateAlbumInternal(std::set<std::string> &refreshAlbums);
@@ -195,6 +199,7 @@ private:
                 dirty = 1 AND \
                 thumbnail_ready >= 3 AND \
                 lcd_visit_time >= 2 AND \
+                exif_rotate > 0 AND \
                 date_trashed = 0 AND \
                 time_pending = 0 AND \
                 file_id NOT IN ({0}) \
@@ -251,9 +256,10 @@ private:
                 * \
             FROM Photos \
             WHERE \
-                dirty = 3 AND \
+                (dirty = 3 OR dirty = 8) AND \
                 thumbnail_ready >= 3 AND \
                 lcd_visit_time >= 2 AND \
+                exif_rotate > 0 AND\
                 cloud_id <> '' AND \
                 cloud_id IS NOT NULL AND \
                 cloud_id NOT IN ({0}) \

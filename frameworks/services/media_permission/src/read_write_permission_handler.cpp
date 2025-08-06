@@ -33,6 +33,7 @@
 #include "userfilemgr_uri.h"
 #include "album_operation_uri.h"
 #include "data_secondary_directory_uri.h"
+#include "dfx_deprecated_perm_usage.h"
 #include "mediatool_uri.h"
 
 using namespace std;
@@ -230,10 +231,12 @@ static int32_t UserFileMgrPermissionCheck(MediaLibraryCommand &cmd, const bool i
     return PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
-static inline int32_t HandleBundlePermCheck()
+static inline int32_t HandleBundlePermCheck(const MediaLibraryCommand &cmd)
 {
     bool ret = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA);
     if (ret) {
+        DfxDeprecatedPermUsage::Record(
+            static_cast<uint32_t>(cmd.GetOprnObject()), static_cast<uint32_t>(cmd.GetOprnType()));
         return E_SUCCESS;
     }
 
@@ -265,11 +268,14 @@ static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
     return E_NEED_FURTHER_CHECK;
 }
 
-static inline int32_t HandleMediaVolumePerm()
+static inline int32_t HandleMediaVolumePerm(const MediaLibraryCommand &cmd)
 {
-    return PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA) ? E_SUCCESS : E_PERMISSION_DENIED;
+    bool ret = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA);
+    CHECK_AND_EXECUTE(!ret,
+        DfxDeprecatedPermUsage::Record(
+            static_cast<uint32_t>(cmd.GetOprnObject()), static_cast<uint32_t>(cmd.GetOprnType())));
+    return ret ? E_SUCCESS : E_PERMISSION_DENIED;
 }
-
 
 static int32_t HandleSpecialObjectPermission(MediaLibraryCommand &cmd, bool isWrite)
 {
@@ -280,9 +286,9 @@ static int32_t HandleSpecialObjectPermission(MediaLibraryCommand &cmd, bool isWr
 
     OperationObject obj = cmd.GetOprnObject();
     if (obj == OperationObject::MEDIA_VOLUME) {
-        return HandleMediaVolumePerm();
+        return HandleMediaVolumePerm(cmd);
     } else if (obj == OperationObject::BUNDLE_PERMISSION) {
-        return HandleBundlePermCheck();
+        return HandleBundlePermCheck(cmd);
     }
 
     if (MediaFileUtils::IsCalledBySelf() == E_OK) {
@@ -328,6 +334,8 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
         if (!PermissionUtils::CheckCallerPermission(perm)) {
             return E_PERMISSION_DENIED;
         }
+        DfxDeprecatedPermUsage::Record(
+            static_cast<uint32_t>(cmd.GetOprnObject()), static_cast<uint32_t>(cmd.GetOprnType()));
     }
     UnifyOprnObject(cmd);
     return E_SUCCESS;

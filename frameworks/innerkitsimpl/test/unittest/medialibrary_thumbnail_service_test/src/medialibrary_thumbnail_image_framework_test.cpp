@@ -15,8 +15,10 @@
 
 #include "medialibrary_thumbnail_image_framework_test.h"
 
-#include "medialibrary_errno.h"
+#include "image_source.h"
+#include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 
 #define private public
 #define protected public
@@ -25,6 +27,7 @@
 #undef protected
 
 using namespace testing::ext;
+using namespace std;
 
 namespace OHOS {
 namespace Media {
@@ -38,7 +41,7 @@ void MediaLibraryThumbnailImageFrameworkTest::SetUp() {}
 
 void MediaLibraryThumbnailImageFrameworkTest::TearDown(void) {}
 
-std::shared_ptr<PixelMap> CreateTestPixelMap(PixelFormat format, bool useDMA)
+static std::shared_ptr<PixelMap> CreateTestPixelMap(PixelFormat format, bool useDMA)
 {
     InitializationOptions opts;
     opts.size.width = TEST_PIXELMAP_WIDTH_AND_HEIGHT;
@@ -50,7 +53,7 @@ std::shared_ptr<PixelMap> CreateTestPixelMap(PixelFormat format, bool useDMA)
     return pixelMap;
 }
 
-std::shared_ptr<Picture> CreateTestPicture(std::shared_ptr<PixelMap> pixelMap, std::shared_ptr<PixelMap> gainMap)
+static std::shared_ptr<Picture> CreateTestPicture(std::shared_ptr<PixelMap> pixelMap, std::shared_ptr<PixelMap> gainMap)
 {
     if (pixelMap == nullptr) {
         return nullptr;
@@ -68,6 +71,40 @@ std::shared_ptr<Picture> CreateTestPicture(std::shared_ptr<PixelMap> pixelMap, s
     CHECK_AND_RETURN_RET_LOG(auxiliaryPicture != nullptr, nullptr, "Create auxiliaryPicture failed");
     picture->SetAuxiliaryPicture(auxiliaryPicture);
     return picture;
+}
+
+static const string HDR_PICTURE_PATH = "/data/local/tmp/HDR_picture.jpg";
+
+static unique_ptr<ImageSource> CreateTestImageSource()
+{
+    string path = HDR_PICTURE_PATH;
+    MEDIA_INFO_LOG("file: %{public}s exist: %{public}d", path.c_str(), MediaFileUtils::IsFileExists(path));
+    uint32_t err;
+    SourceOptions opts;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
+    CHECK_AND_PRINT_LOG(err == E_OK, "ImageSource::CreateImageSource err: %{public}d", err);
+    return imageSource;
+}
+
+static shared_ptr<Picture> CreateTestPicture()
+{
+    unique_ptr<ImageSource> imageSource = CreateTestImageSource();
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, nullptr, "ImageSource::CreateImageSource failed");
+
+    DecodingOptionsForPicture pictureOpts;
+    pictureOpts.desireAuxiliaryPictures = {AuxiliaryPictureType::GAINMAP};
+    uint32_t err;
+    auto picture = imageSource->CreatePicture(pictureOpts, err);
+    CHECK_AND_RETURN_RET_LOG(picture != nullptr, nullptr, "ImageSource->CreatePicture err: %{public}d", err);
+    return picture;
+}
+
+static std::shared_ptr<PixelMap> CreateTestPixelMap()
+{
+    auto picture = CreateTestPicture();
+    CHECK_AND_RETURN_RET_LOG(picture != nullptr, nullptr, "CreateTestPicture() failed");
+
+    return picture->GetMainPixel();
 }
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsYuvPixelMap_test_001, TestSize.Level0)
@@ -160,25 +197,6 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyYuvPixelmap_test_001, Test
     EXPECT_NE(copyPixelMap, nullptr);
 }
 
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, GetPictureOrientation_test_001, TestSize.Level0)
-{
-    std::shared_ptr<Picture> picture = nullptr;
-    int32_t orientation = 0;
-    int32_t err = ThumbnailImageFrameWorkUtils::GetPictureOrientation(picture, orientation);
-    EXPECT_EQ(err, E_ERR);
-}
-
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, GetPictureOrientation_test_002, TestSize.Level0)
-{
-    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
-    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
-    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
-    ASSERT_NE(picture, nullptr);
-    int32_t orientation = 0;
-    int32_t err = ThumbnailImageFrameWorkUtils::GetPictureOrientation(picture, orientation);
-    EXPECT_NE(err, E_OK);
-}
-
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPixelMapSource_test_004, TestSize.Level0)
 {
     std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::YCRCB_P010, true);
@@ -254,15 +272,6 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetSbDynamicMetadata_test_001,
     EXPECT_NE(ret, true);
 }
 
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, GetPictureOrientation_test_003, TestSize.Level0)
-{
-    std::shared_ptr<Picture> picture = std::make_shared<Picture>();
-    int32_t orientation = 10;
-    int32_t ret = 0;
-    ret = ThumbnailImageFrameWorkUtils::GetPictureOrientation(picture, orientation);
-    EXPECT_NE(ret, 0);
-}
-
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetPixelMapYuvInfo_test_001, TestSize.Level0)
 {
     std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV12, true);
@@ -325,6 +334,46 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyAndScalePixelMap_001, Test
     Size desiredSize = { TEST_PIXELMAP_WIDTH_AND_HEIGHT / 2, TEST_PIXELMAP_WIDTH_AND_HEIGHT / 2 };
     auto ret = ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(pixelMap, desiredSize);
     EXPECT_NE(ret, nullptr);
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePicture_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePicture_001");
+    auto picture = CreateTestPicture();
+    int32_t exifRotate = 2;
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
+    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("FlipAndRotatePicture_001 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePicture_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePicture_002");
+    auto picture = CreateTestPicture();
+    FlipAndRotateInfo info;
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, info);
+    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("FlipAndRotatePicture_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMap_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePixelMap_001");
+    auto pixelMap = CreateTestPixelMap();
+    int32_t exifRotate = 2;
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
+    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("FlipAndRotatePixelMap_001 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMap_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FlipAndRotatePixelMap_002");
+    auto pixelMap = CreateTestPixelMap();
+    FlipAndRotateInfo info;
+    auto ret = ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, info);
+    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("FlipAndRotatePixelMap_002 end");
 }
 
 } // namespace Media

@@ -251,6 +251,9 @@ napi_value MediaLibraryNotifyUtils::BuildPhotoAssetChangeInfo(napi_env env,
     SetValueInt64(env, "dateTrashedMs", photoAssetChangeInfo.dateTrashedMs_, result);
     SetValueInt64(env, "dateAddedMs", photoAssetChangeInfo.dateAddedMs_, result);
     SetValueInt64(env, "dateTakenMs", photoAssetChangeInfo.dateTakenMs_, result);
+    SetValueInt32(env, "position", photoAssetChangeInfo.position_, result);
+    SetValueString(env, "displayName", photoAssetChangeInfo.displayName_, result);
+    SetValueInt64(env, "size", photoAssetChangeInfo.size_, result);
 
     return result;
 }
@@ -400,6 +403,8 @@ napi_value MediaLibraryNotifyUtils::BuildAlbumChangeInfo(napi_env env,
     SetValueString(env, "hiddenCoverUri", albumChangeInfo.hiddenCoverUri_, result);
     SetValueBool(env, "isCoverChanged", albumChangeInfo.isCoverChange_, result);
     SetValueBool(env, "isHiddenCoverChanged", albumChangeInfo.isHiddenCoverChange_, result);
+    SetValueInt32(env, "orderSection", albumChangeInfo.orderSection_, result);
+    SetValueInt32(env, "albumOrder", albumChangeInfo.albumOrder_, result);
 
     napi_status status = napi_ok;
     napi_value coverInfoValue = BuildPhotoAssetChangeInfo(env, albumChangeInfo.coverInfo_);

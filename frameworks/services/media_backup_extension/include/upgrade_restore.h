@@ -47,6 +47,7 @@ public:
     int32_t RecordAlbumCoverInfo(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         AlbumCoverInfo& albumCoverInfo);
     void UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverInfos);
+    void DeleteEmptyAlbums();
 
 protected:
     virtual void RestoreAnalysisAlbum();
@@ -134,6 +135,8 @@ protected:
     int32_t InitDb(bool isUpgrade);
     std::vector<int32_t> GetCloudPhotoMinIds();
     std::vector<int32_t> GetLocalPhotoMinIds();
+    void SetOrientationAndExifRotate(FileInfo &info, NativeRdb::ValuesBucket &value,
+        std::unique_ptr<Metadata> &data) override;
 
 protected:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -164,6 +167,9 @@ protected:
     ffrt::mutex externalFailedMutex_;
     int32_t maxId_{-1};
     int64_t maxAnalysisAlbumId_ {0};
+
+private:
+    void BatchDeleteEmptyAlbums(const std::vector<int32_t> &batchAlbumIds, int32_t &deleteRows);
 };
 } // namespace Media
 } // namespace OHOS

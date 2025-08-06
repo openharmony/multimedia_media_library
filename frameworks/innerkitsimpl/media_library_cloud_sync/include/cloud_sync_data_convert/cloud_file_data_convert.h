@@ -55,14 +55,15 @@ public:
     int32_t HandlePosition(std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotosVo &upLoadRecord);
     int32_t HandleRotate(std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotosVo &upLoadRecord);
     int32_t HandleProperties(std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &upLoadRecord);
+    int32_t HandleExifRotate(std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotosVo &upLoadRecord);
 
     /* attachments */
     std::string GetLowerPath(const std::string &path);
     int32_t HandleEditData(std::map<std::string, MDKRecordField> &data, std::string &path, bool isMovingPhoto);
     int32_t HandleContent(std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotosVo &upLoadRecord);
-    int32_t HandleThumbnail(std::map<std::string, MDKRecordField> &recordData, std::string &path, int32_t orientation);
+    int32_t HandleThumbnail(std::map<std::string, MDKRecordField> &recordData, std::string &path, bool needUseExDir);
     std::string GetParentPath(const std::string &path);
-    int32_t HandleLcd(std::map<std::string, MDKRecordField> &recordData, std::string &path, int32_t orientation);
+    int32_t HandleLcd(std::map<std::string, MDKRecordField> &recordData, std::string &path, bool needUseExDir);
     int32_t HandleAttachments(
         std::map<std::string, MDKRecordField> &recordData, const CloudMdkRecordPhotosVo &upLoadRecord);
 

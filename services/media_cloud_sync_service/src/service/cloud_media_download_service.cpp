@@ -32,6 +32,7 @@
 #include "cloud_media_asset_manager.h"
 #include "cloud_media_asset_types.h"
 #include "cloud_media_dfx_service.h"
+#include "cloud_media_scan_service.h"
 #include "dfx_const.h"
 #include "media_gallery_sync_notify.h"
 
@@ -281,6 +282,10 @@ CloudMediaDownloadService::OnDownloadAssetData CloudMediaDownloadService::GetOnD
     std::string extraUri = MediaFileUtils::GetExtraUri(photosPo.displayName.value_or(""), photosPo.data.value_or(""));
     assetData.fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
                                                                std::to_string(photosPo.fileId.value_or(0)), extraUri);
+    assetData.needScanShootingMode = (photosPo.shootingModeTag.has_value() && photosPo.shootingModeTag->empty()) ||
+        (photosPo.frontCamera.has_value() && photosPo.frontCamera->empty());
+    assetData.mediaType = photosPo.mediaType.value_or(0);
+    assetData.exifRotate = CloudMediaSyncUtils::GetExifRotate(assetData.mediaType, assetData.localPath);
     return assetData;
 }
 
@@ -438,14 +443,63 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         assetData.err = ret;
         return;
     }
-    ret = this->dao_.UpdateDownloadAsset(assetData.fixFileType, assetData.path);
+    CloudMediaScanService::ScanResult scanResult;
+    if (assetData.needScanShootingMode) {
+        CloudMediaScanService().ScanShootingMode(assetData.path, scanResult);
+    }
+    ret = this->dao_.UpdateDownloadAsset(assetData.fixFileType, assetData.path, scanResult);
+    if (scanResult.scanSuccess) {
+        CloudMediaScanService().UpdateAndNotifyShootingModeAlbumIfNeeded(scanResult);
+    }
+
     if (ret != E_OK) {
         MEDIA_INFO_LOG("Failed to Handle HandlePhoto %{public}s", assetData.localPath.c_str());
         assetData.errorMsg = "UpdateDownloadAsset failed";
         assetData.err = ret;
         this->UnlinkAsset(assetData);
+        return;
     } else if (assetData.dateModified > 0 && (assetData.needSliceContent || assetData.needSliceRaw)) {
         this->ResetAssetModifyTime(assetData);
     }
+
+    ret = FixDownloadAssetExifRotate(photo, assetData);
+    if (ret != E_OK) {
+        MEDIA_INFO_LOG("HandlePhoto Failed to fix exif rotate %{public}s", assetData.localPath.c_str());
+        assetData.errorMsg = "Fix Exif Rotate Failed";
+        assetData.err = ret;
+        return;
+    }
+}
+
+int32_t CloudMediaDownloadService::FixDownloadAssetExifRotate(
+    const ORM::PhotosPo &photo, OnDownloadAssetData &assetData)
+{
+    CHECK_AND_RETURN_RET(assetData.exifRotate != photo.exifRotate.value_or(0), E_OK);
+
+    int32_t oldExifRotate = photo.exifRotate.value_or(0);
+    int32_t newExifRotate = assetData.exifRotate;
+    int32_t fileId = photo.fileId.value_or(0);
+    string fileIdStr = std::to_string(fileId);
+    string dateTaken = std::to_string(photo.dateTaken.value_or(0));
+    string path = assetData.path;
+    MEDIA_INFO_LOG("Need FixDownloadAssetExifRotate, id:%{public}d, mediaType:%{public}d, oldExifRotate:%{public}d, "
+        "newExifRotate:%{public}d", fileId, assetData.mediaType, oldExifRotate, newExifRotate);
+    if (CloudMediaSyncUtils::CanUpdateExifRotateOnly(assetData.mediaType, oldExifRotate, newExifRotate)) {
+        return this->dao_.UpdateDownloadAssetExifRotateFix(
+            fileId, assetData.exifRotate, DirtyTypes::TYPE_MDIRTY, false);
+    }
+
+    DirtyTypes dirtyType;
+    if (assetData.mediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) {
+        dirtyType = DirtyTypes::TYPE_MDIRTY;
+    } else {
+        dirtyType = DirtyTypes::TYPE_FDIRTY;
+    }
+    int32_t ret = this->dao_.UpdateDownloadAssetExifRotateFix(fileId, assetData.exifRotate, dirtyType, true);
+    CHECK_AND_RETURN_RET(ret == E_OK, ret);
+
+    auto thumbnailService = ThumbnailService::GetInstance();
+    thumbnailService->DeleteThumbnailDirAndAstc(fileIdStr, PhotoColumn::PHOTOS_TABLE, path, dateTaken);
+    return thumbnailService->FixThumbnailExifRotateAfterDownloadAsset(fileIdStr);
 }
 }  // namespace OHOS::Media::CloudSync

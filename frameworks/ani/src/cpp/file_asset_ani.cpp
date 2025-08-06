@@ -15,6 +15,7 @@
 
 #include "ani_class_name.h"
 #include "datashare_values_bucket.h"
+#include "exif_rotate_utils.h"
 #include "file_asset_ani.h"
 #include "medialibrary_ani_log.h"
 #include "medialibrary_ani_utils.h"
@@ -446,6 +447,7 @@ static int32_t CheckSystemApiKeys(ani_env *env, const string &key)
         PhotoColumn::SUPPORTED_WATERMARK_TYPE,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
+        PhotoColumn::PHOTO_EXIF_ROTATE,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryAniUtils::IsSystemApp()) {
@@ -477,7 +479,8 @@ static ani_object HandleDateTransitionKey(ani_env *env, const string &key, const
 static bool IsSpecialKey(const string &key)
 {
     static const set<string> SPECIAL_KEY = {
-        PENDING_STATUS
+        PENDING_STATUS,
+        PhotoColumn::PHOTO_EXIF_ROTATE,
     };
 
     if (SPECIAL_KEY.find(key) != SPECIAL_KEY.end()) {
@@ -492,6 +495,12 @@ static ani_object HandleGettingSpecialKey(ani_env *env, const string &key, const
         bool isTimePending = (fileAssetPtr->GetTimePending() != 0);
         ani_object aniResult = nullptr;
         MediaLibraryAniUtils::ToAniBooleanObject(env, isTimePending, aniResult);
+        return aniResult;
+    } else if (key == PhotoColumn::PHOTO_EXIF_ROTATE) {
+        int32_t value = fileAssetPtr->GetExifRotate();
+        int32_t exifRotate = value == 0 ? static_cast<int32_t>(ExifRotateType::TOP_LEFT) : value;
+        ani_object aniResult = nullptr;
+        MediaLibraryAniUtils::ToAniDoubleObject(env, static_cast<double>(exifRotate), aniResult);
         return aniResult;
     }
 

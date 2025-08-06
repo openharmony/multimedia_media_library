@@ -78,12 +78,7 @@ void AlbumDismissAssetsTest::SetUpTestCase(void)
 
 void AlbumDismissAssetsTest::TearDownTestCase(void)
 {
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
-    ClearTable(VISION_IMAGE_FACE_TABLE);
-    ClearTable(ANALYSIS_PHOTO_MAP_TABLE);
-    ClearTable(ANALYSIS_ALBUM_TABLE);
     MEDIA_INFO_LOG("TearDownTestCase");
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 void AlbumDismissAssetsTest::SetUp()
@@ -93,6 +88,11 @@ void AlbumDismissAssetsTest::SetUp()
 
 void AlbumDismissAssetsTest::TearDown(void)
 {
+    ClearTable(PhotoColumn::PHOTOS_TABLE);
+    ClearTable(VISION_IMAGE_FACE_TABLE);
+    ClearTable(ANALYSIS_PHOTO_MAP_TABLE);
+    ClearTable(ANALYSIS_ALBUM_TABLE);
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
     MEDIA_INFO_LOG("TearDown");
 }
 
@@ -213,17 +213,30 @@ int32_t CreatAssetsAndAlbumsForGroupPhoto(vector<PortraitData> &portraits)
 
 int GetGroupPhotoAssetsCount(int32_t albumId)
 {
-    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_MAP, OperationType::QUERY, MediaLibraryApi::API_10);
-    vector<string> columns = {PhotoColumn::MEDIA_ID};
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
-    int errCode = 0;
-    int count = -1;
-    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
-    auto resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    string querySql = "SELECT DISTINCT Photos.file_id ";
+    querySql += "FROM Photos ";
+    querySql += "INNER JOIN AnalysisPhotoMap ON (file_id = map_asset) ";
+    querySql += "INNER JOIN AnalysisAlbum ON (album_id = map_album) ";
+    querySql += "INNER JOIN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " + std::to_string(albumId) + ") ag ";
+    querySql += "ON ag.group_tag = AnalysisAlbum.group_tag ";
+    querySql += "WHERE Photos.sync_status = 0 ";
+    querySql += "AND Photos.clean_flag = 0 ";
+    querySql += "AND date_trashed = 0 ";
+    querySql += "AND hidden = 0 ";
+    querySql += "AND time_pending = 0 ";
+    querySql += "AND is_temp = 0 ";
+    querySql += "AND is_temp = 0 ";
+    querySql += "AND burst_cover_level = 1 ";
+
+    EXPECT_NE(g_rdbStore, nullptr);
+    auto resultSet = g_rdbStore->QuerySql(querySql);
     EXPECT_NE(resultSet, nullptr);
-    resultSet->GetRowCount(count);
-    return count;
+
+    int32_t resultSetCount = -1;
+    int32_t ret = resultSet->GetRowCount(resultSetCount);
+    EXPECT_EQ(ret, NativeRdb::E_OK);
+    EXPECT_GE(resultSetCount, 0);
+    return resultSetCount;
 }
 
 HWTEST_F(AlbumDismissAssetsTest, DismissAsstes_Test_001, TestSize.Level0)
@@ -255,5 +268,40 @@ HWTEST_F(AlbumDismissAssetsTest, DismissAsstes_Test_001, TestSize.Level0)
     count = GetGroupPhotoAssetsCount(albumId);
     EXPECT_EQ(count, 4);
     MEDIA_INFO_LOG("DismissAsstes_Test_001 End");
+}
+
+HWTEST_F(AlbumDismissAssetsTest, DismissAsstes_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DismissAsstes_Test_002 Start");
+    vector<PortraitData> poraitData;
+    int32_t albumId = CreatAssetsAndAlbumsForGroupPhoto(poraitData);
+    size_t photoCount = poraitData.size();
+    EXPECT_EQ(photoCount, 5);
+    MEDIA_INFO_LOG("Query albums and check result");
+    int count = GetGroupPhotoAssetsCount(albumId);
+    EXPECT_EQ(count, 5);
+
+    MessageParcel data;
+    MessageParcel reply;
+    ChangeRequestDismissAssetsReqBody reqBody;
+    reqBody.albumId = albumId;
+    reqBody.photoAlbumSubType = PhotoAlbumSubType::GROUP_PHOTO;
+    reqBody.assets = {std::to_string(poraitData[0].fileId),
+    std::to_string(poraitData[1].fileId),
+    std::to_string(poraitData[2].fileId),
+    std::to_string(poraitData[3].fileId),
+    std::to_string(poraitData[4].fileId)};
+    if (reqBody.Marshalling(data) != true) {
+        MEDIA_ERR_LOG("reqBody.Marshalling failed");
+    }
+    auto service = make_shared<MediaAlbumsControllerService>();
+    service->DismissAssets(data, reply);
+
+    IPC::MediaRespVo<MediaEmptyObjVo> resp;
+    ASSERT_EQ(resp.Unmarshalling(reply), true);
+    ASSERT_GT(resp.GetErrCode(), 0);
+    count = GetGroupPhotoAssetsCount(albumId);
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("DismissAsstes_Test_002 End");
 }
 }  // namespace OHOS::Media

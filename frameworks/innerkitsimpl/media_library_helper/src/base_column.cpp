@@ -57,4 +57,9 @@ string BaseColumn::AlterTableAddTextColumn(const std::string &table, const std::
 {
     return "ALTER TABLE " + table + " ADD COLUMN " + column + " TEXT DEFAULT '';";
 }
+
+string BaseColumn::AlterTableAddBlobColumn(const std::string &table, const std::string &column)
+{
+    return "ALTER TABLE " + table + " ADD COLUMN " + column + " BLOB;";
+}
 } // namespace OHOS::Media

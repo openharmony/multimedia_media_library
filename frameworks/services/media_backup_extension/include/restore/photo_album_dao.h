@@ -56,6 +56,7 @@ public:
                ", lPath: " + albumInfo.lPath + ", bundleName: " + albumInfo.bundleName;
     }
     void LoadPhotoAlbums();
+    std::vector<int32_t> GetAlbumIdsFromCache();
 
 private:
     std::string FindUniqueAlbumName(const PhotoAlbumRowData &photoAlbum);

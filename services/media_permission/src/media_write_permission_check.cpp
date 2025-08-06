@@ -14,6 +14,8 @@
  */
 #define MLOG_TAG "MediaPermissionCheck"
 #include <string>
+
+#include "dfx_deprecated_perm_usage.h"
 #include "media_write_permission_check.h"
 #include "media_file_utils.h"
 #include "ipc_skeleton.h"
@@ -173,7 +175,9 @@ int32_t DeprecatedWritePermCheck::CheckPermission(uint32_t businessCode, const P
         MEDIA_INFO_LOG("Unable to use deprecated write permission");
         return E_PERMISSION_DENIED;
     }
-    return PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA) ? E_SUCCESS : E_PERMISSION_DENIED;
+    bool ret = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA);
+    CHECK_AND_EXECUTE(!ret, DfxDeprecatedPermUsage::Record(businessCode, 0));
+    return ret ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 static int32_t AcrossLocalAccountsPermCheck(const PermissionHeaderReq &data)

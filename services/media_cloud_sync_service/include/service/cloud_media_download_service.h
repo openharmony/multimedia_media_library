@@ -50,6 +50,9 @@ private:
         std::string errorMsg;
         std::string fileUri;
         bool needParseCover;
+        bool needScanShootingMode;
+        int32_t mediaType;
+        int32_t exifRotate;
     };
 
 private:
@@ -67,6 +70,7 @@ private:
     void HandlePhoto(const ORM::PhotosPo &photo, OnDownloadAssetData &assetData);
     std::string PrintOnDownloadAssetData(const OnDownloadAssetData &assetData);
     void NotifyDownloadLcd(const std::vector<std::string> &cloudIds);
+    int32_t FixDownloadAssetExifRotate(const ORM::PhotosPo &photo, OnDownloadAssetData &assetData);
 
 private:
     const uint32_t TYPE_THM_MASK = 0x1;

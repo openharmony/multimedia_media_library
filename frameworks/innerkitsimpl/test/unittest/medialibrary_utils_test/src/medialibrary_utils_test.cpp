@@ -23,6 +23,7 @@
 #define private public
 #include "medialibrary_utils_test.h"
 #include "thumbnail_service.h"
+#include "thumbnail_rdb_utils.h"
 #include "thumbnail_utils.h"
 #include "post_event_utils.h"
 #include "medialibrary_unistore_manager.h"
@@ -332,21 +333,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_CacheLcdInfo_test_001, TestSize.Level1)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_CacheVisitTime_test_001, TestSize.Level1)
-{
-    ASSERT_NE(storePtr, nullptr);
-    ThumbRdbOpt opts = {
-        .store = storePtr,
-        .networkId = "",
-    };
-    ThumbnailData data;
-    bool ret = ThumbnailUtils::CacheVisitTime(opts, data);
-    EXPECT_EQ(ret, false);
-    opts.networkId = "CacheVisitTime";
-    ret = ThumbnailUtils::CacheVisitTime(opts, data);
-    EXPECT_EQ(ret, false);
-}
-
 HWTEST_F(MediaLibraryUtilsTest, medialib_CleanThumbnailInfo_test_001, TestSize.Level1)
 {
     ASSERT_NE(storePtr, nullptr);
@@ -471,7 +457,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_parseQueryResult_test_001, TestSize.Lev
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
     rdbPredicates.Limit(0);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    ThumbnailUtils::ParseQueryResult(resultSet, data, err, column);
+    ThumbnailRdbUtils::ParseQueryResult(resultSet, data, err, column);
     EXPECT_NE(err, 0);
 }
 
@@ -516,9 +502,9 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_parseStringResult_test_001, TestSize.Le
     rdbPredicates.Limit(0);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     string dataTest;
-    ThumbnailUtils::ParseStringResult(resultSet, -1, dataTest);
+    ThumbnailRdbUtils::ParseStringResult(resultSet, -1, dataTest);
     EXPECT_EQ(dataTest, "");
-    ThumbnailUtils::ParseStringResult(resultSet, index, dataTest);
+    ThumbnailRdbUtils::ParseStringResult(resultSet, index, dataTest);
     EXPECT_EQ(dataTest, "");
 }
 
@@ -543,12 +529,12 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_checkResultSetCount_test_001, TestSize.
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
     rdbPredicates.Limit(0);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    bool ret = ThumbnailUtils::CheckResultSetCount(nullptr, err);
+    bool ret = ThumbnailRdbUtils::CheckResultSetCount(nullptr, err);
     EXPECT_EQ(ret, false);
-    ret = ThumbnailUtils::CheckResultSetCount(resultSet, err);
+    ret = ThumbnailRdbUtils::CheckResultSetCount(resultSet, err);
     EXPECT_EQ(ret, false);
     auto resultSetTest = ThumbnailUtils::QueryThumbnailSet(opts);
-    ret = ThumbnailUtils::CheckResultSetCount(resultSetTest, err);
+    ret = ThumbnailRdbUtils::CheckResultSetCount(resultSetTest, err);
     EXPECT_EQ(ret, false);
 }
 

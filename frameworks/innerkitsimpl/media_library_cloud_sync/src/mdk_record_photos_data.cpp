@@ -417,6 +417,15 @@ MDKRecordPhotosData &MDKRecordPhotosData::SetIsRectificationCover(const int32_t 
     this->attributes_[PhotoColumn::PHOTO_IS_RECTIFICATION_COVER] = MDKRecordField(isRectificationCover);
     return *this;
 }
+std::optional<int32_t> MDKRecordPhotosData::GetExifRotate() const
+{
+    return this->recordReader_.GetIntValue(this->attributes_, PhotoColumn::PHOTO_EXIF_ROTATE);
+}
+MDKRecordPhotosData &MDKRecordPhotosData::SetExifRotate(const int32_t exifRotate)
+{
+    this->attributes_[PhotoColumn::PHOTO_EXIF_ROTATE] = MDKRecordField(exifRotate);
+    return *this;
+}
 std::optional<int32_t> MDKRecordPhotosData::GetMovingPhotoEffectMode() const
 {
     return this->recordReader_.GetIntValue(this->attributes_, PhotoColumn::MOVING_PHOTO_EFFECT_MODE);

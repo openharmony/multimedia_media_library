@@ -63,7 +63,6 @@ public:
     EXPORT static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
     EXPORT static bool CacheLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static void CacheInvalidLcdInfo(ThumbnailData &data);
-    EXPORT static bool CacheVisitTime(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status);
     EXPORT static bool DoUpdateAstcDateTaken(ThumbRdbOpt &opts, ThumbnailData &data);
@@ -119,6 +118,13 @@ public:
     EXPORT static void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
     EXPORT static void DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
     EXPORT static void BatchDropThumbnailSize(const ThumbnailDataBatch& dataBatch);
+    EXPORT static bool IsExCloudThumbnail(const ThumbnailData &data);
+    EXPORT static void HandleImageExifRotate(ThumbnailData &data);
+    EXPORT static bool NeedRotateThumbnail(const ThumbnailData &data);
+    EXPORT static bool IsImageWithExifRotate(const ThumbnailData &data);
+    EXPORT static bool IsUseRotatedSource(const ThumbnailData &data);
+    EXPORT static void PostProcPixelMapSource(ThumbnailData &data);
+    EXPORT static void PostProcPictureSource(ThumbnailData &data);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
@@ -131,18 +137,9 @@ private:
         std::string &fileName, const std::string &timeStamp);
     EXPORT static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     EXPORT static int64_t UTCTimeMilliSeconds();
-    EXPORT static void ParseQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        ThumbnailData &data, int &err, const std::vector<std::string> &column);
-    EXPORT static void ParseStringResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        int index, std::string &data);
-    EXPORT static void ParseInt32Result(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        int index, int32_t &data);
-    EXPORT static void ParseInt64Result(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        int index, int64_t &data);
     EXPORT static void ParseHighlightQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
        ThumbnailData &data, int &err);
 
-    EXPORT static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
     EXPORT static bool LoadImageFile(ThumbnailData &data, Size &desiredSize);
     EXPORT static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
@@ -157,29 +154,6 @@ private:
 
     EXPORT static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
     EXPORT static bool UpdateAstcDateTakenFromKvStore(ThumbRdbOpt &opts, const ThumbnailData &data);
-
-    static void HandleId(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
-    static void HandleFilePath(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
-    static void HandleDateAdded(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
-    static void HandleDisplayName(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        int idx, ThumbnailData &data);
-    static void HandleDateTaken(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
-    static void HandleDateModified(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        int idx, ThumbnailData &data);
-    static void HandleMediaType(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
-    static void HandleOrientation(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        int idx, ThumbnailData &data);
-    static void HandlePosition(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
-    static void HandlePhotoHeight(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        int idx, ThumbnailData &data);
-    static void HandlePhotoWidth(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
-    static void HandleDirty(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
-    static void HandleReady(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
-    static void HandleLcdVisitTime(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        int idx, ThumbnailData &data);
-
-    using HandleFunc = void(*)(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
-    static const std::unordered_map<std::string, HandleFunc> RESULT_SET_HANDLER;
 };
 } // namespace Media
 } // namespace OHOS

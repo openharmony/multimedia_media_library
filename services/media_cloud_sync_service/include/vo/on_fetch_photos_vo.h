@@ -79,6 +79,7 @@ public:
     int64_t hiddenTime;
     int64_t coverPosition;
     int32_t isRectificationCover;
+    int32_t exifRotate;
     bool isDelete;
     bool hasAttributes;
     bool hasproperties;

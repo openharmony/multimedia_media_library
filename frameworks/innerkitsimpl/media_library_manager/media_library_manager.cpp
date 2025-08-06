@@ -56,6 +56,7 @@
 #include "data_secondary_directory_uri.h"
 #include "medialibrary_business_code.h"
 #include "user_inner_ipc_client.h"
+#include "photo_album_column.h"
 #include "add_visit_count_vo.h"
 #include "create_asset_vo.h"
 #include "get_result_set_from_db_vo.h"
@@ -64,6 +65,9 @@
 #include "get_filepath_from_uri_vo.h"
 #include "close_asset_vo.h"
 #include "get_result_set_from_photos_extend_vo.h"
+#include "get_albums_lpath_by_ids_vo.h"
+#include "query_albums_vo.h"
+#include "retain_cloud_media_asset_vo.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -1090,6 +1094,68 @@ std::unordered_map<std::string, std::string> MediaLibraryManager::GetUrisByOldUr
 {
     MEDIA_INFO_LOG("Start request uris by old uris, size: %{public}zu", uris.size());
     return TabOldPhotosClient(*this).GetUrisByOldUris(uris);
+}
+
+int32_t MediaLibraryManager::GetAlbumLpath(uint32_t ownerAlbumId, std::string &lpath)
+{
+    MEDIA_DEBUG_LOG("MediaLibraryManager::GetAlbumLpath Start.");
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_FAIL, "dataShareHelper is nullptr");
+
+    GetAlbumsLpathByIdsReqBody reqBody;
+    reqBody.albumId = ownerAlbumId;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_PAH_QUERY_GET_ALBUMS_BY_IDS);
+    GetAlbumsLpathByIdsRespBody respBody;
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, respBody);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "after IPC::UserDefineIPCClient().Call, errCode: %{public}d.",
+        errCode);
+    lpath = respBody.lpath;
+    MEDIA_DEBUG_LOG("MediaLibraryManager::GetAlbumLpath End. lpath: %{public}s", lpath.c_str());
+    return errCode;
+}
+
+int32_t MediaLibraryManager::GetAlbumLpaths(uint32_t albumType, std::shared_ptr<DataShare::ResultSet> &resultSet)
+{
+    MEDIA_DEBUG_LOG("MediaLibraryManager::GetAlbumLpaths Start.");
+    CHECK_AND_RETURN_RET_LOG(albumType == PhotoAlbumType::USER || albumType == PhotoAlbumType::SOURCE, E_FAIL,
+        "GetAlbumLpaths albumType not support");
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_FAIL, "dataShareHelper is nullptr");
+
+    QueryAlbumsReqBody reqBody;
+    reqBody.albumType = albumType;
+    reqBody.albumSubType =
+        (albumType == PhotoAlbumType::SOURCE ? PhotoAlbumSubType::SOURCE_GENERIC : PhotoAlbumSubType::USER_GENERIC);
+    reqBody.columns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_LPATH};
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_PAH_QUERY_PHOTO_ALBUMS);
+    QueryAlbumsRespBody respBody;
+    int32_t errCode =
+        IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody, respBody);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "after IPC::UserDefineIPCClient().Call, errCode: %{public}d.",
+        errCode);
+    resultSet = respBody.resultSet;
+    MEDIA_DEBUG_LOG("MediaLibraryManager::GetAlbumLpaths End.");
+    return errCode;
+}
+
+int32_t MediaLibraryManager::RetainCloudMediaAsset(CloudMediaRetainType retainType)
+{
+    MEDIA_DEBUG_LOG("MediaLibraryManager::RetainCloudMediaAsset Start.");
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_FAIL, "dataShareHelper is nullptr");
+
+    RetainCloudMediaAssetReqBody reqBody;
+    reqBody.cloudMediaRetainType = static_cast<int32_t>(retainType);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RETAIN_CLOUDMEDIA_ASSET);
+    int32_t errCode = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "after IPC::UserDefineIPCClient().Call, errCode: %{public}d.",
+        errCode);
+    MEDIA_DEBUG_LOG("MediaLibraryManager::RetainCloudMediaAsset End.");
+    return errCode;
 }
 } // namespace Media
 } // namespace OHOS

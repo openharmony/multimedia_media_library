@@ -49,6 +49,7 @@ public:
     int32_t originalSubtype;
     int64_t coverPosition;
     int32_t isRectificationCover;
+    int32_t exifRotate;
     int32_t movingPhotoEffectMode;
     int32_t supportedWatermarkType;
     int32_t strongAssociation;

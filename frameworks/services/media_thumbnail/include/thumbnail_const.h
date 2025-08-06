@@ -57,6 +57,7 @@ enum class GenerateScene : int32_t {
     FOREGROUND,
     RESTORE,
     UPGRADE,
+    REPAIR,
 };
 
 enum class LoadSourceType : int32_t {

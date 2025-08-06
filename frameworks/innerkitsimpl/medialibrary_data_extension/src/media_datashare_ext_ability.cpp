@@ -38,6 +38,7 @@
 #include "dfx_manager.h"
 #include "dfx_timer.h"
 #include "dfx_const.h"
+#include "dfx_deprecated_perm_usage.h"
 #include "dfx_reporter.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
@@ -70,7 +71,7 @@
 #include "system_api_check_handler.h"
 #include "userfilemgr_uri.h"
 #ifdef MEDIALIBRARY_MTP_ENABLE
-#include "mtp_manager.h"
+#include "media_mtp_manager.h"
 #endif
 #include "media_fuse_manager.h"
 #include "highlight_column.h"
@@ -197,7 +198,7 @@ void MediaDataShareExtAbility::InitPermissionHandler()
 void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 {
 #ifdef MEDIALIBRARY_MTP_ENABLE
-    MtpManager::GetInstance().Init();
+    MediaMtpManager::GetInstance().Init();
 #endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().InitAsync();
@@ -396,7 +397,11 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     // Try to check deprecated permissions
     perms.clear();
     FillDeprecatedPerms(containsRead, containsWrite, perms);
-    return PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
+    bool ret = PermissionUtils::CheckCallerPermission(perms);
+    CHECK_AND_EXECUTE(!ret,
+        DfxDeprecatedPermUsage::Record(
+            static_cast<uint32_t>(cmd.GetOprnObject()), static_cast<uint32_t>(cmd.GetOprnType())));
+    return ret ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 static inline void AddHiddenAlbumPermission(MediaLibraryCommand &cmd, vector<string> &outPerms)
@@ -439,15 +444,23 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
     return E_SUCCESS;
 }
 
-static inline int32_t HandleMediaVolumePerm()
+static inline int32_t HandleMediaVolumePerm(const MediaLibraryCommand &cmd)
 {
-    return PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA) ? E_SUCCESS : E_PERMISSION_DENIED;
+    bool ret = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA);
+    CHECK_AND_EXECUTE(!ret,
+        DfxDeprecatedPermUsage::Record(
+            static_cast<uint32_t>(cmd.GetOprnObject()), static_cast<uint32_t>(cmd.GetOprnType())));
+    return ret ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
-static inline int32_t HandleBundlePermCheck()
+static inline int32_t HandleBundlePermCheck(const MediaLibraryCommand &cmd)
 {
     bool ret = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA);
-    CHECK_AND_RETURN_RET(!ret, E_SUCCESS);
+    if (ret) {
+        DfxDeprecatedPermUsage::Record(
+            static_cast<uint32_t>(cmd.GetOprnObject()), static_cast<uint32_t>(cmd.GetOprnType()));
+        return E_SUCCESS;
+    }
 
     return PermissionUtils::CheckHasPermission(WRITE_PERMS_V10) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
@@ -566,9 +579,9 @@ static int32_t HandleSpecialObjectPermission(MediaLibraryCommand &cmd, bool isWr
 
     OperationObject obj = cmd.GetOprnObject();
     if (obj == OperationObject::MEDIA_VOLUME) {
-        return HandleMediaVolumePerm();
+        return HandleMediaVolumePerm(cmd);
     } else if (obj == OperationObject::BUNDLE_PERMISSION) {
-        return HandleBundlePermCheck();
+        return HandleBundlePermCheck(cmd);
     }
 
     return E_NEED_FURTHER_CHECK;
@@ -637,6 +650,8 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     string perm = isWrite ? PERMISSION_NAME_WRITE_MEDIA : PERMISSION_NAME_READ_MEDIA;
     err = PermissionUtils::CheckCallerPermission(perm) ? E_SUCCESS : E_PERMISSION_DENIED;
     CHECK_AND_RETURN_RET(err >= 0, err);
+    DfxDeprecatedPermUsage::Record(
+        static_cast<uint32_t>(cmd.GetOprnObject()), static_cast<uint32_t>(cmd.GetOprnType()));
     UnifyOprnObject(cmd);
     return E_SUCCESS;
 }
@@ -778,7 +793,7 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     bool needToResetTime = false;
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
     int err = permissionHandler_->CheckPermission(cmd, permParam);
-    MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
+    MEDIA_INFO_LOG("OperationObject=%{public}d, permissionHandler_ err=%{public}d", cmd.GetOprnObject(), err);
     CHECK_AND_RETURN_RET(err != -E_CHECK_SYSTEMAPP_FAIL, err);
     CHECK_AND_EXECUTE(err == E_SUCCESS, err = HandleShortPermission(cmd, needToResetTime));
 

@@ -67,6 +67,7 @@ const std::string PhotoColumn::PHOTO_META_DATE_MODIFIED = "meta_date_modified";
 const std::string PhotoColumn::PHOTO_SYNC_STATUS = "sync_status";
 const std::string PhotoColumn::PHOTO_CLOUD_VERSION = "cloud_version";
 const std::string PhotoColumn::PHOTO_ORIENTATION = "orientation";
+const std::string PhotoColumn::PHOTO_EXIF_ROTATE = "exif_rotate";
 const std::string PhotoColumn::PHOTO_LATITUDE = "latitude";
 const std::string PhotoColumn::PHOTO_LONGITUDE = "longitude";
 const std::string PhotoColumn::PHOTO_HEIGHT = "height";
@@ -231,6 +232,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_SYNC_STATUS + "  INT DEFAULT 0, " +
     PHOTO_CLOUD_VERSION + " BIGINT DEFAULT 0, " +
     PHOTO_ORIENTATION + " INT DEFAULT 0, " +
+    PHOTO_EXIF_ROTATE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_LATITUDE + " DOUBLE DEFAULT 0, " +
     PHOTO_LONGITUDE + " DOUBLE DEFAULT 0, " +
     PHOTO_HEIGHT + " INT, " +
@@ -600,6 +602,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::SUPPORTED_WATERMARK_TYPE,
     PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_IS_AUTO,
     PhotoColumn::PHOTO_MEDIA_SUFFIX, PhotoColumn::PHOTO_IS_RECENT_SHOW, PhotoColumn::PHOTO_IS_RECTIFICATION_COVER,
+    PhotoColumn::PHOTO_EXIF_ROTATE,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

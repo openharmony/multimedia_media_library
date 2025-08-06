@@ -50,6 +50,7 @@ namespace OHOS {
 namespace Media {
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 static constexpr int32_t NOT_DISPLAY_FOR_BACKGROUND = -1;
+static constexpr int32_t ALBUM_IS_REMOVED = 1;
 static uint64_t g_shellToken = 0;
 static MediaLibraryMockHapToken* mockToken = nullptr;
 
@@ -1369,77 +1370,42 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Group_Photo_Album_NAME_COUNT_test_
     MEDIA_INFO_LOG("Get_Group_Photo_Album_NAME_COUNT_test_003 End");
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Group_Photo_Album_Asset_test_001, TestSize.Level2)
+HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Group_Photo_Album_NAME_COUNT_test_004, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("Get_Group_Photo_Album_Asset_test_001 Start");
+    MEDIA_INFO_LOG("Get_Group_Photo_Album_NAME_COUNT_test_004 Start");
     MEDIA_INFO_LOG("Clear all table");
     ClearAllTable();
-    const string groupTag = "ser_1711000000000000000,ser_1711000000000000001";
-    const vector<string> tagIds = {"ser_1711000000000000000", "ser_1711000000000000001"};
-    vector<PortraitData> portraits = PrepareGroupPhotoData(tagIds);
-    int64_t portraitAlbumId1 = CreateSmartAlbum(tagIds[0]);
-    int64_t portraitAlbumId2 = CreateSmartAlbum(tagIds[1]);
-    int64_t albumId = CreateSmartAlbum(groupTag, PhotoAlbumSubType::GROUP_PHOTO);
-    EXPECT_GT(portraitAlbumId1, 0);
-    EXPECT_GT(portraitAlbumId2, 0);
-    EXPECT_GT(albumId, 0);
+    const string albumName1 = "album_1";
+    const string albumName2 = "album_2";
 
-    InsertPortraitsToAlbum(portraits, portraitAlbumId1, 1, CoverSatisfiedType::DEFAULT_SETTING);
-    InsertPortraitsToAlbum(portraits, portraitAlbumId2, 1, CoverSatisfiedType::DEFAULT_SETTING);
-    InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
+    MEDIA_INFO_LOG("Create portrait albums");
+    vector<string> tags = {
+        "ser_1711000000000000000, ser_1711000000000000001",
+        "ser_1711000000000000001, ser_1711000000000000002",
+        "ser_1711000000000000002, ser_1711000000000000003",
+        "ser_1711000000000000003, ser_1711000000000000003"
+    };
+
+    CreateSmartAlbum(albumName1, tags[0], PhotoAlbumSubType::GROUP_PHOTO);
+    CreateSmartAlbum("", tags[1], PhotoAlbumSubType::GROUP_PHOTO);
+    CreateSmartAlbum("", tags[2], PhotoAlbumSubType::GROUP_PHOTO);
+    CreateSmartAlbum(albumName2, tags[3], PhotoAlbumSubType::GROUP_PHOTO);
 
     MEDIA_INFO_LOG("Query albums and check result");
-    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_MAP, OperationType::QUERY, MediaLibraryApi::API_10);
-    vector<string> columns = {PhotoColumn::MEDIA_ID};
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY, MediaLibraryApi::API_10);
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_ID};
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::GROUP_PHOTO);
+    predicates.EqualTo(IS_REMOVED, ALBUM_IS_REMOVED);
     int errCode = 0;
     int count = -1;
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
     auto resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
     EXPECT_NE(resultSet, nullptr);
     resultSet->GetRowCount(count);
-    EXPECT_EQ(count, 5);
+    EXPECT_EQ(count, 0);
 
-    MEDIA_INFO_LOG("Get_Group_Photo_Album_Asset_test_001 End");
-}
-
-HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Group_Photo_Album_Asset_test_002, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("Get_Group_Photo_Album_Asset_test_002 Start");
-    MEDIA_INFO_LOG("Clear all table");
-    ClearAllTable();
-    const string groupTag = "ser_1711000000000000000,ser_1711000000000000001";
-    const vector<string> tagIds = {"ser_1711000000000000000", "ser_1711000000000000001"};
-    vector<PortraitData> portraits = PrepareGroupPhotoData(tagIds);
-    int64_t portraitAlbumId1 = CreateSmartAlbum(tagIds[0]);
-    int64_t portraitAlbumId2 = CreateSmartAlbum(tagIds[1]);
-    int64_t albumId = CreateSmartAlbum(groupTag, PhotoAlbumSubType::GROUP_PHOTO);
-    EXPECT_GT(portraitAlbumId1, 0);
-    EXPECT_GT(portraitAlbumId2, 0);
-    EXPECT_GT(albumId, 0);
-
-    InsertPortraitsToAlbum(portraits, portraitAlbumId1, 1, CoverSatisfiedType::DEFAULT_SETTING);
-    InsertPortraitsToAlbum(portraits, portraitAlbumId2, 1, CoverSatisfiedType::DEFAULT_SETTING);
-    InsertPortraitsToAlbum(portraits, albumId, 1, CoverSatisfiedType::DEFAULT_SETTING);
-
-    MEDIA_INFO_LOG("Query albums and check result");
-    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_MAP, OperationType::QUERY, MediaLibraryApi::API_10);
-    vector<string> columns = {MEDIA_DATA_DB_DATE_ADDED_TO_SECOND,
-        MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND,
-        MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND,
-        MEDIA_DATA_DB_DATE_TAKEN_TO_SECOND};
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
-    int errCode = 0;
-    int count = -1;
-    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
-    auto resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
-    EXPECT_NE(resultSet, nullptr);
-    resultSet->GetRowCount(count);
-    EXPECT_EQ(count, 5);
-
-    MEDIA_INFO_LOG("Get_Group_Photo_Album_Asset_test_002 End");
+    MEDIA_INFO_LOG("Get_Group_Photo_Album_NAME_COUNT_test_004 End");
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001, TestSize.Level2)

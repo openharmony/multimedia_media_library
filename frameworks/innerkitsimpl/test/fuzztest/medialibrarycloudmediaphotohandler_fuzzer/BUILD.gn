@@ -69,6 +69,7 @@ ohos_fuzztest("MediaLibraryCloudMediaPhotoHandlerFuzzTest") {
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
+    "ipc:ipc_napi",
     "ipc:ipc_single",
     "jsoncpp:jsoncpp",
     "kv_store:distributeddata_inner",
