@@ -23,6 +23,11 @@
 namespace OHOS::Media {
 class UpgradeRestoreTaskReport {
 public:
+    UpgradeRestoreTaskReport() {};
+    UpgradeRestoreTaskReport(int32_t sceneCode, const std::string &taskId)
+        : sceneCode_(sceneCode), taskId_(taskId)
+    {
+    }
     UpgradeRestoreTaskReport &SetSceneCode(int32_t sceneCode)
     {
         this->sceneCode_ = sceneCode;
@@ -57,8 +62,8 @@ private:
     int32_t PostProgressInfoAuditLog(const std::string &status, const std::string &progressInfo);
 
 private:
-    int32_t sceneCode_;
-    std::string taskId_;
+    int32_t sceneCode_{-1};
+    std::string taskId_{};
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_BACKUP_UPGRADE_RESTORE_TASK_REPORT_H

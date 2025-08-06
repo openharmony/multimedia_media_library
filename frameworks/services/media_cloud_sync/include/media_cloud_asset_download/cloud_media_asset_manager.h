@@ -45,7 +45,9 @@ public:
     EXPORT int32_t RecoverDownloadCloudAsset(const CloudMediaTaskRecoverCause &cause);
     EXPORT int32_t PauseDownloadCloudAsset(const CloudMediaTaskPauseCause &pauseCause);
     EXPORT int32_t CancelDownloadCloudAsset();
-    EXPORT int32_t ForceRetainDownloadCloudMedia();
+    EXPORT int32_t ForceRetainDownloadCloudMedia(
+        CloudMediaRetainType retainType = CloudMediaRetainType::RETAIN_FORCE,
+        bool needAvoidRepeatedDoing = true);
     EXPORT std::string GetCloudMediaAssetTaskStatus();
     EXPORT bool SetIsThumbnailUpdate();
     EXPORT int32_t GetTaskStatus();
@@ -76,26 +78,30 @@ private:
     EXPORT static int32_t DeleteBatchCloudFile(const std::vector<std::string> &fileIds);
     EXPORT static int32_t ReadyDataForDelete(std::vector<std::string> &fileIds, std::vector<std::string> &paths,
         std::vector<std::string> &dateTakens);
-    EXPORT int32_t UpdateCloudMediaAssets();
+    EXPORT int32_t UpdateCloudMediaAssets(CloudMediaRetainType retainType = CloudMediaRetainType::RETAIN_FORCE);
     EXPORT int32_t DeleteEmptyCloudAlbums();
     EXPORT int32_t UpdateLocalAlbums();
-    EXPORT int32_t UpdateBothLocalAndCloudAssets();
+    EXPORT int32_t UpdateBothLocalAndCloudAssets(
+        CloudMediaRetainType retainType = CloudMediaRetainType::RETAIN_FORCE);
     EXPORT static std::string GetEditDataDirPath(const std::string &path);
     EXPORT static int32_t DeleteEditdata(const std::string &path);
-    EXPORT bool HasDataForUpdate(std::vector<std::string> &updateFileIds, const std::string &lastFileId);
+    EXPORT bool HasDataForUpdate(CloudMediaRetainType retainType, std::vector<std::string> &updateFileIds,
+        const std::string &lastFileId);
     EXPORT int32_t UpdateCloudAssets(const std::vector<std::string> &updateFileIds);
     EXPORT void NotifyUpdateAssetsChange(const std::vector<std::string> &notifyFileIds);
-    EXPORT bool HasLocalAndCloudAssets(std::vector<std::string> &updateFileIds, const std::string &lastFileId);
+    EXPORT bool HasLocalAndCloudAssets(CloudMediaRetainType retainType, std::vector<std::string> &updateFileIds,
+        const std::string &lastFileId);
     EXPORT int32_t UpdateLocalAndCloudAssets(const std::vector<std::string> &updateFileIds);
     EXPORT void SetCloudsyncStatusKey(const int32_t statusKey);
     EXPORT void TryToStartSync();
     EXPORT int32_t ClearDeletedDbData();
+    EXPORT int32_t ForceRetainDownloadCloudMediaEx(CloudMediaRetainType retainType);
 
 private:
-    static std::shared_ptr<CloudMediaAssetDownloadOperation> operation_;
-    static std::atomic<TaskDeleteState> doDeleteTask_;
-    static std::mutex deleteMutex_;
-    static std::mutex updateMutex_;
+    std::shared_ptr<CloudMediaAssetDownloadOperation> operation_{nullptr};
+    inline static std::atomic<TaskDeleteState> doDeleteTask_{TaskDeleteState::IDLE};
+    inline static std::mutex deleteMutex_;
+    std::mutex updateMutex_;
 };
 } // namespace Media
 } // namespace OHOS

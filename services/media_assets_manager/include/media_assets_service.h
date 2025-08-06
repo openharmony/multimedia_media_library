@@ -143,7 +143,7 @@ public:
     int32_t StartDownloadCloudMedia(CloudMediaDownloadType downloadType);
     int32_t PauseDownloadCloudMedia();
     int32_t CancelDownloadCloudMedia();
-    int32_t RetainCloudMediaAsset();
+    int32_t RetainCloudMediaAsset(CloudMediaRetainType retainType = CloudMediaRetainType::RETAIN_FORCE);
     int32_t IsEdited(const IsEditedDto &dto, IsEditedRespBody &respBody);
     int32_t RequestEditData(const RequestEditDataDto &dto, RequestEditDataRespBody &respBody);
     int32_t GetEditData(const GetEditDataDto &dto, GetEditDataRespBody &respBody);

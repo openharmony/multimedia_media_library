@@ -166,6 +166,26 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.timeEnd(TAG + ' BACKUP');
   }
 
+  async onBackupEx(backupInfo: string) : Promise<string> {
+    console.log(TAG, 'onBackupEx ok, backupInfo: ' + backupInfo);
+    console.time(TAG + ' BACKUPEX');
+    let startBackupExResult: string = await mediabackup.startBackupEx(CLONE_RESTORE, galleryAppName, mediaAppName, backupInfo);
+    console.log(TAG, ' onBackupEx ret: ' + startBackupExResult);
+    console.timeEnd(TAG + ' BACKUPEX');
+    return startBackupExResult;
+  }
+
+  async onRelease(scenario: number): Promise<void> {
+    try {
+      console.log(TAG, ' onRelease ok.');
+      console.time(TAG + ' RELEASE');
+      await mediabackup.release(CLONE_RESTORE, scenario);
+      console.timeEnd(TAG + ' RELEASE');
+    } catch (error) {
+      console.error(`onRelease failed with error. Code: ${error.code}, message: ${error.message}`);
+    }
+  }
+
   async onRestore(bundleVersion : BundleVersion) : Promise<void> {
     console.log(TAG, `onRestore ok ${JSON.stringify(bundleVersion)}`);
     console.time(TAG + ' RESTORE');
