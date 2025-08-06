@@ -189,8 +189,7 @@ void BackupRestoreService::Release(int32_t sceneCode, int32_t releaseSceneInt)
     CHECK_AND_RETURN_LOG(INT_RELEASE_SCENE_MAP.count(releaseSceneInt),
         "invalid releaseScene: %{public}d", releaseSceneInt);
     ReleaseScene releaseScene = INT_RELEASE_SCENE_MAP.at(releaseSceneInt);
-    // TODO: 是否去调sceneCode
-    CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID && releaseScene == ReleaseScene::BACKUP,
+    CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID,
         "current release scene is not supported, sceneCode: %{public}d releasescene: %{public}d",
         sceneCode, releaseSceneInt);
     Init({CLONE_RESTORE_ID, "", "", "", ""});

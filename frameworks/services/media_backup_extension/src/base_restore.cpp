@@ -2128,22 +2128,22 @@ bool BaseRestore::WaitSouthDeviceExitTimeout()
     constexpr int64_t defaultValueTime = 0;
     int64_t startTime = GetSouthDeviceSwithStatusTimestamp();
     int64_t startTimeTmp = startTime;
-    MEDIA_INFO_LOG("Wait for the south device to exit. startTime: %{public}ld", startTime);
+    MEDIA_INFO_LOG("Wait for the south device to exit. startTime: %{public}lld", startTime);
     while (startTimeTmp > 0) {
         auto nowTime = MediaFileUtils::UTCTimeMilliSeconds();
         int64_t waitTimeout = RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND; // unit: ms
         if ((nowTime - startTimeTmp) > waitTimeout || (nowTime - startTime) > waitTimeout) {
-            MEDIA_WARN_LOG("[Restore or Backup] timeout: now: %{public}ld, start time: %{public}ld, "
-            "startTimeTmp: %{public}ld", nowTime, startTime, startTimeTmp);
+            MEDIA_WARN_LOG("[Restore or Backup] timeout: now: %{public}lld, start time: %{public}lld, "
+                "startTimeTmp: %{public}lld", nowTime, startTime, startTimeTmp);
             return true;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(
             RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_SLEEP_TIME_MILLISECOND));
         startTimeTmp = GetSouthDeviceSwithStatusTimestamp();
-        MEDIA_DEBUG_LOG("[Restore or Backup] waiting: now: %{public}ld, start time: %{public}ld,"
-            " startTimeTmp: %{public}ld", nowTime, startTime, startTimeTmp);
+        MEDIA_DEBUG_LOG("[Restore or Backup] waiting: now: %{public}lld, start time: %{public}lld,"
+            " startTimeTmp: %{public}lld", nowTime, startTime, startTimeTmp);
     }
-    MEDIA_INFO_LOG("the south device has exited. exitTime: %{public}ld", MediaFileUtils::UTCTimeMilliSeconds());
+    MEDIA_INFO_LOG("the south device has exited. exitTime: %{public}lld", MediaFileUtils::UTCTimeMilliSeconds());
     return false;
 }
 
