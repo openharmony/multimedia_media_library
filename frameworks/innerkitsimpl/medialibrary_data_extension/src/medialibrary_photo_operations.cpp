@@ -385,6 +385,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::HandleAnalysisInde
         "invalid analysis album id: %{public}s", albumId.c_str());
     MediaLibraryAlbumHelper::GetAnalysisAlbumPredicates(atoi(albumId.c_str()), albumSubtype,
         albumName, predicates, false);
+    if (albumSubtype == PhotoAlbumSubType::PORTRAIT) {
+        predicates.GroupBy({MediaColumn::MEDIA_ID});
+    }
     vector<string> columns;
     columns.push_back(orderClause);
     columns.push_back(MediaColumn::MEDIA_ID);
