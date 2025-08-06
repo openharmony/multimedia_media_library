@@ -66,8 +66,6 @@ public:
 
 private:
     int32_t ReportFailure(const ReportFailureReqBody &reqBody);
-    bool IsServerNoResponse(const std::vector<MDKRecord> &records, std::vector<CloudMetaData> &newData,
-        std::vector<CloudMetaData> &fdirtyData, std::vector<std::string> &failedRecords, std::vector<int32_t> &stats);
     void DeleteTempLivePhotoFile(std::string &livePhotoCachePath);
 private:
     CloudMediaDataClientHandlerProcessor processor_;

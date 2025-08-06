@@ -54,22 +54,6 @@ std::string CloudMediaPhotoHandler::GetTraceId() const
     return this->traceId_;
 }
 
-bool CloudMediaPhotoHandler::IsServerNoResponse(const std::vector<MDKRecord> &records,
-    std::vector<CloudMetaData> &newData, std::vector<CloudMetaData> &fdirtyData,
-    std::vector<std::string> &failedRecords, std::vector<int32_t> &stats)
-{
-    CHECK_AND_RETURN_RET(!records.empty(), false);
-    int32_t totalStat = 0;
-    for (const auto &stat : stats) {
-        totalStat += stat;
-    }
-    bool isInvalid =
-        !records.empty() && newData.empty() && fdirtyData.empty() && failedRecords.empty() && (totalStat == 0);
-    CHECK_AND_RETURN_RET_LOG(
-        !isInvalid, true, "server no response, records: %{public}zu, totalStat: %{public}d", records.size(), totalStat);
-    return false;
-}
-
 /**
  * stats: 引用入参，按照以下顺序进行返回 [新增，合一，元数据修改，文件修改，删除]:
  * stats: [100, 30, 50, 10, 10]
@@ -101,9 +85,6 @@ int32_t CloudMediaPhotoHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
     newData = this->processor_.GetCloudNewData(respBody.newDatas);
     MEDIA_INFO_LOG("OnFetchRecords NewDataBody: %{public}s", respBody.ToString().c_str());
     fdirtyData = this->processor_.GetCloudFdirtyData(respBody.fdirtyDatas);
-    bool isNoResponse = (ret != E_OK) && (ret != E_IPC_DISCONNECTED) &&
-        this->IsServerNoResponse(records, newData, fdirtyData, failedRecords, stats);
-    CHECK_AND_RETURN_RET_LOG(!isNoResponse, E_SERVER_NO_RESPONSE, "OnFetchRecords error, ret: %{public}d", ret);
     return ret;
 }
 
