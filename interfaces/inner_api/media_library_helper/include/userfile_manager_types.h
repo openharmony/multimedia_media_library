@@ -133,7 +133,7 @@ enum PhotoAlbumSubType : int32_t {
 
 enum class PhotoAlbumId : int32_t {
     DEFAULT = 0,
-    TRASH = -1,
+    TRASH = -3,
     HIDDEN = -4
 };
 

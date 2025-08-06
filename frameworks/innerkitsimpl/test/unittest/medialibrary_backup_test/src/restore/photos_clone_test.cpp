@@ -30,8 +30,7 @@ using namespace testing::ext;
 
 namespace OHOS::Media {
 const int32_t TEST_FILE_ID = 1;
-const int32_t TEST_ALBUM_ID = 10;
-const int32_t TEST_DELEED_ALBUM_ID = 100;
+const int32_t TEST_ALBUM_ID = 100;
 const int64_t TEST_FILE_SIZE = 1024;
 const std::string TEST_ALBUM_NAME = "Camera";
 const std::string TEST_ALBUM_LPATH = "/DCIM/Camera";
@@ -226,8 +225,7 @@ HWTEST_F(PhotosCloneTest, FindPackageName_Test, TestSize.Level0)
     fileInfo.recycledTime = 1;
     fileInfo.sourcePath = "/storage/emulated/0/DCIM/Camera/SVID_20241029_225550_1.mp4";
     std::string albumName = PhotosClone().FindPackageName(fileInfo);
-    EXPECT_FALSE(albumName.empty());
-    EXPECT_EQ(albumName, "Camera");
+    EXPECT_TRUE(albumName.empty()); // nullptr, source album cannot be created
     MEDIA_INFO_LOG("FindPackageName_Test end");
 }
 
@@ -449,8 +447,8 @@ void PhotosCloneTestUtils::ClearPhotosData()
 
 void PhotosCloneTestUtils::ClearPhotoAlbumData()
 {
-    const std::string CLEAR_PHOTO_ALBUM_SQL = "DELETE FROM PhotoAlbum WHERE album_type <> ?";
-    const std::vector<NativeRdb::ValueObject> BIND_ARGS = { static_cast<int32_t>(PhotoAlbumType::SYSTEM) };
+    const std::string CLEAR_PHOTO_ALBUM_SQL = "DELETE FROM PhotoAlbum WHERE album_id >= ?";
+    const std::vector<NativeRdb::ValueObject> BIND_ARGS = { TEST_ALBUM_ID };
     DatabaseUtils::ExecuteSql(g_rdbStore->GetRaw(), CLEAR_PHOTO_ALBUM_SQL, BIND_ARGS);
 }
 

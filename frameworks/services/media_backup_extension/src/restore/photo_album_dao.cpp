@@ -35,6 +35,13 @@ PhotoAlbumDao::PhotoAlbumRowData::PhotoAlbumRowData()
     priority = 1;
 }
 
+bool PhotoAlbumDao::PhotoAlbumRowData::IsValidSourceAlbum()
+{
+    return albumType == static_cast<int32_t>(PhotoAlbumType::SOURCE) &&
+        albumSubType == static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC) &&
+        albumId > static_cast<int32_t>(PhotoAlbumId::DEFAULT);
+}
+
 std::string StringUtils::ToLower(const std::string &str)
 {
     std::string lowerStr;

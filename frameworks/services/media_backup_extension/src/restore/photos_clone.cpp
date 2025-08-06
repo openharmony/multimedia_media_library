@@ -235,10 +235,7 @@ std::string PhotosClone::FindPackageName(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->FindAlbumInfo(fileInfo);
     // Only provide the package name of the existing SOURCE album.
-    bool cond = albumInfo.albumType != static_cast<int32_t>(PhotoAlbumType::SOURCE) ||
-        albumInfo.albumSubType != static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC) ||
-        albumInfo.albumId == static_cast<int32_t>(PhotoAlbumId::DEFAULT);
-    CHECK_AND_RETURN_RET(!cond, "");
+    CHECK_AND_RETURN_RET(albumInfo.IsValidSourceAlbum(), "");
     return albumInfo.albumName;
 }
 
@@ -249,10 +246,7 @@ std::string PhotosClone::FindBundleName(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->FindAlbumInfo(fileInfo);
     // Only provide the bundle name of the existing SOURCE album.
-    bool cond = albumInfo.albumType != static_cast<int32_t>(PhotoAlbumType::SOURCE) ||
-        albumInfo.albumSubType != static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC) ||
-        albumInfo.albumId == static_cast<int32_t>(PhotoAlbumId::DEFAULT);
-    CHECK_AND_RETURN_RET(!cond, "");
+    CHECK_AND_RETURN_RET(albumInfo.IsValidSourceAlbum(), "");
     return albumInfo.bundleName;
 }
 

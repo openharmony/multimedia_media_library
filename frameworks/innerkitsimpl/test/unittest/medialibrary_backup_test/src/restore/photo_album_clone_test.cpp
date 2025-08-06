@@ -34,7 +34,7 @@ using namespace testing::ext;
 
 namespace OHOS::Media {
 const int32_t TEST_FILE_ID = 1;
-const int32_t TEST_ALBUM_ID = 10;
+const int32_t TEST_ALBUM_ID = 100;
 const int64_t TEST_FILE_SIZE = 1024;
 const std::string TEST_ALBUM_NAME = "Camera";
 const std::string TEST_ALBUM_LPATH = "/DCIM/Camera";
@@ -119,7 +119,7 @@ HWTEST_F(PhotoAlbumCloneTest, GetPhotoAlbumCountInOriginalDb_Test_003, TestSize.
 {
     // normal album, cloud photo, cloud restore satisfied
     MEDIA_INFO_LOG("GetPhotoAlbumCountInOriginalDb_Test_003 start");
-    PhotoAlbumCloneTestUtils::InsertAlbum(static_cast<int32_t>(DirtyType::TYPE_DELETED));
+    PhotoAlbumCloneTestUtils::InsertAlbum(static_cast<int32_t>(DirtyType::TYPE_NEW));
     PhotoAlbumCloneTestUtils::InsertPhoto(static_cast<int32_t>(PhotoPositionType::CLOUD));
     PhotoAlbumClone photoAlbumClone;
     photoAlbumClone.OnStart(g_rdbStore->GetRaw(), nullptr, true);
@@ -157,8 +157,8 @@ void PhotoAlbumCloneTestUtils::ClearPhotosData()
 
 void PhotoAlbumCloneTestUtils::ClearPhotoAlbumData()
 {
-    const std::string CLEAR_PHOTO_ALBUM_SQL = "DELETE FROM PhotoAlbum WHERE album_type <> ?";
-    const std::vector<NativeRdb::ValueObject> BIND_ARGS = { static_cast<int32_t>(PhotoAlbumType::SYSTEM) };
+    const std::string CLEAR_PHOTO_ALBUM_SQL = "DELETE FROM PhotoAlbum WHERE album_id >= ?";
+    const std::vector<NativeRdb::ValueObject> BIND_ARGS = { TEST_ALBUM_ID };
     DatabaseUtils::ExecuteSql(g_rdbStore->GetRaw(), CLEAR_PHOTO_ALBUM_SQL, BIND_ARGS);
 }
 

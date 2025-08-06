@@ -36,6 +36,7 @@ public:
         std::string bundleName;
         int32_t priority;
         PhotoAlbumRowData();
+        bool IsValidSourceAlbum();
     };
 
 public:
