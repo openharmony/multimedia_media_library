@@ -3036,7 +3036,7 @@ void CloneRestore::CloseAllKvStore()
 
 void CloneRestore::StartBackup()
 {
-    MEDIA_INFO_LOG("enter clone backup")
+    MEDIA_INFO_LOG("enter clone backup");
     if (WaitSouthDeviceExitTimeout()) {
         MEDIA_ERR_LOG("backup, wait south device cleaning data timeout.");
         SetErrorCode(RestoreError::RETAIN_FORCE_TIMEOUT);
