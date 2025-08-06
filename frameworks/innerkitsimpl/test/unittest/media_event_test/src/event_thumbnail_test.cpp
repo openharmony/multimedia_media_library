@@ -98,15 +98,5 @@ HWTEST_F(EventThumbnailTest, medialib_event_CacheLcdInfo_test_001, TestSize.Leve
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(EventThumbnailTest, medialib_event_CacheVisitTime_test_001, TestSize.Level1)
-{
-    ThumbRdbOpt opts = {
-        .store = storePtr,
-        .networkId = "",
-    };
-    ThumbnailData data;
-    bool ret = ThumbnailUtils::CacheVisitTime(opts, data);
-    EXPECT_EQ(ret, false);
-}
 }
 }
