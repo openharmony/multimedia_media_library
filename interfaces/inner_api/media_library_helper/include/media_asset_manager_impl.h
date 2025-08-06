@@ -42,6 +42,7 @@ public:
     MediaLibrary_ErrorCode NativeRequestMovingPhoto(OH_MediaAsset* mediaAsset,
         NativeRequestOptions requestOptions, MediaLibrary_RequestId* requestId,
         OH_MediaLibrary_OnMovingPhotoDataPrepared callback) override;
+    static std::mutex mutex_;
 
 private:
     void CreateDataHelper(int32_t systemAbilityId);
