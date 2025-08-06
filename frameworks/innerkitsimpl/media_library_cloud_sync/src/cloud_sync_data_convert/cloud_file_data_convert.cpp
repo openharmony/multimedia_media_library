@@ -869,6 +869,8 @@ int32_t CloudFileDataConvert::ConvertFdirtyRecord(
     } else {
         record.metaDateModified = -1;
     }
+    record.path = photosData.GetFilePath().value_or("");
+    record.livePhotoCachePath = MovingPhotoFileUtils::GetLivePhotoCachePath(record.path, userId_);
     record.isSuccess = result.IsSuccess();
     record.version = result.GetDKRecord().GetVersion();
     record.serverErrorCode = result.GetDKError().serverErrorCode;

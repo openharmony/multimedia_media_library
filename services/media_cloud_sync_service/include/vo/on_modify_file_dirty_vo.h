@@ -38,6 +38,7 @@ public:
     int64_t version;
     std::string cloudId;
     std::string path;
+    std::string livePhotoCachePath;
     std::string fileName;
     std::string sourcePath;
     int64_t metaDateModified;
