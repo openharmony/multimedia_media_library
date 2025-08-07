@@ -125,7 +125,7 @@ static void SetSouthDeviceSyncSwitchStatus(CloudSyncStatus status)
 static void SetSouthDeviceCleanStatus(CloudMediaRetainType retainType, CloudSyncStatus statusKey)
 {
     auto retainTypeToInt = static_cast<int32_t>(retainType);
-    // 防止一直无法恢复, 使用时间戳戳代投开关
+    // 防止一直无法恢复, 使用时间戳代替开关
     int64_t timeStamp = 0;
     if (statusKey ==  CloudSyncStatus::CLOUD_CLEANING) {
         timeStamp = MediaFileUtils::UTCTimeMilliSeconds();
@@ -171,21 +171,22 @@ static bool IsSouthDeviceSyncCleaning(CloudMediaRetainType retainType, bool chec
 static void WaitIfBackUpingOrRestoring(const std::string& key, int64_t waitTimeout, const std::string& info = "unknown")
 {
     constexpr int64_t defaultValueTime = 0;
-    int64_t startTime = system::GetIntParameter(key, defaultValueTime);
-    int64_t startTimeTmp = startTime;
-    MEDIA_INFO_LOG("Wait for %{public}s to exit. startTime: %{public}lld", info.c_str(), startTime);
-    while (startTimeTmp > 0) {
+    int64_t startTimeClone = system::GetIntParameter(key, defaultValueTime);
+    int64_t startTimeWait = MediaFileUtils::UTCTimeSeconds();
+    MEDIA_INFO_LOG("Wait for %{public}s to exit. startTimeWait: %{public}lld, startTimeClone: %{public}lld",
+        info.c_str(), startTimeWait, startTimeClone);
+    while (startTimeClone > 0) {
         auto nowTime = MediaFileUtils::UTCTimeSeconds();
-        if ((nowTime - startTimeTmp) > waitTimeout || (nowTime - startTime) > waitTimeout) {
-            MEDIA_WARN_LOG("[%{public}s] timeout: now: %{public}lld, start time: %{public}lld,"
-                " startTimeTmp: %{public}lld", info.c_str(), nowTime, startTime, startTimeTmp);
+        if ((nowTime - startTimeWait) > waitTimeout) {
+            MEDIA_WARN_LOG("[%{public}s] timeout: now: %{public}lld, startTimeWait: %{public}lld,"
+                " startTimeClone: %{public}lld", info.c_str(), nowTime, startTimeWait, startTimeClone);
             break;
         }
-        MEDIA_DEBUG_LOG("[%{public}s] waiting: now: %{public}lld, start time: %{public}lld,"
-            " startTimeTmp: %{public}lld", info.c_str(), nowTime, startTime, startTimeTmp);
+        MEDIA_DEBUG_LOG("[%{public}s] waiting: now: %{public}lld, startTimeWait: %{public}lld,"
+            " startTimeClone: %{public}lld", info.c_str(), nowTime, startTimeWait, startTimeClone);
         std::this_thread::sleep_for(chrono::milliseconds(
             FORCE_RETAIN_CLOUD_MEDIA_WAIT_BACKUP_OR_RESTORE_SLEEP_TIME_MILLISECOND));
-        startTimeTmp = system::GetIntParameter(key, defaultValueTime);
+        startTimeClone = system::GetIntParameter(key, defaultValueTime);
     }
 
     MEDIA_INFO_LOG("the %{public}s has exited, currtime: %{public}lld", info.c_str(), MediaFileUtils::UTCTimeSeconds());

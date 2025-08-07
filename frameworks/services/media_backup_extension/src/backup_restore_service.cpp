@@ -176,10 +176,15 @@ void BackupRestoreService::StartBackupEx(int32_t sceneCode, const std::string &g
     MEDIA_INFO_LOG("Start backupEx service: %{public}d", sceneCode);
     if (sceneCode != CLONE_RESTORE_ID) {
         MEDIA_ERR_LOG("StartBackupEx current scene is not supported");
+        backupExInfo = "";
         return;
     }
     Init({CLONE_RESTORE_ID, galleryAppName, mediaAppName, "", backupInfo});
-    CHECK_AND_RETURN_LOG(restoreService_ != nullptr, "Create media backup service failed.");
+    if (restoreService_ == nullptr) {
+        MEDIA_ERR_LOG("Create media backup service failed.");
+        backupExInfo = "";
+        return;
+    }
     restoreService_->StartBackupEx(backupExInfo);
 }
 
