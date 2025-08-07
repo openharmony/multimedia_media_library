@@ -65,10 +65,10 @@ int32_t PhotoMapTableEventHandler::DropAllTriggers(
     CHECK_AND_RETURN_RET_LOG(store != nullptr, -1, "store is null");
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     const std::vector<std::string> sqls = {
-        this->SQL_DROP_NEW_TRIGGER,
-        this->SQL_DROP_DELETE_TRIGGER,
-        this->SQL_DROP_INSERT_SEARCH_TRIGGER,
-        this->SQL_DROP_DELETE_SEARCH_TRIGGER,
+        SQL_DROP_NEW_TRIGGER,
+        SQL_DROP_DELETE_TRIGGER,
+        SQL_DROP_INSERT_SEARCH_TRIGGER,
+        SQL_DROP_DELETE_SEARCH_TRIGGER,
     };
     int32_t ret = NativeRdb::E_OK;
     for (auto &sql : sqls) {
