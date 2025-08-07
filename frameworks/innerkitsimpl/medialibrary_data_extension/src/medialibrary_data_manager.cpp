@@ -1811,7 +1811,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryGeo(const RdbPred
     string longitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult);
     string addressDescription = GetStringVal(ADDRESS_DESCRIPTION, queryResult);
     MEDIA_INFO_LOG(
-        "QueryGeo, fileId: %{public}s, latitude: %{public}s, longitude: %{public}s, addressDescription: %{private}s",
+        "QueryGeo, fileId: %{public}s, latitude: %{private}s, longitude: %{private}s, addressDescription: %{private}s",
         fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
 
     if (CheckLatitudeAndLongitude(latitude, longitude) && addressDescription.empty()) {
@@ -1860,7 +1860,7 @@ shared_ptr<NativeRdb::ResultSet> QueryGeoAssets(const RdbPredicates &rdbPredicat
             string longitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult);
             string addressDescription = GetStringVal(ADDRESS_DESCRIPTION, queryResult);
             MEDIA_INFO_LOG(
-                "QueryGeo, fileId: %{public}s, latitude: %{public}s, longitude: %{public}s, "
+                "QueryGeo, fileId: %{public}s, latitude: %{private}s, longitude: %{private}s, "
                 "addressDescription: %{private}s",
                 fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
             if (CheckLatitudeAndLongitude(latitude, longitude) && addressDescription.empty()) {
