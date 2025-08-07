@@ -29,6 +29,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "cloud_media_operation_code.h"
 #include "cloud_media_sync_const.h"
+#include "exif_rotate_utils.h"
 #include "photo_album_column.h"
 
 #include "cloud_media_dfx_service.h"
@@ -1896,5 +1897,80 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaScanService_UpdateAndNotifyShootin
     service.UpdateAndNotifyShootingModeAlbumIfNeeded(scanResult);
     EXPECT_EQ(scanResult.shootingMode, "1");
     EXPECT_EQ(scanResult.frontCamera, "1");
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetExifRotate_Test_001, TestSize.Level1)
+{
+    CloudMediaDownloadService service;
+    ORM::PhotosPo photo;
+    OnDownloadAssetData assetData;
+    photo.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+    assetData.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+    int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetExifRotate_Test_002, TestSize.Level1)
+{
+    CloudMediaDownloadService service;
+    ORM::PhotosPo photo;
+    OnDownloadAssetData assetData;
+    photo.fileId = 1;
+    photo.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_RIGHT);
+    assetData.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_RIGHT);
+    int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetExifRotate_Test_003, TestSize.Level1)
+{
+    CloudMediaDownloadService service;
+    ORM::PhotosPo photo;
+    OnDownloadAssetData assetData;
+    photo.fileId = 1;
+    photo.exifRotate = 0;
+    assetData.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+    assetData.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetExifRotate_Test_004, TestSize.Level1)
+{
+    CloudMediaDownloadService service;
+    ORM::PhotosPo photo;
+    OnDownloadAssetData assetData;
+    photo.fileId = 1;
+    photo.exifRotate = 0;
+    assetData.exifRotate = static_cast<int32_t>(ExifRotateType::RIGHT_TOP);
+    assetData.mediaType = MediaType::MEDIA_TYPE_VIDEO;
+    int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetExifRotate_Test_005, TestSize.Level1)
+{
+    CloudMediaDownloadService service;
+    ORM::PhotosPo photo;
+    OnDownloadAssetData assetData;
+    photo.fileId = 1;
+    photo.exifRotate = 0;
+    assetData.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_RIGHT);
+    assetData.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetExifRotate_Test_006, TestSize.Level1)
+{
+    CloudMediaDownloadService service;
+    ORM::PhotosPo photo;
+    OnDownloadAssetData assetData;
+    photo.fileId = 1;
+    photo.exifRotate = 0;
+    assetData.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_RIGHT);
+    assetData.mediaType = MediaType::MEDIA_TYPE_VIDEO;
+    int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
+    EXPECT_EQ(ret, E_OK);
 }
 }
