@@ -110,14 +110,14 @@ public:
     int32_t localExifRotate{-1};
 
 public:  // basic function
-    std::string ToString();
+    std::string ToString() const;
 
 private:
-    void GetBasicInfo(std::stringstream &ss);
-    void GetAttributesInfo(std::stringstream &ss);
-    void GetPropertiesInfo(std::stringstream &ss);
-    void GetCloudInfo(std::stringstream &ss);
-    void GetAlbumIds(std::stringstream &ss);
+    void GetBasicInfo(std::stringstream &ss) const;
+    void GetAttributesInfo(std::stringstream &ss) const;
+    void GetPropertiesInfo(std::stringstream &ss) const;
+    void GetCloudInfo(std::stringstream &ss) const;
+    void GetAlbumIds(std::stringstream &ss) const;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUDSYNC_CLOUD_MEDIA_PULL_DATA_H
