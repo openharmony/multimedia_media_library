@@ -34,6 +34,7 @@
 #include "cloud_media_dfx_service.h"
 #include "cloud_media_scan_service.h"
 #include "dfx_const.h"
+#include "exif_rotate_utils.h"
 #include "media_gallery_sync_notify.h"
 
 namespace OHOS::Media::CloudSync {
@@ -474,19 +475,26 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
 int32_t CloudMediaDownloadService::FixDownloadAssetExifRotate(
     const ORM::PhotosPo &photo, OnDownloadAssetData &assetData)
 {
-    CHECK_AND_RETURN_RET(assetData.exifRotate != photo.exifRotate.value_or(0), E_OK);
+    CHECK_AND_RETURN_RET(assetData.exifRotate != photo.exifRotate.value_or(0),
+        CheckRegenerateThumbnail(photo, assetData));
+
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh =
+        std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL,
+        "FixDownloadAssetExifRotate Failed to get rdbStore.");
 
     int32_t oldExifRotate = photo.exifRotate.value_or(0);
     int32_t newExifRotate = assetData.exifRotate;
     int32_t fileId = photo.fileId.value_or(0);
-    string fileIdStr = std::to_string(fileId);
-    string dateTaken = std::to_string(photo.dateTaken.value_or(0));
-    string path = assetData.path;
+    int32_t ret;
     MEDIA_INFO_LOG("Need FixDownloadAssetExifRotate, id:%{public}d, mediaType:%{public}d, oldExifRotate:%{public}d, "
         "newExifRotate:%{public}d", fileId, assetData.mediaType, oldExifRotate, newExifRotate);
     if (CloudMediaSyncUtils::CanUpdateExifRotateOnly(assetData.mediaType, oldExifRotate, newExifRotate)) {
-        return this->dao_.UpdateDownloadAssetExifRotateFix(
-            fileId, assetData.exifRotate, DirtyTypes::TYPE_MDIRTY, false);
+        ret = this->dao_.UpdateDownloadAssetExifRotateFix(
+            photoRefresh, fileId, assetData.exifRotate, DirtyTypes::TYPE_MDIRTY, false);
+        CHECK_AND_RETURN_RET(ret == E_OK, ret);
+        photoRefresh->Notify();
+        return E_OK;
     }
 
     DirtyTypes dirtyType;
@@ -495,11 +503,23 @@ int32_t CloudMediaDownloadService::FixDownloadAssetExifRotate(
     } else {
         dirtyType = DirtyTypes::TYPE_FDIRTY;
     }
-    int32_t ret = this->dao_.UpdateDownloadAssetExifRotateFix(fileId, assetData.exifRotate, dirtyType, true);
+    ret = this->dao_.UpdateDownloadAssetExifRotateFix(photoRefresh, fileId, assetData.exifRotate, dirtyType, true);
     CHECK_AND_RETURN_RET(ret == E_OK, ret);
 
     auto thumbnailService = ThumbnailService::GetInstance();
-    thumbnailService->DeleteThumbnailDirAndAstc(fileIdStr, PhotoColumn::PHOTOS_TABLE, path, dateTaken);
-    return thumbnailService->FixThumbnailExifRotateAfterDownloadAsset(fileIdStr);
+    thumbnailService->DeleteThumbnailDirAndAstc(std::to_string(fileId), PhotoColumn::PHOTOS_TABLE,
+        assetData.path, std::to_string(photo.dateTaken.value_or(0)));
+    photoRefresh->Notify();
+    return thumbnailService->FixThumbnailExifRotateAfterDownloadAsset(std::to_string(fileId));
+}
+
+int32_t CloudMediaDownloadService::CheckRegenerateThumbnail(
+    const ORM::PhotosPo &photo, OnDownloadAssetData &assetData)
+{
+    CHECK_AND_RETURN_RET(ExifRotateUtils::IsExifRotateWithFlip(assetData.exifRotate), E_OK);
+    int32_t fileId = photo.fileId.value_or(0);
+    MEDIA_INFO_LOG("Need regenerate thumbnail, id:%{public}d, exifRotate:%{public}d", fileId, assetData.exifRotate);
+    auto thumbnailService = ThumbnailService::GetInstance();
+    return thumbnailService->FixThumbnailExifRotateAfterDownloadAsset(std::to_string(fileId));
 }
 }  // namespace OHOS::Media::CloudSync
