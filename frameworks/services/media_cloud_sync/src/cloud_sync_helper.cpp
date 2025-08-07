@@ -17,6 +17,7 @@
 
 #include "cloud_sync_helper.h"
 
+#include "ffrt_inner.h"
 #include "medialibrary_all_album_refresh_processor.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
@@ -49,28 +50,11 @@ shared_ptr<CloudSyncHelper> CloudSyncHelper::GetInstance()
     return instance_;
 }
 
-CloudSyncHelper::CloudSyncHelper() : timer_("CloudSync")
-{
-    timer_.Setup();
-}
-
-CloudSyncHelper::~CloudSyncHelper()
-{
-    timer_.Unregister(timerId_);
-    timer_.Shutdown();
-}
-
 void CloudSyncHelper::StartSync()
 {
-    lock_guard<mutex> lock(syncMutex_);
-    if (isPending_) {
-        /* cancel the previous timer */
-        timer_.Unregister(timerId_);
-    } else {
-        isPending_ = true;
-    }
-    timerId_ = timer_.Register(bind(&CloudSyncHelper::OnTimerCallback, this),
-        SYNC_INTERVAL, true);
+    MEDIA_DEBUG_LOG("CloudSyncHelper StartSync");
+    skipCond_.notify_all();
+    ffrt::submit([this]() { OnTimerCallback(); });
 }
 
 bool CloudSyncHelper::InitDataShareHelper()
@@ -151,13 +135,17 @@ bool CloudSyncHelper::IsSyncSwitchOpen()
 
 void CloudSyncHelper::OnTimerCallback()
 {
+    {
+        unique_lock<mutex> lock(syncMutex_);
+        if (skipCond_.wait_for(lock, std::chrono::milliseconds(SYNC_INTERVAL)) == std::cv_status::no_timeout) {
+            MEDIA_DEBUG_LOG("skip cloud sync");
+            return;
+        }
+    }
+
     if (!IsSyncSwitchOpen()) {
         return;
     }
-
-    unique_lock<mutex> lock(syncMutex_);
-    isPending_ = false;
-    lock.unlock();
 
     MEDIA_INFO_LOG("cloud sync manager start sync");
     auto callback = make_shared<MediaCloudSyncCallback>();
