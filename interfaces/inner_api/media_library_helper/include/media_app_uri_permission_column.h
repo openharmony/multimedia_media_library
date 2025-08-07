@@ -72,6 +72,9 @@ public:
 
     // all columns
     static const std::set<std::string> ALL_COLUMNS EXPORT;
+
+    // delete sql
+    static const std::string DROP_URI_URITYPE_APPID_INDEX EXPORT;
 };
 
 } // namespace OHOS::Media
