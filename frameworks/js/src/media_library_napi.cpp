@@ -7394,7 +7394,9 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
         context->SaveError(errCode);
         return;
     }
+    tracer.Start("MakeFetchResult");
     context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    tracer.Finish();
     context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     context->fetchFileResult->SetUserId(context->userId);
 }

@@ -5588,6 +5588,8 @@ pair<int32_t, NativeRdb::Results> MediaLibraryRdbStore::Delete(const AbsRdbPredi
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const NativeRdb::AbsRdbPredicates &predicates,
     const std::vector<std::string> &columns)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::Query");
     CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), nullptr,
         "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
     return MediaLibraryRdbStore::GetRaw()->Query(predicates, columns);
@@ -5596,6 +5598,8 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const NativeRd
 std::shared_ptr<AbsSharedResultSet> MediaLibraryRdbStore::QuerySql(const std::string &sql,
     const std::vector<ValueObject> &args)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::QuerySql");
     CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), nullptr,
         "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
     return MediaLibraryRdbStore::GetRaw()->QuerySql(sql, args);

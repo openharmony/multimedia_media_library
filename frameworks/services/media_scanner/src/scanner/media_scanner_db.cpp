@@ -259,6 +259,8 @@ static void SetImageVideoValuesFromMetaDataApi10(const Metadata &metadata, Value
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
         HandleMovingPhoto(metadata, values);
     }
+    MEDIA_INFO_LOG("MediaScannerDb height: %{public}d, width: %{public}d.",
+        metadata.GetFileHeight(), metadata.GetFileWidth());
 }
 
 static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &values, bool isInsert,
