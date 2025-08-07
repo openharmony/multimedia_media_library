@@ -531,6 +531,78 @@ static void SetExifRotateAfterAddColumn(const shared_ptr<MediaLibraryRdbStore>& 
     MEDIA_INFO_LOG("End set exif rotate");
 }
 
+static void AsyncUpgradeFromAllVersionFirstPart(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+{
+    MEDIA_INFO_LOG("Start VERSION_ADD_DETAIL_TIME");
+    MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(rdbStore);
+    MediaLibraryRdbStore::UpdateDateTakenIndex(rdbStore);
+    ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
+    MEDIA_INFO_LOG("End VERSION_ADD_DETAIL_TIME");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_INDEX_FOR_COVER");
+    MediaLibraryRdbStore::UpdateIndexForCover(rdbStore);
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_INDEX_FOR_COVER");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_THUMBNAIL_VISIBLE");
+    MediaLibraryRdbStore::UpdateThumbnailVisibleAndIdx(rdbStore);
+    MEDIA_INFO_LOG("Start VERSION_ADD_THUMBNAIL_VISIBLE");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_DATETAKEN_AND_DETAILTIME");
+    MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_DATETAKEN_AND_DETAILTIME");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_READY_COUNT_INDEX");
+    MediaLibraryRdbStore::AddReadyCountIndex(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_READY_COUNT_INDEX");
+
+    MEDIA_INFO_LOG("Start VERSION_REVERT_FIX_DATE_ADDED_INDEX");
+    MediaLibraryRdbStore::RevertFixDateAddedIndex(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_REVERT_FIX_DATE_ADDED_INDEX");
+
+    MEDIA_INFO_LOG("Start VERSION_FIX_PICTURE_LCD_SIZE");
+    MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_FIX_PICTURE_LCD_SIZE");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_ALBUM_INDEX");
+    MediaLibraryRdbStore::AddAlbumIndex(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_INDEX");
+}
+
+static void AsyncUpgradeFromAllVersionSecondPart(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+{
+    MEDIA_INFO_LOG("Start VERSION_ADD_PHOTO_DATEADD_INDEX");
+    MediaLibraryRdbStore::AddPhotoDateAddedIndex(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_PHOTO_DATEADD_INDEX");
+
+    MEDIA_INFO_LOG("Start VERSION_REFRESH_PERMISSION_APPID");
+    MediaLibraryRdbUtils::TransformAppId2TokenId(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_REFRESH_PERMISSION_APPID");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX");
+    MediaLibraryRdbStore::AddCloudEnhancementAlbumIndex(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_PHOTOS_DATE_AND_IDX");
+    PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_PHOTOS_DATE_AND_IDX");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_PHOTOS_DATE_IDX");
+    PhotoDayMonthYearOperation::UpdatePhotosDateIdx(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_PHOTOS_DATE_IDX");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX");
+    MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX");
+    MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX");
+    MediaLibraryRdbStore::AddAlbumSubtypeAndNameIdx(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX");
+}
+
 void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API18) {
@@ -557,6 +629,12 @@ void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE) {
         SetExifRotateAfterAddColumn(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE);
+    }
+
+    if (oldVersion < VERSION_FIX_DB_UPGRADE_TO_API20) {
+        AsyncUpgradeFromAllVersionFirstPart(rdbStore);
+        AsyncUpgradeFromAllVersionSecondPart(rdbStore);
+        rdbStore->SetOldVersion(VERSION_FIX_DB_UPGRADE_TO_API20);
     }
 }
 
@@ -775,6 +853,10 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart
         if (oldVersion < VERSION_UPDATE_INDEX_FOR_COVER) {
             MediaLibraryRdbStore::UpdateIndexForCover(rdbStore);
             rdbStore->SetOldVersion(VERSION_UPDATE_INDEX_FOR_COVER);
+        }
+        if (oldVersion < VERSION_ADD_THUMBNAIL_VISIBLE) {
+            MediaLibraryRdbStore::UpdateThumbnailVisibleAndIdx(rdbStore);
+            rdbStore->SetOldVersion(VERSION_ADD_THUMBNAIL_VISIBLE);
         }
         if (oldVersion < VERSION_UPDATE_DATETAKEN_AND_DETAILTIME) {
             MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(rdbStore);

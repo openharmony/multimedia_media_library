@@ -93,6 +93,9 @@ const std::string AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX = BaseC
     AppUriPermissionColumn::URI_TYPE + "," +
     AppUriPermissionColumn::APP_ID + " DESC)";
 
+const std::string AppUriPermissionColumn::DROP_URI_URITYPE_APPID_INDEX = BaseColumn::DropIndex() +
+    AppUriPermissionColumn::URI_URITYPE_APPID_INDEX;
+
 const std::string AppUriPermissionColumn::CREATE_URI_URITYPE_TOKENID_INDEX = BaseColumn::CreateIndex() +
     AppUriPermissionColumn::URI_URITYPE_APPID_INDEX + " ON " +
     AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + " (" +
