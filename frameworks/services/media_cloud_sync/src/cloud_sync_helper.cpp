@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,6 +22,8 @@
 #include "media_log.h"
 #include "parameters.h"
 #include "post_event_utils.h"
+#include "settings_data_manager.h"
+
 namespace OHOS {
 namespace Media {
 using namespace std;
@@ -107,6 +109,13 @@ bool CloudSyncHelper::InitDataShareHelper()
 
 bool CloudSyncHelper::IsSyncSwitchOpen()
 {
+    auto switchStatus = SettingsDataManager::GetPhotosSyncSwitchStatus();
+    if (switchStatus != SwitchStatus::NONE) {
+        MEDIA_DEBUG_LOG("GetPhotosSyncSwitchStatus success, switchStatus: %{public}d", static_cast<int>(switchStatus));
+        return switchStatus != SwitchStatus::CLOSE;
+    }
+    MEDIA_DEBUG_LOG("GetPhotosSyncSwitchStatus fail, continue query old sync switch");
+
     if (!InitDataShareHelper()) {
         return true;
     }

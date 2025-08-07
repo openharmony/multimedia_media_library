@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -51,6 +51,8 @@ public:
     void ReportPortraitStat(int32_t sceneCode);
     std::string GetProgressInfo();
     virtual void StartBackup();
+    void StartBackupEx(std::string& backupExInfo);
+    void Release(ReleaseScene releaseScene);
     std::string restoreInfo_;
 
 protected:
@@ -178,6 +180,13 @@ protected:
     void InsertDetailTime(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
         FileInfo &fileInfo);
     virtual bool HasExThumbnail(const FileInfo &info);
+    bool WaitSouthDeviceExitTimeout();
+    std::string GetBackupExInfo();
+    virtual void BackupRelease();
+    virtual void RestoreRelease();
+    void SetParameterForBackup();
+    void StopParameterForBackup();
+    nlohmann::json GetBackupErrorInfoJson();
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};

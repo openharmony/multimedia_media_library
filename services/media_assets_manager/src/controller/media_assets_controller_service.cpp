@@ -1774,13 +1774,16 @@ int32_t MediaAssetsControllerService::RetainCloudMediaAsset(MessageParcel &data,
         MEDIA_ERR_LOG("StartDownloadCloudMedia Read Request Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    if (reqBody.cloudMediaRetainType == static_cast<int32_t>(CloudMediaRetainType::RETAIN_FORCE) ||
-        reqBody.cloudMediaRetainType == static_cast<int32_t>(CloudMediaRetainType::HDC_RETAIN_FORCE)) {
-        ret = MediaAssetsService::GetInstance().RetainCloudMediaAsset();
+
+    auto cloudMediaRetainType = static_cast<CloudMediaRetainType>(reqBody.cloudMediaRetainType);
+    if (cloudMediaRetainType == CloudMediaRetainType::RETAIN_FORCE ||
+        cloudMediaRetainType == CloudMediaRetainType::HDC_RETAIN_FORCE) {
+        ret = MediaAssetsService::GetInstance().RetainCloudMediaAsset(cloudMediaRetainType);
     } else {
         ret = E_INVALID_VALUES;
         MEDIA_ERR_LOG("RetainCloudMediaAsset error, err type: %{public}d", reqBody.cloudMediaRetainType);
     }
+    MEDIA_INFO_LOG("RetainCloudMediaAsset end, ret:%{public}d", ret);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 

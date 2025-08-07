@@ -97,6 +97,7 @@ ohos_unittest("media_assets_controller_service_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/trash_photos_vo.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_itypes_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/parameter_utils.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/settings_data_manager.cpp",
     "../../../media_library_manager/src/media_library_tab_old_photos_client.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/add_visit_count_test.cpp",
