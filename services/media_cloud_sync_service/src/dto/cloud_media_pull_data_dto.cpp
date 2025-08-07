@@ -20,7 +20,7 @@
 #include <sstream>
 
 namespace OHOS::Media::CloudSync {
-void CloudMediaPullDataDto::GetBasicInfo(std::stringstream &ss)
+void CloudMediaPullDataDto::GetBasicInfo(std::stringstream &ss) const
 {
     ss << "\"cloudId\": \"" << cloudId << "\","
        << "\"basicIsDelete\": " << std::to_string(basicIsDelete) << ","
@@ -46,7 +46,7 @@ void CloudMediaPullDataDto::GetBasicInfo(std::stringstream &ss)
        << "\"attributesMetaDateModified\": " << attributesMetaDateModified << ","
        << "\"attributesSubtype\": " << attributesSubtype << ",";
 }
-void CloudMediaPullDataDto::GetAttributesInfo(std::stringstream &ss)
+void CloudMediaPullDataDto::GetAttributesInfo(std::stringstream &ss) const
 {
     ss << "\"attributesBurstCoverLevel\": " << attributesBurstCoverLevel << ","
        << "\"attributesBurstKey\": \"" << attributesBurstKey << "\","
@@ -70,7 +70,7 @@ void CloudMediaPullDataDto::GetAttributesInfo(std::stringstream &ss)
        << "\"attributesFixVersion\": " << attributesFixVersion << ","
        << "\"attributesEditDataCamera\": \"" << attributesEditDataCamera << "\",";
 }
-void CloudMediaPullDataDto::GetPropertiesInfo(std::stringstream &ss)
+void CloudMediaPullDataDto::GetPropertiesInfo(std::stringstream &ss) const
 {
     ss << "\"hasProperties\": " << std::to_string(hasProperties) << ","
        << "\"propertiesRotate\": " << propertiesRotate << ","
@@ -92,12 +92,12 @@ void CloudMediaPullDataDto::GetPropertiesInfo(std::stringstream &ss)
        << "\"localOrientation\": " << localOrientation << ","
        << "\"localThumbState\": " << localThumbState;
 }
-void CloudMediaPullDataDto::GetCloudInfo(std::stringstream &ss)
+void CloudMediaPullDataDto::GetCloudInfo(std::stringstream &ss) const
 {
     ss << "\"attributesCloudId\": \"" << attributesCloudId << "\","
        << "\"attributesOriginCloudId\": \"" << attributesOriginCloudId << "\",";
 }
-void CloudMediaPullDataDto::GetAlbumIds(std::stringstream &ss)
+void CloudMediaPullDataDto::GetAlbumIds(std::stringstream &ss) const
 {
     ss << "[";
     for (uint32_t i = 0; i < attributesSrcAlbumIds.size(); ++i) {
@@ -109,7 +109,7 @@ void CloudMediaPullDataDto::GetAlbumIds(std::stringstream &ss)
     }
     ss << "],";
 }
-std::string CloudMediaPullDataDto::ToString()
+std::string CloudMediaPullDataDto::ToString() const
 {
     std::stringstream ss;
     ss << "{";

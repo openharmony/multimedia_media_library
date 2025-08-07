@@ -539,13 +539,41 @@ int32_t CloudMediaPhotosDao::GetSourceAlbumForMerge(const CloudMediaPullDataDto 
     return E_OK;
 }
 
-int32_t CloudMediaPhotosDao::FixAlbumIdToBeOtherAlbumId(
-    int32_t &albumId, SafeMap<std::string, std::pair<int32_t, std::string>> &lpathToIdMap)
+bool CloudMediaPhotosDao::IsHiddenAsset(const CloudMediaPullDataDto &pullData)
+{
+    CHECK_AND_RETURN_RET_INFO_LOG(
+        pullData.attributesSrcAlbumIds.size() > 0, false, "attributesSrcAlbumIds size 0, not hidden");
+    for (auto cloudId : pullData.attributesSrcAlbumIds) {
+        CHECK_AND_RETURN_RET_INFO_LOG(
+            cloudId != HIDDEN_ALBUM_CLOUD_ID, true, "isHidden: true, cloudId %{public}s", cloudId.c_str());
+    }
+    return false;
+}
+
+// 无归属相册的资产下行时，如果是回收站或者隐藏相册，则归属虚拟相册回收站(-3)或者隐藏相册(-4)
+int32_t CloudMediaPhotosDao::FixEmptyAlbumId(const CloudMediaPullDataDto &data, int32_t &albumId)
+{
+    CHECK_AND_RETURN_RET(albumId == 0, E_OK);
+    if (data.basicRecycledTime != 0) {
+        albumId = ALBUM_ID_RECYCLE;
+    } else if (this->IsHiddenAsset(data)) {
+        albumId = ALBUM_ID_HIDDEN;
+    } else if (!data.propertiesSourcePath.empty()) {
+        albumId = ALBUM_ID_NEED_REBUILD;
+    } else {
+        this->FixAlbumIdToBeOtherAlbumId(albumId);
+    }
+    MEDIA_WARN_LOG("FixEmptyAlbumId, fixed-albumId: %{public}d, data: %{public}s.", albumId, data.ToString().c_str());
+    return E_OK;
+}
+
+int32_t CloudMediaPhotosDao::FixAlbumIdToBeOtherAlbumId(int32_t &albumId)
 {
     CHECK_AND_RETURN_RET(albumId == 0, E_OK);
     std::string lPath = "/Pictures/其它";
     std::transform(lPath.begin(), lPath.end(), lPath.begin(), ::tolower);
     std::pair<int32_t, std::string> val;
+    SafeMap<std::string, std::pair<int32_t, std::string>> lpathToIdMap = GetAlbumLPathToIdMap();
     if (lpathToIdMap.Find(lPath, val)) {
         albumId = val.first;
     }
@@ -713,7 +741,7 @@ int32_t CloudMediaPhotosDao::UpdateFixDB(const CloudMediaPullDataDto &data, Nati
     if (albumId == 0 && !isHide) {
         GetSourceAlbumFromPath(data, albumId, albumIds, lpathToIdMap);
     }
-    this->FixAlbumIdToBeOtherAlbumId(albumId, lpathToIdMap);
+    this->FixEmptyAlbumId(data, albumId);
     refreshAlbums.emplace(std::to_string(albumId));
     MEDIA_INFO_LOG(
         "UpdateFixDB needFix %{public}d  %{public}d  %{public}d %{public}d", needFix, isHide, hidden, albumId);
