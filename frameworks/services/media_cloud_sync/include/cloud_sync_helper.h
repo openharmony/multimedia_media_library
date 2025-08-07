@@ -37,13 +37,12 @@ class CloudSyncHelper final {
 public:
     EXPORT static std::shared_ptr<CloudSyncHelper> GetInstance();
     std::atomic<bool> isThumbnailGenerationCompleted_ = true;
-    virtual ~CloudSyncHelper();
+    virtual ~CloudSyncHelper() = default;
 
     EXPORT void StartSync();
     EXPORT bool IsSyncSwitchOpen();
 
 private:
-    CloudSyncHelper();
     void OnTimerCallback();
     bool InitDataShareHelper();
 
@@ -52,10 +51,8 @@ private:
     static std::mutex instanceMutex_;
 
     /* delayed trigger */
-    OHOS::Utils::Timer timer_;
-    uint32_t timerId_ = 0;
-    bool isPending_ = false;
     std::mutex syncMutex_;
+    std::condition_variable skipCond_;
 
     /* sync switch */
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
