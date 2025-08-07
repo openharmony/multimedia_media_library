@@ -505,63 +505,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_
     EXPECT_NE(restoreExInfo, EMPTY_STR); // single clone is now supported
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_004, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialibrary_backup_service_start_restore_ex_004 start");
-    RestoreInfo info;
-    info.sceneCode = UPGRADE_RESTORE_ID;
-    info.galleryAppName = EMPTY_STR;
-    info.mediaAppName = EMPTY_STR;
-    info.backupDir = EMPTY_STR;
-    info.bundleInfo = EMPTY_STR;
-    string restoreExInfo = INVALID_STR;
-    int64_t triggerTimeoutStartTime = MediaFileUtils::UTCTimeMilliSeconds() - \
-            RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND - TIMEOUT_DELTA;
-    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(triggerTimeoutStartTime)));
-    BackupRestoreService::GetInstance().restoreService_ = nullptr;
-    BackupRestoreService::GetInstance().StartRestoreEx(nullptr, info, restoreExInfo);
-    MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
-    EXPECT_NE(restoreExInfo, EMPTY_STR); // upgrade is now supported
-}
-
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_005, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialibrary_backup_service_start_restore_ex_005 start");
-    RestoreInfo info;
-    info.sceneCode = DUAL_FRAME_CLONE_RESTORE_ID;
-    info.galleryAppName = EMPTY_STR;
-    info.mediaAppName = EMPTY_STR;
-    info.backupDir = EMPTY_STR;
-    info.bundleInfo = EMPTY_STR;
-    string restoreExInfo = INVALID_STR;
-    int64_t triggerTimeoutStartTime = MediaFileUtils::UTCTimeMilliSeconds() - \
-            RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND - TIMEOUT_DELTA;
-    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(triggerTimeoutStartTime)));
-    BackupRestoreService::GetInstance().restoreService_ = nullptr;
-    BackupRestoreService::GetInstance().StartRestoreEx(nullptr, info, restoreExInfo);
-    MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
-    EXPECT_NE(restoreExInfo, EMPTY_STR); // dual clone is now supported
-}
-
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_006, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialibrary_backup_service_start_restore_ex_006 start");
-    RestoreInfo info;
-    info.sceneCode = CLONE_RESTORE_ID;
-    info.galleryAppName = EMPTY_STR;
-    info.mediaAppName = EMPTY_STR;
-    info.backupDir = EMPTY_STR;
-    info.bundleInfo = EMPTY_STR;
-    string restoreExInfo = INVALID_STR;
-    int64_t triggerTimeoutStartTime = MediaFileUtils::UTCTimeMilliSeconds() - \
-            RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND - TIMEOUT_DELTA;
-    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(triggerTimeoutStartTime)));
-    BackupRestoreService::GetInstance().restoreService_ = nullptr;
-    BackupRestoreService::GetInstance().StartRestoreEx(nullptr, info, restoreExInfo);
-    MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
-    EXPECT_NE(restoreExInfo, EMPTY_STR); // single clone is now supported
-}
-
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_get_backup_info_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_get_backup_info_001 start");
@@ -1778,21 +1721,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_0
     instance.StartBackup(CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_002, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("medialibrary_backup_service_start_backup_002 start");
-    
-    BackupRestoreService &instance = BackupRestoreService::GetInstance();
-    ASSERT_NE(&instance, nullptr);
-    int64_t triggerTimeoutStartTime = MediaFileUtils::UTCTimeMilliSeconds() - \
-            RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND - TIMEOUT_DELTA;
-    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(triggerTimeoutStartTime)));
-    instance.restoreService_ = nullptr;
-    instance.StartBackup(UPGRADE_RESTORE_ID, EMPTY_STR, EMPTY_STR);
-    instance.restoreService_ = nullptr;
-    instance.StartBackup(CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR);
-}
-
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_ex_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_start_backup_ex_001 start");
@@ -2928,17 +2856,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_tes
     EXPECT_EQ(ret, MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR));
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_test_002, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("Start medialibrary_backup_clone_start_backup_test_002");
-    bool ret = restoreService->BackupKvStore();
-    int64_t triggerTimeoutStartTime = MediaFileUtils::UTCTimeMilliSeconds() - \
-                RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND - TIMEOUT_DELTA;
-    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(triggerTimeoutStartTime)));
-    restoreService->StartBackup();
-    EXPECT_EQ(ret, MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR));
-}
-
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_test_geo_knowledge_clone_test_001");
@@ -3525,20 +3442,9 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_device_exit
     EXPECT_FALSE(cloneRestoreService->WaitSouthDeviceExitTimeout());
 }
 
-
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_device_exit_timeout_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialib_backup_wait_south_device_exit_timeout_test_002");
-    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
-    int64_t triggerTimeoutStartTime = MediaFileUtils::UTCTimeMilliSeconds() - \
-        RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND - TIMEOUT_DELTA;
-    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(triggerTimeoutStartTime)));
-    EXPECT_TRUE(cloneRestoreService->WaitSouthDeviceExitTimeout());
-}
-
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_device_exit_timeout_test_003, TestSize.Level2)
-{
-    MEDIA_INFO_LOG("Start medialib_backup_wait_south_device_exit_timeout_test_003");
     unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
     EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY,
         std::to_string(MediaFileUtils::UTCTimeMilliSeconds())));

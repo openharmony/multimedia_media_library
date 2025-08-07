@@ -1630,6 +1630,7 @@ void BaseRestore::SetParameterForClone()
 
 void BaseRestore::StopParameterForClone()
 {
+    MEDIA_INFO_LOG("StopParameterForClone set 0");
     bool retFlag = system::SetParameter(CLONE_FLAG, "0");
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter cloneFlag, retFlag:%{public}d", retFlag);
 }
@@ -1644,6 +1645,7 @@ void BaseRestore::SetParameterForBackup()
 
 void BaseRestore::StopParameterForBackup()
 {
+    MEDIA_INFO_LOG("StopParameterForBackup set 0");
     bool retFlag = system::SetParameter(BACKUP_FLAG, "0");
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter backupFlag, retFlag:%{public}d", retFlag);
 }
@@ -2126,22 +2128,23 @@ inline int64_t GetSouthDeviceSwithStatusTimestamp()
 bool BaseRestore::WaitSouthDeviceExitTimeout()
 {
     constexpr int64_t defaultValueTime = 0;
-    int64_t startTime = GetSouthDeviceSwithStatusTimestamp();
-    int64_t startTimeTmp = startTime;
-    MEDIA_INFO_LOG("Wait for the south device to exit. startTime: %{public}lld", startTime);
-    while (startTimeTmp > 0) {
+    int64_t startTimeClean = GetSouthDeviceSwithStatusTimestamp();
+    int64_t startTimeWait = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("Wait for the south device to exit. startTimeWait: %{public}lld, startTimeClean: %{public}lld",
+        startTimeWait, startTimeClean);
+    while (startTimeClean > 0) {
         auto nowTime = MediaFileUtils::UTCTimeMilliSeconds();
         int64_t waitTimeout = RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND; // unit: ms
-        if ((nowTime - startTimeTmp) > waitTimeout || (nowTime - startTime) > waitTimeout) {
-            MEDIA_WARN_LOG("[Restore or Backup] timeout: now: %{public}lld, start time: %{public}lld, "
-                "startTimeTmp: %{public}lld", nowTime, startTime, startTimeTmp);
+        if ((nowTime - startTimeWait) > waitTimeout) {
+            MEDIA_WARN_LOG("[Restore or Backup] timeout: now: %{public}lld, startTimeWait: %{public}lld, "
+                "startTimeClean: %{public}lld", nowTime, startTimeWait, startTimeClean);
             return true;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(
             RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_SLEEP_TIME_MILLISECOND));
-        startTimeTmp = GetSouthDeviceSwithStatusTimestamp();
-        MEDIA_DEBUG_LOG("[Restore or Backup] waiting: now: %{public}lld, start time: %{public}lld,"
-            " startTimeTmp: %{public}lld", nowTime, startTime, startTimeTmp);
+        startTimeClean = GetSouthDeviceSwithStatusTimestamp();
+        MEDIA_DEBUG_LOG("[Restore or Backup] waiting: now: %{public}lld, startTimeWait: %{public}lld,"
+            " startTimeClean: %{public}lld", nowTime, startTimeWait, startTimeClean);
     }
     MEDIA_INFO_LOG("the south device has exited. exitTime: %{public}lld", MediaFileUtils::UTCTimeMilliSeconds());
     return false;
@@ -2155,7 +2158,7 @@ void BaseRestore::StartBackupEx(std::string& backupExInfo)
 
 std::string BaseRestore::GetBackupExInfo()
 {
-    return GetBackupErrorInfoJson().dump();
+    return GetBackupErrorInfoJson().dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
 }
 
 nlohmann::json BaseRestore::GetBackupErrorInfoJson()
@@ -2174,8 +2177,10 @@ void BaseRestore::Release(ReleaseScene releaseScene)
 {
     if (releaseScene == ReleaseScene::BACKUP) {
         BackupRelease();
-    } else {
+    } else if (releaseScene == ReleaseScene::RESTORE) {
         RestoreRelease();
+    } else {
+        MEDIA_ERR_LOG("Invalid ReleaseScene: %{public}d", static_cast<int>(releaseScene));
     }
 }
 

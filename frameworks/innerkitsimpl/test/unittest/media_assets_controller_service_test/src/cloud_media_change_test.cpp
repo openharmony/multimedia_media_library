@@ -176,6 +176,7 @@ HWTEST_F(CloudMediaChangeTest, RetainCloudMediaAsset_Test_001, TestSize.Level0)
     IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     ret = respVo.Unmarshalling(reply);
     EXPECT_EQ(true, ret);
+    EXPECT_EQ(respVo.GetErrCode(), E_OK);
 }
 
 HWTEST_F(CloudMediaChangeTest, RetainCloudMediaAsset_Test_002, TestSize.Level0)
@@ -195,6 +196,7 @@ HWTEST_F(CloudMediaChangeTest, RetainCloudMediaAsset_Test_002, TestSize.Level0)
     IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     ret = respVo.Unmarshalling(reply);
     EXPECT_EQ(true, ret);
+    EXPECT_EQ(respVo.GetErrCode(), E_OK);
 }
 
 HWTEST_F(CloudMediaChangeTest, RetainCloudMediaAsset_Test_003, TestSize.Level0) {
@@ -225,5 +227,6 @@ HWTEST_F(CloudMediaChangeTest, RetainCloudMediaAsset_Test_004, TestSize.Level0)
     IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     ret = respVo.Unmarshalling(reply);
     EXPECT_EQ(true, ret);
+    EXPECT_NE(respVo.GetErrCode(), E_OK);
 }
 }  // namespace OHOS::Media
