@@ -44,6 +44,9 @@ public:
     void GetBackupInfo(int32_t sceneCode, std::string &backupInfo);
     void GetProgressInfo(std::string &progressInfo);
     void StartBackup(int32_t sceneCode, const std::string &galleryAppName = "", const std::string &mediaAppName = "");
+    void StartBackupEx(int32_t sceneCode, const std::string &galleryAppName,
+        const std::string &mediaAppName, const std::string& backupInfo, std::string& backupExInfo);
+    void Release(int32_t sceneCode, int32_t releaseScene);
 
 private:
     BackupRestoreService() = default;

@@ -169,5 +169,37 @@ void BackupRestoreService::StartBackup(int32_t sceneCode, const std::string &gal
     CHECK_AND_RETURN_LOG(restoreService_ != nullptr, "Create media backup service failed.");
     restoreService_->StartBackup();
 }
+
+void BackupRestoreService::StartBackupEx(int32_t sceneCode, const std::string &galleryAppName,
+    const std::string &mediaAppName, const std::string& backupInfo, std::string& backupExInfo)
+{
+    MEDIA_INFO_LOG("Start backupEx service: %{public}d", sceneCode);
+    if (sceneCode != CLONE_RESTORE_ID) {
+        MEDIA_ERR_LOG("StartBackupEx current scene is not supported");
+        backupExInfo = "";
+        return;
+    }
+    Init({CLONE_RESTORE_ID, galleryAppName, mediaAppName, "", backupInfo});
+    if (restoreService_ == nullptr) {
+        MEDIA_ERR_LOG("Create media backup service failed.");
+        backupExInfo = "";
+        return;
+    }
+    restoreService_->StartBackupEx(backupExInfo);
+}
+
+void BackupRestoreService::Release(int32_t sceneCode, int32_t releaseSceneInt)
+{
+    MEDIA_INFO_LOG("Start Release service, releaseScene:%{public}d", releaseSceneInt);
+    CHECK_AND_RETURN_LOG(INT_RELEASE_SCENE_MAP.count(releaseSceneInt),
+        "invalid releaseScene: %{public}d", releaseSceneInt);
+    ReleaseScene releaseScene = INT_RELEASE_SCENE_MAP.at(releaseSceneInt);
+    CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID,
+        "current release scene is not supported, sceneCode: %{public}d releasescene: %{public}d",
+        sceneCode, releaseSceneInt);
+    Init({CLONE_RESTORE_ID, "", "", "", ""});
+    CHECK_AND_RETURN_LOG(restoreService_ != nullptr, "Create media backup service failed.");
+    restoreService_->Release(releaseScene);
+}
 } // namespace Media
 } // namespace OHOS

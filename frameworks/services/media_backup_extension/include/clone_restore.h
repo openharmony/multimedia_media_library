@@ -73,6 +73,7 @@ protected:
     void CloudPhotoFilesVerify(const std::vector<FileInfo> &fileInfos, std::vector<FileInfo> &LCDNotFound,
         std::vector<FileInfo> &THMNotFound, unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
     bool HasExThumbnail(const FileInfo &info) override;
+    void BackupRelease() override;
 
 private:
     void RestorePhoto(void) override;

@@ -51,6 +51,16 @@ using BackupBlock = struct {
     napi_deferred nativeDeferred;
 };
 
+using BackupExBlock = struct {
+    napi_env env;
+    int32_t sceneCode;
+    std::string galleryAppName;
+    std::string mediaAppName;
+    napi_deferred nativeDeferred;
+    std::string backupInfo;
+    std::string backupExInfo;
+};
+
 napi_value MediaLibraryBackupNapi::Init(napi_env env, napi_value exports)
 {
     NAPI_INFO_LOG("Init, MediaLibraryBackupNapi has been used.");
@@ -60,6 +70,8 @@ napi_value MediaLibraryBackupNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getBackupInfo", JSGetBackupInfo),
         DECLARE_NAPI_FUNCTION("getProgressInfo", JSGetProgressInfo),
         DECLARE_NAPI_FUNCTION("startBackup", JSStartBackup),
+        DECLARE_NAPI_FUNCTION("startBackupEx", JSStartBackupEx),
+        DECLARE_NAPI_FUNCTION("release", JSRelease),
     };
 
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(media_library_properties) /
@@ -393,6 +405,99 @@ napi_value MediaLibraryBackupNapi::JSStartBackup(napi_env env, napi_callback_inf
     }
     work->data = reinterpret_cast<void *>(block);
     UvBackupWork(loop, work);
+    return result;
+}
+
+napi_value MediaLibraryBackupNapi::JSStartBackupEx(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    if (CheckPermission() != E_OK) {
+        return result;
+    }
+
+    size_t argc = ARGS_FOUR;
+    napi_value argv[ARGS_FOUR] = {0};
+    napi_value thisVar = nullptr;
+
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, (argc == ARGS_FOUR), "requires 4 parameters");
+    napi_get_undefined(env, &result);
+    int32_t sceneCode = GetIntFromParams(env, argv, PARAM0);
+    std::string galleryAppName = GetStringFromParams(env, argv, PARAM1);
+    std::string mediaAppName = GetStringFromParams(env, argv, PARAM2);
+    std::string backupInfo = GetStringFromParams(env, argv, PARAM3);
+    std::string backupExInfo;
+    NAPI_INFO_LOG("StartBackup, sceneCode = %{public}d", sceneCode);
+    if (sceneCode < 0) {
+        NAPI_INFO_LOG("Parameters error, sceneCode = %{public}d", sceneCode);
+        return result;
+    }
+    uv_loop_s *loop = nullptr;
+    napi_get_uv_event_loop(env, &loop);
+    uv_work_t *work = new (std::nothrow) uv_work_t;
+    if (work == nullptr) {
+        NAPI_ERR_LOG("Failed to new uv_work");
+        return result;
+    }
+    napi_deferred nativeDeferred = nullptr;
+    napi_create_promise(env, &nativeDeferred, &result);
+    BackupExBlock *block = new (std::nothrow) BackupExBlock {
+        env, sceneCode, galleryAppName, mediaAppName, nativeDeferred, backupInfo, backupExInfo };
+    if (block == nullptr) {
+        NAPI_ERR_LOG("Failed to new block");
+        delete work;
+        return result;
+    }
+    work->data = reinterpret_cast<void *>(block);
+    UvBackupWorkEx(loop, work);
+    return result;
+}
+
+void MediaLibraryBackupNapi::UvBackupWorkEx(uv_loop_s *loop, uv_work_t *work)
+{
+    uv_queue_work(loop, work, [](uv_work_t *work) {
+        BackupExBlock *block = reinterpret_cast<BackupExBlock *> (work->data);
+        BackupRestoreService::GetInstance().StartBackupEx(block->sceneCode, block->galleryAppName,
+            block->mediaAppName, block->backupInfo, block->backupExInfo);
+    }, [](uv_work_t *work, int _status) {
+        BackupExBlock *block = reinterpret_cast<BackupExBlock *> (work->data);
+        if (block == nullptr) {
+            delete work;
+            return;
+        }
+        napi_handle_scope scope = nullptr;
+        napi_open_handle_scope(block->env, &scope);
+        if (scope == nullptr) {
+            delete work;
+            return;
+        }
+        napi_value napiBackupExResult = nullptr;
+        napi_create_string_utf8(block->env, block->backupExInfo.c_str(), NAPI_AUTO_LENGTH, &napiBackupExResult);
+        napi_resolve_deferred(block->env, block->nativeDeferred, napiBackupExResult);
+        napi_close_handle_scope(block->env, scope);
+        delete block;
+        delete work;
+    });
+}
+
+napi_value MediaLibraryBackupNapi::JSRelease(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    if (CheckPermission() != E_OK) {
+        return result;
+    }
+
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_value thisVar = nullptr;
+
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, (argc == ARGS_TWO), "requires 2 parameters");
+    napi_get_undefined(env, &result);
+    int32_t sceneCode = GetIntFromParams(env, argv, PARAM0);
+    int32_t releaseScene = GetIntFromParams(env, argv, PARAM1);
+    NAPI_INFO_LOG("Release, sceneCode:%{public}d releaseScene = %{public}d", sceneCode, releaseScene);
+    BackupRestoreService::GetInstance().Release(sceneCode, releaseScene);
     return result;
 }
 } // namespace Media

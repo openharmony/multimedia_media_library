@@ -44,6 +44,7 @@
 #include "burst_key_generator.h"
 #undef protected
 #undef private
+#include "parameters.h"
 
 using namespace std;
 using namespace OHOS;
@@ -141,6 +142,14 @@ static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 unique_ptr<CloneRestore> restoreService = nullptr;
+
+static const std::string CLOUDSYNC_SWITCH_STATUS_KEY = "persist.kernel.cloudsync.switch_status"; // ms
+static constexpr int64_t RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND = 60 * 60 * 1000;
+static constexpr int64_t TIMEOUT_DELTA = 1;
+static const std::string BACKUP_FLAG = "multimedia.medialibrary.backupFlag";
+static const int64_t DEFAULT_TIME_STAMP = 0;
+static const int RELEASE_SCENE_RESTORE = 2;
+static const int RELEASE_SCENE_BACKUP = 1;
 
 void ExecuteSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> &sqls)
 {
@@ -455,6 +464,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_
     info.backupDir = EMPTY_STR;
     info.bundleInfo = EMPTY_STR;
     string restoreExInfo = INVALID_STR;
+    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
+    BackupRestoreService::GetInstance().restoreService_ = nullptr;
     BackupRestoreService::GetInstance().StartRestoreEx(nullptr, info, restoreExInfo);
     MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
     EXPECT_NE(restoreExInfo, EMPTY_STR); // upgrade is now supported
@@ -470,6 +481,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_
     info.backupDir = EMPTY_STR;
     info.bundleInfo = EMPTY_STR;
     string restoreExInfo = INVALID_STR;
+    BackupRestoreService::GetInstance().restoreService_ = nullptr;
+    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
     BackupRestoreService::GetInstance().StartRestoreEx(nullptr, info, restoreExInfo);
     MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
     EXPECT_NE(restoreExInfo, EMPTY_STR); // dual clone is now supported
@@ -485,6 +498,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_
     info.backupDir = EMPTY_STR;
     info.bundleInfo = EMPTY_STR;
     string restoreExInfo = INVALID_STR;
+    BackupRestoreService::GetInstance().restoreService_ = nullptr;
+    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
     BackupRestoreService::GetInstance().StartRestoreEx(nullptr, info, restoreExInfo);
     MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
     EXPECT_NE(restoreExInfo, EMPTY_STR); // single clone is now supported
@@ -911,7 +926,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetCloneD
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
 
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
-    system(cmdMkdir.c_str());
+    ::system(cmdMkdir.c_str());
 
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
@@ -945,7 +960,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_002,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
 
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
-    system(cmdMkdir.c_str());
+    ::system(cmdMkdir.c_str());
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
     CloneOpenCall helper;
@@ -963,7 +978,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_003,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
 
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
-    system(cmdMkdir.c_str());
+    ::system(cmdMkdir.c_str());
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
     CloneOpenCall helper;
@@ -1428,7 +1443,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFi
     FileInfo fileInfo;
 
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
-    system(cmdMkdir.c_str());
+    ::system(cmdMkdir.c_str());
 
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
@@ -1453,7 +1468,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFi
     fileInfo.fileSize = 100;
 
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
-    system(cmdMkdir.c_str());
+    ::system(cmdMkdir.c_str());
 
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
@@ -1590,7 +1605,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
 
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
-    system(cmdMkdir.c_str());
+    ::system(cmdMkdir.c_str());
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
     CloneOpenCall helper;
@@ -1613,7 +1628,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
 
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
-    system(cmdMkdir.c_str());
+    ::system(cmdMkdir.c_str());
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
     CloneOpenCall helper;
@@ -1643,7 +1658,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
 
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
-    system(cmdMkdir.c_str());
+    ::system(cmdMkdir.c_str());
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
     CloneOpenCall helper;
@@ -1697,11 +1712,45 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleIns
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_start_rebackup_001 start");
-
     BackupRestoreService &instance = BackupRestoreService::GetInstance();
     ASSERT_NE(&instance, nullptr);
+    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
+    instance.restoreService_ = nullptr;
     instance.StartBackup(UPGRADE_RESTORE_ID, EMPTY_STR, EMPTY_STR);
+    instance.restoreService_ = nullptr;
     instance.StartBackup(CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_ex_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_service_start_backup_ex_001 start");
+    
+    BackupRestoreService &instance = BackupRestoreService::GetInstance();
+    ASSERT_NE(&instance, nullptr);
+    std::string backupExResult = EMPTY_STR;
+    instance.restoreService_ = nullptr;
+    instance.StartBackupEx(UPGRADE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR, backupExResult);
+    EXPECT_EQ(backupExResult, EMPTY_STR);
+    instance.restoreService_ = nullptr;
+    instance.StartBackupEx(CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR, backupExResult);
+    EXPECT_NE(backupExResult, EMPTY_STR);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_release_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_service_release_001 start");
+    BackupRestoreService &instance = BackupRestoreService::GetInstance();
+    instance.restoreService_ = nullptr;
+    instance.Release(UPGRADE_RESTORE_ID, RELEASE_SCENE_RESTORE);
+
+    instance.restoreService_ = nullptr;
+    instance.Release(CLONE_RESTORE_ID, RELEASE_SCENE_RESTORE);
+
+    instance.restoreService_ = nullptr;
+    instance.Release(CLONE_RESTORE_ID, RELEASE_SCENE_BACKUP);
+
+    instance.restoreService_ = nullptr;
+    instance.Release(CLONE_RESTORE_ID, -1);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_thumbnail_test_001, TestSize.Level2)
@@ -2798,10 +2847,11 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_stat
     EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_ALL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_test, TestSize.Level2)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_test_001, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("Start medialibrary_backup_clone_start_backup_test");
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_start_backup_test_001");
     bool ret = restoreService->BackupKvStore();
+    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
     restoreService->StartBackup();
     EXPECT_EQ(ret, MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR));
 }
@@ -3382,6 +3432,66 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_insert_value_from_val_map
         valueObject.GetString(shootingMode);
     }
     EXPECT_EQ(shootingMode, "");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_device_exit_timeout_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialib_backup_wait_south_device_exit_timeout_test_001");
+    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, "0"));
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    EXPECT_FALSE(cloneRestoreService->WaitSouthDeviceExitTimeout());
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_wait_device_exit_timeout_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialib_backup_wait_south_device_exit_timeout_test_002");
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY,
+        std::to_string(MediaFileUtils::UTCTimeMilliSeconds())));
+    std::thread t([&]() -> void {
+        EXPECT_FALSE(cloneRestoreService->WaitSouthDeviceExitTimeout());
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, "0"));
+    t.join();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_set_parameter_for_backup_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialib_backup_set_parameter_for_backup_test_001");
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    EXPECT_TRUE(OHOS::system::SetParameter(BACKUP_FLAG, std::to_string(DEFAULT_TIME_STAMP)));
+    cloneRestoreService->SetParameterForBackup();
+    EXPECT_TRUE(OHOS::system::GetIntParameter(BACKUP_FLAG, DEFAULT_TIME_STAMP) != DEFAULT_TIME_STAMP);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_stop_parameter_for_backup_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialib_backup_set_parameter_for_backup_test_001");
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    EXPECT_TRUE(OHOS::system::SetParameter(BACKUP_FLAG, std::to_string(MediaFileUtils::UTCTimeSeconds())));
+    cloneRestoreService->StopParameterForBackup();
+    EXPECT_EQ(OHOS::system::GetIntParameter(BACKUP_FLAG, DEFAULT_TIME_STAMP), DEFAULT_TIME_STAMP);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_errinfo_json_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_backup_errinfo_json_test_001");
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    cloneRestoreService->errorCode_ = RestoreError::SUCCESS;
+    cloneRestoreService->errorInfo_ = "ERRORINFO";
+    cloneRestoreService->GetBackupErrorInfoJson();
+
+    cloneRestoreService->errorCode_ = RestoreError::RETAIN_FORCE_TIMEOUT;
+    cloneRestoreService->GetBackupErrorInfoJson();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_release_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_release_001");
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    cloneRestoreService->Release(ReleaseScene::BACKUP);
+    cloneRestoreService->Release(ReleaseScene::RESTORE);
 }
 } // namespace Media
 } // namespace OHOS
