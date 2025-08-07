@@ -406,8 +406,6 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
     std::vector<std::string> dateTakens;
     dateTakens.reserve(BATCH_DELETE_LIMIT_COUNT);
     int32_t cycleNumber = 0;
-    auto thumbnailService = ThumbnailService::GetInstance();
-    auto &cloudSyncManager =  CloudSyncManager::GetInstance();
     while (doDeleteTask_.load() > TaskDeleteState::IDLE && cycleNumber <= CYCLE_NUMBER) {
         int32_t ret = ReadyDataForDelete(fileIds, paths, dateTakens);
         if (ret != E_OK || fileIds.empty()) {
@@ -423,10 +421,10 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
             CHECK_AND_PRINT_LOG(MediaLibraryMetaRecovery::DeleteMetaDataByPath(paths[i]) == E_OK,
                 "DeleteMetaDataByPath error.");
 #endif
-            cloudSyncManager.CleanGalleryDentryFile(paths[i]);
+            CloudSyncManager::GetInstance().CleanGalleryDentryFile(paths[i]);
         }
         MEDIA_INFO_LOG("delete thumb files.");
-        CHECK_AND_PRINT_LOG(thumbnailService->BatchDeleteThumbnailDirAndAstc(PhotoColumn::PHOTOS_TABLE,
+        CHECK_AND_PRINT_LOG(ThumbnailService::GetInstance()->BatchDeleteThumbnailDirAndAstc(PhotoColumn::PHOTOS_TABLE,
             fileIds, paths, dateTakens), "DeleteThumbnailDirAndAstc error.");
         MEDIA_INFO_LOG("delete all cloud media asset. loop: %{public}d, deleted asset number: %{public}zu",
             cycleNumber, fileIds.size());
