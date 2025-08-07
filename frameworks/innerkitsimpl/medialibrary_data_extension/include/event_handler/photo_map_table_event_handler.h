@@ -24,6 +24,11 @@
 #include "photo_map_column.h"
 
 namespace OHOS::Media {
+static const std::string SQL_DROP_NEW_TRIGGER = "DROP TRIGGER IF EXISTS album_map_insert_cloud_sync_trigger;";
+static const std::string SQL_DROP_DELETE_TRIGGER = "DROP TRIGGER IF EXISTS album_map_delete_trigger;";
+static const std::string SQL_DROP_INSERT_SEARCH_TRIGGER = "DROP TRIGGER IF EXISTS album_map_insert_search_trigger;";
+static const std::string SQL_DROP_DELETE_SEARCH_TRIGGER = "DROP TRIGGER IF EXISTS album_map_delete_search_trigger;";
+
 class PhotoMapTableEventHandler : public IMediaRdbOpenEvent {
 public:
     virtual ~PhotoMapTableEventHandler() = default;
@@ -41,12 +46,6 @@ private:
     const std::vector<UpgradeHandle> upgradeHandles_ = {
         &PhotoMapTableEventHandler::DropAllTriggers,
     };
-
-private:
-    const std::string SQL_DROP_NEW_TRIGGER = "DROP TRIGGER IF EXISTS album_map_insert_cloud_sync_trigger;";
-    const std::string SQL_DROP_DELETE_TRIGGER = "DROP TRIGGER IF EXISTS album_map_delete_trigger;";
-    const std::string SQL_DROP_INSERT_SEARCH_TRIGGER = "DROP TRIGGER IF EXISTS album_map_insert_search_trigger;";
-    const std::string SQL_DROP_DELETE_SEARCH_TRIGGER = "DROP TRIGGER IF EXISTS album_map_delete_search_trigger;";
 
 private:
     DatabaseUtils dbUpgradeUtils_;
