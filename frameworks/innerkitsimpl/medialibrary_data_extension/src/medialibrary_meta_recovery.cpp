@@ -708,9 +708,9 @@ int32_t MediaLibraryMetaRecovery::WriteMetadataToFile(const string &filePath, co
 
 void MediaLibraryMetaRecovery::AddMetadataToJson(nlohmann::json &j, const FileAsset &fileAsset)
 {
-    const std::unordered_map<std::string, ResultSetDataType> &columnInfoMap = GetRecoveryPhotosTableColumnInfo();
+    std::unordered_map<std::string, ResultSetDataType> columnInfoMap = QueryRecoveryPhotosTableColumnInfo();
     if (columnInfoMap.empty()) {
-        MEDIA_ERR_LOG("GetRecoveryPhotosTableColumnInfo failed");
+        MEDIA_ERR_LOG("QueryRecoveryPhotosTableColumnInfo failed");
         return;
     }
 
@@ -738,9 +738,9 @@ void MediaLibraryMetaRecovery::AddMetadataToJson(nlohmann::json &j, const FileAs
 
 bool MediaLibraryMetaRecovery::GetMetadataFromJson(const nlohmann::json &j, FileAsset &fileAsset)
 {
-    const std::unordered_map<std::string, ResultSetDataType> &columnInfoMap = GetRecoveryPhotosTableColumnInfo();
+    std::unordered_map<std::string, ResultSetDataType> columnInfoMap = QueryRecoveryPhotosTableColumnInfo();
     if (columnInfoMap.empty()) {
-        MEDIA_ERR_LOG("GetRecoveryPhotosTableColumnInfo failed");
+        MEDIA_ERR_LOG("QueryRecoveryPhotosTableColumnInfo failed");
         return false;
     }
 
@@ -1084,9 +1084,9 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset)
         return E_OK;
     }
 
-    const std::unordered_map<std::string, ResultSetDataType> &columnInfoMap = GetRecoveryPhotosTableColumnInfo();
+    std::unordered_map<std::string, ResultSetDataType> columnInfoMap = QueryRecoveryPhotosTableColumnInfo();
     if (columnInfoMap.empty()) {
-        MEDIA_ERR_LOG("GetRecoveryPhotosTableColumnInfo failed");
+        MEDIA_ERR_LOG("QueryRecoveryPhotosTableColumnInfo failed");
         return E_ERR;
     }
 
@@ -1332,24 +1332,11 @@ ResultSetDataType MediaLibraryMetaRecovery::GetDataType(const std::string &name)
     }
 }
 
-const std::unordered_map<std::string, ResultSetDataType> &MediaLibraryMetaRecovery::GetRecoveryPhotosTableColumnInfo()
-{
-    MEDIA_DEBUG_LOG("GetRecoveryPhotosTableColumnInfo");
-    static std::unordered_map<std::string, ResultSetDataType> RECOVERY_PHOTOS_TABLE_COLUMN
-        = QueryRecoveryPhotosTableColumnInfo();
-    if (RECOVERY_PHOTOS_TABLE_COLUMN.empty()) {
-        MEDIA_ERR_LOG("QueryRecoveryPhotosTableColumnInfo failed");
-        RECOVERY_PHOTOS_TABLE_COLUMN = QueryRecoveryPhotosTableColumnInfo();
-    }
-
-    return  RECOVERY_PHOTOS_TABLE_COLUMN;
-}
-
 std::unordered_map<std::string, ResultSetDataType> MediaLibraryMetaRecovery::QueryRecoveryPhotosTableColumnInfo()
 {
     MEDIA_DEBUG_LOG("QueryRecoveryPhotosTableColumnInfo");
     std::unordered_map<std::string, ResultSetDataType> columnInfoMap;
-    const std::vector<std::string> &columnInfo = MediaLibraryAssetOperations::GetPhotosTableColumnInfo();
+    std::vector<std::string> columnInfo = MediaLibraryAssetOperations::GetPhotosTableColumnInfo();
     if (columnInfo.empty()) {
         MEDIA_ERR_LOG("GetPhotosTableColumnInfo failed");
         return columnInfoMap;
