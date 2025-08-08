@@ -132,6 +132,8 @@ public:
     int32_t RenewSameCloudResource(const PhotosDto &photo);
     int32_t RepushDuplicatedPhoto(const PhotosDto &photo);
     void ClearAlbumMap();
+    int32_t QueryAnalysisAlbum(const std::string &cloudId, std::vector<std::string> &analysisAlbumIds);
+    int32_t UpdateAlbumReplacedSignal(const std::vector<std::string> &albumIdVector);
 
 private:
     bool IsTimeChanged(const PhotosDto &record, const std::unordered_map<std::string, LocalInfo> &localMap,
@@ -144,7 +146,6 @@ private:
         SafeMap<std::string, std::pair<int32_t, std::string>> &lpathToIdMap);
     int32_t GetSourceAlbum(const CloudMediaPullDataDto &pullData, int32_t &albumId, std::set<int32_t> &cloudMapIds,
         bool &isHidden, SafeMap<std::string, int32_t> &cloudToLocalMap);
-    int32_t UpdateAlbumReplacedSignal(const std::vector<std::string> &albumIdVector);
     std::shared_ptr<NativeRdb::ResultSet> GetAllSysAlbums(
         const std::vector<std::string> &subtypes, const std::vector<std::string> &columns);
     std::shared_ptr<NativeRdb::ResultSet> GetAllSysAlbumsQuery(
@@ -275,6 +276,12 @@ private:
             LEFT JOIN PhotoAlbum \
             ON DATA.owner_album_id = PhotoAlbum.album_id \
         ;";
+    const std::string SQL_QUERY_ANALYSIS_ALBUM = "\
+        SELECT 100000000 + map_album AS album_id \
+        FROM Photos \
+            INNER JOIN AnalysisPhotoMap \
+            ON AnalysisPhotoMap.map_asset = Photos.file_id \
+        WHERE cloud_id = ? ;";
     const int32_t ALBUM_ID_NEED_REBUILD = -1;
     const int32_t ALBUM_ID_RECYCLE = -3;
     const int32_t ALBUM_ID_HIDDEN = -4;

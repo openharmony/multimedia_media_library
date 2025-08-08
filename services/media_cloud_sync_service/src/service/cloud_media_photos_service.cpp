@@ -65,6 +65,7 @@ int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, s
         }
         return ret;
     }
+    this->RefreshAnalysisAlbum(cloudId);
     int32_t ret = this->photosDao_.DeleteLocalByCloudId(cloudId, photoRefresh);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("delete in rdb failed, ret:%{public}d", ret);
@@ -1214,4 +1215,12 @@ int32_t CloudMediaPhotosService::ReportFailure(const ReportFailureDto &failureDt
     return this->NotifyUploadErr(failureDto.errorCode, std::to_string(failureDto.fileId));
 }
 
+void CloudMediaPhotosService::RefreshAnalysisAlbum(const std::string &cloudId)
+{
+    std::vector<std::string> analysisAlbumIds;
+    int32_t ret = this->photosDao_.QueryAnalysisAlbum(cloudId, analysisAlbumIds);
+    CHECK_AND_RETURN_LOG(!analysisAlbumIds.empty(), "RefreshAnalysisAlbum analysisAlbumIds is null");
+    ret = photosDao_.UpdateAlbumReplacedSignal(analysisAlbumIds);
+    MEDIA_INFO_LOG("RefreshAnalysisAlbum size %{public}zu, ret %{public}d", analysisAlbumIds.size(), ret);
+}
 }  // namespace OHOS::Media::CloudSync
