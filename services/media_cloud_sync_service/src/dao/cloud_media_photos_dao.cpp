@@ -253,14 +253,13 @@ int32_t CloudMediaPhotosDao::UpdateAssetInPhotoMap(const int32_t &fileId, set<in
         bindArgs.emplace_back(cloudAlbum);
     }
     int64_t rowId = 0;
-    if (this->BatchInsert(rowId, PhotoMap::TABLE, pmList) != E_OK) {
-        MEDIA_ERR_LOG("photo %{public}d insert photomap failed", fileId);
-    }
+    int32_t ret = this->BatchInsert(rowId, PhotoMap::TABLE, pmList);
+    MEDIA_ERR_LOG("fileId: %{public}d insert photomap, ret: %{public}d", fileId, ret);
     std::string deleteSql = "Delete FROM PhotoMap WHERE map_asset = " + to_string(fileId) +
                             " AND dirty != 0 AND map_album NOT IN ( " + ss.str() + " )";
-    if (rdbStore->ExecuteSql(deleteSql, bindArgs) != E_OK) {
-        MEDIA_ERR_LOG("photo %{public}d delete photomap failed", fileId);
-    }
+    ret = rdbStore->ExecuteSql(deleteSql, bindArgs);
+    MEDIA_ERR_LOG("fileId: %{public}d delete photomap, ret: %{public}d, deleteSql: %{public}s",
+        fileId, ret, deleteSql.c_str());
     return E_OK;
 }
 
@@ -446,15 +445,16 @@ int32_t CloudMediaPhotosDao::ConflictDataMerge(const CloudMediaPullDataDto &pull
     values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPosition::POSITION_BOTH));
     values.PutInt(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(Clean::NOT_NEED_CLEAN));
     values.PutLong(PhotoColumn::PHOTO_CLOUD_VERSION, pullData.basicCloudVersion);
+    bool needFix = false;
+    int32_t albumId = 0;
     if (cloudStd) {
         CloudSyncConvert().RecordToValueBucket(pullData, values);
-        int32_t albumId = 0;
         UpdateFixDB(pullData, values, albumId, albumIds, refreshAlbums);
         values.Delete(PhotoColumn::PHOTO_SUBTYPE);
         if (albumId != 0) {
             values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
         }
-        bool needFix = IsNeededFix(pullData);
+        needFix = IsNeededFix(pullData);
         if (needFix) {
             values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_SDIRTY));
         } else {
@@ -466,11 +466,12 @@ int32_t CloudMediaPhotosDao::ConflictDataMerge(const CloudMediaPullDataDto &pull
     string whereClause = PhotoColumn::MEDIA_FILE_PATH + " = ?";
     int32_t ret = this->UpdateProxy(
         updateRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, {filePath}, photoRefresh);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("update retry flag failed, ret=%{public}d", ret);
-        return E_RDB;
-    }
-    MEDIA_INFO_LOG("merge update done filePath:%{public}s.", filePath.c_str());
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_RDB, "ConflictDataMerge failed, ret: %{public}d, filePath: %{public}s",
+        ret, filePath.c_str());
+    MEDIA_INFO_LOG("merge update done."
+        "ret: %{public}d, updateRows: %{public}d,"
+        "filePath: %{public}s, cloudStd: %{public}d, needFix: %{public}d, pullData: %{public}s",
+        ret, updateRows, filePath.c_str(), cloudStd, needFix, pullData.ToString().c_str());
     return E_OK;
 }
 
