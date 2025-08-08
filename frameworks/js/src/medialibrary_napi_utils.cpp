@@ -25,6 +25,7 @@
 #include "cloud_enhancement_napi.h"
 #include "cloud_media_asset_manager_napi.h"
 #include "highlight_album_napi.h"
+#include "result_set_napi.h"
 #include "media_asset_change_request_napi.h"
 #include "media_assets_change_request_napi.h"
 #include "media_album_change_request_napi.h"
@@ -2436,6 +2437,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<M
 template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<HighlightAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<HighlightAlbumNapiAsyncContext> &context, string &param);
 
+template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<ResultSetAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<ResultSetAsyncContext> &context, string &param);
+
 template napi_status MediaLibraryNapiUtils::ParseArgsStringArrayCallback<unique_ptr<MediaLibraryAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context, vector<string> &array);
 
@@ -2467,6 +2471,10 @@ template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr
 template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<SmartAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<SmartAlbumNapiAsyncContext> &asyncContext, const size_t minArgs,
     const size_t maxArgs);
+
+template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<ResultSetAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<ResultSetAsyncContext>& asyncContext,
+    const size_t minArgs, const size_t maxArgs);
 
 template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<MediaAssetChangeRequestAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& asyncContext,
@@ -2528,6 +2536,10 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<HighlightAlbumNap
     unique_ptr<HighlightAlbumNapiAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<ResultSetAsyncContext>(napi_env env,
+    unique_ptr<ResultSetAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *))
+
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MovingPhotoAsyncContext>(napi_env env,
     unique_ptr<MovingPhotoAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
@@ -2562,6 +2574,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<M
 
 template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<HighlightAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<HighlightAlbumNapiAsyncContext> &context, int32_t &value);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<ResultSetAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<ResultSetAsyncContext> &context, int32_t &value);
 
 template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context);
