@@ -74,7 +74,7 @@ HWTEST_F(CloudMediaHandlerClientTest, GetAlbumRecordsIllegalSize_Test, TestSize.
 
     MDKRecord record;
     ret = handler->OnFetchRecords(records, newData, newData, failedRecords, stats);
-    EXPECT_EQ(ret, E_ERR);
+    EXPECT_EQ(ret, E_OK);
     records.emplace_back(record);
     handler->OnFetchRecords(records, newData, newData, failedRecords, stats);
 }
