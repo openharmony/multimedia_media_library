@@ -115,6 +115,7 @@
 #include "get_analysis_process_vo.h"
 #include "get_photo_album_object_vo.h"
 #include "set_photo_album_order_vo.h"
+#include "result_set_napi.h"
 
 #include "parcel.h"
 #include "medialibrary_notify_utils.h"
@@ -429,6 +430,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getAnalysisData", PhotoAccessHelperGetAnalysisData),
             DECLARE_NAPI_FUNCTION("createAssetsForAppWithAlbum", CreateAssetsForAppWithAlbum),
             DECLARE_NAPI_FUNCTION("startAssetAnalysis", PhotoAccessStartAssetAnalysis),
+            DECLARE_NAPI_FUNCTION("query", PhotoAccessQuery),
             DECLARE_NAPI_FUNCTION("on", PhotoAccessRegisterCallback),
             DECLARE_NAPI_FUNCTION("off", PhotoAccessUnregisterCallback),
             DECLARE_NAPI_FUNCTION("getPhotoAlbums", PhotoAccessGetPhotoAlbumsWithoutSubtype),
@@ -9566,6 +9568,82 @@ napi_value MediaLibraryNapi::PhotoAccessStartAssetAnalysis(napi_env env, napi_ca
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessStartAssetAnalysis",
         JSStartAssetAnalysisExecute, JSStartAssetAnalysisCallback);
+}
+
+static void PhotoAccessQueryExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessQueryExecute");
+    auto *context = static_cast<ResultSetAsyncContext *>(data);
+    if (context == nullptr) {
+        return;
+    }
+    context->queryRet = UserFileClient::QueryByStep(context->uri);
+    if (context->queryRet == nullptr) {
+        context->error = OHOS_PERMISSION_DENIED_CODE;
+        context->errorMsg = "Permission denied";
+        return;
+    }
+    int count = -1;
+    context->queryRet->GetRowCount(count);
+    if (count == -1) {
+        context->error = JS_E_PARAM_INVALID;
+        context->errorMsg = "Invalid sql";
+        return;
+    }
+    return;
+}
+
+static void PhotoAccessQueryCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessQueryCompleteCallback");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    status = napi_get_undefined(env, &jsContext->data);
+    if (status != napi_ok) {
+        NAPI_INFO_LOG("Napi env error");
+        return;
+    }
+    napi_get_undefined(env, &jsContext->error);
+    napi_value errorObj;
+    napi_create_object(env, &errorObj);
+    auto *context = static_cast<ResultSetAsyncContext *>(data);
+    if (context != nullptr) {
+        if (context->error == ERR_DEFAULT && context->queryRet != nullptr) {
+            jsContext->data = ResultSetNapi::CreateResultSetNapi(env, context->queryRet, *jsContext);
+            if (jsContext->data == nullptr) {
+                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, UFM_SYSCAP_BASE,
+                                                             "CreateResultSet failed");
+            } else {
+                jsContext->status = true;
+                context->queryRet = nullptr;
+            }
+        } else {
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error, context->errorMsg);
+        }
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, UFM_SYSCAP_BASE, "AsyncContext is nullptr");
+    }
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef, context->work,
+                                                   *jsContext);
+    }
+    delete context;
+    return;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessQuery(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessQuery");
+    unique_ptr<ResultSetAsyncContext> asyncContext = make_unique<ResultSetAsyncContext>();
+    CHECK_COND_WITH_ERR_MESSAGE(
+        env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri) == napi_ok,
+        UFM_SYSCAP_BASE, "Failed to get resourceUrl from arguments or wrong param");
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessQuery", PhotoAccessQueryExecute,
+                                                      PhotoAccessQueryCompleteCallback);
 }
 
 napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssets(napi_env env, napi_callback_info info)

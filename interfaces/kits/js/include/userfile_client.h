@@ -71,6 +71,7 @@ public:
     EXPORT static void Clear();
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryRdb(Uri &uri,
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryByStep(const std::string &sql);
     EXPORT static std::string GetType(Uri &uri);
     EXPORT static int32_t UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option);
     EXPORT static int32_t UserDefineFunc(const int32_t &userId, MessageParcel &data, MessageParcel &reply,

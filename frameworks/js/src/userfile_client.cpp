@@ -255,6 +255,12 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
     return resultSet;
 }
 
+shared_ptr<NativeRdb::ResultSet> UserFileClient::QueryByStep(const std::string &sql)
+{
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = MediaAssetRdbStore::GetInstance()->QueryByStep(sql);
+    return resultSet;
+}
+
 std::pair<bool, shared_ptr<DataShareResultSet>> UserFileClient::QueryAccessibleViaSandBox(Uri &uri,
     const DataSharePredicates &predicates, std::vector<std::string> &columns, int &errCode, const int32_t userId)
 {
