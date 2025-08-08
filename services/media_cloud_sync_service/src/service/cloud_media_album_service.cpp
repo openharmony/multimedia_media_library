@@ -606,6 +606,24 @@ bool IsCoverUriExistCloudId(string &coverUri, string &coverCloudId)
     return cloudId != "";
 }
 
+void CloudMediaAlbumService::HandleWaitPullCover(shared_ptr<NativeRdb::ResultSet> &resultSet,
+    const shared_ptr<MediaLibraryRdbStore> rdbStore, NativeRdb::ValuesBucket &values, int32_t albumId)
+{
+    string coverCloudId = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::COVER_CLOUD_ID,
+        resultSet, TYPE_STRING));
+    string coverUri;
+    bool isCloudIdExist = GetCoverUriFromCoverCloudId(coverCloudId, coverUri);
+    if (isCloudIdExist) {
+        MEDIA_DEBUG_LOG("CheckAlbumManualCover isCloudIdExist");
+        string lPath = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_LPATH,
+            resultSet, TYPE_STRING));
+        if (this->albumDao_.ReplaceCoverUriCondition(coverUri, lPath)) {
+            values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
+        }
+        PrepareForNextCloud(rdbStore, values, albumId);
+    }
+}
+
 void CloudMediaAlbumService::CheckAlbumManualCover()
 {
     MEDIA_DEBUG_LOG("CheckAlbumManualCover enter");
@@ -645,15 +663,7 @@ void CloudMediaAlbumService::CheckAlbumManualCover()
                 PrepareForNextCloud(rdbStore, values, albumId);
             }
         } else if (coverUriSource == static_cast<int32_t>(CoverUriSource::MANUAL_WAIT_PULL_COVER)) {
-            string coverCloudId = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::COVER_CLOUD_ID,
-                resultSet, TYPE_STRING));
-            string coverUri;
-            bool isCloudIdExist = GetCoverUriFromCoverCloudId(coverCloudId, coverUri);
-            if (isCloudIdExist) {
-                MEDIA_DEBUG_LOG("CheckAlbumManualCover isCloudIdExist");
-                values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
-                PrepareForNextCloud(rdbStore, values, albumId);
-            }
+            HandleWaitPullCover(resultSet, rdbStore, values, albumId);
         }
     }
     resultSet->Close();
