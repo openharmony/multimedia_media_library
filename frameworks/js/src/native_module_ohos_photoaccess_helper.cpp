@@ -28,6 +28,7 @@
 #include "native_module_ohos_medialibrary.h"
 #include "photo_proxy_napi.h"
 #include "photo_asset_custom_record_manager_napi.h"
+#include "result_set_napi.h"
 
 namespace OHOS {
 namespace Media {
@@ -44,6 +45,7 @@ static napi_value PhotoAccessHelperExport(napi_env env, napi_value exports)
     AlbumOrderNapi::PhotoAccessInit(env, exports);
     HighlightAlbumNapi::AnalysisAlbumInit(env, exports);
     HighlightAlbumNapi::Init(env, exports);
+    ResultSetNapi::Init(env, exports);
     MediaAssetEditDataNapi::Init(env, exports);
     MediaAssetChangeRequestNapi::Init(env, exports);
     MediaAssetsChangeRequestNapi::Init(env, exports);

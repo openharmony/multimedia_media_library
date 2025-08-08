@@ -349,6 +349,16 @@ std::shared_ptr<NativeRdb::ResultSet> MediaAssetRdbStore::QueryRdb(
     return resultSet;
 }
 
+std::shared_ptr<NativeRdb::ResultSet> MediaAssetRdbStore::QueryByStep(const std::string &sql)
+{
+    if (rdbStore_ == nullptr) {
+        if (TryGetRdbStore(false) != NativeRdb::E_OK) {
+            return nullptr;
+        }
+    }
+    return rdbStore_->QueryByStep(sql);
+}
+
 bool MediaAssetRdbStore::IsSupportSharedAssetQuery(Uri& uri, OperationObject& object, bool isIgnoreSELinux)
 {
     CHECK_AND_RETURN_RET(access(MEDIA_DB_DIR.c_str(), E_OK) == 0, false);
