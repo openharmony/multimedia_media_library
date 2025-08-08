@@ -163,7 +163,7 @@ public:
     EXPORT static int32_t UpdateTrashedAssetOnAlbum(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         NativeRdb::RdbPredicates &predicates);
     EXPORT static int32_t UpdateOwnerAlbumId(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-        const std::vector<DataShare::DataShareValuesBucket> &values, std::vector<int32_t> &updateIds);
+        const std::vector<DataShare::DataShareValuesBucket> &values, std::vector<int32_t> &updateIds, bool &hidden);
     EXPORT static int32_t UpdateRemovedAssetToTrash(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &whereIdArgs);
     EXPORT static int32_t UpdateThumbnailRelatedDataToDefault(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,

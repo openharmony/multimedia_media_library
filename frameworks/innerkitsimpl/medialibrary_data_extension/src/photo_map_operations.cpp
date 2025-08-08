@@ -114,9 +114,9 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
                 isValid, albumId);
             return changedRows;
         }
-
-        changedRows = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore, values, updateIds);
-        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { to_string(albumId) }, false, true);
+        bool hidden = false;
+        changedRows = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore, values, updateIds, hidden);
+        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { to_string(albumId) }, false, !hidden);
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
             to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT)
