@@ -1336,7 +1336,7 @@ std::unordered_map<std::string, ResultSetDataType> MediaLibraryMetaRecovery::Que
 {
     MEDIA_DEBUG_LOG("QueryRecoveryPhotosTableColumnInfo");
     std::unordered_map<std::string, ResultSetDataType> columnInfoMap;
-    std::vector<std::string> columnInfo = MediaLibraryAssetOperations::GetPhotosTableColumnInfo();
+    std::vector<std::string> columnInfo = MediaLibraryAssetOperations::QueryPhotosTableColumnInfo();
     if (columnInfo.empty()) {
         MEDIA_ERR_LOG("GetPhotosTableColumnInfo failed");
         return columnInfoMap;
