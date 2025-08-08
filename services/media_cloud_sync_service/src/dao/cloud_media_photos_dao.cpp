@@ -2004,5 +2004,24 @@ int32_t CloudMediaPhotosDao::DeleteLocalFileNotExistRecord(const PhotosDto &phot
     photoRefresh->Notify();
     return ret;
 }
+
+int32_t CloudMediaPhotosDao::QueryAnalysisAlbum(const std::string &cloudId, std::vector<std::string> &analysisAlbumIds)
+{
+    CHECK_AND_RETURN_RET_LOG(!cloudId.empty(), E_ERR, "cloudId is null");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DB_FAIL, "QueryAnalysisAlbum Failed to get rdbStore.");
+    std::vector<NativeRdb::ValueObject> bindArgs = {cloudId};
+    /* query */
+    auto resultSet = rdbStore->QuerySql(SQL_QUERY_ANALYSIS_ALBUM, bindArgs);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Failed to query.");
+    // Notify caller if no data is returned, it means all data has been processed.
+    int32_t analysisAlbumId = 0;
+    while (resultSet->GoToNextRow() == E_OK) {
+        analysisAlbumId = GetInt32Val("album_id", resultSet);
+        analysisAlbumIds.emplace_back(std::to_string(analysisAlbumId));
+    }
+    resultSet->Close();
+    return E_OK;
+}
 // LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync
