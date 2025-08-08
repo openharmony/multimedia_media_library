@@ -23,12 +23,6 @@
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
 
-#define DECLARE_JS_PROPERTY(env, key, value) \
-    napi_property_descriptor(DECLARE_NAPI_DEFAULT_PROPERTY((key), Convert2JSValue((env), (value))))
-
-#define DECLARE_SENDABLE_PROPERTY(env, key, value) \
-    napi_property_descriptor(DECLARE_NAPI_DEFAULT_PROPERTY((key), Convert2Sendable((env), (value))))
-
 namespace OHOS {
 namespace Media {
 using namespace std;
