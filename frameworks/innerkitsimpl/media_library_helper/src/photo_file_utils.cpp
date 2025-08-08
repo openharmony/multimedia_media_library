@@ -186,4 +186,37 @@ bool PhotoFileUtils::IsThumbnailLatest(const string &photoPath)
     }
     return false;
 }
+
+std::tuple<std::string, std::string, std::string> PhotoFileUtils::ExtractYearMonthDay(const std::string &detailTime)
+{
+    const size_t detailTimeLength = 19;
+    if (detailTime.length() != detailTimeLength) {
+        MEDIA_ERR_LOG("invalid length, detailTime: %{public}s", detailTime.c_str());
+        return std::make_tuple("", "", "");
+    }
+
+    const size_t yearDelimiter = 4;
+    const size_t monthDelimiter = 7;
+    const size_t dateDelimiter = 10;
+    if (detailTime[yearDelimiter] != ':' || detailTime[monthDelimiter] != ':' || detailTime[dateDelimiter] != ' ') {
+        MEDIA_ERR_LOG("invalid delimiter, detailTime: %{public}s", detailTime.c_str());
+        return std::make_tuple("", "", "");
+    }
+    const size_t yearIndex = 0;
+    const size_t yearCount = 4;
+    std::string year = detailTime.substr(yearIndex, yearCount);
+    const size_t monthIndex = 5;
+    const size_t monthCount = 2;
+    std::string month = detailTime.substr(monthIndex, monthCount);
+    const size_t dayIndex = 8;
+    const size_t dayCount = 2;
+    std::string day = detailTime.substr(dayIndex, dayCount);
+    if (!all_of(year.begin(), year.end(), ::isdigit) || !all_of(month.begin(), month.end(), ::isdigit) ||
+        !all_of(day.begin(), day.end(), ::isdigit)) {
+        MEDIA_ERR_LOG("invalid year month day, detailTime: %{public}s", detailTime.c_str());
+        return std::make_tuple("", "", "");
+    }
+
+    return std::make_tuple(year, year + month, year + month + day);
+}
 } // namespace OHOS::Media

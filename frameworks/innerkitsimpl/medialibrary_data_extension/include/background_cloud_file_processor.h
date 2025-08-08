@@ -114,7 +114,6 @@ private:
     static void DownloadCloudFilesExecutor(AsyncTaskData *data);
     static void StopDownloadFiles();
     static void UpdateCloudData();
-    static void UpdateAbnormalDayMonthYear();
     static std::shared_ptr<NativeRdb::ResultSet> QueryUpdateData(bool isCloud, bool isVideo);
     static void SetPredicates(NativeRdb::RdbPredicates &predicates, bool isCloud, bool isVideo);
     static void ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet, UpdateData &updateData,

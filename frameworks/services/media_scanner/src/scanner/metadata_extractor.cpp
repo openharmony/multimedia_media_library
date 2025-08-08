@@ -396,6 +396,10 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
 
     ExtractDateTakenMetadata(imageSource, data);
     ExtractDetailTimeMetadata(imageSource, data);
+    auto const [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(data->GetDetailTime());
+    data->SetDateYear(dateYear);
+    data->SetDateMonth(dateMonth);
+    data->SetDateDay(dateDay);
 
     int32_t intTempMeta = 0;
     err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
@@ -484,6 +488,43 @@ int32_t ExtractedAVMetadataExifRotate(const std::unordered_map<int32_t, std::str
     return exifRotate;
 }
 
+std::string ParseDetailTime(const string &timeStr, const string &format)
+{
+    std::tm timeInfo{};
+    std::istringstream iss(timeStr);
+    iss >> std::get_time(&timeInfo, format.c_str());
+    if (iss.fail()) {
+        MEDIA_ERR_LOG(
+            "Parse DetailTime failed, timeStr: %{public}s, format: %{public}s", timeStr.c_str(), format.c_str());
+        return "";
+    }
+
+    std::ostringstream oss;
+    oss << std::put_time(&timeInfo, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT.c_str());
+    return oss.str();
+}
+
+void PopulateAVMetadataDateTime(
+    const std::unordered_map<int32_t, std::string> &resultMap, std::unique_ptr<Metadata> &data)
+{
+    string timeStr = resultMap.at(AV_KEY_DATE_TIME_ISO8601);
+    string detailTime = ParseDetailTime(timeStr, "%Y-%m-%dT%H:%M:%S");
+    if (detailTime.empty()) {
+        timeStr = resultMap.at(AV_KEY_DATE_TIME_FORMAT);
+        detailTime = ParseDetailTime(timeStr, "%Y-%m-%d %H:%M:%S");
+        if (detailTime.empty()) {
+            int64_t dateTaken = data->GetDateTaken() / MSEC_TO_SEC;
+            detailTime = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+        }
+    }
+
+    data->SetDetailTime(detailTime);
+    auto const [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    data->SetDateYear(dateYear);
+    data->SetDateMonth(dateMonth);
+    data->SetDateDay(dateDay);
+}
+
 void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::string> &resultMap,
     std::unique_ptr<Metadata> &data)
 {
@@ -529,8 +570,7 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
     } else {
         data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::SDR));
     }
-    int64_t dateTaken = data->GetDateTaken() / MSEC_TO_SEC;
-    data->SetDetailTime(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken));
+    PopulateAVMetadataDateTime(resultMap, data);
 }
 
 void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data)
