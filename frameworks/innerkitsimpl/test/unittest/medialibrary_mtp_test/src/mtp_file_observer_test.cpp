@@ -487,11 +487,11 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0024, TestSize.Level1)
  */
 HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0025, TestSize.Level1)
 {
+    MtpFileObserver::StopSendEventThread();
     MtpFileObserver::isEventThreadRunning_.store(true);
-    std::queue<std::pair<uint16_t, uint32_t>>().swap(MtpFileObserver::eventQueue_);
     MtpFileObserver::AddToQueue(MTP_EVENT_OBJECT_ADDED_CODE, 0);
     EXPECT_EQ(MtpFileObserver::eventQueue_.size(), 1);
-    std::queue<std::pair<uint16_t, uint32_t>>().swap(MtpFileObserver::eventQueue_);
+    MtpFileObserver::StopSendEventThread();
 }
 
 /*
@@ -504,14 +504,15 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0025, TestSize.Level1)
  */
 HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0027, TestSize.Level1)
 {
+    MtpFileObserver::StopSendEventThread();
     MtpFileObserver::isEventThreadRunning_.store(true);
-    std::queue<std::pair<uint16_t, uint32_t>>().swap(MtpFileObserver::eventQueue_);
     MtpFileObserver::AddToQueue(MTP_EVENT_OBJECT_ADDED_CODE, 0);
-    MtpFileObserver::isEventThreadRunning_.store(false);
     ContextSptr context = make_shared<MtpOperationContext>();
+    MtpFileObserver::isEventThreadRunning_.store(false);
     ASSERT_NE(context, nullptr);
     MtpFileObserver::SendEventThread(context);
     EXPECT_EQ(MtpFileObserver::eventQueue_.size(), 1);
+    MtpFileObserver::StopSendEventThread();
 }
 } // namespace Media
 } // namespace OHOS
