@@ -523,6 +523,7 @@ ani_status MediaLibraryAniUtils::GetArrayBuffer(ani_env *env, ani_object arg, st
         "GetArrayBuffer Object_CallMethodByName_Int failed.");
     size = static_cast<size_t>(length);
     buffer = std::make_unique<uint8_t[]>(size);
+    CHECK_COND_RET(buffer != nullptr, ANI_ERROR, "GetArrayBuffer make buffer failed");
     for (int i = 0; i < static_cast<int>(size); ++i) {
         ani_byte value {};
         CHECK_STATUS_RET(env->Object_CallMethodByName_Byte(arg, "at", nullptr, &value, static_cast<ani_int>(i)),
