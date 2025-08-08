@@ -105,10 +105,7 @@ int32_t CloudMediaAlbumHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
     std::vector<CloudMetaData> &newData, std::vector<CloudMetaData> &fdirtyData,
     std::vector<std::string> &failedRecords, std::vector<int32_t> &stats)
 {
-    if (records.empty()) {
-        MEDIA_ERR_LOG("OnFetchRecords param error");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(!records.empty(), E_OK, "OnFetchRecords param error, records is empty");
     OnFetchRecordsAlbumReqBody req;
     OnFetchRecordsAlbumRespBody resp;
     MEDIA_INFO_LOG("OnFetchRecords %{public}zu records", records.size());
@@ -280,8 +277,8 @@ int32_t CloudMediaAlbumHandler::OnMdirtyRecords(
     const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
     MEDIA_INFO_LOG("enter CloudMediaAlbumHandler::OnMdirtyRecords %{public}zu", map.size());
-    OnMdirtyRecordsAlbumReqBody reqBody;
     CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnMdirtyRecords Album param error");
+    OnMdirtyRecordsAlbumReqBody reqBody;
     CloudAlbumDataConvert dataConvertor{CloudAlbumOperationType::PHOTO_ALBUM_METADATA_MODIF};
     for (auto &entry : map) {
         OnMdirtyAlbumRecord record;
@@ -304,7 +301,8 @@ int32_t CloudMediaAlbumHandler::OnMdirtyRecords(
 int32_t CloudMediaAlbumHandler::OnFdirtyRecords(
     const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("CloudMediaAlbumHandler::OnFdirtyRecords");
+    MEDIA_INFO_LOG("CloudMediaAlbumHandler::OnFdirtyRecords, size: %{public}zu", map.size());
+    CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnFdirtyRecords Album param error");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_FDIRTY_RECORDS);
     return IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode);
 }
@@ -312,10 +310,8 @@ int32_t CloudMediaAlbumHandler::OnFdirtyRecords(
 int32_t CloudMediaAlbumHandler::OnDeleteRecords(
     const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("enter CloudMediaAlbumHandler::OnDeleteRecords");
-    if (map.empty()) {
-        return E_OK;
-    }
+    MEDIA_INFO_LOG("enter CloudMediaAlbumHandler::OnDeleteRecords, size: %{public}zu", map.size());
+    CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnDeleteRecords Album param error");
     OnDeleteRecordsAlbumReqBody reqBody;
     OnDeleteRecordsAlbumRespBody respBody;
     respBody.failSize = 0;
@@ -340,6 +336,7 @@ int32_t CloudMediaAlbumHandler::OnDeleteRecords(
 int32_t CloudMediaAlbumHandler::OnCopyRecords(const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
     MEDIA_INFO_LOG("OnCopyRecords, map size: %{public}zu", map.size());
+    CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnCopyRecords Album param error");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_COPY_RECORDS);
     return IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode);
 }
