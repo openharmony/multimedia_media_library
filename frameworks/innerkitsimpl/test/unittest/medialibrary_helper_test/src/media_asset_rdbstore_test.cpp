@@ -174,6 +174,25 @@ HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_QueryRdb_Test_001, TestS
 
 /*
  * Feature : MediaAssetRdbstoreTest
+ * Function : GraphQueryByStep
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_GraphQueryByStep_Test_001, TestSize.Level0)
+{
+    shared_ptr<MediaAssetRdbStore> ptr = make_shared<MediaAssetRdbStore>();
+    ASSERT_NE(ptr, nullptr);
+    bool test_value = true;
+    ptr->TryGetRdbStore(test_value);
+    std::string sql;
+    std::shared_ptr<NativeRdb::ResultSet> ret = ptr->QueryByStep(sql);
+    EXPECT_EQ(ret, nullptr);
+}
+
+/*
+ * Feature : MediaAssetRdbstoreTest
  * Function : IsSupportSharedAssetQuery
  * SubFunction : NA
  * FunctionPoints : NA
