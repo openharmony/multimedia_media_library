@@ -82,7 +82,8 @@ int32_t CloudMediaDataClientHandler::UpdateDirty(const std::string &cloudId, Dir
 
 int32_t CloudMediaDataClientHandler::UpdatePosition(const std::vector<std::string> &cloudIds, int32_t position)
 {
-    MEDIA_INFO_LOG("CloudMediaDataClientHandler::UpdatePosition begin %{public}d", position);
+    MEDIA_INFO_LOG("UpdatePosition, cloudIds: %{public}zu, position: %{public}d", cloudIds.size(), position);
+    CHECK_AND_RETURN_RET_LOG(!cloudIds.empty(), E_OK, "UpdatePosition: cloudIds is empty");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_UPDATE_POSITION_FOR_CLOUD_CHECK);
     UpdatePositionReqBody reqBody;
     reqBody.cloudIds = cloudIds;
@@ -179,7 +180,8 @@ int32_t CloudMediaDataClientHandler::GetActiveAgingFile(
 int32_t CloudMediaDataClientHandler::GetDownloadAsset(
     const std::vector<std::string> &uris, std::vector<CloudMetaData> &cloudMetaDataVec)
 {
-    MEDIA_INFO_LOG("CloudMediaDataClientHandler::GetDownloadAsset begin");
+    MEDIA_INFO_LOG("GetDownloadAsset, uris: %{public}zu", uris.size());
+    CHECK_AND_RETURN_RET_LOG(!uris.empty(), E_OK, "GetDownloadAsset: uris is empty");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_DOWNLOAD_ASSET);
     GetDownloadAssetReqBody reqBody;
     reqBody.pathList = uris;
@@ -203,7 +205,8 @@ int32_t CloudMediaDataClientHandler::GetDownloadAsset(
 int32_t CloudMediaDataClientHandler::GetDownloadThmsByUri(
     const std::vector<std::string> &uri, int32_t type, std::vector<CloudMetaData> &metaData)
 {
-    MEDIA_INFO_LOG("CloudMediaDataClientHandler::GetDownloadThmsByUri begin");
+    MEDIA_INFO_LOG("GetDownloadThmsByUri, uris: %{public}zu, type: %{public}d", uri.size(), type);
+    CHECK_AND_RETURN_RET_LOG(!uri.empty(), E_OK, "GetDownloadThmsByUri: uris is empty");
     GetDownloadThmsByUriReqBody reqBody;
     reqBody.pathList = uri;
     reqBody.thmType = type;
@@ -226,11 +229,8 @@ int32_t CloudMediaDataClientHandler::GetDownloadThmsByUri(
 int32_t CloudMediaDataClientHandler::OnDownloadAsset(
     const std::vector<std::string> &cloudIds, std::vector<MediaOperateResult> &result)
 {
-    MEDIA_INFO_LOG("enter CloudMediaDataClientHandler::OnDownloadAsset");
-    if (cloudIds.empty()) {
-        MEDIA_INFO_LOG("CloudMediaDataClientHandler::OnDownloadAsset cloudIds is empty");
-        return E_OK;
-    }
+    MEDIA_INFO_LOG("OnDownloadAsset, cloudIds: %{public}zu", cloudIds.size());
+    CHECK_AND_RETURN_RET_LOG(!cloudIds.empty(), E_OK, "OnDownloadAsset: cloudIds is empty");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_ON_DOWNLOAD_ASSET);
     OnDownloadAssetReqBody reqBody;
     reqBody.cloudIds = cloudIds;
@@ -299,7 +299,7 @@ int32_t CloudMediaDataClientHandler::OnDownloadThmsInner(
 int32_t CloudMediaDataClientHandler::OnDownloadThms(
     const std::unordered_map<std::string, int32_t> &resMap, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("enter CloudMediaDataClientHandler::OnDownloadThms");
+    MEDIA_INFO_LOG("OnDownloadThms, resMap: %{public}zu", resMap.size());
     CHECK_AND_RETURN_RET_LOG(!resMap.empty(), E_OK, "OnDownloadThms: resMap is empty");
     std::vector<OnDownloadThmsReqBody::DownloadThmsData> downloadThmsDataList;
     for (const auto &res : resMap) {
@@ -427,10 +427,7 @@ int32_t CloudMediaDataClientHandler::UpdateLocalFileDirty(std::vector<MDKRecord>
             cloudIds.emplace_back(record.GetRecordId());
         }
     }
-    if (cloudIds.empty()) {
-        MEDIA_ERR_LOG("CloudMediaDataClientHandler::UpdateLocalFileDirty Param Error");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(!cloudIds.empty(), E_OK, "UpdateLocalFileDirty: cloudIds is empty");
     UpdateLocalFileDirtyReqBody req;
     req.cloudIds = cloudIds;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_UPDATE_LOCAL_FILE_DIRTY);
