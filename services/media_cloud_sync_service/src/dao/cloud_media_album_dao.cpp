@@ -263,6 +263,30 @@ int32_t CloudMediaAlbumDao::UpdateCloudAlbumSynced(const std::string &field, con
     return ret;
 }
 
+bool CloudMediaAlbumDao::ReplaceCoverUriCondition(const std::string &coverUri, const std::string &lPath)
+{
+    const std::string SCREENSHOT_VIDEO_EXTENSION = "mp4";
+    const std::string DEFAULT_SCREENRECORDS_LPATH_LOWER = "/pictures/screenrecords";
+    const std::string DEFAULT_SCREENSHOT_LPATH_LOWER = "/pictures/screenshots";
+    string extension = MediaFileUtils::GetExtensionFromPath(coverUri);
+    std::string lPathLower;
+    std::transform(lPath.begin(), lPath.end(), std::back_inserter(lPathLower), ::tolower);
+    if (DEFAULT_SCREENRECORDS_LPATH_LOWER.compare(lPathLower) == 0 &&
+        SCREENSHOT_VIDEO_EXTENSION.compare(extension) != 0) {
+        MEDIA_INFO_LOG("Not Allow Replace CoverUri lPath:%{public}s, coverUri:%{public}s", lPath.c_str(),
+                       coverUri.c_str());
+        return false;
+    }
+    if (DEFAULT_SCREENSHOT_LPATH_LOWER.compare(lPathLower) == 0 &&
+        SCREENSHOT_VIDEO_EXTENSION.compare(extension) == 0) {
+        MEDIA_INFO_LOG("Not Allow Replace CoverUri lPath:%{public}s, coverUri:%{public}s", lPath.c_str(),
+                       coverUri.c_str());
+        return false;
+    }
+    MEDIA_DEBUG_LOG("IsCoverIdExist:coverUri:%{public}s", coverUri.c_str());
+    return true;
+}
+
 int32_t CloudMediaAlbumDao::UpdateCloudAlbumInner(PhotoAlbumDto &record, const std::string &field,
     const std::string &value, std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle)
 {
@@ -298,8 +322,9 @@ int32_t CloudMediaAlbumDao::UpdateCloudAlbumInner(PhotoAlbumDto &record, const s
         if (IsCoverIdExist(record.coverCloudId) && GetCoverUriFromCoverCloudId(record.coverCloudId, coverUri)) {
             values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, record.coverUriSource);
             values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, record.coverCloudId);
-            values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
-            MEDIA_DEBUG_LOG("IsCoverIdExist:coverUri:%{public}s", coverUri.c_str());
+            if (ReplaceCoverUriCondition(coverUri, record.lPath)) {
+                values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
+            }
         } else {
             MEDIA_DEBUG_LOG("cloud cover need pull");
             values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::MANUAL_WAIT_PULL_COVER);
@@ -626,8 +651,9 @@ int32_t CloudMediaAlbumDao::InsertAlbums(PhotoAlbumDto &record,
         if (IsCoverIdExist(record.coverCloudId) && GetCoverUriFromCoverCloudId(record.coverCloudId, coverUri)) {
             values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, record.coverUriSource);
             values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, record.coverCloudId);
-            values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
-            MEDIA_DEBUG_LOG("IsCoverIdExist:coverUri:%{public}s", coverUri.c_str());
+            if (ReplaceCoverUriCondition(coverUri, record.lPath)) {
+                values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
+            }
         } else {
             MEDIA_DEBUG_LOG("cloud cover need pull");
             values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::MANUAL_WAIT_PULL_COVER);

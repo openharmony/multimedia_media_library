@@ -116,4 +116,44 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, CloudMediaAlbumDao_HandleLPathAndAlbumTyp
     int32_t ret2 = albumDao.HandleLPathAndAlbumType(record2);
     std::cout << "ret2: " << ret2 << std::endl;
 }
+
+HWTEST_F(CloudMediaSyncServiceDaoTest, CloudMediaAlbumDao_ReplaceCoverUriCondition_Test_001, TestSize.Level1)
+{
+    CloudMediaAlbumDao albumDao;
+    PhotoAlbumDto record;
+    std::string coverUri = "file://media/Photo/93/VID_1754566736_008/SVID_20250807_193716_1.jpg";
+    std::string lPath = "/Pictures/Screenrecords";
+    bool ret = albumDao.ReplaceCoverUriCondition(coverUri, lPath);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(CloudMediaSyncServiceDaoTest, CloudMediaAlbumDao_ReplaceCoverUriCondition_Test_002, TestSize.Level1)
+{
+    CloudMediaAlbumDao albumDao;
+    PhotoAlbumDto record;
+    std::string coverUri = "file://media/Photo/93/VID_1754566736_008/SVID_20250807_193716_1.mp4";
+    std::string lPath = "/Pictures/Screenshots";
+    bool ret = albumDao.ReplaceCoverUriCondition(coverUri, lPath);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(CloudMediaSyncServiceDaoTest, CloudMediaAlbumDao_ReplaceCoverUriCondition_Test_003, TestSize.Level1)
+{
+    CloudMediaAlbumDao albumDao;
+    PhotoAlbumDto record;
+    std::string coverUri = "file://media/Photo/93/VID_1754566736_008/SVID_20250807_193716_1.mp4";
+    std::string lPath = "/Pictures/Screenrecords";
+    bool ret = albumDao.ReplaceCoverUriCondition(coverUri, lPath);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(CloudMediaSyncServiceDaoTest, CloudMediaAlbumDao_ReplaceCoverUriCondition_Test_004, TestSize.Level1)
+{
+    CloudMediaAlbumDao albumDao;
+    PhotoAlbumDto record;
+    std::string coverUri = "file://media/Photo/93/VID_1754566736_008/SVID_20250807_193716_1.jpg";
+    std::string lPath = "/Pictures/Screenshots";
+    bool ret = albumDao.ReplaceCoverUriCondition(coverUri, lPath);
+    EXPECT_EQ(ret, true);
+}
 }

@@ -84,6 +84,7 @@ public:
     bool IsCoverIdExist(std::string &cloudId);
     bool IsNeedPullCoverByDateModified(std::string &lPath, std::string &coverCloudId);
     bool GetCoverUriFromCoverCloudId(std::string &coverCloudId, std::string &coverUri);
+    bool ReplaceCoverUriCondition(const std::string &coverUri, const std::string &lPath);
 private:
     int32_t InsertAlbums(PhotoAlbumDto &record,
         std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> &albumRefreshHandle);
