@@ -74,6 +74,7 @@
 #include "net_conn_client.h"
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
+#include "photo_day_month_year_operation.h"
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "medialibrary_astc_stat.h"
@@ -507,6 +508,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         watch->DoAging();
     }
     DfxMovingPhoto::AbnormalMovingPhotoStatistics();
+    PhotoDayMonthYearOperation::RepairDateTime();
 }
 
 static void PauseBackgroundDownloadCloudMedia()

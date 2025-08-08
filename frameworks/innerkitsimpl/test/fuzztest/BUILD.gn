@@ -80,6 +80,7 @@ group("media_library_fuzztest") {
     "medialibrarymultistagescapture_fuzzer:MediaLibraryMultistagesCaptureFuzzTest",
     "medialibrarymultistagesdeferredcapture_fuzzer:MediaLibraryMultistagesDeferredCaptureFuzzTest",
     "medialibrarypermission_fuzzer:MediaLibraryPermissionFuzzTest",
+    "medialibraryphotodaymonthyearoperation_fuzzer:MediaLibraryPhotoDayMonthYearOperationFuzzTest",
     "medialibraryrefreshmanager_fuzzer:MediaLibraryRefreshManagerFuzzTest",
     "medialibraryrestore_fuzzer:MediaLibraryRestoreFuzzTest",
     "medialibraryserviceextension_fuzzer:MediaLibraryServiceExtensionFuzzTest",

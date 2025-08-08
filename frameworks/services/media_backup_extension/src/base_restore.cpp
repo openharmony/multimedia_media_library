@@ -559,19 +559,20 @@ static void InsertUserComment(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
 }
 
-void BaseRestore::InsertDetailTime(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
-    FileInfo &fileInfo)
+void BaseRestore::InsertDetailTime(
+    const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value, FileInfo &fileInfo)
 {
     if (fileInfo.detailTime.empty()) {
-        fileInfo.detailTime = MediaFileUtils::StrCreateTime(
-            PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, fileInfo.dateTaken / MSEC_TO_SEC);
+        fileInfo.detailTime =
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, fileInfo.dateTaken / MSEC_TO_SEC);
     }
 
-    bool hasDetailTime = value.HasColumn(PhotoColumn::PHOTO_DETAIL_TIME);
-    if (hasDetailTime) {
-        value.Delete(PhotoColumn::PHOTO_DETAIL_TIME);
-    }
-    value.PutString(PhotoColumn::PHOTO_DETAIL_TIME, fileInfo.detailTime);
+    value.Put(PhotoColumn::PHOTO_DETAIL_TIME, fileInfo.detailTime);
+
+    auto const [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(fileInfo.detailTime);
+    value.Put(PhotoColumn::PHOTO_DATE_YEAR, dateYear);
+    value.Put(PhotoColumn::PHOTO_DATE_MONTH, dateMonth);
+    value.Put(PhotoColumn::PHOTO_DATE_DAY, dateDay);
 }
 
 void BaseRestore::CheckAndDelete(NativeRdb::ValuesBucket &value, const std::string &column)
@@ -682,12 +683,6 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
         valueObject.GetLong(dateAdded);
     }
     fileInfo.dateAdded = dateAdded;
-    value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, fileInfo.dateTaken));
-    value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, fileInfo.dateTaken));
-    value.PutString(PhotoColumn::PHOTO_DATE_DAY,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, fileInfo.dateTaken));
     SetCoverPosition(fileInfo, value);
 }
 
