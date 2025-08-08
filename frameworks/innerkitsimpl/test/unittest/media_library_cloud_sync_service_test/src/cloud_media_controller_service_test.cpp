@@ -100,7 +100,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, AlbumController_OnFetchRecords_Test_00
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_ERR);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, AlbumController_OnFetchRecords_Test_002, TestSize.Level1)

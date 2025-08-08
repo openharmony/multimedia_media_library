@@ -62,7 +62,8 @@ int32_t CloudMediaPhotoHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
     std::vector<CloudMetaData> &newData, std::vector<CloudMetaData> &fdirtyData,
     std::vector<std::string> &failedRecords, std::vector<int32_t> &stats)
 {
-    MEDIA_INFO_LOG("enter CloudMediaPhotoHandler::OnFetchRecords");
+    MEDIA_INFO_LOG("OnFetchRecords, size: %{public}zu", records.size());
+    CHECK_AND_RETURN_RET_LOG(!records.empty(), E_OK, "OnFetchRecords records is empty");
     int32_t ret;
     OnFetchRecordsReqBody reqBody;
     OnFetchRecordsRespBody respBody;
@@ -91,7 +92,8 @@ int32_t CloudMediaPhotoHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
 int32_t CloudMediaPhotoHandler::OnDentryFileInsert(
     std::vector<MDKRecord> &records, std::vector<std::string> &failedRecords)
 {
-    MEDIA_INFO_LOG("OnDentryFileInsert enter");
+    MEDIA_INFO_LOG("OnDentryFileInsert, size: %{public}zu", records.size());
+    CHECK_AND_RETURN_RET_LOG(!records.empty(), E_OK, "OnDentryFileInsert records is empty");
     int32_t ret;
     OnDentryFileReqBody reqBody;
     OnDentryFileRespBody respBody;
@@ -128,6 +130,7 @@ int32_t CloudMediaPhotoHandler::GetCheckRecords(
     const std::vector<std::string> &cloudIds, std::unordered_map<std::string, CloudCheckData> &checkRecords)
 {
     MEDIA_INFO_LOG("enter CloudMediaPhotoHandler::GetCheckRecords %{public}zu", cloudIds.size());
+    CHECK_AND_RETURN_RET_LOG(!cloudIds.empty(), E_OK, "GetCheckRecords cloudIds is empty");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_GET_CHECK_RECORDS);
     GetCheckRecordsReqBody reqBody;
     reqBody.cloudIds = cloudIds;
@@ -365,11 +368,8 @@ void CloudMediaPhotoHandler::DeleteTempLivePhotoFile(std::string &livePhotoCache
 int32_t CloudMediaPhotoHandler::OnCreateRecords(
     const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("enter OnCreateRecords");
-    if (map.empty()) {
-        MEDIA_ERR_LOG("OnCreateRecords param error");
-        return E_ERR;
-    }
+    MEDIA_INFO_LOG("OnCreateRecords, size: %{public}zu", map.size());
+    CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnCreateRecords records is empty");
     OnCreateRecordsPhotosReqBody req;
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_CREATE, userId_};
     for (auto &entry : map) {
@@ -395,11 +395,8 @@ int32_t CloudMediaPhotoHandler::OnCreateRecords(
 int32_t CloudMediaPhotoHandler::OnMdirtyRecords(
     const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("enter OnMdirtyRecords");
-    if (map.empty()) {
-        MEDIA_ERR_LOG("OnMdirtyRecords param error");
-        return E_ERR;
-    }
+    MEDIA_INFO_LOG("OnMdirtyRecords, size: %{public}zu", map.size());
+    CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnMdirtyRecords records is empty");
     OnModifyRecordsPhotosReqBody req;
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_DATA_MODIFY, userId_};
     for (auto &entry : map) {
@@ -424,7 +421,8 @@ int32_t CloudMediaPhotoHandler::OnMdirtyRecords(
 int32_t CloudMediaPhotoHandler::OnFdirtyRecords(
     const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("OnFdirtyRecords enter");
+    MEDIA_INFO_LOG("OnFdirtyRecords, size: %{public}zu", map.size());
+    CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnFdirtyRecords records is empty");
     OnFileDirtyRecordsReqBody req;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_FDIRTY_RECORDS);
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_DATA_MODIFY, userId_};
@@ -450,11 +448,8 @@ int32_t CloudMediaPhotoHandler::OnFdirtyRecords(
 int32_t CloudMediaPhotoHandler::OnDeleteRecords(
     const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("CloudMediaPhotoHandler::OnDeleteRecords");
-    if (map.empty()) {
-        MEDIA_ERR_LOG("CloudMediaPhotoHandler::OnDeleteRecords param error");
-        return E_OK;
-    }
+    MEDIA_INFO_LOG("OnDeleteRecords, size: %{public}zu", map.size());
+    CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnDeleteRecords records is empty");
     OnDeleteRecordsPhotosReqBody reqBody;
     OnDeleteRecordsPhotosRespBody resp;
     resp.failSize = 0;
@@ -477,11 +472,8 @@ int32_t CloudMediaPhotoHandler::OnDeleteRecords(
 
 int32_t CloudMediaPhotoHandler::OnCopyRecords(const std::map<std::string, MDKRecordOperResult> &map, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("OnCopyRecords enter");
-    if (map.empty()) {
-        MEDIA_ERR_LOG("OnCopyRecords param error");
-        return E_ERR;
-    }
+    MEDIA_INFO_LOG("OnCopyRecords, size: %{public}zu", map.size());
+    CHECK_AND_RETURN_RET_LOG(!map.empty(), E_OK, "OnCopyRecords records is empty");
     OnCopyRecordsPhotosReqBody req;
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_COPY, userId_};
     for (auto &entry : map) {
