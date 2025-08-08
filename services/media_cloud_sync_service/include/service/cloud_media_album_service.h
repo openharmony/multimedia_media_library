@@ -56,6 +56,8 @@ public:
     int32_t OnCompleteCheck();
     void CheckAlbumManualCover();
     bool GetCoverUriFromCoverCloudId(std::string &coverCloudId, std::string &coverUri);
+    void HandleWaitPullCover(shared_ptr<NativeRdb::ResultSet> &resultSet,
+        const shared_ptr<MediaLibraryRdbStore> rdbStore, NativeRdb::ValuesBucket &values, int32_t albumId);
 
 private:
     int32_t OnDeleteAlbums(std::vector<std::string> &failedAlbumIds);
