@@ -99,7 +99,6 @@ private:
 
     // RecoveryPhotosTableColumn
     EXPORT ResultSetDataType GetDataType(const std::string &name);
-    EXPORT const std::unordered_map<std::string, ResultSetDataType> &GetRecoveryPhotosTableColumnInfo();
     EXPORT std::unordered_map<std::string, ResultSetDataType> QueryRecoveryPhotosTableColumnInfo();
 
 private:
