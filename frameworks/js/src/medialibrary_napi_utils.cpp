@@ -2538,7 +2538,7 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<HighlightAlbumNap
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<ResultSetAsyncContext>(napi_env env,
     unique_ptr<ResultSetAsyncContext> &asyncContext, const string &resourceName,
-    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *))
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MovingPhotoAsyncContext>(napi_env env,
     unique_ptr<MovingPhotoAsyncContext> &asyncContext, const string &resourceName,
