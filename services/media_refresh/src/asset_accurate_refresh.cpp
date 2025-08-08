@@ -76,7 +76,7 @@ int32_t AssetAccurateRefresh::Init(const vector<int32_t> &fileIds)
 }
 
 // refresh album based on init datas and modified datas.
-int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType)
+int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified)
 {
     if (dfxRefreshManager_ != nullptr) {
         albumRefreshExe_.SetDfxRefreshManager(dfxRefreshManager_);
@@ -85,7 +85,7 @@ int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType)
     tracer.Start("AssetAccurateRefresh::RefreshAlbum");
     if (dataManager_.CheckIsForRecheck()) {
         dataManager_.ClearMultiThreadChangeDatas();
-        int32_t ret = RefreshAllAlbum(notifyAlbumType);
+        int32_t ret = RefreshAllAlbum(notifyAlbumType, isRefreshWithDateModified);
         DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return ret;
     }
@@ -96,14 +96,14 @@ int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType)
         DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return ACCURATE_REFRESH_CHANGE_DATA_EMPTY;
     }
-    auto ret = RefreshAlbum(assetChangeDatas, notifyAlbumType);
+    auto ret = RefreshAlbum(assetChangeDatas, notifyAlbumType, isRefreshWithDateModified);
     dataManager_.ClearMultiThreadChangeDatas();
     return ret;
 }
 
 // 根据传递的assetChangeDatas更新相册，不需要dataManager_处理
 int32_t AssetAccurateRefresh::RefreshAlbum(const vector<PhotoAssetChangeData> &assetChangeDatas,
-    NotifyAlbumType notifyAlbumType)
+    NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified)
 {
     if (assetChangeDatas.empty()) {
         MEDIA_WARN_LOG("input asset change datas empty.");
@@ -122,8 +122,13 @@ int32_t AssetAccurateRefresh::RefreshAlbum(const vector<PhotoAssetChangeData> &a
         DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return ACCURATE_REFRESH_RET_OK;
     }
-    int32_t ret = albumRefreshExe_.RefreshAlbum(assetChangeDatas, notifyAlbumType);
+    int32_t ret = albumRefreshExe_.RefreshAlbum(assetChangeDatas, notifyAlbumType, isRefreshWithDateModified);
     return ret;
+}
+
+int32_t AssetAccurateRefresh::RefreshAlbumNoDateModified(NotifyAlbumType notifyAlbumType)
+{
+    return RefreshAlbum(notifyAlbumType, false);
 }
 
 // notify assest change infos based on init datas and modified datas.
@@ -260,9 +265,9 @@ int32_t AssetAccurateRefresh::NotifyForReCheck()
     return ACCURATE_REFRESH_RET_OK;
 }
 
-int32_t AssetAccurateRefresh::RefreshAllAlbum(NotifyAlbumType notifyAlbumType)
+int32_t AssetAccurateRefresh::RefreshAllAlbum(NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified)
 {
-    return albumRefreshExe_.RefreshAllAlbum(notifyAlbumType);
+    return albumRefreshExe_.RefreshAllAlbum(notifyAlbumType, isRefreshWithDateModified);
 }
 }  // namespace Media::AccurateRefresh
 }  // namespace OHOS
