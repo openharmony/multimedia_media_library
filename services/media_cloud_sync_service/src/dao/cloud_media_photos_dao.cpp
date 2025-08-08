@@ -1979,7 +1979,7 @@ int32_t CloudMediaPhotosDao::RenewSameCloudResource(const PhotosDto &photo)
         "ret: %{public}d, changeRows: %{public}d, cloudId: %{public}s",
         ret, changeRows, photo.cloudId.c_str());
     CHECK_AND_RETURN_RET(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, ret);
-    photoRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
+    photoRefresh->RefreshAlbumNoDateModified(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
         NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
     photoRefresh->Notify();
     return ret;
@@ -1999,7 +1999,7 @@ int32_t CloudMediaPhotosDao::DeleteLocalFileNotExistRecord(const PhotosDto &phot
         "ret: %{public}d, deletedRows: %{public}d, path: %{public}s",
         ret, deletedRows, MediaFileUtils::DesensitizePath(photo.path).c_str());
     CHECK_AND_RETURN_RET(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, ret);
-    photoRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
+    photoRefresh->RefreshAlbumNoDateModified(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
         NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
     photoRefresh->Notify();
     return ret;

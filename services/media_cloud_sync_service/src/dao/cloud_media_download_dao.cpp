@@ -245,7 +245,7 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const
         "UpdateDownloadAsset Failed to Update, ret: %{public}d.",
         ret);
     CHECK_AND_PRINT_LOG(changedRows > 0, "UpdateDownloadAsset changedRows: %{public}d.", changedRows);
-    photoRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
+    photoRefresh->RefreshAlbumNoDateModified(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
         NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
     photoRefresh->Notify();
     return ret;

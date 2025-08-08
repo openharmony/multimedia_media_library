@@ -36,9 +36,9 @@ namespace Media::AccurateRefresh {
 class AlbumRefreshExecution {
 public:
     int32_t RefreshAlbum(const std::vector<PhotoAssetChangeData> &assetChangeDatas,
-        NotifyAlbumType notifyAlbumType = NO_NOTIFY);
+        NotifyAlbumType notifyAlbumType = NO_NOTIFY, bool isRefreshWithDateModified = true);
     int32_t Notify();
-    int32_t RefreshAllAlbum(NotifyAlbumType notifyAlbumType);
+    int32_t RefreshAllAlbum(NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified = true);
     void SetDfxRefreshManager(std::shared_ptr<DfxRefreshManager> dfxRefreshManager)
     {
         dfxRefreshManager_ = dfxRefreshManager;
@@ -124,6 +124,8 @@ private:
     std::set<int32_t> forceRefreshHiddenAlbums_;
 
     static std::mutex albumRefreshMtx_;
+
+    bool isRefreshWithDateModified_ = true;
 };
 
 } // namespace Media
