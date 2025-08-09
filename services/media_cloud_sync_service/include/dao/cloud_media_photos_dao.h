@@ -172,6 +172,7 @@ private:
     NativeRdb::AbsRdbPredicates GetUpdateRecordCondition(const std::string &cloudId);
     int32_t UpdatePhoto(const std::string &whereClause, const std::vector<std::string> &whereArgs,
         NativeRdb::ValuesBucket &values, int32_t &changeRows);
+    void IsCoverContentChange(int32_t changedRows, bool mtimeChanged, int32_t fileId);
     int32_t FixAlbumIdToBeOtherAlbumId(int32_t &albumId);
     bool IsHiddenAsset(const CloudMediaPullDataDto &pullData);
     int32_t FixEmptyAlbumId(const CloudMediaPullDataDto &data, int32_t &albumId);
