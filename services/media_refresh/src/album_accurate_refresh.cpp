@@ -232,7 +232,8 @@ bool AlbumAccurateRefresh::IsCoverContentChange(string &fileId)
     return false;
 }
 
-void AlbumAccurateRefresh::NotifyAlbumsCoverChange(string &fileId, vector<int32_t> &albumIds){
+void AlbumAccurateRefresh::NotifyAlbumsCoverChange(string &fileId, vector<int32_t> &albumIds)
+{
     CHECK_AND_RETURN_LOG(MediaFileUtils::IsValidInteger(fileId), "invalid input param");
     CHECK_AND_RETURN_LOG(stoi(fileId) > 0, "fileId is invalid");
     CHECK_AND_RETURN_LOG(!albumIds.empty(), "no album cover has changed");
