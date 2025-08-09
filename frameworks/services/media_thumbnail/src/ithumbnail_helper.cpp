@@ -646,7 +646,8 @@ bool IThumbnailHelper::StorePictureLowQuality(ThumbnailData &data,
     const std::shared_ptr<Picture>& picture, const bool isSourceEx, const size_t sizeLimit)
 {
     size_t lastGeneratedSize = -1;
-    ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize);
+    ThumbnailType type = !isSourceEx ? ThumbnailType::LCD : ThumbnailType::LCD_EX;
+    ThumbnailFileUtils::GetThumbFileSize(data, type, lastGeneratedSize);
     MEDIA_INFO_LOG("Create low quality lcd. SizeLimit: %{public}zu, lastGeneratedSize: %{public}zu",
         sizeLimit, lastGeneratedSize);
     vector<ThumbnailQuality> tryQualityList = { ThumbnailQuality::DEFAULT, ThumbnailQuality::GOOD,
@@ -654,9 +655,9 @@ bool IThumbnailHelper::StorePictureLowQuality(ThumbnailData &data,
     for (const ThumbnailQuality quality : tryQualityList) {
         data.thumbnailQuality = quality;
         CHECK_AND_RETURN_RET_LOG(StorePicture(data, picture, isSourceEx), false, "StorePicture failed.");
-        CHECK_AND_RETURN_RET_LOG(ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize),
+        CHECK_AND_RETURN_RET_LOG(ThumbnailFileUtils::GetThumbFileSize(data, type, lastGeneratedSize),
             false, "GetThumbFileSize failed");
-        if (lastGeneratedSize <= sizeLimit) {
+        if (lastGeneratedSize < sizeLimit) {
             return true;
         }
     }
