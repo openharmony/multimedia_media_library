@@ -42,7 +42,6 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "cloud_sync_utils.h"
-#include "photo_day_month_year_operation.h"
 
 namespace OHOS {
 namespace Media {
@@ -52,7 +51,6 @@ static constexpr int32_t UPDATE_BATCH_CLOUD_SIZE = 2;
 static constexpr int32_t UPDATE_BATCH_LOCAL_VIDEO_SIZE = 50;
 static constexpr int32_t UPDATE_BATCH_LOCAL_IMAGE_SIZE = 200;
 static constexpr int32_t MAX_RETRY_COUNT = 2;
-static constexpr int32_t UPDATE_DAY_MONTH_YEAR_BATCH_SIZE = 200;
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
 static constexpr double DEVICE_STORAGE_FREE_RATIO_HIGH = 0.15;
@@ -231,29 +229,10 @@ void BackgroundCloudFileProcessor::UpdateCloudData()
     UpdateCloudDataExecutor(updateData);
 }
 
-void BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYear()
-{
-    MEDIA_INFO_LOG("Start update abnormal day month year data task");
-
-    auto [ret, needUpdateFileIds] =
-        PhotoDayMonthYearOperation::QueryNeedUpdateFileIds(UPDATE_DAY_MONTH_YEAR_BATCH_SIZE);
-
-    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "Failed to query abnormal day month year data! err: %{public}d", ret);
-    if (needUpdateFileIds.empty()) {
-        MEDIA_DEBUG_LOG("No abnormal day month year data need to update");
-        return;
-    }
-
-    ret = PhotoDayMonthYearOperation::UpdateAbnormalDayMonthYear(needUpdateFileIds);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
-        "Failed to update abnormal day month year data task! err: %{public}d", ret);
-}
-
 void BackgroundCloudFileProcessor::ProcessCloudData()
 {
     isUpdating_ = true;
     UpdateCloudData();
-    UpdateAbnormalDayMonthYear();
 }
 
 bool BackgroundCloudFileProcessor::GetStorageFreeRatio(double &freeRatio)
