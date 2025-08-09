@@ -52,6 +52,12 @@ struct MergeAlbumInfo {
     std::string tagId;
     std::vector<string> repeatedAlbumIds;
 };
+
+struct SetCoverUriAlbumInfo {
+    int32_t albumId;
+    int32_t dirty;
+};
+
 class MediaLibraryAlbumOperations {
 public:
     static int32_t CreateAlbumOperation(MediaLibraryCommand &cmd);
@@ -107,8 +113,8 @@ public:
     static bool IsCoverInAlbum(const string &fileId, int32_t albumSubtype, int32_t albumId);
     static bool IsCoverInSystemAlbum(NativeRdb::RdbPredicates &predicates, int32_t albumSubtype);
     static bool IsManunalCloudCover(const std::string &fileId, std::string &coverCloudId);
-    static int32_t UpdateCoverUriExecute(int32_t albumId, const std::string &coverUri, const std::string &fileId,
-        int64_t coverDateTime, AccurateRefresh::AlbumAccurateRefresh& albumRefresh);
+    static int32_t UpdateCoverUriExecute(const SetCoverUriAlbumInfo& albumInfo, const std::string &coverUri,
+        const std::string &fileId, int64_t coverDateTime, AccurateRefresh::AlbumAccurateRefresh& albumRefresh);
     static int32_t UpdatePhotoAlbumOrder(const vector<NativeRdb::ValuesBucket> &valuesBuckets,
         const vector<NativeRdb::RdbPredicates> &predicatesArray);
 };

@@ -1485,10 +1485,12 @@ HWTEST_F(MediaLibraryAlbumOperationTest, UpdateCoverUriEXecute_test_001, TestSiz
 {
     MEDIA_INFO_LOG("UpdateCoverUriEXecute_test_001::Start");
     int32_t albumId = -1;
+    SetCoverUriAlbumInfo albumInfo;
+    albumInfo.albumId = albumId;
     string fileId = "0";
     string coverUri = "file://media/Photo" + fileId;
     AlbumAccurateRefresh albumRefresh;
-    bool ret = MediaLibraryAlbumOperations::UpdateCoverUriExecute(albumId, coverUri, fileId, 0, albumRefresh);
+    bool ret = MediaLibraryAlbumOperations::UpdateCoverUriExecute(albumInfo, coverUri, fileId, 0, albumRefresh);
     EXPECT_EQ(ret, 0);
     MEDIA_INFO_LOG("UpdateCoverUriEXecute_test_001 End");
 }

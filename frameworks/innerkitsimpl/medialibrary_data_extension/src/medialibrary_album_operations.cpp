@@ -1326,7 +1326,7 @@ bool MediaLibraryAlbumOperations::IsManunalCloudCover(const string &fileId, stri
     return ret;
 }
 
-int32_t MediaLibraryAlbumOperations::UpdateCoverUriExecute(int32_t albumId,
+int32_t MediaLibraryAlbumOperations::UpdateCoverUriExecute(const SetCoverUriAlbumInfo& albumInfo,
     const string &coverUri, const string &fileId, int64_t coverDateTime, AlbumAccurateRefresh& albumRefresh)
 {
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
@@ -1338,18 +1338,20 @@ int32_t MediaLibraryAlbumOperations::UpdateCoverUriExecute(int32_t albumId,
     string cloudId;
     bool isManunalCloudCover = IsManunalCloudCover(fileId, cloudId);
     MEDIA_INFO_LOG("albumId:%{public}d, coverUri:%{public}s, isManunalCloudCover:%{public}d",
-        albumId, coverUri.c_str(), isManunalCloudCover);
+        albumInfo.albumId, coverUri.c_str(), isManunalCloudCover);
     if (isManunalCloudCover) {
         values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::MANUAL_CLOUD_COVER);
         values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, to_string(dateModified) + "," + cloudId);
-        values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
+        if (albumInfo.dirty == static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) {
+            values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
+        }
     } else {
         values.PutInt(PhotoAlbumColumns::COVER_URI_SOURCE, CoverUriSource::MANUAL_LOCAL_COVER);
         values.PutString(PhotoAlbumColumns::COVER_CLOUD_ID, to_string(dateModified) + ",");
     }
 
     string CHECK_COVER_VALID =
-        PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId) + " AND EXISTS (SELECT 1 FROM " +
+        PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumInfo.albumId) + " AND EXISTS (SELECT 1 FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + fileId + " AND " +
         MediaColumn::MEDIA_DATE_TRASHED + " >= 0 AND " + MediaColumn::MEDIA_HIDDEN + " = 0 AND " +
         MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " + PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
@@ -1394,6 +1396,19 @@ int64_t GetCoverDateTime(const string &fileId, int32_t albumSubtype)
     return coverDateTime;
 }
 
+static int32_t QueryAlbumInfo(int32_t albumId, SetCoverUriAlbumInfo& albumInfo)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "Failed to get rdbStore when query");
+    const std::string QUERY_ALBUM_INFO =
+        "SELECT dirty FROM PhotoAlbum WHERE album_id = ?";
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_ALBUM_INFO, { albumId });
+    CHECK_AND_RETURN_RET_LOG(TryToGoToFirstRow(resultSet), E_FAIL, "Get album info failed. Query album info failed");
+    albumInfo.albumId = albumId;
+    albumInfo.dirty = GetInt32Val(PhotoAlbumColumns::ALBUM_DIRTY, resultSet);
+    return E_OK;
+}
+
 int32_t MediaLibraryAlbumOperations::UpdateAlbumCoverUri(const ValuesBucket &values,
     const DataSharePredicates &predicates, bool isSystemAlbum)
 {
@@ -1419,8 +1434,10 @@ int32_t MediaLibraryAlbumOperations::UpdateAlbumCoverUri(const ValuesBucket &val
     auto coverDateTime = GetCoverDateTime(fileId, albumSubtype);
 
     // 3.update cover uri
+    SetCoverUriAlbumInfo albumInfo;
+    CHECK_AND_RETURN_RET_LOG(QueryAlbumInfo(albumId, albumInfo) == E_OK, E_ERR, "Query album info failed");
     AlbumAccurateRefresh albumRefresh;
-    auto updateRows = UpdateCoverUriExecute(albumId, coverUri, fileId, coverDateTime, albumRefresh);
+    auto updateRows = UpdateCoverUriExecute(albumInfo, coverUri, fileId, coverDateTime, albumRefresh);
     CHECK_AND_RETURN_RET_LOG(updateRows == 1, E_ERR,
         "update coverUri failed ,maybe cover is invalid, updateRows = %{public}d", updateRows);
 
