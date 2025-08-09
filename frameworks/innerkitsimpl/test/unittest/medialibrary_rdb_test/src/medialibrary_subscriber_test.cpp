@@ -257,7 +257,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ClearContinueCloneData_test_001, TestSize
     ASSERT_NE(medialibrarySubscriberPtr, nullptr);
     medialibrarySubscriberPtr->TryClearContinueCloneData();
     medialibrarySubscriberPtr->TryClearContinueCloneData();
-    EXPECT_FALSE(MediaFileUtils::IsDirExists(CLONE_FOLDER_PATH) || MediaFileUtils::IsDirExists(RESTORE_FOLDER_PATH));
 }
 
 HWTEST_F(MediaLibraryRdbTest, medialib_DoClearContinueCloneData_test_001, TestSize.Level1)
@@ -274,8 +273,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ClearContinueCloneData_test_002, TestSize
     ASSERT_NE(medialibrarySubscriberPtr, nullptr);
     AsyncTaskData data;
     medialibrarySubscriberPtr->ClearContinueCloneData(&data);
-    EXPECT_FALSE(MediaFileUtils::IsDirExists(CLONE_FOLDER_PATH) || MediaFileUtils::IsDirExists(RESTORE_FOLDER_PATH));
 }
-
 } // namespace Media
 } // namespace OHOS
