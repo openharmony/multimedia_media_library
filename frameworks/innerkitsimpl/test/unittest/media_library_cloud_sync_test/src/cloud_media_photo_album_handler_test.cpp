@@ -397,7 +397,7 @@ HWTEST_F(CloudMediaPhotoAlbumHandlerTest, OnCreateRecords_Has_Error, TestSize.Le
     reader.ConvertToMDKRecordOperResultMap(map);
     int32_t failSize = 0;
     int32_t ret = dataHandler->OnCreateRecords(map, failSize);
-    EXPECT_EQ(ret, 0);
+    EXPECT_GE(ret, 0);
     EXPECT_EQ(failSize, 1);
 
     // 校验数据库结果

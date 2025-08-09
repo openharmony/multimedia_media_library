@@ -39,6 +39,7 @@ static constexpr int32_t DATA_OPRN_COUNT = 17;
 static constexpr int32_t ALBUM_OPRN_COUNT = 16;
 static constexpr int32_t PHOTO_OPRN_COUNT = 18;
 static constexpr int32_t DOWNLOAD_OPRN_COUNT = 6;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 static std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
 void CloudMediaContorllerServiceTest::SetUpTestCase()
@@ -56,6 +57,7 @@ void CloudMediaContorllerServiceTest::SetUpTestCase()
 void CloudMediaContorllerServiceTest::TearDownTestCase()
 {
     GTEST_LOG_(INFO) << "TearDownTestCase";
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
 }

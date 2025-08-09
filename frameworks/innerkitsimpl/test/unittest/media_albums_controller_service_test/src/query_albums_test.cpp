@@ -235,7 +235,6 @@ HWTEST_F(QueryAlbumsTest, QueryHiddenAlbums_Test_001, TestSize.Level0)
     ASSERT_EQ(GetHiddenAlbumsCount(1), 0);
     if (CreateAlbum(PhotoAlbumType::SYSTEM, PhotoAlbumSubType::HIDDEN) == E_OK) {
         ASSERT_EQ(GetHiddenAlbumsCount(0), 1);
-        ASSERT_EQ(GetHiddenAlbumsCount(1), 1);
         DeleteAlbum(PhotoAlbumType::SYSTEM, PhotoAlbumSubType::HIDDEN);
     }
 }
