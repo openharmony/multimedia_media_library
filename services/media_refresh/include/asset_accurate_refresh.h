@@ -57,11 +57,14 @@ public:
     int32_t UpdateModifiedDatas();
 
     // refresh album based on init datas and modified datas.
-    int32_t RefreshAlbum(NotifyAlbumType notifyAlbumType = NO_NOTIFY);
+    int32_t RefreshAlbum(NotifyAlbumType notifyAlbumType = NO_NOTIFY, bool isRefreshWithDateModified = true);
     
     // 根据传递的assetChangeDatas更新相册，不需要dataManager_处理
     int32_t RefreshAlbum(const std::vector<PhotoAssetChangeData> &assetChangeDatas,
-        NotifyAlbumType notifyAlbumType = NO_NOTIFY);
+        NotifyAlbumType notifyAlbumType = NO_NOTIFY, bool isRefreshWithDateModified = true);
+
+    // 只刷新相册内容，不刷新相册date_modified
+    int32_t RefreshAlbumNoDateModified(NotifyAlbumType notifyAlbumType = NO_NOTIFY);
 
     // notify assest change infos based on init datas and modified datas.
     int32_t Notify();
@@ -83,7 +86,7 @@ protected:
     bool IsValidTable(std::string tableName) override;
 private:
     int32_t DeleteCommon(std::function<int32_t(NativeRdb::ValuesBucket &)> updateExe);
-    int32_t RefreshAllAlbum(NotifyAlbumType notifyAlbumType);
+    int32_t RefreshAllAlbum(NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified = true);
 
 private:
     AssetDataManager dataManager_;

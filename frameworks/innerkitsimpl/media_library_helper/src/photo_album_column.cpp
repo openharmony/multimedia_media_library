@@ -450,6 +450,7 @@ std::string PhotoAlbumColumns::CheckUploadPhotoAlbumColumns()
     // Since date_modified has been checked in mdirty and fdirty, omit it here.
     const std::vector<std::string> uploadPhotoAlbumColumns = {
         ALBUM_NAME,
+        ALBUM_DATE_MODIFIED,
     };
 
     std::string result = "(";

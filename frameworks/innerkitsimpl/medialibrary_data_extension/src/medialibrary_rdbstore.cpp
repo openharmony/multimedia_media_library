@@ -5094,6 +5094,10 @@ static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
         UpgradeFromAllVersionThirdPart(store, photoColumnExists);
         UpgradeFromAllVersionFourthPart(store, photoColumnExists);
     }
+
+    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER) {
+        UpdatePhotoAlbumTigger(store);
+    }
 }
 
 static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
