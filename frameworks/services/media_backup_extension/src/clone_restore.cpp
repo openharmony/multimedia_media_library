@@ -2915,7 +2915,6 @@ NativeRdb::ValuesBucket CloneRestore::CreateValuesBucketFromImageFaceTbl(const I
     PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_Y, imageFaceTbl.jointBeautyBounderY);
     PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_WIDTH, imageFaceTbl.jointBeautyBounderWidth);
     PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_HEIGHT, imageFaceTbl.jointBeautyBounderHeight);
-    PutIfPresent(values, IMAGE_FACE_COL_GROUP_VERSION, imageFaceTbl.groupVersion);
     return values;
 }
 
