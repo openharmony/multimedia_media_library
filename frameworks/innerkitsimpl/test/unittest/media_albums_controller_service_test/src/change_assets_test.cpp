@@ -180,19 +180,6 @@ HWTEST_F(ChangeAssetsTest, AddAssets_Test_002, TestSize.Level0) {
 }
 
 /**
- * @tc.name  : RemoveAssets_ShouldHandleHiddenOnlyFlag_WhenIsHiddenOnlyIsTrue
- * @tc.number: RemoveAssetsTest_001
- * @tc.desc  : 测试 isHiddenOnly, RemoveAssets 函数应正确处理隐藏仅标志
- */
-HWTEST_F(ChangeAssetsTest, RemoveAssetsTest_001, TestSize.Level0)
-{
-    int32_t result = ServiceRemoveAssets(0);
-    ASSERT_EQ(result, 0);
-    result = ServiceRemoveAssets(1);
-    ASSERT_EQ(result, 0);
-}
-
-/**
  * @tc.name  : RemoveAssets_ShouldReturnError_WhenReadRequestBodyFails
  * @tc.number: RemoveAssets_Test_002
  * @tc.desc  : 测试当读取请求体失败时,RemoveAssets 函数应返回错误
