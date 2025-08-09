@@ -255,6 +255,7 @@ private:
         std::string &name);
     static int32_t SetPendingTrue(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t SetPendingFalse(const std::shared_ptr<FileAsset> &fileAsset);
+    static void IsCoverContentChange(string &fileId);
 
     static constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
 

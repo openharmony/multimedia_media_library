@@ -26,6 +26,9 @@
 #include "accurate_debug_log.h"
 #include "medialibrary_tracer.h"
 #include "dfx_refresh_hander.h"
+#include "result_set_utils.h"
+#include "medialibrary_type_const.h"
+#include "medialibrary_unistore_manager.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -189,6 +192,65 @@ int32_t AlbumAccurateRefresh::NotifyForReCheck()
     Notification::MediaLibraryNotifyNew::AddItem(notifyInfo);
     ACCURATE_DEBUG("album recheck");
     return ACCURATE_REFRESH_RET_OK;
+}
+
+bool AlbumAccurateRefresh::IsCoverContentChange(string &fileId)
+{
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidInteger(fileId), false, "invalid input param");
+    CHECK_AND_RETURN_RET_LOG(stoi(fileId) > 0, false, "fileId is invalid");
+    MEDIA_INFO_LOG("IsCoverContentChange in, fileId: %{public}s", fileId.c_str());
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COVER_URI,
+        PhotoAlbumColumns::HIDDEN_COVER};
+    shared_ptr<ResultSet> resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultSet is null!");
+    int32_t rowCount = 0;
+    resultSet->GetRowCount(rowCount);
+    CHECK_AND_RETURN_RET_LOG(rowCount > 0, false, "result rowCount is: %{public}d", rowCount);
+
+    vector<int32_t> albumIds;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID,
+            resultSet, TYPE_INT32));
+        string coverUri = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COVER_URI,
+            resultSet, TYPE_STRING));
+        string hiddenCover = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::HIDDEN_COVER,
+            resultSet, TYPE_STRING));
+        if ((coverUri != "" && MediaFileUtils::GetIdFromUri(coverUri) == fileId)
+            || (hiddenCover != "" && MediaFileUtils::GetIdFromUri(hiddenCover) == fileId)) {
+            albumIds.push_back(albumId);
+        }
+    }
+    resultSet->Close();
+
+    if (!albumIds.empty()) {
+        NotifyAlbumsCoverChange(fileId, albumIds);
+        return true;
+    }
+    return false;
+}
+
+void AlbumAccurateRefresh::NotifyAlbumsCoverChange(string &fileId, vector<int32_t> &albumIds)
+{
+    CHECK_AND_RETURN_LOG(MediaFileUtils::IsValidInteger(fileId), "invalid input param");
+    CHECK_AND_RETURN_LOG(stoi(fileId) > 0, "fileId is invalid");
+    CHECK_AND_RETURN_LOG(!albumIds.empty(), "no album cover has changed");
+    Init(albumIds);
+    UpdateModifiedDatasInner(albumIds, RDB_OPERATION_UPDATE);
+    vector<AlbumChangeData> albumChangeDatas = dataManager_.GetChangeDatas();
+    for (auto &albumChangeData : albumChangeDatas) {
+        if (MediaFileUtils::GetIdFromUri(albumChangeData.infoAfterChange_.coverUri_) == fileId) {
+            albumChangeData.infoAfterChange_.isCoverChange_ = true;
+            continue;
+        }
+        if (MediaFileUtils::GetIdFromUri(albumChangeData.infoAfterChange_.hiddenCoverUri_) == fileId) {
+            albumChangeData.infoAfterChange_.isHiddenCoverChange_ = true;
+            continue;
+        }
+    }
+    Notify(albumChangeDatas);
 }
 
 } // namespace Media
