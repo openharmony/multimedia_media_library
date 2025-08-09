@@ -2488,7 +2488,7 @@ void MediaFileUtils::StatDirSize(const std::string& rootPath, size_t& totalSize)
 
         DIR* dir = opendir(currentPath.c_str());
         if (dir == nullptr) {
-            MEDIA_ERR_LOG("Failed to open directory: %{public}s", currentPath.c_str());
+            MEDIA_ERR_LOG("Failed to open directory.");
             continue;
         }
 
@@ -2501,7 +2501,7 @@ void MediaFileUtils::StatDirSize(const std::string& rootPath, size_t& totalSize)
             std::string fullPath = currentPath + "/" + entry->d_name;
             struct stat statBuf;
             if (stat(fullPath.c_str(), &statBuf) == -1) {
-                MEDIA_ERR_LOG("Failed to get file status: %{public}s", fullPath.c_str());
+                MEDIA_ERR_LOG("Failed to get file status.");
                 continue;
             }
 
@@ -2517,7 +2517,7 @@ void MediaFileUtils::StatDirSize(const std::string& rootPath, size_t& totalSize)
         closedir(dir);
     }
 
-    MEDIA_INFO_LOG("Directory size: %s = %{public}lld bytes", rootPath.c_str(), static_cast<long long>(totalSize));
+    MEDIA_INFO_LOG("Directory size: %{public}lld bytes", static_cast<long long>(totalSize));
 }
 
 std::string MediaFileUtils::GetMimeTypeFromDisplayName(const std::string &displayName)
