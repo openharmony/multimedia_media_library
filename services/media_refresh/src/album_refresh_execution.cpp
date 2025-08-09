@@ -70,7 +70,7 @@ std::unordered_map<PhotoAlbumSubType, SystemAlbumInfoCalculation>
 std::unordered_map<int32_t, SystemAlbumInfoCalculation> AlbumRefreshExecution::systemAlbumCalculations_;
 
 int32_t AlbumRefreshExecution::RefreshAlbum(const vector<PhotoAssetChangeData> &assetChangeDatas,
-    NotifyAlbumType notifyAlbumType)
+    NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified)
 {
     // 计算影响相册和refresh info，结果放入systemAlbumInfos_和ownerAlbumInfos_
     CalRefreshInfos(assetChangeDatas);
@@ -78,6 +78,7 @@ int32_t AlbumRefreshExecution::RefreshAlbum(const vector<PhotoAssetChangeData> &
 
     // 相册执行逻辑只能串行执行
     lock_guard<mutex> lock(albumRefreshMtx_);
+    isRefreshWithDateModified_ = isRefreshWithDateModified;
 
     // 计算相册信息
     CalAlbumsInfos();
@@ -258,7 +259,7 @@ int32_t AlbumRefreshExecution::GetUpdateValues(ValuesBucket &values, const Album
     data.coverUriSource = albumInfo.coverUriSource_;
     data.hiddenCoverDateTime = albumInfo.hiddenCoverDateTime_;
     if (!isHidden && (subtype == PhotoAlbumSubType::USER_GENERIC ||
-        subtype == PhotoAlbumSubType::SOURCE_GENERIC)) {
+        subtype == PhotoAlbumSubType::SOURCE_GENERIC) && isRefreshWithDateModified_) {
         data.shouldUpdateDateModified = true; // 非隐藏全量刷新时，说明相册封面有变化，需要设置
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -273,7 +274,8 @@ void AlbumRefreshExecution::CheckUpdateValues(const AlbumChangeInfo &albumInfo, 
     ValuesBucket &values)
 {
     if ((albumInfo.albumSubType_ == PhotoAlbumSubType::USER_GENERIC ||
-        albumInfo.albumSubType_ == PhotoAlbumSubType::SOURCE_GENERIC) && refreshInfo.assetModifiedCnt_ > 0) {
+        albumInfo.albumSubType_ == PhotoAlbumSubType::SOURCE_GENERIC) && refreshInfo.assetModifiedCnt_ > 0 &&
+        isRefreshWithDateModified_) {
         values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
         ACCURATE_DEBUG("album date modified.");
     }
@@ -685,15 +687,18 @@ void AlbumRefreshExecution::CheckNotifyOldNotification(NotifyAlbumType notifyAlb
     }
 }
 
-int32_t AlbumRefreshExecution::RefreshAllAlbum(NotifyAlbumType notifyAlbumType)
+int32_t AlbumRefreshExecution::RefreshAllAlbum(NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null");
     ACCURATE_DEBUG("force update all albums");
     lock_guard<mutex> lock(albumRefreshMtx_);
+    isRefreshWithDateModified_ = isRefreshWithDateModified;
     MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(rdbStore, AlbumOperationType::DEFAULT, {}, notifyAlbumType);
-    MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, {}, notifyAlbumType & USER_ALBUM);
-    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {}, notifyAlbumType & SOURCE_ALBUM);
+    MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, {}, notifyAlbumType & USER_ALBUM,
+        isRefreshWithDateModified);
+    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {}, notifyAlbumType & SOURCE_ALBUM,
+        isRefreshWithDateModified);
     return ACCURATE_REFRESH_RET_OK;
 }
 

@@ -1550,9 +1550,7 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
     }
 
     // album datemodified can be update only when the number of user and source album is updated.
-    bool userOrSourceAlbumUpdated = !hiddenState && newCount != data.albumCount &&
-        (data.albumSubtype == USER_GENERIC || data.albumSubtype == SOURCE_GENERIC);
-    if (data.shouldUpdateDateModified || userOrSourceAlbumUpdated) {
+    if (data.shouldUpdateDateModified) {
         values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     }
     return E_SUCCESS;
