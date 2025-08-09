@@ -547,18 +547,6 @@ int32_t MediaLibraryAssetOperations::CheckExist(const std::string &path)
     return (rowCount > 0) ? E_OK : E_FAIL;
 }
 
-const std::vector<std::string> &MediaLibraryAssetOperations::GetPhotosTableColumnInfo()
-{
-    MEDIA_DEBUG_LOG("GetPhotosTableColumnInfo");
-    static std::vector<std::string> PHOTOS_TABLE_COLUMNS = QueryPhotosTableColumnInfo();
-    if (PHOTOS_TABLE_COLUMNS.empty()) {
-        MEDIA_ERR_LOG("QueryPhotosTableColumnInfo failed");
-        PHOTOS_TABLE_COLUMNS = QueryPhotosTableColumnInfo();
-    }
-
-    return PHOTOS_TABLE_COLUMNS;
-}
-
 std::vector<std::string> MediaLibraryAssetOperations::QueryPhotosTableColumnInfo()
 {
     MEDIA_DEBUG_LOG("QueryPhotosTableColumnInfo");
@@ -593,9 +581,9 @@ int32_t MediaLibraryAssetOperations::QueryTotalPhoto(vector<shared_ptr<FileAsset
     int32_t batchSize)
 {
     MEDIA_INFO_LOG("query total photo start\n");
-    const std::vector<std::string> &columnInfo = GetPhotosTableColumnInfo();
+    std::vector<std::string> columnInfo = QueryPhotosTableColumnInfo();
     if (columnInfo.empty()) {
-        MEDIA_ERR_LOG("GetPhotosTableColumnInfo failed");
+        MEDIA_ERR_LOG("QueryPhotosTableColumnInfo failed");
         return E_ERR;
     }
 
@@ -621,9 +609,9 @@ int32_t MediaLibraryAssetOperations::QueryTotalPhoto(vector<shared_ptr<FileAsset
 
 std::shared_ptr<FileAsset> MediaLibraryAssetOperations::QuerySinglePhoto(int32_t rowId)
 {
-    const std::vector<std::string> &columnInfo = GetPhotosTableColumnInfo();
+    std::vector<std::string> columnInfo = QueryPhotosTableColumnInfo();
     if (columnInfo.empty()) {
-        MEDIA_ERR_LOG("GetPhotosTableColumnInfo failed");
+        MEDIA_ERR_LOG("QueryPhotosTableColumnInfo failed");
         return nullptr;
     }
 
