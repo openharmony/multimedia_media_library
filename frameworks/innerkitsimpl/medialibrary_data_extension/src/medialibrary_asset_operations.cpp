@@ -2027,7 +2027,7 @@ void MediaLibraryAssetOperations::IsCoverContentChange(string &fileId)
     CHECK_AND_RETURN_LOG(stoi(fileId) > 0, "fileId is invalid");
     AccurateRefresh::AlbumAccurateRefresh albumRefresh;
     if (albumRefresh.IsCoverContentChange(fileId)) {
-        MEDIA_INFO_LOG("Album Cover Content has Changed.");
+        MEDIA_INFO_LOG("Album Cover Content has Changed, fileId: %{public}s", fileId.c_str());
     }
 }
 
