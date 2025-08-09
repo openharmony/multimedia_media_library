@@ -1895,7 +1895,7 @@ void MediaLibraryRdbUtils::UpdateUserAlbumHiddenState(
 }
 
 static bool CopyAssetIfNeed(int32_t fileId, int32_t albumId,
-    const shared_ptr<MediaLibraryRdbStore> rdbStore, vector<int32_t> &updateIds)
+    const shared_ptr<MediaLibraryRdbStore> rdbStore, vector<int32_t> &updateIds, bool &hidden)
 {
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
@@ -1905,6 +1905,7 @@ static bool CopyAssetIfNeed(int32_t fileId, int32_t albumId,
     bool needCopy = true;
     int64_t newAssetId = -1;
     if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        hidden = static_cast<bool>(GetIntValFromColumn(resultSet, MediaColumn::MEDIA_HIDDEN));
         auto albumIdQuery = GetIntValFromColumn(resultSet, PhotoColumn::PHOTO_OWNER_ALBUM_ID);
         if (albumIdQuery == albumId) {
             needCopy = false;
@@ -2056,7 +2057,7 @@ int32_t MediaLibraryRdbUtils::UpdateHighlightPlayInfo(const shared_ptr<MediaLibr
 }
 
 int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<DataShare::DataShareValuesBucket> &values, vector<int32_t> &updateIds)
+    const vector<DataShare::DataShareValuesBucket> &values, vector<int32_t> &updateIds, bool &hidden)
 {
     vector<string> whereIdArgs;
     int32_t updateRows = 0;
@@ -2067,7 +2068,7 @@ int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<MediaLibraryRd
         std::string assetUri = value.Get(MediaColumn::MEDIA_ID, isValidNew);
         CHECK_AND_CONTINUE(MediaFileUtils::StartsWith(assetUri, PhotoColumn::PHOTO_URI_PREFIX));
         auto photoId = std::stoi(MediaFileUri::GetPhotoId(assetUri));
-        if (CopyAssetIfNeed(photoId, albumId, rdbStore, updateIds)) {
+        if (CopyAssetIfNeed(photoId, albumId, rdbStore, updateIds, hidden)) {
             updateRows++;
             continue;
         }

@@ -340,7 +340,8 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateOwnerAlbumId_test_001
     value1.Put(MediaColumn::MEDIA_TITLE, newTitle);
     vector<DataShare::DataShareValuesBucket> values = {value1};
     vector<int32_t> updateIds = {0};
-    int32_t ret = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore, values, updateIds);
+    bool hidden = false;
+    int32_t ret = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore, values, updateIds, hidden);
     EXPECT_EQ(ret, 0);
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateOwnerAlbumId_test_001:stop");
 }
@@ -360,7 +361,8 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateOwnerAlbumId_test_002
     value2.Put(MediaColumn::MEDIA_TITLE, newTitle2);
     vector<DataShare::DataShareValuesBucket> values = {value1, value2};
     vector<int32_t> updateIds = {0};
-    int32_t ret = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore, values, updateIds);
+    bool hidden = false;
+    int32_t ret = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore, values, updateIds, hidden);
     EXPECT_EQ(ret, 0);
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateOwnerAlbumId_test_002:stop");
 }
