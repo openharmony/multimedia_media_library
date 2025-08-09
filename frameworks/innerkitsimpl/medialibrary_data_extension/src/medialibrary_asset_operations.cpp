@@ -2021,6 +2021,16 @@ int32_t MediaLibraryAssetOperations::SetPendingFalse(const shared_ptr<FileAsset>
     return E_OK;
 }
 
+void MediaLibraryAssetOperations::IsCoverContentChange(string &fileId)
+{
+    CHECK_AND_RETURN_LOG(MediaFileUtils::IsValidInteger(fileId), "invalid input param");
+    CHECK_AND_RETURN_LOG(stoi(fileId) > 0, "fileId is invalid");
+    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
+    if (albumRefresh.IsCoverContentChange(fileId)) {
+        MEDIA_INFO_LOG("Album Cover Content has Changed, fileId: %{public}s", fileId.c_str());
+    }
+}
+
 int32_t MediaLibraryAssetOperations::SetPendingStatus(MediaLibraryCommand &cmd)
 {
     int32_t pendingStatus = 0;
@@ -2496,6 +2506,9 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     }
 #endif
 
+    if (this->isInvalidateThumb) {
+        IsCoverContentChange(fileId);
+    }
     return E_OK;
 }
 
