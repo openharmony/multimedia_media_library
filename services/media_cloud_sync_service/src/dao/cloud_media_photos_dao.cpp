@@ -431,6 +431,7 @@ int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto 
         }
     }
     UpdateAssetInPhotoMap(pullData.attributesFileId, albumIds);
+    IsCoverContentChange(changedRows, mtimeChanged, pullData.localFileId);
     return ret;
 }
 
@@ -1944,6 +1945,17 @@ int32_t CloudMediaPhotosDao::UpdatePhoto(const std::string &whereClause, const s
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB, "UpdatePhoto get store failed.");
     return rdbStore->Update(changedRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
+}
+
+void CloudMediaPhotosDao::IsCoverContentChange(int32_t changedRows, bool mtimeChanged, int32_t dataFileId)
+{
+    CHECK_AND_RETURN_LOG(changedRows > 0 && mtimeChanged, "no file change.");
+    CHECK_AND_RETURN_LOG(dataFileId > 0, "fileId is invalid");
+    string fileId = to_string(dataFileId);
+    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
+    if (albumRefresh.IsCoverContentChange(fileId)) {
+        MEDIA_INFO_LOG("album cover content has Changed.");
+    }
 }
 
 int32_t CloudMediaPhotosDao::RepushDuplicatedPhoto(const PhotosDto &photo)
