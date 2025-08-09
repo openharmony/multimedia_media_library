@@ -41,6 +41,7 @@
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
 #include "vision_total_column.h"
+#include "medialibrary_rdb_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -55,12 +56,13 @@ constexpr int32_t ALBUM_IS_REMOVED = 1;
 constexpr int32_t SINGLE_FACE = 1;
 constexpr int32_t QUERY_GROUP_PHOTO_ALBUM_RELATED_TO_ME = 1;
 constexpr int32_t QUERY_GROUP_PHOTO_ALBUM_REMOVED = 1;
+constexpr int32_t GROUP_ALBUM_RENAMED = 2;
 const string GROUP_PHOTO_TAG = "group_photo_tag";
 const string GROUP_PHOTO_IS_ME = "group_photo_is_me";
 const string GROUP_PHOTO_ALBUM_NAME = "album_name";
 const string GROUP_MERGE_SQL_PRE = "SELECT " + ALBUM_ID + ", " + COVER_URI + ", " + IS_COVER_SATISFIED + ", "
-    + TAG_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_SUBTYPE + " = " + to_string(GROUP_PHOTO) +
-    " AND (INSTR(" + TAG_ID + ", '";
+    + TAG_ID + ", " + RENAME_OPERATION + ", " + ALBUM_NAME + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
+    ALBUM_SUBTYPE + " = " + to_string(GROUP_PHOTO) + " AND (INSTR(" + TAG_ID + ", '";
 static std::mutex updateGroupPhotoAlbumMutex;
 const string GROUP_ALBUM_FAVORITE_ORDER_CLAUSE = " CASE WHEN user_display_level = 3 THEN 1 ELSE 2 END ";
 const string GROUP_ALBUM_USER_NAME_ORDER_CLAUSE = " CASE WHEN rename_operation = 2 THEN 1 ELSE 2 END ";
@@ -462,7 +464,7 @@ static int32_t UpdateAnalysisPhotoMapForMergeGroupPhoto(const shared_ptr<MediaLi
             MEDIA_ERR_LOG("failed to delete repeat record");
             continue;
         }
-        MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(it.second.albumId);
+        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(store, {std::to_string(it.second.albumId)});
     }
     return E_OK;
 }
@@ -479,8 +481,8 @@ static int32_t UpdateForMergeGroupAlbums(const shared_ptr<MediaLibraryRdbStore> 
     for (auto it : updateMaps) {
         string sql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + TAG_ID + " = '" + it.first + "', " +
             GROUP_TAG + " = '" + it.first + "', " + COVER_URI + " = '" + it.second.coverUri + "', " +
-            IS_REMOVED + " = 0, " + IS_COVER_SATISFIED  + " = " + to_string(it.second.isCoverSatisfied) +
-            " WHERE " + ALBUM_ID + " = " + to_string(it.second.albumId);
+            IS_REMOVED + " = 0, " + IS_COVER_SATISFIED  + " = " + to_string(it.second.isCoverSatisfied) + ", " +
+            ALBUM_NAME + " = '" + it.second.albumName + "' WHERE " + ALBUM_ID + " = " + to_string(it.second.albumId);
         updateSqls.push_back(sql);
     }
     int ret = ExecSqls(updateSqls, store);
@@ -496,7 +498,10 @@ static string ReorderTagId(string target, const vector<MergeAlbumInfo> &mergeAlb
     vector<string> splitResult;
     CHECK_AND_RETURN_RET(!target.empty(), reordererTagId);
     string pattern = ",";
-    string strs = target + pattern;
+    string strs = target;
+    if (static_cast<int32_t>(target.find_last_of(",")) != static_cast<int32_t>(target.size()) - 1) {
+        strs += pattern;
+    }
     size_t pos = strs.find(pattern);
     while (pos != strs.npos) {
         string groupTag = strs.substr(0, pos);
@@ -513,7 +518,9 @@ static string ReorderTagId(string target, const vector<MergeAlbumInfo> &mergeAlb
     for (auto tagId : splitResult) {
         reordererTagId += (tagId + ",");
     }
-    reordererTagId = reordererTagId.substr(0, reordererTagId.size() - 1);
+    if (static_cast<int32_t>(reordererTagId.find(",")) != static_cast<int32_t>(reordererTagId.size()) - 1) {
+        reordererTagId = reordererTagId.substr(0, reordererTagId.size() - 1);
+    }
     return reordererTagId;
 }
 
@@ -523,7 +530,9 @@ int32_t GetMergeAlbumInfo(shared_ptr<NativeRdb::ResultSet> resultSet, MergeAlbum
     bool cond = (GetIntValueFromResultSet(resultSet, ALBUM_ID, info.albumId) != E_OK ||
         GetStringValueFromResultSet(resultSet, TAG_ID, info.tagId) != E_OK ||
         GetStringValueFromResultSet(resultSet, COVER_URI, info.coverUri) != E_OK ||
-        GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, isCoverSatisfied) != E_OK);
+        GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, isCoverSatisfied) != E_OK ||
+        GetIntValueFromResultSet(resultSet, RENAME_OPERATION, info.renameOperation) != E_OK ||
+        GetStringValueFromResultSet(resultSet, ALBUM_NAME, info.albumName) != E_OK);
     CHECK_AND_RETURN_RET(!cond, E_HAS_DB_ERROR);
 
     info.isCoverSatisfied = static_cast<uint8_t>(isCoverSatisfied);
@@ -532,11 +541,7 @@ int32_t GetMergeAlbumInfo(shared_ptr<NativeRdb::ResultSet> resultSet, MergeAlbum
 
 int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo)
 {
-    if (mergeAlbumInfo.size() <= 1) {
-        MEDIA_ERR_LOG("mergeAlbumInfo size is not enough.");
-        return E_INVALID_VALUES;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(mergeAlbumInfo.size() > 1, E_INVALID_VALUES, "mergeAlbumInfo size is not enough.");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL, "UniStore is nullptr! Query album order failed.");
     string queryTagId = GROUP_MERGE_SQL_PRE + mergeAlbumInfo[0].groupTag + "') > 0 OR INSTR(" + TAG_ID + ", '" +
@@ -574,6 +579,9 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
             if (info.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING) ||
                 it->second.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING)) {
                 updateMap[reorderedTagId].isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING);
+            }
+            if (info.renameOperation == GROUP_ALBUM_RENAMED) {
+                updateMap[reorderedTagId].albumName = info.albumName;
             }
             updateMap[reorderedTagId].coverUri = newInfo.coverUri;
             updateMap[reorderedTagId].repeatedAlbumIds.push_back(std::to_string(info.albumId));

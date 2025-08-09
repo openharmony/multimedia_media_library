@@ -273,7 +273,8 @@ int32_t DoDismissAssets(int32_t subtype, const string &albumId, const vector<str
         mapTablePredicate.And()->In(MAP_ASSET, assetIds);
         secondDeleteRow = MediaLibraryRdbStore::Delete(mapTablePredicate);
         if (deleteRow != 0 && secondDeleteRow != 0 && MediaLibraryDataManagerUtils::IsNumber(albumId)) {
-            MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(atoi(albumId.c_str()));
+            MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
+                MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), {albumId});
         }
         return deleteRow;
     }
