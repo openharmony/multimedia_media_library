@@ -66,6 +66,19 @@ std::string CloudFileDataConvert::GetThumbPath(const std::string &path, const st
            GetThumbnailPath(path, key).substr(ROOT_MEDIA_DIR.length());
 }
 
+int32_t CloudFileDataConvert::CheckFileSize(const std::string &thumbSuffix, const int64_t &fileSize)
+{
+    if (fileSize <= 0) {
+        MEDIA_ERR_LOG("ReportFailure: get size err, size is %{public}" PRId64, fileSize);
+        return (thumbSuffix == THUMB_SUFFIX) ? E_THM_SIZE_IS_ZERO : E_LCD_SIZE_IS_ZERO;
+    }
+    if (fileSize >= THUMB_LIMIT_SIZE) {
+        MEDIA_ERR_LOG("ReportFailure: size is too large, size is %{public}" PRId64, fileSize);
+        return (thumbSuffix == THUMB_SUFFIX) ? E_THM_IS_TOO_LARGE : E_LCD_IS_TOO_LARGE;
+    }
+    return E_OK;
+}
+
 int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::string &thumbSuffix, int64_t &fileSize)
 {
     std::string thumbExSuffix = (thumbSuffix == THUMB_SUFFIX) ? THUMB_EX_SUFFIX : LCD_EX_SUFFIX;
@@ -74,6 +87,7 @@ int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::st
     struct stat fileStat;
     MEDIA_INFO_LOG("GetFileSize stat %{public}s", thumbnailPath.c_str());
     int32_t err = stat(thumbnailPath.c_str(), &fileStat);
+    int32_t ret = E_OK;
     if (err < 0) {
         UTIL_SYNC_FAULT_REPORT({bundleName_,
             UtilCloud::FaultScenarioCode::CLOUD_FULL_SYNC,
@@ -84,6 +98,8 @@ int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::st
         MEDIA_ERR_LOG("get thumb size failed errno :%{public}d, %{public}s", errno, thumbnailPath.c_str());
     } else {
         fileSize = fileStat.st_size;
+        ret = this->CheckFileSize(thumbSuffix, fileSize);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "CheckFileSize ret, %{public}d", ret);
         return E_OK;
     }
     /* try get file size on xxxjpg/THM.jpg */
@@ -101,14 +117,8 @@ int32_t CloudFileDataConvert::GetFileSize(const std::string &path, const std::st
         return ((thumbSuffix == THUMB_SUFFIX) ? E_THM_SOURCE_BASIC : E_LCD_SOURCE_BASIC) + errNum;
     }
     fileSize = fileStat.st_size;
-    if (fileStat.st_size <= 0) {
-        MEDIA_ERR_LOG("get size err");
-        return (thumbSuffix == THUMB_SUFFIX) ? E_THM_SIZE_IS_ZERO : E_LCD_SIZE_IS_ZERO;
-    }
-    if (fileStat.st_size >= THUMB_LIMIT_SIZE) {
-        MEDIA_ERR_LOG("ReportFailure: size is too large");
-        return (thumbSuffix == THUMB_SUFFIX) ? E_THM_IS_TOO_LARGE : E_LCD_IS_TOO_LARGE;
-    }
+    ret = this->CheckFileSize(thumbSuffix, fileSize);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "CheckFileSize err, %{public}d", ret);
     MEDIA_INFO_LOG("GetFileSize stat end thumbnailPath: %{public}s, err: %{public}d, size: %{public}" PRId64,
         thumbnailPath.c_str(),
         err,

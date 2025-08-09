@@ -47,7 +47,9 @@ const std::string THUMB_ASTC_FILE_NAME = "THM_ASTC.astc";
 static const std::unordered_map<ThumbnailType, std::string> THUMB_FILE_NAME_MAP = {
     { ThumbnailType::LCD, LCD_FILE_NAME },
     { ThumbnailType::THUMB, THUMB_FILE_NAME },
-    { ThumbnailType::THUMB_ASTC, THUMB_ASTC_FILE_NAME }
+    { ThumbnailType::THUMB_ASTC, THUMB_ASTC_FILE_NAME },
+    { ThumbnailType::LCD_EX, LCD_FILE_NAME },
+    { ThumbnailType::THUMB_EX, THUMB_FILE_NAME }
 };
 
 std::string ThumbnailFileUtils::GetThumbnailSuffix(ThumbnailType type)
@@ -83,12 +85,25 @@ std::string ThumbnailFileUtils::GetThumbExDir(const ThumbnailData &data)
     return MediaFileUtils::GetParentPath(fileName);
 }
 
+bool IsExThumbType(ThumbnailType type)
+{
+    if (type == ThumbnailType::LCD_EX || type == ThumbnailType::THUMB_EX) {
+        return true;
+    }
+    return false;
+}
+
 bool ThumbnailFileUtils::GetThumbFileSize(const ThumbnailData& data, const ThumbnailType type, size_t& size)
 {
     CHECK_AND_RETURN_RET_LOG(THUMB_FILE_NAME_MAP.find(type) != THUMB_FILE_NAME_MAP.end(), false,
         "invalid ThumbnailType: %{public}d", type);
-    std::string thumbDir = GetThumbnailDir(data);
-    CHECK_AND_RETURN_RET_LOG(thumbDir != "", false, "GetThumbnailDir failed");
+    std::string thumbDir;
+    if (!IsExThumbType(type)) {
+        thumbDir = GetThumbnailDir(data);
+    } else {
+        thumbDir = GetThumbExDir(data);
+    }
+    CHECK_AND_RETURN_RET_LOG(!thumbDir.empty(), false, "GetThumbnailDir failed. type: %{public}d", type);
     std::string thumbPath = thumbDir + "/" + THUMB_FILE_NAME_MAP.at(type);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::GetFileSize(thumbPath, size), false,
         "GetFileSize failed. path: %{public}s", DfxUtils::GetSafePath(thumbPath).c_str());

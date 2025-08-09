@@ -123,6 +123,8 @@ HWTEST_F(MediaLibraryThumbnailFileUtilsTest, ThumbnailFileUtils_GetThumbFileSize
     ThumbnailData data;
     bool ret = ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, size);
     EXPECT_EQ(ret, false);
+    ret = ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD_EX, size);
+    EXPECT_EQ(ret, false);
 }
 
 } // namespace Media
