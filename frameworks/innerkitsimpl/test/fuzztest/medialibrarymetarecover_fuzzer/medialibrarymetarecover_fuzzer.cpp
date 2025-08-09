@@ -54,7 +54,6 @@ static void MediaLibraryMetaRecoverTest()
     Media::MediaLibraryMetaRecovery::GetInstance().ReadMetaStatusFromFile(status);
     Media::MediaLibraryMetaRecovery::GetInstance().ReadMetaRecoveryCountFromFile();
     Media::MediaLibraryMetaRecovery::GetInstance().QueryRecoveryPhotosTableColumnInfo();
-    Media::MediaLibraryMetaRecovery::GetInstance().GetRecoveryPhotosTableColumnInfo();
     for (auto name : COLUMN_VECTOR) {
         Media::MediaLibraryMetaRecovery::GetInstance().GetDataType(name);
     }
