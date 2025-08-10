@@ -1,0 +1,261 @@
+frameworks/innerkitsimpl/medialibrary_data_extension/BUILD.gn
+
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dto/on_download_asset_data_dto.cpp",
+
+frameworks/innerkitsimpl/test/unittest/media_library_cloud_sync_service_test/src/media_cloud_sync_service_service_test.cpp
+
+    CloudMediaDownloadService::OnDownloadAssetData assetData;
+    OnDownloadAssetData assetData;
+
+frameworks/innerkitsimpl/test/unittest/media_library_cloud_sync_service_test/src/media_cloud_sync_service_utils_test.cpp
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, GetAnonyStringStrictly_Test, TestSize.Level1)
+{
+    string result = CloudMediaUriUtils::GetAnonyStringStrictly("");
+    EXPECT_EQ(result, "********");
+    result = CloudMediaUriUtils::GetAnonyStringStrictly("610425199911101234");
+    EXPECT_EQ(result, "61042519********11101234");
+}
+
+services/media_cloud_sync_service/include/dto/on_download_asset_data_dto.h
+
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef OHOS_MEDIA_CLOUD_SYNC_ON_DOWNLOAD_ASSET_DATA_DTO_H
+#define OHOS_MEDIA_CLOUD_SYNC_ON_DOWNLOAD_ASSET_DATA_DTO_H
+
+#include <string>
+#include <vector>
+#include <sstream>
+#include "cloud_media_define.h"
+
+namespace OHOS::Media::CloudSync {
+class EXPORT OnDownloadAssetData {
+public:
+    bool fixFileType;
+    bool needSliceContent;
+    bool needSliceRaw;
+    std::string path;
+    int64_t dateModified;
+    std::string localPath;
+    int32_t err;
+    std::string errorMsg;
+    std::string fileUri;
+    bool needParseCover;
+    int32_t mediaType;
+    int32_t exifRotate;
+    bool needScanShootingMode;
+
+public:  // basic functions
+    std::string ToString() const;
+};
+}  // namespace OHOS::Media::CloudSync
+#endif  // OHOS_MEDIA_CLOUD_SYNC_ON_DOWNLOAD_ASSET_DATA_DTO_H
+
+services/media_cloud_sync_service/include/service/cloud_media_download_service.h
+
+#include "on_download_asset_data_dto.h"
+
+services/media_cloud_sync_service/include/service/cloud_media_photos_service.h
+
+
+    int32_t RemoveLocalFile(const std::string &localPath);
+
+services/media_cloud_sync_service/include/utils/cloud_media_uri_utils.h
+
+services/media_cloud_sync_service/src/dto/on_download_asset_data_dto.cpp
+
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#define MLOG_TAG "MEDIA_CLOUD_DTO"
+
+#include "on_download_asset_data_dto.h"
+
+#include <sstream>
+#include "media_file_utils.h"
+
+namespace OHOS::Media::CloudSync {
+std::string OnDownloadAssetData::ToString() const
+{
+    std::stringstream ss;
+    ss << "{"
+       << "\"fixFileType\": " << fixFileType << ","
+       << "\"needSliceContent\": " << needSliceContent << ","
+       << "\"needSliceRaw\": " << needSliceRaw << ","
+       << "\"path\": \"" << MediaFileUtils::DesensitizePath(path) << "\","
+       << "\"dateModified\": " << dateModified << ","
+       << "\"localPath\": \"" << MediaFileUtils::DesensitizePath(localPath) << "\","
+       << "\"err\": " << err << ","
+       << "\"errorMsg\": \"" << errorMsg << ","
+       << "\"fileUri\": " << fileUri << ","
+       << "\"needParseCover\": " << needParseCover << ","
+       << "\"mediaType\": " << mediaType << ","
+       << "\"exifRotate\": " << exifRotate << ","
+       << "\"needScanShootingMode\": " << needScanShootingMode;
+    ss << "\"}";
+    return ss.str();
+}
+}  // namespace OHOS::Media::CloudSync
+
+services/media_cloud_sync_service/src/service/cloud_media_download_service.cpp
+
+void CloudMediaDownloadService::UnlinkAsset(OnDownloadAssetData &assetData)
+{
+    int32_t ret = unlink(assetData.localPath.c_str());
+    CHECK_AND_RETURN_LOG(
+        ret != E_OK, "unlink %{public}s succeeded", MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
+    assetData.err = errno;  // err always -1, use errno.
+    assetData.errorMsg = "unlink failed";
+    MEDIA_WARN_LOG("unlink %{public}s failed", MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
+}
+
+void CloudMediaDownloadService::ResetAssetModifyTime(OnDownloadAssetData &assetData)
+{
+    int32_t ret = access(assetData.localPath.c_str(), F_OK);  // 0 mean file exist.
+    CHECK_AND_RETURN_LOG(
+        ret == E_OK, "file not exist %{public}s", MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
+    int32_t err = CloudMediaSyncUtils::UpdateModifyTime(assetData.localPath, assetData.dateModified);
+    CHECK_AND_RETURN_INFO_LOG(err != E_OK,
+        "UpdateModifyTime %{public}s succeeded",
+        MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
+    assetData.err = err;
+    assetData.errorMsg = "Update ModifyTime failed";
+    MEDIA_WARN_LOG("DownloadAsset UpdateModifyTime %{public}s failed",
+        MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
+}
+
+MEDIA_INFO_LOG("SliceAsset, assetData: %{public}s", assetData.ToString().c_str());
+
+
+        MEDIA_DEBUG_LOG(
+            "OnDownloadAsset %{public}s, %{public}s", photosPo.ToString().c_str(), assetData.ToString().c_str());
+
+
+        MEDIA_INFO_LOG(
+            "HandlePhoto Failed to Slice %{public}s", MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
+
+
+        MEDIA_INFO_LOG(
+            "Failed to Handle HandlePhoto %{public}s", MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
+
+
+        MEDIA_INFO_LOG("HandlePhoto Failed to fix exif rotate %{public}s",
+            MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
+
+services/media_cloud_sync_service/src/service/cloud_media_photos_service.cpp
+
+int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, std::set<std::string> &refreshAlbums,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
+{
+    std::string cloudId = data.cloudId;
+    std::string localPath = data.localPath;
+    CHECK_AND_RETURN_RET_INFO_LOG(!cloudId.empty(), E_OK, "cloudId is empty, ignore cloud delete");
+    bool isLocal = CloudMediaSyncUtils::FileIsLocal(data.localPosition);
+    MEDIA_INFO_LOG("Delete cloudId: %{public}s, isLocal: %{public}d, data: %{public}s",
+        cloudId.c_str(),
+        isLocal,
+        data.ToString().c_str());
+
+    std::string notifyUri =
+        PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX + std::to_string(data.localFileId) + '/' + data.localDateAdded;
+    MediaGallerySyncNotify::GetInstance().TryNotify(notifyUri, ChangeType::DELETE, std::to_string(data.localFileId));
+    refreshAlbums.emplace(data.localOwnerAlbumId);
+    this->RemoveLocalFile(localPath);
+
+
+int32_t CloudMediaPhotosService::RemoveLocalFile(const std::string &localPath)
+{
+    std::string prefixCloud = "";
+    std::string mergePath = CloudMediaSyncUtils::GetCloudPath(localPath, prefixCloud);
+    int32_t ret = unlink(mergePath.c_str());
+    CHECK_AND_PRINT_LOG(ret == E_OK,
+        "unlink local failed, mergePath: %{public}s, ret: %{public}d.",
+        MediaFileUtils::DesensitizePath(mergePath).c_str(),
+        ret);
+    CloudMediaSyncUtils::RemoveThmParentPath(localPath, prefixCloud);
+    CloudMediaSyncUtils::RemoveEditDataParentPath(localPath, prefixCloud);
+    CloudMediaSyncUtils::RemoveMetaDataPath(localPath, prefixCloud);
+    CloudMediaSyncUtils::InvalidVideoCache(localPath);
+    CloudMediaSyncUtils::RemoveEditDataPath(localPath);
+    CloudMediaSyncUtils::RemoveMovingPhoto(localPath);
+    return E_OK;
+}
+
+services/media_cloud_sync_service/src/utils/cloud_media_sync_utils.cpp
+
+#include "cloud_media_uri_utils.h"
+
+
+void CloudMediaSyncUtils::InvalidVideoCache(const std::string &localPath)
+{
+    MEDIA_INFO_LOG("InvalidVideoCache loca path: %{public}s", MediaFileUtils::DesensitizePath(localPath).c_str());
+    const std::string sandboxPrefix = "/storage/cloud";
+    size_t pos = localPath.find(sandboxPrefix);
+    CHECK_AND_RETURN_LOG(pos == 0 && pos != std::string::npos,
+        "InvalidVideoCache Invalid localPath, sandboxPrefix: %{public}s",
+        sandboxPrefix.c_str());
+    std::string videoCachePath = GetVideoCachePath(localPath);
+    CHECK_AND_RETURN_LOG(!videoCachePath.empty(), "InvalidVideoCache Invalid videoCachePath");
+    CHECK_AND_RETURN_LOG(unlink(videoCachePath.c_str()) >= 0,
+        "InvalidVideoCache Failed to unlink video cache: %{public}s, errno: %{public}d",
+        MediaFileUtils::DesensitizePath(videoCachePath).c_str(),
+        errno);
+    MEDIA_INFO_LOG(
+        "InvalidVideoCache VideoCachePath: %{public}s", MediaFileUtils::DesensitizePath(videoCachePath).c_str());
+}
+
+services/media_cloud_sync_service/src/utils/cloud_media_uri_utils.cpp
+
+
+#include "media_file_utils.h"
+
+int32_t CloudMediaUriUtils::GetFileIdFromUri(const std::string &uri, int32_t &fileUniqueId)
+{
+    static std::string mediaDirPath = "file://media/Photo/";
+    size_t index = uri.find(mediaDirPath);
+    if (index != 0) {
+        MEDIA_INFO_LOG("Failed to get media dir from uri: %{public}s", MediaFileUtils::DesensitizePath(uri).c_str());
+        return E_INVAL_ARG;
+    }
+    std::string uriTails = uri.substr(index + mediaDirPath.length());
+    index = uriTails.find('/');
+    if (index == std::string::npos) {
+        MEDIA_INFO_LOG("Failed to get fileId from uri: %{public}s", MediaFileUtils::DesensitizePath(uri).c_str());
+        return E_INVAL_ARG;
+    }
+    std::string fileId = uriTails.substr(0, index);
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
+        MEDIA_INFO_LOG("Invalid fileId from uri: %{public}s", fileId.c_str());
+        return E_INVAL_ARG;
+    }
+    if (!StrToInt(fileId, fileUniqueId)) {
+        MEDIA_INFO_LOG("Invalid meida uri: %{public}s", MediaFileUtils::DesensitizePath(uri).c_str());
+        return E_INVAL_ARG;
+    }
+    return E_OK;

@@ -20,39 +20,21 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "string_ex.h"
+#include "media_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
-std::string CloudMediaUriUtils::GetAnonyStringStrictly(const std::string &input)
-{
-    constexpr size_t INT32_MIN_ID_LENGTH = 17;
-    constexpr size_t INT32_PLAINTEXT_LENGTH = 8;
-    std::string anonyStr("********");
-
-    size_t length = input.length();
-    if (length < INT32_MIN_ID_LENGTH) {
-        return anonyStr;
-    } else {
-        std::string result = input.substr(0, INT32_PLAINTEXT_LENGTH);
-        result += anonyStr;
-        result += input.substr(length - INT32_PLAINTEXT_LENGTH, INT32_PLAINTEXT_LENGTH);
-        return result;
-    }
-}
-
 int32_t CloudMediaUriUtils::GetFileIdFromUri(const std::string &uri, int32_t &fileUniqueId)
 {
     static std::string mediaDirPath = "file://media/Photo/";
     size_t index = uri.find(mediaDirPath);
     if (index != 0) {
-        MEDIA_INFO_LOG(
-            "Failed to get media dir from uri: %{public}s", CloudMediaUriUtils::GetAnonyStringStrictly(uri).c_str());
+        MEDIA_INFO_LOG("Failed to get media dir from uri: %{public}s", MediaFileUtils::DesensitizePath(uri).c_str());
         return E_INVAL_ARG;
     }
     std::string uriTails = uri.substr(index + mediaDirPath.length());
     index = uriTails.find('/');
     if (index == std::string::npos) {
-        MEDIA_INFO_LOG(
-            "Failed to get fileId from uri: %{public}s", CloudMediaUriUtils::GetAnonyStringStrictly(uri).c_str());
+        MEDIA_INFO_LOG("Failed to get fileId from uri: %{public}s", MediaFileUtils::DesensitizePath(uri).c_str());
         return E_INVAL_ARG;
     }
     std::string fileId = uriTails.substr(0, index);
@@ -61,7 +43,7 @@ int32_t CloudMediaUriUtils::GetFileIdFromUri(const std::string &uri, int32_t &fi
         return E_INVAL_ARG;
     }
     if (!StrToInt(fileId, fileUniqueId)) {
-        MEDIA_INFO_LOG("Invalid meida uri: %{public}s", CloudMediaUriUtils::GetAnonyStringStrictly(uri).c_str());
+        MEDIA_INFO_LOG("Invalid meida uri: %{public}s", MediaFileUtils::DesensitizePath(uri).c_str());
         return E_INVAL_ARG;
     }
     return E_OK;

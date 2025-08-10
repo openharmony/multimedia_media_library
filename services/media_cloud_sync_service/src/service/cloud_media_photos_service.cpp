@@ -49,9 +49,12 @@ int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, s
 {
     std::string cloudId = data.cloudId;
     std::string localPath = data.localPath;
+    CHECK_AND_RETURN_RET_INFO_LOG(!cloudId.empty(), E_OK, "cloudId is empty, ignore cloud delete");
     bool isLocal = CloudMediaSyncUtils::FileIsLocal(data.localPosition);
-    MEDIA_INFO_LOG("Delete cloudId: %{public}s, localPath: %{public}s, isLocal: %{public}d",
-        cloudId.c_str(), localPath.c_str(), isLocal);
+    MEDIA_INFO_LOG("Delete cloudId: %{public}s, isLocal: %{public}d, data: %{public}s",
+        cloudId.c_str(),
+        isLocal,
+        data.ToString().c_str());
     if (isLocal && CloudMediaSyncUtils::IsLocalDirty(data.localDirty, true)) {
         MEDIA_ERR_LOG("local record dirty, ignore cloud delete");
         return this->photosDao_.ClearCloudInfo(cloudId);
@@ -76,27 +79,11 @@ int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, s
         }
         return ret;
     }
-    if (!cloudId.empty()) {
-        std::string notifyUri =
-            PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX + std::to_string(data.localFileId) + '/' + data.localDateAdded;
-        MediaGallerySyncNotify::GetInstance().TryNotify(
-            notifyUri, ChangeType::DELETE, std::to_string(data.localFileId));
-    }
+    std::string notifyUri =
+        PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX + std::to_string(data.localFileId) + '/' + data.localDateAdded;
+    MediaGallerySyncNotify::GetInstance().TryNotify(notifyUri, ChangeType::DELETE, std::to_string(data.localFileId));
     refreshAlbums.emplace(data.localOwnerAlbumId);
-
-    std::string prefixCloud = "";
-    std::string mergePath = CloudMediaSyncUtils::GetCloudPath(localPath, prefixCloud);
-    ret = unlink(mergePath.c_str());
-    if (ret != 0) {
-        MEDIA_ERR_LOG("unlink local failed.");
-    }
-
-    CloudMediaSyncUtils::RemoveThmParentPath(localPath, prefixCloud);       // ?是否是沙箱路径
-    CloudMediaSyncUtils::RemoveEditDataParentPath(localPath, prefixCloud);  // ?是否是沙箱路径
-    CloudMediaSyncUtils::RemoveMetaDataPath(localPath, prefixCloud);        // ?是否是沙箱路径
-    CloudMediaSyncUtils::InvalidVideoCache(localPath);
-    CloudMediaSyncUtils::RemoveEditDataPath(localPath);
-    CloudMediaSyncUtils::RemoveMovingPhoto(localPath);
+    this->RemoveLocalFile(localPath);
     return E_OK;
 }
 
@@ -1222,5 +1209,23 @@ void CloudMediaPhotosService::RefreshAnalysisAlbum(const std::string &cloudId)
     CHECK_AND_RETURN_LOG(!analysisAlbumIds.empty(), "RefreshAnalysisAlbum analysisAlbumIds is null");
     ret = photosDao_.UpdateAlbumReplacedSignal(analysisAlbumIds);
     MEDIA_INFO_LOG("RefreshAnalysisAlbum size %{public}zu, ret %{public}d", analysisAlbumIds.size(), ret);
+}
+
+int32_t CloudMediaPhotosService::RemoveLocalFile(const std::string &localPath)
+{
+    std::string prefixCloud = "";
+    std::string mergePath = CloudMediaSyncUtils::GetCloudPath(localPath, prefixCloud);
+    int32_t ret = unlink(mergePath.c_str());
+    CHECK_AND_PRINT_LOG(ret == E_OK,
+        "unlink local failed, mergePath: %{public}s, ret: %{public}d.",
+        MediaFileUtils::DesensitizePath(mergePath).c_str(),
+        ret);
+    CloudMediaSyncUtils::RemoveThmParentPath(localPath, prefixCloud);
+    CloudMediaSyncUtils::RemoveEditDataParentPath(localPath, prefixCloud);
+    CloudMediaSyncUtils::RemoveMetaDataPath(localPath, prefixCloud);
+    CloudMediaSyncUtils::InvalidVideoCache(localPath);
+    CloudMediaSyncUtils::RemoveEditDataPath(localPath);
+    CloudMediaSyncUtils::RemoveMovingPhoto(localPath);
+    return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync
