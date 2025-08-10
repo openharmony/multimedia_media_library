@@ -448,7 +448,7 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
     ret = FixDownloadAssetExifRotate(photo, assetData);
     if (ret != E_OK) {
         MEDIA_INFO_LOG("HandlePhoto Failed to fix exif rotate %{public}s",
-            MediaFileUtils::DesensitizePath(assetData.localPath).c_str());       
+            MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
         assetData.errorMsg = "Fix Exif Rotate Failed";
         assetData.err = ret;
         return;
