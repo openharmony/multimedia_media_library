@@ -34,6 +34,7 @@
 #include "photo_file_utils.h"
 #include "thumbnail_const.h"
 #include "moving_photo_file_utils.h"
+#include "cloud_media_uri_utils.h"
 
 using namespace std;
 
@@ -202,26 +203,20 @@ static std::string GetVideoCachePath(const std::string &filePath)
 
 void CloudMediaSyncUtils::InvalidVideoCache(const std::string &localPath)
 {
-    MEDIA_INFO_LOG("InvalidVideoCache loca path: %{public}s", localPath.c_str());
+    MEDIA_INFO_LOG("InvalidVideoCache loca path: %{public}s", MediaFileUtils::DesensitizePath(localPath).c_str());
     const std::string sandboxPrefix = "/storage/cloud";
-    const std::string cachePathPrefix = "/data/service/el2/";
-    const std::string cachePathSuffix = "/hmdfs/cache/cloud_cache/pread_cache";
     size_t pos = localPath.find(sandboxPrefix);
-    if (pos != 0 || pos == std::string::npos) {
-        MEDIA_ERR_LOG("InvalidVideoCache Invalid localPath, path: %{public}s", localPath.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(pos == 0 && pos != std::string::npos,
+        "InvalidVideoCache Invalid localPath, sandboxPrefix: %{public}s",
+        sandboxPrefix.c_str());
     std::string videoCachePath = GetVideoCachePath(localPath);
-    if (videoCachePath.empty()) {
-        MEDIA_ERR_LOG("InvalidVideoCache Invalid VideoCachePath, loca path: %{public}s", localPath.c_str());
-        return;
-    }
-    MEDIA_INFO_LOG("InvalidVideoCache VideoCachePath: %{public}s", videoCachePath.c_str());
-    if (unlink(videoCachePath.c_str()) < 0) {
-        MEDIA_ERR_LOG("InvalidVideoCache Failed to unlink video cache: %{public}s, errno: %{public}d",
-            videoCachePath.c_str(),
-            errno);
-    }
+    CHECK_AND_RETURN_LOG(!videoCachePath.empty(), "InvalidVideoCache Invalid videoCachePath");
+    CHECK_AND_RETURN_LOG(unlink(videoCachePath.c_str()) >= 0,
+        "InvalidVideoCache Failed to unlink video cache: %{public}s, errno: %{public}d",
+        MediaFileUtils::DesensitizePath(videoCachePath).c_str(),
+        errno);
+    MEDIA_INFO_LOG(
+        "InvalidVideoCache VideoCachePath: %{public}s", MediaFileUtils::DesensitizePath(videoCachePath).c_str());
 }
 
 std::string CloudMediaSyncUtils::GetMovingPhotoExtraDataDir(const std::string &localPath)
@@ -423,7 +418,6 @@ bool CloudMediaSyncUtils::IsLivePhoto(const PhotosPo &photosPo)
 {
     std::string path = photosPo.data.value_or("");
     std::string localPath = GetLocalPath(path);
-    MEDIA_INFO_LOG("IsLivePhoto %{public}s", localPath.c_str());
     return MovingPhotoFileUtils::IsLivePhoto(localPath);
 }
 

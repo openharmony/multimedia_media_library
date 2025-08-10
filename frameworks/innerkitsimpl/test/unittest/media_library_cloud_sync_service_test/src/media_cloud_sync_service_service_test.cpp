@@ -918,7 +918,7 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_OnDownloadAsset_Te
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_UnlinkAsset_Test_001, TestSize.Level1)
 {
     CloudMediaDownloadService service;
-    CloudMediaDownloadService::OnDownloadAssetData assetData;
+    OnDownloadAssetData assetData;
     assetData.localPath = "/xxx/xxx";
     service.UnlinkAsset(assetData);
     EXPECT_EQ(assetData.localPath, "/xxx/xxx");
@@ -927,7 +927,7 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_UnlinkAsset_Test_0
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_ResetAssetModifyTime_Test_001, TestSize.Level1)
 {
     CloudMediaDownloadService service;
-    CloudMediaDownloadService::OnDownloadAssetData assetData;
+    OnDownloadAssetData assetData;
     assetData.localPath = "/xxx/xxx";
     service.ResetAssetModifyTime(assetData);
     EXPECT_EQ(assetData.localPath, "/xxx/xxx");
@@ -941,7 +941,7 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_ResetAssetModifyTi
     chmod(filename.c_str(), S_IRUSR | S_IRGRP | S_IROTH);
 
     CloudMediaDownloadService service;
-    CloudMediaDownloadService::OnDownloadAssetData assetData;
+    OnDownloadAssetData assetData;
     assetData.localPath = filename;
     service.ResetAssetModifyTime(assetData);
     EXPECT_EQ(assetData.localPath, filename);
