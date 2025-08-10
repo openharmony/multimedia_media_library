@@ -20,15 +20,7 @@
 
 namespace OHOS {
 namespace Media {
-struct DateAnomalyPhoto {
-    int32_t fileId{0};
-    int64_t dateTaken{0};
-    int64_t dateModified{0};
-    std::string dateDay;
-    std::string detailTime;
-    std::string exif;
-};
-
+#define EXPORT __attribute__ ((visibility ("default")))
 class PhotoDayMonthYearOperation {
 public:
     EXPORT static int32_t UpdatePhotosDateAndIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
@@ -37,17 +29,13 @@ public:
 
     EXPORT static int32_t UpdatePhotosDate(NativeRdb::RdbStore &rdbStore);
 
-    EXPORT static int32_t RepairDateTime();
+    EXPORT static std::pair<int32_t, std::vector<std::string>> QueryNeedUpdateFileIds(const int32_t batchSize);
+
+    EXPORT static int32_t UpdateAbnormalDayMonthYear(std::vector<std::string> &fileIds);
 
 private:
     static int32_t UpdatePhotosDate(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
-
-    static std::vector<DateAnomalyPhoto> QueryDateAnomalyPhotos(const int32_t startFileId);
-
-    static void RepairDateAnomalyPhotos(const std::vector<DateAnomalyPhoto> &photos, int32_t &curFileId);
-
-    static std::mutex mutex_;
 };
-}  // namespace Media
-}  // namespace OHOS
-#endif  // OHOS_MEDIALIBRARY_PHOTO_DAY_MONTH_YEAR_OPERATION_H
+} // namespace Media
+} // namespace OHOS
+#endif // OHOS_MEDIALIBRARY_PHOTO_DAY_MONTH_YEAR_OPERATION_H
