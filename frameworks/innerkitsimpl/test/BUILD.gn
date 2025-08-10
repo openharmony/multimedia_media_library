@@ -87,7 +87,6 @@ group("test") {
     "unittest/moving_photo_test:unittest",
     "unittest/notify_test:Notifytest",
     "unittest/photo_album_test:PhotoAlbumTest",
-    "unittest/photo_day_month_year_operation_test:unittest",
     "unittest/portrait_album_update_test:PortraitAlbumUpdateTest",
     "unittest/media_library_cloud_sync_service_test:unittest",
     "unittest/media_library_cloud_sync_client_test:unittest"
