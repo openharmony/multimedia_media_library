@@ -59,6 +59,31 @@ const vector<bool> HIDDEN_STATE = {
     false
 };
 
+const string SQL_INSERT_ALBUM = "INSERT OR IGNORE INTO " + PhotoAlbumColumns::TABLE + "(" +
+    PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
+    PhotoAlbumColumns::ALBUM_SUBTYPE + ") ";
+
+void InsertSystemAlbums()
+{
+    string insertImageAlbumSql = SQL_INSERT_ALBUM +  "VALUES (7, 1024, 1031)";
+    string insertVideoAlbumSql = SQL_INSERT_ALBUM +  "VALUES (2, 1024, 1026)";
+    string insertHiddenAlbumSql = SQL_INSERT_ALBUM +  "VALUES (3, 1024, 1027)";
+    string insertTrashAlbumSql = SQL_INSERT_ALBUM +  "VALUES (4, 1024, 1028)";
+
+    vector<string> insertSqls = {
+        insertImageAlbumSql,
+        insertVideoAlbumSql,
+        insertHiddenAlbumSql,
+        insertTrashAlbumSql
+    };
+    for (auto &sql : insertSqls) {
+        int32_t ret = g_rdbStore->ExecuteSql(sql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{public}s failed", sql.c_str());
+        }
+    }
+}
+
 int32_t ClearTable(const string &table)
 {
     RdbPredicates predicates(table);
@@ -336,7 +361,7 @@ void AlbumInfo::CheckUserAlbum(const int32_t albumId) const
 {
     for (const auto hiddenState : HIDDEN_STATE) {
         auto album = QueryUserAlbumInfo(albumId, hiddenState);
-        EXPECT_NE(album, nullptr);
+        ASSERT_NE(album, nullptr);
         MEDIA_ERR_LOG("Expect result %{public}d of user album.", album != nullptr);
         CheckAlbum(album, hiddenState);
     }
@@ -346,7 +371,7 @@ void AlbumInfo::CheckSystemAlbum(const int32_t subtype) const
 {
     for (const auto hiddenState : HIDDEN_STATE) {
         auto album = QuerySystemAlbumInfo(subtype, hiddenState);
-        EXPECT_NE(album, nullptr);
+        ASSERT_NE(album, nullptr);
         MEDIA_ERR_LOG("Expect result %{public}d of system album.", album != nullptr);
         CheckAlbum(album, hiddenState);
     }
@@ -530,6 +555,7 @@ void AlbumCountCoverTest::SetUpTestCase()
         return;
     }
     ClearEnv();
+    InsertSystemAlbums();
     InitPhotoTrigger();
 }
 
