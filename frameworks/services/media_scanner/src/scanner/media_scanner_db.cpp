@@ -40,7 +40,6 @@
 #include "userfilemgr_uri.h"
 #include "values_bucket.h"
 #include "post_event_utils.h"
-#include "photo_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -120,6 +119,16 @@ static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket 
 #endif
 }
 
+static inline void SetDateDay(const int64_t dateTaken, ValuesBucket &outValues)
+{
+    outValues.PutString(PhotoColumn::PHOTO_DATE_YEAR,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateTaken));
+    outValues.PutString(PhotoColumn::PHOTO_DATE_MONTH,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateTaken));
+    outValues.PutString(PhotoColumn::PHOTO_DATE_DAY,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateTaken));
+}
+
 static void InsertDateAdded(const Metadata &metadata, ValuesBucket &outValues)
 {
     int64_t dateAdded = metadata.GetFileDateAdded();
@@ -152,16 +161,15 @@ static inline void HandleDateAdded(const Metadata &metadata, const bool isInsert
     }
 }
 
-static inline void HandleYearMonthDay(const Metadata &metadata, ValuesBucket &outValues)
+static inline void HandleDateDay(const Metadata &metadata, const bool isInsert, ValuesBucket &outValues)
 {
     MediaType type = metadata.GetFileMediaType();
     if ((type != MEDIA_TYPE_PHOTO) && (type != MEDIA_TYPE_IMAGE) && (type != MEDIA_TYPE_VIDEO)) {
         return;
     }
-    auto const [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(metadata.GetDetailTime());
-    outValues.Put(PhotoColumn::PHOTO_DATE_YEAR, dateYear);
-    outValues.Put(PhotoColumn::PHOTO_DATE_MONTH, dateMonth);
-    outValues.Put(PhotoColumn::PHOTO_DATE_DAY, dateDay);
+    int64_t dateTaken = metadata.GetDateTaken();
+    SetDateDay(dateTaken, outValues);
+    return;
 }
 
 static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &values, bool isInsert,
@@ -182,7 +190,7 @@ static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &va
 
     SetValuesFromMetaDataAndType(metadata, values, mediaType, table);
     HandleDateAdded(metadata, isInsert, values);
-    HandleYearMonthDay(metadata, values);
+    HandleDateDay(metadata, isInsert, values);
 }
 
 static void HandleMovingPhotoDirty(const Metadata &metadata, ValuesBucket &values)
@@ -281,7 +289,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     }
 
     HandleDateAdded(metadata, isInsert, values);
-    HandleYearMonthDay(metadata, values);
+    HandleDateDay(metadata, isInsert, values);
 }
 
 static void GetTableNameByPath(int32_t mediaType, string &tableName, const string &path = "")
