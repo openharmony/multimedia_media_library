@@ -1182,7 +1182,7 @@ int32_t MediaAlbumsControllerService::GetAlbumsLpathByIds(MessageParcel &data, M
     QueryAlbumsDto dto;
     dto.columns = { PhotoAlbumColumns::ALBUM_LPATH };
     dto.predicates = predicates;
-    ret = MediaAlbumsService::GetInstance().QueryAlbumsLpaths(dto);
+    ret = MediaAlbumsService::GetInstance().QueryAlbumsLpath(dto);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GetAlbumsLpathByIds failed, ret: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
