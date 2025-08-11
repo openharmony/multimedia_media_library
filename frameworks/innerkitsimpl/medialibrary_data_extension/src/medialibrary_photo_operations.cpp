@@ -3167,8 +3167,8 @@ void MediaLibraryPhotoOperations::StoreThumbnailAndEditSize(const string& photoI
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK,
         "Failed to store sizes for photoId: %{public}s", photoId.c_str());
 
-    MEDIA_INFO_LOG("Successfully stored thumbnail size: %{public}llu", photoThumbnailSize);
-    MEDIA_INFO_LOG("Edit data size: %{public}llu", editDataSize);
+    MEDIA_INFO_LOG("Successfully stored thumbnail size: %{public}" PRIu64, photoThumbnailSize);
+    MEDIA_INFO_LOG("Edit data size: %{public}" PRIu64, editDataSize);
     MEDIA_INFO_LOG("For photo ID: %{public}s", photoId.c_str());
 }
 

@@ -182,8 +182,8 @@ int32_t MediaLibraryExtendManager::QueryGrantedIndex(uint32_t targetTokenId,
     auto fileIds_size = respBody.fileIds.size();
     auto permissionTypes_size = respBody.permissionTypes.size();
     bool isValid = (fileIds_size == permissionTypes_size);
-    CHECK_AND_RETURN_RET_LOG(isValid, E_ERR, "Failed cause fileIds_size:%{public}d"
-        " not same to permissionTypes_size:%{public}d", fileIds_size, permissionTypes_size);
+    CHECK_AND_RETURN_RET_LOG(isValid, E_ERR, "Failed cause fileIds_size:%{public}zu"
+        " not same to permissionTypes_size:%{public}zu", fileIds_size, permissionTypes_size);
     for (size_t i = 0; i < respBody.fileIds.size(); i++) {
         string fileId = respBody.fileIds[i];
         int32_t permissionType = respBody.permissionTypes[i];
