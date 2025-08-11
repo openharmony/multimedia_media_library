@@ -489,14 +489,6 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CloudMediaSyncServiceUtilsSafeVector_Te
     EXPECT_EQ(safeVec.Empty(), true);
 }
 
-HWTEST_F(CloudMediaSyncServiceUtilsTest, GetAnonyStringStrictly_Test, TestSize.Level1)
-{
-    string result = CloudMediaUriUtils::GetAnonyStringStrictly("");
-    EXPECT_EQ(result, "********");
-    result = CloudMediaUriUtils::GetAnonyStringStrictly("610425********2222");
-    EXPECT_EQ(result, "610425************2222");
-}
-
 HWTEST_F(CloudMediaSyncServiceUtilsTest, GetFileIdFromUri_Test, TestSize.Level1)
 {
     int32_t fileId = 0;

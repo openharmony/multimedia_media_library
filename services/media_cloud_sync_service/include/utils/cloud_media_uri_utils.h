@@ -27,7 +27,6 @@ public:
 
 private:
     static int32_t GetFileIdFromUri(const std::string &uri, int32_t &fileUniqueId);
-    static std::string GetAnonyStringStrictly(const std::string &input);
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_URI_UTILS_H

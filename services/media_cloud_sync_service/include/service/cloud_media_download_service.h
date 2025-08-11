@@ -26,6 +26,7 @@
 #include "download_thumbnail_query_dto.h"
 #include "media_operate_result_dto.h"
 #include "cloud_media_define.h"
+#include "on_download_asset_data_dto.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaDownloadService {
@@ -37,23 +38,6 @@ public:
         std::vector<MediaOperateResultDto> &result);
     std::vector<PhotosDto> GetDownloadAsset(const std::vector<int32_t> &fileIds);
     int32_t OnDownloadAsset(const std::vector<std::string> &cloudIds, std::vector<MediaOperateResultDto> &result);
-
-private:
-    struct OnDownloadAssetData {
-        bool fixFileType;
-        bool needSliceContent;
-        bool needSliceRaw;
-        std::string path;
-        int64_t dateModified;
-        std::string localPath;
-        int32_t err;
-        std::string errorMsg;
-        std::string fileUri;
-        bool needParseCover;
-        bool needScanShootingMode;
-        int32_t mediaType;
-        int32_t exifRotate;
-    };
 
 private:
     bool IsCloudInsertTaskPriorityHigh();
@@ -68,7 +52,6 @@ private:
         const std::string &videoPath, const std::string &extraDataPath);
     int32_t SliceAsset(const OnDownloadAssetData &assetData, const PhotosPo &photo);
     void HandlePhoto(const ORM::PhotosPo &photo, OnDownloadAssetData &assetData);
-    std::string PrintOnDownloadAssetData(const OnDownloadAssetData &assetData);
     void NotifyDownloadLcd(const std::vector<std::string> &cloudIds);
     int32_t FixDownloadAssetExifRotate(const ORM::PhotosPo &photo, OnDownloadAssetData &assetData);
 
