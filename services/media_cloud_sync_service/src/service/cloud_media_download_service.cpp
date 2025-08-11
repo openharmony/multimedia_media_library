@@ -262,9 +262,9 @@ std::vector<PhotosDto> CloudMediaDownloadService::GetDownloadAsset(const std::ve
     return photosDtoVec;
 }
 
-CloudMediaDownloadService::OnDownloadAssetData CloudMediaDownloadService::GetOnDownloadAssetData(PhotosPo &photosPo)
+OnDownloadAssetData CloudMediaDownloadService::GetOnDownloadAssetData(PhotosPo &photosPo)
 {
-    CloudMediaDownloadService::OnDownloadAssetData assetData;
+    OnDownloadAssetData assetData;
     assetData.err = E_OK;
     assetData.errorMsg = "";
     bool isMovingPhoto = CloudMediaSyncUtils::IsMovingPhoto(photosPo);
@@ -292,29 +292,26 @@ CloudMediaDownloadService::OnDownloadAssetData CloudMediaDownloadService::GetOnD
 void CloudMediaDownloadService::UnlinkAsset(OnDownloadAssetData &assetData)
 {
     int32_t ret = unlink(assetData.localPath.c_str());
-    if (ret != 0) {
-        assetData.err = errno;  // err always -1, use errno.
-        assetData.errorMsg = "unlink failed";
-        MEDIA_WARN_LOG("DownloadAsset unlink %{public}s failed", assetData.localPath.c_str());
-    }
+    CHECK_AND_RETURN_LOG(
+        ret != E_OK, "unlink %{public}s succeeded", MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
+    assetData.err = errno;  // err always -1, use errno.
+    assetData.errorMsg = "unlink failed";
+    MEDIA_WARN_LOG("unlink %{public}s failed", MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
 }
 
 void CloudMediaDownloadService::ResetAssetModifyTime(OnDownloadAssetData &assetData)
 {
-    MEDIA_INFO_LOG("UpdateModifyTime: %{public}s,%{public}d",
-        assetData.localPath.c_str(),
-        access(assetData.localPath.c_str(), F_OK) == 0);
-    if (access(assetData.localPath.c_str(), F_OK) != 0) {
-        MEDIA_ERR_LOG("ResetAssetModifyTime file not exist %{public}s", assetData.localPath.c_str());
-        return;
-    }
+    int32_t ret = access(assetData.localPath.c_str(), F_OK);  // 0 mean file exist.
+    CHECK_AND_RETURN_LOG(
+        ret == E_OK, "file not exist %{public}s", MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
     int32_t err = CloudMediaSyncUtils::UpdateModifyTime(assetData.localPath, assetData.dateModified);
-    if (err != E_OK) {
-        assetData.err = err;
-        assetData.errorMsg = "Update ModifyTime failed";
-        MEDIA_WARN_LOG("DownloadAsset UpdateModifyTime %{public}s failed",
-            MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
-    }
+    CHECK_AND_RETURN_INFO_LOG(err != E_OK,
+        "UpdateModifyTime %{public}s succeeded",
+        MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
+    assetData.err = err;
+    assetData.errorMsg = "Update ModifyTime failed";
+    MEDIA_WARN_LOG("DownloadAsset UpdateModifyTime %{public}s failed",
+        MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
 }
 
 int32_t CloudMediaDownloadService::SliceAssetFile(const std::string &originalFile, const std::string &path,
@@ -353,7 +350,6 @@ int32_t CloudMediaDownloadService::SliceAssetFile(const std::string &originalFil
 
 int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetData, const PhotosPo &photo)
 {
-    MEDIA_INFO_LOG("SliceAsset enter");
     if (assetData.needSliceRaw) {
         std::string rawFilePath = PhotoFileUtils::GetEditDataSourcePath(assetData.path);
         bool isLivePhoto = MovingPhotoFileUtils::IsLivePhoto(rawFilePath);
@@ -384,22 +380,8 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
         }
         return ret;
     }
+    MEDIA_INFO_LOG("SliceAsset, assetData: %{public}s", assetData.ToString().c_str());
     return E_OK;
-}
-
-std::string CloudMediaDownloadService::PrintOnDownloadAssetData(const OnDownloadAssetData &assetData)
-{
-    std::stringstream ss;
-    ss << "{"
-       << "\"fixFileType\": " << std::to_string(assetData.fixFileType) << ","
-       << "\"needSliceContent\": " << std::to_string(assetData.needSliceContent) << ","
-       << "\"needSliceRaw\": " << std::to_string(assetData.needSliceRaw) << ","
-       << "\"err\": " << assetData.err << ","
-       << "\"dateModified\": " << assetData.dateModified << ","
-       << "\"path\": \"" << assetData.path << "\","
-       << "\"localPath\": \"" << assetData.localPath << "\","
-       << "\"errorMsg\": \"" << assetData.errorMsg << "\"}";
-    return ss.str();
 }
 
 int32_t CloudMediaDownloadService::OnDownloadAsset(
@@ -420,9 +402,8 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
     OnDownloadAssetData assetData;
     for (auto &photosPo : photosPoVec) {
         assetData = this->GetOnDownloadAssetData(photosPo);
-        MEDIA_DEBUG_LOG("OnDownloadAsset %{public}s, %{public}s",
-            photosPo.ToString().c_str(),
-            PrintOnDownloadAssetData(assetData).c_str());
+        MEDIA_DEBUG_LOG(
+            "OnDownloadAsset %{public}s, %{public}s", photosPo.ToString().c_str(), assetData.ToString().c_str());
         HandlePhoto(photosPo, assetData);
         // record result
         MediaOperateResultDto mediaResult;
@@ -438,7 +419,8 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
 {
     int32_t ret = SliceAsset(assetData, photo);
     if (ret != E_OK) {
-        MEDIA_INFO_LOG("HandlePhoto Failed to Slice %{public}s", assetData.localPath.c_str());
+        MEDIA_INFO_LOG(
+            "HandlePhoto Failed to Slice %{public}s", MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
         assetData.errorMsg = "Slice Moving File Failed";
         assetData.err = ret;
         return;
@@ -453,7 +435,8 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
     }
 
     if (ret != E_OK) {
-        MEDIA_INFO_LOG("Failed to Handle HandlePhoto %{public}s", assetData.localPath.c_str());
+        MEDIA_INFO_LOG(
+            "Failed to Handle HandlePhoto %{public}s", MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
         assetData.errorMsg = "UpdateDownloadAsset failed";
         assetData.err = ret;
         this->UnlinkAsset(assetData);
@@ -464,7 +447,8 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
 
     ret = FixDownloadAssetExifRotate(photo, assetData);
     if (ret != E_OK) {
-        MEDIA_INFO_LOG("HandlePhoto Failed to fix exif rotate %{public}s", assetData.localPath.c_str());
+        MEDIA_INFO_LOG("HandlePhoto Failed to fix exif rotate %{public}s",
+            MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
         assetData.errorMsg = "Fix Exif Rotate Failed";
         assetData.err = ret;
         return;
