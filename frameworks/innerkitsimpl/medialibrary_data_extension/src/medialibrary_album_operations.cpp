@@ -89,6 +89,8 @@ constexpr int32_t ALBUM_SETNAME_OK = 1;
 constexpr int32_t HIGHLIGHT_DELETED = -2;
 constexpr int32_t HIGHLIGHT_COVER_STATUS_TITLE = 2;
 constexpr int32_t HIGHLIGHT_COVER_STATUS_COVER = 1;
+constexpr int32_t ALBUM_RENAMED = 2;
+constexpr int32_t ALBUM_TO_RENAME_FOR_ANALYSIS = 3;
 const std::string ALBUM_LPATH_PREFIX = "/Pictures/Users/";
 const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
 
@@ -2834,13 +2836,35 @@ int32_t MediaLibraryAlbumOperations::SetIsMe(const ValuesBucket &values, const D
     std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " + RENAME_OPERATION +
         " = 1 WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
         ALBUM_ID + " = " + targetAlbumId + ")";
+    std::string updateReNameOperation = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RENAME_OPERATION + " = " +
+        std::to_string(ALBUM_TO_RENAME_FOR_ANALYSIS) + " WHERE " + ALBUM_ID + " IN (SELECT " + ALBUM_ID + " FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + GROUP_TAG + " LIKE ( SELECT CONCAT('%', " + GROUP_TAG + ", '%') FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ") AND " +
+        PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(PhotoAlbumSubType::GROUP_PHOTO) + " AND (" +
+        RENAME_OPERATION + " != " + std::to_string(ALBUM_RENAMED) + " OR " + RENAME_OPERATION + " IS NULL))";
     updateSqls.push_back(updateForSetIsMe);
+    updateSqls.push_back(updateReNameOperation);
     int32_t err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
         NotifyPortraitAlbum(changeAlbumIds);
     }
     return err;
+}
+
+std::vector<std::string> GetUpdateSqlForSetAlbumName(std::string targetAlbumId, std::string albumName)
+{
+    std::string updateForSetAlbumName = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ALBUM_NAME + " = '" + albumName +
+        "' , " + RENAME_OPERATION + " = 1 WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ")";
+    std::string updateReNameOperation = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RENAME_OPERATION + " = " +
+        std::to_string(ALBUM_TO_RENAME_FOR_ANALYSIS) + " WHERE " + ALBUM_ID + " IN (SELECT " + ALBUM_ID + " FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + GROUP_TAG + " LIKE ( SELECT CONCAT('%', " + GROUP_TAG + ", '%') FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ") AND " +
+        PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(PhotoAlbumSubType::GROUP_PHOTO) + " AND (" +
+        RENAME_OPERATION + " != " + std::to_string(ALBUM_RENAMED) + " OR " + RENAME_OPERATION + " IS NULL))";
+    vector<string> updateSqls = {updateForSetAlbumName, updateReNameOperation};
+    return updateSqls;
 }
 
 /**
@@ -2869,10 +2893,7 @@ int32_t MediaLibraryAlbumOperations::SetAlbumName(const ValuesBucket &values, co
     }
     MEDIA_INFO_LOG("Set analysis album name, album id: %{public}s, album name: %{public}s",
         targetAlbumId.c_str(), DfxUtils::GetSafeAlbumName(albumName).c_str());
-    std::string updateForSetAlbumName = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ALBUM_NAME + " = '" + albumName +
-        "' , " + RENAME_OPERATION + " = 1 WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " +
-        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ")";
-    vector<string> updateSqls = { updateForSetAlbumName};
+    std::vector<std::string> updateSqls = GetUpdateSqlForSetAlbumName(targetAlbumId, albumName);
     err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
