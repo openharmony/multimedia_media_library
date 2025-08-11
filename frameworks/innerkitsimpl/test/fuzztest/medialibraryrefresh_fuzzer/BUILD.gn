@@ -101,7 +101,6 @@ ohos_fuzztest("MediaLibraryRefreshFuzzTest") {
     "data_share:datashare_consumer",
     "e2fsprogs:libext2_uuid",
     "image_framework:image_native",
-    "user_file_service:file_access_extension_ability_kit",
     "ability_runtime:runtime",
     "ipc:ipc_napi",
   ]
