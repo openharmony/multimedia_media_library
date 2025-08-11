@@ -322,7 +322,7 @@ int32_t MediaScannerObj::Commit()
     int64_t duration = endTime - startTime;
     // 在CPU占用率80%, 运行脚本一直执行连拍100次操作, 查看极端场景下用时大于400ms的频率
     if (duration > 400) {
-        MEDIA_HILOG(HILOG_IMPL, LOG_INFO, "Process duration: %llu milliseconds", duration);
+        MEDIA_HILOG(HILOG_IMPL, LOG_INFO, "Process duration: %" PRId64 " milliseconds", duration);
     }
 
     return E_OK;

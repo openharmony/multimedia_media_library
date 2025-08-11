@@ -1145,7 +1145,7 @@ static bool SaveConvertFormatMetaData(std::shared_ptr<AccurateRefresh::AssetAccu
         return false;
     }
 
-    MEDIA_INFO_LOG("SaveConvertFormatMetaData success, newAssetId: %{public}lld", newAssetId);
+    MEDIA_INFO_LOG("SaveConvertFormatMetaData success, newAssetId: %{public}" PRId64, newAssetId);
     return true;
 }
 
@@ -1182,15 +1182,15 @@ static int32_t ConvertFormatFileSync(const std::shared_ptr<MediaLibraryRdbStore>
     int32_t assetId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     err = UpdateRelationship(upgradeStore, {assetId, newAssetId, ownerAlbumId}, assetRefresh);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("UpdateRelationship fail, assetId: %{public}d, newAssetId: %{public}lld,"
-            "ownerAlbumId: %{public}d, ret = %{public}d", assetId, newAssetId, ownerAlbumId, err);
+        MEDIA_ERR_LOG("UpdateRelationship fail, assetId: %{public}d, newAssetId: %{public}" PRId64
+            ", ownerAlbumId: %{public}d, ret = %{public}d", assetId, newAssetId, ownerAlbumId, err);
         return err;
     }
 
     err = PhotoFileOperation().CopyThumbnail(resultSet, targetPath, newAssetId);
     if (err != E_OK && GenerateThumbnail(newAssetId, targetPath, resultSet, true) != E_SUCCESS) {
         MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(upgradeStore, newAssetId);
-        MEDIA_ERR_LOG("Copy thumbnail failed, targetPath = %{public}s, ret = %{public}d, newAssetId = %{public}lld",
+        MEDIA_ERR_LOG("Copy thumbnail failed, targetPath = %{public}s, ret = %{public}d, newAssetId = %{public}" PRId64,
             targetPath.c_str(), err, newAssetId);
         return err;
     }
@@ -1212,7 +1212,7 @@ static bool CheckConvertFormatAsset(std::shared_ptr<MediaLibraryRdbStore> rdbSto
     }
     int64_t timePending = GetInt64Val(MediaColumn::MEDIA_TIME_PENDING, resultSet);
     if (timePending != 0) {
-        MEDIA_ERR_LOG("timePending: %{public}lld is invalid", timePending);
+        MEDIA_ERR_LOG("timePending: %{public}" PRId64 " is invalid", timePending);
         return false;
     }
     int32_t hidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, resultSet);
@@ -1223,7 +1223,8 @@ static bool CheckConvertFormatAsset(std::shared_ptr<MediaLibraryRdbStore> rdbSto
     int64_t dateTrashed = GetInt64Val(MediaColumn::MEDIA_DATE_TRASHED, resultSet);
     int64_t dateDeleted = GetInt64Val(MediaColumn::MEDIA_DATE_DELETED, resultSet);
     if (dateTrashed != 0 || dateDeleted != 0) {
-        MEDIA_ERR_LOG("dateTrashed: %{public}lld, dateDeleted: %{public}lld is invalid", dateTrashed, dateDeleted);
+        MEDIA_ERR_LOG("dateTrashed: %{public}" PRId64 ", dateDeleted: %{public}" PRId64 " is invalid",
+            dateTrashed, dateDeleted);
         return false;
     }
 
@@ -1273,7 +1274,7 @@ int32_t MediaLibraryAlbumFusionUtils::ConvertFormatAsset(const int64_t &assetId,
     int64_t newAssetId = -1;
     int32_t err = ConvertFormatFileSync(rdbStore, assetRefresh, resultSet, displayName, newAssetId);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("ConvertFormatFileSync failed, ret = %{public}d, assetId = %{public}lld", err, assetId);
+        MEDIA_ERR_LOG("ConvertFormatFileSync failed, ret = %{public}d, assetId = %{public}" PRId64, err, assetId);
         return err;
     }
 
@@ -1295,7 +1296,7 @@ int32_t MediaLibraryAlbumFusionUtils::ConvertFormatAsset(const int64_t &assetId,
         MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore);
     }
     SendNewAssetNotify(newFileAssetUri, rdbStore, assetRefresh);
-    MEDIA_INFO_LOG("ConvertFormatAsset success, newAssetId = %{public}lld", newAssetId);
+    MEDIA_INFO_LOG("ConvertFormatAsset success, newAssetId = %{public}" PRId64, newAssetId);
     return newAssetId;
 }
 
