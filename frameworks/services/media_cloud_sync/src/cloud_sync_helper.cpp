@@ -17,7 +17,6 @@
 
 #include "cloud_sync_helper.h"
 
-#include "ffrt_inner.h"
 #include "medialibrary_all_album_refresh_processor.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
@@ -53,8 +52,9 @@ shared_ptr<CloudSyncHelper> CloudSyncHelper::GetInstance()
 void CloudSyncHelper::StartSync()
 {
     MEDIA_DEBUG_LOG("CloudSyncHelper StartSync");
+    lock_guard<mutex> lock(syncMutex_);
     skipCond_.notify_all();
-    ffrt::submit([this]() { OnTimerCallback(); });
+    std::thread([this]() { OnTimerCallback(); }).detach();
 }
 
 bool CloudSyncHelper::InitDataShareHelper()
@@ -135,12 +135,10 @@ bool CloudSyncHelper::IsSyncSwitchOpen()
 
 void CloudSyncHelper::OnTimerCallback()
 {
-    {
-        unique_lock<mutex> lock(syncMutex_);
-        if (skipCond_.wait_for(lock, std::chrono::milliseconds(SYNC_INTERVAL)) == std::cv_status::no_timeout) {
-            MEDIA_DEBUG_LOG("skip cloud sync");
-            return;
-        }
+    unique_lock<mutex> lock(skipMutex_);
+    if (skipCond_.wait_for(lock, std::chrono::milliseconds(SYNC_INTERVAL)) == std::cv_status::no_timeout) {
+        MEDIA_DEBUG_LOG("skip cloud sync");
+        return;
     }
 
     if (!IsSyncSwitchOpen()) {
