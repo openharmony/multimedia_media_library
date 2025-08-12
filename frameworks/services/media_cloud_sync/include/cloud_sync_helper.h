@@ -52,6 +52,7 @@ private:
 
     /* delayed trigger */
     std::mutex syncMutex_;
+    std::mutex skipMutex_;
     std::condition_variable skipCond_;
 
     /* sync switch */
