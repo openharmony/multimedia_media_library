@@ -46,7 +46,7 @@ const uint32_t OFFSET = 5;
 
 constexpr int FUZZ_STORAGE_MANAGER_MANAGER_ID = 5003;
 
-static MtpOperationContext FuzzMtpOperationContext(const uint8_t* data, size_t size)
+static MtpOperationContext FuzzMtpOperationContext()
 {
     MtpOperationContext context;
 
@@ -94,23 +94,20 @@ static void ProxyInit(std::shared_ptr<MtpOperationContext> context, MtpPtpProxy&
     proxy.Init(remoteObj, context);
 }
 
-static void ProxyGetHandlesTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyGetHandlesTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     std::shared_ptr<UInt32List> handles = std::make_shared<UInt32List>();
     bool isMac = provider->ConsumeBool();
     proxy.GetHandles(context, handles, isMac);
 }
 
-static void ProxyGetObjectInfoTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyGetObjectInfoTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     std::shared_ptr<ObjectInfo> objectInfo = std::make_shared<ObjectInfo>(0);
     proxy.GetObjectInfo(context, objectInfo);
 }
 
-static void ProxyGetObjectPropValueTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyGetObjectPropValueTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     uint64_t intVal;
     uint128_t longVal;
@@ -118,74 +115,65 @@ static void ProxyGetObjectPropValueTest(const uint8_t* data, size_t size,
     proxy.GetObjectPropValue(context, intVal, longVal, strVal);
 }
 
-static void ProxySetObjectPropValueTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxySetObjectPropValueTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     proxy.SetObjectPropValue(context);
 }
 
-static void ProxyGetObjectPropListTest(const uint8_t* data, size_t size)
+static void ProxyGetObjectPropListTest()
 {
-    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(FuzzMtpOperationContext(data, size));
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(FuzzMtpOperationContext());
     auto proxy = MtpPtpProxy::GetInstance();
     ProxyInit(context, proxy);
     std::shared_ptr<std::vector<Property>> properties;
     proxy.GetObjectPropList(context, properties);
 }
 
-static void ProxyGetReadFdTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyGetReadFdTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     int32_t fd;
     proxy.GetReadFd(context, fd);
 }
 
-static void ProxyCloseReadFdTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyCloseReadFdTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     int32_t fd = provider->ConsumeIntegral<int32_t>();
     proxy.CloseReadFd(context, fd);
 }
 
-static void ProxyGetWriteFdTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyGetWriteFdTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     int32_t fd = 0;
     proxy.GetWriteFd(context, fd);
 }
 
-static void ProxyCloseWriteFdTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyCloseWriteFdTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     int32_t fd = provider->ConsumeIntegral<int32_t>();
     proxy.CloseWriteFd(context, fd);
 }
 
-static void ProxyGetModifyObjectInfoPathByIdTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyGetModifyObjectInfoPathByIdTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     int32_t handle = provider->ConsumeIntegral<int32_t>();
     std::string path = "";
     proxy.GetModifyObjectInfoPathById(handle, path);
 }
 
-static void ProxyGetMtpPathByIdTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyGetMtpPathByIdTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     int32_t handle = provider->ConsumeIntegral<int32_t>();
     std::string path = "";
     proxy.GetMtpPathById(handle, path);
 }
 
-static void ProxyGetThumbTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyGetThumbTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     std::shared_ptr<UInt8List> outThumb;
     proxy.GetThumb(context, outThumb);
 }
 
-static void ProxySendObjectInfoTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxySendObjectInfoTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     uint32_t storageId = provider->ConsumeIntegral<uint32_t>();
     uint32_t parent = provider->ConsumeIntegral<uint32_t>();
@@ -193,43 +181,37 @@ static void ProxySendObjectInfoTest(const uint8_t* data, size_t size,
     proxy.SendObjectInfo(context, storageId, parent, handle);
 }
 
-static void ProxyDeleteObjectTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyDeleteObjectTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     proxy.DeleteObject(context);
 }
 
-static void ProxyMoveObjectTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyMoveObjectTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     uint32_t repeatHandle = 0;
     proxy.MoveObject(context, repeatHandle);
 }
 
-static void ProxyCopyObjectTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyCopyObjectTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     uint32_t oldHandle = provider->ConsumeIntegral<uint32_t>();
     uint32_t outHandle = 0;
     proxy.CopyObject(context, outHandle, oldHandle);
 }
 
-static void ProxyGetMtpStorageIdsTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyGetMtpStorageIdsTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     proxy.GetMtpStorageIds();
 }
 
-static void ProxyGetIdByPathTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyGetIdByPathTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     std::string path = provider->ConsumeBytesAsString(NUM_BYTES);
     uint32_t outId = 0;
     proxy.GetIdByPath(path, outId);
 }
 
-static void ProxyGetPathByHandleTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyGetPathByHandleTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     uint32_t handle = provider->ConsumeIntegral<uint32_t>();
     std::string outPath = "";
@@ -237,68 +219,64 @@ static void ProxyGetPathByHandleTest(const uint8_t* data, size_t size,
     proxy.GetPathByHandle(handle, outPath, outRealPath);
 }
 
-static void ProxyDeleteCanceledObjectTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyDeleteCanceledObjectTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     uint32_t handle = provider->ConsumeIntegral<uint32_t>();
     std::string path = provider->ConsumeBytesAsString(NUM_BYTES);
     proxy.DeleteCanceledObject(path, handle);
 }
 
-static void ProxyIsMtpExistObjectTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyIsMtpExistObjectTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     proxy.IsMtpExistObject(context);
 }
 
-static void ProxyMtpTryAddExternalStorageTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyMtpTryAddExternalStorageTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     uint32_t storageId = provider->ConsumeIntegral<uint32_t>();
     std::string fsUuid = provider->ConsumeBytesAsString(NUM_BYTES);
     proxy.MtpTryAddExternalStorage(fsUuid, storageId);
 }
 
-static void ProxyMtpTryRemoveExternalStorageTest(const uint8_t* data, size_t size,
-    shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
+static void ProxyMtpTryRemoveExternalStorageTest(shared_ptr<MtpOperationContext> context, MtpPtpProxy& proxy)
 {
     uint32_t storageId = provider->ConsumeIntegral<uint32_t>();
     std::string fsUuid = provider->ConsumeBytesAsString(NUM_BYTES);
     proxy.MtpTryRemoveExternalStorage(fsUuid, storageId);
 }
 
-static void MtpPtpProxyTest(const uint8_t* data, size_t size)
+static void MtpPtpProxyTest()
 {
-    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(FuzzMtpOperationContext(data, size));
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(FuzzMtpOperationContext());
     auto proxy = MtpPtpProxy::GetInstance();
     ProxyInit(context, proxy);
 
     uint32_t mode = provider->ConsumeIntegralInRange<uint32_t>(0, 2);
     MtpManager::GetInstance().mtpMode_ = MtpManager::MtpMode(mode);
 
-    ProxyGetHandlesTest(data, size, context, proxy);
-    ProxyGetObjectInfoTest(data, size, context, proxy);
-    ProxyGetObjectPropValueTest(data, size, context, proxy);
-    ProxySetObjectPropValueTest(data, size, context, proxy);
-    ProxyGetObjectPropListTest(data, size);
-    ProxyGetReadFdTest(data, size, context, proxy);
-    ProxyCloseReadFdTest(data, size, context, proxy);
-    ProxyGetWriteFdTest(data, size, context, proxy);
-    ProxyCloseWriteFdTest(data, size, context, proxy);
-    ProxyGetModifyObjectInfoPathByIdTest(data, size, context, proxy);
-    ProxyGetMtpPathByIdTest(data, size, context, proxy);
-    ProxyGetThumbTest(data, size, context, proxy);
-    ProxySendObjectInfoTest(data, size, context, proxy);
-    ProxyDeleteObjectTest(data, size, context, proxy);
-    ProxyMoveObjectTest(data, size, context, proxy);
-    ProxyCopyObjectTest(data, size, context, proxy);
-    ProxyGetMtpStorageIdsTest(data, size, context, proxy);
-    ProxyGetIdByPathTest(data, size, context, proxy);
-    ProxyGetPathByHandleTest(data, size, context, proxy);
-    ProxyDeleteCanceledObjectTest(data, size, context, proxy);
-    ProxyIsMtpExistObjectTest(data, size, context, proxy);
-    ProxyMtpTryAddExternalStorageTest(data, size, context, proxy);
-    ProxyMtpTryRemoveExternalStorageTest(data, size, context, proxy);
+    ProxyGetHandlesTest(context, proxy);
+    ProxyGetObjectInfoTest(context, proxy);
+    ProxyGetObjectPropValueTest(context, proxy);
+    ProxySetObjectPropValueTest(context, proxy);
+    ProxyGetObjectPropListTest();
+    ProxyGetReadFdTest(context, proxy);
+    ProxyCloseReadFdTest(context, proxy);
+    ProxyGetWriteFdTest(context, proxy);
+    ProxyCloseWriteFdTest(context, proxy);
+    ProxyGetModifyObjectInfoPathByIdTest(context, proxy);
+    ProxyGetMtpPathByIdTest(context, proxy);
+    ProxyGetThumbTest(context, proxy);
+    ProxySendObjectInfoTest(context, proxy);
+    ProxyDeleteObjectTest(context, proxy);
+    ProxyMoveObjectTest(context, proxy);
+    ProxyCopyObjectTest(context, proxy);
+    ProxyGetMtpStorageIdsTest(context, proxy);
+    ProxyGetIdByPathTest(context, proxy);
+    ProxyGetPathByHandleTest(context, proxy);
+    ProxyDeleteCanceledObjectTest(context, proxy);
+    ProxyIsMtpExistObjectTest(context, proxy);
+    ProxyMtpTryAddExternalStorageTest(context, proxy);
+    ProxyMtpTryRemoveExternalStorageTest(context, proxy);
 }
 
 static int32_t AddSeed()
@@ -340,6 +318,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     FuzzedDataProvider fdp(data, size);
     OHOS::provider = &fdp;
     
-    OHOS::MtpPtpProxyTest(data, size);
+    OHOS::MtpPtpProxyTest();
     return 0;
 }
