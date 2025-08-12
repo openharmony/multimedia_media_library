@@ -333,22 +333,14 @@ static void CloudMediaPhotoControllerProcessorFuzzer()
 
 static void Init()
 {
-    shared_ptr<CloudMediaAlbumControllerService> cloudMediaAlbumControllerService =
-        make_shared<CloudMediaAlbumControllerService>();
-    shared_ptr<CloudMediaDataControllerService> cloudMediaDataControllerService =
-        make_shared<CloudMediaDataControllerService>();
-    shared_ptr<CloudMediaDownloadControllerService> cloudMediaDownloadControllerService =
-        make_shared<CloudMediaDownloadControllerService>();
-    shared_ptr<CloudMediaPhotoControllerService> cloudMediaPhotoControllerService =
-        make_shared<CloudMediaPhotoControllerService>();
-    shared_ptr<CloudMediaAlbumControllerProcessor> cloudMediaAlbumControllerProcessor =
-        make_shared<CloudMediaAlbumControllerProcessor>();
-    shared_ptr<CloudMediaDataControllerProcessor> cloudMediaDataControllerProcessor =
-        make_shared<CloudMediaDataControllerProcessor>();
-    shared_ptr<CloudMediaDownloadControllerProcessor> cloudMediaDownloadControllerProcessor =
-        make_shared<CloudMediaDownloadControllerProcessor>();
-    shared_ptr<CloudMediaPhotoControllerProcessor> cloudMediaPhotoControllerProcessor =
-        make_shared<CloudMediaPhotoControllerProcessor>();
+    cloudMediaAlbumControllerService = make_shared<CloudMediaAlbumControllerService>();
+    cloudMediaDataControllerService = make_shared<CloudMediaDataControllerService>();
+    cloudMediaDownloadControllerService = make_shared<CloudMediaDownloadControllerService>();
+    cloudMediaPhotoControllerService = make_shared<CloudMediaPhotoControllerService>();
+    cloudMediaAlbumControllerProcessor = make_shared<CloudMediaAlbumControllerProcessor>();
+    cloudMediaDataControllerProcessor = make_shared<CloudMediaDataControllerProcessor>();
+    cloudMediaDownloadControllerProcessor = make_shared<CloudMediaDownloadControllerProcessor>();
+    cloudMediaPhotoControllerProcessor = make_shared<CloudMediaPhotoControllerProcessor>();
 }
 
 static int32_t AddSeed()
