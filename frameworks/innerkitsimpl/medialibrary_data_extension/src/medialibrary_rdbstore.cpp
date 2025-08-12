@@ -4911,10 +4911,6 @@ static void UpgradeFromAllVersionFirstPart(RdbStore &store, unordered_map<string
     TabOldPhotosTableEventHandler().OnCreate(store);
     MEDIA_INFO_LOG("End VERSION_CREATE_TAB_OLD_PHOTOS");
 
-    MEDIA_INFO_LOG("Start VERSION_ALTER_THUMBNAIL_VISIBLE");
-    AlterThumbnailVisible(store);
-    MEDIA_INFO_LOG("End VERSION_ALTER_THUMBNAIL_VISIBLE");
-
     MEDIA_INFO_LOG("Start VERSION_UPDATE_SEARCH_INDEX_TRIGGER_FOR_CLEAN_FLAG");
     UpdateSearchIndexTriggerForCleanFlag(store);
     MEDIA_INFO_LOG("End VERSION_UPDATE_SEARCH_INDEX_TRIGGER_FOR_CLEAN_FLAG");
@@ -5008,10 +5004,6 @@ static void UpgradeFromAllVersionThirdPart(RdbStore &store, unordered_map<string
         AddStageVideoTaskStatus(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_STAGE_VIDEO_TASK_STATUS");
-
-    MEDIA_INFO_LOG("Start VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION");
-    AddAssetAlbumOperationTable(store);
-    MEDIA_INFO_LOG("End VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION");
 
     MEDIA_INFO_LOG("Start VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION_FOR_SYNC");
     AddAssetAlbumOperationTableForSync(store);
