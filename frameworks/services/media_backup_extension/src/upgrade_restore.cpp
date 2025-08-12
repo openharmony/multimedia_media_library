@@ -875,7 +875,6 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
     info.firstUpdateTime = GetInt64Val(GALLERY_FIRST_UPDATE_TIME, resultSet);
-    info.dateTaken = GetInt64Val(GALLERY_DATE_TAKEN, resultSet);
     info.detailTime = GetStringVal(GALLERY_DETAIL_TIME, resultSet);
     info.userId = BackupFileUtils::GetUserId(info.oldPath);
     return true;
@@ -903,6 +902,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.localBigThumbPath = GetStringVal(GALLERY_LOCAL_BIG_THUMB_PATH_ID, resultSet);
 
     bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
+    info.dateTaken = info.showDateToken;
     CHECK_AND_RETURN_RET_LOG(isSuccess, isSuccess, "ParseResultSetFromGallery fail");
     info.burstKey = burstKeyGenerator_.FindBurstKey(info);
     // Pre-Fetch: sourcePath, lPath
