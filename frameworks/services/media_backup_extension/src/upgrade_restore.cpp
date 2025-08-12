@@ -900,9 +900,8 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.uniqueId = GetStringVal(GALLERY_UNIQUE_ID, resultSet);
     info.localThumbPath = GetStringVal(GALLERY_LOCAL_THUMB_PATH_ID, resultSet);
     info.localBigThumbPath = GetStringVal(GALLERY_LOCAL_BIG_THUMB_PATH_ID, resultSet);
-
-    bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
     info.dateTaken = info.showDateToken;
+    bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
     CHECK_AND_RETURN_RET_LOG(isSuccess, isSuccess, "ParseResultSetFromGallery fail");
     info.burstKey = burstKeyGenerator_.FindBurstKey(info);
     // Pre-Fetch: sourcePath, lPath
