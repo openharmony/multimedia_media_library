@@ -40,7 +40,7 @@ namespace MediaTool {
 
 using namespace std;
 
-constexpr mode_t OPEN_MODE = 0664;
+constexpr mode_t OPEN_MODE = 0644;
 
 static bool GetWriteFilePath(const ExecEnv& env, const string& displayName, std::string& wFilePath)
 {
