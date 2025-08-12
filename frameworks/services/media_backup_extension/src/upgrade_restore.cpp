@@ -953,6 +953,10 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     }
     if (fileInfo.dateTaken != 0) {
         values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.dateTaken);
+    } else {
+        UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
+            .ReportInAudit("INVALID_DATETAKEN", std::to_string(fileInfo.dateTaken),
+                BackupLogUtils::FileInfoToString(sceneCode_, fileInfo));
     }
     values.PutString(PhotoColumn::PHOTO_DETAIL_TIME, fileInfo.detailTime);
     values.PutLong(MediaColumn::MEDIA_DURATION, fileInfo.duration);
