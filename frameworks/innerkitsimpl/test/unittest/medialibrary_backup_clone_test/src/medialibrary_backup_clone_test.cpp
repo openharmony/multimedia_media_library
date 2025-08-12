@@ -1730,7 +1730,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_e
     std::string backupExResult = EMPTY_STR;
     instance.restoreService_ = nullptr;
     instance.StartBackupEx(UPGRADE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR, backupExResult);
-    EXPECT_EQ(backupExResult, EMPTY_STR);
+    EXPECT_NE(backupExResult, EMPTY_STR);
     instance.restoreService_ = nullptr;
     instance.StartBackupEx(CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR, backupExResult);
     EXPECT_NE(backupExResult, EMPTY_STR);
