@@ -57,12 +57,10 @@ constexpr int32_t SINGLE_FACE = 1;
 constexpr int32_t QUERY_GROUP_PHOTO_ALBUM_RELATED_TO_ME = 1;
 constexpr int32_t QUERY_GROUP_PHOTO_ALBUM_REMOVED = 1;
 constexpr int32_t GROUP_ALBUM_RENAMED = 2;
+constexpr int32_t ALBUM_TO_RENAME_FOR_ANALYSIS = 3;
 const string GROUP_PHOTO_TAG = "group_photo_tag";
 const string GROUP_PHOTO_IS_ME = "group_photo_is_me";
 const string GROUP_PHOTO_ALBUM_NAME = "album_name";
-const string GROUP_MERGE_SQL_PRE = "SELECT " + ALBUM_ID + ", " + COVER_URI + ", " + IS_COVER_SATISFIED + ", "
-    + TAG_ID + ", " + RENAME_OPERATION + ", " + ALBUM_NAME + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
-    ALBUM_SUBTYPE + " = " + to_string(GROUP_PHOTO) + " AND (INSTR(" + TAG_ID + ", '";
 static std::mutex updateGroupPhotoAlbumMutex;
 const string GROUP_ALBUM_FAVORITE_ORDER_CLAUSE = " CASE WHEN user_display_level = 3 THEN 1 ELSE 2 END ";
 const string GROUP_ALBUM_USER_NAME_ORDER_CLAUSE = " CASE WHEN rename_operation = 2 THEN 1 ELSE 2 END ";
@@ -479,10 +477,13 @@ static int32_t UpdateForMergeGroupAlbums(const shared_ptr<MediaLibraryRdbStore> 
     }
     vector<string> updateSqls;
     for (auto it : updateMaps) {
+        int32_t renameOperation =
+            it.second.renameOperation != GROUP_ALBUM_RENAMED ? ALBUM_TO_RENAME_FOR_ANALYSIS : GROUP_ALBUM_RENAMED;
         string sql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + TAG_ID + " = '" + it.first + "', " +
             GROUP_TAG + " = '" + it.first + "', " + COVER_URI + " = '" + it.second.coverUri + "', " +
             IS_REMOVED + " = 0, " + IS_COVER_SATISFIED  + " = " + to_string(it.second.isCoverSatisfied) + ", " +
-            ALBUM_NAME + " = '" + it.second.albumName + "' WHERE " + ALBUM_ID + " = " + to_string(it.second.albumId);
+            RENAME_OPERATION + " = " + to_string(renameOperation) + ", " + ALBUM_NAME + " = '" +
+            it.second.albumName + "' WHERE " + ALBUM_ID + " = " + to_string(it.second.albumId);
         updateSqls.push_back(sql);
     }
     int ret = ExecSqls(updateSqls, store);
@@ -539,13 +540,25 @@ int32_t GetMergeAlbumInfo(shared_ptr<NativeRdb::ResultSet> resultSet, MergeAlbum
     return E_OK;
 }
 
+std::string GetQueryTagIdSql(std::string groupTag1, std::string groupTag2)
+{
+    std::string groupMergeSqlPre = "SELECT " + ALBUM_ID + ", " + COVER_URI + ", " + IS_COVER_SATISFIED + ", "
+        + TAG_ID + ", " + RENAME_OPERATION + ", " + ALBUM_NAME + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
+        ALBUM_SUBTYPE + " = " + to_string(GROUP_PHOTO) + " AND (INSTR(" + TAG_ID + ", '";
+    std::string queryTagId = groupMergeSqlPre + groupTag1 + "') > 0 OR INSTR(" + TAG_ID + ", '" +
+        groupTag2 + "') > 0)";
+    std::string albumMergeUserDisplayLevelOrderClause =
+        " ORDER BY CASE WHEN user_display_level = -1 THEN 0 WHEN user_display_level = 3 THEN 3 ELSE 1 END DESC";
+    queryTagId += albumMergeUserDisplayLevelOrderClause;
+    return queryTagId;
+}
+
 int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo)
 {
     CHECK_AND_RETURN_RET_LOG(mergeAlbumInfo.size() > 1, E_INVALID_VALUES, "mergeAlbumInfo size is not enough.");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL, "UniStore is nullptr! Query album order failed.");
-    string queryTagId = GROUP_MERGE_SQL_PRE + mergeAlbumInfo[0].groupTag + "') > 0 OR INSTR(" + TAG_ID + ", '" +
-        mergeAlbumInfo[1].groupTag + "') > 0)";
+    std::string queryTagId = GetQueryTagIdSql(mergeAlbumInfo[0].groupTag, mergeAlbumInfo[1].groupTag);
     auto resultSet = uniStore->QuerySql(queryTagId);
     CHECK_AND_RETURN_RET(resultSet != nullptr, E_HAS_DB_ERROR);
 
@@ -582,6 +595,7 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
             }
             if (info.renameOperation == GROUP_ALBUM_RENAMED) {
                 updateMap[reorderedTagId].albumName = info.albumName;
+                updateMap[reorderedTagId].renameOperation = info.renameOperation;
             }
             updateMap[reorderedTagId].coverUri = newInfo.coverUri;
             updateMap[reorderedTagId].repeatedAlbumIds.push_back(std::to_string(info.albumId));
