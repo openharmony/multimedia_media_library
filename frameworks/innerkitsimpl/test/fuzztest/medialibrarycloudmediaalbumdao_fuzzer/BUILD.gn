@@ -74,7 +74,6 @@ ohos_fuzztest("MediaLibraryCloudMediaAlbumDaoFuzzTest") {
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
-    "user_file_service:file_access_extension_ability_kit",
     "dfs_service:cloudfile_kit",
   ]
 }
