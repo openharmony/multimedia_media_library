@@ -207,6 +207,7 @@ vector<AlbumChangeData> AlbumDataManager::GetAlbumDatasFromAddAlbum(const vector
     vector<AlbumChangeData> albumChangeDatas;
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, albumChangeDatas, "rdbStore null");
     auto resultSet = rdbStore->QueryByStep(predicates, AlbumChangeInfo::GetAlbumInfoColumns());
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, albumChangeDatas, "resultSet null");
     auto albumIdInfos = AlbumChangeInfo::GetInfoFromResult(resultSet, AlbumChangeInfo::GetAlbumInfoColumns());
     resultSet->Close();
     for (auto &albumInfo : albumIdInfos) {
