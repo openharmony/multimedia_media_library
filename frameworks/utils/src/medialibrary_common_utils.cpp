@@ -193,6 +193,11 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     MEDIA_DATA_DB_COVER_SATISFIED,
     PhotoColumn::PHOTO_OWNER_ALBUM_ID,
 
+    // Analysis aesthetics score
+    AESTHETICS_ALL_VERSION,
+    AESTHETICS_SCORE_ALL,
+    IS_FILTERED_HARD,
+
     // AnalysisPhotoMap table columns
     MAP_ALBUM,
 
