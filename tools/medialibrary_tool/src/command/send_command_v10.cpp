@@ -150,8 +150,12 @@ static int32_t CreateRecord(const ExecEnv &env, FileInfo &fileInfo, bool isResta
     return Media::E_OK;
 }
 
-static int32_t WriteFile(const ExecEnv &env, const FileInfo &fileInfo, bool isRestart)
+static int32_t WriteFile(const ExecEnv &env, FileInfo &fileInfo, bool isRestart)
 {
+    if (!PathToRealPath(fileInfo.path, fileInfo.path)) {
+        printf("%s path issue. errno:%d, path:%s.\n", STR_FAIL.c_str(), errno, fileInfo.path.c_str());
+        return Media::E_ERR;
+    }
     int32_t rfd = open(fileInfo.path.c_str(), O_RDONLY | O_CLOEXEC);
     if (rfd < 0) {
         printf("%s open file failed. rfd:%d, path:%s\n", STR_FAIL.c_str(), rfd, fileInfo.path.c_str());
