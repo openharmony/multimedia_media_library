@@ -3002,8 +3002,8 @@ void MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(vector<string>& columns)
 void MediaLibraryRdbUtils::CleanAmbiguousColumn(std::vector<std::string> &columns,
     DataShare::DataSharePredicates &predicates, const std::string tableName)
 {
-    int FIELD_IDX = 0;
-    int VALUE_IDX = 1;
+    size_t FIELD_IDX = 0;
+    size_t VALUE_IDX = 1;
     vector<DataShare::OperationItem> operationItemsNew;
     auto operationItems = predicates.GetOperationList();
     for (DataShare::OperationItem item : operationItems) {
