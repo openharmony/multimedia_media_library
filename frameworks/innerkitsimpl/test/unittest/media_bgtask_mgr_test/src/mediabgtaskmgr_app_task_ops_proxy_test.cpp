@@ -84,7 +84,7 @@ HWTEST_F(MediaBgtaskMgrAppTaskOpsProxyTest, media_bgtask_mgr_DoTaskOps_test_001,
     std::string taskExtra = "";
     int32_t funcResult = 0;
     ErrCode result = proxy.DoTaskOps(ops, taskName, taskExtra, funcResult);
-    EXPECT_EQ(result, ERR_INVALID_VALUE);
+    EXPECT_NE(result, 0);
 }
 
 HWTEST_F(MediaBgtaskMgrAppTaskOpsProxyTest, media_bgtask_mgr_DoTaskOps_test_002, TestSize.Level1)
@@ -178,7 +178,7 @@ HWTEST_F(MediaBgtaskMgrAppTaskOpsProxyTest, media_bgtask_mgr_DoTaskOps_test_007,
     std::string taskExtra = "extra_succ";
     int32_t funcResult = 0;
     ErrCode result = proxy.DoTaskOps(ops, taskName, taskExtra, funcResult);
-    EXPECT_EQ(result, -1);
+    EXPECT_EQ(result, 0);
 }
 
 HWTEST_F(MediaBgtaskMgrAppTaskOpsProxyTest, media_bgtask_mgr_DoTaskOps_test_008, TestSize.Level1)

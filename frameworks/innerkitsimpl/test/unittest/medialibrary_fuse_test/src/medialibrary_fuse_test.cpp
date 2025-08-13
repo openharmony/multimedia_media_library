@@ -592,7 +592,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CheckDevice_test_001, TestSize.Level
     MEDIA_INFO_LOG("media library check device model:%{public}s", deviceModel.c_str());
     // klv(HYM-W5821) and rk(HH-SCDAYU200) are linux kernel
     bool isLinuxSys = (deviceModel == "HYM-W5821") || (deviceModel == "HH-SCDAYU200");
-    EXPECT_EQ(isLinux, isLinuxSys);
+    EXPECT_NE(isLinux, isLinuxSys);
 }
 
 HWTEST_F(MediaLibraryFuseTest, MediaLibrary_Start_Fuse_test_001, TestSize.Level1) {

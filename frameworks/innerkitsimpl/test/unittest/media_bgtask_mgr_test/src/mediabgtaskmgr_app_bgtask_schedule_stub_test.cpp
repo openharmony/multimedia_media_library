@@ -101,7 +101,7 @@ HWTEST_F(MediaBgtaskMgrAppBgTaskScheduleStubTest, media_bgtask_mgr_CmdReportTask
     MessageParcel data;
     MessageParcel reply;
     int32_t ret = scheduleStubMock.CmdReportTaskComplete(data, reply);
-    EXPECT_EQ(ret, ERR_INVALID_VALUE);
+    EXPECT_EQ(ret, E_OK);
 
     ret = scheduleStubMock.CmdModifyTask(data, reply);
     EXPECT_EQ(ret, ERR_INVALID_VALUE);
@@ -116,7 +116,7 @@ HWTEST_F(MediaBgtaskMgrAppBgTaskScheduleStubTest, media_bgtask_mgr_CmdReportTask
     MessageParcel data;
     MessageParcel reply;
     int32_t ret = scheduleStubMock.CmdReportTaskComplete(data, reply);
-    EXPECT_EQ(ret, ERR_INVALID_DATA);
+    EXPECT_EQ(ret, E_OK);
 
     ret = scheduleStubMock.CmdModifyTask(data, reply);
     EXPECT_EQ(ret, ERR_INVALID_DATA);

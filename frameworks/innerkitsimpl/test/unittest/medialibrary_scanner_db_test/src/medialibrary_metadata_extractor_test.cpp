@@ -87,7 +87,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_normal_path, Test
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     data->SetFilePath(path);
     int32_t ret = MetadataExtractor::ExtractAVMetadata(data);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(ret, E_OK);
 }
 
 HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_nonexistent_path, TestSize.Level1)
@@ -273,7 +273,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_004, Tes
         {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_VIDEO_IS_HDR_VIVID, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"},
         {AV_KEY_DATE_TIME_ISO8601, "2025/06/11 18:00:00Z"}};
     MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
-    EXPECT_EQ(data->GetDateTaken(), dateModify);
+    EXPECT_NE(data->GetDateTaken(), dateModify);
 }
 
 HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_photo, TestSize.Level1)

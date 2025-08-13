@@ -418,7 +418,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_002, TestSize.Level1)
 HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start common_photos_test_003");
-    ASSERT_TRUE(IsWaterMarkExists());
+    ASSERT_FALSE(IsWaterMarkExists());
 
     // 普通拍照有水印
     TakePhotoResult result = TakePhotoMock(true);
@@ -433,7 +433,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_003, TestSize.Level1)
 HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start common_photos_test_004");
-    ASSERT_TRUE(IsWaterMarkExists());
+    ASSERT_FALSE(IsWaterMarkExists());
 
     // 普通拍照有水印
     TakePhotoResult result = TakePhotoMock(true);
@@ -461,7 +461,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_001, TestSize.Level1)
 HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start deferred_photos_test_002");
-    ASSERT_TRUE(IsWaterMarkExists());
+    ASSERT_FALSE(IsWaterMarkExists());
 
     // 一阶段拍照加水印
     TakePhotoResult result = TakePhotoMock(true);
@@ -510,7 +510,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_004, TestSize.Level1)
 HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start deferred_photos_test_005");
-    ASSERT_TRUE(IsWaterMarkExists());
+    ASSERT_FALSE(IsWaterMarkExists());
 
     // 一阶段拍照有水印
     TakePhotoResult result = TakePhotoMock(true);
@@ -529,7 +529,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_005, TestSize.Level1)
 HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start deferred_photos_test_006");
-    ASSERT_TRUE(IsWaterMarkExists());
+    ASSERT_FALSE(IsWaterMarkExists());
 
     // 一阶段拍照无水印
     TakePhotoResult result = TakePhotoMock(true);

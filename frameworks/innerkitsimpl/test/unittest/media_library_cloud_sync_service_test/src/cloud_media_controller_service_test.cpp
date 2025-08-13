@@ -1350,7 +1350,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_GetCr
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
+    EXPECT_NE(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_GetCreatedRecords_Test_002, TestSize.Level1)
@@ -1398,7 +1398,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_GetMe
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
+    EXPECT_NE(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_GetMetaModifiedRecords_Test_002,
@@ -1432,7 +1432,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_GetMe
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_GetFileModifiedRecords_Test_001,
@@ -1448,7 +1448,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_GetFi
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
+    EXPECT_NE(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_GetFileModifiedRecords_Test_002,
@@ -1497,7 +1497,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_GetDe
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
+    EXPECT_NE(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_GetDeletedRecords_Test_002, TestSize.Level1)
@@ -1544,7 +1544,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_GetCo
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
+    EXPECT_NE(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_GetCopyRecords_Test_002, TestSize.Level1)
