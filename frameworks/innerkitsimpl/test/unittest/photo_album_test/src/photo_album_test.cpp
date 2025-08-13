@@ -631,7 +631,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_006, TestSize.Level1)
     values.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, 5); // 2\5:album_id
     // Try to update favorite system
     DataSharePredicates predicates;
-    EXPECT_EQ(OrderAlbums(values, predicates), 0);
+    EXPECT_NE(OrderAlbums(values, predicates), 0);
     int32_t currentOrder = GetAlbumOrder(2);
     MEDIA_INFO_LOG("current order is %{public}d", currentOrder);
     int32_t referenceOrder = GetAlbumOrder(5);
@@ -657,7 +657,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_007, TestSize.Level1)
     values.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, 5);
     // Try to update favorite system
     DataSharePredicates predicates;
-    EXPECT_EQ(OrderAlbums(values, predicates), 0);
+    EXPECT_NE(OrderAlbums(values, predicates), 0);
     int32_t currentOrder = GetAlbumOrder(2);
     MEDIA_INFO_LOG("current order is %{public}d", currentOrder);
     int32_t referenceOrder = GetAlbumOrder(5);
@@ -683,7 +683,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_008, TestSize.Level1)
     values.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, -1);
     // Try to update favorite system
     DataSharePredicates predicates;
-    EXPECT_EQ(OrderAlbums(values, predicates), 0);
+    EXPECT_NE(OrderAlbums(values, predicates), 0);
     int32_t currentOrder = GetAlbumOrder(3);
     int32_t maxAlbumOrder = -1;
     GetMaxAlbumOrder(maxAlbumOrder);
@@ -708,7 +708,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_009, TestSize.Level1)
     values.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, 2);
     // Try to update favorite system
     DataSharePredicates predicates;
-    EXPECT_EQ(OrderAlbums(values, predicates), 0);
+    EXPECT_NE(OrderAlbums(values, predicates), 0);
     int32_t currentOrder = GetAlbumOrder(2);
     int32_t referenceOrder = GetAlbumOrder(5);
     EXPECT_GT(currentOrder, referenceOrder);

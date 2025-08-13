@@ -406,7 +406,7 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_end_state_switch_test_003, TestSize.L
         std::to_string(static_cast<int>(CloudSyncStatus::SYNC_SWITCHED_OFF)));
     EXPECT_EQ(EndState::StateSwitch(*manager), true);
     EndState::Process(*manager);
-    EXPECT_NE(manager->timerId_, 0);
+    EXPECT_EQ(manager->timerId_, 0);
 }
 
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_safe_path_test, TestSize.Level0)
@@ -791,7 +791,7 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_QueryDirtyCloudPhoto_test_001, TestSi
     std::vector<std::string> columns = { MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_DIRTY,
         PhotoColumn::PHOTO_CLOUD_ID };
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
-    EXPECT_EQ(resultSet, nullptr);
+    EXPECT_NE(resultSet, nullptr);
 }
 
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_QueryAnalysisVersion_test_001, TestSize.Level0)

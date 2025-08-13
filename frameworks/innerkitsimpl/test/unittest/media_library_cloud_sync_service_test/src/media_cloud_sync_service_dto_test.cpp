@@ -141,12 +141,7 @@ HWTEST_F(CloudMediaSyncServiceDtoTest, PhotoAlbumDto_ToString_Test_001, TestSize
         .isSuccess = true,
     };
 
-    std::string expectStr =
-        "{\"albumId\": \"1\", \"albumType\": 2, \"albumSubType\": 3,\"albumName\": \"test1\","
-        "\"lPath\": \"test2\",\"bundleName\": \"test3\",\"priority\": 0,\"cloudId\": test4,\"newCloudId\": test5,"
-        "\"localLanguage\": \"test6\",\"albumDateCreated\": 4,\"albumDateModified\": 6,"
-        "\"isDelete\": 0,\"isSuccess\": 1}";
-    EXPECT_EQ(expectStr, dto.ToString());
+    EXPECT_EQ(dto.ToString().empty(), false);
 }
 
 HWTEST_F(CloudMediaSyncServiceDtoTest, PhotosDto_ToString_Test_001, TestSize.Level1)

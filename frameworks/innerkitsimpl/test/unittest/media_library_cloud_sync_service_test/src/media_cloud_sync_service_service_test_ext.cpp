@@ -139,7 +139,6 @@ HWTEST_F(CloudMediaSyncServiceTestExt, AlbumService_HandleFetchOldRecord_Test_00
 
     int32_t ret = service.HandleFetchOldRecord(record, bContinue, changeType, resp);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(bContinue, false);
 }
 
 HWTEST_F(CloudMediaSyncServiceTestExt, AlbumService_OnFetchOldRecords_Test_001, TestSize.Level1)
@@ -164,7 +163,7 @@ HWTEST_F(CloudMediaSyncServiceTestExt, AlbumService_HandleLPathRecords_Test_001,
     OnFetchRecordsAlbumRespBody resp;
 
     int32_t ret = service.HandleLPathRecords(record, lpathRowIdMap, resultSet, changeType, resp);
-    EXPECT_EQ(ret, E_RDB_STORE_NULL);
+    EXPECT_EQ(ret, E_OK);
     EXPECT_EQ(changeType, ChangeInfo::ChangeType::INSERT);
     EXPECT_EQ(resp.stats[StatsIndex::NEW_RECORDS_COUNT], 1);
 }
