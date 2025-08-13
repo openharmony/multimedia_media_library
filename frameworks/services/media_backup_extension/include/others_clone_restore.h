@@ -61,11 +61,32 @@ private:
     void SetFileInfosInCurrentDir(const std::string &file, struct stat &statInfo);
     int32_t GetAllfilesInCurrentDir(const std::string &path);
     bool CheckSamePathForSD(const std::string &dataPath, FileInfo &fileInfo, const std::string &filePath);
+    std::string GenerateSearchKey(const FileInfo &fileInfo);
+    CloneDbInfo* FindAudioDbInfo(const std::string &key, const std::string &displayName);
+    CloneDbInfo* FindPhotoDbInfo(const std::string &key, const std::string &displayName);
+    CloneDbInfo* FindDbInfoByFileType(const FileInfo &fileInfo, const std::string &key);
+    double ConvertTimeToSeconds(double timeValue);
+    void UpdateFileTimeInfo(FileInfo &fileInfo, CloneDbInfo *dbInfo);
     void UpDateFileModifiedTime(FileInfo &fileInfo);
     void UpdateFileGPS(FileInfo &fileInfo);
     void ReportMissingFilesFromDB(std::vector<CloneDbInfo> &mediaDbInfo, const std::string &dbType);
     void GetDbInfo(int32_t sceneCode, std::vector<CloneDbInfo> &mediaDbInfo,
         const std::shared_ptr<NativeRdb::ResultSet> &resultSet);
+    std::string BuildDbPath(const std::string &dbName);
+    bool CheckDbExists(const std::string &dbPath, const std::string &dbName);
+    std::shared_ptr<NativeRdb::RdbStore> InitializeDatabase(const std::string &dbName, const std::string &dbPath);
+    int32_t GetTotalRecordCount(std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
+        const std::string &dbName);
+    void ProcessBatch(std::shared_ptr<NativeRdb::RdbStore> mediaRdb, int32_t offset,
+        std::vector<CloneDbInfo> &mediaDbInfo);
+    void ProcessChunk(std::shared_ptr<NativeRdb::RdbStore> mediaRdb, int32_t chunkStart,
+        int32_t chunkEnd, std::vector<CloneDbInfo> &mediaDbInfo);
+    void QueryDatabaseRecords(std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
+        int32_t totalNumber, std::vector<CloneDbInfo> &mediaDbInfo);
+    bool IsPhotoVideoDatabase(const std::string &dbName);
+    void BuildPhotoVideoDbMap(const std::vector<CloneDbInfo> &mediaDbInfo);
+    void BuildAudioDbMap(const std::vector<CloneDbInfo> &mediaDbInfo);
+    void BuildDbInfoMap(const std::string &dbName, const std::vector<CloneDbInfo> &mediaDbInfo);
     void GetCloneDbInfos(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo);
     bool HasSameFileForDualClone(FileInfo &fileInfo);
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
