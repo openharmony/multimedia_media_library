@@ -236,7 +236,7 @@ int32_t CloudSyncConvert::CompensateAttIsRectificationCover(const CloudMediaPull
     int32_t isRectificationCover = data.attributesIsRectificationCover;
     CHECK_AND_RETURN_RET_WARN_LOG(isRectificationCover != -1, E_CLOUDSYNC_INVAL_ARG,
                                   "Cannot find attributes::isRectificationCover.");
-    values.PutLong(PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, isRectificationCover);
+    values.PutInt(PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, isRectificationCover);
     return E_OK;
 }
 
