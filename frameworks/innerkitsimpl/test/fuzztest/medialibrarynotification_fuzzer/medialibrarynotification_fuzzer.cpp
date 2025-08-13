@@ -108,9 +108,6 @@ std::pair<Media::Notification::NotifyUriType, Media::Notification::NotifyUriType
 {
     int32_t firstUriType = provider->ConsumeIntegralInRange<int32_t>(0, NOTIFY_URI_TYPE_MAX);
     int32_t secondUriType = provider->ConsumeIntegralInRange<int32_t>(0, NOTIFY_URI_TYPE_MAX);
-    while (firstUriType == secondUriType) {
-        secondUriType = provider->ConsumeIntegralInRange<int32_t>(0, NOTIFY_URI_TYPE_MAX);
-    }
     return {
         static_cast<Media::Notification::NotifyUriType>(firstUriType),
         static_cast<Media::Notification::NotifyUriType>(secondUriType)
@@ -152,7 +149,6 @@ static void SetNotifyInfoInners(std::vector<Notification::NotifyInfoInner> &noti
     int32_t instIndex = provider->ConsumeIntegralInRange<int32_t>(0, ASSET_REFRESH_OPERATION.size()-1);
     firstNotifyInfoInner.operationType = ASSET_REFRESH_OPERATION[instIndex];
     notifyInfoInners.push_back(firstNotifyInfoInner);
-    Notification::MediaLibraryNotifyNew::AddItem(firstNotifyInfoInner);
     Notification::MediaLibraryNotifyNew::NotifyInner(firstNotifyInfoInner);
     Notification::NotifyInfoInner secondNotifyInfoInner;
     secondNotifyInfoInner.tableType = FuzzNotifyTableType();
