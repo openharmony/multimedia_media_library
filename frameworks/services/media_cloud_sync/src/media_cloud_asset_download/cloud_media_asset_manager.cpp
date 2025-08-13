@@ -90,7 +90,7 @@ const std::string SQL_DELETE_EMPTY_CLOUD_ALBUMS = "DELETE " + SQL_CONDITION_EMPT
 static const std::string CLOUD_RETIAN_STATUS_KEY = "persist.multimedia.medialibrary.retain.cloud.status";
 static const std::string HDC_RETIAN_STATUS_KEY = "persist.multimedia.medialibrary.retain.hdc.status";
 
-static const std::string MEIDA_RESTORE_FLAG = "multimedia.medialibrary.cloneFlag";
+static const std::string MEIDA_RESTORE_FLAG = "multimedia.medialibrary.restoreFlag";
 static const std::string MEIDA_BACKUP_FLAG = "multimedia.medialibrary.backupFlag";
 
 // 同步服务模块使用: 时间戳|0，时间戳表征任务正在清理中，0表示无清理任务

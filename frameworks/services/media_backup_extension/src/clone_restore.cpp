@@ -243,6 +243,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     }
     MEDIA_INFO_LOG("Start clone restore");
     SetParameterForClone();
+    SetParameterForRestore();
     GetAccountValid();
     GetSyncSwitchOn();
     MEDIA_INFO_LOG("the isAccountValid_ is %{public}d, the isSyncSwitchOn_ is %{public}d", isAccountValid_,
@@ -264,6 +265,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
     }
     HandleRestData();
+    StopParameterForRestore();
     StopParameterForClone();
     CloseAllKvStore();
     MEDIA_INFO_LOG("End clone restore");
