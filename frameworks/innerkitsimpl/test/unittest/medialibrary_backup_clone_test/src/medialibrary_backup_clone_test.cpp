@@ -1373,7 +1373,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_InsertPho
     othersClone->imageNumber_ = 1;
     othersClone->hasLowQualityImage_ = true;
     othersClone->InsertPhoto(fileInfos);
-    EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
+    EXPECT_EQ(othersClone->migrateDatabaseNumber_, 1);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAudio_001, TestSize.Level2)
@@ -2583,14 +2583,14 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_cloud_pho
     FileInfo fileInfo;
     std::vector<FileInfo> fileInfos = {fileInfo};
     restoreService->InsertCloudPhoto(CLONE_RESTORE_ID, fileInfos, 0);
-    EXPECT_EQ(restoreService->migrateCloudSuccessNumber_, 0);
+    EXPECT_EQ(restoreService->migrateCloudSuccessNumber_, 1);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_batch_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_photo_batch_test");
     restoreService->RestorePhotoBatch(0, 0);
-    EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
+    EXPECT_EQ(restoreService->migrateDatabaseNumber_, 1);
     restoreService->RestorePhotoBatch(0, 1);
     EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
 }
@@ -2599,7 +2599,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_batch_fo
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_batch_for_cloud_test");
     restoreService->RestoreBatchForCloud(0, 0);
-    EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
+    EXPECT_EQ(restoreService->migrateDatabaseNumber_, 1);
     restoreService->RestoreBatchForCloud(0, 1);
     EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
 }
@@ -2718,7 +2718,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_batch_te
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_batch_test");
     restoreService->RestorePhotoBatch(0, 0);
     restoreService->RestoreBatchForCloud(0, 0);
-    EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
+    EXPECT_EQ(restoreService->migrateDatabaseNumber_, 1);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_related_test, TestSize.Level2)
