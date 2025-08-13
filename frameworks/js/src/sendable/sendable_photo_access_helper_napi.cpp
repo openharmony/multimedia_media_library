@@ -1683,19 +1683,6 @@ static void GetCreateUri(SendablePhotoAccessHelperAsyncContext *context, string 
     }
 }
 
-static bool CheckTitleCompatible(SendablePhotoAccessHelperAsyncContext* context)
-{
-    if (!context->isCreateByComponent) {
-        return true;
-    }
-    bool hasTitleParam = false;
-    const string title = context->valuesBucket.Get(MediaColumn::MEDIA_TITLE, hasTitleParam);
-    if (!hasTitleParam) {
-        return true;
-    }
-    return MediaFileUtils::CheckTitleCompatible(title) == E_OK;
-}
-
 static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -1706,10 +1693,7 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
         context->error = JS_E_DISPLAYNAME;
         return;
     }
-    if (!CheckTitleCompatible(context)) {
-        context->error = JS_E_DISPLAYNAME;
-        return;
-    }
+
     string uri;
     GetCreateUri(context, uri);
     Uri createFileUri(uri);
