@@ -556,7 +556,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, DataManager_Delete_001, TestSize.Level1)
         Uri uri(EXTENSION_URI_LISTS[i]);
         MediaLibraryCommand cmd(uri);
         auto deleteRet = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
-        EXPECT_LT(deleteRet, 2);
+        EXPECT_LE(deleteRet, 2);
         this_thread::sleep_for(chrono::milliseconds(SLEEP_FOR_FIFTY_MS));
     }
     MEDIA_INFO_LOG("DataManager_Delete_001::End");

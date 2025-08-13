@@ -31,6 +31,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "media_facard_photos_column.h"
 #include "media_column.h"
 #include "result_set_utils.h"
 #include "medialibrary_errno.h"
@@ -54,6 +55,8 @@ static const string SQL_INSERT_PHOTO = "INSERT INTO " + PhotoColumn::PHOTOS_TABL
     MediaColumn::MEDIA_DURATION + ", " + MediaColumn::MEDIA_IS_FAV + ", " + MediaColumn::MEDIA_DATE_TRASHED + ", " +
     MediaColumn::MEDIA_HIDDEN + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH + ", " +
     PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_SHOOTING_MODE + ")";
+const std::string CREATE_FACARD_TABLE_SQL = "CREATE TABLE IF NOT EXISTS tab_facard_photos \
+    (form_id TEXT, asset_uri TEXT);";
 
 static int32_t ExecSqls(const vector<string> &sqls)
 {
@@ -83,9 +86,11 @@ static void ClearFormInfoTables()
 {
     string clearFormInfoSql = "DELETE FROM " + FormMap::FORM_MAP_TABLE;
     string clearPhotosSql = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
+    string clearPhototabCardSql = "DELETE FROM " + TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE;
     vector<string> executeSqlStrs = {
         clearPhotosSql,
         clearFormInfoSql,
+        clearPhototabCardSql
     };
     MEDIA_INFO_LOG("start clear data in all tables");
     ExecSqls(executeSqlStrs);
@@ -107,7 +112,8 @@ static void SetAllTestTables()
 {
     vector<string> createTableSqlList = {
         FormMap::CREATE_FORM_MAP_TABLE,
-        PhotoColumn::CREATE_PHOTO_TABLE
+        PhotoColumn::CREATE_PHOTO_TABLE,
+        CREATE_FACARD_TABLE_SQL
     };
     for (auto &createTableSql : createTableSqlList) {
         int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
