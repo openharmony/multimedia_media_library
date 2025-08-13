@@ -278,7 +278,7 @@ bool OthersCloneRestore::IsPhotoVideoDatabase(const std::string &dbName)
             dbName == VIDEO_DB_NAME || dbName == VIDEO_SD_MEDIA_INFO_DB_NAME);
 }
 
-void OthersCloneRestore::BuildPhotoVideoDbMap(const std::vector<CloneDbInfo> &mediaDbInfo)
+void OthersCloneRestore::BuildPhotoVideoDbMap(std::vector<CloneDbInfo> &mediaDbInfo)
 {
     photoDbMap_.clear();
     size_t reserveSize = std::min(mediaDbInfo.size(), static_cast<size_t>(PRE_ALLOC_PHOTOMAP_VECTOR));
@@ -292,7 +292,7 @@ void OthersCloneRestore::BuildPhotoVideoDbMap(const std::vector<CloneDbInfo> &me
     }
 }
 
-void OthersCloneRestore::BuildAudioDbMap(const std::vector<CloneDbInfo> &mediaDbInfo)
+void OthersCloneRestore::BuildAudioDbMap(std::vector<CloneDbInfo> &mediaDbInfo)
 {
     audioDbMap_.clear();
     size_t reserveSize = std::min(mediaDbInfo.size(), static_cast<size_t>(PRE_ALLOC_AUDIOMAP_VECTOR));
@@ -306,7 +306,7 @@ void OthersCloneRestore::BuildAudioDbMap(const std::vector<CloneDbInfo> &mediaDb
     }
 }
 
-void OthersCloneRestore::BuildDbInfoMap(const std::string &dbName, const std::vector<CloneDbInfo> &mediaDbInfo)
+void OthersCloneRestore::BuildDbInfoMap(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo)
 {
     if (IsPhotoVideoDatabase(dbName)) {
         BuildPhotoVideoDbMap(mediaDbInfo);
