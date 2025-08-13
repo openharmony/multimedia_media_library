@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 #define MLOG_TAG "DataManager"
 
 #include "medialibrary_data_manager.h"
@@ -108,6 +108,7 @@
 #include "system_ability_definition.h"
 #include "shooting_mode_column.h"
 #include "timer.h"
+#include "trash_async_worker.h"
 #include "value_object.h"
 #include "photo_storage_operation.h"
 #include "post_event_utils.h"
@@ -119,12 +120,15 @@
 #include "vision_photo_map_column.h"
 #include "parameter.h"
 #include "parameters.h"
+#include "uuid.h"
 #ifdef DEVICE_STANDBY_ENABLE
 #include "medialibrary_standby_service_subscriber.h"
 #endif
 #ifdef HAS_THERMAL_MANAGER_PART
 #include "thermal_mgr_client.h"
 #endif
+#include "zip_util.h"
+#include "photo_custom_restore_operation.h"
 #include "vision_db_sqls.h"
 #include "cloud_media_asset_uri.h"
 #include "album_operation_uri.h"
@@ -149,10 +153,27 @@ namespace Media {
 unique_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
+static const int32_t UUID_STR_LENGTH = 37;
 const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 2;
+const int32_t LARGE_FILE_SIZE_MB = 200;
+const int32_t WRONG_VALUE = 0;
+const int32_t BATCH_QUERY_NUMBER = 200;
+const int32_t UPDATE_BATCH_SIZE = 200;
+const int32_t DELETE_BATCH_SIZE = 1000;
+const int32_t PHOTO_CLOUD_POSITION = 2;
+const int32_t PHOTO_LOCAL_CLOUD_POSITION = 3;
+const int32_t UPDATE_DIRTY_CLOUD_CLONE_V1 = 1;
+const int32_t UPDATE_DIRTY_CLOUD_CLONE_V2 = 2;
+const int32_t ERROR_OLD_FILE_ID_OFFSET = -1000000;
 constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
 constexpr int32_t MAX_DEFAULT_THUMBNAIL_SIZE = 768;
 static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
+static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
+static const std::string NO_UPDATE_DIRTY_CLOUD_CLONE_V2 = "no_update_dirty_cloud_clone_v2";
+static const std::string NO_DELETE_DIRTY_HDC_DATA = "no_delete_dirty_hdc_data";
+static const std::string CLOUD_PREFIX_PATH = "/storage/cloud/files";
+static const std::string THUMB_PREFIX_PATH = "/storage/cloud/files/.thumbs";
+static const std::string COLUMN_OLD_FILE_ID = "old_file_id";
 static const std::string NO_DELETE_DISK_DATA_INDEX = "no_delete_disk_data_index";
 static const std::string NO_UPDATE_EDITDATA_SIZE = "no_update_editdata_size";
 static const std::string UPDATE_EDITDATA_SIZE_COUNT = "update_editdata_size_count";
@@ -784,7 +805,7 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_PHOTOS_DATE_AND_IDX);
     }
-
+    
     if (oldVersion < VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL) {
         MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL);
@@ -1630,6 +1651,9 @@ void MediaLibraryDataManager::InterruptBgworker()
     if (mediaAsyncWorker != nullptr) {
         mediaAsyncWorker->Interrupt();
     }
+    shared_ptr<TrashAsyncTaskWorker> asyncWorker = TrashAsyncTaskWorker::GetInstance();
+    CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "asyncWorker null");
+    asyncWorker->Interrupt();
 }
 
 void MediaLibraryDataManager::InterruptThumbnailBgWorker()
@@ -1707,6 +1731,249 @@ int32_t MediaLibraryDataManager::RestoreThumbnailDualFrame()
     return thumbnailService_->RestoreThumbnailDualFrame();
 }
 
+static void CacheAging()
+{
+    if (!MediaFileUtils::IsDirectory(MEDIA_CACHE_DIR)) {
+        return;
+    }
+    time_t now = time(nullptr);
+    constexpr int thresholdSeconds = 24 * 60 * 60; // 24 hours
+    vector<string> files;
+    GetDirFiles(MEDIA_CACHE_DIR, files);
+    for (auto &file : files) {
+        struct stat statInfo {};
+        if (stat(file.c_str(), &statInfo) != 0) {
+            MEDIA_WARN_LOG("skip %{private}s , stat errno: %{public}d", file.c_str(), errno);
+            continue;
+        }
+        time_t timeModified = statInfo.st_mtime;
+        double duration = difftime(now, timeModified); // diff in seconds
+        CHECK_AND_CONTINUE(duration >= thresholdSeconds);
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(file),
+            "delete failed %{public}s, errno: %{public}d", file.c_str(), errno);
+    }
+}
+
+static int32_t ClearInvalidDeletedAlbum()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return E_FAIL;
+    }
+
+    const std::string QUERY_NO_CLOUD_DELETED_ALBUM_INFO =
+        "SELECT album_id, album_name FROM PhotoAlbum WHERE " + PhotoAlbumColumns::ALBUM_DIRTY +
+        " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
+        " AND " + PhotoColumn::PHOTO_CLOUD_ID + " is NULL";
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_NO_CLOUD_DELETED_ALBUM_INFO);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query not match data fails");
+        return E_HAS_DB_ERROR;
+    }
+
+    vector<string> albumIds;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int columnIndex = 0;
+        int32_t albumId = -1;
+        if (resultSet->GetColumnIndex(PhotoAlbumColumns::ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetInt(columnIndex, albumId);
+            albumIds.emplace_back(to_string(albumId));
+        }
+        std::string albumName = "";
+        if (resultSet->GetColumnIndex(PhotoAlbumColumns::ALBUM_NAME, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetString(columnIndex, albumName);
+        }
+        MEDIA_INFO_LOG("Handle name %{public}s id %{public}d", DfxUtils::GetSafeAlbumName(albumName).c_str(), albumId);
+    }
+
+    NativeRdb::RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
+    int deleteRow = -1;
+    auto ret = rdbStore->Delete(deleteRow, predicates);
+    MEDIA_INFO_LOG("Delete invalid album, deleteRow is %{public}d", deleteRow);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Delete invalid album failed, ret = %{public}d, deleteRow is %{public}d", ret, deleteRow);
+    return E_OK;
+}
+
+int32_t MediaLibraryDataManager::DoAging()
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::DoAging IN");
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+
+    CacheAging(); // aging file in .cache
+
+    PhotoCustomRestoreOperation::GetInstance().CleanTimeoutCustomRestoreTaskDir();
+
+    ClearInvalidDeletedAlbum(); // Clear invalid album data with null cloudid and dirty '4'
+
+    MediaLibraryTableAssetAlbumOperations().OprnTableOversizeChecker();
+
+    shared_ptr<TrashAsyncTaskWorker> asyncWorker = TrashAsyncTaskWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("asyncWorker null");
+        return E_FAIL;
+    }
+    asyncWorker->Init();
+    return E_OK;
+}
+
+static string GenerateUuid()
+{
+    uuid_t uuid;
+    uuid_generate(uuid);
+    char str[UUID_STR_LENGTH] = {};
+    uuid_unparse(uuid, str);
+    return str;
+}
+
+static string generateRegexpMatchForNumber(const int32_t num)
+{
+    string regexpMatchNumber = "[0-9]";
+    string strRegexpMatch = "";
+    for (int i = 0; i < num; i++) {
+        strRegexpMatch += regexpMatchNumber;
+    }
+    return strRegexpMatch;
+}
+
+static string generateUpdateSql(const bool isCover, const string title, const int32_t ownerAlbumId)
+{
+    uint32_t index = title.find_first_of("BURST");
+    string globMember = title.substr(0, index) + "BURST" + generateRegexpMatchForNumber(3);
+    string globCover = globMember + "_COVER";
+    string updateSql;
+    if (isCover) {
+        string burstkey = GenerateUuid();
+        updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_SUBTYPE + " = " +
+            to_string(static_cast<int32_t>(PhotoSubType::BURST)) + ", " + PhotoColumn::PHOTO_BURST_KEY + " = '" +
+            burstkey + "', " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = CASE WHEN " + MediaColumn::MEDIA_TITLE +
+            " NOT LIKE '%COVER%' THEN " + to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER)) + " ELSE " +
+            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " END WHERE " + MediaColumn::MEDIA_TYPE +
+            " = " + to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
+            to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
+            " = " + to_string(ownerAlbumId) + " AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" +
+            globMember + "') OR LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globCover + "'));";
+    } else {
+        string subWhere = "FROM " + PhotoColumn::PHOTOS_TABLE + " AS p2 WHERE LOWER(p2." + MediaColumn::MEDIA_TITLE +
+            ") GLOB LOWER('" + globCover + "') AND p2." + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " +
+            to_string(ownerAlbumId);
+
+        updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " AS p1 SET " + PhotoColumn::PHOTO_BURST_KEY +
+            " = (SELECT CASE WHEN p2." + PhotoColumn::PHOTO_BURST_KEY + " IS NOT NULL THEN p2." +
+            PhotoColumn::PHOTO_BURST_KEY + " ELSE NULL END " + subWhere + " LIMIT 1 ), " +
+            PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = (SELECT CASE WHEN COUNT(1) > 0 THEN " +
+            to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER)) + " ELSE " +
+            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) + " END " + subWhere + "), " +
+            PhotoColumn::PHOTO_SUBTYPE + " = (SELECT CASE WHEN COUNT(1) > 0 THEN " +
+            to_string(static_cast<int32_t>(PhotoSubType::BURST)) + " ELSE p1." + PhotoColumn::PHOTO_SUBTYPE + " END " +
+            subWhere + ") WHERE p1." + MediaColumn::MEDIA_TITLE + " = '" + title + "' AND p1." +
+            PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " + to_string(ownerAlbumId);
+    }
+    return updateSql;
+}
+
+static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    int32_t count;
+    int32_t retCount = resultSet->GetRowCount(count);
+    if (count == 0) {
+        if (isCover) {
+            MEDIA_INFO_LOG("No burst cover need to update");
+        } else {
+            MEDIA_INFO_LOG("No burst member need to update");
+        }
+        return E_SUCCESS;
+    }
+    if (retCount != E_SUCCESS || count < 0) {
+        return E_ERR;
+    }
+
+    int32_t ret = E_ERR;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int columnIndex = 0;
+        string title;
+        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_TITLE, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetString(columnIndex, title);
+        }
+        int32_t ownerAlbumId = 0;
+        if (resultSet->GetColumnIndex(PhotoColumn::PHOTO_OWNER_ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetInt(columnIndex, ownerAlbumId);
+        }
+
+        string updateSql = generateUpdateSql(isCover, title, ownerAlbumId);
+        ret = rdbStore->ExecuteSql(updateSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
+            return E_HAS_DB_ERROR;
+        }
+    }
+    return ret;
+}
+
+static shared_ptr<NativeRdb::ResultSet> QueryBurst(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const string globNameRule1, const string globNameRule2)
+{
+    string querySql = "SELECT " + MediaColumn::MEDIA_TITLE + ", " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_TYPE + " = " +
+        to_string(static_cast<int32_t>(MEDIA_TYPE_IMAGE)) + " AND " + PhotoColumn::PHOTO_SUBTYPE + " != " +
+        to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND " + PhotoColumn::PHOTO_BURST_KEY +
+        " IS NULL AND (LOWER(" + MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule1 + "') OR LOWER(" +
+        MediaColumn::MEDIA_TITLE + ") GLOB LOWER('" + globNameRule2 + "'))";
+    
+    auto resultSet = rdbStore->QueryByStep(querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("failed to acquire result from visitor query.");
+    }
+    return resultSet;
+}
+
+int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
+{
+    MEDIA_INFO_LOG("Begin UpdateBurstFromGallery");
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryDataManager::UpdateBurstFromGallery");
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+    if (rdbStore_ == nullptr) {
+        MEDIA_DEBUG_LOG("rdbStore_ is nullptr");
+        return E_FAIL;
+    }
+
+    string globNameRule = "IMG_" + generateRegexpMatchForNumber(8) + "_" + generateRegexpMatchForNumber(6) + "_";
+
+    // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx, 'x' represents a number
+    string globMemberStr1 = globNameRule + "BURST" + generateRegexpMatchForNumber(3);
+    string globMemberStr2 = globNameRule + "[0-9]_BURST" + generateRegexpMatchForNumber(3);
+    // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx_COVER, 'x' represents a number
+    string globCoverStr1 = globMemberStr1 + "_COVER";
+    string globCoverStr2 = globMemberStr2 + "_COVER";
+    
+    auto resultSet = QueryBurst(rdbStore_, globCoverStr1, globCoverStr2);
+    int32_t ret = UpdateBurstPhoto(true, rdbStore_, resultSet);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("failed to UpdateBurstPhotoByCovers.");
+        return E_FAIL;
+    }
+
+    resultSet = QueryBurst(rdbStore_, globMemberStr1, globMemberStr2);
+    ret = UpdateBurstPhoto(false, rdbStore_, resultSet);
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("failed to UpdateBurstPhotoByMembers.");
+        return E_FAIL;
+    }
+    MEDIA_INFO_LOG("End UpdateBurstFromGallery");
+    return ret;
+}
 
 int MediaLibraryDataManager::GetThumbnail(const string &uri)
 {
@@ -2216,6 +2483,23 @@ int32_t MediaLibraryDataManager::SetCmdBundleAndDevice(MediaLibraryCommand &outC
     return 0;
 }
 
+int32_t MediaLibraryDataManager::DoTrashAging(shared_ptr<int> countPtr)
+{
+    shared_ptr<int> smartAlbumTrashPtr = make_shared<int>();
+    MediaLibrarySmartAlbumMapOperations::HandleAgingOperation(smartAlbumTrashPtr);
+
+    shared_ptr<int> albumTrashtPtr = make_shared<int>();
+    MediaLibraryAlbumOperations::HandlePhotoAlbum(OperationType::AGING, {}, {}, albumTrashtPtr);
+
+    shared_ptr<int> audioTrashtPtr = make_shared<int>();
+    MediaLibraryAudioOperations::TrashAging(audioTrashtPtr);
+
+    if (countPtr != nullptr) {
+      *countPtr = *smartAlbumTrashPtr + *albumTrashtPtr + *audioTrashtPtr;
+    }
+    return E_SUCCESS;
+}
+
 int32_t MediaLibraryDataManager::RevertPendingByFileId(const std::string &fileId)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
@@ -2326,6 +2610,41 @@ int32_t MediaLibraryDataManager::CheckCloudThumbnailDownloadFinish()
     return thumbnailService_->CheckCloudThumbnailDownloadFinish();
 }
 
+void MediaLibraryDataManager::UploadDBFileInner(int64_t totalFileSize)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr!");
+    std::string tmpPath = MEDIA_DB_DIR + "/rdb/media_library_tmp.db";
+    int32_t errCode = rdbStore->Backup(tmpPath);
+    CHECK_AND_RETURN_LOG(errCode == 0, "rdb backup fail: %{public}d", errCode);
+    std::string destDbPath = "/data/storage/el2/log/logpack/media_library.db";
+    if (totalFileSize < LARGE_FILE_SIZE_MB) {
+        MediaFileUtils::CopyFileUtil(tmpPath, destDbPath);
+        return;
+    }
+
+    std::string destPath = "/data/storage/el2/log/logpack/media_library.db.zip";
+    int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
+    std::string zipFileName = tmpPath;
+    if (MediaFileUtils::IsFileExists(destPath)) {
+        CHECK_AND_RETURN_LOG(MediaFileUtils::DeleteFile(destPath),
+            "Failed to delete destDb file, path:%{private}s", destPath.c_str());
+    }
+    if (MediaFileUtils::IsFileExists(destDbPath)) {
+        CHECK_AND_RETURN_LOG(MediaFileUtils::DeleteFile(destDbPath),
+            "Failed to delete destDb file, path:%{private}s", destDbPath.c_str());
+    }
+    zipFile compressZip = Media::ZipUtil::CreateZipFile(destPath);
+    CHECK_AND_RETURN_LOG(compressZip != nullptr, "open zip file failed.");
+
+    auto errcode = Media::ZipUtil::AddFileInZip(compressZip, zipFileName, Media::KEEP_NONE_PARENT_PATH);
+    CHECK_AND_PRINT_LOG(errcode == 0, "AddFileInZip failed, errCode = %{public}d", errcode);
+
+    Media::ZipUtil::CloseZipFile(compressZip);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("Zip db file success, cost %{public}ld ms", (long)(end - begin));
+}
+
 void MediaLibraryDataManager::SubscriberPowerConsumptionDetection()
 {
 #ifdef DEVICE_STANDBY_ENABLE
@@ -2381,6 +2700,314 @@ static int32_t SearchDateTakenWhenZero(const shared_ptr<MediaLibraryRdbStore> rd
             get<int64_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_MODIFIED, resultSet, TYPE_INT64));
         updateData.emplace(to_string(fileId), to_string(newDateTaken));
     }
+    return E_OK;
+}
+
+int32_t MediaLibraryDataManager::UpdateDateTakenWhenZero()
+{
+    MEDIA_DEBUG_LOG("UpdateDateTakenWhenZero start");
+    CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore_ is nullptr");
+    bool needUpdate = false;
+    unordered_map<string, string> updateData;
+    int32_t ret = SearchDateTakenWhenZero(rdbStore_, needUpdate, updateData);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "SerchDateTaken failed, ret = %{public}d", ret);
+    CHECK_AND_RETURN_RET(needUpdate, E_OK);
+
+    string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + MediaColumn::MEDIA_DATE_TAKEN +
+        " = " + PhotoColumn::MEDIA_DATE_MODIFIED + "," + PhotoColumn::PHOTO_DETAIL_TIME +
+        " = strftime('%Y:%m:%d %H:%M:%S', date_modified/1000, 'unixepoch', 'localtime'), " +
+        PhotoColumn::PHOTO_DATE_DAY + " = strftime( '%Y%m%d', date_modified / 1000, 'unixepoch', 'localtime' ), " +
+        PhotoColumn::PHOTO_DATE_MONTH + " = strftime( '%Y%m', date_modified / 1000, 'unixepoch', 'localtime' ), " +
+        PhotoColumn::PHOTO_DATE_YEAR + " = strftime( '%Y', date_modified / 1000, 'unixepoch', 'localtime' )" +
+        " WHERE " + MediaColumn::MEDIA_DATE_TAKEN + " <= 0";
+    ret = rdbStore_->ExecuteSql(updateSql);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "rdbStore->ExecuteSql failed, ret = %{public}d", ret);
+
+    for (const auto& data : updateData) {
+        ThumbnailService::GetInstance()->UpdateAstcWithNewDateTaken(data.first, data.second, "0");
+    }
+    MEDIA_DEBUG_LOG("UpdateDateTakenWhenZero end");
+    return ret;
+}
+
+static void DealUpdateForDirty(const shared_ptr<NativeRdb::ResultSet> &resultSet, bool fileExist,
+    std::vector<std::string> &dirtyToZeroFileIds, std::vector<std::string> &dirtyToThreeFileIds)
+{
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
+    int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
+    int64_t editTime = GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet);
+
+    // position = 2：update dirty 0
+    // position = 3: if edit, update dirty 3; else update dirty 0
+    if (position == PHOTO_CLOUD_POSITION) {
+        if (fileExist) {
+            MEDIA_WARN_LOG("File exists while position is 2, file_id: %{public}d", fileId);
+            return;
+        } else {
+            dirtyToZeroFileIds.push_back(to_string(fileId));
+        }
+    } else if (position == PHOTO_LOCAL_CLOUD_POSITION) {
+        if (!fileExist) {
+            MEDIA_WARN_LOG("File not exists while position is 3, file_id: %{public}d", fileId);
+            return;
+        } else {
+            if (editTime > 0 || effectMode > 0) {
+                dirtyToThreeFileIds.push_back(to_string(fileId));
+            } else {
+                dirtyToZeroFileIds.push_back(to_string(fileId));
+            }
+        }
+    }
+}
+
+static int32_t DoUpdateDirtyForCloudCloneOperation(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const std::vector<std::string> &fileIds, bool updateToZero)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
+    CHECK_AND_RETURN_RET_INFO_LOG(!fileIds.empty(), E_OK, "No cloud data need to update dirty for clone found.");
+    ValuesBucket updatePostBucket;
+    if (updateToZero) {
+        updatePostBucket.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
+    } else {
+        updatePostBucket.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_FDIRTY));
+    }
+    AbsRdbPredicates updatePredicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    updatePredicates.In(MediaColumn::MEDIA_ID, fileIds);
+    int32_t changeRows = -1;
+    int32_t ret = rdbStore->Update(changeRows, updatePostBucket, updatePredicates);
+    CHECK_AND_RETURN_RET_LOG((ret == E_OK && changeRows > 0), E_FAIL,
+        "Failed to UpdateDirtyForCloudClone, ret: %{public}d, updateRows: %{public}d", ret, changeRows);
+    return ret;
+}
+
+static int32_t DoUpdateDirtyForCloudCloneOperationV2(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const std::vector<std::string> &fileIds)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
+    CHECK_AND_RETURN_RET_INFO_LOG(!fileIds.empty(), E_OK, "No cloud data need to update dirty for clone found.");
+    ValuesBucket updatePostBucket;
+    updatePostBucket.Put(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    AbsRdbPredicates updatePredicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    updatePredicates.In(MediaColumn::MEDIA_ID, fileIds);
+    int32_t changeRows = -1;
+    int32_t ret = rdbStore->Update(changeRows, updatePostBucket, updatePredicates);
+    CHECK_AND_RETURN_RET_LOG((ret == E_OK && changeRows > 0), E_FAIL,
+        "Failed to UpdateDirtyForCloudClone, ret: %{public}d, updateRows: %{public}d", ret, changeRows);
+
+    string updateSql = "UPDATE " + PhotoColumn::TAB_OLD_PHOTOS_TABLE + " SET " +
+        COLUMN_OLD_FILE_ID + " = (" + std::to_string(ERROR_OLD_FILE_ID_OFFSET) + " - " + MediaColumn::MEDIA_ID + ") "+
+        "WHERE " +  MediaColumn::MEDIA_ID + " IN (";
+    vector<ValueObject> bindArgs;
+    for (auto fileId : fileIds) {
+        bindArgs.push_back(fileId);
+        updateSql.append("?,");
+    }
+    updateSql = updateSql.substr(0, updateSql.length() -1);
+    updateSql.append(")");
+    ret = rdbStore->ExecuteSql(updateSql, bindArgs);
+    return ret;
+}
+
+static int32_t DoDeleteHdcDataOperation(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const std::vector<std::string> &fileIds)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
+    CHECK_AND_RETURN_RET_INFO_LOG(!fileIds.empty(), E_OK, "Not need to delete dirty data.");
+    AbsRdbPredicates deletePredicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    deletePredicates.In(MediaColumn::MEDIA_ID, fileIds);
+    int32_t deletedRows = -1;
+    int32_t ret = rdbStore->Delete(deletedRows, deletePredicates);
+    CHECK_AND_RETURN_RET_LOG((ret == E_OK && deletedRows > 0), E_FAIL,
+        "Failed to DoDeleteHdcDataOperation, ret: %{public}d, deletedRows: %{public}d", ret, deletedRows);
+    return ret;
+}
+
+int32_t MediaLibraryDataManager::UpdateDirtyForCloudClone(int32_t version)
+{
+    switch (version) {
+        case UPDATE_DIRTY_CLOUD_CLONE_V1: {
+            return UpdateDirtyForCloudClone();
+        }
+        case UPDATE_DIRTY_CLOUD_CLONE_V2: {
+            return UpdateDirtyForCloudCloneV2();
+        }
+        default: {
+            break;
+        }
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryDataManager::UpdateDirtyForCloudClone()
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore is nullptr");
+    MEDIA_INFO_LOG("MediaLibraryDataManager::UpdateDirtyForCloudClone");
+    const std::string QUERY_DIRTY_FOR_CLOUD_CLONE_INFO =
+        "SELECT p.file_id, p.data, p.position, p.edit_time, p.moving_photo_effect_mode "
+        "FROM Photos p "
+        "JOIN tab_old_photos t ON p.file_id = t.file_id "
+        "WHERE (p.position = 2 OR p.position = 3) AND p.dirty = 1 "
+        "LIMIT " + std::to_string(UPDATE_BATCH_SIZE);
+
+    bool nextUpdate = true;
+    while (nextUpdate && MedialibrarySubscriber::IsCurrentStatusOn()) {
+        shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore_->QuerySql(QUERY_DIRTY_FOR_CLOUD_CLONE_INFO);
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "Failed to query resultSet");
+        int32_t count = -1;
+        int32_t err = resultSet->GetRowCount(count);
+        MEDIA_INFO_LOG("the resultSet size is %{public}d", count);
+        if (count < UPDATE_BATCH_SIZE) {
+            nextUpdate = false;
+        }
+
+        // get file id need to update
+        vector<std::string> dirtyToZeroFileIds;
+        vector<std::string> dirtyToThreeFileIds;
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            std::string dataPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+            dataPath.replace(0, PhotoColumn::FILES_CLOUD_DIR.length(), PhotoColumn::FILES_LOCAL_DIR);
+            CHECK_AND_CONTINUE_INFO_LOG(dataPath != "",
+                "The data path is empty, data path: %{public}s", dataPath.c_str());
+            bool fileExist = MediaFileUtils::IsFileExists(dataPath);
+            DealUpdateForDirty(resultSet, fileExist, dirtyToZeroFileIds, dirtyToThreeFileIds);
+        }
+
+        resultSet->Close();
+        CHECK_AND_PRINT_LOG(DoUpdateDirtyForCloudCloneOperation(rdbStore_, dirtyToZeroFileIds, true) == E_OK,
+            "Failed to DoUpdateDirtyForCloudCloneOperation for dirtyToZeroFileIds");
+        CHECK_AND_PRINT_LOG(DoUpdateDirtyForCloudCloneOperation(rdbStore_, dirtyToThreeFileIds, false) == E_OK,
+            "Failed to DoUpdateDirtyForCloudCloneOperation for dirtyToThreeFileIds");
+    }
+    if (!nextUpdate) {
+        int32_t errCode;
+        shared_ptr<NativePreferences::Preferences> prefs =
+            NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
+        CHECK_AND_RETURN_RET_LOG(prefs, E_FAIL, "Get preferences error: %{public}d", errCode);
+        prefs->PutInt(NO_UPDATE_DIRTY, 1);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryDataManager::UpdateDirtyForCloudCloneV2()
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore is nullptr");
+    MEDIA_INFO_LOG("MediaLibraryDataManager::UpdateDirtyForCloudCloneV2");
+    const std::string QUERY_DIRTY_FOR_CLOUD_CLONE_INFO_V2 =
+        "SELECT p.file_id, p.data, p.position, p.cloud_id "
+        "FROM Photos p "
+        "JOIN tab_old_photos t ON p.file_id = t.file_id "
+        "WHERE p.position = 2 AND COALESCE(cloud_id,'') = '' AND t.old_file_id = -1 "
+        "LIMIT " + std::to_string(UPDATE_BATCH_SIZE);
+    bool nextUpdate = true;
+    while (nextUpdate && MedialibrarySubscriber::IsCurrentStatusOn()) {
+        shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore_->QuerySql(QUERY_DIRTY_FOR_CLOUD_CLONE_INFO_V2);
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "Failed to query resultSet");
+        int32_t count = -1;
+        int32_t err = resultSet->GetRowCount(count);
+        MEDIA_INFO_LOG("the resultSet size is %{public}d", count);
+        if (count < UPDATE_BATCH_SIZE) {
+            nextUpdate = false;
+        }
+        // get file id need to update
+        vector<std::string> dirtyFileIds;
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            std::string dataPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+            dataPath.replace(0, PhotoColumn::FILES_CLOUD_DIR.length(), PhotoColumn::FILES_LOCAL_DIR);
+            bool cond = (dataPath == "" || !MediaFileUtils::IsFileExists(dataPath));
+            CHECK_AND_CONTINUE_INFO_LOG(!cond, "The data path is empty, data path: %{public}s",
+                MediaFileUtils::DesensitizePath(dataPath).c_str());
+
+            int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+            dirtyFileIds.push_back(to_string(fileId));
+        }
+        resultSet->Close();
+        CHECK_AND_PRINT_LOG(DoUpdateDirtyForCloudCloneOperationV2(rdbStore_, dirtyFileIds) == E_OK,
+            "Failed to DoUpdateDirtyForCloudCloneOperationV2 for dirtyFileIds");
+    }
+    if (!nextUpdate) {
+        int32_t errCode;
+        shared_ptr<NativePreferences::Preferences> prefs =
+            NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
+        CHECK_AND_RETURN_RET_LOG(prefs, E_FAIL, "Get preferences error: %{public}d", errCode);
+        prefs->PutInt(NO_UPDATE_DIRTY_CLOUD_CLONE_V2, 1);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryDataManager::UpdateDirtyHdcDataStatus()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
+    CHECK_AND_RETURN_RET_LOG(prefs, E_FAIL, "Get preferences error: %{public}d", errCode);
+    prefs->PutInt(NO_DELETE_DIRTY_HDC_DATA, 1);
+    return E_OK;
+}
+
+void MediaLibraryDataManager::DeleteDirtyFileAndDir(const std::vector<std::string>& deleteFilePaths)
+{
+    for (auto path : deleteFilePaths) {
+        bool deleteFileRet = MediaFileUtils::DeleteFileOrFolder(path, true);
+        std::string thumbsFolder =
+            MediaFileUtils::GetReplacedPathByPrefix(CLOUD_PREFIX_PATH, THUMB_PREFIX_PATH, path);
+        bool deleteThumbsRet = MediaFileUtils::DeleteFileOrFolder(thumbsFolder, false);
+        bool cond = (!deleteFileRet || !deleteThumbsRet);
+        CHECK_AND_PRINT_LOG(!cond, "Clean file failed, path: %{public}s, deleteFileRet: %{public}d, "
+            "deleteThumbsRet: %{public}d, errno: %{public}d",
+            MediaFileUtils::DesensitizePath(path).c_str(),
+            static_cast<int32_t>(deleteFileRet), static_cast<int32_t>(deleteThumbsRet), errno);
+    }
+}
+
+int32_t MediaLibraryDataManager::ClearDirtyHdcData()
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore is nullptr");
+    MEDIA_INFO_LOG("MediaLibraryDataManager::ClearDirtyHdcData");
+    const std::string QUERY_DIRTY_HDC_INFO =
+        "SELECT p.file_id, p.data, p.position, p.cloud_id, p.display_name FROM Photos p "
+        "JOIN tab_old_photos t ON p.file_id = t.file_id "
+        "WHERE p.position = 2  AND COALESCE(cloud_id,'') = '' "
+        "LIMIT " + std::to_string(DELETE_BATCH_SIZE);
+    bool nextDelete = true;
+    while (nextDelete && MedialibrarySubscriber::IsCurrentStatusOn()) {
+        shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore_->QuerySql(QUERY_DIRTY_HDC_INFO);
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "Failed to query resultSet");
+        int32_t count = -1;
+        int32_t err = resultSet->GetRowCount(count);
+        MEDIA_INFO_LOG("the resultSet size is %{public}d", count);
+        if (count < DELETE_BATCH_SIZE) {
+            nextDelete = false;
+        }
+
+        vector<std::string> dirtyFileIds;
+        vector<std::string> deleteUris;
+        vector<std::string> deleteFilePaths;
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            std::string dataPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+            dataPath.replace(0, PhotoColumn::FILES_CLOUD_DIR.length(), PhotoColumn::FILES_LOCAL_DIR);
+            bool cond = (dataPath == "" || MediaFileUtils::IsFileExists(dataPath));
+            CHECK_AND_CONTINUE_INFO_LOG(!cond, "The data path is empty or file exist, data path: %{public}s",
+                MediaFileUtils::DesensitizePath(dataPath).c_str());
+
+            int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+            dirtyFileIds.push_back(to_string(fileId));
+            string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+            string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+            string uri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
+                MediaFileUtils::GetExtraUri(displayName, filePath));
+            deleteUris.push_back(uri);
+            deleteFilePaths.push_back(filePath);
+        }
+        resultSet->Close();
+        DeleteDirtyFileAndDir(deleteFilePaths);
+        CHECK_AND_RETURN_RET_LOG(DoDeleteHdcDataOperation(rdbStore_, dirtyFileIds) == E_OK,
+            E_FAIL, "Failed to DoDeleteHdcDataOperation for dirtyFileIds");
+        MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore_, deleteUris);
+    }
+
+    CHECK_AND_RETURN_RET(nextDelete, UpdateDirtyHdcDataStatus());
     return E_OK;
 }
 
@@ -2473,6 +3100,68 @@ int32_t MediaLibraryDataManager::UpdateMediaSizeFromStorage()
 
     prefs->PutInt(NO_UPDATE_EDITDATA_SIZE, 1);
     prefs->FlushSync();
+    return E_OK;
+}
+
+static int32_t DoUpdateBurstCoverLevelOperation(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const std::vector<std::string> &fileIdVec)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
+    AbsRdbPredicates updatePredicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    updatePredicates.In(MediaColumn::MEDIA_ID, fileIdVec);
+    updatePredicates.BeginWrap();
+    updatePredicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, WRONG_VALUE);
+    updatePredicates.Or();
+    updatePredicates.IsNull(PhotoColumn::PHOTO_BURST_COVER_LEVEL);
+    updatePredicates.EndWrap();
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::COVER));
+
+    int32_t changedRows = -1;
+    int32_t ret = rdbStore->Update(changedRows, values, updatePredicates);
+    CHECK_AND_RETURN_RET_LOG((ret == E_OK && changedRows > 0), E_FAIL,
+        "Failed to UpdateBurstCoverLevelFromGallery, ret: %{public}d, updateRows: %{public}d", ret, changedRows);
+    MEDIA_INFO_LOG("UpdateBurstCoverLevelFromGallery success, changedRows: %{public}d, fileIdVec.size(): %{public}d.",
+        changedRows, static_cast<int32_t>(fileIdVec.size()));
+    return ret;
+}
+
+int32_t MediaLibraryDataManager::UpdateBurstCoverLevelFromGallery()
+{
+    MEDIA_INFO_LOG("UpdateBurstCoverLevelFromGallery start");
+    CHECK_AND_RETURN_RET_LOG(refCnt_.load() > 0, E_FAIL, "MediaLibraryDataManager is not initialized");
+    CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore_ is nullptr");
+
+    const std::vector<std::string> columns = { MediaColumn::MEDIA_ID };
+    AbsRdbPredicates predicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, WRONG_VALUE);
+    predicates.Or();
+    predicates.IsNull(PhotoColumn::PHOTO_BURST_COVER_LEVEL);
+    predicates.EndWrap();
+    predicates.Limit(BATCH_QUERY_NUMBER);
+
+    bool nextUpdate = true;
+    while (nextUpdate && MedialibrarySubscriber::IsCurrentStatusOn()) {
+        auto resultSet = rdbStore_->Query(predicates, columns);
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "Failed to query resultSet");
+        int32_t rowCount = 0;
+        int32_t ret = resultSet->GetRowCount(rowCount);
+        CHECK_AND_RETURN_RET_LOG((ret == E_OK && rowCount >= 0), E_FAIL, "Failed to GetRowCount");
+        CHECK_AND_RETURN_RET_INFO_LOG(rowCount != 0, E_OK, "No need to UpdateBurstCoverLevelFromGallery.");
+
+        if (rowCount < BATCH_QUERY_NUMBER) {
+            nextUpdate = false;
+        }
+        std::vector<std::string> fileIdVec;
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            std::string fileId = GetStringVal(MediaColumn::MEDIA_ID, resultSet);
+            fileIdVec.push_back(fileId);
+        }
+        resultSet->Close();
+        CHECK_AND_RETURN_RET_LOG(DoUpdateBurstCoverLevelOperation(rdbStore_, fileIdVec) == E_OK,
+            E_FAIL, "Failed to DoUpdateBurstCoverLevelOperation");
+    }
     return E_OK;
 }
 

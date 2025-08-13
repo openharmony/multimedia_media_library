@@ -61,14 +61,6 @@
                 "resource": "$profile:backup_config"
             }
         ]
-      },
-      {
-        "srcEntrance": "./ets/ServiceExtAbility/ServiceExtAbility.ts",
-        "name": "ServiceExtAbility",
-        "icon": "$media:icon",
-        "description": "service",
-        "type": "service",
-        "exported": true
       }
     ],
     "requestPermissions": [

@@ -26,11 +26,9 @@
 #include "ipc_skeleton.h"
 #include "dfx_worker.h"
 #include "dfx_cloud_const.h"
-#include "medialibrary_base_bg_processor.h"
 
 namespace OHOS {
 namespace Media {
-#define EXPORT __attribute__ ((visibility ("default")))
 
 struct DeleteBehaviorData {
     std::map<std::string, std::string> displayNames;
@@ -60,7 +58,7 @@ public:
     std::shared_ptr<DfxReporter> dfxReporter_;
 };
 
-class DfxManager : public MediaLibraryBaseBgProcessor {
+class DfxManager {
 public:
     DfxManager();
     ~DfxManager();
@@ -79,8 +77,8 @@ public:
         const DeleteBehaviorData &deleteBehaviorData = {});
     void HandleDeleteBehaviors();
     void HandleNoPermmison(int32_t type, int32_t object, int32_t error);
-    bool HandleHalfDayMissions();
-    bool HandleTwoDayMissions();
+    void HandleHalfDayMissions();
+    void HandleTwoDayMissions();
     void HandleAdaptationToMovingPhoto(const std::string &appName, bool adapted);
     void IsDirectoryExist(const std::string &dirName);
     void CheckStatus();
@@ -92,14 +90,8 @@ public:
     void HandleUpdateUploadDetailError(int32_t error);
     void HandleSyncEnd(const int32_t stopReason = 0);
     void HandleReportSyncFault(const std::string& position, const SyncFaultEvent& event);
-    bool HandleOneWeekMissions();
-
-    bool HandleReportTaskCompleteMissions();
-
+    void HandleOneWeekMissions();
     void HandleAccurateRefreshTimeOut(const AccurateRefreshDfxDataPoint& reportData);
-
-    int32_t Start(const std::string &taskExtra) override;
-    int32_t Stop(const std::string &taskExtra) override;
 
 private:
     void Init();
@@ -126,8 +118,6 @@ private:
     std::vector<std::atomic<uint64_t>> uploadMetaErr_;
     CloudSyncInfo syncInfo_;
     std::string taskId_;
-
-    const std::string taskName_ = DFX_HANDLE_HALF_DAY_MISSIONS;
 };
 } // namespace Media
 } // namespace OHOS

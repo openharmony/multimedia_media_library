@@ -36,8 +36,6 @@ ohos_unittest("medialibrary_rdb_test") {
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/include/bg_task_processor",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
   ]
 
@@ -45,7 +43,6 @@ ohos_unittest("medialibrary_rdb_test") {
 
   sources = [
     "${MEDIALIB_UTILS_PATH}/src/settings_data_manager.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/medialibrary_base_bg_processor.cpp",
     "${MEDIALIB_CLOUD_SYNC_PATH}/src/cloud_sync_helper.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/moving_photo_processor.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
@@ -60,7 +57,6 @@ ohos_unittest("medialibrary_rdb_test") {
     "./src/moving_photo_processor_test.cpp",
   ]
   deps = [
-    "${MEDIALIB_BUSINESS_PATH}/media_bgtask_mgr:media_bgtask_mgr_client",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
     "${MEDIALIB_UTILS_PATH}:permission_utils",

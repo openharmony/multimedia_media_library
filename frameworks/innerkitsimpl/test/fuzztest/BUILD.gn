@@ -16,17 +16,6 @@ import("//foundation/multimedia/media_library/media_library.gni")
 group("media_library_fuzztest") {
   testonly = true
   deps = [
-    "media_bgtask_aging_task_fuzzer:MediaBgtaskAgingTaskFuzzTest",
-    "mediabgtaskmgrappbgtaskschedulestub_fuzzer:MediaBgtaskMgrAppBgtaskScheduleStubFuzzTest",
-    "mediabgtaskmgrappopsconnectability_fuzzer:MediaBgtaskMgrAppOpsConnectAbilityFuzzTest",
-    "mediabgtaskmgrsaopsconnection_fuzzer:MediaBgtaskMgrSaOpsConnectionFuzzTest",
-    "mediabgtaskmgrschedulepolicy_fuzzer:MediaBgtaskMgrSchedulePolicyFuzzTest",
-    "mediabgtaskmgrscheduleservice_fuzzer:MediaBgtaskMgrScheduleServiceFuzzTest",
-    "mediabgtaskmgrscheduleserviceability_fuzzer:MediaBgtaskMgrScheduleServiceAbilityFuzzTest",
-    "mediabgtaskmgrsystemstatemgr_fuzzer:MediaBgtaskMgrSystemStateMgrFuzzTest",
-    "mediabgtaskmgrtaskinfomgr_fuzzer:MediaBgtaskMgrTaskInfoMgrFuzzTest",
-    "mediabgtaskmgrtaskscheduleparammanager_fuzzer:MediaBgtaskMgrTaskScheduleParamManagerFuzzTest",
-    "mediabgtaskmgrutils_fuzzer:MediaBgtaskMgrUtilsFuzzTest",
     "medialibraryappstateobserver_fuzzer:MediaLibraryAppstateObserverFuzzTest",
     "medialibraryappuripermissionoperations_fuzzer:MediaLibraryAppUriPermissionOperationsFuzzTest",
     "medialibraryappurisensitiveoperations_fuzzer:MediaLibraryAppUriSensitiveOperationsFuzzTest",
@@ -45,6 +34,7 @@ group("media_library_fuzztest") {
     "medialibrarycloudmediaservice_fuzzer:MediaLibraryCloudMediaServiceFuzzTest",
     "medialibrarycloudmediasyncdataconvert_fuzzer:MediaLibraryCloudMediaSyncDataConvertFuzzTest",
     "medialibrarycloudmediavo_fuzzer:MediaLibraryCloudMediaVoFuzzTest",
+    "medialibraryclouduploadchecker_fuzzer:MediaLibraryCloudUploadCheckerFuzzTest",
     "medialibrarycommon_fuzzer:MediaLibraryCommonFuzzTest",
     "medialibrarydfx_fuzzer:MediaLibraryDfxFuzzTest",
     "medialibraryduplicatephotooperation_fuzzer:MediaLibraryDuplicatePhotoOperationFuzzTest",
@@ -82,7 +72,6 @@ group("media_library_fuzztest") {
     "medialibrarypermission_fuzzer:MediaLibraryPermissionFuzzTest",
     "medialibraryrefreshmanager_fuzzer:MediaLibraryRefreshManagerFuzzTest",
     "medialibraryrestore_fuzzer:MediaLibraryRestoreFuzzTest",
-    "medialibraryserviceextension_fuzzer:MediaLibraryServiceExtensionFuzzTest",
     "medialibrarythumbnail_fuzzer:MediaLibraryThumbnailFuzzTest",
     "medialibraryuripermissionoperations_fuzzer:MediaLibraryUriPermissionOperationsFuzzTest",
     "medialibraryurisensitiveoperations_fuzzer:MediaLibraryUriSensitiveOperationsFuzzTest",

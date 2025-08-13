@@ -112,7 +112,7 @@ public:
     static int32_t TrashPhotos(MediaLibraryCommand &cmd);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
-    EXPORT static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd);
+    static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd);
     EXPORT static int32_t Get500FileIdsAndPathS(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         std::vector<std::string> &fileIds, std::vector<std::string> &filePaths, std::string startFileId, bool &hasMore);
     EXPORT static int32_t ConvertPhotoCloudPathToLocalData(std::string retrievedPath,
