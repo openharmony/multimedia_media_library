@@ -994,6 +994,7 @@ int32_t MediaAlbumsService::DismissAssets(ChangeRequestDismissAssetsDto &dismiss
         cmd.SetDataSharePred(updatePredicates);
         cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicateUpdate.GetWhereClause());
         cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicateUpdate.GetWhereArgs());
+        cmd.SetApiParam(MEDIA_OPERN_KEYWORD, UPDATE_DISMISS_ASSET);
         auto dataManager = MediaLibraryDataManager::GetInstance();
         dataManager->HandleAnalysisFaceUpdate(cmd, value, updatePredicates);
     }
