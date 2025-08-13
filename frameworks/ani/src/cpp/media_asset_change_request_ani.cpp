@@ -817,6 +817,7 @@ ani_object MediaAssetChangeRequestAni::getAsset(ani_env *env, ani_object aniObje
     auto aniContext = std::make_unique<MediaAssetChangeRequestAniContext>();
     aniContext->objectInfo = Unwrap(env, aniObject);
     auto changeRequest = aniContext->objectInfo;
+    CHECK_COND_WITH_RET_MESSAGE(env, changeRequest != nullptr, nullptr, "changeRequest is null");
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
  
@@ -989,6 +990,7 @@ ani_object MediaAssetChangeRequestAni::AddMovingPhotoVideoResourceByFileUri(ani_
     auto aniContext = make_unique<MediaAssetChangeRequestAniContext>();
     aniContext->objectInfo = MediaAssetChangeRequestAni::Unwrap(env, aniObject);
     auto changeRequest = aniContext->objectInfo;
+    CHECK_COND_WITH_RET_MESSAGE(env, changeRequest != nullptr, nullptr, "changeRequest is null");
 
     CHECK_COND(env, ParseFileUri(env, fileUri, MediaType::MEDIA_TYPE_VIDEO, aniContext), OHOS_INVALID_PARAM_CODE);
     if (!MediaFileUtils::CheckMovingPhotoVideo(aniContext->realPath)) {
@@ -1011,6 +1013,7 @@ ani_object MediaAssetChangeRequestAni::AddMovingPhotoVideoResourceByArrayBuffer(
     auto aniContext = make_unique<MediaAssetChangeRequestAniContext>();
     aniContext->objectInfo = MediaAssetChangeRequestAni::Unwrap(env, aniObject);
     auto changeRequest = aniContext->objectInfo;
+    CHECK_COND_WITH_RET_MESSAGE(env, changeRequest != nullptr, nullptr, "changeRequest is null");
 
     std::unique_ptr<uint8_t[]> buffer;
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetArrayBuffer(
@@ -1036,6 +1039,7 @@ ani_object MediaAssetChangeRequestAni::addResourceByFileUri(ani_env *env, ani_ob
     auto aniContext = make_unique<MediaAssetChangeRequestAniContext>();
     aniContext->objectInfo = MediaAssetChangeRequestAni::Unwrap(env, aniObject);
     auto changeRequest = aniContext->objectInfo;
+    CHECK_COND_WITH_RET_MESSAGE(env, changeRequest != nullptr, nullptr, "changeRequest is null");
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
 
@@ -1065,6 +1069,7 @@ ani_object MediaAssetChangeRequestAni::addResourceByArrayBuffer(ani_env *env, an
     auto aniContext = make_unique<MediaAssetChangeRequestAniContext>();
     aniContext->objectInfo = MediaAssetChangeRequestAni::Unwrap(env, aniObject);
     auto changeRequest = aniContext->objectInfo;
+    CHECK_COND_WITH_RET_MESSAGE(env, changeRequest != nullptr, nullptr, "changeRequest is null");
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
 
@@ -1097,6 +1102,7 @@ ani_object MediaAssetChangeRequestAni::addResourceByPhotoProxy(ani_env *env, ani
     auto aniContext = make_unique<MediaAssetChangeRequestAniContext>();
     aniContext->objectInfo = MediaAssetChangeRequestAni::Unwrap(env, aniObject);
     auto changeRequest = aniContext->objectInfo;
+    CHECK_COND_WITH_RET_MESSAGE(env, changeRequest != nullptr, nullptr, "changeRequest is null");
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
 
