@@ -84,9 +84,9 @@ private:
     void QueryDatabaseRecords(std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
         int32_t totalNumber, std::vector<CloneDbInfo> &mediaDbInfo);
     bool IsPhotoVideoDatabase(const std::string &dbName);
-    void BuildPhotoVideoDbMap(const std::vector<CloneDbInfo> &mediaDbInfo);
-    void BuildAudioDbMap(const std::vector<CloneDbInfo> &mediaDbInfo);
-    void BuildDbInfoMap(const std::string &dbName, const std::vector<CloneDbInfo> &mediaDbInfo);
+    void BuildPhotoVideoDbMap(std::vector<CloneDbInfo> &mediaDbInfo);
+    void BuildAudioDbMap(std::vector<CloneDbInfo> &mediaDbInfo);
+    void BuildDbInfoMap(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo);
     void GetCloneDbInfos(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo);
     bool HasSameFileForDualClone(FileInfo &fileInfo);
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
