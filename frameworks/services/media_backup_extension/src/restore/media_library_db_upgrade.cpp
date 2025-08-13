@@ -187,7 +187,7 @@ void MediaLibraryDbUpgrade::ProcessOcrClassifyAlbum(const std::string &newAlbumN
         }
     }
     std::string selectOcrSql = SQL_SELECT_CLASSIFY_OCR + subOcrSql + ")) ";
-    std::string insertMappingSql = selectOcrSql +   
+    std::string insertMappingSql = selectOcrSql +
         "INSERT INTO AnalysisPhotoMap (map_album, map_asset) "
         "SELECT album_id, map_asset FROM TempResult;";
     std::vector<NativeRdb::ValueObject> params = {};
