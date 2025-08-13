@@ -104,6 +104,10 @@ private:
     std::unordered_set<std::string> GetCommonColumns(const std::string &tableName);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
         int64_t &rowNum);
+    
+    void AddSpecialAlbum();
+    void AddSelfieAlbum();
+    void AddUserCommentAlbum();
 
 private:
     int32_t sceneCode_{-1};
