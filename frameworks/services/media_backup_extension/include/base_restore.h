@@ -187,6 +187,8 @@ protected:
     void SetParameterForBackup();
     void StopParameterForBackup();
     nlohmann::json GetBackupErrorInfoJson();
+    void SetParameterForRestore();
+    void StopParameterForRestore();
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};
