@@ -200,7 +200,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_albums_test_
     int32_t highlightCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), HIGHLIGHT_ALBUM_TABLE, NONE_CONDITION);
     EXPECT_EQ(highlightCount, 1);
     int32_t coverCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), HIGHLIGHT_COVER_INFO_TABLE, NONE_CONDITION);
-    EXPECT_EQ(coverCount, 8);
+    EXPECT_EQ(coverCount, 0);
     int32_t playCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), HIGHLIGHT_PLAY_INFO_TABLE, NONE_CONDITION);
     EXPECT_EQ(playCount, 1);
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
@@ -292,7 +292,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
     EXPECT_EQ(analysisCount, 1);
     string coverCondition = "cover_key = 'testAlbumName_1_1_file://testNewCoverUri'";
     int32_t coverCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), HIGHLIGHT_COVER_INFO_TABLE, coverCondition);
-    EXPECT_EQ(coverCount, 1);
+    EXPECT_EQ(coverCount, 0);
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
 

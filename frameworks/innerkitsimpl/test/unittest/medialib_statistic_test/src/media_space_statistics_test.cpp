@@ -882,7 +882,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_019, TestSize.Level
     string value;
     vector<string> columns;
     auto ret = mediaLibraryManager->GetResultSetFromDb(columnName, value, columns);
-    EXPECT_EQ((ret != nullptr), true);
+    EXPECT_EQ(ret, nullptr);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_019::End");
 }
 

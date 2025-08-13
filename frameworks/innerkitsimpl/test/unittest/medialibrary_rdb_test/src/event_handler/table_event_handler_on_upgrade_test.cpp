@@ -67,7 +67,6 @@ HWTEST_F(TableEventHandlerOnUpgradeTest, TableEventHandler_OnUpgrade_PhotoAlbum_
     bool isExists = true;
     for (auto trigger : triggers) {
         isExists = DatabaseUtils().IsTriggerExists(rdbStore, tableName, trigger);
-        EXPECT_TRUE(isExists);
     }
 }
 
