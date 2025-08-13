@@ -92,6 +92,8 @@ private:
     std::vector<FileInfo> audioInfos_;
     std::vector<CloneDbInfo> photoDbInfo_;
     std::vector<CloneDbInfo> audioDbInfo_;
+    std::unordered_map<std::string, CloneDbInfo*> photoDbMap_;
+    std::unordered_map<std::string, CloneDbInfo*> audioDbMap_;
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     PhotoAlbumDao photoAlbumDao_;
     PhotoAlbumRestore photoAlbumRestore_;
