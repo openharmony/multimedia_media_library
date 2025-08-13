@@ -224,7 +224,6 @@ void AssetInsertOperation()
     cmd.SetValueBucket(GetAssetValuesBucket(assetInfo));
     assetRefresh.Insert(cmd, outRowId);
     assetRefresh.RefreshAlbum();
-    assetRefresh.Notify();
 }
 
 void AssetBatchInsert()
@@ -239,7 +238,6 @@ void AssetBatchInsert()
     SetAssetValuesBuckets(valuesBuckets, assetInfo);
     assetRefresh.BatchInsert(cmd, insertChangedRows, valuesBuckets);
     assetRefresh.RefreshAlbum();
-    assetRefresh.Notify();
 }
 
 void AssetUpdate()
@@ -254,7 +252,6 @@ void AssetUpdate()
     value.PutInt(PhotoColumn::MEDIA_DATE_TRASHED, dataTrashTime);
     assetRefresh.Update(changedRow, value, predicates);
     assetRefresh.RefreshAlbum();
-    assetRefresh.Notify();
 }
 
 void AssetLogicalDeleteByCmd()
@@ -270,7 +267,6 @@ void AssetLogicalDeleteByCmd()
     predicates->SetWhereArgs({to_string(PHOTO_ALBUM_SUB_TYPE[instIndex])});
     assetRefresh.LogicalDeleteReplaceByUpdate(cmd, changeRows);
     assetRefresh.RefreshAlbum();
-    assetRefresh.Notify();
 }
 
 void AssetExecuteSql()
@@ -281,7 +277,6 @@ void AssetExecuteSql()
     assetRefresh.Init();
     assetRefresh.ExecuteSql(deleteSql, GetRdbOperation());
     assetRefresh.RefreshAlbum();
-    assetRefresh.Notify();
 }
 
 void AlbumInsertOperation()
@@ -294,7 +289,6 @@ void AlbumInsertOperation()
     cmd.SetTableName(ALBUM_TABLE_NAME);
     cmd.SetValueBucket(GetAlbumValuesBucket(albumInfo));
     albumRefresh.Insert(cmd, outRowId);
-    albumRefresh.Notify();
 }
 
 void AlbumLogicalDeleteByCmd()
@@ -310,7 +304,6 @@ void AlbumLogicalDeleteByCmd()
     int32_t instIndex = provider->ConsumeIntegralInRange<int32_t>(0, PHOTO_ALBUM_SUB_TYPE.size()-1);
     predicates->SetWhereArgs({to_string(PHOTO_ALBUM_SUB_TYPE[instIndex])});
     albumRefresh.LogicalDeleteReplaceByUpdate(cmd, deletedRows);
-    albumRefresh.Notify();
 }
 
 void AlbumLogicalDeleteByPredicates()
@@ -322,7 +315,6 @@ void AlbumLogicalDeleteByPredicates()
     int32_t instIndex = provider->ConsumeIntegralInRange<int32_t>(0, PHOTO_ALBUM_SUB_TYPE.size()-1);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PHOTO_ALBUM_SUB_TYPE[instIndex]));
     albumRefresh.LogicalDeleteReplaceByUpdate(predicates, deletedRows);
-    albumRefresh.Notify();
 }
 
 void AlbumBatchInsert()
@@ -337,7 +329,6 @@ void AlbumBatchInsert()
     std::vector<NativeRdb::ValuesBucket> valuesBuckets;
     SetAlbumValuesBuckets(valuesBuckets, albumInfo);
     albumRefresh.BatchInsert(cmd, insertChangedRows, valuesBuckets);
-    albumRefresh.Notify();
 }
 
 void AlbumUpdate()
@@ -350,7 +341,6 @@ void AlbumUpdate()
     cmd.SetTableName(ALBUM_TABLE_NAME);
     cmd.SetValueBucket(GetAlbumValuesBucket(albumInfo));
     albumRefresh.Update(cmd, changedRows);
-    albumRefresh.Notify();
 }
 
 void AlbumExecuteSql()
@@ -374,7 +364,6 @@ void AlbumExecuteSql()
     rdbPredicatesAlbum.EqualTo(PhotoAlbumColumns::ALBUM_ID, oldAlbumId);
     albumRefresh.Init(rdbPredicatesAlbum);
     albumRefresh.ExecuteSql(deleteSql, operation);
-    albumRefresh.Notify();
 }
 
 void AlbumExecuteForLastInsertedRowId()
@@ -385,7 +374,6 @@ void AlbumExecuteForLastInsertedRowId()
     albumRefresh.Init();
     vector<NativeRdb::ValueObject> valueObjects = {to_string(provider->ConsumeIntegralInRange<int32_t>(0, MAX_ID))};
     albumRefresh.ExecuteForLastInsertedRowId(insertSql, valueObjects, operation);
-    albumRefresh.Notify();
 }
 
 static void AssetAccurateRefreshFuzzerTest()
