@@ -998,19 +998,6 @@ static void SetFileAssetByIdV9(int32_t id, const string &networkId, MediaLibrary
 }
 #endif
 
-static bool CheckTitleCompatible(MediaLibraryAsyncContext* context)
-{
-    if (!context->isCreateByComponent) {
-        return true;
-    }
-    bool hasTitleParam = false;
-    const string title = context->valuesBucket.Get(MediaColumn::MEDIA_TITLE, hasTitleParam);
-    if (!hasTitleParam) {
-        return true;
-    }
-    return MediaFileUtils::CheckTitleCompatible(title) == E_OK;
-}
-
 static void PhotoAccessCreateAssetExecute(MediaLibraryAsyncContext* context)
 {
     MediaLibraryTracer tracer;
@@ -1022,10 +1009,6 @@ static void PhotoAccessCreateAssetExecute(MediaLibraryAsyncContext* context)
     }
 
     if (!CheckDisplayNameParams(context)) {
-        context->error = JS_E_DISPLAYNAME;
-        return;
-    }
-    if (!CheckTitleCompatible(context)) {
         context->error = JS_E_DISPLAYNAME;
         return;
     }
