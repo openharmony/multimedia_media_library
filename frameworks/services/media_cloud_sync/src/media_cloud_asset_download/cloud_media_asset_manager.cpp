@@ -54,7 +54,6 @@
 #include "thumbnail_service.h"
 #include "cloud_media_asset_uri.h"
 #include "dfx_const.h"
-#include "medialibrary_base_bg_processor.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -309,11 +308,10 @@ int32_t CloudMediaAssetManager::CancelDownloadCloudAsset()
 
 void CloudMediaAssetManager::StartDeleteCloudMediaAssets()
 {
-    MEDIA_INFO_LOG("Begin StartDeleteCloudMediaAssets");
     TaskDeleteState expect = TaskDeleteState::IDLE;
     if (doDeleteTask_.compare_exchange_strong(expect, TaskDeleteState::BACKGROUND_DELETE)) {
         MEDIA_INFO_LOG("start delete cloud media assets task.");
-        DeleteAllCloudMediaAssetsAsync(true);
+        DeleteAllCloudMediaAssetsAsync();
     }
 }
 
@@ -393,13 +391,10 @@ int32_t CloudMediaAssetManager::DeleteEditdata(const std::string &path)
 void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data)
 {
     std::lock_guard<std::mutex> lock(deleteMutex_);
+    MEDIA_INFO_LOG("enter DeleteAllCloudMediaAssetsOperation");
     MediaLibraryTracer tracer;
     tracer.Start("DeleteAllCloudMediaAssetsOperation");
 
-    auto *taskData = static_cast<DeleteAllCloudMediaAssetsData *>(data);
-    CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to get DeleteAllCloudMediaAssetsData.");
-    bool needReportSchedule = taskData->needReportSchedule_;
-    MEDIA_INFO_LOG("enter DeleteAllCloudMediaAssetsOperation, needReportSchedule: %{public}d.", needReportSchedule);
     std::vector<std::string> fileIds;
     fileIds.reserve(BATCH_DELETE_LIMIT_COUNT);
     std::vector<std::string> paths;
@@ -436,23 +431,16 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
         this_thread::sleep_for(chrono::milliseconds(SLEEP_FOR_DELETE));
     }
     doDeleteTask_.store(TaskDeleteState::IDLE);
-    if (needReportSchedule) {
-        MediaLibraryBaseBgProcessor::RemoveTaskName(DELETE_CLOUD_MEDIA_ASSETS);
-        MediaLibraryBaseBgProcessor::ReportTaskComplete(DELETE_CLOUD_MEDIA_ASSETS);
-    }
     MEDIA_INFO_LOG("exit DeleteAllCloudMediaAssetsOperation");
 }
 
-void CloudMediaAssetManager::DeleteAllCloudMediaAssetsAsync(bool needReportSchedule)
+void CloudMediaAssetManager::DeleteAllCloudMediaAssetsAsync()
 {
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "Can not get asyncWorker");
 
-    auto *taskData = new (std::nothrow) DeleteAllCloudMediaAssetsData(needReportSchedule);
-    CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to alloc async data for delete cloud media assets data");
-
     shared_ptr<MediaLibraryAsyncTask> deleteAsyncTask =
-        make_shared<MediaLibraryAsyncTask>(DeleteAllCloudMediaAssetsOperation, taskData);
+        make_shared<MediaLibraryAsyncTask>(DeleteAllCloudMediaAssetsOperation, nullptr);
     CHECK_AND_RETURN_LOG(deleteAsyncTask != nullptr, "Can not get deleteAsyncTask");
 
     asyncWorker->AddTask(deleteAsyncTask, true);
@@ -801,7 +789,7 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMediaEx(CloudMediaRetain
 
     MEDIA_INFO_LOG("start delete cloud media assets task.");
     doDeleteTask_.store(TaskDeleteState::ACTIVE_DELETE);
-    DeleteAllCloudMediaAssetsAsync(false);
+    DeleteAllCloudMediaAssetsAsync();
 
     CHECK_AND_RETURN_RET_WARN_LOG(updateRet == E_OK, updateRet,
         "exit ForceRetainDownloadCloudMediaEx, Type: %{public}d, updateRet: %{public}d.", retainTypeInt, updateRet);

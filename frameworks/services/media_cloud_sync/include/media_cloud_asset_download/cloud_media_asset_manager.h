@@ -54,11 +54,10 @@ public:
     EXPORT int32_t GetDownloadType();
     EXPORT bool SetBgDownloadPermission(const bool &flag);
     EXPORT void CheckStorageAndRecoverDownloadTask();
-    EXPORT static void DeleteAllCloudMediaAssetsAsync(bool needReportSchedule);
+    EXPORT static void DeleteAllCloudMediaAssetsAsync();
     EXPORT static void StartDeleteCloudMediaAssets();
     EXPORT static void StopDeleteCloudMediaAssets();
     EXPORT void RestartForceRetainCloudAssets();
-    EXPORT static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
 
 private:
     CloudMediaAssetManager() {}
@@ -66,18 +65,11 @@ private:
     CloudMediaAssetManager(const CloudMediaAssetManager &manager) = delete;
     const CloudMediaAssetManager &operator=(const CloudMediaAssetManager &manager) = delete;
 
-    class DeleteAllCloudMediaAssetsData : public AsyncTaskData {
-    public:
-        DeleteAllCloudMediaAssetsData(bool needReportSchedule) : needReportSchedule_(needReportSchedule) {};
-        ~DeleteAllCloudMediaAssetsData() override = default;
-
-        bool needReportSchedule_ {false};
-    };
-
     EXPORT int32_t CheckDownloadTypeOfTask(const CloudMediaDownloadType &type);
     EXPORT static int32_t DeleteBatchCloudFile(const std::vector<std::string> &fileIds);
     EXPORT static int32_t ReadyDataForDelete(std::vector<std::string> &fileIds, std::vector<std::string> &paths,
         std::vector<std::string> &dateTakens);
+    static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
     EXPORT int32_t UpdateCloudMediaAssets(CloudMediaRetainType retainType = CloudMediaRetainType::RETAIN_FORCE);
     EXPORT int32_t DeleteEmptyCloudAlbums();
     EXPORT int32_t UpdateLocalAlbums();
