@@ -196,69 +196,142 @@ void OthersCloneRestore::HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> 
     resultSet->Close();
 }
 
-void OthersCloneRestore::GetCloneDbInfos(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo)
+std::string OthersCloneRestore::BuildDbPath(const std::string &dbName)
 {
-    std::string dbPath = OTHER_CLONE_DB_PATH + dbName;
     if (dbName == PHOTO_SD_MEDIA_INFO_DB_NAME || dbName == VIDEO_SD_MEDIA_INFO_DB_NAME) {
-        dbPath = OTHER_CLONE_FILE_ROOT_PATH + "/" + dbName;
+        return OTHER_CLONE_FILE_ROOT_PATH + "/" + dbName;
     }
+    return OTHER_CLONE_DB_PATH + dbName;
+}
+
+bool OthersCloneRestore::CheckDbExists(const std::string &dbPath, const std::string &dbName)
+{
     if (access(dbPath.c_str(), F_OK) != 0) {
         MEDIA_ERR_LOG("Init rdb not exists, dbName = %{public}s", dbName.c_str());
-        return;
+        return false;
     }
+    return true;
+}
+
+std::shared_ptr<NativeRdb::RdbStore> OthersCloneRestore::InitializeDatabase(
+    const std::string &dbName, const std::string &dbPath)
+{
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb;
     int32_t initErr = BackupDatabaseUtils::InitDb(mediaRdb, dbName, dbPath, mediaAppName_, false);
-    CHECK_AND_RETURN_LOG(mediaRdb != nullptr,
-        "Init rdb fail, dbName = %{public}s, err = %{public}d",
-        dbName.c_str(), initErr);
+    if (mediaRdb == nullptr) {
+        MEDIA_ERR_LOG("Init rdb fail, dbName = %{public}s, err = %{public}d", dbName.c_str(), initErr);
+        return nullptr;
+    }
 
+    return mediaRdb;
+}
+
+int32_t OthersCloneRestore::GetTotalRecordCount(std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
+    const std::string &dbName)
+{
     std::string selectTotalCloneMediaNumber = "SELECT count(1) AS count FROM mediainfo";
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb, selectTotalCloneMediaNumber, CUSTOM_COUNT);
     MEDIA_INFO_LOG("dbName = %{public}s, totalNumber = %{public}d", dbName.c_str(), totalNumber);
+    return totalNumber;
+}
 
+void OthersCloneRestore::ProcessBatch(std::shared_ptr<NativeRdb::RdbStore> mediaRdb, int32_t offset,
+    std::vector<CloneDbInfo> &mediaDbInfo)
+{
+    std::vector<CloneDbInfo> batchResults;
+    HandleSelectBatch(mediaRdb, offset, sceneCode_, batchResults);
+    CloneInfoPushBack(mediaDbInfo, batchResults);
+    batchResults.clear();
+    batchResults.shrink_to_fit();
+}
 
+void OthersCloneRestore::ProcessChunk(std::shared_ptr<NativeRdb::RdbStore> mediaRdb, int32_t chunkStart,
+    int32_t chunkEnd, std::vector<CloneDbInfo> &mediaDbInfo)
+{
     const int32_t BATCH_SIZE = 1000;
+    int32_t batchesInChunk = (chunkEnd - chunkStart + BATCH_SIZE - 1) / BATCH_SIZE;
+    for (int32_t batchIdx = 0; batchIdx < batchesInChunk; ++batchIdx) {
+        int32_t offset = chunkStart + batchIdx * BATCH_SIZE;
+        ProcessBatch(mediaRdb, offset, mediaDbInfo);
+    }
+}
+
+void OthersCloneRestore::QueryDatabaseRecords(std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
+    int32_t totalNumber, std::vector<CloneDbInfo> &mediaDbInfo)
+{
     const int32_t CHUNK_SIZE = 10000;
     for (int32_t chunkStart = 0; chunkStart < totalNumber; chunkStart += CHUNK_SIZE) {
         int32_t chunkEnd = std::min(chunkStart + CHUNK_SIZE, totalNumber);
-        int32_t batchesInChunk = (chunkEnd - chunkStart + BATCH_SIZE - 1) / BATCH_SIZE;
-        for (int32_t batchIdx = 0; batchIdx < batchesInChunk; ++batchIdx) {
-            int32_t offset = chunkStart + batchIdx * BATCH_SIZE;
-            std::vector<CloneDbInfo> batchResults;
-            HandleSelectBatch(mediaRdb, offset, sceneCode, batchResults);
-            CloneInfoPushBack(mediaDbInfo, batchResults);
-            batchResults.clear();
-            batchResults.shrink_to_fit();
-        }
-
+        ProcessChunk(mediaRdb, chunkStart, chunkEnd, mediaDbInfo);
         if (chunkStart % BATCHES_CHUNK_NUMBER == 0) {
             MEDIA_INFO_LOG("Processed chunk %{public}d/%{public}d, current restore: %{public}zu records",
-                chunkStart / CHUNK_SIZE + 1, (totalNumber + CHUNK_SIZE - 1) / CHUNK_SIZE, mediaDbInfo.size());
+                chunkStart / CHUNK_SIZE + 1,
+                (totalNumber + CHUNK_SIZE - 1) / CHUNK_SIZE,
+                mediaDbInfo.size());
         }
+    }
+}
+
+bool OthersCloneRestore::IsPhotoVideoDatabase(const std::string &dbName)
+{
+    return (dbName == PHOTO_DB_NAME || dbName == PHOTO_SD_MEDIA_INFO_DB_NAME ||
+            dbName == VIDEO_DB_NAME || dbName == VIDEO_SD_MEDIA_INFO_DB_NAME);
+}
+
+void OthersCloneRestore::BuildPhotoVideoDbMap(const std::vector<CloneDbInfo> &mediaDbInfo)
+{
+    photoDbMap_.clear();
+    size_t reserveSize = std::min(mediaDbInfo.size(), static_cast<size_t>(PRE_ALLOC_PHOTOMAP_VECTOR));
+    photoDbMap_.reserve(reserveSize);
+
+    for (auto& info : mediaDbInfo) {
+        photoDbMap_[info.data] = &info;
+        if (!info.displayName.empty()) {
+            photoDbMap_[info.displayName] = &info;
+        }
+    }
+}
+
+void OthersCloneRestore::BuildAudioDbMap(const std::vector<CloneDbInfo> &mediaDbInfo)
+{
+    audioDbMap_.clear();
+    size_t reserveSize = std::min(mediaDbInfo.size(), static_cast<size_t>(PRE_ALLOC_AUDIOMAP_VECTOR));
+    audioDbMap_.reserve(reserveSize);
+
+    for (auto& info : mediaDbInfo) {
+        audioDbMap_[info.data] = &info;
+        if (!info.displayName.empty()) {
+            audioDbMap_[info.displayName] = &info;
+        }
+    }
+}
+
+void OthersCloneRestore::BuildDbInfoMap(const std::string &dbName, const std::vector<CloneDbInfo> &mediaDbInfo)
+{
+    if (IsPhotoVideoDatabase(dbName)) {
+        BuildPhotoVideoDbMap(mediaDbInfo);
+    } else if (dbName == AUDIO_DB_NAME) {
+        BuildAudioDbMap(mediaDbInfo);
+    }
+}
+
+void OthersCloneRestore::GetCloneDbInfos(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo)
+{
+    std::string dbPath = BuildDbPath(dbName);
+    if (!CheckDbExists(dbPath, dbName)) {
+        return;
     }
 
-    if (dbName == PHOTO_DB_NAME || dbName == PHOTO_SD_MEDIA_INFO_DB_NAME ||
-        dbName == VIDEO_DB_NAME || dbName == VIDEO_SD_MEDIA_INFO_DB_NAME) {
-        photoDbMap_.clear();
-        size_t reserveSize = std::min(mediaDbInfo.size(), static_cast<size_t>(PRE_ALLOC_PHOTOMAP_VECTOR));
-        photoDbMap_.reserve(reserveSize);
-        for (auto& info : mediaDbInfo) {
-            photoDbMap_[info.data] = &info;
-            if (!info.displayName.empty()) {
-                photoDbMap_[info.displayName] = &info;
-            }
-        }
-    } else if (dbName == AUDIO_DB_NAME) {
-        audioDbMap_.clear();
-        size_t reserveSize = std::min(mediaDbInfo.size(), static_cast<size_t>(PRE_ALLOC_AUDIOMAP_VECTOR));
-        audioDbMap_.reserve(reserveSize);
-        for (auto& info : mediaDbInfo) {
-            audioDbMap_[info.data] = &info;
-            if (!info.displayName.empty()) {
-                audioDbMap_[info.displayName] = &info;
-            }
-        }
+    auto mediaRdb = InitializeDatabase(dbName, dbPath);
+    if (mediaRdb == nullptr) {
+        return;
     }
+
+    int32_t totalNumber = GetTotalRecordCount(mediaRdb, dbName);
+
+    QueryDatabaseRecords(mediaRdb, totalNumber, mediaDbInfo);
+
+    BuildDbInfoMap(dbName, mediaDbInfo);
 }
 
 void OthersCloneRestore::ReportMissingFilesFromDB(std::vector<CloneDbInfo> &mediaDbInfo, const std::string &dbType)
@@ -616,75 +689,104 @@ void OthersCloneRestore::UpdateFileGPS(FileInfo &fileInfo)
     fileInfo.longitude = infoPtr->longitude;
 }
 
-void OthersCloneRestore::UpDateFileModifiedTime(FileInfo &fileInfo)
+std::string OthersCloneRestore::GenerateSearchKey(const FileInfo &fileInfo)
 {
-    CloneDbInfo* infoPtr = nullptr;
-    std::string key;
-
     if (sceneCode_ == I_PHONE_CLONE_RESTORE) {
-        key = fileInfo.displayName;
+        return fileInfo.displayName;
     } else if (sceneCode_ == LITE_PHONE_CLONE_RESTORE) {
-        key = ParseSourcePathToPath(fileInfo.filePath, OTHER_CLONE_FILE_ROOT_PATH);
+        return ParseSourcePathToPath(fileInfo.filePath, OTHER_CLONE_FILE_ROOT_PATH);
     } else {
-        key = ParseSourcePathToPath(fileInfo.filePath, OTHER_CLONE_FILE_ROOT_PATH);
+        return ParseSourcePathToPath(fileInfo.filePath, OTHER_CLONE_FILE_ROOT_PATH);
+    }
+}
+
+CloneDbInfo* OthersCloneRestore::FindAudioDbInfo(const std::string &key, const std::string &displayName)
+{
+    auto it = audioDbMap_.find(key);
+    if (it != audioDbMap_.end()) {
+        it->second->fileExists = true;
+        return it->second;
     }
 
+    it = audioDbMap_.find(displayName);
+    if (it != audioDbMap_.end()) {
+        it->second->fileExists = true;
+        return it->second;
+    }
+
+    return nullptr;
+}
+
+CloneDbInfo* OthersCloneRestore::FindPhotoDbInfo(const std::string &key, const std::string &displayName)
+{
+    auto it = photoDbMap_.find(key);
+    if (it != photoDbMap_.end()) {
+        it->second->fileExists = true;
+        return it->second;
+    }
+
+    it = photoDbMap_.find(displayName);
+    if (it != photoDbMap_.end()) {
+        it->second->fileExists = true;
+        return it->second;
+    }
+
+    it = audioDbMap_.find(key);
+    if (it == audioDbMap_.end()) {
+        it = audioDbMap_.find(displayName);
+    }
+
+    if (it != audioDbMap_.end()) {
+        MEDIA_WARN_LOG("find video in audio info map %{public}s", displayName.c_str());
+        it->second->fileExists = true;
+        return it->second;
+    }
+
+    return nullptr;
+}
+
+CloneDbInfo* OthersCloneRestore::FindDbInfoByFileType(const FileInfo &fileInfo, const std::string &key)
+{
     if (fileInfo.fileType == MediaType::MEDIA_TYPE_AUDIO) {
-        auto it = audioDbMap_.find(key);
-        if (it != audioDbMap_.end()) {
-            infoPtr = it->second;
-            infoPtr->fileExists = true;
-        } else {
-            it = audioDbMap_.find(fileInfo.displayName);
-            if (it != audioDbMap_.end()) {
-                infoPtr = it->second;
-                infoPtr->fileExists = true;
-            } else {
-                return;
-            }
-        }
-    } else if (fileInfo.fileType  == MediaType::MEDIA_TYPE_IMAGE || fileInfo.fileType  == MediaType::MEDIA_TYPE_VIDEO) {
-        auto it = photoDbMap_.find(key);
-        if (it != photoDbMap_.end()) {
-            infoPtr = it->second;
-            infoPtr->fileExists = true;
-        } else {
-            it = photoDbMap_.find(fileInfo.displayName);
-            if (it != photoDbMap_.end()) {
-                infoPtr = it->second;
-                infoPtr->fileExists = true;
-            } else {
-                it = audioDbMap_.find(key);
-                if (it == audioDbMap_.end()) {
-                    it = audioDbMap_.find(fileInfo.displayName);
-                }
-                if (it != audioDbMap_.end()) {
-                    MEDIA_WARN_LOG("find video in audio info map %{public}s", fileInfo.displayName.c_str());
-                    infoPtr = it->second;
-                    infoPtr->fileExists = true;
-                } else {
-                    return;
-                }
-            }
-        }
+        return FindAudioDbInfo(key, fileInfo.displayName);
+    } else if (fileInfo.fileType == MediaType::MEDIA_TYPE_IMAGE ||
+               fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
+        return FindPhotoDbInfo(key, fileInfo.displayName);
     } else {
         MEDIA_WARN_LOG("Not supported file %{public}s", fileInfo.displayName.c_str());
-        return;
+        return nullptr;
     }
+}
 
-    double dateModified = infoPtr->dateModified;
-    double dateTaken = infoPtr->dateTaken;
+double OthersCloneRestore::ConvertTimeToSeconds(double timeValue)
+{
+    if (timeValue < SECONDS_LEVEL_LIMIT) {
+        return timeValue * static_cast<double>(MSEC_TO_SEC);
+    }
+    return timeValue;
+}
 
-    if (dateModified < SECONDS_LEVEL_LIMIT) {
-        dateModified *= static_cast<double>(MSEC_TO_SEC);
-    }
-    if (dateTaken < SECONDS_LEVEL_LIMIT) {
-        dateTaken *= static_cast<double>(MSEC_TO_SEC);
-    }
+void OthersCloneRestore::UpdateFileTimeInfo(FileInfo &fileInfo, CloneDbInfo *dbInfo)
+{
+    double dateModified = ConvertTimeToSeconds(dbInfo->dateModified);
+    double dateTaken = ConvertTimeToSeconds(dbInfo->dateTaken);
 
     fileInfo.dateModified = static_cast<int64_t>(dateModified);
     fileInfo.dateTaken = static_cast<int64_t>(dateTaken);
+
     BackupFileUtils::ModifyFile(fileInfo.filePath, fileInfo.dateModified / MSEC_TO_SEC);
+}
+
+void OthersCloneRestore::UpDateFileModifiedTime(FileInfo &fileInfo)
+{
+    std::string key = GenerateSearchKey(fileInfo);
+    CloneDbInfo* infoPtr = FindDbInfoByFileType(fileInfo, key);
+
+    if (infoPtr == nullptr) {
+        return;
+    }
+
+    UpdateFileTimeInfo(fileInfo, infoPtr);
 }
 
 int32_t OthersCloneRestore::GetAllfilesInCurrentDir(const std::string &path)
