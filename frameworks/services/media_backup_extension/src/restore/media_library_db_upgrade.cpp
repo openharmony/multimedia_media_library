@@ -25,6 +25,9 @@
 #include "medialibrary_rdb_transaction.h"
 #include "photo_album_update_date_modified_operation.h"
 #include "photo_day_month_year_operation.h"
+#include "result_set_utils.h"
+#include "classify_aggregate_types.h"
+#include "media_file_utils.h"
 
 namespace OHOS::Media {
 namespace DataTransfer {
@@ -59,6 +62,8 @@ int32_t MediaLibraryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     });
     CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
 
+    this->AggregateClassifyAlbum(store);
+
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::OnUpgrade end");
     return NativeRdb::E_OK;
 }
@@ -85,6 +90,147 @@ int32_t MediaLibraryDbUpgrade::ExecSqlWithRetry(std::function<int32_t()> execSql
         }
     }
     return err;
+}
+
+static void GetAggregateMap(std::unordered_map<std::string, std::vector<std::string>> &newAlbumMaps)
+{
+    for (const auto &pair : AGGREGATE_MAPPING_TABLE) {
+        int32_t oriAlbum = static_cast<int32_t>(pair.first);
+        int32_t newAlbum = static_cast<int32_t>(pair.second);
+        newAlbumMaps[std::to_string(newAlbum)].push_back(std::to_string(oriAlbum));
+    }
+}
+
+static std::string BuildInClause(const std::vector<std::string> &values)
+{
+    std::string result = "(";
+    for (size_t i = 0; i < values.size(); ++i) {
+        result += "'" + values[i] + "'";
+        if (i != values.size() - 1) {
+            result += ", ";
+        }
+    }
+    result += ")";
+    return result;
+}
+
+bool MediaLibraryDbUpgrade::CheckClassifyAlbumExist(const std::string &newAlbumName,
+    NativeRdb::RdbStore &store)
+{
+    std::vector<NativeRdb::ValueObject> params = {};
+    params.push_back(NativeRdb::ValueObject(std::to_string(PhotoAlbumType::SMART)));
+    params.push_back(NativeRdb::ValueObject(std::to_string(PhotoAlbumSubType::CLASSIFY)));
+    params.push_back(NativeRdb::ValueObject(newAlbumName));
+    auto resultSet = store.QuerySql(SQL_QUERY_CLASSIFY_ALBUM_EXIST, params);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultSet is nullptr");
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK && GetInt32Val("count", resultSet) > 0) {
+        resultSet->Close();
+        return true;
+    }
+    resultSet->Close();
+    return false;
+}
+
+int32_t MediaLibraryDbUpgrade::CreateClassifyAlbum(const std::string &newAlbumName,
+    NativeRdb::RdbStore &store)
+{
+    std::vector<NativeRdb::ValueObject> params = {};
+    params.push_back(NativeRdb::ValueObject(std::to_string(PhotoAlbumType::SMART)));
+    params.push_back(NativeRdb::ValueObject(std::to_string(PhotoAlbumSubType::CLASSIFY)));
+    params.push_back(NativeRdb::ValueObject(newAlbumName));
+    int32_t ret = ExecSqlWithRetry([&]() {
+        return store.ExecuteSql(SQL_CREATE_CLASSIFY_ALBUM, params);
+    });
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+        "Media_Restore: execute CreateClassifyAlbumSql failed, sql: %{public}s",
+        SQL_CREATE_CLASSIFY_ALBUM.c_str());
+    return ret;
+}
+
+void MediaLibraryDbUpgrade::ProcessClassifyAlbum(const std::string &newAlbumName,
+    const std::vector<std::string> &oriAlbumNames, NativeRdb::RdbStore &store)
+{
+    CHECK_AND_RETURN_INFO_LOG(!CheckClassifyAlbumExist(newAlbumName, store),
+        "Media_Restore: classify album: %{public}s already exist.", newAlbumName.c_str());
+    int32_t ret = CreateClassifyAlbum(newAlbumName, store);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK,
+        "create classify album: %{public}s failed", newAlbumName.c_str());
+    std::string subLabels = BuildInClause(oriAlbumNames);
+    CHECK_AND_RETURN_LOG(subLabels != "()", "not meet query criteria");
+    std::string insertMappingSql = SQL_INSERT_MAPPING_RESULT + subLabels + ";";
+    std::vector<NativeRdb::ValueObject> params = {};
+    params.push_back(NativeRdb::ValueObject(newAlbumName));
+    params.push_back(NativeRdb::ValueObject(std::to_string(PhotoAlbumType::SMART)));
+    params.push_back(NativeRdb::ValueObject(std::to_string(PhotoAlbumSubType::CLASSIFY)));
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(insertMappingSql, params); });
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Media_Restore: execute insertMappingSql failed, sql: %{public}s", insertMappingSql.c_str());
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("ProcessClassifyAlbum cost: %{public}" PRId64, endTime - startTime);
+}
+
+void MediaLibraryDbUpgrade::ProcessOcrClassifyAlbum(const std::string &newAlbumName,
+    const std::vector<std::string> &ocrText, NativeRdb::RdbStore &store)
+{
+    CHECK_AND_RETURN_INFO_LOG(!CheckClassifyAlbumExist(newAlbumName, store),
+        "Media_Restore: classify album: %{public}s already exist.", newAlbumName.c_str());
+    int32_t ret = CreateClassifyAlbum(newAlbumName, store);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK,
+        "create classify album: %{public}s failed", newAlbumName.c_str());
+
+    std::string subOcrSql = "";
+    for (size_t i = 0; i < ocrText.size(); i++) {
+        subOcrSql += "tab_analysis_ocr.ocr_text LIKE '%" + ocrText[i] + "%'";
+        if (i != ocrText.size() - 1) {
+            subOcrSql += " OR ";
+        }
+    }
+    std::string selectOcrSql = SQL_SELECT_CLASSIFY_OCR + subOcrSql + ")) ";
+    std::string insertMappingSql = selectOcrSql +   
+        "INSERT INTO AnalysisPhotoMap (map_album, map_asset) "
+        "SELECT album_id, map_asset FROM TempResult;";
+    std::vector<NativeRdb::ValueObject> params = {};
+    params.push_back(NativeRdb::ValueObject(newAlbumName));
+    params.push_back(NativeRdb::ValueObject(std::to_string(PhotoAlbumType::SMART)));
+    params.push_back(NativeRdb::ValueObject(std::to_string(PhotoAlbumSubType::CLASSIFY)));
+    params.push_back(NativeRdb::ValueObject(std::to_string(static_cast<int32_t>(PhotoLabel::ID_CARD))));
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(insertMappingSql, params); });
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Media_Restore: execute insertMappingSql failed, sql: %{public}s", insertMappingSql.c_str());
+    
+    std::string updateSql = selectOcrSql +
+        "UPDATE tab_analysis_label SET sub_label = "
+        "CASE WHEN sub_label = '[]' THEN '[" + newAlbumName + "]' "
+        "ELSE SUBSTR(sub_label,1,LENGTH(sub_label)-1)||'," + newAlbumName + "]' END "
+        "WHERE file_id IN(SELECT map_asset FROM TempResult);";
+    ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(updateSql, params); });
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Media_Restore: execute updateSql failed, sql: %{public}s", updateSql.c_str());
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("ProcessOcrClassifyAlbum cost: %{public}" PRId64, endTime - startTime);
+}
+
+void MediaLibraryDbUpgrade::AggregateClassifyAlbum(NativeRdb::RdbStore &store)
+{
+    MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::AggregateClassifyAlbum start");
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    std::unordered_map<std::string, std::vector<std::string>> newAlbumMaps;
+    GetAggregateMap(newAlbumMaps);
+    for (const auto &pair : newAlbumMaps) {
+        std::string newAlbumName = pair.first;
+        std::vector<std::string> oriAlbumNames = newAlbumMaps[newAlbumName];
+        ProcessClassifyAlbum(newAlbumName, oriAlbumNames, store);
+    }
+    for (const auto &pair : OCR_AGGREGATE_MAPPING_TABLE) {
+        int32_t newAlbum = static_cast<int32_t>(pair.first);
+        std::vector<std::string> ocrText = pair.second;
+        ProcessOcrClassifyAlbum(std::to_string(newAlbum), ocrText, store);
+    }
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::AggregateClassifyAlbum end, cost: %{public}" PRId64,
+        endTime - startTime);
 }
 
 int32_t MediaLibraryDbUpgrade::MergeAlbumFromOldBundleNameToNewBundleName(NativeRdb::RdbStore &store)
