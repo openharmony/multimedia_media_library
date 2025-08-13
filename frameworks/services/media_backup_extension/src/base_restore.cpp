@@ -660,7 +660,9 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     }
     value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
     InsertFileDuration(data, value, fileInfo);
-    InsertDateTaken(data, fileInfo, value);
+    if (fileInfo.dateTaken <= 0) {
+        InsertDateTaken(data, fileInfo, value);
+    }
     InsertDetailTime(data, value, fileInfo);
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());

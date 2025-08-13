@@ -875,7 +875,6 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
     info.firstUpdateTime = GetInt64Val(GALLERY_FIRST_UPDATE_TIME, resultSet);
-    info.dateTaken = GetInt64Val(GALLERY_DATE_TAKEN, resultSet);
     info.detailTime = GetStringVal(GALLERY_DETAIL_TIME, resultSet);
     info.userId = BackupFileUtils::GetUserId(info.oldPath);
     return true;
@@ -901,7 +900,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.uniqueId = GetStringVal(GALLERY_UNIQUE_ID, resultSet);
     info.localThumbPath = GetStringVal(GALLERY_LOCAL_THUMB_PATH_ID, resultSet);
     info.localBigThumbPath = GetStringVal(GALLERY_LOCAL_BIG_THUMB_PATH_ID, resultSet);
-
+    info.dateTaken = info.showDateToken;
     bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
     CHECK_AND_RETURN_RET_LOG(isSuccess, isSuccess, "ParseResultSetFromGallery fail");
     info.burstKey = burstKeyGenerator_.FindBurstKey(info);
@@ -954,6 +953,10 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     }
     if (fileInfo.dateTaken != 0) {
         values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.dateTaken);
+    } else {
+        UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
+            .ReportInAudit("INVALID_DATETAKEN", std::to_string(fileInfo.dateTaken),
+                BackupLogUtils::FileInfoToString(sceneCode_, fileInfo));
     }
     values.PutString(PhotoColumn::PHOTO_DETAIL_TIME, fileInfo.detailTime);
     values.PutLong(MediaColumn::MEDIA_DURATION, fileInfo.duration);
