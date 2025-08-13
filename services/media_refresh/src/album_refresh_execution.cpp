@@ -283,6 +283,7 @@ void AlbumRefreshExecution::CheckUpdateValues(const AlbumChangeInfo &albumInfo, 
 
 int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumType)
 {
+    ACCURATE_INFO("AccurateUpdateAlbums notifyAlbumType[0x%{public}x]", notifyAlbumType);
     MediaLibraryTracer tracer;
     tracer.Start("AlbumRefreshExecution::AccurateUpdateAlbums");
     for (auto &iter : refreshAlbums_) {

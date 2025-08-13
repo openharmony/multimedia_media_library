@@ -159,6 +159,7 @@ int32_t AlbumAccurateRefresh::LogicalDeleteReplaceByUpdate(const AbsRdbPredicate
 
 int32_t AlbumAccurateRefresh::DeleteCommon(function<int32_t(ValuesBucket&)> updateExe)
 {
+    MEDIA_INFO_LOG("DeleteCommon enter");
     MediaLibraryTracer tracer;
     tracer.Start("AlbumAccurateRefresh::DeleteCommon");
     ValuesBucket valuesBucket;
