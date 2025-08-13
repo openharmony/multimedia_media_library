@@ -287,10 +287,6 @@ void MediaAssetsRdbOperations::DeleteFromVisionTables(const string& fileId)
 
     selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND pose = 1";
     DeleteFromVisionTable(fileId, POSE, VISION_POSE_TABLE, selectionTotal);
-
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Can not get rdbstore");
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(rdbStore, {fileId}, NEED_UPDATE_TYPE);
 }
 
 bool MediaAssetsRdbOperations::QueryAlbumIdIfExists(const std::string& albumId)
