@@ -67,6 +67,7 @@ group("media_library_fuzztest") {
     "medialibrarymtp_fuzzer:MediaLibraryMtpFuzzTest",
     "medialibrarymtpcoverage_fuzzer:MediaLibraryMtpCoverageFuzzTest",
     "medialibrarymtpdatautils_fuzzer:MediaLibraryMtpDataUtilsFuzzTest",
+    "medialibrarymtpevent_fuzzer:MediaLibraryMtpEventFuzzTest",
     "medialibrarymtpheaderdata_fuzzer:MediaLibraryMtpHeaderDataFuzzTest",
     "medialibrarymtpmedialibrary_fuzzer:MediaLibraryMtpMediaLibraryFuzzTest",
     "medialibrarymtpmedialibrarymanager_fuzzer:MediaLibraryMtpMediaLibraryManagerFuzzTest",
@@ -79,7 +80,9 @@ group("media_library_fuzztest") {
     "medialibrarymtpptpspecialhandles_fuzzer:MediaLibraryMtpPtpSpecialHandlesFuzzTest",
     "medialibrarymultistagescapture_fuzzer:MediaLibraryMultistagesCaptureFuzzTest",
     "medialibrarymultistagesdeferredcapture_fuzzer:MediaLibraryMultistagesDeferredCaptureFuzzTest",
+    "medialibrarynotification_fuzzer:MediaLibraryNotificationFuzzTest",
     "medialibrarypermission_fuzzer:MediaLibraryPermissionFuzzTest",
+    "medialibraryrefresh_fuzzer:MediaLibraryRefreshFuzzTest",
     "medialibraryrefreshmanager_fuzzer:MediaLibraryRefreshManagerFuzzTest",
     "medialibraryrestore_fuzzer:MediaLibraryRestoreFuzzTest",
     "medialibraryserviceextension_fuzzer:MediaLibraryServiceExtensionFuzzTest",
@@ -87,8 +90,6 @@ group("media_library_fuzztest") {
     "medialibraryuripermissionoperations_fuzzer:MediaLibraryUriPermissionOperationsFuzzTest",
     "medialibraryurisensitiveoperations_fuzzer:MediaLibraryUriSensitiveOperationsFuzzTest",
     "medialibraryutil_fuzzer:MediaLibraryUtilFuzzTest",
-    "medialibrarynotification_fuzzer:MediaLibraryNotificationFuzzTest",
-    "medialibraryrefresh_fuzzer:MediaLibraryRefreshFuzzTest",
   ]
 
   if (defined(global_parts_info.hdf_drivers_interface_usb) &&
