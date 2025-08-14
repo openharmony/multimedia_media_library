@@ -48,6 +48,8 @@ public:
     EXPORT static void HandleSuccessCallback(const DownloadProgressObj &progress);
     EXPORT static void HandleFailedCallback(const DownloadProgressObj &progress);
     EXPORT static void HandleStoppedCallback(const DownloadProgressObj &progress);
+    EXPORT static void RepairMimeType();
+    EXPORT static void HandleRepairMimeType(const int32_t &repairRecord);
 
 private:
     typedef struct {
@@ -152,6 +154,7 @@ private:
     static int32_t localVideoUpdateOffset_;
     static int32_t cloudRetryCount_;
     static std::mutex downloadResultMutex_;
+    static std::mutex repairMimeTypeMutex_;
     static std::unordered_map<std::string, DownloadStatus> downloadResult_;
     static int64_t downloadId_;
 };

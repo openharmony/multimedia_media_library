@@ -31,6 +31,7 @@ public:
     EXPORT MimeTypeUtils& operator=(MimeTypeUtils&&) = delete;
     EXPORT static bool IsMimeTypeMapEmpty();
     EXPORT static int32_t InitMimeTypeMap();
+    EXPORT static std::string GetMimeTypeFromContent(const std::string &filePath);
     EXPORT static std::string GetMimeTypeFromExtension(const std::string &extension);
     EXPORT static std::string GetMimeTypeFromExtension(const std::string &extension,
         const std::unordered_map<std::string, std::vector<std::string>> &mimeTypeMap);
@@ -38,6 +39,8 @@ public:
 
 private:
     static void CreateMapFromJson();
+    static int32_t GetVideoMimetype(const std::string &filePath, std::string &mimeType);
+    static int32_t GetImageMimetype(const std::string &filePath, std::string &mimeType);
 
     static std::unordered_map<std::string, std::vector<std::string>> mediaJsonMap_;
 };
