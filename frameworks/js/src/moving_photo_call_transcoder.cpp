@@ -46,46 +46,39 @@ bool MovingPhotoCallTranscoder::DoTranscode(const std::shared_ptr<MovingPhotoPro
     transCoderCb->SetMovingPhotoProgress(movingPhotoProgressHandler);
     transCoderCb->setTransCoder(transCoder);
     if (transCoder->SetTransCoderCallback(transCoderCb) != E_OK) {
-        NAPI_ERR_LOG("Failed to set TransCoder callback");
-        return false;
+        return transCoderCb->DoTranscodePrepareError("Failed to set TransCoder callback");
     }
     if (transCoder->SetInputFile(movingPhotoProgressHandler->srcFd.Get(), movingPhotoProgressHandler->offset,
         movingPhotoProgressHandler->size) != E_OK) {
-        NAPI_ERR_LOG("Failed to set input file for TransCoder");
-        return false;
+        return transCoderCb->DoTranscodePrepareError("Failed to set input file for TransCoder");
     }
     if (transCoder->SetOutputFile(movingPhotoProgressHandler->destFd.Get()) != E_OK) {
-        NAPI_ERR_LOG("Failed to set output file for TransCoder");
-        return false;
+        return transCoderCb->DoTranscodePrepareError("Failed to set output file for TransCoder");
     }
     if (transCoder->SetOutputFormat(FORMAT_MPEG_4) != E_OK) {
-        NAPI_ERR_LOG("Failed to SetOutputFormat");
-        return false;
+        return transCoderCb->DoTranscodePrepareError("Failed to SetOutputFormat");
     }
     if (transCoder->SetColorSpace(TRANSCODER_COLORSPACE_P3_FULL) != E_OK) {
-        NAPI_ERR_LOG("Failed to SetColorSpace");
-        return false;
+        return transCoderCb->DoTranscodePrepareError("Failed to SetColorSpace");
     }
     if (transCoder->Prepare() != E_OK) {
-        NAPI_ERR_LOG("Failed to prepare TransCoder");
-        transCoderCb->DoPrepareError();
-        return false;
+        return transCoderCb->DoTranscodePrepareError("Failed to prepare TransCoder");
     }
     if (transCoder->Start() != E_OK) {
-        NAPI_ERR_LOG("Failed to TransCoder Start");
-        return false;
+        return transCoderCb->DoTranscodePrepareError("Failed to TransCoder Start");
     }
     NAPI_INFO_LOG("DoTranscode success");
     return true;
 }
 
-void MovingphotoTranscoderObserver::DoPrepareError()
+bool MovingphotoTranscoderObserver::DoTranscodePrepareError(const std::string &errorMsg)
 {
+    NAPI_ERR_LOG("DoTranscodePrepareError errorMsg:%{public}s", errorMsg.c_str());
     isPrepareError.store(true);
-    NAPI_ERR_LOG("MediaAssetManagerCallback DoPrepareError");
     if (transCoder_ != nullptr) {
         transCoder_->Release();
     }
+    return false;
 }
 
 void MovingphotoTranscoderObserver::CallMovingProgressCallback(bool isComplete)
