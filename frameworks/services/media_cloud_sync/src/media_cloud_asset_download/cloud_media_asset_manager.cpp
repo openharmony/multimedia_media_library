@@ -20,6 +20,7 @@
 #include <iostream>
 #include <chrono>
 #include <mutex>
+#include <cinttypes>
 
 #include "abs_rdb_predicates.h"
 #include "album_accurate_refresh.h"
@@ -172,23 +173,24 @@ static void WaitIfBackUpingOrRestoring(const std::string& key, int64_t waitTimeo
     constexpr int64_t defaultValueTime = 0;
     int64_t startTimeClone = system::GetIntParameter(key, defaultValueTime);
     int64_t startTimeWait = MediaFileUtils::UTCTimeSeconds();
-    MEDIA_INFO_LOG("Wait for %{public}s to exit. startTimeWait: %{public}lld, startTimeClone: %{public}lld",
-        info.c_str(), startTimeWait, startTimeClone);
+    MEDIA_INFO_LOG("Wait for %{public}s to exit. startTimeWait: %{public}" PRId64
+        ", startTimeClone: %{public}" PRId64, info.c_str(), startTimeWait, startTimeClone);
     while (startTimeClone > 0) {
         auto nowTime = MediaFileUtils::UTCTimeSeconds();
         if ((nowTime - startTimeWait) > waitTimeout) {
-            MEDIA_WARN_LOG("[%{public}s] timeout: now: %{public}lld, startTimeWait: %{public}lld,"
-                " startTimeClone: %{public}lld", info.c_str(), nowTime, startTimeWait, startTimeClone);
+            MEDIA_WARN_LOG("[%{public}s] timeout: now: %{public}" PRId64", startTimeWait: %{public}" PRId64
+                ", startTimeClone: %{public}" PRId64, info.c_str(), nowTime, startTimeWait, startTimeClone);
             break;
         }
-        MEDIA_DEBUG_LOG("[%{public}s] waiting: now: %{public}lld, startTimeWait: %{public}lld,"
-            " startTimeClone: %{public}lld", info.c_str(), nowTime, startTimeWait, startTimeClone);
+        MEDIA_DEBUG_LOG("[%{public}s] waiting: now: %{public}" PRId64", startTimeWait: %{public}" PRId64
+            ", startTimeClone: %{public}" PRId64, info.c_str(), nowTime, startTimeWait, startTimeClone);
         std::this_thread::sleep_for(chrono::milliseconds(
             FORCE_RETAIN_CLOUD_MEDIA_WAIT_BACKUP_OR_RESTORE_SLEEP_TIME_MILLISECOND));
         startTimeClone = system::GetIntParameter(key, defaultValueTime);
     }
 
-    MEDIA_INFO_LOG("the %{public}s has exited, currtime: %{public}lld", info.c_str(), MediaFileUtils::UTCTimeSeconds());
+    MEDIA_INFO_LOG("the %{public}s has exited, currtime: %{public}" PRId64,
+        info.c_str(), MediaFileUtils::UTCTimeSeconds());
 }
 
 static void WaitIfBackUpingOrRestoring()
