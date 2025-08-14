@@ -261,7 +261,7 @@ bool Unmarshalling(std::unordered_map<K, V> &val, MessageParcel &parcel)
 /**
  * @brief The following two functions are used in scenarios where IPC communication parameters are extremely large,
  * serializing objects to shared memory and deserializing objects from shared memory. The upper limit of shared memory
- * is 128M.
+ * is 128M. Note: For large amounts of data, this function can only be called once per IPC.
  */
 bool MarshalStrVec(const std::vector<std::string> &strVec, MessageParcel &parcel);
 
