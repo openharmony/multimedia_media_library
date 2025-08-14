@@ -44,6 +44,10 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/media_cloud_asset_download",
   ]
 
+  include_cloud_dirty_handle = [
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_dirty_handle",
+  ]
+
   include_albums_refresh =
       [ "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/include" ]
 
@@ -102,17 +106,6 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/controller",
   ]
 
-  include_media_bgtask = [
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/include",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/include/bg_task_processor",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/include/bg_task_processor/aging_task",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/include/bg_task_processor/bg_generate_thumbnail_task",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/include/bg_task_processor/compatible_with_gallery_task",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/include/bg_task_processor/dfx_task",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/include/bg_task_processor/preserve_db_task",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/include/bg_task_processor/repair_dirty_data_task",
-  ]
-
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -137,6 +130,7 @@ config("media_data_extension_public_config") {
   include_dirs += include_multistages_capture
   include_dirs += include_dfx
   include_dirs += include_cloud_asset_download
+  include_dirs += include_cloud_dirty_handle
   include_dirs += include_albums_refresh
   include_dirs += include_cloud_sync_server
   include_dirs += include_media_ipc
@@ -146,7 +140,6 @@ config("media_data_extension_public_config") {
   include_dirs += include_media_albums_manager
   include_dirs += include_notification
   include_dirs += include_accurate_refresh
-  include_dirs += include_media_bgtask
 
   if (media_library_feature_cloud_enhancement) {
     include_cloud_enhancement = [
@@ -391,6 +384,8 @@ ohos_shared_library("medialibrary_data_extension") {
   media_cloud_sync_server_source += media_cloud_sync_server_source_vo
   media_cloud_sync_server_source += media_cloud_sync_server_source_dto
 
+  media_cloud_dirty_handle_source = [ "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_dirty_handle/cloud_upload_checker.cpp" ]
+
   media_albums_refresh_source = [
     "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_notify.cpp",
@@ -562,30 +557,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_cloud_permission_check.cpp",
   ]
 
-  media_bgtask_source = [
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/medialibrary_base_bg_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/aging_task/delete_temporary_photos_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/aging_task/storage_aging_operation_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/aging_task/trash_aging_operation_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/bg_generate_thumbnail_task/do_thumbnail_bg_operation_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/compatible_with_gallery_task/clean_invalid_cloud_album_and_data_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/compatible_with_gallery_task/do_update_burst_from_gallery_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/compatible_with_gallery_task/migrate_high_light_info_to_new_path_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/dfx_task/upload_db_file_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/preserve_db_task/analyze_photos_table_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/preserve_db_task/check_db_backup_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/preserve_db_task/wal_check_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/repair_dirty_data_task/add_permission_for_cloud_enhancement_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/repair_dirty_data_task/clear_beta_and_hdc_dirty_data_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/repair_dirty_data_task/delete_cloud_media_assets_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/repair_dirty_data_task/repair_history_dirty_data_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/repair_dirty_data_task/repair_no_origin_photo_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/bg_task_processor/repair_dirty_data_task/update_invalid_mime_type_processor.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/medialibrary_bg_task_manager.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/medialibrary_service_extension_napi.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_service_extension/src/native_module_ohos_medialibrary_service_extension.cpp",
-  ]
-
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
@@ -645,7 +616,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_subscriber.cpp",
     "src/medialibrary_tab_asset_and_album_operations.cpp",
     "src/medialibrary_tab_old_photos_operations.cpp",
-    "src/medialibrary_unistore_manager.cpp",
     "src/medialibrary_uripermission_operations.cpp",
     "src/medialibrary_urisensitive_operations.cpp",
     "src/medialibrary_vision_operations.cpp",
@@ -660,6 +630,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/operation/photo_day_month_year_operation.cpp",
     "src/operation/photo_displayname_operation.cpp",
     "src/operation/photo_file_operation.cpp",
+    "src/operation/photo_mimetype_operation.cpp",
     "src/operation/photo_owner_album_id_operation.cpp",
     "src/operation/photo_source_path_operation.cpp",
     "src/operation/photo_storage_operation.cpp",
@@ -670,6 +641,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/picture_data_operations.cpp",
     "src/picture_handle_service.cpp",
     "src/picture_manager_thread.cpp",
+    "src/trash_async_worker.cpp",
     "src/video_composition_callback_imp.cpp",
     "src/zip_util.cpp",
   ]
@@ -726,6 +698,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_permission_source
   sources += media_power_efficiency_source
   sources += media_cloud_asset_download_source
+  sources += media_cloud_dirty_handle_source
   sources += media_albums_refresh_source
   sources += media_cloud_sync_server_source
   sources += media_visit_count
@@ -737,7 +710,6 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_albums_manager_source
   sources += media_albums_manager_vo_source
   sources += media_albums_manager_dto_source
-  sources += media_bgtask_source
   sources += media_notification_source
   sources += media_mtp_service
   sources += accurate_refresh_source
@@ -750,6 +722,7 @@ ohos_shared_library("medialibrary_data_extension") {
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/dynamic_loader.cpp",
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/enhancement_thread_manager.cpp",
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/settings_monitor.cpp",
+      "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/utils/cloud_enhancement_checker.cpp",
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_task_manager.cpp",
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_manager.cpp",
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/dfx/cloud_enhancement_dfx_get_count.cpp",
@@ -760,13 +733,11 @@ ohos_shared_library("medialibrary_data_extension") {
   public_configs = [ ":media_data_extension_public_config" ]
 
   deps = [
-    "${MEDIALIB_BUSINESS_PATH}/media_bgtask_mgr:media_bgtask_mgr_client",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker:medialibrary_async_worker",
     "${MEDIALIB_UTILS_PATH}:medialibrary_common_utils",
     "${MEDIALIB_UTILS_PATH}:permission_utils",
     "${MEDIALIB_UTILS_PATH}:post_event_utils",
-    "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary_nutils",
   ]
 
   include_dirs = [
@@ -783,7 +754,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "ability_runtime:app_manager",
     "ability_runtime:dataobs_manager",
     "ability_runtime:extensionkit_native",
-    "ability_runtime:napi_base_context",
     "ability_runtime:runtime",
     "ability_runtime:uri_permission_mgr",
     "access_token:libaccesstoken_sdk",

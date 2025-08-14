@@ -16,8 +16,6 @@
 #ifndef OHOS_MEDIALIBRARY_ALL_ALBUM_REFRESH_PROCESSOR_H
 #define OHOS_MEDIALIBRARY_ALL_ALBUM_REFRESH_PROCESSOR_H
 
-#include "medialibrary_base_bg_processor.h"
-
 #include <mutex>
 
 namespace OHOS {
@@ -31,10 +29,10 @@ enum class AlbumRefreshStatus : int32_t {
     ANALYSIS,
 };
 
-class MediaLibraryAllAlbumRefreshProcessor : public MediaLibraryBaseBgProcessor {
+class MediaLibraryAllAlbumRefreshProcessor {
 public:
     EXPORT static std::shared_ptr<MediaLibraryAllAlbumRefreshProcessor> GetInstance();
-    void OnCurrentStatusChanged(bool currentStatus, bool needReport = false);
+    void OnCurrentStatusChanged(bool currentStatus);
     EXPORT void OnCloudSyncStateChanged(bool isCloudSyncing);
     virtual ~MediaLibraryAllAlbumRefreshProcessor() = default;
 private:
@@ -46,9 +44,6 @@ private:
     int32_t RefreshAlbums(AlbumRefreshStatus albumRefreshStatus,
         const std::vector<int32_t>& albumIds);
 
-    int32_t Start(const std::string &taskExtra) override;
-    int32_t Stop(const std::string &taskExtra) override;
-
     /* singleton */
     static std::shared_ptr<MediaLibraryAllAlbumRefreshProcessor> instance_;
     static std::mutex instanceMutex_;
@@ -59,8 +54,6 @@ private:
     bool isCloudSyncing_ = false;
     AlbumRefreshStatus albumRefreshStatus_ = AlbumRefreshStatus::NOT_START;
     int32_t currentAlbumId_ = 0;
-
-    const std::string taskName_ = ALL_ALBUM_REFRESH;
 };
 } // namespace Media
 } // namespace OHOS

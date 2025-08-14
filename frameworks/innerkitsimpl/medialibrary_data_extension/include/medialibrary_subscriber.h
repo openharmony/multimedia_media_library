@@ -64,30 +64,30 @@ public:
     EXPORT static bool IsWifiConnected();
     EXPORT static bool IsCurrentStatusOn();
     EXPORT static void RefreshCellularNetStatus();
-    EXPORT static bool IsCharging();
-    EXPORT static bool IsScreenOff();
-    EXPORT static int32_t GetNewTemperatureLevel();
-    EXPORT static int32_t GetBatteryCapacity();
 private:
     static const std::vector<std::string> events_;
-    static bool isScreenOff_;
-    static bool isCharging_;
+    bool isScreenOff_ {false};
+    bool isCharging_ {false};
     bool isDeviceTemperatureProper_{false};
     static bool isWifiConnected_;
     static bool currentStatus_;
+    bool thumbnailBgGenerationStatus_{false};
     bool timerStatus_{false};
     static bool isCellularNetConnected_;
     std::mutex mutex_;
     int32_t agingCount_ {0};
     int32_t deviceTemperatureLevel_ {0};
-    static int32_t newTemperatureLevel_;
-    static int32_t batteryCapacity_;
+    int32_t newTemperatureLevel_ {0};
+    int32_t batteryCapacity_ {0};
     int64_t lockTime_ {0};
 
     DelayTask backgroundDelayTask_{"backgroundTask"};
+    DelayTask thumbnailBgDelayTask_{"thumbnailBgTask"};
     EXPORT void ClearDirtyData();
     EXPORT void DoBackgroundOperation();
+    EXPORT void DoThumbnailBgOperation();
     EXPORT void StopBackgroundOperation();
+    EXPORT void StopThumbnailBgOperation();
     EXPORT void StartAnalysisService();
     EXPORT static void ClearContinueCloneData(AsyncTaskData *data);
     EXPORT int32_t DoClearContinueCloneData();
@@ -95,6 +95,7 @@ private:
     EXPORT bool TryClearContinueCloneData();
     EXPORT std::string GetDataCloneDescriptionJsonPath();
     EXPORT bool GetCloneTimestamp(const std::string &path, int64_t &cloneTimestamp);
+    EXPORT void WalCheckPointAsync();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();
@@ -105,7 +106,10 @@ private:
     void UpdateBackgroundOperationStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
     void UpdateCloudMediaAssetDownloadStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
     void UpdateCurrentStatus();
+    void UpdateThumbnailBgGenerationStatus();
+    void CheckHalfDayMissions();
     void UpdateBackgroundTimer();
+    void DoAgingOperation();
     void UpdateCloudMediaAssetDownloadTaskStatus();
     void DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType);
 };

@@ -269,14 +269,14 @@ static void CloudMediaAssetDeleteFuzzer()
     vector<string> dateTakens;
     fileId = InsertAsset();
     instance.ReadyDataForDelete(fileIds, paths, dateTakens);
-    instance.DeleteAllCloudMediaAssetsAsync(false);
+    instance.DeleteAllCloudMediaAssetsAsync();
     instance.DeleteEmptyCloudAlbums();
     instance.ForceRetainDownloadCloudMedia();
 
     int32_t firstFileId = InsertDeleteAsset();
     int32_t secondFileId = InsertDeleteAsset();
     instance.UpdateCloudMediaAssets();
-    instance.DeleteAllCloudMediaAssetsAsync(false);
+    instance.DeleteAllCloudMediaAssetsAsync();
     firstFileId = InsertDeleteAsset();
     secondFileId = InsertDeleteAsset();
     instance.ForceRetainDownloadCloudMedia();

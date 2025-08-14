@@ -20,12 +20,10 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#include <stdint.h>
 
 #include "medialibrary_rdbstore.h"
 
 namespace OHOS::Media {
-#define EXPORT __attribute__ ((visibility ("default")))
 class PhotoOwnerAlbumIdOperation {
 public:
     struct MediaData {
@@ -58,7 +56,7 @@ public:  // getter & setter
     }
 
 public:
-    EXPORT int32_t FixPhotoRelation();
+    int32_t FixPhotoRelation();
 
 private:
     std::string ToStringWithComma(const std::vector<NativeRdb::ValueObject> &bindArgs) const;

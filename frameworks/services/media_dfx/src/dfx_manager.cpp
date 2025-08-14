@@ -19,8 +19,6 @@
 
 #include "dfx_cloud_manager.h"
 #include "dfx_utils.h"
-#include "ffrt.h"
-#include "ffrt_inner.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "media_log.h"
@@ -401,74 +399,61 @@ static void HandleCheckTwoDayTask(DfxData *data)
     CheckPhotoError(dfxReporter);
 }
 
-bool DfxManager::HandleHalfDayMissions()
+void DfxManager::HandleHalfDayMissions()
 {
-    MEDIA_INFO_LOG("Begin HandleHalfDayMissions");
     if (!isInitSuccess_) {
         MEDIA_WARN_LOG("DfxManager not init");
-        return false;
+        return;
     }
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
     if (!prefs) {
         MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return false;
+        return;
     }
     int64_t lastReportTime = prefs->GetLong(LAST_HALF_DAY_REPORT_TIME, 0);
-    if (dfxWorker_ == nullptr || (MediaFileUtils::UTCTimeSeconds() - lastReportTime <= HALF_DAY)) {
-        MEDIA_INFO_LOG("last task was executed within half a day.");
-        return false;
+    if (MediaFileUtils::UTCTimeSeconds() - lastReportTime > HALF_DAY && dfxWorker_ != nullptr) {
+        MEDIA_INFO_LOG("start handle statistic behavior");
+        auto *taskData = new (nothrow) StatisticData(dfxReporter_);
+        if (taskData == nullptr) {
+            MEDIA_ERR_LOG("Failed to alloc async data for Handle Half Day Missions!");
+            return;
+        }
+        auto statisticTask = make_shared<DfxTask>(HandleStatistic, taskData);
+        if (statisticTask == nullptr) {
+            MEDIA_ERR_LOG("Failed to create statistic task.");
+            return;
+        }
+        dfxWorker_->AddTask(statisticTask);
+        int64_t time = MediaFileUtils::UTCTimeSeconds();
+        prefs->PutLong(LAST_HALF_DAY_REPORT_TIME, time);
+        prefs->FlushSync();
     }
-    MEDIA_INFO_LOG("start handle statistic behavior");
-    auto *taskData = new (nothrow) StatisticData(dfxReporter_);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for Handle Half Day Missions!");
-        return false;
-    }
-    auto statisticTask = make_shared<DfxTask>(HandleStatistic, taskData);
-    if (statisticTask == nullptr) {
-        MEDIA_ERR_LOG("Failed to create statistic task.");
-        delete taskData;
-        return false;
-    }
-    dfxWorker_->AddTask(statisticTask);
-    int64_t time = MediaFileUtils::UTCTimeSeconds();
-    prefs->PutLong(LAST_HALF_DAY_REPORT_TIME, time);
-    prefs->FlushSync();
-    return true;
 }
 
-bool DfxManager::HandleTwoDayMissions()
+void DfxManager::HandleTwoDayMissions()
 {
-    MEDIA_INFO_LOG("Begin HandleTwoDayMissions");
-    CHECK_AND_RETURN_RET_LOG(isInitSuccess_, false, "DfxManager not init");
+    CHECK_AND_RETURN_LOG(isInitSuccess_, "DfxManager not init");
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
     if (!prefs) {
         MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return false;
+        return;
     }
     int64_t lastReportTime = prefs->GetLong(LAST_TWO_DAY_REPORT_TIME, 0);
-    if (dfxWorker_ == nullptr || (MediaFileUtils::UTCTimeSeconds() - lastReportTime <= TWO_DAY)) {
-        MEDIA_INFO_LOG("last task was executed within two day.");
-        return false;
+    if (MediaFileUtils::UTCTimeSeconds() - lastReportTime > TWO_DAY && dfxWorker_ != nullptr) {
+        MEDIA_INFO_LOG("start handle statistic behavior");
+        auto *taskData = new (nothrow) StatisticData(dfxReporter_);
+        CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to alloc async data for Handle Two Day Missions!");
+        auto twoDayTask = make_shared<DfxTask>(HandleCheckTwoDayTask, taskData);
+        CHECK_AND_RETURN_LOG(twoDayTask != nullptr, "Failed to create dfx task.");
+        dfxWorker_->AddTask(twoDayTask);
+        int64_t time = MediaFileUtils::UTCTimeSeconds();
+        prefs->PutLong(LAST_TWO_DAY_REPORT_TIME, time);
+        prefs->FlushSync();
     }
-    MEDIA_INFO_LOG("start handle statistic behavior");
-    auto *taskData = new (nothrow) StatisticData(dfxReporter_);
-    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, false, "Failed to alloc async data for Handle Two Day Missions!");
-    auto twoDayTask = make_shared<DfxTask>(HandleCheckTwoDayTask, taskData);
-    if (twoDayTask == nullptr) {
-        MEDIA_ERR_LOG("Failed to create dfx task.");
-        delete taskData;
-        return false;
-    }
-    dfxWorker_->AddTask(twoDayTask);
-    int64_t time = MediaFileUtils::UTCTimeSeconds();
-    prefs->PutLong(LAST_TWO_DAY_REPORT_TIME, time);
-    prefs->FlushSync();
-    return true;
 }
 
 void DfxManager::IsDirectoryExist(const string& dirName)
@@ -613,36 +598,29 @@ static void HandleCheckOneWeekDayTask(DfxData *data)
     HandleGetSizeAndResolutionInfo(dfxReporter);
 }
 
-bool DfxManager::HandleOneWeekMissions()
+void DfxManager::HandleOneWeekMissions()
 {
     MEDIA_INFO_LOG("HandlePhotoInfo start");
-    CHECK_AND_RETURN_RET_LOG(isInitSuccess_, false, "DfxManager not init");
+    CHECK_AND_RETURN_LOG(isInitSuccess_, "DfxManager not init");
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
     NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
     if (!prefs) {
         MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return false;
+        return;
     }
     int64_t lastReportTime = prefs->GetLong(LAST_WEEK_REPORT_TIME, 0);
-    if (dfxWorker_ == nullptr || (MediaFileUtils::UTCTimeSeconds() - lastReportTime <= ONE_WEEK)) {
-        MEDIA_INFO_LOG("last task was executed within a week.");
-        return false;
+    if (MediaFileUtils::UTCTimeSeconds() - lastReportTime > ONE_WEEK && dfxWorker_ != nullptr) {
+        MEDIA_INFO_LOG("start handle statistic behavior");
+        auto *taskData = new (nothrow) StatisticData(dfxReporter_);
+        CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to alloc async data for Handle Week Day Missions!");
+        auto oneWeekTask = make_shared<DfxTask>(HandleCheckOneWeekDayTask, taskData);
+        CHECK_AND_RETURN_LOG(oneWeekTask != nullptr, "Failed to create dfx task.");
+        dfxWorker_->AddTask(oneWeekTask);
+        int64_t time = MediaFileUtils::UTCTimeSeconds();
+        prefs->PutLong(LAST_WEEK_REPORT_TIME, time);
+        prefs->FlushSync();
     }
-    MEDIA_INFO_LOG("start handle statistic behavior");
-    auto *taskData = new (nothrow) StatisticData(dfxReporter_);
-    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, false, "Failed to alloc async data for Handle Week Day Missions!");
-    auto oneWeekTask = make_shared<DfxTask>(HandleCheckOneWeekDayTask, taskData);
-    if (oneWeekTask == nullptr) {
-        MEDIA_ERR_LOG("Failed to create dfx task.");
-        delete taskData;
-        return false;
-    }
-    dfxWorker_->AddTask(oneWeekTask);
-    int64_t time = MediaFileUtils::UTCTimeSeconds();
-    prefs->PutLong(LAST_WEEK_REPORT_TIME, time);
-    prefs->FlushSync();
-    return true;
 }
 
 bool IsReported()
@@ -1054,59 +1032,6 @@ void DfxManager::HandleSyncEnd(const int32_t stopReason)
 void DfxManager::HandleReportSyncFault(const std::string& position, const SyncFaultEvent& event)
 {
     DfxReporter::ReportSyncFault(taskId_, position, event);
-}
-
-int32_t DfxManager::Start(const std::string &taskExtra)
-{
-    MEDIA_INFO_LOG("Start begin");
-    ffrt::submit([this]() {
-        bool taskHalfDay = HandleHalfDayMissions();
-        bool taskTwoDay = HandleTwoDayMissions();
-        bool taskOneWeek = HandleOneWeekMissions();
-        if (taskHalfDay || taskTwoDay || taskOneWeek) {
-            if (!HandleReportTaskCompleteMissions()) {
-                RemoveTaskName(taskName_);
-                ReportTaskComplete(taskName_);
-            }
-        } else {
-            RemoveTaskName(taskName_);
-            ReportTaskComplete(taskName_);
-        }
-    });
-    return E_OK;
-}
-
-int32_t DfxManager::Stop(const std::string &taskExtra)
-{
-    return E_OK;
-}
-
-static void HandleReportTaskCompleteTask(DfxData *data)
-{
-    MediaLibraryBaseBgProcessor::RemoveTaskName(DFX_HANDLE_HALF_DAY_MISSIONS);
-    MediaLibraryBaseBgProcessor::ReportTaskComplete(DFX_HANDLE_HALF_DAY_MISSIONS);
-}
-
-bool DfxManager::HandleReportTaskCompleteMissions()
-{
-    if (!isInitSuccess_) {
-        MEDIA_WARN_LOG("DfxManager not init");
-        return false;
-    }
-    MEDIA_INFO_LOG("start handle statistic behavior");
-    auto *taskData = new (nothrow) StatisticData(dfxReporter_);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for Handle Half Day Missions!");
-        return false;
-    }
-    auto statisticTask = make_shared<DfxTask>(HandleReportTaskCompleteTask, taskData);
-    if (statisticTask == nullptr) {
-        MEDIA_ERR_LOG("Failed to create statistic task.");
-        delete taskData;
-        return false;
-    }
-    dfxWorker_->AddTask(statisticTask);
-    return true;
 }
 
 void DfxManager::HandleAccurateRefreshTimeOut(const AccurateRefreshDfxDataPoint& reportData)

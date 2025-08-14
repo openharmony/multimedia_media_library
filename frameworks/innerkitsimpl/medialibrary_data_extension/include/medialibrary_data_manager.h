@@ -86,13 +86,20 @@ public:
     // restore thumbnail for date fronted 2000 photos from dual framework upgrade or clone
     EXPORT int32_t RestoreThumbnailDualFrame();
     void InterruptBgworker();
-    EXPORT void InterruptThumbnailBgWorker();
+    void InterruptThumbnailBgWorker();
+    EXPORT int32_t DoAging();
+    EXPORT int32_t DoTrashAging(std::shared_ptr<int> countPtr = nullptr);
     /**
      * @brief Revert the pending state through the package name
      * @param bundleName packageName
      * @return revert result
      */
     EXPORT int32_t RevertPendingByPackage(const std::string &bundleName);
+
+    // update burst photo from gallery
+    EXPORT int32_t UpdateBurstFromGallery();
+    // update burst_cover_level from gallery
+    EXPORT int32_t UpdateBurstCoverLevelFromGallery();
 
     EXPORT std::shared_ptr<MediaLibraryRdbStore> rdbStore_;
 
@@ -120,6 +127,8 @@ public:
 private:
     int32_t InitMediaLibraryRdbStore();
     int32_t UpdateDirtyHdcDataStatus();
+    int32_t UpdateDirtyForCloudClone();
+    int32_t UpdateDirtyForCloudCloneV2();
     void InitResourceInfo();
     void DeleteDirtyFileAndDir(const std::vector<std::string>& deleteFilePaths);
     void HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart);

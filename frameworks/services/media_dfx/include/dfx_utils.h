@@ -23,18 +23,16 @@
 
 namespace OHOS {
 namespace Media {
-#define EXPORT __attribute__ ((visibility ("default")))
-
 class DfxUtils {
 public:
     static std::vector<std::string> Split(std::string &input, const std::string &pattern);
     static std::string GetSafePath(const std::string &path);
-    EXPORT static std::string GetSafeUri(const std::string &uri);
+    static std::string GetSafeUri(const std::string &uri);
     static std::string GetCurrentDate();
     static std::string GetCurrentDateMillisecond();
     static std::string JoinStrings(const std::unordered_set<std::string>& strSet, char delimiter);
     static std::unordered_set<std::string> SplitString(const std::string& input, char delimiter);
-    EXPORT static std::string GetSafeAlbumName(const std::string &value);
+    static std::string GetSafeAlbumName(const std::string &value);
     static std::string GetSafeAlbumNameWhenChinese(const std::string &albumName);
     static std::string GetSafeDiaplayNameWhenChinese(const std::string &displayName);
     static std::u16string Str8ToStr16(const std::string &inputStr);
