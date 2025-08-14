@@ -17,9 +17,19 @@
 
 #include <algorithm>
 #include <fstream>
+#include <sys/stat.h>
+#include <sstream>
+#include <fcntl.h>
 
+#include "avmetadatahelper.h"
+#include "directory_ex.h"
+#include "image_source.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
+#include "media_file_utils.h"
+
+#define O_RDONLY 00
 
 using std::string;
 using std::vector;
@@ -80,6 +90,89 @@ int32_t MimeTypeUtils::InitMimeTypeMap()
         return E_FAIL;
     }
     return E_OK;
+}
+
+int32_t MimeTypeUtils::GetImageMimetype(const string &filePath, string &mimeType)
+{
+    SourceOptions opts;
+    uint32_t err = E_OK;
+    MediaLibraryTracer tracer;
+    tracer.Start("ImageSource::CreateImageSource");
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, err);
+    tracer.Finish();
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, E_INVALID_VALUES,
+        "CreateImageSource failed, err: %{public}d", err);
+    tracer.Start("imageSource->GetImageInfo");
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    tracer.Finish();
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_INVALID_VALUES, "GetImageInfo failed, err: %{public}d", err);
+    mimeType = imageInfo.encodedFormat;
+    CHECK_AND_RETURN_RET_LOG(mimeType != "", E_INVALID_VALUES, "failed to get encodedFormat");
+    return E_OK;
+}
+
+int32_t MimeTypeUtils::GetVideoMimetype(const string &filePath, string &mimeType)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("avMetadataHelper->open");
+    std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    CHECK_AND_RETURN_RET_LOG(avMetadataHelper != nullptr, E_INVALID_VALUES,
+        "CreateAVMetadataHelper fail!");
+    int32_t fd = open(filePath.c_str(), O_RDONLY);
+    tracer.Finish();
+    CHECK_AND_RETURN_RET_LOG(fd > 0, E_SYSCALL, "Open file descriptor failed, errno = %{public}d", errno);
+
+    struct stat64 st;
+    if (fstat64(fd, &st) != 0) {
+        MEDIA_ERR_LOG("Get file state failed for the given fd");
+        (void)close(fd);
+        return E_SYSCALL;
+    }
+
+    tracer.Start("avMetadataHelper->SetSource");
+    int32_t err = avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(st.st_size), AV_META_USAGE_META_ONLY);
+    tracer.Finish();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("SetSource failed for file descriptor, err: %{public}d", err);
+        (void)close(fd);
+        return E_AVMETADATA;
+    }
+    tracer.Start("avMetadataHelper->ResolveMetadata");
+    std::unordered_map<int32_t, std::string> resultMap = avMetadataHelper->ResolveMetadata();
+    tracer.Finish();
+    (void)close(fd);
+    CHECK_AND_RETURN_RET_LOG(resultMap.find(AV_KEY_MIME_TYPE) != resultMap.end(), E_INVALID_VALUES,
+        "failed to get AV_KEY_MIME_TYPE");
+    mimeType = resultMap.at(AV_KEY_MIME_TYPE);
+    CHECK_AND_RETURN_RET_LOG(mimeType != "", E_INVALID_VALUES, "AV_KEY_MIME_TYPE empty");
+    return E_OK;
+}
+
+string MimeTypeUtils::GetMimeTypeFromContent(const string &filePath)
+{
+    CHECK_AND_RETURN_RET_LOG(filePath != "", "", "empty file path");
+    string extension = MediaFileUtils::GetExtensionFromPath(filePath);
+    string mimeType = GetMimeTypeFromExtension(extension);
+    string absFilePath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(filePath, absFilePath),
+        mimeType, "failed to transfer realpath: %{private}s", filePath.c_str());
+    int32_t mediaType = GetMediaTypeFromMimeType(mimeType);
+    int32_t err = -1;
+    if (mediaType == MEDIA_TYPE_IMAGE) {
+        err = GetImageMimetype(absFilePath, mimeType);
+    } else if (mediaType == MEDIA_TYPE_VIDEO) {
+        err = GetVideoMimetype(absFilePath, mimeType);
+    } else {
+        MEDIA_ERR_LOG("Invalid mediaType: %{public}d", mediaType);
+        return mimeType;
+    }
+    if (err != E_OK) {
+        mimeType = GetMimeTypeFromExtension(extension);
+    }
+    MEDIA_INFO_LOG("GetMimeTypeFromContent mimeType: %{public}s, err: %{public}d",
+        mimeType.c_str(), err);
+    return mimeType;
 }
 
 string MimeTypeUtils::GetMimeTypeFromExtension(const string &extension)

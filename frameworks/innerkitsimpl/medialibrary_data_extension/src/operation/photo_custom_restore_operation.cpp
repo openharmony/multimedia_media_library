@@ -899,7 +899,7 @@ int32_t PhotoCustomRestoreOperation::GetFileMetadata(std::unique_ptr<Metadata> &
         data->SetFileDateModified(dateModified);
     }
     string extension = ScannerUtils::GetFileExtension(data->GetFileName());
-    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
+    string mimeType = MimeTypeUtils::GetMimeTypeFromContent(data->GetFilePath());
     data->SetFileExtension(extension);
     data->SetFileMimeType(mimeType);
     return E_OK;

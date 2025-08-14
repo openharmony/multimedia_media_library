@@ -254,6 +254,7 @@ static void SetImageVideoValuesFromMetaDataApi10(const Metadata &metadata, Value
     values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, metadata.GetFrontCamera());
     values.PutString(PhotoColumn::PHOTO_DETAIL_TIME, metadata.GetDetailTime());
     values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    values.PutString(PhotoColumn::MEDIA_MIME_TYPE, metadata.GetFileMimeType());
 
     if (metadata.GetPhotoSubType() != 0) {
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());

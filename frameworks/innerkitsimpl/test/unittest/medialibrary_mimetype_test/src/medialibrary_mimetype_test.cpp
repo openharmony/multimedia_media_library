@@ -296,5 +296,15 @@ HWTEST_F(MimeTypeTest, MimeTypeTest_GetMediaTypeFromMimeType_Test_001, TestSize.
         ASSERT_EQ(mediaType, item.second);
     }
 }
+
+HWTEST_F(MimeTypeTest, MimeTypeTest_GetMimeTypeFromContent_Test_001, TestSize.Level1)
+{
+    string filePath1 = "";
+    string mimetype1 = MimeTypeUtils::GetMimeTypeFromContent(filePath1);
+    ASSERT_EQ(mimetype1, "");
+    string filePath2 = "/storage/media/cloud/files/Photo/test.jpg";
+    string mimetype2 = MimeTypeUtils::GetMimeTypeFromContent(filePath2);
+    ASSERT_EQ(mimetype2, "image/jpeg");
+}
 } // namespace Media
 } // namespace OHOS
