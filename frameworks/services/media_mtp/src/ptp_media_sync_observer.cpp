@@ -405,6 +405,9 @@ void MediaSyncObserver::SendPhotoRemoveEvent(std::string &suffixString)
 {
     vector<string> allDeletedHandles;
     vector<int32_t> handles;
+    auto specialHandles = PtpSpecialHandles::GetInstance();
+    CHECK_AND_RETURN_LOG(specialHandles != nullptr, "specialHandles is nullptr");
+
     if (suffixString.empty()) {
         allDeletedHandles = GetAllDeleteHandles();
         for (auto deleteHandle : allDeletedHandles) {
@@ -412,13 +415,17 @@ void MediaSyncObserver::SendPhotoRemoveEvent(std::string &suffixString)
                 MEDIA_ERR_LOG("Mtp SendPhotoRemoveEvent deleteHandle is incorrect ");
                 continue;
             }
+            uint32_t fileId = static_cast<uint32_t>(atoi(deleteHandle.c_str()));
+            if (FindRealHandle(fileId + COMMON_PHOTOS_OFFSET)) {
+                uint32_t actualHandle = specialHandles->HandleConvertToDeleted(fileId + COMMON_PHOTOS_OFFSET);
+                SendEventPackets(actualHandle, MTP_EVENT_OBJECT_REMOVED_CODE);
+                continue;
+            }
             SendEventPackets(atoi(deleteHandle.c_str()) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
             SendEventPackets(atoi(deleteHandle.c_str()) + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
         }
     } else {
         CHECK_AND_RETURN_LOG(IsNumber(suffixString), "Mtp SendPhotoRemoveEvent deleteHandle is incorrect ");
-        auto specialHandles = PtpSpecialHandles::GetInstance();
-        CHECK_AND_RETURN_LOG(specialHandles != nullptr, "specialHandles is nullptr");
         uint32_t fileId = static_cast<uint32_t>(atoi(suffixString.c_str()));
         if (FindRealHandle(fileId + COMMON_PHOTOS_OFFSET)) {
             uint32_t actualHandle = specialHandles->HandleConvertToDeleted(fileId + COMMON_PHOTOS_OFFSET);
