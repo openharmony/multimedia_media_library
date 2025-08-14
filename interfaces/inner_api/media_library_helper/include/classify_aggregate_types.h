@@ -166,15 +166,15 @@ enum class AggregateType : int32_t {
 };
 
 enum class OcrAggregateType : int32_t {
-    FRONT_CARD = 5004,
-    BACK_CARD = 5005,
-};
-
-inline const std::vector<std::string> FRONT_OCR_TEXT {
-    "公民身份号码"
+    FRONT_CARD = 5005,
+    BACK_CARD = 5004,
 };
 
 inline const std::vector<std::string> BACK_OCR_TEXT {
+    "公民身份号码"
+};
+
+inline const std::vector<std::string> FRONT_OCR_TEXT {
     "居民身份证", "签发机关", "有效期限"
 };
 
