@@ -29,6 +29,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_subscriber.h"
 #include "medialibrary_unistore_manager.h"
 #include "metadata_extractor.h"
 #include "mimetype_utils.h"
@@ -41,16 +42,23 @@
 #include "preferences_helper.h"
 #include "cloud_sync_utils.h"
 #include "photo_day_month_year_operation.h"
+#include "power_efficiency_manager.h"
+#include "cloud_media_photos_dao.h"
+#include "result_set_reader.h"
+#include "photos_po_writer.h"
 
 namespace OHOS {
 namespace Media {
 using namespace FileManagement::CloudSync;
+using namespace OHOS::Media::ORM;
 
 static constexpr int32_t UPDATE_BATCH_CLOUD_SIZE = 2;
 static constexpr int32_t UPDATE_BATCH_LOCAL_VIDEO_SIZE = 50;
 static constexpr int32_t UPDATE_BATCH_LOCAL_IMAGE_SIZE = 200;
 static constexpr int32_t MAX_RETRY_COUNT = 2;
 static constexpr int32_t UPDATE_DAY_MONTH_YEAR_BATCH_SIZE = 200;
+static constexpr int32_t MIMETYPE_REPAIR_INTERVAL = 20000;
+static constexpr int32_t CACHE_PHOTO_NUM = 100;
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
 static constexpr double DEVICE_STORAGE_FREE_RATIO_HIGH = 0.15;
@@ -79,6 +87,7 @@ int32_t BackgroundCloudFileProcessor::localImageUpdateOffset_ = 0;
 int32_t BackgroundCloudFileProcessor::localVideoUpdateOffset_ = 0;
 int32_t BackgroundCloudFileProcessor::cloudRetryCount_ = 0;
 std::mutex BackgroundCloudFileProcessor::downloadResultMutex_;
+std::mutex BackgroundCloudFileProcessor::repairMimeTypeMutex_;
 std::unordered_map<std::string, BackgroundCloudFileProcessor::DownloadStatus>
     BackgroundCloudFileProcessor::downloadResult_;
 int64_t BackgroundCloudFileProcessor::downloadId_ = DOWNLOAD_ID_DEFAULT;
@@ -88,6 +97,7 @@ const std::string DOWNLOAD_CNT_CONFIG = "/data/storage/el2/base/preferences/down
 
 const std::string DOWNLOAD_LATEST_FINISHED = "download_latest_finished";
 const std::string LAST_DOWNLOAD_MILLISECOND = "last_download_millisecond";
+const std::string LAST_LOCAL_MIMETYPE_REPAIR = "last_mimetype_repair";
 // when kernel hibernates, the timer expires longer, and the number of download images needs to be compensated
 const int32_t MIN_DOWNLOAD_NUM = 1;
 const int32_t MAX_DOWNLOAD_NUM = 30;
@@ -237,6 +247,105 @@ void BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYear()
     ret = PhotoDayMonthYearOperation::UpdateAbnormalDayMonthYear(needUpdateFileIds);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
         "Failed to update abnormal day month year data task! err: %{public}d", ret);
+}
+
+void UpdateMimeTypeByFileId(const string &mimetype, int32_t fileId)
+{
+    NativeRdb::ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_MIME_TYPE, mimetype);
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t changedRows = 0;
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    int32_t result = rdbStore->Update(changedRows, values, predicates);
+    bool cond = (result != NativeRdb::E_OK || changedRows <= 0);
+    CHECK_AND_RETURN_LOG(!cond, "Update operation failed. Result %{public}d. Updated %{public}d",
+        result, changedRows);
+}
+
+std::vector<PhotosPo> GetRepairMimeTypeData(const int32_t &lastRecord)
+{
+    MEDIA_INFO_LOG("GetRepairMimeTypeData begin");
+    std::vector<PhotosPo> photosPoVec;
+    const std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
+        MediaColumn::MEDIA_TYPE, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_POSITION };
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, photosPoVec, "Failed to get rdbStore.");
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.GreaterThan(MediaColumn::MEDIA_ID, lastRecord);
+    predicates.OrderByAsc(MediaColumn::MEDIA_ID);
+    predicates.Limit(CACHE_PHOTO_NUM);
+    
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, photosPoVec, "Failed to query.");
+    
+    ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords(photosPoVec);
+    return photosPoVec;
+}
+
+void BackgroundCloudFileProcessor::HandleRepairMimeType(const int32_t &lastRecord)
+{
+    std::unique_lock<std::mutex> lock(repairMimeTypeMutex_, std::defer_lock);
+    CHECK_AND_RETURN_WARN_LOG(lock.try_lock(), "Repairing mimetype has started, skipping this operation");
+    MEDIA_INFO_LOG("Start repair mimetype from %{public}d", lastRecord);
+    bool terminate = false;
+    int32_t repairRecord = lastRecord;
+    std::vector<PhotosPo> photosPoVec = GetRepairMimeTypeData(repairRecord);
+    do {
+        for (PhotosPo photosPo : photosPoVec) {
+            std::string path = photosPo.data.value_or("");
+            int32_t fileId = photosPo.fileId.value_or(0);
+            std::string mimeType = photosPo.mimeType.value_or("");
+            int32_t position = photosPo.position.value_or(0);
+            if (path == "" || fileId <= 0 || position <= 0) {
+                continue;
+            }
+            if (position == static_cast<int32_t>(POSITION_CLOUD) && !MedialibrarySubscriber::IsWifiConnected()) {
+                MEDIA_INFO_LOG("Break repair cause wifi not connect");
+                terminate = true;
+                break;
+            }
+            string mimeTypeNew = MimeTypeUtils::GetMimeTypeFromContent(path);
+            if (mimeTypeNew != mimeType) {
+                MEDIA_INFO_LOG("Update mimetype from: %{public}s to: %{public}s",
+                    mimeType.c_str(), mimeTypeNew.c_str());
+                UpdateMimeTypeByFileId(mimeTypeNew, fileId);
+            }
+            repairRecord = fileId;
+
+            // reduce repair frequency
+            this_thread::sleep_for(chrono::milliseconds(MIMETYPE_REPAIR_INTERVAL));
+            if (!PowerEfficiencyManager::IsChargingAndScreenOff()) {
+                MEDIA_INFO_LOG("Break repair cause invalid status");
+                terminate = true;
+                break;
+            }
+        }
+        int32_t errCode = 0;
+        shared_ptr<NativePreferences::Preferences> prefs =
+            NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
+        prefs->PutInt(LAST_LOCAL_MIMETYPE_REPAIR, repairRecord);
+        prefs->FlushSync();
+        MEDIA_INFO_LOG("repair mimetype to %{public}d", repairRecord);
+        photosPoVec = GetRepairMimeTypeData(repairRecord);
+    } while (photosPoVec.size() > 0 && !terminate);
+}
+
+void BackgroundCloudFileProcessor::RepairMimeType()
+{
+    int32_t errCode = 0;
+    int64_t defaultCnt = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
+    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
+    int32_t localRepairRecord = prefs->GetInt(LAST_LOCAL_MIMETYPE_REPAIR, defaultCnt);
+
+    std::vector<PhotosPo> photosPoVec = GetRepairMimeTypeData(localRepairRecord);
+    CHECK_AND_RETURN_LOG(photosPoVec.size() > 0, "no data for repair");
+    MEDIA_INFO_LOG("need repair count %{public}d", static_cast<int>(photosPoVec.size()));
+    std::thread([localRepairRecord]() {
+        HandleRepairMimeType(localRepairRecord);
+    }).detach();
 }
 
 void BackgroundCloudFileProcessor::ProcessCloudData()

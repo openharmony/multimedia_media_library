@@ -337,6 +337,7 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient, newTemperatureLevel_);
     currentStatus_ = newStatus;
     backgroundDelayTask_.EndBackgroundOperationThread();
+    BackgroundCloudFileProcessor::RepairMimeType();
     if (currentStatus_) {
         backgroundDelayTask_.SetOperationThread([this] { this->DoBackgroundOperation(); });
     } else {
