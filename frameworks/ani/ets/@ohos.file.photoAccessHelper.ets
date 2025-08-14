@@ -3546,7 +3546,8 @@ export namespace photoAccessHelper {
       return new Promise<void>((resolve: (v: undefined) => void, reject: RejectString) : void => {
         let cb = (): undefined | MediaLibraryAniError => {
           try {
-            return MediaAlbumChangeRequest.deleteAlbumsSync(context, albums);
+            MediaAlbumChangeRequest.deleteAlbumsSync(context, albums);
+            return undefined;
           } catch(e) {
             return e as MediaLibraryAniError;
           }
@@ -3570,7 +3571,8 @@ export namespace photoAccessHelper {
       return new Promise<void>((resolve: (v: undefined) => void, reject: RejectString) : void => {
         let cb = (): undefined | MediaLibraryAniError => {
           try {
-            return MediaAlbumChangeRequest.deleteAlbumsWithUriSync(context, albumUris);
+            MediaAlbumChangeRequest.deleteAlbumsWithUriSync(context, albumUris);
+            return undefined;
           } catch(e) {
             return e as MediaLibraryAniError;
           }
