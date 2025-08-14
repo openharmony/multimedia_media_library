@@ -196,6 +196,7 @@ void MediaLibraryRestore::DoRdbBackup()
 
 void MediaLibraryRestore::InterruptBackup()
 {
+    MEDIA_INFO_LOG("InterruptBackup [start]");
     if (!isBackuping_.load()) {
         MEDIA_INFO_LOG("rdb is not backuping, no need to interrupt");
         return;
