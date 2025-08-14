@@ -56,7 +56,12 @@ public:
     int32_t GetVideoToCache(std::vector<PhotosPo> &photosPos);
     int32_t QueryFilePosStat(const int32_t position, int &num);
     int32_t QueryCloudThmStat(const int32_t cloudThmStat, int &num);
-    int32_t QueryDirtyTypeStat(const int32_t dirtyType, int &num);
+    int32_t GetDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat);
+
+private:
+    int32_t QueryDirtyTypeStat(const int32_t dirtyType, int64_t &num);
+    void InitDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat);
+    int32_t GetDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat, const int32_t dirtyType);
 
 private:
     const std::vector<std::string> COLUMNS_VIDEO_CACHE_QUERY = {
@@ -70,6 +75,7 @@ private:
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PhotoColumn::PHOTO_ORIENTATION,
     };
+    const int32_t DIRTY_TYPE_STAT_SIZE = 9;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DATA_DAO_H

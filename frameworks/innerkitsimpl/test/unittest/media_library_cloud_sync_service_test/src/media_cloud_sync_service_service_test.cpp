@@ -651,9 +651,10 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDataService_GetCloudThmStat_Test_0
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDataService_GetDirtyTypeStat_Test_001, TestSize.Level1)
 {
     CloudMediaDataService service;
-    std::vector<PhotosDto> photosDtos;
-    std::vector<uint64_t> filePosStat = service.GetDirtyTypeStat();
-    EXPECT_EQ(filePosStat.size(), 5);
+    std::vector<uint64_t> dirtyTypeStat;
+    int32_t ret = service.GetDirtyTypeStat(dirtyTypeStat);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(dirtyTypeStat.size(), 9);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDataService_UpdateLocalFileDirty_Test_001, TestSize.Level1)
