@@ -16,7 +16,9 @@
 
 #include "clone_restore_classify.h"
 
+#include "classify_aggregate_types.h"
 #include "backup_database_utils.h"
+#include "media_library_db_upgrade.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -56,6 +58,7 @@ const string FIELD_TYPE_INT = "INT";
 
 const int32_t CLASSIFY_STATUS_SUCCESS = 1;
 const int32_t CLASSIFY_TYPE = 4097;
+const int32_t FRONT_CAMERA = 1;
 
 const unordered_map<string, unordered_set<string>> COMPARED_COLUMNS_MAP = {
     { "tab_analysis_label",
@@ -125,6 +128,7 @@ void CloneRestoreClassify::Restore(const std::unordered_map<int32_t, PhotoInfo> 
     for (int32_t offset = 0; offset < totalNumber; offset += PAGE_SIZE) {
         RestoreBatch(photoInfoMap);
     }
+    AddSpecialAlbum();
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     restoreTimeCost_ = end - start;
     ReportRestoreTask();
@@ -560,5 +564,61 @@ void CloneRestoreClassify::ReportRestoreTaskofVideo()
     info.failedCount = failInsertVideoLabelCnt_;
     info.duplicateCount = duplicateVideoLabelCnt_;
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).Report(info);
+}
+
+void CloneRestoreClassify::AddSpecialAlbum()
+{
+    MEDIA_INFO_LOG("AddSpecialAlbum start");
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    AddSelfieAlbum();
+    AddUserCommentAlbum();
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("AddSpecialAlbum end, cost: %{public}" PRId64,
+        endTime - startTime);
+}
+
+void CloneRestoreClassify::AddSelfieAlbum()
+{
+    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "AddSelfieAlbum failed, rdbStore is nullptr");
+    std::string selfieAlbum = std::to_string(static_cast<int32_t>(AggregateType::SELFIE_ALBUM));
+    DataTransfer::MediaLibraryDbUpgrade medialibraryDbUpgrade;
+    bool isExist =  medialibraryDbUpgrade.CheckClassifyAlbumExist(selfieAlbum, *this->mediaLibraryRdb_);
+    CHECK_AND_RETURN_INFO_LOG(!isExist, "SelfieAlbum already exist.");
+    std::string querySql = "SELECT count(1) AS count FROM Photos WHERE front_camera = ?;";
+    std::vector<NativeRdb::ValueObject> params;
+    params.push_back(FRONT_CAMERA);
+    auto resultSet = mediaLibraryRdb_->QuerySql(querySql, params);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK && GetInt32Val("count", resultSet) > 0) {
+        resultSet->Close();
+        int32_t ret = medialibraryDbUpgrade.CreateClassifyAlbum(selfieAlbum, *this->mediaLibraryRdb_);
+        CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "AddSelfieAlbum failed");
+        MEDIA_INFO_LOG("AddSelfieAlbum success");
+        return;
+    }
+    resultSet->Close();
+    MEDIA_INFO_LOG("not meet the criteria for AddSelfieAlbum");
+}
+
+void CloneRestoreClassify::AddUserCommentAlbum()
+{
+    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "AddUserCommentAlbum failed, rdbStore is nullptr");
+    std::string userCommentAlbum = std::to_string(static_cast<int32_t>(AggregateType::USER_COMMENT_ALBUM));
+    DataTransfer::MediaLibraryDbUpgrade medialibraryDbUpgrade;
+    bool isExist =  medialibraryDbUpgrade.CheckClassifyAlbumExist(userCommentAlbum, *this->mediaLibraryRdb_);
+    CHECK_AND_RETURN_INFO_LOG(!isExist, "UserCommentAlbum already exist.");
+    std::string querySql = "SELECT count(1) AS count FROM Photos "
+        "WHERE user_comment IS NOT NULL AND user_comment != '';";
+    auto resultSet = mediaLibraryRdb_->QuerySql(querySql);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK && GetInt32Val("count", resultSet) > 0) {
+        resultSet->Close();
+        int32_t ret = medialibraryDbUpgrade.CreateClassifyAlbum(userCommentAlbum, *this->mediaLibraryRdb_);
+        CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "AddUserCommentAlbum failed");
+        MEDIA_INFO_LOG("AddUserCommentAlbum success");
+        return;
+    }
+    resultSet->Close();
+    MEDIA_INFO_LOG("not meet the criteria for AddUserCommentAlbum");
 }
 }
