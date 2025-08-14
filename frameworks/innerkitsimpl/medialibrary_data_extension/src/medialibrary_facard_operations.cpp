@@ -347,6 +347,7 @@ int32_t MediaLibraryFaCardOperations::HandleRemoveGalleryFormOperation(NativeRdb
 
 void MediaLibraryFaCardOperations::InitRegisterObserver()
 {
+    MEDIA_INFO_LOG("enter InitRegisterObserver");
     const int INIT_NUM = 0;
     const int END_NUM = 10;
     const int DELAY_NUM = 100;
