@@ -1036,7 +1036,7 @@ int32_t CloudMediaPhotosDao::GetMetaModifiedRecords(
     for (auto &record : tempList) {
         ownerAlbumId = record.ownerAlbumId.value_or(-1);
         fileId = record.fileId.value_or(-1);
-        isValid = ownerAlbumId > 0 && fileId > 0;
+        isValid = fileId > 0;
         CHECK_AND_RETURN_RET_LOG(isValid, E_HAS_DB_ERROR, "GetMetaModifiedRecords Invalid Data.");
         ret = this->AddRemoveAlbumCloudId(rdbStore, fileId, ownerAlbumId, record);
         CHECK_AND_PRINT_LOG(ret == E_OK, "AddRemoveAlbumCloudId failed. ret: %{public}d", ret);
@@ -1084,7 +1084,7 @@ int32_t CloudMediaPhotosDao::GetFileModifiedRecords(int32_t size, std::vector<Ph
     for (auto &record : tempList) {
         ownerAlbumId = record.ownerAlbumId.value_or(-1);
         fileId = record.fileId.value_or(-1);
-        isValid = ownerAlbumId > 0 && fileId > 0;
+        isValid = fileId > 0;
         CHECK_AND_RETURN_RET_LOG(isValid, E_HAS_DB_ERROR, "GetFileModifiedRecords Invalid Data.");
         ret = this->AddRemoveAlbumCloudId(rdbStore, fileId, ownerAlbumId, record);
         CHECK_AND_PRINT_LOG(ret == E_OK, "AddRemoveAlbumCloudId failed. ret: %{public}d", ret);
@@ -1149,7 +1149,7 @@ int32_t CloudMediaPhotosDao::GetCopyRecords(int32_t size, std::vector<PhotosPo> 
     for (auto &record : tempList) {
         ownerAlbumId = record.ownerAlbumId.value_or(-1);
         fileId = record.fileId.value_or(-1);
-        isValid = ownerAlbumId > 0 && fileId > 0;
+        isValid = fileId > 0;
         CHECK_AND_RETURN_RET_LOG(isValid, E_HAS_DB_ERROR, "GetCopyRecords Invalid Data.");
         ret = this->AddRemoveAlbumCloudId(rdbStore, fileId, ownerAlbumId, record);
         CHECK_AND_PRINT_LOG(ret == E_OK, "AddRemoveAlbumCloudId failed. ret: %{public}d", ret);
