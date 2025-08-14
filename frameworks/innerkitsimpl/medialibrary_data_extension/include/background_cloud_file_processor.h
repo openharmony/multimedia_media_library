@@ -25,11 +25,11 @@
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
 #include "media_file_uri.h"
-#include "medialibrary_base_bg_processor.h"
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+constexpr int32_t PROCESS_INTERVAL = 5 * 60 * 1000;  // 5 minute
 constexpr int32_t DOWNLOAD_INTERVAL = 1 * 60 * 1000;  // 1 minute
 constexpr int32_t DOWNLOAD_DURATION = 10 * 1000; // 10 seconds
 constexpr int32_t DOWNLOAD_FAIL_MAX_TIMES = 5; // 5 times
@@ -39,20 +39,15 @@ typedef struct {
     bool isVideo;
 } QueryOption;
 
-class EXPORT BackgroundCloudFileProcessor : public MediaLibraryBaseBgProcessor {
+class BackgroundCloudFileProcessor {
 public:
     EXPORT static void StartTimer();
-    EXPORT static void StopTimer(bool isReportSchedule = false);
+    EXPORT static void StopTimer();
     EXPORT static void SetDownloadLatestFinished(bool downloadLatestFinished);
     EXPORT static bool GetDownloadLatestFinished();
     EXPORT static void HandleSuccessCallback(const DownloadProgressObj &progress);
     EXPORT static void HandleFailedCallback(const DownloadProgressObj &progress);
     EXPORT static void HandleStoppedCallback(const DownloadProgressObj &progress);
-    EXPORT static void ProcessCloudData();
-    EXPORT static void StopUpdateData();
-
-    int32_t Start(const std::string &taskExtra) override;
-    int32_t Stop(const std::string &taskExtra) override;
 
 private:
     typedef struct {
@@ -96,8 +91,23 @@ private:
         DownloadFiles downloadFiles_;
     };
 
+    class UpdateAbnormalData : public AsyncTaskData {
+    public:
+        UpdateAbnormalData(UpdateData updateData) : updateData_(updateData){};
+        ~UpdateAbnormalData() override = default;
+
+        UpdateData updateData_;
+    };
+
+    class UpdateAbnormalDayMonthYearData : public AsyncTaskData {
+    public:
+        UpdateAbnormalDayMonthYearData(std::vector<std::string> fileIds) : fileIds_(fileIds){};
+        ~UpdateAbnormalDayMonthYearData() override = default;
+
+        std::vector<std::string> fileIds_;
+    };
+
     static void DownloadCloudFiles();
-    static bool DownloadCloudFilesSync();
     static bool GetStorageFreeRatio(double &freeRatio);
     static void SetLastDownloadMilliSecond(int64_t lastDownloadMilliSecond);
     static int64_t GetLastDownloadMilliSecond();
@@ -113,22 +123,27 @@ private:
     static int32_t AddDownloadTask(const DownloadFiles &downloadFiles);
     static void DownloadCloudFilesExecutor(AsyncTaskData *data);
     static void StopDownloadFiles();
+    static void ProcessCloudData();
     static void UpdateCloudData();
     static void UpdateAbnormalDayMonthYear();
     static std::shared_ptr<NativeRdb::ResultSet> QueryUpdateData(bool isCloud, bool isVideo);
     static void SetPredicates(NativeRdb::RdbPredicates &predicates, bool isCloud, bool isVideo);
     static void ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet, UpdateData &updateData,
         bool isCloud, bool isVideo);
-    static void UpdateCloudDataExecutor(const UpdateData &updateData);
+        static int32_t AddUpdateDataTask(const UpdateData &updateData);
+        static void UpdateCloudDataExecutor(AsyncTaskData *data);
     static void UpdateAbnormaldata(std::unique_ptr<Metadata> &metadata, const std::string &tableName);
     static void GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata);
     static int32_t GetExtractMetadata(std::unique_ptr<Metadata> &metadata);
+    static void StopUpdateData();
     static void UpdateCurrentOffset(bool isCloud, bool isVideo);
 
+    static int32_t processInterval_;
     static int32_t downloadInterval_;
     static int32_t downloadDuration_;
     static std::recursive_mutex mutex_;
     static Utils::Timer timer_;
+    static uint32_t cloudDataTimerId_;
     static uint32_t startTimerId_;
     static uint32_t stopTimerId_;
     static bool isUpdating_;
@@ -139,8 +154,6 @@ private:
     static std::mutex downloadResultMutex_;
     static std::unordered_map<std::string, DownloadStatus> downloadResult_;
     static int64_t downloadId_;
-
-    static const std::string taskName_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -26,8 +26,6 @@
 
 namespace OHOS {
 namespace Media {
-#define EXPORT __attribute__ ((visibility ("default")))
-
 class MediaLibraryTableAssetAlbumOperations {
 public:
     const std::string OPRN_TABLE_NAME = "tab_asset_and_album_operation";
@@ -40,7 +38,7 @@ public:
 
     std::shared_ptr<NativeRdb::ResultSet> Query(const NativeRdb::RdbPredicates &rdbPredicate,
         const std::vector<std::string> &columns);
-    EXPORT int32_t OprnTableOversizeChecker(void);
+    int32_t OprnTableOversizeChecker(void);
     static int32_t Delete(NativeRdb::RdbPredicates &predicates);
 };
 } // namespace Media

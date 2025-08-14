@@ -23,8 +23,6 @@
 #include "cloud_sync_helper.h"
 #include "dfx_utils.h"
 #include "directory_ex.h"
-#include "ffrt.h"
-#include "ffrt_inner.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -60,8 +58,6 @@ static const string MOVING_PHOTO_PROCESS_FLAG = "multimedia.medialibrary.cloneFl
 static const string LIVE_PHOTO_COMPAT_DONE = "0";
 
 bool MovingPhotoProcessor::isProcessing_ = false;
-
-MovingPhotoProcessor::~MovingPhotoProcessor() {}
 
 static bool IsCloudLivePhotoRefreshed()
 {
@@ -598,23 +594,6 @@ void MovingPhotoProcessor::UpdateLivePhotoData(const LivePhotoData& livePhotoDat
     int32_t result = rdbStore->Update(updateCount, PhotoColumn::PHOTOS_TABLE, values, whereClause, whereArgs);
     cond = (result != NativeRdb::E_OK || updateCount <= 0);
     CHECK_AND_RETURN_LOG(!cond, "Update failed. result: %{public}d, updateCount: %{public}d", result, updateCount);
-}
-
-int32_t MovingPhotoProcessor::Start(const std::string &taskExtra)
-{
-    MEDIA_INFO_LOG("Start begin");
-    ffrt::submit([this]() {
-        StartProcess();
-        RemoveTaskName(taskName_);
-        ReportTaskComplete(taskName_);
-    });
-    return E_OK;
-}
-
-int32_t MovingPhotoProcessor::Stop(const std::string &taskExtra)
-{
-    StopProcess();
-    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

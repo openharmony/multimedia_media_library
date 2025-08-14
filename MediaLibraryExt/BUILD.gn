@@ -20,9 +20,7 @@ ohos_hap("medialibrary_ext_hap") {
     ":MediaLibStage_js_assets",
     ":MediaLibStage_resources",
   ]
-  shared_libraries = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-  ]
+  shared_libraries = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
   certificate_profile = "./signature/medialib.p7b"
   hap_name = "Media_Library_Ext"
   part_name = "media_library"

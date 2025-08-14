@@ -41,7 +41,6 @@ int32_t MediaLibraryTableAssetAlbumOperations::Delete(NativeRdb::RdbPredicates &
 
 int32_t MediaLibraryTableAssetAlbumOperations::OprnTableOversizeChecker(void)
 {
-    MEDIA_INFO_LOG("Begin OprnTableOversizeChecker");
     static int64_t lastcheckTime {0};
     if ((MediaFileUtils::UTCTimeMilliSeconds() - lastcheckTime) >= OPRN_TABLE_OVERSIZE_CHECK_INTERVAL) {
         MEDIA_INFO_LOG("operation table oversize check");
