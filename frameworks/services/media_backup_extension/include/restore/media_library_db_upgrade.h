@@ -26,6 +26,8 @@ namespace DataTransfer {
 class MediaLibraryDbUpgrade {
 public:
     int32_t OnUpgrade(NativeRdb::RdbStore &store);
+    int32_t CreateClassifyAlbum(const std::string &newAlbumName, NativeRdb::RdbStore &store);
+    bool CheckClassifyAlbumExist(const std::string &newAlbumName, NativeRdb::RdbStore &store);
 
 private:
     int32_t UpgradeAlbumPlugin(NativeRdb::RdbStore &store);
@@ -34,6 +36,7 @@ private:
     int32_t UpgradePhotoMap(NativeRdb::RdbStore &store);
     int32_t MergeAlbumFromOldBundleNameToNewBundleName(NativeRdb::RdbStore &store);
     int32_t UpgradePhotosBelongsToAlbum(NativeRdb::RdbStore &store);
+    void AggregateClassifyAlbum(NativeRdb::RdbStore &store);
 
 private:
     int32_t AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store);
@@ -41,6 +44,10 @@ private:
     int32_t MoveSingleRelationshipToPhotos(NativeRdb::RdbStore &store);
     int32_t UpdatelPathColumn(NativeRdb::RdbStore &store);
     int32_t ExecSqlWithRetry(std::function<int32_t()> execSql);
+    void ProcessClassifyAlbum(const std::string &newAlbumName, const std::vector<std::string> &oriAlbumNames,
+        NativeRdb::RdbStore &store);
+    void ProcessOcrClassifyAlbum(const std::string &newAlbumName, const std::vector<std::string> &ocrText,
+        NativeRdb::RdbStore &store);
 
 private:
     DbUpgradeUtils dbUpgradeUtils_;
@@ -292,6 +299,69 @@ private:
         SQL_PHOTO_ALBUM_INSERT_OTHER_ALBUM,
         SQL_PHOTOS_UPDATE_OTHER_ALBUM,
     };
+    const std::string SQL_QUERY_CLASSIFY_ALBUM_EXIST = " \
+        SELECT \
+            count(1) AS count \
+        FROM AnalysisAlbum \
+        WHERE \
+            album_type = ? \
+        AND \
+            album_subtype = ? \
+        AND \
+            album_name = ?;";
+    const std::string SQL_CREATE_CLASSIFY_ALBUM = " \
+        INSERT INTO AnalysisAlbum( \
+            album_type, \
+            album_subtype, \
+            album_name, \
+            is_local, \
+            date_modified, \
+            count \
+            ) \
+        VALUES( \
+            ?, \
+            ?, \
+            ?, \
+            1, \
+            0, \
+            0 \
+        );";
+    const std::string SQL_INSERT_MAPPING_RESULT = " \
+        INSERT INTO AnalysisPhotoMap( \
+            map_album, \
+            map_asset \
+            ) \
+        SELECT DISTINCT ( \
+            SELECT \
+                album_id \
+            FROM AnalysisAlbum \
+            WHERE album_name = ? \
+            ) AS album_id, \
+            AnalysisPhotoMap.map_asset \
+        FROM AnalysisAlbum \
+        INNER JOIN AnalysisPhotoMap \
+            ON AnalysisAlbum.album_id = AnalysisPhotoMap.map_album \
+            AND AnalysisAlbum.album_type = ? \
+            AND AnalysisAlbum.album_subtype = ? \
+            AND AnalysisAlbum.album_name IN ";
+    const std::string SQL_SELECT_CLASSIFY_OCR = " \
+        WITH TempResult AS ( \
+            SELECT DISTINCT ( \
+                SELECT \
+                    album_id \
+                FROM AnalysisAlbum \
+                WHERE album_name = ? \
+                ) AS album_id, \
+                AnalysisPhotoMap.map_asset as map_asset \
+            FROM AnalysisAlbum \
+            INNER JOIN AnalysisPhotoMap \
+            ON AnalysisAlbum.album_id = AnalysisPhotoMap.map_album \
+            AND AnalysisAlbum.album_type = ? \
+            AND AnalysisAlbum.album_subtype = ? \
+            AND AnalysisAlbum.album_name = ? \
+            INNER JOIN tab_analysis_ocr \
+            ON AnalysisPhotoMap.map_asset = tab_analysis_ocr.file_id \
+            AND (";
 };
 }  // namespace DataTransfer
 }  // namespace OHOS::Media
