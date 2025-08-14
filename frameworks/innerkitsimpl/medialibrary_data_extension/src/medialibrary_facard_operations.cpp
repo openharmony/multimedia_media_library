@@ -277,7 +277,7 @@ void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
         return;
     }
     for (const auto& observer : formAssetObservers) {
-        if (observer->assetChangeUri.empty()) {
+        if (!observer || observer->assetChangeUri.empty()) {
             MEDIA_ERR_LOG("observer->assetChangeUri is null");
             return;
         }
@@ -306,7 +306,7 @@ void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
         return;
     }
     for (const auto& observer : formCloudSyncObservers) {
-        if (observer->cloudSyncChangeUri.empty()) {
+        if (!observer || observer->cloudSyncChangeUri.empty()) {
             MEDIA_ERR_LOG("observer->cloudSyncChangeUri is null");
             return;
         }
