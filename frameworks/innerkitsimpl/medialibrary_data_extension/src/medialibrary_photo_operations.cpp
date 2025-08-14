@@ -117,7 +117,10 @@ constexpr int32_t OFFSET = 5;
 constexpr int32_t ZERO_ASCII = '0';
 const std::string SET_LOCATION_KEY = "set_location";
 const std::string SET_LOCATION_VALUE = "1";
-const std::string EDITDATA = "{\"system\":\"\"}";
+const std::string SPECIAL_EDIT_COMPATIBLE_FORMAT = "system";
+const std::string SPECIAL_EDIT_FORMAT_VERSION = "1.0";
+const std::string SPECIAL_EDIT_EDIT_DATA = "";
+const std::string SPECIAL_EDIT_APP_ID = "com.ohos.photos";
 
 enum ImageFileType : int32_t {
     JPEG = 1,
@@ -1906,7 +1909,8 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET_LOG(changedRows >= 0, changedRows, "Update owner album id fail when move from system album");
     CHECK_AND_EXECUTE(assetString.empty(), MediaAnalysisHelper::AsyncStartMediaAnalysisService(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), assetString));
-
+    
+    assetRefresh.RefreshAlbum();
     for (auto it = ownerAlbumIds.begin(); it != ownerAlbumIds.end(); it++) {
         MEDIA_INFO_LOG("System album move assets target album id is: %{public}s", to_string(it->first).c_str());
         int32_t oriAlbumId = it->first;
@@ -1919,7 +1923,6 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
                 NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId);
         }
     }
-    assetRefresh.RefreshAlbum();
     assetRefresh.Notify();
     return changedRows;
 }
@@ -2886,7 +2889,13 @@ int32_t MediaLibraryPhotoOperations::DoRevertAfterAddFiltersFailed(const std::sh
     CHECK_AND_RETURN_RET_LOG(!editDataPath.empty(), E_INVALID_VALUES, "EditData path is empty");
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(editDataPath), E_HAS_FS_ERROR,
         "Failed to create editdata file %{private}s", editDataPath.c_str());
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataPath, EDITDATA), E_HAS_FS_ERROR,
+    nlohmann::json editDataJson;
+    editDataJson[COMPATIBLE_FORMAT] = SPECIAL_EDIT_COMPATIBLE_FORMAT;
+    editDataJson[FORMAT_VERSION] = SPECIAL_EDIT_FORMAT_VERSION;
+    editDataJson[EDIT_DATA] = SPECIAL_EDIT_EDIT_DATA;
+    editDataJson[APP_ID] = SPECIAL_EDIT_APP_ID;
+    string editData = editDataJson.dump();
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataPath, editData), E_HAS_FS_ERROR,
         "Failed to write editdata:%{private}s", editDataPath.c_str());
     UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     return E_OK;

@@ -187,13 +187,6 @@ static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
 
     selectionTotal = FILE_ID + " = " + fileId + " AND " + AESTHETICS_SCORE_ALL_STATUS + " = 1";
     DeleteFromVisionTables(fileId, selectionTotal, AESTHETICS_SCORE_ALL_STATUS, PAH_ANA_ATTS);
-
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Can not get rdbstore");
-        return;
-    }
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(rdbStore, {fileId}, NEED_UPDATE_TYPE);
 }
 
 int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &cmd)
