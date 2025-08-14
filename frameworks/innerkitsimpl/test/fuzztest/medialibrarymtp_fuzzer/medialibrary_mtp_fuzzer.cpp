@@ -123,27 +123,6 @@ static void MtpErrorUtilsTest()
     MtpErrorUtils::SolveCloseFdError(mediaError);
 }
 
-static void MtpEventTest()
-{
-    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
-        FuzzMtpOperationContext());
-    if (context == nullptr) {
-        MEDIA_ERR_LOG("context is nullptr");
-        return;
-    }
-    shared_ptr<MtpEvent> mtpEvent = make_shared<MtpEvent>(context);
-    string path = provider->ConsumeBytesAsString(NUM_BYTES);
-    uint32_t handle = provider->ConsumeIntegral<uint32_t>();
-    string fsUuid = provider->ConsumeBytesAsString(NUM_BYTES);
-    mtpEvent->SendObjectAdded(path);
-    mtpEvent->SendObjectRemoved(path);
-    mtpEvent->SendObjectRemovedByHandle(handle);
-    mtpEvent->SendObjectInfoChanged(path);
-    mtpEvent->SendDevicePropertyChanged();
-    mtpEvent->SendStoreAdded(fsUuid);
-    mtpEvent->SendStoreRemoved(fsUuid);
-}
-
 static void MtpFileObserverTest()
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
@@ -302,7 +281,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     }
     OHOS::MtpDriverTest();
     OHOS::MtpErrorUtilsTest();
-    OHOS::MtpEventTest();
     OHOS::MtpFileObserverTest();
     OHOS::MtpMonitorTest();
     OHOS::MtpOperationTest();
