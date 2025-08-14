@@ -3478,18 +3478,22 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_errin
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_backup_errinfo_json_test_001");
     unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    ASSERT_NE(cloneRestoreService.get(), nullptr);
     cloneRestoreService->errorCode_ = RestoreError::SUCCESS;
     cloneRestoreService->errorInfo_ = "ERRORINFO";
-    cloneRestoreService->GetBackupErrorInfoJson();
+    auto errorInfoJson = cloneRestoreService->GetBackupErrorInfoJson();
+    EXPECT_EQ(errorInfoJson[STAT_KEY_ERROR_CODE], "0");
 
     cloneRestoreService->errorCode_ = RestoreError::RETAIN_FORCE_TIMEOUT;
-    cloneRestoreService->GetBackupErrorInfoJson();
+    errorInfoJson = cloneRestoreService->GetBackupErrorInfoJson();
+    EXPECT_EQ(errorInfoJson[STAT_KEY_ERROR_CODE], "13500099");
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_release_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_release_001");
     unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    ASSERT_NE(cloneRestoreService.get(), nullptr);
     cloneRestoreService->Release(ReleaseScene::BACKUP);
     cloneRestoreService->Release(ReleaseScene::RESTORE);
 }

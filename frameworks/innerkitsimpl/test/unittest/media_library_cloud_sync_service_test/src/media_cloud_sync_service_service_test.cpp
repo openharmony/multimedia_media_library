@@ -919,9 +919,15 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_UnlinkAsset_Test_0
 {
     CloudMediaDownloadService service;
     OnDownloadAssetData assetData;
-    assetData.localPath = "/xxx/xxx";
+    assetData.localPath = "/data/abcedf.txt";
     service.UnlinkAsset(assetData);
-    EXPECT_EQ(assetData.localPath, "/xxx/xxx");
+    EXPECT_EQ(assetData.errorMsg, "unlink failed");
+
+    int fd = creat(assetData.localPath.c_str(), S_IRUSR | S_IWUSR);
+    ASSERT_GT(fd, 0);
+    service.UnlinkAsset(assetData);
+    EXPECT_EQ(access(assetData.localPath.c_str(), F_OK), -1);
+    close(fd);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_ResetAssetModifyTime_Test_001, TestSize.Level1)
@@ -929,24 +935,23 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_ResetAssetModifyTi
     CloudMediaDownloadService service;
     OnDownloadAssetData assetData;
     assetData.localPath = "/xxx/xxx";
+    EXPECT_EQ(access(assetData.localPath.c_str(), F_OK), -1);
     service.ResetAssetModifyTime(assetData);
-    EXPECT_EQ(assetData.localPath, "/xxx/xxx");
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_ResetAssetModifyTime_Test_002, TestSize.Level1)
 {
     std::string filename = "/data/filetdd.txt";
-    int32_t fd = open(filename.c_str(), O_CREAT | O_RDONLY, S_IRUSR);
-    close(fd);
-    chmod(filename.c_str(), S_IRUSR | S_IRGRP | S_IROTH);
+    int fd = creat(filename.c_str(), S_IRUSR | S_IWUSR);
+    ASSERT_GT(fd, 0);
+    EXPECT_EQ(access(filename.c_str(), F_OK), E_OK);
 
     CloudMediaDownloadService service;
     OnDownloadAssetData assetData;
     assetData.localPath = filename;
     service.ResetAssetModifyTime(assetData);
-    EXPECT_EQ(assetData.localPath, filename);
-
     system("rm -rf /data/filetdd.txt");
+    close(fd);
 }
 
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_SliceAssetFile_Test_001, TestSize.Level1)

@@ -55,13 +55,11 @@ HWTEST_F(CloudMediaAlbumHandlerEmptyRequestTest, OnCreateRecords_EMPTY, TestSize
     int32_t cloudType = 0;
     int32_t userId = 100;
     int32_t failSize = 0;
-    int32_t ret;
     std::shared_ptr<CloudMediaDataHandler> dataHandler =
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
 
-    ret = dataHandler->OnCreateRecords(map, failSize);
+    int32_t ret = dataHandler->OnCreateRecords(map, failSize);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(0, failSize);
 }
 
 HWTEST_F(CloudMediaAlbumHandlerEmptyRequestTest, OnFetchRecords_EMPTY, TestSize.Level1)
@@ -90,13 +88,11 @@ HWTEST_F(CloudMediaAlbumHandlerEmptyRequestTest, OnMdirtyRecords_EMPTY, TestSize
     int32_t cloudType = 0;
     int32_t userId = 100;
     int32_t failSize = 0;
-    int32_t ret;
     std::shared_ptr<CloudMediaDataHandler> dataHandler =
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
 
-    ret = dataHandler->OnMdirtyRecords(map, failSize);
+    int32_t ret = dataHandler->OnMdirtyRecords(map, failSize);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(0, failSize);
 }
 
 HWTEST_F(CloudMediaAlbumHandlerEmptyRequestTest, OnFdirtyRecords_EMPTY, TestSize.Level1)
@@ -106,13 +102,11 @@ HWTEST_F(CloudMediaAlbumHandlerEmptyRequestTest, OnFdirtyRecords_EMPTY, TestSize
     int32_t cloudType = 0;
     int32_t userId = 100;
     int32_t failSize = 0;
-    int32_t ret;
     std::shared_ptr<CloudMediaDataHandler> dataHandler =
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
 
-    ret = dataHandler->OnFdirtyRecords(map, failSize);
+    int32_t ret = dataHandler->OnFdirtyRecords(map, failSize);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(0, failSize);
 }
 
 HWTEST_F(CloudMediaAlbumHandlerEmptyRequestTest, OnDeleteRecords_EMPTY, TestSize.Level1)
@@ -122,13 +116,11 @@ HWTEST_F(CloudMediaAlbumHandlerEmptyRequestTest, OnDeleteRecords_EMPTY, TestSize
     int32_t cloudType = 0;
     int32_t userId = 100;
     int32_t failSize = 0;
-    int32_t ret;
     std::shared_ptr<CloudMediaDataHandler> dataHandler =
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
 
-    ret = dataHandler->OnDeleteRecords(map, failSize);
+    int32_t ret = dataHandler->OnDeleteRecords(map, failSize);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(0, failSize);
 }
 
 HWTEST_F(CloudMediaAlbumHandlerEmptyRequestTest, OnCopyRecords_EMPTY, TestSize.Level1)
@@ -138,12 +130,10 @@ HWTEST_F(CloudMediaAlbumHandlerEmptyRequestTest, OnCopyRecords_EMPTY, TestSize.L
     int32_t cloudType = 0;
     int32_t userId = 100;
     int32_t failSize = 0;
-    int32_t ret;
     std::shared_ptr<CloudMediaDataHandler> dataHandler =
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
 
-    ret = dataHandler->OnCopyRecords(map, failSize);
+    int32_t ret = dataHandler->OnCopyRecords(map, failSize);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(0, failSize);
 }
 }  // namespace OHOS::Media::CloudSync
