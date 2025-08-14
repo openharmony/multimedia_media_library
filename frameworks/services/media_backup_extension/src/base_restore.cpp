@@ -18,7 +18,7 @@
 #include "base_restore.h"
 
 #include <sstream>
-
+#include <cinttypes>
 #include "application_context.h"
 #include "background_task_mgr_helper.h"
 #include "backup_database_utils.h"
@@ -54,6 +54,7 @@
 #include "medialibrary_rdb_transaction.h"
 #include "database_report.h"
 #include "ohos_account_kits.h"
+
 
 namespace OHOS {
 namespace Media {
@@ -2148,23 +2149,23 @@ bool BaseRestore::WaitSouthDeviceExitTimeout()
     constexpr int64_t defaultValueTime = 0;
     int64_t startTimeClean = GetSouthDeviceSwithStatusTimestamp();
     int64_t startTimeWait = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("Wait for the south device to exit. startTimeWait: %{public}lld, startTimeClean: %{public}lld",
-        startTimeWait, startTimeClean);
+    MEDIA_INFO_LOG("Wait for the south device to exit. startTimeWait: %{public}" PRId64
+        ", startTimeClean: %{public}" PRId64, startTimeWait, startTimeClean);
     while (startTimeClean > 0) {
         auto nowTime = MediaFileUtils::UTCTimeMilliSeconds();
         int64_t waitTimeout = RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND; // unit: ms
         if ((nowTime - startTimeWait) > waitTimeout) {
-            MEDIA_WARN_LOG("[Restore or Backup] timeout: now: %{public}lld, startTimeWait: %{public}lld, "
-                "startTimeClean: %{public}lld", nowTime, startTimeWait, startTimeClean);
+            MEDIA_WARN_LOG("[Restore or Backup] timeout: now: %{public}" PRId64", startTimeWait: %{public}" PRId64
+                ", startTimeClean: %{public}" PRId64, nowTime, startTimeWait, startTimeClean);
             return true;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(
             RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_SLEEP_TIME_MILLISECOND));
         startTimeClean = GetSouthDeviceSwithStatusTimestamp();
-        MEDIA_DEBUG_LOG("[Restore or Backup] waiting: now: %{public}lld, startTimeWait: %{public}lld,"
-            " startTimeClean: %{public}lld", nowTime, startTimeWait, startTimeClean);
+        MEDIA_DEBUG_LOG("[Restore or Backup] waiting: now: %{public}" PRId64", startTimeWait: %{public}" PRId64
+            ", startTimeClean: %{public}" PRId64, nowTime, startTimeWait, startTimeClean);
     }
-    MEDIA_INFO_LOG("the south device has exited. exitTime: %{public}lld", MediaFileUtils::UTCTimeMilliSeconds());
+    MEDIA_INFO_LOG("the south device has exited. exitTime: %{public}" PRId64, MediaFileUtils::UTCTimeMilliSeconds());
     return false;
 }
 
