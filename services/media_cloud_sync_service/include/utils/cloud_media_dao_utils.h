@@ -29,6 +29,7 @@ public:
     static std::vector<std::string> GetNumbers(const std::vector<std::string> &albumIds);
     static std::vector<std::string> GetStringVector(const std::vector<int32_t> &intVals);
     static int32_t ToInt32(const std::string &str);
+    static std::string VectorToString(const std::vector<uint64_t> &vec, const std::string &sep = ", ");
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_CLOUD_MEDIA_DAO_UTILS_H

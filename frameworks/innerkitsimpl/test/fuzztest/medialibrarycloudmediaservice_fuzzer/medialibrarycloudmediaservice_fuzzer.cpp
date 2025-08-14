@@ -327,7 +327,8 @@ static void CloudMediadataServiceFuzzer()
 
     cloudMediaDataService->GetFilePosStat();
     cloudMediaDataService->GetCloudThmStat();
-    cloudMediaDataService->GetDirtyTypeStat();
+    std::vector<uint64_t> dirtyTypeStat;
+    cloudMediaDataService->GetDirtyTypeStat(dirtyTypeStat);
 }
 
 static void CloudMediaDownloadServiceFuzzer()

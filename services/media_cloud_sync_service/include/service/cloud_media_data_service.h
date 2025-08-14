@@ -49,7 +49,7 @@ public:
     // 大数据
     std::vector<uint64_t> GetFilePosStat();
     std::vector<uint64_t> GetCloudThmStat();
-    std::vector<uint64_t> GetDirtyTypeStat();
+    int32_t GetDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat);
 
 private:
     enum {
@@ -62,12 +62,6 @@ private:
         INDEX_LCD_TO_DOWNLOAD = 1,
         INDEX_THM_TO_DOWNLOAD = 2,
         INDEX_TO_DOWNLOAD = 3,
-        // Index of Dirty Type Statistic Info.
-        INDEX_SYNCED = 0,
-        INDEX_NEW = 1,
-        INDEX_MDIRTY = 2,
-        INDEX_FDIRTY = 3,
-        INDEX_DELETED = 4,
     };
 
 private:

@@ -147,37 +147,9 @@ std::vector<uint64_t> CloudMediaDataService::GetCloudThmStat()
     return cloudThmStat;
 }
 
-std::vector<uint64_t> CloudMediaDataService::GetDirtyTypeStat()
+int32_t CloudMediaDataService::GetDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat)
 {
-    MEDIA_INFO_LOG("GetDirtyTypeStat");
-    std::vector<uint64_t> dirtyTypeStat{0, 0, 0, 0, 0};
-    /* get synced dirty type status */
-    int num = 0;
-    this->dataDao_.QueryDirtyTypeStat(static_cast<int32_t>(DirtyType::TYPE_SYNCED), num);
-    dirtyTypeStat[INDEX_SYNCED] = static_cast<uint64_t>(num);
-    MEDIA_INFO_LOG("DirtyType[0]: %{public}d", num);
-
-    /* get new dirty type status */
-    this->dataDao_.QueryDirtyTypeStat(static_cast<int32_t>(DirtyType::TYPE_NEW), num);
-    dirtyTypeStat[INDEX_NEW] = static_cast<uint64_t>(num);
-    MEDIA_INFO_LOG("DirtyType[1]: %{public}d", num);
-
-    /* get mdirty dirty type status */
-    this->dataDao_.QueryDirtyTypeStat(static_cast<int32_t>(DirtyType::TYPE_MDIRTY), num);
-    dirtyTypeStat[INDEX_MDIRTY] = static_cast<uint64_t>(num);
-    MEDIA_INFO_LOG("DirtyType[2]: %{public}d", num);
-
-    /* get fdirty dirty type status */
-    this->dataDao_.QueryDirtyTypeStat(static_cast<int32_t>(DirtyType::TYPE_FDIRTY), num);
-    dirtyTypeStat[INDEX_FDIRTY] = static_cast<uint64_t>(num);
-    MEDIA_INFO_LOG("DirtyType[3]: %{public}d", num);
-
-    /* get deleted dirty type status */
-    this->dataDao_.QueryDirtyTypeStat(static_cast<int32_t>(DirtyType::TYPE_DELETED), num);
-    dirtyTypeStat[INDEX_DELETED] = static_cast<uint64_t>(num);
-    MEDIA_INFO_LOG("DirtyType[4]: %{public}d", num);
-
-    return dirtyTypeStat;
+    return this->dataDao_.GetDirtyTypeStat(dirtyTypeStat);
 }
 
 static bool IsLocalDirty(int32_t dirty, bool isDelete)
