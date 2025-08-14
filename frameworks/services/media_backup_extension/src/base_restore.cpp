@@ -60,6 +60,7 @@ namespace Media {
 const std::string DATABASE_PATH = "/data/storage/el2/database/rdb/media_library.db";
 const std::string SINGLE_DIR_NAME = "A";
 const std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
+const std::string RESTORE_FLAG = "multimedia.medialibrary.restoreFlag";
 const std::string BACKUP_FLAG = "multimedia.medialibrary.backupFlag";
 // 同步服务模块使用: 时间戳|0，时间戳表征任务正在清理中，0表示无清理任务
 const std::string CLOUDSYNC_SWITCH_STATUS_KEY = "persist.kernel.cloudsync.switch_status"; // ms
@@ -1650,6 +1651,21 @@ void BaseRestore::StopParameterForBackup()
     MEDIA_INFO_LOG("StopParameterForBackup set 0");
     bool retFlag = system::SetParameter(BACKUP_FLAG, "0");
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter backupFlag, retFlag:%{public}d", retFlag);
+}
+
+void BaseRestore::SetParameterForRestore()
+{
+    auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
+    MEDIA_INFO_LOG("SetParameterForRestore currentTime:%{public}s", currentTime.c_str());
+    bool retFlag = system::SetParameter(RESTORE_FLAG, currentTime);
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter restoreFlag, retFlag:%{public}d", retFlag);
+}
+
+void BaseRestore::StopParameterForRestore()
+{
+    MEDIA_INFO_LOG("StopParameterForRestore set 0");
+    bool retFlag = system::SetParameter(RESTORE_FLAG, "0");
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter restoreFlag, retFlag:%{public}d", retFlag);
 }
 
 void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType)

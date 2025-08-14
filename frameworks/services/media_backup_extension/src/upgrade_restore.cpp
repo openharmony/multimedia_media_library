@@ -453,6 +453,7 @@ void UpgradeRestore::RestorePhoto()
         MEDIA_INFO_LOG("restore mode no need to del gallery db");
     }
     ProcessBurstPhotos();
+    StopParameterForRestore();
     StopParameterForClone();
 }
 
@@ -1557,6 +1558,7 @@ void UpgradeRestore::RestoreAnalysisAlbum()
 void UpgradeRestore::SetCloneParameterAndStopSync()
 {
     SetParameterForClone();
+    SetParameterForRestore();
 #ifdef CLOUD_SYNC_MANAGER
     FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
 #endif

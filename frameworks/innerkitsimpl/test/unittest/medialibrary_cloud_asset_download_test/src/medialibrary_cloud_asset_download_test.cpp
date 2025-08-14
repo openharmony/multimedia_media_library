@@ -67,7 +67,7 @@ static constexpr int32_t ALBUM_FROM_CLOUD = 2;
 
 static const std::string CLOUD_RETIAN_STATUS_KEY = "persist.multimedia.medialibrary.retain.cloud.status";
 static const std::string HDC_RETIAN_STATUS_KEY = "persist.multimedia.medialibrary.retain.hdc.status";
-static const std::string MEIDA_RESTORE_FLAG = "multimedia.medialibrary.cloneFlag";
+static const std::string MEIDA_RESTORE_FLAG = "multimedia.medialibrary.restoreFlag";
 static const std::string MEIDA_BACKUP_FLAG = "multimedia.medialibrary.backupFlag";
 static const std::string CLOUDSYNC_SWITCH_STATUS_KEY = "persist.kernel.cloudsync.switch_status"; // ms
 static const int64_t INVALID_TIME_STAMP = -1;
