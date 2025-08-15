@@ -20,6 +20,7 @@
 #include "result_set_utils.h"
 #include "ani_class_name.h"
 #include "medialibrary_ani_utils.h"
+#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "userfile_client.h"
 #include "photo_album_ani.h"
@@ -66,14 +67,18 @@ ani_status MediaAlbumChangeRequestAni::Init(ani_env *env)
         ani_native_function {"dismissAssets", nullptr, reinterpret_cast<void *>(DismissAssets)},
         ani_native_function {"addAssets", nullptr, reinterpret_cast<void *>(AddAssets)},
         ani_native_function {"moveAssets", nullptr, reinterpret_cast<void *>(MoveAssets)},
+        ani_native_function {"moveAssetsWithUri", nullptr, reinterpret_cast<void *>(MoveAssetsWithUri)},
         ani_native_function {"mergeAlbum", nullptr, reinterpret_cast<void *>(MergeAlbum)},
         ani_native_function {"setAlbumName", nullptr, reinterpret_cast<void *>(SetAlbumName)},
         ani_native_function {"setCoverUri", nullptr, reinterpret_cast<void *>(SetCoverUri)},
         ani_native_function {"removeAssets", nullptr, reinterpret_cast<void *>(RemoveAssets)},
+        ani_native_function {"recoverAssetsWithUri", nullptr, reinterpret_cast<void *>(RecoverAssetsWithUri)},
         ani_native_function {"recoverAssets", nullptr, reinterpret_cast<void *>(RecoverAssets)},
         ani_native_function {"setDisplayLevel", nullptr, reinterpret_cast<void *>(SetDisplayLevel)},
         ani_native_function {"deleteAssets", nullptr, reinterpret_cast<void *>(DeleteAssets)},
+        ani_native_function {"deleteAssetsWithUri", nullptr, reinterpret_cast<void *>(DeleteAssetsWithUri)},
         ani_native_function {"deleteAlbumsSync", nullptr, reinterpret_cast<void *>(DeleteAlbums)},
+        ani_native_function {"deleteAlbumsWithUriSync", nullptr, reinterpret_cast<void *>(DeleteAlbumsWithUri)},
         ani_native_function {"setIsMe", nullptr, reinterpret_cast<void *>(SetIsMe)},
         ani_native_function {"dismiss", nullptr, reinterpret_cast<void *>(Dismiss)},
     };
@@ -270,48 +275,56 @@ ani_status MediaAlbumChangeRequestAni::SetAlbumName(ani_env *env, ani_object obj
     aniContext->objectInfo = Unwrap(env, object);
     CHECK_COND_RET(aniContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
 
-    auto changeRequest = aniContext->objectInfo;
-    CHECK_COND_RET(changeRequest != nullptr, ANI_ERROR, "changeRequest is nullptr");
-    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
-    CHECK_COND_RET(photoAlbum != nullptr, ANI_ERROR, "photoAlbum is nullptr");
-    ChangeRequestSetAlbumNameReqBody reqBody;
-    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
-    reqBody.albumName = photoAlbum->GetAlbumName();
-    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
-    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
-
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ALBUM_NAME);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    if (changedRows < 0) {
-        ANI_ERR_LOG("Failed to set album name, err: %{public}d", changedRows);
-        return ANI_INVALID_ARGS;
-    }
+    string albumName;
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        MediaLibraryAniUtils::GetParamStringPathMax(env, name, albumName) == ANI_OK, ANI_INVALID_ARGS,
+        "Failed to get name");
+    auto photoAlbum = aniContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, ANI_ERROR, "photoAlbum is null");
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaFileUtils::CheckAlbumName(albumName) == E_OK, ANI_INVALID_ARGS,
+        "Invalid album name");
+    CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is null");
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        ANI_INVALID_ARGS, "Only user album, highlight, smart portrait album and group photo can set album name");
+    photoAlbum->SetAlbumName(albumName);
+    aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_ALBUM_NAME);
     return ANI_OK;
 }
 
 ani_status MediaAlbumChangeRequestAni::SetCoverUri(ani_env *env, ani_object object, ani_string coverUri)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return ANI_ERROR;
+    }
     auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
     CHECK_COND_RET(aniContext != nullptr, ANI_ERROR, "aniContext is null");
     aniContext->objectInfo = Unwrap(env, object);
     CHECK_COND_RET(aniContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
     auto photoAlbum = aniContext->objectInfo->GetPhotoAlbumInstance();
-    CHECK_COND_RET(photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is nullptr");
-
-    ChangeRequestSetCoverUriReqBody reqBody;
-    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
-    reqBody.coverUri = photoAlbum->GetCoverUri();
-    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
-    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
-
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_COVER_URI);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    if (changedRows < 0) {
-        ANI_ERR_LOG("Failed to set cover uri, err: %{public}d", changedRows);
-        aniContext->error = ANI_INVALID_ARGS;
-        return ANI_INVALID_ARGS;
-    }
+    string coverUriStr;
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        MediaLibraryAniUtils::GetParamStringPathMax(env, coverUri, coverUriStr) == ANI_OK, ANI_INVALID_ARGS,
+        "Failed to get coverUri");
+    CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is null");
+    auto subtype = static_cast<int32_t>(photoAlbum->GetPhotoAlbumSubType());
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        (PhotoAlbum::IsSystemAlbum(photoAlbum->GetPhotoAlbumType()) &&
+        !PhotoAlbum::IsHiddenAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) ||
+        PhotoAlbum::IsSourceAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        ANI_INVALID_ARGS, "can't set album cover of album subtype:" + to_string(subtype));
+    photoAlbum->SetCoverUri(coverUriStr);
+    photoAlbum->SetCoverUriSource(static_cast<int32_t>(CoverUriSource::MANUAL_CLOUD_COVER));
+    aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_COVER_URI);
     return ANI_OK;
 }
 
@@ -468,7 +481,7 @@ static bool ParsePhotoAlbum(ani_env *env, ani_object targetAblum, shared_ptr<Pho
 }
 
 ani_status MediaAlbumChangeRequestAni::MoveAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset,
-    ani_object targetAblum)
+    ani_object targetAlbum)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
@@ -484,12 +497,16 @@ ani_status MediaAlbumChangeRequestAni::MoveAssets(ani_env *env, ani_object objec
     CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is null");
 
     shared_ptr<PhotoAlbum> targetPhotoAlbum = nullptr;
-    CHECK_COND_WITH_RET_MESSAGE(env, ParsePhotoAlbum(env, targetAblum, targetPhotoAlbum), ANI_INVALID_ARGS,
+    CHECK_COND_WITH_RET_MESSAGE(env, ParsePhotoAlbum(env, targetAlbum, targetPhotoAlbum), ANI_INVALID_ARGS,
         "Failed to parse album");
     CHECK_COND_RET(targetPhotoAlbum != nullptr, ANI_INVALID_ARGS, "targetPhotoAlbum is nullptr");
     CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum->GetAlbumId() != targetPhotoAlbum->GetAlbumId(),
         ANI_INVALID_ARGS, "targetAlbum cannot be self");
     vector<string> assetUriArray;
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        PhotoAlbum::IsUserPhotoAlbum(targetPhotoAlbum->GetPhotoAlbumType(), targetPhotoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsSourceAlbum(targetPhotoAlbum->GetPhotoAlbumType(), targetPhotoAlbum->GetPhotoAlbumSubType()),
+        ANI_INVALID_ARGS, "Only user and source albums can be set as target album.");
     CHECK_COND_WITH_RET_MESSAGE(env,
         MediaLibraryAniUtils::GetUriArrayFromAssets(env, arrayPhotoAsset, assetUriArray) == ANI_OK, ANI_INVALID_ARGS,
         "Failed to get assetUriArray");
@@ -503,6 +520,82 @@ ani_status MediaAlbumChangeRequestAni::MoveAssets(ani_env *env, ani_object objec
     }
     changeRequest->RecordMoveAssets(assetUriArray, targetPhotoAlbum);
     changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::MOVE_ASSETS);
+    return ANI_OK;
+}
+
+static bool CheckAssetsUri(const string& uri)
+{
+    if (uri.empty()) {
+        ANI_ERR_LOG("uri is empty, can not get fileId");
+        return false;
+    }
+    MediaFileUri fileUri(uri);
+    if (!fileUri.IsApi10()) {
+        fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
+    }
+    string fileId = fileUri.GetFileId();
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit) || atoi(fileId.c_str()) <= 0) {
+        return false;
+    }
+    return true;
+}
+
+static ani_status GetUriArray(ani_env *env, ani_object arrayUris, vector<string>& assetUriArray)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
+    vector<string> uriArray;
+    CHECK_COND_RET(MediaLibraryAniUtils::GetStringArray(env, arrayUris, uriArray) == ANI_OK,
+        ANI_INVALID_ARGS, "Failed to get assetUriArray");
+    for (auto iter = uriArray.begin(); iter != uriArray.end(); iter++) {
+        if (!CheckAssetsUri(*iter)) {
+            ANI_ERR_LOG("fileId is invalid, uri is %{public}s", iter->c_str());
+            continue;
+        }
+        assetUriArray.push_back(*iter);
+    }
+    return ANI_OK;
+}
+
+ani_status MediaAlbumChangeRequestAni::MoveAssetsWithUri(ani_env *env, ani_object object, ani_object arrayUris,
+    ani_object targetAlbum)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return ANI_ERROR;
+    }
+    auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
+    CHECK_COND_RET(aniContext != nullptr, ANI_ERROR, "aniContext is nullptr");
+    aniContext->objectInfo = Unwrap(env, object);
+    auto changeRequest = aniContext->objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, ANI_INVALID_ARGS, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is null");
+
+    shared_ptr<PhotoAlbum> targetPhotoAlbum = nullptr;
+    CHECK_COND_WITH_RET_MESSAGE(env, ParsePhotoAlbum(env, targetAlbum, targetPhotoAlbum), ANI_INVALID_ARGS,
+        "Failed to parse album");
+    CHECK_COND_RET(targetPhotoAlbum != nullptr, ANI_INVALID_ARGS, "targetPhotoAlbum is nullptr");
+    CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum->GetAlbumId() != targetPhotoAlbum->GetAlbumId(),
+        ANI_INVALID_ARGS, "targetAlbum cannot be self");
+    vector<std::string> assetUriArray;
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        PhotoAlbum::IsUserPhotoAlbum(targetPhotoAlbum->GetPhotoAlbumType(),
+        targetPhotoAlbum->GetPhotoAlbumSubType()) || PhotoAlbum::IsSourceAlbum(targetPhotoAlbum->GetPhotoAlbumType(),
+        targetPhotoAlbum->GetPhotoAlbumSubType()), ANI_INVALID_ARGS,
+        "Only user and source albums can be set as target album.");
+    CHECK_COND_WITH_RET_MESSAGE(env, GetUriArray(env, arrayUris, assetUriArray) == ANI_OK,
+        ANI_INVALID_ARGS, "Failed to get assetUriArray");
+    auto moveMap = changeRequest->GetMoveMap();
+    for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
+        if (!CheckDuplicatedAssetArray(assetUriArray, iter->second)) {
+            AniError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
+                "The previous moveAssets operation has contained the same asset");
+            return ANI_ERROR;
+        }
+    }
+    changeRequest->RecordMoveAssets(assetUriArray, targetPhotoAlbum);
+    changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::MOVE_ASSETS_WITH_URI);
     return ANI_OK;
 }
 
@@ -569,72 +662,61 @@ ani_status MediaAlbumChangeRequestAni::RecoverAssets(ani_env *env, ani_object ob
 ani_status MediaAlbumChangeRequestAni::SetDisplayLevel(ani_env *env, ani_object object, ani_int displayLevel)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return ANI_ERROR;
+    }
     auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
     CHECK_COND_RET(aniContext != nullptr, ANI_ERROR, "aniContext is null");
     aniContext->objectInfo = Unwrap(env, object);
     CHECK_COND_RET(aniContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaFileUtils::CheckDisplayLevel(displayLevel),
+        ANI_INVALID_ARGS, "Invalid display level");
     auto photoAlbum = aniContext->objectInfo->photoAlbum_;
     CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "PhotoAlbum is nullptr");
-    ChangeRequestSetCoverUriReqBody reqBody;
-    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
-    reqBody.coverUri = photoAlbum->GetCoverUri();
-    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
-    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
-
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_COVER_URI);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    if (changedRows < 0) {
-        ANI_ERR_LOG("Failed to set cover uri, err: %{public}d", changedRows);
-        aniContext->error = ANI_INVALID_ARGS;
-        return ANI_INVALID_ARGS;
-    }
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        ANI_INVALID_ARGS, "Only portrait album can set album display level");
+    photoAlbum->SetDisplayLevel(displayLevel);
+    aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_DISPLAY_LEVEL);
     return ANI_OK;
 }
 
 ani_status MediaAlbumChangeRequestAni::SetIsMe(ani_env *env, ani_object object)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return ANI_ERROR;
+    }
     auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
     CHECK_COND_RET(aniContext != nullptr, ANI_ERROR, "aniContext is null");
     aniContext->objectInfo = Unwrap(env, object);
     CHECK_COND_RET(aniContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
     auto photoAlbum = aniContext->objectInfo->GetPhotoAlbumInstance();
-    CHECK_COND_RET(photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is nullptr");
-    ChangeRequestSetIsMeReqBody reqBody;
-    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
-    reqBody.isMe = VALUE_IS_ME;
-    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
-    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
-
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_IS_ME);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    if (changedRows < 0) {
-        ANI_ERR_LOG("Failed to set album name, err: %{public}d", changedRows);
-        return ANI_INVALID_ARGS;
-    }
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        ANI_INVALID_ARGS, "Only portrait album can set is me");
+    aniContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_IS_ME);
     return ANI_OK;
 }
 
 ani_status MediaAlbumChangeRequestAni::Dismiss(ani_env *env, ani_object object)
 {
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return ANI_ERROR;
+    }
     auto asyncContext = make_unique<MediaAlbumChangeRequestContext>();
     CHECK_COND_RET(asyncContext != nullptr, ANI_ERROR, "asyncContext is null");
     asyncContext->objectInfo = Unwrap(env, object);
     CHECK_COND_RET(asyncContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, ANI_ERROR, "photoAlbum is null");
-    ChangeRequesDismissReqBody reqBody;
-    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
-    reqBody.isRemoved = VALUE_IS_REMOVED;
-    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
-    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
-
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS);
-    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    if (changedRows < 0) {
-        ANI_ERR_LOG("Failed to set album name, err: %{public}d", changedRows);
-        return ANI_INVALID_ARGS;
-    }
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        ANI_INVALID_ARGS, "Only group photo can be dismissed");
+    asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::DISMISS);
     return ANI_OK;
 }
 
@@ -671,6 +753,34 @@ ani_status MediaAlbumChangeRequestAni::DeleteAssets(ani_env *env, ani_object obj
     return ANI_OK;
 }
 
+static void DeleteAlbumsExecute(unique_ptr<MediaAlbumChangeRequestContext>& context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_IF_EQUAL(!context->deleteIds.empty(), "albumIds is empty");
+
+    DeleteAlbumsReqBody reqBody;
+    reqBody.albumIds = context->deleteIds;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS);
+    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        context->SaveError(ret);
+        ANI_ERR_LOG("Failed to delete albums, err: %{public}d", ret);
+        return;
+    }
+    ANI_INFO_LOG("Delete %{public}d album(s)", ret);
+}
+
+static void DeleteAlbumsCompleteCallback(ani_env *env, unique_ptr<MediaAlbumChangeRequestContext>& context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is null");
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    ani_object errorObj {};
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, errorObj);
+    }
+    context.reset();
+}
+
 ani_status MediaAlbumChangeRequestAni::DeleteAlbums(ani_env *env, ani_class clazz, ani_object context,
     ani_object arrayAlbum)
 {
@@ -687,7 +797,7 @@ ani_status MediaAlbumChangeRequestAni::DeleteAlbums(ani_env *env, ani_class claz
     CHECK_COND_WITH_RET_MESSAGE(env,
         MediaLibraryAniUtils::GetPhotoAlbumAniArray(env, arrayAlbum, array) == ANI_OK, ANI_INVALID_ARGS,
         "Failed to get arrayAlbum");
-
+    CHECK_COND_WITH_RET_MESSAGE(env, array.size() > 0, ANI_INVALID_ARGS, "arrayAlbum is empty");
     vector<string> deleteIds;
     for (const auto& obj : array) {
         CHECK_COND_RET(obj != nullptr && obj->GetPhotoAlbumInstance() != nullptr, ANI_ERROR, "obj is null");
@@ -698,16 +808,57 @@ ani_status MediaAlbumChangeRequestAni::DeleteAlbums(ani_env *env, ani_class claz
             "Only user and highlight album can be deleted");
         deleteIds.push_back(to_string(obj->GetPhotoAlbumInstance()->GetAlbumId()));
     }
-    DeleteAlbumsReqBody reqBody;
-    reqBody.albumIds = deleteIds;
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS);
-    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    if (ret < 0) {
-        ANI_ERR_LOG("Failed to delete albums, err: %{public}d", ret);
-        aniContext->ThrowError(env, ret, "Failed to delete albums");
+    aniContext->deleteIds = deleteIds;
+    DeleteAlbumsExecute(aniContext);
+    DeleteAlbumsCompleteCallback(env, aniContext);
+    return ANI_OK;
+}
+
+int32_t GetAlbumIdFromUri(const string &uri, string &albumId)
+{
+    auto startIndex = uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX);
+    if (startIndex != std::string::npos) {
+        albumId.clear();
+        albumId = uri.substr(startIndex + PhotoAlbumColumns::ALBUM_URI_PREFIX.length());
+        if (!all_of(albumId.begin(), albumId.end(), ::isdigit)) {
+            ANI_ERR_LOG("albumId is not digit, albumId is %{private}s", albumId.c_str());
+            return E_URI_INVALID;
+        }
+    } else {
+        ANI_ERR_LOG("Photo album uri format error");
+        return E_URI_INVALID;
+    }
+    return E_OK;
+}
+
+ani_status MediaAlbumChangeRequestAni::DeleteAlbumsWithUri(ani_env *env, ani_class clazz, ani_object context,
+    ani_object arrayAlbum)
+{
+    CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is null");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return ANI_ERROR;
     }
-    ANI_INFO_LOG("Delete %{public}d album(s)", ret);
+    auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
+    CHECK_COND_RET(aniContext != nullptr, ANI_ERROR, "aniContext is null");
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaAlbumChangeRequestAni::InitUserFileClient(env, context), ANI_INVALID_ARGS,
+        "DeleteAlbums InitUserFileClient failed");
+    std::vector<std::string> albumUris;
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        MediaLibraryAniUtils::GetStringArray(env, arrayAlbum, albumUris) == ANI_OK, ANI_INVALID_ARGS,
+        "Failed to get arrayAlbum");
+    CHECK_COND_WITH_RET_MESSAGE(env, albumUris.size() > 0, ANI_INVALID_ARGS, "albumUris is empty");
+    vector<string> deleteIds;
+    for (const auto& albumUri : albumUris) {
+        string albumId = "";
+        CHECK_COND_WITH_RET_MESSAGE(env, GetAlbumIdFromUri(albumUri, albumId) == E_OK, ANI_INVALID_ARGS,
+            "Failed to get albumId");
+        deleteIds.push_back(albumId);
+    }
+
+    aniContext->deleteIds = deleteIds;
+    DeleteAlbumsExecute(aniContext);
+    DeleteAlbumsCompleteCallback(env, aniContext);
     return ANI_OK;
 }
 
@@ -809,6 +960,38 @@ static bool CreateAlbumExecute(MediaAlbumChangeRequestContext& context)
     return true;
 }
 
+static bool FetchNewCount(MediaAlbumChangeRequestContext &context, shared_ptr<PhotoAlbum> &album)
+{
+    if (album == nullptr) {
+        ANI_ERR_LOG("Album is null");
+        context.SaveError(E_FAIL);
+        return false;
+    }
+
+    Uri queryUri(PAH_QUERY_PHOTO_ALBUM);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, album->GetAlbumId());
+    vector<string> fetchColumns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COUNT,
+        PhotoAlbumColumns::ALBUM_IMAGE_COUNT, PhotoAlbumColumns::ALBUM_VIDEO_COUNT };
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(queryUri, predicates, fetchColumns, errCode);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
+        ANI_ERR_LOG("resultSet is nullptr or go to first row failed, errCode is %{public}d", errCode);
+        context.SaveError(E_HAS_DB_ERROR);
+        return false;
+    }
+
+    bool hiddenOnly = album->GetHiddenOnly();
+    int imageCount = hiddenOnly ? -1 :
+        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet, TYPE_INT32));
+    int videoCount = hiddenOnly ? -1 :
+        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet, TYPE_INT32));
+    album->SetCount(
+        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, resultSet, TYPE_INT32)));
+    album->SetImageCount(imageCount);
+    album->SetVideoCount(videoCount);
+    return true;
+}
 
 static bool AddAssetsExecute(MediaAlbumChangeRequestContext& context)
 {
@@ -826,6 +1009,7 @@ static bool AddAssetsExecute(MediaAlbumChangeRequestContext& context)
     for (const auto& asset : changeRequest->GetAddAssetArray()) {
         reqBody.assets.push_back(asset);
     }
+    reqBody.isHiddenOnly = photoAlbum->GetHiddenOnly();
     if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT ||
         photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         ANI_INFO_LOG("Add Assets on highlight album");
@@ -884,6 +1068,46 @@ static bool RemoveAssetsExecute(MediaAlbumChangeRequestContext& context)
     return true;
 }
 
+static bool MoveAssetsExecuteWithUri(MediaAlbumChangeRequestContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+    int32_t albumId = photoAlbum->GetAlbumId();
+    auto moveMap = changeRequest->GetMoveMap();
+    changeRequest->ClearMoveMap();
+
+    for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
+        auto targetPhotoAlbum = iter->first;
+        CHECK_COND_RET(targetPhotoAlbum != nullptr, false, "targetPhotoAlbum is nullptr");
+        int32_t targetAlbumId = targetPhotoAlbum->GetAlbumId();
+        vector<string> moveAssetArray = iter->second;
+        // Move into target album.
+        DataShare::DataSharePredicates predicates;
+        predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
+        auto andPredicates = predicates.And();
+        CHECK_COND_RET(andPredicates != nullptr, false, "andPredicates is nullptr");
+        andPredicates->In(PhotoColumn::MEDIA_ID, moveAssetArray);
+
+        DataShare::DataShareValuesBucket valuesBuckets;
+        valuesBuckets.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, targetAlbumId);
+        string uri = PAH_BATCH_UPDATE_OWNER_ALBUM_ID;
+        MediaLibraryAniUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri moveAssetsUri(uri);
+        int ret = UserFileClient::Update(moveAssetsUri, predicates, valuesBuckets);
+        if (ret < 0) {
+            context.SaveError(ret);
+            ANI_ERR_LOG("Failed to move assets into album %{public}d, err: %{public}d", targetAlbumId, ret);
+            return false;
+        }
+        ANI_INFO_LOG("Move %{public}d asset(s) into album %{public}d", ret, targetAlbumId);
+        FetchNewCount(context, targetPhotoAlbum);
+    }
+    FetchNewCount(context, photoAlbum);
+    return true;
+}
+
 static bool MoveAssetsExecute(MediaAlbumChangeRequestContext& context)
 {
     auto changeRequest = context.objectInfo;
@@ -922,19 +1146,22 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestContext& context)
     photoAlbum->SetVideoCount(isHiddenOnly ? -1 : respBody.albumVideoCount);
     photoAlbum->SetImageCount(isHiddenOnly ? -1 : respBody.albumImageCount);
     photoAlbum->SetCount(respBody.albumCount);
+    ANI_INFO_LOG("origin album video count: %{public}d, image count: %{public}d, count: %{public}d",
+        respBody.albumVideoCount, respBody.albumImageCount, respBody.albumCount);
     return true;
 }
 
-static bool RecoverAssetsExecute(MediaAlbumChangeRequestContext& context)
+static bool RecoverAssetsExecuteWithUri(MediaAlbumChangeRequestContext& context)
 {
     CHECK_COND_RET(context.objectInfo != nullptr, false, "objectInfo is nullptr");
-    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_RECOVER_ASSETS);
-    ChangeRequestRecoverAssetsReqBody reqBody;
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    predicates.In(PhotoColumn::MEDIA_ID, context.objectInfo->GetRecoverAssetArray());
+    valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, 0);
 
-    for (const auto& asset : context.objectInfo->GetRecoverAssetArray()) {
-        reqBody.assets.push_back(asset);
-    }
-    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    Uri recoverAssetsUri(PAH_RECOVER_PHOTOS);
+    int ret = UserFileClient::Update(recoverAssetsUri, predicates, valuesBucket);
+    context.objectInfo->ClearRecoverAssetArray();
     if (ret < 0) {
         context.SaveError(ret);
         ANI_ERR_LOG("Failed to recover assets, err: %{public}d", ret);
@@ -949,11 +1176,61 @@ static bool RecoverAssetsExecute(MediaAlbumChangeRequestContext& context)
     return true;
 }
 
+static bool RecoverAssetsExecute(MediaAlbumChangeRequestContext& context)
+{
+    CHECK_COND_RET(context.objectInfo != nullptr, false, "objectInfo is nullptr");
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_RECOVER_ASSETS);
+    ChangeRequestRecoverAssetsReqBody reqBody;
+
+    for (const auto& asset : context.objectInfo->GetRecoverAssetArray()) {
+        reqBody.assets.push_back(asset);
+    }
+    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    context.objectInfo->ClearRecoverAssetArray();
+    if (ret < 0) {
+        context.SaveError(ret);
+        ANI_ERR_LOG("Failed to recover assets, err: %{public}d", ret);
+        return false;
+    }
+
+    ANI_INFO_LOG("Recover %{public}d assets from trash album", ret);
+    auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is null");
+    int32_t currentCount = photoAlbum->GetCount() - ret;
+    photoAlbum->SetCount(currentCount > 0 ? currentCount : 0);
+    return true;
+}
+
+static bool DeleteAssetsExecuteWithUri(MediaAlbumChangeRequestContext& context)
+{
+    DataShare::DataSharePredicates predicates;
+    CHECK_COND_RET(context.objectInfo != nullptr, false, "objectInfo is null");
+    predicates.In(PhotoColumn::MEDIA_ID, context.objectInfo->GetDeleteAssetArray());
+    predicates.GreaterThan(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+    Uri deleteAssetsUri(PAH_DELETE_PHOTOS);
+    int ret = UserFileClient::Update(deleteAssetsUri, predicates, valuesBucket, context.objectInfo->GetUserId());
+    context.objectInfo->ClearDeleteAssetArray();
+    if (ret < 0) {
+        context.SaveError(ret);
+        ANI_ERR_LOG("Failed to delete assets from trash album permanently, err: %{public}d", ret);
+        return false;
+    }
+    ANI_INFO_LOG("Delete %{public}d assets permanently from trash album", ret);
+    auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is null");
+    int32_t currentCount = photoAlbum->GetCount() - ret;
+    photoAlbum->SetCount(currentCount > 0 ? currentCount : 0);
+    return true;
+}
+
 static bool DeleteAssetsExecute(MediaAlbumChangeRequestContext& context)
 {
     CHECK_COND_RET(context.objectInfo != nullptr, false, "objectInfo is nullptr");
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DELETE_ASSETS);
     ChangeRequestDeleteAssetsReqBody reqBody;
+    CHECK_COND_RET(context.objectInfo != nullptr, false, "context.objectInfo is nullptr");
     for (const auto& asset : context.objectInfo->GetDeleteAssetArray()) {
         reqBody.assets.push_back(asset);
     }
@@ -1025,8 +1302,6 @@ static bool MergeAlbumExecute(MediaAlbumChangeRequestContext& context)
 static bool DismissAssetExecute(MediaAlbumChangeRequestContext& context)
 {
     CHECK_COND_RET(context.objectInfo != nullptr, false, "objectInfo is nullptr");
-    string disMissAssetAssetsUri = PAH_DISMISS_ASSET;
-    Uri uri(disMissAssetAssetsUri);
 
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is null");
@@ -1037,10 +1312,10 @@ static bool DismissAssetExecute(MediaAlbumChangeRequestContext& context)
     for (const auto& asset : context.objectInfo->GetDismissAssetArray()) {
         reqBody.assets.push_back(asset);
     }
-    int deletedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
-    if (deletedRows < 0) {
-        context.SaveError(deletedRows);
-        ANI_ERR_LOG("Failed to dismiss asset err: %{public}d", deletedRows);
+    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (ret < 0) {
+        context.SaveError(ret);
+        ANI_ERR_LOG("Failed to dismiss asset err: %{public}d", ret);
         return false;
     }
 
@@ -1084,77 +1359,153 @@ static const unordered_map<AlbumChangeOperation, bool (*)(MediaAlbumChangeReques
     { AlbumChangeOperation::ADD_ASSETS, AddAssetsExecute },
     { AlbumChangeOperation::REMOVE_ASSETS, RemoveAssetsExecute },
     { AlbumChangeOperation::MOVE_ASSETS, MoveAssetsExecute },
+    { AlbumChangeOperation::MOVE_ASSETS_WITH_URI, MoveAssetsExecuteWithUri },
     { AlbumChangeOperation::RECOVER_ASSETS, RecoverAssetsExecute },
+    { AlbumChangeOperation::RECOVER_ASSETS_WITH_URI, RecoverAssetsExecuteWithUri },
     { AlbumChangeOperation::DELETE_ASSETS, DeleteAssetsExecute },
+    { AlbumChangeOperation::DELETE_ASSETS_WITH_URI, DeleteAssetsExecuteWithUri },
     { AlbumChangeOperation::ORDER_ALBUM, OrderAlbumExecute },
     { AlbumChangeOperation::MERGE_ALBUM, MergeAlbumExecute },
     { AlbumChangeOperation::DISMISS_ASSET, DismissAssetExecute },
     { AlbumChangeOperation::SET_ORDER_POSITION, SetOrderPositionExecute },
 };
 
-static void GetAlbumUpdateCoverUri(const shared_ptr<PhotoAlbum>& photoAlbum, string& uri)
+static bool SetAlbumNameExecute(MediaAlbumChangeRequestContext& context)
 {
-    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
-    if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
-        uri = PAH_PORTRAIT_ANAALBUM_COVER_URI;
-    } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO) {
-        uri = PAH_GROUP_ANAALBUM_COVER_URI;
-    } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT ||
-        photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
-        uri = PAH_HIGHLIGHT_COVER_URI;
-    } else {
-        uri = PAH_UPDATE_PHOTO_ALBUM;
-    }
-}
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+    ChangeRequestSetAlbumNameReqBody reqBody;
+    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
+    reqBody.albumName = photoAlbum->GetAlbumName();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
 
-static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumChangeOperation changeOperation,
-    string& uri, DataShare::DataShareValuesBucket& valuesBucket, string& property)
-{
-    if (photoAlbum == nullptr) {
-        ANI_ERR_LOG("photoAlbum is null");
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ALBUM_NAME);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        ANI_ERR_LOG("Failed to set album name, err: %{public}d", changedRows);
         return false;
-    }
-
-    switch (changeOperation) {
-        case AlbumChangeOperation::SET_ALBUM_NAME:
-            if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
-                uri = PAH_PORTRAIT_ANAALBUM_ALBUM_NAME;
-            } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO) {
-                uri = PAH_GROUP_ANAALBUM_ALBUM_NAME;
-            } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT ||
-                photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
-                uri = PAH_HIGHLIGHT_ALBUM_NAME;
-            } else {
-                uri = PAH_SET_PHOTO_ALBUM_NAME;
-            }
-            property = PhotoAlbumColumns::ALBUM_NAME;
-            valuesBucket.Put(property, photoAlbum->GetAlbumName());
-            break;
-        case AlbumChangeOperation::SET_COVER_URI:
-            GetAlbumUpdateCoverUri(photoAlbum, uri);
-            property = PhotoAlbumColumns::ALBUM_COVER_URI;
-            valuesBucket.Put(property, photoAlbum->GetCoverUri());
-            break;
-        case AlbumChangeOperation::SET_DISPLAY_LEVEL:
-            uri = PAH_PORTRAIT_DISPLAY_LEVLE;
-            property = USER_DISPLAY_LEVEL;
-            valuesBucket.Put(property, photoAlbum->GetDisplayLevel());
-            break;
-        case AlbumChangeOperation::SET_IS_ME:
-            uri = PAH_PORTRAIT_IS_ME;
-            property = IS_ME;
-            valuesBucket.Put(property, 1);
-            break;
-        case AlbumChangeOperation::DISMISS:
-            uri = PAH_GROUP_ANAALBUM_DISMISS;
-            property = IS_REMOVED;
-            valuesBucket.Put(property, 1);
-            break;
-        default:
-            return false;
     }
     return true;
 }
+
+static bool SetCoverUriExecute(MediaAlbumChangeRequestContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+    ChangeRequestSetCoverUriReqBody reqBody;
+    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
+    reqBody.coverUri = photoAlbum->GetCoverUri();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_COVER_URI);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        ANI_ERR_LOG("Failed to set cover uri, err: %{public}d", changedRows);
+        context.error = JS_INNER_FAIL;
+        return false;
+    }
+    return true;
+}
+
+static bool SetDisplayLevelExecute(MediaAlbumChangeRequestContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+    ChangeRequestSetDisplayLevelReqBody reqBody;
+    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
+    reqBody.displayLevel = photoAlbum->GetDisplayLevel();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_DISPLAY_LEVEL);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        ANI_ERR_LOG("Failed to set album name, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
+}
+
+static bool SetIsMeExecute(MediaAlbumChangeRequestContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+    ChangeRequestSetIsMeReqBody reqBody;
+    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
+    reqBody.isMe = VALUE_IS_ME;
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_IS_ME);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        ANI_ERR_LOG("Failed to set album name, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
+}
+
+static bool DismissExecute(MediaAlbumChangeRequestContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+    ChangeRequesDismissReqBody reqBody;
+    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
+    reqBody.isRemoved = VALUE_IS_REMOVED;
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        ANI_ERR_LOG("Failed to set album name, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
+}
+
+static bool ResetCoverUriExecute(MediaAlbumChangeRequestContext& context)
+{
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
+    ChangeRequesDismissReqBody reqBody;
+    reqBody.albumId = std::to_string(photoAlbum->GetAlbumId());
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_RESET_COVER_URI);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        ANI_ERR_LOG("Failed to reset cover uri, err: %{public}d", changedRows);
+        context.error = JS_E_INNER_FAIL;
+        return false;
+    }
+    return true;
+}
+
+static const unordered_map<AlbumChangeOperation,
+    bool (*)(MediaAlbumChangeRequestContext&)> PROPERTY_EXECUTE_MAP = {
+    { AlbumChangeOperation::SET_ALBUM_NAME, SetAlbumNameExecute },
+    { AlbumChangeOperation::SET_COVER_URI, SetCoverUriExecute },
+    { AlbumChangeOperation::SET_DISPLAY_LEVEL, SetDisplayLevelExecute },
+    { AlbumChangeOperation::SET_IS_ME, SetIsMeExecute },
+    { AlbumChangeOperation::DISMISS, DismissExecute },
+    { AlbumChangeOperation::RESET_COVER_URI, ResetCoverUriExecute },
+};
 
 static bool SetAlbumPropertyExecute(
     std::unique_ptr<MediaAlbumChangeRequestContext> &aniContext, const AlbumChangeOperation changeOperation)
@@ -1165,30 +1516,77 @@ static bool SetAlbumPropertyExecute(
         aniContext->albumChangeOperations.front() == AlbumChangeOperation::CREATE_ALBUM) {
         return true;
     }
+    bool valid = false;
+    auto iter = PROPERTY_EXECUTE_MAP.find(changeOperation);
+    if (iter != PROPERTY_EXECUTE_MAP.end()) {
+        valid = iter->second(*aniContext);
+    }
+    return valid;
+}
 
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    CHECK_COND_RET(aniContext->objectInfo != nullptr, false, "aniContext->objectInfo is nullptr");
-    auto photoAlbum = aniContext->objectInfo->GetPhotoAlbumInstance();
-    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is nullptr");
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
-    string uri;
-    string property;
-    if (!GetAlbumUpdateValue(photoAlbum, changeOperation, uri, valuesBucket, property)) {
-        aniContext->SaveError(E_FAIL);
-        ANI_ERR_LOG("Failed to parse album change operation: %{public}d", changeOperation);
-        return false;
+ani_status MediaAlbumChangeRequestAni::RecoverAssetsWithUri(ani_env *env, ani_object object, ani_object uriArray)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return ANI_ERROR;
     }
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, photoAlbum->GetPhotoAlbumSubType());
-    MediaLibraryAniUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateAlbumUri(uri);
-    int32_t changedRows = UserFileClient::Update(updateAlbumUri, predicates, valuesBucket);
-    if (changedRows < 0) {
-        aniContext->SaveError(changedRows);
-        ANI_ERR_LOG("Failed to set %{public}s, err: %{public}d", property.c_str(), changedRows);
-        return false;
+    auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
+    CHECK_COND_RET(aniContext != nullptr, ANI_ERROR, "aniContext is null");
+    aniContext->objectInfo = Unwrap(env, object);
+    auto changeRequest = aniContext->objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, ANI_INVALID_ARGS, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is null");
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        PhotoAlbum::IsTrashAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        ANI_INVALID_ARGS, "Only trash album can recover assets");
+    vector<string> assetUriArray;
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        MediaLibraryAniUtils::GetStringArray(env, uriArray, assetUriArray) == ANI_OK, ANI_INVALID_ARGS,
+        "Failed to get assetUriArray");
+    if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToRecover_)) {
+        AniError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
+            "The previous recoverAssets operation has contained the same asset");
+        return ANI_ERROR;
     }
-    return true;
+    changeRequest->assetsToRecover_.insert(
+        changeRequest->assetsToRecover_.end(), assetUriArray.begin(), assetUriArray.end());
+    changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::RECOVER_ASSETS);
+    return ANI_OK;
+}
+
+ani_status MediaAlbumChangeRequestAni::DeleteAssetsWithUri(ani_env *env, ani_object object, ani_object uriArray)
+{
+    CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is null");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return ANI_ERROR;
+    }
+    auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
+    CHECK_COND_RET(aniContext != nullptr, ANI_ERROR, "aniContext is null");
+    aniContext->objectInfo = Unwrap(env, object);
+    auto changeRequest = aniContext->objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, ANI_INVALID_ARGS, "changeRequest is nullptr");
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is null");
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        PhotoAlbum::IsTrashAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        ANI_INVALID_ARGS, "Only trash album can delete assets permanently");
+    vector<string> assetUriArray;
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        MediaLibraryAniUtils::GetStringArray(env, uriArray, assetUriArray) == ANI_OK, ANI_INVALID_ARGS,
+        "Failed to get assetUriArray");
+    if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToDelete_)) {
+        AniError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
+            "The previous deleteAssets operation has contained the same asset");
+        return ANI_ERROR;
+    }
+    changeRequest->assetsToDelete_.insert(
+        changeRequest->assetsToDelete_.end(), assetUriArray.begin(), assetUriArray.end());
+    changeRequest->userId_ = photoAlbum->GetUserId();
+    changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::DELETE_ASSETS);
+    return ANI_OK;
 }
 
 static void ApplyAlbumChangeRequestExecute(std::unique_ptr<MediaAlbumChangeRequestContext> &aniContext)
@@ -1209,7 +1607,8 @@ static void ApplyAlbumChangeRequestExecute(std::unique_ptr<MediaAlbumChangeReque
                    changeOperation == AlbumChangeOperation::SET_COVER_URI ||
                    changeOperation == AlbumChangeOperation::SET_IS_ME ||
                    changeOperation == AlbumChangeOperation::SET_DISPLAY_LEVEL ||
-                   changeOperation == AlbumChangeOperation::DISMISS) {
+                   changeOperation == AlbumChangeOperation::DISMISS ||
+                   changeOperation == AlbumChangeOperation::RESET_COVER_URI) {
             valid = SetAlbumPropertyExecute(aniContext, changeOperation);
         } else {
             ANI_ERR_LOG("Invalid album change operation: %{public}d", changeOperation);

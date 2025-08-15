@@ -465,6 +465,7 @@ public:
     static ani_status GetNextRowObject(ani_env *env, shared_ptr<NativeRdb::ResultSet> &resultSet, bool isShared,
         VarMap &result);
     static ani_status ToAniVariantArray(ani_env *env, const std::vector<VarMap> &array, ani_object &aniArray);
+    static string GetUserIdFromUri(const string &uri);
 private:
     static ani_status VariantMapToAniMap(ani_env *env, const VarMap &map, ani_object &aniMap);
 };
