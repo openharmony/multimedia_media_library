@@ -419,7 +419,7 @@ void Metadata::SetDateYear(const VariantData &dateYear)
     dateYear_ = get<string>(dateYear);
 }
 
-const string &Metadata::getDateYear() const
+const string &Metadata::GetDateYear() const
 {
     return dateYear_;
 }
@@ -429,7 +429,7 @@ void Metadata::SetDateMonth(const VariantData &dateMonth)
     dateMonth_ = get<string>(dateMonth);
 }
 
-const string &Metadata::getDateMonth() const
+const string &Metadata::GetDateMonth() const
 {
     return dateMonth_;
 }
