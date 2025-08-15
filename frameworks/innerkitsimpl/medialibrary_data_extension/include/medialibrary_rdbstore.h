@@ -91,6 +91,7 @@ public:
     EXPORT static void UpdateBurstDirty(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateReadyOnThumbnailUpgrade(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateDateTakenToMillionSecond(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddIndexForFileIdAsync(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateDateTakenIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateDateTakenAndDetalTime(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void ClearAudios(const std::shared_ptr<MediaLibraryRdbStore> store);
