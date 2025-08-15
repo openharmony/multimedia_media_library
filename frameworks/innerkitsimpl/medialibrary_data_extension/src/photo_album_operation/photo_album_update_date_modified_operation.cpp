@@ -57,7 +57,7 @@ const std::string SQL_UPDATE_ALBUM_DATE_NEED_FIX = "\
     ;";
 
 bool PhotoAlbumUpdateDateModifiedOperation::CheckAlbumDateNeedFix(
-    std::shared_ptr<MediaLibraryRdbStore> &rdbStore)
+    const std::shared_ptr<MediaLibraryRdbStore> &rdbStore)
 {
     auto resultSet = rdbStore->QuerySql(SQL_QUERY_COUNT_ALBUM_DATE_NEED_FIX);
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
@@ -73,7 +73,7 @@ bool PhotoAlbumUpdateDateModifiedOperation::CheckAlbumDateNeedFix(
 }
 
 void PhotoAlbumUpdateDateModifiedOperation::UpdateAlbumDateNeedFix(
-    std::shared_ptr<MediaLibraryRdbStore> &rdbStore)
+    const std::shared_ptr<MediaLibraryRdbStore> &rdbStore)
 {
     int32_t errCode = rdbStore->ExecuteSql(SQL_UPDATE_ALBUM_DATE_NEED_FIX);
     CHECK_AND_RETURN_LOG(errCode == NativeRdb::E_OK,

@@ -51,6 +51,7 @@
 #include "asset_accurate_refresh.h"
 #include "album_accurate_refresh.h"
 #include "refresh_business_name.h"
+#include "medialibrary_subscriber.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -1322,6 +1323,9 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNoOwnerData(const std::shared_ptr<Me
     }
     auto rowCount = GetNoOwnerDataCnt(upgradeStore);
     SetRefreshAlbum(rowCount > 0);
+    if (rowCount <= 0) {
+        return E_OK;
+    }
     const std::string UPDATE_NO_OWNER_ASSET_INTO_OTHER_ALBUM = "UPDATE PHOTOS SET owner_album_id = "
         "(SELECT album_id FROM PhotoAlbum where album_name = '其它') WHERE owner_album_id = 0";
     int32_t ret = upgradeStore->ExecuteSql(UPDATE_NO_OWNER_ASSET_INTO_OTHER_ALBUM);
@@ -2106,7 +2110,81 @@ int32_t MediaLibraryAlbumFusionUtils::RefreshAllAlbums()
     return E_OK;
 }
 
-int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
+bool MediaLibraryAlbumFusionUtils::ScreenOnInterrupt()
+{
+    if (MedialibrarySubscriber::IsCurrentStatusOn()) {
+        return false;
+    }
+    SetParameterToStartSync();
+    if (isNeedRefreshAlbum.load() == true) {
+        RefreshAllAlbums();
+        isNeedRefreshAlbum = false;
+    }
+    return true;
+}
+
+void MediaLibraryAlbumFusionUtils::MigratePhotoMapData(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
+{
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbstore is nullptr");
+        return;
+    }
+    int32_t totalNumber = QueryTotalNumberNeedToHandle(rdbStore, QUERY_NEW_NOT_MATCHED_COUNT_IN_PHOTOMAP);
+    MEDIA_INFO_LOG("QueryTotalNumberNeedToHandle, totalNumber=%{public}d", totalNumber);
+    SetRefreshAlbum(totalNumber > 0);
+    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
+    for (int32_t offset = 0; offset < totalNumber; offset += ALBUM_FUSION_BATCH_COUNT) {
+        MEDIA_INFO_LOG("DATA_CLEAN: handle batch clean, offset: %{public}d", offset);
+        notMatchedMap.clear();
+        int32_t err = QueryNoMatchedMap(rdbStore, notMatchedMap, false);
+        CHECK_AND_BREAK_ERR_LOG(err == NativeRdb::E_OK, "Fatal error! Failed to query not matched map data");
+
+        if (notMatchedMap.size() != 0) {
+            MEDIA_INFO_LOG("There are %{public}d items need to migrate", (int)notMatchedMap.size());
+            HandleNewCloudDirtyData(rdbStore, notMatchedMap);
+        }
+    }
+}
+
+const std::vector<std::function<void(const std::shared_ptr<MediaLibraryRdbStore>& store)>>
+    MediaLibraryAlbumFusionUtils::ALBUM_FUSION_CLEAN_TASKS = {
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) { MigratePhotoMapData(store); },
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) {
+        HandleDuplicateAlbum(store);
+    },
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) { HandleDuplicatePhoto(store); },
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) {
+        HandleNoOwnerData(store);
+    },
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) { HandleChangeNameAlbum(store); },
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) { CompensateLpathForLocalAlbum(store); },
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) { HandleExpiredAlbumData(store); },
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) { KeepHiddenAlbumAssetSynced(store); },
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) { RemediateErrorSourceAlbumSubType(store); },
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) { HandleMisMatchScreenRecord(store); },
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) {
+        int32_t albumAffectedCount = PhotoAlbumLPathOperation::GetInstance()
+                                     .SetRdbStore(store)
+                                     .Start()
+                                     .CleanInvalidPhotoAlbums()
+                                     .CleanDuplicatePhotoAlbums()
+                                     .CleanEmptylPathPhotoAlbums()
+                                     .GetAlbumAffectedCount();
+        SetRefreshAlbum(albumAffectedCount > 0);
+    },
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) {
+        PhotoAlbumUpdateDateModifiedOperation photoAlbumOperation;
+        if (photoAlbumOperation.CheckAlbumDateNeedFix(store)) {
+            photoAlbumOperation.UpdateAlbumDateNeedFix(store);
+            SetRefreshAlbum(true);
+        }
+    },
+    [](const std::shared_ptr<MediaLibraryRdbStore>& store) {
+        PhotoSourcePathOperation().ResetPhotoSourcePath(store);
+    }
+};
+
+int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(bool isBackgroundExecute)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -2131,32 +2209,12 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data start!");
     SetParameterToStopSync();
-    int32_t totalNumber = QueryTotalNumberNeedToHandle(rdbStore, QUERY_NEW_NOT_MATCHED_COUNT_IN_PHOTOMAP);
-    MEDIA_INFO_LOG("QueryTotalNumberNeedToHandle, totalNumber=%{public}d", totalNumber);
-    SetRefreshAlbum(totalNumber > 0);
-    std::multimap<int32_t, vector<int32_t>> notMatchedMap;
-    for (int32_t offset = 0; offset < totalNumber; offset += ALBUM_FUSION_BATCH_COUNT) {
-        MEDIA_INFO_LOG("DATA_CLEAN: handle batch clean, offset: %{public}d", offset);
-        notMatchedMap.clear();
-        int32_t err = QueryNoMatchedMap(rdbStore, notMatchedMap, false);
-        CHECK_AND_BREAK_ERR_LOG(err == NativeRdb::E_OK, "Fatal error! Failed to query not matched map data");
-
-        if (notMatchedMap.size() != 0) {
-            MEDIA_INFO_LOG("There are %{public}d items need to migrate", (int)notMatchedMap.size());
-            HandleNewCloudDirtyData(rdbStore, notMatchedMap);
+    for (auto& task : ALBUM_FUSION_CLEAN_TASKS) {
+        if (isBackgroundExecute && ScreenOnInterrupt()) {
+            MEDIA_INFO_LOG("DATA_CLEAN:Screen on, interrupt album fusion background task");
+            return E_OK;
         }
-    }
-    HandleDuplicateAlbum(rdbStore);
-    HandleDuplicatePhoto(rdbStore);
-    // Put no relationship asset into other album
-    HandleNoOwnerData(rdbStore);
-    // Clean duplicative album and rebuild expired album
-    RebuildAlbumAndFillCloudValue(rdbStore);
-
-    PhotoAlbumUpdateDateModifiedOperation photoAlbumOperation;
-    if (photoAlbumOperation.CheckAlbumDateNeedFix(rdbStore)) {
-        photoAlbumOperation.UpdateAlbumDateNeedFix(rdbStore);
-        SetRefreshAlbum(true);
+        task(rdbStore);
     }
 
     SetParameterToStartSync();
@@ -2164,7 +2222,7 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
         RefreshAllAlbums();
         isNeedRefreshAlbum = false;
     }
-    PhotoSourcePathOperation().ResetPhotoSourcePath(rdbStore);
+    
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
     return E_OK;

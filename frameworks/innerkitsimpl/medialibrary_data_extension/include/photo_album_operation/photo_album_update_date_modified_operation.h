@@ -23,8 +23,8 @@
 namespace OHOS::Media {
 class PhotoAlbumUpdateDateModifiedOperation {
 public:
-    bool CheckAlbumDateNeedFix(std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
-    void UpdateAlbumDateNeedFix(std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
+    bool CheckAlbumDateNeedFix(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
+    void UpdateAlbumDateNeedFix(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
 
     EXPORT static int32_t UpdateAlbumDateNeedFix(NativeRdb::RdbStore &rdbStore);
 };
