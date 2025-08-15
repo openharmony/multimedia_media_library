@@ -119,10 +119,10 @@ public:
     EXPORT const std::string &GetAllExif() const;
 
     EXPORT void SetDateYear(const VariantData &dateYear);
-    EXPORT const std::string &getDateYear() const;
+    EXPORT const std::string &GetDateYear() const;
 
     EXPORT void SetDateMonth(const VariantData &dateMonth);
-    EXPORT const std::string &getDateMonth() const;
+    EXPORT const std::string &GetDateMonth() const;
 
     EXPORT void SetDateDay(const VariantData &dateDay);
     EXPORT const std::string &GetDateDay() const;

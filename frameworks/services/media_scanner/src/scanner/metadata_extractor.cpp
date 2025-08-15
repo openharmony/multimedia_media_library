@@ -254,29 +254,41 @@ static int64_t GetModifiedTimeStampByExif(const unique_ptr<ImageSource> &imageSo
 
 static void ExtractDateTakenMetadata(const unique_ptr<ImageSource> &imageSource, unique_ptr<Metadata> &data)
 {
-    bool forAdd = data->GetForAdd();
     int64_t shootingTimeStamp = GetShootingTimeStampByExif(imageSource);
     if (shootingTimeStamp > 0) {
         data->SetDateTaken(shootingTimeStamp);
-        MEDIA_INFO_LOG(
-            "forAdd:%{public}d, shootingTimeStamp:%{public}ld", forAdd, static_cast<long>(shootingTimeStamp));
+        MEDIA_INFO_LOG("forAdd:%{public}d, shootingTimeStamp:%{public}ld",
+            data->GetForAdd(),
+            static_cast<long>(shootingTimeStamp));
         return;
     }
-    if (!forAdd) {
-        if (data->GetDateTaken() <= 0) {
-            data->SetDateTaken(data->GetFileDateModified());
-            MEDIA_INFO_LOG("using fileDateModified:%{public}ld", static_cast<long>(data->GetFileDateModified()));
-        }
+    int64_t dateTaken = data->GetDateTaken();
+    if (dateTaken > 0 && !data->GetForAdd()) {
+        MEDIA_WARN_LOG("Set date_taken use old date_taken: %{public}ld", static_cast<long>(dateTaken));
         return;
+    }
+    int64_t dateAdded = data->GetFileDateAdded();
+    if (dateAdded > 0) {
+        dateTaken = dateTaken > 0 ? min(dateTaken, dateAdded) : dateAdded;
+    }
+    int64_t dateModified = data->GetFileDateModified();
+    if (dateModified > 0) {
+        dateTaken = dateTaken > 0 ? min(dateTaken, dateModified) : dateModified;
     }
     int64_t modifiedTimeStamp = GetModifiedTimeStampByExif(imageSource);
     if (modifiedTimeStamp > 0) {
-        data->SetDateTaken(modifiedTimeStamp);
-        MEDIA_INFO_LOG("using modifiedTimeStamp:%{public}ld", static_cast<long>(modifiedTimeStamp));
-        return;
+        dateTaken = dateTaken > 0 ? min(dateTaken, modifiedTimeStamp) : modifiedTimeStamp;
     }
-    data->SetDateTaken(data->GetFileDateModified());
-    MEDIA_INFO_LOG("no exif time, using fileDateModified:%{public}ld", static_cast<long>(data->GetFileDateModified()));
+    if (dateTaken <= 0) {
+        dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    }
+    data->SetDateTaken(dateTaken);
+    MEDIA_WARN_LOG("Set date_taken use dateAdded:%{public}ld or dateModified:%{public}ld or "
+                   "modifiedTimeStamp:%{public}ld, dateTaken:%{public}ld",
+        static_cast<long>(dateAdded),
+        static_cast<long>(dateModified),
+        static_cast<long>(modifiedTimeStamp),
+        static_cast<long>(dateTaken));
 }
 
 static string GetCompatibleUserComment(const string& userComment)
@@ -396,6 +408,10 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
 
     ExtractDateTakenMetadata(imageSource, data);
     ExtractDetailTimeMetadata(imageSource, data);
+    auto const [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(data->GetDetailTime());
+    data->SetDateYear(dateYear);
+    data->SetDateMonth(dateMonth);
+    data->SetDateDay(dateDay);
 
     int32_t intTempMeta = 0;
     err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
@@ -484,31 +500,85 @@ int32_t ExtractedAVMetadataExifRotate(const std::unordered_map<int32_t, std::str
     return exifRotate;
 }
 
-void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::string> &resultMap,
-    std::unique_ptr<Metadata> &data)
+std::string ParseDetailTime(const string &timeStr, const string &format)
 {
-    int32_t intTempMeta;
-
-    string strTemp = resultMap.at(AV_KEY_DATE_TIME_ISO8601);
-    if (strTemp != "") {
-        int64_t int64TempMeta = convertUTCTimeInformat(strTemp, "%Y-%m-%dT%H:%M:%S");
-        if (int64TempMeta <= 0) {
-            // use modified time as date taken time when get date_taken fails
-            data->SetDateTaken(data->GetFileDateModified());
-            MEDIA_DEBUG_LOG("Set date_taken use modified time");
-        } else {
-            data->SetDateTaken(int64TempMeta * MSEC_TO_SEC);
-        }
-    } else {
-        // use modified time as date taken time when date taken not set
-        data->SetDateTaken(data->GetFileDateModified());
-        MEDIA_DEBUG_LOG("Set date_taken use modified time");
+    std::tm timeInfo{};
+    std::istringstream iss(timeStr);
+    iss >> std::get_time(&timeInfo, format.c_str());
+    if (iss.fail()) {
+        MEDIA_ERR_LOG(
+            "Parse DetailTime failed, timeStr: %{public}s, format: %{public}s", timeStr.c_str(), format.c_str());
+        return "";
     }
 
-    strTemp = resultMap.at(AV_KEY_VIDEO_ORIENTATION);
-    if (strTemp == "") {
-        intTempMeta = 0;
-    } else {
+    std::ostringstream oss;
+    oss << std::put_time(&timeInfo, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT.c_str());
+    return oss.str();
+}
+
+void PopulateAVMetadataDateTaken(
+    const std::unordered_map<int32_t, std::string> &resultMap, std::unique_ptr<Metadata> &data)
+{
+    // first take utc time
+    string timeStr = resultMap.at(AV_KEY_DATE_TIME_ISO8601);
+    int64_t dateTaken = convertUTCTimeInformat(timeStr, "%Y-%m-%dT%H:%M:%S");
+    if (dateTaken > 0) {
+        data->SetDateTaken(dateTaken * MSEC_TO_SEC);
+        return;
+    }
+    timeStr = resultMap.at(AV_KEY_DATE_TIME_FORMAT);
+    dateTaken = convertTimeStr2TimeStamp(timeStr);
+    if (dateTaken > 0) {
+        data->SetDateTaken(dateTaken * MSEC_TO_SEC);
+        MEDIA_WARN_LOG("Set date_taken use local time");
+        return;
+    }
+    dateTaken = data->GetDateTaken();
+    if (dateTaken > 0 && !data->GetForAdd()) {
+        MEDIA_WARN_LOG("Set date_taken use old date_taken: %{public}ld", static_cast<long>(dateTaken));
+        return;
+    }
+    int64_t dateAdded = data->GetFileDateAdded();
+    if (dateAdded > 0) {
+        dateTaken = dateTaken > 0 ? min(dateTaken, dateAdded) : dateAdded;
+    }
+    int64_t dateModified = data->GetFileDateModified();
+    if (dateModified > 0) {
+        dateTaken = dateTaken > 0 ? min(dateTaken, dateModified) : dateModified;
+    }
+    if (dateTaken <= 0) {
+        dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+    }
+    data->SetDateTaken(dateTaken);
+    MEDIA_WARN_LOG("Set date_taken use dateAdded:%{public}ld or dateModified:%{public}ld, dateTaken:%{public}ld",
+        static_cast<long>(dateAdded),
+        static_cast<long>(dateModified),
+        static_cast<long>(dateTaken));
+}
+
+void PopulateAVMetadataDetailTime(
+    const std::unordered_map<int32_t, std::string> &resultMap, std::unique_ptr<Metadata> &data)
+{
+    string timeStr = resultMap.at(AV_KEY_DATE_TIME_FORMAT);
+    string detailTime = ParseDetailTime(timeStr, "%Y-%m-%d %H:%M:%S");
+    if (!detailTime.empty()) {
+        data->SetDetailTime(detailTime);
+        return;
+    }
+    detailTime = data->GetDetailTime();
+    if (detailTime.empty() || data->GetForAdd()) {
+        int64_t dateTaken = data->GetDateTaken() / MSEC_TO_SEC;
+        detailTime = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    }
+    data->SetDetailTime(detailTime);
+}
+
+void PopulateExtractedAVMetadataTwo(
+    const std::unordered_map<int32_t, std::string> &resultMap, std::unique_ptr<Metadata> &data)
+{
+    int32_t intTempMeta{0};
+    string strTemp = resultMap.at(AV_KEY_VIDEO_ORIENTATION);
+    if (!strTemp.empty()) {
         intTempMeta = stringToNum<int32_t>(strTemp);
     }
     data->SetOrientation(intTempMeta);
@@ -529,8 +599,6 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
     } else {
         data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::SDR));
     }
-    int64_t dateTaken = data->GetDateTaken() / MSEC_TO_SEC;
-    data->SetDetailTime(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken));
 }
 
 void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data)
@@ -592,6 +660,12 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
 {
     PopulateExtractedAVMetadataOne(resultMap, data);
     PopulateExtractedAVMetadataTwo(resultMap, data);
+    PopulateAVMetadataDateTaken(resultMap, data);
+    PopulateAVMetadataDetailTime(resultMap, data);
+    auto const [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(data->GetDetailTime());
+    data->SetDateYear(dateYear);
+    data->SetDateMonth(dateMonth);
+    data->SetDateDay(dateDay);
     PopulateExtractedAVLocationMeta(meta, data);
 
     int64_t timeNow = MediaFileUtils::UTCTimeMilliSeconds();

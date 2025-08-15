@@ -2676,61 +2676,6 @@ int32_t MediaLibraryDataManager::AstcMthAndYearInsert(MediaLibraryCommand &cmd,
     return E_OK;
 }
 
-static int32_t SearchDateTakenWhenZero(const shared_ptr<MediaLibraryRdbStore> rdbStore, bool &needUpdate,
-    unordered_map<string, string> &updateData)
-{
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TAKEN, "0");
-    vector<string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_MODIFIED};
-    auto resultSet = rdbStore->Query(predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "failed to acquire result from visitor query.");
-    int32_t count;
-    int32_t retCount = resultSet->GetRowCount(count);
-    bool cond = (retCount != E_SUCCESS || count < 0);
-    CHECK_AND_RETURN_RET(!cond, E_HAS_DB_ERROR);
-
-    CHECK_AND_RETURN_RET_LOG(count != 0, E_OK, "No dateTaken need to update");
-    needUpdate = true;
-    MEDIA_INFO_LOG("Have dateTaken need to update, count = %{public}d", count);
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t fileId =
-            get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
-        int64_t newDateTaken =
-            get<int64_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_MODIFIED, resultSet, TYPE_INT64));
-        updateData.emplace(to_string(fileId), to_string(newDateTaken));
-    }
-    return E_OK;
-}
-
-int32_t MediaLibraryDataManager::UpdateDateTakenWhenZero()
-{
-    MEDIA_DEBUG_LOG("UpdateDateTakenWhenZero start");
-    CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore_ is nullptr");
-    bool needUpdate = false;
-    unordered_map<string, string> updateData;
-    int32_t ret = SearchDateTakenWhenZero(rdbStore_, needUpdate, updateData);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "SerchDateTaken failed, ret = %{public}d", ret);
-    CHECK_AND_RETURN_RET(needUpdate, E_OK);
-
-    string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + MediaColumn::MEDIA_DATE_TAKEN +
-        " = " + PhotoColumn::MEDIA_DATE_MODIFIED + "," + PhotoColumn::PHOTO_DETAIL_TIME +
-        " = strftime('%Y:%m:%d %H:%M:%S', date_modified/1000, 'unixepoch', 'localtime'), " +
-        PhotoColumn::PHOTO_DATE_DAY + " = strftime( '%Y%m%d', date_modified / 1000, 'unixepoch', 'localtime' ), " +
-        PhotoColumn::PHOTO_DATE_MONTH + " = strftime( '%Y%m', date_modified / 1000, 'unixepoch', 'localtime' ), " +
-        PhotoColumn::PHOTO_DATE_YEAR + " = strftime( '%Y', date_modified / 1000, 'unixepoch', 'localtime' )" +
-        " WHERE " + MediaColumn::MEDIA_DATE_TAKEN + " <= 0";
-    ret = rdbStore_->ExecuteSql(updateSql);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
-        "rdbStore->ExecuteSql failed, ret = %{public}d", ret);
-
-    for (const auto& data : updateData) {
-        ThumbnailService::GetInstance()->UpdateAstcWithNewDateTaken(data.first, data.second, "0");
-    }
-    MEDIA_DEBUG_LOG("UpdateDateTakenWhenZero end");
-    return ret;
-}
-
 static void DealUpdateForDirty(const shared_ptr<NativeRdb::ResultSet> &resultSet, bool fileExist,
     std::vector<std::string> &dirtyToZeroFileIds, std::vector<std::string> &dirtyToThreeFileIds)
 {
