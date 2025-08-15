@@ -174,9 +174,8 @@ int32_t CloudMediaDataDao::QueryCloudThmStat(const int32_t cloudThmStat, int &nu
     return E_OK;
 }
 
-int32_t CloudMediaDataDao::QueryDirtyTypeStat(const int32_t dirtyType, int &num)
+int32_t CloudMediaDataDao::QueryDirtyTypeStat(const int32_t dirtyType, int64_t &num)
 {
-    MEDIA_INFO_LOG("enter QueryDirtyTypeStat, dirtyType: %{public}d", dirtyType);
     num = 0;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
@@ -188,9 +187,47 @@ int32_t CloudMediaDataDao::QueryDirtyTypeStat(const int32_t dirtyType, int &num)
         MEDIA_ERR_LOG("resultSet is null or failed to get row");
         return E_RDB;
     }
-    num = GetInt32Val("count", resultSet);
+    num = GetInt64Val("count", resultSet);
     resultSet->Close();
-    MEDIA_INFO_LOG("QueryDirtyTypeStat end %{public}d", num);
+    MEDIA_INFO_LOG("QueryDirtyTypeStat, dirtyType: %{public}d, num: %{public}" PRIu64, dirtyType, num);
+    return E_OK;
+}
+
+void CloudMediaDataDao::InitDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat)
+{
+    dirtyTypeStat.clear();
+    for (int32_t i = 0; i < DIRTY_TYPE_STAT_SIZE; i++) {
+        dirtyTypeStat.push_back(0);
+    }
+    return;
+}
+
+int32_t CloudMediaDataDao::GetDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat, const int32_t dirtyType)
+{
+    CHECK_AND_RETURN_RET_LOG(0 <= dirtyType && dirtyType < DIRTY_TYPE_STAT_SIZE,
+        E_INVAL_ARG,
+        "dirtyType is invalid, dirtyType: %{public}d",
+        dirtyType);
+    CHECK_AND_EXECUTE(
+        static_cast<int32_t>(dirtyTypeStat.size()) == DIRTY_TYPE_STAT_SIZE, InitDirtyTypeStat(dirtyTypeStat));
+    int64_t num = 0;
+    int32_t ret = this->QueryDirtyTypeStat(dirtyType, num);
+    CHECK_AND_RETURN_RET_LOG(
+        ret == E_OK, ret, "Failed to GetDirtyTypeStat, dirtyType: %{public}d, ret: %{public}d", dirtyType, ret);
+    dirtyTypeStat[dirtyType] = static_cast<uint64_t>(num);
+    return E_OK;
+}
+
+int32_t CloudMediaDataDao::GetDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat)
+{
+    int32_t ret = E_OK;
+    for (int32_t i = 0; i < DIRTY_TYPE_STAT_SIZE; i++) {
+        ret = this->GetDirtyTypeStat(dirtyTypeStat, i);
+        CHECK_AND_RETURN_RET_LOG(
+            ret == E_OK, ret, "Failed to GetDirtyTypeStat, ret: %{public}d, dirtyType: %{public}d", ret, i);
+    }
+    MEDIA_INFO_LOG(
+        "GetDirtyTypeStat, dirtyTypeStat: %{public}s", CloudMediaDaoUtils::VectorToString(dirtyTypeStat).c_str());
     return E_OK;
 }
 

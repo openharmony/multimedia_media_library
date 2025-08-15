@@ -384,18 +384,10 @@ int32_t CloudMediaDataClientHandler::GetCloudThmStat(std::vector<uint64_t> &clou
 int32_t CloudMediaDataClientHandler::GetDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat)
 {
     MEDIA_INFO_LOG("CloudMediaDataClientHandler::GetDirtyTypeStat begin");
-    if (dirtyTypeStat.size() != SIZE_DIRTY_TYPE_LEN) {
-        MEDIA_ERR_LOG("dirty type size is wrong with %{public}zu", dirtyTypeStat.size());
-        return E_DATA;
-    }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_DIRTY_TYPE_STAT);
     GetDirtyTypeStatRespBody respBody;
-    int32_t ret =
-        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Get(operationCode, respBody);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to GetDirtyTypeStat, ret: %{public}d", ret);
-        return ret;
-    }
+    int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Get(operationCode, respBody);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to GetDirtyTypeStat, ret: %{public}d", ret);
     dirtyTypeStat = respBody.statList;
     return E_OK;
 }

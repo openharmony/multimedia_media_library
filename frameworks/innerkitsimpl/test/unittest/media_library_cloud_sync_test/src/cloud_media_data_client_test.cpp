@@ -1063,11 +1063,24 @@ HWTEST_F(CloudMediaDataClientTest, GetDirtyTypeStat, TestSize.Level1)
     int32_t ret = cloudMediaDataClient.GetDirtyTypeStat(dirtyTypeStat);
     EXPECT_EQ(ret, 0);
     TestUtils::PhotosDao photosDao = TestUtils::PhotosDao();
-    EXPECT_EQ(dirtyTypeStat[0], photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_SYNCED)));
-    EXPECT_EQ(dirtyTypeStat[1], photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_NEW)));
-    EXPECT_EQ(dirtyTypeStat[2], photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_MDIRTY)));
-    EXPECT_EQ(dirtyTypeStat[3], photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_FDIRTY)));
-    EXPECT_EQ(dirtyTypeStat[4], photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_DELETED)));
+    EXPECT_EQ(dirtyTypeStat[static_cast<int32_t>(DirtyType::TYPE_SYNCED)],
+        photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_SYNCED)));
+    EXPECT_EQ(dirtyTypeStat[static_cast<int32_t>(DirtyType::TYPE_NEW)],
+        photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_NEW)));
+    EXPECT_EQ(dirtyTypeStat[static_cast<int32_t>(DirtyType::TYPE_MDIRTY)],
+        photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_MDIRTY)));
+    EXPECT_EQ(dirtyTypeStat[static_cast<int32_t>(DirtyType::TYPE_FDIRTY)],
+        photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_FDIRTY)));
+    EXPECT_EQ(dirtyTypeStat[static_cast<int32_t>(DirtyType::TYPE_DELETED)],
+        photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_DELETED)));
+    EXPECT_EQ(dirtyTypeStat[static_cast<int32_t>(DirtyType::TYPE_RETRY)],
+        photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_RETRY)));
+    EXPECT_EQ(dirtyTypeStat[static_cast<int32_t>(DirtyType::TYPE_SDIRTY)],
+        photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_SDIRTY)));
+    EXPECT_EQ(dirtyTypeStat[static_cast<int32_t>(DirtyType::TYPE_COPY)],
+        photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_COPY)));
+    EXPECT_EQ(dirtyTypeStat[static_cast<int32_t>(DirtyType::TYPE_TDIRTY)],
+        photosDao.GetDirtyTypeNum(static_cast<int32_t>(DirtyType::TYPE_TDIRTY)));
 }
 
 HWTEST_F(CloudMediaDataClientTest, UpdateLocalFileDirty, TestSize.Level1)

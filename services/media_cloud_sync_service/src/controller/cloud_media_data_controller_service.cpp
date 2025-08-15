@@ -184,7 +184,11 @@ int32_t CloudMediaDataControllerService::GetCloudThmStat(MessageParcel &data, Me
 int32_t CloudMediaDataControllerService::GetDirtyTypeStat(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CloudMediaDataControllerService::GetDirtyTypeStat");
-    std::vector<uint64_t> statList = this->dataService_.GetDirtyTypeStat();
+    std::vector<uint64_t> statList;
+    int32_t ret = this->dataService_.GetDirtyTypeStat(statList);
+    if (ret != E_OK) {
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
     GetDirtyTypeStatRespBody respBody;
     respBody.statList = statList;
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
