@@ -22,9 +22,12 @@
 #include "media_file_utils.h"
 #include "media_photo_asset_proxy.h"
 #include "medialibrary_ani_utils.h"
+#include <ani_signature_builder.h>
 
 namespace OHOS {
 namespace Media {
+using namespace arkts::ani_signature;
+
 MediaLibraryCommAni::MediaLibraryCommAni() {}
 
 MediaLibraryCommAni::~MediaLibraryCommAni() {}
@@ -44,10 +47,11 @@ ani_object MakePhotoAssetAni(ani_env *env, shared_ptr<FileAsset> fileAsset, bool
     }
     ani_method setCaptureId;
     CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
-    CHECK_COND_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<set>captureId", nullptr, &setCaptureId),
-        nullptr, "No <set>captureId");
+    const char *captureIdSetterName = Builder::BuildSetterName("captureId").c_str();
+    CHECK_COND_RET(env->Class_FindMethod(fileAssetAniMethod.cls, captureIdSetterName, nullptr, &setCaptureId),
+        nullptr, "No %{public}s", captureIdSetterName);
     CHECK_COND_RET(env->Object_CallMethod_Void(ret, setCaptureId, static_cast<ani_double>(captureId)), nullptr,
-        "<set>photoType fail");
+        "%{public}s fail", Builder::BuildSetterName("photoType").c_str());
     return ret;
 }
 
