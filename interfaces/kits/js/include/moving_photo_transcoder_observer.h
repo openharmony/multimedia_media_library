@@ -30,7 +30,7 @@ public:
     ~MovingphotoTranscoderObserver() = default;
     void SetMovingPhotoProgress(const std::shared_ptr<MovingPhotoProgressHandler> &movingPhotoProgressHandler);
     void CallMovingProgressCallback(bool isComplete = false);
-    void DoPrepareError();
+    bool DoTranscodePrepareError(const std::string &errorMsg);
     void setTransCoder(std::shared_ptr<TransCoder> transCoder)
     {
         transCoder_ = transCoder;
