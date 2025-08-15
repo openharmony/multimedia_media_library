@@ -17,6 +17,7 @@
 #define FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_PHOTO_FILE_UTILS_H
 
 #include <string>
+#include <tuple>
 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -34,6 +35,7 @@ public:
     EXPORT static std::string GetMetaDataRealPath(const std::string &photoPath, int32_t userId = -1);
     EXPORT static bool IsThumbnailExists(const std::string &photoPath);
     EXPORT static bool IsThumbnailLatest(const std::string &photoPath);
+    EXPORT static std::tuple<std::string, std::string, std::string> ExtractYearMonthDay(const std::string &detailTime);
 
 protected:
     EXPORT static std::string AppendUserId(const std::string &path, int32_t userId = -1);
