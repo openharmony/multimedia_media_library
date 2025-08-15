@@ -740,39 +740,6 @@ int32_t PhotoCustomRestoreOperation::UpdateUniqueNumber(UniqueNumber &uniqueNumb
     return E_OK;
 }
 
-static void InsertDateTaken(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
-{
-    int64_t dateTaken = metadata->GetDateTaken();
-    if (dateTaken > 0) {
-        value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
-        value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-            MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateTaken));
-        value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-            MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateTaken));
-        value.PutString(PhotoColumn::PHOTO_DATE_DAY,
-            MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateTaken));
-        return;
-    }
-    int64_t dateAdded = metadata->GetFileDateAdded();
-    if (dateAdded <= 0) {
-        int64_t dateModified = metadata->GetFileDateModified();
-        if (dateModified <= 0) {
-            dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
-        } else {
-            dateTaken = dateModified;
-        }
-    } else {
-        dateTaken = dateAdded;
-    }
-    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
-    value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateTaken));
-    value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateTaken));
-    value.PutString(PhotoColumn::PHOTO_DATE_DAY,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateTaken));
-}
-
 static void FillFileInfo(FileInfo& fileInfo, const std::unique_ptr<Metadata>& data)
 {
     fileInfo.size = data->GetFileSize();
@@ -802,7 +769,11 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     data->SetFileName(fileInfo.fileName);
     data->SetFileMediaType(fileInfo.mediaType);
     FillMetadata(data);
-    InsertDateTaken(data, value);
+    value.Put(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());
+    value.Put(PhotoColumn::PHOTO_DETAIL_TIME, data->GetDetailTime());
+    value.Put(PhotoColumn::PHOTO_DATE_YEAR, data->GetDateYear());
+    value.Put(PhotoColumn::PHOTO_DATE_MONTH, data->GetDateMonth());
+    value.Put(PhotoColumn::PHOTO_DATE_DAY, data->GetDateDay());
     value.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
     value.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, data->GetExifRotate());
@@ -827,7 +798,6 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, data->GetUserComment());
     value.PutInt(PhotoColumn::PHOTO_QUALITY, 0);
-    value.PutString(PhotoColumn::PHOTO_DETAIL_TIME, data->GetDetailTime());
     FillFileInfo(fileInfo, data);
     return value;
 }

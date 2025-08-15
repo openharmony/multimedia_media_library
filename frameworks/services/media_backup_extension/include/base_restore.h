@@ -177,8 +177,7 @@ protected:
         FileInfo &fileInfo);
     void SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value);
     void AddToPhotoInfoMap(std::vector<FileInfo> &fileInfos);
-    void InsertDetailTime(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
-        FileInfo &fileInfo);
+    void InsertDetailTime(NativeRdb::ValuesBucket &value, FileInfo &fileInfo);
     virtual bool HasExThumbnail(const FileInfo &info);
     bool WaitSouthDeviceExitTimeout();
     std::string GetBackupExInfo();
