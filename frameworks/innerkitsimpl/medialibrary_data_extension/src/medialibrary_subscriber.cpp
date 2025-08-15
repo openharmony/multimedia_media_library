@@ -812,7 +812,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     CloudMediaAssetManager::GetInstance().StartDeleteCloudMediaAssets();
     // compat old-version moving photo
     MovingPhotoProcessor::StartProcess();
-    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
+    MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(true);
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {
         watch->DoAging();
