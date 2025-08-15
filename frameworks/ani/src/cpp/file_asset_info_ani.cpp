@@ -19,9 +19,12 @@
 #include "medialibrary_ani_utils.h"
 #include "media_library_enum_ani.h"
 #include "media_column.h"
+#include <ani_signature_builder.h>
 
 namespace OHOS {
 namespace Media {
+using namespace arkts::ani_signature;
+
 ani_object FileAssetInfo::ToFileAssetInfoObject(ani_env *env, std::unique_ptr<FileAsset> fileAsset)
 {
     CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
@@ -94,8 +97,11 @@ ani_status FileAssetInfo::SetFileId(ani_env *env, ani_class cls, ani_object obje
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method fileIdSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>file_id", nullptr, &fileIdSetter), "No <set>file_id");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, fileIdSetter, fileId), "<set>file_id fail");
+    std::string fileIdSetterName = Builder::BuildSetterName("file_id");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, fileIdSetterName.c_str(), nullptr, &fileIdSetter),
+        "No %{public}s", fileIdSetterName.c_str());
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, fileIdSetter, fileId),
+        "%{public}s fail", fileIdSetterName.c_str());
     return ANI_OK;
 }
 
@@ -103,10 +109,12 @@ ani_status FileAssetInfo::SetUri(ani_env *env, ani_class cls, ani_object object,
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method uriSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>uri", nullptr, &uriSetter), "No <set>uri");
+    std::string uriSetterName = Builder::BuildSetterName("uri");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, uriSetterName.c_str(), nullptr, &uriSetter),
+        "No %{public}s", uriSetterName.c_str());
     ani_string uriObj {};
     CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, uri, uriObj), "ToAniString uri fail");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, uriSetter, uriObj), "<set>uri fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, uriSetter, uriObj), "%{public}s fail", uriSetterName.c_str());
     return ANI_OK;
 }
 
@@ -114,10 +122,13 @@ ani_status FileAssetInfo::SetMediaType(ani_env *env, ani_class cls, ani_object o
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method mediaTypeSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>media_type", nullptr, &mediaTypeSetter), "No <set>media_type");
+    std::string mediaTypeSetterName = Builder::BuildSetterName("media_type");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, mediaTypeSetterName.c_str(), nullptr, &mediaTypeSetter),
+        "No %{public}s", mediaTypeSetterName.c_str());
     ani_enum_item mediaTypeObj = 0;
     CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, mediaType, mediaTypeObj), "Get mediaType index fail");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, mediaTypeSetter, mediaTypeObj), "<set>media_type fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, mediaTypeSetter, mediaTypeObj),
+        "%{public}s fail", mediaTypeSetterName.c_str());
     return ANI_OK;
 }
 
@@ -125,11 +136,13 @@ ani_status FileAssetInfo::SetDisplayName(ani_env *env, ani_class cls, ani_object
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method displayNameSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>display_name", nullptr, &displayNameSetter),
-        "No <set>display_name");
+    std::string displayNameSetterName = Builder::BuildSetterName("display_name");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, displayNameSetterName.c_str(), nullptr, &displayNameSetter),
+        "No %{public}s", displayNameSetterName.c_str());
     ani_string displayNameObj {};
     CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, displayName, displayNameObj), "ToAniString fail");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, displayNameSetter, displayNameObj), "<set>displayName fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, displayNameSetter, displayNameObj),
+        "%{public}s fail", displayNameSetterName.c_str());
     return ANI_OK;
 }
 
@@ -137,7 +150,8 @@ ani_status FileAssetInfo::SetSize(ani_env *env, ani_class cls, ani_object object
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method doubleSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>size", nullptr, &doubleSetter), "No doubleSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("size").c_str(), nullptr, &doubleSetter),
+        "No doubleSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, doubleSetter, size), "doubleSetter fail");
     return ANI_OK;
 }
@@ -146,7 +160,8 @@ ani_status FileAssetInfo::SetDateAdded(ani_env *env, ani_class cls, ani_object o
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method doubleSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>date_added", nullptr, &doubleSetter), "No doubleSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("date_added").c_str(), nullptr, &doubleSetter),
+        "No doubleSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, doubleSetter, dateAdded), "doubleSetter fail");
     return ANI_OK;
 }
@@ -155,7 +170,8 @@ ani_status FileAssetInfo::SetDateModified(ani_env *env, ani_class cls, ani_objec
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method doubleSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>date_modified", nullptr, &doubleSetter), "No doubleSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("date_modified").c_str(), nullptr,
+        &doubleSetter), "No doubleSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, doubleSetter, dateModified), "doubleSetter fail");
     return ANI_OK;
 }
@@ -164,7 +180,8 @@ ani_status FileAssetInfo::SetDuration(ani_env *env, ani_class cls, ani_object ob
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method doubleSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>duration", nullptr, &doubleSetter), "No doubleSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("duration").c_str(), nullptr, &doubleSetter),
+        "No doubleSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, doubleSetter, duration), "doubleSetter fail");
     return ANI_OK;
 }
@@ -173,7 +190,8 @@ ani_status FileAssetInfo::SetWidth(ani_env *env, ani_class cls, ani_object objec
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method doubleSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>width", nullptr, &doubleSetter), "No doubleSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("width").c_str(), nullptr, &doubleSetter),
+        "No doubleSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, doubleSetter, width), "doubleSetter fail");
     return ANI_OK;
 }
@@ -182,7 +200,8 @@ ani_status FileAssetInfo::SetHeight(ani_env *env, ani_class cls, ani_object obje
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method doubleSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>height", nullptr, &doubleSetter), "No doubleSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("height").c_str(), nullptr, &doubleSetter),
+        "No doubleSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, doubleSetter, height), "doubleSetter fail");
     return ANI_OK;
 }
@@ -191,7 +210,8 @@ ani_status FileAssetInfo::SetDateTaken(ani_env *env, ani_class cls, ani_object o
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method doubleSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>date_taken", nullptr, &doubleSetter), "No doubleSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("date_taken").c_str(), nullptr, &doubleSetter),
+        "No doubleSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, doubleSetter, dateTaken), "doubleSetter fail");
     return ANI_OK;
 }
@@ -200,7 +220,8 @@ ani_status FileAssetInfo::SetOrientation(ani_env *env, ani_class cls, ani_object
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method doubleSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>orientation", nullptr, &doubleSetter), "No doubleSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("orientation").c_str(), nullptr,
+        &doubleSetter), "No doubleSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, doubleSetter, orientation), "doubleSetter fail");
     return ANI_OK;
 }
@@ -209,7 +230,8 @@ ani_status FileAssetInfo::SetIsFavorite(ani_env *env, ani_class cls, ani_object 
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method boolSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>is_favorite", nullptr, &boolSetter), "No boolSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("is_favorite").c_str(), nullptr, &boolSetter),
+        "No boolSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, boolSetter, isFavorite), "boolSetter fail");
     return ANI_OK;
 }
@@ -218,7 +240,8 @@ ani_status FileAssetInfo::SetTitle(ani_env *env, ani_class cls, ani_object objec
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method strSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>title", nullptr, &strSetter), "No strSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("title").c_str(), nullptr, &strSetter),
+        "No strSetter");
     ani_string strObj {};
     CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, title, strObj), "ToAniString fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, strSetter, strObj), "strSetter fail");
@@ -229,10 +252,13 @@ ani_status FileAssetInfo::SetPosition(ani_env *env, ani_class cls, ani_object ob
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method positionSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>position", nullptr, &positionSetter), "No <set>position");
+    std::string positionSetterName = Builder::BuildSetterName("position");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, positionSetterName.c_str(), nullptr, &positionSetter),
+        "No %{public}s", positionSetterName.c_str());
     ani_enum_item positionObj = 0;
     CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, position, positionObj), "Get position object fail");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, positionSetter, positionObj), "<set>position fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, positionSetter, positionObj),
+        "%{public}s fail", positionSetterName.c_str());
     return ANI_OK;
 }
 
@@ -240,7 +266,8 @@ ani_status FileAssetInfo::SetDateTrashed(ani_env *env, ani_class cls, ani_object
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method doubleSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>date_trashed", nullptr, &doubleSetter), "No doubleSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("date_trashed").c_str(), nullptr,
+        &doubleSetter), "No doubleSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, doubleSetter, dateTrashed), "doubleSetter fail");
     return ANI_OK;
 }
@@ -249,7 +276,8 @@ ani_status FileAssetInfo::SetHidden(ani_env *env, ani_class cls, ani_object obje
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method boolSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>hidden", nullptr, &boolSetter), "No boolSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("hidden").c_str(), nullptr, &boolSetter),
+        "No boolSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, boolSetter, hidden), "boolSetter fail");
     return ANI_OK;
 }
@@ -258,7 +286,8 @@ ani_status FileAssetInfo::SetUserComment(ani_env *env, ani_class cls, ani_object
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method strSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>user_comment", nullptr, &strSetter), "No strSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("user_comment").c_str(), nullptr, &strSetter),
+        "No strSetter");
     ani_string strObj {};
     CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, userComment, strObj), "ToAniString fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, strSetter, strObj), "strSetter fail");
@@ -269,7 +298,8 @@ ani_status FileAssetInfo::SetCameraShotKey(ani_env *env, ani_class cls, ani_obje
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method strSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>camera_shot_key", nullptr, &strSetter), "No strSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("camera_shot_key").c_str(), nullptr,
+        &strSetter), "No strSetter");
     ani_string strObj {};
     CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, camera, strObj), "ToAniString fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, strSetter, strObj), "strSetter fail");
@@ -280,7 +310,8 @@ ani_status FileAssetInfo::SetDateYear(ani_env *env, ani_class cls, ani_object ob
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method strSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>date_year", nullptr, &strSetter), "No strSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("date_year").c_str(), nullptr, &strSetter),
+        "No strSetter");
     ani_string strObj {};
     CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, dateYear, strObj), "ToAniString fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, strSetter, strObj), "strSetter fail");
@@ -291,7 +322,8 @@ ani_status FileAssetInfo::SetDateMonth(ani_env *env, ani_class cls, ani_object o
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method strSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>date_month", nullptr, &strSetter), "No strSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("date_month").c_str(), nullptr, &strSetter),
+        "No strSetter");
     ani_string strObj {};
     CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, dateMonth, strObj), "ToAniString fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, strSetter, strObj), "strSetter fail");
@@ -302,7 +334,8 @@ ani_status FileAssetInfo::SetDateDay(ani_env *env, ani_class cls, ani_object obj
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method strSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>date_day", nullptr, &strSetter), "No strSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("date_day").c_str(), nullptr, &strSetter),
+        "No strSetter");
     ani_string strObj {};
     CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, dateDay, strObj), "ToAniString fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, strSetter, strObj), "strSetter fail");
@@ -313,7 +346,8 @@ ani_status FileAssetInfo::SetPending(ani_env *env, ani_class cls, ani_object obj
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method boolSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>pending", nullptr, &boolSetter), "No boolSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("pending").c_str(), nullptr, &boolSetter),
+        "No boolSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, boolSetter, pending), "boolSetter fail");
     return ANI_OK;
 }
@@ -322,7 +356,8 @@ ani_status FileAssetInfo::SetDateAddedMs(ani_env *env, ani_class cls, ani_object
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method doubleSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>date_added_ms", nullptr, &doubleSetter), "No doubleSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("date_added_ms").c_str(), nullptr,
+        &doubleSetter), "No doubleSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, doubleSetter, dateAddedMs), "doubleSetter fail");
     return ANI_OK;
 }
@@ -331,7 +366,8 @@ ani_status FileAssetInfo::SetDateModifiedMs(ani_env *env, ani_class cls, ani_obj
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method doubleSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>date_modified_ms", nullptr, &doubleSetter), "No doubleSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("date_modified_ms").c_str(), nullptr,
+        &doubleSetter), "No doubleSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, doubleSetter, dateModifiedMs), "doubleSetter fail");
     return ANI_OK;
 }
@@ -340,7 +376,8 @@ ani_status FileAssetInfo::SetDateTrashedMs(ani_env *env, ani_class cls, ani_obje
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method doubleSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>date_trashed_ms", nullptr, &doubleSetter), "No doubleSetter");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, Builder::BuildSetterName("date_trashed_ms").c_str(), nullptr,
+        &doubleSetter), "No doubleSetter");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, doubleSetter, dateTrashedMs), "doubleSetter fail");
     return ANI_OK;
 }
@@ -349,10 +386,13 @@ ani_status FileAssetInfo::SetSubtype(ani_env *env, ani_class cls, ani_object obj
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method subtypeSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>subtype", nullptr, &subtypeSetter), "No <set>subtype");
+    std::string subtypeSetterName = Builder::BuildSetterName("subtype");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, subtypeSetterName.c_str(), nullptr, &subtypeSetter),
+        "No %{public}s", subtypeSetterName.c_str());
     ani_enum_item subtypeObj = 0;
     CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, subtype, subtypeObj), "Get subtype object fail");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, subtypeSetter, subtypeObj), "<set>subtype fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, subtypeSetter, subtypeObj),
+        "%{public}s fail", subtypeSetterName.c_str());
     return ANI_OK;
 }
 } // namespace Media

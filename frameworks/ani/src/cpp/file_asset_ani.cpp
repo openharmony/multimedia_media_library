@@ -66,9 +66,12 @@
 #include "is_edited_vo.h"
 #include "get_edit_data_vo.h"
 #include "convert_format_vo.h"
+#include <ani_signature_builder.h>
 
 namespace OHOS::Media {
 namespace {
+using namespace arkts::ani_signature;
+
 using DataSharePredicates = OHOS::DataShare::DataSharePredicates;
 using DataShareValuesBucket = OHOS::DataShare::DataShareValuesBucket;
 using DataShareResultSet = OHOS::DataShare::DataShareResultSet;
@@ -245,17 +248,18 @@ static ani_status BindAniAttributes(ani_env *env, ani_object object,
     ani_enum_item photoType = 0;
     CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, attrs.photoType, photoType), "Get photoType index fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, fileAssetAniMethod.setPhotoType, photoType),
-        "<set>photoType fail");
+        "%{public}s fail", Builder::BuildSetterName("photoType").c_str());
 
     ani_string uri {};
     CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.uri, uri), "ToAniString uri fail");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, fileAssetAniMethod.setUri, uri), "<set>uri fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, fileAssetAniMethod.setUri, uri),
+        "%{public}s fail", Builder::BuildSetterName("uri").c_str());
 
     ani_string displayName {};
     CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.displayName, displayName),
         "ToAniString displayName fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, fileAssetAniMethod.setDisplayName, displayName),
-        "<set>displayName fail");
+        "%{public}s fail", Builder::BuildSetterName("displayName").c_str());
     return ANI_OK;
 }
 
@@ -307,12 +311,15 @@ ani_status FileAssetAni::InitFileAssetAniMethod(ani_env *env, ResultNapiType cla
         "No className: %{public}s", className.c_str());
     CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<ctor>", "l:", &fileAssetAniMethod.ctor),
         "No <ctor>");
-    CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<set>uri", nullptr, &fileAssetAniMethod.setUri),
-        "No <set>uri");
-    CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<set>photoType", nullptr,
-        &fileAssetAniMethod.setPhotoType), "No <set>photoType");
-    CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<set>displayName", nullptr,
-        &fileAssetAniMethod.setDisplayName), "No <set>displayName");
+    CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, Builder::BuildSetterName("uri").c_str(), nullptr,
+        &fileAssetAniMethod.setUri),
+        "No %{public}s", Builder::BuildSetterName("uri").c_str());
+    CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, Builder::BuildSetterName("photoType").c_str(),
+        nullptr, &fileAssetAniMethod.setPhotoType),
+        "No %{public}s", Builder::BuildSetterName("photoType").c_str());
+    CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, Builder::BuildSetterName("displayName").c_str(),
+        nullptr, &fileAssetAniMethod.setDisplayName),
+        "No %{public}s", Builder::BuildSetterName("displayName").c_str());
     return ANI_OK;
 }
 
