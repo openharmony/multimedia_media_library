@@ -464,7 +464,7 @@ int32_t CloudMediaPhotosDao::ConflictDataMerge(const CloudMediaPullDataDto &pull
     } else {
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_SDIRTY));
     }
-    string whereClause = PhotoColumn::MEDIA_FILE_PATH + " = ?";
+    string whereClause = PhotoColumn::MEDIA_FILE_PATH + " = ? AND position = 1";
     int32_t ret = this->UpdateProxy(
         updateRows, PhotoColumn::PHOTOS_TABLE, values, whereClause, {filePath}, photoRefresh);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_RDB, "ConflictDataMerge failed, ret: %{public}d, filePath: %{public}s",
