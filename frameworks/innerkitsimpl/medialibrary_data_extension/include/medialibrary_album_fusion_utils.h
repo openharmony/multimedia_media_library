@@ -58,7 +58,7 @@ public:
         std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t &sourceAlbumId, const int64_t &targetAlbumId);
     EXPORT static void SetParameterToStopSync();
     EXPORT static void SetParameterToStartSync();
-    EXPORT static int32_t CleanInvalidCloudAlbumAndData();
+    EXPORT static int32_t CleanInvalidCloudAlbumAndData(bool isBackgroundExecute = false);
     EXPORT static int32_t CloneSingleAsset(const int64_t &assetId, const std::string title);
     EXPORT static int32_t ConvertFormatAsset(const int64_t &assetId, const std::string &title,
         const std::string &extension);
@@ -82,6 +82,8 @@ public:
     EXPORT static int32_t SetAlbumFuseUpgradeStatus(int32_t upgradeStatus);
     EXPORT static void ReportAlbumFusionData(int64_t albumFusionTag, AlbumFusionState albumFusionState,
         const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
+    static bool ScreenOnInterrupt();
+    static void MigratePhotoMapData(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 
 private:
     EXPORT static void SetRefreshAlbum(bool needRefresh);
@@ -99,6 +101,8 @@ private:
 private:
     static std::mutex cloudAlbumAndDataMutex_;
     static std::atomic<bool> isNeedRefreshAlbum;
+    static const std::vector<std::function<void(const std::shared_ptr<MediaLibraryRdbStore>& store)>>
+        ALBUM_FUSION_CLEAN_TASKS;
 };
 }
 }
