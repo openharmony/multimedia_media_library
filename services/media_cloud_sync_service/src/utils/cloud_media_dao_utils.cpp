@@ -107,4 +107,17 @@ std::vector<std::string> CloudMediaDaoUtils::GetStringVector(const std::vector<i
     }
     return strVals;
 }
+
+std::string CloudMediaDaoUtils::VectorToString(const std::vector<uint64_t> &vec, const std::string &sep)
+{
+    std::stringstream ss;
+    ss << "[";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        ss << vec[i];
+        if (i != vec.size() - 1)
+            ss << sep;
+    }
+    ss << "]";
+    return ss.str();
+}
 }  // namespace OHOS::Media::CloudSync

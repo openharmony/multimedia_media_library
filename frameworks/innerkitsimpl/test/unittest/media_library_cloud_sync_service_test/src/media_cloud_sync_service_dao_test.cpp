@@ -29,9 +29,9 @@
 
 #define private public
 #include "cloud_media_album_dao.h"
+#include "cloud_media_data_dao.h"
 #undef private
 #include "cloud_media_common_dao.h"
-#include "cloud_media_data_dao.h"
 #include "cloud_media_photos_dao.h"
 #include "media_cloud_sync_test_utils.h"
 
@@ -78,7 +78,8 @@ void CloudMediaSyncServiceDaoTest::SetUp()
     ClearAndRestart(g_rdbStore);
 }
 
-void CloudMediaSyncServiceDaoTest::TearDown() {}
+void CloudMediaSyncServiceDaoTest::TearDown()
+{}
 
 HWTEST_F(CloudMediaSyncServiceDaoTest, CloudMediaAlbumDao_HandleLPathAndAlbumType_Test_001, TestSize.Level1)
 {
@@ -156,4 +157,4 @@ HWTEST_F(CloudMediaSyncServiceDaoTest, CloudMediaAlbumDao_ReplaceCoverUriConditi
     bool ret = albumDao.ReplaceCoverUriCondition(coverUri, lPath);
     EXPECT_EQ(ret, true);
 }
-}
+} // namespace OHOS::Media::CloudSync

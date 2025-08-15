@@ -95,6 +95,13 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, GetNumbers_Test, TestSize.Level1)
     EXPECT_EQ(result.size(), 1);
 }
 
+HWTEST_F(CloudMediaSyncServiceUtilsTest, VectorToString_Test, TestSize.Level1)
+{
+    std::vector<uint64_t> albumIds = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+    auto result = CloudMediaDaoUtils::VectorToString(albumIds);
+    EXPECT_GT(result.size(), 9);
+}
+
 HWTEST_F(CloudMediaSyncServiceUtilsTest, GetLocalPath_Test, TestSize.Level1)
 {
     string res = CloudMediaSyncUtils::GetLocalPath("");
