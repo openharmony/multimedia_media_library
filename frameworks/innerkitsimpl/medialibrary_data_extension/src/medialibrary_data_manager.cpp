@@ -560,6 +560,10 @@ static void AsyncUpgradeFromAllVersionFirstPart(const shared_ptr<MediaLibraryRdb
     ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
     MEDIA_INFO_LOG("End VERSION_ADD_DETAIL_TIME");
 
+    MEDIA_INFO_LOG("Start VERSION_ADD_INDEX_FOR_FILEID");
+    MediaLibraryRdbStore::AddIndexForFileIdAsync(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_INDEX_FOR_FILEID");
+
     MEDIA_INFO_LOG("Start VERSION_UPDATE_INDEX_FOR_COVER");
     MediaLibraryRdbStore::UpdateIndexForCover(rdbStore);
     MEDIA_INFO_LOG("Start VERSION_UPDATE_INDEX_FOR_COVER");

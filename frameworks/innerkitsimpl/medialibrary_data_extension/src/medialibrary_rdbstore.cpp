@@ -1735,7 +1735,6 @@ static const vector<string> onCreateSqlStrs = {
     PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER,
     PhotoAlbumColumns::ALBUM_INSERT_ORDER_TRIGGER,
     PhotoMap::CREATE_TABLE,
-    TriggerDeleteAlbumClearMap(),
     TriggerDeletePhotoClearMap(),
     CREATE_TAB_ANALYSIS_OCR,
     CREATE_TAB_ANALYSIS_LABEL,
@@ -2911,6 +2910,18 @@ static void AddIndexForFileId(RdbStore& store)
     };
     MEDIA_INFO_LOG("start AddIndexForFileId");
     ExecSqls(sqls, store);
+}
+
+void MediaLibraryRdbStore::AddIndexForFileIdAsync(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("AddIndexForFileIdAsync start");
+    const vector<string> updateSql = {
+        CREATE_IDX_FILEID_FOR_SEARCH_INDEX,
+        CREATE_IDX_FILEID_FOR_ANALYSIS_TOTAL,
+        CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP,
+    };
+    ExecSqls(updateSql, *store->GetRaw().get());
+    MEDIA_INFO_LOG("AddIndexForFileIdAsync end");
 }
 
 static void AddMetaRecovery(RdbStore& store)
@@ -4440,6 +4451,17 @@ static void AddOCRCardColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void DropPhotoAlbumClearMap(RdbStore& store)
+{
+    const vector<string> sqls = {
+        DROP_PHOTO_ALBUM_CLEAR_MAP_SQL,
+        DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+    };
+    MEDIA_INFO_LOG("Drop photoAlbum clear map start");
+    ExecSqls(sqls, store);
+}
+
 static void AddThumbnailVisible(RdbStore& store)
 {
     const vector<string> sqls = {
@@ -4885,6 +4907,10 @@ static void UpgradeFromAllVersionFirstPart(RdbStore &store, unordered_map<string
         AddDetailTimeToPhotos(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_DETAIL_TIME");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_OWNER_ALBUM_ID");
+    DropPhotoAlbumClearMap(store);
+    MEDIA_INFO_LOG("End VERSION_ADD_OWNER_ALBUM_ID");
 
     MEDIA_INFO_LOG("Start VERSION_ADD_THUMBNAIL_VISIBLE");
     if (photoColumnExists.find(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE) == photoColumnExists.end() ||
