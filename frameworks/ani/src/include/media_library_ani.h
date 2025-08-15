@@ -127,6 +127,7 @@ private:
         bool isPhoto);
     static ani_object BuildSharedPhotoAssetsObj(ani_env* env,
         ChangeListenerAni::JsOnChangeCallbackWrapper *wrapper, bool isPhoto);
+    void HandleMessageData(UvChangeMsg *msg, ChangeListenerAni::JsOnChangeCallbackWrapper* wrapper);
 };
 
 class ThumbnailBatchGenerateObserver : public DataShare::DataShareObserver {
@@ -174,10 +175,13 @@ public:
     static ani_status PhotoAccessHelperInit(ani_env *env);
     static ani_status UserFileMgrInit(ani_env *env);
     static ani_object CreateNewInstance(ani_env *env, ani_class clazz, ani_object context,
-        ani_object userIdObject, bool isAsync = false);
+        bool isAsync = false);
+    static ani_object CreateNewInstanceWithUserId(ani_env *env, ani_class clazz, ani_object context,
+        int32_t userId, bool isAsync = false);
 
     static ani_object GetUserFileMgr(ani_env *env, ani_object context);
-    static ani_object GetPhotoAccessHelperInner(ani_env *env, ani_object context, ani_object userId);
+    static ani_object GetPhotoAccessHelperInner(ani_env *env, ani_object context);
+    static ani_object GetPhotoAccessHelperWithUserIdInner(ani_env *env, ani_object context, ani_int userId);
     static MediaLibraryAni* Unwrap(ani_env *env, ani_object object);
     static void OnThumbnailGenerated(ani_env *env, ani_object callback, void *context, void *data);
     int32_t GetUserId();
@@ -213,7 +217,7 @@ public:
     static ani_object GetAssetsInner([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_object options);
     static void PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
-        ani_double taskId);
+        ani_int taskId);
     static ani_int PhotoAccessStartCreateThumbnailTask([[maybe_unused]] ani_env *env,
         [[maybe_unused]] ani_object object, ani_object predicate, ani_object callback);
     static ani_object GetBurstAssets([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
@@ -233,16 +237,16 @@ public:
     static ani_object PhotoAccessHelperAgentCreateAssetsWithMode(ani_env *env, ani_object object,
         ani_object appInfo, ani_enum_item authorizationMode, ani_object photoCreationConfigs);
     static ani_string PhotoAccessGetIndexConstructProgress(ani_env *env, ani_object object);
-    static ani_double PhotoAccessGrantPhotoUriPermission(ani_env *env, ani_object object, ani_object param,
+    static ani_int PhotoAccessGrantPhotoUriPermission(ani_env *env, ani_object object, ani_object param,
         ani_enum_item photoPermissionType, ani_enum_item hideSensitiveType);
-    static ani_double PhotoAccessGrantPhotoUrisPermission(ani_env *env, ani_object object, ani_object param,
+    static ani_int PhotoAccessGrantPhotoUrisPermission(ani_env *env, ani_object object, ani_object param,
         ani_enum_item photoPermissionType, ani_enum_item hideSensitiveType);
-    static ani_double PhotoAccessCancelPhotoUriPermission(ani_env *env, ani_object object, ani_double aniTokenId,
+    static ani_int PhotoAccessCancelPhotoUriPermission(ani_env *env, ani_object object, ani_long aniTokenId,
         ani_string aniUri, ani_enum_item photoPermissionType);
-    static ani_double PhotoAccessGetPhotoIndex([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+    static ani_int PhotoAccessGetPhotoIndex([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_string photoUri, ani_string albumUri, ani_object options);
     static ani_object PhotoAccessGetSupportedPhotoFormats(ani_env *env, ani_object object, ani_enum_item photoTypeAni);
-    static ani_double StartAssetAnalysis(ani_env *env, ani_object object, ani_enum_item type, ani_object assetUris);
+    static ani_int StartAssetAnalysis(ani_env *env, ani_object object, ani_enum_item type, ani_object assetUris);
     static void PhotoAccessRemoveFormInfo(ani_env *env, ani_object object, ani_object info);
     static void PhotoAccessRemoveGalleryFormInfo(ani_env *env, ani_object object, ani_object info);
     static void PhotoAccessUpdateGalleryFormInfo(ani_env *env, ani_object object, ani_object info);
@@ -338,6 +342,8 @@ struct MediaLibraryAsyncContext : public AniError {
     int32_t userId = -1;
     uint32_t businessCode = 0;
     std::string burstKey;
+    int32_t photoAlbumType;
+    int32_t photoAlbumSubType;
 };
 } // namespace Media
 } // namespace OHOS

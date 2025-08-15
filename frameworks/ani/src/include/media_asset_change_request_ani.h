@@ -123,10 +123,10 @@ public:
     static ani_object SaveCameraPhotoByImageFileType(ani_env *env, ani_object aniObject,
         ani_enum_item imageFileTypeAni);
     static ani_object DiscardCameraPhoto(ani_env *env, ani_object aniObject);
-    static ani_double GetWriteCacheHandler(ani_env *env, ani_object aniObject);
+    static ani_int GetWriteCacheHandler(ani_env *env, ani_object aniObject);
     static ani_object DeleteLocalAssetsPermanently(ani_env *env, [[maybe_unused]] ani_class clazz,
         ani_object context, ani_object assets);
-    static ani_object SetOrientation(ani_env *env, ani_object aniObject, ani_double orientation);
+    static ani_object SetOrientation(ani_env *env, ani_object aniObject, ani_int orientation);
     static ani_object SetSupportedWatermarkType(ani_env *env, ani_object aniObject,
         ani_enum_item watermarkTypeAni);
     static ani_object SetVideoEnhancementAttr(ani_env *env, ani_object aniObject,
