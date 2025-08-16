@@ -72,7 +72,6 @@ group("media_library_fuzztest") {
     "medialibrarymultistagesdeferredcapture_fuzzer:MediaLibraryMultistagesDeferredCaptureFuzzTest",
     "medialibrarynotification_fuzzer:MediaLibraryNotificationFuzzTest",
     "medialibrarypermission_fuzzer:MediaLibraryPermissionFuzzTest",
-    "medialibraryphotodaymonthyearoperation_fuzzer:MediaLibraryPhotoDayMonthYearOperationFuzzTest",
     "medialibraryrefresh_fuzzer:MediaLibraryRefreshFuzzTest",
     "medialibraryrefreshmanager_fuzzer:MediaLibraryRefreshManagerFuzzTest",
     "medialibraryrestore_fuzzer:MediaLibraryRestoreFuzzTest",

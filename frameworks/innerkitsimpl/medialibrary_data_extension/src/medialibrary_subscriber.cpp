@@ -78,7 +78,6 @@
 #include "net_conn_client.h"
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
-#include "photo_day_month_year_operation.h"
 #include "photo_mimetype_operation.h"
 #include "preferences.h"
 #include "preferences_helper.h"
@@ -667,6 +666,30 @@ static void RecoverBackgroundDownloadCloudMediaAsset()
     CHECK_AND_PRINT_LOG(ret == E_OK, "RecoverDownloadCloudAsset faild");
 }
 
+static void UpdateDateTakenWhenZero(AsyncTaskData *data)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    CHECK_AND_RETURN_LOG(dataManager != nullptr, "Failed to MediaLibraryDataManager instance!");
+
+    int32_t result = dataManager->UpdateDateTakenWhenZero();
+    CHECK_AND_PRINT_LOG(result == E_OK, "UpdateDateTakenWhenZero faild, result = %{public}d", result);
+}
+
+static int32_t DoUpdateDateTakenWhenZero()
+{
+    MEDIA_DEBUG_LOG("Begin DoUpdateDateTakenWhenZero");
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
+        "Failed to get async worker instance!");
+
+    shared_ptr<MediaLibraryAsyncTask> UpdateDateTakenWhenZeroTask =
+        make_shared<MediaLibraryAsyncTask>(UpdateDateTakenWhenZero, nullptr);
+    CHECK_AND_RETURN_RET_LOG(UpdateDateTakenWhenZeroTask != nullptr, E_FAIL,
+        "Failed to create async task for UpdateDateTakenWhenZeroTask !");
+    asyncWorker->AddTask(UpdateDateTakenWhenZeroTask, false);
+    return E_SUCCESS;
+}
+
 static void UpdateBurstCoverLevelFromGallery(AsyncTaskData *data)
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
@@ -779,6 +802,10 @@ void MedialibrarySubscriber::DoBackgroundOperation()
             }
         }
     }
+    ret = DoUpdateDateTakenWhenZero();
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("DoUpdateDateTakenWhenZero faild");
+    }
     ret = DoUpdateBurstCoverLevelFromGallery();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstCoverLevelFromGallery faild");
     RecoverBackgroundDownloadCloudMediaAsset();
@@ -794,7 +821,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     PhotoMimetypeOperation::UpdateInvalidMimeType();
     DfxManager::GetInstance()->HandleTwoDayMissions();
     DfxManager::GetInstance()->HandleOneWeekMissions();
-    PhotoDayMonthYearOperation::RepairDateTime();
 }
 
 static void PauseBackgroundDownloadCloudMedia()

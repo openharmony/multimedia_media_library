@@ -118,6 +118,7 @@ public:
     EXPORT void ReCreateMediaDir();
     EXPORT int32_t CheckCloudThumbnailDownloadFinish();
     EXPORT void UploadDBFileInner(int64_t totalFileSize);
+    EXPORT int32_t UpdateDateTakenWhenZero();
     EXPORT int32_t UpdateDirtyForCloudClone(int32_t version);
     EXPORT int32_t ClearDirtyHdcData();
     EXPORT int32_t UpdateMediaSizeFromStorage();

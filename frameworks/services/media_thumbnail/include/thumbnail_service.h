@@ -75,7 +75,7 @@ public:
     EXPORT void CancelAstcBatchTask(int32_t requestId);
     EXPORT bool CreateAstcMthAndYear(const std::string &id);
     EXPORT bool RegenerateThumbnailFromCloud(const std::string &id);
-    EXPORT void UpdateAstcWithNewDateTaken(const std::string &fileId, const std::string &newDateTaken,
+    void UpdateAstcWithNewDateTaken(const std::string &fileId, const std::string &newDateTaken,
         const std::string &formerDateTaken);
     EXPORT int32_t CheckCloudThumbnailDownloadFinish();
     EXPORT void AstcChangeKeyFromDateAddedToDateTaken();
