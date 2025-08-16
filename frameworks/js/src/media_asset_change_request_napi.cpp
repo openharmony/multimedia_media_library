@@ -1189,6 +1189,10 @@ napi_value MediaAssetChangeRequestNapi::JSSetVideoEnhancementAttr(napi_env env, 
     changeRequest->fileAsset_->SetPhotoId(photoId);
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
+    if (fileAsset->GetMediaType() != MediaType::MEDIA_TYPE_VIDEO) {
+        NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT, "This type is not supported, because it is not video.");
+        return nullptr;
+    }
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_VIDEO_ENHANCEMENT_ATTR);
     RETURN_NAPI_UNDEFINED(env);
 }
