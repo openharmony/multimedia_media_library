@@ -41,6 +41,7 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "cloud_sync_utils.h"
+#include "photo_day_month_year_operation.h"
 #include "power_efficiency_manager.h"
 #include "cloud_media_photos_dao.h"
 #include "result_set_reader.h"
@@ -55,6 +56,7 @@ static constexpr int32_t UPDATE_BATCH_CLOUD_SIZE = 2;
 static constexpr int32_t UPDATE_BATCH_LOCAL_VIDEO_SIZE = 50;
 static constexpr int32_t UPDATE_BATCH_LOCAL_IMAGE_SIZE = 200;
 static constexpr int32_t MAX_RETRY_COUNT = 2;
+static constexpr int32_t UPDATE_DAY_MONTH_YEAR_BATCH_SIZE = 200;
 static constexpr int32_t MIMETYPE_REPAIR_INTERVAL = 20000;
 static constexpr int32_t CACHE_PHOTO_NUM = 100;
 
@@ -229,6 +231,24 @@ void BackgroundCloudFileProcessor::UpdateCloudData()
     }
 }
 
+void BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYear()
+{
+    MEDIA_INFO_LOG("Start update abnormal day month year data task");
+
+    auto [ret, needUpdateFileIds] =
+        PhotoDayMonthYearOperation::QueryNeedUpdateFileIds(UPDATE_DAY_MONTH_YEAR_BATCH_SIZE);
+
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "Failed to query abnormal day month year data! err: %{public}d", ret);
+    if (needUpdateFileIds.empty()) {
+        MEDIA_DEBUG_LOG("No abnormal day month year data need to update");
+        return;
+    }
+
+    ret = PhotoDayMonthYearOperation::UpdateAbnormalDayMonthYear(needUpdateFileIds);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Failed to update abnormal day month year data task! err: %{public}d", ret);
+}
+
 void UpdateMimeTypeByFileId(const string &mimetype, int32_t fileId)
 {
     NativeRdb::ValuesBucket values;
@@ -331,6 +351,7 @@ void BackgroundCloudFileProcessor::RepairMimeType()
 void BackgroundCloudFileProcessor::ProcessCloudData()
 {
     UpdateCloudData();
+    UpdateAbnormalDayMonthYear();
 }
 
 bool BackgroundCloudFileProcessor::GetStorageFreeRatio(double &freeRatio)

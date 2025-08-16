@@ -2312,6 +2312,14 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, AstcMthAndYearInsert_test_001, TestSiz
     EXPECT_EQ(result, -1);
 }
 
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateDateTakenWhenZero_test_001, TestSize.Level0)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    int32_t ret =  dataManager->UpdateDateTakenWhenZero();
+    EXPECT_EQ(ret, E_OK);
+}
+
 HWTEST_F(MediaLibraryDataManagerUnitTest, LSMediaFiles_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("LSMediaFiles_test_001::Start");
