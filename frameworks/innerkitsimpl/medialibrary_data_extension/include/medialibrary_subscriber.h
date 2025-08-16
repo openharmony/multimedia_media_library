@@ -23,6 +23,7 @@
 #include "common_event_support.h"
 #include "matching_skills.h"
 #include "medialibrary_async_worker.h"
+#include "media_background_task_factory.h"
 
 namespace OHOS {
 namespace Media {
@@ -80,6 +81,7 @@ private:
     int32_t newTemperatureLevel_ {0};
     int32_t batteryCapacity_ {0};
     int64_t lockTime_ {0};
+    Background::MediaBackgroundTaskFactory backgroundTaskFactory_;
 
     DelayTask backgroundDelayTask_{"backgroundTask"};
     DelayTask thumbnailBgDelayTask_{"thumbnailBgTask"};

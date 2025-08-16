@@ -21,6 +21,8 @@
 
 #include "medialibrary_data_manager_utils.h"
 #include "media_log.h"
+#include "result_set_utils.h"
+#include "medialibrary_unistore_manager.h"
 
 namespace OHOS::Media::CloudSync {
 std::string CloudMediaDaoUtils::ToStringWithCommaAndQuote(const std::vector<std::string> &values)
@@ -119,5 +121,25 @@ std::string CloudMediaDaoUtils::VectorToString(const std::vector<uint64_t> &vec,
     }
     ss << "]";
     return ss.str();
+}
+
+int32_t CloudMediaDaoUtils::QueryCount(const std::string &sql, const std::string &columnName, int32_t &count)
+{
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB, "rdbStore is nullptr");
+    auto resultSet = rdbStore->QueryByStep(sql);
+    CHECK_AND_RETURN_RET_LOG(
+        resultSet != nullptr, E_RDB, "Query failed, failed when executing sql: %{public}s", sql.c_str());
+    CHECK_AND_RETURN_RET_LOG(
+        resultSet->GoToFirstRow() == E_OK, E_RDB, "Go to first row failed, sql: %{public}s", sql.c_str());
+    count = GetInt32Val(columnName, resultSet);
+    return E_OK;
+}
+
+int32_t CloudMediaDaoUtils::ExecuteSql(const std::string &sql)
+{
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB, "rdbStore is nullptr");
+    return rdbStore->ExecuteSql(sql);
 }
 }  // namespace OHOS::Media::CloudSync
