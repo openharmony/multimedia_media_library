@@ -47,6 +47,8 @@ ani_status GlobalFunctionInit(ani_env *env)
     std::array staticMethods = {
         ani_native_function {"getPhotoAccessHelperInner", nullptr,
             reinterpret_cast<void *>(MediaLibraryAni::GetPhotoAccessHelperInner)},
+        ani_native_function {"getPhotoAccessHelperWithUserIdInner", nullptr,
+            reinterpret_cast<void *>(MediaLibraryAni::GetPhotoAccessHelperWithUserIdInner)},
     };
 
     if (ANI_OK != env->Namespace_BindNativeFunctions(ns, staticMethods.data(), staticMethods.size())) {

@@ -131,13 +131,13 @@ void CloudEnhancementTaskStateAni::SetCloudEnhancementTaskStage(CloudEnhancement
     this->cloudEnhancementTaskStage_ = cloudEnhancementTaskStage;
 }
 
-ani_double CloudEnhancementTaskStateAni::GetTransferredFileSize(ani_env *env, ani_object object)
+ani_int CloudEnhancementTaskStateAni::GetTransferredFileSize(ani_env *env, ani_object object)
 {
     CHECK_COND_RET(env != nullptr, CloudEnhancementTaskStateAni::UNDEFINED, "env is nullptr");
     CloudEnhancementTaskStateAni* nativeHandle = Unwrap(env, object);
     CHECK_COND_RET(nativeHandle != nullptr, CloudEnhancementTaskStateAni::UNDEFINED,
         "CloudEnhancementTaskStateAni is nullptr");
-    return static_cast<ani_double>(nativeHandle->transferredFileSize_);
+    return static_cast<ani_int>(nativeHandle->transferredFileSize_);
 }
 
 void CloudEnhancementTaskStateAni::SetTransferredFileSize(int32_t transferredFileSize)
@@ -145,13 +145,13 @@ void CloudEnhancementTaskStateAni::SetTransferredFileSize(int32_t transferredFil
     this->transferredFileSize_ = transferredFileSize;
 }
 
-ani_double CloudEnhancementTaskStateAni::GetTotalFileSize(ani_env *env, ani_object object)
+ani_int CloudEnhancementTaskStateAni::GetTotalFileSize(ani_env *env, ani_object object)
 {
     CHECK_COND_RET(env != nullptr, CloudEnhancementTaskStateAni::UNDEFINED, "env is nullptr");
     CloudEnhancementTaskStateAni* nativeHandle = Unwrap(env, object);
     CHECK_COND_RET(nativeHandle != nullptr, CloudEnhancementTaskStateAni::UNDEFINED,
         "CloudEnhancementTaskStateAni is nullptr");
-    return static_cast<ani_double>(nativeHandle->totalFileSize_);
+    return static_cast<ani_int>(nativeHandle->totalFileSize_);
 }
 
 void CloudEnhancementTaskStateAni::SetTotalFileSize(int32_t totalFileSize)
@@ -159,13 +159,13 @@ void CloudEnhancementTaskStateAni::SetTotalFileSize(int32_t totalFileSize)
     this->totalFileSize_ = totalFileSize;
 }
 
-ani_double CloudEnhancementTaskStateAni::GetExpectedDuration(ani_env *env, ani_object object)
+ani_int CloudEnhancementTaskStateAni::GetExpectedDuration(ani_env *env, ani_object object)
 {
     CHECK_COND_RET(env != nullptr, CloudEnhancementTaskStateAni::UNDEFINED, "env is nullptr");
     CloudEnhancementTaskStateAni* nativeHandle = Unwrap(env, object);
     CHECK_COND_RET(nativeHandle != nullptr, CloudEnhancementTaskStateAni::UNDEFINED,
         "CloudEnhancementTaskStateAni is nullptr");
-    return static_cast<ani_double>(nativeHandle->expectedDuration_);
+    return static_cast<ani_int>(nativeHandle->expectedDuration_);
 }
 
 void CloudEnhancementTaskStateAni::SetExpectedDuration(int32_t expectedDuration)
@@ -173,13 +173,13 @@ void CloudEnhancementTaskStateAni::SetExpectedDuration(int32_t expectedDuration)
     this->expectedDuration_ = expectedDuration;
 }
 
-ani_double CloudEnhancementTaskStateAni::GetStatusCode(ani_env *env, ani_object object)
+ani_int CloudEnhancementTaskStateAni::GetStatusCode(ani_env *env, ani_object object)
 {
     CHECK_COND_RET(env != nullptr, CloudEnhancementTaskStateAni::UNDEFINED, "env is nullptr");
     CloudEnhancementTaskStateAni* nativeHandle = Unwrap(env, object);
     CHECK_COND_RET(nativeHandle != nullptr, CloudEnhancementTaskStateAni::UNDEFINED,
         "CloudEnhancementTaskStateAni is nullptr");
-    return static_cast<ani_double>(nativeHandle->statusCode_);
+    return static_cast<ani_int>(nativeHandle->statusCode_);
 }
 
 void CloudEnhancementTaskStateAni::SetStatusCode(int32_t statusCode)
