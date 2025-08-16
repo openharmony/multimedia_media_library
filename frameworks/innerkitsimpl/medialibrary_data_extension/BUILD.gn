@@ -63,6 +63,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/service",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/service/processor",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/utils",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/background",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/native/cloud_sync",
   ]
 
@@ -106,6 +107,10 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/controller",
   ]
 
+  include_backround_task = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/background",
+  ]
+
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -140,6 +145,7 @@ config("media_data_extension_public_config") {
   include_dirs += include_media_albums_manager
   include_dirs += include_notification
   include_dirs += include_accurate_refresh
+  include_dirs += include_backround_task
 
   if (media_library_feature_cloud_enhancement) {
     include_cloud_enhancement = [
@@ -379,6 +385,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/sys_utils.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_sync_convert.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/media_gallery_sync_notify.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/background/media_cloud_sync_backgroud_task.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/background/media_hidden_and_recycle_task.cpp",
   ]
 
   media_cloud_sync_server_source += media_cloud_sync_server_source_vo
@@ -557,6 +565,10 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_cloud_permission_check.cpp",
   ]
 
+  sources_backround_task = [
+    "src/background/media_background_task_factory.cpp",
+  ]
+
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
@@ -714,6 +726,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_mtp_service
   sources += accurate_refresh_source
   sources += accurate_refresh_server_source
+  sources += sources_backround_task
 
   if (media_library_feature_cloud_enhancement) {
     media_cloud_enhancement_source = [
