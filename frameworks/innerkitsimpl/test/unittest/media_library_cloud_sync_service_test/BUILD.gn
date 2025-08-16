@@ -35,15 +35,17 @@ ohos_unittest("media_library_cloud_sync_service_test") {
     "../medialibrary_unittest_utils/include",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/vo",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/includ/utils/",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/background",
   ]
 
   sources = [
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/cloud_media_controller_service_test.cpp",
+    "./src/cloud_media_service_test.cpp",
+    "./src/media_background_task_factory_test.cpp",
     "./src/media_cloud_sync_service_utils_test.cpp",
     "./src/media_cloud_sync_service_vo_test.cpp",
-    "./src/cloud_media_service_test.cpp",
-    "src/media_cloud_sync_test_utils.cpp",
+    "./src/media_cloud_sync_test_utils.cpp",
   ]
 
   deps = [

@@ -30,6 +30,8 @@ public:
     static std::vector<std::string> GetStringVector(const std::vector<int32_t> &intVals);
     static int32_t ToInt32(const std::string &str);
     static std::string VectorToString(const std::vector<uint64_t> &vec, const std::string &sep = ", ");
+    static int32_t QueryCount(const std::string &sql, const std::string &columnName, int32_t &count);
+    static int32_t ExecuteSql(const std::string &sql);
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_CLOUD_MEDIA_DAO_UTILS_H

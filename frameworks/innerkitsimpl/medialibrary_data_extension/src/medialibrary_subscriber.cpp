@@ -795,6 +795,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     DfxManager::GetInstance()->HandleTwoDayMissions();
     DfxManager::GetInstance()->HandleOneWeekMissions();
     PhotoDayMonthYearOperation::RepairDateTime();
+    backgroundTaskFactory_.Execute();
 }
 
 static void PauseBackgroundDownloadCloudMedia()
