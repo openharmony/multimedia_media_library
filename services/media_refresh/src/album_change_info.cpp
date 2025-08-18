@@ -44,7 +44,7 @@ const map<std::string, ResultSetDataType> AlbumChangeInfo::albumInfoCloumnTypes_
     { PhotoAlbumColumns::HIDDEN_COVER_DATE_TIME, TYPE_INT64 },
     { PhotoAlbumColumns::ALBUM_DIRTY, TYPE_INT32 },
     { PhotoAlbumColumns::COVER_URI_SOURCE, TYPE_INT32 },
-    { PhotoAlbumColumns::ALBUM_ORDER, TYPE_INT32 },
+    { PhotoAlbumColumns::ALBUMS_ORDER, TYPE_INT32 },
     { PhotoAlbumColumns::ORDER_SECTION, TYPE_INT32},
 };
 
@@ -100,10 +100,10 @@ vector<AlbumChangeInfo> AlbumChangeInfo::GetInfoFromResult(
             resultSet, GetDataType(PhotoAlbumColumns::ALBUM_DIRTY)));
         albumChangeInfo.coverUriSource_ = get<int32_t>(ResultSetUtils::GetValFromColumn(
             PhotoAlbumColumns::COVER_URI_SOURCE, resultSet, GetDataType(PhotoAlbumColumns::COVER_URI_SOURCE)));
-        albumChangeInfo.orderSection_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ORDER,
-            resultSet, GetDataType(PhotoAlbumColumns::ALBUMS_ORDER)));
-        albumChangeInfo.albumOrder_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_SECTION,
+        albumChangeInfo.orderSection_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_SECTION,
             resultSet, GetDataType(PhotoAlbumColumns::ORDER_SECTION)));
+        albumChangeInfo.albumsOrder_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUMS_ORDER,
+            resultSet, GetDataType(PhotoAlbumColumns::ALBUMS_ORDER)));
         albumChangeInfos.push_back(albumChangeInfo);
     }
 
@@ -122,7 +122,7 @@ string AlbumChangeInfo::ToString(bool isDetail) const
         ss << ", isCoverChange_: " << isCoverChange_ << ", isHiddenCoverChange_: " << isHiddenCoverChange_;
         ss << ", coverDateTime_: " << coverDateTime_ << ", hiddenCoverDateTime_: " << hiddenCoverDateTime_;
         ss << ", dirty_: " << dirty_ << ", coverUriSource_: " << coverUriSource_;
-        ss << ", albumOrder_: " << albumOrder_ << ", orderSection_ " << orderSection_;
+        ss << ", albumsOrder_: " << albumsOrder_ << ", orderSection_ " << orderSection_;
         if (isCoverChange_) {
             ss << ", cover info: " << coverInfo_.ToString().c_str();
         }
@@ -227,7 +227,7 @@ bool AlbumChangeInfo::Marshalling(Parcel &parcel, bool isSystem) const
             ret = ret && hiddenCoverInfo_.Marshalling(parcel, isSystem);
         }
         ret = ret && parcel.WriteInt32(orderSection_);
-        ret = ret && parcel.WriteInt32(albumOrder_);
+        ret = ret && parcel.WriteInt32(albumsOrder_);
     }
     ret = ret && parcel.WriteInt32(albumId_);
     return ret;
@@ -261,7 +261,7 @@ bool AlbumChangeInfo::ReadFromParcel(Parcel &parcel)
             ret = ret && hiddenCoverInfo_.ReadFromParcel(parcel);
         }
         ret = ret && parcel.ReadInt32(orderSection_);
-        ret = ret && parcel.ReadInt32(albumOrder_);
+        ret = ret && parcel.ReadInt32(albumsOrder_);
     }
     ret = ret && parcel.ReadInt32(albumId_);
     return ret;
@@ -307,7 +307,7 @@ string AlbumChangeInfo::GetAlbumDiff(const AlbumChangeInfo &album, const AlbumCh
     GET_ALBUM_DIFF(hiddenCoverDateTime_);
     GET_ALBUM_DIFF(dirty_);
     GET_ALBUM_DIFF(coverUriSource_);
-    GET_ALBUM_DIFF(albumOrder_);
+    GET_ALBUM_DIFF(albumsOrder_);
     GET_ALBUM_DIFF(orderSection_);
 
     if (album.coverUri_ != compare.coverUri_) {
@@ -344,7 +344,7 @@ bool AlbumChangeData::IsAlbumInfoChange()
         (infoBeforeChange_.lpath_ != infoAfterChange_.lpath_) ||
         (infoBeforeChange_.albumName_ != infoAfterChange_.albumName_) ||
         (infoBeforeChange_.dirty_ != infoAfterChange_.dirty_) ||
-        (infoBeforeChange_.albumOrder_ != infoAfterChange_.albumOrder_) ||
+        (infoBeforeChange_.albumsOrder_ != infoAfterChange_.albumsOrder_) ||
         (infoBeforeChange_.orderSection_ != infoAfterChange_.orderSection_);
 }
  
