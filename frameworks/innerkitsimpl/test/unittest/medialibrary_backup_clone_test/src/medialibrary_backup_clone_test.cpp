@@ -1103,20 +1103,42 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileIn
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_001");
-
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
-        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+        "TddTest", "");
+    EXPECT_EQ(othersClone->mediaAppName_, "TddTest");
+
     FileInfo fileInfo;
-    fileInfo.displayName = "test.jpg";
+    fileInfo.displayName = "test.mp3";
     fileInfo.fileType = MediaType::MEDIA_TYPE_AUDIO;
     CloneDbInfo cloneDbInfo;
-    cloneDbInfo.displayName = "test.jpg";
+    cloneDbInfo.displayName = "test.mp3";
+
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    othersClone->audioDbMap_.insert(std::make_pair("test.mp3", &cloneDbInfo));
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(othersClone->audioDbMap_["test.mp3"]->fileExists, true);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_lite, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_lite");
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(LITE_PHONE_CLONE_RESTORE,
+        "TDDTest", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    EXPECT_EQ(othersClone->mediaAppName_, "TDDTest");
+    FileInfo fileInfo;
+    fileInfo.filePath = "/storage/media/local/files/.backup/restore/test.jpg";
+    fileInfo.displayName = "/test.jpg";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
+
+    CloneDbInfo cloneDbInfo;
+    cloneDbInfo.displayName = "/test.jpg";
     cloneDbInfo.dateModified = 1;
     cloneDbInfo.dateTaken = 1;
-    othersClone->audioDbInfo_.push_back(cloneDbInfo);
+
     othersClone->UpDateFileModifiedTime(fileInfo);
-    EXPECT_EQ(fileInfo.dateModified, 1000);
-    EXPECT_EQ(fileInfo.dateTaken, 1000);
+    othersClone->photoDbMap_.insert(std::make_pair("/test.jpg", &cloneDbInfo));
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(othersClone->photoDbMap_["/test.jpg"]->fileExists, true);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_002, TestSize.Level2)
@@ -1141,9 +1163,9 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_003");
-
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
-        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+        "TestDT", "[{\"type\":\"deviceType\",\"detail\":\"IKUNI\"}]");
+    EXPECT_EQ(othersClone->clonePhoneName_, "IKUNI");
     FileInfo fileInfo;
     fileInfo.displayName = "test.jpg";
     fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
@@ -1151,32 +1173,31 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     cloneDbInfo.displayName = "test.jpg";
     cloneDbInfo.dateModified = 1;
     cloneDbInfo.dateTaken = 1;
-    othersClone->photoDbInfo_.push_back(cloneDbInfo);
+
     othersClone->UpDateFileModifiedTime(fileInfo);
-    EXPECT_EQ(fileInfo.dateModified, 1000);
-    EXPECT_EQ(fileInfo.dateTaken, 1000);
+    othersClone->photoDbMap_.insert(std::make_pair("test.jpg", &cloneDbInfo));
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(othersClone->photoDbMap_["test.jpg"]->fileExists, true);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_004");
 
-    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
-        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
+        "TDDTest", "[{\"type\":\"deviceType\",\"detail\":\"IKUNI\"}]");
+    EXPECT_EQ(othersClone->mediaAppName_, "TDDTest");
     FileInfo fileInfo;
     fileInfo.displayName = "test.jpg";
     fileInfo.fileType = MediaType::MEDIA_TYPE_IMAGE;
-    CloneDbInfo cloneDbInfoPh;
-    cloneDbInfoPh.displayName = "";
+
     CloneDbInfo cloneDbInfo;
     cloneDbInfo.displayName = "test.jpg";
     cloneDbInfo.dateModified = 1;
     cloneDbInfo.dateTaken = 1;
-    othersClone->photoDbInfo_.push_back(cloneDbInfoPh);
-    othersClone->audioDbInfo_.push_back(cloneDbInfo);
+    othersClone->photoDbMap_.insert(std::make_pair("test.jpg", &cloneDbInfo));
     othersClone->UpDateFileModifiedTime(fileInfo);
-    EXPECT_EQ(fileInfo.dateModified, 1000);
-    EXPECT_EQ(fileInfo.dateTaken, 1000);
+    EXPECT_EQ(othersClone->photoDbMap_["test.jpg"]->fileExists, true);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_005, TestSize.Level2)
@@ -1238,18 +1259,21 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_008");
 
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
-        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+        "TestTDD", "[{\"type\":\"deviceType\",\"detail\":\"\"}]");
+    EXPECT_EQ(othersClone->clonePhoneName_.empty(), false);
     FileInfo fileInfo;
-    fileInfo.displayName = "test.jpg";
-    fileInfo.fileType = MediaType::MEDIA_TYPE_AUDIO;
+    fileInfo.displayName = "test.mov";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_VIDEO;
+
     CloneDbInfo cloneDbInfo;
-    cloneDbInfo.displayName = "test.jpg";
-    cloneDbInfo.dateModified = 1.5e10;
-    cloneDbInfo.dateTaken = 1.5e10;
-    othersClone->audioDbInfo_.push_back(cloneDbInfo);
+    cloneDbInfo.displayName = "test.mov";
+    cloneDbInfo.dateModified = 1;
+    cloneDbInfo.dateTaken = 1;
     othersClone->UpDateFileModifiedTime(fileInfo);
-    EXPECT_EQ(fileInfo.dateModified, 15000000000);
-    EXPECT_EQ(fileInfo.dateTaken, 15000000000);
+
+    othersClone->photoDbMap_.insert(std::make_pair("test.mov", &cloneDbInfo));
+    othersClone->UpDateFileModifiedTime(fileInfo);
+    EXPECT_EQ(othersClone->photoDbMap_["test.mov"]->fileExists, true);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_009, TestSize.Level2)
