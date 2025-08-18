@@ -38,12 +38,12 @@ public:
         int32_t albumSubType, std::string albumName, std::string albumUri, int32_t count, std::string coverUri,
         int32_t hiddenCount, std::string hiddenCoverUri, bool isCoverChange,
         bool isHiddenCoverChange, int64_t dateTimeForCover, int64_t dateTimeForHiddenCover, int32_t dirty,
-        int32_t albumOrder, int32_t orderSection) : albumId_(albumId), lpath_(lpath), imageCount_(imageCount),
+        int32_t albumsOrder, int32_t orderSection) : albumId_(albumId), lpath_(lpath), imageCount_(imageCount),
         videoCount_(videoCount), albumType_(albumType), albumSubType_(albumSubType), albumName_(albumName),
         albumUri_(albumUri), count_(count), coverUri_(coverUri), hiddenCount_(hiddenCount),
         hiddenCoverUri_(hiddenCoverUri), isCoverChange_(isCoverChange), isHiddenCoverChange_(isHiddenCoverChange),
         coverDateTime_(dateTimeForCover), hiddenCoverDateTime_(dateTimeForHiddenCover), dirty_(dirty),
-        albumOrder_(albumOrder), orderSection_(orderSection) {}
+        albumsOrder_(albumsOrder), orderSection_(orderSection) {}
 
     int32_t albumId_ = INVALID_INT32_VALUE;
     std::string lpath_ = EMPTY_STR;
@@ -65,7 +65,7 @@ public:
     int64_t hiddenCoverDateTime_ = INVALID_INT64_VALUE;
     int32_t dirty_ = INVALID_INT32_VALUE;
     int32_t coverUriSource_ = 0;
-    int32_t albumOrder_ = INVALID_INT32_VALUE;
+    int32_t albumsOrder_ = INVALID_INT32_VALUE;
     int32_t orderSection_ = INVALID_INT32_VALUE;
 
     NativeRdb::ValuesBucket GetUpdateValues(const AlbumChangeInfo &oldAlbumInfo, NotifyType &type);
