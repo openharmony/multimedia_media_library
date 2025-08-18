@@ -105,7 +105,6 @@ ohos_unittest("media_notification_test") {
     "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   defines = []
