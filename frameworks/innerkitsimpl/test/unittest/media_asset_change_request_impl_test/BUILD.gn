@@ -99,7 +99,6 @@ ohos_unittest("media_asset_change_request_impl_test") {
     "resource_management:librawfile",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   if (ability_runtime_graphics) {

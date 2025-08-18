@@ -97,7 +97,6 @@ ohos_unittest("medialibrary_ptp_operations_test") {
     "resource_management:librawfile",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   defines = []
