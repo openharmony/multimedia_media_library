@@ -45,6 +45,7 @@ public:
     EXPORT static bool FlipAndRotatePicture(std::shared_ptr<Picture> picture, const FlipAndRotateInfo &info);
     EXPORT static bool FlipAndRotatePixelMap(std::shared_ptr<PixelMap> pixelMap, int32_t exifRotate);
     EXPORT static bool FlipAndRotatePixelMap(std::shared_ptr<PixelMap> pixelMap, const FlipAndRotateInfo &info);
+    EXPORT static bool ConvertPixelMapToSdrAndFormatRGBA8888(std::shared_ptr<PixelMap> &pixelMap);
 
 private:
     EXPORT static std::shared_ptr<PixelMap> CopyNormalPixelmap(std::shared_ptr<PixelMap> pixelMap);
