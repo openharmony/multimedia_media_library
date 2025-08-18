@@ -19,6 +19,7 @@
 #include <securec.h>
 
 #include "hdr_type.h"
+#include "image_format_convert.h"
 #include "image_source.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 
@@ -383,6 +384,24 @@ bool ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(std::shared_ptr<PixelMa
 {
     CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "PixelMap is nullptr");
     return MediaImageFrameWorkUtils::FlipAndRotatePixelMap(*(pixelMap.get()), info);
+}
+
+bool ThumbnailImageFrameWorkUtils::ConvertPixelMapToSdrAndFormatRGBA8888(std::shared_ptr<PixelMap> &pixelMap)
+{
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "PixelMap is nullptr");
+    if (pixelMap->IsHdr()) {
+        uint32_t ret = pixelMap->ToSdr();
+        CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Failed to transform to sdr");
+    }
+
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
+    if (imageInfo.pixelFormat != PixelFormat::RGBA_8888) {
+        uint32_t ret = ImageFormatConvert::ConvertImageFormat(pixelMap, PixelFormat::RGBA_8888);
+        CHECK_AND_RETURN_RET_LOG(ret == 0, false,
+            "Failed to convert image format, format: %{public}d", imageInfo.pixelFormat);
+    }
+    return true;
 }
 // LCOV_EXCL_STOP
 } // namespace Media
