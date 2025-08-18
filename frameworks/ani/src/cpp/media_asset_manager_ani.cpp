@@ -593,11 +593,11 @@ ani_status MediaAssetManagerAni::CreateOnDataPreparedThreadSafeFunc(ThreadFuncti
         ani_options aniArgs {1, &interopEnabled};
         CHECK_IF_EQUAL(assetHandler->etsVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &etsEnv) == ANI_OK,
             "AttachCurrentThread fail");
-
+        auto assetHandler_etsVm = assetHandler->etsVm;
         // Do OnDataPrepared in thread
         MediaAssetManagerAni::OnDataPrepared(etsEnv, assetHandler);
 
-        CHECK_IF_EQUAL(assetHandler->etsVm->DetachCurrentThread() == ANI_OK, "DetachCurrentThread fail");
+        CHECK_IF_EQUAL(assetHandler_etsVm->DetachCurrentThread() == ANI_OK, "DetachCurrentThread fail");
     };
     return ANI_OK;
 }
