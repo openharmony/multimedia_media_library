@@ -157,6 +157,28 @@ void MediaAnalysisHelper::StartForegroundAnalysisServiceSync(int32_t code, const
         return;
     }
 }
+
+void MediaAnalysisHelper::PortraitDisplayGraphChange(int32_t code, const std::vector<std::string> &albumId)
+{
+    MessageParcel data;
+    MediaAnalysisProxy mediaAnalysisProxy(nullptr);
+    if (!data.WriteInterfaceToken(mediaAnalysisProxy.GetDescriptor())) {
+        MEDIA_ERR_LOG("Write InterfaceToken failed");
+        return;
+    }
+
+    if (!data.WriteStringVector(albumId)) {
+        MEDIA_ERR_LOG("write fileIds failed");
+        return;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_ASYNC);
+    if (!mediaAnalysisProxy.SendTransactCmd(code, data, reply, option)) {
+        MEDIA_ERR_LOG("Actively Calling Analysis For Foreground failed");
+        return;
+    }
+}
 // LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
