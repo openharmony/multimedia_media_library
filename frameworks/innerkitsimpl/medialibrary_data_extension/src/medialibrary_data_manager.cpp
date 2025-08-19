@@ -560,7 +560,7 @@ static void SetExifRotateAfterAddColumn(const shared_ptr<MediaLibraryRdbStore>& 
 static void AsyncUpgradeFromAllVersionFirstPart(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
 {
     MEDIA_INFO_LOG("Start VERSION_ADD_DETAIL_TIME");
-    int32_t errCode;
+    int32_t errCode = 0;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(RDB_FIX_RECORDS, errCode);
     if (prefs != nullptr) {
