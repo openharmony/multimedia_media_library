@@ -157,6 +157,13 @@ const int TRASH_ALBUM_TYPE_VALUES = 2;
 
 const int32_t ARG_COUNT = 2;
 const std::string TRASH_ALBUM_NAME_VALUES = "TrashAlbum";
+
+static const std::string RDB_FIX_RECORDS = "/data/storage/el2/base/preferences/rdb_fix_records.xml";
+static const std::string DETAIL_TIME_FIXED = "detail_time_fixed";
+static const std::string THUMBNAIL_VISIBLE_FIXED = "thumbnail_visible_fixed";
+static const int32_t NEED_FIXED = 1;
+static const int32_t ALREADY_FIXED = 2;
+
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
     int32_t startNumber;
@@ -4915,6 +4922,15 @@ static void UpgradeFromAllVersionFirstPart(RdbStore &store, unordered_map<string
     MEDIA_INFO_LOG("Start VERSION_ADD_THUMBNAIL_VISIBLE");
     if (photoColumnExists.find(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE) == photoColumnExists.end() ||
         !photoColumnExists.at(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE)) {
+        int32_t errCode;
+        shared_ptr<NativePreferences::Preferences> prefs =
+            NativePreferences::PreferencesHelper::GetPreferences(RDB_FIX_RECORDS, errCode);
+        if (prefs != nullptr) {
+            // before current version, thumbnail visible column has existed, need to fix other information
+            prefs->PutInt(THUMBNAIL_VISIBLE_FIXED, NEED_FIXED);
+            prefs->FlushSync();
+            MEDIA_INFO_LOG("THUMBNAIL_VISIBLE_FIXED set to: %{public}d", NEED_FIXED);
+        }
         AddThumbnailVisible(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_THUMBNAIL_VISIBLE");
@@ -4934,7 +4950,10 @@ static void UpgradeFromAllVersionFirstPart(RdbStore &store, unordered_map<string
     MEDIA_INFO_LOG("Start VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM");
     AddCloudEnhancementAlbum(store);
     MEDIA_INFO_LOG("End VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM");
+}
 
+static void UpgradeFromAllVersionSecondPart(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
+{
     MEDIA_INFO_LOG("Start VERSION_CREATE_TAB_OLD_PHOTOS");
     TabOldPhotosTableEventHandler().OnCreate(store);
     MEDIA_INFO_LOG("End VERSION_CREATE_TAB_OLD_PHOTOS");
@@ -4955,10 +4974,7 @@ static void UpgradeFromAllVersionFirstPart(RdbStore &store, unordered_map<string
         AddSupportedWatermarkType(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_SUPPORTED_WATERMARK_TYPE");
-}
 
-static void UpgradeFromAllVersionSecondPart(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
-{
     MEDIA_INFO_LOG("Start VERSION_UDAPTE_AOI");
     if (!IsColumnExists(store, GEO_KNOWLEDGE_TABLE, AOI)) {
         UpdateAOI(store);
@@ -4985,7 +5001,10 @@ static void UpgradeFromAllVersionSecondPart(RdbStore &store, unordered_map<strin
         AddSourceAndTargetTokenForUriPermission(store);
     }
     MEDIA_INFO_LOG("End VERSION_UPDATE_URIPERMISSION_SOURCE_TOKEN_AND_TARGET_TOKEN");
+}
 
+static void UpgradeFromAllVersionThirdPart(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
+{
     MEDIA_INFO_LOG("Start VERSION_HIGHLIGHT_CHANGE_FUNCTION");
     if (!IsColumnExists(store, ANALYSIS_PHOTO_MAP_TABLE, ORDER_POSITION)) {
         AddHighlightChangeFunction(store);
@@ -5012,10 +5031,7 @@ static void UpgradeFromAllVersionSecondPart(RdbStore &store, unordered_map<strin
     MEDIA_INFO_LOG("Start VERSION_FIX_SOURCE_ALBUM_UPDATE_TRIGGER_TO_USE_LPATH");
     FixSourceAlbumUpdateTriggerToUseLPath(store);
     MEDIA_INFO_LOG("End VERSION_FIX_SOURCE_ALBUM_UPDATE_TRIGGER_TO_USE_LPATH");
-}
 
-static void UpgradeFromAllVersionThirdPart(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
-{
     MEDIA_INFO_LOG("Start VERSION_ADD_REFRESH_ALBUM_STATUS_COLUMN");
     if (!IsColumnExists(store, ALBUM_REFRESH_TABLE, ALBUM_REFRESH_STATUS)) {
         AddRefreshAlbumStatusColumn(store);
@@ -5032,7 +5048,10 @@ static void UpgradeFromAllVersionThirdPart(RdbStore &store, unordered_map<string
         AddStageVideoTaskStatus(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_STAGE_VIDEO_TASK_STATUS");
+}
 
+static void UpgradeFromAllVersionFourthPart(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
+{
     MEDIA_INFO_LOG("Start VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION_FOR_SYNC");
     AddAssetAlbumOperationTableForSync(store);
     MEDIA_INFO_LOG("End VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION_FOR_SYNC");
@@ -5046,10 +5065,7 @@ static void UpgradeFromAllVersionThirdPart(RdbStore &store, unordered_map<string
         AddDcAnalysisColumn(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_DC_ANALYSIS");
-}
 
-static void UpgradeFromAllVersionFourthPart(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
-{
     MEDIA_INFO_LOG("Start VERSION_CLOUD_MEDIA_UPGRADE");
     DealWithAlbumMapTrigger(store);
     MEDIA_INFO_LOG("End VERSION_CLOUD_MEDIA_UPGRADE");
