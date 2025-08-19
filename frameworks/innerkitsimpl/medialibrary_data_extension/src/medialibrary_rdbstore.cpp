@@ -4911,7 +4911,7 @@ static void UpgradeFromAllVersionFirstPart(RdbStore &store, unordered_map<string
     MEDIA_INFO_LOG("Start VERSION_ADD_DETAIL_TIME");
     if (photoColumnExists.find(PhotoColumn::PHOTO_DETAIL_TIME) == photoColumnExists.end() ||
         !photoColumnExists.at(PhotoColumn::PHOTO_DETAIL_TIME)) {
-        int32_t errCode;
+        int32_t errCode = 0;
         shared_ptr<NativePreferences::Preferences> prefs =
             NativePreferences::PreferencesHelper::GetPreferences(RDB_FIX_RECORDS, errCode);
         if (prefs != nullptr) {
@@ -4932,7 +4932,7 @@ static void UpgradeFromAllVersionFirstPart(RdbStore &store, unordered_map<string
     MEDIA_INFO_LOG("Start VERSION_ADD_THUMBNAIL_VISIBLE");
     if (photoColumnExists.find(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE) == photoColumnExists.end() ||
         !photoColumnExists.at(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE)) {
-        int32_t errCode;
+        int32_t errCode = 0;
         shared_ptr<NativePreferences::Preferences> prefs =
             NativePreferences::PreferencesHelper::GetPreferences(RDB_FIX_RECORDS, errCode);
         if (prefs != nullptr) {
