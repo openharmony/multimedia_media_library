@@ -142,12 +142,8 @@ void AssetChangeNotifyExecution::InsertNotifyInfo(AssetRefreshOperation operatio
     PhotoAssetChangeData modifiedChangeData = changeData;
     if ((operationType & ASSET_ADD) == ASSET_ADD) {
         modifiedChangeData.infoBeforeChange_.fileId_ = INVALID_INT32_VALUE;
-        ACCURATE_DEBUG("origin data: %{public}s", changeData.ToString(true).c_str());
-        ACCURATE_DEBUG("modify add data: %{public}s", modifiedChangeData.ToString(true).c_str());
     } else if ((operationType & ASSET_REMOVE) == ASSET_REMOVE) {
         modifiedChangeData.infoAfterChange_.fileId_ = INVALID_INT32_VALUE;
-        ACCURATE_DEBUG("origin data: %{public}s", changeData.ToString(true).c_str());
-        ACCURATE_DEBUG("modify remove data: %{public}s", modifiedChangeData.ToString(true).c_str());
     }
     auto iter = notifyInfos_.find(operationType);
     if (iter == notifyInfos_.end()) {
@@ -162,28 +158,28 @@ void AssetChangeNotifyExecution::InsertNotifyInfo(AssetRefreshOperation operatio
 
 AssetRefreshOperation AssetChangeNotifyExecution::GetAddOperation(const PhotoAssetChangeInfo &changeInfo)
 {
+    if (AlbumAssetHelper::IsCommonSystemAsset(changeInfo)) {
+        return ASSET_OPERATION_ADD;
+    }
     if (TrashAssetHelper::IsAsset(changeInfo)) {
         return ASSET_OPERATION_ADD_TRASH;
     }
     if (HiddenAssetHelper::IsAsset(changeInfo)) {
         return ASSET_OPERATION_ADD_HIDDEN;
     }
-    if (AlbumAssetHelper::IsCommonSystemAsset(changeInfo)) {
-        return ASSET_OPERATION_ADD;
-    }
     return ASSET_OPERATION_UNDEFINED;
 }
 
 AssetRefreshOperation AssetChangeNotifyExecution::GetRemoveOperation(const PhotoAssetChangeInfo &changeInfo)
 {
+    if (AlbumAssetHelper::IsCommonSystemAsset(changeInfo)) {
+        return ASSET_OPERATION_REMOVE;
+    }
     if (TrashAssetHelper::IsAsset(changeInfo)) {
         return ASSET_OPERATION_REMOVE_TRASH;
     }
     if (HiddenAssetHelper::IsAsset(changeInfo)) {
         return ASSET_OPERATION_REMOVE_HIDDEN;
-    }
-    if (AlbumAssetHelper::IsCommonSystemAsset(changeInfo)) {
-        return ASSET_OPERATION_REMOVE;
     }
     return ASSET_OPERATION_UNDEFINED;
 }
@@ -200,6 +196,7 @@ void AssetChangeNotifyExecution::InsertNormalAssetOperation(const PhotoAssetChan
         if (operationCal.first({before, after})) {
             InsertNotifyInfo(operationCal.second, changeData);
             ACCURATE_DEBUG("insert normal operation: %{public}x", operationCal.second);
+            break;
         }
     }
 }
@@ -214,6 +211,7 @@ void AssetChangeNotifyExecution::InsertTrashAssetOperation(const PhotoAssetChang
         if (operationCal.first({before, after})) {
             InsertNotifyInfo(operationCal.second, changeData);
             ACCURATE_DEBUG("insert trash operation: %{public}x", operationCal.second);
+            break;
         }
     }
 }
@@ -228,6 +226,7 @@ void AssetChangeNotifyExecution::InsertHiddenlAssetOperation(const PhotoAssetCha
         if (operationCal.first({before, after})) {
             InsertNotifyInfo(operationCal.second, changeData);
             ACCURATE_DEBUG("insert hidden operation: %{public}x", operationCal.second);
+            break;
         }
     }
 }
