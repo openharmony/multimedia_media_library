@@ -178,7 +178,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_004, Test
     metadata->SetFileDateModified(dateModified);
     int32_t ret = MetadataExtractor::ExtractImageMetadata(metadata);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(metadata->GetDateTaken(), dateModified);
+    EXPECT_EQ(metadata->GetDateTaken(), dateTaken);
 
     dateTaken = -1753081131777L;
     metadata->SetDateTaken(dateTaken);

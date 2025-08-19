@@ -19,9 +19,11 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_scanner_test.h"
 #include "medialibrary_unittest_utils.h"
+#include "media_file_utils.h"
 #include "mimetype_utils.h"
 #include "scanner_utils.h"
 #include "userfile_manager_types.h"
+#include "medialibrary_errno.h"
 
 using namespace std;
 using namespace OHOS;
@@ -54,20 +56,18 @@ void MediaLibraryScannerTest::TearDown(void) {}
 
 HWTEST_F(MediaLibraryScannerTest, medialib_IsExists_test_001, TestSize.Level0)
 {
-    if (!MediaLibraryUnitTestUtils::IsValid()) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
-        exit(1);
-    }
-    shared_ptr<FileAsset> fileAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("IsExists_test_001.jpg", g_pictures, fileAsset), true);
     string path = "";
     bool ret = ScannerUtils::IsExists(path);
     EXPECT_EQ(ret, false);
     path = "medialib_GetFileName_test_001";
     ret = ScannerUtils::IsExists(path);
     EXPECT_EQ(ret, false);
+
     path= "/storage/cloud/files/Pictures/IsExists_test_001.jpg";
+    remove(path.c_str());
+    EXPECT_EQ(MediaFileUtils::CreateAsset(path), E_OK);
     ret = ScannerUtils::IsExists(path);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(path), true);
     EXPECT_EQ(ret, true);
 }
 
@@ -139,20 +139,18 @@ HWTEST_F(MediaLibraryScannerTest, medialib_IsDirectory_test_001, TestSize.Level0
 
 HWTEST_F(MediaLibraryScannerTest, medialib_IsRegularFile_test_001, TestSize.Level0)
 {
-    if (!MediaLibraryUnitTestUtils::IsValid()) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
-        exit(1);
-    }
     std::string path = "";
     bool ret = ScannerUtils::IsRegularFile(path);
     EXPECT_EQ(ret, false);
     path = "medialib_IsRegularFile_test_001";
     ret = ScannerUtils::IsRegularFile(path);
     EXPECT_EQ(ret, false);
-    shared_ptr<FileAsset> fileAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("IsRegularFile_test_001.jpg", g_pictures, fileAsset), true);
+
     path = "/storage/cloud/files/Pictures/IsRegularFile_test_001.jpg";
+    remove(path.c_str());
+    EXPECT_EQ(MediaFileUtils::CreateAsset(path), E_OK);
     ret = ScannerUtils::IsRegularFile(path);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(path), true);
     EXPECT_EQ(ret, true);
 }
 
