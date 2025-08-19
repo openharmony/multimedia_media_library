@@ -4911,6 +4911,16 @@ static void UpgradeFromAllVersionFirstPart(RdbStore &store, unordered_map<string
     MEDIA_INFO_LOG("Start VERSION_ADD_DETAIL_TIME");
     if (photoColumnExists.find(PhotoColumn::PHOTO_DETAIL_TIME) == photoColumnExists.end() ||
         !photoColumnExists.at(PhotoColumn::PHOTO_DETAIL_TIME)) {
+        int32_t errCode;
+        shared_ptr<NativePreferences::Preferences> prefs =
+            NativePreferences::PreferencesHelper::GetPreferences(RDB_FIX_RECORDS, errCode);
+        if (prefs != nullptr) {
+            // before current version, detail time column has existed, need to fix other information
+            prefs->PutInt(DETAIL_TIME_FIXED, NEED_FIXED);
+            prefs->FlushSync();
+            MEDIA_INFO_LOG("DETAIL_TIME_FIXED set to: %{public}d", NEED_FIXED);
+        }
+        MEDIA_INFO_LOG("DETAIL_TIME_FIXED prefs errCode: %{public}d", errCode);
         AddDetailTimeToPhotos(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_DETAIL_TIME");
@@ -4931,6 +4941,7 @@ static void UpgradeFromAllVersionFirstPart(RdbStore &store, unordered_map<string
             prefs->FlushSync();
             MEDIA_INFO_LOG("THUMBNAIL_VISIBLE_FIXED set to: %{public}d", NEED_FIXED);
         }
+        MEDIA_INFO_LOG("THUMBNAIL_VISIBLE_FIXED prefs errCode: %{public}d", errCode);
         AddThumbnailVisible(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_THUMBNAIL_VISIBLE");
