@@ -177,6 +177,11 @@ static const std::string COLUMN_OLD_FILE_ID = "old_file_id";
 static const std::string NO_DELETE_DISK_DATA_INDEX = "no_delete_disk_data_index";
 static const std::string NO_UPDATE_EDITDATA_SIZE = "no_update_editdata_size";
 static const std::string UPDATE_EDITDATA_SIZE_COUNT = "update_editdata_size_count";
+static const std::string RDB_FIX_RECORDS = "/data/storage/el2/base/preferences/rdb_fix_records.xml";
+static const std::string DETAIL_TIME_FIXED = "detail_time_fixed";
+static const std::string THUMBNAIL_VISIBLE_FIXED = "thumbnail_visible_fixed";
+static const int32_t NEED_FIXED = 1;
+static const int32_t ALREADY_FIXED = 2;
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -555,9 +560,22 @@ static void SetExifRotateAfterAddColumn(const shared_ptr<MediaLibraryRdbStore>& 
 static void AsyncUpgradeFromAllVersionFirstPart(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
 {
     MEDIA_INFO_LOG("Start VERSION_ADD_DETAIL_TIME");
-    MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(rdbStore);
-    MediaLibraryRdbStore::UpdateDateTakenIndex(rdbStore);
-    ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_FIX_RECORDS, errCode);
+    if (prefs != nullptr) {
+        int32_t detailTimeFixed = prefs->GetInt(DETAIL_TIME_FIXED, 0);
+        MEDIA_INFO_LOG("prefs current detailTimeFixed: %{public}d", detailTimeFixed);
+        if (detailTimeFixed == NEED_FIXED) {
+            MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(rdbStore);
+            MediaLibraryRdbStore::UpdateDateTakenIndex(rdbStore);
+            ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
+            prefs->PutInt(DETAIL_TIME_FIXED, ALREADY_FIXED);
+            prefs->FlushSync();
+            MEDIA_INFO_LOG("detailTimeFixed set to: %{public}d", ALREADY_FIXED);
+        }
+        MEDIA_INFO_LOG("prefs errCode: %{public}d", errCode);
+    }
     MEDIA_INFO_LOG("End VERSION_ADD_DETAIL_TIME");
 
     MEDIA_INFO_LOG("Start VERSION_ADD_INDEX_FOR_FILEID");
@@ -566,11 +584,21 @@ static void AsyncUpgradeFromAllVersionFirstPart(const shared_ptr<MediaLibraryRdb
 
     MEDIA_INFO_LOG("Start VERSION_UPDATE_INDEX_FOR_COVER");
     MediaLibraryRdbStore::UpdateIndexForCover(rdbStore);
-    MEDIA_INFO_LOG("Start VERSION_UPDATE_INDEX_FOR_COVER");
+    MEDIA_INFO_LOG("End VERSION_UPDATE_INDEX_FOR_COVER");
 
     MEDIA_INFO_LOG("Start VERSION_ADD_THUMBNAIL_VISIBLE");
-    MediaLibraryRdbStore::UpdateThumbnailVisibleAndIdx(rdbStore);
-    MEDIA_INFO_LOG("Start VERSION_ADD_THUMBNAIL_VISIBLE");
+    if (prefs != nullptr) {
+        int32_t thumbnailVisibleFixed = prefs->GetInt(THUMBNAIL_VISIBLE_FIXED, 0);
+        MEDIA_INFO_LOG("prefs current thumbnailVisibleFixed: %{public}d", thumbnailVisibleFixed);
+        if (thumbnailVisibleFixed == NEED_FIXED) {
+            MediaLibraryRdbStore::UpdateThumbnailVisibleAndIdx(rdbStore);
+            prefs->PutInt(THUMBNAIL_VISIBLE_FIXED, ALREADY_FIXED);
+            prefs->FlushSync();
+            MEDIA_INFO_LOG("thumbnailVisibleFixed set to: %{public}d", ALREADY_FIXED);
+        }
+        MEDIA_INFO_LOG("prefs errCode: %{public}d", errCode);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_THUMBNAIL_VISIBLE");
 
     MEDIA_INFO_LOG("Start VERSION_UPDATE_DATETAKEN_AND_DETAILTIME");
     MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(rdbStore);
@@ -579,22 +607,18 @@ static void AsyncUpgradeFromAllVersionFirstPart(const shared_ptr<MediaLibraryRdb
     MEDIA_INFO_LOG("Start VERSION_ADD_READY_COUNT_INDEX");
     MediaLibraryRdbStore::AddReadyCountIndex(rdbStore);
     MEDIA_INFO_LOG("End VERSION_ADD_READY_COUNT_INDEX");
-
-    MEDIA_INFO_LOG("Start VERSION_REVERT_FIX_DATE_ADDED_INDEX");
-    MediaLibraryRdbStore::RevertFixDateAddedIndex(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_REVERT_FIX_DATE_ADDED_INDEX");
-
-    MEDIA_INFO_LOG("Start VERSION_FIX_PICTURE_LCD_SIZE");
-    MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_FIX_PICTURE_LCD_SIZE");
-
-    MEDIA_INFO_LOG("Start VERSION_ADD_ALBUM_INDEX");
-    MediaLibraryRdbStore::AddAlbumIndex(rdbStore);
-    MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_INDEX");
 }
 
 static void AsyncUpgradeFromAllVersionSecondPart(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
 {
+    MEDIA_INFO_LOG("Start VERSION_REVERT_FIX_DATE_ADDED_INDEX");
+    MediaLibraryRdbStore::RevertFixDateAddedIndex(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_REVERT_FIX_DATE_ADDED_INDEX");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_ALBUM_INDEX");
+    MediaLibraryRdbStore::AddAlbumIndex(rdbStore);
+    MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_INDEX");
+
     MEDIA_INFO_LOG("Start VERSION_ADD_PHOTO_DATEADD_INDEX");
     MediaLibraryRdbStore::AddPhotoDateAddedIndex(rdbStore);
     MEDIA_INFO_LOG("End VERSION_ADD_PHOTO_DATEADD_INDEX");
