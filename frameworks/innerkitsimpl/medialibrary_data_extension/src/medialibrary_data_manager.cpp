@@ -1906,17 +1906,27 @@ static string generateUpdateSql(const bool isCover, const string title, const in
     return updateSql;
 }
 
+static shared_ptr<NativeRdb::ResultSet> QueryGenerateSql(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const string title, const int32_t ownerAlbumId)
+{
+    uint32_t index = title.find_first_of("BURST");
+    CHECK_AND_RETURN_RET_LOG(index != string::npos, nullptr, "find BURST failed");
+    string globMember = title.substr(0, index) + "BURST" + generateRegexpMatchForNumber(3);
+    string globCover = globMember + "_COVER";
+    string querySql = "SELECT " + PhotoColumn::PHOTO_BURST_KEY + " FROM " + PhotoColumn::PHOTOS_TABLE +
+        " WHERE LOWER(" + MediaColumn::MEDIA_TITLE +
+        ") GLOB LOWER('" + globCover + "') AND " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " +
+        to_string(ownerAlbumId);
+    return rdbStore->QueryByStep(querySql);
+}
+
 static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibraryRdbStore> rdbStore,
     shared_ptr<NativeRdb::ResultSet> resultSet)
 {
     int32_t count;
     int32_t retCount = resultSet->GetRowCount(count);
     if (count == 0) {
-        if (isCover) {
-            MEDIA_INFO_LOG("No burst cover need to update");
-        } else {
-            MEDIA_INFO_LOG("No burst member need to update");
-        }
+        MEDIA_INFO_LOG("%{public}s", isCover ? "No burst cover need to update" : "No burst member need to update");
         return E_SUCCESS;
     }
     if (retCount != E_SUCCESS || count < 0) {
@@ -1933,6 +1943,18 @@ static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibrar
         int32_t ownerAlbumId = 0;
         if (resultSet->GetColumnIndex(PhotoColumn::PHOTO_OWNER_ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
             resultSet->GetInt(columnIndex, ownerAlbumId);
+        }
+        if (!isCover) {
+            auto resultSet = QueryGenerateSql(rdbStore, title, ownerAlbumId);
+            if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+                MEDIA_INFO_LOG("No burst member need to query");
+                continue;
+            }
+            std::string burstKey = GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet);
+            if (burstKey.empty()) {
+                MEDIA_INFO_LOG("No burst key found");
+                continue;
+            }
         }
 
         string updateSql = generateUpdateSql(isCover, title, ownerAlbumId);
