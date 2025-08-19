@@ -30,11 +30,9 @@ ohos_unittest("medialibrary_mimetype_test") {
     "${MEDIALIB_UTILS_PATH}/include",
   ]
 
-  sources = [
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/src/media_file_utils.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/src/mimetype_utils.cpp",
-    "./src/medialibrary_mimetype_test.cpp",
-  ]
+  sources = [ "./src/medialibrary_mimetype_test.cpp" ]
+
+  deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
 
   sanitize = {
     cfi = true
