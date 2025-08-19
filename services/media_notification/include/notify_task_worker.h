@@ -43,7 +43,7 @@ public:
     EXPORT ~NotifyTaskWorker();
     EXPORT static std::shared_ptr<NotifyTaskWorker> GetInstance();
     EXPORT void StartWorker();
-    EXPORT void AddTaskInfo(NotifyInfoInner notifyInfoInner);
+    EXPORT void AddTaskInfo(NotifyInfoInner &notifyInfoInner);
     EXPORT bool IsRunning();
 
 private:

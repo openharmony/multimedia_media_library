@@ -135,7 +135,7 @@ int32_t AssetAccurateRefresh::RefreshAlbumNoDateModified(NotifyAlbumType notifyA
 int32_t AssetAccurateRefresh::Notify()
 {
     MediaLibraryTracer tracer;
-    tracer.Start("AssetAccurateRefresh::RefreshAlbum");
+    tracer.Start("AssetAccurateRefresh::Notify");
     if (dataManager_.CheckIsForRecheck()) {
         DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return NotifyForReCheck();
