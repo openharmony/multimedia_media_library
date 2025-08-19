@@ -62,6 +62,7 @@
 #include "submit_cache_vo.h"
 #include "add_image_vo.h"
 #include "save_camera_photo_vo.h"
+#include "qos.h"
 
 using namespace std;
 using namespace OHOS::Security::AccessToken;
@@ -2454,6 +2455,7 @@ static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context
 
 static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext &context)
 {
+    OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     MediaLibraryTracer tracer;
     tracer.Start("SaveCameraPhotoExecute");
     NAPI_INFO_LOG("Begin SaveCameraPhotoExecute");
@@ -2504,6 +2506,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext &context)
     if (ret < 0) {
         NAPI_ERR_LOG("save camera photo fail");
     }
+    OHOS::QOS::ResetThreadQos();
     return true;
 }
 
