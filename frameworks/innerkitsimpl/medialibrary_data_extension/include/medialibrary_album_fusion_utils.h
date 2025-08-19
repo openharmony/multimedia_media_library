@@ -43,6 +43,14 @@ enum class AlbumFusionState {
     FAILED = 3
 };
 class MediaLibraryAlbumFusionUtils {
+
+struct ExecuteObject {
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore = nullptr;
+    std::shared_ptr<TransactionOperations> trans = nullptr,
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh = nullptr,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr
+};
+
 public:
     EXPORT static int32_t RemoveMisAddedHiddenData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
     EXPORT static int32_t HandleMatchedDataFusion(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore);
@@ -68,11 +76,9 @@ public:
     EXPORT static int32_t CopyCloudSingleFile(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
         const int32_t &assetId, const int32_t &ownerAlbumId, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int64_t &newAssetId);
-    EXPORT static int32_t DeleteAlbumAndUpdateRelationship(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
+    EXPORT static int32_t DeleteAlbumAndUpdateRelationship(ExecuteObject& executeObject,
         const int32_t &oldAlbumId, const int64_t &newAlbumId, bool isCloudAblum,
-        std::shared_ptr<TransactionOperations> trans = nullptr,
-        std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh = nullptr,
-        std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr);
+        const std::vector<std::string>* fileIdsInAlbum = nullptr);
     EXPORT static bool IsCloudAlbum(std::shared_ptr<NativeRdb::ResultSet> resultSet);
     EXPORT static void BuildAlbumInsertValuesSetName(const std::shared_ptr<MediaLibraryRdbStore>& upgradeStore,
         NativeRdb::ValuesBucket &values, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
