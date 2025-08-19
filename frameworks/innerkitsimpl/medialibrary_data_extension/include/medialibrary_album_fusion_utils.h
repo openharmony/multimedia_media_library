@@ -42,13 +42,14 @@ enum class AlbumFusionState {
     SUCCESS = 2,
     FAILED = 3
 };
-class MediaLibraryAlbumFusionUtils {
 
+class MediaLibraryAlbumFusionUtils {
+public:
 struct ExecuteObject {
     std::shared_ptr<MediaLibraryRdbStore> rdbStore = nullptr;
-    std::shared_ptr<TransactionOperations> trans = nullptr,
-    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh = nullptr,
-    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr
+    std::shared_ptr<TransactionOperations> trans = nullptr;
+    std::shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh = nullptr;
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh = nullptr;
 };
 
 public:

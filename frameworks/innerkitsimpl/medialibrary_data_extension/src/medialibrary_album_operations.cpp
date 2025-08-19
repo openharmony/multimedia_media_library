@@ -1043,7 +1043,7 @@ namespace {
     };
 }
 
-static bool SetNewNameExecute(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject
+static bool SetNewNameExecute(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject,
     NewNameExecuteInfo& executeInfo, NativeRdb::ValuesBucket& newNameValues, vector<string>& fileIdsInAlbum)
 {
     if (executeInfo.newAlbumId > 0) {
