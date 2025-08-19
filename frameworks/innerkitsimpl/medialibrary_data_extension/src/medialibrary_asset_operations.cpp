@@ -2480,8 +2480,8 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
 
     string fileId = MediaFileUtils::GetIdFromUri(uri);
     int32_t type = MediaFileUtils::GetMediaType(path);
-    if (this->isInvalidateThumb && PhotoFileUtils::IsThumbnailExists(path) &&
-        !PhotoFileUtils::IsThumbnailLatest(path)) {
+    bool isThumbnailExist = PhotoFileUtils::IsThumbnailExists(path);
+    if (this->isInvalidateThumb && isThumbnailExist && !PhotoFileUtils::IsThumbnailLatest(path)) {
         InvalidateThumbnail(fileId, type);
     }
     CreateThumbnailFileScaned(uri, path, this->isCreateThumbSync, originalPhotoPicture);
@@ -2494,7 +2494,7 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     }
 #endif
 
-    if (this->isInvalidateThumb) {
+    if (this->isInvalidateThumb && isThumbnailExist) {
         IsCoverContentChange(fileId);
     }
     return E_OK;
