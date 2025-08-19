@@ -81,7 +81,7 @@ static std::string CombinedTimeFunction(const std::string &format, time_t curTim
     }
     time_t curTimeTemp = curTime;
     if (curTimeTemp == 0) {
-        curTimeTemp = time(nullptr);
+        return "";
     }
     auto tmPtr = localtime(&curTimeTemp);
     if (!tmPtr) {
