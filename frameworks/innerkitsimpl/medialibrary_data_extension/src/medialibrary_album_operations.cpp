@@ -2654,6 +2654,11 @@ int32_t MediaLibraryAlbumOperations::SetDisplayLevel(const ValuesBucket &values,
         changedAlbumIds.push_back(albumId);
     }
     if (err == E_OK) {
+        if (displayLevelValue == SECOND_PAGE) {
+            std::vector<std::string> albumList = { to_string(albumId) };
+            MediaAnalysisHelper::PortraitDisplayGraphChange(
+                IMediaAnalysisService::ActivateServiceType::PORTRAIT_DISPLAY_CHANGE, albumList);
+        }
         NotifyPortraitAlbum(changedAlbumIds);
     }
     return err;
