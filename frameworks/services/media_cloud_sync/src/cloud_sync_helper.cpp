@@ -49,12 +49,25 @@ shared_ptr<CloudSyncHelper> CloudSyncHelper::GetInstance()
     return instance_;
 }
 
+CloudSyncHelper::~CloudSyncHelper()
+{
+    lock_guard<mutex> lock(syncMutex_);
+    isSyncStopped_ = true;
+    while (isThreadPending_) {
+        skipCond_.notify_all();
+        this_thread::sleep_for(std::chrono::milliseconds(WAIT_INTERVAL));
+    }
+}
+
 void CloudSyncHelper::StartSync()
 {
     MEDIA_DEBUG_LOG("CloudSyncHelper StartSync");
     lock_guard<mutex> lock(syncMutex_);
     skipCond_.notify_all();
-    std::thread([this]() { OnTimerCallback(); }).detach();
+    if (!isThreadPending_ && !isSyncStopped_) {
+        isThreadPending_ = true;
+        std::thread([this]() { OnTimerCallback(); }).detach();
+    }
 }
 
 bool CloudSyncHelper::InitDataShareHelper()
@@ -135,14 +148,23 @@ bool CloudSyncHelper::IsSyncSwitchOpen()
 
 void CloudSyncHelper::OnTimerCallback()
 {
-    unique_lock<mutex> lock(skipMutex_);
-    if (skipCond_.wait_for(lock, std::chrono::milliseconds(SYNC_INTERVAL)) == std::cv_status::no_timeout) {
-        MEDIA_DEBUG_LOG("skip cloud sync");
-        return;
+    {
+        unique_lock<mutex> lock(skipMutex_);
+        while (skipCond_.wait_for(lock, std::chrono::milliseconds(SYNC_INTERVAL)) == std::cv_status::no_timeout) {
+            if (isSyncStopped_) {
+                isThreadPending_ = false;
+                return;
+            }
+        }
     }
 
     if (!IsSyncSwitchOpen()) {
         return;
+    }
+
+    {
+        lock_guard<mutex> lock(syncMutex_);
+        isThreadPending_ = false;
     }
 
     MEDIA_INFO_LOG("cloud sync manager start sync");
