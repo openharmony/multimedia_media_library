@@ -168,15 +168,14 @@ void MediaAnalysisHelper::PortraitDisplayGraphChange(int32_t code, const std::ve
     }
 
     if (!data.WriteStringVector(albumId)) {
-        MEDIA_ERR_LOG("write fileIds failed");
+        MEDIA_ERR_LOG("Write albumId failed");
         return;
     }
 
     MessageParcel reply;
     MessageOption option(MessageOption::TF_ASYNC);
     if (!mediaAnalysisProxy.SendTransactCmd(code, data, reply, option)) {
-        MEDIA_ERR_LOG("Actively Calling Analysis For Foreground failed");
-        return;
+        MEDIA_ERR_LOG("Actively Calling Analysis For PortraitDisplayGraph failed");
     }
 }
 // LCOV_EXCL_STOP
