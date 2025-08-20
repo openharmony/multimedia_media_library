@@ -37,7 +37,7 @@ class CloudSyncHelper final {
 public:
     EXPORT static std::shared_ptr<CloudSyncHelper> GetInstance();
     std::atomic<bool> isThumbnailGenerationCompleted_ = true;
-    virtual ~CloudSyncHelper() = default;
+    virtual ~CloudSyncHelper();
 
     EXPORT void StartSync();
     EXPORT bool IsSyncSwitchOpen();
@@ -54,6 +54,9 @@ private:
     std::mutex syncMutex_;
     std::mutex skipMutex_;
     std::condition_variable skipCond_;
+    const int32_t WAIT_INTERVAL = 5;
+    std::atomic<bool> isThreadPending_ = false;
+    std::atomic<bool> isSyncStopped_ = false;
 
     /* sync switch */
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
