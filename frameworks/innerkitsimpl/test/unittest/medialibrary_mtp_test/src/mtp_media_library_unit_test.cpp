@@ -1155,7 +1155,6 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_053, TestSi
     ASSERT_NE(out, nullptr);
     uint32_t errcode = 1;
     errcode = mtpMediaLib_->ScanDirTraverseWithType(STORAGE_FILE, out);
-    EXPECT_NE(errcode, MTP_SUCCESS);
     if (access(STORAGE_FILE.c_str(), R_OK) == 0) {
         EXPECT_EQ(errcode, MTP_SUCCESS);
     } else {
