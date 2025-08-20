@@ -98,6 +98,7 @@
 #include "photo_album_column.h"
 #include "photo_day_month_year_operation.h"
 #include "photo_map_operations.h"
+#include "power_efficiency_manager.h"
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "resource_type.h"
@@ -182,6 +183,8 @@ static const std::string DETAIL_TIME_FIXED = "detail_time_fixed";
 static const std::string THUMBNAIL_VISIBLE_FIXED = "thumbnail_visible_fixed";
 static const int32_t NEED_FIXED = 1;
 static const int32_t ALREADY_FIXED = 2;
+
+static int32_t g_updateBurstMaxId = 0;
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -1923,32 +1926,21 @@ static shared_ptr<NativeRdb::ResultSet> QueryGenerateSql(const shared_ptr<MediaL
 static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibraryRdbStore> rdbStore,
     shared_ptr<NativeRdb::ResultSet> resultSet)
 {
-    int32_t count;
+    int32_t count = 0;
     int32_t retCount = resultSet->GetRowCount(count);
+    CHECK_AND_RETURN_RET_LOG(retCount == E_SUCCESS && count >= 0, E_ERR, "Failed to GetRowCount");
     if (count == 0) {
         MEDIA_INFO_LOG("%{public}s", isCover ? "No burst cover need to update" : "No burst member need to update");
         return E_SUCCESS;
     }
-    if (retCount != E_SUCCESS || count < 0) {
-        return E_ERR;
-    }
 
-    int32_t ret = E_ERR;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int columnIndex = 0;
-        string title;
-        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_TITLE, columnIndex) == NativeRdb::E_OK) {
-            resultSet->GetString(columnIndex, title);
-        }
-        int32_t ownerAlbumId = 0;
-        if (resultSet->GetColumnIndex(PhotoColumn::PHOTO_OWNER_ALBUM_ID, columnIndex) == NativeRdb::E_OK) {
-            resultSet->GetInt(columnIndex, ownerAlbumId);
-        }
+    int32_t ret = E_SUCCESS;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK && PowerEfficiencyManager::IsChargingAndScreenOff()) {
+        string title = GetStringVal(MediaColumn::MEDIA_TITLE, resultSet);
+        int32_t ownerAlbumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
         if (!isCover) {
             auto resultSet = QueryGenerateSql(rdbStore, title, ownerAlbumId);
-            if (resultSet == nullptr) {
-                continue;
-            }
+            CHECK_AND_CONTINUE_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
             if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
                 MEDIA_INFO_LOG("No burst member need to query");
                 resultSet->Close();
@@ -1963,6 +1955,10 @@ static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibrar
             MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
             return E_HAS_DB_ERROR;
         }
+    }
+    if (!PowerEfficiencyManager::IsChargingAndScreenOff()) {
+        ret = E_ERR;
+        MEDIA_ERR_LOG("current status is not charging or screenOn");
     }
     return ret;
 }
@@ -1984,23 +1980,42 @@ static shared_ptr<NativeRdb::ResultSet> QueryBurst(const shared_ptr<MediaLibrary
     return resultSet;
 }
 
+static int32_t QueryMaxFileId(const shared_ptr<MediaLibraryRdbStore> rdbStore)
+{
+    MEDIA_INFO_LOG("Begin QueryMaxFileId");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore_ is nullptr");
+
+    std::string querySql = "SELECT MAX(file_id) AS file_id FROM Photos";
+    auto resultSet = rdbStore->QueryByStep(querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is nullptr.");
+        return g_updateBurstMaxId;
+    }
+    if (resultSet->GoToNextRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("resultSet is empty.");
+        return g_updateBurstMaxId;
+    }
+    return GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+}
+
 int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
 {
     MEDIA_INFO_LOG("Begin UpdateBurstFromGallery");
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataManager::UpdateBurstFromGallery");
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
-    if (refCnt_.load() <= 0) {
-        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
-        return E_FAIL;
+    CHECK_AND_RETURN_RET_LOG(refCnt_.load() > 0, E_FAIL, "MediaLibraryDataManager is not initialized");
+    CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore_ is nullptr");
+
+    int32_t lastMaxId = QueryMaxFileId(rdbStore_);
+    if (lastMaxId <= g_updateBurstMaxId) {
+        MEDIA_INFO_LOG("No need to update burst, lastMaxId: %{public}d, g_updateBurstMaxId: %{public}d.",
+            lastMaxId, g_updateBurstMaxId);
+        return E_SUCCESS;
     }
-    if (rdbStore_ == nullptr) {
-        MEDIA_DEBUG_LOG("rdbStore_ is nullptr");
-        return E_FAIL;
-    }
+    MEDIA_INFO_LOG("Current lastMaxId: %{public}d, g_updateBurstMaxId: %{public}d.", lastMaxId, g_updateBurstMaxId);
 
     string globNameRule = "IMG_" + generateRegexpMatchForNumber(8) + "_" + generateRegexpMatchForNumber(6) + "_";
-
     // regexp match IMG_xxxxxxxx_xxxxxx_BURSTxxx, 'x' represents a number
     string globMemberStr1 = globNameRule + "BURST" + generateRegexpMatchForNumber(3);
     string globMemberStr2 = globNameRule + "[0-9]_BURST" + generateRegexpMatchForNumber(3);
@@ -2021,7 +2036,8 @@ int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
         MEDIA_ERR_LOG("failed to UpdateBurstPhotoByMembers.");
         return E_FAIL;
     }
-    MEDIA_INFO_LOG("End UpdateBurstFromGallery");
+    g_updateBurstMaxId = lastMaxId;
+    MEDIA_INFO_LOG("End UpdateBurstFromGallery, g_updateBurstMaxId: %{public}d.", g_updateBurstMaxId);
     return ret;
 }
 
