@@ -244,11 +244,9 @@ void AlbumAccurateRefresh::NotifyAlbumsCoverChange(string &fileId, vector<int32_
     for (auto &albumChangeData : albumChangeDatas) {
         if (MediaFileUtils::GetIdFromUri(albumChangeData.infoAfterChange_.coverUri_) == fileId) {
             albumChangeData.infoAfterChange_.isCoverChange_ = true;
-            continue;
         }
         if (MediaFileUtils::GetIdFromUri(albumChangeData.infoAfterChange_.hiddenCoverUri_) == fileId) {
             albumChangeData.infoAfterChange_.isHiddenCoverChange_ = true;
-            continue;
         }
     }
     Notify(albumChangeDatas);
