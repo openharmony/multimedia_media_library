@@ -1946,15 +1946,15 @@ static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibrar
         }
         if (!isCover) {
             auto resultSet = QueryGenerateSql(rdbStore, title, ownerAlbumId);
-            if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+            if (resultSet == nullptr) {
+                continue;
+            }
+            if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
                 MEDIA_INFO_LOG("No burst member need to query");
+                resultSet->Close();
                 continue;
             }
-            std::string burstKey = GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet);
-            if (burstKey.empty()) {
-                MEDIA_INFO_LOG("No burst key found");
-                continue;
-            }
+            resultSet->Close();
         }
 
         string updateSql = generateUpdateSql(isCover, title, ownerAlbumId);
