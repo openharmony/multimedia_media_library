@@ -2455,7 +2455,6 @@ static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context
 
 static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext &context)
 {
-    OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     MediaLibraryTracer tracer;
     tracer.Start("SaveCameraPhotoExecute");
     NAPI_INFO_LOG("Begin SaveCameraPhotoExecute");
@@ -2501,12 +2500,13 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext &context)
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_CAMERA_PHOTO);
     std::unordered_map<std::string, std::string> headerMap{
         {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     int32_t ret =
         IPC::UserDefineIPCClient().SetUserId(context.userId_).SetHeader(headerMap).Call(businessCode, reqBody);
+    OHOS::QOS::ResetThreadQos();
     if (ret < 0) {
         NAPI_ERR_LOG("save camera photo fail");
     }
-    OHOS::QOS::ResetThreadQos();
     return true;
 }
 
