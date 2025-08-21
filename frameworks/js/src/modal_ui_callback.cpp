@@ -58,6 +58,11 @@ void ModalUICallback::OnResultForModal(int32_t resultCode, const OHOS::AAFwk::Wa
     pickerCallBack_->uris = result.GetStringArrayParam("select-item-list");
     pickerCallBack_->isOrigin = result.GetBoolParam("isOriginal", false);
     pickerCallBack_->resultCode = resultCode;
+    pickerCallBack_->albumUri = result.GetStringParam("albumUri");
+    pickerCallBack_->time = atoll(result.GetStringParam("time").c_str());
+    pickerCallBack_->displayName = result.GetStringParam("displayName");
+    pickerCallBack_->recommendationType = result.GetIntParam("recommendationType", 0);
+    pickerCallBack_->selectedRecommendationType = result.GetIntParam("selectedRecommendationType", 0);
 }
 
 void ModalUICallback::OnReceive(const OHOS::AAFwk::WantParams &request)

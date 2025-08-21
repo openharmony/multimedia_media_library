@@ -10896,6 +10896,64 @@ static void StartPhotoPickerExecute(napi_env env, void *data)
     }
 }
 
+static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, MediaLibraryAsyncContext* context, napi_value result)
+{
+    NAPI_INFO_LOG("getPhotoPickerContextRecoveryInfo start");
+ 
+    napi_value recoverInfo = nullptr;
+    napi_create_object(env, &recoverInfo);
+ 
+    napi_value albumUri = nullptr;
+    const string &jsAlbumUri = context->pickerCallBack->albumUri;
+    napi_create_string_utf8(env, jsAlbumUri.c_str(), NAPI_AUTO_LENGTH, &albumUri);
+    status = napi_set_named_property(env, recoverInfo, "albumUri", albumUri);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property albumUri failed");
+    }
+ 
+    napi_value time = nullptr;
+    napi_create_int64(env, context->pickerCallBack->time, &time);
+    status = napi_set_named_property(env, recoverInfo, "time", time);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property time failed");
+    }
+ 
+    napi_value displayName = nullptr;
+    const string &jsDisplayName = context->pickerCallBack->displayName;
+    napi_create_string_utf8(env, jsDisplayName.c_str(), NAPI_AUTO_LENGTH, &displayName);
+    status = napi_set_named_property(env, recoverInfo, "displayName", displayName);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property displayName failed");
+    }
+ 
+    napi_value recommendationType = nullptr;
+    napi_create_int32(env, context->pickerCallBack->recommendationType, &recommendationType);
+    status = napi_set_named_property(env, recoverInfo, "recommendationType", recommendationType);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property recommendationType failed");
+    }
+ 
+    napi_value selectedRecommendationType = nullptr;
+    napi_create_int32(env, context->pickerCallBack->selectedRecommendationType, &selectedRecommendationType);
+    status = napi_set_named_property(env, recoverInfo, "selectedRecommendationType", selectedRecommendationType);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property selectedRecommendationType failed");
+    }
+ 
+    napi_value version = nullptr;
+    std::string recoverSceneVersion = "1.0";
+    napi_create_string_utf8(env, recoverSceneVersion.c_str(), NAPI_AUTO_LENGTH, &version);
+    status = napi_set_named_property(env, recoverInfo, "version", version);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property version failed");
+    }
+    
+    status = napi_set_named_property(env, result, "contextRecoveryInfo", recoverInfo);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property contextRecoveryInfo failed");
+    }
+}
+
 static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status status, void *data)
 {
     NAPI_INFO_LOG("StartPhotoPickerAsyncCallbackComplete start");
@@ -10935,6 +10993,7 @@ static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status stat
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property isOrigin failed");
     }
+    getPhotoPickerContextRecoveryInfo(env, status, context, result);
     if (result != nullptr) {
         jsContext->data = result;
         jsContext->status = true;
