@@ -917,6 +917,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isPreviewForSingleSelectionSupported = option.isPreviewForSingleSelectionSupported;
     config.parameters.singleSelectionMode = option.singleSelectionMode;
     config.parameters.isOriginalSupported = option.isOriginalSupported;
+    config.parameters.contextRecoveryInfo = option.contextRecoveryInfo;
     config.parameters.subWindowName = option.subWindowName;
     config.parameters.themeColor = option.themeColor;
     config.parameters.completeButtonText = option.completeButtonText;
@@ -959,9 +960,10 @@ function getPhotoPickerSelectResult(args) {
   if (args.resultCode === 0) {
     let uris = args.uris;
     let isOrigin = args.isOrigin;
-    selectResult.data = new PhotoSelectResult(uris, isOrigin);
+    let contextRecoveryInfo = args.contextRecoveryInfo;
+    selectResult.data = new PhotoSelectResult(uris, isOrigin, contextRecoveryInfo);
   } else if (args.resultCode === -1) {
-    selectResult.data = new PhotoSelectResult([], undefined);
+    selectResult.data = new PhotoSelectResult([], undefined, undefined);
   } else {
     selectResult.error = getErr(ErrCode.RESULT_ERROR);
   }
@@ -1073,9 +1075,10 @@ function PhotoSelectOptions() {
   this.userId = -1;
 }
 
-function PhotoSelectResult(uris, isOriginalPhoto) {
+function PhotoSelectResult(uris, isOriginalPhoto, contextRecoveryInfo) {
   this.photoUris = uris;
   this.isOriginalPhoto = isOriginalPhoto;
+  this.contextRecoveryInfo = contextRecoveryInfo;
 }
 
 function PhotoViewPicker() {

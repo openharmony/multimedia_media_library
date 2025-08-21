@@ -466,6 +466,11 @@ struct PickerCallBack {
     bool isOrigin;
     int32_t resultCode;
     vector<string> uris;
+    std::string albumUri;
+    int64_t time;
+    std::string displayName;
+    int32_t recommendationType;
+    int32_t selectedRecommendationType;
 };
 
 constexpr int32_t DEFAULT_PRIVATEALBUMTYPE = 3;
