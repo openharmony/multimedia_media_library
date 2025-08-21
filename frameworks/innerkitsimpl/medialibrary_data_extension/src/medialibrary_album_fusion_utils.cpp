@@ -1574,12 +1574,14 @@ static int32_t UpdateAlbumPhotoOwnerAlbumId(MediaLibraryAlbumFusionUtils::Execut
     if (fileIdsInAlbum) {
         UpdatePhotoOwnerAlbumSql = "UPDATE Photos SET owner_album_id = " +
             to_string(newAlbumId) + " WHERE file_id IN (";
+        bool isFirst = true;
         for (const auto& fileId : *fileIdsInAlbum) {
+            if (!isFirst) {
+                UpdatePhotoOwnerAlbumSql += ", ";
+            }
             UpdatePhotoOwnerAlbumSql += fileId;
-            UpdatePhotoOwnerAlbumSql += ", ";
+            isFirst = false;
         }
-        UpdatePhotoOwnerAlbumSql.pop_back();
-        UpdatePhotoOwnerAlbumSql.pop_back(); // Remove the last comma
         UpdatePhotoOwnerAlbumSql += ")";
     } else {
         UpdatePhotoOwnerAlbumSql = "UPDATE Photos SET owner_album_id = " +
