@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Huawei Device Co., Ltd.
+# Copyright (C) 2024-2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -83,10 +83,12 @@ ohos_shared_library("cj_photoaccesshelper_ffi") {
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
+    "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
     "ability_runtime:dataobs_manager",
     "ability_runtime:napi_base_context",
+    "ability_runtime:napi_common",
     "ability_runtime:service_extension",
     "ability_runtime:ui_extension",
     "access_token:libaccesstoken_sdk",
