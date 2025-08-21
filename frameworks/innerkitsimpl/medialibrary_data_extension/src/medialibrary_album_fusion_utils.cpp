@@ -1544,9 +1544,12 @@ static int32_t CopyAlbumMetaData(const std::shared_ptr<MediaLibraryRdbStore> upg
     return E_OK;
 }
 
-static int32_t DeleteOldAlbum(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject,
-    int32_t oldAlbumId, bool isCloudAblum)
+static int32_t BatchDeleteAlbumAndUpdateRelation(const int32_t &oldAlbumId, const int64_t &newAlbumId,
+    bool isCloudAblum, std::shared_ptr<TransactionOperations> trans,
+    shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
+    CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     std::string DELETE_EXPIRED_ALBUM = "";
     if (isCloudAblum) {
         DELETE_EXPIRED_ALBUM = "UPDATE PhotoAlbum SET dirty = '4' WHERE album_id = " + to_string(oldAlbumId);
@@ -1554,70 +1557,40 @@ static int32_t DeleteOldAlbum(MediaLibraryAlbumFusionUtils::ExecuteObject& execu
         DELETE_EXPIRED_ALBUM = "DELETE FROM PhotoAlbum WHERE album_id = " + to_string(oldAlbumId);
     }
     int32_t ret = E_HAS_DB_ERROR;
-    if (executeObject.albumRefresh != nullptr) {
+    if (albumRefresh != nullptr && assetRefresh != nullptr) {
         RdbPredicates rdbPredicatesAlbum(PhotoAlbumColumns::TABLE);
         rdbPredicatesAlbum.EqualTo(PhotoAlbumColumns::ALBUM_ID, oldAlbumId);
-        executeObject.albumRefresh->Init(rdbPredicatesAlbum);
-        ret = executeObject.albumRefresh->ExecuteSql(
+        albumRefresh->Init(rdbPredicatesAlbum);
+        RdbPredicates rdbPredicatesPhoto(PhotoColumn::PHOTOS_TABLE);
+        rdbPredicatesPhoto.And()->NotEqualTo(PhotoColumn::PHOTO_DIRTY, '4');
+        rdbPredicatesPhoto.And()->EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, oldAlbumId);
+        assetRefresh->Init(rdbPredicatesPhoto);
+        ret = albumRefresh->ExecuteSql(
             DELETE_EXPIRED_ALBUM, isCloudAblum ? AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE :
             AccurateRefresh::RdbOperation::RDB_OPERATION_REMOVE);
     } else {
-        ret = executeObject.trans->ExecuteSql(DELETE_EXPIRED_ALBUM);
+        ret = trans->ExecuteSql(DELETE_EXPIRED_ALBUM);
     }
-    return ret;
-}
-
-static int32_t UpdateAlbumPhotoOwnerAlbumId(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject,
-    int32_t oldAlbumId, int64_t newAlbumId, const vector<string>* fileIdsInAlbum)
-{
-    string UpdatePhotoOwnerAlbumSql;
-    if (fileIdsInAlbum) {
-        UpdatePhotoOwnerAlbumSql = "UPDATE Photos SET owner_album_id = " +
-            to_string(newAlbumId) + " WHERE file_id IN (";
-        for (const auto& fileId : *fileIdsInAlbum) {
-            UpdatePhotoOwnerAlbumSql += fileId;
-            UpdatePhotoOwnerAlbumSql += ", ";
-        }
-        UpdatePhotoOwnerAlbumSql.pop_back();
-        UpdatePhotoOwnerAlbumSql.pop_back(); // Remove the last comma
-        UpdatePhotoOwnerAlbumSql += ")";
-    } else {
-        UpdatePhotoOwnerAlbumSql = "UPDATE Photos SET owner_album_id = " +
-            to_string(newAlbumId) + " WHERE owner_album_id = " + to_string(oldAlbumId);
-    }
-    if (executeObject.assetRefresh != nullptr) {
-        RdbPredicates rdbPredicatesPhoto(PhotoColumn::PHOTOS_TABLE);
-        if (fileIdsInAlbum) {
-            rdbPredicatesPhoto.And()->In(MediaColumn::MEDIA_ID, *fileIdsInAlbum);
-        } else {
-            rdbPredicatesPhoto.And()->EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, oldAlbumId);
-        }
-        executeObject.assetRefresh->Init(rdbPredicatesPhoto);
-        return executeObject.assetRefresh->ExecuteSql(
-            UpdatePhotoOwnerAlbumSql, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
-    } else {
-        return executeObject.trans->ExecuteSql(UpdatePhotoOwnerAlbumSql);
-    }
-}
-
-static int32_t BatchDeleteAlbumAndUpdateRelation(MediaLibraryAlbumFusionUtils::ExecuteObject& executeObject,
-    int32_t oldAlbumId, int64_t newAlbumId, bool isCloudAblum, const vector<string>* fileIdsInAlbum = nullptr)
-{
-    CHECK_AND_RETURN_RET_LOG(executeObject.trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
-
-    int32_t ret = DeleteOldAlbum(executeObject, oldAlbumId, isCloudAblum);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "DELETE expired album failed, ret = %{public}d, albumId is %{public}d",
         ret, oldAlbumId);
-
     const std::string UPDATE_NEW_ALBUM_ID_IN_PHOTO_MAP = "UPDATE PhotoMap SET map_album = " +
         to_string(newAlbumId) + " WHERE dirty != '4' AND map_album = " + to_string(oldAlbumId);
-    ret = executeObject.trans->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTO_MAP);
+    ret = trans->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTO_MAP);
+
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "Update relationship in photo map fails, ret = %{public}d, albumId is %{public}d",
         ret, oldAlbumId);
 
-    ret = UpdateAlbumPhotoOwnerAlbumId(executeObject, oldAlbumId, newAlbumId, fileIdsInAlbum);
+    const std::string UPDATE_NEW_ALBUM_ID_IN_PHOTOS = "UPDATE Photos SET owner_album_id = " +
+        to_string(newAlbumId) + " WHERE dirty != '4' AND owner_album_id = " + to_string(oldAlbumId);
+
+    if (assetRefresh != nullptr) {
+        ret = assetRefresh->ExecuteSql(
+            UPDATE_NEW_ALBUM_ID_IN_PHOTOS, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+    } else {
+        ret = trans->ExecuteSql(UPDATE_NEW_ALBUM_ID_IN_PHOTOS);
+    }
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "Update relationship in photo map fails, ret = %{public}d, albumId is %{public}d",
         ret, oldAlbumId);
@@ -1625,10 +1598,12 @@ static int32_t BatchDeleteAlbumAndUpdateRelation(MediaLibraryAlbumFusionUtils::E
 }
 
 int32_t MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(
-    ExecuteObject& executeObject, const int32_t &oldAlbumId, const int64_t &newAlbumId,
-    bool isCloudAblum, const vector<string>* fileIdsInAlbum)
+    const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const int32_t &oldAlbumId, const int64_t &newAlbumId,
+    bool isCloudAblum, std::shared_ptr<TransactionOperations> trans,
+    shared_ptr<AccurateRefresh::AlbumAccurateRefresh> albumRefresh,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
-    if (executeObject.rdbStore == nullptr) {
+    if (upgradeStore == nullptr) {
         MEDIA_ERR_LOG("invalid rdbstore or nullptr map");
         return E_INVALID_ARGUMENTS;
     }
@@ -1638,15 +1613,13 @@ int32_t MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(
     }
 
     int32_t errCode = E_OK;
-    if (executeObject.albumRefresh != nullptr && executeObject.assetRefresh != nullptr) {
+    if (albumRefresh != nullptr && assetRefresh != nullptr) {
         errCode = BatchDeleteAlbumAndUpdateRelation(
-            executeObject, oldAlbumId, newAlbumId, isCloudAblum, fileIdsInAlbum);
+            oldAlbumId, newAlbumId, isCloudAblum, trans, albumRefresh, assetRefresh);
     } else {
         std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
-        ExecuteObject object;
-        object.trans = trans;
         std::function<int(void)> func = [&]()->int {
-            return BatchDeleteAlbumAndUpdateRelation(object, oldAlbumId, newAlbumId, isCloudAblum, fileIdsInAlbum);
+            return BatchDeleteAlbumAndUpdateRelation(oldAlbumId, newAlbumId, isCloudAblum, trans, nullptr, nullptr);
         };
         errCode = trans->RetryTrans(func);
         if (errCode != E_OK) {
@@ -1682,9 +1655,7 @@ int32_t MediaLibraryAlbumFusionUtils::HandleExpiredAlbumData(const std::shared_p
         int64_t newAlbumId = -1;
         GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_ID, oldAlbumId);
         CopyAlbumMetaData(upgradeStore, resultSet, oldAlbumId, newAlbumId);
-        ExecuteObject executeObject;
-        executeObject.rdbStore = upgradeStore;
-        DeleteAlbumAndUpdateRelationship(executeObject, oldAlbumId, newAlbumId, IsCloudAlbum(resultSet));
+        DeleteAlbumAndUpdateRelationship(upgradeStore, oldAlbumId, newAlbumId, IsCloudAlbum(resultSet));
         MEDIA_ERR_LOG("Finish handle old album %{public}d, new inserted album id is %{public}" PRId64,
             oldAlbumId, newAlbumId);
     }
@@ -1764,9 +1735,8 @@ int32_t MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(const std::shared_pt
     if (sourceAlbumId == targetAlbumId) {
         return E_OK;
     }
-    ExecuteObject executeObject;
-    executeObject.rdbStore = upgradeStore;
-    DeleteAlbumAndUpdateRelationship(executeObject, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
+
+    DeleteAlbumAndUpdateRelationship(upgradeStore, sourceAlbumId, targetAlbumId, IsCloudAlbum(resultSet));
     return E_OK;
 }
 

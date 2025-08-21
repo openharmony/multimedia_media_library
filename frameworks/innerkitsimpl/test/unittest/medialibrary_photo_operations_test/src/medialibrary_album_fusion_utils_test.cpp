@@ -349,15 +349,12 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_012, TestSize.L
         values, resultSet, albumName);
     int32_t albumId = NUM_ZERO;
     int32_t newAlbumId = NUM_INVALID;
-    MediaLibraryAlbumFusionUtils::ExecuteObject executeObject;
-    executeObject.rdbStore = upgradeStore;
-    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(executeObject,
+    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(upgradeStore,
         albumId, newAlbumId, false);
     newAlbumId = ALBUM_NUM;
-    executeObject.rdbStore = rdbStorePtr;
-    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(executeObject,
+    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(rdbStorePtr,
         albumId, newAlbumId, false);
-    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(executeObject,
+    MediaLibraryAlbumFusionUtils::DeleteAlbumAndUpdateRelationship(rdbStorePtr,
         albumId, newAlbumId, true);
     MediaLibraryAlbumFusionUtils::IsCloudAlbum(resultSet);
     MediaLibraryAlbumFusionUtils::HandleExpiredAlbumData(upgradeStore);
