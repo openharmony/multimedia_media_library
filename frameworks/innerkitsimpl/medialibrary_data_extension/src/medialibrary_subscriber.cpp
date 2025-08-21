@@ -130,11 +130,11 @@ const int32_t THUMB_ASTC_ENOUGH = 20000;
 bool MedialibrarySubscriber::isCellularNetConnected_ = false;
 bool MedialibrarySubscriber::isWifiConnected_ = false;
 bool MedialibrarySubscriber::currentStatus_ = false;
-// BetaVersion will upload the DB, and the true uploadDBFlag indicates that uploading is enabled.
+// BetaVersion will upload the DB
 const std::string KEY_HIVIEW_VERSION_TYPE = "const.logsystem.versiontype";
-std::atomic<bool> uploadDBFlag(true);
+std::mutex uploadDBMutex;
 int64_t g_lastTime = MediaFileUtils::UTCTimeMilliSeconds();
-const int32_t HALF_HOUR_MS = 1800000;
+const int64_t TWELVE_HOUR_MS = static_cast<int64_t>(12 * 3600 * 1000);
 
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
@@ -244,10 +244,12 @@ static bool IsBetaVersion()
     return isBetaVersion;
 }
 
-static bool IsLastHalfHourDb()
+static bool IsTwelveHoursAgo()
 {
+    std::lock_guard<mutex> lock(uploadDBMutex);
     int64_t curTime = MediaFileUtils::UTCTimeMilliSeconds();
-    if (curTime - g_lastTime >= HALF_HOUR_MS) {
+    MEDIA_INFO_LOG("IsTwelveHoursAgo enter, interval:%{public}s ms", to_string(curTime - g_lastTime).c_str());
+    if (curTime - g_lastTime >= TWELVE_HOUR_MS) {
         g_lastTime = curTime;
         return true;
     }
@@ -256,7 +258,7 @@ static bool IsLastHalfHourDb()
 
 static void UploadDBFile()
 {
-    uploadDBFlag.store(false);
+    std::lock_guard<mutex> lock(uploadDBMutex);
     int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
     static const std::string databaseDir = MEDIA_DB_DIR + "/rdb";
     static const std::vector<std::string> dbFileName = { "/media_library.db",
@@ -276,34 +278,26 @@ static void UploadDBFile()
     if (totalFileSize > MAX_FILE_SIZE_MB) {
         MEDIA_WARN_LOG("DB file over 10GB are not uploaded, totalFileSize is %{public}ld MB",
             static_cast<long>(totalFileSize));
-        uploadDBFlag.store(true);
         return ;
     }
     if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateDirectory(destPath)) {
         MEDIA_ERR_LOG("Create dir failed, dir=%{private}s", destPath.c_str());
-        uploadDBFlag.store(true);
         return ;
     }
     auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager == nullptr) {
         MEDIA_ERR_LOG("dataManager is nullptr");
-        uploadDBFlag.store(true);
         return;
     }
     dataManager->UploadDBFileInner(totalFileSize);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("Handle %{public}s MB DBFile success, cost %{public}s ms", std::to_string(totalFileSize).c_str(),
         std::to_string(end - begin).c_str());
-    uploadDBFlag.store(true);
 }
 
 void MedialibrarySubscriber::CheckHalfDayMissions()
 {
     if (isScreenOff_ && isCharging_) {
-        if (IsBetaVersion() && uploadDBFlag.load() && IsLastHalfHourDb()) {
-            MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile");
-            UploadDBFile();
-        }
         DfxManager::GetInstance()->HandleHalfDayMissions();
         MediaLibraryRestore::GetInstance().CheckBackup();
     }
@@ -478,6 +472,18 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         // when turn off gallery switch or quit account, clear the download lastest finished flag,
         // so we can download lastest images for the subsequent login new account
         BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
+    }
+    if (action == EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
+        isScreenOff_ && isCharging_ && IsBetaVersion()) {
+        std::tm nowLocalTime;
+        const int32_t BACKUP_START_TIME = 23;
+        const int32_t BACKUP_END_TIME = 5;
+        if (GetNowLocalTime(nowLocalTime) &&
+            (nowLocalTime.tm_hour >= BACKUP_START_TIME || nowLocalTime.tm_hour < BACKUP_END_TIME) &&
+            IsTwelveHoursAgo()) {
+            MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile, now:%{public}d", nowLocalTime.tm_hour);
+            UploadDBFile();
+        }
     }
 
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
