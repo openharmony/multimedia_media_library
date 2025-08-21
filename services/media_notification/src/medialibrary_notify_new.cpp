@@ -44,7 +44,7 @@ void MediaLibraryNotifyNew::UpdateItem(NotifyInfoInner notifyInfoInner)
     MEDIA_INFO_LOG("UpdateItem");
 }
 
-void MediaLibraryNotifyNew::AddItem(NotifyInfoInner notifyInfoInner)
+void MediaLibraryNotifyNew::AddItem(NotifyInfoInner &notifyInfoInner)
 {
     auto worker = NotifyTaskWorker::GetInstance();
     worker->AddTaskInfo(notifyInfoInner);

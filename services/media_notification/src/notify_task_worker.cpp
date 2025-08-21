@@ -65,7 +65,7 @@ void NotifyTaskWorker::StartWorker()
     std::thread([this]() { this->HandleNotifyTaskPeriod(); }).detach();
 }
 
-void NotifyTaskWorker::AddTaskInfo(NotifyInfoInner notifyInfoInner)
+void NotifyTaskWorker::AddTaskInfo(NotifyInfoInner &notifyInfoInner)
 {
     lock_guard<mutex> lock(mapMutex_);
     int32_t waitLoopCnt = notifyInfoInner.notifyLevel.waitLoopCnt;

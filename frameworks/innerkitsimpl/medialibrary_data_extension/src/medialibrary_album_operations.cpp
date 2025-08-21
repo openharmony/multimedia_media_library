@@ -1603,29 +1603,40 @@ void MediaLibraryAlbumOperations::DealwithNoAlbumAssets(const vector<string> &wh
     CHECK_AND_RETURN_LOG(ret == E_OK, "Fix photo relation failed");
 }
 
-static bool isRecoverToHiddenAlbum(const string& uri)
+static set<string> GetHiddenUri(const vector<string> &uris)
 {
-    string fileId = MediaFileUtils::GetIdFromUri(uri);
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    MediaLibraryTracer tracer;
+    tracer.Start("GetHiddenUri");
+    size_t count = uris.size() - THAN_AGR_SIZE;
+    vector<string> ids;
+    unordered_map<string, string> maps;
+    for (size_t i = 0; i < count; i++) {
+        string fileId = MediaFileUtils::GetIdFromUri(uris[i]);
+        ids.push_back(fileId);
+        maps[fileId] = uris[i];
+    }
+    set<string> result;
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("get uniStore fail");
-        return false;
+        return result;
     }
-    vector<string> columns = { MediaColumn::MEDIA_HIDDEN };
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.In(MediaColumn::MEDIA_ID, ids);
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(1));
+    vector<string> columns = { MediaColumn::MEDIA_ID };
     auto resultSet = uniStore->Query(predicates, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr) {
         MEDIA_ERR_LOG("fail to query file on photo");
-        return false;
+        return result;
     }
-    int isHiddenIndex = -1;
-    int32_t isHidden = 0;
-    resultSet->GetColumnIndex(MediaColumn::MEDIA_HIDDEN, isHiddenIndex);
-    if (resultSet->GetInt(isHiddenIndex, isHidden) != NativeRdb::E_OK) {
-        return false;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t fileId = -1;
+        if (resultSet->GetInt(0, fileId) == NativeRdb::E_OK) {
+            result.insert(maps[to_string(fileId)]);
+        }
     }
-    return isHidden == 1;
+    return result;
 }
 
 int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicates &predicates)
@@ -1658,13 +1669,13 @@ int32_t MediaLibraryAlbumOperations::RecoverPhotoAssets(const DataSharePredicate
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
     MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, whereArgs);
     assetRefresh.RefreshAlbum(NotifyAlbumType::SYS_ALBUM);
-
+    std::set<string> hiddenSet = GetHiddenUri(whereArgs);
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     size_t count = whereArgs.size() - THAN_AGR_SIZE;
     for (size_t i = 0; i < count; i++) {
         string notifyUri = MediaFileUtils::Encode(whereArgs[i]);
-        if (isRecoverToHiddenAlbum(notifyUri)) {
+        if (hiddenSet.count(whereArgs[i]) == 1) {
             watch->Notify(notifyUri, NotifyType::NOTIFY_UPDATE);
         } else {
             watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
