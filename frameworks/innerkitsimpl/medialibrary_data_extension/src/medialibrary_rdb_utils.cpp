@@ -1981,6 +1981,8 @@ static int32_t GetStringFromResultSet(shared_ptr<ResultSet> resultSet, const str
 int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     RdbPredicates &predicates)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateTrashedAssetOnAlbum");
     vector<string> newWhereIdArgs;
     for (auto albumId: predicates.GetWhereArgs()) {
         MEDIA_INFO_LOG("Start trashed album, album id is: %{public}s", albumId.c_str());
