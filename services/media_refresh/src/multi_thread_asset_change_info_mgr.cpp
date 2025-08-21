@@ -115,10 +115,10 @@ void MultiThreadAssetChangeInfoMgr::ClearMultiThreadChangeData(int32_t fileId)
     }
     auto &multiThreadChangeData = iter->second;
     multiThreadChangeData.count_--;
+    ACCURATE_DEBUG("multi erase, fileId[%{public}d] count[%{public}d]", fileId, multiThreadChangeData.count_);
     if (multiThreadChangeData.count_ == 0) {
         assetChangeDataMap_.erase(iter);
     }
-    ACCURATE_DEBUG("multi erase, fileId[%{public}d] count[%{public}d]", fileId, multiThreadChangeData.count_);
 }
 
 } // namespace Media::AccurateRefresh
