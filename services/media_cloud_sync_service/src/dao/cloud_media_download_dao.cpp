@@ -251,13 +251,12 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const
     return ret;
 }
 
-int32_t CloudMediaDownloadDao::UpdateDownloadAssetExifRotateFix(const int32_t fileId,
-    const int32_t exifRotate, const DirtyTypes dirtyType, bool needRegenerateThumbnail)
+int32_t CloudMediaDownloadDao::UpdateDownloadAssetExifRotateFix(
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh,
+    const int32_t fileId, const int32_t exifRotate, const DirtyTypes dirtyType, bool needRegenerateThumbnail)
 {
     CHECK_AND_RETURN_RET_LOG(dirtyType == DirtyTypes::TYPE_MDIRTY || dirtyType == DirtyTypes::TYPE_FDIRTY,
         E_ERR, "Not support update this dirtype:%{public}d", dirtyType);
-    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh =
-        std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
     CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL,
         "UpdateDownloadAssetExifRotateFix Failed to get rdbStore.");
 
@@ -277,7 +276,6 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAssetExifRotateFix(const int32_t fi
         E_ERR,
         "UpdateDownloadAssetExifRotateFix Failed to Update, ret: %{public}d.",
         ret);
-    photoRefresh->Notify();
     return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync
