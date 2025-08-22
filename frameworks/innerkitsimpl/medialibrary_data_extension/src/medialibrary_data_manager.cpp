@@ -2531,11 +2531,17 @@ void MediaLibraryDataManager::InitDatabaseACLPermission()
 
 int32_t ScanFileCallback::OnScanFinished(const int32_t status, const string &uri, const string &path)
 {
+    CHECK_AND_EXECUTE(this->callback_ == nullptr, this->callback_->OnScanFinished(status, uri, path));
     auto instance = MediaLibraryDataManager::GetInstance();
     if (instance != nullptr) {
         instance->CreateThumbnailAsync(uri, path, originalPhotoPicture);
     }
     return E_OK;
+}
+
+void ScanFileCallback::SetCallback(std::shared_ptr<IMediaScannerCallback> &callback)
+{
+    this->callback_ = callback;
 }
 
 int32_t MediaLibraryDataManager::SetCmdBundleAndDevice(MediaLibraryCommand &outCmd)
