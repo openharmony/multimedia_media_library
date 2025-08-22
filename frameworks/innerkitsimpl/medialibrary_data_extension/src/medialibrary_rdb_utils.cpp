@@ -62,6 +62,7 @@
 #include "medialibrary_restore.h"
 #include "album_accurate_refresh_manager.h"
 #include "refresh_business_name.h"
+#include "accurate_common_data.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -408,6 +409,8 @@ static int32_t ForEachRow(const shared_ptr<MediaLibraryRdbStore> rdbStore, std::
     const bool hiddenState, const UpdateHandler &func)
 {
     int32_t err = NativeRdb::E_OK;
+    vector<AccurateRefresh::AlbumChangeData> batchNotifyChangeDatas;
+    AccurateRefresh::AlbumAccurateRefresh sendNotifyAlbumRefresh;
     for (auto data : datas) {
         std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
         AccurateRefresh::AlbumAccurateRefresh albumRefresh(AccurateRefresh::COMMIT_EDITE_ASSET_BUSSINESS_NAME, trans);
@@ -420,8 +423,18 @@ static int32_t ForEachRow(const shared_ptr<MediaLibraryRdbStore> rdbStore, std::
         CHECK_AND_PRINT_LOG(err == E_OK, "ForEachRow: trans retry fail!, ret:%{public}d", err);
         SendAlbumIdNotify(data);
         if (data.hasChanged) {
-            albumRefresh.Notify();
+            vector<AccurateRefresh::AlbumChangeData> albumChangeDatas = albumRefresh.GetAlbumChangeDatas();
+            batchNotifyChangeDatas.insert(batchNotifyChangeDatas.end(),
+                albumChangeDatas.begin(), albumChangeDatas.end());
         }
+        if (batchNotifyChangeDatas.size() >= AccurateRefresh::MAX_AFFECTED_ALBUM_LENGTH) {
+            albumRefresh.Notify(batchNotifyChangeDatas);
+            batchNotifyChangeDatas.clear();
+        }
+    }
+    if (!batchNotifyChangeDatas.empty()) {
+        sendNotifyAlbumRefresh.Notify(batchNotifyChangeDatas);
+        batchNotifyChangeDatas.clear();
     }
     return E_SUCCESS;
 }

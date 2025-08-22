@@ -50,8 +50,10 @@ public:
     void ClearMultiThreadChangeData(int32_t fileId);
     // 清除所有的fileId
     void ClearMultiThreadChangeDatas();
+    bool CheckIsForRecheck() override;
 
 private:
+    void SetAlbumIdByChangeInfos(const std::vector<PhotoAssetChangeInfo> &changeInfos) override;
     int32_t UpdateThumbnailChangeStatus(PhotoAssetChangeData &assetChangeData);
     int32_t GetChangeInfoKey(const PhotoAssetChangeInfo &changeInfo) override;
     std::vector<PhotoAssetChangeInfo> GetInfoByKeys(const std::vector<int32_t> &fileIds) override;
@@ -61,11 +63,22 @@ private:
     void PostInsertAfterData(PhotoAssetChangeData &changeData, PendingInfo &pendingInfo, bool isAdd = false) override;
     bool CheckUpdateDataForMultiThread(PhotoAssetChangeData &changeData) override;
     void UpdatePendingInfo(PhotoAssetChangeData &changeData, PendingInfo &pendingInfo);
+    int32_t SetAlbumIdsByPredicates(const NativeRdb::AbsRdbPredicates &predicates) override;
+    int32_t SetAlbumIdsBySql(const std::string &sql, const std::vector<NativeRdb::ValueObject> &bindArgs) override;
+    int32_t SetAlbumIdsByFileds(const std::vector<int32_t> &fileIds) override;
 
 private:
     std::unordered_map<int32_t, PhotoAssetContentInfo> contentInfos;
     // 用于清理MultiThreadAssetChangeInfoMgr中的资产信息
     std::unordered_set<int32_t> multiThreadAssetIds_;
+protected:
+    bool CheckIsExceed(const NativeRdb::AbsRdbPredicates &predicates, bool isLengthChanged = false) override;
+    bool CheckIsExceed(const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &bindArgs, bool isLengthChanged = false) override;
+    bool CheckIsExceed(const std::vector<int32_t> &keys) override;
+    bool CheckIsExceed(bool isLengthChanged = false) override;
+    bool CheckIsExceed(const std::vector<PhotoAssetChangeInfo> &changeInfos) override;
+    void SetAlbumIdFromChangeDates();
 };
 
 }  // namespace Media::AccurateRefresh

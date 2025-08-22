@@ -220,5 +220,105 @@ vector<AlbumChangeData> AlbumDataManager::GetAlbumDatasFromAddAlbum(const vector
     }
     return albumChangeDatas;
 }
+
+int32_t AlbumDataManager::SetAlbumIdsByPredicates(const AbsRdbPredicates &predicates)
+{
+    // 直接更新操作相册的，不用存相册id
+    return NativeRdb::E_OK;
+}
+
+int32_t AlbumDataManager::SetAlbumIdsBySql(const std::string &sql,
+    const std::vector<ValueObject> &bindArgs)
+{
+    // 直接更新操作相册的，不用存相册id
+    return NativeRdb::E_OK;
+}
+
+int32_t AlbumDataManager::SetAlbumIdsByFileds(const std::vector<int32_t> &fileIds)
+{
+    // 直接更新操作相册的，不用存相册id
+    return NativeRdb::E_OK;
+}
+
+void AlbumDataManager::ClearChangeInfos()
+{
+    this->changeDatas_.clear();
+}
+
+bool AlbumDataManager::CheckIsExceed(bool isLengthChanged)
+{
+    if (!isLengthChanged) {
+        return isExceed_;
+    }
+
+    if (isExceed_) {
+        return true;
+    }
+
+    isExceed_ = this->changeDatas_.size() >= MAX_DATA_LENGTH;
+    if (isExceed_) {
+        this->changeDatas_.clear();
+    }
+    return isExceed_;
+};
+
+bool AlbumDataManager::CheckIsExceed(const AbsRdbPredicates &predicates, bool isLengthChanged)
+{
+    if (!isLengthChanged) {
+        return isExceed_;
+    }
+
+    if (isExceed_) {
+        return true;
+    }
+
+    isExceed_ = this->changeDatas_.size() >= MAX_DATA_LENGTH;
+    if (isExceed_) {
+        this->changeDatas_.clear();
+    }
+    return isExceed_;
+};
+
+bool AlbumDataManager::CheckIsExceed(const string &sql,
+    const vector<ValueObject> &bindArgs, bool isLengthChanged)
+{
+    if (!isLengthChanged) {
+        return isExceed_;
+    }
+
+    if (isExceed_) {
+        return true;
+    }
+
+    isExceed_ = this->changeDatas_.size() >= MAX_DATA_LENGTH;
+    if (isExceed_) {
+        this->changeDatas_.clear();
+    }
+    return isExceed_;
+};
+
+bool AlbumDataManager::CheckIsExceed(const vector<AlbumChangeInfo> &changeInfos)
+{
+    if (changeInfos.size() >= MAX_DATA_LENGTH) {
+        isExceed_ = true;
+        this->changeDatas_.clear();
+    }
+    return isExceed_;
+}
+
+bool AlbumDataManager::CheckIsExceed(const vector<int32_t> &keys)
+{
+    if (keys.size() >= MAX_DATA_LENGTH) {
+        isExceed_ = true;
+        this->changeDatas_.clear();
+    }
+    return isExceed_;
+}
+
+bool AlbumDataManager::CheckIsForRecheck()
+{
+    return isForRecheck_ || CheckIsExceed();
+}
+
 } // namespace Media
 } // namespace OHOS

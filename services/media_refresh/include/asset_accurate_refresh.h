@@ -86,7 +86,8 @@ protected:
     bool IsValidTable(std::string tableName) override;
 private:
     int32_t DeleteCommon(std::function<int32_t(NativeRdb::ValuesBucket &)> updateExe);
-    int32_t RefreshAllAlbum(NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified = true);
+    int32_t RefreshAllAlbum(std::unordered_set<int32_t> albumIds,
+        NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified = true);
 
 private:
     AssetDataManager dataManager_;
