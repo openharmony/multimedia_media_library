@@ -292,8 +292,8 @@ static void MultistageTest()
 {
     std::string photoId = FDP->ConsumeBytesAsString(NUM_BYTES);
     int32_t fileId = InsertAsset(photoId);
-    MEDIA_INFO_LOG("fileId: %{public}d.", fileId);
-    Media::MultiStagesCaptureDfxFirstVisit::GetInstance().Report(photoId);
+    MEDIA_INFO_LOG("fileId: %{public}d, photoId: %{public}s", fileId, photoId.c_str());
+    Media::MultiStagesCaptureDfxFirstVisit::GetInstance().Report(fileId);
     MEDIA_INFO_LOG("MultistageTest");
 }
 

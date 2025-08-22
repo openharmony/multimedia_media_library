@@ -486,10 +486,10 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_first_visit_001, TestSize.
     this_thread::sleep_for(chrono::milliseconds(1234));
 
     MultiStagesCaptureDfxFirstVisit &instance = MultiStagesCaptureDfxFirstVisit::GetInstance();
-    instance.Report(PHOTO_ID_FOR_TEST);
+    instance.Report(fileId);
 
     // report again, it will not report to hiview
-    instance.Report(PHOTO_ID_FOR_TEST);
+    instance.Report(fileId);
 
     MEDIA_INFO_LOG("dfx_first_visit_001 End");
 }
@@ -504,14 +504,11 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_first_visit_invalid_param_
     this_thread::sleep_for(chrono::milliseconds(1234));
 
     MultiStagesCaptureDfxFirstVisit &instance = MultiStagesCaptureDfxFirstVisit::GetInstance();
-    // photo id is empty
-    instance.Report("");
-
-    // photo id is not exist
-    instance.Report("1");
+    // file id is not exist
+    instance.Report(0);
 
     // report success
-    instance.Report(PHOTO_ID_FOR_TEST);
+    instance.Report(fileId);
 
     MEDIA_INFO_LOG("dfx_first_visit_invalid_param_002 End");
 }
