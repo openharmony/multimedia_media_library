@@ -66,15 +66,15 @@ static void ReportInternal(AsyncTaskData *taskData)
     MEDIA_INFO_LOG("ReportInternal exit result: %{public}d", result);
 }
 
-void MultiStagesCaptureDfxFirstVisit::Report(const int32_t fileId)
+void MultiStagesCaptureDfxFirstVisit::Report(const string &photoId)
 {
-    if (fileId <= 0) {
-        MEDIA_WARN_LOG("Report fileId is invalid: %{public}d", fileId);
+    if (photoId.empty()) {
+        MEDIA_INFO_LOG("Report photoId is empty");
         return;
     }
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    cmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
     vector<string> columns { MediaColumn::MEDIA_ID, PhotoColumn::PHOTO_FIRST_VISIT_TIME,
         PhotoColumn::PHOTO_LAST_VISIT_TIME };
     
@@ -96,6 +96,7 @@ void MultiStagesCaptureDfxFirstVisit::Report(const int32_t fileId)
         return;
     }
 
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     int64_t lastVisitTime = GetInt64Val(PhotoColumn::PHOTO_LAST_VISIT_TIME, resultSet);
     FirstVisitAsyncTaskData *taskData = new (std::nothrow) FirstVisitAsyncTaskData(fileId, photoId, lastVisitTime,
         MediaFileUtils::UTCTimeMilliSeconds());

@@ -39,7 +39,7 @@ public:
 class MultiStagesCaptureDfxFirstVisit {
 public:
     EXPORT static MultiStagesCaptureDfxFirstVisit& GetInstance();
-    EXPORT void Report(const int32_t fileId);
+    EXPORT void Report(const std::string &photoId);
 
 private:
     MultiStagesCaptureDfxFirstVisit();

@@ -490,7 +490,7 @@ void MultiStagesPhotoCaptureManager::ProcessImage(int fileId, int deliveryMode)
     MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::THIRD_PART);
     MultiStagesCaptureDfxRequestPolicy::GetInstance().SetPolicy(callerBundleName,
         static_cast<RequestPolicy>(deliveryMode));
-    MultiStagesCaptureDfxFirstVisit::GetInstance().Report(fileId);
+    MultiStagesCaptureDfxFirstVisit::GetInstance().Report(photoId);
     int32_t currentRequestCount =
         MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(photoId, RequestType::REQUEST);
     MEDIA_INFO_LOG("processimage, pkg name: %{public}s, photoid %{public}s, mode: %{public}d, count: %{public}d",
