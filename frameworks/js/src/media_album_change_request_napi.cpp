@@ -1505,7 +1505,7 @@ static bool DeleteAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     for (const auto& asset : context.objectInfo->GetDeleteAssetArray()) {
         reqBody.assets.push_back(asset);
     }
-    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    int ret = IPC::UserDefineIPCClient().SetUserId(context.objectInfo->GetUserId()).Call(businessCode, reqBody);
 
     context.objectInfo->ClearDeleteAssetArray();
     if (ret < 0) {
