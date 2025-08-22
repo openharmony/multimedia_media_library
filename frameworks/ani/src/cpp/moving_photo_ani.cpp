@@ -45,9 +45,18 @@
 #include "ability_context.h"
 #include "application_context.h"
 #include "media_call_transcode.h"
-
+#include "interop_js/arkts_esvalue.h"
+#include "interop_js/arkts_interop_js_api.h"
+#include "transfer_utils.h"
+#include "ani_transfer_lib_manager.h"
 namespace OHOS {
 namespace Media {
+using CreateTransferMovingPhotoFn = napi_value (*)(napi_env,
+    std::string, int, OHOS::Media::TransferUtils::TransferMovingPhotoParam);
+using GetPropertyMovingPhotoNapiFn = bool (*)(OHOS::Media::MovingPhotoNapi*, std::string, int,
+    OHOS::Media::TransferUtils::TransferMovingPhotoParam);
+std::mutex LibManager::mutex_;
+std::shared_ptr<LibHandle> LibManager::instance_ = nullptr;
 namespace {
 static const std::string URI_TYPE = "uriType";
 static const std::string TYPE_PHOTOS = "1";
@@ -79,6 +88,10 @@ ani_status MovingPhotoAni::Init(ani_env *env)
         ani_native_function {"requestContentByResourceType", nullptr,
             reinterpret_cast<void *>(MovingPhotoAni::RequestContentByResourceType)},
         ani_native_function {"getUri", nullptr, reinterpret_cast<void *>(MovingPhotoAni::GetUri)},
+        ani_native_function {"transferToDynamicMovingPhoto", nullptr,
+            reinterpret_cast<void *>(TransferToDynamicMovingPhoto)},
+        ani_native_function {"transferToStaticMovingPhoto", nullptr,
+            reinterpret_cast<void *>(TransferToStaticMovingPhoto)},
     };
 
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
@@ -1006,5 +1019,74 @@ void MovingPhotoAni::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsync
     }
     context->arrayBufferLength = fileSize;
 }
+//ani -> napi
+ani_ref MovingPhotoAni::TransferToDynamicMovingPhoto(ani_env *env, [[maybe_unused]] ani_class, ani_object input)
+{
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    ani_ref undefinedRef {};
+    env->GetUndefined(&undefinedRef);
+    napi_env jsEnv;
+
+    arkts_napi_scope_open(env, &jsEnv);
+    MovingPhotoAni* movingPhotoAni = Unwrap(env, input);
+    if (movingPhotoAni == nullptr) {
+        ANI_ERR_LOG("movingPhotoAni is null.");
+        return undefinedRef;
+    }
+
+    TransferUtils::TransferMovingPhotoParam movingPhotoParam;
+    std::string uri = movingPhotoAni->GetUriInner();
+    int sourceMode = static_cast<int>(movingPhotoAni->GetSourceMode());
+    movingPhotoParam.compatibleMode = static_cast<int>(movingPhotoAni->GetCompatibleMode());
+    movingPhotoParam.requestId = movingPhotoAni->GetRequestId();
+    movingPhotoParam.progressHandlerRef = reinterpret_cast<napi_ref>(movingPhotoAni->GetProgressHandlerRef());
+    movingPhotoParam.threadsafeFunction = nullptr;
+    CreateTransferMovingPhotoFn funcHandle = nullptr;
+    if (!LibManager::GetSymbol("CreateTransferMovingPhotoNapi", funcHandle)) {
+        ANI_ERR_LOG("%{public}s Get CreateTransferMovingPhotoNapi symbol failed", __func__);
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
+    napi_value napiMovingPhoto = funcHandle(jsEnv, uri, sourceMode, movingPhotoParam);
+    if (napiMovingPhoto == nullptr) {
+        ANI_ERR_LOG("napiMovingPhoto is null.");
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
+    ani_ref result {};
+    arkts_napi_scope_close_n(jsEnv, 1, &napiMovingPhoto, &result);
+
+    return result;
+}
+//napi -> ani
+ani_object MovingPhotoAni::TransferToStaticMovingPhoto(ani_env *env, [[maybe_unused]] ani_class, ani_object input)
+{
+    MovingPhotoNapi *napiMovingPhoto = nullptr;
+
+    arkts_esvalue_unwrap(env, input, (void **)&napiMovingPhoto);
+    CHECK_COND_RET(napiMovingPhoto != nullptr, nullptr, "napiMovingPhoto is null");
+
+    TransferUtils::TransferMovingPhotoParam movingPhotoParam;
+    std::string uri = "";
+    int sourceMode = static_cast<int>(SourceMode::EDITED_MODE);
+
+    GetPropertyMovingPhotoNapiFn funcHandle = nullptr;
+    if (!LibManager::GetSymbol("MovingPhotoGetProperty", funcHandle)) {
+        ANI_ERR_LOG("%{public}s Get MovingPhotoGetProperty symbol failed", __func__);
+        return nullptr;
+    }
+    CHECK_COND_RET(funcHandle != nullptr, nullptr, "funcHandle is null");
+    bool ret = funcHandle(napiMovingPhoto, uri, sourceMode, movingPhotoParam);
+    CHECK_COND_RET(ret != false, nullptr, "Failed to get property from napiMovingPhoto");
+
+    MovingPhotoParam movingPhotoParamAni;
+    movingPhotoParamAni.compatibleMode = static_cast<CompatibleMode>(movingPhotoParam.compatibleMode);
+    movingPhotoParamAni.requestId = movingPhotoParam.requestId;
+    movingPhotoParamAni.progressHandlerRef = reinterpret_cast<ani_ref>(movingPhotoParam.progressHandlerRef);
+    movingPhotoParam.threadsafeFunction = nullptr;
+
+    return MovingPhotoAni::NewMovingPhotoAni(env, uri, static_cast<SourceMode>(sourceMode), movingPhotoParamAni);
+}
+
 } // namespace Media
 } // namespace OHOS

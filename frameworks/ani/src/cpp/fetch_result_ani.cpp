@@ -18,8 +18,19 @@
 #include "ani_class_name.h"
 #include "medialibrary_ani_utils.h"
 #include "medialibrary_tracer.h"
+#include "interop_js/arkts_esvalue.h"
+#include "interop_js/arkts_interop_js_api.h"
+#include "transfer_utils.h"
+#include "ani_transfer_lib_manager.h"
 
 namespace OHOS::Media {
+using CreateFetchFileResultFileAssetFn = napi_value (*)(napi_env, std::unique_ptr<FetchResult<FileAsset>>);
+using CreateFetchFileResultAlbumAssetFn = napi_value (*)(napi_env, std::unique_ptr<FetchResult<AlbumAsset>>);
+using CreateFetchFileResultPhotoAlbumFn = napi_value (*)(napi_env, std::unique_ptr<FetchResult<PhotoAlbum>>);
+using CreateFetchFileResultSmartAlbumFn = napi_value (*)(napi_env, std::unique_ptr<FetchResult<SmartAlbumAsset>>);
+using GetFetchAlbumResultObjectFn = TransferUtils::TransferSharedPtr (*)(FetchFileResultNapi*);
+using GetFetchFileResultObjectFn = TransferUtils::TransferSharedPtr (*)(FetchFileResultNapi*);
+using GetFetchResTypeFn = FetchResType (*)(FetchFileResultNapi*);
 ani_status FetchFileResultAni::UserFileMgrInit(ani_env *env)
 {
     return ANI_OK;
@@ -45,6 +56,10 @@ ani_status FetchFileResultAni::PhotoAccessHelperInit(ani_env *env)
         ani_native_function {"getObjectByPositionSync", nullptr, reinterpret_cast<void *>(GetPositionObject)},
         ani_native_function {"getCount", nullptr, reinterpret_cast<void *>(GetCount)},
         ani_native_function {"close", nullptr, reinterpret_cast<void *>(Close)},
+        ani_native_function {"transferToDynamicFetchResult", nullptr,
+            reinterpret_cast<void *>(TransferToDynamicFetchResult)},
+        ani_native_function {"transferToStaticFetchResult", nullptr,
+            reinterpret_cast<void *>(TransferToStaticFetchResult)},
     };
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
@@ -726,4 +741,141 @@ ani_object FetchFileResultAni::GetLastObject(ani_env *env, [[maybe_unused]] ani_
     }
     return returnObj;
 }
+
+
+FetchFileResultAni* GetNativeFetchFileResultAni(ani_env *env, ani_object object)
+{
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    CHECK_COND_RET(object != nullptr, nullptr, "object is null");
+
+    auto fetchFileResultAni = FetchFileResultAni::Unwrap(env, object);
+    return fetchFileResultAni;
+}
+
+napi_value FetchFileResultAni::CreateFetchFileResultNapiByType(napi_env jsEnv, FetchResType fetchType,
+    FetchFileResultAni *aniFetchFileResult)
+{
+    CHECK_COND_RET(aniFetchFileResult != nullptr, nullptr, "aniFetchFileResult is null");
+    napi_value result = nullptr;
+    switch (fetchType) {
+        case FetchResType::TYPE_FILE: {
+            CreateFetchFileResultFileAssetFn fileFuncHandle = nullptr;
+            CHECK_COND_RET(LibManager::GetSymbol("CreateFetchFileResultFileAsset", fileFuncHandle), nullptr,
+                "Get GetFetchResType symbol failed");
+            CHECK_COND_RET(fileFuncHandle != nullptr, nullptr, "fileFuncHandle is null");
+            result = fileFuncHandle(jsEnv, move(aniFetchFileResult->sFetchFileResult_));
+            CHECK_COND_RET(result == nullptr, nullptr, "CreateFetchFileResult is null.");
+            break;
+        }
+        case FetchResType::TYPE_ALBUM: {
+            CreateFetchFileResultAlbumAssetFn albumFuncHandle = nullptr;
+            CHECK_COND_RET(LibManager::GetSymbol("CreateFetchFileResultAlbumAsset", albumFuncHandle), nullptr,
+                "Get GetFetchResType symbol failed");
+            CHECK_COND_RET(albumFuncHandle != nullptr, nullptr, "fileFuncHandle is null");
+            result = albumFuncHandle(jsEnv, move(aniFetchFileResult->sFetchAlbumResult_));
+            CHECK_COND_RET(result == nullptr, nullptr, "CreateFetchFileResult is null.");
+            break;
+        }
+        case FetchResType::TYPE_SMARTALBUM:{
+            CreateFetchFileResultSmartAlbumFn smartFuncHandle = nullptr;
+            CHECK_COND_RET(LibManager::GetSymbol("CreateFetchFileResultSmartAlbumAsset", smartFuncHandle), nullptr,
+                "Get GetFetchResType symbol failed");
+            CHECK_COND_RET(smartFuncHandle != nullptr, nullptr, "fileFuncHandle is null");
+            result = smartFuncHandle(jsEnv, move(aniFetchFileResult->sFetchSmartAlbumResult_));
+            CHECK_COND_RET(result == nullptr, nullptr, "CreateFetchFileResult is null.");
+            break;
+        }
+        case FetchResType::TYPE_PHOTOALBUM:{
+            CreateFetchFileResultPhotoAlbumFn photoAlbumfuncHandle = nullptr;
+            CHECK_COND_RET(LibManager::GetSymbol("CreateFetchFileResultPhotoAlbum", photoAlbumfuncHandle), nullptr,
+                "Get GetFetchResType symbol failed");
+            CHECK_COND_RET(photoAlbumfuncHandle != nullptr, nullptr, "fileFuncHandle is null");
+            result = photoAlbumfuncHandle(jsEnv, move(aniFetchFileResult->sFetchPhotoAlbumResult_));
+            CHECK_COND_RET(result == nullptr, nullptr, "CreateFetchFileResult is null.");
+            break;
+        }
+        default:
+            ANI_ERR_LOG("unsupported FetchResType");
+            return nullptr;
+    }
+    return result;
+}
+//ANI -> NAPI
+ani_ref FetchFileResultAni::TransferToDynamicFetchResult(ani_env *env, [[maybe_unused]] ani_class, ani_object input)
+{
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    ani_ref undefinedRef {};
+    env->GetUndefined(&undefinedRef);
+    napi_env jsEnv;
+    arkts_napi_scope_open(env, &jsEnv);
+    auto aniFetchFileResult = GetNativeFetchFileResultAni(env, input);
+    if (aniFetchFileResult == nullptr) {
+        ANI_ERR_LOG("aniPhotoAlbum is null.");
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
+    FetchResType fetchType = aniFetchFileResult->GetFetchResType();
+    napi_value napiFetchFileResult = CreateFetchFileResultNapiByType(jsEnv, fetchType, aniFetchFileResult);
+    if (napiFetchFileResult == nullptr) {
+        ANI_ERR_LOG("napiPhotoAlbum is null.");
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
+    ani_ref result {};
+    arkts_napi_scope_close_n(jsEnv, 1, &napiFetchFileResult, &result);
+    return result;
+}
+
+ani_object FetchFileResultAni::TransferToStaticFetchResult(ani_env *env, [[maybe_unused]] ani_class, ani_object input)
+{
+    FetchFileResultNapi *napiFetchFileResult = nullptr;
+    ani_object result;
+    arkts_esvalue_unwrap(env, input, (void **)&napiFetchFileResult);
+    if (napiFetchFileResult == nullptr) {
+        ANI_ERR_LOG("null wrapper");
+        return nullptr;
+    }
+    GetFetchResTypeFn funcHandle = nullptr;
+    CHECK_COND_RET(LibManager::GetSymbol("GetFetchResType", funcHandle), nullptr,
+        "Get GetFetchResType symbol failed");
+    CHECK_COND_RET(funcHandle != nullptr, nullptr, "funcHandle is null");
+    FetchResType fetchResType = funcHandle(napiFetchFileResult);
+    ANI_INFO_LOG("fetchResType: %{public}d", fetchResType);
+    switch (fetchResType) {
+        case FetchResType::TYPE_FILE: {
+            GetFetchFileResultObjectFn fileFuncHandle = nullptr;
+            CHECK_COND_RET(!LibManager::GetSymbol("GetFetchFileResultObject", fileFuncHandle), nullptr,
+                "Get GetFetchResType symbol failed");
+            CHECK_COND_RET(fileFuncHandle != nullptr, nullptr, "fileFuncHandle is null");
+            TransferUtils::TransferSharedPtr fetchFileResultPtr = fileFuncHandle(napiFetchFileResult);
+            CHECK_COND_RET(fetchFileResultPtr.fetchFileResultPtr != nullptr, nullptr,
+                "fetchFileResultPtr is null for TYPE_FILE");
+            std::shared_ptr<FetchResult<FileAsset>> fetchFileResult =
+                std::shared_ptr<FetchResult<FileAsset>>(fetchFileResultPtr.fetchFileResultPtr);
+            CHECK_COND_RET(fetchFileResult != nullptr, nullptr, "fetchAlbumResult is null");
+            result = CreateFetchFileResult(env, std::make_unique<FetchResult<FileAsset>>(*fetchFileResult));
+            break;
+        }
+        case FetchResType::TYPE_ALBUM:{
+            GetFetchAlbumResultObjectFn albumFuncHandle = nullptr;
+            CHECK_COND_RET(!LibManager::GetSymbol("GetFetchAlbumResultObject", albumFuncHandle), nullptr,
+                "Get GetFetchAlbumResultObject symbol failed");
+            CHECK_COND_RET(albumFuncHandle != nullptr, nullptr, "fileFuncHandle is null");
+            TransferUtils::TransferSharedPtr fetchAlbumResultPtr = albumFuncHandle(napiFetchFileResult);
+            CHECK_COND_RET(fetchAlbumResultPtr.fetchPhotoAlbumPtr != nullptr, nullptr,
+                "fetchAlbumResultPtr is null for TYPE_ALBUM");
+            std::shared_ptr<FetchResult<PhotoAlbum>> fetchAlbumResult =
+                std::shared_ptr<FetchResult<PhotoAlbum>>(fetchAlbumResultPtr.fetchPhotoAlbumPtr);
+            CHECK_COND_RET(fetchAlbumResult != nullptr, nullptr, "fetchAlbumResult is null");
+            result = CreateFetchFileResult(env, std::make_unique<FetchResult<PhotoAlbum>>(*fetchAlbumResult));
+            break;
+        }
+        default:
+            ANI_ERR_LOG("unsupported FetchResType");
+            return nullptr;
+    }
+    CHECK_COND_RET(result != nullptr, nullptr, "result is null");
+    return result;
+}
+
 } // namespace OHOS::Media

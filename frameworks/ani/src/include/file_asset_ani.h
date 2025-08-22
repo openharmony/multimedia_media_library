@@ -113,6 +113,8 @@ public:
     std::string GetFileDisplayName() const;
     std::string GetFileUri() const;
     int32_t GetFileId() const;
+    static ani_ref TransferToDynamicPhotoAsset(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
+    static ani_object TransferToStaticPhotoAsset(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
 
 private:
     static thread_local std::shared_ptr<FileAsset> sFileAsset_;
