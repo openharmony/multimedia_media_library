@@ -22,6 +22,9 @@
 #include "fetch_result.h"
 #include "file_asset.h"
 
+typedef struct napi_env__* napi_env;
+typedef struct napi_value__* napi_value;
+
 namespace OHOS {
 namespace Media {
 
@@ -57,6 +60,10 @@ public:
     std::shared_ptr<FetchResult<AlbumAsset>> GetFetchAlbumResultObject();
     std::shared_ptr<FetchResult<PhotoAlbum>> GetFetchPhotoAlbumResultObject();
     std::shared_ptr<FetchResult<SmartAlbumAsset>> GetFetchSmartAlbumResultObject();
+    static napi_value CreateFetchFileResultNapiByType(napi_env jsEnv,
+        FetchResType fetchType, FetchFileResultAni *aniFetchFileResult);
+    static ani_ref TransferToDynamicFetchResult(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
+    static ani_object TransferToStaticFetchResult(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
 
     FetchResType GetFetchResType();
     bool CheckIfPropertyPtrNull();

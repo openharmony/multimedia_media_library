@@ -479,6 +479,27 @@ export namespace photoAccessHelper {
       }
     }
 
+    private static native transferToDynamicPhotoAsset(input: PhotoAssetHandle): Any;
+    private static native transferToStaticPhotoAsset(input: ESValue): PhotoAssetHandle;
+
+    static transferDynamic(input: Object): Any {
+      return PhotoAssetHandle.transferToDynamicPhotoAsset(input as PhotoAssetHandle);
+    }
+    static transferStatic(input: Any): Object {
+      if (input === undefined || input === null) {
+        throw new Error("Input is null or undefined");
+      }
+      let dyESValue: ESValue = ESValue.wrap(input);
+      if( dyESValue === undefined || dyESValue === null) {
+        throw new Error("Input is not a valid ESValue");
+      }
+      let output: PhotoAssetHandle = PhotoAssetHandle.transferToStaticPhotoAsset(dyESValue);
+      if (output === null) {
+        throw new Error("Failed to transfer to PhotoAssetHandle");
+      }
+      return output as Object;
+    }
+
     native get(member: string): MemberType;
 
     native set(member: string, value: string): void;
@@ -1407,6 +1428,27 @@ export namespace photoAccessHelper {
         this.nativeValue = value;
     }
 
+    private static native transferToDynamicFetchResult(input: Object): Any;
+    private static native transferToStaticFetchResult(input: ESValue): FetchResultHandle<T>;
+
+    static transferDynamic(input: Object): Any {
+        return FetchResultHandle.transferToDynamicFetchResult(input);
+    }
+    static transferStatic(input: Any): Object {
+      if (input === undefined || input === null) {
+        throw new Error("Input is null or undefined");
+      }
+      let dyESValue: ESValue = ESValue.wrap(input);
+      if( dyESValue === undefined || dyESValue === null) {
+        throw new Error("Input is not a valid ESValue");
+      }
+      let output: Object = FetchResultHandle.transferToStaticFetchResult(dyESValue);
+      if (output === null) {
+        throw new Error("Failed to transfer to FetchResultHandle");
+      }
+      return output;
+    }
+
     native getCount(): int;
     native isAfterLast(): boolean;
     getFirstObject(callback: AsyncCallback<T | undefined, void>): void {
@@ -1764,6 +1806,28 @@ export namespace photoAccessHelper {
         this.dateAdded = this.getdateAdded();
         this.dateModified = this.getdateModified();
       }
+    }
+
+
+    private static native transferToDynamicAlbum(input: AlbumHandle): Any;
+    private static native transferToStaticAlbum(input: ESValue): AlbumHandle;
+
+    static transferDynamic(input: Object): Any {
+      return AlbumHandle.transferToDynamicAlbum(input as AlbumHandle);
+    }
+    static transferStatic(input: Any): Object {
+      if (input === undefined || input === null) {
+        throw new Error("Input is null or undefined");
+      }
+      let dyESValue: ESValue = ESValue.wrap(input);
+      if( dyESValue === undefined || dyESValue === null) {
+        throw new Error("Input is not a valid ESValue");
+      }
+      let output: AlbumHandle = AlbumHandle.transferToStaticAlbum(dyESValue);
+      if (output === null) {
+        throw new Error("Failed to transfer to AlbumHandle");
+      }
+      return output as Object;
     }
 
     getAssets(options: FetchOptions, callback: AsyncCallback<FetchResult<PhotoAsset> | undefined>): void {
@@ -3825,6 +3889,28 @@ export namespace photoAccessHelper {
         this.nativeMovingPhoto = context;
       }
     }
+
+    private static native transferToDynamicMovingPhoto(input: MovingPhotoHandle): Any;
+    private static native transferToStaticMovingPhoto(input: Any): MovingPhotoHandle;
+
+    static transferDynamic(input: Object): Any {
+      return MovingPhotoHandle.transferToDynamicMovingPhoto(input as MovingPhotoHandle);
+    }
+    static transferStatic(input: Any): Object {
+      if (input === undefined || input === null) {
+        throw new Error("Input is null or undefined");
+      }
+      let dyESValue: ESValue = ESValue.wrap(input);
+      if( dyESValue === undefined || dyESValue === null) {
+        throw new Error("Input is not a valid ESValue");
+      }
+      let output: MovingPhotoHandle = MovingPhotoHandle.transferToStaticMovingPhoto(dyESValue);
+      if (output === null) {
+        throw new Error("Failed to transfer to MovingPhotoHandle");
+      }
+      return output as Object;
+    }
+
 
     requestContent(imageFileUri: string, videoFileUri: string): Promise<void> {
       return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
