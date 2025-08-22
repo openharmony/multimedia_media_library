@@ -3418,6 +3418,19 @@ void UpdatePhotoAlbumTigger(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void UpdateAnalysisAlbumRelationship(RdbStore &store)
+{
+    const string addRelationColumn = "ALTER TABLE " + ANALYSIS_ALBUM_TABLE + " ADD COLUMN " +
+        ALBUM_RELATIONSHIP + " TEXT(64) ";
+    static const vector<string> executeSqlStrs = {
+        addRelationColumn,
+        "DROP TRIGGER IF EXISTS " + ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
+        CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
+    };
+    MEDIA_INFO_LOG("Start update album modify trigger");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void AddMovingPhotoEffectMode(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -5144,6 +5157,10 @@ static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER) {
         UpdatePhotoAlbumTigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER) {
+        UpdateAnalysisAlbumRelationship(store);
     }
 }
 
