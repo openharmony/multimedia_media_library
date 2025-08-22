@@ -184,9 +184,11 @@ public:
     {
         originalPhotoPicture = resultPicture;
     }
+    void SetCallback(std::shared_ptr<IMediaScannerCallback> &callback);
 
 private:
     std::shared_ptr<Media::Picture> originalPhotoPicture = nullptr;
+    std::shared_ptr<IMediaScannerCallback> callback_;
 };
 } // namespace Media
 } // namespace OHOS

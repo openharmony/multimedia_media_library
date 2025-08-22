@@ -27,6 +27,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "native_album_asset.h"
+#include "imedia_scanner_callback.h"
 #include "picture.h"
 #include "rdb_utils.h"
 #include "uri.h"
@@ -55,7 +56,8 @@ public:
     EXPORT static int32_t OpenFile(MediaLibraryCommand &cmd, const std::string &mode);
     EXPORT static int32_t CloseFile(MediaLibraryCommand &cmd);
     EXPORT static void ScanFileAsync(const std::string &path, const std::string &id, MediaLibraryApi api,
-        bool isCameraShotMovingPhoto = false, std::shared_ptr<Media::Picture> resultPicture = nullptr);
+        bool isCameraShotMovingPhoto = false, std::shared_ptr<Media::Picture> resultPicture = nullptr,
+        std::shared_ptr<IMediaScannerCallback> callback = nullptr);
     static void ScanFileSyncWithoutAlbumUpdate(const std::string &path, const std::string &id, MediaLibraryApi api);
     EXPORT static void ScanMovingPhotoVideoAsync(const std::string &path, bool isCameraShotMovingPhoto);
     EXPORT static int32_t GetIdByPathFromDb(const std::string &path);
