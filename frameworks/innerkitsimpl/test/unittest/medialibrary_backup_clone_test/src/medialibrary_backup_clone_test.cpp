@@ -3493,5 +3493,246 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_release_001, Tes
     cloneRestoreService->Release(ReleaseScene::BACKUP);
     cloneRestoreService->Release(ReleaseScene::RESTORE);
 }
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_query_old_no_face_status_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_query_old_no_face_status_test_001");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_TOTAL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    auto oldRdbStore = cloneSource.cloneStorePtr_;
+    ASSERT_NE(oldRdbStore, nullptr);
+
+    ExecuteSqls(oldRdbStore, {
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (101, -1)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (102, -2)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (103, 0)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (104, -3)"
+    });
+
+    vector<int32_t> oldFileIds = {101, 102, 103, 104, 105};
+
+    auto result = BackupDatabaseUtils::QueryOldNoFaceStatus(oldRdbStore, oldFileIds);
+
+    EXPECT_EQ(result.size(), 3);
+    EXPECT_EQ(result[101], -1);
+    EXPECT_EQ(result[102], -2);
+    EXPECT_EQ(result[104], -3);
+    EXPECT_EQ(result.count(103), 0);
+    EXPECT_EQ(result.count(105), 0);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_query_old_no_face_status_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_query_old_no_face_status_test_002");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_TOTAL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    auto oldRdbStore = cloneSource.cloneStorePtr_;
+    ASSERT_NE(oldRdbStore, nullptr);
+
+    vector<int32_t> oldFileIds = {};
+
+    auto result = BackupDatabaseUtils::QueryOldNoFaceStatus(oldRdbStore, oldFileIds);
+
+    EXPECT_TRUE(result.empty());
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_new_no_face_status_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_update_new_no_face_status_test_001");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_TOTAL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    auto oldRdbStore = cloneSource.cloneStorePtr_;
+    auto newRdbStore = g_rdbStore->GetRaw();
+    ASSERT_NE(oldRdbStore, nullptr);
+    ASSERT_NE(newRdbStore, nullptr);
+
+    ExecuteSqls(oldRdbStore, {
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (101, -1)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (102, -2)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (103, 0)"
+    });
+
+    ExecuteSqls(newRdbStore, {
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (201, 5)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (202, 6)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (203, 7)"
+    });
+
+    unordered_map<int32_t, int32_t> oldFileIdToFaceMap = {
+        {101, -1},
+        {102, -2},
+        {104, -4}
+    };
+
+    vector<FileIdPair> fileIdPair = {
+        {101, 201},
+        {102, 202},
+        {103, 203},
+        {104, 204}
+    };
+
+    BackupDatabaseUtils::UpdateNewNoFaceStatus(newRdbStore, oldFileIdToFaceMap, fileIdPair);
+
+    auto verifyFaceValue = [&](int32_t fileId, int32_t expectedFace) {
+        string querySql = "SELECT face FROM " + VISION_TOTAL_TABLE + " WHERE file_id = " + to_string(fileId);
+        auto resultSet = newRdbStore->QuerySql(querySql);
+        ASSERT_NE(resultSet, nullptr);
+        if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+            int32_t faceValue;
+            resultSet->GetInt(0, faceValue);
+            EXPECT_EQ(faceValue, expectedFace);
+        }
+        resultSet->Close();
+    };
+
+    verifyFaceValue(201, -1);
+    verifyFaceValue(202, -2);
+    verifyFaceValue(203, 7);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_new_no_face_status_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_update_new_no_face_status_test_002");
+
+    ClearData();
+    auto newRdbStore = g_rdbStore->GetRaw();
+    ASSERT_NE(newRdbStore, nullptr);
+
+    unordered_map<int32_t, int32_t> oldFileIdToFaceMap = {};
+    vector<FileIdPair> fileIdPair = {{101, 201}, {102, 202}};
+
+    BackupDatabaseUtils::UpdateNewNoFaceStatus(newRdbStore, oldFileIdToFaceMap, fileIdPair);
+
+    MEDIA_INFO_LOG("Empty old face status map test completed");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_total_no_face_status_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_update_total_no_face_status_test_001");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_TOTAL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    auto oldRdbStore = cloneSource.cloneStorePtr_;
+    auto newRdbStore = g_rdbStore->GetRaw();
+    ASSERT_NE(oldRdbStore, nullptr);
+    ASSERT_NE(newRdbStore, nullptr);
+
+    ExecuteSqls(oldRdbStore, {
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (101, -1)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (102, -2)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (103, 0)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (104, -3)"
+    });
+
+    ExecuteSqls(newRdbStore, {
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (201, 5)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (202, 6)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (203, 7)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (204, 8)"
+    });
+
+    vector<FileIdPair> fileIdPair = {
+        {101, 201},
+        {102, 202},
+        {103, 203},
+        {104, 204},
+        {105, 205}
+    };
+
+    BackupDatabaseUtils::UpdateAnalysisTotalTblNoFaceStatus(newRdbStore, oldRdbStore, fileIdPair);
+
+    auto verifyFaceValue = [&](int32_t fileId, int32_t expectedFace) {
+        string querySql = "SELECT face FROM " + VISION_TOTAL_TABLE + " WHERE file_id = " + to_string(fileId);
+        auto resultSet = newRdbStore->QuerySql(querySql);
+        ASSERT_NE(resultSet, nullptr);
+        if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+            int32_t faceValue;
+            resultSet->GetInt(0, faceValue);
+            EXPECT_EQ(faceValue, expectedFace);
+        }
+        resultSet->Close();
+    };
+
+    verifyFaceValue(201, -1);
+    verifyFaceValue(202, -2);
+    verifyFaceValue(203, 7);
+    verifyFaceValue(204, -3);
+    verifyFaceValue(205, 8);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_total_no_face_status_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_update_total_no_face_status_test_002");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_TOTAL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    auto oldRdbStore = cloneSource.cloneStorePtr_;
+    auto newRdbStore = g_rdbStore->GetRaw();
+    ASSERT_NE(oldRdbStore, nullptr);
+    ASSERT_NE(newRdbStore, nullptr);
+
+    ExecuteSqls(oldRdbStore, {
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (101, 1)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (102, 2)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (103, 3)"
+    });
+
+    ExecuteSqls(newRdbStore, {
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (201, 5)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (202, 6)",
+        "INSERT INTO " + VISION_TOTAL_TABLE + " (file_id, face) VALUES (203, 7)"
+    });
+
+    vector<FileIdPair> fileIdPair = {
+        {101, 201},
+        {102, 202},
+        {103, 203}
+    };
+
+    BackupDatabaseUtils::UpdateAnalysisTotalTblNoFaceStatus(newRdbStore, oldRdbStore, fileIdPair);
+    auto verifyFaceValue = [&](int32_t fileId, int32_t expectedFace) {
+        string querySql = "SELECT face FROM " + VISION_TOTAL_TABLE + " WHERE file_id = " + to_string(fileId);
+        auto resultSet = newRdbStore->QuerySql(querySql);
+        ASSERT_NE(resultSet, nullptr);
+        if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+            int32_t faceValue;
+            resultSet->GetInt(0, faceValue);
+            EXPECT_EQ(faceValue, expectedFace);
+        }
+        resultSet->Close();
+    };
+
+    verifyFaceValue(201, 5);
+    verifyFaceValue(202, 6);
+    verifyFaceValue(203, 7);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
 } // namespace Media
 } // namespace OHOS
