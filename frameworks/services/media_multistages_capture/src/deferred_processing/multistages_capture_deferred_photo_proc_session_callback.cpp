@@ -38,6 +38,7 @@
 #include "media_change_effect.h"
 #include "exif_metadata.h"
 #include "picture_adapter.h"
+#include "high_quality_scan_file_callback.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
@@ -103,15 +104,6 @@ int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(c
     updateCmd.SetValueBucket(updateValues);
     updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
     int32_t updatePhotoQualityResult = DatabaseAdapter::Update(updateCmd);
-
-    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, false);
-    updateCmd.GetAbsRdbPredicates()->NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
-        to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
-    NativeRdb::ValuesBucket updateValuesDirty;
-    updateValuesDirty.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-    updateCmd.SetValueBucket(updateValuesDirty);
-    auto isDirtyResult = DatabaseAdapter::Update(updateCmd);
-    CHECK_AND_PRINT_LOG(isDirtyResult >= 0, "update dirty flag fail, photoId: %{public}s", photoId.c_str());
     return updatePhotoQualityResult;
 }
 
@@ -203,6 +195,8 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK);
     CHECK_AND_RETURN_LOG(!cond, "resultset is empty.");
 
+    MediaLibraryTracer tracer;
+    tracer.Start("ProcessAndSaveHighQualityImage " + imageId);
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
@@ -237,7 +231,8 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
         imageId, std::move(picture), isEdited, isTakeEffect);
     UpdateHighQualityPictureInfo(imageId, cloudImageEnhanceFlag, modifyType);
     MediaLibraryObjectUtils::ScanFileAsync(
-        data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto, resultPicture);
+        data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto, resultPicture,
+        HighQualityScanFileCallback::Create(fileId));
     NotifyIfTempFile(resultSet);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
@@ -265,7 +260,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
     std::shared_ptr<CameraStandard::PictureIntf> pictureIntf, uint32_t cloudImageEnhanceFlag)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("OnProcessImageDone " + imageId);
+    tracer.Start("OnProcessImageDone with PictureIntf " + imageId);
     std::shared_ptr<Media::Picture> picture = GetPictureFromPictureIntf(pictureIntf);
     if (picture == nullptr || picture->GetMainPixel() == nullptr) {
         tracer.Finish();
@@ -372,7 +367,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
     CHECK_AND_RETURN_LOG(MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(imageId),
         "this photo was delete or err photoId: %{public}s", imageId.c_str());
     MediaLibraryTracer tracer;
-    tracer.Start("OnProcessImageDone " + imageId);
+    tracer.Start("OnProcessImageDone with addr " + imageId);
 
     // 1. 分段式拍照已经处理完成，保存全质量图
     MEDIA_INFO_LOG("photoid: %{public}s, bytes: %{public}ld, cloudImageEnhanceFlag: %{public}u enter",
@@ -410,7 +405,8 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
 
     UpdateHighQualityPictureInfo(imageId, cloudImageEnhanceFlag, modifyType);
 
-    MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto);
+    MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto,
+        nullptr, HighQualityScanFileCallback::Create(fileId));
     NotifyIfTempFile(resultSet);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);

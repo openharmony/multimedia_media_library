@@ -33,6 +33,7 @@ config("media_data_extension_public_config") {
   include_multistages_capture = [
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/deferred_processing",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/dao",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/dfx",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/utils",
   ]
@@ -230,8 +231,10 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   media_multistages_capture_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dao/multistages_capture_dao.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/deferred_photo_proc_adapter.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/deferred_video_proc_adapter.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/high_quality_scan_file_callback.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_first_visit.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_request_policy.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_result.cpp",
