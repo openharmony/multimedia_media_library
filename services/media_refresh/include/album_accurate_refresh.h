@@ -65,6 +65,8 @@ public:
     static int32_t NotifyForReCheck();
     bool IsCoverContentChange(string &fileId);
     void NotifyAlbumsCoverChange(string &fileId, vector<int32_t> &albumIds);
+    vector<AlbumChangeData> GetAlbumChangeDatas();
+    void ClearChangeInfos();
 
 protected:
     int32_t UpdateModifiedDatasInner(const std::vector<int> &albumIds, RdbOperation operation,

@@ -84,8 +84,9 @@ int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType, bool
     MediaLibraryTracer tracer;
     tracer.Start("AssetAccurateRefresh::RefreshAlbum");
     if (dataManager_.CheckIsForRecheck()) {
+        MEDIA_INFO_LOG("enter ForRecheck");
+        int32_t ret = RefreshAllAlbum(dataManager_.uniqueAlbumIds_, notifyAlbumType, isRefreshWithDateModified);
         dataManager_.ClearMultiThreadChangeDatas();
-        int32_t ret = RefreshAllAlbum(notifyAlbumType, isRefreshWithDateModified);
         DfxRefreshHander::SetEndTimeHander(dfxRefreshManager_);
         return ret;
     }
@@ -265,9 +266,10 @@ int32_t AssetAccurateRefresh::NotifyForReCheck()
     return ACCURATE_REFRESH_RET_OK;
 }
 
-int32_t AssetAccurateRefresh::RefreshAllAlbum(NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified)
+int32_t AssetAccurateRefresh::RefreshAllAlbum(std::unordered_set<int32_t> albumIds,
+    NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified)
 {
-    return albumRefreshExe_.RefreshAllAlbum(notifyAlbumType, isRefreshWithDateModified);
+    return albumRefreshExe_.RefreshAllAlbum(albumIds, notifyAlbumType, isRefreshWithDateModified);
 }
 }  // namespace Media::AccurateRefresh
 }  // namespace OHOS
