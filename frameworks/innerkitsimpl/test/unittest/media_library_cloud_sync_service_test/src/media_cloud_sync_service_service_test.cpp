@@ -1979,4 +1979,30 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaDownloadService_FixDownloadAssetEx
     int32_t ret = service.FixDownloadAssetExifRotate(photo, assetData);
     EXPECT_EQ(ret, E_OK);
 }
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaScanService_RemoveLocalFile_Test_001, TestSize.Level1)
+{
+    CloudMediaPhotosService service;
+    CloudMediaPullDataDto dto;
+    dto.localPath = "";
+    dto.attributesSubtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+    dto.attributesMovingPhotoEffectMode = 0;
+    dto.attributesOriginalSubtype = 0;
+    int32_t ret = service.RemoveLocalFile(dto);
+    EXPECT_NE(ret, E_OK); // 暂未配置能删除的资源，先预期not ok
+}
+
+HWTEST_F(CloudMediaSyncServiceTest, CloudMediaScanService_ClearLocalData_Test_001, TestSize.Level1)
+{
+    CloudMediaPhotosService service;
+    CloudMediaPullDataDto dto;
+    std::vector<PhotosDto> fdirtyData;
+    dto.localPath = "";
+    dto.localPosition = 1;
+    dto.attributesSubtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+    dto.attributesMovingPhotoEffectMode = 0;
+    dto.attributesOriginalSubtype = 0;
+    int32_t ret = service.ClearLocalData(dto, fdirtyData);
+    EXPECT_EQ(ret, E_OK);
+}
 }
