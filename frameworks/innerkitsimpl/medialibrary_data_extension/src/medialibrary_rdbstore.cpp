@@ -90,6 +90,7 @@
 #include "medialibrary_notify_new.h"
 #include "photo_map_table_event_handler.h"
 #include "media_app_uri_sensitive_column.h"
+#include "medialibrary_upgrade_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -157,12 +158,6 @@ const int TRASH_ALBUM_TYPE_VALUES = 2;
 
 const int32_t ARG_COUNT = 2;
 const std::string TRASH_ALBUM_NAME_VALUES = "TrashAlbum";
-
-static const std::string RDB_FIX_RECORDS = "/data/storage/el2/base/preferences/rdb_fix_records.xml";
-static const std::string DETAIL_TIME_FIXED = "detail_time_fixed";
-static const std::string THUMBNAIL_VISIBLE_FIXED = "thumbnail_visible_fixed";
-static const int32_t NEED_FIXED = 1;
-static const int32_t ALREADY_FIXED = 2;
 
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
@@ -5139,7 +5134,12 @@ static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
         AddExifRotateColumn(store);
     }
 
-    if (oldVersion < VERSION_FIX_DB_UPGRADE_TO_API20) {
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_UPGRADE_EVENT, errCode);
+    MEDIA_INFO_LOG("rdb_upgrade_events prefs errCode: %{public}d", errCode);
+    if (oldVersion < VERSION_FIX_DB_UPGRADE_TO_API20 &&
+        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, true)) {
         unordered_map<string, bool> photoColumnExists = {
             { PhotoColumn::PHOTO_DETAIL_TIME, false },          // VERSION_ADD_DETAIL_TIME
             { PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, false },    // VERSION_ADD_THUMBNAIL_VISIBLE
@@ -5153,14 +5153,19 @@ static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
         UpgradeFromAllVersionSecondPart(store, photoColumnExists);
         UpgradeFromAllVersionThirdPart(store, photoColumnExists);
         UpgradeFromAllVersionFourthPart(store, photoColumnExists);
+        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, true);
     }
 
-    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER) {
+    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER &&
+        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER, true)) {
         UpdatePhotoAlbumTigger(store);
+        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER, true);
     }
 
-    if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER) {
+    if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER &&
+        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true)) {
         UpdateAnalysisAlbumRelationship(store);
+        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true);
     }
 }
 
