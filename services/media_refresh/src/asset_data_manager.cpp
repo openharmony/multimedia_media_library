@@ -31,6 +31,7 @@ namespace Media::AccurateRefresh {
 
 AssetDataManager::~AssetDataManager()
 {
+    ACCURATE_DEBUG("multiThreadAssetIds_ size: %{public}zu", multiThreadAssetIds_.size());
     ClearMultiThreadChangeDatas();
 }
 
@@ -189,6 +190,7 @@ void AssetDataManager::PostInsertBeforeData(PhotoAssetChangeData &changeData, Pe
     }
 
     MultiThreadAssetChangeInfoMgr::GetInstance().CheckInsertBeforeInfo(changeData.infoBeforeChange_);
+    multiThreadAssetIds_.insert(changeData.infoBeforeChange_.fileId_);
 }
 
 void AssetDataManager::PostInsertAfterData(PhotoAssetChangeData &changeData, PendingInfo &pendingInfo, bool isAdd)
@@ -201,6 +203,8 @@ void AssetDataManager::PostInsertAfterData(PhotoAssetChangeData &changeData, Pen
     if (MultiThreadAssetChangeInfoMgr::GetInstance().CheckInsertAfterInfo(changeData.infoAfterChange_, isAdd)) {
         multiThreadAssetIds_.insert(changeData.infoAfterChange_.fileId_);
         changeData.isMultiOperation_ = true;
+    } else {
+        multiThreadAssetIds_.erase(changeData.infoAfterChange_.fileId_);
     }
 }
 
