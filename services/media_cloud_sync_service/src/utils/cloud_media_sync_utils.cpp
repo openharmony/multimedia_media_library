@@ -306,14 +306,17 @@ void CloudMediaSyncUtils::RemoveEditDataPath(const std::string &localPath)
     }
 }
 
-void CloudMediaSyncUtils::RemoveMovingPhoto(const std::string &localPath)
+void CloudMediaSyncUtils::RemoveMovingPhoto(const CloudMediaPullDataDto &pullData)
 {
-    MEDIA_INFO_LOG("RemoveMovingPhoto MovingPhotoVideoPath: %{public}s", GetMovingPhotoVideoPath(localPath).c_str());
-    if (unlink(GetMovingPhotoVideoPath(localPath).c_str()) != 0 && errno != ENOENT) {
+    CHECK_AND_RETURN_LOG(IsMovingPhoto(pullData), "RemoveMovingPhoto Is not MovingPhoto");
+    MEDIA_INFO_LOG(
+        "RemoveMovingPhoto MovingPhotoVideoPath: %{public}s", GetMovingPhotoVideoPath(pullData.localPath).c_str());
+    if (unlink(GetMovingPhotoVideoPath(pullData.localPath).c_str()) != 0 && errno != ENOENT) {
         MEDIA_ERR_LOG("unlink moving photo's video failed, errno %{public}d", errno);
     }
-    MEDIA_INFO_LOG("RemoveMovingPhoto ExtraDataPath: %{public}s", GetMovingPhotoExtraDataPath(localPath).c_str());
-    if (unlink(GetMovingPhotoExtraDataPath(localPath).c_str()) != 0 && errno != ENOENT) {
+    MEDIA_INFO_LOG(
+        "RemoveMovingPhoto ExtraDataPath: %{public}s", GetMovingPhotoExtraDataPath(pullData.localPath).c_str());
+    if (unlink(GetMovingPhotoExtraDataPath(pullData.localPath).c_str()) != 0 && errno != ENOENT) {
         MEDIA_ERR_LOG("unlink moving photo's video failed, errno %{public}d", errno);
     }
 }
@@ -404,6 +407,14 @@ bool CloudMediaSyncUtils::IsMovingPhoto(const PhotosPo &photosPo)
     int32_t subtype = photosPo.subtype.value_or(0);
     int32_t movingPhotoEffectMode = photosPo.movingPhotoEffectMode.value_or(0);
     int32_t originalSubtype = photosPo.originalSubtype.value_or(0);
+    return MovingPhotoFileUtils::IsMovingPhoto(subtype, movingPhotoEffectMode, originalSubtype);
+}
+
+bool CloudMediaSyncUtils::IsMovingPhoto(const CloudMediaPullDataDto &pullData)
+{
+    int32_t subtype = pullData.attributesSubtype;
+    int32_t movingPhotoEffectMode = pullData.attributesMovingPhotoEffectMode;
+    int32_t originalSubtype = pullData.attributesOriginalSubtype;
     return MovingPhotoFileUtils::IsMovingPhoto(subtype, movingPhotoEffectMode, originalSubtype);
 }
 

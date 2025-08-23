@@ -119,7 +119,7 @@ private:
     int32_t HandleDuplicatedResource(const PhotosDto &photo);
     std::string GetCloudPath(const std::string &filePath);
     void RefreshAnalysisAlbum(const std::string &cloudId);
-    int32_t RemoveLocalFile(const std::string &localPath);
+    int32_t RemoveLocalFile(const CloudMediaPullDataDto &pullData);
 
 private:
     CloudMediaPhotoServiceProcessor processor_;

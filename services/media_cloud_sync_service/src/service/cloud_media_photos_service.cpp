@@ -83,7 +83,7 @@ int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, s
         PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX + std::to_string(data.localFileId) + '/' + data.localDateAdded;
     MediaGallerySyncNotify::GetInstance().TryNotify(notifyUri, ChangeType::DELETE, std::to_string(data.localFileId));
     refreshAlbums.emplace(data.localOwnerAlbumId);
-    this->RemoveLocalFile(localPath);
+    this->RemoveLocalFile(data);
     return E_OK;
 }
 
@@ -145,7 +145,7 @@ int32_t CloudMediaPhotosService::ClearLocalData(const CloudMediaPullDataDto &pul
         CloudMediaSyncUtils::RemoveThmParentPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
         CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
         CloudMediaSyncUtils::RemoveEditDataPath(pullData.localPath);
-        CloudMediaSyncUtils::RemoveMovingPhoto(pullData.localPath);
+        CloudMediaSyncUtils::RemoveMovingPhoto(pullData);
         if (pullData.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
             CloudMediaSyncUtils::InvalidVideoCache(pullData.localPath);
         }
@@ -564,6 +564,9 @@ static void SetPullDataFromPhotosPo(CloudMediaPullDataDto &pullData, const Photo
     pullData.dateTaken = photo.dateTaken.value_or(0);
     pullData.localOriginalAssetCloudId = photo.originalAssetCloudId.value_or("");
     pullData.localExifRotate = photo.exifRotate.value_or(0);
+    pullData.attributesSubtype = photo.subtype.value_or(0);
+    pullData.attributesMovingPhotoEffectMode = photo.movingPhotoEffectMode.value_or(0);
+    pullData.attributesOriginalSubtype = photo.originalSubtype.value_or(0);
 }
 
 int32_t CloudMediaPhotosService::OnFetchRecords(const std::vector<std::string> &cloudIds,
@@ -1211,21 +1214,21 @@ void CloudMediaPhotosService::RefreshAnalysisAlbum(const std::string &cloudId)
     MEDIA_INFO_LOG("RefreshAnalysisAlbum size %{public}zu, ret %{public}d", analysisAlbumIds.size(), ret);
 }
 
-int32_t CloudMediaPhotosService::RemoveLocalFile(const std::string &localPath)
+int32_t CloudMediaPhotosService::RemoveLocalFile(const CloudMediaPullDataDto &pullData)
 {
     std::string prefixCloud = "";
-    std::string mergePath = CloudMediaSyncUtils::GetCloudPath(localPath, prefixCloud);
+    std::string mergePath = CloudMediaSyncUtils::GetCloudPath(pullData.localPath, prefixCloud);
     int32_t ret = unlink(mergePath.c_str());
     CHECK_AND_PRINT_LOG(ret == E_OK,
         "unlink local failed, mergePath: %{public}s, ret: %{public}d.",
         MediaFileUtils::DesensitizePath(mergePath).c_str(),
         ret);
-    CloudMediaSyncUtils::RemoveThmParentPath(localPath, prefixCloud);
-    CloudMediaSyncUtils::RemoveEditDataParentPath(localPath, prefixCloud);
-    CloudMediaSyncUtils::RemoveMetaDataPath(localPath, prefixCloud);
-    CloudMediaSyncUtils::InvalidVideoCache(localPath);
-    CloudMediaSyncUtils::RemoveEditDataPath(localPath);
-    CloudMediaSyncUtils::RemoveMovingPhoto(localPath);
+    CloudMediaSyncUtils::RemoveThmParentPath(pullData.localPath, prefixCloud);
+    CloudMediaSyncUtils::RemoveEditDataParentPath(pullData.localPath, prefixCloud);
+    CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath, prefixCloud);
+    CloudMediaSyncUtils::InvalidVideoCache(pullData.localPath);
+    CloudMediaSyncUtils::RemoveEditDataPath(pullData.localPath);
+    CloudMediaSyncUtils::RemoveMovingPhoto(pullData);
     return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync
