@@ -45,6 +45,7 @@
 #include "cloud_enhancement_uri.h"
 #include "album_operation_uri.h"
 #include "data_secondary_directory_uri.h"
+#include "medialibrary_upgrade_utils.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -588,6 +589,37 @@ HWTEST_F(MediaDatashareExtAbilityTest, DataManager_RegisterObserver_001, TestSiz
     }
     EXPECT_EQ(dataObserver, nullptr);
     MEDIA_INFO_LOG("DataManager_RegisterObserver_001::End");
+}
+
+HWTEST_F(MediaDatashareExtAbilityTest, DataManager_UpgradeUtils_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("DataManager_UpgradeUtils_001::Start");
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_UPGRADE_EVENT, errCode);
+    ASSERT_EQ(errCode, 0);
+    bool ret = RdbUpgradeUtils::IsUpgrade(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, true);
+    EXPECT_EQ(ret, false);
+    RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, true);
+    ret = RdbUpgradeUtils::IsUpgrade(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, false);
+    EXPECT_EQ(ret, false);
+    RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, false);
+    RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, false);
+    MEDIA_INFO_LOG("DataManager_UpgradeUtils_001::End");
+}
+ 
+HWTEST_F(MediaDatashareExtAbilityTest, DataManager_UpgradeUtils_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("DataManager_UpgradeUtils_002::Start");
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_UPGRADE_EVENT, errCode);
+    ASSERT_EQ(errCode, 0);
+    bool ret = RdbUpgradeUtils::IsUpgrade(prefs, 0, true);
+    EXPECT_EQ(ret, false);
+    RdbUpgradeUtils::SetUpgradeStatus(prefs, 0, true);
+    RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, true);
+    MEDIA_INFO_LOG("DataManager_UpgradeUtils_002::End");
 }
 } // namespace Media
 } // namespace OHOS

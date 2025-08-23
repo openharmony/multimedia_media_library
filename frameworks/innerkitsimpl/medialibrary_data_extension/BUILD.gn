@@ -659,6 +659,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/trash_async_worker.cpp",
     "src/video_composition_callback_imp.cpp",
     "src/zip_util.cpp",
+    "src/medialibrary_upgrade_utils.cpp",
   ]
 
   media_notification_source = [
