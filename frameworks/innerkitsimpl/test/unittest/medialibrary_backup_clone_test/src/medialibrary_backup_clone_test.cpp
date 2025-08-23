@@ -921,18 +921,17 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetCloneD
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetCloneDbInfos_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetCloneDbInfos_002");
-
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
     ::system(cmdMkdir.c_str());
-
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
     CloneOpenCall helper;
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    ASSERT_NE(store, nullptr);
+
     store->ExecuteSql(string("CREATE TABLE IF NOT EXISTS mediaInfo ") +
         "(_data TEXT, latitude DOUBLE, longitude DOUBLE, datetaken DOUBLE, date_modified DOUBLE, primaryStr TEXT)");
     store->ExecuteSql(string("INSERT INTO mediaInfo (_data, latitude, longitude, datetaken,") +
@@ -955,17 +954,17 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_001,
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_Init_002");
-
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
     ::system(cmdMkdir.c_str());
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
     CloneOpenCall helper;
     int errCode = 0;
+
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    ASSERT_NE(store, nullptr);
     othersClone->mediaLibraryRdb_ = store;
     EXPECT_NE(othersClone->Init("/data/photo", "/data/test", true), E_OK);
 }
@@ -973,17 +972,17 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_002,
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_Init_003");
-
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
     ::system(cmdMkdir.c_str());
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
     CloneOpenCall helper;
     int errCode = 0;
+
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    ASSERT_NE(store, nullptr);
     othersClone->mediaLibraryRdb_ = store;
     othersClone->backupRestoreDir_ = "/storage/media/100/local/files/";
     EXPECT_EQ(othersClone->Init("/data/photo", "/data/test", true), E_OK);
@@ -1461,29 +1460,25 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAl
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFileForDualClone_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HasSameFileForDualClone_001");
-
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
     FileInfo fileInfo;
-
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
     ::system(cmdMkdir.c_str());
-
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
     CloneOpenCall helper;
     int errCode = 0;
+
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
-
+    ASSERT_NE(store, nullptr);
     othersClone->photosRestore_.OnStart(store, store);
-
     EXPECT_FALSE(othersClone->HasSameFileForDualClone(fileInfo));
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFileForDualClone_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HasSameFileForDualClone_002");
-
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
     FileInfo fileInfo;
@@ -1493,19 +1488,19 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFi
 
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
     ::system(cmdMkdir.c_str());
-
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
     NativeRdb::RdbStoreConfig config(path);
     CloneOpenCall helper;
     int errCode = 0;
+
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    ASSERT_NE(store, nullptr);
     store->ExecuteSql(PhotoColumn::CREATE_PHOTO_TABLE);
     store->ExecuteSql(string("INSERT INTO Photos (file_id, data, display_name, size, owner_album_id") +
         ") VALUES (1, 'test', 'test.jpg', 100, 0)");
 
     othersClone->photosRestore_.photosBasicInfo_.maxFileId = 100;
     othersClone->photosRestore_.OnStart(store, store);
-
     EXPECT_TRUE(othersClone->HasSameFileForDualClone(fileInfo));
     store->ExecuteSql("DROP TABLE IF EXISTS Photos");
 }
@@ -1624,10 +1619,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleSelectBatch_002");
-
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
     ::system(cmdMkdir.c_str());
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
@@ -1635,6 +1628,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
     CloneOpenCall helper;
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    ASSERT_NE(store, nullptr);
 
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb = store;
     int32_t offset = 1;
@@ -1647,10 +1641,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleSelectBatch_003");
-
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
     ::system(cmdMkdir.c_str());
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
@@ -1658,6 +1650,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
     CloneOpenCall helper;
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    ASSERT_NE(store, nullptr);
+
     store->ExecuteSql(string("CREATE TABLE IF NOT EXISTS mediaInfo ") +
         "(_data TEXT, latitude DOUBLE, longitude DOUBLE, datetaken DOUBLE, date_modified DOUBLE, primaryStr TEXT)");
     store->ExecuteSql(string("INSERT INTO mediaInfo (_data, latitude, longitude, datetaken,") +
@@ -1677,10 +1671,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleSelectBatch_004");
-
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
     ::system(cmdMkdir.c_str());
     std::string path = "/storage/media/local/files/.backup/restore/storage/emulated/0/photo_MediaInfo.db";
@@ -1688,6 +1680,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
     CloneOpenCall helper;
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    ASSERT_NE(store, nullptr);
+
     store->ExecuteSql(string("CREATE TABLE IF NOT EXISTS mediaInfo ") +
         "(_data TEXT, latitude DOUBLE, longitude DOUBLE, datetaken DOUBLE, date_modified DOUBLE, primaryStr TEXT)");
     store->ExecuteSql(string("INSERT INTO mediaInfo (_data, latitude, longitude, datetaken,") +
