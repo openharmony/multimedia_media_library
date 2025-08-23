@@ -64,6 +64,7 @@ ohos_unittest("media_datashare_ext_ability_test") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
+    "preferences:native_preferences",
   ]
 
   sanitize = {

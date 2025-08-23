@@ -135,6 +135,7 @@
 #include "album_operation_uri.h"
 #include "custom_record_operations.h"
 #include "medialibrary_photo_operations.h"
+#include "medialibrary_upgrade_utils.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -178,11 +179,6 @@ static const std::string COLUMN_OLD_FILE_ID = "old_file_id";
 static const std::string NO_DELETE_DISK_DATA_INDEX = "no_delete_disk_data_index";
 static const std::string NO_UPDATE_EDITDATA_SIZE = "no_update_editdata_size";
 static const std::string UPDATE_EDITDATA_SIZE_COUNT = "update_editdata_size_count";
-static const std::string RDB_FIX_RECORDS = "/data/storage/el2/base/preferences/rdb_fix_records.xml";
-static const std::string DETAIL_TIME_FIXED = "detail_time_fixed";
-static const std::string THUMBNAIL_VISIBLE_FIXED = "thumbnail_visible_fixed";
-static const int32_t NEED_FIXED = 1;
-static const int32_t ALREADY_FIXED = 2;
 
 static int32_t g_updateBurstMaxId = 0;
 
@@ -683,10 +679,16 @@ void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE);
     }
 
-    if (oldVersion < VERSION_FIX_DB_UPGRADE_TO_API20) {
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_UPGRADE_EVENT, errCode);
+    MEDIA_INFO_LOG("rdb_upgrade_events prefs errCode: %{public}d", errCode);
+    if (oldVersion < VERSION_FIX_DB_UPGRADE_TO_API20 &&
+        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, false)) {
         AsyncUpgradeFromAllVersionFirstPart(rdbStore);
         AsyncUpgradeFromAllVersionSecondPart(rdbStore);
         rdbStore->SetOldVersion(VERSION_FIX_DB_UPGRADE_TO_API20);
+        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, false);
     }
 }
 
