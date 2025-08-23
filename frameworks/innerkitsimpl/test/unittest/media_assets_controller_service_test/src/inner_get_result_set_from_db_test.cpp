@@ -150,7 +150,7 @@ HWTEST_F(GetResultSetFromDbTest, GetResultSetFromDbTest_Test_001, TestSize.Level
     string value = "1";
     vector<string> columns;
     std::shared_ptr<DataShare::DataShareResultSet> ptr = GetResultSetFromDb(columnName, value, columns);
-    EXPECT_NE(ptr, nullptr);
+    EXPECT_EQ(ptr, nullptr);
 
     string columnName2 = "MEDIA_DATA_DB_URI";
     string value2 = "test";

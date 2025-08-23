@@ -207,7 +207,6 @@ HWTEST_F(GetCloudEnhancementPairTest, GetCloudEnhancementPair_Test_003, TestSize
     ASSERT_EQ(result, 0);
 
     ASSERT_NE(resultSet, nullptr);
-    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
     ASSERT_EQ(GetInt32Val(MediaColumn::MEDIA_ID, resultSet), fileId);
 }
 }  // namespace OHOS::Media

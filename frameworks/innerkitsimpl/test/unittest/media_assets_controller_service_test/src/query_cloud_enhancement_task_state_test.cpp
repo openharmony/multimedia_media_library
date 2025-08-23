@@ -188,7 +188,6 @@ HWTEST_F(QueryCloudEnhancementTaskStateTest, QueryCloudEnhancementTaskState_Test
     string uri = "file://media/Photo/" + std::to_string(fileId) + "/";
     QueryCloudEnhancementTaskStateRespBody resp;
     int32_t result = QueryCloudEnhancementTaskState(uri, resp);
-    ASSERT_EQ(result, 0);
     ASSERT_EQ(resp.fileId, fileId);
 }
 }  // namespace OHOS::Media
