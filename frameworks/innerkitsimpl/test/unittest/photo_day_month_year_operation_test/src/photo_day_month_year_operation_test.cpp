@@ -24,6 +24,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
+#include "photo_album_column.h"
 #include "photo_day_month_year_operation.h"
 #include "photo_file_utils.h"
 #include "result_set_utils.h"
@@ -41,7 +42,7 @@ static constexpr int64_t SEC_TO_MSEC = 1e3;
 
 int32_t ExecSqls(const vector<string> &sqls)
 {
-    EXPECT_NE((g_rdbStore == nullptr), true);
+    EXPECT_NE(g_rdbStore, nullptr);
     int32_t err = E_OK;
     for (const auto &sql : sqls) {
         err = g_rdbStore->ExecuteSql(sql);
@@ -53,11 +54,12 @@ int32_t ExecSqls(const vector<string> &sqls)
 
 void ClearTables()
 {
-    string clearPhoto = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
-    vector<string> executeSqls = {clearPhoto};
+    vector<string> createTableSqlList = {
+        "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
+        "DELETE FROM " + PhotoAlbumColumns::TABLE,
+    };
     MEDIA_INFO_LOG("start clear data");
-    ExecSqls(executeSqls);
-    g_num = 0;
+    ExecSqls(createTableSqlList);
 }
 
 inline void IncrementNum()
@@ -82,7 +84,7 @@ string GetTitle(int64_t &timestamp)
 
 int64_t InsertPhoto(const MediaType &mediaType, int32_t position)
 {
-    EXPECT_NE((g_rdbStore == nullptr), true);
+    EXPECT_NE(g_rdbStore, nullptr);
     int64_t timestamp = GetTimestamp();
     int64_t timestampMilliSecond = timestamp * SEC_TO_MSEC;
     string title = GetTitle(timestamp);
@@ -134,7 +136,7 @@ int64_t InsertPhoto(const MediaType &mediaType, int32_t position)
 int64_t InsertPhotoWithDateTime(
     const int64_t dateTaken, const string &detailTime, const string &dateDay, const string &exif)
 {
-    EXPECT_NE((g_rdbStore == nullptr), true);
+    EXPECT_NE(g_rdbStore, nullptr);
 
     int64_t timestamp = GetTimestamp();
     int64_t timestampMilliSecond = timestamp * SEC_TO_MSEC;
@@ -226,7 +228,7 @@ void PrepareAbnormalPhotos()
 
 int32_t QueryAbnormalPhotosCount()
 {
-    EXPECT_NE((g_rdbStore == nullptr), true);
+    EXPECT_NE(g_rdbStore, nullptr);
 
     const string sql = "SELECT"
                        "  COUNT( * ) AS count "
@@ -248,6 +250,35 @@ int32_t QueryAbnormalPhotosCount()
     return count;
 }
 
+int64_t UpdatePhotosDateDay()
+{
+    EXPECT_NE(g_rdbStore, nullptr);
+
+    const string sql = "UPDATE Photos "
+                       "SET date_day = '19700101';";
+
+    int64_t changeRows = 0;
+    auto errCode = g_rdbStore->ExecuteForChangedRowCount(changeRows, sql);
+    EXPECT_EQ(errCode, E_OK);
+
+    return changeRows;
+}
+
+void SetTables()
+{
+    vector<string> createTableSqlList = {
+        PhotoColumn::CREATE_PHOTO_TABLE,
+        PhotoAlbumColumns::CREATE_TABLE,
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        ASSERT_NE(g_rdbStore, nullptr);
+
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        ASSERT_EQ(ret, NativeRdb::E_OK);
+        MEDIA_INFO_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
 void PhotoDayMonthYearOperationTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("PhotoDayMonthYearOperationTest SetUpTestCase");
@@ -255,6 +286,7 @@ void PhotoDayMonthYearOperationTest::SetUpTestCase()
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
+    SetTables();
 }
 
 void PhotoDayMonthYearOperationTest::TearDownTestCase()
@@ -267,6 +299,7 @@ void PhotoDayMonthYearOperationTest::SetUp()
 {
     MEDIA_INFO_LOG("PhotoDayMonthYearOperationTest SetUp");
     ClearTables();
+    g_num = 0;
 }
 
 void PhotoDayMonthYearOperationTest::TearDown()
@@ -286,6 +319,32 @@ HWTEST_F(PhotoDayMonthYearOperationTest, photo_day_month_year_operation_test_001
     int32_t count = QueryAbnormalPhotosCount();
     EXPECT_EQ(count, 0);
     MEDIA_INFO_LOG("photo_day_month_year_operation_test_001 End");
+}
+
+HWTEST_F(PhotoDayMonthYearOperationTest, photo_day_month_year_operation_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("photo_day_month_year_operation_test_002 Start");
+    PreparePhotos();
+    PrepareAbnormalPhotos();
+
+    int32_t count = QueryAbnormalPhotosCount();
+    EXPECT_GT(count, 0);
+
+    int32_t ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+
+    count = QueryAbnormalPhotosCount();
+    EXPECT_EQ(count, 0);
+
+    auto changeRows = UpdatePhotosDateDay();
+    EXPECT_GT(changeRows, 0);
+
+    ret = PhotoDayMonthYearOperation::RepairDateTime();
+    EXPECT_EQ(ret, E_OK);
+
+    count = QueryAbnormalPhotosCount();
+    EXPECT_GT(count, 0);
+    MEDIA_INFO_LOG("photo_day_month_year_operation_test_002 End");
 }
 }  // namespace Media
 }  // namespace OHOS
