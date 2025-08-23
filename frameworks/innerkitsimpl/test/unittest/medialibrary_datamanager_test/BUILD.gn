@@ -36,6 +36,7 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
     "./src/medialibrary_datamanager_test.cpp",
+    "./src/mock_power_efficiency_manager.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
