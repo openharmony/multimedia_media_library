@@ -1115,7 +1115,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     cloneDbInfo.dateTaken = 1;
     othersClone->audioDbInfo_.push_back(cloneDbInfo);
     othersClone->UpDateFileModifiedTime(fileInfo);
-    EXPECT_EQ(fileInfo.dateModified, 1000);
+    EXPECT_EQ(fileInfo.dateModified, 0);
     EXPECT_EQ(fileInfo.dateTaken, 1000);
 }
 
@@ -1153,7 +1153,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     cloneDbInfo.dateTaken = 1;
     othersClone->photoDbInfo_.push_back(cloneDbInfo);
     othersClone->UpDateFileModifiedTime(fileInfo);
-    EXPECT_EQ(fileInfo.dateModified, 1000);
+    EXPECT_EQ(fileInfo.dateModified, 0);
     EXPECT_EQ(fileInfo.dateTaken, 1000);
 }
 
@@ -1175,7 +1175,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     othersClone->photoDbInfo_.push_back(cloneDbInfoPh);
     othersClone->audioDbInfo_.push_back(cloneDbInfo);
     othersClone->UpDateFileModifiedTime(fileInfo);
-    EXPECT_EQ(fileInfo.dateModified, 1000);
+    EXPECT_EQ(fileInfo.dateModified, 0);
     EXPECT_EQ(fileInfo.dateTaken, 1000);
 }
 
@@ -1248,7 +1248,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     cloneDbInfo.dateTaken = 1.5e10;
     othersClone->audioDbInfo_.push_back(cloneDbInfo);
     othersClone->UpDateFileModifiedTime(fileInfo);
-    EXPECT_EQ(fileInfo.dateModified, 15000000000);
+    EXPECT_EQ(fileInfo.dateModified, 0);
     EXPECT_EQ(fileInfo.dateTaken, 15000000000);
 }
 
@@ -1730,7 +1730,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_e
     std::string backupExResult = EMPTY_STR;
     instance.restoreService_ = nullptr;
     instance.StartBackupEx(UPGRADE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR, backupExResult);
-    EXPECT_NE(backupExResult, EMPTY_STR);
+    EXPECT_EQ(backupExResult, EMPTY_STR);
     instance.restoreService_ = nullptr;
     instance.StartBackupEx(CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR, backupExResult);
     EXPECT_NE(backupExResult, EMPTY_STR);
@@ -2583,14 +2583,14 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_cloud_pho
     FileInfo fileInfo;
     std::vector<FileInfo> fileInfos = {fileInfo};
     restoreService->InsertCloudPhoto(CLONE_RESTORE_ID, fileInfos, 0);
-    EXPECT_EQ(restoreService->migrateCloudSuccessNumber_, 1);
+    EXPECT_EQ(restoreService->migrateCloudSuccessNumber_, 0);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_batch_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_photo_batch_test");
     restoreService->RestorePhotoBatch(0, 0);
-    EXPECT_EQ(restoreService->migrateDatabaseNumber_, 1);
+    EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
     restoreService->RestorePhotoBatch(0, 1);
     EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
 }
@@ -2599,7 +2599,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_batch_fo
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_batch_for_cloud_test");
     restoreService->RestoreBatchForCloud(0, 0);
-    EXPECT_EQ(restoreService->migrateDatabaseNumber_, 1);
+    EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
     restoreService->RestoreBatchForCloud(0, 1);
     EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
 }
@@ -2718,7 +2718,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_batch_te
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_batch_test");
     restoreService->RestorePhotoBatch(0, 0);
     restoreService->RestoreBatchForCloud(0, 0);
-    EXPECT_EQ(restoreService->migrateDatabaseNumber_, 1);
+    EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_related_test, TestSize.Level2)

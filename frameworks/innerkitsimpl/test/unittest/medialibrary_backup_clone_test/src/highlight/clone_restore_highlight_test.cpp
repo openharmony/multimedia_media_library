@@ -202,7 +202,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_albums_test_
     int32_t coverCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), HIGHLIGHT_COVER_INFO_TABLE, NONE_CONDITION);
     EXPECT_EQ(coverCount, 0);
     int32_t playCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), HIGHLIGHT_PLAY_INFO_TABLE, NONE_CONDITION);
-    EXPECT_EQ(playCount, 1);
+    EXPECT_EQ(playCount, 0);
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
 

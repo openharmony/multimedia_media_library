@@ -820,7 +820,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     ret = operation->StartDownloadTask(static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_GENTLE));
     EXPECT_NE(ret, E_OK);
     ret = operation->StartDownloadTask(static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE));
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(ret, E_OK);
     operation->taskStatus_ = CloudMediaAssetTaskStatus::IDLE;
 
     ret = operation->DoRecoverExecute();

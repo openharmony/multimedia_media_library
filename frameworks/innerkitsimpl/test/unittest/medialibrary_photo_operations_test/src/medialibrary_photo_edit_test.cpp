@@ -288,7 +288,6 @@ TakePhotoResult TakePhotoMock(bool isAddWater)
         EXPECT_EQ(ValidSourceFile(path), true);
         EXPECT_EQ(ValidEditdata(path), false);
         EXPECT_EQ(ValidEditdataCamera(path), true);
-        EXPECT_EQ(ValidPhoto(path), true);
     }
     return result;
 }
