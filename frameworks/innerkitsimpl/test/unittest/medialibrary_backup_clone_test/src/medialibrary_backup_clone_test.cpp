@@ -3621,6 +3621,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_new_no_fa
 
     BackupDatabaseUtils::UpdateNewNoFaceStatus(newRdbStore, oldFileIdToFaceMap, fileIdPair);
 
+    EXPECT_EQ(BackupDatabaseUtils::QueryOldNoFaceStatus(newRdbStore, {201, 202}).size(), 0);
     MEDIA_INFO_LOG("Empty old face status map test completed");
 }
 
