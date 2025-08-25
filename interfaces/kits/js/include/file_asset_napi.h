@@ -77,6 +77,7 @@ public:
     std::string GetFrontCamera() const;
     std::string GetUserComment() const;
     EXPORT std::shared_ptr<FileAsset> GetFileAssetInstance() const;
+    friend class MediaLibraryNapi;
 
 private:
     EXPORT static void FileAssetNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);

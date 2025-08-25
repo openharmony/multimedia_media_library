@@ -398,11 +398,166 @@ napi_value FetchFileResultNapi::UserFileMgrInit(napi_env env, napi_value exports
             DECLARE_NAPI_FUNCTION("getLastObject", JSGetLastObject),
             DECLARE_NAPI_FUNCTION("getPositionObject", JSGetPositionObject),
             DECLARE_NAPI_FUNCTION("getAllObject", JSGetAllObject),
+            DECLARE_NAPI_FUNCTION("getRangeObjects", JSGetRangeObjects),
             DECLARE_NAPI_FUNCTION("close", JSClose)
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
+}
+
+napi_value FetchFileResultNapi::JSGetRangeObjects(napi_env env, napi_callback_info info)
+{
+    napi_status status;
+    napi_value result = nullptr;
+    const int32_t refCount = 1;
+    napi_valuetype type = napi_undefined;
+    napi_value resource = nullptr;
+    size_t argc = ARGS_THREE;
+    napi_value argv[ARGS_THREE] = {0};
+    napi_value thisVar = nullptr;
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetRangeObjects");
+
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, argc <= ARGS_THREE, "requires 3 parameter maximum");
+
+    napi_get_undefined(env, &result);
+    unique_ptr<FetchFileResultAsyncContext> asyncContext = make_unique<FetchFileResultAsyncContext>();
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
+    if (status == napi_ok && CheckIfFFRNapiNotEmpty(asyncContext->objectInfo)) {
+        // Parse offset parameter
+        napi_typeof(env, argv[PARAM0], &type);
+        if (type == napi_number) {
+            napi_get_value_int32(env, argv[PARAM0], &(asyncContext->offset));
+        } else {
+            NAPI_ERR_LOG("Invalid offset type: %{public}d", type);
+            return result;
+        }
+        // Parse length parameter
+        napi_typeof(env, argv[PARAM1], &type);
+        if (type == napi_number) {
+            napi_get_value_int32(env, argv[PARAM1], &(asyncContext->length));
+        } else {
+            NAPI_ERR_LOG("Invalid length type: %{public}d", type);
+            return result;
+        }
+        // Parse optional callback
+        if (argc == ARGS_THREE) {
+            GET_JS_ASYNC_CB_REF(env, argv[PARAM2], refCount, asyncContext->callbackRef);
+        }
+
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetRangeObjects", asyncContext);
+
+        asyncContext->objectPtr = asyncContext->objectInfo->propertyPtr;
+        CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "propertyPtr is nullptr");
+
+        status = napi_create_async_work(
+            env, nullptr, resource, 
+            [](napi_env env, void *data) {
+                auto context = static_cast<FetchFileResultAsyncContext*>(data);
+                // Validate range before execution
+                if (context->offset < 0 || context->length <= 0) {
+                    //context->error = "Invalid range parameters";
+                    return;
+                }
+                context->GetObjectsInRange();
+            },
+            reinterpret_cast<napi_async_complete_callback>(GetAllObjectCompleteCallback),
+            static_cast<void *>(asyncContext.get()), &asyncContext->work);
+        if (status != napi_ok) {
+            napi_get_undefined(env, &result);
+        } else {
+            napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
+            asyncContext.release();
+        }
+    } else {
+        NAPI_ERR_LOG("JSGetRangeObjects obj == nullptr, status: %{public}d", status);
+        NAPI_ASSERT(env, false, "JSGetRangeObjects obj == nullptr");
+    }
+
+    return result;
+}
+
+void FetchFileResultAsyncContext::GetObjectsInRange()
+{
+    switch (objectPtr->fetchResType_) {
+        case FetchResType::TYPE_FILE: {
+            auto fetchResult = objectPtr->fetchFileResult_;
+            auto file = fetchResult->GetObjectAtPosition(offset);
+            while (file != nullptr && (length--) > 0) {
+                file->SetUserId(fetchResult->GetUserId());
+                fileAssetArray.push_back(move(file));
+                file = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_ALBUM: {
+            auto fetchResult = objectPtr->fetchAlbumResult_;
+            auto album = fetchResult->GetObjectAtPosition(offset);
+            while (album != nullptr && (length--) > 0) {
+                fileAlbumArray.push_back(move(album));
+                album = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_PHOTOALBUM: {
+            auto fetchResult = objectPtr->fetchPhotoAlbumResult_;
+            auto photoAlbum = fetchResult->GetObjectAtPosition(offset);
+            while (photoAlbum != nullptr && (length--) > 0) {
+                photoAlbum->SetUserId(fetchResult->GetUserId());
+                filePhotoAlbumArray.push_back(move(photoAlbum));
+                photoAlbum = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_SMARTALBUM: {
+            auto fetchResult = objectPtr->fetchSmartAlbumResult_;
+            auto smartAlbum = fetchResult->GetObjectAtPosition(offset);
+            while (smartAlbum != nullptr && (length--) > 0) {
+                fileSmartAlbumArray.push_back(move(smartAlbum));
+                smartAlbum = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_ANALYSIS_PHOTOALBUM: {
+            auto fetchResult = objectPtr->fetchAnalysisPhotoAlbumResult_;
+            auto analysisPhotoAlbum = fetchResult->GetObjectAtPosition(offset);
+            while (photoAlbum != nullptr && (length--) > 0) {
+                fileAnalysisPhotoAlbumArray.push_back(move(analysisPhotoAlbum));
+                analysisPhotoAlbum = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_CUSTOMRECORD: {
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr, "objectPtr is nullptr");
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr->fetchCustomRecordResult_, "fetchCustomRecordResult_ is nullptr");
+            auto fetchResult = objectPtr->fetchCustomRecordResult_;
+            auto customRecord = fetchResult->GetObjectAtPosition(offset);
+            while (customRecord != nullptr && (length--) > 0) {
+                customRecordArray.push_back(move(customRecord));
+                customRecord = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_ALBUMORDER: {
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr, "objectPtr is nullptr");
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr->fetchAlbumOrderResult_, "fetchAlbumOrderResult_ is nullptr");
+            auto fetchResult = objectPtr->fetchAlbumOrderResult_;
+            auto albumOrder = fetchResult->GetObjectAtPosition(offset);
+            while (albumOrder != nullptr && (length--) > 0) {
+                fileAlbumOrderArray.push_back(move(albumOrder));
+                albumOrder = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        default:
+            NAPI_ERR_LOG("unsupported FetchResType");
+            break;
+    }
 }
 
 napi_value FetchFileResultNapi::PhotoAccessHelperInit(napi_env env, napi_value exports)
