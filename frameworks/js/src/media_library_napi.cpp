@@ -429,6 +429,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("setForceHideSensitiveType", PhotoAccessHelperSetForceHideSensitiveType),
             DECLARE_NAPI_FUNCTION("getAnalysisData", PhotoAccessHelperGetAnalysisData),
             DECLARE_NAPI_FUNCTION("createAssetsForAppWithAlbum", CreateAssetsForAppWithAlbum),
+            DECLARE_NAPI_FUNCTION("getAssetMemberBatch", PhotoAccessHelperGetAssetMemberBatch),
             DECLARE_NAPI_FUNCTION("startAssetAnalysis", PhotoAccessStartAssetAnalysis),
             DECLARE_NAPI_FUNCTION("query", PhotoAccessQuery),
             DECLARE_NAPI_FUNCTION("on", PhotoAccessRegisterCallback),
@@ -489,6 +490,167 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessHelperGetAssetMemberBatch(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperGetAssetMemberBatch");
+    NAPI_INFO_LOG("enter PhotoAccessHelperGetAssetMemberBatch");
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    napi_status status;
+    size_t argc = 2;
+    napi_value args[2];     // args[0]: assets, args[1]: members
+
+    status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+    if (status != napi_ok) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse args failed");
+        return nullptr;
+    }
+    
+    std::vector<napi_value> fileAssetArray;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, args[0], fileAssetArray));
+    // if (fileAssetArray.empty()) {
+    //     return nullptr;
+    // }
+
+    std::vector<std::string> keys;
+    if (MediaLibraryNapiUtils::GetStringArray(env, args[1], keys) != napi_ok) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse memberKeys failed");
+    }
+
+    std::vector<std::reference_wrapper<const std::unordered_map<
+        string, variant<int32_t, int64_t, string, double>>>> memberMaps;
+
+    memberMaps.reserve(fileAssetArray.size());
+    for (size_t i = 0; i < fileAssetArray.size(); i++) {
+        FileAssetNapi *obj;
+        napi_status status = napi_unwrap(env, fileAssetArray[i], reinterpret_cast<void **>(&obj));
+        if (obj==nullptr || status != napi_ok) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse args in array failed");
+        }
+        memberMaps.push_back(std::cref(obj->fileAssetPtr->GetMemberMap()));
+    }
+    // TODO: exception for GetCompatDate
+    // napi_value result = nullptr;// fast::napi::ExtractValuesByKeys(env, memberMaps, keys);
+    /*    fast start  */
+    int fileInfoNum = memberMaps.size();
+    int keyNum = keys.size();
+
+    napi_value result;
+    int fileInfoNum = memberMaps.size();
+    int keyNum = keys.size();
+
+    napi_value resultArray;
+    napi_status status = napi_create_array_with_length(env, fileInfoNum, &resultArray);
+    if (status != napi_ok) {
+        napi_throw_error(env, nullptr, "Failed to create array");
+        return nullptr;
+    }
+
+    std::vector<std::vector<value_type>> rawResults(fileInfoNum, std::vector<value_type>(keyNum));
+
+    if (fileInfoNum >= 4000) {
+        const int numThreads = 4;
+        int chunkSize = (fileInfoNum + numThreads - 1) / numThreads;
+        std::vector<std::thread> threads;
+        std::atomic<bool> errorOccurred(false);
+
+        auto processChunk = [&memberMaps, &keys, &rawResults, &errorOccurred, keyNum](int start, int end) {
+            for (int j = start; j < end; j++) {
+                for (int k = 0; k < keyNum; k++) {
+                    const std::string& key = keys[k];
+                    if (memberMaps[j].get().count(key) == 0) {
+                        errorOccurred = true;
+                        return;
+                    }
+                    auto m = memberMaps[j].get().at(key);
+                    rawResults[j][k] = m;
+                }
+            }
+        };
+
+        for (int i = 0; i < numThreads; i++) {
+            int start = i * chunkSize;
+            int end = std::min(start + chunkSize, fileInfoNum);
+            threads.emplace_back(processChunk, start, end);
+        }
+
+        // Wait for all threads to finish
+        for (auto &t : threads) {
+            t.join();
+        }
+
+        if (errorOccurred) {
+            keyError = true;
+            return {};
+        }
+
+    } else {
+        bool errorOccurred = false;
+        for (int j = 0; j < fileInfoNum && !errorOccurred; j++) {
+            for (int k = 0; k < keyNum; k++) {
+                const std::string& key = keys[k];
+                if (memberMaps[j].get().count(key) == 0) {
+                    errorOccurred = true;
+                    break;
+                }
+                auto m = memberMaps[j].get().at(key);
+                rawResults[j][k] = m;
+            }
+        }
+        if (errorOccurred) {
+            keyError = true;
+            return {};
+        }
+    }
+    // return rawResults;
+    for (int i = 0; i < fileInfoNum; i++) {
+        napi_value members;
+        status = napi_create_object(env, &members);
+        if (status != napi_ok) {
+            napi_throw_error(env, nullptr, "Failed to create members");
+            return nullptr;
+        }
+        for (int j = 0; j < keyNum; j++) {
+            auto &m = rawResults[i][j];
+            napi_value jsResult;
+            if (m.index() == 2) {
+                napi_create_string_utf8(env, std::get<std::string>(m).c_str(), NAPI_AUTO_LENGTH, &jsResult);
+            } else if (m.index() == 0) {
+                napi_create_int32(env, std::get<int32_t>(m), &jsResult);
+            } else if (m.index() == 1) {
+                napi_create_int64(env, std::get<int64_t>(m), &jsResult);
+            } else if (m.index() == 3) {
+                napi_create_double(env, std::get<double>(m), &jsResult);
+            } else {
+                napi_throw_error(env, nullptr, "Unsupported type");
+                return nullptr;
+            }
+            status = napi_set_named_property(env, members, keys[j].c_str(), jsResult);
+            if (status != napi_ok) {
+                napi_throw_error(env, nullptr, "Failed to set property");
+                return nullptr;
+            }
+        }
+        status = napi_set_element(env, resultArray, i, members);
+        if (status != napi_ok) {
+            napi_throw_error(env, nullptr, "Failed to set member element");
+            return nullptr;
+        }
+    }
+    }
+    /*  fast end */
+
+    if (resultArray == nullptr) {
+        NapiError::ThrowError(env, JS_E_FILE_KEY);
+        return nullptr;
+    }
+    return resultArray;
 }
 
 static napi_status CheckWhetherAsync(napi_env env, napi_callback_info info, bool &isAsync)

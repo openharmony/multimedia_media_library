@@ -91,6 +91,7 @@ private:
     EXPORT static napi_value JSGetLastObject(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetPositionObject(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetAllObject(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetRangeObjects(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSClose(napi_env env, napi_callback_info info);
 
     napi_env env_;
@@ -117,6 +118,8 @@ public:
     std::shared_ptr<FetchResultProperty> objectPtr;
     bool status;
     int32_t position;
+    int32_t offset;
+    int32_t length;
     std::unique_ptr<FileAsset> fileAsset;
     std::unique_ptr<AlbumAsset> albumAsset;
     std::unique_ptr<PhotoAlbum> photoAlbum;
@@ -132,6 +135,7 @@ public:
     void GetFirstAsset();
     void GetObjectAtPosition();
     void GetAllObjectFromFetchResult();
+    void GetObjectsInRange();
     void GetLastObject();
     void GetNextObject();
 };
