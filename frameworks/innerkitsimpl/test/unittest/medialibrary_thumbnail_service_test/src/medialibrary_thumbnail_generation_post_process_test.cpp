@@ -124,5 +124,35 @@ HWTEST_F(MediaLibraryThumbnailGenerationPostProcessTest, PostProcess_test_002, T
     EXPECT_EQ(ret, E_OK);
 }
 
+HWTEST_F(MediaLibraryThumbnailGenerationPostProcessTest, PostProcess_test_003, TestSize.Level0)
+{
+    NativeRdb::ValuesBucket values;
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
+    ThumbnailData data;
+    data.rdbUpdateCache = values;
+    data.id = "1231";
+    ThumbRdbOpt opts;
+    opts.store = store;
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+
+    int ret = ThumbnailGenerationPostProcess::PostProcess(data, opts);
+    EXPECT_EQ(ret, E_RDB_UPDATE_NO_ROWS_CHANGED);
+}
+
+HWTEST_F(MediaLibraryThumbnailGenerationPostProcessTest, PostProcess_test_004, TestSize.Level0)
+{
+    NativeRdb::ValuesBucket values;
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_LATER));
+    ThumbnailData data;
+    data.rdbUpdateCache = values;
+    data.id = "1231";
+    ThumbRdbOpt opts;
+    opts.store = store;
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+
+    int ret = ThumbnailGenerationPostProcess::PostProcess(data, opts);
+    EXPECT_EQ(ret, E_RDB_QUERY_NO_RES);
+}
+
 } // namespace Media
 } // namespace OHOS
