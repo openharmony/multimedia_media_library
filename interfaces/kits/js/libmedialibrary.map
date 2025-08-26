@@ -164,6 +164,23 @@
             "NAPI_multimedia_mediaLibrary_GetJSCode";
             "NAPI_multimedia_mediaLibrary_GetABCCode";
     };
+    extern "C" {
+      "AttachCreateFileAsset";
+      "GetFileAssetInstance";
+      "CreatePhotoAlbumNapi";
+      "GetPhotoAlbumInstance";
+      "CreateFetchFileResultFileAsset";
+      "CreateFetchFileResultAlbumAsset";
+      "CreateFetchFileResultPhotoAlbum";
+      "CreateFetchFileResultSmartAlbumAsset";
+      "CreateFetchFileResultPhotoAssetCustomRecord";
+      "CreateFetchFileResultAlbumOrder";
+      "GetFetchResType";
+      "GetFetchFileResultObject";
+      "GetFetchAlbumResultObject";
+      "CreateTransferMovingPhotoNapi";
+      "MovingPhotoGetProperty";
+    };
   local:
     *;
 };
