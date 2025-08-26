@@ -95,6 +95,8 @@ const std::string URI_FIND_ALL_DUPLICATE_ASSETS = "/" + OPRN_FIND_ALL_DUPLICATE_
 const std::string OPRN_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE = "can_del_duplicate_assets";
 const std::string URI_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE = "/" + OPRN_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE;
 const std::string OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE = "update_supported_watermark_type";
+const std::string OPRN_UPDATE_HAS_APPLINK = "update_supported_has_applink";
+const std::string OPRN_UPDATE_APPLINK = "update_supported_applink";
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_PHOTOOPRN = "photo_operation";
@@ -302,6 +304,10 @@ const std::string PAH_CUSTOM_RESTORE_CANCEL =
     MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CUSTOM_RESTORE_CANCEL;
 const std::string PAH_UPDATE_PHOTO_SUPPORTED_WATERMARK_TYPE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" +
     OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE;
+const std::string PAH_UPDATE_HAS_APPLINK = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" +
+    OPRN_UPDATE_HAS_APPLINK;
+const std::string PAH_UPDATE_APPLINK = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" +
+    OPRN_UPDATE_APPLINK;
 
 // MultiStages capture related operation uri
 const std::string PAH_SET_PHOTO_QUALITY = MEDIALIBRARY_DATA_URI + "/ "+ PAH_PHOTO + "/" + OPRN_SET_PHOTO_QUALITY;

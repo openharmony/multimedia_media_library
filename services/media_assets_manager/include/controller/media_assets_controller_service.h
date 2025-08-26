@@ -52,6 +52,8 @@ public:
     EXPORT int32_t SetOrientation(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SetVideoEnhancementAttr(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SetSupportedWatermarkType(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t SetHasAppLink(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t SetAppLink(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetAssets(MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context);
     EXPORT int32_t GetBurstAssets(MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context);
     EXPORT int32_t GetAllDuplicateAssets(MessageParcel &data, MessageParcel &reply);

@@ -95,6 +95,8 @@ public:
     int32_t SetEffectMode(const int32_t fileId, const int32_t effectMode);
     int32_t SetOrientation(const int32_t fileId, const int32_t orientation);
     int32_t SetVideoEnhancementAttr(const int32_t fileId, const std::string &photoId, const std::string &path);
+    int32_t SetHasAppLink(const int32_t fileId, const int32_t hasAppLink);
+    int32_t SetAppLink(const int32_t fileId, const std::string appLink);
     int32_t SetSupportedWatermarkType(const int32_t fileId, const int32_t watermarkType);
     std::shared_ptr<DataShare::DataShareResultSet> GetAssets(GetAssetsDto &dto);
     std::shared_ptr<DataShare::DataShareResultSet> GetAllDuplicateAssets(GetAssetsDto &dto);

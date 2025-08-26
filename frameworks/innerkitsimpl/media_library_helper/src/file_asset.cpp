@@ -635,6 +635,26 @@ void FileAsset::SetSupportedWatermarkType(int32_t watermarkType)
     member_[PhotoColumn::SUPPORTED_WATERMARK_TYPE] = watermarkType;
 }
 
+int32_t FileAsset::GetHasAppLink() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_HAS_APPLINK);
+}
+ 
+void FileAsset::SetHasAppLink(int32_t hasAppLink)
+{
+    member_[PhotoColumn::PHOTO_HAS_APPLINK] = hasAppLink;
+}
+ 
+const std::string &FileAsset::GetAppLink() const
+{
+    return GetStrMember(PhotoColumn::PHOTO_APPLINK);
+}
+ 
+void FileAsset::SetAppLink(const string appLink)
+{
+    member_[PhotoColumn::PHOTO_APPLINK] = appLink;
+}
+
 int32_t FileAsset::GetIsAuto() const
 {
     return GetInt32Member(PhotoColumn::PHOTO_IS_AUTO);

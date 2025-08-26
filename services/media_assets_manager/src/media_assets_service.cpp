@@ -479,6 +479,44 @@ int32_t MediaAssetsService::SetVideoEnhancementAttr(
     return E_OK;
 }
 
+int32_t MediaAssetsService::SetHasAppLink(const int32_t fileId, const int32_t hasAppLink)
+{
+    MediaLibraryCommand cmd(
+        OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE_HAS_APPLINK, MediaLibraryApi::API_10);
+ 
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+ 
+    NativeRdb::ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_HAS_APPLINK, hasAppLink);
+ 
+    cmd.SetValueBucket(values);
+    cmd.SetDataSharePred(predicates);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    return MediaLibraryPhotoOperations::UpdateAppLink(cmd);
+}
+ 
+int32_t MediaAssetsService::SetAppLink(const int32_t fileId, const string appLink)
+{
+    MediaLibraryCommand cmd(
+        OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE_APPLINK, MediaLibraryApi::API_10);
+ 
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+ 
+    NativeRdb::ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_APPLINK, appLink);
+ 
+    cmd.SetValueBucket(values);
+    cmd.SetDataSharePred(predicates);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    return MediaLibraryPhotoOperations::UpdateAppLink(cmd);
+}
+
 int32_t MediaAssetsService::SetSupportedWatermarkType(const int32_t fileId, const int32_t watermarkType)
 {
     MediaLibraryCommand cmd(
