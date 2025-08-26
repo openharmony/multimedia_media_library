@@ -225,6 +225,8 @@ enum class EXPORT OperationType : uint32_t {
     SET_SYSTEM_ALBUM_COVER_URI,
     RESET_COVER_URI,
     MOVING_PHOTO_VIDEO_READY,
+    UPDATE_HAS_APPLINK,
+    UPDATE_APPLINK,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

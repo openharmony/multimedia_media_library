@@ -52,6 +52,8 @@ enum class AssetChangeOperation {
     DISCARD_CAMERA_PHOTO,
     SET_ORIENTATION,
     SET_SUPPORTED_WATERMARK_TYPE,
+    SET_HAS_APPLINK,
+    SET_APPLINK,
     SET_VIDEO_ENHANCEMENT_ATTR,
 };
 
@@ -143,6 +145,8 @@ private:
     EXPORT static napi_value JSDiscardCameraPhoto(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetOrientation(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetSupportedWatermarkType(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetHasAppLink(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetAppLink(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetVideoEnhancementAttr(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteLocalAssetsPermanently(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteLocalAssetsPermanentlyWithUri(napi_env env, napi_callback_info info);

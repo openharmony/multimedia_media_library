@@ -210,6 +210,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAssetsControllerService::SetSupportedWatermarkType
     },
     {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_HAS_APPLINK),
+        &MediaAssetsControllerService::SetHasAppLink
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::SET_APPLINK),
+        &MediaAssetsControllerService::SetAppLink
+    },
+    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::FIND_ALL_DUPLICATE_ASSETS),
         &MediaAssetsControllerService::GetAllDuplicateAssets
     },
@@ -1029,6 +1037,36 @@ int32_t MediaAssetsControllerService::SetSupportedWatermarkType(MessageParcel &d
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = MediaAssetsService::GetInstance().SetSupportedWatermarkType(reqBody.fileId, reqBody.watermarkType);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::SetHasAppLink(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter SetHasAppLink");
+    AssetChangeReqBody reqBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetHasAppLink Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = MediaAssetsService::GetInstance().SetHasAppLink(reqBody.fileId, reqBody.hasAppLink);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::SetAppLink(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter SetAppLink");
+    AssetChangeReqBody reqBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetAppLink Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = MediaAssetsService::GetInstance().SetAppLink(reqBody.fileId, reqBody.appLink);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 

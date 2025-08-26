@@ -60,6 +60,9 @@ static const mode_t CHOWN_RWX_USR_GRP = 02771;
 static const mode_t CHOWN_RW_USR_GRP = 0660;
 static const mode_t CHOWN_RO_USR_GRP = 0644;
 constexpr size_t DISPLAYNAME_MAX = 255;
+constexpr int32_t HAS_APPLINK_MIN = 0;
+constexpr int32_t HAS_APPLINK_MAX = 2;
+constexpr size_t APPLINK_MAX = 512;
 const int32_t OPEN_FDS = 64;
 const std::string PATH_PARA = "path=";
 constexpr unsigned short MAX_RECURSION_DEPTH = 4;
@@ -1305,6 +1308,21 @@ int32_t MediaFileUtils::CheckAlbumName(const string &albumName)
         return -EINVAL;
     }
     return E_OK;
+}
+
+int32_t MediaFileUtils::CheckAppLink(const string &link)
+{
+    int err = CheckStringSize(link, APPLINK_MAX);
+    if (err < 0) {
+        MEDIA_ERR_LOG("link string size check failed: %{public}d, size is %{public}zu", err, link.length());
+        return err;
+    }
+    return E_OK;
+}
+ 
+bool MediaFileUtils::CheckHasAppLink(int32_t hasLink)
+{
+    return hasLink >= HAS_APPLINK_MIN && hasLink <= HAS_APPLINK_MAX;
 }
 
 int32_t MediaFileUtils::CheckHighlightSubtitle(const string &highlightSubtitle)

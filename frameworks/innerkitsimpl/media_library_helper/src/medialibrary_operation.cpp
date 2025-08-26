@@ -374,6 +374,8 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { MTH_AND_YEAR_ASTC, OperationType::MTH_AND_YEAR_ASTC },
         { OPRN_HIGHLIGHT_SUBTITLE, OperationType::HIGHLIGHT_SUBTITLE},
         { OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE, OperationType::UPDATE_SUPPORTED_WATERMARK_TYPE },
+        { OPRN_UPDATE_HAS_APPLINK, OperationType::UPDATE_HAS_APPLINK },
+        { OPRN_UPDATE_APPLINK, OperationType::UPDATE_APPLINK },
         { OPRN_QUERY_HIGHLIGHT_DIRECTORY_SIZE, OperationType::QUERY_HIGHLIGHT_DIRECTORY_SIZE },
         { OPRN_LS, OperationType::LS_MEDIA_FILES },
         { OPRN_QUERY_ACTIVE_USER_ID, OperationType::QUERY_ACTIVE_USER_ID },
