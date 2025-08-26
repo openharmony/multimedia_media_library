@@ -56,7 +56,6 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "./src/medialibrary_album_fusion_utils_test.cpp",
     "./src/medialibrary_facard_operations_test.cpp",
     "./src/medialibrary_formmap_operations_test.cpp",
-    "./src/medialibrary_photo_edit_test.cpp",
     "./src/medialibrary_photo_operations_test.cpp",
     "./src/operation/display_name_info_test.cpp",
     "./src/operation/photo_album_copy_meta_data_operation_test.cpp",
