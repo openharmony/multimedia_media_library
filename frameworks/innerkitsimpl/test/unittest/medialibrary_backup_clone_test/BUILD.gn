@@ -100,7 +100,6 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./src/clone_source.cpp",
     "./src/highlight/clone_highlight_source.cpp",
     "./src/highlight/clone_restore_highlight_test.cpp",
-    "./src/medialibrary_backup_clone_test.cpp",
   ]
 
   source_ipc_client = [
