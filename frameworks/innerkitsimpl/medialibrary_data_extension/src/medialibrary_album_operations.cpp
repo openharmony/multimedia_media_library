@@ -1148,6 +1148,7 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
         CHECK_AND_RETURN_RET_LOG(
             SetNewNameExecute(executeObject, executeInfo, newNameValues, fileIdsInAlbum),
             E_HAS_DB_ERROR, "Set new name execute failed");
+        newAlbumId = executeInfo.newAlbumId;
         return E_OK;
     };
     int ret = trans->RetryTrans(trySetUserAlbumName);
