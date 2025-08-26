@@ -79,7 +79,8 @@ private:
     EXPORT static ani_object PhotoAccessGetSharedPhotoAssets(ani_env *env, ani_object object, ani_object options);
     EXPORT static ani_long GetdateAdded(ani_env *env, ani_object object);
     EXPORT static ani_long GetdateModified(ani_env *env, ani_object object);
-
+    EXPORT static ani_ref TransferToDynamicAlbum(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
+    EXPORT static ani_object TransferToStaticAlbum(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
     ani_env *env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
     static thread_local PhotoAlbum *pAlbumData_;
