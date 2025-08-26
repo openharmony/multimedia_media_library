@@ -22,6 +22,7 @@
 #include "accurate_debug_log.h"
 #include "medialibrary_tracer.h"
 #include "media_file_utils.h"
+#include "result_set_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -79,6 +80,100 @@ int32_t AssetDataManager::UpdateThumbnailChangeStatus(PhotoAssetChangeData &asse
     }
 }
 
+void AssetDataManager::SetAlbumIdFromChangeDates()
+{
+    for (const auto &[key, changeInfo] : this->changeDatas_) {
+        this->uniqueAlbumIds_.insert(changeInfo.infoBeforeChange_.ownerAlbumId_);
+        this->uniqueAlbumIds_.insert(changeInfo.infoAfterChange_.ownerAlbumId_);
+    }
+}
+
+void AssetDataManager::SetAlbumIdByChangeInfos(const vector<PhotoAssetChangeInfo> &changeInfos)
+{
+    for (const PhotoAssetChangeInfo &changeInfo : changeInfos) {
+        this->uniqueAlbumIds_.insert(changeInfo.ownerAlbumId_);
+    }
+}
+
+bool AssetDataManager::CheckIsExceed(bool isLengthChanged)
+{
+    if (!isLengthChanged) {
+        return isExceed_;
+    }
+
+    if (isExceed_) {
+        return true;
+    }
+
+    isExceed_ = this->changeDatas_.size() >= MAX_DATA_LENGTH;
+    if (isExceed_) {
+        this->SetAlbumIdFromChangeDates();
+        this->changeDatas_.clear();
+    }
+    return isExceed_;
+}
+
+bool AssetDataManager::CheckIsExceed(const AbsRdbPredicates &predicates, bool isLengthChanged)
+{
+    SetAlbumIdsByPredicates(predicates);
+    if (!isLengthChanged) {
+        return isExceed_;
+    }
+
+    if (isExceed_) {
+        return true;
+    }
+
+    isExceed_ = this->changeDatas_.size() >= MAX_DATA_LENGTH;
+    if (isExceed_) {
+        this->SetAlbumIdFromChangeDates();
+        this->changeDatas_.clear();
+    }
+    return isExceed_;
+}
+
+bool AssetDataManager::CheckIsExceed(const string &sql,
+    const vector<ValueObject> &bindArgs, bool isLengthChanged)
+{
+    SetAlbumIdsBySql(sql, bindArgs);
+    if (!isLengthChanged) {
+        return isExceed_;
+    }
+
+    if (isExceed_) {
+        return true;
+    }
+
+    isExceed_ = this->changeDatas_.size() >= MAX_DATA_LENGTH;
+    if (isExceed_) {
+        this->SetAlbumIdFromChangeDates();
+        this->changeDatas_.clear();
+    }
+    return isExceed_;
+}
+
+bool AssetDataManager::CheckIsExceed(const vector<PhotoAssetChangeInfo> &changeInfos)
+{
+    SetAlbumIdByChangeInfos(changeInfos);
+    if (changeInfos.size() >= MAX_DATA_LENGTH) {
+        isExceed_ = true;
+        this->SetAlbumIdFromChangeDates();
+        this->changeDatas_.clear();
+    }
+    return isExceed_;
+}
+
+bool AssetDataManager::CheckIsExceed(const vector<int32_t> &keys)
+{
+    SetAlbumIdsByFileds(keys);
+    if (keys.size() >= MAX_DATA_LENGTH) {
+        isExceed_ = true;
+        this->SetAlbumIdFromChangeDates();
+        this->changeDatas_.clear();
+    }
+    return isExceed_;
+}
+
 int32_t AssetDataManager::GetChangeInfoKey(const PhotoAssetChangeInfo &changeInfo)
 {
     return changeInfo.fileId_;
@@ -93,6 +188,70 @@ std::vector<PhotoAssetChangeInfo> AssetDataManager::GetInfoByKeys(const std::vec
     }
     rbdPredicates.In(PhotoColumn::MEDIA_ID, fileIdStrs);
     return GetInfosByPredicates(rbdPredicates);
+}
+
+int32_t AssetDataManager::SetAlbumIdsByPredicates(const AbsRdbPredicates &predicates)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("AssetDataManager::SetAlbumIdsByPredicates");
+    shared_ptr<ResultSet> resultSet;
+    if (CanTransOperate()) {
+        resultSet = trans_->QueryByStep(predicates, {PhotoColumn::PHOTO_OWNER_ALBUM_ID});
+    } else {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, NativeRdb::E_ERROR, "rdbStore null");
+        resultSet = rdbStore->QueryByStep(predicates, {PhotoColumn::PHOTO_OWNER_ALBUM_ID});
+    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, NativeRdb::E_ERROR, "resultSet null");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        auto albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(
+            PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet,
+            PhotoAssetChangeInfo::GetDataType(PhotoColumn::PHOTO_OWNER_ALBUM_ID)));
+        uniqueAlbumIds_.insert(albumId);
+    }
+    resultSet->Close();
+    return NativeRdb::E_OK;
+}
+
+int32_t AssetDataManager::SetAlbumIdsBySql(const std::string &sql,
+    const std::vector<ValueObject> &bindArgs)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("AssetDataManager::SetAlbumIdsBySql");
+    shared_ptr<ResultSet> resultSet;
+    if (CanTransOperate()) {
+        resultSet = trans_->QueryByStep(sql, bindArgs);
+    } else {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null");
+        resultSet = rdbStore->QueryByStep(sql, bindArgs);
+    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, NativeRdb::E_ERROR, "resultSet null");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        uniqueAlbumIds_.insert(get<int32_t>(ResultSetUtils::GetValFromColumn(
+            PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet,
+            PhotoAssetChangeInfo::GetDataType(PhotoColumn::PHOTO_OWNER_ALBUM_ID))));
+    }
+    resultSet->Close();
+    return NativeRdb::E_OK;
+}
+
+int32_t AssetDataManager::SetAlbumIdsByFileds(const std::vector<int32_t> &fileIds)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("AssetDataManager::SetAlbumIdsByFileds");
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    vector<string> fileIdStrs;
+    for (const auto &fileId : fileIds) {
+        fileIdStrs.push_back(to_string(fileId));
+    }
+    rbdPredicates.In(PhotoColumn::MEDIA_ID, fileIdStrs);
+    return SetAlbumIdsByPredicates(rbdPredicates);
+}
+
+bool AssetDataManager::CheckIsForRecheck()
+{
+    return isForRecheck_ || CheckIsExceed();
 }
 
 vector<PhotoAssetChangeInfo> AssetDataManager::GetInfosByPredicates(const AbsRdbPredicates &predicates)
