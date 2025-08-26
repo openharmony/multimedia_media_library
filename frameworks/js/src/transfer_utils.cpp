@@ -36,7 +36,7 @@ shared_ptr<FileAsset> TransferUtils::GetFileAssetInstance(FileAssetNapi* napiFil
     return napiFileAsset->GetFileAssetInstance();
 }
 
-napi_value TransferUtils::CreatePhotoAlbumNapi(napi_env env, shared_ptr<PhotoAlbum> &albumData)
+napi_value TransferUtils::CreatePhotoAlbumNapi(napi_env env, std::unique_ptr<PhotoAlbum> &albumData)
 {
     if (albumData == nullptr) {
         NAPI_ERR_LOG("albumData is null.");
@@ -185,9 +185,11 @@ TransferUtils::TransferSharedPtr GetFileAssetInstance(FileAssetNapi* napiFileAss
     return transferSharedPtr;
 }
 
-napi_value CreatePhotoAlbumNapi(napi_env env, shared_ptr<PhotoAlbum> &albumData)
+napi_value CreatePhotoAlbumNapi(napi_env env, TransferUtils::TransferSharedPtr transferPtr)
 {
     NAPI_INFO_LOG("%{public}s Called", __func__);
+    std::unique_ptr<PhotoAlbum> albumData = std::unique_ptr<PhotoAlbum>(transferPtr.photoAlbumPtr);
+    CHECK_COND_RET(albumData != nullptr, nullptr, "albumData is null");
     return TransferUtils::CreatePhotoAlbumNapi(env, albumData);
 }
 
@@ -200,40 +202,58 @@ TransferUtils::TransferSharedPtr GetPhotoAlbumInstance(PhotoAlbumNapi* napiPhoto
     return transferSharedPtr;
 }
 
-napi_value CreateFetchFileResultFileAsset(napi_env env, std::unique_ptr<FetchResult<FileAsset>> &fileResult)
+napi_value CreateFetchFileResultFileAsset(napi_env env, TransferUtils::TransferSharedPtr transferPtr)
 {
     NAPI_INFO_LOG("%{public}s Called", __func__);
+    std::unique_ptr<FetchResult<FileAsset>> fileResult =
+        std::unique_ptr<FetchResult<FileAsset>>(transferPtr.fetchFileResultPtr);
+    CHECK_COND_RET(fileResult != nullptr, nullptr, "fileResult is null");
     return TransferUtils::CreateFetchFileResult(env, fileResult);
 }
 
-napi_value CreateFetchFileResultAlbumAsset(napi_env env, std::unique_ptr<FetchResult<AlbumAsset>> &fileResult)
+napi_value CreateFetchFileResultAlbumAsset(napi_env env, TransferUtils::TransferSharedPtr transferPtr)
 {
     NAPI_INFO_LOG("%{public}s Called", __func__);
+    std::unique_ptr<FetchResult<AlbumAsset>> fileResult =
+        std::unique_ptr<FetchResult<AlbumAsset>>(transferPtr.fetchAlbumResultPtr);
+    CHECK_COND_RET(fileResult != nullptr, nullptr, "fileResult is null");
     return TransferUtils::CreateFetchFileResult(env, fileResult);
 }
 
-napi_value CreateFetchFileResultPhotoAlbum(napi_env env, std::unique_ptr<FetchResult<PhotoAlbum>> &fileResult)
+napi_value CreateFetchFileResultPhotoAlbum(napi_env env, TransferUtils::TransferSharedPtr transferPtr)
 {
     NAPI_INFO_LOG("%{public}s Called", __func__);
+    std::unique_ptr<FetchResult<PhotoAlbum>> fileResult =
+        std::unique_ptr<FetchResult<PhotoAlbum>>(transferPtr.fetchPhotoAlbumPtr);
+    CHECK_COND_RET(fileResult != nullptr, nullptr, "fileResult is null");
     return TransferUtils::CreateFetchFileResult(env, fileResult);
 }
 
-napi_value CreateFetchFileResultSmartAlbumAsset(napi_env env, std::unique_ptr<FetchResult<SmartAlbumAsset>> &fileResult)
+napi_value CreateFetchFileResultSmartAlbumAsset(napi_env env, TransferUtils::TransferSharedPtr transferPtr)
 {
     NAPI_INFO_LOG("%{public}s Called", __func__);
+    std::unique_ptr<FetchResult<SmartAlbumAsset>> fileResult =
+        std::unique_ptr<FetchResult<SmartAlbumAsset>>(transferPtr.fetchSmartAlbumResultPtr);
+    CHECK_COND_RET(fileResult != nullptr, nullptr, "fileResult is null");
     return TransferUtils::CreateFetchFileResult(env, fileResult);
 }
 
 napi_value CreateFetchFileResultPhotoAssetCustomRecord(napi_env env,
-    std::unique_ptr<FetchResult<PhotoAssetCustomRecord>> &fileResult)
+    TransferUtils::TransferSharedPtr transferPtr)
 {
     NAPI_INFO_LOG("%{public}s Called", __func__);
+    std::unique_ptr<FetchResult<PhotoAssetCustomRecord>> fileResult =
+        std::unique_ptr<FetchResult<PhotoAssetCustomRecord>>(transferPtr.fetchPhotoAssetCustomRecordPtr);
+    CHECK_COND_RET(fileResult != nullptr, nullptr, "fileResult is null");
     return TransferUtils::CreateFetchFileResult(env, fileResult);
 }
 
-napi_value CreateFetchFileResultAlbumOrder(napi_env env, std::unique_ptr<FetchResult<AlbumOrder>> &fileResult)
+napi_value CreateFetchFileResultAlbumOrder(napi_env env, TransferUtils::TransferSharedPtr transferPtr)
 {
     NAPI_INFO_LOG("%{public}s Called", __func__);
+    std::unique_ptr<FetchResult<AlbumOrder>> fileResult =
+        std::unique_ptr<FetchResult<AlbumOrder>>(transferPtr.fetchAlbumOrderPtr);
+    CHECK_COND_RET(fileResult != nullptr, nullptr, "fileResult is null");
     return TransferUtils::CreateFetchFileResult(env, fileResult);
 }
 
