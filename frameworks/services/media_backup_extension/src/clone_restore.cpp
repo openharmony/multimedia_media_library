@@ -2381,6 +2381,8 @@ void CloneRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::
     analysisAlbumTbl.isLocal = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_LOCAL);
     analysisAlbumTbl.isCoverSatisfied = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         ANALYSIS_COL_IS_COVER_SATISFIED);
+    analysisAlbumTbl.isCoverSatisfied = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+        ANALYSIS_COL_RELATIONSHIP);
 }
 
 void CloneRestore::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, FaceTagTbl& faceTagTbl)
@@ -2455,6 +2457,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const AnalysisAlbumTbl &por
     PutIfPresent(values, ANALYSIS_COL_IS_REMOVED, portraitAlbumInfo.isRemoved);
     PutIfPresent(values, ANALYSIS_COL_RENAME_OPERATION, portraitAlbumInfo.renameOperation);
     PutIfPresent(values, ANALYSIS_COL_IS_LOCAL, portraitAlbumInfo.isLocal);
+    PutIfPresent(values, ANALYSIS_COL_RELATIONSHIP, portraitAlbumInfo.relationship);
 
     return values;
 }

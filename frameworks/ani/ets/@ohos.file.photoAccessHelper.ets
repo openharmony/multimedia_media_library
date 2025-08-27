@@ -1639,4 +1639,9 @@ export namespace photoAccessHelper {
     EXECUTING,
     COMPLETED
   }
+
+  class MediaAnalysisAlbumChangeRequest extends MediaAlbumChangeRequest {
+    constructor(album: Album);
+    setRelationship(relationship: string): Promise<void>;
+  }
 }
