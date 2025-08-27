@@ -61,7 +61,6 @@ ani_status MediaAlbumChangeRequestAni::Init(ani_env *env)
 
     std::array methods = {
         ani_native_function {"getAlbum", nullptr, reinterpret_cast<void *>(GetAlbum)},
-        ani_native_function {"createAlbumRequest", nullptr, reinterpret_cast<void *>(CreateAlbumRequest)},
         ani_native_function {"nativeConstructor", nullptr, reinterpret_cast<void *>(Constructor)},
         ani_native_function {"placeBefore", nullptr, reinterpret_cast<void *>(PlaceBefore)},
         ani_native_function {"dismissAssets", nullptr, reinterpret_cast<void *>(DismissAssets)},
@@ -77,8 +76,6 @@ ani_status MediaAlbumChangeRequestAni::Init(ani_env *env)
         ani_native_function {"setDisplayLevel", nullptr, reinterpret_cast<void *>(SetDisplayLevel)},
         ani_native_function {"deleteAssets", nullptr, reinterpret_cast<void *>(DeleteAssets)},
         ani_native_function {"deleteAssetsWithUri", nullptr, reinterpret_cast<void *>(DeleteAssetsWithUri)},
-        ani_native_function {"deleteAlbumsSync", nullptr, reinterpret_cast<void *>(DeleteAlbums)},
-        ani_native_function {"deleteAlbumsWithUriSync", nullptr, reinterpret_cast<void *>(DeleteAlbumsWithUri)},
         ani_native_function {"setIsMe", nullptr, reinterpret_cast<void *>(SetIsMe)},
         ani_native_function {"dismiss", nullptr, reinterpret_cast<void *>(Dismiss)},
     };
@@ -87,6 +84,18 @@ ani_status MediaAlbumChangeRequestAni::Init(ani_env *env)
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
         return status;
     }
+
+    std::array staticMethods = {
+        ani_native_function {"createAlbumRequest", nullptr, reinterpret_cast<void *>(CreateAlbumRequest)},
+        ani_native_function {"deleteAlbumsSync", nullptr, reinterpret_cast<void *>(DeleteAlbums)},
+        ani_native_function {"deleteAlbumsWithUriSync", nullptr, reinterpret_cast<void *>(DeleteAlbumsWithUri)},
+    };
+    status = env->Class_BindStaticNativeMethods(cls, staticMethods.data(), staticMethods.size());
+    if (status != ANI_OK) {
+        ANI_ERR_LOG("Failed to bind static native methods to: %{public}s", className);
+        return status;
+    }
+
     return ANI_OK;
 }
 
