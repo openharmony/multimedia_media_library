@@ -51,9 +51,11 @@ shared_ptr<CloudSyncHelper> CloudSyncHelper::GetInstance()
 
 CloudSyncHelper::~CloudSyncHelper()
 {
-    lock_guard<mutex> lock(syncMutex_);
-    isSyncStopped_ = true;
-    while (isThreadPending_) {
+    {
+        lock_guard<mutex> lock(syncMutex_);
+        isSyncStopped_ = true;
+    }
+    while (runningThreadNum_ != 0) {
         skipCond_.notify_all();
         this_thread::sleep_for(std::chrono::milliseconds(WAIT_INTERVAL));
     }
@@ -66,7 +68,14 @@ void CloudSyncHelper::StartSync()
     skipCond_.notify_all();
     if (!isThreadPending_ && !isSyncStopped_) {
         isThreadPending_ = true;
-        std::thread([this]() { OnTimerCallback(); }).detach();
+        runningThreadNum_++;
+        std::thread([this]() {
+            OnTimerCallback();
+            {
+                lock_guard<mutex> lock(syncMutex_);
+                runningThreadNum_--;
+            }
+        }).detach();
     }
 }
 
@@ -158,13 +167,13 @@ void CloudSyncHelper::OnTimerCallback()
         }
     }
 
-    if (!IsSyncSwitchOpen()) {
-        return;
-    }
-
     {
         lock_guard<mutex> lock(syncMutex_);
         isThreadPending_ = false;
+    }
+
+    if (!IsSyncSwitchOpen()) {
+        return;
     }
 
     MEDIA_INFO_LOG("cloud sync manager start sync");
