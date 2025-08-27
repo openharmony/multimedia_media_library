@@ -1001,7 +1001,7 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
     for (size_t i = 0; i < fileInfos.size(); i++) {
         CHECK_AND_CONTINUE(fileInfos[i].needMove);
 
-        if(IsFileValid(fileInfos[i], sceneCode) != E_OK) {
+        if (IsFileValid(fileInfos[i], sceneCode) != E_OK) {
             fileInfos[i].needVisible = false;
             fileInfos[i].needMove = false;
             MEDIA_ERR_LOG("File is not visible");
