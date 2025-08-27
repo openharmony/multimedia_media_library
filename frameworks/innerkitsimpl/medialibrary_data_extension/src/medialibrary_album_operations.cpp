@@ -2708,7 +2708,8 @@ void SetMyOldAlbum(vector<string>& updateSqls, shared_ptr<MediaLibraryRdbStore> 
         string albumName = "";
         GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumName);
         int renameOperation = albumName != "" ? 1 : 0;
-        clearIsMeAlbum= "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 0, " + RENAME_OPERATION +
+        clearIsMeAlbum= "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 0, " +
+            ALBUM_RELATIONSHIP + " = '', " + RENAME_OPERATION +
             " = " + to_string(renameOperation) + " WHERE " + IS_ME + " = 1";
         updateSqls.push_back(clearIsMeAlbum);
     }
@@ -2839,6 +2840,81 @@ int32_t MediaLibraryAlbumOperations::SetHighlightSubtitle(const ValuesBucket &va
     return err;
 }
 
+int32_t SetAnalysisAlbumRelationship(const ValuesBucket &values, const DataSharePredicates &predicates)
+{
+    string relationship;
+    int err = GetStringVal(values, ALBUM_RELATIONSHIP, relationship);
+    CHECK_AND_RETURN_RET_LOG(err >= 0, E_INVALID_VALUES, "Invalid,relationship");
+
+    stringstream sql;
+    sql << "UPDATE" << ANALYSIS_ALBUM_TABLE << " SET " << ALBUM_RELATIONSHIP;
+    if (relationship.empty()) {
+        sql << " = NULL";
+    } else {
+        sql << " = \"" << relationship << "\"";
+    }
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
+    sql << " WHERE " << rdbPredicates.GetWhereClause();
+    string sqlStr = sql.str();
+
+    auto bindArgs = rdbPredicates.GetBindArgs();
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+    int ret =  rdbStore->ExecuteSql(sqlStr, bindArgs);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Update relationship failed, error id: %{public}d", ret);
+    return ret;
+}
+
+int32_t MediaLibraryAlbumOperations::SetPortraitAlbumRelationship(const ValuesBucket &values,
+    const DataSharePredicates &predicates, const int32_t isMeAlbum)
+{
+    MEDIA_INFO_LOG("SetPortraitAlbumRelationship start");
+    string relationship;
+    int err = GetStringVal(values, ALBUM_RELATIONSHIP, relationship);
+    CHECK_AND_RETURN_RET_LOG(err >= 0, E_INVALID_VALUES, "Invalid relationship");
+    if (relationship == "me") {
+        MEDIA_INFO_LOG("SetPortraitAlbumRelationship is me");
+        return MediaLibraryAlbumOperations::SetIsMe(values, predicates);
+    }
+
+    // 如果当前相册是“我”，设置为其它相册，则清理is_me等数据
+    if (isMeAlbum == 1) {
+        auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL,
+            "uniStore is nullptr! failed update for set relationship");
+        vector<string> updateSqls;
+        SetMyOldAlbum(updateSqls, uniStore);
+        CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err, "SetMyOldAlbum failed, error id: %{public}d", err);
+    }
+
+    stringstream sql;
+    sql << "UPDATE " << ANALYSIS_ALBUM_TABLE << " SET " << ALBUM_RELATIONSHIP;
+    if (rela..empty()) {
+        sql << " = NULL";
+    } else {
+        sql << " = \"" << relationship << "\"";
+    }
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
+    sql << " WHERE " << rdbPredicates.GetWhereClause();
+    string sqlStr = sql.str();
+    auto bindArgs = rdbPredicates.GetBindArgs();
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+    int ret = rdbStore->ExecuteSql(sqlStr, bindArgs);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Update relationship failed, error id: %{public}d", ret);
+
+    auto whereArgs = rdbPredicates.GetWhereArgs();
+    if (whereArgs.empty()) {
+        return E_INVALID_VALUES
+    }
+    string targetAlbumId = whereArgs[0];
+    vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
+    NotifyPortraitAlbum(targetAlbumId);
+    return ret;
+}
+
 /**
  * set target album is me
  * @param values is_me
@@ -2869,8 +2945,9 @@ int32_t MediaLibraryAlbumOperations::SetIsMe(const ValuesBucket &values, const D
     targetResultSet->Close();
 
     MEDIA_INFO_LOG("Start set is me, album id: %{public}s", targetAlbumId.c_str());
-    std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " + RENAME_OPERATION +
-        " = 1 WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
+    std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " +
+        ALBUM_RELATIONSHIP + " = 'me', " + RENAME_OPERATION + " = 1 WHERE " + GROUP_TAG + " IN(SELECT " +
+        GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
         ALBUM_ID + " = " + targetAlbumId + ")";
     std::string updateReNameOperation = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RENAME_OPERATION + " = " +
         std::to_string(ALBUM_TO_RENAME_FOR_ANALYSIS) + " WHERE " + ALBUM_ID + " IN (SELECT " + ALBUM_ID + " FROM " +
@@ -3054,6 +3131,8 @@ int32_t MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(const OperationTyp
             return SetHighlightCoverUri(values, predicates);
         case OperationType::HIGHLIGHT_SUBTITLE:
             return SetHighlightSubtitle(values, predicates);
+        case OperationType::RELATIONSHIP:
+            return SetAnalysisAlbumRelationship(values, predicates);
         case OperationType::DISMISS:
         case OperationType::GROUP_ALBUM_NAME:
         case OperationType::GROUP_COVER_URI:

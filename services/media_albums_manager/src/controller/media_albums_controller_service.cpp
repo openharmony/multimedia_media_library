@@ -35,6 +35,8 @@
 #include "change_request_set_display_level_vo.h"
 #include "change_request_set_is_me_vo.h"
 #include "change_request_set_album_name_dto.h"
+#include "change_request_set_relationship_vo.h"
+#include "get_relationship_vo.h"
 #include "medialibrary_data_manager_utils.h"
 #include "change_request_add_assets_vo.h"
 #include "change_request_remove_assets_vo.h"
@@ -175,6 +177,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ORDER_POSITION),
         &MediaAlbumsControllerService::SetOrderPosition
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_RELATIONSHIP),
+        &MediaAlbumsControllerService::SetRelationship
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_RELATIONSHIP),
+        &MediaAlbumsControllerService::GetRelationship
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_COMMIT_MODIFY),
@@ -736,6 +746,49 @@ int32_t MediaAlbumsControllerService::SetOrderPosition(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
+int32_t MediaAlbumsControllerService::SetRelationship(MessageParcel &data, MessageParcel &reply)
+{
+    ChangeRequestSetRelationshipReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetRelationship Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
+    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
+    bool cond = PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype);
+    if (!cond) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+    }
+    ret = MediaAlbumsService::GetInstance().SetPortraitRelationship(
+        reqBody.albumId, reqBody.relationship, reqBody.isMe);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAlbumsControllerService::GetRelationship(MessageParcel &data, MessageParcel &reply)
+{
+    GetRelationshipReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetRelationship Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
+    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
+    bool cond = PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype);
+    if (!cond) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+    }
+
+    GetRelationshipRespBody respBody;
+    ret = MediaAlbumsService::GetInstance().GetPortraitRelationship(reqBody.albumId, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
 int32_t MediaAlbumsControllerService::AlbumCommitModify(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter CommitModify");
@@ -974,6 +1027,35 @@ int32_t MediaAlbumsControllerService::GetOrderPosition(MessageParcel &data, Mess
 
     ret = MediaAlbumsService::GetInstance().GetOrderPosition(getOrderPositionDto, respBody);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAlbumsControllerService::GetPortraitRelationship(const int32_t albumId, GetRalationshipRespBody& resp)
+{
+    MEDIA_INFO_LOG("GetPortraitRelationship start");
+    NativeRdb::RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::AlBUM_ID, albumId)
+    std::vector<std::string> fetchColumn{ALBUM_RELATIONSHIP};
+
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, fetchColumn);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+
+    int count = 0;
+    int ret = resultSet->GetRowCount(count);
+    if (ret != NativeRdb::E_OK || count <= 0) {
+        MEDIA_ERR_LOG("GetRowCount failed, error code: %{public}d, count: %{public}d", ret, count);
+        return JS_INNER_FAIL;
+    }
+    if (resultSet->GoToFirstRow == NativeRdb::E_OK) {
+        resp.relationship = get<std::string>(ResultSetUtils::GetValFromColumn(
+            ALBUM_RELATIONSHIP, resultSet, TYPE_STRING));
+    } else {
+        MEDIA_ERR_LOG("query resultSet fail");
+        return E_ERR;
+    }
+    return E_OK;
 }
 
 int32_t MediaAlbumsControllerService::GetFaceId(MessageParcel &data, MessageParcel &reply)

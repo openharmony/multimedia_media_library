@@ -513,6 +513,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_merge_album_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_place_before_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_order_position_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/change_request_set_relationship_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_relationship_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_commit_modify_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_add_assets_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/album_remove_assets_vo.cpp",

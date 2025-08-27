@@ -50,6 +50,7 @@ private:
     EXPORT static napi_value JSGetOrderPosition(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetHighlightSubtitle(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteHighlightAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSAnalysisAlbumGetRelationship(napi_env env, napi_callback_info info);
 
     napi_env highlightmEnv_;
     std::shared_ptr<PhotoAlbum> highlightAlbumPtr = nullptr;
@@ -73,6 +74,7 @@ struct HighlightAlbumNapiAsyncContext : public NapiError {
     std::vector<std::string> assetIdArray;
     std::vector<int32_t> orderPositionArray;
     int32_t albumId;
+    std::string relationship;
     PhotoAlbumSubType subType;
 
     int32_t highlightAlbumInfoType = HighlightAlbumInfoType::INVALID_INFO;

@@ -42,6 +42,7 @@ enum class AlbumChangeOperation {
     DISMISS_ASSET,
     SET_IS_ME,
     DISMISS,
+    SET_RELATIONSHIP,
     SET_ORDER_POSITION,
     MOVE_ASSETS_WITH_URI,
     RECOVER_ASSETS_WITH_URI,
@@ -91,6 +92,8 @@ public:
     void ClearRecoverAssetArray();
     void ClearDeleteAssetArray();
     void ClearDismissAssetArray();
+    std::string GetRelationship() const;
+    int32_t GetIsMe() const;
     void ClearMoveMap();
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
 
@@ -123,6 +126,7 @@ private:
     EXPORT static napi_value JSSetDisplayLevel(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSMergeAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDismissAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetRelationship(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetIsMe(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDismiss(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetOrderPosition(napi_env env, napi_callback_info info);
@@ -146,6 +150,8 @@ private:
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> moveMap_;
     std::vector<AlbumChangeOperation> albumChangeOperations_;
     std::vector<std::pair<std::string, int32_t>> idOrderPositionPairs_;
+    std::string relationship_;
+    int32_t isMe_ = 0;
 };
 
 struct MediaAlbumChangeRequestAsyncContext : public NapiError {

@@ -49,6 +49,7 @@
 #include "story_cover_info_column.h"
 #include "story_play_info_column.h"
 #include "vision_column_comm.h"
+#include "vision_album_column.h"
 #include "medialibrary_photo_operations.h"
 #include "rdb_predicates.h"
 #include "dfx_refresh_manager.h"
@@ -132,6 +133,16 @@ int32_t MediaAlbumsService::SetHighlightUserActionData(const SetHighlightUserAct
 {
     int32_t err = this->rdbOperation_.SetHighlightUserActionData(dto);
     return err;
+}
+
+int32_t MediaAlbumsService::SetPortraitRelationship(const int32_t albumId, const string& relationship,
+    const int32_t isMe)
+{
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    values.Put(ALBUM_RELATIONSHIP, relationship);
+    return MediaLibraryAlbumOperations::SetPortraitAlbumRelationship(values, predicates, isMe);
 }
 
 int32_t MediaAlbumsService::SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto)

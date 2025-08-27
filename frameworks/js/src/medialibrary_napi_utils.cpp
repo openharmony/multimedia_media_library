@@ -1179,6 +1179,22 @@ int32_t MediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
     return E_SUCCESS;
 }
 
+bool MediaLibraryNapiUtils::ClearAllRelationship()
+{
+    Uri uri(PAH_RELATIONSHIP_ANA_PHOTO_ALBUM);
+    DataShare::DataShareValuesBucket valuesBucket;
+    // Assign empty string to clear relationship
+    valuesBucket.Put(ALBUM_RELATIONSHIP, "");
+    DataSharePredicates predicates;
+    predicates.IsNotNull(ALBUM_RELATIONSHIP);
+    int32_t result = UserFileClient::Update(uri, predicates, valuesBucket);
+    if (result < 0) {
+        NAPI_ERR_LOG("Failed to clear relationship, error: %{public}d", result);
+        return false;
+    }
+    return true;
+}
+
 int32_t MediaLibraryNapiUtils::GetAllLocationPredicates(DataSharePredicates &predicates)
 {
     SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
