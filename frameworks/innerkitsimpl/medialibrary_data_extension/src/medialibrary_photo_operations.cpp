@@ -1721,14 +1721,14 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
         "Failed to query file asset vector from db, errCode=%{private}d", errCode);
 
+    int32_t updateRows = UpdateFileInDb(cmd);
+    CHECK_AND_RETURN_RET_LOG(updateRows >= 0, updateRows,
+        "Update Photo in database failed, updateRows=%{public}d", updateRows);
+
     for (const auto& fileAsset : fileAssetVector) {
         errCode = SetUserComment(cmd, fileAsset);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to set user comment, errCode=%{private}d", errCode);
     }
-
-    int32_t updateRows = UpdateFileInDb(cmd);
-    CHECK_AND_RETURN_RET_LOG(updateRows >= 0, updateRows,
-        "Update Photo in database failed, updateRows=%{public}d", updateRows);
 
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
