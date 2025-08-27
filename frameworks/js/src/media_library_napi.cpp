@@ -9715,126 +9715,70 @@ napi_value MediaLibraryNapi::PhotoAccessHelperGetAssetMemberBatch(napi_env env, 
     std::vector<napi_value> fileAssetArray;
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, args[0], fileAssetArray));
 
-    std::vector<std::string> keys;
-    if (MediaLibraryNapiUtils::GetStringArray(env, args[1], keys) != napi_ok) {
+    std::vector<std::string> inputKeys;
+    if (MediaLibraryNapiUtils::GetStringArray(env, args[1], inputKeys) != napi_ok) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse memberKeys failed");
     }
 
-    std::vector<std::reference_wrapper<const std::unordered_map<
-        string, variant<int32_t, int64_t, string, double>>>> memberMaps;
-
-    memberMaps.reserve(fileAssetArray.size());
-    for (size_t i = 0; i < fileAssetArray.size(); i) {
-        FileAssetNapi *obj;
-        napi_status status = napi_unwrap(env, fileAssetArray[i], reinterpret_cast<void **>(&obj));
-        if (obj==nullptr || status != napi_ok) {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse args in array failed");
+    for (auto& inputKey: inputKeys) {
+        if (FileAssetNapi::CheckSystemApiKeys(env, inputKey) < 0) {
+            return nullptr;
         }
-        memberMaps.push_back(std::cref(obj->fileAssetPtr->GetMemberMap()));
     }
 
-    int fileInfoNum = memberMaps.size();
-    int keyNum = keys.size();
-
     napi_value resultArray;
-    status = napi_create_array_with_length(env, fileInfoNum, &resultArray);
+    status = napi_create_array_with_length(env, fileAssetArray.size(), &resultArray);
     if (status != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to create array");
         return nullptr;
     }
 
-    using value_type = std::variant<int32_t, int64_t, std::string, double>;
-    std::vector<std::vector<value_type>> rawResults(fileInfoNum, std::vector<value_type>(keyNum));
-
-    if (fileInfoNum >= 4000) {
-        const int numThreads = 4;
-        int chunkSize = (fileInfoNum  numThreads - 1) / numThreads;
-        std::vector<std::thread> threads;
-        std::atomic<bool> errorOccurred(false);
-
-        auto processChunk = [&memberMaps, &keys, &rawResults, &errorOccurred, keyNum](int start, int end) {
-            for (int j = start; j < end; j) {
-                for (int k = 0; k < keyNum; k) {
-                    const std::string& key = keys[k];
-                    if (memberMaps[j].get().count(key) == 0) {
-                        errorOccurred = true;
-                        return;
-                    }
-                    auto m = memberMaps[j].get().at(key);
-                    rawResults[j][k] = m;
-                }
-            }
-        };
-
-        for (int i = 0; i < numThreads; i) {
-            int start = i * chunkSize;
-            int end = std::min(start  chunkSize, fileInfoNum);
-            threads.emplace_back(processChunk, start, end);
+    for (size_t i = 0; i < fileAssetArray.size(); i++) {
+        FileAssetNapi *obj;
+        napi_status status = napi_unwrap(env, fileAssetArray[i], reinterpret_cast<void **>(&obj));
+        if (obj==nullptr || status != napi_ok) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse args in array failed");
         }
-
-        // Wait for all threads to finish
-        for (auto &t : threads) {
-            t.join();
-        }
-
-        if (errorOccurred) {
-            // keyError = true;
-            return {};
-        }
-
-    } else {
-        bool errorOccurred = false;
-        for (int j = 0; j < fileInfoNum && !errorOccurred; j) {
-            for (int k = 0; k < keyNum; k) {
-                const std::string& key = keys[k];
-                if (memberMaps[j].get().count(key) == 0) {
-                    errorOccurred = true;
-                    break;
-                }
-                auto m = memberMaps[j].get().at(key);
-                rawResults[j][k] = m;
-            }
-        }
-        if (errorOccurred) {
-            // keyError = true;
-            return {};
-        }
-    }
-    for (int i = 0; i < fileInfoNum; i) {
         napi_value members;
         status = napi_create_object(env, &members);
         if (status != napi_ok) {
             napi_throw_error(env, nullptr, "Failed to create members");
             return nullptr;
         }
-        for (int j = 0; j < keyNum; j) {
-            auto &m = rawResults[i][j];
-            napi_value jsResult;
-            if (m.index() == 2) {
-                napi_create_string_utf8(env, std::get<std::string>(m).c_str(), NAPI_AUTO_LENGTH, &jsResult);
-            } else if (m.index() == 0) {
-                napi_create_int32(env, std::get<int32_t>(m), &jsResult);
-            } else if (m.index() == 1) {
-                napi_create_int64(env, std::get<int64_t>(m), &jsResult);
-            } else if (m.index() == 3) {
-                napi_create_double(env, std::get<double>(m), &jsResult);
-            } else {
-                napi_throw_error(env, nullptr, "Unsupported type");
+        for (auto& inputKey: inputKeys) {
+            if (obj->fileAssetPtr->GetMemberMap().count(inputKey) == 0) {
+                // no exist throw error
+                NapiError::ThrowError(env, JS_E_FILE_KEY);
                 return nullptr;
             }
-            status = napi_set_named_property(env, members, keys[j].c_str(), jsResult);
+            napi_value jsResult = nullptr;
+            napi_get_undefined(env, &jsResult);
+            if (FileAssetNapi::IsSpecialKey(inputKey)) {
+                jsResult = FileAssetNapi::HandleGettingSpecialKey(env, inputKey, obj->fileAssetPtr);
+            }
+            else if (inputKey == PhotoColumn::PHOTO_DETAIL_TIME) {
+                jsResult = FileAssetNapi::HandleGettingDetailTimeKey(env, obj->fileAssetPtr);
+            } else {
+                auto m = obj->fileAssetPtr->GetMemberMap().at(inputKey);
+                if (m.index() == MEMBER_TYPE_STRING) {
+                    napi_create_string_utf8(env, get<string>(m).c_str(), NAPI_AUTO_LENGTH, &jsResult);
+                } else if (m.index() == MEMBER_TYPE_INT32) {
+                    napi_create_int32(env, get<int32_t>(m), &jsResult);
+                } else if (m.index() == MEMBER_TYPE_INT64) {
+                    napi_create_int64(env, FileAssetNapi::GetCompatDate(inputKey, get<int64_t>(m)), &jsResult);
+                } else {
+                    NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+                    return nullptr;
+                }
+            }
+            status = napi_set_named_property(env, members, inputKey.c_str(), jsResult);
             if (status != napi_ok) {
                 napi_throw_error(env, nullptr, "Failed to set property");
                 return nullptr;
             }
         }
-        status = napi_set_element(env, resultArray, i, members);
-        if (status != napi_ok) {
-            napi_throw_error(env, nullptr, "Failed to set member element");
-            return nullptr;
-        }
     }
-    
+
     if (resultArray == nullptr) {
         NapiError::ThrowError(env, JS_E_FILE_KEY);
         return nullptr;
