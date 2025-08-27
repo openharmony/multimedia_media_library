@@ -601,6 +601,7 @@ bool SourceLoader::RunLoading()
                     STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
                 break;
             }
+            data_.lastLoadSource = state_;
             state_ = SourceState::FINISH;
             DfxManager::GetInstance()->HandleThumbnailGeneration(data_.stats);
         } while (0);
@@ -613,7 +614,6 @@ bool SourceLoader::RunLoading()
             STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
-    data_.lastLoadSource = state_;
     return true;
 }
 
