@@ -190,6 +190,13 @@ const size_t LCD_UPLOAD_LIMIT_SIZE = 2048000;
 // Only check the latest 3000 data to avoid opreation taking too long time
 const uint32_t MAXIMUM_LCD_CHECK_NUM = 3000;
 
+constexpr int64_t RESTORE_THUMBNAIL_REPORT_INTERVAL_MS = 5 * 60 * 1000;
+constexpr int32_t REPORT_OPEN = 1;
+constexpr int32_t REPORT_END = 0;
+constexpr float PROGRESS_TO_PERCENT = 100.0f;
+constexpr float MILLIS_PER_MINUTE = 60000.0f;
+constexpr int64_t SINGLE_THREAD_RUNTIME_MS = 350;
+
 const std::unordered_set<ThumbnailQuality> THUMBNAIL_QUALITY_SET = {
     ThumbnailQuality::POOR,
     ThumbnailQuality::NOT_BAD,

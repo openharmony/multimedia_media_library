@@ -66,6 +66,7 @@
           "image_framework",
           "napi",
           "resource_management",
+          "resource_schedule_service",
           "runtime_core",
           "os_account",
           "player_framework",
