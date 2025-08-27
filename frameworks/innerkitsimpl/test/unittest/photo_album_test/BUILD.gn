@@ -28,7 +28,6 @@ ohos_unittest("PhotoAlbumTest") {
 
   sources = [
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
-    "./src/photo_album_test.cpp",
   ]
 
   deps = [
