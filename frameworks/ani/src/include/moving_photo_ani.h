@@ -62,6 +62,8 @@ public:
     void SetThreadsafeFunction(ThreadFunctionOnProgress threadsafeFunction);
     static int32_t DoMovingPhotoTranscode(int32_t &videoFd, MovingPhotoAsyncContext* context);
     static void AfterTranscoder(void *context, int32_t errCode);
+    static ani_ref TransferToDynamicMovingPhoto(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
+    static ani_object TransferToStaticMovingPhoto(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
 
 private:
     static ani_object Constructor(ani_env *env, [[maybe_unused]] ani_class clazz, ani_string photoUriAni);

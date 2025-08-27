@@ -36,8 +36,14 @@
 #include "album_photo_query_vo.h"
 #include "album_get_assets_vo.h"
 #include "get_face_id_vo.h"
+#include "interop_js/arkts_esvalue.h"
+#include "interop_js/arkts_interop_js_api.h"
+#include "transfer_utils.h"
+#include "ani_transfer_lib_manager.h"
 
 namespace OHOS::Media {
+using CreatePhotoAlbumNapiFn = napi_value (*)(napi_env, TransferUtils::TransferSharedPtr);
+using GetPhotoAlbumInstanceFn = TransferUtils::TransferSharedPtr (*)(PhotoAlbumNapi*);
 using DataSharePredicates = OHOS::DataShare::DataSharePredicates;
 using DataShareValuesBucket = OHOS::DataShare::DataShareValuesBucket;
 struct PhotoAlbumAttributes {
@@ -88,6 +94,8 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
             reinterpret_cast<void *>(PhotoAccessGetSharedPhotoAssets)},
         ani_native_function {"getdateAdded", nullptr, reinterpret_cast<void *>(GetdateAdded)},
         ani_native_function {"getdateModified", nullptr, reinterpret_cast<void *>(GetdateModified)},
+        ani_native_function {"transferToDynamicAlbum", nullptr, reinterpret_cast<void *>(TransferToDynamicAlbum)},
+        ani_native_function {"transferToStaticAlbum", nullptr, reinterpret_cast<void *>(TransferToStaticAlbum)}
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
@@ -1357,6 +1365,75 @@ ani_long PhotoAlbumAni::GetdateModified(ani_env *env, ani_object object)
     }
     auto dateModified = photoAlbumAni->GetPhotoAlbumInstance()->GetDateModified();
     return static_cast<ani_long>(dateModified);
+}
+
+PhotoAlbumAni* GetNativePhotoAlbumAni(ani_env *env, ani_object object)
+{
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    CHECK_COND_RET(object != nullptr, nullptr, "object is null");
+
+    auto photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
+    return photoAlbumAni;
+}
+
+ani_ref PhotoAlbumAni::TransferToDynamicAlbum(ani_env *env, [[maybe_unused]] ani_class, ani_object input)
+{
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    ani_ref undefinedRef {};
+    env->GetUndefined(&undefinedRef);
+    napi_env jsEnv;
+    arkts_napi_scope_open(env, &jsEnv);
+    auto aniPhotoAlbum = GetNativePhotoAlbumAni(env, input);
+    if (aniPhotoAlbum == nullptr || aniPhotoAlbum->GetPhotoAlbumInstance() == nullptr) {
+        ANI_ERR_LOG("aniPhotoAlbum or photoAlbumInstance is null");
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
+
+    CreatePhotoAlbumNapiFn funcHandle = nullptr;
+    if (!LibManager::GetSymbol("CreatePhotoAlbumNapi", funcHandle)) {
+        ANI_ERR_LOG("Get CreatePhotoAlbumNapi symbol failed");
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
+    if (funcHandle == nullptr) {
+        ANI_ERR_LOG("CreatePhotoAlbumNapi function handle is null");
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
+    std::shared_ptr<PhotoAlbum> photoAlbum = aniPhotoAlbum->GetPhotoAlbumInstance();
+    TransferUtils::TransferSharedPtr transferPtr;
+    transferPtr.photoAlbumPtr = photoAlbum.get();
+    napi_value napiPhotoAlbum = funcHandle(jsEnv, transferPtr);
+    if (napiPhotoAlbum == nullptr) {
+        ANI_ERR_LOG("CreatePhotoAlbumNapi failed");
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
+
+    ani_ref result {};
+    arkts_napi_scope_close_n(jsEnv, 1, &napiPhotoAlbum, &result);
+    return result;
+}
+
+ani_object PhotoAlbumAni::TransferToStaticAlbum(ani_env *env, [[maybe_unused]] ani_class, ani_object input)
+{
+    PhotoAlbumNapi *napiPhotoAlbum = nullptr;
+    arkts_esvalue_unwrap(env, input, (void **)&napiPhotoAlbum);
+    CHECK_COND_RET(napiPhotoAlbum != nullptr, nullptr, "napiPhotoAlbum is null");
+
+    GetPhotoAlbumInstanceFn funcHandle = nullptr;
+    CHECK_COND_RET(!LibManager::GetSymbol("GetPhotoAlbumInstance", funcHandle), nullptr,
+        "Get GetPhotoAlbumInstance symbol failed");
+    CHECK_COND_RET(funcHandle != nullptr, nullptr, "funcHandle is null");
+    TransferUtils::TransferSharedPtr nativePhotoAlbumPtr = funcHandle(napiPhotoAlbum);
+    CHECK_COND_RET(nativePhotoAlbumPtr.photoAlbumPtr != nullptr, nullptr, "nativePhotoAlbumPtr is null");
+    std::unique_ptr<PhotoAlbum> nativePhotoAlbum = std::unique_ptr<PhotoAlbum>(nativePhotoAlbumPtr.photoAlbumPtr);
+    CHECK_COND_RET(nativePhotoAlbum != nullptr, nullptr, "nativeFileAsset is null");
+    auto aniFileAsset = CreatePhotoAlbumAni(env, nativePhotoAlbum);
+    CHECK_COND_RET(aniFileAsset != nullptr, nullptr, "null aniWrapper");
+
+    return aniFileAsset;
 }
 
 } // namespace OHOS::Media
