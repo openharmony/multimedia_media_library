@@ -22,7 +22,7 @@
 
 namespace OHOS::Media {
 
-bool GetOrderPositionReqBody::Unmarshalling(MessageParcel &parcel)
+bool GetRelationshipReqBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadInt32(this->albumId);
     CHECK_AND_RETURN_RET(status, status);
@@ -33,7 +33,7 @@ bool GetOrderPositionReqBody::Unmarshalling(MessageParcel &parcel)
     return true;
 }
 
-bool GetOrderPositionReqBody::Marshalling(MessageParcel &parcel) const
+bool GetRelationshipReqBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = parcel.WriteInt32(this->albumId);
     CHECK_AND_RETURN_RET(status, status);
@@ -44,14 +44,14 @@ bool GetOrderPositionReqBody::Marshalling(MessageParcel &parcel) const
     return true;
 }
 
-bool GetOrderPositionRespBody::Unmarshalling(MessageParcel &parcel)
+bool GetRelationshipRespBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadString(this->relationship);
     CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 
-bool GetOrderPositionRespBody::Marshalling(MessageParcel &parcel) const
+bool GetRelationshipRespBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = parcel.WriteString(this->relationship);
     CHECK_AND_RETURN_RET(status, status);
