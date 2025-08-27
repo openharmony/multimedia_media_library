@@ -159,6 +159,12 @@ private:
     EXPORT static napi_value PhotoAccessHelperGetEditData(napi_env env, napi_callback_info info);
     static napi_value GetExports(napi_env &env, napi_value &exports, napi_property_descriptor *file_asset_props,
         int32_t fileAssetPropsSize);
+    static int32_t CheckSystemApiKeys(napi_env env, const string &key);
+    static bool IsSpecialKey(const string &key);
+    static napi_value HandleGettingSpecialKey(napi_env env, const string &key, const shared_ptr<FileAsset> &fileAssetPtr);
+    static napi_value HandleGettingDetailTimeKey(napi_env env, const shared_ptr<FileAsset> &fileAssetPtr);
+    static napi_value HandleDateTransitionKey(napi_env env, const string &key, const shared_ptr<FileAsset> &fileAssetPtr);
+    static int64_t GetCompatDate(const string inputKey, const int64_t date);
 
     bool HandleParamSet(const std::string &inputKey, const std::string &value, ResultNapiType resultNapiType);
     napi_env env_;

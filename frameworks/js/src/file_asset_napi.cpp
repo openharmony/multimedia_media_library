@@ -2937,7 +2937,7 @@ shared_ptr<FileAsset> FileAssetNapi::GetFileAssetInstance() const
     return fileAssetPtr;
 }
 
-static int32_t CheckSystemApiKeys(napi_env env, const string &key)
+int32_t FileAssetNapi::CheckSystemApiKeys(napi_env env, const string &key)
 {
     static const set<string> SYSTEM_API_KEYS = {
         MediaColumn::MEDIA_DATE_TRASHED,
@@ -2962,7 +2962,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
     return E_SUCCESS;
 }
 
-static bool IsSpecialKey(const string &key)
+bool FileAssetNapi::IsSpecialKey(const string &key)
 {
     static const set<string> SPECIAL_KEY = {
         PENDING_STATUS,
@@ -2975,7 +2975,8 @@ static bool IsSpecialKey(const string &key)
     return false;
 }
 
-static napi_value HandleGettingSpecialKey(napi_env env, const string &key, const shared_ptr<FileAsset> &fileAssetPtr)
+napi_value FileAssetNapi::HandleGettingSpecialKey(napi_env env, const string &key,
+ const shared_ptr<FileAsset> &fileAssetPtr)
 {
     napi_value jsResult = nullptr;
     if (key == PENDING_STATUS) {
@@ -3082,7 +3083,8 @@ static napi_value HandleGettingDetailTimeKey(napi_env env, const shared_ptr<File
     return jsResult;
 }
 
-static napi_value HandleDateTransitionKey(napi_env env, const string &key, const shared_ptr<FileAsset> &fileAssetPtr)
+napi_value FileAssetNapi::HandleDateTransitionKey(napi_env env, const string &key,
+ const shared_ptr<FileAsset> &fileAssetPtr)
 {
     napi_value jsResult = nullptr;
     if (fileAssetPtr->GetMemberMap().count(key) == 0) {
@@ -3100,7 +3102,7 @@ static napi_value HandleDateTransitionKey(napi_env env, const string &key, const
     return jsResult;
 }
 
-static inline int64_t GetCompatDate(const string inputKey, const int64_t date)
+inline int64_t FileAssetNapi::GetCompatDate(const string inputKey, const int64_t date)
 {
     if (inputKey == MEDIA_DATA_DB_DATE_ADDED || inputKey == MEDIA_DATA_DB_DATE_MODIFIED ||
         inputKey == MEDIA_DATA_DB_DATE_TRASHED || inputKey == MEDIA_DATA_DB_DATE_TAKEN) {

@@ -420,6 +420,7 @@ napi_value FetchFileResultNapi::PhotoAccessHelperInit(napi_env env, napi_value e
             DECLARE_NAPI_FUNCTION("getLastObject", JSGetLastObject),
             DECLARE_NAPI_FUNCTION("getObjectByPosition", JSGetPositionObject),
             DECLARE_NAPI_FUNCTION("getAllObjects", JSGetAllObject),
+            DECLARE_NAPI_FUNCTION("getRangeObjects", JSGetRangeObjects),
             DECLARE_NAPI_FUNCTION("close", JSClose)
         }
     };
@@ -1076,10 +1077,13 @@ napi_value FetchFileResultNapi::JSGetRangeObjects(napi_env env, napi_callback_in
         asyncContext->objectPtr = asyncContext->objectInfo->propertyPtr;
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "propertyPtr is nullptr");
 
-        status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void *data) {
+        status = napi_create_async_work(
+            env, nullptr, resource, 
+            [](napi_env env, void *data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
                 // Validate range before execution
                 if (context->offset < 0 || context->length <= 0) {
+                    //context->error = "Invalid range parameters";
                     return;
                 }
                 context->GetObjectsInRange();
