@@ -537,9 +537,14 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
 {
     vector<std::string> moveFailedData;
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        bool cond = (!MediaFileUtils::IsFileExists(fileInfos[i].filePath) ||
-            fileInfos[i].cloudPath.empty() || !fileInfos[i].needMove);
-        CHECK_AND_CONTINUE(!cond);
+        if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath) ||
+            fileInfos[i].cloudPath.empty() || !fileInfos[i].needMove) {
+            fileInfos[i].needVisible = false;
+            fileInfos[i].needMove = false;
+            MEDIA_ERR_LOG("File is not visible");
+            continue;
+        }
+
         int32_t errCode = MoveAsset(fileInfos[i]);
         if (errCode != E_OK) {
             fileInfos[i].needUpdate = false;

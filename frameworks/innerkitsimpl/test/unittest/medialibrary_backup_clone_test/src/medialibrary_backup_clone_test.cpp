@@ -2538,7 +2538,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_migrate_fil
     int64_t fileMoveCount = 0;
     int64_t videoFileMoveCount = 0;
     restoreService->MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount);
-    EXPECT_TRUE(fileInfos[0].needVisible);
+    EXPECT_FALSE(fileInfos[0].needVisible);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_migrate_cloud_file_test, TestSize.Level2)
