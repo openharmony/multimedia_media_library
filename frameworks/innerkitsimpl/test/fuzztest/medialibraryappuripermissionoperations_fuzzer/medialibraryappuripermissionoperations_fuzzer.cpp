@@ -17,11 +17,11 @@
 
 #include <cstdint>
 #include <string>
+#include <fstream>
 #include <vector>
 #include <fuzzer/FuzzedDataProvider.h>
 
 #include "ability_context_impl.h"
-#include "medialibrary_app_uri_permission_operations.h"
 #include "datashare_predicates.h"
 #include "media_app_uri_permission_column.h"
 #include "media_column.h"
@@ -40,6 +40,10 @@
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
 
+#define private public
+#include "medialibrary_app_uri_permission_operations.h"
+#undef private
+
 namespace OHOS {
 using namespace std;
 using namespace DataShare;
@@ -51,6 +55,8 @@ static const int32_t NUM_BYTES = 1;
 static const int32_t MAX_PERMISSION_TYPE = 6;
 static const int32_t MAX_URI_TYPE = 2;
 static const int32_t MAX_DATA = 1;
+static const int32_t MAX_BYTE_VALUE = 256;
+static const int32_t SEED_SIZE = 1024;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 FuzzedDataProvider *FDP = nullptr;
 
@@ -103,6 +109,7 @@ static int32_t InsertPhotoAsset(string photoId)
 
 static void HandleInsertOperationFuzzer(string appId, int32_t photoId, int32_t permissionType, int32_t uriType)
 {
+    MEDIA_INFO_LOG("HandleInsertOperationFuzzer start");
     DataShareValuesBucket values;
     values.Put(Media::AppUriPermissionColumn::APP_ID, appId);
     values.Put(Media::AppUriPermissionColumn::FILE_ID, photoId);
@@ -113,10 +120,12 @@ static void HandleInsertOperationFuzzer(string appId, int32_t photoId, int32_t p
     NativeRdb::ValuesBucket rdbValue = RdbDataShareAdapter::RdbUtils::ToValuesBucket(values);
     cmd.SetValueBucket(rdbValue);
     Media::MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
+    MEDIA_INFO_LOG("HandleInsertOperationFuzzer end");
 }
 
 static void DeleteOperationFuzzer(string appId, int32_t photoId, int32_t permissionType)
 {
+    MEDIA_INFO_LOG("DeleteOperationFuzzer start");
     DataSharePredicates predicates;
     predicates.And()->EqualTo(Media::AppUriPermissionColumn::APP_ID, appId);
     predicates.And()->EqualTo(Media::AppUriPermissionColumn::FILE_ID, photoId);
@@ -124,10 +133,12 @@ static void DeleteOperationFuzzer(string appId, int32_t photoId, int32_t permiss
     NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
         Media::AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     Media::MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
+    MEDIA_INFO_LOG("DeleteOperationFuzzer end");
 }
 
 static void BatchInsertFuzzer()
 {
+    MEDIA_INFO_LOG("BatchInsertFuzzer start");
     vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int32_t i = 0; i < BatchInsertNumber; i++) {
         DataShareValuesBucket value;
@@ -145,10 +156,12 @@ static void BatchInsertFuzzer()
     Media::MediaLibraryCommand cmd(Media::OperationObject::MEDIA_APP_URI_PERMISSION, Media::OperationType::CREATE,
         Media::MediaLibraryApi::API_10);
     Media::MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, dataShareValues);
+    MEDIA_INFO_LOG("BatchInsertFuzzer end");
 }
 
 static void BatchInsertInnerFuzzer()
 {
+    MEDIA_INFO_LOG("BatchInsertInnerFuzzer start");
     vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int32_t i = 0; i < BatchInsertNumber; i++) {
         DataShareValuesBucket value;
@@ -171,6 +184,27 @@ static void BatchInsertInnerFuzzer()
     std::string funcName = FDP->ConsumeBytesAsString(NUM_BYTES);
     std::shared_ptr<Media::TransactionOperations> trans = std::make_shared<Media::TransactionOperations>(funcName);
     Media::MediaLibraryAppUriPermissionOperations::BatchInsertInner(cmd, dataShareValues, trans);
+    MEDIA_INFO_LOG("BatchInsertInnerFuzzer end");
+}
+
+static void UpdatePermissionTypeFuzzer()
+{
+    MEDIA_INFO_LOG("UpdatePermissionTypeFuzzer start");
+    NativeRdb::RdbPredicates predicates(Media::AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    if (FDP->ConsumeBool()) {
+        predicates.EqualTo(Media::AppUriPermissionColumn::FILE_ID, FDP->ConsumeIntegral<int64_t>());
+    }
+    predicates.EqualTo(Media::AppUriPermissionColumn::PERMISSION_TYPE, FuzzPermissionType());
+    std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, {});
+    CHECK_AND_RETURN_LOG(resultSet != nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK, "failed to query");
+
+    int permissionType = FuzzPermissionType();
+    std::shared_ptr<Media::TransactionOperations> trans;
+    if (FDP->ConsumeBool()) {
+        trans = make_shared<Media::TransactionOperations>(FDP->ConsumeBytesAsString(NUM_BYTES));
+    }
+    Media::MediaLibraryAppUriPermissionOperations::UpdatePermissionType(resultSet, permissionType, trans);
+    MEDIA_INFO_LOG("UpdatePermissionTypeFuzzer end");
 }
 
 static void AppUriPermissionOperationsFuzzer()
@@ -187,6 +221,7 @@ static void AppUriPermissionOperationsFuzzer()
 
     BatchInsertFuzzer();
     BatchInsertInnerFuzzer();
+    UpdatePermissionTypeFuzzer();
 }
 
 void SetTables()
@@ -225,6 +260,27 @@ static void Init()
     SetTables();
 }
 
+static int32_t AddSeed()
+{
+    char *seedData = new char[OHOS::SEED_SIZE];
+    for (int i = 0; i < OHOS::SEED_SIZE; i++) {
+        seedData[i] = static_cast<char>(i % MAX_BYTE_VALUE);
+    }
+
+    const char* filename = "corpus/seed.txt";
+    std::ofstream file(filename, std::ios::binary | std::ios::trunc);
+    if (!file) {
+        MEDIA_ERR_LOG("Cannot open file filename:%{public}s", filename);
+        delete[] seedData;
+        return Media::E_ERR;
+    }
+    file.write(seedData, OHOS::SEED_SIZE);
+    file.close();
+    delete[] seedData;
+    MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
+    return Media::E_OK;
+}
+
 static inline void ClearKvStore()
 {
     Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
@@ -233,6 +289,7 @@ static inline void ClearKvStore()
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 {
+    OHOS::AddSeed();
     OHOS::Init();
     return 0;
 }

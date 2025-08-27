@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Copyright (c) 2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,19 +14,30 @@
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-ohos_fuzztest("MediaLibraryMultistagesDeferredCaptureFuzzTest") {
+ohos_fuzztest("MediaLibraryPhotoCustomRestoreOperationFuzzTest") {
   module_out_path = "media_library/media_library"
   fuzz_config_file = "."
 
+  defines = []
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_efficiency_manager)) {
+    defines += [ "EFFICIENCY_MANAGER_ENABLE" ]
+  }
+
   include_dirs = [
-    ".",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
+    "${MEDIALIB_SERVICES_PATH}/media_library/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_manager/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
-    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/operation",
   ]
 
   sources = [
-    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/deferred_video_proc_adapter.cpp",
-    "./medialibrary_multistages_deferred_capture_fuzzer.cpp"
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/medialibrary_custom_restore_notify.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_custom_restore_operation.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
+    "./photocustomrestoreoperation_fuzzer.cpp",
   ]
 
   deps = [
@@ -34,37 +45,36 @@ ohos_fuzztest("MediaLibraryMultistagesDeferredCaptureFuzzTest") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
   ]
 
-  defines = []
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.multimedia_camera_framework) &&
-      global_parts_info.multimedia_camera_framework) {
-    defines += ["ABILITY_CAMERA_SUPPORT"]
-  }
-
   external_deps = [
     "ability_base:configuration",
-    "ability_base:want",
     "ability_base:zuri",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
-    "ability_runtime:app_manager",
-    "ability_runtime:dataobs_manager",
     "ability_runtime:runtime",
-    "bundle_framework:appexecfwk_core",
-    "camera_framework:camera_framework",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken",
+    "access_token:libprivacy_sdk",
+    "access_token:libtoken_setproc",
     "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
-    "graphic_surface:surface",
+    "data_share:datashare_provider",
+    "dfs_service:cloudsync_kit_inner",
+    "ffrt:libffrt",
     "hilog:libhilog",
+    "hisysevent:libhisysevent",
+    "hitrace:hitrace_meter",
     "image_framework:image_native",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "player_framework:media_client",
+    "preferences:native_preferences",
     "relational_store:native_rdb",
-    "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
+    "user_file_service:file_access_extension_ability_kit",
   ]
 }
