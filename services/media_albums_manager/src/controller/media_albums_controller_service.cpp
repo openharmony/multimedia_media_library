@@ -786,7 +786,7 @@ int32_t MediaAlbumsControllerService::GetRelationship(MessageParcel &data, Messa
 
     GetRelationshipRespBody respBody;
     ret = MediaAlbumsService::GetInstance().GetPortraitRelationship(reqBody.albumId, respBody);
-    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::AlbumCommitModify(MessageParcel &data, MessageParcel &reply)
@@ -1029,11 +1029,11 @@ int32_t MediaAlbumsControllerService::GetOrderPosition(MessageParcel &data, Mess
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
-int32_t MediaAlbumsControllerService::GetPortraitRelationship(const int32_t albumId, GetRalationshipRespBody& resp)
+int32_t MediaAlbumsControllerService::GetPortraitRelationship(const int32_t albumId, GetRelationshipRespBody& resp)
 {
     MEDIA_INFO_LOG("GetPortraitRelationship start");
     NativeRdb::RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::AlBUM_ID, albumId)
+    predicates.EqualTo(PhotoAlbumColumns::AlBUM_ID, albumId);
     std::vector<std::string> fetchColumn{ALBUM_RELATIONSHIP};
 
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, fetchColumn);
@@ -1048,7 +1048,7 @@ int32_t MediaAlbumsControllerService::GetPortraitRelationship(const int32_t albu
         MEDIA_ERR_LOG("GetRowCount failed, error code: %{public}d, count: %{public}d", ret, count);
         return JS_INNER_FAIL;
     }
-    if (resultSet->GoToFirstRow == NativeRdb::E_OK) {
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
         resp.relationship = get<std::string>(ResultSetUtils::GetValFromColumn(
             ALBUM_RELATIONSHIP, resultSet, TYPE_STRING));
     } else {

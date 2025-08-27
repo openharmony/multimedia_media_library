@@ -22,7 +22,7 @@
 
 namespace OHOS::Media {
 
-bool ChangeRequestSetOrderPositionReqBody::Unmarshalling(MessageParcel &parcel)
+bool ChangeRequestSetRelationshipReqBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadInt32(this->albumId);
     CHECK_AND_RETURN_RET(status, status);
@@ -37,7 +37,7 @@ bool ChangeRequestSetOrderPositionReqBody::Unmarshalling(MessageParcel &parcel)
     return true;
 }
 
-bool ChangeRequestSetOrderPositionReqBody::Marshalling(MessageParcel &parcel) const
+bool ChangeRequestSetRelationshipReqBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = parcel.WriteInt32(this->albumId);
     CHECK_AND_RETURN_RET(status, status);
@@ -50,4 +50,5 @@ bool ChangeRequestSetOrderPositionReqBody::Marshalling(MessageParcel &parcel) co
     status = parcel.WriteInt32(this->isMe);
     CHECK_AND_RETURN_RET(status, status);
     return true;
+}
 } // namespace OHOS::Media

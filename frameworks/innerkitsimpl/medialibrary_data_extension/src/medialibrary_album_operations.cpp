@@ -2844,10 +2844,10 @@ int32_t SetAnalysisAlbumRelationship(const ValuesBucket &values, const DataShare
 {
     string relationship;
     int err = GetStringVal(values, ALBUM_RELATIONSHIP, relationship);
-    CHECK_AND_RETURN_RET_LOG(err >= 0, E_INVALID_VALUES, "Invalid,relationship");
+    CHECK_AND_RETURN_RET_LOG(err >= 0, E_INVALID_VALUES, "Invalid relationship");
 
     stringstream sql;
-    sql << "UPDATE" << ANALYSIS_ALBUM_TABLE << " SET " << ALBUM_RELATIONSHIP;
+    sql << "UPDATE " << ANALYSIS_ALBUM_TABLE << " SET " << ALBUM_RELATIONSHIP;
     if (relationship.empty()) {
         sql << " = NULL";
     } else {
@@ -2861,7 +2861,7 @@ int32_t SetAnalysisAlbumRelationship(const ValuesBucket &values, const DataShare
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
-    int ret =  rdbStore->ExecuteSql(sqlStr, bindArgs);
+    int ret = rdbStore->ExecuteSql(sqlStr, bindArgs);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Update relationship failed, error id: %{public}d", ret);
     return ret;
 }
@@ -2885,12 +2885,13 @@ int32_t MediaLibraryAlbumOperations::SetPortraitAlbumRelationship(const ValuesBu
             "uniStore is nullptr! failed update for set relationship");
         vector<string> updateSqls;
         SetMyOldAlbum(updateSqls, uniStore);
+        int err = ExecSqls(updateSqls, uniStore);
         CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err, "SetMyOldAlbum failed, error id: %{public}d", err);
     }
 
     stringstream sql;
     sql << "UPDATE " << ANALYSIS_ALBUM_TABLE << " SET " << ALBUM_RELATIONSHIP;
-    if (rela..empty()) {
+    if (relationship.empty()) {
         sql << " = NULL";
     } else {
         sql << " = \"" << relationship << "\"";
@@ -2911,7 +2912,7 @@ int32_t MediaLibraryAlbumOperations::SetPortraitAlbumRelationship(const ValuesBu
     }
     string targetAlbumId = whereArgs[0];
     vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
-    NotifyPortraitAlbum(targetAlbumId);
+    NotifyPortraitAlbum(changeAlbumIds);
     return ret;
 }
 

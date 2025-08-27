@@ -703,6 +703,35 @@ int32_t MediaAlbumsService::GetOrderPosition(const GetOrderPositionDto& getOrder
     return E_OK;
 }
 
+int32_t MediaAlbumsService::GetPortraitRelationship(const int32_t albumId, GetRelationshipRespBody& resp)
+{
+    MEDIA_INFO_LOG("GetPortraitRelationship start");
+    NativeRdb::RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::AlBUM_ID, albumId);
+    std::vector<std::string> fetchColumn{ALBUM_RELATIONSHIP};
+
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, fetchColumn);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+
+    int count = 0;
+    int ret = resultSet->GetRowCount(count);
+    if (ret != NativeRdb::E_OK || count <= 0) {
+        MEDIA_ERR_LOG("GetRowCount failed, error code: %{public}d, count: %{public}d", ret, count);
+        return JS_INNER_FAIL;
+    }
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        resp.relationship = get<std::string>(ResultSetUtils::GetValFromColumn(
+            ALBUM_RELATIONSHIP, resultSet, TYPE_STRING));
+    } else {
+        MEDIA_ERR_LOG("query resultSet fail");
+        return E_ERR;
+    }
+    return E_OK;
+}
+
 int32_t MediaAlbumsService::GetFaceId(int32_t albumId, string& groupTag)
 {
     return this->rdbOperation_.GetFaceId(albumId, groupTag);

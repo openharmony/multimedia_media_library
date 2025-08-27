@@ -724,19 +724,19 @@ static void JSGetRelationshipExecute(napi_env env, void* data)
     tracer.Start("JSGetRelationshipExecute");
     NAPI_INFO_LOG("JSGetRelationshipExecute start");
 
-    auto* context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
+    auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "objectInfo is null");
-    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
 
     GetRelationshipReqBody reqBody;
-    GetRalationshipRespBody respBody;
+    GetRelationshipRespBody respBody;
     reqBody.albumId = photoAlbum->GetAlbumId();
     reqBody.albumType = photoAlbum->GetPhotoAlbumType();
     reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_RELATIONSHIP);
-    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
     if (result < 0) {
         NAPI_ERR_LOG("Failed to get relationship, error: %{public}d", result);
         context->error = JS_INNER_FAIL;
@@ -753,17 +753,17 @@ static void JSGetRelationshipCompleteCallback(napi_env env, napi_status status, 
     MediaLibraryTracer tracer;
     tracer.Start("JSGetRelationshipCompleteCallback");
 
-    auto* context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
+    auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    unique_ptr<JSAsyncContextOutput> asyncContext = make_unique<JSAsyncContextOutput>();
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
     if (context->error == ERR_DEFAULT) {
         CHECK_ARGS_RET_VOID(env,
-            napi_create_string_utf8(env, context->relationship.c_str(), NAPI_AUTO_LENGTH, &jsContext=>data),
+            napi_create_string_utf8(env, context->relationship.c_str(), NAPI_AUTO_LENGTH, &jsContext->data),
             JS_INNER_FAIL);
         jsContext->status = true;
     } else {
@@ -797,7 +797,7 @@ napi_value HighlightAlbumNapi::JSAnalysisAlbumGetRelationship(napi_env env, napi
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, undefinedObject, "asyncContext context is null");
 
     CHECK_COND_WITH_ERR_MESSAGE(env,
-        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_TWO) == napi_ok,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ZERO) == napi_ok,
         MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "Failed to get object info");
     // Check album instance
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
