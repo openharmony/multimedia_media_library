@@ -25,38 +25,23 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_kvstore_manager.h"
+#include "picture_adapter.h"
+#define private public
+#define protected public
 #include "deferred_photo_proc_session.h"
 #include "deferred_photo_proc_adapter.h"
-#include "multistages_capture_deferred_photo_proc_session_callback.h"
-#include "medialibrary_kvstore_manager.h"
+#include "deferred_video_proc_adapter.h"
+#undef private
+#undef protected
 
 namespace OHOS {
 using namespace std;
-static const int32_t E_ERR = -1;
+using namespace Media;
 static const int32_t NUM_BYTES = 1;
-static const int32_t MAX_DPS_ERROR_CODE = 10;
 static const string PHOTOS_TABLE = "Photos";
 FuzzedDataProvider *provider = nullptr;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
-
-static inline CameraStandard::DpsErrorCode FuzzDpsErrorCode()
-{
-    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_DPS_ERROR_CODE);
-    return static_cast<CameraStandard::DpsErrorCode>(value);
-}
-
-static int32_t InsertAsset(string photoId)
-{
-    if (g_rdbStore == nullptr) {
-        return E_ERR;
-    }
-    NativeRdb::ValuesBucket values;
-    values.PutString(Media::PhotoColumn::PHOTO_ID, photoId);
-    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
-    int64_t fileId = 0;
-    g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
-    return static_cast<int32_t>(fileId);
-}
 
 void SetTables()
 {
@@ -92,8 +77,12 @@ static void Init()
 
 static void MultistagesCaptureDeferredPhotoProcAdapterTest()
 {
-    std::shared_ptr<Media::DeferredPhotoProcessingAdapter> deferredProcSession =
+    MEDIA_INFO_LOG("MultistagesCaptureDeferredPhotoProcAdapterTest start");
+    shared_ptr<Media::DeferredPhotoProcessingAdapter> deferredProcSession =
         make_shared<Media::DeferredPhotoProcessingAdapter>();
+    if (provider->ConsumeBool()) {
+        deferredProcSession->deferredPhotoProcSession_ = nullptr;
+    }
     deferredProcSession->BeginSynchronize();
     deferredProcSession->EndSynchronize();
     std::string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
@@ -101,17 +90,26 @@ static void MultistagesCaptureDeferredPhotoProcAdapterTest()
     deferredProcSession->RestoreImage(photoId);
     deferredProcSession->ProcessImage(appName, photoId);
     deferredProcSession->CancelProcessImage(photoId);
+    MEDIA_INFO_LOG("MultistagesCaptureDeferredPhotoProcAdapterTest end");
 }
 
-static void MultistagesCaptureDeferredPhotoProcSessionCallbackTest()
+static void MultistagesCaptureDeferredVideoProcAdapterTest()
 {
-    Media::MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
-        new Media::MultiStagesCaptureDeferredPhotoProcSessionCallback();
-    std::string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
-    int32_t fileId = InsertAsset(photoId);
-    MEDIA_DEBUG_LOG("fileId: %{public}d.", fileId);
-    CameraStandard::DpsErrorCode errCode = FuzzDpsErrorCode();
-    callback->OnError(photoId, errCode);
+    MEDIA_INFO_LOG("MultistagesCaptureDeferredVideoProcAdapterTest start");
+    shared_ptr<Media::DeferredVideoProcessingAdapter> deferredProcSession =
+        make_shared<Media::DeferredVideoProcessingAdapter>();
+    if (provider->ConsumeBool()) {
+        deferredProcSession->deferredVideoProcSession_ = nullptr;
+    }
+    deferredProcSession->BeginSynchronize();
+    std::string videoId = provider->ConsumeBytesAsString(NUM_BYTES);
+    int srcFd = provider->ConsumeIntegral<int32_t>();
+    int dstFd = provider->ConsumeIntegral<int32_t>();
+    deferredProcSession->AddVideo(videoId, srcFd, dstFd);
+    deferredProcSession->RemoveVideo(videoId, provider->ConsumeBool());
+    deferredProcSession->RestoreVideo(videoId);
+    deferredProcSession->EndSynchronize();
+    MEDIA_INFO_LOG("MultistagesCaptureDeferredVideoProcAdapterTest end");
 }
 
 static inline void ClearKvStore()
@@ -134,10 +132,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     if (data == nullptr) {
         return 0;
     }
-    int sleepTime = 100;
-    std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
     OHOS::MultistagesCaptureDeferredPhotoProcAdapterTest();
-    OHOS::MultistagesCaptureDeferredPhotoProcSessionCallbackTest();
+    OHOS::MultistagesCaptureDeferredVideoProcAdapterTest();
     OHOS::ClearKvStore();
     return 0;
 }

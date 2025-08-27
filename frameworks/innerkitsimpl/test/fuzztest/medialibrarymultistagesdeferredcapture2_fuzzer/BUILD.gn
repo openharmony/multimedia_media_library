@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-ohos_fuzztest("MediaLibraryMultistagesDeferredCaptureFuzzTest") {
+ohos_fuzztest("MediaLibraryMultistagesDeferredCapture2FuzzTest") {
   module_out_path = "media_library/media_library"
   fuzz_config_file = "."
 
@@ -26,7 +26,7 @@ ohos_fuzztest("MediaLibraryMultistagesDeferredCaptureFuzzTest") {
 
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/deferred_video_proc_adapter.cpp",
-    "./medialibrary_multistages_deferred_capture_fuzzer.cpp"
+    "./medialibrary_multistages_deferred_capture2_fuzzer.cpp"
   ]
 
   deps = [
