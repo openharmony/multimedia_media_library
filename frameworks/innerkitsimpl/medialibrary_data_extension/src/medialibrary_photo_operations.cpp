@@ -4400,6 +4400,19 @@ int32_t MediaLibraryPhotoOperations::UpdateSupportedWatermarkType(MediaLibraryCo
     return updateRows;
 }
 
+int32_t MediaLibraryPhotoOperations::UpdateAppLink(MediaLibraryCommand &cmd)
+{
+    auto rdbstore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbstore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+    auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    auto args = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+    int32_t updateRows = -1;
+    int32_t errCode = rdbstore->Update(updateRows, PhotoColumn::PHOTOS_TABLE, cmd.GetValueBucket(), whereClause, args);
+    CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Update subtype field failed. errCode:%{public}d.", errCode);
+    return E_OK;
+}
+
 struct LSOperationFileInfo {
     std::string permissions;
     int links;

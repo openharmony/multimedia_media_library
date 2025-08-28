@@ -125,6 +125,8 @@ const std::string PhotoColumn::PHOTO_REAL_LCD_VISIT_TIME = "real_lcd_visit_time"
 const std::string PhotoColumn::PHOTO_VISIT_COUNT = "visit_count";
 const std::string PhotoColumn::PHOTO_LCD_VISIT_COUNT = "lcd_visit_count";
 const std::string PhotoColumn::PHOTO_IS_RECENT_SHOW = "is_recent_show";
+const std::string PhotoColumn::PHOTO_HAS_APPLINK = "has_applink";
+const std::string PhotoColumn::PHOTO_APPLINK = "applink";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -288,7 +290,9 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_IS_RECENT_SHOW + " INT NOT NULL DEFAULT 1, " +
     PHOTO_REAL_LCD_VISIT_TIME + " BIGINT NOT NULL DEFAULT 0, " +
     PHOTO_VISIT_COUNT + " INT NOT NULL DEFAULT 0, " +
-    PHOTO_LCD_VISIT_COUNT + " INT NOT NULL DEFAULT 0" +
+    PHOTO_LCD_VISIT_COUNT + " INT NOT NULL DEFAULT 0," +
+    PHOTO_HAS_APPLINK + " INT NOT NULL DEFAULT 0," +
+    PHOTO_APPLINK + " TEXT" +
     ") ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
@@ -602,7 +606,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::SUPPORTED_WATERMARK_TYPE,
     PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_IS_AUTO,
     PhotoColumn::PHOTO_MEDIA_SUFFIX, PhotoColumn::PHOTO_IS_RECENT_SHOW, PhotoColumn::PHOTO_IS_RECTIFICATION_COVER,
-    PhotoColumn::PHOTO_EXIF_ROTATE,
+    PhotoColumn::PHOTO_EXIF_ROTATE, PhotoColumn::PHOTO_HAS_APPLINK, PhotoColumn::PHOTO_APPLINK,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

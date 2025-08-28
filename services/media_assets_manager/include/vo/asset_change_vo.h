@@ -33,6 +33,8 @@ public:
     int32_t effectMode{0};
     int32_t orientation{INT32_MIN};
     int32_t watermarkType{INT32_MIN};
+    int32_t hasAppLink{INT32_MIN};
+    std::string appLink;
     double latitude{0};
     double longitude{0};
     std::string cameraShotKey;

@@ -147,6 +147,8 @@ public:
     static const std::string PHOTO_VISIT_COUNT EXPORT;
     static const std::string PHOTO_LCD_VISIT_COUNT EXPORT;
     static const std::string PHOTO_IS_RECENT_SHOW EXPORT;
+    static const std::string PHOTO_HAS_APPLINK EXPORT;
+    static const std::string PHOTO_APPLINK EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;

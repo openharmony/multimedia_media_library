@@ -223,6 +223,12 @@ public:
     EXPORT int32_t GetSupportedWatermarkType() const;
     EXPORT void SetSupportedWatermarkType(int32_t watermarkType);
 
+    EXPORT int32_t GetHasAppLink() const;
+    EXPORT void SetHasAppLink(int32_t hasAppLink);
+ 
+    EXPORT const std::string &GetAppLink() const;
+    EXPORT void SetAppLink(const std::string appLink);
+
     EXPORT int32_t GetIsAuto() const;
     EXPORT void SetIsAuto(int32_t isAuto);
 
