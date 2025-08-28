@@ -562,6 +562,8 @@ static void GenerateAnalysisCmd(MediaLibraryCommand &cmd,
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+    cmd.GetAbsRdbPredicates()->Limit(rdbPredicate.GetLimit());
+    cmd.GetAbsRdbPredicates()->Offset(rdbPredicate.GetOffset());
 }
 
 int32_t MediaAlbumsService::QueryAlbums(QueryAlbumsDto &dto)
