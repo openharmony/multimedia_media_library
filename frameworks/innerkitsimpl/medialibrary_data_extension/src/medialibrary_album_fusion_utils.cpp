@@ -1067,6 +1067,7 @@ static void SaveScanMetaDate(NativeRdb::ValuesBucket &values, const std::string 
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
     values.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
+    values.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, data->GetExifRotate());
     values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data->GetLongitude());
     values.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
     values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
