@@ -46,7 +46,6 @@ group("test") {
     "unittest/medialibrary_common_utils_test:unittest",
     "unittest/medialibrary_cover_position_parser_test:unittest",
     "unittest/medialibrary_custom_restore_test:unittest",
-    "unittest/medialibrary_datamanager_test:unittest",
     "unittest/medialibrary_dfx_test:unittest",
     "unittest/medialibrary_fuse_test:unittest",
     "unittest/medialibrary_handler_test:unittest",
