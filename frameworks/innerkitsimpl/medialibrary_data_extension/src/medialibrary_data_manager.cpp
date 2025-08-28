@@ -1937,30 +1937,31 @@ static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibrar
     }
 
     int32_t ret = E_SUCCESS;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK && PowerEfficiencyManager::IsChargingAndScreenOff()) {
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        if (!isChargingAndScreenOffPtr()) {
+            ret = E_ERR;
+            MEDIA_ERR_LOG("current status is not charging or screenOn");
+            break;
+        }
         string title = GetStringVal(MediaColumn::MEDIA_TITLE, resultSet);
         int32_t ownerAlbumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
         if (!isCover) {
-            auto resultSet = QueryGenerateSql(rdbStore, title, ownerAlbumId);
-            CHECK_AND_CONTINUE_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
-            if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+            auto generateResultSet = QueryGenerateSql(rdbStore, title, ownerAlbumId);
+            CHECK_AND_CONTINUE_ERR_LOG(generateResultSet != nullptr, "generateResultSet is nullptr");
+            if (generateResultSet->GoToFirstRow() != NativeRdb::E_OK) {
                 MEDIA_INFO_LOG("No burst member need to query");
-                resultSet->Close();
+                generateResultSet->Close();
                 continue;
             }
-            resultSet->Close();
+            generateResultSet->Close();
         }
 
         string updateSql = generateUpdateSql(isCover, title, ownerAlbumId);
         ret = rdbStore->ExecuteSql(updateSql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
-            return E_HAS_DB_ERROR;
+            continue;
         }
-    }
-    if (!PowerEfficiencyManager::IsChargingAndScreenOff()) {
-        ret = E_ERR;
-        MEDIA_ERR_LOG("current status is not charging or screenOn");
     }
     return ret;
 }

@@ -36,6 +36,8 @@ public:
 private:
     static int32_t sAlbumUpdateInterval_;
 };
+
+inline EXPORT bool (*isChargingAndScreenOffPtr)() = PowerEfficiencyManager::IsChargingAndScreenOff;
 } // namespace Media
 } // namespace OHOS
 
