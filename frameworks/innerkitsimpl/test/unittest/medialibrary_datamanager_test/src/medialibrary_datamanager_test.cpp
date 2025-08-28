@@ -34,6 +34,7 @@
 #include "vision_image_face_column.h"
 #include "result_set_utils.h"
 #include "photo_map_column.h"
+#include "power_efficiency_manager.h"
 #include "vision_photo_map_column.h"
 #define private public
 #include "medialibrary_data_manager.h"
@@ -64,6 +65,12 @@ struct PortraitData {
     string title;
     string path;
 };
+
+bool MockIsChargingAndScreenOff()
+{
+    MEDIA_INFO_LOG("enter");
+    return true;
+}
 
 void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
 {
@@ -104,7 +111,10 @@ void MediaLibraryDataManagerUnitTest::SetUp(void)
     MediaLibraryUnitTestUtils::Init();
 }
 
-void MediaLibraryDataManagerUnitTest::TearDown(void) {}
+void MediaLibraryDataManagerUnitTest::TearDown(void)
+{
+    isChargingAndScreenOffPtr = PowerEfficiencyManager::IsChargingAndScreenOff;
+}
 
 string ReturnUri(string UriType, string MainUri, string SubUri = "")
 {
@@ -1561,6 +1571,7 @@ void ValidBurstValue(BurstResult &exResult)
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start UpdateBurstFromGallery_test_function_001");
+    isChargingAndScreenOffPtr = MockIsChargingAndScreenOff;
     struct BurstResult burstCover = {-1, "IMG_12345678_123456_BURST001_COVER",
         static_cast<int32_t>(MEDIA_TYPE_IMAGE), static_cast<int32_t>(PhotoSubType::DEFAULT), 0,
         static_cast<int32_t>(BurstCoverLevelType::COVER), "", 0, true, 8};
@@ -1596,6 +1607,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_0
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start UpdateBurstFromGallery_test_function_002");
+    isChargingAndScreenOffPtr = MockIsChargingAndScreenOff;
     struct BurstResult burstCover = {-1, "IMG_12345678_123456_BURST001_cover",
         static_cast<int32_t>(MEDIA_TYPE_IMAGE), static_cast<int32_t>(PhotoSubType::DEFAULT), 0,
         static_cast<int32_t>(BurstCoverLevelType::COVER), "", 0, true, 8};
@@ -1618,6 +1630,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_0
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start UpdateBurstFromGallery_test_function_003");
+    isChargingAndScreenOffPtr = MockIsChargingAndScreenOff;
     struct BurstResult burstCover = {-1, "IMG_12345678_123456_BURST_cover",
         static_cast<int32_t>(MEDIA_TYPE_IMAGE), static_cast<int32_t>(PhotoSubType::DEFAULT), 0,
         static_cast<int32_t>(BurstCoverLevelType::COVER), "", 0, true, 8};
@@ -1637,6 +1650,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_0
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_001, TestSize.Level2)
 {
+    isChargingAndScreenOffPtr = MockIsChargingAndScreenOff;
     auto dataManager = MediaLibraryDataManager::GetInstance();
     EXPECT_NE(dataManager, nullptr);
     dataManager->refCnt_.store(0);
@@ -1646,6 +1660,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_001, TestS
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_002, TestSize.Level2)
 {
+    isChargingAndScreenOffPtr = MockIsChargingAndScreenOff;
     auto dataManager = MediaLibraryDataManager::GetInstance();
     EXPECT_NE(dataManager, nullptr);
     dataManager->refCnt_.store(1);
