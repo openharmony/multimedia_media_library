@@ -2976,7 +2976,7 @@ bool FileAssetNapi::IsSpecialKey(const string &key)
 }
 
 napi_value FileAssetNapi::HandleGettingSpecialKey(napi_env env, const string &key,
- const shared_ptr<FileAsset> &fileAssetPtr)
+    const shared_ptr<FileAsset> &fileAssetPtr)
 {
     napi_value jsResult = nullptr;
     if (key == PENDING_STATUS) {
@@ -3084,7 +3084,7 @@ static napi_value HandleGettingDetailTimeKey(napi_env env, const shared_ptr<File
 }
 
 napi_value FileAssetNapi::HandleDateTransitionKey(napi_env env, const string &key,
- const shared_ptr<FileAsset> &fileAssetPtr)
+                                                  const shared_ptr<FileAsset> &fileAssetPtr)
 {
     napi_value jsResult = nullptr;
     if (fileAssetPtr->GetMemberMap().count(key) == 0) {
