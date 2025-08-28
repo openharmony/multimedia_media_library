@@ -1078,8 +1078,7 @@ napi_value FetchFileResultNapi::JSGetRangeObjects(napi_env env, napi_callback_in
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "propertyPtr is nullptr");
 
         status = napi_create_async_work(
-            env, nullptr, resource, 
-            [](napi_env env, void *data) {
+            env, nullptr, resource, [](napi_env env, void *data) {
                 auto context = static_cast<FetchFileResultAsyncContext*>(data);
                 // Validate range before execution
                 if (context->offset < 0 || context->length <= 0) {
@@ -1390,15 +1389,6 @@ void FetchFileResultAsyncContext::GetObjectsInRange()
             while (smartAlbum != nullptr && (length--) > 0) {
                 fileSmartAlbumArray.push_back(move(smartAlbum));
                 smartAlbum = fetchResult->GetNextObject();
-            }
-            break;
-        }
-        case FetchResType::TYPE_ANALYSIS_PHOTOALBUM: {
-            auto fetchResult = objectPtr->fetchAnalysisPhotoAlbumResult_;
-            auto analysisPhotoAlbum = fetchResult->GetObjectAtPosition(offset);
-            while (photoAlbum != nullptr && (length--) > 0) {
-                fileAnalysisPhotoAlbumArray.push_back(move(analysisPhotoAlbum));
-                analysisPhotoAlbum = fetchResult->GetNextObject();
             }
             break;
         }
