@@ -66,8 +66,13 @@
 #include "is_edited_vo.h"
 #include "get_edit_data_vo.h"
 #include "convert_format_vo.h"
-
+#include "interop_js/arkts_esvalue.h"
+#include "interop_js/arkts_interop_js_api.h"
+#include "transfer_utils.h"
+#include "ani_transfer_lib_manager.h"
 namespace OHOS::Media {
+using AttachCreateFileAssetFn = napi_value (*)(napi_env, TransferUtils::TransferSharedPtr);
+using GetFileAssetInstanceFn = TransferUtils::TransferSharedPtr (*)(FileAssetNapi*);
 namespace {
 using DataSharePredicates = OHOS::DataShare::DataSharePredicates;
 using DataShareValuesBucket = OHOS::DataShare::DataShareValuesBucket;
@@ -116,6 +121,10 @@ const std::array fileAssetAniMethods = {
         reinterpret_cast<void *>(FileAssetAni::GetExif)},
     ani_native_function {"setPendingSync", nullptr,
         reinterpret_cast<void *>(FileAssetAni::PhotoAccessHelperSetPending)},
+    ani_native_function {"transferToDynamicPhotoAsset", nullptr,
+        reinterpret_cast<void *>(FileAssetAni::TransferToDynamicPhotoAsset)},
+    ani_native_function {"transferToStaticPhotoAsset", nullptr,
+        reinterpret_cast<void *>(FileAssetAni::TransferToStaticPhotoAsset)},
 };
 } // namespace
 struct FileAssetAttributes {
@@ -2753,4 +2762,86 @@ ani_status FileAssetAni::PhotoAccessHelperSetPending(ani_env *env, ani_object ob
     PhotoAccessHelperSetPendingExecute(env, context);
     return PhotoAccessHelperSetPendingComplete(env, context);
 }
+
+FileAssetAni* GetNativeFileAssetAni(ani_env *env, ani_object object)
+{
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    CHECK_COND_RET(object != nullptr, nullptr, "object is null");
+
+    auto fileAssetAni = FileAssetAni::Unwrap(env, object);
+    return fileAssetAni;
+}
+// ANI -> NAPI
+ani_ref FileAssetAni::TransferToDynamicPhotoAsset(ani_env *env, [[maybe_unused]] ani_class, ani_object input)
+{
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    ani_ref undefinedRef {};
+    env->GetUndefined(&undefinedRef);
+    napi_env jsEnv;
+
+    arkts_napi_scope_open(env, &jsEnv);
+    auto aniFileAsset = GetNativeFileAssetAni(env, input);
+    if (aniFileAsset == nullptr || aniFileAsset->fileAssetPtr == nullptr) {
+        ANI_ERR_LOG("aniFileAsset is null");
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
+
+    AttachCreateFileAssetFn funcHandle = nullptr;
+    if (!LibManager::GetSymbol("AttachCreateFileAsset", funcHandle)) {
+        ANI_ERR_LOG("Get AttachCreateFileAsset symbol failed");
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
+    if (funcHandle == nullptr) {
+        ANI_ERR_LOG("funcHandle is null");
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
+    std::shared_ptr<FileAsset> nativeFileAsset = aniFileAsset->fileAssetPtr;
+    TransferUtils::TransferSharedPtr nativeFileAssetPtr;
+    nativeFileAssetPtr.fileAssetPtr = nativeFileAsset.get();
+    napi_value napiFileAsset = funcHandle(jsEnv, nativeFileAssetPtr);
+    if (napiFileAsset == nullptr) {
+        ANI_ERR_LOG("napiFileAsset is null");
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
+
+    ani_ref result {};
+    arkts_napi_scope_close_n(jsEnv, 1, &napiFileAsset, &result);
+
+    return result;
+}
+// NAPI -> ANI
+ani_object FileAssetAni::TransferToStaticPhotoAsset(ani_env *env, [[maybe_unused]] ani_class, ani_object input)
+{
+    FileAssetNapi *napiFileAsset = nullptr;
+    arkts_esvalue_unwrap(env, input, (void **)&napiFileAsset);
+    CHECK_COND_RET(napiFileAsset != nullptr, nullptr, "napiFileAsset is null");
+
+    GetFileAssetInstanceFn funcHandle = nullptr;
+    CHECK_COND_RET(LibManager::GetSymbol("GetFileAssetInstance", funcHandle), nullptr,
+        "Get GetFileAssetInstance symbol failed");
+    CHECK_COND_RET(funcHandle != nullptr, nullptr, "funcHandle is null");
+    TransferUtils::TransferSharedPtr nativeFileAssetPtr = funcHandle(napiFileAsset);
+    CHECK_COND_RET(nativeFileAssetPtr.fileAssetPtr != nullptr, nullptr, "nativeFileAssetPtr is null");
+
+    std::shared_ptr<FileAsset> nativeFileAsset = std::shared_ptr<FileAsset>(nativeFileAssetPtr.fileAssetPtr);
+    CHECK_COND_RET(nativeFileAsset != nullptr, nullptr, "nativeFileAsset is null");
+    auto aniFileAsset = CreatePhotoAsset(env, nativeFileAsset);
+    CHECK_COND_RET(aniFileAsset != nullptr, nullptr, "aniFileAsset is null");
+
+    FileAssetAniMethod fileAssetAniMethod;
+    if (ANI_OK != FileAssetAni::InitFileAssetAniMethod(env, nativeFileAsset->GetResultNapiType(),
+        fileAssetAniMethod)) {
+        ANI_ERR_LOG("InitFileAssetAniMethod failed");
+        return nullptr;
+    }
+
+    ani_object output = FileAssetAni::Wrap(env, aniFileAsset, fileAssetAniMethod);
+    CHECK_COND_RET(aniFileAsset != nullptr, nullptr, "aniFileAsset is null");
+    return output;
+}
+
 } // namespace OHOS::Media
