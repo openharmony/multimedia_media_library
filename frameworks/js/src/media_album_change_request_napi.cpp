@@ -52,7 +52,7 @@
 #include "change_request_merge_album_vo.h"
 #include "change_request_place_before_vo.h"
 #include "change_request_set_order_position_vo.h"
-#include "change_request_set_relationship.h"
+#include "change_request_set_relationship_vo.h"
 
 using namespace std;
 
