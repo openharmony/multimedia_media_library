@@ -27,9 +27,9 @@ public:
     int32_t albumSubType {-1};
     int32_t isMe {0};
 
-public:  // functions of Parcelable.
+public: // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
 };
-}  // namespace OHOS::Media
-#endif  // OHOS_MEDIA_ALBUMS_MANAGER_CHANGE_REQUEST_SET_RELATIONSHIP_VO_H
+} // namespace OHOS::Media
+#endif // OHOS_MEDIA_ALBUMS_MANAGER_CHANGE_REQUEST_SET_RELATIONSHIP_VO_H

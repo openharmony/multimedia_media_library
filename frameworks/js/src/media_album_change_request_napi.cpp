@@ -1029,7 +1029,6 @@ static void GetIsMeInfo(int32_t &isMe, bool &isMeExist, const int32_t albumId)
 
     if (isMe == 0) {
         // check has is me
-        Uri queryUri(PAH_QUERY_ANA_PHOTO_ALBUM);
         std::vector<std::string> fetchColumnNew{IS_ME, ALBUM_ID};
         DataShare::DataSharePredicates queryPredicatesNew;
         queryPredicatesNew.EqualTo(IS_ME, 1);
@@ -1037,7 +1036,7 @@ static void GetIsMeInfo(int32_t &isMe, bool &isMeExist, const int32_t albumId)
         auto isMeExistRet = UserFileClient::Query(queryUri, queryPredicatesNew, fetchColumnNew, errCodeNew);
         if (errCodeNew == E_SUCCESS && isMeExistRet != nullptr && isMeExistRet->GoToFirstRow() == NativeRdb::E_OK) {
             NAPI_INFO_LOG("Has is me album on portrait album list");
-            isMeExist == true;
+            isMeExist = true;
         }
     }
 }

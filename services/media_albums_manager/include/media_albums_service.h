@@ -95,7 +95,7 @@ public:
     int32_t GetAlbumsByIds(GetAlbumsByIdsDto &getAlbumsByIdsDto, GetAlbumsByIdsRespBody &respBody);
     int32_t GetPhotoAlbumObject(GetPhotoAlbumObjectDto &getPhotoAlbumObjectDto, GetPhotoAlbumObjectRespBody &respBody);
     int32_t SetPortraitRelationship(const int32_t albumId, const std::string& relationship, const int32_t isMe);
-    int32_t GetPortraitRelationship(const int32_t albumId, GetRalationshipRespBody& respBody);
+    int32_t GetPortraitRelationship(const int32_t albumId, GetRelationshipRespBody& respBody);
 
 private:
     int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);
