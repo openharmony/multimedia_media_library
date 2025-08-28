@@ -349,6 +349,10 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAnalysisAlbumOperations::Query
             clause += " AND " + userDisplayLevelClause + to_string(userDisplayLevelVal);
         }
     }
+    int limitVal = cmd.GetAbsRdbPredicates()->GetLimit();
+    int offsetVal = cmd.GetAbsRdbPredicates()->GetOffset();
+    CHECK_AND_EXECUTE(limitVal < 0, rdbPredicates.Limit(limitVal));
+    CHECK_AND_EXECUTE(limitVal < 0 || offsetVal < 0, rdbPredicates.Offset(offsetVal));
     rdbPredicates.SetWhereClause(clause);
     rdbPredicates.OrderByAsc(GROUP_ALBUM_FAVORITE_ORDER_CLAUSE);
     rdbPredicates.OrderByAsc(GROUP_ALBUM_USER_NAME_ORDER_CLAUSE);
@@ -425,7 +429,7 @@ static string GetSqlsForInsertFileIdInAnalysisAlbumMap(const MergeAlbumInfo &upd
         MEDIA_WARN_LOG("There are no duplicate albums that need to be deleted.");
         return "";
     }
-    for (int i = 0; i < deleteAlbumIds.size(); i++) {
+    for (size_t i = 0; i < deleteAlbumIds.size(); i++) {
         strDeleteAlbumIds += deleteAlbumIds[i];
         if (i != deleteAlbumIds.size() - 1) {
             strDeleteAlbumIds += ", ";
@@ -451,7 +455,7 @@ static int32_t InsertNewRecordInMap(const shared_ptr<MediaLibraryRdbStore> store
 static int32_t UpdateAnalysisPhotoMapForMergeGroupPhoto(const shared_ptr<MediaLibraryRdbStore> store,
     const std::unordered_map<string, MergeAlbumInfo> updateMaps)
 {
-    for (const auto it : updateMaps) {
+    for (const auto& it : updateMaps) {
         int32_t ret = InsertNewRecordInMap(store, it.second);
         if (ret != E_OK) {
             MEDIA_ERR_LOG("failed to insert newRecord");
