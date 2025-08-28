@@ -24,7 +24,10 @@ ohos_fuzztest("MediaLibraryAppUriSensitiveOperationsFuzzTest") {
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
   ]
 
-  sources = [ "./medialibraryappurisensitiveoperations_fuzzer.cpp" ]
+  sources = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_app_uri_sensitive_operations.cpp",
+    "./medialibraryappurisensitiveoperations_fuzzer.cpp"
+  ]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
