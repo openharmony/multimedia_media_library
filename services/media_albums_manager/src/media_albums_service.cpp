@@ -707,7 +707,7 @@ int32_t MediaAlbumsService::GetPortraitRelationship(const int32_t albumId, GetRe
 {
     MEDIA_INFO_LOG("GetPortraitRelationship start");
     NativeRdb::RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::AlBUM_ID, albumId);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
     std::vector<std::string> fetchColumn{ALBUM_RELATIONSHIP};
 
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, fetchColumn);

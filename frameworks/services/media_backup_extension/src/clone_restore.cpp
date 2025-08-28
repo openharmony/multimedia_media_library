@@ -2381,7 +2381,7 @@ void CloneRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::
     analysisAlbumTbl.isLocal = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_LOCAL);
     analysisAlbumTbl.isCoverSatisfied = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         ANALYSIS_COL_IS_COVER_SATISFIED);
-    analysisAlbumTbl.isCoverSatisfied = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+    analysisAlbumTbl.relationship = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         ANALYSIS_COL_RELATIONSHIP);
 }
 

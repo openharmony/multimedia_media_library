@@ -2885,7 +2885,7 @@ int32_t MediaLibraryAlbumOperations::SetPortraitAlbumRelationship(const ValuesBu
             "uniStore is nullptr! failed update for set relationship");
         vector<string> updateSqls;
         SetMyOldAlbum(updateSqls, uniStore);
-        int err = ExecSqls(updateSqls, uniStore);
+        int32_t err = ExecSqls(updateSqls, uniStore);
         CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err, "SetMyOldAlbum failed, error id: %{public}d", err);
     }
 
@@ -2908,7 +2908,7 @@ int32_t MediaLibraryAlbumOperations::SetPortraitAlbumRelationship(const ValuesBu
 
     auto whereArgs = rdbPredicates.GetWhereArgs();
     if (whereArgs.empty()) {
-        return E_INVALID_VALUES
+        return E_INVALID_VALUES;
     }
     string targetAlbumId = whereArgs[0];
     vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
@@ -2948,8 +2948,7 @@ int32_t MediaLibraryAlbumOperations::SetIsMe(const ValuesBucket &values, const D
     MEDIA_INFO_LOG("Start set is me, album id: %{public}s", targetAlbumId.c_str());
     std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " +
         ALBUM_RELATIONSHIP + " = 'me', " + RENAME_OPERATION + " = 1 WHERE " + GROUP_TAG + " IN(SELECT " +
-        GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
-        ALBUM_ID + " = " + targetAlbumId + ")";
+        GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ")";
     std::string updateReNameOperation = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RENAME_OPERATION + " = " +
         std::to_string(ALBUM_TO_RENAME_FOR_ANALYSIS) + " WHERE " + ALBUM_ID + " IN (SELECT " + ALBUM_ID + " FROM " +
         ANALYSIS_ALBUM_TABLE + " WHERE " + GROUP_TAG + " LIKE ( SELECT CONCAT('%', " + GROUP_TAG + ", '%') FROM " +
