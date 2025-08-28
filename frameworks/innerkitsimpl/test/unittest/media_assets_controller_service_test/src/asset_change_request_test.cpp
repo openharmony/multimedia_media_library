@@ -207,6 +207,56 @@ static int32_t SetSupportedWatermarkType(int32_t fileId, int32_t watermarkType)
     return respVo.GetErrCode();
 }
 
+static int32_t SetHasAppLink(int32_t fileId, int32_t has)
+{
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileId;
+    reqBody.hasAppLink = has;
+ 
+    MessageParcel data;
+    if (reqBody.Marshalling(data) != true) {
+        MEDIA_ERR_LOG("reqBody.Marshalling failed");
+        return -1;
+    }
+ 
+    MessageParcel reply;
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->SetHasAppLink(data, reply);
+ 
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    if (respVo.Unmarshalling(reply) != true) {
+        MEDIA_ERR_LOG("respVo.Unmarshalling failed");
+        return -1;
+    }
+    MEDIA_INFO_LOG("SetHasAppLink ErrCode:%{public}d", respVo.GetErrCode());
+    return respVo.GetErrCode();
+}
+ 
+static int32_t SetAppLink(int32_t fileId, string link)
+{
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileId;
+    reqBody.appLink = link;
+ 
+    MessageParcel data;
+    if (reqBody.Marshalling(data) != true) {
+        MEDIA_ERR_LOG("reqBody.Marshalling failed");
+        return -1;
+    }
+ 
+    MessageParcel reply;
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->SetAppLink(data, reply);
+ 
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    if (respVo.Unmarshalling(reply) != true) {
+        MEDIA_ERR_LOG("respVo.Unmarshalling failed");
+        return -1;
+    }
+    MEDIA_INFO_LOG("SetAppLink ErrCode:%{public}d", respVo.GetErrCode());
+    return respVo.GetErrCode();
+}
+
 static int32_t SetVideoEnhancementAttr(int32_t fileId, string photoId, string path)
 {
     AssetChangeReqBody reqBody;
@@ -555,6 +605,30 @@ HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_Test_014, TestSize.Level0)
 
     MEDIA_INFO_LOG("AssetChangeAddImage ErrCode1:%{public}d", respVo1.GetErrCode());
     ASSERT_LT(respVo1.GetErrCode(), 0);
+}
+
+HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_Test_015, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AssetChangeRequest_Test_015 for setHasAppLink Begin");
+    InsertAsset();
+    int32_t fileId = QueryFileIdByDisplayName("cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+ 
+    int32_t result = SetHasAppLink(fileId, 1);
+    MEDIA_INFO_LOG("AssetChangeRequest_Test_015 result:%{public}d", result);
+    ASSERT_EQ(result, 0);
+}
+ 
+HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_Test_016, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AssetChangeRequest_Test_016 for SetAppLink Begin");
+    InsertAsset();
+    int32_t fileId = QueryFileIdByDisplayName("cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+ 
+    int32_t result = SetAppLink(fileId, "www.baid.com");
+    MEDIA_INFO_LOG("AssetChangeRequest_Test_016 result:%{public}d", result);
+    ASSERT_EQ(result, 0);
 }
 
 }  // namespace OHOS::Media

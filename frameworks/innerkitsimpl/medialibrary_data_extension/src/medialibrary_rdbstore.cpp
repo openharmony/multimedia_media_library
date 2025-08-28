@@ -4524,6 +4524,19 @@ static void AddMediaSuffixColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddAppLinkColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_HAS_APPLINK +
+            " INT NOT NULL DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_APPLINK +
+            " TEXT",
+    };
+    MEDIA_INFO_LOG("add has_applink/applink column start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("add has_applink/applink column end");
+}
+
 static void AddVisitCountColumn(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -5110,6 +5123,21 @@ static void UpgradeFromAllVersionFourthPart(RdbStore &store, unordered_map<strin
     MEDIA_INFO_LOG("End ADD_URI_SENSITIVE_COLUMNS");
 }
 
+static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion, shared_ptr<NativePreferences::Preferences> prefs)
+{
+    if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER &&
+        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true)) {
+        UpdateAnalysisAlbumRelationship(store);
+        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true);
+    }
+    
+    if (oldVersion < VERSION_ADD_APPLINK_VERSION &&
+        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_ADD_APPLINK_VERSION, true)) {
+        AddAppLinkColumn(store);
+        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_ADD_APPLINK_VERSION, true);
+    }
+}
+
 static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_SHOOTING_MODE_ALBUM_SECOND_INTERATION) {
@@ -5162,11 +5190,7 @@ static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
         RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER, true);
     }
 
-    if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER &&
-        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true)) {
-        UpdateAnalysisAlbumRelationship(store);
-        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true);
-    }
+    UpgradeExtensionPart9(store, oldVersion, prefs);
 }
 
 static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)

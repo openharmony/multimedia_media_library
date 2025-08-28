@@ -1101,5 +1101,38 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsDirExists_Test_01, TestSiz
     EXPECT_FALSE(MediaFileUtils::IsDirExists(""));
     EXPECT_TRUE(MediaFileUtils::IsDirExists("/data"));
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckAppLink_Test_01, TestSize.Level1)
+{
+    string linkInfo = "";
+    EXPECT_EQ(MediaFileUtils::CheckAppLink(linkInfo), -EINVAL);
+}
+ 
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckAppLink_Test_02, TestSize.Level1)
+{
+    string linkInfo = "https://item.taobao.com/item.htm?id=899930519163";
+    EXPECT_EQ(MediaFileUtils::CheckAppLink(linkInfo), E_OK);
+}
+ 
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckAppLink_Test_03, TestSize.Level1)
+{
+    string linkInfo(512, 'a');
+    EXPECT_EQ(MediaFileUtils::CheckAppLink(linkInfo), E_OK);
+}
+ 
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckAppLink_Test_04, TestSize.Level1)
+{
+    string linkInfo(513, 'a');
+    EXPECT_EQ(MediaFileUtils::CheckAppLink(linkInfo), -ENAMETOOLONG);
+}
+ 
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckHasAppLink_Test_01, TestSize.Level1)
+{
+    EXPECT_FALSE(MediaFileUtils::CheckHasAppLink(-1));
+    EXPECT_TRUE(MediaFileUtils::CheckHasAppLink(0));
+    EXPECT_TRUE(MediaFileUtils::CheckHasAppLink(1));
+    EXPECT_TRUE(MediaFileUtils::CheckHasAppLink(2));
+    EXPECT_FALSE(MediaFileUtils::CheckHasAppLink(3));
+}
 } // namespace Media
 } // namespace OHOS
