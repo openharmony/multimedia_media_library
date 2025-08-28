@@ -22,6 +22,9 @@
 #include "fetch_result.h"
 #include "file_asset.h"
 
+typedef struct napi_env__* napi_env;
+typedef struct napi_value__* napi_value;
+
 namespace OHOS {
 namespace Media {
 
@@ -58,6 +61,9 @@ public:
     std::shared_ptr<FetchResult<PhotoAlbum>> GetFetchPhotoAlbumResultObject();
     std::shared_ptr<FetchResult<SmartAlbumAsset>> GetFetchSmartAlbumResultObject();
 
+    static ani_ref TransferToDynamicFetchResult(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
+    static ani_object TransferToStaticFetchResult(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
+
     FetchResType GetFetchResType();
     bool CheckIfPropertyPtrNull();
     inline std::shared_ptr<FetchResultProperty> GetPropertyPtrInstance()
@@ -68,6 +74,16 @@ public:
 private:
     EXPORT static void GetFetchResult(unique_ptr<FetchFileResultAni> &obj);
     EXPORT static ani_object FetchFileResultAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz);
+    EXPORT static napi_value CreateFetchFileResultNapiByType(napi_env jsEnv,
+        FetchResType fetchType, FetchFileResultAni *aniFetchFileResult);
+    EXPORT static bool CreateFetchFileResultNapiFile(napi_env jsEnv, napi_value &result,
+    FetchFileResultAni *aniFetchFileResult);
+    EXPORT static bool CreateFetchFileResultNapiAlbum(napi_env jsEnv, napi_value &result,
+    FetchFileResultAni *aniFetchFileResult);
+    EXPORT static bool CreateFetchFileResultNapiPhotoAlbum(napi_env jsEnv, napi_value &result,
+    FetchFileResultAni *aniFetchFileResult);
+    EXPORT static bool CreateFetchFileResultNapiSmartAlbum(napi_env jsEnv, napi_value &result,
+    FetchFileResultAni *aniFetchFileResult);
 
     ani_env *env_;
     std::shared_ptr<FetchResultProperty> propertyPtr;
