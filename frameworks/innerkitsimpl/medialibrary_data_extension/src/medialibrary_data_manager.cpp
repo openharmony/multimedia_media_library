@@ -2461,6 +2461,10 @@ void MediaLibraryDataManager::InitDatabaseACLPermission()
     if (Acl::AclSetDatabase() != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl db permission for the media db dir");
     }
+
+    if (Acl::AclSetSlaveDatabase() != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the slave db permission for the media db dir");
+    }
 }
 
 int32_t ScanFileCallback::OnScanFinished(const int32_t status, const string &uri, const string &path)
