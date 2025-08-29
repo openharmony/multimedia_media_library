@@ -72,6 +72,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::HIGHLIGHT_DELETE,
     OperationObject::STORY_PLAY,
     OperationObject::USER_PHOTOGRAPHY,
+    OperationObject::ANALYSIS_PROGRESS,
     OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
     OperationObject::INDEX_CONSTRUCTION_STATUS,
     OperationObject::MEDIA_APP_URI_PERMISSION,
