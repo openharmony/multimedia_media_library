@@ -142,5 +142,81 @@ void DfxAnalyzer::FlushAdaptationToMovingPhoto(AdaptationToMovingPhotoInfo& newA
     MEDIA_INFO_LOG("flush adaptation to moving photo, unadapted num: %{private}zu, adapted num: %{private}zu",
         allUnadaptedApps.size(), allAdaptedApps.size());
 }
+
+void DfxAnalyzer::FlushTranscodeAccessTimes(const TranscodeAccessType type)
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(ALIB_HEIF_DUPLICATE_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    const char* accessKey = nullptr;
+    switch (type) {
+        case ACCESS_MEDIALIB:
+            accessKey = TRANSCODE_ACCESS_MEDIALIB.c_str();
+            break;
+        case ACCESS_LIBC:
+            accessKey = TRANSCODE_ACCESS_LIBC.c_str();
+            break;
+        default:
+            MEDIA_ERR_LOG("get TranscodeAccessType error: %{public}d", type);
+            return;
+    }
+
+    int32_t useTimes = prefs->GetInt(TRANSCODE_ACCESS_TIMES, 0);
+    int32_t accessTimes = prefs->GetInt(accessKey, 0);
+    prefs->PutInt(TRANSCODE_ACCESS_TIMES, useTimes + 1);
+    prefs->PutInt(accessKey, accessTimes + 1);
+    prefs->FlushSync();
+}
+
+void DfxAnalyzer::FlushTranscodeFailed(const TranscodeErrorType type)
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(ALIB_HEIF_DUPLICATE_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    const char* typeKey = nullptr;
+    switch (type) {
+        case INNER_FAILED:
+            typeKey = INNER_FAILED_TIMES.c_str();
+            break;
+        case CODEC_FAILED:
+            typeKey = CODEC_FAILED_TIMES.c_str();
+            break;
+        default:
+            MEDIA_ERR_LOG("get TranscodeFailedType error: %{public}d", type);
+            return;
+    }
+    int32_t failedAllTimes = prefs->GetInt(TRANSCODE_FAILED_TIMES, 0);
+    int32_t failedTimes = prefs->GetInt(typeKey, 0);
+    prefs->PutInt(TRANSCODE_FAILED_TIMES, failedAllTimes + 1);
+    prefs->PutInt(typeKey, failedTimes + 1);
+    prefs->FlushSync();
+}
+
+void DfxAnalyzer::FlushTranscodeCostTime(const int32_t costTime)
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(ALIB_HEIF_DUPLICATE_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    
+    int32_t alreadyCostTime = prefs->GetInt(TRANSCODE_AVG_TIME, 0);
+    int32_t transcodeTime = prefs->GetInt(TRANSCODE_TIMES, 0);
+    alreadyCostTime = alreadyCostTime + costTime;
+    prefs->PutInt(TRANSCODE_AVG_TIME, alreadyCostTime);
+    prefs->PutInt(TRANSCODE_TIMES, transcodeTime + 1);
+    prefs->FlushSync();
+}
+
 } // namespace Media
 } // namespace OHOS

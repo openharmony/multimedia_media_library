@@ -40,6 +40,7 @@ public:
         int64_t &newAssetId);
     int32_t ConvertFormatPhoto(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath,
         const std::string &extension);
+    int32_t CreateTmpCompatibleDup(const std::string &srcPath, size_t &size);
 
 private:
     std::string GetVideoFilePath(const PhotoAssetInfo &photoInfo);

@@ -382,12 +382,19 @@ NativeRdb::AbsRdbPredicates CloudMediaPhotosDao::GetUpdateRecordCondition(const 
     return predicates;
 }
 
+void UpDateTransCode(NativeRdb::ValuesBucket &values)
+{
+    values.PutLong(PhotoColumn::PHOTO_TRANSCODE_TIME, 0);
+    values.PutLong(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, 0);
+    values.PutLong(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, 0);
+    return;
+}
+
 int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto &pullData, bool isLocal,
     bool mtimeChanged, std::set<std::string> &refreshAlbums, std::vector<int32_t> &stats,
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
     MEDIA_INFO_LOG("UpdateRecordToDatabase enter");
-
     NativeRdb::ValuesBucket values;
     this->GetUpdateRecordValues(pullData, values);
     if (mtimeChanged) {
@@ -417,6 +424,7 @@ int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto 
         values.Delete(PhotoColumn::PHOTO_DIRTY);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     }
+    UpDateTransCode(values);
     NativeRdb::AbsRdbPredicates predicates = this->GetUpdateRecordCondition(pullData.cloudId);
     int32_t changedRows = DEFAULT_VALUE;
     int32_t ret = this->UpdateProxy(changedRows, values, predicates, pullData.cloudId, photoRefresh);

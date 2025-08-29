@@ -1553,6 +1553,7 @@ void MediaAssetManagerNapi::GetImageSourceNapiObject(const std::string &fileUri,
         MediaFileUtils::UriAppendKeyValue(tmpUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
         NAPI_INFO_LOG("request source image's imageSource");
     }
+    MediaFileUtils::UriAppendKeyValue(tmpUri, PHOTO_TRANSCODE_OPERATION, OPRN_TRANSCODE_HEIF);
     Uri uri(tmpUri);
     int fd = UserFileClient::OpenFile(uri, "r");
     if (fd < 0) {

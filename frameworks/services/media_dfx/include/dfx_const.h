@@ -109,6 +109,7 @@ const std::string THUMBNAIL_ERROR_XML = "/data/storage/el2/base/preferences/thum
 const std::string COMMON_BEHAVIOR_XML = "/data/storage/el2/base/preferences/common_behavior.xml";
 const std::string DELETE_BEHAVIOR_XML = "/data/storage/el2/base/preferences/delete_behavior.xml";
 const std::string ADAPTATION_TO_MOVING_PHOTO_XML = "/data/storage/el2/base/preferences/adaptation_to_moving_photo.xml";
+const std::string ALIB_HEIF_DUPLICATE_XML = "/data/storage/el2/base/preferences/alib_heif_duplicate.xml";
 const std::string DFX_COMMON_XML = "/data/storage/el2/base/preferences/dfx_common.xml";
 const std::string LAST_REPORT_TIME = "last_report_time";
 const std::string LAST_MIDDLE_REPORT_TIME = "last_middle_report_time";
@@ -131,6 +132,15 @@ const std::string CLOUD_FILE_PATH = "/storage/cloud/files/";
 const std::string GARBLE = "*";
 const std::string SPLIT_PATH = "/";
 const std::string DOT = ".";
+
+const std::string TRANSCODE_ACCESS_TIMES = "transcode_access_times";
+const std::string TRANSCODE_ACCESS_MEDIALIB = "transcode_access_medialib";
+const std::string TRANSCODE_ACCESS_LIBC = "transcode_access_libc";
+const std::string TRANSCODE_AVG_TIME = "transcode_avg_time";
+const std::string TRANSCODE_TIMES = "transcode_times";
+const std::string TRANSCODE_FAILED_TIMES = "transcode_failed_times";
+const std::string INNER_FAILED_TIMES = "inner_failed_times";
+const std::string CODEC_FAILED_TIMES = "codec_failed_times";
 
 struct ThumbnailErrorInfo {
     int32_t method;
@@ -186,6 +196,16 @@ struct OperationRecordInfo {
     int32_t delTotalCount;
     int32_t updateTotalCount;
     int32_t totalCount;
+};
+
+enum TranscodeAccessType {
+    ACCESS_MEDIALIB = 0,
+    ACCESS_LIBC,
+};
+
+enum TranscodeErrorType {
+    INNER_FAILED = 0,
+    CODEC_FAILED,
 };
 } // namespace Media
 } // namespace OHOS

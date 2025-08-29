@@ -121,6 +121,9 @@ public:
     EXPORT int32_t UpdateDirtyForCloudClone(int32_t version);
     EXPORT int32_t ClearDirtyHdcData();
     EXPORT int32_t UpdateMediaSizeFromStorage();
+    EXPORT void AgingTmpCompatibleDuplicates();
+    EXPORT void InterruptAgingTmpCompatibleDuplicates();
+    EXPORT int32_t AgingTmpCompatibleDuplicate(int32_t fileId, const std::string &filePath);
     EXPORT int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
                 const DataShare::DataSharePredicates &predicates);
 private:
@@ -154,6 +157,7 @@ private:
     int32_t SolveInsertCmdSub(MediaLibraryCommand &cmd);
     void HandleOtherInitOperations();
     void InitRefreshAlbum();
+    void AgingTmpCompatibleDuplicatesThread();
     int32_t ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
         const NativeRdb::ValuesBucket &value, const DataShare::DataSharePredicates &predicates);
     void SubscriberPowerConsumptionDetection();
@@ -172,6 +176,7 @@ private:
     std::shared_ptr<CloudSyncObserver> galleryRebuildObserver_;
     std::shared_ptr<CloudSyncObserver> cloudGalleryPhotoObserver_;
     std::shared_ptr<CloudSyncObserver> cloudGalleryDownloadObserver_;
+    std::atomic_bool isAgingDup_ {false};
 };
 
 // Scanner callback objects

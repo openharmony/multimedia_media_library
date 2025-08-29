@@ -244,6 +244,9 @@ public:
 
     EXPORT void SetUserId(int32_t userId);
     EXPORT int32_t GetUserId();
+    EXPORT int64_t GetTransCodeTime() const;
+    EXPORT int32_t GetExistCompatibleDuplicate() const;
+    EXPORT void SetExistCompatibleDuplicate(int32_t existCompatibleDuplicate);
 
     EXPORT void SetStageVideoTaskStatus(int32_t stageVideoTaskStatus);
     EXPORT int32_t GetStageVideoTaskStatus() const;

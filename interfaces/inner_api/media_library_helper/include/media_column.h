@@ -146,6 +146,9 @@ public:
     static const std::string PHOTO_REAL_LCD_VISIT_TIME EXPORT;
     static const std::string PHOTO_VISIT_COUNT EXPORT;
     static const std::string PHOTO_LCD_VISIT_COUNT EXPORT;
+    static const std::string PHOTO_TRANSCODE_TIME EXPORT;
+    static const std::string PHOTO_TRANS_CODE_FILE_SIZE EXPORT;
+    static const std::string PHOTO_EXIST_COMPATIBLE_DUPLICATE EXPORT;
     static const std::string PHOTO_IS_RECENT_SHOW EXPORT;
     static const std::string PHOTO_HAS_APPLINK EXPORT;
     static const std::string PHOTO_APPLINK EXPORT;

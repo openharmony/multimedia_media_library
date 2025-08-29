@@ -4426,6 +4426,20 @@ static void AddGroupVersion(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddCreateTmpCompatibleDup(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start add create_tmp_compatible_dup columns");
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+            " ADD COLUMN " + PhotoColumn::PHOTO_TRANSCODE_TIME  + " BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+            " ADD COLUMN " + PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE  + " BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+            " ADD COLUMN " + PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE  + " INT NOT NULL DEFAULT 0"
+    };
+    ExecSqls(sqls, store);
+}
+
 static void AddDetailTimeToPhotos(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -5130,11 +5144,15 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion, shared_pt
         UpdateAnalysisAlbumRelationship(store);
         RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true);
     }
-    
+
     if (oldVersion < VERSION_ADD_APPLINK_VERSION &&
         !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_ADD_APPLINK_VERSION, true)) {
         AddAppLinkColumn(store);
         RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_ADD_APPLINK_VERSION, true);
+    }
+
+    if (oldVersion < VERSION_CREATE_TMP_COMPATIBLE_DUP) {
+        AddCreateTmpCompatibleDup(store);
     }
 }
 
