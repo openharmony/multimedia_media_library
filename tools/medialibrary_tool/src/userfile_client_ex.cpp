@@ -31,7 +31,6 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "mimetype_utils.h"
-#include "scanner_utils.h"
 #include "string_ex.h"
 #include "system_ability_definition.h"
 #include "thumbnail_const.h"
@@ -225,6 +224,23 @@ void UserFileClientEx::Clear()
     UserFileClient::Clear();
 }
 
+static string GetFileExtension(const string& pathOrDisplayName)
+{
+    if (!pathOrDisplayName.empty()) {
+        size_t dotIndex = pathOrDisplayName.rfind(".");
+        string extension {};
+        if (dotIndex != string::npos) {
+            extension = pathOrDisplayName.substr(dotIndex + 1);
+            CHECK_AND_WARN_LOG(!extension.empty(), "Extension is empty, path/displayName: %{public}s",
+                pathOrDisplayName.c_str());
+            return extension;
+        }
+    }
+
+    MEDIA_ERR_LOG("Failed to obtain file extension because given path/displayName is empty");
+    return "";
+}
+
 int32_t UserFileClientEx::InsertExt(const std::string &tableName, const std::string &name,
     std::string &outString, bool isRestart)
 {
@@ -244,7 +260,7 @@ int32_t UserFileClientEx::InsertExt(const std::string &tableName, const std::str
     if (MimeTypeUtils::IsMimeTypeMapEmpty()) {
         MimeTypeUtils::InitMimeTypeMap();
     }
-    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtension(name));
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(GetFileExtension(name));
     values.Put(MediaColumn::MEDIA_TYPE, MimeTypeUtils::GetMediaTypeFromMimeType(mimeType));
     values.Put(MediaColumn::MEDIA_OWNER_PACKAGE, "com.mediatool.album");
     values.Put(MediaColumn::MEDIA_OWNER_APPID, "mediatool.appid");
