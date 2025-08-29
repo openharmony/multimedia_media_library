@@ -569,7 +569,7 @@ export class PickerController {
   saveCallbackMap: Map<number, Object> = new Map<number, Object>();
   createCallbackMap: Map<number, Object> = new Map<number, Object>();
 
-    setData(type: DataType, data: Object) {
+  setData(type: DataType, data: Object) {
     if (data === undefined) {
       return;
     }
@@ -748,7 +748,7 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   singleLineConfig?: SingleLineConfig;
   uiComponentColorMode?: PickerColorMode;
   combinedMediaTypeFilter?: Array<string>;
-    pickerIndex?: number;
+  pickerIndex?: number;
   preSelectedUrisWithPickerIndex?: Array<PreSelectedInfo>;
 }
 
