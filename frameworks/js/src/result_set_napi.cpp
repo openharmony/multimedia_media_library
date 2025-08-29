@@ -496,7 +496,7 @@ napi_value ResultSetNapi::JSClose(napi_env env, napi_callback_info info)
     ResultSetNapi *obj = GetResultSetNapi(env, info);
     if (obj->resultSetPtr != nullptr) {
         obj->resultSetPtr = move(nullptr);
-    }else{
+    } else {
         NAPI_WARN_LOG("Resultset is already closed");
     }
     return nullptr;
