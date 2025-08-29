@@ -47,7 +47,7 @@ private:
         std::map<std::string, MediaColumnType::DataType> columns = objectWriter->GetColumns();
         for (const std::string &columnName : this->columnNames_) {
             auto it = columns.find(columnName);
-            CHECK_AND_CONTINUE_ERR_LOG(it != columns.end(), "column [%{public}s] not found", columnName.c_str());
+            CHECK_AND_CONTINUE_DEBUG_LOG(it != columns.end(), "column [%{public}s] not found", columnName.c_str());
             const std::string key = it->first;
             MediaColumnType::DataType type = it->second;
             std::variant<int32_t, int64_t, double, std::string> val;
