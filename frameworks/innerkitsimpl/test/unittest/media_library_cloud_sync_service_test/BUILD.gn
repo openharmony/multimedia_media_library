@@ -69,7 +69,6 @@ ohos_unittest("media_library_cloud_sync_service_test") {
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
-    "device_manager:devicemanagersdk",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
@@ -77,6 +76,10 @@ ohos_unittest("media_library_cloud_sync_service_test") {
     "dfs_service:cloudsync_kit_inner",
     "relational_store:rdb_data_share_adapter",
   ]
+
+  if (media_library_feature_device_manager) {
+     external_deps += ["device_manager:devicemanagersdk"]
+  }
 
   sanitize = {
     cfi = true
@@ -124,7 +127,6 @@ ohos_unittest("media_library_cloud_sync_service_dao_test") {
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
-    "device_manager:devicemanagersdk",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
@@ -132,6 +134,10 @@ ohos_unittest("media_library_cloud_sync_service_dao_test") {
     "dfs_service:cloudsync_kit_inner",
     "relational_store:rdb_data_share_adapter",
   ]
+
+  if (media_library_feature_device_manager) {
+     external_deps += ["device_manager:devicemanagersdk"]
+  }
 
   sanitize = {
     cfi = true
@@ -177,7 +183,6 @@ ohos_unittest("media_library_cloud_sync_service_dto_test") {
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
-    "device_manager:devicemanagersdk",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
@@ -185,6 +190,10 @@ ohos_unittest("media_library_cloud_sync_service_dto_test") {
     "dfs_service:cloudsync_kit_inner",
     "relational_store:rdb_data_share_adapter",
   ]
+
+  if (media_library_feature_device_manager) {
+     external_deps += ["device_manager:devicemanagersdk"]
+  }
 
   sanitize = {
     cfi = true
@@ -232,7 +241,6 @@ ohos_unittest("media_library_cloud_sync_service_controller_service_test") {
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
-    "device_manager:devicemanagersdk",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
@@ -240,6 +248,10 @@ ohos_unittest("media_library_cloud_sync_service_controller_service_test") {
     "dfs_service:cloudsync_kit_inner",
     "relational_store:rdb_data_share_adapter",
   ]
+
+  if (media_library_feature_device_manager) {
+     external_deps += ["device_manager:devicemanagersdk"]
+  }
 
   sanitize = {
     cfi = true
@@ -285,7 +297,6 @@ ohos_unittest("media_library_cloud_sync_service_controller_processor_test") {
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
-    "device_manager:devicemanagersdk",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
@@ -293,6 +304,10 @@ ohos_unittest("media_library_cloud_sync_service_controller_processor_test") {
     "dfs_service:cloudsync_kit_inner",
     "relational_store:rdb_data_share_adapter",
   ]
+
+  if (media_library_feature_device_manager) {
+     external_deps += ["device_manager:devicemanagersdk"]
+  }
 
   sanitize = {
     cfi = true
@@ -340,7 +355,6 @@ ohos_unittest("media_library_cloud_sync_service_service_test") {
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
-    "device_manager:devicemanagersdk",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
@@ -348,6 +362,10 @@ ohos_unittest("media_library_cloud_sync_service_service_test") {
     "dfs_service:cloudsync_kit_inner",
     "relational_store:rdb_data_share_adapter",
   ]
+
+  if (media_library_feature_device_manager) {
+     external_deps += ["device_manager:devicemanagersdk"]
+  }
 
   sanitize = {
     cfi = true
@@ -394,7 +412,6 @@ ohos_unittest("media_library_cloud_sync_service_service_ext_test") {
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
-    "device_manager:devicemanagersdk",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
@@ -402,6 +419,10 @@ ohos_unittest("media_library_cloud_sync_service_service_ext_test") {
     "dfs_service:cloudsync_kit_inner",
     "relational_store:rdb_data_share_adapter",
   ]
+
+  if (media_library_feature_device_manager) {
+     external_deps += ["device_manager:devicemanagersdk"]
+  }
 
   sanitize = {
     cfi = true

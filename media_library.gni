@@ -59,4 +59,22 @@ declare_args() {
   media_library_feature_mtp = true
   media_library_feature_back_up = true
   media_library_feature_cloud_enhancement = true
+  media_library_feature_device_manager = false
+  media_library_feature_user_file_service = false
+  media_library_feature_device_security_level = false
+}
+
+if (defined(global_parts_info) &&
+    defined(global_parts_info.distributedhardware_device_manager)) {
+  media_library_feature_device_manager = true
+}
+
+if (defined(global_parts_info) &&
+    defined(global_parts_info.filemanagement_user_file_service)) {
+  media_library_feature_user_file_service = true
+}
+
+if (defined(global_parts_info) &&
+    defined(global_parts_info.security_device_security_level)) {
+    media_library_feature_device_security_leve = true
 }
