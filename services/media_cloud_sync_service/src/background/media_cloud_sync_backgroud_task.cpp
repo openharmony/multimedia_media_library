@@ -18,6 +18,7 @@
 #include "media_cloud_sync_backgroud_task.h"
 
 #include "media_hidden_and_recycle_task.h"
+#include "repair_video_dirty_and_quality_task.h"
 #include "medialibrary_subscriber.h"
 #include "media_log.h"
 
@@ -27,6 +28,7 @@ MediaCloudSyncBackgroundTask::MediaCloudSyncBackgroundTask()
 {
     this->tasks_ = {
         std::make_shared<MediaHiddenAndRecycleTask>(),
+        std::make_shared<RepairVideoDirtyAndQualityTask>(),
     };
 }
 
