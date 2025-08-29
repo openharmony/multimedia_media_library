@@ -60,6 +60,9 @@ export struct PhotoPickerComponent {
     } else if (data?.has('SET_ALBUM_URI')) {
       this.proxy.send({ 'albumUri': data?.get('SET_ALBUM_URI') as string });
       console.info('PhotoPickerComponent onChanged: SET_ALBUM_URI');
+    } else if (data?.has('SET_SELECTED_URIS_AND_PICKER_INDEX')) {
+      this.proxy.send({ 'uriAndPickerIndexLists': data?.get('SET_SELECTED_URIS_AND_PICKER_INDEX') as Array<PreSelectedInfo> });
+      console.info('PhotoPickerComponent onChanged: SET_SELECTED_URIS_AND_PICKER_INDEX');
     } else if (data?.has('SET_MAX_SELECT_COUNT')) {
       this.onSetMaxSelectCount(data);
     } else if (data?.has('SET_PHOTO_BROWSER_ITEM')) {
@@ -200,6 +203,8 @@ export struct PhotoPickerComponent {
             singleLineConfig: this.getSingleLineConfig(this.pickerOptions?.singleLineConfig as SingleLineConfig),
             uiComponentColorMode: this.pickerOptions?.uiComponentColorMode as PickerColorMode,
             combinedMediaTypeFilter: this.pickerOptions?.combinedMediaTypeFilter as Array<string>,
+            pickerIndex: this.pickerOptions?.pickerIndex as number,
+            preSelectedUrisWithPickerIndex: this.pickerOptions?.preSelectedUrisWithPickerIndex as Array<PreSelectedInfo>
           }
         })
           .height('100%')
@@ -564,7 +569,7 @@ export class PickerController {
   saveCallbackMap: Map<number, Object> = new Map<number, Object>();
   createCallbackMap: Map<number, Object> = new Map<number, Object>();
 
-  setData(type: DataType, data: Object) {
+    setData(type: DataType, data: Object) {
     if (data === undefined) {
       return;
     }
@@ -581,6 +586,12 @@ export class PickerController {
       if (albumUri !== undefined) {
         this.data = new Map([['SET_ALBUM_URI', albumUri]]);
         console.info('PhotoPickerComponent SET_ALBUM_URI' + this.encrypt(JSON.stringify(albumUri)));
+      }
+    } else if (type === DataType.SET_SELECTED_URIS_AND_PICKER_INDEX) {
+      let uriAndPickerIndexLists: Array<PreSelectedInfo> = data as Array<PreSelectedInfo>;
+      if (uriAndPickerIndexLists !== undefined) {
+        this.data = new Map([['SET_SELECTED_URIS_AND_PICKER_INDEX', uriAndPickerIndexLists]]);
+        console.info('PhotoPickerComponent SET_SELECTED_URIS_AND_PICKER_INDEX' + this.encrypt(JSON.stringify(uriAndPickerIndexLists)));
       }
     } else {
       console.info('PhotoPickerComponent setData: other case');
@@ -737,6 +748,8 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   singleLineConfig?: SingleLineConfig;
   uiComponentColorMode?: PickerColorMode;
   combinedMediaTypeFilter?: Array<string>;
+    pickerIndex?: number;
+  preSelectedUrisWithPickerIndex?: Array<PreSelectedInfo>;
 }
 
 export class BaseItemInfo {
@@ -787,9 +800,15 @@ class PhotoBrowserUIElementVisibility {
   isVisible?: boolean;
 }
 
+class PreSelectedInfo {
+  uri:string;
+  pickerIndex?: number = -1;
+}
+
 export enum DataType {
   SET_SELECTED_URIS = 1,
-  SET_ALBUM_URI = 2
+  SET_ALBUM_URI = 2,
+  SET_SELECTED_URIS_AND_PICKER_INDEX = 3
 }
 
 export enum ItemType {
