@@ -278,6 +278,15 @@ std::string CloudMediaSyncUtils::GetEditDataPath(const std::string &localPath)
     return parentPath + "/editdata";
 }
 
+std::string CloudMediaSyncUtils::GetTransCodePath(const std::string &localPath)
+{
+    std::string parentPath = GetEditDataDir(localPath);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/transcode.jpg";
+}
+
 std::string CloudMediaSyncUtils::GetMovingPhotoVideoPath(const std::string &localPath)
 {
     size_t splitIndex = localPath.find_last_of('.');
@@ -303,6 +312,17 @@ void CloudMediaSyncUtils::RemoveEditDataPath(const std::string &localPath)
     MEDIA_INFO_LOG("RemoveEditDataPath EditDataPath: %{public}s", editDataPath.c_str());
     if (unlink(editDataPath.c_str()) != 0 && errno != ENOENT) {
         MEDIA_ERR_LOG("unlink editData failed, errno %{public}d", errno);
+    }
+}
+
+void CloudMediaSyncUtils::RemoveTransCodePath(const std::string &localPath)
+{
+    std::string transCodePath = GetTransCodePath(localPath);
+    MEDIA_INFO_LOG("RemoveTransCodePath TransCodePath: %{public}s", transCodePath.c_str());
+    if (unlink(transCodePath.c_str()) != 0 && errno != ENOENT) {
+        MEDIA_ERR_LOG("[CloudMedia] unlink transCode failed, errno %{public}d", errno);
+    } else {
+        MEDIA_INFO_LOG("[CloudMedia] Delete transCode file Success!");
     }
 }
 

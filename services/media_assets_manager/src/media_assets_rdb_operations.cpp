@@ -200,6 +200,8 @@ int32_t MediaAssetsRdbOperations::CommitEditInsert(const string& editData, int32
         PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         MediaColumn::MEDIA_DATE_TAKEN,
         PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+        PhotoColumn::MEDIA_TYPE,
+        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
     };
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
     CHECK_AND_RETURN_RET(resultSet != nullptr, E_INVALID_VALUES);
@@ -478,6 +480,7 @@ const static vector<string> EDITED_COLUMN_VECTOR = {
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
     PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
     MediaColumn::MEDIA_DATE_TAKEN,
+    PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
 };
 
 int32_t MediaAssetsRdbOperations::RevertToOrigin(const int32_t &fileId)
@@ -492,6 +495,10 @@ int32_t MediaAssetsRdbOperations::RevertToOrigin(const int32_t &fileId)
     CHECK_AND_RETURN_RET(PhotoEditingRecord::GetInstance()->StartRevert(fileId), E_IS_IN_COMMIT);
 
     int32_t errCode = MediaLibraryPhotoOperations::DoRevertEdit(fileAsset);
+    if (fileAsset->GetExistCompatibleDuplicate() != 0) {
+        MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
+            to_string(fileId), __func__);
+    }
     PhotoEditingRecord::GetInstance()->EndRevert(fileId);
     return errCode;
 }
@@ -549,6 +556,27 @@ int32_t MediaAssetsRdbOperations::QueryEnhancementTaskState(const string& photoU
     dto.ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
     dto.ceErrorCode = GetInt32Val(PhotoColumn::PHOTO_CE_STATUS_CODE, resultSet);
     resultSet->Close();
+    return E_OK;
+}
+
+int32_t MediaAssetsRdbOperations::UpdateTmpCompatibleDup(int32_t fileId, size_t size, bool validate)
+{
+    int64_t curTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t dupSize = static_cast<int64_t>(size);
+    MEDIA_INFO_LOG("dupfile info: time[%{public}" PRId64 "] size[%{public}" PRId64 "]", curTime, dupSize);
+    ValuesBucket value;
+    value.PutLong(PhotoColumn::PHOTO_TRANSCODE_TIME, curTime);
+    value.PutLong(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, dupSize);
+    value.PutInt(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, static_cast<int>(validate));
+
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_INNER_FAIL, "Can not get rdbstore");
+
+    int32_t changeRows = 0;
+    int32_t err = rdbStore->Update(changeRows, value, rdbPredicate);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_INNER_FAIL, "Failed to UpdateTmpCompatibleDup[%{public}d]", err);
     return E_OK;
 }
 

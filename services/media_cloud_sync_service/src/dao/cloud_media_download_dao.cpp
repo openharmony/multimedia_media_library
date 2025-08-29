@@ -278,4 +278,24 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAssetExifRotateFix(
         ret);
     return E_OK;
 }
+
+int32_t CloudMediaDownloadDao::UpdateTransCodeInfo(const std::string &path)
+{
+    MEDIA_INFO_LOG("enter UpdateTransCodeInfo");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Failed to get rdbStore.");
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_FILE_PATH, path);
+    NativeRdb::ValuesBucket values;
+
+    values.PutLong(PhotoColumn::PHOTO_TRANSCODE_TIME, 0);
+    values.PutLong(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, 0);
+    values.PutLong(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, 0);
+    int32_t changedRows = DEFAULT_VALUE;
+    int32_t ret = rdbStore->Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to UpdateTransCodeInfo.");
+    CHECK_AND_PRINT_LOG(changedRows > 0, "Check updateRows: %{public}d.", changedRows);
+    MEDIA_INFO_LOG("UpdateTransCodeInfo success, changedRows: %{public}d.", changedRows);
+    return ret;
+}
 }  // namespace OHOS::Media::CloudSync

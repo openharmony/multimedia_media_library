@@ -457,6 +457,8 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     MediaColumn::MEDIA_HIDDEN,
     MediaColumn::MEDIA_DATE_TRASHED,
     MediaColumn::MEDIA_SIZE,
+    MediaColumn::MEDIA_NAME,
+    PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
 };
 
 bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
@@ -600,6 +602,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     if (errCode != E_OK || !isSkipEdit) {
         return errCode;
     }
+    bool isHeif = cmd.GetQuerySetParam(PHOTO_TRANSCODE_OPERATION) == OPRN_TRANSCODE_HEIF;
     string uriString = cmd.GetUriStringWithoutSegment();
     string id = MediaFileUtils::GetIdFromUri(uriString);
     CHECK_AND_RETURN_RET(!uriString.empty() && MediaLibraryDataManagerUtils::IsNumber(id), E_INVALID_URI);
@@ -624,12 +627,18 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     string uri = cmd.GetUri().ToString();
     int32_t type = -1;
     GetType(uri, type);
-    MEDIA_DEBUG_LOG("After spliting, uri is %{public}s", uri.c_str());
-    MEDIA_DEBUG_LOG("After spliting, type is %{public}d", type);
+    MEDIA_DEBUG_LOG("After spliting, uri is %{public}s, type is %{public}d", uri.c_str(), type);
+    int32_t err = SetTranscodeUriToFileAsset(fileAsset, mode, isHeif);
+    int32_t ret = E_ERR;
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
-        return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10, isMovingPhotoVideo, type);
+        ret = OpenAsset(fileAsset, mode, MediaLibraryApi::API_10, isMovingPhotoVideo, type);
+    } else {
+        ret = OpenAsset(fileAsset, mode, cmd.GetApi(), type);
     }
-    return OpenAsset(fileAsset, mode, cmd.GetApi(), type);
+    if (err == 0 && ret >= 0) {
+        MediaLibraryAssetOperations::DoTranscodeDfx(ACCESS_MEDIALIB);
+    }
+    return ret;
 }
 
 int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
@@ -2093,6 +2102,32 @@ static int32_t UpdateAlbumDateModified(int32_t albumId)
     return E_OK;
 }
 
+int32_t MediaLibraryPhotoOperations::UpdateOrientation(MediaLibraryCommand &cmd,
+    const shared_ptr<FileAsset>& fileAsset, bool &orientationUpdated,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &assetRefresh, int32_t &errCode)
+{
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is null");
+    string currentOrientation = "";
+    errCode = UpdateOrientationExif(cmd, fileAsset, orientationUpdated, currentOrientation);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update allexif failed, allexif=%{private}s",
+        fileAsset->GetAllExif().c_str());
+
+    int32_t rowId = -1;
+    CHECK_AND_RETURN_RET_LOG(assetRefresh != nullptr, E_INVALID_VALUES, "assetRefresh is null");
+    assetRefresh->Update(cmd, rowId);
+    if (rowId < 0) {
+        MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
+        RevertOrientation(fileAsset, currentOrientation);
+        return rowId;
+    }
+
+    if (orientationUpdated && fileAsset->GetExistCompatibleDuplicate() != 0) {
+        MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
+            to_string(fileAsset->GetId()), __func__);
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
 {
     shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh =
@@ -2100,7 +2135,7 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE,
         PhotoColumn::MEDIA_NAME, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, MediaColumn::MEDIA_HIDDEN,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_ALL_EXIF,
-        PhotoColumn::PHOTO_OWNER_ALBUM_ID };
+        PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, columns);
     CHECK_AND_RETURN_RET(fileAsset != nullptr, E_INVALID_VALUES);
@@ -2108,7 +2143,6 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     bool isNeedScan = false;
     int32_t errCode = RevertToOriginalEffectMode(cmd, fileAsset, isNeedScan);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to revert original effect mode: %{public}d", errCode);
-
     // Update if FileAsset.title or FileAsset.displayName is modified
     bool isNameChanged = false;
     errCode = UpdateFileName(cmd, fileAsset, isNameChanged);
@@ -2116,22 +2150,18 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
         fileAsset->GetDisplayName().c_str());
 
     bool orientationUpdated = false;
-    string currentOrientation = "";
-    errCode = UpdateOrientationExif(cmd, fileAsset, orientationUpdated, currentOrientation);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update allexif failed, allexif=%{private}s",
-        fileAsset->GetAllExif().c_str());
-
-    int32_t rowId = -1;
-    assetRefresh->Update(cmd, rowId);
+    int32_t rowId = UpdateOrientation(cmd, fileAsset, orientationUpdated, assetRefresh, errCode);
     if (rowId < 0) {
-        MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
-        RevertOrientation(fileAsset, currentOrientation);
         return rowId;
     }
     CHECK_AND_EXECUTE(!isNameChanged, UpdateAlbumDateModified(fileAsset->GetOwnerAlbumId()));
     if (cmd.GetOprnType() == OperationType::SET_USER_COMMENT) {
         errCode = SetUserComment(cmd, fileAsset);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Edit user comment errCode = %{private}d", errCode);
+        if (fileAsset->GetExistCompatibleDuplicate() != 0) {
+            MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
+                to_string(fileAsset->GetId()), __func__);
+        }
     }
     HandleUpdateIndex(cmd, to_string(fileAsset->GetId()));
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
@@ -2292,6 +2322,7 @@ const static vector<string> EDITED_COLUMN_VECTOR = {
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
     PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
     PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+    PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
 };
 
 static int32_t CheckFileAssetStatus(const shared_ptr<FileAsset>& fileAsset, bool checkMovingPhoto = false)
@@ -2712,6 +2743,10 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
     errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d",
         fileAsset->GetId());
+    if (fileAsset->GetMediaType() == MEDIA_TYPE_IMAGE && fileAsset->GetExistCompatibleDuplicate() != 0) {
+        MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
+            to_string(fileAsset->GetId()), __func__);
+    }
     UpdateAlbumDateModified(fileAsset->GetOwnerAlbumId());
     ScanFile(path, false, true, true);
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
@@ -2817,10 +2852,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     int32_t errCode = CheckFileAssetStatus(fileAsset);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
     int32_t fileId = fileAsset->GetId();
-    if (fileAsset->GetPhotoEditTime() == 0) {
-        MEDIA_INFO_LOG("File %{public}d is not edit", fileId);
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET_INFO_LOG(fileAsset->GetPhotoEditTime() !=0, E_OK, "File %{public}d is not edit", fileId);
 
     string path = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INVALID_URI, "Can not get file path, fileId=%{public}d", fileId);
@@ -2859,7 +2891,6 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
         fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType())) {
         RemoveMovingPhotoVideo(sourcePath, path);
     }
-
     CHECK_AND_RETURN_RET_LOG(DoRevertFilters(fileAsset, path, sourcePath) == E_OK, E_FAIL,
         "Failed to DoRevertFilters to photo");
 
@@ -3285,7 +3316,8 @@ std::shared_ptr<FileAsset> MediaLibraryPhotoOperations::GetFileAsset(MediaLibrar
     int32_t id = 0;
     GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id);
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
-        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED };
+        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED,
+        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
         PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
     return fileAsset;

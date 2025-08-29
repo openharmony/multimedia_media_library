@@ -18,6 +18,7 @@
 
 #include <sstream>
 
+#include "dfx_manager.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_utils.h"
@@ -586,6 +587,46 @@ int32_t PhotoFileOperation::ConvertFormatPhotoExtraData(const std::string &srcPa
         MEDIA_ERR_LOG("ConvertFormatExtraDataDirectory failed, srcPath: %{public}s, dstPath: %{public}s, "
             "extension: %{public}s", srcPath.c_str(), dstPath.c_str(), extension.c_str());
         return ret;
+    }
+    return E_OK;
+}
+
+static int32_t DoTranscodeFailedDfx(const std::string &errmsg, const TranscodeErrorType &type)
+{
+    MEDIA_ERR_LOG("%s", errmsg.c_str());
+    auto dfxManager = DfxManager::GetInstance();
+    if (dfxManager == nullptr) {
+        MEDIA_ERR_LOG("DfxManager::GetInstance() returned nullptr");
+        return E_INNER_FAIL;
+    }
+    dfxManager->HandleTranscodeFailed(type);
+    return E_INNER_FAIL;
+}
+
+int32_t PhotoFileOperation::CreateTmpCompatibleDup(const std::string &srcPath, size_t &size)
+{
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(srcPath), E_PARAM_CONVERT_FORMAT,
+        "Origin file is not exists.");
+    const std::string extension = "jpg";
+    const std::string duplicate = "/transcode.jpg";
+    PhotoFileOperation::PhotoAssetInfo sourcePhotoInfo;
+    sourcePhotoInfo.filePath = std::move(srcPath);
+    auto editDataFolder = BuildEditDataFolder(sourcePhotoInfo);
+    if (editDataFolder.empty()) {
+        return DoTranscodeFailedDfx("CreateTmpCompatibleDup failed, editDataFolder is empty", INNER_FAILED);
+    }
+    if (!MediaFileUtils::IsDirExists(editDataFolder)) {
+        if (!MediaFileUtils::CreateDirectory(editDataFolder)) {
+            return DoTranscodeFailedDfx("Create editDataFolder fail", INNER_FAILED);
+        }
+    }
+
+    auto targetPath = std::move(editDataFolder) + duplicate;
+    if (!MediaFileUtils::ConvertFormatCopy(sourcePhotoInfo.filePath, targetPath, extension)) {
+        return DoTranscodeFailedDfx("ConvertFormatCopy fail", CODEC_FAILED);
+    }
+    if (!MediaFileUtils::GetFileSize(targetPath, size)) {
+        return DoTranscodeFailedDfx("GetFileSize fail", INNER_FAILED);
     }
     return E_OK;
 }

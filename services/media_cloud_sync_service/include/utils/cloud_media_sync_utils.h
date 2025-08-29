@@ -44,6 +44,7 @@ public:
     static void InvalidVideoCache(const std::string &localPath);
     static void RemoveMovingPhoto(const CloudMediaPullDataDto &pullData);
     static void RemoveEditDataPath(const std::string &localPath);
+    static void RemoveTransCodePath(const std::string &localPath);
     static uint32_t GenerateCloudIdWithHash(PhotoAlbumPo &record);
     static int32_t FillPhotosDto(PhotosDto &photosDto, const std::string &path, const int32_t &orientation,
         const int32_t exifRotate, const int32_t &thumbState);
@@ -54,6 +55,7 @@ public:
     static std::string GetMovingPhotoExtraDataPath(const std::string &localPath);
     static std::string GetEditDataDir(const std::string &localPath);
     static std::string GetEditDataPath(const std::string &localPath);
+    static std::string GetTransCodePath(const std::string &localPath);
     static std::string GetMovingPhotoVideoPath(const std::string &localPath);
     static std::string GetMovingPhotoTmpPath(const std::string &localPath);
     static std::string GetEditDataSourcePath(const std::string& photoPath);

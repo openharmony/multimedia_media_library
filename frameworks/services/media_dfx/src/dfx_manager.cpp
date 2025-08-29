@@ -526,6 +526,7 @@ int64_t DfxManager::HandleOneDayReport()
     dfxReporter_->ReportAdaptationToMovingPhoto();
     dfxReporter_->ReportPhotoRecordInfo();
     dfxReporter_->ReportOperationRecordInfo();
+    dfxReporter_->ReportAlibHeifDuplicate();
     return MediaFileUtils::UTCTimeSeconds();
 }
 
@@ -1042,6 +1043,30 @@ void DfxManager::HandleAccurateRefreshTimeOut(const AccurateRefreshDfxDataPoint&
     }
     MEDIA_INFO_LOG("enter HandleAccurateRefreshTimeOut");
     dfxReporter_->ReportAccurateRefreshResult(reportData);
+}
+
+void DfxManager::HandleTranscodeAccessTime(const TranscodeAccessType type)
+{
+    MEDIA_INFO_LOG("HandleTranscodeAccessTime type: %{public}d", type);
+    CHECK_AND_RETURN_LOG(isInitSuccess_, "DfxManager not init");
+    CHECK_AND_RETURN_LOG(dfxAnalyzer_, "dfxAnalyzer_ is nullptr");
+    dfxAnalyzer_->FlushTranscodeAccessTimes(type);
+}
+
+void DfxManager::HandleTranscodeFailed(const TranscodeErrorType type)
+{
+    MEDIA_INFO_LOG("HandleTranscodeFailed type: %{public}d", type);
+    CHECK_AND_RETURN_LOG(isInitSuccess_, "DfxManager not init");
+    CHECK_AND_RETURN_LOG(dfxAnalyzer_, "dfxAnalyzer_ is nullptr");
+    dfxAnalyzer_->FlushTranscodeFailed(type);
+}
+
+void DfxManager::HandleTranscodeCostTime(const int32_t costTime)
+{
+    MEDIA_INFO_LOG("HandleTranscodeCostTime type: %{public}d", costTime);
+    CHECK_AND_RETURN_LOG(isInitSuccess_, "DfxManager not init");
+    CHECK_AND_RETURN_LOG(dfxAnalyzer_, "dfxAnalyzer_ is nullptr");
+    dfxAnalyzer_->FlushTranscodeCostTime(costTime);
 }
 } // namespace Media
 } // namespace OHOS

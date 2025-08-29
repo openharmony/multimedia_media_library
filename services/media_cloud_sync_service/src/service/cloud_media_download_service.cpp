@@ -454,6 +454,14 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         assetData.err = ret;
         return;
     }
+    CloudMediaSyncUtils::RemoveTransCodePath(assetData.localPath);
+    ret = this->dao_.UpdateTransCodeInfo(assetData.path);
+    if (ret != E_OK) {
+        assetData.errorMsg = "[OnDownloadAsset] UpdateTransCodeInfo failed";
+        assetData.err = ret;
+        return;
+    }
+    MEDIA_INFO_LOG("[OnDownloadAsset] Delete transCode file Success!");
 }
 
 int32_t CloudMediaDownloadService::FixDownloadAssetExifRotate(

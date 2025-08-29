@@ -21,6 +21,7 @@
 #include <fuse.h>
 #include <sys/utsname.h>
 #include "dfx_const.h"
+#include "dfx_manager.h"
 #include "dfx_reporter.h"
 #include "iservice_registry.h"
 #include "media_fuse_daemon.h"
@@ -34,6 +35,7 @@
 #include "media_column.h"
 #include "media_privacy_manager.h"
 #include "media_visit_count_manager.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "rdb_utils.h"
@@ -41,6 +43,7 @@
 #include "abs_permission_handler.h"
 #include "read_write_permission_handler.h"
 #include "grant_permission_handler.h"
+#include "heif_transcoding_check_utils.h"
 #include "ipc_skeleton.h"
 #include "permission_used_type.h"
 #include "medialibrary_object_utils.h"
@@ -72,6 +75,7 @@ static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDWR | O_TRUNC, MEDIA_FILEMODE_READWRITETRUNCATE },
     { O_RDWR | O_APPEND, MEDIA_FILEMODE_READWRITEAPPEND },
 };
+std::map<int, time_t> MEDIA_OPEN_WRITE_MAP;
 
 MediafusePermCheckInfo::MediafusePermCheckInfo(const string &filePath, const string &mode, const string &fileId,
     const string &appId, const int32_t &uid)
@@ -319,6 +323,56 @@ int32_t MediafusePermCheckInfo::CheckPermission(uint32_t &tokenCaller)
     return rslt;
 }
 
+static int32_t GetCompatibleModeFromFileId(int32_t &compatibleMode, const string &fileId)
+{
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
+
+    vector<string> columns;
+    columns.push_back(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE);
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
+    int32_t numRows = 0;
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rslt");
+        return E_ERR;
+    }
+    int32_t ret = resultSet->GetRowCount(numRows);
+    if ((ret != NativeRdb::E_OK) || (numRows <= 0)) {
+        MEDIA_ERR_LOG("Failed to get filePath");
+        return E_ERR;
+    }
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        compatibleMode = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE);
+    }
+    return E_SUCCESS;
+}
+
+static int32_t GetTranscodeUri(string &filePath, const string &bundleName, const string &fileId, const string &mode)
+{
+    if (MediaFileUtils::GetExtensionFromPath(filePath) != "heif" &&
+        MediaFileUtils::GetExtensionFromPath(filePath) != "heic") {
+        MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", filePath.c_str());
+        return E_INNER_FAIL;
+    }
+    CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
+        "mode is not read only, filePath: %{private}s", filePath.c_str());
+    CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(bundleName), E_INNER_FAIL,
+        "Get client bundle name failed, filePath: %{private}s", filePath.c_str());
+    int32_t compatibleMode = 0;
+    CHECK_AND_RETURN_RET_LOG(GetCompatibleModeFromFileId(compatibleMode, fileId), E_INNER_FAIL,
+        "Get compatible mode failed, fileId: %{private}s", fileId.c_str());
+    CHECK_AND_RETURN_RET_LOG(compatibleMode != 0, E_INNER_FAIL,
+        "Is not have transcode file, filePath: %{private}s", filePath.c_str());
+    string path = MediaLibraryAssetOperations::GetEditDataDirPath(filePath);
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INNER_FAIL,
+        "Get edit data dir path failed, filePath: %{private}s", filePath.c_str());
+    MEDIA_INFO_LOG("GetTranscodeUri path: %{private}s", path.c_str());
+    string tempPath = path + "/transcode.jpg";
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists((tempPath)), E_INNER_FAIL, "transcode.jpg is not exist");
+    filePath = tempPath;
+    return E_OK;
+}
+
 static int32_t OpenFile(const string &filePath, const string &fileId, const string &mode)
 {
     MEDIA_DEBUG_LOG("fuse open file");
@@ -333,7 +387,43 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
     if (permGranted == false) {
         return E_ERR;
     }
-    return MediaPrivacyManager(filePath, mode, fileId, appId, bundleName, uid, tokenCaller).Open();
+    string path = filePath;
+    int32_t err = GetTranscodeUri(path, bundleName, fileId, mode);
+    int32_t ret = MediaPrivacyManager(path, mode, fileId, appId, bundleName, uid, tokenCaller).Open();
+    if (err == 0 && ret >= 0) {
+        MEDIA_INFO_LOG("libc open transcode file success");
+        auto dfxManager = DfxManager::GetInstance();
+        CHECK_AND_RETURN_RET_LOG(dfxManager != nullptr, E_INNER_FAIL, "DfxManager::GetInstance() returned nullptr");
+        dfxManager->HandleTranscodeAccessTime(ACCESS_LIBC);
+    }
+    return ret;
+}
+
+static int32_t HasTransCodeFile(const string &filePath, const string &fileId)
+{
+    if (MediaFileUtils::GetExtensionFromPath(filePath) != "heif" &&
+        MediaFileUtils::GetExtensionFromPath(filePath) != "heic") {
+        MEDIA_INFO_LOG("Display name is not heif, filePath: %{private}s", filePath.c_str());
+        return E_ERR;
+    }
+    int32_t compatibleMode = 0;
+    if (!GetCompatibleModeFromFileId(compatibleMode, fileId)) {
+        MEDIA_ERR_LOG("Get compatible mode failed, fileId: %{public}s", fileId.c_str());
+        return E_ERR;
+    }
+    return E_OK;
+}
+
+static int32_t GetFileMtime(const string &filePath, time_t &mtime)
+{
+    struct stat statInfo {};
+    if (stat(filePath.c_str(), &statInfo) != 0) {
+        MEDIA_ERR_LOG("Get file mtime failed, path = %{private}s", filePath.c_str());
+        return E_ERR;
+    }
+    mtime = statInfo.st_mtime;
+    MEDIA_INFO_LOG("cpp--Get file mtime success, mtime = %{public}lld", mtime);
+    return E_OK;
 }
 
 int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
@@ -356,6 +446,11 @@ int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
         MEDIA_ERR_LOG("Open failed, path = %{private}s, errno = %{public}d", target.c_str(), errno);
         return E_ERR;
     }
+    time_t mtime = 0;
+    if (realFlag == O_RDONLY || HasTransCodeFile(target, fileId) != E_OK || GetFileMtime(target, mtime) != E_OK) {
+        return E_OK;
+    }
+    MEDIA_OPEN_WRITE_MAP.insert(std::make_pair(fd, mtime));
     return 0;
 }
 
@@ -365,15 +460,27 @@ int32_t MediaFuseManager::DoRelease(const char *path, const int &fd)
     string filePath;
     GetFileIdFromUri(fileId, path);
     GetPathFromFileId(filePath, fileId);
-    if (fd >= 0) {
-        close(fd);
-        MediaLibraryObjectUtils::ScanFileAsync(filePath, fileId, MediaLibraryApi::API_10);
-        MEDIA_DEBUG_LOG("fuse close file succ");
-        return E_OK;
-    } else {
+    if (fd < 0) {
         MEDIA_ERR_LOG("fuse close file fail");
         return E_ERR;
     }
+    if (MEDIA_OPEN_WRITE_MAP.find(fd) != MEDIA_OPEN_WRITE_MAP.end()) {
+        time_t oldMtime = MEDIA_OPEN_WRITE_MAP[fd];
+        MEDIA_OPEN_WRITE_MAP.erase(fd);
+        time_t newMtime = 0;
+        if (GetFileMtime(filePath, newMtime) != E_OK) {
+            MEDIA_ERR_LOG("Get file mtime failed, path = %{private}s", filePath.c_str());
+            close(fd);
+            return E_ERR;
+        }
+        if (oldMtime != newMtime) {
+            MediaLibraryAssetOperations::DeleteTransCodeInfo(filePath, fileId, __func__);
+        }
+    }
+    close(fd);
+    MediaLibraryObjectUtils::ScanFileAsync(filePath, fileId, MediaLibraryApi::API_10);
+    MEDIA_DEBUG_LOG("fuse close file succ");
+    return E_OK;
 }
 
 int32_t MediaFuseManager::MountFuse(std::string &mountpoint)
