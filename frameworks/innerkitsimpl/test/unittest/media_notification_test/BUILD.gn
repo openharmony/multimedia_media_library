@@ -94,7 +94,6 @@ ohos_unittest("media_notification_test") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
-    "device_manager:devicemanagersdk",
     "e2fsprogs:libext2_uuid",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
@@ -106,6 +105,10 @@ ohos_unittest("media_notification_test") {
     "player_framework:media_client",
     "relational_store:native_rdb",
   ]
+
+  if (media_library_feature_device_manager) {
+     external_deps += ["device_manager:devicemanagersdk"]
+  }
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]

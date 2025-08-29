@@ -77,7 +77,6 @@ ohos_unittest("medialibrary_rdb_test") {
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
     "ffrt:libffrt",
-    "device_manager:devicemanagersdk",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "ipc:ipc_napi",
@@ -92,6 +91,10 @@ ohos_unittest("medialibrary_rdb_test") {
       defined(global_parts_info.filemanagement_dfs_service)) {
     defines += [ "CLOUD_SYNC_MANAGER" ]
     external_deps += [ "dfs_service:cloudsync_kit_inner" ]
+  }
+
+  if (media_library_feature_device_manager) {
+     external_deps += ["device_manager:devicemanagersdk"]
   }
 
   sanitize = {

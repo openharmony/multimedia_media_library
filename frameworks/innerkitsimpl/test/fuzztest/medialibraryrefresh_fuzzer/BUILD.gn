@@ -87,7 +87,6 @@ ohos_fuzztest("MediaLibraryRefreshFuzzTest") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
-    "device_manager:devicemanagersdk",
     "dfs_service:cloudsync_kit_inner",
     "hilog:libhilog",
     "ipc:ipc_single",
@@ -104,6 +103,10 @@ ohos_fuzztest("MediaLibraryRefreshFuzzTest") {
     "ability_runtime:runtime",
     "ipc:ipc_napi",
   ]
+
+  if (media_library_feature_device_manager) {
+     external_deps += ["device_manager:devicemanagersdk"]
+  }
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
