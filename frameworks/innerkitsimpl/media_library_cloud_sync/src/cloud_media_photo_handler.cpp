@@ -504,7 +504,7 @@ int32_t CloudMediaPhotoHandler::OnStartSync()
 
 int32_t CloudMediaPhotoHandler::OnCompleteSync()
 {
-    MEDIA_INFO_LOG("OnCompleteSync enter");
+    MEDIA_DEBUG_LOG("OnCompleteSync enter");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_COMPLETE_SYNC);
     return IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode);
 }
