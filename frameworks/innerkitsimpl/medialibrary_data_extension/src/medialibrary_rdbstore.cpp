@@ -5124,9 +5124,19 @@ static void UpgradeFromAllVersionFourthPart(RdbStore &store, unordered_map<strin
     MEDIA_INFO_LOG("End ADD_URI_SENSITIVE_COLUMNS");
 }
 
+static void AddAnalysisProgress(RdbStore &store)
+{
+    const vector<string> exeSqls = {
+        CREATE_TAB_ANALYSIS_PROGRESS,
+    };
+    MEDIA_INFO_LOG("start add analysis progress table");
+    ExecSqls(exeSqls, store);
+    MEDIA_INFO_LOG("end add analysis progress table");
+}
+
 static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
 {
-    if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER &&
+     if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true)) {
         UpdateAnalysisAlbumRelationship(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true);
@@ -5136,6 +5146,10 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_APPLINK_VERSION, true)) {
         AddAppLinkColumn(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_APPLINK_VERSION, true);
+    }
+
+    if (oldVersion < VERSION_ADD_TAB_ANALYSIS_PROGRESS) {
+        AddAnalysisProgress(store);
     }
 }
 
