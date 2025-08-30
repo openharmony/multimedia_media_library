@@ -369,23 +369,26 @@ int32_t Acl::AclSetSlaveDatabase()
         MEDIA_ERR_LOG("Media database directory is not exist");
         return E_ERR;
     }
-
-    if (EnableAcl(MEDIA_DB_FILE_SLAVE, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
+    if (EnableAcl(RDB_DIR, ACL_XATTR_DEFAULT, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
         ACL_PERM::Value::EXECUTE, DDMS_ACL_GROUP) != E_OK) {
-        MEDIA_ERR_LOG("Failed to set the acl permission for the DB file");
+        MEDIA_ERR_LOG("Failed to set the default acl permission for the DB dir");
         return E_ERR;
     }
-    if (EnableAcl(MEDIA_DB_FILE_SLAVE_SHM, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
+    if (RecursiveEnableAcl(RDB_DIR, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
         ACL_PERM::Value::EXECUTE, DDMS_ACL_GROUP) != E_OK) {
-        MEDIA_ERR_LOG("Failed to set the acl permission for the DB file");
-        return E_ERR;
-    }
-    if (EnableAcl(MEDIA_DB_FILE_SLAVE_WAL, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
-        ACL_PERM::Value::EXECUTE, DDMS_ACL_GROUP) != E_OK) {
-        MEDIA_ERR_LOG("Failed to set the acl permission for the DB file");
+        MEDIA_ERR_LOG("Failed to set the acl permission for the DB dir");
         return E_ERR;
     }
 
+    if (!IsDirExist(MEDIA_DB_BINLOG_DIR)) {
+        MEDIA_ERR_LOG("binlog not exist");
+        return E_OK;
+    }
+    if (EnableAcl(MEDIA_DB_BINLOG_DIR, ACL_XATTR_DEFAULT, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
+        ACL_PERM::Value::EXECUTE, DDMS_ACL_GROUP) != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the acl default permission for the binlog dir");
+        return E_ERR;
+    }
     return E_OK;
 }
 
