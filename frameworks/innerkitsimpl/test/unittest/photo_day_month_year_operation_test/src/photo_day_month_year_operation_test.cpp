@@ -217,11 +217,23 @@ void PrepareAbnormalPhotos()
     fileId = InsertPhotoWithDateTime(dateTaken, detailTime, "20200808", exif);
     EXPECT_GT(fileId, 0);
 
-    exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\"}";
+    exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+08:00\","
+           "\"SubsecTimeOriginal\":\"120000\",\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
     fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
     EXPECT_GT(fileId, 0);
 
-    exif = "";
+    exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"\","
+           "\"SubsecTimeOriginal\":\"\",\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
+    fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+
+    exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+           "\"GPSDateStamp\":\"2020:08:08\",\"GPSTimeStamp\":\"00:08:53.12\"}";
+    fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+    EXPECT_GT(fileId, 0);
+
+    exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+           "\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
     fileId = InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
     EXPECT_GT(fileId, 0);
 }

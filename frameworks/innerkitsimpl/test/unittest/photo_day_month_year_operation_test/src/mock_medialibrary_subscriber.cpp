@@ -15,10 +15,13 @@
 
 #include "medialibrary_subscriber.h"
 
+#include "media_log.h"
+
 namespace OHOS {
 namespace Media {
 bool MedialibrarySubscriber::IsCurrentStatusOn()
 {
+    MEDIA_INFO_LOG("enter");
     return true;
 }
 }  // namespace Media

@@ -201,10 +201,20 @@ static void PrepareAbnormalPhotos()
 
     InsertPhotoWithDateTime(dateTaken, detailTime, "20200808", exif);
 
-    exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\"}";
+    exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+08:00\","
+           "\"SubsecTimeOriginal\":\"120000\",\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
     InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
 
-    exif = "";
+    exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"\","
+           "\"SubsecTimeOriginal\":\"\",\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
+    InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+
+    exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+           "\"GPSDateStamp\":\"2020:08:08\",\"GPSTimeStamp\":\"00:08:53.12\"}";
+    InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
+
+    exif = "{\"DateTimeOriginal\":\"\",\"OffsetTimeOriginal\":\"\",\"SubsecTimeOriginal\":\"\","
+           "\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";
     InsertPhotoWithDateTime(dateTaken, detailTime, dateDay, exif);
 }
 
