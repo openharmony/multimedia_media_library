@@ -41,10 +41,9 @@ public:
     RdbUpgradeUtils() = delete;
     ~RdbUpgradeUtils() = delete;
  
-    EXPORT static bool IsUpgrade(std::shared_ptr<NativePreferences::Preferences> prefs, int32_t version,
-        bool isSync);
-    EXPORT static void SetUpgradeStatus(std::shared_ptr<NativePreferences::Preferences> prefs, int32_t version,
-        bool isSync);
+    EXPORT static bool HasUpgraded(int32_t version, bool isSync);
+    EXPORT static void SetUpgradeStatus(int32_t version, bool isSync);
+    static void AddMapValueToPreference();
 };
  
 } // Media

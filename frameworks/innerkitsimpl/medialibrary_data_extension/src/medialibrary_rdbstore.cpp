@@ -1891,6 +1891,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
     PrepareShootingModeAlbum(store);
 
     MediaLibraryRdbStore::SetOldVersion(MEDIA_RDB_VERSION);
+    RdbUpgradeUtils::AddMapValueToPreference();
     return NativeRdb::E_OK;
 }
 
@@ -5123,18 +5124,18 @@ static void UpgradeFromAllVersionFourthPart(RdbStore &store, unordered_map<strin
     MEDIA_INFO_LOG("End ADD_URI_SENSITIVE_COLUMNS");
 }
 
-static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion, shared_ptr<NativePreferences::Preferences> prefs)
+static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER &&
-        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true)) {
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true)) {
         UpdateAnalysisAlbumRelationship(store);
-        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true);
     }
     
     if (oldVersion < VERSION_ADD_APPLINK_VERSION &&
-        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_ADD_APPLINK_VERSION, true)) {
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_APPLINK_VERSION, true)) {
         AddAppLinkColumn(store);
-        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_ADD_APPLINK_VERSION, true);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_APPLINK_VERSION, true);
     }
 }
 
@@ -5162,12 +5163,8 @@ static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
         AddExifRotateColumn(store);
     }
 
-    int32_t errCode = 0;
-    shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(RDB_UPGRADE_EVENT, errCode);
-    MEDIA_INFO_LOG("rdb_upgrade_events prefs errCode: %{public}d", errCode);
     if (oldVersion < VERSION_FIX_DB_UPGRADE_TO_API20 &&
-        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, true)) {
+        !RdbUpgradeUtils::HasUpgraded(VERSION_FIX_DB_UPGRADE_TO_API20, true)) {
         unordered_map<string, bool> photoColumnExists = {
             { PhotoColumn::PHOTO_DETAIL_TIME, false },          // VERSION_ADD_DETAIL_TIME
             { PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, false },    // VERSION_ADD_THUMBNAIL_VISIBLE
@@ -5181,16 +5178,16 @@ static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
         UpgradeFromAllVersionSecondPart(store, photoColumnExists);
         UpgradeFromAllVersionThirdPart(store, photoColumnExists);
         UpgradeFromAllVersionFourthPart(store, photoColumnExists);
-        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, true);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_FIX_DB_UPGRADE_TO_API20, true);
     }
 
     if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER &&
-        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER, true)) {
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER, true)) {
         UpdatePhotoAlbumTigger(store);
-        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER, true);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER, true);
     }
 
-    UpgradeExtensionPart9(store, oldVersion, prefs);
+    UpgradeExtensionPart9(store, oldVersion);
 }
 
 static void UpgradeExtensionPart7(RdbStore &store, int32_t oldVersion)
