@@ -64,6 +64,7 @@ HWTEST_F(CloudMediaDataClientTest, CloudMediaDataClientTraceId_Test, TestSize.Le
 HWTEST_F(CloudMediaDataClientTest, CloudMediaDataClientVacantHandler_Test, TestSize.Level1)
 {
     int32_t failSize;
+    int32_t res = 1;
     DownloadThumPara param;
     std::vector<std::string> uris;
     std::vector<MDKRecord> records;
@@ -78,6 +79,8 @@ HWTEST_F(CloudMediaDataClientTest, CloudMediaDataClientVacantHandler_Test, TestS
 
     client->SetTraceId("test");
     EXPECT_EQ(client->GetTraceId(), "");
+    client->SetUserId(2);
+    EXPECT_EQ(client->userId_, 2);
     client->UpdateDirty("test", DirtyTypes::TYPE_DELETED);
     EXPECT_EQ(client->UpdatePosition(cloudIds, 0), E_IPC_INVAL_ARG);
     client->UpdateSyncStatus("test", 1);
@@ -95,6 +98,8 @@ HWTEST_F(CloudMediaDataClientTest, CloudMediaDataClientVacantHandler_Test, TestS
     client->GetDirtyTypeStat(filePosStat);
     client->GetDownloadThmNum(failSize, 1);
     client->UpdateLocalFileDirty(records);
+    EXPECT_EQ(client->GetCloudSyncUnPreparedData(res), E_IPC_INVAL_ARG);
+    EXPECT_EQ(client->SubmitCloudSyncPreparedDataTask(), E_IPC_INVAL_ARG);
 }
 
 HWTEST_F(CloudMediaDataClientTest, CloudMediaDataClientMDKProperty_Test, TestSize.Level1)
