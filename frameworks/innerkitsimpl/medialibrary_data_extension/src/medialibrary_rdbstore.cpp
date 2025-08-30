@@ -5139,7 +5139,7 @@ static void AddAnalysisProgress(RdbStore &store)
 
 static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
 {
-    if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER &&
+     if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true)) {
         UpdateAnalysisAlbumRelationship(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true);
