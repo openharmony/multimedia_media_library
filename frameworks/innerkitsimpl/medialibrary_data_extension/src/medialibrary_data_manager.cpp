@@ -679,16 +679,12 @@ void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE);
     }
 
-    int32_t errCode = 0;
-    shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(RDB_UPGRADE_EVENT, errCode);
-    MEDIA_INFO_LOG("rdb_upgrade_events prefs errCode: %{public}d", errCode);
     if (oldVersion < VERSION_FIX_DB_UPGRADE_TO_API20 &&
-        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, false)) {
+        !RdbUpgradeUtils::HasUpgraded(VERSION_FIX_DB_UPGRADE_TO_API20, false)) {
         AsyncUpgradeFromAllVersionFirstPart(rdbStore);
         AsyncUpgradeFromAllVersionSecondPart(rdbStore);
         rdbStore->SetOldVersion(VERSION_FIX_DB_UPGRADE_TO_API20);
-        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, false);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_FIX_DB_UPGRADE_TO_API20, false);
     }
 }
 

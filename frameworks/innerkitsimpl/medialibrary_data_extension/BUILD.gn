@@ -632,6 +632,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_subscriber.cpp",
     "src/medialibrary_tab_asset_and_album_operations.cpp",
     "src/medialibrary_tab_old_photos_operations.cpp",
+    "src/medialibrary_upgrade_utils.cpp",
     "src/medialibrary_uripermission_operations.cpp",
     "src/medialibrary_urisensitive_operations.cpp",
     "src/medialibrary_vision_operations.cpp",
@@ -660,7 +661,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/trash_async_worker.cpp",
     "src/video_composition_callback_imp.cpp",
     "src/zip_util.cpp",
-    "src/medialibrary_upgrade_utils.cpp",
   ]
 
   media_notification_source = [

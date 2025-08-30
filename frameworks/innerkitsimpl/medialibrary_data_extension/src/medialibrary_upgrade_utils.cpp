@@ -30,19 +30,20 @@ static unordered_map<int32_t, string> UPGRADE_VALUE_MAP = {
     { VERSION_ADD_APPLINK_VERSION, "VERSION_ADD_APPLINK_VERSION" },
 };
  
-bool RdbUpgradeUtils::IsUpgrade(shared_ptr<NativePreferences::Preferences> prefs, int32_t version,
-    bool isSync)
+bool RdbUpgradeUtils::HasUpgraded(int32_t version, bool isSync)
 {
     if (UPGRADE_VALUE_MAP.find(version) == UPGRADE_VALUE_MAP.end()) {
         return false;
     }
- 
-    int32_t upgradeStatus = UPGRADE_STATUS::UNKNOWN;
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_UPGRADE_EVENT, errCode);
+    MEDIA_INFO_LOG("rdb_upgrade_events prefs errCode: %{public}d", errCode);
+    CHECK_AND_RETURN_RET_WARN_LOG(prefs != nullptr, false, "prefs is nullptr");
+
     string versionKey = UPGRADE_VALUE_MAP.at(version);
-    if (prefs != nullptr) {
-        upgradeStatus = prefs->GetInt(versionKey, UPGRADE_STATUS::UNKNOWN);
-    }
-    MEDIA_INFO_LOG("IsUpgrade current version:%{public}s, current upgradeStatus: %{public}d",
+    int32_t upgradeStatus = prefs->GetInt(versionKey, UPGRADE_STATUS::UNKNOWN);
+    MEDIA_INFO_LOG("HasUpgraded current version:%{public}s, current upgradeStatus: %{public}d",
         versionKey.c_str(), upgradeStatus);
     if (upgradeStatus == UPGRADE_STATUS::UNKNOWN) {
         return false;
@@ -52,19 +53,20 @@ bool RdbUpgradeUtils::IsUpgrade(shared_ptr<NativePreferences::Preferences> prefs
         (upgradeStatus == UPGRADE_STATUS::ASYNC || upgradeStatus == UPGRADE_STATUS::ALL);
 }
  
-void RdbUpgradeUtils::SetUpgradeStatus(shared_ptr<NativePreferences::Preferences> prefs, int32_t version,
-    bool isSync)
+void RdbUpgradeUtils::SetUpgradeStatus(int32_t version, bool isSync)
 {
     if (UPGRADE_VALUE_MAP.find(version) == UPGRADE_VALUE_MAP.end()) {
         MEDIA_INFO_LOG("upgrade map value not exist, version: %{public}d", version);
         return;
     }
- 
-    int32_t currentStatus = UPGRADE_STATUS::UNKNOWN;
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_UPGRADE_EVENT, errCode);
+    MEDIA_INFO_LOG("rdb_upgrade_events prefs errCode: %{public}d", errCode);
+    CHECK_AND_RETURN_LOG(prefs != nullptr, "prefs is nullptr");
+
     string versionKey = UPGRADE_VALUE_MAP.at(version);
-    if (prefs != nullptr) {
-        currentStatus = prefs->GetInt(versionKey, UPGRADE_STATUS::UNKNOWN);
-    }
+    int32_t currentStatus = prefs->GetInt(versionKey, UPGRADE_STATUS::UNKNOWN);
     MEDIA_INFO_LOG("SetUpgradeStatus current version:%{public}s, current upgradeStatus: %{public}d",
         versionKey.c_str(), currentStatus);
  
@@ -81,15 +83,27 @@ void RdbUpgradeUtils::SetUpgradeStatus(shared_ptr<NativePreferences::Preferences
             break;
         case UPGRADE_STATUS::ALL:
             nextStatus = isSync ? UPGRADE_STATUS::ALL : UPGRADE_STATUS::ALL;
+            break;
         default:
             break;
     }
  
-    if (prefs != nullptr) {
-        prefs->PutInt(versionKey, nextStatus);
-        prefs->FlushSync();
-        MEDIA_INFO_LOG("version %{public}s set to: %{public}d", versionKey.c_str(), nextStatus);
+    prefs->PutInt(versionKey, nextStatus);
+    prefs->FlushSync();
+    MEDIA_INFO_LOG("version %{public}s set to: %{public}d", versionKey.c_str(), nextStatus);
+}
+
+void RdbUpgradeUtils::AddMapValueToPreference()
+{
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(RDB_UPGRADE_EVENT, errCode);
+    MEDIA_INFO_LOG("rdb_upgrade_events prefs errCode: %{public}d", errCode);
+    CHECK_AND_RETURN_LOG(prefs != nullptr, "prefs is nullptr");
+    for (auto& pair : UPGRADE_VALUE_MAP) {
+        prefs->PutInt(pair.second, UPGRADE_STATUS::ALL);
     }
+    prefs->FlushSync();
 }
 } // namespace Media
 } // namespace OHOS
