@@ -113,9 +113,9 @@ HWTEST_F(MediaLibraryAnalysisProgressTest, Update_Analysis_Progress_Test, TestSi
     valuesBucket.Put(HEAD_DETECT_FINISH_CNT, 100);
     valuesBucket.Put(LABEL_DETECT_FINISH_CNT, 100);
     valuesBucket.Put(TOTAL_IMAGE_CNT, 100);
-    valuesBucket.Put(FULLY_ANALYZED_IAMGE_CNT, 100);
+    valuesBucket.Put(FULLY_ANALYZED_IMAGE_CNT, 100);
     valuesBucket.Put(TOTAL_PROGRESS, 100);
-    valuesBucket.Put(CREATED_TIME, 1755508527690);
+    valuesBucket.Put(UPDATED_TIME, 1755508527690);
     DataShare::DataSharePredicates predicates;
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucket, predicates);
     EXPECT_GT(retVal, 0);
