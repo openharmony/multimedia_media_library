@@ -433,6 +433,7 @@ const std::string NOTIFY_VIDEO_SAVE_FINISHED = "notify_video_save_finished"; // 
 const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
 
 // slave medialibrary db file path
+const std::string MEDIA_DB_BINLOG_DIR = "/data/storage/el2/database/rdb/media_library.db_binlog";
 const std::string MEDIA_DB_FILE_SLAVE = "/data/storage/el2/database/rdb/media_library_slave.db";
 const std::string MEDIA_DB_FILE_SLAVE_SHM = "/data/storage/el2/database/rdb/media_library_slave.db-shm";
 const std::string MEDIA_DB_FILE_SLAVE_WAL = "/data/storage/el2/database/rdb/media_library_slave.db-wal";
