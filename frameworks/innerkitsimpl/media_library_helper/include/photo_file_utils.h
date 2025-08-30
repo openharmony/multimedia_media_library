@@ -36,6 +36,7 @@ public:
     EXPORT static bool IsThumbnailExists(const std::string &photoPath);
     EXPORT static bool IsThumbnailLatest(const std::string &photoPath);
     EXPORT static std::tuple<std::string, std::string, std::string> ExtractYearMonthDay(const std::string &detailTime);
+    EXPORT static std::string ExtractDetailTimeFromGPS(const std::string &gpsDate, const std::string &gpsTime);
 
 protected:
     EXPORT static std::string AppendUserId(const std::string &path, int32_t userId = -1);
