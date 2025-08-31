@@ -20,6 +20,7 @@
 #include "rdb_predicates.h"
 #include "single_kvstore.h"
 #include "thumbnail_utils.h"
+#include "thumbnail_generate_worker_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -68,6 +69,10 @@ private:
     EXPORT static int32_t GetThumbnailDataNeedUpgrade(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas,
         bool isWifiConnected);
     EXPORT static void CheckMonthAndYearKvStoreValid(ThumbRdbOpt &opts);
+    EXPORT static void CheckAndReportRestoreThumbnailProgress(bool isScreenOn, int32_t status, int64_t totalAstc = 1,
+        int64_t readyAstc = 0);
+    EXPORT static void RestoreAstcDualFrameTask(std::shared_ptr<ThumbnailTaskData> &data);
+    EXPORT static void AddCompletedTasks();
 };
 } // namespace Media
 } // namespace OHOS

@@ -810,6 +810,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "preferences:native_preferences",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
+    "resource_schedule_service:ressched_client",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
