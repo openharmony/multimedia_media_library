@@ -35,6 +35,7 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 static constexpr char MEDIA_LIBRARY[] = "MEDIALIBRARY";
+constexpr uint64_t MB_SIZE = 1024 * 1024;
 
 DfxReporter::DfxReporter()
 {
@@ -695,6 +696,67 @@ void DfxReporter::ReportAccurateRefreshResult(const AccurateRefreshDfxDataPoint&
     if (ret != 0) {
         MEDIA_ERR_LOG("ReportAccurateRefreshService error:%{public}d", ret);
     }
+}
+
+int32_t DfxReporter::reportHeifAgingStatistics(const HeifAgingStatistics& heifAgingStatistics)
+{
+    string date = DfxUtils::GetCurrentDate();
+    uint64_t transcodeTotalSize = (heifAgingStatistics.transcodeTotalSize) / MB_SIZE;
+    uint64_t agingTotalSize = (heifAgingStatistics.agingTotalSize) / MB_SIZE;
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_HEIF_AGING",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "TRANSCODE_FILE_NUM", heifAgingStatistics.transcodeFileNum,
+        "TRANSCODE_TOTAL_SIZE", transcodeTotalSize,
+        "AGING_FILE_NUM", heifAgingStatistics.agingFileNum,
+        "AGING_TOTAL_SIZE", agingTotalSize);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportHeifAgingStatistics error:%{public}d", ret);
+    }
+    return ret;
+}
+
+void DfxReporter::ReportAlibHeifDuplicate()
+{
+    MEDIA_INFO_LOG("ReportAlibHeifDuplicate start");
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(ALIB_HEIF_DUPLICATE_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    string date = DfxUtils::GetCurrentDate();
+    int32_t transcodeAccessTimes = prefs->GetInt(TRANSCODE_ACCESS_TIMES, 0);
+    int32_t transcodeAccessMedialib = prefs->GetInt(TRANSCODE_ACCESS_MEDIALIB, 0);
+    int32_t transcodeAccessLibc = prefs->GetInt(TRANSCODE_ACCESS_LIBC, 0);
+    int32_t transcodeAvgTime = 0;
+    int32_t transcodeTimes = prefs->GetInt(TRANSCODE_TIMES, 0);
+    if (transcodeTimes != 0) {
+        transcodeAvgTime = prefs->GetInt(TRANSCODE_AVG_TIME, 0) / prefs->GetInt(TRANSCODE_TIMES, 0);
+    }
+    int32_t transcodeFailedTimes = prefs->GetInt(TRANSCODE_FAILED_TIMES, 0);
+    int32_t innerFailedTimes = prefs->GetInt(INNER_FAILED_TIMES, 0);
+    int32_t codecFailedTimes = prefs->GetInt(CODEC_FAILED_TIMES, 0);
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_HEIF_ACCESS_STAT",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "TRANSCODE_ACCESS_TIMES", transcodeAccessTimes,
+        "TRANSCODE_ACCESS_MEDIALIB", transcodeAccessMedialib,
+        "TRANSCODE_ACCESS_LIBC", transcodeAccessLibc,
+        "TRANSCODE_AVG_TIME", transcodeAvgTime,
+        "TRANSCODE_TIMES", transcodeTimes,
+        "TRANSCODE_FAILED_TIMES", transcodeFailedTimes,
+        "INNER_FAILED_TIMES", innerFailedTimes,
+        "CODEC_FAILED_TIMES", codecFailedTimes);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Report alib heif duplicate error:%{public}d", ret);
+    }
+
+    prefs->Clear();
+    prefs->FlushSync();
 }
 
 } // namespace Media

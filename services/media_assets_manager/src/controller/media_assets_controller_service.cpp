@@ -67,6 +67,8 @@
 #include "permission_common.h"
 #include "convert_format_vo.h"
 #include "convert_format_dto.h"
+#include "create_tmp_compatible_dup_vo.h"
+#include "create_tmp_compatible_dup_dto.h"
 #include "add_visit_count_vo.h"
 #include "get_result_set_from_db_vo.h"
 #include "get_result_set_from_photos_extend_vo.h"
@@ -76,6 +78,7 @@
 #include "get_uris_by_old_uris_inner_vo.h"
 #include "close_asset_vo.h"
 #include "stop_restore_vo.h"
+#include "heif_transcoding_check_vo.h"
 #include "medialibrary_file_operations.h"
 #include "dfx_timer.h"
 #include "dfx_const.h"
@@ -438,6 +441,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         &MediaAssetsControllerService::ConvertFormat
     },
     {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CREATE_TMP_DUPLICATE),
+        &MediaAssetsControllerService::CreateTmpCompatibleDup
+    },
+    {
         static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_DB),
         &MediaAssetsControllerService::GetResultSetFromDb
     },
@@ -477,6 +484,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE_CANCEL),
         &MediaAssetsControllerService::StopRestore
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::HEIF_TRANSCODING_CHECK),
+        &MediaAssetsControllerService::HeifTranscodingCheck
+    }
 };
 
 bool MediaAssetsControllerService::Accept(uint32_t code)
@@ -1572,6 +1583,25 @@ int32_t MediaAssetsControllerService::ConvertFormat(MessageParcel &data, Message
     }
 }
 
+int32_t MediaAssetsControllerService::CreateTmpCompatibleDup(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter CreateTmpCompatibleDup");
+    CreateTmpCompatibleDupReqBody reqBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CreateTmpCompatibleDup Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    CreateTmpCompatibleDupDto createTmpCompatibleDupDto;
+    createTmpCompatibleDupDto.fileId = reqBody.fileId;
+    createTmpCompatibleDupDto.path = reqBody.path;
+
+    ret = MediaAssetsService::GetInstance().CreateTmpCompatibleDup(createTmpCompatibleDupDto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
 int32_t MediaAssetsControllerService::RevertToOriginal(MessageParcel &data, MessageParcel &reply)
 {
     MEDIA_INFO_LOG("enter RevertToOriginal");
@@ -2377,5 +2407,22 @@ int32_t MediaAssetsControllerService::StopRestore(MessageParcel &data, MessagePa
     ret = MediaAssetsService::GetInstance().StopRestore(reqBody.keyPath);
     CHECK_AND_PRINT_LOG(ret == E_OK, "StopRestore failed");
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::HeifTranscodingCheck(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter HeifTranscodingCheck");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::HEIF_TRANSCODING_CHECK);
+    HeifTranscodingCheckReqBody reqBody;
+    HeifTranscodingCheckRespBody respBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("HeifTranscodingCheck Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = MediaAssetsService::GetInstance().CanSupportedCompatibleDuplicate(reqBody.bundleName, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 } // namespace OHOS::Media

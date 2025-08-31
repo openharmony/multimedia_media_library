@@ -191,7 +191,7 @@ int32_t CloudMediaPhotosService::PullUpdate(const CloudMediaPullDataDto &pullDat
 
     refreshAlbums.emplace(pullData.localOwnerAlbumId);
     ExtractEditDataCamera(pullData);
-
+    CloudMediaSyncUtils::RemoveTransCodePath(pullData.localPath);
     if (mtimeChanged && (updateCount != stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT])) {
         this->ClearLocalData(pullData, fdirtyData);
     }
@@ -1229,6 +1229,7 @@ int32_t CloudMediaPhotosService::RemoveLocalFile(const CloudMediaPullDataDto &pu
     CloudMediaSyncUtils::InvalidVideoCache(pullData.localPath);
     CloudMediaSyncUtils::RemoveEditDataPath(pullData.localPath);
     CloudMediaSyncUtils::RemoveMovingPhoto(pullData);
+    CloudMediaSyncUtils::RemoveTransCodePath(pullData.localPath);
     return E_OK;
 }
 }  // namespace OHOS::Media::CloudSync

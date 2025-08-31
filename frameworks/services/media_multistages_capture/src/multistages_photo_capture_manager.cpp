@@ -263,7 +263,16 @@ static int32_t WriteGpsInfoAndUpdateDb(const std::string &path, const int32_t &f
 
     auto result = DatabaseAdapter::Update(cmd);
     CHECK_AND_RETURN_RET_LOG(result == NativeRdb::E_OK, E_ERR, "update fail fileId: %{public}d", fileId);
-
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    queryCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    std::vector<std::string> columns { PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE };
+    auto resultSet = DatabaseAdapter::Query(queryCmd, columns);
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != 0);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "result set is empty");
+    int32_t existDup = GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resultSet);
+    if (existDup != 0) {
+        MediaLibraryAssetOperations::DeleteTransCodeInfo(path, to_string(fileId), __func__);
+    }
     return E_OK;
 }
 

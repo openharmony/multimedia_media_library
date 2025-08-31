@@ -1,0 +1,6 @@
+version=1.10.25.100
+type=heif_transcoding
+subtype=generic
+compatibleVersion=1
+classify=1
+displayVersion=MEDIA_HEIF.1.10.25.100
