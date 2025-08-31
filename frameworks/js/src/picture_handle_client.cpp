@@ -45,6 +45,7 @@ std::shared_ptr<Media::Picture> PictureHandlerClient::RequestPicture(const int32
     MEDIA_DEBUG_LOG("PictureHandlerClient::RequestPicture fileId: %{public}d", fileId);
     std::string uri = PhotoColumn::PHOTO_REQUEST_PICTURE;
     MediaFileUtils::UriAppendKeyValue(uri, MediaColumn::MEDIA_ID, std::to_string(fileId));
+    MediaFileUtils::UriAppendKeyValue(uri, PHOTO_TRANSCODE_OPERATION, OPRN_TRANSCODE_HEIF);
     Uri requestUri(uri);
     int32_t fd = UserFileClient::OpenFile(requestUri, MEDIA_FILEMODE_READONLY);
     if (fd < 0) {

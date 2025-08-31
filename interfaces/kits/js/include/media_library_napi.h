@@ -347,6 +347,7 @@ private:
     EXPORT static napi_value PhotoAccessGetPhotoAlbumOrder(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessSetPhotoAlbumOrder(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessQuery(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CanSupportedCompatibleDuplicate(napi_env env, napi_callback_info info);
     
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
@@ -550,6 +551,8 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t photoAlbumType;
     int32_t photoAlbumSubType;
     int32_t orderStyle = 0;
+    std::string bundleName;
+    bool canSupportedCompatibleDuplicate = false;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

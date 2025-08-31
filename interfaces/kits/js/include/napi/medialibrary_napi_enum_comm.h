@@ -273,6 +273,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("SUM_SIZE",                  MEDIA_SUM_SIZE),
     std::make_pair("HAS_APPLINK",               PhotoColumn::PHOTO_HAS_APPLINK),
     std::make_pair("APPLINK",                   PhotoColumn::PHOTO_APPLINK),
+    std::make_pair("EXIST_COMPATIBLE_DUPLICATE", PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

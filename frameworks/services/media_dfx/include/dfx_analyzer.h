@@ -30,6 +30,9 @@ public:
     void FlushCommonBehavior(std::unordered_map<std::string, CommonBehavior> &commonBehaviorMap);
     void FlushDeleteBehavior(std::unordered_map<std::string, int32_t> &deleteBehaviorMap, int32_t type);
     void FlushAdaptationToMovingPhoto(AdaptationToMovingPhotoInfo& newAdaptationInfo);
+    void FlushTranscodeAccessTimes(const TranscodeAccessType type);
+    void FlushTranscodeFailed(const TranscodeErrorType type);
+    void FlushTranscodeCostTime(const int32_t costTime);
 };
 } // namespace Media
 } // namespace OHOS

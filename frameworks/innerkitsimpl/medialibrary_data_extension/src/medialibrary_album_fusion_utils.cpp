@@ -22,6 +22,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "dfx_manager.h"
 #include "dfx_reporter.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_formmap_operations.h"
@@ -2128,6 +2129,82 @@ int32_t MediaLibraryAlbumFusionUtils::HandleMisMatchScreenRecord(
         return E_OK;
     }
     return TransferMisMatchScreenRecord(upgradeStore);
+}
+
+static int32_t UpdateTranscodeTime(int32_t fileId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_INNER_FAIL, "Failed to get rdbStore.");
+
+    ValuesBucket value;
+    value.PutLong(PhotoColumn::PHOTO_TRANSCODE_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
+    int32_t changeRows = 0;
+    int32_t err = rdbStore->Update(changeRows, value, rdbPredicate);
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, E_INNER_FAIL, "Failed to update[%{public}d].", err);
+    MEDIA_INFO_LOG("UpdateTranscodeTime success");
+    return E_OK;
+}
+
+static int32_t CheckTmpCompatibleDup(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int32_t fileId, int32_t &dupExist)
+{
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, E_INNER_FAIL,
+        "no matched data.");
+    dupExist = GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resultSet);
+    if (dupExist > 0) {
+        MEDIA_INFO_LOG("compatible duplicate file is exists");
+        return UpdateTranscodeTime(fileId);
+    }
+    int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
+    CHECK_AND_RETURN_RET_LOG(position != static_cast<int32_t>(PhotoPositionType::CLOUD), E_PARAM_CONVERT_FORMAT,
+        "pure cloud asset is invalid, position: %{public}d", position);
+
+    int32_t isTemp = GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet);
+    CHECK_AND_RETURN_RET_LOG(isTemp == 0, E_PARAM_CONVERT_FORMAT, "photo is temp");
+
+    int64_t timePending = GetInt64Val(MediaColumn::MEDIA_TIME_PENDING, resultSet);
+    CHECK_AND_RETURN_RET_LOG(timePending == 0, E_PARAM_CONVERT_FORMAT, "photo is timePending");
+
+    int32_t hidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, resultSet);
+    CHECK_AND_RETURN_RET_LOG(hidden == 0, E_PARAM_CONVERT_FORMAT, "photo is hidden");
+
+    int64_t dateTrashed = GetInt64Val(MediaColumn::MEDIA_DATE_TRASHED, resultSet);
+    int64_t dateDeleted = GetInt64Val(MediaColumn::MEDIA_DATE_DELETED, resultSet);
+    CHECK_AND_RETURN_RET_LOG(dateTrashed == 0 && dateDeleted == 0, E_PARAM_CONVERT_FORMAT,
+        "photo is trashed or deleted");
+    return E_OK;
+}
+
+int32_t MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(int32_t fileId, const std::string &path, size_t &size,
+    int32_t &dupExist)
+{
+    auto dfxManager = DfxManager::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(dfxManager != nullptr, E_INVALID_VALUES, "DfxManager::GetInstance() returned nullptr");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rdbStore.");
+        dfxManager->HandleTranscodeFailed(INNER_FAILED);
+        return E_INNER_FAIL;
+    }
+
+    const std::string querySql = R"(SELECT exist_compatible_duplicate, position, is_temp, time_pending, hidden,
+        date_trashed, date_deleted FROM Photos WHERE file_id = ?)";
+    std::vector<NativeRdb::ValueObject> params = { fileId };
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql, params);
+    dupExist = 0;
+    auto err = CheckTmpCompatibleDup(resultSet, fileId, dupExist);
+    CHECK_AND_EXECUTE(resultSet == nullptr, resultSet->Close());
+    if (dupExist > 0) {
+        return err;
+    }
+    if (err == E_OK) {
+        return PhotoFileOperation().CreateTmpCompatibleDup(path, size);
+    }
+    MEDIA_ERR_LOG("CheckTmpCompatibleDup fail %{public}d", err);
+    dfxManager->HandleTranscodeFailed(INNER_FAILED);
+    return err;
 }
 
 int32_t MediaLibraryAlbumFusionUtils::RefreshAllAlbums()

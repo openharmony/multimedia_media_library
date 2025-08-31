@@ -116,6 +116,7 @@
 #include "get_photo_album_object_vo.h"
 #include "set_photo_album_order_vo.h"
 #include "result_set_napi.h"
+#include "heif_transcoding_check_vo.h"
 
 #include "parcel.h"
 #include "medialibrary_notify_utils.h"
@@ -436,6 +437,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getPhotoAlbums", PhotoAccessGetPhotoAlbumsWithoutSubtype),
             DECLARE_NAPI_FUNCTION("getPhotoAlbumOrder", PhotoAccessGetPhotoAlbumOrder),
             DECLARE_NAPI_FUNCTION("setPhotoAlbumOrder", PhotoAccessSetPhotoAlbumOrder),
+            DECLARE_NAPI_FUNCTION("isCompatibleDuplicateSupported", CanSupportedCompatibleDuplicate),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -11814,6 +11816,83 @@ napi_value MediaLibraryNapi::PhotoAccessSetPhotoAlbumOrder(napi_env env, napi_ca
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "SetPhotoAlbumOrder",
         JSSetPhotoAlbumOrderExecute, JSSetAlbumOrderCompleteCallback);
+}
+
+static napi_value ParseArgsCanSupportedCompatibleDuplicate(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_ONE;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+
+    string bundleName;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundleName),
+        JS_ERR_PARAMETER_INVALID);
+    context->bundleName = bundleName;
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void JSCanSupportedCompatibleDuplicateExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetPhotoAlbumOrderExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    HeifTranscodingCheckReqBody reqBody;
+    HeifTranscodingCheckRespBody respBody;
+    reqBody.bundleName = context->bundleName;
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::HEIF_TRANSCODING_CHECK);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    context->canSupportedCompatibleDuplicate = respBody.canSupportedCompatibleDuplicate;
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("CanSupportedCompatibleDuplicateExecute failed, err: %{public}d", ret);
+    }
+}
+
+static void JSCanSupportedCompatibleDuplicateCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env,
+            napi_get_boolean(env, context->canSupportedCompatibleDuplicate, &jsContext->data), JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::CanSupportedCompatibleDuplicate(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsCanSupportedCompatibleDuplicate(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "CanSupportedCompatibleDuplicate",
+     JSCanSupportedCompatibleDuplicateExecute, JSCanSupportedCompatibleDuplicateCompleteCallback);
 }
 
 int32_t MediaLibraryNapi::GetUserId()

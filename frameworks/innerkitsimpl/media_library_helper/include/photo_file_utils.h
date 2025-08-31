@@ -27,6 +27,7 @@ public:
     EXPORT static std::string GetEditDataDir(const std::string &photoPath, int32_t userId = -1);
     EXPORT static std::string GetEditDataPath(const std::string &photoPath, int32_t userId = -1);
     EXPORT static std::string GetEditDataCameraPath(const std::string &photoPath, int32_t userId = -1);
+    EXPORT static std::string GetTransCodePath(const std::string &photoPath, int32_t userId = -1);
     EXPORT static std::string GetEditDataSourcePath(const std::string &photoPath, int32_t userId = -1);
     EXPORT static bool HasEditData(int64_t editTime);
     EXPORT static bool HasSource(bool hasEditDataCamera, int64_t editTime, int32_t effectMode);

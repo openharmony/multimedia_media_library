@@ -23,6 +23,24 @@ ohos_prebuilt_etc("userfilemanager_mimetypes.json") {
   part_name = "media_library"
 }
 
+ohos_prebuilt_etc("heif_transcoding_checklist.json") {
+  module_install_dir = "etc/com.ohos.medialibrary.medialibrarydata/heif_transcoding/"
+
+  source = "${MEDIALIB_UTILS_PATH}/configs/heif_transcoding_checklist.json"
+
+  subsystem_name = "multimedia"
+  part_name = "media_library"
+}
+
+ohos_prebuilt_etc("version.txt") {
+  module_install_dir = "etc/com.ohos.medialibrary.medialibrarydata/heif_transcoding/"
+
+  source = "${MEDIALIB_UTILS_PATH}/configs/version.txt"
+
+  subsystem_name = "multimedia"
+  part_name = "media_library"
+}
+
 config("media_data_extension_public_config") {
   include_fuse = [ "${MEDIALIB_SERVICES_PATH}/media_fuse/include" ]
   include_scanner = [
@@ -426,6 +444,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/commit_edited_asset_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/form_info_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/create_asset_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/create_tmp_compatible_dup_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/clone_asset_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/convert_format_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/delete_photos_vo.cpp",
@@ -471,6 +490,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_uris_by_old_uris_inner_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/restore_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/stop_restore_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/heif_transcoding_check_vo.cpp",
   ]
 
   media_assets_manager_dto_source = [
@@ -594,6 +614,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/event_handler/tab_old_photos_table_event_handler.cpp",
     "src/event_handler/table_event_handler.cpp",
     "src/foreground_analysis_meta.cpp",
+    "src/heif_transcoding_check_utils.cpp",
     "src/hi_audit.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",

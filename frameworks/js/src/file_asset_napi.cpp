@@ -88,6 +88,7 @@
 #include "medialibrary_business_code.h"
 #include "modify_assets_vo.h"
 #include "clone_asset_vo.h"
+#include "create_tmp_compatible_dup_vo.h"
 #include "revert_to_original_vo.h"
 #include "get_asset_analysis_data_vo.h"
 #include "request_edit_data_vo.h"
@@ -294,6 +295,7 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
             DECLARE_NAPI_FUNCTION("revertToOriginal", PhotoAccessHelperRevertToOriginal),
             DECLARE_NAPI_FUNCTION("getAnalysisData", PhotoAccessHelperGetAnalysisData),
             DECLARE_NAPI_FUNCTION("getEditData", PhotoAccessHelperGetEditData),
+            DECLARE_NAPI_FUNCTION("createTemporaryCompatibleDuplicate", PhotoAccessHelperCreateTmpCompatibleDup),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -2925,6 +2927,100 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
     }
 
     return result;
+}
+
+static void PhotoAccessHelperCreateTmpCompatibleDupExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateTempCompatibleDupExecute");
+
+    auto context = static_cast<FileAssetAsyncContext*>(data);
+    if (context == nullptr || context->objectPtr == nullptr) {
+        NapiError::ThrowError(env, E_INNER_FAIL, "context or objectPtr is null");
+        return;
+    }
+
+    CreateTmpCompatibleDupReqBody reqBody;
+    reqBody.fileId = context->objectPtr->GetId();
+    reqBody.path = context->objectPtr->GetPath();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CREATE_TMP_DUPLICATE);
+    IPC::UserDefineIPCClient client;
+    std::unordered_map<std::string, std::string> headerMap = {
+        { MediaColumn::MEDIA_ID, std::to_string(reqBody.fileId) },
+        { URI_TYPE, TYPE_PHOTOS },
+    };
+
+    int32_t ret = client.SetHeader(headerMap).Call(businessCode, reqBody);
+    if (ret != E_OK) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Failed to CreateTmpCompatibleDup, ret: %{public}d", ret);
+        return;
+    }
+    NAPI_INFO_LOG("CreateTmpCompatibleDup success");
+}
+
+static void PhotoAccessHelperCreateTmpCompatibleDupComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperCreateTmpCompatibleDupComplete");
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    CHECK_NULL_PTR_RETURN_VOID(jsContext, "jsContext context is null");
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperCreateTmpCompatibleDup(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperCreateTmpCompatibleDup");
+    NAPI_INFO_LOG("enter PhotoAccessHelperCreateTmpCompatibleDup");
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_COND(env, asyncContext != nullptr, JS_E_PARAM_INVALID);
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
+        "Failed to parse js args");
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest != nullptr, JS_E_PARAM_INVALID);
+
+    asyncContext->objectPtr = changeRequest->fileAssetPtr;
+    auto fileAsset = asyncContext->objectPtr;
+    CHECK_COND(env, fileAsset != nullptr, JS_E_PARAM_INVALID);
+
+    if (fileAsset->GetMediaType() != MediaType::MEDIA_TYPE_IMAGE) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Only image file type is supported");
+        return nullptr;
+    }
+    // Check if the file is HEIF/HEIC format
+    std::string originExtension = MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
+    if (originExtension != "heif" && originExtension != "heic") {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "extension must be heif or heic");
+        return nullptr;
+    }
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperCreateTmpCompatibleDup",
+        PhotoAccessHelperCreateTmpCompatibleDupExecute, PhotoAccessHelperCreateTmpCompatibleDupComplete);
 }
 
 void FileAssetNapi::UpdateFileAssetInfo()

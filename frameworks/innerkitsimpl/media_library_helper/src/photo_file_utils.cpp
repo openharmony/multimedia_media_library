@@ -66,6 +66,15 @@ string PhotoFileUtils::GetEditDataCameraPath(const string& photoPath, int32_t us
     return parentPath + "/editdata_camera";
 }
 
+string PhotoFileUtils::GetTransCodePath(const string& photoPath, int32_t userId)
+{
+    string parentPath = GetEditDataDir(photoPath, userId);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/transcode.jpg";
+}
+
 string PhotoFileUtils::GetEditDataSourcePath(const string& photoPath, int32_t userId)
 {
     string parentPath = GetEditDataDir(photoPath, userId);

@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include "album_asset.h"
 #include "datashare_predicates.h"
+#include "dfx_manager.h"
 #include "directory_ex.h"
 #include "fetch_result.h"
 #include "file_asset.h"
@@ -34,6 +35,7 @@
 #include "media_scanner_manager.h"
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
@@ -823,20 +825,19 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
         return OpenDocument(uriString, mode);
     }
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromUri(uriString);
-    if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain path from Database");
-        return E_INVALID_URI;
-    }
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI, "Failed to obtain path from Database");
     if (fileAsset->GetTimePending() != 0 && !CheckIsOwner(fileAsset->GetOwnerPackage().c_str())) {
         MEDIA_ERR_LOG("Failed to open fileId:%{public}d, it is not owner", fileAsset->GetId());
         return E_IS_PENDING_ERROR;
     }
+    bool isHeif = cmd.GetQuerySetParam(PHOTO_TRANSCODE_OPERATION) == OPRN_TRANSCODE_HEIF;
+    int32_t err = MediaLibraryAssetOperations::SetTranscodeUriToFileAsset(fileAsset, mode, isHeif);
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
     int32_t fd = OpenAsset(path, mode, fileId, type);
-    if (fd < 0) {
-        MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
-        return E_HAS_FS_ERROR;
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, E_HAS_FS_ERROR, "open file fd %{private}d, errno %{private}d", fd, errno);
+    if (err == 0) {
+        MediaLibraryAssetOperations::DoTranscodeDfx(ACCESS_MEDIALIB);
     }
     if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos) {
         auto watch = MediaLibraryInotify::GetInstance();
