@@ -762,8 +762,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     // check metadata recovery state
     MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();
 #endif
-    int32_t ret = MediaLibraryDataManager::GetInstance()->RestoreInvalidPosData();
-    CHECK_AND_PRINT_LOG(ret == E_OK, "DoBackgroundOperation RestoreInvalidPosData failed");
+    MediaLibraryDataManager::GetInstance()->RestoreInvalidPosData();
     AgingTmpCompatibleDuplicates(true);
     // delete temporary photos
     DeleteTemporaryPhotos();

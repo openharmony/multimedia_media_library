@@ -1444,6 +1444,9 @@ NativeRdb::ValuesBucket CloneRestore::GetCloudInsertValue(const FileInfo &fileIn
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, fileInfo.sourcePath);
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
+    CHECK_AND_EXECUTE(!PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP.count(dstCloneRestoreConfigInfo_.photoSyncOption),
+        values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE,
+        static_cast<int>(PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP.at(dstCloneRestoreConfigInfo_.photoSyncOption))));
     GetCloudThumbnailInsertValue(fileInfo, values);
     GetInsertValueFromValMap(fileInfo, values);
     return values;

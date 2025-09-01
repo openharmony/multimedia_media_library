@@ -44,12 +44,6 @@ enum class ExtraChangeType : uint32_t {
     PHOTO_TIME_UPDATE = 100
 };
 
-enum class SouthDeviceType : int32_t {
-    SOUTH_DEVICE_NULL = 0,
-    SOUTH_DEVICE_CLOUD = 1,
-    SOUTH_DEVICE_HDC = 2
-};
-
 const std::unordered_map<int32_t, SouthDeviceType> INT_SOUTH_DEVICE_TYPE_MAP = {
     {static_cast<int>(SouthDeviceType::SOUTH_DEVICE_NULL), SouthDeviceType::SOUTH_DEVICE_NULL},
     {static_cast<int>(SouthDeviceType::SOUTH_DEVICE_CLOUD), SouthDeviceType::SOUTH_DEVICE_CLOUD},
