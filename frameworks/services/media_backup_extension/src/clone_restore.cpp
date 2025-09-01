@@ -218,6 +218,12 @@ const unordered_map<string, string> ALBUM_URI_PREFIX_MAP = {
     { ANALYSIS_ALBUM_TABLE, PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX },
 };
 
+const std::unordered_map<SwitchStatus, SouthDeviceType> PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP = {
+    {SwitchStatus::CLOSE, SouthDeviceType::SOUTH_DEVICE_NULL},
+    {SwitchStatus::CLOUD, SouthDeviceType::SOUTH_DEVICE_CLOUD},
+    {SwitchStatus::HDC, SouthDeviceType::SOUTH_DEVICE_HDC},
+};
+
 static std::string GetConfigInfoInsertValue(ConfigInfoSceneId sceneId,
     const std::string key, const std::string value)
 {
@@ -1334,8 +1340,10 @@ void CloneRestore::GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::
 void CloneRestore::GetCloudThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values)
 {
     values.PutInt(PhotoColumn::PHOTO_POSITION, fileInfo.position);
-    values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_CLOUD));
     values.PutString(PhotoColumn::PHOTO_CLOUD_ID, fileInfo.cloudId);
+    CHECK_AND_EXECUTE(!PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP.count(dstCloneRestoreConfigInfo_.switchStatus),
+        values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE,
+        static_cast<int32_t>(PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP.at(dstCloneRestoreConfigInfo_.switchStatus))));
     values.PutInt(PhotoColumn::PHOTO_CLOUD_VERSION, fileInfo.cloudVersion);
     values.PutInt(PhotoColumn::PHOTO_DIRTY, 0);
     values.PutInt(PhotoColumn::PHOTO_CLEAN_FLAG, 0);
@@ -1444,9 +1452,6 @@ NativeRdb::ValuesBucket CloneRestore::GetCloudInsertValue(const FileInfo &fileIn
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, fileInfo.sourcePath);
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
-    CHECK_AND_EXECUTE(!PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP.count(dstCloneRestoreConfigInfo_.switchStatus),
-        values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE,
-        static_cast<int>(PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP.at(dstCloneRestoreConfigInfo_.switchStatus))));
     GetCloudThumbnailInsertValue(fileInfo, values);
     GetInsertValueFromValMap(fileInfo, values);
     return values;
