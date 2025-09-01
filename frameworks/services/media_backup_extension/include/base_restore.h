@@ -171,7 +171,7 @@ protected:
     int32_t RemoveDentryFileWithConflict(const FileInfo &fileInfo);
     int32_t GetRestoreMode();
     uint64_t GetNotFoundNumber();
-    bool IsCloudRestoreSatisfied();
+    virtual bool IsCloudRestoreSatisfied();
     void CheckAndDelete(NativeRdb::ValuesBucket &value, const std::string &column);
     void InsertFileDuration(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
         FileInfo &fileInfo);

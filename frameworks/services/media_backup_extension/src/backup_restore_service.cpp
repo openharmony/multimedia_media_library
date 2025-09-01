@@ -188,17 +188,19 @@ void BackupRestoreService::StartBackupEx(int32_t sceneCode, const std::string &g
     restoreService_->StartBackupEx(backupExInfo);
 }
 
-void BackupRestoreService::Release(int32_t sceneCode, int32_t releaseSceneInt)
+void BackupRestoreService::Release(const std::shared_ptr<AbilityRuntime::Context> &context,
+    int32_t sceneCode, int32_t releaseSceneInt)
 {
     MEDIA_INFO_LOG("Start Release service, releaseScene:%{public}d", releaseSceneInt);
     CHECK_AND_RETURN_LOG(INT_RELEASE_SCENE_MAP.count(releaseSceneInt),
         "invalid releaseScene: %{public}d", releaseSceneInt);
     ReleaseScene releaseScene = INT_RELEASE_SCENE_MAP.at(releaseSceneInt);
-    CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID,
+    CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID && releaseScene == ReleaseScene::BACKUP,
         "current release scene is not supported, sceneCode: %{public}d releasescene: %{public}d",
         sceneCode, releaseSceneInt);
     Init({CLONE_RESTORE_ID, "", "", "", ""});
     CHECK_AND_RETURN_LOG(restoreService_ != nullptr, "Create media backup service failed.");
+    CHECK_AND_EXECUTE(context == nullptr, BackupFileUtils::CreateDataShareHelper(context->GetToken()));
     restoreService_->Release(releaseScene);
 }
 } // namespace Media

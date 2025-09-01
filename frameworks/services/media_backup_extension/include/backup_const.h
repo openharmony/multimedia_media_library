@@ -25,6 +25,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "vision_column.h"
+#include "settings_data_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -280,6 +281,8 @@ enum RestoreError {
     PARSE_TRACK_FAILED,
     TABLE_LACK_OF_COLUMN,
     RETAIN_FORCE_TIMEOUT,
+    BACKUP_UPDATE_CONFIG_INFO_FAILED,
+    BACKUP_INVALIDATE_HDC_CLOUD_DATA_FAILED,
 };
 
 enum class PhotoRelatedType {
@@ -329,6 +332,8 @@ const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::PARSE_TRACK_FAILED, "RESTORE_HIGHLIGHT_PARSE_TRACK_FAILED"},
     { RestoreError::TABLE_LACK_OF_COLUMN, "RESTORE_TABLE_LACK_OF_COLUMN"},
     { RestoreError::RETAIN_FORCE_TIMEOUT, "RETAIN_FORCE_TIMEOUT" },
+    { RestoreError::BACKUP_UPDATE_CONFIG_INFO_FAILED, "BACKUP_UPDATE_CONFIG_INFO_FAILED"},
+    { RestoreError::BACKUP_INVALIDATE_HDC_CLOUD_DATA_FAILED, "BACKUP_INVALIDATE_HDC_CLOUD_DATA_FAILED"},
 };
 
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
@@ -734,6 +739,10 @@ const std::string SQL_SELECT_ERROR_BURST_COVER_PHOTOS  = "COALESCE(burst_key, ''
         SELECT 1 FROM Photos p1 WHERE p1.burst_key = photos.burst_key AND p1.burst_cover_level = 2)";
 const std::string SQL_SELECT_CLONE_FILE_IDS = "SELECT file_id FROM tab_old_photos";
 constexpr size_t SQL_BATCH_SIZE = 1000;
+// Config Info Const
+const std::string CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY = "photo_sync_status";
+const std::string CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY = "hdc_device_id";
+const std::string BACKUP_DST_DEVICE_HDC_ENABLE_KEY = "backupHdcEnable";
 } // namespace Media
 } // namespace OHOS
 

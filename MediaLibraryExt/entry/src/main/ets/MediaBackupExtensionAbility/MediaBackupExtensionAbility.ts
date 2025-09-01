@@ -158,9 +158,13 @@ const DEFAULT_PROGRESS_INFO = {
   }]
 };
 
+interface BackupCompatibilityInfo {
+  backupHdcEnable: boolean;
+}
+
 export default class MediaBackupExtAbility extends BackupExtensionAbility {
   async onBackup() : Promise<void> {
-    console.log(TAG, 'onBackup ok.');
+    console.log(TAG, ' onBackup ok.');
     console.time(TAG + ' BACKUP');
     await mediabackup.startBackup(CLONE_RESTORE, galleryAppName, mediaAppName);
     console.timeEnd(TAG + ' BACKUP');
@@ -175,11 +179,28 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     return startBackupExResult;
   }
 
+  async getRestoreCompatibilityInfo(extInfo: string): Promise<string> {
+    try {
+      console.log(TAG, ' enter getRestoreCompatibilityInfo, extInfo: ' + extInfo);
+      console.time(TAG + ' getRestoreCompatibilityInfo');
+      let backupCompatibilityInfo: BackupCompatibilityInfo = {
+        backupHdcEnable: true,
+      };
+      let ret = JSON.stringify(backupCompatibilityInfo);
+      console.log(TAG, ' getRestoreCompatibilityInfo ret: ' + ret);
+      console.timeEnd(TAG + ' getRestoreCompatibilityInfo');
+      return ret;
+    } catch (error) {
+      console.error(`getRestoreCompatibilityInfo failed with error. Code: ${error.code}, message: ${error.message}`);
+    }
+    return '';
+  }
+
   async onRelease(scenario: number): Promise<void> {
     try {
       console.log(TAG, ' enter onRelease.');
       console.time(TAG + ' RELEASE');
-      await mediabackup.release(CLONE_RESTORE, scenario);
+      await mediabackup.release(this.context, CLONE_RESTORE, scenario);
       console.timeEnd(TAG + ' RELEASE');
     } catch (error) {
       console.error(`onRelease failed with error. Code: ${error.code}, Message: ${error.message}`);

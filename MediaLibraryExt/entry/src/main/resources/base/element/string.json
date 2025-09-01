@@ -91,6 +91,10 @@
     {
       "name": "permission_get_network_info",
       "value": "Allow app to get network info"
+    },
+    {
+      "name": "permission_memospace_sync",
+      "value": "Allow mediaLibrary to call memospace interface"
     }
   ]
 }
