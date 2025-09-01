@@ -32,8 +32,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
-#include "media_file_uri.h"
-#include "vision_photo_map_column.h"
+#include "medialibrary_busness_code.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -95,11 +94,8 @@ static const string SQL_CREATE_ALBUM = "INSERT INTO " + ANALYSIS_ALBUM_TABLE + "
     PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
     PhotoAlbumColumns::ALBUM_COUNT + ", " + RELATIONSHIP + ")";
 
-// (albumType == PhotoAlbumType::SMART) &&
-// (albumSubType >= PhotoAlbumSubType::ANALYSIS_START && albumSubType <= PhotoAlbumSubType::ANALYSIS_END); 4097-4111
 static void CreateAnalysisAlbum(const std::string &albumName)
 {
-    // album_type, album_subtype, album_name, date_modified, is_local, date_added, lpath, priority
     int32_t count = g_rdbStore->ExecuteSql("SELECT COUNT(*) FROM " + ANALYSIS_ALBUM_TABLE);
     int32_t albumId = count + 1;
     g_rdbStore->ExecuteSql(SQL_CREATE_ALBUM + "VALUES (" + to_string(albumId) +
@@ -166,17 +162,17 @@ HWTEST_F(GetRelationshipTest, GetRelationshipTest_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Start GetRelationshipTest_Test_001");
     // 1、前置条件准备
     int32_t albumId = -1;
-    GetOrderPositionPrepare(albumId);
+    GetRelationshipPrepare(albumId);
     EXPECT_GT(albumId, 0);
 
     // 2、查询人物关系
     int32_t ret = GetRelationship(albumId, PhotoAlbumType::SMART, PhotoAlbumSubType::HIGHLIGHT);
     EXPECT_EQ(ret, E_INVALID_VALUES);
 
-    ret = GetOrderPosition(albumId, PhotoAlbumType::USER, PhotoAlbumSubType::PORTRAIT);
+    ret = GetRelationship(albumId, PhotoAlbumType::USER, PhotoAlbumSubType::PORTRAIT);
     EXPECT_EQ(ret, E_INVALID_VALUES);
 
-    ret = GetOrderPosition(albumId, PhotoAlbumType::SMART, PhotoAlbumSubType::PORTRAIT);
+    ret = GetRelationship(albumId, PhotoAlbumType::SMART, PhotoAlbumSubType::PORTRAIT);
     EXPECT_EQ(ret, E_OK);
 
     MEDIA_INFO_LOG("end GetRelationshipTest_Test_001");
