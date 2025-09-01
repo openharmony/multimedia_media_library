@@ -51,6 +51,7 @@ ohos_shared_library("media_library") {
     "src/media_asset_rdbstore.cpp",
     "src/media_change_effect.cpp",
     "src/media_column.cpp",
+    "src/media_config_info_column.cpp",
     "src/media_facard_photos_column.cpp",
     "src/media_file_uri.cpp",
     "src/media_file_utils.cpp",

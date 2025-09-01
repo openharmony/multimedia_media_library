@@ -487,17 +487,23 @@ napi_value MediaLibraryBackupNapi::JSRelease(napi_env env, napi_callback_info in
         return result;
     }
 
-    size_t argc = ARGS_TWO;
-    napi_value argv[ARGS_TWO] = {0};
+    size_t argc = ARGS_THREE;
+    napi_value argv[ARGS_THREE] = {0};
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_TWO), "requires 2 parameters");
+    NAPI_ASSERT(env, (argc == ARGS_THREE), "requires 3 parameters");
     napi_get_undefined(env, &result);
-    int32_t sceneCode = GetIntFromParams(env, argv, PARAM0);
-    int32_t releaseScene = GetIntFromParams(env, argv, PARAM1);
+
+    // get ability context
+    std::shared_ptr<OHOS::AbilityRuntime::Context> context;
+    if (!ParseContext(env, argv[PARAM0], context)) {
+        return result;
+    }
+    int32_t sceneCode = GetIntFromParams(env, argv, PARAM1);
+    int32_t releaseScene = GetIntFromParams(env, argv, PARAM2);
     NAPI_INFO_LOG("Release, sceneCode:%{public}d releaseScene = %{public}d", sceneCode, releaseScene);
-    BackupRestoreService::GetInstance().Release(sceneCode, releaseScene);
+    BackupRestoreService::GetInstance().Release(context, sceneCode, releaseScene);
     return result;
 }
 } // namespace Media

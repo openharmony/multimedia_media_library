@@ -91,6 +91,7 @@
 #include "photo_map_table_event_handler.h"
 #include "media_app_uri_sensitive_column.h"
 #include "medialibrary_upgrade_utils.h"
+#include "media_config_info_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1801,6 +1802,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
     CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
     CREATE_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX,
+    ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE,
 
     // search
     CREATE_SEARCH_TOTAL_TABLE,
@@ -3089,6 +3091,13 @@ void AddMultiStagesCaptureColumns(RdbStore &store)
             " INT DEFAULT 0",
     };
     ExecSqls(sqls, store);
+}
+
+static void CreateBackupInfoTable(RdbStore& store)
+{
+    MEDIA_INFO_LOG("create table ConfigInfo start");
+    ExecSqls({ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE}, store);
+    MEDIA_INFO_LOG("create table ConfigInfo end");
 }
 
 void UpdateMillisecondDate(RdbStore &store)
@@ -5154,6 +5163,12 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_CREATE_TMP_COMPATIBLE_DUP) {
         AddCreateTmpCompatibleDup(store);
+    }
+
+    if (oldVersion < VERSION_ADD_MEDIA_BACKUP_INFO &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_MEDIA_BACKUP_INFO, true)) {
+        CreateBackupInfoTable(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_MEDIA_BACKUP_INFO, true);
     }
 }
 

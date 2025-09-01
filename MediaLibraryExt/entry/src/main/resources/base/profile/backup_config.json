@@ -1,5 +1,6 @@
 {
     "allowToBackupRestore": true,
+    "requireCompatibility": true,
     "extraInfo" : {
         "supportScene": [
             "next2next",
