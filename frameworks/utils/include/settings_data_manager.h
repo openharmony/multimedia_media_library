@@ -44,7 +44,7 @@ const std::unordered_map<std::string, SwitchStatus> STRING_SWITCH_STATUS_MAP = {
 
 class SettingsDataManager {
 public:
-    static SwitchStatus GetPhotosSyncSwitchStatus();
+    EXPORT static SwitchStatus GetPhotosSyncSwitchStatus();
     EXPORT static bool GetHdcDeviceId(std::string& deviceId);
 
 private:

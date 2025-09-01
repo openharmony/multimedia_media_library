@@ -31,7 +31,6 @@ ohos_fuzztest("MediaLibraryUtilFuzzTest") {
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync_utils/cloud_sync_utils.cpp",
-    "${MEDIALIB_UTILS_PATH}/src/settings_data_manager.cpp",
     "${MEDIALIB_UTILS_PATH}/src/cpu_utils.cpp",
     "src/medialibrary_util_fuzzer.cpp",
   ]

@@ -42,7 +42,6 @@ ohos_unittest("medialibrary_rdb_test") {
   cflags = [ "-fno-access-control" ]
 
   sources = [
-    "${MEDIALIB_UTILS_PATH}/src/settings_data_manager.cpp",
     "${MEDIALIB_CLOUD_SYNC_PATH}/src/cloud_sync_helper.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/moving_photo_processor.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
