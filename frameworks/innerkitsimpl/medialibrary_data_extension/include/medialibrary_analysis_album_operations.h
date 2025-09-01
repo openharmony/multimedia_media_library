@@ -65,6 +65,8 @@ public:
         const DataShare::DataSharePredicates &predicates);
     EXPORT static int32_t DismissGroupPhotoAlbum(const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates);
+    EXPORT static int32_t SetHighlightAttribute(const int32_t &albumId,
+        const int32_t &highlightAlbumChangeAttribute, const std::string &value);
 };
 } // namespace Media
 } // namespace OHOS

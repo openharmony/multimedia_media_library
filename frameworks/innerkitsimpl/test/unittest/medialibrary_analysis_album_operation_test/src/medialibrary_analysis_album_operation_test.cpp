@@ -28,6 +28,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
+#include "story_album_column.h"
 #include "uri.h"
 #include "vision_db_sqls_more.h"
 #include "rdb_utils.h"
@@ -894,6 +895,76 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, MergeGroupPhotoAlbum_test_001, 
     int32_t ret = MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(mergeAlbumInfos);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("end MergeGroupPhotoAlbum_test_001");
+}
+
+shared_ptr<NativeRdb::ResultSet> QueryHighlightAlbumInfoByAlbumId(const int32_t &albumId)
+{
+    EXPECT_GT(albumId, 0);
+    std::string querySql = "SELECT is_favorite, is_viewed, notification_time \
+        FROM tab_highlight_album WHERE album_id = ?;";
+    std::vector<NativeRdb::ValueObject> params = { NativeRdb::ValueObject(std::to_string(albumId)) };
+    EXPECT_NE(g_rdbStore, nullptr);
+    shared_ptr<NativeRdb::ResultSet> resultSet = g_rdbStore->QuerySql(querySql, params);
+    EXPECT_NE(resultSet, nullptr);
+    EXPECT_EQ(resultSet->GoToFirstRow(), E_OK);
+    return resultSet;
+}
+
+int32_t InsertValueHighlightAlbum(const int32_t &albumId)
+{
+    EXPECT_GT(albumId, 0);
+    std::string insertSql = " \
+        INSERT INTO tab_highlight_album \
+        (album_id, cluster_type, cluster_sub_type, cluster_condition, highlight_version, \
+        is_favorite, is_viewed, notification_time) \
+        VALUES (?, 'TYPE_LIFE_STAGE', 'Graduate', ?, 0, 0, 0, 0);";
+    std::string clusterCondition =
+        R"([{"end": "1244081480000", "group_tag": "ser_1755585091890809000", \
+        "locationType": "COLLEGE_UNIVERSITY", "start":"1117851080000"}])";
+    std::vector<NativeRdb::ValueObject> params = {};
+    params.push_back(NativeRdb::ValueObject(std::to_string(albumId)));
+    params.push_back(NativeRdb::ValueObject(clusterCondition));
+    EXPECT_NE(g_rdbStore, nullptr);
+    int32_t ret = g_rdbStore->ExecuteSql(insertSql, params);
+    return ret;
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetHighlightAttribute_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start SetHighlightAttribute_test_001");
+    ASSERT_TRUE(g_rdbStore);
+    int32_t albumId = 1;
+    int32_t ret = InsertValueHighlightAlbum(albumId);
+    EXPECT_EQ(ret, E_OK);
+    int32_t highlightAlbumChangeAttribute = 0;
+    std::string viewedValue = "1";
+    ret = MediaLibraryAnalysisAlbumOperations::SetHighlightAttribute(albumId,
+        highlightAlbumChangeAttribute, viewedValue);
+    EXPECT_EQ(ret, E_OK);
+    highlightAlbumChangeAttribute = 1;
+    std::string notificationValue = "1756092178000";
+    ret = MediaLibraryAnalysisAlbumOperations::SetHighlightAttribute(albumId,
+        highlightAlbumChangeAttribute, notificationValue);
+    EXPECT_EQ(ret, E_OK);
+    highlightAlbumChangeAttribute = 2;
+    std::string favoriteValue = "1";
+    ret = MediaLibraryAnalysisAlbumOperations::SetHighlightAttribute(albumId,
+        highlightAlbumChangeAttribute, favoriteValue);
+    EXPECT_EQ(ret, E_OK);
+    highlightAlbumChangeAttribute = 3;
+    std::string value = "1";
+    ret = MediaLibraryAnalysisAlbumOperations::SetHighlightAttribute(albumId,
+        highlightAlbumChangeAttribute, value);
+    EXPECT_NE(ret, E_OK);
+    auto resultSet = QueryHighlightAlbumInfoByAlbumId(albumId);
+    int32_t isViewed = GetInt32Val(HIGHLIGHT_IS_VIEWED, resultSet);
+    int32_t isFavorite = GetInt32Val(HIGHLIGHT_IS_FAVORITE, resultSet);
+    int64_t notificationTime = GetInt64Val(HIGHLIGHT_NOTIFICATION_TIME, resultSet);
+    EXPECT_EQ(std::to_string(isViewed), viewedValue);
+    EXPECT_EQ(std::to_string(isFavorite), favoriteValue);
+    EXPECT_EQ(std::to_string(notificationTime), notificationValue);
+    resultSet->Close();
+    MEDIA_INFO_LOG("end SetHighlightAttribute_test_001");
 }
 } // namespace Media
 } // namespace OHOS

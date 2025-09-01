@@ -79,7 +79,8 @@ enum AnalysisType : int32_t {
 enum HighlightAlbumInfoType : int32_t {
     INVALID_INFO = -1,
     COVER_INFO,
-    PLAY_INFO
+    PLAY_INFO,
+    ALBUM_INFO
 };
 
 enum HighlightUserActionType : int32_t {
@@ -94,6 +95,13 @@ enum HighlightUserActionType : int32_t {
     RENDER_VIEWED_DURATION,
     ART_LAYOUT_VIEWED_TIMES,
     ART_LAYOUT_VIEWED_DURATION
+};
+
+enum HighlightAlbumChangeAttribute : int32_t {
+    INVALID_CHANGE_ATTRIBUTE = -1,
+    IS_VIEWED = 0,
+    NOTIFICATION_TIME = 1,
+    IS_FAVORITE = 2
 };
 
 enum PhotoAlbumType : int32_t {
