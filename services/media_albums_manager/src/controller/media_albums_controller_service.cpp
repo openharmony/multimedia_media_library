@@ -248,6 +248,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SET_PHOTO_ALBUM_ORDER),
         &MediaAlbumsControllerService::UpdatePhotoAlbumOrder
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_HIGHLIGHT_ATTRIBUTE),
+        &MediaAlbumsControllerService::ChangeRequestSetHighlightAttribute
+    },
 };
 
 bool MediaAlbumsControllerService::Accept(uint32_t code)
@@ -1196,5 +1200,35 @@ int32_t MediaAlbumsControllerService::GetAlbumsLpathByIds(MessageParcel &data, M
     MEDIA_DEBUG_LOG("MediaAlbumsControllerService::GetAlbumsLpathByIds End. lpath: %{public}s",
         respBody.lpath.c_str());
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+}
+
+int32_t MediaAlbumsControllerService::ChangeRequestSetHighlightAttribute(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAlbumsControllerService::ChangeRequestSetHighlightAttribute start");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_HIGHLIGHT_ATTRIBUTE);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ChangeRequestSetHighlightAttributeReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ChangeRequestSetHighlightAttribute Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
+    PhotoAlbumSubType albumSubType = GetPhotoAlbumSubType(reqBody.albumSubType);
+    bool cond = PhotoAlbum::IsHighlightAlbum(albumType, albumSubType);
+    cond = cond && (reqBody.albumId != -1) && (!reqBody.highlightAlbumChangeAttributeValue.empty());
+    if (!cond) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_PARAM_CONVERT_FORMAT);
+    }
+    ChangeRequestSetHighlightAttributeDto dto;
+    dto.albumId = reqBody.albumId;
+    dto.highlightAlbumChangeAttribute = reqBody.highlightAlbumChangeAttribute;
+    dto.highlightAlbumChangeAttributeValue = reqBody.highlightAlbumChangeAttributeValue;
+    dto.albumType = reqBody.albumType;
+    dto.albumSubType = reqBody.albumSubType;
+    ret = MediaAlbumsService::GetInstance().ChangeRequestSetHighlightAttribute(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 } // namespace OHOS::Media

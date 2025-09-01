@@ -47,6 +47,7 @@ enum class AlbumChangeOperation {
     RECOVER_ASSETS_WITH_URI,
     DELETE_ASSETS_WITH_URI,
     RESET_COVER_URI,
+    SET_HIGHLIGHT_ATTRIBUTE,
 };
 
 enum class ParameterType {
@@ -73,6 +74,7 @@ public:
 
     EXPORT static napi_value Init(napi_env env, napi_value exports);
     EXPORT static napi_value MediaAnalysisAlbumChangeRequestInit(napi_env env, napi_value exports);
+    EXPORT static napi_value MediaHighlightAlbumChangeRequestInit(napi_env env, napi_value exports);
 
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
     std::shared_ptr<PhotoAlbum> GetReferencePhotoAlbumInstance() const;
@@ -85,6 +87,7 @@ public:
     std::vector<std::pair<std::string, int32_t>> GetIdOrderPositionPairs() const;
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> GetMoveMap() const;
     int32_t GetUserId() const;
+    std::pair<int32_t, std::string> GetHighlightAlbumChangeAttributePair() const;
     void RecordMoveAssets(std::vector<std::string>& assetArray, std::shared_ptr<PhotoAlbum>& targetAlbum);
     void ClearAddAssetArray();
     void ClearRemoveAssetArray();
@@ -126,6 +129,7 @@ private:
     EXPORT static napi_value JSSetIsMe(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDismiss(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetOrderPosition(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetHighlightAttribute(napi_env env, napi_callback_info info);
     EXPORT static bool CheckDismissAssetVaild(std::vector<std::string> &dismissAssets,
         std::vector<std::string> &newAssetArray);
 
@@ -134,6 +138,7 @@ private:
 
     static thread_local napi_ref constructor_;
     static thread_local napi_ref mediaAnalysisAlbumChangeRequestConstructor_;
+    static thread_local napi_ref mediaHighlightAlbumChangeRequestConstructor_;
     std::shared_ptr<PhotoAlbum> photoAlbum_ = nullptr;
     std::shared_ptr<PhotoAlbum> referencePhotoAlbum_ = nullptr;
     std::shared_ptr<PhotoAlbum> targetAlbum_ = nullptr;
@@ -146,6 +151,7 @@ private:
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> moveMap_;
     std::vector<AlbumChangeOperation> albumChangeOperations_;
     std::vector<std::pair<std::string, int32_t>> idOrderPositionPairs_;
+    std::pair<int32_t, std::string> highlightAlbumChangeAttributePair_;
 };
 
 struct MediaAlbumChangeRequestAsyncContext : public NapiError {
