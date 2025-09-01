@@ -256,6 +256,7 @@ thread_local napi_ref MediaLibraryNapi::sRequestPhotoTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sResourceTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHighlightAlbumInfoType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHighlightUserActionType_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sHighlightAlbumChangeAttributeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMovingPhotoEffectModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sImageFileTypeEnumEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCloudEnhancementTaskStageEnumRef_ = nullptr;
@@ -472,6 +473,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("CompatibleMode", CreateCompatibleModeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightAlbumInfoType", CreateHighlightAlbumInfoTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightUserActionType", CreateHighlightUserActionTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("HighlightAlbumChangeAttribute", CreateHighlightAlbumChangeAttributeEnum(env)),
         DECLARE_NAPI_PROPERTY("MovingPhotoEffectMode", CreateMovingPhotoEffectModeEnum(env)),
         DECLARE_NAPI_PROPERTY("ImageFileType", CreateImageFileTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("CloudEnhancementTaskStage", CreateCloudEnhancementTaskStageEnum(env)),
@@ -8034,6 +8036,7 @@ napi_value MediaLibraryNapi::CreateHighlightAlbumInfoTypeEnum(napi_env env)
     struct AnalysisProperty property[] = {
         { "COVER_INFO", HighlightAlbumInfoType::COVER_INFO },
         { "PLAY_INFO", HighlightAlbumInfoType::PLAY_INFO },
+        { "ALBUM_INFO", HighlightAlbumInfoType::ALBUM_INFO },
     };
 
     napi_value result = nullptr;
@@ -8072,6 +8075,27 @@ napi_value MediaLibraryNapi::CreateHighlightUserActionTypeEnum(napi_env env)
     }
 
     CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sHighlightAlbumInfoType_), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value MediaLibraryNapi::CreateHighlightAlbumChangeAttributeEnum(napi_env env)
+{
+    struct AnalysisProperty property[] = {
+        { "IS_VIEWED", HighlightAlbumChangeAttribute::IS_VIEWED },
+        { "NOTIFICATION_TIME", HighlightAlbumChangeAttribute::NOTIFICATION_TIME },
+        { "IS_FAVORITE", HighlightAlbumChangeAttribute::IS_FAVORITE },
+    };
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_create_object(env, &result), JS_E_INNER_FAIL);
+
+    for (uint32_t i = 0; i < sizeof(property) / sizeof(property[0]); i++) {
+        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, property[i].enumName, property[i].enumValue),
+            JS_E_INNER_FAIL);
+    }
+
+    CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT,
+        &sHighlightAlbumChangeAttributeEnumRef_), JS_E_INNER_FAIL);
     return result;
 }
 
