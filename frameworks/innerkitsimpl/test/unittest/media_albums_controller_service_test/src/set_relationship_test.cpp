@@ -95,11 +95,8 @@ static const string SQL_CREATE_ALBUM = "INSERT INTO " + ANALYSIS_ALBUM_TABLE + "
     PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
     PhotoAlbumColumns::ALBUM_COUNT + ", " + RELATIONSHIP + ")";
 
-// (albumType == PhotoAlbumType::SMART) &&
-// (albumSubType >= PhotoAlbumSubType::ANALYSIS_START && albumSubType <= PhotoAlbumSubType::ANALYSIS_END); 4097-4111
 static void CreateAnalysisAlbum(const std::string &albumName)
 {
-    // album_type, album_subtype, album_name, date_modified, is_local, date_added, lpath, priority
     int32_t count = g_rdbStore->ExecuteSql("SELECT COUNT(*) FROM " + ANALYSIS_ALBUM_TABLE);
     int32_t albumId = count + 1;
     g_rdbStore->ExecuteSql(SQL_CREATE_ALBUM + "VALUES (" + to_string(albumId) +
@@ -155,7 +152,7 @@ static int32_t SetRelationship(int32_t albumId, int32_t albumType, int32_t album
     auto service = make_shared<MediaAlbumsControllerService>();
     service->SetRelationship(data, reply);
 
-    IPC::MediaRespVo<MediaEmptyObjVo> respVo;
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
     if (respVo.Unmarshalling(reply) != true) {
         MEDIA_ERR_LOG("respVo.Unmarshalling failed");
         return -1;
