@@ -19,6 +19,7 @@
 
 #include <string>
 
+#include "media_analysis_progress_column.h"
 #include "medialibrary_album_operations.h"
 #include "media_albums_rdb_operations.h"
 #include "media_log.h"
@@ -736,7 +737,13 @@ int32_t MediaAlbumsService::GetAnalysisProcess(GetAnalysisProcessReqBody &reqBod
     std::string tableName;
     DataShare::DataSharePredicates predicates;
     std::vector<std::string> columns;
-    if (reqBody.analysisType == static_cast<int32_t>(AnalysisType::ANALYSIS_LABEL)) {
+    if (reqBody.analysisType == static_cast<int32_t>(AnalysisType::ANALYSIS_INVALID)) {
+        tableName = TAB_ANALYSIS_PROGRESS_TABLE;
+        columns = { SEARCH_FINISH_CNT, LOCATION_FINISH_CNT, FACE_FINISH_CNT, OBJECT_FINISH_CNT, AESTHETIC_FINISH_CNT,
+            OCR_FINISH_CNT, POSE_FINISH_CNT, SALIENCY_FINISH_CNT, RECOMMENDATION_FINISH_CNT, SEGMENTATION_FINISH_CNT,
+            BEAUTY_AESTHETIC_FINISH_CNT, HEAD_DETECT_FINISH_CNT, LABEL_DETECT_FINISH_CNT, TOTAL_IMAGE_CNT,
+            FULLY_ANALYZED_IMAGE_CNT, TOTAL_PROGRESS };
+    } else if (reqBody.analysisType == static_cast<int32_t>(AnalysisType::ANALYSIS_LABEL)) {
         tableName = VISION_TOTAL_TABLE;
         columns = {
             "COUNT(*) AS totalCount",
