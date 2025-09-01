@@ -140,6 +140,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::ANALYSIS_ASSET_SD_MAP,
     OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
     OperationObject::CLOUD_MEDIA_ASSET_OPERATE,
+    OperationObject::PAH_BACKUP_POSTPROCESS,
 };
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const unique_ptr<Runtime>& runtime)
@@ -522,7 +523,8 @@ static int32_t HandleShortPermission(const MediaLibraryCommand &cmd, bool &need)
 
 static int32_t HandleRestorePermission(MediaLibraryCommand &cmd)
 {
-    if (cmd.GetUriStringWithoutSegment() == PAH_GENERATE_THUMBNAILS_RESTORE) {
+    std::string uri = cmd.GetUriStringWithoutSegment();
+    if (uri == PAH_GENERATE_THUMBNAILS_RESTORE ||uri == PAH_RESTORE_INVALID_HDC_CLOUD_DATA_POS) {
         return PermissionUtils::CheckCallerPermission(PERM_READ_IMAGEVIDEO) ? E_SUCCESS : E_PERMISSION_DENIED;
     }
     return E_PERMISSION_DENIED;

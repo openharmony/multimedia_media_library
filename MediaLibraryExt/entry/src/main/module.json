@@ -259,6 +259,18 @@
           ],
           "when": "always"
         }
+      },
+      {
+        "name": "ohos.permission.MEMOSPACE_SYNC",
+        "reason": "$string:permission_memospace_sync",
+        "usedScene":{
+          "abilities":[
+            "MainAbility",
+            "DataShareExtAbility",
+            "MediaBackupExtensionAbility"
+          ],
+          "when": "always"
+        }
       }
     ],
     "proxyDatas": [

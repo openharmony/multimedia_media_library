@@ -45,6 +45,7 @@
 #undef protected
 #undef private
 #include "parameters.h"
+#include "media_config_info_column.h"
 
 using namespace std;
 using namespace OHOS;
@@ -101,6 +102,7 @@ const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + ANALYSIS_SEARCH_INDEX_TABLE,
     "DELETE FROM " + ANALYSIS_VIDEO_FACE_TABLE,
     "DELETE FROM " + ANALYSIS_BEAUTY_SCORE_TABLE,
+    "DELETE FROM " + ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME,
 };
 const vector<string> WHERE_CLAUSE_LIST_PHOTO = { WHERE_CLAUSE_SHOOTING_MODE, WHERE_CLAUSE_TRASHED,
     WHERE_CLAUSE_IS_FAVORITE, WHERE_CLAUSE_HIDDEN, WHERE_CLAUSE_EDIT,
@@ -139,6 +141,10 @@ const int PHONE_FIFTH_NUMBER = 110;
 const int PHONE_SIXTH_NUMBER = 101;
 
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
+const std::string DEFAULT_DEVICE_ID = "device_id";
+const std::string CONFIG_INFO_INVALID_KEY = "invalid_key";
+const std::string CONFIG_INFO_INVALID_VALUE = "invalid_value";
 
 shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 unique_ptr<CloneRestore> restoreService = nullptr;
@@ -221,7 +227,12 @@ void MediaLibraryBackupCloneTest::TearDownTestCase(void)
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
-void MediaLibraryBackupCloneTest::SetUp() {}
+void MediaLibraryBackupCloneTest::SetUp()
+{
+    OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP));
+    OHOS::system::SetParameter(BACKUP_FLAG, std::to_string(DEFAULT_TIME_STAMP));
+    OHOS::system::SetParameter(BACKUP_FLAG, std::to_string(DEFAULT_TIME_STAMP));
+}
 
 void MediaLibraryBackupCloneTest::TearDown(void) {}
 
@@ -1759,16 +1770,16 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_release_001, T
     MEDIA_INFO_LOG("medialibrary_backup_service_release_001 start");
     BackupRestoreService &instance = BackupRestoreService::GetInstance();
     instance.restoreService_ = nullptr;
-    instance.Release(UPGRADE_RESTORE_ID, RELEASE_SCENE_RESTORE);
+    instance.Release(nullptr, UPGRADE_RESTORE_ID, RELEASE_SCENE_RESTORE);
 
     instance.restoreService_ = nullptr;
-    instance.Release(CLONE_RESTORE_ID, RELEASE_SCENE_RESTORE);
+    instance.Release(nullptr, CLONE_RESTORE_ID, RELEASE_SCENE_RESTORE);
 
     instance.restoreService_ = nullptr;
-    instance.Release(CLONE_RESTORE_ID, RELEASE_SCENE_BACKUP);
+    instance.Release(nullptr, CLONE_RESTORE_ID, RELEASE_SCENE_BACKUP);
 
     instance.restoreService_ = nullptr;
-    instance.Release(CLONE_RESTORE_ID, -1);
+    instance.Release(nullptr, CLONE_RESTORE_ID, -1);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_thumbnail_test_001, TestSize.Level2)
@@ -2870,8 +2881,58 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_tes
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_start_backup_test_001");
     bool ret = restoreService->BackupKvStore();
     EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
+    restoreService->errorCode_ = RestoreError::SUCCESS;
     restoreService->StartBackup();
+    EXPECT_NE(restoreService->errorCode_, RestoreError::SUCCESS);
     EXPECT_EQ(ret, MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR));
+}
+
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_start_backup_test_002");
+    bool ret = restoreService->BackupKvStore();
+    int64_t triggerTimeoutStartTime = MediaFileUtils::UTCTimeMilliSeconds() - \
+                RESTORE_OR_BACKUP_WAIT_FORCE_RETAIN_CLOUD_MEDIA_TIMEOUT_MILLISECOND - TIMEOUT_DELTA;
+    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(triggerTimeoutStartTime)));
+    restoreService->errorCode_ = RestoreError::SUCCESS;
+    restoreService->StartBackup();
+    EXPECT_NE(restoreService->errorCode_, RestoreError::SUCCESS);
+    EXPECT_EQ(ret, MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR));
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_test_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_start_backup_test_003");
+    bool ret = restoreService->BackupKvStore();
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaLibraryRdb_ = cloneSource.cloneStorePtr_;
+
+    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
+    restoreService->errorCode_ = RestoreError::SUCCESS;
+    restoreService->StartBackup();
+    EXPECT_NE(restoreService->errorCode_, RestoreError::SUCCESS);
+    EXPECT_EQ(ret, MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR));
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_test_004, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_start_backup_test_004");
+    bool ret = restoreService->BackupKvStore();
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE, ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaLibraryRdb_ = cloneSource.cloneStorePtr_;
+
+    EXPECT_TRUE(OHOS::system::SetParameter(CLOUDSYNC_SWITCH_STATUS_KEY, std::to_string(DEFAULT_TIME_STAMP)));
+    restoreService->errorCode_ = RestoreError::SUCCESS;
+    restoreService->StartBackup();
+    EXPECT_EQ(restoreService->errorCode_, RestoreError::SUCCESS);
+    EXPECT_EQ(ret, MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR));
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test_001, TestSize.Level2)
@@ -3756,6 +3817,362 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_update_total_no_
     verifyFaceValue(203, 7);
 
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_update_config_info_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_update_config_info_test_001");
+    restoreService->mediaLibraryRdb_ = nullptr;
+    EXPECT_FALSE(restoreService->UpdateConfigInfo());
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_update_config_info_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_update_config_info_test_002");
+    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    EXPECT_TRUE(restoreService->mediaLibraryRdb_ != nullptr);
+    restoreService->srcCloneRestoreConfigInfo_ = {
+        .deviceId = DEFAULT_DEVICE_ID,
+        .isValid = true,
+        .switchStatus = SwitchStatus::HDC,
+    };
+    EXPECT_TRUE(restoreService->UpdateConfigInfo());
+    auto configInfo = BackupDatabaseUtils::QueryConfigInfo(restoreService->mediaLibraryRdb_);
+    EXPECT_TRUE(configInfo.count(ConfigInfoSceneId::CLONE_RESTORE) &&
+        configInfo[ConfigInfoSceneId::CLONE_RESTORE].count(CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY) &&
+        configInfo[ConfigInfoSceneId::CLONE_RESTORE].count(CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY));
+    EXPECT_EQ(configInfo[ConfigInfoSceneId::CLONE_RESTORE][CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY],
+        std::to_string(static_cast<int>(SwitchStatus::HDC)));
+    EXPECT_EQ(configInfo[ConfigInfoSceneId::CLONE_RESTORE][CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY],
+        DEFAULT_DEVICE_ID);
+}
+
+static bool InsertIntoConfigInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    ConfigInfoSceneId sceneId, const std::string& key, const std::string& value)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore, false, "rdbStore is null");
+    std::string sqlStr = "INSERT INTO " + ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME +
+        " (" + ConfigInfoColumn::MEDIA_CONFIG_INFO_SCENE_ID + ", " +
+        ConfigInfoColumn::MEDIA_CONFIG_INFO_KEY + ", " +
+        ConfigInfoColumn::MEDIA_CONFIG_INFO_VALUE + ") " +
+        "VALUES (" + std::to_string(static_cast<int>(sceneId)) + ", '" + key + "', '" + value + "')" +
+        " ON CONFLICT(" + ConfigInfoColumn::MEDIA_CONFIG_INFO_SCENE_ID + ", " +
+        ConfigInfoColumn::MEDIA_CONFIG_INFO_KEY + ") DO UPDATE SET " +
+        ConfigInfoColumn::MEDIA_CONFIG_INFO_VALUE + " = excluded." + ConfigInfoColumn::MEDIA_CONFIG_INFO_VALUE + ";";
+    MEDIA_INFO_LOG("InsertIntoConfigInfo sql:%{public}s", sqlStr.c_str());
+    std::vector<NativeRdb::ValueObject> args;
+    CHECK_AND_RETURN_RET_LOG(rdbStore->ExecuteSql(sqlStr, args) == NativeRdb::E_OK, false,
+        "fail to execute sq;, sql:%{public}s", sqlStr.c_str());
+    return true;
+}
+
+static bool ClearTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string& tableName)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore, false, "rdbStore is null");
+    std::string sqlStr = "DELETE FROM " + tableName;
+    MEDIA_INFO_LOG("ClearTable sql: %{public}s", sqlStr.c_str());
+    std::vector<NativeRdb::ValueObject> args;
+    CHECK_AND_RETURN_RET_LOG(rdbStore->ExecuteSql(sqlStr, args), false, "fail to execute sql:%{public}s",
+        sqlStr.c_str());
+    return true;
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_origin_db_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_get_clone_config_info_from_origin_db_test_001");
+    CloneRestoreConfigInfo expectedConfigInfo;
+    restoreService->mediaRdb_ = nullptr;
+    CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
+    EXPECT_TRUE(expectedConfigInfo == result);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_origin_db_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_get_clone_config_info_from_origin_db_test_002");
+    CloneRestoreConfigInfo expectedConfigInfo = {
+        .deviceId = EMPTY_STR,
+        .switchStatus = SwitchStatus::CLOUD,
+        .isValid = true
+    };
+
+    CloneSource cloneSource;
+    Init(cloneSource, TEST_BACKUP_DB_PATH, {});
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+
+    CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
+    EXPECT_TRUE(expectedConfigInfo == result);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_origin_db_test_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_get_clone_config_info_from_origin_db_test_003");
+    CloneRestoreConfigInfo expectedConfigInfo;
+
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+    
+    CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
+    EXPECT_TRUE(expectedConfigInfo == result);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_origin_db_test_004, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_get_clone_config_info_from_origin_db_test_004");
+    CloneRestoreConfigInfo expectedConfigInfo;
+
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+
+    EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
+        CONFIG_INFO_INVALID_KEY, CONFIG_INFO_INVALID_VALUE));
+    
+    CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
+    EXPECT_TRUE(expectedConfigInfo == result);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_origin_db_test_005, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_get_clone_config_info_from_origin_db_test_005");
+    CloneRestoreConfigInfo expectedConfigInfo;
+
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+
+    EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
+        CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY, CONFIG_INFO_INVALID_VALUE));
+    
+    CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
+    EXPECT_TRUE(expectedConfigInfo == result);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_origin_db_test_006, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_get_clone_config_info_from_origin_db_test_006");
+    CloneRestoreConfigInfo expectedConfigInfo;
+
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+
+    EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
+        CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY, CONFIG_INFO_INVALID_VALUE));
+    EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
+        CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY, CONFIG_INFO_INVALID_VALUE));
+    
+    CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
+    EXPECT_TRUE(expectedConfigInfo == result);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_origin_db_test_008, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_get_clone_config_info_from_origin_db_test_008");
+    CloneRestoreConfigInfo expectedConfigInfo = {
+        .deviceId = DEFAULT_DEVICE_ID,
+        .isValid = true,
+        .switchStatus = SwitchStatus::HDC
+    };
+
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME, PhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+
+    EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
+        CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY, std::to_string(static_cast<int>(SwitchStatus::HDC))));
+    EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
+        CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY, DEFAULT_DEVICE_ID));
+
+    
+    CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
+    EXPECT_TRUE(expectedConfigInfo == result);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_check_src_dst_switch_status_match_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_check_src_dst_switch_status_match_test_001");
+    restoreService->srcCloneRestoreConfigInfo_ = {
+        .deviceId = DEFAULT_DEVICE_ID,
+        .isValid = false,
+        .switchStatus = SwitchStatus::CLOSE,
+    };
+    restoreService->dstCloneRestoreConfigInfo_ = {
+        .deviceId = DEFAULT_DEVICE_ID,
+        .isValid = false,
+        .switchStatus = SwitchStatus::CLOSE,
+    };
+
+    restoreService->CheckSrcDstSwitchStatusMatch();
+    EXPECT_FALSE(restoreService->isSrcDstSwitchStatusMatch_);
+
+    restoreService->srcCloneRestoreConfigInfo_.isValid = true;
+    restoreService->CheckSrcDstSwitchStatusMatch();
+    EXPECT_FALSE(restoreService->isSrcDstSwitchStatusMatch_);
+
+    restoreService->dstCloneRestoreConfigInfo_.isValid = true;
+    restoreService->CheckSrcDstSwitchStatusMatch();
+    EXPECT_FALSE(restoreService->isSrcDstSwitchStatusMatch_);
+
+    restoreService->srcCloneRestoreConfigInfo_.switchStatus = SwitchStatus::HDC;
+    restoreService->CheckSrcDstSwitchStatusMatch();
+    EXPECT_FALSE(restoreService->isSrcDstSwitchStatusMatch_);
+
+    restoreService->dstCloneRestoreConfigInfo_.switchStatus = SwitchStatus::CLOUD;
+    restoreService->CheckSrcDstSwitchStatusMatch();
+    EXPECT_FALSE(restoreService->isSrcDstSwitchStatusMatch_);
+
+    restoreService->dstCloneRestoreConfigInfo_.switchStatus = SwitchStatus::HDC;
+    restoreService->CheckSrcDstSwitchStatusMatch();
+    EXPECT_TRUE(restoreService->isSrcDstSwitchStatusMatch_);
+}
+
+static std::string GenerateBackupInfo(const std::string& key, const std::string& value)
+{
+    std::string backupInfo = "[{"
+        "\"type\":	\"compatibility_info\","
+ 		"\"detail\":\"{\\\"" + key + "\\\": " + value + "}\""
+        "},{\"type\": \"other\", \"detail\":\"\"}]";
+    MEDIA_INFO_LOG("backupInfo: %{public}s", backupInfo.c_str());
+    return backupInfo;
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_parse_dst_device_backup_info_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_parse_dst_device_backup_info_001");
+
+    restoreService->restoreInfo_ = EMPTY_STR;
+    restoreService->ParseDstDeviceBackupInfo();
+    EXPECT_FALSE(restoreService->dstDeviceBackupInfo_.hdcEnabled);
+
+    restoreService->restoreInfo_ = "invalid json";
+    restoreService->ParseDstDeviceBackupInfo();
+    EXPECT_FALSE(restoreService->dstDeviceBackupInfo_.hdcEnabled);
+
+    restoreService->restoreInfo_ = GenerateBackupInfo("invalid_key", "abc");
+    restoreService->ParseDstDeviceBackupInfo();
+    EXPECT_FALSE(restoreService->dstDeviceBackupInfo_.hdcEnabled);
+
+    restoreService->restoreInfo_ = GenerateBackupInfo(BACKUP_DST_DEVICE_HDC_ENABLE_KEY, "\"invalid value\"");
+    restoreService->ParseDstDeviceBackupInfo();
+    EXPECT_FALSE(restoreService->dstDeviceBackupInfo_.hdcEnabled);
+
+    restoreService->restoreInfo_ = GenerateBackupInfo(BACKUP_DST_DEVICE_HDC_ENABLE_KEY, "true");
+    restoreService->ParseDstDeviceBackupInfo();
+    EXPECT_TRUE(restoreService->dstDeviceBackupInfo_.hdcEnabled);
+
+    restoreService->restoreInfo_ = GenerateBackupInfo(BACKUP_DST_DEVICE_HDC_ENABLE_KEY, "false");
+    restoreService->ParseDstDeviceBackupInfo();
+    EXPECT_FALSE(restoreService->dstDeviceBackupInfo_.hdcEnabled);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_preprocess_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_preprocess_001");
+
+    restoreService->restoreInfo_ = GenerateBackupInfo(BACKUP_DST_DEVICE_HDC_ENABLE_KEY, "false");
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaLibraryRdb_ = cloneSource.cloneStorePtr_;
+    restoreService->srcCloneRestoreConfigInfo_ = {
+        .deviceId = DEFAULT_DEVICE_ID,
+        .isValid = false,
+        .switchStatus = SwitchStatus::HDC
+    };
+
+    EXPECT_TRUE(restoreService->BackupPreprocess());
+    EXPECT_FALSE(restoreService->dstDeviceBackupInfo_.hdcEnabled);
+
+    restoreService->mediaLibraryRdb_ = nullptr;
+    EXPECT_FALSE(restoreService->BackupPreprocess());
+    EXPECT_FALSE(restoreService->dstDeviceBackupInfo_.hdcEnabled);
+
+    restoreService->srcCloneRestoreConfigInfo_.isValid = true;
+    EXPECT_FALSE(restoreService->BackupPreprocess());
+    EXPECT_FALSE(restoreService->dstDeviceBackupInfo_.hdcEnabled);
+
+    restoreService->srcCloneRestoreConfigInfo_.switchStatus = SwitchStatus::CLOUD;
+    EXPECT_TRUE(restoreService->BackupPreprocess());
+    EXPECT_FALSE(restoreService->dstDeviceBackupInfo_.hdcEnabled);
+
+    restoreService->restoreInfo_ = GenerateBackupInfo(BACKUP_DST_DEVICE_HDC_ENABLE_KEY, "true");
+    EXPECT_TRUE(restoreService->BackupPreprocess());
+    EXPECT_TRUE(restoreService->dstDeviceBackupInfo_.hdcEnabled);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_is_table_exist_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_is_table_exist_001");
+    auto rdbStore = g_rdbStore->GetRaw();
+    EXPECT_TRUE(rdbStore != nullptr);
+
+    bool ret = false;
+    EXPECT_TRUE(BackupDatabaseUtils::isTableExist(rdbStore,
+        ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME, ret));
+    EXPECT_TRUE(ret);
+
+    ret = false;
+    EXPECT_FALSE(BackupDatabaseUtils::isTableExist(nullptr, "invalid_table_name", ret));
+    EXPECT_FALSE(ret);
+
+    ret = false;
+    EXPECT_TRUE(BackupDatabaseUtils::isTableExist(rdbStore,
+        "invalid_table_name", ret));
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_invalidate_hdc_cloud_data_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_invalidate_hdc_cloud_data_001");
+
+    restoreService->mediaLibraryRdb_ = nullptr;
+    EXPECT_FALSE(restoreService->InvalidateHdcCloudData());
+
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaLibraryRdb_ = cloneSource.cloneStorePtr_;
+    EXPECT_TRUE(restoreService->InvalidateHdcCloudData());
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_current_clone_config_info_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_get_current_clone_config_info_001");
+    CloneRestoreConfigInfo expectedConfigInfo;
+    auto config = restoreService->GetCurrentDeviceCloneConfigInfo();
+    bool flag = !config.isValid || config.switchStatus != SwitchStatus::NONE;
+    EXPECT_TRUE(flag);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_hdc_device_id_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_get_hdc_device_id_001");
+    std::string deviceId;
+    bool ret = SettingsDataManager::GetHdcDeviceId(deviceId);
+    bool flag = ((ret && !deviceId.empty()) || (!ret && deviceId.empty()));
+    EXPECT_TRUE(flag);
 }
 } // namespace Media
 } // namespace OHOS

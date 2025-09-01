@@ -45,6 +45,8 @@
 #include "upgrade_restore_task_report.h"
 #include "userfile_manager_types.h"
 #include "ohos_account_kits.h"
+#include "media_config_info_column.h"
+#include "settings_data_manager.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -216,6 +218,198 @@ const unordered_map<string, string> ALBUM_URI_PREFIX_MAP = {
     { ANALYSIS_ALBUM_TABLE, PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX },
 };
 
+static std::string GetConfigInfoInsertValue(ConfigInfoSceneId sceneId,
+    const std::string key, const std::string value)
+{
+    return "(" + std::to_string(static_cast<int>(sceneId)) + ", '" + key + "', '" + value + "')";
+}
+
+bool CloneRestore::UpdateConfigInfo()
+{
+    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_, false, "mediaLibraryRdb_ is null");
+
+    MEDIA_INFO_LOG("current device CloneConfigInfo: %{public}s",
+        srcCloneRestoreConfigInfo_.ToString().c_str());
+
+    std::string underInsertedValues =  \
+        GetConfigInfoInsertValue(ConfigInfoSceneId::CLONE_RESTORE,
+            CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY,
+            std::to_string(static_cast<int>(srcCloneRestoreConfigInfo_.switchStatus))) + ", " +
+        GetConfigInfoInsertValue(ConfigInfoSceneId::CLONE_RESTORE,
+            CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY,
+            srcCloneRestoreConfigInfo_.deviceId);
+
+    std::string sqlStr = "INSERT INTO " + ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME +
+        " (" + ConfigInfoColumn::MEDIA_CONFIG_INFO_SCENE_ID + ", " +
+        ConfigInfoColumn::MEDIA_CONFIG_INFO_KEY + ", " +
+        ConfigInfoColumn::MEDIA_CONFIG_INFO_VALUE + ") " +
+        "VALUES " + underInsertedValues +
+        " ON CONFLICT(" + ConfigInfoColumn::MEDIA_CONFIG_INFO_SCENE_ID + ", " +
+        ConfigInfoColumn::MEDIA_CONFIG_INFO_KEY + ") DO UPDATE SET " +
+        ConfigInfoColumn::MEDIA_CONFIG_INFO_VALUE + " = excluded." + ConfigInfoColumn::MEDIA_CONFIG_INFO_VALUE + ";";
+    MEDIA_DEBUG_LOG("insert into configinfo sql:%{public}s", sqlStr.c_str());
+
+    TransactionOperations trans{__func__};
+    trans.SetBackupRdbStore(mediaLibraryRdb_);
+    std::function<int(void)> func = [&]()->int {
+        auto ret = trans.ExecuteSql(sqlStr);
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "fail to insert into ConfigInfo, ret:%{public}d", ret);
+        return ret;
+    };
+    auto ret = trans.RetryTrans(func, true);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false, "fail to insert backupInfo into ConfigInfo.");
+    return true;
+}
+
+CloneRestoreConfigInfo CloneRestore::GetCloneConfigInfoFromOriginDB()
+{
+    CloneRestoreConfigInfo cloneConfigInfo;
+
+    CHECK_AND_RETURN_RET_LOG(this->mediaRdb_, cloneConfigInfo, "mediaRdb_ is nullptr");
+
+    bool isConfigInfoExistInOriginDb = false;
+    CHECK_AND_RETURN_RET_LOG(BackupDatabaseUtils::isTableExist(this->mediaRdb_,
+        ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME, isConfigInfoExistInOriginDb),
+        cloneConfigInfo, "fail to check whether configInfo exists");
+    if (!isConfigInfoExistInOriginDb) {
+        MEDIA_WARN_LOG("no ConfigInfo found in origin db");
+        cloneConfigInfo.switchStatus = SwitchStatus::CLOUD;
+        cloneConfigInfo.deviceId = "";
+    } else {
+        auto configInfo = BackupDatabaseUtils::QueryConfigInfo(this->mediaRdb_);
+        CHECK_AND_RETURN_RET_LOG(configInfo.count(ConfigInfoSceneId::CLONE_RESTORE) &&
+            configInfo[ConfigInfoSceneId::CLONE_RESTORE].count(CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY) \
+            && \
+            configInfo[ConfigInfoSceneId::CLONE_RESTORE].count(CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY),
+                                 cloneConfigInfo, "fail to find sufficient config info for CLONE_RESTORE");
+
+        std::string srcswitchStatusStr = \
+            configInfo[ConfigInfoSceneId::CLONE_RESTORE][CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY];
+        CHECK_AND_RETURN_RET_LOG(STRING_SWITCH_STATUS_MAP.count(srcswitchStatusStr), cloneConfigInfo,
+            "fail to parse switchStatus of source device from %{public}s", srcswitchStatusStr.c_str());
+        cloneConfigInfo.switchStatus = STRING_SWITCH_STATUS_MAP.at(srcswitchStatusStr);
+
+        cloneConfigInfo.deviceId = \
+            configInfo[ConfigInfoSceneId::CLONE_RESTORE][CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY];
+    }
+    cloneConfigInfo.isValid = true;
+    MEDIA_INFO_LOG("Config of original DB: %{public}s", cloneConfigInfo.ToString().c_str());
+    return cloneConfigInfo;
+}
+
+void CloneRestore::CheckSrcDstSwitchStatusMatch()
+{
+    isSrcDstSwitchStatusMatch_ = false;
+
+    MEDIA_INFO_LOG("srcCloneRestoreConfigInfo_: %{public}s, dstCloneRestoreConfigInfo_: %{public}s",
+        srcCloneRestoreConfigInfo_.ToString().c_str(), dstCloneRestoreConfigInfo_.ToString().c_str());
+    
+    CHECK_AND_RETURN_LOG(dstCloneRestoreConfigInfo_.isValid && srcCloneRestoreConfigInfo_.isValid,
+        "dstCloneRestoreConfigInfo_/srcCloneRestoreConfigInfo_ is not valid.");
+    
+    CHECK_AND_RETURN_INFO_LOG(srcCloneRestoreConfigInfo_.switchStatus != SwitchStatus::CLOSE &&
+        dstCloneRestoreConfigInfo_.switchStatus != SwitchStatus::CLOSE,
+        "source/dst device photo sync option is off");
+
+    CHECK_AND_RETURN_INFO_LOG(srcCloneRestoreConfigInfo_ == dstCloneRestoreConfigInfo_,
+        "src device and dst device photo sync status not macth.");
+
+    isSrcDstSwitchStatusMatch_ = true;
+}
+
+bool CloneRestore::IsCloudRestoreSatisfied()
+{
+    return isAccountValid_ && isSrcDstSwitchStatusMatch_;
+}
+
+void CloneRestore::ParseDstDeviceBackupInfo()
+{
+    MEDIA_INFO_LOG("ParseDstDeviceBackupInfo, restoreInfo_:%{public}s", restoreInfo_.c_str());
+    dstDeviceBackupInfo_.hdcEnabled = false;
+    
+    CHECK_AND_RETURN_WARN_LOG(!restoreInfo_.empty(), "restoreInfo_ is empty");
+
+    nlohmann::json jsonArray = nlohmann::json::parse(restoreInfo_, nullptr, false);
+    CHECK_AND_RETURN_LOG(!jsonArray.is_discarded(), "ParseDstDeviceBackupInfo parse restoreInfo_ failed");
+
+    std::string compatibilityInfoStr;
+    for (const auto& item : jsonArray) {
+        bool cond = (!item.contains("type") || !item.contains("detail"));
+        CHECK_AND_CONTINUE(!cond);
+        if (item["type"] == "compatibility_info") {
+            compatibilityInfoStr = item["detail"];
+            break;
+        }
+    }
+
+    CHECK_AND_RETURN_WARN_LOG(!compatibilityInfoStr.empty(), "compatibilityInfoStr is empty");
+
+    nlohmann::json jsonObject = nlohmann::json::parse(compatibilityInfoStr, nullptr, false);
+    CHECK_AND_RETURN_LOG(!jsonObject.is_discarded(), "ParseDstDeviceBackupInfo parse compatibilityInfoStr failed");
+
+    CHECK_AND_RETURN_LOG(jsonObject.contains(BACKUP_DST_DEVICE_HDC_ENABLE_KEY) &&
+        jsonObject[BACKUP_DST_DEVICE_HDC_ENABLE_KEY].is_boolean(),
+        "invalid value for BackupDeviceInfo %{public}s", compatibilityInfoStr.c_str());
+    dstDeviceBackupInfo_.hdcEnabled = jsonObject[BACKUP_DST_DEVICE_HDC_ENABLE_KEY].get<bool>();
+
+    MEDIA_INFO_LOG("dstDeviceBackupInfo_.hdcEnabled: %{public}d", dstDeviceBackupInfo_.hdcEnabled);
+}
+
+bool CloneRestore::BackupPreprocess()
+{
+    ParseDstDeviceBackupInfo();
+    if (!dstDeviceBackupInfo_.hdcEnabled && (!srcCloneRestoreConfigInfo_.isValid ||
+        srcCloneRestoreConfigInfo_.switchStatus == SwitchStatus::HDC)) {
+        MEDIA_INFO_LOG("dst device does not support hdc while current hdc sync is on");
+        bool ret = InvalidateHdcCloudData();
+        if (!ret) {
+            MEDIA_ERR_LOG("fail to delete hdc data");
+            SetErrorCode(RestoreError::BACKUP_INVALIDATE_HDC_CLOUD_DATA_FAILED);
+            ErrorInfo errorInfo(RestoreError::BACKUP_INVALIDATE_HDC_CLOUD_DATA_FAILED, 0, "",
+                "CloneBackup clear hdc data failed");
+            UpgradeRestoreTaskReport(sceneCode_, taskId_).ReportError(errorInfo);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool CloneRestore::InvalidateHdcCloudData()
+{
+    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_, false, "mediaLibraryRdb_ is nullptr");
+
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+        std::make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
+    predicates->EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int>(PhotoPositionType::CLOUD));
+    NativeRdb::ValuesBucket updateBucket;
+    updateBucket.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int>(PhotoPositionType::INVALID));
+    int32_t changedRows = -1;
+    CHECK_AND_RETURN_RET_LOG(BackupDatabaseUtils::Update(mediaLibraryRdb_, changedRows, updateBucket,
+        predicates) == NativeRdb::E_OK, false, "fail to invalid hdc cloud data");
+    MEDIA_INFO_LOG("InvalidateHdcCloudData %{public}d rows updated", changedRows);
+    return true;
+}
+
+
+CloneRestoreConfigInfo CloneRestore::GetCurrentDeviceCloneConfigInfo()
+{
+    CloneRestoreConfigInfo cloneConfigInfo;
+    cloneConfigInfo.switchStatus = SettingsDataManager::GetPhotosSyncSwitchStatus();
+    bool isSyncSwitchStatusValid = (cloneConfigInfo.switchStatus != SwitchStatus::NONE);
+    bool isDeviceIdValid = true;
+    if (cloneConfigInfo.switchStatus == SwitchStatus::HDC &&
+        !(isDeviceIdValid = SettingsDataManager::GetHdcDeviceId(cloneConfigInfo.deviceId))) {
+        MEDIA_ERR_LOG("fail to get deviceId of current device");
+        cloneConfigInfo.switchStatus = SwitchStatus::NONE;
+        cloneConfigInfo.deviceId = "";
+        cloneConfigInfo.isValid = false;
+    }
+    cloneConfigInfo.isValid = (isSyncSwitchStatusValid && isDeviceIdValid);
+    MEDIA_INFO_LOG("GetCurrentDeviceCloneConfigInfo, %{public}s",
+        cloneConfigInfo.ToString().c_str());
+    return cloneConfigInfo;
+}
+
 template<typename Key, typename Value>
 Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, const Value &defaultValue = Value())
 {
@@ -246,14 +440,15 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     SetParameterForRestore();
     GetAccountValid();
     GetSyncSwitchOn();
-    MEDIA_INFO_LOG("the isAccountValid_ is %{public}d, the isSyncSwitchOn_ is %{public}d", isAccountValid_,
-        isSyncSwitchOn_);
 #ifdef CLOUD_SYNC_MANAGER
     FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
 #endif
     backupRestoreDir_ = backupRestoreDir;
     garbagePath_ = backupRestoreDir_ + "/storage/media/local/files";
     int32_t errorCode = Init(backupRestoreDir, upgradePath, true);
+    MEDIA_INFO_LOG("the isAccountValid_ is %{public}d,"
+        " the isSrcDstSwitchStatusMatch_ is %{public}d",
+        isAccountValid_, isSrcDstSwitchStatusMatch_);
     if (errorCode == E_OK) {
         RestoreGallery();
         RestoreMusic();
@@ -305,6 +500,9 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_, IsCloudRestoreSatisfied());
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreGeoDictionary_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
+    srcCloneRestoreConfigInfo_ = GetCloneConfigInfoFromOriginDB();
+    dstCloneRestoreConfigInfo_ = GetCurrentDeviceCloneConfigInfo();
+    CheckSrcDstSwitchStatusMatch();
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -1690,8 +1888,7 @@ void CloneRestore::RestoreGallery()
     UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
         .Report("RESTORE_CLOUD_STATUS", "",
             "isAccountValid_: " + std::to_string(isAccountValid_) +
-            ", syncSwitchType_: " + std::to_string(syncSwitchType_) +
-            ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOn_));
+            "isSrcDstSwitchStatusMatch_: " + std::to_string(isSrcDstSwitchStatusMatch_));
     // Restore the backup db info.
     RestoreAlbum();
     RestorePhoto();
@@ -3053,6 +3250,18 @@ void CloneRestore::StartBackup()
     }
     MEDIA_INFO_LOG("Start clone backup");
     SetParameterForBackup();
+    if (BaseRestore::Init() != E_OK || !mediaLibraryRdb_) {
+        MEDIA_ERR_LOG("init db failed when start backup");
+        SetErrorCode(RestoreError::INIT_FAILED);
+        return;
+    }
+    srcCloneRestoreConfigInfo_ = GetCurrentDeviceCloneConfigInfo();
+    if (!UpdateConfigInfo()) {
+        MEDIA_ERR_LOG("update configInfo failed when start backup");
+        SetErrorCode(RestoreError::BACKUP_UPDATE_CONFIG_INFO_FAILED);
+        return;
+    }
+    CHECK_AND_RETURN_LOG(BackupPreprocess(), "backup preprocess failed");
     bool cond = (!BackupKvStore() && !MediaFileUtils::DeleteDir(CLONE_KVDB_BACKUP_DIR));
     CHECK_AND_PRINT_LOG(!cond, "BackupKvStore failed and delete old backup kvdb failed, errno:%{public}d", errno);
     MEDIA_INFO_LOG("End clone backup");
@@ -3260,6 +3469,7 @@ bool CloneRestore::HasExThumbnail(const FileInfo &info)
 
 void CloneRestore::BackupRelease()
 {
+    BackupFileUtils::RestoreInvalidHDCCloudDataPos();
     StopParameterForBackup();
 }
 } // namespace Media

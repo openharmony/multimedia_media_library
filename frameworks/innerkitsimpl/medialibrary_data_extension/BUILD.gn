@@ -840,6 +840,11 @@ ohos_shared_library("medialibrary_data_extension") {
     "zlib:shared_libz",
   ]
 
+  if (defined(global_parts_info) &&
+    defined(global_parts_info.iotdev_memospace_service)) {
+    external_deps += [ "memospace_service:hdc_proxy" ]
+  }
+
   defines = []
   if (defined(global_parts_info) &&
       defined(global_parts_info.filemanagement_dfs_service)) {
@@ -851,6 +856,11 @@ ohos_shared_library("medialibrary_data_extension") {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
   defines += [ "META_RECOVERY_SUPPORT=1" ]
+
+  if (defined(global_parts_info) &&
+    defined(global_parts_info.iotdev_memospace_service)) {
+    defines += [ "MEDIA_LIBRARY_MEMOSPACE_SERVICE_SUPPORT" ]
+  }
 
   if (!defined(global_parts_info) ||
       defined(global_parts_info.security_security_component_manager)) {

@@ -114,6 +114,7 @@ enum class EXPORT OperationObject : uint32_t {
     PTP_ALBUM_OPERATION,
     CUSTOM_RECORDS_OPERATION,
     MOVING_PHOTO_VIDEO_READY,
+    PAH_BACKUP_POSTPROCESS,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -227,6 +228,7 @@ enum class EXPORT OperationType : uint32_t {
     MOVING_PHOTO_VIDEO_READY,
     UPDATE_HAS_APPLINK,
     UPDATE_APPLINK,
+    RESTORE_INVALID_HDC_CLOUD_DATA_POS
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

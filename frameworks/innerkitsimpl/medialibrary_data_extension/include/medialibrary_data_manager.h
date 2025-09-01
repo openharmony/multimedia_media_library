@@ -163,6 +163,7 @@ private:
     void SubscriberPowerConsumptionDetection();
     int32_t AstcMthAndYearInsert(MediaLibraryCommand &cmd,
         const std::vector<DataShare::DataShareValuesBucket> &values);
+    EXPORT int32_t RestoreInvalidHDCCloudDataPos();
     std::shared_mutex mgrSharedMutex_;
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
     std::string bundleName_ {BUNDLE_NAME};

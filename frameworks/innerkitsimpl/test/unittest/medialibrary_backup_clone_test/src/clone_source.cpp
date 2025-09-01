@@ -27,6 +27,7 @@
 #include "photo_map_column.h"
 #include "vision_column.h"
 #include "vision_db_sqls_more.h"
+#include "media_config_info_column.h"
 
 using namespace std;
 
@@ -51,6 +52,7 @@ const unordered_map<string, string> TABLE_CREATE_MAP = {
     { VISION_TOTAL_TABLE, CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE },
     { ANALYSIS_BEAUTY_SCORE_TABLE, CREATE_AESTHETICS_SCORE_TBL },
     { ANALYSIS_VIDEO_FACE_TABLE, CREATE_VIDEO_FACE_TBL },
+    { ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME, ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE },
 };
 const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { PhotoColumn::PHOTOS_TABLE, InsertType::PHOTOS },

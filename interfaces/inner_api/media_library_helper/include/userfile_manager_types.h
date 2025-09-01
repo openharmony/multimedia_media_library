@@ -164,6 +164,7 @@ enum class MovingPhotoEffectMode : int32_t {
 };
 
 enum class PhotoPositionType : int32_t {
+    INVALID = -1,
     LOCAL = 1,
     CLOUD = 2,
     LOCAL_AND_CLOUD = 3

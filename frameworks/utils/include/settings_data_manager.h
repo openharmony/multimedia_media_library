@@ -22,6 +22,7 @@
 #include "safe_map.h"
 
 namespace OHOS::Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 
 enum SwitchStatus {
     NONE = -1,
@@ -30,9 +31,21 @@ enum SwitchStatus {
     HDC,
 };
 
+const std::unordered_map<std::string, SwitchStatus> STRING_SWITCH_STATUS_MAP = {
+    {std::to_string(static_cast<int>(SwitchStatus::HDC)),
+        SwitchStatus::HDC},
+    {std::to_string(static_cast<int>(SwitchStatus::CLOUD)),
+        SwitchStatus::CLOUD},
+    {std::to_string(static_cast<int>(SwitchStatus::CLOSE)),
+        SwitchStatus::CLOSE},
+    {std::to_string(static_cast<int>(SwitchStatus::NONE)),
+        SwitchStatus::NONE},
+};
+
 class SettingsDataManager {
 public:
-    static SwitchStatus GetPhotosSyncSwitchStatus();
+    EXPORT static SwitchStatus GetPhotosSyncSwitchStatus();
+    EXPORT static bool GetHdcDeviceId(std::string& deviceId);
 
 private:
     static int32_t QueryParamInSettingData(const std::string &key, std::string &value);

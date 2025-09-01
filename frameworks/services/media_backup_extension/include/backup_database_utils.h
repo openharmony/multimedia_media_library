@@ -27,6 +27,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_utils.h"
 #include "result_set_utils.h"
+#include "media_config_info_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,6 +35,8 @@ using FileIdPair = std::pair<int32_t, int32_t>;
 using TagPairOpt = std::pair<std::optional<std::string>, std::optional<std::string>>;
 constexpr int32_t TOTAL_TBL_FACE_ANALYSED = 2;
 class BackupDatabaseUtils {
+public:
+    using ConfigInfoType = std::unordered_map<ConfigInfoSceneId, std::unordered_map<std::string, std::string>>;
 public:
     static int32_t InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
         const std::string &dbPath, const std::string &bundleName, bool isMediaLibary,
@@ -146,6 +149,10 @@ public:
         const std::unordered_map<int32_t, int32_t>& oldFileIdToFaceMap, const std::vector<FileIdPair>& fileIdPair);
     static void UpdateAnalysisTotalTblNoFaceStatus(std::shared_ptr<NativeRdb::RdbStore> newRdbStore,
         std::shared_ptr<NativeRdb::RdbStore> oldRdbStore, const std::vector<FileIdPair>& fileIdPair);
+    static bool isTableExist(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        const std::string &tableName, bool& result);
+    static ConfigInfoType QueryConfigInfo(
+        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);

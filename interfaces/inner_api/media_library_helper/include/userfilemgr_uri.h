@@ -77,6 +77,7 @@ const std::string OPRN_DEGENERATE_MOVING_PHOTO = "degenerate_moving_photo";
 const std::string OPRN_START_GENERATE_THUMBNAILS = "start_generate_thumbnails";
 const std::string OPRN_STOP_GENERATE_THUMBNAILS = "stop_generate_thumbnails";
 const std::string OPRN_GENERATE_THUMBNAILS_RESTORE = "generate_thumbnails_restore";
+const std::string OPRN_RESTORE_INVALID_HDC_CLOUD_DATA_POS = "RESTORE_INVALID_HDC_CLOUD_DATA_POS";
 const std::string OPRN_LOCAL_THUMBNAIL_GENERATION = "local_thumbnail_generation";
 const std::string OPRN_ADD_FILTERS = "add_filters";
 const std::string OPRN_DISCARD_CAMERA_PHOTO = "discard_camera_photo";
@@ -263,6 +264,7 @@ const std::string PAH_HIGHLIGHT_PLAY = "phaccess_highlight_play_operation";
 const std::string PAH_HIGHLIGHT_DELETE = "phaccess_highlight_delete";
 const std::string PAH_HIGHLIGHT_ADD_ASSETS = "phaccess_highlight_add_assets";
 const std::string PAH_BATCH_THUMBNAIL_OPERATE = "phaccess_batch_thumbnail_operation";
+const std::string PAH_BACKUP_POSTPROCESS = "phaccess_backup_postprocess";
 const std::string SEARCH_INDEX_CONSTRUCTION_STATUS = "phaccess_search_index_construction_operation";
 const std::string PAH_ANA_MULTI_CROP = "phaccess_ana_multi_crop_operation";
 const std::string PAH_ANA_ASSET_SD = "tab_analysis_asset_sd_map";
@@ -343,6 +345,10 @@ const std::string PAH_GENERATE_THUMBNAILS_RESTORE =
 // Generate local thumbnail from cloud trigger
 const std::string PAH_GENERATE_LOCAL_THUMBNAIL =
     MEDIALIBRARY_DATA_URI + "/" + PAH_BATCH_THUMBNAIL_OPERATE + "/" + OPRN_LOCAL_THUMBNAIL_GENERATION;
+
+// restore hdc cloud data invalidated by backup
+const std::string PAH_RESTORE_INVALID_HDC_CLOUD_DATA_POS =
+    MEDIALIBRARY_DATA_URI + "/" + PAH_BACKUP_POSTPROCESS + "/" + OPRN_RESTORE_INVALID_HDC_CLOUD_DATA_POS;
 
 const std::string PAH_QUERY_ANA_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_PHOTO_MAP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MAP + "/" + OPRN_QUERY;
