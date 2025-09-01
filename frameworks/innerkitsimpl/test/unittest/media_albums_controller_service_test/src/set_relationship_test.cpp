@@ -155,12 +155,12 @@ static int32_t SetRelationship(int32_t albumId, int32_t albumType, int32_t album
     auto service = make_shared<MediaAlbumsControllerService>();
     service->SetRelationship(data, reply);
 
-    IPC::MediaRespVo<MediaEmptyObjVo> resp;
-    if (resp.Unmarshalling(reply) != true) {
-        MEDIA_ERR_LOG("resp.Unmarshalling failed");
+    IPC::MediaRespVo<MediaEmptyObjVo> respVo;
+    if (respVo.Unmarshalling(reply) != true) {
+        MEDIA_ERR_LOG("respVo.Unmarshalling failed");
         return -1;
     }
-    return resp.GetErrCode();
+    return respVo.GetErrCode();
 }
 
 HWTEST_F(SetRelationshipTest, SetRelationshipTest_Test_001, TestSize.Level0)
@@ -168,7 +168,7 @@ HWTEST_F(SetRelationshipTest, SetRelationshipTest_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Start SetRelationshipTest_Test_001");
     // 1、前置条件准备
     int32_t albumId = -1;
-    GetOrderPositionPrepare(albumId);
+    SetRelationshipPrepare(albumId);
     EXPECT_GT(albumId, 0);
 
     // 2、设置人物关系
@@ -196,11 +196,11 @@ HWTEST_F(SetRelationshipTest, SetRelationshipTest_Test_002, TestSize.Level0)
     MessageParcel data;
     MessageParcel reply;
     auto service = make_shared<MediaAlbumsControllerService>();
-    service->GetRelationship(data, reply);
+    service->SetRelationship(data, reply);
 
-    IPC::MediaRespVo<MediaEmptyObjVo> resp;
-    ASSERT_EQ(resp.Unmarshalling(reply), true);
-    ASSERT_LT(resp.GetErrCode(), 0);
+    IPC::MediaRespVo<MediaEmptyObjVo> respVo;
+    ASSERT_EQ(respVo.Unmarshalling(reply), true);
+    ASSERT_LT(respVo.GetErrCode(), 0);
     MEDIA_INFO_LOG("end SetRelationshipTest_Test_002");
 }
 }  // namespace OHOS::Media
