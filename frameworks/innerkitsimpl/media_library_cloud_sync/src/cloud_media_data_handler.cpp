@@ -97,7 +97,7 @@ int32_t CloudMediaDataHandler::GetCheckRecords(
 
 int32_t CloudMediaDataHandler::GetCreatedRecords(std::vector<MDKRecord> &records, int32_t size)
 {
-    MEDIA_DEBUG_LOG("GetCreatedRecords enter, records: %{public}zu", records.size());
+    MEDIA_INFO_LOG("GetCreatedRecords enter, records: %{public}zu", records.size());
     if (this->dataHandler_ == nullptr) {
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
@@ -107,7 +107,7 @@ int32_t CloudMediaDataHandler::GetCreatedRecords(std::vector<MDKRecord> &records
 
 int32_t CloudMediaDataHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &records, int32_t size, int32_t dirtyType)
 {
-    MEDIA_DEBUG_LOG("GetMetaModifiedRecords enter, records: %{public}zu", records.size());
+    MEDIA_INFO_LOG("GetMetaModifiedRecords enter, records: %{public}zu", records.size());
     if (this->dataHandler_ == nullptr) {
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
@@ -127,7 +127,7 @@ int32_t CloudMediaDataHandler::GetFileModifiedRecords(std::vector<MDKRecord> &re
 
 int32_t CloudMediaDataHandler::GetDeletedRecords(std::vector<MDKRecord> &records, int32_t size)
 {
-    MEDIA_DEBUG_LOG("GetDeletedRecords enter, records: %{public}zu", records.size());
+    MEDIA_INFO_LOG("GetDeletedRecords enter, records: %{public}zu", records.size());
     if (this->dataHandler_ == nullptr) {
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
