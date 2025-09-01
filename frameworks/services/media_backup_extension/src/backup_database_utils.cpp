@@ -966,6 +966,8 @@ void BackupDatabaseUtils::BatchUpdatePhotosToLocal(std::shared_ptr<NativeRdb::Rd
     NativeRdb::ValuesBucket updatePostBucket;
     updatePostBucket.Put(PhotoColumn::PHOTO_CLEAN_FLAG, 0);
     updatePostBucket.Put(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    updatePostBucket.Put(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE,
+        static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_NULL));
     updatePostBucket.PutNull(PhotoColumn::PHOTO_CLOUD_ID);
     updatePostBucket.PutNull(PhotoColumn::PHOTO_CLOUD_VERSION);
     updatePostBucket.Put(PhotoColumn::PHOTO_THUMBNAIL_READY, 0);

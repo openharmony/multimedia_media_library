@@ -24,7 +24,7 @@
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
-enum SwitchStatus {
+enum class SwitchStatus {
     NONE = -1,
     CLOSE = 0,
     CLOUD,

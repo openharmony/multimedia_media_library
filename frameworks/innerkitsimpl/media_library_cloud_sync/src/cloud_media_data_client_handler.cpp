@@ -64,6 +64,11 @@ std::string CloudMediaDataClientHandler::GetTraceId() const
     return this->traceId_;
 }
 
+void CloudMediaDataClientHandler::SetCloudType(const int32_t cloudType)
+{
+    this->cloudType_ = cloudType;
+}
+
 int32_t CloudMediaDataClientHandler::UpdateDirty(const std::string &cloudId, DirtyTypes dirtyType)
 {
     MEDIA_INFO_LOG("CloudMediaDataClientHandler::UpdateDirty begin");

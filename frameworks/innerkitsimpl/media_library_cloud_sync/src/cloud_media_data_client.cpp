@@ -31,6 +31,14 @@ CloudMediaDataClient::CloudMediaDataClient(const int32_t &userId) : userId_(user
     this->dataHandler_->SetUserId(userId);
 }
 
+CloudMediaDataClient::CloudMediaDataClient(const int32_t cloudType, const int32_t userId)
+    : cloudType_(cloudType), userId_(userId)
+{
+    this->dataHandler_ = std::make_shared<CloudMediaDataClientHandler>();
+    this->dataHandler_->SetCloudType(cloudType);
+    this->dataHandler_->SetUserId(userId);
+}
+
 void CloudMediaDataClient::SetUserId(const int32_t &userId)
 {
     this->userId_ = userId;
@@ -52,6 +60,16 @@ std::string CloudMediaDataClient::GetTraceId() const
         return "";
     }
     return this->dataHandler_->GetTraceId();
+}
+
+void CloudMediaDataClient::SetCloudType(const int32_t cloudType)
+{
+    this->cloudType_ = cloudType;
+    if (this->dataHandler_ == nullptr) {
+        MEDIA_ERR_LOG("No data handler found!");
+        return;
+    }
+    this->dataHandler_->SetCloudType(cloudType);
 }
 
 int32_t CloudMediaDataClient::UpdateDirty(const std::string &cloudId, DirtyTypes dirtyType)

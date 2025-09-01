@@ -26,12 +26,14 @@
 #include "i_media_controller_service.h"
 #include "cloud_media_operation_code.h"
 #include "medialibrary_errno.h"
+#include "media_column.h"
 #include "media_resp_vo.h"
 #include "media_empty_obj_vo.h"
 #include "user_define_ipc.h"
 #include "cloud_media_album_service.h"
 #include "cloud_media_album_controller_processor.h"
 #include "cloud_media_define.h"
+#include "cloud_media_context.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaAlbumControllerService : public IPC::IMediaControllerService {
@@ -99,6 +101,12 @@ public:
     int32_t OnRemoteRequest(
         uint32_t code, MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context) override
     {
+        auto headerMap = context.GetHeader();
+        auto headerIt = headerMap.find(PhotoColumn::CLOUD_TYPE);
+        if (headerIt != headerMap.end()) {
+            int32_t cloudType = std::atoi(headerIt->second.c_str());
+            CloudMediaContext::GetInstance().SetCloudType(cloudType);
+        }
         auto it = this->HANDLERS.find(code);
         if (!this->Accept(code) || it == this->HANDLERS.end()) {
             return IPC::UserDefineIPC().WriteResponseBody(reply, E_IPC_SEVICE_NOT_FOUND);

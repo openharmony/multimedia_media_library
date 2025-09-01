@@ -186,6 +186,12 @@ enum class CleanType : int32_t {
     TYPE_NEED_CLEAN
 };
 
+enum class CloudType : int32_t {
+    CLOUD_TYPE_CLOSE = 0,
+    CLOUD_TYPE_CLOUD,
+    CLOUD_TYPE_HDC
+};
+
 enum class MultiStagesPhotoQuality : int32_t {
     FULL = 0,
     LOW,

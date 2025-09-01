@@ -762,6 +762,8 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     // check metadata recovery state
     MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();
 #endif
+    int32_t ret = MediaLibraryDataManager::GetInstance()->RestoreInvalidPosData();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "DoBackgroundOperation RestoreInvalidPosData failed");
     AgingTmpCompatibleDuplicates(true);
     // delete temporary photos
     DeleteTemporaryPhotos();
@@ -774,12 +776,11 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     DoAgingOperation();
     PeriodicAnalyzePhotosData();
     // update burst from gallery
-    int32_t ret = DoUpdateBurstFromGallery();
+    ret = DoUpdateBurstFromGallery();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstFromGallery faild");
     // update all editdata size
     ret = UpdateAllEditDataSize();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateAllEditDataSize faild");
-
     CloudUploadChecker::RepairNoOriginPhoto();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     // add permission for cloud enhancement photo

@@ -32,6 +32,8 @@
 #include "cloud_media_photos_service.h"
 #include "cloud_media_photo_controller_processor.h"
 #include "cloud_media_define.h"
+#include "media_column.h"
+#include "cloud_media_context.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaPhotoControllerService : public IPC::IMediaControllerService {
@@ -111,6 +113,12 @@ public:
     int32_t OnRemoteRequest(
         uint32_t code, MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context) override
     {
+        auto headerMap = context.GetHeader();
+        auto headerIt = headerMap.find(PhotoColumn::CLOUD_TYPE);
+        if (headerIt != headerMap.end()) {
+            int32_t cloudType = std::atoi(headerIt->second.c_str());
+            CloudMediaContext::GetInstance().SetCloudType(cloudType);
+        }
         auto it = this->HANDLERS.find(code);
         if (!this->Accept(code) || it == this->HANDLERS.end()) {
             return IPC::UserDefineIPC().WriteResponseBody(reply, E_IPC_SEVICE_NOT_FOUND);
