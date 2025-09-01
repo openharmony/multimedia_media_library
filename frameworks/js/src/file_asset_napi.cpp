@@ -3047,6 +3047,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         PhotoColumn::PHOTO_APPLINK,
         PhotoColumn::PHOTO_HAS_APPLINK,
+        PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
         MEDIA_SUM_SIZE,

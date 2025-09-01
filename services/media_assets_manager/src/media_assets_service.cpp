@@ -537,6 +537,18 @@ int32_t MediaAssetsService::SetSupportedWatermarkType(const int32_t fileId, cons
     return MediaLibraryPhotoOperations::UpdateSupportedWatermarkType(cmd);
 }
 
+int32_t MediaAssetsService::SetCompositeDisplayMode(const int32_t fileId, const int32_t compositeDisplayMode)
+{
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    MEDIA_INFO_LOG(
+        "enter MediaAssetsService::SetCompositeDisplayMode, compositeDisplayMode:%{public}d ", compositeDisplayMode);
+    int32_t ret = EnhancementManager::GetInstance().SetCompositeDisplayMode(fileId, compositeDisplayMode);
+    MEDIA_INFO_LOG("MediaAssetsService::SetCompositeDisplayMode ret:%{public}d", ret);
+    return ret;
+#endif
+    return E_ERR;
+}
+
 int32_t MediaAssetsService::GrantPhotoUriPermissionInner(const GrantUriPermissionInnerDto& grantUrisPermissionInnerDto)
 {
     MEDIA_INFO_LOG("enter MediaAssetsService::GrantPhotoUriPermissionInner");

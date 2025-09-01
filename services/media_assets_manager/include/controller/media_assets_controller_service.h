@@ -115,6 +115,7 @@ public:
     EXPORT int32_t Restore(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t StopRestore(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t HeifTranscodingCheck(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t SetCompositeDisplayMode(MessageParcel &data, MessageParcel &reply);
 public:
     virtual ~MediaAssetsControllerService() = default;
     bool Accept(uint32_t code) override;

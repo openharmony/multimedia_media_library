@@ -34,6 +34,7 @@ public:
     ~CloudMediaSyncUtils();
 
     static std::string GetLocalPath(const std::string &filePath);
+    static std::string RestoreCloudPath(const std::string &filepath);
     static bool IsLocalDirty(int32_t dirty, bool isDelete);
     static bool FileIsLocal(const int32_t position);
     static std::string GetCloudPath(const std::string &path, const std::string &prefixCloud);
@@ -43,6 +44,8 @@ public:
     static void RemoveMetaDataPath(const std::string &path, const std::string &prefixCloud);
     static void InvalidVideoCache(const std::string &localPath);
     static void RemoveMovingPhoto(const CloudMediaPullDataDto &pullData);
+    static void BackUpEditDataSourcePath(const std::string &localPath);
+    static void RemoveEditDataSourcePath(const std::string &localPath);
     static void RemoveEditDataPath(const std::string &localPath);
     static void RemoveTransCodePath(const std::string &localPath);
     static uint32_t GenerateCloudIdWithHash(PhotoAlbumPo &record);

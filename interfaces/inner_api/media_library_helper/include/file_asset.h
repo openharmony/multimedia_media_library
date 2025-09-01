@@ -229,6 +229,9 @@ public:
     EXPORT const std::string &GetAppLink() const;
     EXPORT void SetAppLink(const std::string appLink);
 
+    EXPORT int32_t GetCompositeDisplayStatus() const;
+    EXPORT void SetCompositeDisplayStatus(int32_t compositeDisplayStatus);
+
     EXPORT int32_t GetIsAuto() const;
     EXPORT void SetIsAuto(int32_t isAuto);
 

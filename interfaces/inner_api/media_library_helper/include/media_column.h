@@ -218,6 +218,7 @@ public:
     static const std::string PHOTO_STRONG_ASSOCIATION EXPORT;
     static const std::string PHOTO_ASSOCIATE_FILE_ID EXPORT;
     static const std::string PHOTO_HAS_CLOUD_WATERMARK EXPORT;
+    static const std::string PHOTO_COMPOSITE_DISPLAY_STATUS EXPORT;
     // format in PhotoTable detail time
     static const std::string PHOTO_DETAIL_TIME_FORMAT EXPORT;
 

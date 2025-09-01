@@ -158,6 +158,7 @@ public:
     int32_t GetFilePathFromUri(const std::string &virtualId, GetFilePathFromUriRespBody &respBody);
     int32_t GetUriFromFilePath(const std::string &tempPath, GetUriFromFilePathRespBody &respBody);
     int32_t CanSupportedCompatibleDuplicate(const std::string &bundleName, HeifTranscodingCheckRespBody &respBody);
+    int32_t SetCompositeDisplayMode(const int32_t fileId, const int32_t compositeDisplayMode);
 
 private:
     MediaAssetsRdbOperations rdbOperation_;
