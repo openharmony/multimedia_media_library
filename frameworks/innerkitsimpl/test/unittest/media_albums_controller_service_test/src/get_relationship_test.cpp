@@ -32,7 +32,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
-#include "medialibrary_busness_code.h"
+#include "medialibrary_business_code.h"
 
 namespace OHOS::Media {
 using namespace std;
