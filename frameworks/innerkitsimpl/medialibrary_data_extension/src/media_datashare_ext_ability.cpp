@@ -289,6 +289,8 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     dataManager->SetStartupParameter();
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
     CloudMediaAssetManager::GetInstance().RestartForceRetainCloudAssets();
+    ret = dataManager->RestoreInvalidPosData();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "OnStart RestoreInvalidPosData failed");
 }
 
 void MediaDataShareExtAbility::OnStop()
@@ -1040,6 +1042,7 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
     uint32_t operationCode = reqVo.GetCode();
     std::string traceId = reqVo.GetTraceId();
     int32_t userId = reqVo.GetUserId();
+    std::unordered_map<std::string, std::string> headerMap = reqVo.GetHeader();
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t ret = E_IPC_SEVICE_NOT_FOUND;
     for (auto &controllerService : this->serviceFactory_.GetAllMediaControllerService()) {
@@ -1053,7 +1056,7 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
             ret = IPC::UserDefineIPC().WriteResponseBody(reply, Media::E_PERMISSION_DENIED);
             break;
         }
-        PermissionHeaderReq permHeaderReq = PermissionHeaderReq::convertToPermissionHeaderReq(reqVo.GetHeader(),
+        PermissionHeaderReq permHeaderReq = PermissionHeaderReq::convertToPermissionHeaderReq(headerMap,
             userId, permissionPolicy, isDBBypass);
         int32_t errCode = PermissionCheck::VerifyPermissions(operationCode, permHeaderReq);
         if (errCode != E_SUCCESS && errCode != E_PERMISSION_DB_BYPASS) {
@@ -1062,6 +1065,7 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
         }
         MEDIA_INFO_LOG("API code %{public}d verify permission success", operationCode);
         IPCContext context(option, errCode);
+        context.SetHeader(headerMap);
         ret = controllerService->OnRemoteRequest(operationCode, data, reply, context);
         break;
     }

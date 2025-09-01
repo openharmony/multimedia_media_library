@@ -80,6 +80,9 @@ int32_t CloudMediaDataDao::UpdatePosition(const std::vector<std::string> &cloudI
 
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_POSITION, position);
+    if (position == static_cast<int32_t>(PhotoPositionType::LOCAL)) {
+        values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_NULL));
+    }
 
     int32_t changedRows = DEFAULT_VALUE;
     AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::UPDATE_POSITION_BUSSINESS_NAME);

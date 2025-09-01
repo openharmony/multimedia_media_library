@@ -995,6 +995,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (fileInfo.localMediaId == -1) {
         values.PutString(PhotoColumn::PHOTO_CLOUD_ID, fileInfo.uniqueId);
         values.PutInt(PhotoColumn::PHOTO_POSITION, PHOTO_CLOUD_POSITION);
+        values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_CLOUD));
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_SYNCED));
     } else {
         values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));

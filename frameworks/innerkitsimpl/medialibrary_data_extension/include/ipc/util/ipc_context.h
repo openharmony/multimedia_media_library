@@ -17,6 +17,7 @@
 #define OHOS_MEDIA_IPC_CONTEXT_H
 
 #include <string>
+#include <unordered_map>
 
 #include "message_parcel.h"
 #include "media_log.h"
@@ -43,9 +44,20 @@ public:
         return byPassCode_;
     }
 
+    void SetHeader(const std::unordered_map<std::string, std::string> &header)
+    {
+        this->header_ = header;
+    }
+
+    std::unordered_map<std::string, std::string> GetHeader() const
+    {
+        return this->header_;
+    }
+
 private:
     MessageOption option_;
     int32_t byPassCode_;
+    std::unordered_map<std::string, std::string> header_;
 };
 }  // namespace OHOS::Media::IPC
 #endif  // OHOS_MEDIA_IPC_CONTEXT_H

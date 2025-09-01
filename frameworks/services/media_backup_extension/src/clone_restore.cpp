@@ -1334,6 +1334,7 @@ void CloneRestore::GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::
 void CloneRestore::GetCloudThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values)
 {
     values.PutInt(PhotoColumn::PHOTO_POSITION, fileInfo.position);
+    values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_CLOUD));
     values.PutString(PhotoColumn::PHOTO_CLOUD_ID, fileInfo.cloudId);
     values.PutInt(PhotoColumn::PHOTO_CLOUD_VERSION, fileInfo.cloudVersion);
     values.PutInt(PhotoColumn::PHOTO_DIRTY, 0);
