@@ -4463,6 +4463,17 @@ static void AddCreateTmpCompatibleDup(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddSouthDeviceType(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE +
+            " INT NOT NULL DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add south_device_type column start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("Add south_device_type column end");
+}
+
 static void AddDetailTimeToPhotos(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -5188,6 +5199,12 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_HIGHLIGHT_VIEWED_NOTIFICATION, true)) {
         AddHighlightViewedNotification(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_HIGHLIGHT_VIEWED_NOTIFICATION, true);
+    }
+
+    if (oldVersion < VERSION_ADD_SOUTH_DEVICE_TYPE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_SOUTH_DEVICE_TYPE, true)) {
+        AddSouthDeviceType(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_SOUTH_DEVICE_TYPE, true);
     }
 }
 

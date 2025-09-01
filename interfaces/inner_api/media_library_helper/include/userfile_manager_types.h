@@ -18,6 +18,8 @@
 #include <limits>
 #include <string>
 
+#include "media_column.h"
+
 namespace OHOS {
 namespace Media {
 enum class ResultNapiType {

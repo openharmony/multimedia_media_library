@@ -165,6 +165,7 @@ public:
     static const std::string PHOTO_IS_RECENT_SHOW EXPORT;
     static const std::string PHOTO_HAS_APPLINK EXPORT;
     static const std::string PHOTO_APPLINK EXPORT;
+    static const std::string PHOTO_SOUTH_DEVICE_TYPE EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
@@ -302,6 +303,9 @@ public:
     static const std::string PHOTO_TYPE_URI EXPORT;
     static const std::string DEFAULT_PHOTO_URI EXPORT;
     static const std::string PHOTO_CACHE_URI_PREFIX EXPORT;
+
+    // cloud sync type
+    static const std::string CLOUD_TYPE EXPORT;
 
     // cloud sync uri
     static const std::string PHOTO_CLOUD_URI_PREFIX EXPORT;

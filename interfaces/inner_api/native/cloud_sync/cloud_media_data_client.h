@@ -27,12 +27,14 @@ namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaDataClient : public ICloudMediaDataClient {
 public:  // constructors
     CloudMediaDataClient(const int32_t &userId);
+    CloudMediaDataClient(const int32_t cloudType, const int32_t userId);
     virtual ~CloudMediaDataClient() = default;
 
 public:  // getter & setter
     void SetTraceId(const std::string &traceId) override;
     std::string GetTraceId() const override;
     void SetUserId(const int32_t &userId) override;
+    void SetCloudType(const int32_t cloudType) override;
 
 public:
     // 核查
@@ -66,6 +68,7 @@ public:
 
 private:
     std::shared_ptr<ICloudMediaDataClient> dataHandler_;
+    int32_t cloudType_;
     int32_t userId_;
 };
 }  // namespace OHOS::Media::CloudSync

@@ -20,11 +20,12 @@
 
 #include "data_ability_observer_stub.h"
 #include "safe_map.h"
+#include "media_column.h"
 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
-enum SwitchStatus {
+enum class SwitchStatus {
     NONE = -1,
     CLOSE = 0,
     CLOUD,
@@ -40,6 +41,12 @@ const std::unordered_map<std::string, SwitchStatus> STRING_SWITCH_STATUS_MAP = {
         SwitchStatus::CLOSE},
     {std::to_string(static_cast<int>(SwitchStatus::NONE)),
         SwitchStatus::NONE},
+};
+
+const std::unordered_map<SwitchStatus, SouthDeviceType> PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP = {
+    {SwitchStatus::CLOSE, SouthDeviceType::SOUTH_DEVICE_NULL},
+    {SwitchStatus::CLOUD, SouthDeviceType::SOUTH_DEVICE_CLOUD},
+    {SwitchStatus::HDC, SouthDeviceType::SOUTH_DEVICE_HDC},
 };
 
 class SettingsDataManager {

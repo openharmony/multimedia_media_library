@@ -35,7 +35,8 @@ public:  // constructor
     virtual ~CloudMediaDataHandlerFactory() = default;
 
 public:
-    std::shared_ptr<ICloudMediaDataHandler> GetDataHandler(const std::string &tableName, const int32_t userId)
+    std::shared_ptr<ICloudMediaDataHandler> GetDataHandler(const std::string &tableName,
+        const int32_t cloudType, const int32_t userId)
     {
         std::shared_ptr<ICloudMediaDataHandler> handler = nullptr;
         auto iter = this->DATA_HANDLER.find(tableName);
@@ -43,6 +44,7 @@ public:
             handler = iter->second;
         }
         CHECK_AND_RETURN_RET_LOG(handler != nullptr, handler, "handler is null");
+        handler->SetCloudType(cloudType);
         handler->SetUserId(userId);
         return handler;
     }

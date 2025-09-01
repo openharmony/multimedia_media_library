@@ -34,7 +34,7 @@ namespace OHOS::Media::CloudSync {
 CloudMediaDataHandler::CloudMediaDataHandler(const std::string &tableName, int32_t cloudType, int32_t userId)
     : cloudType_(cloudType), userId_(userId), tableName_(tableName)
 {
-    this->dataHandler_ = CloudMediaDataHandlerFactory().GetDataHandler(tableName, userId);
+    this->dataHandler_ = CloudMediaDataHandlerFactory().GetDataHandler(tableName, cloudType, userId);
     MEDIA_INFO_LOG("media-ipc userId: %{public}d", userId);
 }
 
@@ -53,9 +53,14 @@ int32_t CloudMediaDataHandler::GetUserId() const
     return this->userId_;
 }
 
-void CloudMediaDataHandler::SetCloudType(int32_t cloudType)
+void CloudMediaDataHandler::SetCloudType(const int32_t cloudType)
 {
     this->cloudType_ = cloudType;
+    if (this->dataHandler_ == nullptr) {
+        MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
+        return;
+    }
+    this->dataHandler_->SetCloudType(cloudType);
 }
 
 std::string CloudMediaDataHandler::GetTableName() const
@@ -66,7 +71,7 @@ std::string CloudMediaDataHandler::GetTableName() const
 void CloudMediaDataHandler::SetTableName(const std::string &tableName)
 {
     this->tableName_ = tableName;
-    this->dataHandler_ = CloudMediaDataHandlerFactory().GetDataHandler(tableName, userId_);
+    this->dataHandler_ = CloudMediaDataHandlerFactory().GetDataHandler(tableName, cloudType_, userId_);
 }
 
 void CloudMediaDataHandler::SetTraceId(const std::string &traceId)
