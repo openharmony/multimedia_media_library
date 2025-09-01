@@ -1109,7 +1109,8 @@ napi_value MediaAlbumChangeRequestNapi::JSSetRelationship(napi_env env, napi_cal
     std::string relationship(relationshipCStr, strLen);
     CHECK_COND_WITH_ERR_MESSAGE(env, ALLOWED_RELATIONSHIPS.find(relationship) != ALLOWED_RELATIONSHIPS.end(),
         NAPI_INVALID_PARAMETER_ERROR, "Invalid relationship value provided");
-    NAPI_INFO_LOG("Set relationship is: %{public}s", relationship.c_str());
+    NAPI_INFO_LOG("Set relationship is: %{public}s, albumId: %{public}d",
+        relationship.c_str(), photoAlbum->GetAlbumId());
 
     // 清空relationship和更改is_me场景：
     // 1、存在“我”相册且“我”相册不是当前相册，将其它相册人物关系设置为“我”
