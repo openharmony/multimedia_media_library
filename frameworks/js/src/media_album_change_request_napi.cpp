@@ -52,17 +52,22 @@
 #include "change_request_merge_album_vo.h"
 #include "change_request_place_before_vo.h"
 #include "change_request_set_order_position_vo.h"
+#include "change_request_set_highlight_attribute_vo.h"
 
 using namespace std;
 
 namespace OHOS::Media {
 static const string MEDIA_ALBUM_CHANGE_REQUEST_CLASS = "MediaAlbumChangeRequest";
 static const string MEDIA_ANALYSIS_ALBUM_CHANGE_REQUEST_CLASS = "MediaAnalysisAlbumChangeRequest";
+static const string MEDIA_HIGHLIGHT_ALBUM_CHANGE_REQUEST_CLASS = "MediaHighlightAlbumChangeRequest";
 thread_local napi_ref MediaAlbumChangeRequestNapi::constructor_ = nullptr;
 thread_local napi_ref MediaAlbumChangeRequestNapi::mediaAnalysisAlbumChangeRequestConstructor_ = nullptr;
+thread_local napi_ref MediaAlbumChangeRequestNapi::mediaHighlightAlbumChangeRequestConstructor_ = nullptr;
 static const int32_t VALUE_IS_ME = 1;
 static const int32_t VALUE_IS_REMOVED = 1;
 static const int32_t MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR = 23800301;
+static const int32_t MEDIA_LIBRARY_PARAM_ERROR = 23800151;
+static const int32_t MAX_HIGHLIGHT_ATTRIBUTE_VALUE_LEN = 20;
 
 napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
 {
@@ -119,6 +124,18 @@ napi_value MediaAlbumChangeRequestNapi::MediaAnalysisAlbumChangeRequestInit(napi
             DECLARE_NAPI_FUNCTION("setIsMe", JSSetIsMe),
             DECLARE_NAPI_FUNCTION("dismiss", JSDismiss),
             DECLARE_NAPI_FUNCTION("setOrderPosition", JSSetOrderPosition),
+        } };
+    MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
+    return exports;
+}
+
+napi_value MediaAlbumChangeRequestNapi::MediaHighlightAlbumChangeRequestInit(napi_env env, napi_value exports)
+{
+    NapiClassInfo info = { .name = MEDIA_HIGHLIGHT_ALBUM_CHANGE_REQUEST_CLASS,
+        .ref = &mediaHighlightAlbumChangeRequestConstructor_,
+        .constructor = Constructor,
+        .props = {
+            DECLARE_NAPI_FUNCTION("setHighlightAttribute", JSSetHighlightAttribute),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -231,6 +248,11 @@ map<shared_ptr<PhotoAlbum>, vector<string>, PhotoAlbumPtrCompare> MediaAlbumChan
 int32_t MediaAlbumChangeRequestNapi::GetUserId() const
 {
     return userId_;
+}
+
+std::pair<int32_t, std::string> MediaAlbumChangeRequestNapi::GetHighlightAlbumChangeAttributePair() const
+{
+    return highlightAlbumChangeAttributePair_;
 }
 
 void MediaAlbumChangeRequestNapi::RecordMoveAssets(vector<string>& assetArray, shared_ptr<PhotoAlbum>& targetAlbum)
@@ -1181,6 +1203,42 @@ napi_value MediaAlbumChangeRequestNapi::JSPlaceBefore(napi_env env, napi_callbac
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value MediaAlbumChangeRequestNapi::JSSetHighlightAttribute(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetHighlightAttribute");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    napi_value undefinedObject = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &undefinedObject));
+    unique_ptr<MediaAlbumChangeRequestAsyncContext> asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, undefinedObject, "Failed to create asyncContext");
+
+    int32_t highlightAlbumChangeAttribute = HighlightAlbumChangeAttribute::INVALID_CHANGE_ATTRIBUTE;
+    string value;
+    CHECK_ARGS_WITH_MEG(env, MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext,
+        highlightAlbumChangeAttribute) == napi_ok, MEDIA_LIBRARY_PARAM_ERROR,
+        "Failed to parse highlightAlbumChangeAttribute");
+    
+    CHECK_ARGS_WITH_MEG(env, MediaLibraryNapiUtils::GetParamStringWithLength(env, asyncContext->argv[1],
+        MAX_HIGHLIGHT_ATTRIBUTE_VALUE_LEN, value) == napi_ok, MEDIA_LIBRARY_PARAM_ERROR, "Failed to parse value arg");
+    
+    CHECK_ARGS_WITH_MEG(env, asyncContext->argc == ARGS_TWO, MEDIA_LIBRARY_PARAM_ERROR,
+        "Number of args is invalid");
+    
+    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_ARGS_WITH_MEG(env, photoAlbum != nullptr, MEDIA_LIBRARY_PARAM_ERROR, "photoAlbum is null");
+    CHECK_ARGS_WITH_MEG(env,
+        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        MEDIA_LIBRARY_PARAM_ERROR, "Only highlight album can SetHighlightAttribute");
+    
+    asyncContext->objectInfo->highlightAlbumChangeAttributePair_ = make_pair(highlightAlbumChangeAttribute, value);
+    asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_HIGHLIGHT_ATTRIBUTE);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 static bool CreateAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -1776,6 +1834,31 @@ static bool ResetCoverUriExecute(MediaAlbumChangeRequestAsyncContext& context)
     return true;
 }
 
+static bool SetHighlightAttributeExecute(MediaAlbumChangeRequestAsyncContext &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetHighlightAttributeExecute");
+
+    const auto &photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, false, "photoAlbum is null");
+    const auto pair = context.objectInfo->GetHighlightAlbumChangeAttributePair();
+    CHECK_COND_RET(!pair.second.empty(), false, "value is empty");
+    ChangeRequestSetHighlightAttributeReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.highlightAlbumChangeAttribute = pair.first;
+    reqBody.highlightAlbumChangeAttributeValue = pair.second;
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_HIGHLIGHT_ATTRIBUTE);
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (result < 0) {
+        context.SaveError(result);
+        NAPI_ERR_LOG("Failed to SetHighlightAttributeExecute err: %{public}d", result);
+        return false;
+    }
+    return true;
+}
+
 static const unordered_map<AlbumChangeOperation,
     bool (*)(MediaAlbumChangeRequestAsyncContext&)> PROPERTY_EXECUTE_MAP = {
     { AlbumChangeOperation::SET_ALBUM_NAME, SetAlbumNameExecute },
@@ -1823,6 +1906,7 @@ static const unordered_map<AlbumChangeOperation, bool (*)(MediaAlbumChangeReques
     { AlbumChangeOperation::MERGE_ALBUM, MergeAlbumExecute },
     { AlbumChangeOperation::DISMISS_ASSET, DismissAssetExecute },
     { AlbumChangeOperation::SET_ORDER_POSITION, SetOrderPositionExecute },
+    { AlbumChangeOperation::SET_HIGHLIGHT_ATTRIBUTE, SetHighlightAttributeExecute },
 };
 
 static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)

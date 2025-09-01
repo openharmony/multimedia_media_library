@@ -3203,6 +3203,19 @@ void AddHighlightChangeFunction(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddHighlightViewedNotification(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start AddHighlightViewedNotification");
+    const vector<string> sqls = {
+        "ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " +
+            HIGHLIGHT_IS_VIEWED + " BOOL NOT NULL DEFAULT 0 ",
+        "ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " +
+            HIGHLIGHT_NOTIFICATION_TIME + " BIGINT NOT NULL DEFAULT 0 ",
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end AddHighlightViewedNotification");
+}
+
 void AddAestheticsScoreFileds(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -5169,6 +5182,12 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_MEDIA_BACKUP_INFO, true)) {
         CreateBackupInfoTable(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_MEDIA_BACKUP_INFO, true);
+    }
+
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_VIEWED_NOTIFICATION &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_HIGHLIGHT_VIEWED_NOTIFICATION, true)) {
+        AddHighlightViewedNotification(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_HIGHLIGHT_VIEWED_NOTIFICATION, true);
     }
 }
 
