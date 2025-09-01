@@ -416,7 +416,6 @@ ohos_shared_library("medialibrary") {
     "ability_runtime:napi_base_context",
     "c_utils:utils",
     "data_share:datashare_consumer",
-    "device_manager:devicemanagersdk",
     "hilog:libhilog",
     "i18n:intl_util",
     "ipc:ipc_napi",
@@ -459,6 +458,10 @@ ohos_shared_library("medialibrary") {
     external_deps += [ "image_framework:image_native" ]
   }
 
+  if (media_library_feature_device_manager) {
+    external_deps += ["device_manager:devicemanagersdk"]
+  }
+
   relative_install_dir = "module/multimedia"
   subsystem_name = "multimedia"
   part_name = "media_library"
@@ -486,7 +489,6 @@ ohos_shared_library("userfilemanager") {
     "ability_runtime:napi_base_context",
     "c_utils:utils",
     "data_share:datashare_consumer",
-    "device_manager:devicemanagersdk",
     "hilog:libhilog",
     "i18n:intl_util",
     "ipc:ipc_napi",
@@ -519,6 +521,10 @@ ohos_shared_library("userfilemanager") {
       "memmgr_override:libpurgeablemem_plugin",
       "memmgr_override:purgeable_pixelmap_builder",
     ]
+  }
+
+  if (media_library_feature_device_manager) {
+     external_deps += ["device_manager:devicemanagersdk"]
   }
 
   if (ability_runtime_graphics) {
