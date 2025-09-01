@@ -178,12 +178,6 @@ enum class PhotoPositionType : int32_t {
     LOCAL_AND_CLOUD = 3
 };
 
-enum class SouthDeviceType : int32_t {
-    SOUTH_DEVICE_NULL = 0,
-    SOUTH_DEVICE_CLOUD = 1,
-    SOUTH_DEVICE_HDC = 2
-};
-
 enum class PhotoThumbStatusType : int32_t {
     DOWNLOADED = 0,
     NOT_DOWNLOADED = 3
