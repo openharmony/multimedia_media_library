@@ -24,7 +24,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 354;
+const int32_t MEDIA_RDB_VERSION = 355;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -244,6 +244,7 @@ enum {
     VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER = 352,
     VERSION_ADD_APPLINK_VERSION = 353,
     VERSION_CREATE_TMP_COMPATIBLE_DUP = 354,
+    VERSION_ADD_MEDIA_BACKUP_INFO = 355,
 };
 enum {
     MEDIA_API_VERSION_DEFAULT = 8,
@@ -444,6 +445,7 @@ const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";
 const std::string IMAGE_FILE_TYPE = "image_file_type";
 
 const std::string RESTORE_REQUEST_ASTC_GENERATE_COUNT = "restore_request_astc_generate_count";
+const std::string BACKUP_RESTORE_INVALID_HDC_CLOUD_DATA_POS_FLAG = "BACKUP_RESTORE_INVALID_HDC_CLOUD_DATA_POS_FLAG";
 } // namespace Media
 } // namespace OHOS
 

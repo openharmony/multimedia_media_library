@@ -186,6 +186,7 @@ static int32_t g_updateBurstMaxId = 0;
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
 static const std::string MODULE_NAME = "com.ohos.medialibrary.medialibrarydata";
 #endif
+static constexpr int ADD_ASYNC_TASK_SUCCESS = 0;
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
@@ -1660,6 +1661,9 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
                 return MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
             }
             break;
+        case OperationObject::PAH_BACKUP_POSTPROCESS:
+            return RestoreInvalidHDCCloudDataPos();
+            break;
         default:
             break;
     }
@@ -1667,6 +1671,38 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
     // so no need to distinct them in switch-case deliberately
     cmd.SetValueBucket(value);
     return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
+}
+
+static void RestoreInvalidatedPos(AsyncTaskData *data)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore, "rdbStore is nullptr");
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int>(PhotoPositionType::INVALID));
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int>(PhotoPositionType::CLOUD));
+    int32_t changedRows = -1;
+    CHECK_AND_RETURN_LOG(rdbStore->Update(changedRows, values, predicates) == NativeRdb::E_OK,
+        "fail to update invalid pos");
+    MEDIA_INFO_LOG("RestoreInvalidHDCCloudDataPos, %{public}d rows updated", changedRows);
+}
+
+int32_t MediaLibraryDataManager::RestoreInvalidHDCCloudDataPos()
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, NativeRdb::E_ERROR, "Can not get asyncWorker");
+
+    AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, NativeRdb::E_ERROR, "Failed to allocate new taskData");
+
+    shared_ptr<MediaLibraryAsyncTask> restoreInvalidPosTask = \
+        make_shared<MediaLibraryAsyncTask>(RestoreInvalidatedPos, taskData);
+    CHECK_AND_RETURN_RET_LOG(restoreInvalidPosTask, NativeRdb::E_ERROR, "fail to create medialibrary async task");
+    int32_t ret = asyncWorker->AddTask(restoreInvalidPosTask, false);
+    CHECK_AND_RETURN_RET_LOG(ret == ADD_ASYNC_TASK_SUCCESS, NativeRdb::E_ERROR,
+        "fail to add restore-invalid-pos-task to asyncWorker, ret %{public}d", ret);
+    return NativeRdb::E_OK;
 }
 
 void MediaLibraryDataManager::InterruptBgworker()

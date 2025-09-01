@@ -2396,5 +2396,15 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, AddToMediaVisitCount_test_002, TestSiz
     int32_t ret = dataManager->OpenFile(cmdCustom, "R");
     EXPECT_EQ(ret, E_INVALID_URI);
 }
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, RestoreInvalidHDCCloudDataPos_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("RestoreInvalidHDCCloudDataPos_test_001::Start");
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+
+    auto ret = dataManager->RestoreInvalidHDCCloudDataPos();
+    EXPECT_EQ(ret, E_OK);
+}
 } // namespace Media
 } // namespace OHOS
