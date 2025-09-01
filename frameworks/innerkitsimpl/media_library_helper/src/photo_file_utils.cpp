@@ -86,6 +86,39 @@ string PhotoFileUtils::GetEditDataSourcePath(const string& photoPath, int32_t us
     return parentPath + "/source." + MediaFileUtils::GetExtensionFromPath(photoPath);
 }
 
+string PhotoFileUtils::GetEditDataSourceBackPath(const string& photoPath, int32_t userId)
+{
+    string parentPath = GetEditDataDir(photoPath, userId);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/source_back." + MediaFileUtils::GetExtensionFromPath(photoPath);
+}
+
+string PhotoFileUtils::GetEditDataTempPath(const string &photoPath, int32_t userId)
+{
+    string parentPath = GetEditDataDir(photoPath, userId);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/photo_temp." + MediaFileUtils::GetExtensionFromPath(photoPath);
+}
+
+string PhotoFileUtils::GetEditDataSourceTempPath(const string& photoPath, int32_t userId)
+{
+    string parentPath = GetEditDataDir(photoPath, userId);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/source_temp." + MediaFileUtils::GetExtensionFromPath(photoPath);
+}
+
+bool PhotoFileUtils::IsEditDataSourceBackExists(const std::string &photoPath, int32_t userId)
+{
+    string editDataSourceBackPath = GetEditDataSourceBackPath(photoPath);
+    return MediaFileUtils::IsFileExists(editDataSourceBackPath);
+}
+
 bool PhotoFileUtils::HasEditData(int64_t editTime)
 {
     return editTime > 0;

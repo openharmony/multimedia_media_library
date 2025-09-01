@@ -100,6 +100,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_IS_AUTO, TYPE_INT32 },
         { PhotoColumn::PHOTO_MEDIA_SUFFIX, TYPE_STRING },
         { PhotoColumn::PHOTO_IS_RECENT_SHOW, TYPE_INT32 },
+        { PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, TYPE_INT32 },
         { PhotoColumn::PHOTO_HAS_APPLINK, TYPE_INT32 },
         { PhotoColumn::PHOTO_APPLINK, TYPE_STRING },
         { MEDIA_SUM_SIZE, TYPE_INT64 },

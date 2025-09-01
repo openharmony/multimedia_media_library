@@ -98,6 +98,7 @@ static const std::map<std::string, DataType> PHOTOS_COLUMNS = {
     {PhotoColumn::PHOTO_STRONG_ASSOCIATION, DataType::INT},
     {PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, DataType::INT},
     {PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, DataType::INT},
+    {PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, DataType::INT},
     {PhotoColumn::PHOTO_DETAIL_TIME, DataType::STRING},
     {PhotoColumn::PHOTO_OWNER_ALBUM_ID, DataType::INT},
     {PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, DataType::STRING},

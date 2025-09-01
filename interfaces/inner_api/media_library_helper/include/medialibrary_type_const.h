@@ -109,6 +109,11 @@ enum class DirtyType : int32_t {
     TYPE_TDIRTY
 };
 
+enum class CompositeDisplayMode : int32_t {
+    DEFAULT = 0,
+    CLOUD_ENHANCEMENT,
+};
+
 enum class CloudEnhancementAvailableType : int32_t {
     NOT_SUPPORT = 0,
     SUPPORT,
@@ -120,6 +125,14 @@ enum class CloudEnhancementAvailableType : int32_t {
     TRASH,
     PROCESSING_AUTO,
     FINISH = 120,
+};
+
+enum class CompositeDisplayStatus : int32_t {
+    PLAIN_PICTURE = 0,
+    ORIGINAL,
+    ENHANCED,
+    ORIGINAL_EDIT,
+    ENHANCED_EDIT,
 };
 
 enum class CloudEnhancementIsAutoType : int32_t {
