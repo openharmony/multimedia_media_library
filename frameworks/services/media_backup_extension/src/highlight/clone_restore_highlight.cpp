@@ -95,7 +95,9 @@ const std::unordered_map<std::string, std::unordered_set<std::string>> ALBUM_COL
             "theme",
             "pin_time",
             "use_subtitle",
-            "highlight_location"
+            "highlight_location",
+            "is_viewed",
+            "notification_time"
         }
     },
     { "tab_highlight_cover_info",
@@ -659,6 +661,7 @@ void CloneRestoreHighlight::GetHighlightRowInfo(HighlightAlbumInfo &info,
     GetIfInIntersection("pin_time", info.pinTime, intersection, resultSet);
     GetIfInIntersection("use_subtitle", info.useSubtitle, intersection, resultSet);
     GetIfInIntersection("highlight_location", info.highlightLocation, intersection, resultSet);
+    GetIfInIntersection("notification_time", info.notificationTime, intersection, resultSet);
 }
 
 void CloneRestoreHighlight::GetHighlightNewAlbumId(HighlightAlbumInfo &info)
@@ -757,6 +760,8 @@ void CloneRestoreHighlight::GetHighlightInsertValue(NativeRdb::ValuesBucket &val
     PutIfInIntersection(value, "pin_time", info.pinTime, intersection);
     PutIfInIntersection(value, "use_subtitle", info.useSubtitle, intersection);
     PutIfInIntersection(value, "highlight_location", info.highlightLocation, intersection);
+    PutIfInIntersection(value, "is_viewed", info.isViewed, intersection);
+    PutIfInIntersection(value, "notification_time", info.notificationTime, intersection);
 }
 
 void CloneRestoreHighlight::PutTempHighlightStatus(NativeRdb::ValuesBucket &value, const HighlightAlbumInfo &info)

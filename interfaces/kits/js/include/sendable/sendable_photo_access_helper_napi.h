@@ -109,6 +109,7 @@ private:
     static thread_local napi_ref sSourceModeEnumRef_;
     static thread_local napi_ref sHighlightAlbumInfoType_;
     static thread_local napi_ref sHighlightUserActionType_;
+    static thread_local napi_ref sHighlightAlbumChangeAttributeEnumRef_;
     static thread_local napi_ref sMovingPhotoEffectModeEnumRef_;
     static thread_local napi_ref sDynamicRangeTypeEnumRef_;
 
