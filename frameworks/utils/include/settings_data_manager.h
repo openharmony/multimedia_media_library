@@ -20,6 +20,7 @@
 
 #include "data_ability_observer_stub.h"
 #include "safe_map.h"
+#include "media_column.h"
 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
