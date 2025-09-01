@@ -37,6 +37,8 @@ bool AssetChangeReqBody::Unmarshalling(MessageParcel &parcel)
         effectMode,
         orientation,
         watermarkType,
+        hasAppLink,
+        appLink,
         latitude,
         longitude,
         values);
@@ -57,6 +59,8 @@ bool AssetChangeReqBody::Marshalling(MessageParcel &parcel) const
         effectMode,
         orientation,
         watermarkType,
+        hasAppLink,
+        appLink,
         latitude,
         longitude,
         values);

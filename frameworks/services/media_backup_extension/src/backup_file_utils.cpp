@@ -829,6 +829,13 @@ static std::shared_ptr<DataShare::DataShareHelper> GetCloudHelper(const std::str
 
 int32_t BackupFileUtils::IsCloneCloudSyncSwitchOn(int32_t sceneCode)
 {
+    auto switchStatus = SettingsDataManager::GetPhotosSyncSwitchStatus();
+    if (switchStatus != SwitchStatus::NONE) {
+        MEDIA_DEBUG_LOG("GetPhotosSyncSwitchStatus success, switchStatus: %{public}d", static_cast<int>(switchStatus));
+        return (switchStatus != SwitchStatus::CLOSE) ? CheckSwitchType::SUCCESS_ON : CheckSwitchType::SUCCESS_OFF;
+    }
+    MEDIA_DEBUG_LOG("GetPhotosSyncSwitchStatus fail, continue query old sync switch");
+
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper = GetCloudHelper(CLOUD_BASE_URI);
     CHECK_AND_RETURN_RET_LOG(cloudHelper != nullptr, CheckSwitchType::CLOUD_HELPER_NULL, "cloudHelper is null");
 
@@ -867,5 +874,22 @@ bool BackupFileUtils::HasOrientationOrExifRotate(const FileInfo &info)
     return info.orientation != 0 || (
         info.exifRotate != 0 && info.exifRotate != static_cast<int32_t>(ExifRotateType::TOP_LEFT));
 }
+
+void BackupFileUtils::RestoreInvalidHDCCloudDataPos()
+{
+    std::string updateUri = PAH_RESTORE_INVALID_HDC_CLOUD_DATA_POS;
+    MediaFileUtils::UriAppendKeyValue(updateUri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(updateUri);
+    DataShare::DataSharePredicates emptyPredicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(BACKUP_RESTORE_INVALID_HDC_CLOUD_DATA_POS_FLAG, 0);
+    CHECK_AND_RETURN_LOG(sDataShareHelper_, "sDataShareHelper_ is nullptr");
+    int result = sDataShareHelper_->Update(uri, emptyPredicates, valuesBucket);
+    CHECK_AND_PRINT_LOG(result >= 0, "restore invaildated pos of cloud hdc data failed,"
+        "the sDataShareHelper_ update error");
+    MEDIA_INFO_LOG("RestoreInvalidHDCCloudDataPos update success");
+}
+
+
 } // namespace Media
 } // namespace OHOS

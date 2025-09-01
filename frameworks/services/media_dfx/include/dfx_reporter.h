@@ -108,6 +108,13 @@ struct AccurateRefreshDfxDataPoint {
     std::string albumHiddenInfoOperationTime;
 };
 
+struct HeifAgingStatistics {
+    uint32_t transcodeFileNum = 0;
+    uint64_t transcodeTotalSize = 0;
+    uint32_t agingFileNum = 0;
+    uint64_t agingTotalSize = 0;
+};
+
 class DfxReporter {
 public:
     DfxReporter();
@@ -129,6 +136,7 @@ public:
     void ReportCommonVersion(int32_t dbVersion);
     void ReportAnalysisVersion(const std::string &analysisName, int32_t version);
     void ReportAdaptationToMovingPhoto();
+    void ReportAlibHeifDuplicate();
     static int32_t ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,
         const int32_t& totalDownload);
     EXPORT static void ReportStartResult(int32_t scene, int32_t errorCode, int32_t startTime);
@@ -147,6 +155,7 @@ public:
     void ReportPhotoSizeAndResolutionInfo(const QuerySizeAndResolution& querySizeAndResolution,
         const std::string& photoMimeType);
     void ReportAccurateRefreshResult(const AccurateRefreshDfxDataPoint& reportData);
+    static int32_t reportHeifAgingStatistics(const HeifAgingStatistics& heifAgingStatistics);
 };
 } // namespace Media
 } // namespace OHOS

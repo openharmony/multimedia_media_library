@@ -22,7 +22,6 @@
 
 #include "ability_context_impl.h"
 #include "medialibrary_app_uri_permission_operations.h"
-#include "medialibrary_app_uri_sensitive_operations.h"
 #include "datashare_predicates.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
@@ -41,12 +40,17 @@
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
 
+#define private public
+#include "medialibrary_app_uri_sensitive_operations.h"
+#undef private
+
 namespace OHOS {
 using namespace std;
 using namespace DataShare;
 const int32_t PERMISSION_DEFAULT = -1;
 const int32_t SENSITIVE_DEFAULT = -1;
 const int32_t URI_DEFAULT = 0;
+const int32_t ID = 1;
 const int32_t BatchInsertNumber = 5;
 static const int32_t NUM_BYTES = 1;
 static const int32_t MAX_PERMISSION_TYPE = 6;
@@ -88,6 +92,7 @@ static int FuzzHideSensitiveType()
 static void HandleInsertOperationFuzzer(string appId, string photoId, int32_t sensitiveType, int32_t permissionType,
     int32_t uriType)
 {
+    MEDIA_INFO_LOG("HandleInsertOperationFuzzer start");
     DataShareValuesBucket values;
     values.Put(Media::AppUriSensitiveColumn::APP_ID, appId);
     values.Put(Media::AppUriSensitiveColumn::FILE_ID, photoId);
@@ -100,20 +105,24 @@ static void HandleInsertOperationFuzzer(string appId, string photoId, int32_t se
     NativeRdb::ValuesBucket rdbValue = RdbDataShareAdapter::RdbUtils::ToValuesBucket(values);
     cmd.SetValueBucket(rdbValue);
     Media::MediaLibraryAppUriSensitiveOperations::HandleInsertOperation(cmd);
+    MEDIA_INFO_LOG("HandleInsertOperationFuzzer end");
 }
 
 static void DeleteOperationFuzzer(string appId, string photoId)
 {
+    MEDIA_INFO_LOG("DeleteOperationFuzzer start");
     DataSharePredicates predicates;
     predicates.And()->EqualTo(Media::AppUriSensitiveColumn::APP_ID, appId);
     predicates.And()->EqualTo(Media::AppUriSensitiveColumn::FILE_ID, photoId);
     NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(predicates,
         Media::AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     Media::MediaLibraryAppUriSensitiveOperations::DeleteOperation(rdbPredicate);
+    MEDIA_INFO_LOG("DeleteOperationFuzzer end");
 }
 
 static void BatchInsertFuzzer()
 {
+    MEDIA_INFO_LOG("BatchInsertFuzzer start");
     vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int32_t i = 0; i < BatchInsertNumber; i++) {
         DataShareValuesBucket value;
@@ -128,10 +137,12 @@ static void BatchInsertFuzzer()
     Media::MediaLibraryCommand cmd(Media::OperationObject::MEDIA_APP_URI_PERMISSION, Media::OperationType::CREATE,
         Media::MediaLibraryApi::API_10);
     Media::MediaLibraryAppUriSensitiveOperations::BatchInsert(cmd, dataShareValues);
+    MEDIA_INFO_LOG("BatchInsertFuzzer end");
 }
 
 static void BeForceSensitiveFuzzer()
 {
+    MEDIA_INFO_LOG("BeForceSensitiveFuzzer start");
     vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int32_t i = 0; i < BatchInsertNumber; i++) {
         DataShareValuesBucket value;
@@ -147,6 +158,38 @@ static void BeForceSensitiveFuzzer()
     Media::MediaLibraryCommand cmd(Media::OperationObject::MEDIA_APP_URI_PERMISSION, Media::OperationType::CREATE,
         Media::MediaLibraryApi::API_10);
     Media::MediaLibraryAppUriSensitiveOperations::BeForceSensitive(cmd, dataShareValues);
+    MEDIA_INFO_LOG("BeForceSensitiveFuzzer end");
+}
+
+static void UpdateSensitiveTypeFuzzer()
+{
+    MEDIA_INFO_LOG("UpdateSensitiveTypeFuzzer start");
+    NativeRdb::RdbPredicates predicates(Media::AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
+    predicates.EqualTo(Media::AppUriSensitiveColumn::ID, ID);
+    predicates.EqualTo(Media::AppUriSensitiveColumn::URI_TYPE, FuzzUriType());
+    std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, {});
+    CHECK_AND_RETURN_LOG(resultSet != nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK, "failed to query");
+
+    int sensitiveType = FuzzHideSensitiveType();
+    Media::MediaLibraryAppUriSensitiveOperations::UpdateSensitiveType(resultSet, sensitiveType);
+    MEDIA_INFO_LOG("UpdateSensitiveTypeFuzzer end");
+}
+
+static void UpdateSensitiveTypeAndForceHideSensitiveFuzzer()
+{
+    MEDIA_INFO_LOG("UpdateSensitiveTypeAndForceHideSensitiveFuzzer start");
+    NativeRdb::RdbPredicates predicates(Media::AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
+    predicates.EqualTo(Media::AppUriSensitiveColumn::ID, ID);
+    predicates.EqualTo(Media::AppUriSensitiveColumn::URI_TYPE, FuzzUriType());
+    std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, {});
+    CHECK_AND_RETURN_LOG(resultSet != nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK, "failed to query");
+
+    int sensitiveType = FuzzHideSensitiveType();
+    OHOS::NativeRdb::ValuesBucket values;
+    values.Put(Media::AppUriSensitiveColumn::IS_FORCE_SENSITIVE, FDP->ConsumeIntegral<int32_t>());
+    Media::MediaLibraryAppUriSensitiveOperations::UpdateSensitiveTypeAndForceHideSensitive(resultSet,
+        sensitiveType, values);
+    MEDIA_INFO_LOG("UpdateSensitiveTypeAndForceHideSensitiveFuzzer end");
 }
 
 static void AppUriSensitiveOperationsFuzzer()
@@ -163,6 +206,8 @@ static void AppUriSensitiveOperationsFuzzer()
     DeleteOperationFuzzer(appId, photoId);
     BatchInsertFuzzer();
     BeForceSensitiveFuzzer();
+    UpdateSensitiveTypeFuzzer();
+    UpdateSensitiveTypeAndForceHideSensitiveFuzzer();
 }
 
 void SetTables()

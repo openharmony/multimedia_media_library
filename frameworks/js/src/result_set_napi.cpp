@@ -219,14 +219,14 @@ static std::shared_ptr<ResultSet> GetInt32AndResultSet(napi_env env, napi_callba
     size_t argc = 1;
     napi_value args[1];
     CHECK_COND_WITH_ERR_MESSAGE(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr) == napi_ok,
-                                UFM_SYSCAP_BASE, "NAPI napi_get_cb_info failed");
-    CHECK_COND_WITH_ERR_MESSAGE(env, napi_get_value_int32(env, args[0], &ret) == napi_ok, UFM_SYSCAP_BASE,
+                                JS_E_INNER_FAIL, "NAPI napi_get_cb_info failed");
+    CHECK_COND_WITH_ERR_MESSAGE(env, napi_get_value_int32(env, args[0], &ret) == napi_ok, JS_E_PARAM_INVALID,
                                 "NAPI napi_get_value_int32 failed");
     ResultSetNapi *obj = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    CHECK_COND_WITH_ERR_MESSAGE(env, status == napi_ok && obj != nullptr, UFM_SYSCAP_BASE, "napi env error");
+    CHECK_COND_WITH_ERR_MESSAGE(env, status == napi_ok && obj != nullptr, JS_E_INNER_FAIL, "NAPI env error");
     std::shared_ptr<ResultSet> rs = obj->resultSetPtr;
-    CHECK_COND_WITH_ERR_MESSAGE(env, rs != nullptr, UFM_SYSCAP_BASE, "ResultSet is null");
+    CHECK_COND_WITH_ERR_MESSAGE(env, rs != nullptr, JS_E_INNER_FAIL, "ResultSet is null");
     return rs;
 }
 
@@ -235,19 +235,19 @@ static ResultSetNapi *GetResultSetNapi(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value thisVar = nullptr;
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
-    CHECK_COND_WITH_ERR_MESSAGE(env, status == napi_ok, UFM_SYSCAP_BASE, "GET_JS_OBJ_WITH_ZERO_ARGS failed");
+    CHECK_COND_WITH_ERR_MESSAGE(env, status == napi_ok, JS_E_INNER_FAIL, "GET_JS_OBJ_WITH_ZERO_ARGS failed");
     ResultSetNapi *obj = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
-    CHECK_COND_WITH_ERR_MESSAGE(env, status == napi_ok && obj != nullptr, UFM_SYSCAP_BASE, "napi_unwrap failed");
+    CHECK_COND_WITH_ERR_MESSAGE(env, status == napi_ok && obj != nullptr, JS_E_INNER_FAIL, "NAPI_unwrap failed");
     return obj;
 }
 
 static std::shared_ptr<ResultSet> GetResultSet(napi_env env, napi_callback_info info)
 {
     ResultSetNapi *obj = GetResultSetNapi(env, info);
-    CHECK_COND_WITH_ERR_MESSAGE(env, obj != nullptr, UFM_SYSCAP_BASE, "ResultSetNapi is nullptr");
+    CHECK_COND_WITH_ERR_MESSAGE(env, obj != nullptr, JS_E_INNER_FAIL, "ResultSetNapi is nullptr");
     std::shared_ptr<ResultSet> rs = obj->resultSetPtr;
-    CHECK_COND_WITH_ERR_MESSAGE(env, rs != nullptr, UFM_SYSCAP_BASE, "ResultSet is nullptr");
+    CHECK_COND_WITH_ERR_MESSAGE(env, rs != nullptr, JS_E_INNER_FAIL, "ResultSet is nullptr");
     return rs;
 }
 
@@ -297,7 +297,7 @@ napi_value ResultSetNapi::ResultSetNapiConstructor(napi_env env, napi_callback_i
 {
     napi_value thisArg;
     CHECK_COND_WITH_ERR_MESSAGE(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisArg, nullptr) == napi_ok,
-                                UFM_SYSCAP_BASE, "Napi env error");
+                                JS_E_INNER_FAIL, "Napi env error");
     return thisArg;
 }
 
@@ -305,26 +305,26 @@ napi_value ResultSetNapi::CreateResultSetNapi(napi_env env, std::shared_ptr<Resu
                                               JSAsyncContextOutput &asyncContext)
 {
     if (resultSet == nullptr) {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, asyncContext.error, UFM_SYSCAP_BASE, "ResultSet is null");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, asyncContext.error, JS_E_INNER_FAIL, "ResultSet is null");
         return nullptr;
     }
     napi_value constructor;
     napi_status status = napi_get_reference_value(env, sResultSetConstructor_, &constructor);
     if (status != napi_ok) {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, asyncContext.error, UFM_SYSCAP_BASE,
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, asyncContext.error, JS_E_INNER_FAIL,
                                                      "Napi env error: Napi_get_reference_value");
         return nullptr;
     }
     napi_value instance;
     status = napi_new_instance(env, constructor, 0, nullptr, &instance);
     if (status != napi_ok) {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, asyncContext.error, UFM_SYSCAP_BASE,
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, asyncContext.error, JS_E_INNER_FAIL,
                                                      "Napi env error: Napi_new_instance");
         return nullptr;
     }
     ResultSetNapi *obj = new ResultSetNapi(resultSet);
     if (obj == nullptr) {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, asyncContext.error, UFM_SYSCAP_BASE,
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, asyncContext.error, JS_E_INNER_FAIL,
                                                      "ResultSetnapi create failed");
         return nullptr;
     }
@@ -332,7 +332,7 @@ napi_value ResultSetNapi::CreateResultSetNapi(napi_env env, std::shared_ptr<Resu
     status = napi_wrap(env, instance, obj, ResultSetNapi::ResultSetNapiDestructor, nullptr, nullptr);
     if (status != napi_ok) {
         delete obj;
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, asyncContext.error, UFM_SYSCAP_BASE, "Napi env error");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, asyncContext.error, JS_E_INNER_FAIL, "Napi env error");
         return nullptr;
     }
     return instance;
@@ -496,6 +496,8 @@ napi_value ResultSetNapi::JSClose(napi_env env, napi_callback_info info)
     ResultSetNapi *obj = GetResultSetNapi(env, info);
     if (obj->resultSetPtr != nullptr) {
         obj->resultSetPtr = move(nullptr);
+    } else {
+        NAPI_WARN_LOG("Resultset is already closed");
     }
     return nullptr;
 }

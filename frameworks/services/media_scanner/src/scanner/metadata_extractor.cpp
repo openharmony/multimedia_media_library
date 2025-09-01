@@ -99,7 +99,7 @@ static time_t convertUTCTimeInformat(const string &timeStr, const string &format
 
     time_t offset = convertOnceTime - convertTwiceTime;
     time_t utcTimeStamp = convertOnceTime + offset;
-    MEDIA_DEBUG_LOG("convertUTCTimeInformat result utcTimeStamp:%{public}ld", static_cast<long>(utcTimeStamp));
+    MEDIA_DEBUG_LOG("convertUTCTimeInformat result utcTimeStamp:%{public}lld", static_cast<long long>(utcTimeStamp));
     return utcTimeStamp;
 }
 
@@ -169,21 +169,42 @@ static void ExtractDetailTimeMetadata(const unique_ptr<ImageSource> &imageSource
     uint32_t err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL, timeString);
     if (err == E_OK && !timeString.empty() && timeString.compare(ZEROTIMESTRING) != 0) {
         data->SetDetailTime(timeString);
-        MEDIA_DEBUG_LOG("Set detail_time from DateTimeOriginal in exif");
+        MEDIA_DEBUG_LOG("Set detail_time:%{public}s from DateTimeOriginal", timeString.c_str());
         return;
     }
+
+    string dateString;
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_DATE_STAMP, dateString);
+    if (err == E_OK && !dateString.empty()) {
+        err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_TIME_STAMP, timeString);
+        string fullTimeString = dateString + " " + timeString;
+        if (err == E_OK && !timeString.empty() && fullTimeString != ZEROTIMESTRING) {
+            string detailTime = PhotoFileUtils::ExtractDetailTimeFromGPS(dateString, timeString);
+            if (!detailTime.empty()) {
+                data->SetDetailTime(detailTime);
+                MEDIA_DEBUG_LOG("Set detail_time:%{public}s from GPS", detailTime.c_str());
+                return;
+            }
+        }
+    }
+
     if (data->GetForAdd()) {
         err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME, timeString);
         if (err == E_OK && !timeString.empty() && timeString.compare(ZEROTIMESTRING) != 0) {
             data->SetDetailTime(timeString);
-            MEDIA_DEBUG_LOG("Set detail_time from DateTime in exif");
+            MEDIA_DEBUG_LOG("Set detail_time:%{public}s from DateTime", timeString.c_str());
             return;
         }
     }
-    if (data->GetDetailTime().empty()) {
+
+    string detailTime = data->GetDetailTime();
+    if (detailTime.empty()) {
         int64_t dateTaken = data->GetDateTaken() / MSEC_TO_SEC;
-        data->SetDetailTime(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken));
+        detailTime = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+        data->SetDetailTime(detailTime);
+        MEDIA_DEBUG_LOG("GetDetailTime is empty, get from dateTaken:%{public}lld", static_cast<long long>(dateTaken));
     }
+    MEDIA_DEBUG_LOG("Set detail_time:%{public}s from dateTaken", detailTime.c_str());
 }
 
 static int64_t GetShootingTimeStampByExif(const unique_ptr<ImageSource> &imageSource)
@@ -204,7 +225,7 @@ static int64_t GetShootingTimeStampByExif(const unique_ptr<ImageSource> &imageSo
         }
         if (timeStamp > 0) {
             SetSubSecondTime(imageSource, PHOTO_DATA_IMAGE_SUBSEC_TIME_ORIGINAL, timeStamp);
-            MEDIA_DEBUG_LOG("OriginalTimeStamp:%{public}ld in exif", static_cast<long>(timeStamp));
+            MEDIA_DEBUG_LOG("OriginalTimeStamp:%{public}lld in exif", static_cast<long long>(timeStamp));
             return timeStamp;
         }
     }
@@ -218,7 +239,7 @@ static int64_t GetShootingTimeStampByExif(const unique_ptr<ImageSource> &imageSo
             timeStamp = convertUTCTimeStrToTimeStamp(fullTimeString) * MSEC_TO_SEC;
             if (timeStamp > 0) {
                 SetSubSecondTime(imageSource, PHOTO_DATA_IMAGE_SUBSEC_TIME_ORIGINAL, timeStamp);
-                MEDIA_DEBUG_LOG("GPSTimeStamp:%{public}ld in exif", static_cast<long>(timeStamp));
+                MEDIA_DEBUG_LOG("GPSTimeStamp:%{public}lld in exif", static_cast<long long>(timeStamp));
                 return timeStamp;
             }
         }
@@ -245,7 +266,7 @@ static int64_t GetModifiedTimeStampByExif(const unique_ptr<ImageSource> &imageSo
         }
         if (timeStamp > 0) {
             SetSubSecondTime(imageSource, PHOTO_DATA_IMAGE_SUBSEC_TIME, timeStamp);
-            MEDIA_DEBUG_LOG("TimeStamp:%{public}ld in exif", static_cast<long>(timeStamp));
+            MEDIA_DEBUG_LOG("TimeStamp:%{public}lld in exif", static_cast<long long>(timeStamp));
             return timeStamp;
         }
     }
@@ -257,14 +278,14 @@ static void ExtractDateTakenMetadata(const unique_ptr<ImageSource> &imageSource,
     int64_t shootingTimeStamp = GetShootingTimeStampByExif(imageSource);
     if (shootingTimeStamp > 0) {
         data->SetDateTaken(shootingTimeStamp);
-        MEDIA_INFO_LOG("forAdd:%{public}d, shootingTimeStamp:%{public}ld",
+        MEDIA_INFO_LOG("forAdd:%{public}d, shootingTimeStamp:%{public}lld",
             data->GetForAdd(),
-            static_cast<long>(shootingTimeStamp));
+            static_cast<long long>(shootingTimeStamp));
         return;
     }
     int64_t dateTaken = data->GetDateTaken();
     if (dateTaken > 0 && !data->GetForAdd()) {
-        MEDIA_WARN_LOG("Set date_taken use old date_taken: %{public}ld", static_cast<long>(dateTaken));
+        MEDIA_WARN_LOG("Set date_taken use old date_taken: %{public}lld", static_cast<long long>(dateTaken));
         return;
     }
     int64_t dateAdded = data->GetFileDateAdded();
@@ -283,12 +304,12 @@ static void ExtractDateTakenMetadata(const unique_ptr<ImageSource> &imageSource,
         dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
     }
     data->SetDateTaken(dateTaken);
-    MEDIA_WARN_LOG("Set date_taken use dateAdded:%{public}ld or dateModified:%{public}ld or "
-                   "modifiedTimeStamp:%{public}ld, dateTaken:%{public}ld",
-        static_cast<long>(dateAdded),
-        static_cast<long>(dateModified),
-        static_cast<long>(modifiedTimeStamp),
-        static_cast<long>(dateTaken));
+    MEDIA_INFO_LOG("Set date_taken use dateAdded:%{public}lld or dateModified:%{public}lld or "
+                   "modifiedTimeStamp:%{public}lld, dateTaken:%{public}lld",
+        static_cast<long long>(dateAdded),
+        static_cast<long long>(dateModified),
+        static_cast<long long>(modifiedTimeStamp),
+        static_cast<long long>(dateTaken));
 }
 
 static string GetCompatibleUserComment(const string& userComment)
@@ -535,7 +556,7 @@ void PopulateAVMetadataDateTaken(
     }
     dateTaken = data->GetDateTaken();
     if (dateTaken > 0 && !data->GetForAdd()) {
-        MEDIA_WARN_LOG("Set date_taken use old date_taken: %{public}ld", static_cast<long>(dateTaken));
+        MEDIA_WARN_LOG("Set date_taken use old date_taken: %{public}lld", static_cast<long long>(dateTaken));
         return;
     }
     int64_t dateAdded = data->GetFileDateAdded();
@@ -550,27 +571,37 @@ void PopulateAVMetadataDateTaken(
         dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
     }
     data->SetDateTaken(dateTaken);
-    MEDIA_WARN_LOG("Set date_taken use dateAdded:%{public}ld or dateModified:%{public}ld, dateTaken:%{public}ld",
-        static_cast<long>(dateAdded),
-        static_cast<long>(dateModified),
-        static_cast<long>(dateTaken));
+    MEDIA_INFO_LOG("Set date_taken use dateAdded:%{public}lld or dateModified:%{public}lld, dateTaken:%{public}lld",
+        static_cast<long long>(dateAdded),
+        static_cast<long long>(dateModified),
+        static_cast<long long>(dateTaken));
 }
 
 void PopulateAVMetadataDetailTime(
     const std::unordered_map<int32_t, std::string> &resultMap, std::unique_ptr<Metadata> &data)
 {
-    string timeStr = resultMap.at(AV_KEY_DATE_TIME_FORMAT);
-    string detailTime = ParseDetailTime(timeStr, "%Y-%m-%d %H:%M:%S");
-    if (!detailTime.empty()) {
-        data->SetDetailTime(detailTime);
-        return;
+    string timeStr = resultMap.at(AV_KEY_DATE_TIME_ISO8601);
+    const string zeroTime = "1970-01-01T00:00:00.000000Z";
+    if (timeStr != zeroTime) {
+        timeStr = resultMap.at(AV_KEY_DATE_TIME_FORMAT);
+        string detailTime = ParseDetailTime(timeStr, "%Y-%m-%d %H:%M:%S");
+        if (!detailTime.empty()) {
+            data->SetDetailTime(detailTime);
+            MEDIA_DEBUG_LOG("Set detail_time:%{public}s from AV_KEY_DATE_TIME_FORMAT", detailTime.c_str());
+            return;
+        }
+    } else {
+        MEDIA_WARN_LOG("zeroTime:%{public}s", timeStr.c_str());
     }
-    detailTime = data->GetDetailTime();
+
+    string detailTime = data->GetDetailTime();
     if (detailTime.empty() || data->GetForAdd()) {
         int64_t dateTaken = data->GetDateTaken() / MSEC_TO_SEC;
         detailTime = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+        MEDIA_DEBUG_LOG("detail_time:%{public}s, forAdd:%{public}d", detailTime.c_str(), data->GetForAdd());
     }
     data->SetDetailTime(detailTime);
+    MEDIA_DEBUG_LOG("Set detail_time:%{public}s from dateTaken", detailTime.c_str());
 }
 
 void PopulateExtractedAVMetadataTwo(

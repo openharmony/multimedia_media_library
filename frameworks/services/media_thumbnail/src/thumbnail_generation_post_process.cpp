@@ -35,33 +35,21 @@ namespace Media {
 int32_t ThumbnailGenerationPostProcess::PostProcess(ThumbnailData& data, const ThumbRdbOpt& opts)
 {
     CHECK_AND_RETURN_RET_INFO_LOG(!data.rdbUpdateCache.IsEmpty(), E_OK, "RdbUpdateCache is empty, no need update.");
-    int32_t err = E_OK;
     bool hasGeneratedThumb = HasGeneratedThumb(data);
-    MEDIA_INFO_LOG("HasGeneratedThumb: %{public}d", hasGeneratedThumb);
-    if (!hasGeneratedThumb) {
-        err = UpdateCachedRdbValue(data, opts);
-        CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
-        data.rdbUpdateCache.Clear();
-        return E_OK;
+    MEDIA_INFO_LOG("HasGeneratedThumb: %{public}d id: %{public}s, path: %{public}s",
+        hasGeneratedThumb, data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    int32_t err = hasGeneratedThumb ? UpdateCachedRdbValueAndNotify(data, opts) : UpdateCachedRdbValue(data, opts);
+    if (err == E_RDB_UPDATE_NO_ROWS_CHANGED || err == E_RDB_QUERY_NO_RES) {
+        auto deleteRes = ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data);
+        MEDIA_ERR_LOG("There is no such id: %{public}s path: %{public}s in the db,"
+            " the corresponding thumb needs to be deleted. err: %{public}d, deleteRes: %{public}d",
+            data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), err, deleteRes);
+        return err;
     }
 
-    // 必须在更新数据库前获取通知类型
-    NotifyType notifyType;
-    err = GetNotifyType(data, opts, notifyType);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GetNotifyType failed. err: %{public}d", err);
-
-    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::THUMBNAIL_GENERATION_BUSSINESS_NAME);
-    int32_t changedRows;
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, data.id);
-    auto ret = assetRefresh.Update(changedRows, data.rdbUpdateCache, predicates);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "AssetRefresh.Update failed. err: %{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Update failed. err: %{public}d id: %{public}s path: %{public}s",
+        err, data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
     data.rdbUpdateCache.Clear();
-    ret = assetRefresh.Notify();
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Notify failed. err: %{public}d", ret);
-
-    err = Notify(data, notifyType);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Notify failed. err: %{public}d", err);
     return E_OK;
 }
 
@@ -78,8 +66,35 @@ int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValue(ThumbnailData& data
         data.rdbUpdateCache, MEDIA_DATA_DB_ID + " = ?", { data.id });
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. table: %{public}s, err: %{public}d",
         photosTable.c_str(), err);
-    CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_ERR, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
-        data.id.c_str(), ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data));
+    CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_RDB_UPDATE_NO_ROWS_CHANGED,
+        "No such id: %{public}s in db. changedRows: %{public}d", data.id.c_str(), changedRows);
+    return E_OK;
+}
+
+int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValueAndNotify(ThumbnailData& data, const ThumbRdbOpt& opts)
+{
+    // 必须在更新数据库前获取通知类型
+    NotifyType notifyType;
+    int32_t err = GetNotifyType(data, opts, notifyType);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GetNotifyType failed. err: %{public}d", err);
+
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::THUMBNAIL_GENERATION_BUSSINESS_NAME);
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, data.id);
+    MediaLibraryTracer tracer;
+    tracer.Start("ThumbnailGenerationPostProcess assetRefresh.Update id: " + data.id);
+    int32_t changedRows;
+    err = assetRefresh.Update(changedRows, data.rdbUpdateCache, predicates);
+    tracer.Finish();
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "AssetRefresh.Update failed. err: %{public}d", err);
+    CHECK_AND_RETURN_RET_LOG(changedRows > 0, E_RDB_UPDATE_NO_ROWS_CHANGED,
+        "AssetRefresh.Update falied changedRows: %{public}d", changedRows);
+    err = assetRefresh.Notify();
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "AssetRefresh.Notify failed. err: %{public}d", err);
+
+    err = Notify(data, notifyType);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Notify failed. err: %{public}d", err);
+
     return E_OK;
 }
 
@@ -108,8 +123,14 @@ int32_t ThumbnailGenerationPostProcess::GetNotifyType(const ThumbnailData& data,
 
     auto resultSet = opts.store->QueryByStep(rdbPredicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "QueryByStep() result is null");
-    auto ret = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "ResultSet->GoToFirstRow() failed");
+    int32_t rowsCount = 0;
+    auto ret = resultSet->GetRowCount(rowsCount);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "ResultSet->GetRowCount err: %{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(rowsCount > 0, E_RDB_QUERY_NO_RES,
+        "There is no such id: %{public}s path: %{public}s in the db",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    ret = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "ResultSet->GoToFirstRow() err: %{public}d", ret);
     int32_t thumbnailVisible = GetInt32Val(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, resultSet);
 
     notifyType = thumbnailVisible > 0 ? NotifyType::NOTIFY_THUMB_UPDATE : NotifyType::NOTIFY_THUMB_ADD;

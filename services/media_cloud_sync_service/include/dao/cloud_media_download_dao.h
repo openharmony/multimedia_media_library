@@ -44,6 +44,7 @@ public:
     int32_t UpdateDownloadAssetExifRotateFix(
         std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh,
         const int32_t fileId, const int32_t exifRotate, const DirtyTypes dirtyType, bool needRegenerateThumbnail);
+    int32_t UpdateTransCodeInfo(const std::string &path);
 
 private:
     NativeRdb::AbsRdbPredicates GetDownloadThmsConditions(const int32_t type);

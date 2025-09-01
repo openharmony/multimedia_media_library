@@ -57,6 +57,7 @@ private:
     const int32_t WAIT_INTERVAL = 5;
     std::atomic<bool> isThreadPending_ = false;
     std::atomic<bool> isSyncStopped_ = false;
+    std::atomic<int32_t> runningThreadNum_ = 0;
 
     /* sync switch */
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;

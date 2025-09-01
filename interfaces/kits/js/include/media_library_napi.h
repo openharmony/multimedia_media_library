@@ -347,6 +347,7 @@ private:
     EXPORT static napi_value PhotoAccessGetPhotoAlbumOrder(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessSetPhotoAlbumOrder(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessQuery(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CanSupportedCompatibleDuplicate(napi_env env, napi_callback_info info);
     
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
@@ -363,6 +364,7 @@ private:
     EXPORT static napi_value CreateAuthorizationModeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightAlbumInfoTypeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightUserActionTypeEnum(napi_env env);
+    EXPORT static napi_value CreateHighlightAlbumChangeAttributeEnum(napi_env env);
     EXPORT static napi_value CreateMovingPhotoEffectModeEnum(napi_env env);
     EXPORT static napi_value CreateImageFileTypeEnum(napi_env env);
     EXPORT static napi_value CreateCloudEnhancementTaskStageEnum(napi_env env);
@@ -443,6 +445,7 @@ private:
     static thread_local napi_ref sCompatibleModeEnumRef_;
     static thread_local napi_ref sHighlightAlbumInfoType_;
     static thread_local napi_ref sHighlightUserActionType_;
+    static thread_local napi_ref sHighlightAlbumChangeAttributeEnumRef_;
     static thread_local napi_ref sMovingPhotoEffectModeEnumRef_;
     static thread_local napi_ref sImageFileTypeEnumEnumRef_;
     static thread_local napi_ref sCloudEnhancementTaskStageEnumRef_;
@@ -550,6 +553,8 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t photoAlbumType;
     int32_t photoAlbumSubType;
     int32_t orderStyle = 0;
+    std::string bundleName;
+    bool canSupportedCompatibleDuplicate = false;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

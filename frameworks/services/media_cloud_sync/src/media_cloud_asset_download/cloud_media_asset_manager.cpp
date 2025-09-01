@@ -202,12 +202,6 @@ static void WaitIfBackUpingOrRestoring()
         FORCE_RETAIN_CLOUD_MEDIA_WAIT_BACKUP_TIMEOUT_SECOND, "db backup");
 }
 
-enum class SouthDeviceType : int32_t {
-    SOUTH_DEVICE_NULL = 0,
-    SOUTH_DEVICE_CLOUD = 1,
-    SOUTH_DEVICE_HDC = 2
-};
-
 CloudMediaAssetManager& CloudMediaAssetManager::GetInstance()
 {
     static CloudMediaAssetManager instance;

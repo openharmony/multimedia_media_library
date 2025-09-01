@@ -1003,10 +1003,18 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
     int64_t startMoveAndModifyFile = MediaFileUtils::UTCTimeMilliSeconds();
     for (size_t i = 0; i < fileInfos.size(); i++) {
         CHECK_AND_CONTINUE(fileInfos[i].needMove);
-        CHECK_AND_CONTINUE(IsFileValid(fileInfos[i], sceneCode) == E_OK);
+
+        if (IsFileValid(fileInfos[i], sceneCode) != E_OK) {
+            fileInfos[i].needVisible = false;
+            fileInfos[i].needMove = false;
+            MEDIA_ERR_LOG("File is not visible");
+            continue;
+        }
+
         if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
             fileInfos[i].needUpdate = false;
             fileInfos[i].needVisible = false;
+            fileInfos[i].needMove = false;
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i], RestoreError::MOVE_FAILED);
             ErrorInfo errorInfo(RestoreError::MOVE_FAILED, 1, "",
                 BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i]));
@@ -1095,6 +1103,7 @@ void BaseRestore::HandleFailData(std::vector<FileInfo> &fileInfos, std::vector<s
         if (find(failCloudIds.begin(), failCloudIds.end(), iteration->uniqueId) != failCloudIds.end()) {
             dentryFailedData.push_back(iteration->cloudPath);
             iteration->needVisible = false;
+            iteration->needMove = false;
             UpdateFailedFiles(iteration->fileType, *iteration, RestoreError::INSERT_FAILED);
             if (fileType == DENTRY_INFO_ORIGIN) {
                 iteration = fileInfos.erase(iteration);

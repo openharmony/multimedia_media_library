@@ -150,6 +150,8 @@ const std::map<uint32_t, int64_t> DfxTimer::operationCodeTimeoutMap = {
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_ORIENTATION), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_VIDEO_ENHANCEMENT_ATTR), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUPPORTED_WATERMARK_TYPE), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_HAS_APPLINK), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_APPLINK), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ASSETS), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_BURST_ASSETS), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::FIND_ALL_DUPLICATE_ASSETS), 200},
@@ -205,6 +207,7 @@ const std::map<uint32_t, int64_t> DfxTimer::operationCodeTimeoutMap = {
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_RETAIN_CLOUDMEDIA_ASSET), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_PAH_QUERY_PHOTO_ALBUMS), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_PAH_QUERY_GET_ALBUMS_BY_IDS), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_HIGHLIGHT_ATTRIBUTE), 200},
 };
 
 int64_t DfxTimer::GetOperationCodeTimeout(uint32_t operationCode)

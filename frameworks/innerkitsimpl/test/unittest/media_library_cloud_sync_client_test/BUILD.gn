@@ -53,6 +53,7 @@ ohos_unittest("media_library_cloud_sync_client_test") {
   sources = [
     "./src/media_library_cloud_sync_handler_test.cpp",
     "./src/medi_library_cloud_data_client_test.cpp",
+    "./src/media_library_cloud_data_client_inner_api_test.cpp",
   ]
 
   deps = [

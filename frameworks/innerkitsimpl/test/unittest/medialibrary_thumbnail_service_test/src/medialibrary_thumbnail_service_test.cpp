@@ -38,6 +38,7 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static constexpr int32_t SLEEP_FIVE_MINUTES = 5 * 60;
 class ConfigTestOpenCall : public NativeRdb::RdbOpenCallback {
 public:
     int OnCreate(NativeRdb::RdbStore &rdbStore) override;
@@ -1275,6 +1276,33 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_018, T
     int count = 0;
     auto res = ThumbnailGenerateHelper::GetNewThumbnailCount(opts, time, count);
     EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_020, TestSize.Level1)
+{
+    bool isScreenOn = false;
+    EXPECT_NO_FATAL_FAILURE(ThumbnailGenerateHelper::CheckAndReportRestoreThumbnailProgress(isScreenOn, 1));
+
+    isScreenOn = true;
+    EXPECT_NO_FATAL_FAILURE(ThumbnailGenerateHelper::CheckAndReportRestoreThumbnailProgress(isScreenOn, 1));
+
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_MINUTES));
+
+    EXPECT_NO_FATAL_FAILURE(ThumbnailGenerateHelper::CheckAndReportRestoreThumbnailProgress(isScreenOn, 1, 2, 1));
+
+    EXPECT_NO_FATAL_FAILURE(ThumbnailGenerateHelper::CheckAndReportRestoreThumbnailProgress(isScreenOn, 0));
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_021, TestSize.Level1)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData thumbData;
+    int32_t requestId = 1;
+    std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, thumbData, requestId);
+    EXPECT_NO_FATAL_FAILURE(ThumbnailGenerateHelper::RestoreAstcDualFrameTask(taskData));
+
+    std::shared_ptr<ThumbnailTaskData> data;
+    EXPECT_NO_FATAL_FAILURE(ThumbnailGenerateHelper::RestoreAstcDualFrameTask(data));
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_031, TestSize.Level1)

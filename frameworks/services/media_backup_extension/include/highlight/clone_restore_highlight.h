@@ -141,6 +141,8 @@ private:
         std::optional<int64_t> pinTime;
         std::optional<int32_t> useSubtitle;
         std::optional<std::string> highlightLocation;
+        std::optional<int32_t> isViewed = 1;
+        std::optional<int64_t> notificationTime;
 
         std::string ToString() const
         {

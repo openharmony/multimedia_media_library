@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <string>
+#include <fuzzer/FuzzedDataProvider.h>
 
 #define private public
 #include "cloud_upload_checker.h"
@@ -27,77 +28,60 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_kvstore_manager.h"
 
 namespace OHOS {
 using namespace std;
 using namespace AbilityRuntime;
 static const string PHOTOS_TABLE = "Photos";
 static const int32_t E_ERR = -1;
+static const int32_t NUM_BYTES = 1;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
-static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int32_t)) {
-        return 0;
-    }
-    return static_cast<int32_t>(*data);
-}
+FuzzedDataProvider *provider;
 
-static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
+static int32_t InsertPhotoAsset()
 {
-    if (data == nullptr || size < sizeof(int64_t)) {
-        return 0;
-    }
-    return static_cast<int64_t>(*data);
-}
-
-static inline string FuzzString(const uint8_t *data, size_t size)
-{
-    return {reinterpret_cast<const char*>(data), size};
-}
-
-static int32_t InsertPhotoAsset(const uint8_t *data, size_t size)
-{
-    if (g_rdbStore == nullptr || data == nullptr || size < sizeof(int32_t) + sizeof(int64_t)) {
+    if (g_rdbStore == nullptr) {
         return E_ERR;
     }
-    int offset = 0;
     NativeRdb::ValuesBucket values;
-    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
-    values.PutInt(Media::PhotoColumn::PHOTO_DIRTY, FuzzInt32(data + offset, size));
-    offset += sizeof(int64_t);
-    values.PutLong(Media::MediaColumn::MEDIA_SIZE, FuzzInt64(data + offset, size));
+    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, provider->ConsumeBytesAsString(NUM_BYTES));
+    values.PutInt(Media::PhotoColumn::PHOTO_DIRTY, provider->ConsumeIntegral<int32_t>());
+    values.PutLong(Media::MediaColumn::MEDIA_SIZE, provider->ConsumeIntegral<int64_t>());
     int64_t fileId = 0;
     g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
     return static_cast<int32_t>(fileId);
 }
 
-static Media::CheckedPhotoInfo FuzzCheckedPhotoInfo(const uint8_t *data, size_t size)
+static Media::CheckedPhotoInfo FuzzCheckedPhotoInfo()
 {
     Media::CheckedPhotoInfo checkedPhotoInfo = {
-        .fileId = InsertPhotoAsset(data, size),
-        .path = FuzzString(data, size)
+        .fileId = InsertPhotoAsset(),
+        .path = provider->ConsumeBytesAsString(NUM_BYTES)
     };
     return checkedPhotoInfo;
 }
 
-static vector<Media::CheckedPhotoInfo> FuzzVectorCheckedPhotoInfo(const uint8_t *data, size_t size)
+static vector<Media::CheckedPhotoInfo> FuzzVectorCheckedPhotoInfo()
 {
-    return {FuzzCheckedPhotoInfo(data, size)};
+    return {FuzzCheckedPhotoInfo()};
 }
 
-static void RepairNoOriginPhotoTest(const uint8_t *data, size_t size)
+static void RepairNoOriginPhotoTest()
 {
-    Media::CloudUploadChecker::QueryLcdPhotoCount(FuzzInt32(data, size));
-    int32_t startFileId = InsertPhotoAsset(data, size);
+    MEDIA_INFO_LOG("RepairNoOriginPhotoTest start");
+    Media::CloudUploadChecker::QueryLcdPhotoCount(provider->ConsumeIntegral<int32_t>());
+    int32_t startFileId = InsertPhotoAsset();
     int32_t curFileId = -1;
     Media::CloudUploadChecker::QueryPhotoInfo(startFileId);
-    Media::CloudUploadChecker::HandlePhotoInfos(FuzzVectorCheckedPhotoInfo(data, size), curFileId);
+    Media::CloudUploadChecker::HandlePhotoInfos(FuzzVectorCheckedPhotoInfo(), curFileId);
     Media::CloudUploadChecker::RepairNoOriginPhoto();
+    MEDIA_INFO_LOG("RepairNoOriginPhotoTest end");
 }
 
-static void CloudUploadCheckerTest(const uint8_t *data, size_t size)
+static void CloudUploadCheckerTest()
 {
-    RepairNoOriginPhotoTest(data, size);
+    RepairNoOriginPhotoTest();
 }
 
 void SetTables()
@@ -132,6 +116,11 @@ static void Init()
     g_rdbStore = rdbStore;
     SetTables();
 }
+
+static inline void ClearKvStore()
+{
+    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
+}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -142,6 +131,12 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    OHOS::CloudUploadCheckerTest(data, size);
+    FuzzedDataProvider fdp(data, size);
+    OHOS::provider = &fdp;
+    if (data == nullptr) {
+        return 0;
+    }
+    OHOS::CloudUploadCheckerTest();
+    OHOS::ClearKvStore();
     return 0;
 }

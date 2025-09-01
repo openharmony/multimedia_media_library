@@ -17,6 +17,8 @@
 
 #include "photo_file_utils.h"
 
+#include <regex>
+
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
@@ -64,6 +66,15 @@ string PhotoFileUtils::GetEditDataCameraPath(const string& photoPath, int32_t us
         return "";
     }
     return parentPath + "/editdata_camera";
+}
+
+string PhotoFileUtils::GetTransCodePath(const string& photoPath, int32_t userId)
+{
+    string parentPath = GetEditDataDir(photoPath, userId);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/transcode.jpg";
 }
 
 string PhotoFileUtils::GetEditDataSourcePath(const string& photoPath, int32_t userId)
@@ -218,5 +229,25 @@ std::tuple<std::string, std::string, std::string> PhotoFileUtils::ExtractYearMon
     }
 
     return std::make_tuple(year, year + month, year + month + day);
+}
+
+string PhotoFileUtils::ExtractDetailTimeFromGPS(const string &gpsDate, const string &gpsTime)
+{
+    static const regex datePattern(R"(^\d{4}:\d{2}:\d{2}$)");
+    if (!regex_match(gpsDate, datePattern)) {
+        MEDIA_ERR_LOG("invalid gpsDate: %{public}s", gpsDate.c_str());
+        return "";
+    }
+
+    static const regex timePattern(R"(^\d{2}:\d{2}:\d{2}(\.\d+)?$)");
+    if (!regex_match(gpsTime, timePattern)) {
+        MEDIA_ERR_LOG("invalid gpsTime: %{public}s", gpsTime.c_str());
+        return "";
+    }
+
+    size_t dotPos = gpsTime.find(".");
+    string timePart = (dotPos != string::npos) ? gpsTime.substr(0, dotPos) : gpsTime;
+
+    return gpsDate + " " + timePart;
 }
 } // namespace OHOS::Media

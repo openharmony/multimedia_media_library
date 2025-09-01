@@ -259,3 +259,21 @@ MEDIALIB_MTP_PTP_SEND_RESPONSE:
   OPERATION_RESULT: { type: INT32, desc: Operation result }
   OPERATION_COST_TIME: { type: UINT64, desc: Operation time consumption }
   OPERATION_MODE : { type: INT32, desc: operating mode read or write }
+
+MEDIALIB_HEIF_AGING:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: Charging and screen-off trigger aging business successfully, preserve: true }
+  TRANSCODE_FILE_NUM: { type: UINT32, desc: Number of files that have been transcoded }
+  TRANSCODE_TOTAL_SIZE: { type: UINT64, desc: Transcoded files occupy space }
+  AGING_FILE_NUM: { type: UINT32, desc: Number of files aged this time }
+  AGING_TOTAL_SIZE: { type: UINT64, desc: Storage size of this aging file }
+
+MEDIALIB_HEIF_ACCESS_STAT:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: 24-hour cycle check-in, preserve: true }
+  TRANSCODE_ACCESS_TIMES: { type: INT32, desc: Number of uses of transcoded files }
+  TRANSCODE_ACCESS_MEDIALIB: { type: INT32, desc: Number of accesses through the media library }
+  TRANSCODE_ACCESS_LIBC: { type: INT32, desc: Number of accesses through libc }
+  TRANSCODE_AVG_TIME: { type: INT32, desc: The average time for transcoding }
+  TRANSCODE_TIMES: { type: INT32, desc: Trigger transcoding frequency }
+  TRANSCODE_FAILED_TIMES: { type: INT32, desc: Total number of failures }
+  INNER_FAILED_TIMES: { type: INT32, desc: Number of failures due to internal errors }
+  CODEC_FAILED_TIMES: { type: INT32, desc: Codec error failure count }

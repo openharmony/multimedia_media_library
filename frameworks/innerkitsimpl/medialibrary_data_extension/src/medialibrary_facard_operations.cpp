@@ -281,6 +281,7 @@ void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
             MEDIA_ERR_LOG("observer->assetChangeUri is null");
             return;
         }
+        MEDIA_DEBUG_LOG("UnregisterObserver assetChangeUri is:%{public}s", (observer->assetChangeUri).c_str());
         Uri notifyUri(observer->assetChangeUri);
         dataShareHelper->UnregisterObserverExt(notifyUri,
             std::static_pointer_cast<DataShare::DataShareObserver>(observer));
@@ -310,6 +311,8 @@ void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
             MEDIA_ERR_LOG("observer->cloudSyncChangeUri is null");
             return;
         }
+        MEDIA_DEBUG_LOG("UnregisterObserver cloudSyncChangeUri is:%{public}s",
+            (observer->cloudSyncChangeUri).c_str());
         Uri notifyUri(observer->cloudSyncChangeUri);
         dataShareHelper->UnregisterObserver(notifyUri, observer);
     }

@@ -77,6 +77,8 @@ static const std::map<int32_t, struct HighlightAlbumInfo> HIGHLIGHT_ALBUM_INFO_M
         HIGHLIGHT_IS_MUTED, HIGHLIGHT_IS_FAVORITE, HIGHLIGHT_THEME, HIGHLIGHT_PIN_TIME, HIGHLIGHT_USE_SUBTITLE } } },
     { PLAY_INFO, { PAH_QUERY_HIGHLIGHT_PLAY, { ID, HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
         MUSIC, FILTER, HIGHLIGHT_PLAY_INFO, IS_CHOSEN, PLAY_INFO_VERSION, PLAY_INFO_ID } } },
+    { ALBUM_INFO, { PAH_QUERY_HIGHLIGHT_ALBUM, {ID, HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
+        HIGHLIGHT_STATUS, HIGHLIGHT_IS_VIEWED, HIGHLIGHT_NOTIFICATION_TIME } } },
 };
 
 MediaAlbumsService &MediaAlbumsService::GetInstance()
@@ -573,6 +575,8 @@ static void GenerateAnalysisCmd(MediaLibraryCommand &cmd,
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+    cmd.GetAbsRdbPredicates()->Limit(rdbPredicate.GetLimit());
+    cmd.GetAbsRdbPredicates()->Offset(rdbPredicate.GetOffset());
 }
 
 int32_t MediaAlbumsService::QueryAlbums(QueryAlbumsDto &dto)
@@ -821,7 +825,7 @@ int32_t MediaAlbumsService::GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqB
     if (HIGHLIGHT_ALBUM_INFO_MAP.find(reqBody.highlightAlbumInfoType) != HIGHLIGHT_ALBUM_INFO_MAP.end()) {
         columns = HIGHLIGHT_ALBUM_INFO_MAP.at(reqBody.highlightAlbumInfoType).fetchColumn;
         string tabStr;
-        if (reqBody.highlightAlbumInfoType == COVER_INFO) {
+        if (reqBody.highlightAlbumInfoType == COVER_INFO || reqBody.highlightAlbumInfoType == ALBUM_INFO) {
             tabStr = HIGHLIGHT_COVER_INFO_TABLE;
         } else {
             tabStr = HIGHLIGHT_PLAY_INFO_TABLE;
@@ -847,7 +851,8 @@ int32_t MediaAlbumsService::GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqB
     }
 
     std::string tableName = "";
-    if (reqBody.highlightAlbumInfoType == static_cast<int32_t>(HighlightAlbumInfoType::COVER_INFO)) {
+    if (reqBody.highlightAlbumInfoType == static_cast<int32_t>(HighlightAlbumInfoType::COVER_INFO) ||
+        reqBody.highlightAlbumInfoType == static_cast<int32_t>(HighlightAlbumInfoType::ALBUM_INFO)) {
         tableName = HIGHLIGHT_COVER_INFO_TABLE;
     } else if (reqBody.highlightAlbumInfoType == static_cast<int32_t>(HighlightAlbumInfoType::PLAY_INFO)) {
         tableName = HIGHLIGHT_PLAY_INFO_TABLE;
@@ -1175,6 +1180,16 @@ int32_t MediaAlbumsService::QueryAlbumsLpaths(QueryAlbumsDto &dto)
     auto bridge = RdbUtils::ToResultSetBridge(resultSet);
     dto.resultSet = make_shared<DataShare::DataShareResultSet>(bridge);
     MEDIA_DEBUG_LOG("MediaAlbumsService::QueryAlbumsLpaths End");
+    return E_OK;
+}
+
+int32_t MediaAlbumsService::ChangeRequestSetHighlightAttribute(ChangeRequestSetHighlightAttributeDto &dto)
+{
+    MEDIA_DEBUG_LOG("MediaAlbumsService::ChangeRequestSetHighlightAttribute Start");
+    int32_t ret = MediaLibraryAnalysisAlbumOperations::SetHighlightAttribute(dto.albumId,
+        dto.highlightAlbumChangeAttribute, dto.highlightAlbumChangeAttributeValue);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret,
+        "ChangeRequestSetHighlightAttribute failed, error id: %{public}d", ret);
     return E_OK;
 }
 } // namespace OHOS::Media

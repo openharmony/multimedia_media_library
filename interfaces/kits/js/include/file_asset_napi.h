@@ -156,6 +156,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperCommitEditedAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperRevertToOriginal(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetEditData(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperCreateTmpCompatibleDup(napi_env env, napi_callback_info info);
     static napi_value GetExports(napi_env &env, napi_value &exports, napi_property_descriptor *file_asset_props,
         int32_t fileAssetPropsSize);
 

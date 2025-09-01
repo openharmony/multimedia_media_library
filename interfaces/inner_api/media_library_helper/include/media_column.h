@@ -44,6 +44,19 @@ enum class ExtraChangeType : uint32_t {
     PHOTO_TIME_UPDATE = 100
 };
 
+enum class SouthDeviceType : int32_t {
+    SOUTH_DEVICE_NULL = 0,
+    SOUTH_DEVICE_CLOUD = 1,
+    SOUTH_DEVICE_HDC = 2
+};
+
+const std::unordered_map<int32_t, SouthDeviceType> INT_SOUTH_DEVICE_TYPE_MAP = {
+    {static_cast<int>(SouthDeviceType::SOUTH_DEVICE_NULL), SouthDeviceType::SOUTH_DEVICE_NULL},
+    {static_cast<int>(SouthDeviceType::SOUTH_DEVICE_CLOUD), SouthDeviceType::SOUTH_DEVICE_CLOUD},
+    {static_cast<int>(SouthDeviceType::SOUTH_DEVICE_HDC), SouthDeviceType::SOUTH_DEVICE_HDC},
+};
+
+
 class MediaColumn {
 public:
     // Asset Base Parameter
@@ -146,7 +159,12 @@ public:
     static const std::string PHOTO_REAL_LCD_VISIT_TIME EXPORT;
     static const std::string PHOTO_VISIT_COUNT EXPORT;
     static const std::string PHOTO_LCD_VISIT_COUNT EXPORT;
+    static const std::string PHOTO_TRANSCODE_TIME EXPORT;
+    static const std::string PHOTO_TRANS_CODE_FILE_SIZE EXPORT;
+    static const std::string PHOTO_EXIST_COMPATIBLE_DUPLICATE EXPORT;
     static const std::string PHOTO_IS_RECENT_SHOW EXPORT;
+    static const std::string PHOTO_HAS_APPLINK EXPORT;
+    static const std::string PHOTO_APPLINK EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;

@@ -65,6 +65,7 @@ public:
     EXPORT int32_t GetAlbumsLpathByIds(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SetRelationship(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetRelationship(MessageParcel &data, MessageParcel &reply);
+    int32_t ChangeRequestSetHighlightAttribute(MessageParcel &data, MessageParcel &reply);
 public:
     virtual ~MediaAlbumsControllerService() = default;
     bool Accept(uint32_t code) override;

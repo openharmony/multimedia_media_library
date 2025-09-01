@@ -180,6 +180,11 @@ int32_t AlbumAccurateRefresh::DeleteCommon(function<int32_t(ValuesBucket&)> upda
     return ACCURATE_REFRESH_RET_OK;
 }
 
+void AlbumAccurateRefresh::ClearChangeInfos()
+{
+    dataManager_.ClearChangeInfos();
+}
+
 bool AlbumAccurateRefresh::IsValidTable(std::string tableName)
 {
     return PhotoAlbumColumns::TABLE == tableName;
@@ -250,6 +255,11 @@ void AlbumAccurateRefresh::NotifyAlbumsCoverChange(string &fileId, vector<int32_
         }
     }
     Notify(albumChangeDatas);
+}
+
+vector<AlbumChangeData> AlbumAccurateRefresh::GetAlbumChangeDatas()
+{
+    return dataManager_.GetChangeDatas();
 }
 
 } // namespace Media

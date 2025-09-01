@@ -116,6 +116,7 @@
 #include "get_photo_album_object_vo.h"
 #include "set_photo_album_order_vo.h"
 #include "result_set_napi.h"
+#include "heif_transcoding_check_vo.h"
 
 #include "parcel.h"
 #include "medialibrary_notify_utils.h"
@@ -255,6 +256,7 @@ thread_local napi_ref MediaLibraryNapi::sRequestPhotoTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sResourceTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHighlightAlbumInfoType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHighlightUserActionType_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sHighlightAlbumChangeAttributeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMovingPhotoEffectModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sImageFileTypeEnumEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCloudEnhancementTaskStageEnumRef_ = nullptr;
@@ -436,6 +438,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getPhotoAlbums", PhotoAccessGetPhotoAlbumsWithoutSubtype),
             DECLARE_NAPI_FUNCTION("getPhotoAlbumOrder", PhotoAccessGetPhotoAlbumOrder),
             DECLARE_NAPI_FUNCTION("setPhotoAlbumOrder", PhotoAccessSetPhotoAlbumOrder),
+            DECLARE_NAPI_FUNCTION("isCompatibleDuplicateSupported", CanSupportedCompatibleDuplicate),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -470,6 +473,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("CompatibleMode", CreateCompatibleModeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightAlbumInfoType", CreateHighlightAlbumInfoTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightUserActionType", CreateHighlightUserActionTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("HighlightAlbumChangeAttribute", CreateHighlightAlbumChangeAttributeEnum(env)),
         DECLARE_NAPI_PROPERTY("MovingPhotoEffectMode", CreateMovingPhotoEffectModeEnum(env)),
         DECLARE_NAPI_PROPERTY("ImageFileType", CreateImageFileTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("CloudEnhancementTaskStage", CreateCloudEnhancementTaskStageEnum(env)),
@@ -8032,6 +8036,7 @@ napi_value MediaLibraryNapi::CreateHighlightAlbumInfoTypeEnum(napi_env env)
     struct AnalysisProperty property[] = {
         { "COVER_INFO", HighlightAlbumInfoType::COVER_INFO },
         { "PLAY_INFO", HighlightAlbumInfoType::PLAY_INFO },
+        { "ALBUM_INFO", HighlightAlbumInfoType::ALBUM_INFO },
     };
 
     napi_value result = nullptr;
@@ -8070,6 +8075,27 @@ napi_value MediaLibraryNapi::CreateHighlightUserActionTypeEnum(napi_env env)
     }
 
     CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sHighlightAlbumInfoType_), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value MediaLibraryNapi::CreateHighlightAlbumChangeAttributeEnum(napi_env env)
+{
+    struct AnalysisProperty property[] = {
+        { "IS_VIEWED", HighlightAlbumChangeAttribute::IS_VIEWED },
+        { "NOTIFICATION_TIME", HighlightAlbumChangeAttribute::NOTIFICATION_TIME },
+        { "IS_FAVORITE", HighlightAlbumChangeAttribute::IS_FAVORITE },
+    };
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_create_object(env, &result), JS_E_INNER_FAIL);
+
+    for (uint32_t i = 0; i < sizeof(property) / sizeof(property[0]); i++) {
+        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, property[i].enumName, property[i].enumValue),
+            JS_E_INNER_FAIL);
+    }
+
+    CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT,
+        &sHighlightAlbumChangeAttributeEnumRef_), JS_E_INNER_FAIL);
     return result;
 }
 
@@ -9576,6 +9602,7 @@ static void PhotoAccessQueryExecute(napi_env env, void *data)
     tracer.Start("PhotoAccessQueryExecute");
     auto *context = static_cast<ResultSetAsyncContext *>(data);
     if (context == nullptr) {
+        NAPI_ERR_LOG("Execute context is nullptr");
         return;
     }
     context->queryRet = UserFileClient::QueryByStep(context->uri);
@@ -9602,19 +9629,16 @@ static void PhotoAccessQueryCompleteCallback(napi_env env, napi_status status, v
     jsContext->status = false;
     status = napi_get_undefined(env, &jsContext->data);
     if (status != napi_ok) {
-        NAPI_INFO_LOG("Napi env error");
+        NAPI_ERR_LOG("Napi env error");
         return;
     }
     napi_get_undefined(env, &jsContext->error);
-    napi_value errorObj;
-    napi_create_object(env, &errorObj);
     auto *context = static_cast<ResultSetAsyncContext *>(data);
     if (context != nullptr) {
         if (context->error == ERR_DEFAULT && context->queryRet != nullptr) {
             jsContext->data = ResultSetNapi::CreateResultSetNapi(env, context->queryRet, *jsContext);
             if (jsContext->data == nullptr) {
-                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, UFM_SYSCAP_BASE,
-                                                             "CreateResultSet failed");
+                NAPI_ERR_LOG("CreateResultSetNapi failed");
             } else {
                 jsContext->status = true;
                 context->queryRet = nullptr;
@@ -9623,7 +9647,8 @@ static void PhotoAccessQueryCompleteCallback(napi_env env, napi_status status, v
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error, context->errorMsg);
         }
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, UFM_SYSCAP_BASE, "AsyncContext is nullptr");
+        NAPI_ERR_LOG("Callback context is nullptr");
+        return;
     }
     tracer.Finish();
     if (context->work != nullptr) {
@@ -9641,7 +9666,7 @@ napi_value MediaLibraryNapi::PhotoAccessQuery(napi_env env, napi_callback_info i
     unique_ptr<ResultSetAsyncContext> asyncContext = make_unique<ResultSetAsyncContext>();
     CHECK_COND_WITH_ERR_MESSAGE(
         env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri) == napi_ok,
-        UFM_SYSCAP_BASE, "Failed to get resourceUrl from arguments or wrong param");
+        JS_E_PARAM_INVALID, "Failed to get resourceUrl from arguments or wrong param");
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessQuery", PhotoAccessQueryExecute,
                                                       PhotoAccessQueryCompleteCallback);
 }
@@ -11815,6 +11840,83 @@ napi_value MediaLibraryNapi::PhotoAccessSetPhotoAlbumOrder(napi_env env, napi_ca
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "SetPhotoAlbumOrder",
         JSSetPhotoAlbumOrderExecute, JSSetAlbumOrderCompleteCallback);
+}
+
+static napi_value ParseArgsCanSupportedCompatibleDuplicate(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_ONE;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+
+    string bundleName;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], bundleName),
+        JS_ERR_PARAMETER_INVALID);
+    context->bundleName = bundleName;
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void JSCanSupportedCompatibleDuplicateExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetPhotoAlbumOrderExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    HeifTranscodingCheckReqBody reqBody;
+    HeifTranscodingCheckRespBody respBody;
+    reqBody.bundleName = context->bundleName;
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::HEIF_TRANSCODING_CHECK);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    context->canSupportedCompatibleDuplicate = respBody.canSupportedCompatibleDuplicate;
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("CanSupportedCompatibleDuplicateExecute failed, err: %{public}d", ret);
+    }
+}
+
+static void JSCanSupportedCompatibleDuplicateCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env,
+            napi_get_boolean(env, context->canSupportedCompatibleDuplicate, &jsContext->data), JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::CanSupportedCompatibleDuplicate(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsCanSupportedCompatibleDuplicate(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "CanSupportedCompatibleDuplicate",
+     JSCanSupportedCompatibleDuplicateExecute, JSCanSupportedCompatibleDuplicateCompleteCallback);
 }
 
 int32_t MediaLibraryNapi::GetUserId()

@@ -39,6 +39,7 @@
 #include "beauty_score_clone.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
+#include "settings_data_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -50,6 +51,30 @@ struct CloudPhotoFileExistFlag {
     bool isExLcdExist {false};
     bool isExThmExist {false};
 };
+
+struct CloneRestoreConfigInfo {
+    SwitchStatus switchStatus = SwitchStatus::NONE;
+    std::string deviceId;
+    bool isValid = false;
+
+    bool operator==(const CloneRestoreConfigInfo& other)
+    {
+        return switchStatus == other.switchStatus &&
+            deviceId == other.deviceId &&
+            isValid == other.isValid;
+    }
+
+    std::string ToString()
+    {
+        return "[switchStatus: " + std::to_string(static_cast<int>(switchStatus)) + ", "
+        "deviceId: " + deviceId + ", isValid:" + std::to_string(isValid) +"]";
+    }
+};
+
+struct DstDeviceBackupInfo {
+    bool hdcEnabled = false;
+};
+
 class CloneRestore : public BaseRestore {
 public:
     CloneRestore();
@@ -74,6 +99,7 @@ protected:
         std::vector<FileInfo> &THMNotFound, unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
     bool HasExThumbnail(const FileInfo &info) override;
     void BackupRelease() override;
+    bool IsCloudRestoreSatisfied() override;
 
 private:
     void RestorePhoto(void) override;
@@ -247,6 +273,13 @@ private:
     void AddToPhotoInfoMaps(std::vector<FileInfo> &fileInfos);
     void GetOrientationAndExifRotateValue(const shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &fileInfo);
     void UpdateExistNewAddColumnSet(const std::unordered_map<string, string> &srcColumnInfoMap);
+    bool UpdateConfigInfo();
+    void CheckSrcDstSwitchStatusMatch();
+    bool BackupPreprocess();
+    void ParseDstDeviceBackupInfo();
+    bool InvalidateHdcCloudData();
+    CloneRestoreConfigInfo GetCurrentDeviceCloneConfigInfo();
+    CloneRestoreConfigInfo GetCloneConfigInfoFromOriginDB();
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
@@ -283,6 +316,10 @@ private:
     int64_t maxBeautyFileId_ {0};
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
     std::unordered_set<std::string> existNewAddColumnSet_;
+    bool isSrcDstSwitchStatusMatch_ {false};
+    CloneRestoreConfigInfo dstCloneRestoreConfigInfo_;
+    CloneRestoreConfigInfo srcCloneRestoreConfigInfo_;
+    DstDeviceBackupInfo dstDeviceBackupInfo_;
 };
 
 template<typename T>

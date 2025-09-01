@@ -94,6 +94,7 @@
 #include "media_column.h"
 #include "media_old_photos_column.h"
 #include "cloud_media_asset_manager.h"
+#include "heif_transcoding_check_utils.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -477,6 +478,44 @@ int32_t MediaAssetsService::SetVideoEnhancementAttr(
     MEDIA_DEBUG_LOG("photoId:%{public}s, fileId:%{public}d, path:%{public}s", photoId.c_str(), fileId, path.c_str());
     MultiStagesVideoCaptureManager::GetInstance().AddVideo(photoId, to_string(fileId), path);
     return E_OK;
+}
+
+int32_t MediaAssetsService::SetHasAppLink(const int32_t fileId, const int32_t hasAppLink)
+{
+    MediaLibraryCommand cmd(
+        OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE_HAS_APPLINK, MediaLibraryApi::API_10);
+ 
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+ 
+    NativeRdb::ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_HAS_APPLINK, hasAppLink);
+ 
+    cmd.SetValueBucket(values);
+    cmd.SetDataSharePred(predicates);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    return MediaLibraryPhotoOperations::UpdateAppLink(cmd);
+}
+ 
+int32_t MediaAssetsService::SetAppLink(const int32_t fileId, const string appLink)
+{
+    MediaLibraryCommand cmd(
+        OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE_APPLINK, MediaLibraryApi::API_10);
+ 
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+ 
+    NativeRdb::ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_APPLINK, appLink);
+ 
+    cmd.SetValueBucket(values);
+    cmd.SetDataSharePred(predicates);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    return MediaLibraryPhotoOperations::UpdateAppLink(cmd);
 }
 
 int32_t MediaAssetsService::SetSupportedWatermarkType(const int32_t fileId, const int32_t watermarkType)
@@ -1001,6 +1040,37 @@ int32_t MediaAssetsService::ConvertFormat(const ConvertFormatDto& convertFormatD
     return MediaLibraryAlbumFusionUtils::ConvertFormatAsset(fileId, title, extension);
 }
 
+int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupDto &createTmpCompatibleDupDto)
+{
+    MEDIA_DEBUG_LOG("CreateTmpCompatibleDup: %{public}s", createTmpCompatibleDupDto.ToString().c_str());
+    int32_t fileId = createTmpCompatibleDupDto.fileId;
+    std::string path = std::move(createTmpCompatibleDupDto.path);
+    CHECK_AND_RETURN_RET_LOG(fileId > 0 && !path.empty(), E_INNER_FAIL,
+        "Invalid parameters for CreateTmpCompatibleDup, fileId: %{public}d, path: %{public}s",
+        fileId, path.c_str());
+
+    auto startTime = std::chrono::high_resolution_clock::now();
+    size_t size = 0;
+    int32_t dupExist = 0;
+    auto dfxManager = DfxManager::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(dfxManager != nullptr, E_INVALID_VALUES, "DfxManager::GetInstance() returned nullptr");
+    auto err = MediaLibraryAlbumFusionUtils::CreateTmpCompatibleDup(fileId, path, size, dupExist);
+    if (err == E_OK && dupExist == 0) {
+        err = this->rdbOperation_.UpdateTmpCompatibleDup(fileId, size);
+        if (err == E_OK) {
+            auto endTime = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<uint16_t, std::milli> duration =
+                std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+            MEDIA_INFO_LOG("CreateTmpCompatibleDup duration:%{public}d ms", duration.count());
+            dfxManager->HandleTranscodeCostTime(duration.count());
+        } else {
+            MEDIA_ERR_LOG("CreateTmpCompatibleDup dfx updata database failed");
+            dfxManager->HandleTranscodeFailed(INNER_FAILED);
+        }
+    }
+    return err;
+}
+
 int32_t MediaAssetsService::RevertToOriginal(const RevertToOriginalDto& revertToOriginalDto)
 {
     int32_t fileId = revertToOriginalDto.fileId;
@@ -1500,6 +1570,13 @@ int32_t MediaAssetsService::GetUriFromFilePath(const std::string &tempPath, GetU
 
     auto resultSetBridge = RdbUtils::ToResultSetBridge(resultSet);
     respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
+    return E_OK;
+}
+
+int32_t MediaAssetsService::CanSupportedCompatibleDuplicate(const std::string &bundleName,
+    HeifTranscodingCheckRespBody &respBody)
+{
+    respBody.canSupportedCompatibleDuplicate = HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(bundleName);
     return E_OK;
 }
 } // namespace OHOS::Media

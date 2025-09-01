@@ -102,6 +102,7 @@ public:
     EXPORT static int32_t ProcessCustomRestore(MediaLibraryCommand &cmd);
     EXPORT static int32_t CancelCustomRestore(MediaLibraryCommand &cmd);
     EXPORT static int32_t UpdateSupportedWatermarkType(MediaLibraryCommand &cmd);
+    EXPORT static int32_t UpdateAppLink(MediaLibraryCommand &cmd);
     EXPORT static int32_t BatchSetOwnerAlbumId(MediaLibraryCommand &cmd);
     static int32_t UpdateExtension(const int32_t &fileId, const int32_t &fileType, PhotoExtInfo &photoExtInfo,
         NativeRdb::ValuesBucket &updateValues);
@@ -110,6 +111,9 @@ public:
         const std::string &editData);
     static int32_t DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t TrashPhotos(MediaLibraryCommand &cmd);
+    static int32_t UpdateOrientation(MediaLibraryCommand &cmd, const shared_ptr<FileAsset> &fileAsset,
+        bool &orientationUpdated, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &assetRefresh,
+        int32_t &errCode);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
     static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd);

@@ -17,6 +17,7 @@
 #include "thumbnail_generate_helper.h"
 
 #include <fcntl.h>
+#include <mutex>
 
 #include "acl.h"
 #include "cloud_sync_helper.h"
@@ -37,9 +38,12 @@
 #include "media_image_framework_utils.h"
 #include "media_log.h"
 #include "media_player_framework_utils.h"
+#ifdef HAS_POWER_MANAGER_PART
+#include "power_mgr_client.h"
+#endif
+#include "res_sched_client.h"
 #include "thumbnail_const.h"
 #include "thumbnail_file_utils.h"
-#include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_generation_post_process.h"
 #include "thumbnail_rdb_utils.h"
 #include "thumbnail_source_loading.h"
@@ -56,6 +60,11 @@ const int FFRT_MAX_RESTORE_ASTC_THREADS = 4;
 const std::string SQL_REFRESH_THUMBNAIL_READY =
     " Update " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_THUMBNAIL_READY + " = 7 " +
     " WHERE " + PhotoColumn::PHOTO_THUMBNAIL_READY + " != 0; END;";
+static std::mutex g_restoreThumbnailMutex;
+static std::atomic<int64_t> g_restoreThumbnailStartTime{0};
+static std::atomic<int64_t> g_restoreThumbnailReadyAstc{0};
+static std::atomic<int64_t> g_completedTasks{0};
+static std::atomic<int64_t> g_totalTasks{0};
 
 int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bool isSync)
 {
@@ -916,6 +925,119 @@ int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts, b
     return E_OK;
 }
 
+void ThumbnailGenerateHelper::AddCompletedTasks()
+{
+    std::lock_guard<std::mutex> lock(g_restoreThumbnailMutex);
+    g_completedTasks++;
+}
+
+static void ReportRestoreThumbnailProgress(const std::string& bundleName, int64_t currentTime, int64_t startTime,
+    int64_t totalAstc, int64_t readyAstc)
+{
+    int64_t delta = currentTime - startTime;
+    if (delta < RESTORE_THUMBNAIL_REPORT_INTERVAL_MS) {
+        return;
+    }
+    
+    g_restoreThumbnailStartTime.store(currentTime);
+    int64_t deltaReadyAstc = readyAstc - g_restoreThumbnailReadyAstc.load();
+    if (deltaReadyAstc <= 0) {
+        MEDIA_ERR_LOG("Error no progress");
+        return;
+    }
+    g_restoreThumbnailReadyAstc.store(readyAstc);
+    float releaseTime = (totalAstc - readyAstc) * (static_cast<float>(delta) / deltaReadyAstc) /
+        MILLIS_PER_MINUTE;
+    
+    if (totalAstc <= 0) {
+        MEDIA_ERR_LOG("Error thumbnail number");
+        return;
+    }
+    float progress = (static_cast<float>(readyAstc) / totalAstc) * PROGRESS_TO_PERCENT;
+    
+    std::unordered_map<std::string, std::string> payload = {
+        {"bundleName", bundleName},
+        {"releaseTime", std::to_string(releaseTime)},
+        {"progress", std::to_string(progress) + "%"}
+    };
+    MEDIA_INFO_LOG("Report data bundle name:%{public}s, releaseTime:%{public}f, progress:%{public}f",
+        bundleName.c_str(), releaseTime, progress);
+    ResourceSchedule::ResSchedClient::GetInstance().ReportData(
+        ResourceSchedule::ResType::RES_TYPE_BACKGROUND_STATUS, REPORT_OPEN, payload);
+}
+
+void ThumbnailGenerateHelper::CheckAndReportRestoreThumbnailProgress(bool isScreenOn, int32_t status,
+    int64_t totalAstc, int64_t readyAstc)
+{
+    MEDIA_INFO_LOG("Enter CheckAndReportRestoreThumbnailProgress");
+    int64_t currentTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t startTime = g_restoreThumbnailStartTime.load();
+    std::string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+
+    if (!isScreenOn) {
+        MEDIA_ERR_LOG("Error screen off");
+        return;
+    }
+
+    if (status == 0) {
+        std::unordered_map<std::string, std::string> payload = {
+            {"bundleName", bundleName},
+            {"releaseTime", "0"},
+            {"progress", "100%"}
+        };
+        MEDIA_INFO_LOG("Report data bundle name:%{public}s, releaseTime:0, progress:100", bundleName.c_str());
+        ResourceSchedule::ResSchedClient::GetInstance().ReportData(
+            ResourceSchedule::ResType::RES_TYPE_BACKGROUND_STATUS, REPORT_OPEN, payload);
+        return;
+    }
+
+    if (startTime == 0) {
+        g_restoreThumbnailStartTime.store(currentTime);
+        g_restoreThumbnailReadyAstc.store(readyAstc);
+        if (totalAstc == 0) {
+            MEDIA_ERR_LOG("Error thumbnail number");
+            return;
+        }
+        float totalTime = totalAstc * SINGLE_THREAD_RUNTIME_MS / FFRT_MAX_RESTORE_ASTC_THREADS / MILLIS_PER_MINUTE;
+        float releaseTime = totalTime * (totalAstc - readyAstc) / totalAstc;
+        float progress = (static_cast<float>(readyAstc) / totalAstc) * PROGRESS_TO_PERCENT;
+        std::unordered_map<std::string, std::string> payload = {
+            {"bundleName", bundleName},
+            {"releaseTime", std::to_string(releaseTime)},
+            {"progress", std::to_string(progress) + "%"}
+        };
+        MEDIA_INFO_LOG("Report data bundle name:%{public}s, releaseTime:%{public}f, progress:%{public}f",
+            bundleName.c_str(), releaseTime, progress);
+        ResourceSchedule::ResSchedClient::GetInstance().ReportData(
+            ResourceSchedule::ResType::RES_TYPE_BACKGROUND_STATUS, status, payload);
+    } else {
+        ReportRestoreThumbnailProgress(bundleName, currentTime, startTime, totalAstc, readyAstc);
+    }
+}
+
+void ThumbnailGenerateHelper::RestoreAstcDualFrameTask(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    AddCompletedTasks();
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("CreateThumbnailWithProgress failed, data is null");
+        return;
+    }
+    int64_t totalTasks = g_totalTasks.load();
+    int64_t completedTasks = g_completedTasks.load();
+    bool isScreenOn = false;
+#ifdef HAS_POWER_MANAGER_PART
+    isScreenOn = PowerMgr::PowerMgrClient::GetInstance().IsScreenOn();
+#endif
+    if (completedTasks < totalTasks) {
+        CheckAndReportRestoreThumbnailProgress(isScreenOn, REPORT_OPEN, totalTasks,
+            completedTasks);
+    } else {
+        CheckAndReportRestoreThumbnailProgress(isScreenOn, REPORT_END);
+    }
+
+    IThumbnailHelper::CreateThumbnail(data);
+}
+
 int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts, const int32_t &restoreAstcCount)
 {
     CHECK_AND_RETURN_RET_LOG(restoreAstcCount > 0, E_ERR, "RestoreAstcCount:%{public}d is invalid", restoreAstcCount);
@@ -930,6 +1052,16 @@ int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts, const i
         MEDIA_INFO_LOG("No photos need resotre astc.");
         return E_OK;
     }
+    std::lock_guard<std::mutex> lock(g_restoreThumbnailMutex);
+    bool isScreenOn = false;
+#ifdef HAS_POWER_MANAGER_PART
+    isScreenOn = PowerMgr::PowerMgrClient::GetInstance().IsScreenOn();
+#endif
+    g_restoreThumbnailStartTime.store(0);
+    g_restoreThumbnailReadyAstc.store(0);
+    g_totalTasks.store(infos.size());
+    g_completedTasks.store(0);
+    CheckAndReportRestoreThumbnailProgress(isScreenOn, REPORT_OPEN, g_totalTasks.load());
 
     MEDIA_INFO_LOG("create astc for restored dual frame photos count:%{public}zu, restoreAstcCount:%{public}d",
         infos.size(), restoreAstcCount);
@@ -938,7 +1070,7 @@ int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts, const i
         opts.row = info.id;
         info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::RESTORE, LoadSourceType::LOCAL_PHOTO);
-        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateThumbnail, opts, info,
+        IThumbnailHelper::AddThumbnailGenerateTask(RestoreAstcDualFrameTask, opts, info,
             ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::MID);
     }
 

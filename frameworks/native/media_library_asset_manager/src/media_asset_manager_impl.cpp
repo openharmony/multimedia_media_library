@@ -634,6 +634,7 @@ OH_ImageSourceNative* MediaAssetManagerImpl::CreateImageSource(const std::string
 
     std::string tmpUri = requestUri;
     MediaFileUtils::UriAppendKeyValue(tmpUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
+    MediaFileUtils::UriAppendKeyValue(tmpUri, PHOTO_TRANSCODE_OPERATION, OPRN_TRANSCODE_HEIF);
     Uri uri(tmpUri);
     int fd = UserFileClient::OpenFile(uri, "r");
     CHECK_AND_RETURN_RET_LOG(fd >= 0, nullptr, "get image fd failed");
