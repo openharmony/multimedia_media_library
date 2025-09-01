@@ -202,6 +202,9 @@ const std::string PhotoColumn::PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX = "file://
 const std::string PhotoColumn::PHOTO_REQUEST_PICTURE = "file://media/Photo/picture/";
 const std::string PhotoColumn::PHOTO_REQUEST_PICTURE_BUFFER = "file://media/Photo/pictureBuffer/";
 
+const std::string PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE = "south_device_type";
+const std::string PhotoColumn::CLOUD_TYPE = "cloud_type";
+
 const std::set<std::string> PhotoColumn::DEFAULT_FETCH_COLUMNS = {
     PHOTO_SUBTYPE, PHOTO_BURST_KEY,
 };
@@ -298,7 +301,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_APPLINK + " TEXT, " +
     PHOTO_TRANSCODE_TIME + " BIGINT NOT NULL DEFAULT 0, " +
     PHOTO_TRANS_CODE_FILE_SIZE + " BIGINT NOT NULL DEFAULT 0, " +
-    PHOTO_EXIST_COMPATIBLE_DUPLICATE + " INT NOT NULL DEFAULT 0 " +
+    PHOTO_EXIST_COMPATIBLE_DUPLICATE + " INT NOT NULL DEFAULT 0, " +
+    PHOTO_SOUTH_DEVICE_TYPE + "INT NOT NULL DEFAULT 0" +
     ") ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +

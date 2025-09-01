@@ -126,6 +126,7 @@ public:
     EXPORT int32_t AgingTmpCompatibleDuplicate(int32_t fileId, const std::string &filePath);
     EXPORT int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
                 const DataShare::DataSharePredicates &predicates);
+    EXPORT int32_t RestoreInvalidPosData();
 private:
     int32_t InitMediaLibraryRdbStore();
     int32_t UpdateDirtyHdcDataStatus();

@@ -762,6 +762,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     // check metadata recovery state
     MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();
 #endif
+    MediaLibraryDataManager::GetInstance()->RestoreInvalidPosData();
     AgingTmpCompatibleDuplicates(true);
     // delete temporary photos
     DeleteTemporaryPhotos();
@@ -779,7 +780,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     // update all editdata size
     ret = UpdateAllEditDataSize();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateAllEditDataSize faild");
-
     CloudUploadChecker::RepairNoOriginPhoto();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     // add permission for cloud enhancement photo

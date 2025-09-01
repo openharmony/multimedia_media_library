@@ -45,7 +45,7 @@ public:  // constructor
 
 public:  // getter & setter
     int32_t GetCloudType() const;
-    void SetCloudType(int32_t cloudType);
+    void SetCloudType(const int32_t cloudType) override;
     std::string GetTableName() const;
     void SetTableName(const std::string &tableName);
     int32_t GetUserId() const;

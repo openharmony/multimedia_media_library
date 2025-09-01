@@ -136,6 +136,7 @@
 #include "custom_record_operations.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_upgrade_utils.h"
+#include "settings_data_manager.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -652,6 +653,28 @@ static void AsyncUpgradeFromAllVersionSecondPart(const shared_ptr<MediaLibraryRd
     MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX");
 }
 
+static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+{
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
+
+    auto southDeviceType = SouthDeviceType::SOUTH_DEVICE_CLOUD;
+    auto switchStatus = SettingsDataManager::GetPhotosSyncSwitchStatus();
+    if (switchStatus == SwitchStatus::HDC) {
+        southDeviceType = SouthDeviceType::SOUTH_DEVICE_HDC;
+    }
+
+    MEDIA_INFO_LOG("Start updating south_device_type for photos stored in cloud space");
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::CLOUD))
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(southDeviceType));
+    int32_t changedRows = 0;
+    int32_t ret = rdbStore->Update(changedRows, values, predicates);
+    MEDIA_INFO_LOG("Update south_device_type for %{public}d photos in cloud space, ret: %{public}d", changedRows, ret);
+}
+
 void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API18) {
@@ -686,6 +709,13 @@ void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         AsyncUpgradeFromAllVersionSecondPart(rdbStore);
         rdbStore->SetOldVersion(VERSION_FIX_DB_UPGRADE_TO_API20);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_FIX_DB_UPGRADE_TO_API20, false);
+    }
+
+    if (oldVersion < VERSION_ADD_SOUTH_DEVICE_TYPE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_SOUTH_DEVICE_TYPE, false)) {
+        FillSouthDeviceType(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_SOUTH_DEVICE_TYPE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_SOUTH_DEVICE_TYPE, false);
     }
 }
 
@@ -2845,6 +2875,8 @@ static int32_t DoUpdateDirtyForCloudCloneOperationV2(const shared_ptr<MediaLibra
     CHECK_AND_RETURN_RET_INFO_LOG(!fileIds.empty(), E_OK, "No cloud data need to update dirty for clone found.");
     ValuesBucket updatePostBucket;
     updatePostBucket.Put(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    updatePostBucket.Put(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE,
+        static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_NULL));
     AbsRdbPredicates updatePredicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     updatePredicates.In(MediaColumn::MEDIA_ID, fileIds);
     int32_t changeRows = -1;
@@ -3361,6 +3393,18 @@ void MediaLibraryDataManager::InterruptAgingTmpCompatibleDuplicates()
     CHECK_AND_RETURN_INFO_LOG(isAgingDup_.load(), "[HeifDup] AgingTmpCompatibleDuplicatesThread is not running.");
     isAgingDup_.store(false);
     MEDIA_INFO_LOG("[HeifDup] Interrupt delete transcode photos is called.");
+}
+
+int32_t MediaLibraryDataManager::RestoreInvalidPosData()
+{
+    MEDIA_INFO_LOG("MediaLibraryDataManager::RestoreInvalidPosData Start");
+    std::string sql =
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_POSITION + " = 2" +
+        " WHERE " + PhotoColumn::PHOTO_POSITION + " = -1";
+    auto ret = rdbStore_->ExecuteSql(sql);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Execute sql failed");
+    MEDIA_INFO_LOG("MediaLibraryDataManager::RestoreInvalidPosData End");
+    return ret;
 }
 }  // namespace Media
 }  // namespace OHOS

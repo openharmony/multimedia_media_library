@@ -590,6 +590,9 @@ bool CloudMediaAssetManager::HasLocalAndCloudAssets(CloudMediaRetainType retainT
     predicates.NotEqualTo(PhotoColumn::PHOTO_CLOUD_VERSION, 0);
     predicates.Or();
     predicates.NotEqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    predicates.Or();
+    predicates.NotEqualTo(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE,
+        static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_NULL));
     predicates.EndWrap();
     predicates.EndWrap();
     predicates.EndWrap();
@@ -626,6 +629,7 @@ int32_t CloudMediaAssetManager::UpdateLocalAndCloudAssets(const std::vector<std:
     values.PutLong(PhotoColumn::PHOTO_CLOUD_VERSION, 0);
     values.PutNull(PhotoColumn::PHOTO_CLOUD_ID);
     values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_NULL));
 
     int32_t changedRows = -1;
     int32_t ret = rdbStore->Update(changedRows, values, predicates);
