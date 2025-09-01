@@ -445,6 +445,8 @@ static int32_t CheckSystemApiKeys(ani_env *env, const string &key)
         PhotoColumn::CAMERA_SHOT_KEY,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PhotoColumn::SUPPORTED_WATERMARK_TYPE,
+        PhotoColumn::PHOTO_HAS_APPLINK,
+        PhotoColumn::PHOTO_APPLINK,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
         PhotoColumn::PHOTO_EXIF_ROTATE,

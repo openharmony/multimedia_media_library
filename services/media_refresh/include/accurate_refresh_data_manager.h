@@ -23,6 +23,7 @@
 #include "result_set.h"
 #include "accurate_common_data.h"
 #include "medialibrary_rdb_transaction.h"
+#include "photo_asset_change_info.h"
 
 namespace OHOS {
 namespace Media::AccurateRefresh {
@@ -47,13 +48,18 @@ public:
     virtual std::vector<int32_t> GetInitKeys() = 0;
     void SetTransaction(std::shared_ptr<TransactionOperations> trans);
     // 外部接口数据无法获取修改前后数据进行精准计算
-    bool CheckIsForRecheck();
+    virtual bool CheckIsForRecheck() = 0;
     bool CanTransOperate();
+    std::unordered_set<int32_t> uniqueAlbumIds_;
  
 protected:
     int32_t InsertInitChangeInfos(const std::vector<ChangeInfo> &changeInfos, PendingInfo pendingInfo = PendingInfo());
-    bool CheckIsExceed(bool isLengthChanged = false);
-    bool CheckIsExceed(std::size_t length);
+    virtual bool CheckIsExceed(const NativeRdb::AbsRdbPredicates &predicates, bool isLengthChanged = false) = 0;
+    virtual bool CheckIsExceed(const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &bindArgs, bool isLengthChanged = false) = 0;
+    virtual bool CheckIsExceed(const std::vector<int32_t> &keys) = 0;
+    virtual bool CheckIsExceed(bool isLengthChanged = false) = 0;
+    virtual bool CheckIsExceed(const std::vector<ChangeInfo> &changeInfos) = 0;
 
 private:
     int32_t CheckAndUpdateOperation(RdbOperation &newOperation, RdbOperation oldOperation);
@@ -66,13 +72,17 @@ private:
     virtual std::vector<ChangeInfo> GetInfoByKeys(const std::vector<int32_t> &keys) = 0;
     virtual std::vector<ChangeInfo> GetInfosByPredicates(const NativeRdb::AbsRdbPredicates &predicates) = 0;
     virtual std::vector<ChangeInfo> GetInfosByResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet) = 0;
-    std::size_t GetCurrentDataLength();
     // before数据插入后处理
     virtual void PostInsertBeforeData(ChangeData &changeData, PendingInfo &pendingInfo) {}
     // after数据插入后处理
     virtual void PostInsertAfterData(ChangeData &changeData, PendingInfo &pendingInfo, bool isAdd = false) {}
     // 资产数据在更新相册时，可能需要刷新，解决多线程问题
     virtual bool CheckUpdateDataForMultiThread(ChangeData &changeData) { return false; }
+    virtual int32_t SetAlbumIdsByPredicates(const NativeRdb::AbsRdbPredicates &predicates) = 0;
+    virtual int32_t SetAlbumIdsBySql(const std::string &sql, const std::vector<NativeRdb::ValueObject> &bindArgs) = 0;
+    virtual int32_t SetAlbumIdsByFileds(const std::vector<int32_t> &fileIds) = 0;
+    virtual void SetAlbumIdByChangeInfos(const std::vector<PhotoAssetChangeInfo> &changeInfos) {};
+    void SetAlbumIdFromChangeDates();
 
 protected:
     std::map<int32_t, ChangeData> changeDatas_;

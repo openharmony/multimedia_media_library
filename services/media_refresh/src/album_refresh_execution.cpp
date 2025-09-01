@@ -181,6 +181,16 @@ vector<int32_t> AlbumRefreshExecution::GetAlbumIds()
     return albumIds;
 }
 
+void AlbumRefreshExecution::CheckNotifyAlbum()
+{
+    affectedAlbumCount_ ++;
+    if (affectedAlbumCount_ == MAX_AFFECTED_ALBUM_LENGTH) {
+        affectedAlbumCount_ = 0;
+        albumRefresh_.Notify();
+        albumRefresh_.ClearChangeInfos();
+    }
+}
+
 int32_t AlbumRefreshExecution::UpdateAllAlbums(NotifyAlbumType notifyAlbumType)
 {
     MediaLibraryTracer tracer;
@@ -237,6 +247,7 @@ int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden,
         refreshRecord.RefreshAlbumEnd();
     }
     DfxRefreshHander::SetAlbumIdAndOptTimeHander(albumId, isHidden, dfxRefreshManager_);
+    CheckNotifyAlbum();
     return ACCURATE_REFRESH_RET_OK;
 }
 
@@ -318,6 +329,7 @@ int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumT
             albumInfo.albumId_);
         DfxRefreshHander::SetOptEndTimeHander(predicates, dfxRefreshManager_);
         DfxRefreshHander::SetAlbumIdHander(albumInfo.albumId_, dfxRefreshManager_);
+        CheckNotifyAlbum();
     }
     return ACCURATE_REFRESH_RET_OK;
 }
@@ -688,18 +700,22 @@ void AlbumRefreshExecution::CheckNotifyOldNotification(NotifyAlbumType notifyAlb
     }
 }
 
-int32_t AlbumRefreshExecution::RefreshAllAlbum(NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified)
+int32_t AlbumRefreshExecution::RefreshAllAlbum(std::unordered_set<int32_t> albumIds,
+    NotifyAlbumType notifyAlbumType, bool isRefreshWithDateModified)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null");
     ACCURATE_DEBUG("force update all albums");
     lock_guard<mutex> lock(albumRefreshMtx_);
     isRefreshWithDateModified_ = isRefreshWithDateModified;
+    std::vector<std::string> albumIdList;
+    albumIdList.reserve(albumIds.size());
+    for (int32_t albumId : albumIds) {
+        albumIdList.push_back(std::to_string(albumId));
+    }
     MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(rdbStore, AlbumOperationType::DEFAULT, {}, notifyAlbumType);
-    MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, {}, notifyAlbumType & USER_ALBUM,
-        isRefreshWithDateModified);
-    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {}, notifyAlbumType & SOURCE_ALBUM,
-        isRefreshWithDateModified);
+    MediaLibraryRdbUtils::UpdateCommonAlbumInternal(rdbStore, albumIdList, (notifyAlbumType & USER_ALBUM) ||
+        (notifyAlbumType & SOURCE_ALBUM), isRefreshWithDateModified);
     return ACCURATE_REFRESH_RET_OK;
 }
 

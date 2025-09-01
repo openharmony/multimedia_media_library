@@ -263,12 +263,17 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("OWNER_ALBUM_ID",            PhotoColumn::PHOTO_OWNER_ALBUM_ID),
     std::make_pair("THUMBNAIL_VISIBLE",         PhotoColumn::PHOTO_THUMBNAIL_VISIBLE),
     std::make_pair("SUPPORTED_WATERMARK_TYPE",  PhotoColumn::SUPPORTED_WATERMARK_TYPE),
+    std::make_pair("PHOTO_HAS_APPLINK",         PhotoColumn::PHOTO_HAS_APPLINK),
+    std::make_pair("PHOTO_APPLINK",             PhotoColumn::PHOTO_APPLINK),
     std::make_pair("LATITUDE",                  PhotoColumn::PHOTO_LATITUDE),
     std::make_pair("LONGITUDE",                 PhotoColumn::PHOTO_LONGITUDE),
     std::make_pair("IS_AUTO",                   PhotoColumn::PHOTO_IS_AUTO),
     std::make_pair("MEDIA_SUFFIX",              PhotoColumn::PHOTO_MEDIA_SUFFIX),
     std::make_pair("IS_RECENT_SHOW",            PhotoColumn::PHOTO_IS_RECENT_SHOW),
     std::make_pair("SUM_SIZE",                  MEDIA_SUM_SIZE),
+    std::make_pair("HAS_APPLINK",               PhotoColumn::PHOTO_HAS_APPLINK),
+    std::make_pair("APPLINK",                   PhotoColumn::PHOTO_APPLINK),
+    std::make_pair("EXIST_COMPATIBLE_DUPLICATE", PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

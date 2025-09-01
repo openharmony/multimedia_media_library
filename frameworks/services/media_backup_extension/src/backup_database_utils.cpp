@@ -1166,5 +1166,42 @@ void BackupDatabaseUtils::UpdateAnalysisTotalTblNoFaceStatus(std::shared_ptr<Nat
 
     UpdateNewNoFaceStatus(newRdbStore, oldFileIdToFaceMap, fileIdPair);
 }
+
+bool BackupDatabaseUtils::isTableExist(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    const std::string &tableName, bool& result)
+{
+    std::string querySql = "SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "';";
+    MEDIA_DEBUG_LOG("BackupDatabaseUtils::isTableExist sql: %{public}s", querySql.c_str());
+    auto resultSet = GetQueryResultSet(rdbStore, querySql);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultSet is nullptr");
+    int32_t count = -1;
+    int32_t err = resultSet->GetRowCount(count);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed to get count, err: %{public}d", err);
+    resultSet->Close();
+    result = (count > 0);
+    return true;
+}
+
+BackupDatabaseUtils::ConfigInfoType BackupDatabaseUtils::QueryConfigInfo(
+    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    ConfigInfoType configInfo;
+    std::string querySql = "select * from " + ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME;
+    auto resultSet = GetQueryResultSet(rdbStore, querySql);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, configInfo, "resultSet is null.");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int sceneIdInt = GetInt32Val(ConfigInfoColumn::MEDIA_CONFIG_INFO_SCENE_ID, resultSet);
+        std::string key = GetStringVal(ConfigInfoColumn::MEDIA_CONFIG_INFO_KEY, resultSet);
+        std::string value = GetStringVal(ConfigInfoColumn::MEDIA_CONFIG_INFO_VALUE, resultSet);
+        MEDIA_INFO_LOG("query backupInfo result: sceneId:%{public}d key:%{public}s value:%{public}s",
+            sceneIdInt, key.c_str(), value.c_str());
+        CHECK_AND_CONTINUE_ERR_LOG(INT_CONFIG_INFO_SCENE_ID_MAP.count(sceneIdInt),
+            "fail to parse SceneId:%{public}d", sceneIdInt);
+        ConfigInfoSceneId sceneId = INT_CONFIG_INFO_SCENE_ID_MAP.at(sceneIdInt);
+        configInfo[sceneId][key] = value;
+    }
+    resultSet->Close();
+    return configInfo;
+}
 } // namespace Media
 } // namespace OHOS

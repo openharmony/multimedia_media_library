@@ -743,6 +743,17 @@ static void PeriodicAnalyzePhotosData()
     }
 }
 
+static void AgingTmpCompatibleDuplicates(bool isAge)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    CHECK_AND_RETURN_LOG(dataManager != nullptr, "dataManager is nullptr");
+    if (isAge) {
+        dataManager->AgingTmpCompatibleDuplicates();
+    } else {
+        dataManager->InterruptAgingTmpCompatibleDuplicates();
+    }
+}
+
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     bool cond = (!backgroundDelayTask_.IsDelayTaskTimeOut() || !currentStatus_);
@@ -751,6 +762,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     // check metadata recovery state
     MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();
 #endif
+    AgingTmpCompatibleDuplicates(true);
     // delete temporary photos
     DeleteTemporaryPhotos();
     // clear dirty data
@@ -828,6 +840,7 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     PauseBackgroundDownloadCloudMedia();
     PhotoAlbumLPathOperation::GetInstance().Stop();
     CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
+    AgingTmpCompatibleDuplicates(false);
 }
 
 void MedialibrarySubscriber::UpdateThumbnailBgGenerationStatus()

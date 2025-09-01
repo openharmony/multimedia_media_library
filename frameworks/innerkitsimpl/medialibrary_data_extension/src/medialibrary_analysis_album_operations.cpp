@@ -36,6 +36,7 @@
 #include "values_bucket.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
+#include "story_album_column.h"
 #include "vision_album_column.h"
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
@@ -66,6 +67,8 @@ const string GROUP_ALBUM_FAVORITE_ORDER_CLAUSE = " CASE WHEN user_display_level 
 const string GROUP_ALBUM_USER_NAME_ORDER_CLAUSE = " CASE WHEN rename_operation = 2 THEN 1 ELSE 2 END ";
 const string GROUP_ALBUM_SYSTEM_NAME_ORDER_CLAUSE =
     " CASE WHEN album_name IS NULL OR album_name = '' THEN 2 ELSE 1 END ";
+const string TRUE_VALUE = "1";
+const string FALSE_VALUE = "0";
 
 static int32_t ExecSqls(const vector<string> &sqls, const shared_ptr<MediaLibraryUnistore> &store)
 {
@@ -315,6 +318,17 @@ std::string GetUserDisplayLevelClause(const std::string &clause)
     return subClause.substr(0, argsIndex);
 }
 
+int32_t CheckHighlightAttributeValue(const int32_t &key, const std::string &value)
+{
+    if (key == static_cast<int32_t>(HighlightAlbumChangeAttribute::IS_VIEWED) ||
+        key == static_cast<int32_t>(HighlightAlbumChangeAttribute::IS_FAVORITE)) {
+        CHECK_AND_RETURN_RET(value == TRUE_VALUE || value == FALSE_VALUE, E_PARAM_CONVERT_FORMAT);
+    } else if (key == static_cast<int32_t>(HighlightAlbumChangeAttribute::NOTIFICATION_TIME)) {
+        CHECK_AND_RETURN_RET(MediaLibraryDataManagerUtils::IsNumber(value), E_PARAM_CONVERT_FORMAT);
+    }
+    return E_OK;
+}
+
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(
     MediaLibraryCommand &cmd, const std::vector<std::string> &columns)
 {
@@ -349,6 +363,10 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAnalysisAlbumOperations::Query
             clause += " AND " + userDisplayLevelClause + to_string(userDisplayLevelVal);
         }
     }
+    int limitVal = cmd.GetAbsRdbPredicates()->GetLimit();
+    int offsetVal = cmd.GetAbsRdbPredicates()->GetOffset();
+    CHECK_AND_EXECUTE(limitVal < 0, rdbPredicates.Limit(limitVal));
+    CHECK_AND_EXECUTE(limitVal < 0 || offsetVal < 0, rdbPredicates.Offset(offsetVal));
     rdbPredicates.SetWhereClause(clause);
     rdbPredicates.OrderByAsc(GROUP_ALBUM_FAVORITE_ORDER_CLAUSE);
     rdbPredicates.OrderByAsc(GROUP_ALBUM_USER_NAME_ORDER_CLAUSE);
@@ -425,7 +443,7 @@ static string GetSqlsForInsertFileIdInAnalysisAlbumMap(const MergeAlbumInfo &upd
         MEDIA_WARN_LOG("There are no duplicate albums that need to be deleted.");
         return "";
     }
-    for (int i = 0; i < deleteAlbumIds.size(); i++) {
+    for (size_t i = 0; i < deleteAlbumIds.size(); i++) {
         strDeleteAlbumIds += deleteAlbumIds[i];
         if (i != deleteAlbumIds.size() - 1) {
             strDeleteAlbumIds += ", ";
@@ -451,7 +469,7 @@ static int32_t InsertNewRecordInMap(const shared_ptr<MediaLibraryRdbStore> store
 static int32_t UpdateAnalysisPhotoMapForMergeGroupPhoto(const shared_ptr<MediaLibraryRdbStore> store,
     const std::unordered_map<string, MergeAlbumInfo> updateMaps)
 {
-    for (const auto it : updateMaps) {
+    for (const auto& it : updateMaps) {
         int32_t ret = InsertNewRecordInMap(store, it.second);
         if (ret != E_OK) {
             MEDIA_ERR_LOG("failed to insert newRecord");
@@ -809,6 +827,39 @@ int32_t MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(Media
 
     int ret = rdbStore->ExecuteSql(sqlStr, args);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Update orderPositions failed, error id: %{public}d", ret);
+    return ret;
+}
+
+int32_t MediaLibraryAnalysisAlbumOperations::SetHighlightAttribute(const int32_t &albumId,
+    const int32_t &highlightAlbumChangeAttribute, const std::string &value)
+{
+    MEDIA_INFO_LOG("albumId: %{public}d, highlightAlbumChangeAttribute: %{public}d, value: %{public}s",
+        albumId, highlightAlbumChangeAttribute, value.c_str());
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_INNER_FAIL, "get rdbStore failed");
+    int32_t result = CheckHighlightAttributeValue(highlightAlbumChangeAttribute, value);
+    CHECK_AND_RETURN_RET_LOG(result == E_OK, result, "check value invalid");
+    std::string updateColumn;
+    std::vector<NativeRdb::ValueObject> params = {};
+    switch (static_cast<HighlightAlbumChangeAttribute>(highlightAlbumChangeAttribute)) {
+        case HighlightAlbumChangeAttribute::IS_VIEWED:
+            updateColumn = HIGHLIGHT_IS_VIEWED;
+            break;
+        case HighlightAlbumChangeAttribute::NOTIFICATION_TIME:
+            updateColumn = HIGHLIGHT_NOTIFICATION_TIME;
+            break;
+        case HighlightAlbumChangeAttribute::IS_FAVORITE:
+            updateColumn = HIGHLIGHT_IS_FAVORITE;
+            break;
+        default:
+            return E_PARAM_CONVERT_FORMAT;
+    }
+    std::string updateSql = "UPDATE tab_highlight_album SET " + updateColumn + " = ? WHERE album_id = ?;";
+    params.push_back(NativeRdb::ValueObject(value));
+    params.push_back(NativeRdb::ValueObject(std::to_string(albumId)));
+    int32_t ret = rdbStore->ExecuteSql(updateSql, params);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_INNER_FAIL,
+        "update highlight album attribute failed");
     return ret;
 }
 } // namespace OHOS::Media

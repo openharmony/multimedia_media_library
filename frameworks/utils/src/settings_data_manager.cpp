@@ -24,6 +24,9 @@
 #include "datashare_result_set.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
+#ifdef MEDIA_LIBRARY_MEMOSPACE_SERVICE_SUPPORT
+#include "hdc_device_id.h"
+#endif
 
 namespace OHOS::Media {
 inline static const std::string SETTING_DATA_QUERY_URI = "datashareproxy://";
@@ -121,5 +124,23 @@ int32_t SettingsDataManager::QueryParamInSettingData(const std::string &key, std
     CHECK_AND_RETURN_RET_LOG(ret == DataShare::E_OK, ret, "GetString failed, err: %{public}d", ret);
     MEDIA_INFO_LOG("Query success, value: %{public}s", value.c_str());
     return E_OK;
+}
+
+bool SettingsDataManager::GetHdcDeviceId(std::string& deviceId)
+{
+    #ifdef MEDIA_LIBRARY_MEMOSPACE_SERVICE_SUPPORT
+        int hdcRet = Memospace::GetHdcDeviceId(deviceId);
+        if (hdcRet != 0) {
+            MEDIA_ERR_LOG("fail to get real device Id, ret:%{public}d", hdcRet);
+            deviceId = "";
+            return false;
+        }
+        MEDIA_INFO_LOG("get hdc deviceId: %{public}s", deviceId.c_str());
+        return true;
+    #else
+        MEDIA_WARN_LOG("hdc device is not supprted");
+        deviceId = "";
+        return false;
+    #endif
 }
 }

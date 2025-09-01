@@ -51,6 +51,7 @@ static napi_value PhotoAccessHelperExport(napi_env env, napi_value exports)
     MediaAssetsChangeRequestNapi::Init(env, exports);
     MediaAlbumChangeRequestNapi::Init(env, exports);
     MediaAlbumChangeRequestNapi::MediaAnalysisAlbumChangeRequestInit(env, exports);
+    MediaAlbumChangeRequestNapi::MediaHighlightAlbumChangeRequestInit(env, exports);
     MediaAssetManagerNapi::Init(env, exports);
     MovingPhotoNapi::Init(env, exports);
     PhotoProxyNapi::Init(env, exports);

@@ -44,6 +44,7 @@
 #include "query_photo_vo.h"
 #include "adapted_vo.h"
 #include "convert_format_dto.h"
+#include "create_tmp_compatible_dup_dto.h"
 #include "check_photo_uri_permission_inner_dto.h"
 #include "get_result_set_from_db_vo.h"
 #include "get_result_set_from_db_dto.h"
@@ -66,6 +67,7 @@
 #include "get_cloud_enhancement_pair_dto.h"
 #include "get_filepath_from_uri_vo.h"
 #include "get_uri_from_filepath_vo.h"
+#include "heif_transcoding_check_vo.h"
 
 namespace OHOS::Media {
 class MediaAssetsService {
@@ -95,6 +97,8 @@ public:
     int32_t SetEffectMode(const int32_t fileId, const int32_t effectMode);
     int32_t SetOrientation(const int32_t fileId, const int32_t orientation);
     int32_t SetVideoEnhancementAttr(const int32_t fileId, const std::string &photoId, const std::string &path);
+    int32_t SetHasAppLink(const int32_t fileId, const int32_t hasAppLink);
+    int32_t SetAppLink(const int32_t fileId, const std::string appLink);
     int32_t SetSupportedWatermarkType(const int32_t fileId, const int32_t watermarkType);
     std::shared_ptr<DataShare::DataShareResultSet> GetAssets(GetAssetsDto &dto);
     std::shared_ptr<DataShare::DataShareResultSet> GetAllDuplicateAssets(GetAssetsDto &dto);
@@ -130,6 +134,7 @@ public:
     int32_t QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRespBody &resp);
     int32_t LogMovingPhoto(const AdaptedReqBody &req);
     int32_t ConvertFormat(const ConvertFormatDto &convertFormatDto);
+    int32_t CreateTmpCompatibleDup(const CreateTmpCompatibleDupDto &createTmpCompatibleDupDto);
     int32_t GetResultSetFromDb(const GetResultSetFromDbDto &getResultSetFromDbDto, GetResultSetFromDbRespBody &resp);
     int32_t GetResultSetFromPhotosExtend(const std::string &value, std::vector<std::string> &columns,
         GetResultSetFromPhotosExtendRespBody &resp);
@@ -152,6 +157,7 @@ public:
     int32_t GetCloudEnhancementPair(const GetCloudEnhancementPairDto &dto, GetCloudEnhancementPairRespBody &respBody);
     int32_t GetFilePathFromUri(const std::string &virtualId, GetFilePathFromUriRespBody &respBody);
     int32_t GetUriFromFilePath(const std::string &tempPath, GetUriFromFilePathRespBody &respBody);
+    int32_t CanSupportedCompatibleDuplicate(const std::string &bundleName, HeifTranscodingCheckRespBody &respBody);
 
 private:
     MediaAssetsRdbOperations rdbOperation_;

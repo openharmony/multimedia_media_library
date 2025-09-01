@@ -565,6 +565,11 @@ void FileAsset::SetPhotoEditTime(int64_t photoEditTime)
     member_[PhotoColumn::PHOTO_EDIT_TIME] = photoEditTime;
 }
 
+int64_t FileAsset::GetTransCodeTime() const
+{
+    return GetInt64Member(PhotoColumn::PHOTO_TRANSCODE_TIME);
+}
+
 int32_t FileAsset::GetMovingPhotoEffectMode() const
 {
     return GetInt32Member(PhotoColumn::MOVING_PHOTO_EFFECT_MODE);
@@ -633,6 +638,26 @@ int32_t FileAsset::GetSupportedWatermarkType() const
 void FileAsset::SetSupportedWatermarkType(int32_t watermarkType)
 {
     member_[PhotoColumn::SUPPORTED_WATERMARK_TYPE] = watermarkType;
+}
+
+int32_t FileAsset::GetHasAppLink() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_HAS_APPLINK);
+}
+ 
+void FileAsset::SetHasAppLink(int32_t hasAppLink)
+{
+    member_[PhotoColumn::PHOTO_HAS_APPLINK] = hasAppLink;
+}
+ 
+const std::string &FileAsset::GetAppLink() const
+{
+    return GetStrMember(PhotoColumn::PHOTO_APPLINK);
+}
+ 
+void FileAsset::SetAppLink(const string appLink)
+{
+    member_[PhotoColumn::PHOTO_APPLINK] = appLink;
 }
 
 int32_t FileAsset::GetIsAuto() const
@@ -717,6 +742,16 @@ int32_t FileAsset::GetUserId()
 void FileAsset::SetUserId(int32_t userId)
 {
     userId_ = userId;
+}
+
+int32_t FileAsset::GetExistCompatibleDuplicate() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE);
+}
+
+void FileAsset::SetExistCompatibleDuplicate(int32_t existCompatibleDuplicate)
+{
+    member_[PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE] = existCompatibleDuplicate;
 }
 
 void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)

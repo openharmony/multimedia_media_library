@@ -81,6 +81,8 @@ static int32_t CheckSystemApiKeys(const string &key)
         PhotoColumn::CAMERA_SHOT_KEY,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PhotoColumn::SUPPORTED_WATERMARK_TYPE,
+        PhotoColumn::PHOTO_HAS_APPLINK,
+        PhotoColumn::PHOTO_APPLINK,
         PhotoColumn::PHOTO_IS_AUTO,
         PhotoColumn::PHOTO_IS_RECENT_SHOW,
         PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,

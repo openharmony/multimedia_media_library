@@ -619,7 +619,7 @@ int32_t CloudFileDataConvert::HandleAttachments(
     /* content */
     int32_t ret = E_OK;
     if (upLoadRecord.dirty == -1 || upLoadRecord.dirty != static_cast<int32_t>(DirtyType::TYPE_TDIRTY)) {
-        MEDIA_INFO_LOG("handle content when not TDIRTY");
+        MEDIA_DEBUG_LOG("handle content when not TDIRTY");
         ret = HandleContent(recordData, upLoadRecord);
         CHECK_AND_PRINT_LOG(ret == E_OK, "failed to handle content");
     }

@@ -43,6 +43,8 @@ public:
     std::unordered_map<int32_t, AlbumChangeInfo> GetInitAlbumInfos();
     std::vector<int32_t> GetInitKeys() override;
     static std::vector<AlbumChangeData> GetAlbumDatasFromAddAlbum(const std::vector<std::string> &albumIdsStr);
+    void ClearChangeInfos();
+    bool CheckIsForRecheck() override;
 
 private:
     int32_t GetChangeInfoKey(const AlbumChangeInfo &changeInfo) override;
@@ -50,10 +52,20 @@ private:
     std::vector<AlbumChangeInfo> GetInfosByPredicates(const NativeRdb::AbsRdbPredicates &predicates) override;
     std::vector<AlbumChangeInfo> GetInfosByResult(
         const std::shared_ptr<NativeRdb::ResultSet> &resultSet) override;
+    int32_t SetAlbumIdsByPredicates(const NativeRdb::AbsRdbPredicates &predicates) override;
+    int32_t SetAlbumIdsBySql(const std::string &sql, const std::vector<NativeRdb::ValueObject> &bindArgs) override;
+    int32_t SetAlbumIdsByFileds(const std::vector<int32_t> &fileIds) override;
 
     std::vector<AlbumChangeInfo> GetAlbumInfos(const std::vector<int32_t> &albumIds,
         const std::vector<std::string> systemTypes = {});
     PhotoAssetChangeInfo GetPhotoAssetInfo(int32_t fileId);
+protected:
+    bool CheckIsExceed(const NativeRdb::AbsRdbPredicates &predicates, bool isLengthChanged = false) override;
+    bool CheckIsExceed(const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &bindArgs, bool isLengthChanged = false) override;
+    bool CheckIsExceed(const std::vector<int32_t> &keys) override;
+    bool CheckIsExceed(bool isLengthChanged = false) override;
+    bool CheckIsExceed(const std::vector<AlbumChangeInfo> &changeInfos) override;
 };
 
 } // namespace Media

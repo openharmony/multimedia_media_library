@@ -47,6 +47,7 @@
 #include "change_request_merge_album_dto.h"
 #include "change_request_place_before_dto.h"
 #include "change_request_set_order_position_dto.h"
+#include "change_request_set_highlight_attribute_dto.h"
 #include "get_albums_by_ids_dto.h"
 #include "get_photo_album_object_dto.h"
 #include "get_photo_album_object_vo.h"
@@ -96,6 +97,7 @@ public:
     int32_t GetPhotoAlbumObject(GetPhotoAlbumObjectDto &getPhotoAlbumObjectDto, GetPhotoAlbumObjectRespBody &respBody);
     int32_t SetPortraitRelationship(const int32_t albumId, const std::string& relationship, const int32_t isMe);
     int32_t GetPortraitRelationship(const int32_t albumId, GetRelationshipRespBody& respBody);
+    int32_t ChangeRequestSetHighlightAttribute(ChangeRequestSetHighlightAttributeDto &dto);
 
 private:
     int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);

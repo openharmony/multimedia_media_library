@@ -186,6 +186,7 @@ static int32_t g_updateBurstMaxId = 0;
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
 static const std::string MODULE_NAME = "com.ohos.medialibrary.medialibrarydata";
 #endif
+static constexpr int ADD_ASYNC_TASK_SUCCESS = 0;
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
@@ -679,16 +680,12 @@ void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_ADD_EXIF_ROTATE_COLUMN_AND_SET_VALUE);
     }
 
-    int32_t errCode = 0;
-    shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(RDB_UPGRADE_EVENT, errCode);
-    MEDIA_INFO_LOG("rdb_upgrade_events prefs errCode: %{public}d", errCode);
     if (oldVersion < VERSION_FIX_DB_UPGRADE_TO_API20 &&
-        !RdbUpgradeUtils::IsUpgrade(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, false)) {
+        !RdbUpgradeUtils::HasUpgraded(VERSION_FIX_DB_UPGRADE_TO_API20, false)) {
         AsyncUpgradeFromAllVersionFirstPart(rdbStore);
         AsyncUpgradeFromAllVersionSecondPart(rdbStore);
         rdbStore->SetOldVersion(VERSION_FIX_DB_UPGRADE_TO_API20);
-        RdbUpgradeUtils::SetUpgradeStatus(prefs, VERSION_FIX_DB_UPGRADE_TO_API20, false);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_FIX_DB_UPGRADE_TO_API20, false);
     }
 }
 
@@ -1664,6 +1661,9 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
                 return MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
             }
             break;
+        case OperationObject::PAH_BACKUP_POSTPROCESS:
+            return RestoreInvalidHDCCloudDataPos();
+            break;
         default:
             break;
     }
@@ -1671,6 +1671,38 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
     // so no need to distinct them in switch-case deliberately
     cmd.SetValueBucket(value);
     return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd);
+}
+
+static void RestoreInvalidatedPos(AsyncTaskData *data)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore, "rdbStore is nullptr");
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int>(PhotoPositionType::INVALID));
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int>(PhotoPositionType::CLOUD));
+    int32_t changedRows = -1;
+    CHECK_AND_RETURN_LOG(rdbStore->Update(changedRows, values, predicates) == NativeRdb::E_OK,
+        "fail to update invalid pos");
+    MEDIA_INFO_LOG("RestoreInvalidHDCCloudDataPos, %{public}d rows updated", changedRows);
+}
+
+int32_t MediaLibraryDataManager::RestoreInvalidHDCCloudDataPos()
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, NativeRdb::E_ERROR, "Can not get asyncWorker");
+
+    AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, NativeRdb::E_ERROR, "Failed to allocate new taskData");
+
+    shared_ptr<MediaLibraryAsyncTask> restoreInvalidPosTask = \
+        make_shared<MediaLibraryAsyncTask>(RestoreInvalidatedPos, taskData);
+    CHECK_AND_RETURN_RET_LOG(restoreInvalidPosTask, NativeRdb::E_ERROR, "fail to create medialibrary async task");
+    int32_t ret = asyncWorker->AddTask(restoreInvalidPosTask, false);
+    CHECK_AND_RETURN_RET_LOG(ret == ADD_ASYNC_TASK_SUCCESS, NativeRdb::E_ERROR,
+        "fail to add restore-invalid-pos-task to asyncWorker, ret %{public}d", ret);
+    return NativeRdb::E_OK;
 }
 
 void MediaLibraryDataManager::InterruptBgworker()
@@ -1937,30 +1969,31 @@ static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibrar
     }
 
     int32_t ret = E_SUCCESS;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK && PowerEfficiencyManager::IsChargingAndScreenOff()) {
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        if (!isChargingAndScreenOffPtr()) {
+            ret = E_ERR;
+            MEDIA_ERR_LOG("current status is not charging or screenOn");
+            break;
+        }
         string title = GetStringVal(MediaColumn::MEDIA_TITLE, resultSet);
         int32_t ownerAlbumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
         if (!isCover) {
-            auto resultSet = QueryGenerateSql(rdbStore, title, ownerAlbumId);
-            CHECK_AND_CONTINUE_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
-            if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+            auto generateResultSet = QueryGenerateSql(rdbStore, title, ownerAlbumId);
+            CHECK_AND_CONTINUE_ERR_LOG(generateResultSet != nullptr, "generateResultSet is nullptr");
+            if (generateResultSet->GoToFirstRow() != NativeRdb::E_OK) {
                 MEDIA_INFO_LOG("No burst member need to query");
-                resultSet->Close();
+                generateResultSet->Close();
                 continue;
             }
-            resultSet->Close();
+            generateResultSet->Close();
         }
 
         string updateSql = generateUpdateSql(isCover, title, ownerAlbumId);
         ret = rdbStore->ExecuteSql(updateSql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("rdbStore->ExecuteSql failed, ret = %{public}d", ret);
-            return E_HAS_DB_ERROR;
+            continue;
         }
-    }
-    if (!PowerEfficiencyManager::IsChargingAndScreenOff()) {
-        ret = E_ERR;
-        MEDIA_ERR_LOG("current status is not charging or screenOn");
     }
     return ret;
 }
@@ -2528,6 +2561,10 @@ void MediaLibraryDataManager::InitDatabaseACLPermission()
 
     if (Acl::AclSetDatabase() != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl db permission for the media db dir");
+    }
+
+    if (Acl::AclSetSlaveDatabase() != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the slave db permission for the media db dir");
     }
 }
 
@@ -3226,6 +3263,104 @@ int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryComman
             break;
     }
     return E_FAIL;
+}
+
+static int32_t GetExistsDupSize(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int64_t threshold,
+    int32_t &totalCount, int64_t &totalSize)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_INNER_FAIL, "[HeifDup] rdbStore is nullptr");
+
+    const std::string sql = R"(SELECT SUM(trans_code_file_size) AS total_size, COUNT(1) AS total_count FROM Photos
+        WHERE transcode_time > 0 and transcode_time < ?)";
+    std::vector<NativeRdb::ValueObject> params = { threshold };
+    auto resultSet = rdbStore->QuerySql(sql, params);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, E_INNER_FAIL,
+        "[HeifDup] Query dup size, resultSet is nullptr or empty.");
+
+    totalCount = GetInt32Val("total_count", resultSet);
+    if (totalCount > 0) {
+        totalSize = GetInt64Val("total_size", resultSet);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryDataManager::AgingTmpCompatibleDuplicate(int32_t fileId, const std::string &filePath)
+{
+    CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INNER_FAIL, "[HeifDup] filePath is empty");
+    auto result = MediaLibraryAssetOperations::DeleteTranscodePhotos(filePath);
+    CHECK_AND_RETURN_RET_LOG(result == E_OK, result, "[HeifDup] Failed to delete transcode photo");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_INNER_FAIL, "[HeifDup] Failed to get rdbStore.");
+
+    const std::string updateSql = R"(Update Photos SET transcode_time = 0, trans_code_file_size = 0,
+        exist_compatible_duplicate = 0 where file_id =)" + std::to_string(fileId);
+    result = rdbStore->ExecuteSql(updateSql);
+    CHECK_AND_RETURN_RET_LOG(result == NativeRdb::E_OK, E_INNER_FAIL, "[HeifDup] Failed to update rdb");
+    return result;
+}
+
+void MediaLibraryDataManager::AgingTmpCompatibleDuplicatesThread()
+{
+    constexpr int64_t transcodeTimeThreshold = 24 * 60 * 60 * 1000;  // 24 hours in milliseconds
+    constexpr int32_t batchSize = 100; // Number of photos to process in each batch
+    const std::string querySql = R"(SELECT file_id, data, trans_code_file_size FROM Photos
+        WHERE transcode_time > 0 and transcode_time < ? LIMIT ?)";
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "[HeifDup] Failed to get rdbStore");
+
+    // transcode_time < current_Time - 24 hours
+    int64_t threshold = MediaFileUtils::UTCTimeMilliSeconds() - transcodeTimeThreshold;
+    int32_t totalCount = 0;
+    int64_t totalSize = 0;
+    CHECK_AND_RETURN(GetExistsDupSize(rdbStore, threshold, totalCount, totalSize) == E_OK);
+    CHECK_AND_RETURN_INFO_LOG(totalCount > 0, "[HeifDup] No duplicate transcode photos to delete");
+
+    int dealCnt = 0;
+    int64_t dealSize = 0;
+    int32_t queryTimes = static_cast<int32_t>(ceil(static_cast<double>(totalCount) / batchSize));
+    for (int32_t i = 0; i < queryTimes; i++) {
+        std::vector<NativeRdb::ValueObject> params = { threshold, batchSize };
+        auto resultSet = rdbStore->QuerySql(querySql, params);
+        CHECK_AND_RETURN_INFO_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
+            "[HeifDup] Have no transcode photos to delete.");
+
+        do {
+            int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+            std::string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+            auto ret = AgingTmpCompatibleDuplicate(id, std::move(path));
+            CHECK_AND_CONTINUE(ret == E_OK);
+
+            int64_t size = GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet);
+            dealCnt++;
+            dealSize += size;
+            MEDIA_INFO_LOG("[HeifDup] total: %{public}d, aged: %{public}d", totalCount, dealCnt);
+        } while (resultSet->GoToNextRow() == NativeRdb::E_OK && isAgingDup_.load());
+
+        CHECK_AND_EXECUTE(resultSet == nullptr, resultSet->Close());
+        HeifAgingStatistics heifAgingStatistics;
+        heifAgingStatistics.transcodeFileNum = totalCount;
+        heifAgingStatistics.transcodeTotalSize = totalSize;
+        heifAgingStatistics.agingFileNum = dealCnt;
+        heifAgingStatistics.agingTotalSize = dealSize;
+        DfxReporter::reportHeifAgingStatistics(heifAgingStatistics);
+        CHECK_AND_BREAK(isAgingDup_.load());
+    }
+}
+
+void MediaLibraryDataManager::AgingTmpCompatibleDuplicates()
+{
+    MEDIA_INFO_LOG("[HeifDup] Start to delete transcode photos in background thread.");
+    CHECK_AND_RETURN_INFO_LOG(!isAgingDup_.load(), "[HeifDup] AgingTmpCompatibleDuplicatesThread is running.");
+    isAgingDup_.store(true);
+    std::thread([&] { AgingTmpCompatibleDuplicatesThread(); }).detach();
+}
+
+void MediaLibraryDataManager::InterruptAgingTmpCompatibleDuplicates()
+{
+    CHECK_AND_RETURN_INFO_LOG(isAgingDup_.load(), "[HeifDup] AgingTmpCompatibleDuplicatesThread is not running.");
+    isAgingDup_.store(false);
+    MEDIA_INFO_LOG("[HeifDup] Interrupt delete transcode photos is called.");
 }
 }  // namespace Media
 }  // namespace OHOS

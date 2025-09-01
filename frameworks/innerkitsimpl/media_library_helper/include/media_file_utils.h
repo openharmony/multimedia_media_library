@@ -214,6 +214,8 @@ public:
     EXPORT static int64_t GetFileModificationTime(const std::string &path);
     EXPORT static int64_t StrToInt64(const std::string &value);
     EXPORT static bool IsDirExists(const std::string &path);
+    EXPORT static int32_t CheckAppLink(const std::string &link);
+    EXPORT static bool CheckHasAppLink(int32_t hasAppLink);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);

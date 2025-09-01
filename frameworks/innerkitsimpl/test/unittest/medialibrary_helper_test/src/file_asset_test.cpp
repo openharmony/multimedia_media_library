@@ -228,5 +228,18 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_004, TestSize.Level1)
     fileAsset.SetLcdVisitCount(TEST_PARENT);
     EXPECT_EQ(fileAsset.GetLcdVisitCount(), TEST_PARENT);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_005, TestSize.Level1)
+{
+    FileAsset fileAsset;
+ 
+    const int32_t TEST_HAS_APPLINK = 1;
+    fileAsset.SetHasAppLink(TEST_HAS_APPLINK);
+    EXPECT_EQ(fileAsset.GetHasAppLink(), TEST_HAS_APPLINK);
+ 
+    const string TEST_APPLINK = "https://item.taobao.com/item.htm?id=899930519163";
+    fileAsset.SetAppLink(TEST_APPLINK);
+    EXPECT_EQ(fileAsset.GetAppLink(), TEST_APPLINK);
+}
 } // namespace Media
 } // namespace OHOS

@@ -72,6 +72,9 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_ALL_EXIF, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
     { PhotoColumn::PHOTO_EDIT_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_TRANSCODE_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_SUBTYPE, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, MEMBER_TYPE_INT32 },
     { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, MEMBER_TYPE_INT32 },
@@ -180,10 +183,16 @@ public:
         int32_t &value);
     EXPORT static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         std::string &value);
+    EXPORT static int32_t DeleteTranscodePhotos(const std::string &filePath);
+    EXPORT static void DeleteTransCodeInfo(const std::string &filePath, const std::string &fileId,
+        const std::string functionName);
+    EXPORT static std::string GetTransCodePath(const string &path);
     EXPORT static std::string GetEditDataDirPath(const std::string &path);
     static std::shared_ptr<FileAsset> GetAssetFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::vector<std::string> &columns);
-
+    static int32_t SetTranscodeUriToFileAsset(std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
+        const bool isHeif);
+    static void DoTranscodeDfx(const int32_t &type);
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");

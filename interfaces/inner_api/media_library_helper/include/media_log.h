@@ -141,6 +141,14 @@
         }                                              \
     } else void (0)
 
+#define CHECK_AND_CONTINUE_DEBUG_LOG(cond, fmt, ...)   \
+    if (1) {                                           \
+        if (!(cond)) {                                 \
+            MEDIA_DEBUG_LOG(fmt, ##__VA_ARGS__);       \
+            continue;                                  \
+        }                                              \
+    } else void (0)
+
 #define CHECK_AND_BREAK_ERR_LOG(cond, fmt, ...)        \
     if (1) {                                           \
         if (!(cond)) {                                 \

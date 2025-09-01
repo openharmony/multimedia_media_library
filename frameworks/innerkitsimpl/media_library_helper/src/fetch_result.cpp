@@ -100,11 +100,14 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_IS_AUTO, TYPE_INT32 },
         { PhotoColumn::PHOTO_MEDIA_SUFFIX, TYPE_STRING },
         { PhotoColumn::PHOTO_IS_RECENT_SHOW, TYPE_INT32 },
+        { PhotoColumn::PHOTO_HAS_APPLINK, TYPE_INT32 },
+        { PhotoColumn::PHOTO_APPLINK, TYPE_STRING },
         { MEDIA_SUM_SIZE, TYPE_INT64 },
         { CustomRecordsColumns::FILE_ID, TYPE_INT32 },
         { CustomRecordsColumns::BUNDLE_NAME, TYPE_STRING },
         { CustomRecordsColumns::SHARE_COUNT, TYPE_INT32 },
         { CustomRecordsColumns::LCD_JUMP_COUNT, TYPE_INT32 },
+        { PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, TYPE_INT32 },
         { PhotoColumn::PHOTO_EXIF_ROTATE, TYPE_INT32 },
     };
     return RESULT_TYPE_MAP;

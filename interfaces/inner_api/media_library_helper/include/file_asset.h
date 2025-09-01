@@ -223,6 +223,12 @@ public:
     EXPORT int32_t GetSupportedWatermarkType() const;
     EXPORT void SetSupportedWatermarkType(int32_t watermarkType);
 
+    EXPORT int32_t GetHasAppLink() const;
+    EXPORT void SetHasAppLink(int32_t hasAppLink);
+ 
+    EXPORT const std::string &GetAppLink() const;
+    EXPORT void SetAppLink(const std::string appLink);
+
     EXPORT int32_t GetIsAuto() const;
     EXPORT void SetIsAuto(int32_t isAuto);
 
@@ -238,6 +244,9 @@ public:
 
     EXPORT void SetUserId(int32_t userId);
     EXPORT int32_t GetUserId();
+    EXPORT int64_t GetTransCodeTime() const;
+    EXPORT int32_t GetExistCompatibleDuplicate() const;
+    EXPORT void SetExistCompatibleDuplicate(int32_t existCompatibleDuplicate);
 
     EXPORT void SetStageVideoTaskStatus(int32_t stageVideoTaskStatus);
     EXPORT int32_t GetStageVideoTaskStatus() const;

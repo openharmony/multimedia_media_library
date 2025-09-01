@@ -45,6 +45,7 @@
 #include "medialibrary_subscriber.h"
 #include "medialibrary_uripermission_operations.h"
 #include "multistages_capture_manager.h"
+#include "heif_transcoding_check_utils.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
@@ -139,6 +140,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::ANALYSIS_ASSET_SD_MAP,
     OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
     OperationObject::CLOUD_MEDIA_ASSET_OPERATE,
+    OperationObject::PAH_BACKUP_POSTPROCESS,
 };
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const unique_ptr<Runtime>& runtime)
@@ -283,6 +285,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     }
     OnStartSub(want);
     Media::MedialibrarySubscriber::Subscribe();
+    Media::HeifTranscodingCheckUtils::InitCheckList();
     dataManager->SetStartupParameter();
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
     CloudMediaAssetManager::GetInstance().RestartForceRetainCloudAssets();
@@ -294,6 +297,7 @@ void MediaDataShareExtAbility::OnStop()
     auto scannerManager = MediaScannerManager::GetInstance();
     CHECK_AND_EXECUTE(scannerManager == nullptr, scannerManager->Stop());
 
+    Media::HeifTranscodingCheckUtils::UnsubscribeCotaUpdatedEvent();
     MediaFuseManager::GetInstance().Stop();
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();
@@ -519,7 +523,8 @@ static int32_t HandleShortPermission(const MediaLibraryCommand &cmd, bool &need)
 
 static int32_t HandleRestorePermission(MediaLibraryCommand &cmd)
 {
-    if (cmd.GetUriStringWithoutSegment() == PAH_GENERATE_THUMBNAILS_RESTORE) {
+    std::string uri = cmd.GetUriStringWithoutSegment();
+    if (uri == PAH_GENERATE_THUMBNAILS_RESTORE ||uri == PAH_RESTORE_INVALID_HDC_CLOUD_DATA_POS) {
         return PermissionUtils::CheckCallerPermission(PERM_READ_IMAGEVIDEO) ? E_SUCCESS : E_PERMISSION_DENIED;
     }
     return E_PERMISSION_DENIED;

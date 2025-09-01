@@ -24,7 +24,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 352;
+const int32_t MEDIA_RDB_VERSION = 356;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -242,6 +242,10 @@ enum {
     VERSION_FIX_DB_UPGRADE_TO_API20 = 350,
     VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER = 351,
     VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER = 352,
+    VERSION_ADD_APPLINK_VERSION = 353,
+    VERSION_CREATE_TMP_COMPATIBLE_DUP = 354,
+    VERSION_ADD_MEDIA_BACKUP_INFO = 355,
+    VERSION_ADD_HIGHLIGHT_VIEWED_NOTIFICATION = 356,
 };
 enum {
     MEDIA_API_VERSION_DEFAULT = 8,
@@ -432,6 +436,7 @@ const std::string NOTIFY_VIDEO_SAVE_FINISHED = "notify_video_save_finished"; // 
 const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
 
 // slave medialibrary db file path
+const std::string MEDIA_DB_BINLOG_DIR = "/data/storage/el2/database/rdb/media_library.db_binlog";
 const std::string MEDIA_DB_FILE_SLAVE = "/data/storage/el2/database/rdb/media_library_slave.db";
 const std::string MEDIA_DB_FILE_SLAVE_SHM = "/data/storage/el2/database/rdb/media_library_slave.db-shm";
 const std::string MEDIA_DB_FILE_SLAVE_WAL = "/data/storage/el2/database/rdb/media_library_slave.db-wal";
@@ -441,6 +446,7 @@ const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";
 const std::string IMAGE_FILE_TYPE = "image_file_type";
 
 const std::string RESTORE_REQUEST_ASTC_GENERATE_COUNT = "restore_request_astc_generate_count";
+const std::string BACKUP_RESTORE_INVALID_HDC_CLOUD_DATA_POS_FLAG = "BACKUP_RESTORE_INVALID_HDC_CLOUD_DATA_POS_FLAG";
 } // namespace Media
 } // namespace OHOS
 
