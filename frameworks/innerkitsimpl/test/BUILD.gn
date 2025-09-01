@@ -88,7 +88,8 @@ group("test") {
     "unittest/photo_day_month_year_operation_test:unittest",
     "unittest/portrait_album_update_test:PortraitAlbumUpdateTest",
     "unittest/media_library_cloud_sync_service_test:unittest",
-    "unittest/media_library_cloud_sync_client_test:unittest"
+    "unittest/media_library_cloud_sync_client_test:unittest",
+    "unittest/medialibrary_analysis_progress_test:unittest",
   ]
 
   if (defined(global_parts_info.hdf_drivers_interface_usb) &&

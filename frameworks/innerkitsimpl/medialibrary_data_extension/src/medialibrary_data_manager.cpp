@@ -1152,6 +1152,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmdSub(MediaLibraryCommand &cmd)
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
+        case OperationObject::ANALYSIS_PROGRESS:
         case OperationObject::ANALYSIS_ASSET_SD_MAP:
         case OperationObject::ANALYSIS_ALBUM_ASSET_MAP:
             return MediaLibraryStoryOperations::InsertOperation(cmd);
@@ -1468,7 +1469,8 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryComma
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
-        case OperationObject::USER_PHOTOGRAPHY: {
+        case OperationObject::USER_PHOTOGRAPHY:
+        case OperationObject::ANALYSIS_PROGRESS: {
             return MediaLibraryStoryOperations::DeleteOperation(cmd);
         }
         case OperationObject::SEARCH_TOTAL: {
@@ -1642,6 +1644,7 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
+        case OperationObject::ANALYSIS_PROGRESS:
             return MediaLibraryStoryOperations::UpdateOperation(cmd);
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
@@ -2388,6 +2391,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
+        case OperationObject::ANALYSIS_PROGRESS:
         case OperationObject::APP_URI_PERMISSION_INNER:
             return MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, cmd.GetTableName()),
                 columns);
@@ -3245,6 +3249,7 @@ int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryComman
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
+        case OperationObject::ANALYSIS_PROGRESS:
         case OperationObject::ANALYSIS_ASSET_SD_MAP:
         case OperationObject::ANALYSIS_ALBUM_ASSET_MAP:
         case OperationObject::ANALYSIS_PHOTO_MAP: {
