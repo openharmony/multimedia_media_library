@@ -775,7 +775,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     DoAgingOperation();
     PeriodicAnalyzePhotosData();
     // update burst from gallery
-    ret = DoUpdateBurstFromGallery();
+    int32_t ret = DoUpdateBurstFromGallery();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstFromGallery faild");
     // update all editdata size
     ret = UpdateAllEditDataSize();
