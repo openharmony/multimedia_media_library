@@ -90,8 +90,10 @@ constexpr int32_t HIGHLIGHT_COVER_STATUS_TITLE = 2;
 constexpr int32_t HIGHLIGHT_COVER_STATUS_COVER = 1;
 constexpr int32_t ALBUM_RENAMED = 2;
 constexpr int32_t ALBUM_TO_RENAME_FOR_ANALYSIS = 3;
+constexpr int32_t IS_ME_ALBUM = 1;
 const std::string ALBUM_LPATH_PREFIX = "/Pictures/Users/";
 const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
+const std::string ME_RELATIONSHIP = "me";
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -2874,13 +2876,13 @@ int32_t MediaLibraryAlbumOperations::SetPortraitAlbumRelationship(const ValuesBu
     string relationship;
     int err = GetStringVal(values, ALBUM_RELATIONSHIP, relationship);
     CHECK_AND_RETURN_RET_LOG(err >= 0, E_INVALID_VALUES, "Invalid relationship");
-    if (relationship == "me") {
+    if (relationship == ME_RELATIONSHIP) {
         MEDIA_INFO_LOG("SetPortraitAlbumRelationship is me");
         return MediaLibraryAlbumOperations::SetIsMe(values, predicates);
     }
 
     // 如果当前相册是“我”，设置为其它相册，则清理is_me等数据
-    if (isMeAlbum == 1) {
+    if (isMeAlbum == IS_ME_ALBUM) {
         auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL,
             "uniStore is nullptr! failed update for set relationship");

@@ -733,6 +733,7 @@ int32_t MediaAlbumsService::GetPortraitRelationship(const int32_t albumId, GetRe
         MEDIA_ERR_LOG("query resultSet fail");
         return E_ERR;
     }
+    resultSet->Close();
     return E_OK;
 }
 
