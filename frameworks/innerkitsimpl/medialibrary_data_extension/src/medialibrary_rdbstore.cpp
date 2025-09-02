@@ -1678,9 +1678,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_MEDIA_TABLE,
     PhotoColumn::CREATE_PHOTO_TABLE,
     PhotoColumn::CREATE_CLOUD_ID_INDEX,
-    PhotoColumn::INDEX_SCTHP_ADDTIME,
     PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
-    PhotoColumn::INDEX_SCHPT_ALBUM_GENERAL,
     PhotoColumn::INDEX_SCHPT_ALBUM,
     PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED,
     PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
@@ -1695,7 +1693,6 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_YEAR_INDEX,
     PhotoColumn::CREATE_MONTH_INDEX,
     PhotoColumn::CREATE_DAY_INDEX,
-    PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
     PhotoColumn::CREATE_SCHPT_DAY_INDEX,
     PhotoColumn::CREATE_SCHPT_YEAR_COUNT_READY_INDEX,
     PhotoColumn::CREATE_SCHPT_MONTH_COUNT_READY_INDEX,
@@ -1834,6 +1831,10 @@ static const vector<string> onCreateSqlStrs = {
     CustomRecordsColumns::CREATE_TABLE,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
+    PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_SIZE_INDEX,
+    PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_SIZE_INDEX,
+    PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DISPLAY_NAME_INDEX,
+    PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DISPLAY_NAME_INDEX,
 
     // tab_analysis_progress
     CREATE_TAB_ANALYSIS_PROGRESS,
@@ -4950,6 +4951,22 @@ static void AddExifRotateColumn(RdbStore& store)
     MEDIA_INFO_LOG("End add exif_rotate column");
 }
 
+static void AddIndexForPhotoSortInAlbum(RdbStore& store)
+{
+    const vector<string> sqls = {
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ALBUM_GENERAL_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ADDED_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_SIZE_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_SIZE_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DISPLAY_NAME_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DISPLAY_NAME_INDEX,
+    };
+    MEDIA_INFO_LOG("Start add index for photo sort");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("End add index for photo sort");
+}
+
 static void DealWithAlbumMapTrigger(RdbStore &store)
 {
     const vector<std::string> exeSqls = {
@@ -5224,6 +5241,11 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_ANALYSIS_PROGRESS, true)) {
         AddAnalysisProgress(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS, true);
+    }
+
+    if (oldVersion < VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, true)) {
+        AddIndexForPhotoSortInAlbum(store);
     }
 }
 
