@@ -289,8 +289,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     dataManager->SetStartupParameter();
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
     CloudMediaAssetManager::GetInstance().RestartForceRetainCloudAssets();
-    ret = dataManager->RestoreInvalidPosData();
-    CHECK_AND_PRINT_LOG(ret == E_OK, "OnStart RestoreInvalidPosData failed");
+    dataManager->RestoreInvalidHDCCloudDataPos();
 }
 
 void MediaDataShareExtAbility::OnStop()
