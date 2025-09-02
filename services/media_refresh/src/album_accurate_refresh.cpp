@@ -262,5 +262,10 @@ vector<AlbumChangeData> AlbumAccurateRefresh::GetAlbumChangeDatas()
     return dataManager_.GetChangeDatas();
 }
 
+int32_t AlbumAccurateRefresh::AddAlbumIdForMoveOperation(const AbsRdbPredicates &predicates)
+{
+    return dataManager_.AddAlbumIdForMoveOperation(predicates);
+}
+
 } // namespace Media
 } // namespace OHOS

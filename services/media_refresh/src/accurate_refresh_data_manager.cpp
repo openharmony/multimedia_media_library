@@ -289,6 +289,13 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasF
 }
 
 template <typename ChangeInfo, typename ChangeData>
+int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::AddAlbumIdForMoveOperation(
+    const NativeRdb::AbsRdbPredicates &predicates)
+{
+    return SetAlbumIdsByPredicates(predicates);
+}
+
+template <typename ChangeInfo, typename ChangeData>
 bool AccurateRefreshDataManager<ChangeInfo, ChangeData>::IsValidChangeInfo(const ChangeInfo &changeInfo)
 {
     return GetChangeInfoKey(changeInfo) != INVALID_INT32_VALUE;
