@@ -35,6 +35,7 @@
 #include "ipc_skeleton.h"
 #include "location_column.h"
 #include "locale_config.h"
+#include "media_analysis_progress_column.h"
 #include "media_device_column.h"
 #include "media_directory_type_column.h"
 #include "media_file_asset_columns.h"
@@ -6836,6 +6837,42 @@ static void GetMediaAnalysisServiceProgress(nlohmann::json& jsonObj, unordered_m
     ret->Close();
 }
 
+static std::string GetAnalysisProgress()
+{
+    int errCode = 0;
+    GetAnalysisProcessReqBody reqBody;
+    reqBody.analysisType = AnalysisType::ANALYSIS_INVALID;
+    QueryResultRespBody respBody;
+    errCode = IPC::UserDefineIPCClient().Call(
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, respBody);
+    shared_ptr<DataShare::DataShareResultSet> ret = respBody.resultSet;
+    if (ret == nullptr) {
+        NAPI_ERR_LOG("ret is nullptr");
+        return "";
+    }
+    if (ret->GoToFirstRow() != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
+        ret->Close();
+        return "";
+    }
+    vector<string> columnList = {SEARCH_FINISH_CNT, LOCATION_FINISH_CNT, FACE_FINISH_CNT, OBJECT_FINISH_CNT,
+        AESTHETIC_FINISH_CNT, OCR_FINISH_CNT, POSE_FINISH_CNT, SALIENCY_FINISH_CNT, RECOMMENDATION_FINISH_CNT,
+        SEGMENTATION_FINISH_CNT, BEAUTY_AESTHETIC_FINISH_CNT, HEAD_DETECT_FINISH_CNT, LABEL_DETECT_FINISH_CNT,
+        TOTAL_IMAGE_CNT, FULLY_ANALYZED_IMAGE_CNT, TOTAL_PROGRESS};
+    int colIndex = 0;
+    int colValue = 0;
+    nlohmann::json jsonObj;
+    for (auto columnName : columnList) {
+        ret->GetColumnIndex(columnName, colIndex);
+        ret->GetInt(colIndex, colValue);
+        jsonObj[columnName] = colValue;
+    }
+    ret->Close();
+    string retStr = jsonObj.dump();
+    NAPI_INFO_LOG("Progress json is %{public}s", retStr.c_str());
+    return retStr;
+}
+
 static std::string GetLabelAnalysisProgress()
 {
     unordered_map<int, string> idxToCount = {
@@ -6966,6 +7003,11 @@ static void JSGetAnalysisProgressExecute(MediaLibraryAsyncContext* context)
     std::vector<std::string> fetchColumn;
     DataShare::DataSharePredicates predicates;
     switch (context->analysisType) {
+        case ANALYSIS_INVALID: {
+            // 处理总进度
+            context->analysisProgress = GetAnalysisProgress();
+            break;
+        }
         case ANALYSIS_LABEL: {
             context->analysisProgress = GetLabelAnalysisProgress();
             break;
@@ -7008,6 +7050,20 @@ static void JSGetDataAnalysisProgressCompleteCallback(napi_env env, napi_status 
     delete context;
 }
 
+napi_status ParseArgsDataAnalysisProgress(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context, int32_t &value)
+{
+    constexpr size_t minArgs = ARGS_ZERO;
+    constexpr size_t maxArgs = ARGS_ONE;
+    CHECK_STATUS_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        "Failed to get object info");
+    if (context->argc == maxArgs) {
+        CHECK_STATUS_RET(MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_ZERO], value),
+            "Failed to get number argument");
+    }
+    return napi_ok;
+}
+
 napi_value MediaLibraryNapi::PhotoAccessHelperGetDataAnalysisProgress(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -7018,7 +7074,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperGetDataAnalysisProgress(napi_env e
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, asyncContext->analysisType),
+    CHECK_ARGS(env, ParseArgsDataAnalysisProgress(env, info, asyncContext, asyncContext->analysisType),
         JS_ERR_PARAMETER_INVALID);
 
     SetUserIdFromObjectInfo(asyncContext);
