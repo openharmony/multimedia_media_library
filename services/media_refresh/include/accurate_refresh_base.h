@@ -85,6 +85,7 @@ public:
     void CloseDfxReport();
 
 protected:
+    virtual int32_t AddAlbumIdForMoveOperation(const NativeRdb::AbsRdbPredicates &predicates) = 0;
     // 数据库操作后，触发更新修改后的数据
     virtual int32_t UpdateModifiedDatasInner(const std::vector<int32_t> &keys, RdbOperation operation,
         PendingInfo pendingInfo = PendingInfo()) = 0;

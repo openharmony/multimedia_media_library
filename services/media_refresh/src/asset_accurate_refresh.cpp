@@ -271,5 +271,10 @@ int32_t AssetAccurateRefresh::RefreshAllAlbum(std::unordered_set<int32_t> albumI
 {
     return albumRefreshExe_.RefreshAllAlbum(albumIds, notifyAlbumType, isRefreshWithDateModified);
 }
+
+int32_t AssetAccurateRefresh::AddAlbumIdForMoveOperation(const AbsRdbPredicates &predicates)
+{
+    return dataManager_.AddAlbumIdForMoveOperation(predicates);
+}
 }  // namespace Media::AccurateRefresh
 }  // namespace OHOS
