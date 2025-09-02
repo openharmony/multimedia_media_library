@@ -95,6 +95,7 @@ static const std::unordered_map<std::string, ResultSetDataType> RESULT_TYPE_MAP 
     { PhotoColumn::PHOTO_STRONG_ASSOCIATION, TYPE_INT32 },
     { PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, TYPE_INT32 },
     { PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, TYPE_INT32 },
+    { PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, TYPE_INT32 },
     { PhotoColumn::PHOTO_DETAIL_TIME, TYPE_STRING },
     { PhotoColumn::PHOTO_OWNER_ALBUM_ID, TYPE_INT32 },
     { PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, TYPE_STRING },

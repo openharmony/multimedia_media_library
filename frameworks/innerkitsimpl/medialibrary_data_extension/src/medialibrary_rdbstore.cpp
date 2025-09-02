@@ -2714,6 +2714,14 @@ void AddCloudIndex(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddCompositeDisplayStatusColumn(RdbStore &store)
+{
+    const string addCompositeDisplayStatusOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+        " ADD COLUMN " + PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS + " INT NOT NULL DEFAULT 0";
+    const vector<string> addCompositeDisplayStatus = {addCompositeDisplayStatusOnPhotos};
+    ExecSqls(addCompositeDisplayStatus, store);
+}
+
 static void AddPhotoEditTimeColumn(RdbStore &store)
 {
     const string addEditTimeOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
@@ -5245,6 +5253,10 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_ANALYSIS_PROGRESS, true)) {
         AddAnalysisProgress(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS, true);
+    }
+
+    if (oldVersion < VERSION_ADD_COMPOSITE_DISPLAY_STATUS_COLUMNS) {
+        AddCompositeDisplayStatusColumn(store);
     }
 }
 

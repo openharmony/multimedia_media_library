@@ -487,7 +487,11 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::HEIF_TRANSCODING_CHECK),
         &MediaAssetsControllerService::HeifTranscodingCheck
-    }
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_COMPOSITE_DISPLAY_MODE),
+        &MediaAssetsControllerService::SetCompositeDisplayMode
+    },
 };
 
 bool MediaAssetsControllerService::Accept(uint32_t code)
@@ -1078,6 +1082,26 @@ int32_t MediaAssetsControllerService::SetAppLink(MessageParcel &data, MessagePar
     }
 
     ret = MediaAssetsService::GetInstance().SetAppLink(reqBody.fileId, reqBody.appLink);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::SetCompositeDisplayMode(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter SetCompositeDisplayMode");
+    AssetChangeReqBody reqBody;
+
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetCompositeDisplayMode Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    ret = ParameterUtils::CheckCompositeDisplayMode(reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().SetCompositeDisplayMode(reqBody.fileId, reqBody.compositeDisplayMode);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 

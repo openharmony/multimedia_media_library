@@ -881,6 +881,7 @@ int32_t CloudFileDataConvert::ConvertFdirtyRecord(
     }
     record.path = photosData.GetFilePath().value_or("");
     record.livePhotoCachePath = MovingPhotoFileUtils::GetLivePhotoCachePath(record.path, userId_);
+    record.sourceLivePhoto = MovingPhotoFileUtils::GetSourceLivePhotoCachePath(record.path, userId_);
     record.isSuccess = result.IsSuccess();
     record.version = result.GetDKRecord().GetVersion();
     record.serverErrorCode = result.GetDKError().serverErrorCode;
@@ -905,6 +906,7 @@ int32_t CloudFileDataConvert::ConvertToOnCreateRecord(
     record.version = result.GetDKRecord().GetVersion();
     record.isSuccess = result.IsSuccess();
     record.livePhotoCachePath = MovingPhotoFileUtils::GetLivePhotoCachePath(record.path, userId_);
+    record.sourceLivePhoto = MovingPhotoFileUtils::GetSourceLivePhotoCachePath(record.path, userId_);
     record.serverErrorCode = result.GetDKError().serverErrorCode;
     ConvertErrorTypeDetails(result, record.errorDetails);
     return E_OK;

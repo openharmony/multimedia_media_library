@@ -43,6 +43,7 @@ public:
     std::string cloudId;
     std::string path;
     std::string livePhotoCachePath;
+    std::string sourceLivePhoto;
     std::string fileName;
     std::string sourcePath;
     std::vector<CloudErrorDetail> errorDetails;

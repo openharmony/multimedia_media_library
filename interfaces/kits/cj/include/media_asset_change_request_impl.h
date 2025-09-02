@@ -47,6 +47,7 @@ enum class AssetChangeOperation {
     SET_HAS_APPLINK,
     SET_APPLINK,
     SET_VIDEO_ENHANCEMENT_ATTR,
+    SET_COMPOSITE_DISPLAY_MODE,
 };
 
 enum class AddResourceMode {
