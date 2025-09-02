@@ -135,6 +135,7 @@ private:
     void InitResourceInfo();
     void DeleteDirtyFileAndDir(const std::vector<std::string>& deleteFilePaths);
     void HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart);
+    void UpgradeAsync(const std::shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion);
     int32_t BatchInsertMediaAnalysisData(MediaLibraryCommand &cmd,
         const std::vector<DataShare::DataShareValuesBucket> &values);
     int32_t HandleThumbnailOperations(MediaLibraryCommand &cmd);
