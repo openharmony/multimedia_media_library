@@ -289,7 +289,8 @@ int32_t MediaScannerObj::Commit()
                 NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
             UpdateAndNotifyShootingModeAlbumOfAsset(data_);
         }
-        if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT && data_->GetBurstCoverLevel() == COVER) {
+        if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT && data_->GetBurstCoverLevel() == COVER
+            && data_->GetFileSourceType() != static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) {
             if (data_->GetForAdd()) {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
             } else {
@@ -302,7 +303,8 @@ int32_t MediaScannerObj::Commit()
         assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
             NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
         UpdateAndNotifyShootingModeAlbumOfAsset(data_);
-        if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT) {
+        if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT
+            && data_->GetFileSourceType() != static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) {
             watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
         }
     }

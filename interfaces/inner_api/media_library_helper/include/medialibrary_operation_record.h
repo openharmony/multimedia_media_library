@@ -45,6 +45,8 @@ const std::string CREATE_OPERATION_ASSET_INSERT_TRIGGER =
     PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
     " WHEN (NEW.media_type = 1 OR NEW.media_type = 2)" +
     " AND NEW.POSITION <> 2" +
+    " AND NEW." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+    to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
     " BEGIN " +
     " INSERT OR IGNORE INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
@@ -59,6 +61,8 @@ const std::string CREATE_OPERATION_ASSET_DELETE_TRIGGER =
     PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
     " WHEN (OLD.media_type = 1 OR OLD.media_type = 2)" +
     " AND OLD.POSITION <> 2" +
+    " AND OLD." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+    to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
     " BEGIN " +
     " INSERT OR IGNORE INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
@@ -72,7 +76,7 @@ const std::string OPERATION_ASSET_UPDATE_TRIGGER = "operation_asset_update_trigg
 const std::string CREATE_OPERATION_ASSET_UPDATE_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS operation_asset_update_trigger AFTER UPDATE ON " +
     PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
-    " WHEN " +
+    " WHEN (" +
     " (OLD.POSITION = 2 AND NEW.POSITION = 3)" +
     " OR (OLD.POSITION = 3 AND NEW.POSITION = 2)" +
     " OR (NEW.POSITION <> 2" +
@@ -98,6 +102,8 @@ const std::string CREATE_OPERATION_ASSET_UPDATE_TRIGGER =
     " OR NEW.time_pending <> OLD.time_pending" +
     " OR NEW.moving_photo_effect_mode <> OLD.moving_photo_effect_mode)" +
     " )" +
+    " ) AND OLD." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+    to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
     " BEGIN " +
     " INSERT OR IGNORE INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +

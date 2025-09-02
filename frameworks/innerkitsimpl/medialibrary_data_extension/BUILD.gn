@@ -596,6 +596,7 @@ ohos_shared_library("medialibrary_data_extension") {
 
   sources_backround_task = [
     "src/background/media_background_task_factory.cpp",
+    "src/background/media_file_manager_temp_file_aging_task.cpp",
   ]
 
   sources = [

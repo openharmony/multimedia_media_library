@@ -42,6 +42,7 @@ private:
 
 private:
     int32_t AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store);
+    int32_t AddFileSourceTypeColumn(NativeRdb::RdbStore &store);
     int32_t AddlPathColumn(NativeRdb::RdbStore &store);
     int32_t MoveSingleRelationshipToPhotos(NativeRdb::RdbStore &store);
     int32_t UpdatelPathColumn(NativeRdb::RdbStore &store);
@@ -89,6 +90,8 @@ private:
             COALESCE(PhotoAlbum.lpath, '') = '';";
     const std::string SQL_PHOTOS_TABLE_ADD_OWNER_ALBUM_ID = "\
         ALTER TABLE Photos ADD COLUMN owner_album_id INT DEFAULT 0;";
+    const std::string SQL_PHOTOS_TABLE_ADD_FILE_SOURCE_TYPE = "\
+        ALTER TABLE Photos ADD COLUMN file_source_type INT DEFAULT 0;";
     const std::string SQL_TEMP_PHOTO_MAP_TABLE_DROP = "DROP TABLE IF EXISTS temp_photo_map;";
     // 使用 group 分组查找 Photos 的一条关联关系
     const std::string SQL_TEMP_PHOTO_MAP_TABLE_CREATE = "\
