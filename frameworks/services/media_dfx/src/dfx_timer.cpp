@@ -176,6 +176,8 @@ const std::map<uint32_t, int64_t> DfxTimer::operationCodeTimeoutMap = {
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_DISPLAY_LEVEL), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_DISMISS), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_RESET_COVER_URI), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_RELATIONSHIP), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_RELATIONSHIP), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_HIGH_LIGHT_USER_ACTION_DATA), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUBTITLE), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_ADD_ASSETS), 200},

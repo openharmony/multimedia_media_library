@@ -32,6 +32,7 @@
 #include "get_order_position_dto.h"
 #include "get_order_position_vo.h"
 #include "get_photo_index_vo.h"
+#include "get_relationship_vo.h"
 #include "query_result_vo.h"
 #include "get_analysis_process_vo.h"
 #include "get_highlight_album_info_vo.h"
@@ -94,6 +95,8 @@ public:
     int32_t SetOrderPosition(ChangeRequestSetOrderPositionDto &setOrderPositionDto);
     int32_t GetAlbumsByIds(GetAlbumsByIdsDto &getAlbumsByIdsDto, GetAlbumsByIdsRespBody &respBody);
     int32_t GetPhotoAlbumObject(GetPhotoAlbumObjectDto &getPhotoAlbumObjectDto, GetPhotoAlbumObjectRespBody &respBody);
+    int32_t SetPortraitRelationship(const int32_t albumId, const std::string& relationship, const int32_t isMe);
+    int32_t GetPortraitRelationship(const int32_t albumId, GetRelationshipRespBody& respBody);
     int32_t ChangeRequestSetHighlightAttribute(ChangeRequestSetHighlightAttributeDto &dto);
 
 private:

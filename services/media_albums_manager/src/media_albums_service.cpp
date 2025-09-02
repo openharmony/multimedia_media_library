@@ -49,6 +49,7 @@
 #include "story_cover_info_column.h"
 #include "story_play_info_column.h"
 #include "vision_column_comm.h"
+#include "vision_album_column.h"
 #include "medialibrary_photo_operations.h"
 #include "rdb_predicates.h"
 #include "dfx_refresh_manager.h"
@@ -134,6 +135,16 @@ int32_t MediaAlbumsService::SetHighlightUserActionData(const SetHighlightUserAct
 {
     int32_t err = this->rdbOperation_.SetHighlightUserActionData(dto);
     return err;
+}
+
+int32_t MediaAlbumsService::SetPortraitRelationship(const int32_t albumId, const string& relationship,
+    const int32_t isMe)
+{
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    values.Put(ALBUM_RELATIONSHIP, relationship);
+    return MediaLibraryAlbumOperations::SetPortraitAlbumRelationship(values, predicates, isMe);
 }
 
 int32_t MediaAlbumsService::SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto)
@@ -693,6 +704,36 @@ int32_t MediaAlbumsService::GetOrderPosition(const GetOrderPositionDto& getOrder
     for (const string& assetId : getOrderPositionDto.assetIdArray) {
         resp.orderPositionArray.push_back(idOrderMap[assetId]);
     }
+    return E_OK;
+}
+
+int32_t MediaAlbumsService::GetPortraitRelationship(const int32_t albumId, GetRelationshipRespBody& resp)
+{
+    MEDIA_INFO_LOG("GetPortraitRelationship start");
+    NativeRdb::RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    std::vector<std::string> fetchColumn{ALBUM_RELATIONSHIP};
+
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, fetchColumn);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+
+    int count = 0;
+    int ret = resultSet->GetRowCount(count);
+    if (ret != NativeRdb::E_OK || count <= 0) {
+        MEDIA_ERR_LOG("GetRowCount failed, error code: %{public}d, count: %{public}d", ret, count);
+        return JS_INNER_FAIL;
+    }
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        resp.relationship = get<std::string>(ResultSetUtils::GetValFromColumn(
+            ALBUM_RELATIONSHIP, resultSet, TYPE_STRING));
+    } else {
+        MEDIA_ERR_LOG("query resultSet fail");
+        return E_ERR;
+    }
+    resultSet->Close();
     return E_OK;
 }
 

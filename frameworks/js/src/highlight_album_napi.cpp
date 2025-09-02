@@ -45,6 +45,7 @@
 #include "set_highlight_user_action_data_vo.h"
 #include "get_order_position_vo.h"
 #include "get_highlight_album_info_vo.h"
+#include "get_relationship_vo.h"
 #include "query_result_vo.h"
 
 using namespace std;
@@ -54,6 +55,8 @@ static const string HIGHLIGHT_ALBUM_CLASS = "HighlightAlbum";
 static const string ANALYSIS_ALBUM_CLASS = "AnalysisAlbum";
 thread_local napi_ref HighlightAlbumNapi::constructor_ = nullptr;
 thread_local napi_ref HighlightAlbumNapi::analysisAlbumConstructor_ = nullptr;
+static const int32_t NAPI_INVALID_PARAMETER_ERROR = 23800151;
+static const int32_t MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR = 23800301;
 
 using CompleteCallback = napi_async_complete_callback;
 
@@ -87,6 +90,7 @@ napi_value HighlightAlbumNapi::AnalysisAlbumInit(napi_env env, napi_value export
         .constructor = Constructor,
         .props = {
             DECLARE_NAPI_FUNCTION("getOrderPosition", JSGetOrderPosition),
+            DECLARE_NAPI_FUNCTION("getRelationship", JSAnalysisAlbumGetRelationship),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -714,5 +718,100 @@ napi_value HighlightAlbumNapi::JSDeleteHighlightAlbums(napi_env env, napi_callba
 shared_ptr<PhotoAlbum> HighlightAlbumNapi::GetPhotoAlbumInstance() const
 {
     return highlightAlbumPtr;
+}
+
+static void JSGetRelationshipExecute(napi_env env, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetRelationshipExecute");
+    NAPI_INFO_LOG("JSGetRelationshipExecute start");
+
+    auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "objectInfo is null");
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
+
+    GetRelationshipReqBody reqBody;
+    GetRelationshipRespBody respBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_RELATIONSHIP);
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (result < 0) {
+        NAPI_ERR_LOG("Failed to get relationship, error: %{public}d", result);
+        context->error = JS_INNER_FAIL;
+        return;
+    }
+    context->relationship = respBody.relationship;
+
+    NAPI_INFO_LOG("GetRelationship: albumId: %{public}d, relationship is: %{public}s",
+        reqBody.albumId, context->relationship.c_str());
+}
+
+static void JSGetRelationshipCompleteCallback(napi_env env, napi_status status, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetRelationshipCompleteCallback");
+
+    auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env,
+            napi_create_string_utf8(env, context->relationship.c_str(), NAPI_AUTO_LENGTH, &jsContext->data),
+            JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value HighlightAlbumNapi::JSAnalysisAlbumGetRelationship(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSAnalysisAlbumGetRelationship");
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    // make undefined
+    napi_value undefinedObject = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &undefinedObject));
+
+    // Create async context
+    unique_ptr<HighlightAlbumNapiAsyncContext> asyncContext = make_unique<HighlightAlbumNapiAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, undefinedObject, "asyncContext context is null");
+
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ZERO) == napi_ok,
+        MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "Failed to get object info");
+    // Check album instance
+    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_ERR_MESSAGE(env, photoAlbum != nullptr,
+        MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "photoAlbum is null");
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        NAPI_INVALID_PARAMETER_ERROR, "Only portrait album can set relationship");
+    
+    // make assync task
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, asyncContext, "JSGetRelationship", JSGetRelationshipExecute, JSGetRelationshipCompleteCallback);
 }
 } // namespace OHOS::Media

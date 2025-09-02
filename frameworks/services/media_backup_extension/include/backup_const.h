@@ -580,6 +580,7 @@ struct AnalysisAlbumTbl {
     std::optional<int32_t> renameOperation;
     std::optional<int32_t> isLocal;
     std::optional<int32_t> isCoverSatisfied;
+    std::optional<std::string> relationship;
 };
 
 struct PortraitAlbumDfx {
