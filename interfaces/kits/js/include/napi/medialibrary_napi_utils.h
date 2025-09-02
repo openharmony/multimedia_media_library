@@ -501,6 +501,7 @@ public:
     EXPORT static int32_t GetFeaturedSinglePortraitAlbumPredicates(
         const int32_t albumId, DataShare::DataSharePredicates &predicates);
     EXPORT static int32_t GetPortraitAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
+    EXPORT static bool ClearAllRelationship();
     EXPORT static int32_t GetAllLocationPredicates(DataShare::DataSharePredicates &predicates);
     EXPORT static int32_t GetSourceAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates,
         const bool hiddenOnly);

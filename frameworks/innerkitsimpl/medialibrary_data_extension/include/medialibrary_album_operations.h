@@ -97,6 +97,8 @@ public:
         const DataShare::DataSharePredicates &predicates);
     static int32_t SetHighlightSubtitle(const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates);
+    static int32_t SetPortraitAlbumRelationship(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates, const int32_t isMeAlbum);
     static int32_t SetIsMe(const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates);
     static int32_t RecoverPhotoAssets(const DataShare::DataSharePredicates &predicates);

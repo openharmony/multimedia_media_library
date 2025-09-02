@@ -52,6 +52,7 @@
 #include "change_request_merge_album_vo.h"
 #include "change_request_place_before_vo.h"
 #include "change_request_set_order_position_vo.h"
+#include "change_request_set_relationship_vo.h"
 #include "change_request_set_highlight_attribute_vo.h"
 
 using namespace std;
@@ -65,6 +66,7 @@ thread_local napi_ref MediaAlbumChangeRequestNapi::mediaAnalysisAlbumChangeReque
 thread_local napi_ref MediaAlbumChangeRequestNapi::mediaHighlightAlbumChangeRequestConstructor_ = nullptr;
 static const int32_t VALUE_IS_ME = 1;
 static const int32_t VALUE_IS_REMOVED = 1;
+static const int32_t NAPI_INVALID_PARAMETER_ERROR = 23800151;
 static const int32_t MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR = 23800301;
 static const int32_t MEDIA_LIBRARY_PARAM_ERROR = 23800151;
 static const int32_t MAX_HIGHLIGHT_ATTRIBUTE_VALUE_LEN = 20;
@@ -124,6 +126,7 @@ napi_value MediaAlbumChangeRequestNapi::MediaAnalysisAlbumChangeRequestInit(napi
             DECLARE_NAPI_FUNCTION("setIsMe", JSSetIsMe),
             DECLARE_NAPI_FUNCTION("dismiss", JSDismiss),
             DECLARE_NAPI_FUNCTION("setOrderPosition", JSSetOrderPosition),
+            DECLARE_NAPI_FUNCTION("setRelationship", JSSetRelationship),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -233,6 +236,16 @@ vector<string> MediaAlbumChangeRequestNapi::GetDeleteAssetArray() const
 vector<string> MediaAlbumChangeRequestNapi::GetDismissAssetArray() const
 {
     return dismissAssets_;
+}
+
+std::string MediaAlbumChangeRequestNapi::GetRelationship() const
+{
+    return relationship_;
+}
+
+int32_t MediaAlbumChangeRequestNapi::GetIsMe() const
+{
+    return isMe_;
 }
 
 std::vector<std::pair<std::string, int32_t>> MediaAlbumChangeRequestNapi::GetIdOrderPositionPairs() const
@@ -1017,6 +1030,105 @@ napi_value MediaAlbumChangeRequestNapi::JSSetDisplayLevel(napi_env env, napi_cal
     return result;
 }
 
+const std::unordered_set<std::string> ALLOWED_RELATIONSHIPS = {
+    "me", "son", "daughter", "wife", "husband", "father", "mother",
+    "colleague", "friend", "classmate", "best_friend_female",
+    "boyfriend", "girlfriend", "family", "maternal_grandfather", "maternal_grandmother",
+    "paternal_grandfather", "paternal_grandmother", "older_brother", "relative",
+    "older_sister", "younger_brother", "younger_sister", "other", ""
+};
+
+static void GetIsMeInfo(int32_t &isMe, bool &isMeExist, const int32_t albumId)
+{
+    Uri queryUri(PAH_QUERY_ANA_PHOTO_ALBUM);
+    std::vector<std::string> fetchColumn{IS_ME};
+    DataShare::DataSharePredicates queryPredicates;
+    queryPredicates.EqualTo(ALBUM_ID, albumId);
+    int errCode = 0;
+    auto isMeResultSet = UserFileClient::Query(queryUri, queryPredicates, fetchColumn, errCode);
+    if (errCode == E_SUCCESS && isMeResultSet != nullptr && isMeResultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        isMe = get<int32_t>(ResultSetUtils::GetValFromColumn(IS_ME, isMeResultSet, TYPE_INT32));
+    }
+
+    if (isMe == 0) {
+        // check has is me
+        std::vector<std::string> fetchColumnNew{IS_ME, ALBUM_ID};
+        DataShare::DataSharePredicates queryPredicatesNew;
+        queryPredicatesNew.EqualTo(IS_ME, 1);
+        int errCodeNew = 0;
+        auto isMeExistRet = UserFileClient::Query(queryUri, queryPredicatesNew, fetchColumnNew, errCodeNew);
+        if (errCodeNew == E_SUCCESS && isMeExistRet != nullptr && isMeExistRet->GoToFirstRow() == NativeRdb::E_OK) {
+            NAPI_INFO_LOG("Has is me album on portrait album list");
+            isMeExist = true;
+        }
+    }
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSSetRelationship(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("JSSetRelationship called");
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetRelationship");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    // Create undefined return value in case of failure
+    napi_value undefinedObject = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &undefinedObject));
+
+    // Create async context
+    std::unique_ptr<MediaAlbumChangeRequestAsyncContext> asyncContext =
+        std::make_unique<MediaAlbumChangeRequestAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, undefinedObject, "Failed to create asyncContext");
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        (MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_TWO) == napi_ok),
+        MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "Failed to get object info");
+    // Retrieve the album instance
+    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_ERR_MESSAGE(env, photoAlbum != nullptr,
+        MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR, "Failed to get photo album instance");
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        NAPI_INVALID_PARAMETER_ERROR, "Only portrait album can set relationship");
+    
+    // Check is me
+    int32_t isMe = 0;
+    bool isMeExist = false;
+    GetIsMeInfo(isMe, isMeExist, photoAlbum->GetAlbumId());
+
+    // Parse the relationship string from the first argument
+    napi_valuetype valueType;
+    NAPI_CALL(env, napi_typeof(env, asyncContext->argv[PARAM0], &valueType));
+    CHECK_COND_WITH_ERR_MESSAGE(env, (valueType == napi_string),
+        NAPI_INVALID_PARAMETER_ERROR, "Relationship must be a string");
+    char relationshipCStr[256] = {0};
+    size_t strLen = 0;
+    CHECK_ARGS(env, napi_get_value_string_utf8(env, asyncContext->argv[PARAM0],
+        relationshipCStr, sizeof(relationshipCStr), &strLen), JS_ERR_PARAMETER_INVALID);
+    std::string relationship(relationshipCStr, strLen);
+    CHECK_COND_WITH_ERR_MESSAGE(env, ALLOWED_RELATIONSHIPS.find(relationship) != ALLOWED_RELATIONSHIPS.end(),
+        NAPI_INVALID_PARAMETER_ERROR, "Invalid relationship value provided");
+    NAPI_INFO_LOG("Set relationship is: %{public}s, albumId: %{public}d",
+        relationship.c_str(), photoAlbum->GetAlbumId());
+
+    // 清空relationship和更改is_me场景：
+    // 1、存在“我”相册且“我”相册不是当前相册，将其它相册人物关系设置为“我”
+    // 2、当前相册为“我”相册并将已设置的“我”设置为其他关系
+    if ((isMeExist && relationship == "me" && isMe == 0) || (isMe == 1 && relationship != "me")) {
+        NAPI_INFO_LOG("Clear relationship");
+        bool result = MediaLibraryNapiUtils::ClearAllRelationship();
+        if (!result) {
+            NAPI_WARN_LOG("Failed to clear all relationship after set is me.");
+        }
+    }
+    // Store relationship in context via objectInfo
+    asyncContext->objectInfo->relationship_ = relationship;
+    asyncContext->objectInfo->isMe_ = isMe;
+    asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_RELATIONSHIP);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 napi_value MediaAlbumChangeRequestNapi::JSSetOrderPosition(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -1607,6 +1719,35 @@ static bool OrderAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
     return true;
 }
 
+static bool SetRelationshipExecute(MediaAlbumChangeRequestAsyncContext &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetRelationshipExecute");
+    NAPI_INFO_LOG("SetRelationshipExecute start");
+    // Retrieve the photo album instance
+    const auto &photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
+    if (photoAlbum == nullptr) {
+        NAPI_ERR_LOG("Photo album is null in SetRelationshipExecute");
+        context.SaveError(JS_INNER_FAIL);
+        return false;
+    }
+
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_RELATIONSHIP);
+    ChangeRequestSetRelationshipReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.relationship = context.objectInfo->GetRelationship();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+    reqBody.isMe = context.objectInfo->GetIsMe();
+    int32_t result = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (result < 0) {
+        NAPI_ERR_LOG("Failed to set relationship, error: %{public}d", result);
+        context.SaveError(result);
+        return false;
+    }
+    return true;
+}
+
 static bool SetOrderPositionExecute(MediaAlbumChangeRequestAsyncContext &context)
 {
     MediaLibraryTracer tracer;
@@ -1766,6 +1907,10 @@ static bool SetIsMeExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SetIsMeExecute");
+    bool result = MediaLibraryNapiUtils::ClearAllRelationship();
+    if (!result) {
+        NAPI_WARN_LOG("Failed to clear all relationship after set is me");
+    }
 
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
@@ -1906,6 +2051,7 @@ static const unordered_map<AlbumChangeOperation, bool (*)(MediaAlbumChangeReques
     { AlbumChangeOperation::MERGE_ALBUM, MergeAlbumExecute },
     { AlbumChangeOperation::DISMISS_ASSET, DismissAssetExecute },
     { AlbumChangeOperation::SET_ORDER_POSITION, SetOrderPositionExecute },
+    { AlbumChangeOperation::SET_RELATIONSHIP, SetRelationshipExecute },
     { AlbumChangeOperation::SET_HIGHLIGHT_ATTRIBUTE, SetHighlightAttributeExecute },
 };
 

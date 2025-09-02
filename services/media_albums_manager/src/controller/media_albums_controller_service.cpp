@@ -35,6 +35,8 @@
 #include "change_request_set_display_level_vo.h"
 #include "change_request_set_is_me_vo.h"
 #include "change_request_set_album_name_dto.h"
+#include "change_request_set_relationship_vo.h"
+#include "get_relationship_vo.h"
 #include "medialibrary_data_manager_utils.h"
 #include "change_request_add_assets_vo.h"
 #include "change_request_remove_assets_vo.h"
@@ -175,6 +177,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_ORDER_POSITION),
         &MediaAlbumsControllerService::SetOrderPosition
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_RELATIONSHIP),
+        &MediaAlbumsControllerService::SetRelationship
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_RELATIONSHIP),
+        &MediaAlbumsControllerService::GetRelationship
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_COMMIT_MODIFY),
@@ -738,6 +748,49 @@ int32_t MediaAlbumsControllerService::SetOrderPosition(MessageParcel &data, Mess
     dto.FromVo(reqBody);
     ret = MediaAlbumsService::GetInstance().SetOrderPosition(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAlbumsControllerService::SetRelationship(MessageParcel &data, MessageParcel &reply)
+{
+    ChangeRequestSetRelationshipReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("SetRelationship Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
+    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
+    bool cond = PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype);
+    if (!cond) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+    }
+    ret = MediaAlbumsService::GetInstance().SetPortraitRelationship(
+        reqBody.albumId, reqBody.relationship, reqBody.isMe);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAlbumsControllerService::GetRelationship(MessageParcel &data, MessageParcel &reply)
+{
+    GetRelationshipReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetRelationship Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    PhotoAlbumType albumType = GetPhotoAlbumType(reqBody.albumType);
+    PhotoAlbumSubType albumSubtype = GetPhotoAlbumSubType(reqBody.albumSubType);
+    bool cond = PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype);
+    if (!cond) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_INVALID_VALUES);
+    }
+
+    GetRelationshipRespBody respBody;
+    ret = MediaAlbumsService::GetInstance().GetPortraitRelationship(reqBody.albumId, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t MediaAlbumsControllerService::AlbumCommitModify(MessageParcel &data, MessageParcel &reply)
