@@ -120,9 +120,9 @@ export class PhotoPickerComponent extends ViewPU {
         } else if (null == o ? void 0 : o.has('SET_ALBUM_URI')) {
             this.proxy.send({ albumUri: null == o ? void 0 : o.get('SET_ALBUM_URI') });
             console.info('PhotoPickerComponent onChanged: SET_ALBUM_URI');
-        } else if (null == o ? void 0 : o.has('SET_SELECTED_URIS_AND_PICKER_INDEX')) {
-            this.proxy.send({ uriAndPickerIndexLists: null == o ? void 0 : o.get('SET_SELECTED_URIS_AND_PICKER_INDEX') });
-            console.info('PhotoPickerComponent onChanged: SET_SELECTED_URIS_AND_PICKER_INDEX');
+        } else if (null == o ? void 0 : o.has('SET_SELECTED_INFO')) {
+            this.proxy.send({ uriAndPickerIndexLists: null == o ? void 0 : o.get('SET_SELECTED_INFO') });
+            console.info('PhotoPickerComponent onChanged: SET_SELECTED_INFO');
         } else if (null == o ? void 0 : o.has('SET_MAX_SELECT_COUNT')) {
             this.onSetMaxSelectCount(o);
         } else if (null == o ? void 0 : o.has('SET_PHOTO_BROWSER_ITEM')) {
@@ -271,7 +271,7 @@ export class PhotoPickerComponent extends ViewPU {
                     uiComponentColorMode: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.uiComponentColorMode,
                     combinedMediaTypeFilter: null === (f = this.pickerOptions) || void 0 === f ? void 0 : f.combinedMediaTypeFilter,
                     pickerIndex: null === (y = this.pickerOptions) || void 0 === y ? void 0 : y.pickerIndex,
-                    preSelectedUrisWithPickerIndex: null === (g = this.pickerOptions) || void 0 === g ? void 0 : g.preSelectedUrisWithPickerIndex
+                    preselectedInfos: null === (g = this.pickerOptions) || void 0 === g ? void 0 : g.preselectedInfos
                 }
             });
             SecurityUIExtensionComponent.height('100%');
@@ -607,12 +607,12 @@ let PickerController = class {
                 this.data = new Map([['SET_ALBUM_URI', e]]);
                 console.info('PhotoPickerComponent SET_ALBUM_URI' + this.encrypt(JSON.stringify(e)));
             }
-        } else if (e === DataType.SET_SELECTED_URIS_AND_PICKER_INDEX) {
+        } else if (e === DataType.SET_SELECTED_INFO) {
             if (o instanceof Array) {
                 let e = o;
                 if (e) {
-                    this.data = new Map([['SET_SELECTED_URIS_AND_PICKER_INDEX', [...e]]]);
-                    console.info('PhotoPickerComponent SET_SELECTED_URIS_AND_PICKER_INDEX' + this.encrypt(JSON.stringify(e)));
+                    this.data = new Map([['SET_SELECTED_INFO', [...e]]]);
+                    console.info('PhotoPickerComponent SET_SELECTED_INFO' + this.encrypt(JSON.stringify(e)));
                 }
             }
         } else {
@@ -787,7 +787,7 @@ export var DataType;
 !function(e) {
     e[e.SET_SELECTED_URIS = 1] = 'SET_SELECTED_URIS';
     e[e.SET_ALBUM_URI = 2] = 'SET_ALBUM_URI';
-    e[e.SET_ALBUM_URI = 3] = 'SET_SELECTED_URIS_AND_PICKER_INDEX';
+    e[e.SET_SELECTED_INFO = 3] = 'SET_SELECTED_INFO';
 }(DataType || (DataType = {}));
 
 export var ItemType;
