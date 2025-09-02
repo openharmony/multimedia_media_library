@@ -1834,6 +1834,9 @@ static const vector<string> onCreateSqlStrs = {
     CustomRecordsColumns::CREATE_TABLE,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
     PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
+
+    // tab_analysis_progress
+    CREATE_TAB_ANALYSIS_PROGRESS,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -5171,6 +5174,16 @@ static void UpgradeFromAllVersionFourthPart(RdbStore &store, unordered_map<strin
     MEDIA_INFO_LOG("End ADD_URI_SENSITIVE_COLUMNS");
 }
 
+static void AddAnalysisProgress(RdbStore &store)
+{
+    const vector<string> exeSqls = {
+        CREATE_TAB_ANALYSIS_PROGRESS,
+    };
+    MEDIA_INFO_LOG("start add analysis progress table");
+    ExecSqls(exeSqls, store);
+    MEDIA_INFO_LOG("end add analysis progress table");
+}
+
 static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER &&
@@ -5205,6 +5218,12 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_SOUTH_DEVICE_TYPE, true)) {
         AddSouthDeviceType(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_SOUTH_DEVICE_TYPE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_TAB_ANALYSIS_PROGRESS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_ANALYSIS_PROGRESS, true)) {
+        AddAnalysisProgress(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS, true);
     }
 }
 
