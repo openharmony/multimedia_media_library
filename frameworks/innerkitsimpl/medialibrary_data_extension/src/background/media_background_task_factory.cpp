@@ -17,6 +17,7 @@
 #include "media_background_task_factory.h"
 
 #include "media_cloud_sync_backgroud_task.h"
+#include "media_file_manager_temp_file_aging_task.h"
 #include "medialibrary_subscriber.h"
 #include "media_log.h"
 
@@ -25,6 +26,7 @@ MediaBackgroundTaskFactory::MediaBackgroundTaskFactory()
 {
     this->tasks_ = {
         std::make_shared<MediaCloudSyncBackgroundTask>(),
+        std::make_shared<MediaFileManagerTempFileAgingTask>(),
     };
 }
 

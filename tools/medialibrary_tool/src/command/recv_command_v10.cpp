@@ -159,6 +159,8 @@ int32_t RecvCommandV10::QueryAssets(std::shared_ptr<DataShare::DataShareResultSe
     }
 
     Uri queryUri(queryUriStr);
+    predicates.And()->NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+        static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER));
     if (!IsRoot() && tableName == PhotoColumn::PHOTOS_TABLE) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
     }

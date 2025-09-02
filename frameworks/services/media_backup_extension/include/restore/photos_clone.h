@@ -122,6 +122,7 @@ private:
             ON PhotoMap.map_asset=Photos.file_id \
         WHERE Photos.position IN (1, 3) AND \
             COALESCE(is_temp, 0) = 0 AND \
+            Photos.file_source_type = 0 AND \
             (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum');";
     const std::string SQL_CLOUD_PHOTOS_TABLE_COUNT_IN_PHOTO_MAP = "\
         SELECT COUNT(1) AS count \
@@ -135,6 +136,7 @@ private:
             Photos.clean_flag = 0 AND \
             Photos.time_pending = 0 AND \
             Photos.is_temp = 0 AND \
+            Photos.file_source_type = 0 AND \
             (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum');";
     const std::string SQL_PHOTOS_TABLE_QUERY_IN_PHOTO_MAP = "\
         SELECT PhotoAlbum.lpath, \
@@ -146,6 +148,7 @@ private:
             ON PhotoMap.map_asset=Photos.file_id \
         WHERE Photos.position IN (1, 3) AND \
             COALESCE(is_temp, 0) = 0 AND \
+            Photos.file_source_type = 0 AND \
             (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
@@ -162,6 +165,7 @@ private:
             Photos.clean_flag = 0 AND \
             Photos.time_pending = 0 AND \
             Photos.is_temp = 0 AND \
+            Photos.file_source_type = 0 AND \
             (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
@@ -172,6 +176,7 @@ private:
             ON Photos.owner_album_id = PhotoAlbum.album_id \
         WHERE position IN (1, 3) AND \
             COALESCE(is_temp, 0) = 0 AND \
+            Photos.file_source_type = 0 AND \
             (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum');";
     const std::string SQL_CLOUD_PHOTOS_TABLE_COUNT_NOT_IN_PHOTO_MAP = "\
         SELECT COUNT(1) AS count \
@@ -183,6 +188,7 @@ private:
             Photos.clean_flag = 0 AND \
             Photos.time_pending = 0 AND \
             Photos.is_temp = 0 AND \
+            Photos.file_source_type = 0 AND \
             (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum');";
     const std::string SQL_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP = "\
         SELECT \
@@ -193,6 +199,7 @@ private:
             ON Photos.owner_album_id=PhotoAlbum.album_id \
         WHERE position IN (1, 3) AND \
             COALESCE(is_temp, 0) = 0 AND \
+            Photos.file_source_type = 0 AND \
             (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
@@ -208,6 +215,7 @@ private:
             Photos.clean_flag = 0 AND \
             Photos.time_pending = 0 AND \
             Photos.is_temp = 0 AND \
+            Photos.file_source_type = 0 AND \
             (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
@@ -223,7 +231,8 @@ private:
             ( \
                 SELECT owner_album_id, burst_key \
                 FROM Photos \
-                WHERE COALESCE(burst_key, '') <> '' \
+                WHERE COALESCE(burst_key, '') <> '' AND \
+                    file_source_type = 0 \
                 GROUP BY owner_album_id, burst_key \
             ) \
             GROUP BY burst_key \
@@ -243,6 +252,7 @@ private:
         SELECT COUNT(1) AS count \
         FROM Photos \
         WHERE position NOT IN (1, 3) AND \
+            file_source_type <> 0 AND \
             sync_status = 0 AND \
             clean_flag = 0 AND \
             time_pending = 0 AND \

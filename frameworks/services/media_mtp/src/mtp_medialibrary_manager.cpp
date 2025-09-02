@@ -184,6 +184,15 @@ static uint32_t HandleConvertToAdded(uint32_t key)
     return ptpSpecialHandles->HandleConvertToAdded(key);
 }
 
+static void GetHandlesProcessResultSet(shared_ptr<DataShare::DataShareResultSet> &resultSet, vector<int> &outHandles)
+{
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        outHandles.push_back(id);
+    }
+    resultSet->GoToFirstRow();
+}
+
 int32_t MtpMedialibraryManager::GetHandles(int32_t parentId, vector<int> &outHandles, MediaType mediaType)
 {
     shared_ptr<DataShare::DataShareResultSet> resultSet;
@@ -203,6 +212,8 @@ int32_t MtpMedialibraryManager::GetHandles(int32_t parentId, vector<int> &outHan
         predicates.IsNotNull(MEDIA_DATA_DB_ALBUM_NAME);
         predicates.NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
         predicates.NotEqualTo(MEDIA_DATA_DB_IS_LOCAL, IS_LOCAL);
+        predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/图库");
+        predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/其它");
         resultSet = dataShareHelper_->Query(uri, predicates, columns);
     } else {
         Uri uri(PAH_QUERY_PHOTO);
@@ -221,17 +232,15 @@ int32_t MtpMedialibraryManager::GetHandles(int32_t parentId, vector<int> &outHan
         predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
         predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
         predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
+        predicates.NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+            to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)));
         resultSet = dataShareHelper_->Query(uri, predicates, columns);
     }
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
         MtpErrorUtils::SolveGetHandlesError(E_NO_SUCH_FILE), "fail to get handles");
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
         MtpErrorUtils::SolveGetHandlesError(E_SUCCESS), "have no handles");
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-        outHandles.push_back(id);
-    }
-    resultSet->GoToFirstRow();
+    GetHandlesProcessResultSet(resultSet, outHandles);
     return MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
 }
 
@@ -311,6 +320,8 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetAlbumInfo(
     predicates.BeginWrap();
     predicates.IsNotNull(MEDIA_DATA_DB_ALBUM_NAME);
     predicates.NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
+    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/图库");
+    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/其它");
     predicates.BeginWrap();
     predicates.NotEqualTo(MEDIA_DATA_DB_IS_LOCAL, IS_LOCAL);
     predicates.Or();
@@ -337,6 +348,8 @@ std::shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetOwnerA
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
+    predicates.NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+        to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)));
     predicates.Distinct();
     return dataShareHelper_->Query(uri, predicates, columns);
 }
@@ -370,6 +383,8 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetPhotosInfo(
         predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
         predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
         predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
+        predicates.NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+            to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)));
         if (!burstKeys.empty()) {
             predicates.BeginWrap()
                 ->BeginWrap()

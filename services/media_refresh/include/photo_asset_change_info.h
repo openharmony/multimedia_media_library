@@ -37,13 +37,14 @@ public:
         int32_t thumbnailVisible, int64_t dateAddedMs, int64_t dateTakenMs, int32_t subType,
         int32_t syncStatus, int32_t cleanFlag, int32_t timePending, bool isTemp, int32_t burstCoverLevel,
         int32_t ownerAlbumId, int64_t hiddenTime, int64_t thumbnailReady, std::string displayName,
-        std::string path, int32_t position, int64_t size) : fileId_(fileId), uri_(uri), dateDay_(dateDay),
-        ownerAlbumUri_(ownerAlbumUri), isFavorite_(isFavorite), mediaType_(mediaType), isHidden_(isHidden),
-        dateTrashedMs_(dateTrashedMs), strongAssociation_(strongAssociation), thumbnailVisible_(thumbnailVisible),
-        dateAddedMs_(dateAddedMs), dateTakenMs_(dateTakenMs), subType_(subType), syncStatus_(syncStatus),
-        cleanFlag_(cleanFlag), timePending_(timePending), isTemp_(isTemp), burstCoverLevel_(burstCoverLevel),
-        ownerAlbumId_(ownerAlbumId), hiddenTime_(hiddenTime), thumbnailReady_(thumbnailReady),
-        displayName_(displayName), path_(path), position_(position), size_(size) {}
+        std::string path, int32_t position, int64_t size, int32_t fileSourceType) : fileId_(fileId), uri_(uri),
+        dateDay_(dateDay), ownerAlbumUri_(ownerAlbumUri), isFavorite_(isFavorite), mediaType_(mediaType),
+        isHidden_(isHidden), dateTrashedMs_(dateTrashedMs), strongAssociation_(strongAssociation),
+        thumbnailVisible_(thumbnailVisible), dateAddedMs_(dateAddedMs), dateTakenMs_(dateTakenMs), subType_(subType),
+        syncStatus_(syncStatus), cleanFlag_(cleanFlag), timePending_(timePending), isTemp_(isTemp),
+        burstCoverLevel_(burstCoverLevel), ownerAlbumId_(ownerAlbumId), hiddenTime_(hiddenTime),
+        thumbnailReady_(thumbnailReady), displayName_(displayName), path_(path), position_(position), size_(size),
+        fileSourceType_(fileSourceType) {}
         
 public:
     int32_t fileId_ = INVALID_INT32_VALUE;
@@ -78,6 +79,7 @@ public:
     int64_t timestamp_ = INVALID_INT64_VALUE;
     int32_t position_ = INVALID_INT32_VALUE;
     int64_t size_ = INVALID_INT64_VALUE;
+    int32_t fileSourceType_ = INVALID_INT32_VALUE;
 
     std::string ToString(bool isDetail = false) const;
     bool Marshalling(Parcel &parcel) const override;

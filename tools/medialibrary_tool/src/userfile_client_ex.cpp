@@ -301,6 +301,8 @@ int32_t UserFileClientEx::Query(const std::string &tableName, const std::string 
     if (!id.empty()) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_ID, id);
     }
+    predicates.And()->NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+        static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER));
     if (!IsRoot() && (tableName == PhotoColumn::PHOTOS_TABLE)) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
     }
@@ -408,7 +410,8 @@ int32_t UserFileClientEx::Trash(const std::string &uri, bool isRestart)
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? AND " + PhotoColumn::PHOTO_FILE_SOURCE_TYPE +
+        " = " + to_string(static_cast<int32_t>(FileSourceTypes::MEDIA)));
     predicates.SetWhereArgs({ fileUri.GetFileId() });
     Uri trashUri(trashUriStr);
     MEDIA_INFO_LOG("trash. trashUri:%{public}s, uri:%{public}s", trashUri.ToString().c_str(), uri.c_str());
@@ -490,6 +493,8 @@ std::shared_ptr<DataShare::DataShareResultSet> UserFileClientEx::GetResultsetByD
 {
     DataShare::DataSharePredicates predicates;
     predicates.And()->EqualTo(MediaColumn::MEDIA_NAME, displayName);
+    predicates.And()->NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+        static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER));
     if (!IsRoot() && (tableName == PhotoColumn::PHOTOS_TABLE)) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
     }

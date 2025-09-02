@@ -5025,6 +5025,30 @@ static void AddUriSensitiveColumns(RdbStore &store)
     MEDIA_INFO_LOG("AddUriSensitiveColumns end");
 }
 
+static void AddFileSourceType(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS " + INSERT_SEARCH_TRIGGER,
+        DROP_INSERT_VISION_TRIGGER,
+        "DROP TABLE IF EXISTS operation_asset_insert_trigger",
+        "DROP TABLE IF EXISTS operation_asset_delete_trigger",
+        "DROP TABLE IF EXISTS operation_asset_update_trigger",
+        DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+        DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        CREATE_SEARCH_INSERT_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
+        CREATE_OPERATION_ASSET_INSERT_TRIGGER,
+        CREATE_OPERATION_ASSET_DELETE_TRIGGER,
+        CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
+        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+        CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        PhotoColumn::CREATE_PHOTOS_METADATA_DIRTY_TRIGGER,
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0 "
+    };
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeFromAllVersionFirstPart(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
 {
     MEDIA_INFO_LOG("Start VERSION_ADD_DETAIL_TIME");
@@ -5242,6 +5266,27 @@ static void AddCloneSequenceColumns(RdbStore &store)
     MEDIA_INFO_LOG("add tab_old_photos clone_sequence columns end");
 }
 
+static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, true)) {
+        AddIndexForPhotoSortInAlbum(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, true);
+    }
+
+    if (oldVersion < VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE, true)) {
+        AddCloneSequenceColumns(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_FILE_SOURCE_TYPE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_FILE_SOURCE_TYPE, true)) {
+        AddFileSourceType(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_FILE_SOURCE_TYPE, true);
+    }
+}
+
 static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER &&
@@ -5290,17 +5335,7 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         AddCompositeDisplayStatusColumn(store);
     }
 
-    if (oldVersion < VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, true)) {
-        AddIndexForPhotoSortInAlbum(store);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, true);
-    }
-
-    if (oldVersion < VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE, true)) {
-        AddCloneSequenceColumns(store);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE, true);
-    }
+    UpgradeExtensionPart10(store, oldVersion);
 }
 
 static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)

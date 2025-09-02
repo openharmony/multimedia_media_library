@@ -680,6 +680,16 @@ void FileAsset::SetIsAuto(int32_t isAuto)
     member_[PhotoColumn::PHOTO_IS_AUTO] = isAuto;
 }
 
+int32_t FileAsset::GetFileResourceType() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
+}
+
+void FileAsset::SetFileResourceType(int32_t fileResourceType)
+{
+    member_[PhotoColumn::PHOTO_FILE_SOURCE_TYPE] = fileResourceType;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);

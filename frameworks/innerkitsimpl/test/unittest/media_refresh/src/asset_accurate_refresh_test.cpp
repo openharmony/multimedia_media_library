@@ -115,7 +115,8 @@ const PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSET_URI, ASSET_DATE
     ASSET_DISPLAY_NAME,
     ASSET_PATH,
     1, // local
-    666 //size
+    666, //size
+    0 //fileSourceType
 };
 
 void SetTables()

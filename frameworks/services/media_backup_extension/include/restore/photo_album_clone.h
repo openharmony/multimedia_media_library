@@ -77,8 +77,8 @@ private:
             LEFT JOIN Photos AS P2 \
             ON PhotoAlbum.album_id=P2.owner_album_id \
         WHERE PhotoAlbum.dirty <> ? AND \
-            (P1.file_id IS NOT NULL AND P1.position IN (1, 3) OR \
-            P2.file_id IS NOT NULL AND P2.position IN (1, 3)) ;";
+            (P1.file_id IS NOT NULL AND P1.position IN (1, 3) AND P1.file_source_type = 0 OR \
+            P2.file_id IS NOT NULL AND P2.position IN (1, 3) AND P2.file_source_type = 0) ;";
     const std::string SQL_PHOTO_ALBUM_SELECT_FOR_CLONE_LOCAL = "\
         SELECT DISTINCT PhotoAlbum.* \
         FROM PhotoAlbum \
@@ -89,8 +89,8 @@ private:
             LEFT JOIN Photos AS P2 \
             ON PhotoAlbum.album_id=P2.owner_album_id \
         WHERE PhotoAlbum.dirty <> ? AND \
-            (P1.file_id IS NOT NULL AND P1.position IN (1, 3) OR \
-            P2.file_id IS NOT NULL AND P2.position IN (1, 3)) \
+            (P1.file_id IS NOT NULL AND P1.position IN (1, 3) AND P1.file_source_type = 0 OR \
+            P2.file_id IS NOT NULL AND P2.position IN (1, 3) AND P2.file_source_type = 0) \
         ORDER BY PhotoAlbum.album_id \
         LIMIT ?, ? ;";
     const std::string SQL_PHOTO_ALBUM_COUNT_FOR_CLONE_LOCAL_AND_CLOUD = "\
