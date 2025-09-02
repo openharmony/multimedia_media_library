@@ -9607,7 +9607,7 @@ static void PhotoAccessQueryExecute(napi_env env, void *data)
     }
     context->queryRet = UserFileClient::QueryByStep(context->uri);
     if (context->queryRet == nullptr) {
-        context->error = OHOS_PERMISSION_DENIED_CODE;
+        context->error = UFM_SYSCAP_BASE;
         context->errorMsg = "Permission denied";
         return;
     }
