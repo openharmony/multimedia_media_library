@@ -660,6 +660,16 @@ void FileAsset::SetAppLink(const string appLink)
     member_[PhotoColumn::PHOTO_APPLINK] = appLink;
 }
 
+int32_t FileAsset::GetCompositeDisplayStatus() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS);
+}
+
+void FileAsset::SetCompositeDisplayStatus(int32_t compositeDisplayStatus)
+{
+    member_[PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS] = compositeDisplayStatus;
+}
+
 int32_t FileAsset::GetIsAuto() const
 {
     return GetInt32Member(PhotoColumn::PHOTO_IS_AUTO);

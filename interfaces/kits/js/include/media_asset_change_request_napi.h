@@ -55,6 +55,7 @@ enum class AssetChangeOperation {
     SET_HAS_APPLINK,
     SET_APPLINK,
     SET_VIDEO_ENHANCEMENT_ATTR,
+    SET_COMPOSITE_DISPLAY_MODE,
 };
 
 enum class AddResourceMode {
@@ -116,6 +117,8 @@ public:
 
     void SetIsWriteGpsAdvanced(bool val);
     bool GetIsWriteGpsAdvanced();
+    void SetCompositeDisplayMode(int32_t val);
+    int32_t GetCompositeDisplayMode();
 
     sptr<PhotoProxy> GetPhotoProxyObj();
     void ReleasePhotoProxyObj();
@@ -148,6 +151,7 @@ private:
     EXPORT static napi_value JSSetHasAppLink(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetAppLink(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetVideoEnhancementAttr(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetCompositeDisplayMode(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteLocalAssetsPermanently(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteLocalAssetsPermanentlyWithUri(napi_env env, napi_callback_info info);
 
@@ -179,6 +183,7 @@ private:
     std::vector<AssetChangeOperation> assetChangeOperations_;
     int32_t imageFileType_;
     bool isWriteGpsAdvanced_{false};
+    int32_t compositeDisplayMode_ {0};
 };
 
 struct MediaAssetChangeRequestAsyncContext : public NapiError {

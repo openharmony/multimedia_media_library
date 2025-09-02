@@ -306,6 +306,30 @@ std::string CloudMediaSyncUtils::GetMovingPhotoTmpPath(const std::string &localP
     return tempDownloadParent + localPath.substr(ROOT_MEDIA_DIR.length());
 }
 
+void CloudMediaSyncUtils::BackUpEditDataSourcePath(const std::string &localPath)
+{
+    std::string editDataSourcePath = MovingPhotoFileUtils::GetEditDataSourcePath(localPath);
+    std::string editDataTempPath = MovingPhotoFileUtils::GetEditDataTempPath(localPath);
+    if (MediaFileUtils::IsFileExists(editDataSourcePath)) {
+        if (!MediaFileUtils::MoveFile(editDataSourcePath, editDataTempPath)) {
+            MEDIA_ERR_LOG("MoveFile failed. Fail to back source file of photo, errno:%{public}d", errno);
+        }
+    } else {
+        if (!MediaFileUtils::CopyFileUtil(localPath, editDataTempPath)) {
+            MEDIA_ERR_LOG("CopyFileUtil failed. Fail to back source file of photo, errno:%{public}d", errno);
+        }
+    }
+}
+
+void CloudMediaSyncUtils::RemoveEditDataSourcePath(const std::string &localPath)
+{
+    std::string editDataSourcePath = GetEditDataSourcePath(localPath);
+    MEDIA_INFO_LOG("RemoveEditDataSourcePath EditDataSourcePath: %{public}s", editDataSourcePath.c_str());
+    if (unlink(editDataSourcePath.c_str()) != 0 && errno != ENOENT) {
+        MEDIA_ERR_LOG("unlink editDataSource failed, errno %{public}d", errno);
+    }
+}
+
 void CloudMediaSyncUtils::RemoveEditDataPath(const std::string &localPath)
 {
     std::string editDataPath = GetEditDataPath(localPath);
@@ -420,6 +444,16 @@ std::string CloudMediaSyncUtils::GetLocalPath(const std::string &path)
         localPath.replace(pos, PHOTO_CLOUD_PATH_URI.length(), PHOTO_MEDIA_PATH_URI);
     }
     return localPath;
+}
+
+std::string CloudMediaSyncUtils::RestoreCloudPath(const std::string &path)
+{
+    std::string cloudPath = path;
+    size_t pos = cloudPath.find(PHOTO_MEDIA_PATH_URI);
+    if (pos != std::string::npos) {
+        cloudPath.replace(pos, PHOTO_MEDIA_PATH_URI.length(), PHOTO_CLOUD_PATH_URI);
+    }
+    return cloudPath;
 }
 
 bool CloudMediaSyncUtils::IsMovingPhoto(const PhotosPo &photosPo)

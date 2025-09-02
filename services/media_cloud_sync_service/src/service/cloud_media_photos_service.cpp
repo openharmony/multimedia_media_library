@@ -41,6 +41,7 @@
 #include "cloud_media_sync_const.h"
 #include "cloud_media_operation_code.h"
 #include "cloud_media_dfx_service.h"
+#include "enhancement_manager.h"
 
 using ChangeType = OHOS::AAFwk::ChangeInfo::ChangeType;
 namespace OHOS::Media::CloudSync {
@@ -145,6 +146,12 @@ int32_t CloudMediaPhotosService::ClearLocalData(const CloudMediaPullDataDto &pul
         CloudMediaSyncUtils::RemoveThmParentPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
         CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
         CloudMediaSyncUtils::RemoveEditDataPath(pullData.localPath);
+        // for cloud enhancement composite photo
+        if (EnhancementManager::GetInstance().IsCloudEnhancementSupposed() &&
+            PhotoFileUtils::IsEditDataSourceBackExists(pullData.localPath)) {
+            CloudMediaSyncUtils::BackUpEditDataSourcePath(pullData.localPath);
+        }
+        CloudMediaSyncUtils::RemoveEditDataSourcePath(pullData.localPath);
         CloudMediaSyncUtils::RemoveMovingPhoto(pullData);
         if (pullData.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
             CloudMediaSyncUtils::InvalidVideoCache(pullData.localPath);

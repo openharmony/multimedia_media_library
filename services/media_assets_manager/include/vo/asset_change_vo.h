@@ -39,6 +39,7 @@ public:
     double longitude{0};
     std::string cameraShotKey;
     NativeRdb::ValuesBucket values;
+    int32_t compositeDisplayMode{0};
 
 public:  // functions of Parcelable.
     bool Unmarshalling(MessageParcel &parcel) override;

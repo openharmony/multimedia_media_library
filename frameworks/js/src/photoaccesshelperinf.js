@@ -1208,4 +1208,5 @@ export default {
   NotifyChangeType: photoAccessHelper.NotifyChangeType,
   ThumbnailChangeStatus: photoAccessHelper.ThumbnailChangeStatus,
   StrongAssociationType: photoAccessHelper.StrongAssociationType,
+  CompositeDisplayMode: photoAccessHelper.CompositeDisplayMode,
 };

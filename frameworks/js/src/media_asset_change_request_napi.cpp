@@ -176,6 +176,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setVideoEnhancementAttr", JSSetVideoEnhancementAttr),
             DECLARE_NAPI_FUNCTION("setHasAppLink", JSSetHasAppLink),
             DECLARE_NAPI_FUNCTION("setAppLinkInfo", JSSetAppLink),
+            DECLARE_NAPI_FUNCTION("setCompositeDisplayMode", JSSetCompositeDisplayMode),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -508,6 +509,16 @@ void MediaAssetChangeRequestNapi::SetIsWriteGpsAdvanced(bool val)
 bool MediaAssetChangeRequestNapi::GetIsWriteGpsAdvanced()
 {
     return isWriteGpsAdvanced_;
+}
+
+void MediaAssetChangeRequestNapi::SetCompositeDisplayMode(int32_t val)
+{
+    compositeDisplayMode_ = val;
+}
+
+int32_t MediaAssetChangeRequestNapi::GetCompositeDisplayMode()
+{
+    return compositeDisplayMode_;
 }
 
 napi_value MediaAssetChangeRequestNapi::JSGetAsset(napi_env env, napi_callback_info info)
@@ -1454,6 +1465,33 @@ napi_value MediaAssetChangeRequestNapi::JSSetSupportedWatermarkType(napi_env env
     changeRequest->GetFileAssetInstance()->SetSupportedWatermarkType(watermarkType);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_SUPPORTED_WATERMARK_TYPE);
     RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSSetCompositeDisplayMode(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    int32_t compositeDisplayMode;
+    CHECK_COND_WITH_ERR_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, compositeDisplayMode) == napi_ok,
+        JS_E_PARAM_INVALID, "Failed to parse composite display mode");
+    CHECK_COND_WITH_ERR_MESSAGE(env, asyncContext->argc == ARGS_ONE, JS_E_PARAM_INVALID, "Number of args is invalid");
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaFileUtils::CheckCompositeDisplayMode(compositeDisplayMode),
+        JS_E_PARAM_INVALID, "Failed to check composite display mode");
+
+    MEDIA_INFO_LOG("exchange enhancement photo : parse %{public}d ", compositeDisplayMode);
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_E_INNER_FAIL);
+    changeRequest->SetCompositeDisplayMode(compositeDisplayMode);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_COMPOSITE_DISPLAY_MODE);
+    // SET_COMPOSITE_DISPLAY_MODE
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_E_INNER_FAIL);
+    return result;
 }
 
 static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& context, bool isMovingPhotoVideo = false)
@@ -2723,6 +2761,37 @@ static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext
     return true;
 }
 
+static bool SetCompositeDisplayModeExecute(MediaAssetChangeRequestAsyncContext &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetCompositeDisplayModeExecute");
+    auto changeOperations = context.assetChangeOperations;
+
+    auto changeRequest = context.objectInfo;
+    CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "fileAsset is nullptr");
+    NAPI_INFO_LOG("enter SetCompositeDisplayModeExecute: %{public}d", changeRequest->GetCompositeDisplayMode());
+
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.compositeDisplayMode = changeRequest->GetCompositeDisplayMode();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_COMPOSITE_DISPLAY_MODE);
+    std::unordered_map<std::string, std::string> headerMap{
+        {MediaColumn::MEDIA_ID, to_string(fileAsset->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+    int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        if (changedRows == -1) {
+            context.error = OHOS_INVALID_PARAM_CODE;
+        } else {
+            context.SaveError(changedRows);
+        }
+        NAPI_ERR_LOG("Failed to update composite_display_mode of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
+}
+
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {
     { AssetChangeOperation::CREATE_FROM_URI, CreateFromFileUriExecute },
     { AssetChangeOperation::GET_WRITE_CACHE_HANDLER, SubmitCacheExecute },
@@ -2743,6 +2812,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_VIDEO_ENHANCEMENT_ATTR, SetVideoEnhancementAttr },
     { AssetChangeOperation::SET_HAS_APPLINK, SetHasAppLinkExecute },
     { AssetChangeOperation::SET_APPLINK, SetAppLinkExecute },
+    { AssetChangeOperation::SET_COMPOSITE_DISPLAY_MODE, SetCompositeDisplayModeExecute },
 };
 
 static void RecordAddResourceAndSetLocation(MediaAssetChangeRequestAsyncContext& context)

@@ -415,6 +415,7 @@ NativeRdb::ValuesBucket OthersCloneRestore::GetInsertValue(const FileInfo &fileI
         values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
         values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
     }
+    values.PutInt(PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, fileInfo.compositeDisplayStatus);
     return values;
 }
 
