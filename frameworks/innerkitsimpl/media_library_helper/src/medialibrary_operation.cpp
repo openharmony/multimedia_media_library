@@ -20,6 +20,7 @@
 #include "dir_asset.h"
 #include "form_map.h"
 #include "location_column.h"
+#include "media_analysis_progress_column.h"
 #include "media_app_uri_permission_column.h"
 #include "media_column.h"
 #include "media_old_photos_column.h"
@@ -154,6 +155,9 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_ALBUM_ASSET, OperationObject::ANALYSIS_ALBUM_ASSET_MAP },
         { PAH_HIGHLIGHT_DELETE, OperationObject::HIGHLIGHT_DELETE },
 
+        // use in media analysis progress
+        { TAB_ANALYSIS_PROGRESS_TABLE, OperationObject::ANALYSIS_PROGRESS },
+
         // others
         { MISC_OPERATION, OperationObject::MISCELLANEOUS },
         { PTP_OPERATION, OperationObject::PTP_OPERATION },
@@ -252,6 +256,9 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::HIGHLIGHT_DELETE, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_ALBUM_TABLE } }},
         { OperationObject::PTP_ALBUM_OPERATION, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
         { OperationObject::CUSTOM_RECORDS_OPERATION, { { OperationType::UNKNOWN_TYPE, CustomRecordsColumns::TABLE } } },
+
+        // use in media analysis progress
+        { OperationObject::ANALYSIS_PROGRESS, { {OperationType::UNKNOWN_TYPE, TAB_ANALYSIS_PROGRESS_TABLE } } },
     };
     return tableNameMap;
 }
