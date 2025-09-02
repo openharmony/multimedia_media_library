@@ -43,12 +43,6 @@ const std::unordered_map<std::string, SwitchStatus> STRING_SWITCH_STATUS_MAP = {
         SwitchStatus::NONE},
 };
 
-const std::unordered_map<SwitchStatus, SouthDeviceType> PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP = {
-    {SwitchStatus::CLOSE, SouthDeviceType::SOUTH_DEVICE_NULL},
-    {SwitchStatus::CLOUD, SouthDeviceType::SOUTH_DEVICE_CLOUD},
-    {SwitchStatus::HDC, SouthDeviceType::SOUTH_DEVICE_HDC},
-};
-
 class SettingsDataManager {
 public:
     EXPORT static SwitchStatus GetPhotosSyncSwitchStatus();
