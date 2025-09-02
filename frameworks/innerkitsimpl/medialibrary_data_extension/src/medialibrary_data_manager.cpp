@@ -890,7 +890,8 @@ static void MultiStagesInitOperation()
     MultiStagesPhotoCaptureManager::GetInstance().Init();
     MultiStagesVideoCaptureManager::GetInstance().Init();
 }
-void MediaLibraryDataManager::UpgradeAsync(const std::shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
+
+void UpgradeAsync(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     MEDIA_INFO_LOG("oldVersion:%{public}d", oldVersion);
     // compare older version, update and set old version
