@@ -111,6 +111,7 @@ public:
     EXPORT static void UpdatePhotoQualityCloned(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateMdirtyTriggerForTdirty(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryEditDataExists(
         const NativeRdb::AbsRdbPredicates &predicates);
     EXPORT static int32_t InsertInternal(int64_t &outRowId, const std::string &table, NativeRdb::ValuesBucket &row);

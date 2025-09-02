@@ -891,6 +891,52 @@ static void MultiStagesInitOperation()
     MultiStagesVideoCaptureManager::GetInstance().Init();
 }
 
+void UpgradeAsync(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
+{
+    MEDIA_INFO_LOG("oldVersion:%{public}d", oldVersion);
+    // compare older version, update and set old version
+    if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
+        MediaLibraryRdbStore::CreateBurstIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_CREATE_BURSTKEY_INDEX);
+    }
+
+    if (oldVersion < VERSION_UPDATE_BURST_DIRTY) {
+        MediaLibraryRdbStore::UpdateBurstDirty(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_BURST_DIRTY);
+    }
+
+    if (oldVersion < VERSION_UPGRADE_THUMBNAIL) {
+        MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPGRADE_THUMBNAIL);
+    }
+    if (oldVersion < VERSION_ADD_DETAIL_TIME) {
+        MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(rdbStore);
+        MediaLibraryRdbStore::UpdateDateTakenIndex(rdbStore);
+        ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
+        rdbStore->SetOldVersion(VERSION_ADD_DETAIL_TIME);
+    }
+    if (oldVersion < VERSION_MOVE_AUDIOS) {
+        MediaLibraryAudioOperations::MoveToMusic();
+        MediaLibraryRdbStore::ClearAudios(rdbStore);
+        rdbStore->SetOldVersion(VERSION_MOVE_AUDIOS);
+    }
+    if (oldVersion < VERSION_UPDATE_INDEX_FOR_COVER) {
+        MediaLibraryRdbStore::UpdateIndexForCover(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_INDEX_FOR_COVER);
+    }
+    if (oldVersion < VERSION_ADD_THUMBNAIL_VISIBLE) {
+        MediaLibraryRdbStore::UpdateThumbnailVisibleAndIdx(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_THUMBNAIL_VISIBLE);
+    }
+    if (oldVersion < VERSION_UPDATE_DATETAKEN_AND_DETAILTIME) {
+        MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_DATETAKEN_AND_DETAILTIME);
+    }
+
+    HandleUpgradeRdbAsyncExtension(rdbStore, oldVersion);
+    // !! Do not add upgrade code here !!
+    rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
+}
 void MediaLibraryDataManager::HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart)
 {
     std::thread([isInMediaLibraryOnStart] {
@@ -901,52 +947,10 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr!");
         int32_t oldVersion = rdbStore->GetOldVersion();
-        bool cond = (oldVersion == -1 || oldVersion >= MEDIA_RDB_VERSION);
-        CHECK_AND_RETURN_INFO_LOG(!cond, "No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
-
-        MEDIA_INFO_LOG("oldVersion:%{public}d", oldVersion);
-        // compare older version, update and set old version
-        if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
-            MediaLibraryRdbStore::CreateBurstIndex(rdbStore);
-            rdbStore->SetOldVersion(VERSION_CREATE_BURSTKEY_INDEX);
+        if (oldVersion != -1 && oldVersion < MEDIA_RDB_VERSION) {
+            UpgradeAsync(rdbStore, oldVersion);
         }
-
-        if (oldVersion < VERSION_UPDATE_BURST_DIRTY) {
-            MediaLibraryRdbStore::UpdateBurstDirty(rdbStore);
-            rdbStore->SetOldVersion(VERSION_UPDATE_BURST_DIRTY);
-        }
-
-        if (oldVersion < VERSION_UPGRADE_THUMBNAIL) {
-            MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(rdbStore);
-            rdbStore->SetOldVersion(VERSION_UPGRADE_THUMBNAIL);
-        }
-        if (oldVersion < VERSION_ADD_DETAIL_TIME) {
-            MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(rdbStore);
-            MediaLibraryRdbStore::UpdateDateTakenIndex(rdbStore);
-            ThumbnailService::GetInstance()->AstcChangeKeyFromDateAddedToDateTaken();
-            rdbStore->SetOldVersion(VERSION_ADD_DETAIL_TIME);
-        }
-        if (oldVersion < VERSION_MOVE_AUDIOS) {
-            MediaLibraryAudioOperations::MoveToMusic();
-            MediaLibraryRdbStore::ClearAudios(rdbStore);
-            rdbStore->SetOldVersion(VERSION_MOVE_AUDIOS);
-        }
-        if (oldVersion < VERSION_UPDATE_INDEX_FOR_COVER) {
-            MediaLibraryRdbStore::UpdateIndexForCover(rdbStore);
-            rdbStore->SetOldVersion(VERSION_UPDATE_INDEX_FOR_COVER);
-        }
-        if (oldVersion < VERSION_ADD_THUMBNAIL_VISIBLE) {
-            MediaLibraryRdbStore::UpdateThumbnailVisibleAndIdx(rdbStore);
-            rdbStore->SetOldVersion(VERSION_ADD_THUMBNAIL_VISIBLE);
-        }
-        if (oldVersion < VERSION_UPDATE_DATETAKEN_AND_DETAILTIME) {
-            MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(rdbStore);
-            rdbStore->SetOldVersion(VERSION_UPDATE_DATETAKEN_AND_DETAILTIME);
-        }
-
-        HandleUpgradeRdbAsyncExtension(rdbStore, oldVersion);
-        // !! Do not add upgrade code here !!
-        rdbStore->SetOldVersion(MEDIA_RDB_VERSION);
+        MediaLibraryRdbStore::AddIndex(rdbStore);
     }).detach();
 }
 
