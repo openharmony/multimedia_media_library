@@ -265,7 +265,6 @@ inline const std::unordered_map<PhotoLabel, AggregateType> AGGREGATE_MAPPING_TAB
     {PhotoLabel::AURORA, AggregateType::NATURAL_SCENERY},
     {PhotoLabel::LIGHTNING, AggregateType::NATURAL_SCENERY},
     {PhotoLabel::OCEAN_BEACH_LAKE, AggregateType::NATURAL_SCENERY},
-    {PhotoLabel::BEACH, AggregateType::NATURAL_SCENERY},
     {PhotoLabel::CORAL_REEF, AggregateType::NATURAL_SCENERY},
     {PhotoLabel::MOUNTAIN, AggregateType::NATURAL_SCENERY},
     {PhotoLabel::SNOWY_MOUNTAIN, AggregateType::NATURAL_SCENERY},
