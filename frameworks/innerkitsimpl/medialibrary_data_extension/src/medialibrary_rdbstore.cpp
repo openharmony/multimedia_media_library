@@ -346,6 +346,27 @@ void MediaLibraryRdbStore::CreateBurstIndex(const shared_ptr<MediaLibraryRdbStor
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("end create idx_burstkey");
 }
+void MediaLibraryRdbStore::AddIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
+        PhotoColumn::CREATE_SCHPT_DAY_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
+        PhotoColumn::INDEX_SCHPT_ALBUM,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX,
+        PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
+        PhotoColumn::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX,
+        PhotoColumn::CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX,
+        PhotoColumn::INDEX_QUERY_THUMBNAIL_WHITE_BLOCKS
+    };
+    MEDIA_INFO_LOG("start create idx again");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end create idx again");
+}
 
 void MediaLibraryRdbStore::UpdateBurstDirty(const shared_ptr<MediaLibraryRdbStore> store)
 {
