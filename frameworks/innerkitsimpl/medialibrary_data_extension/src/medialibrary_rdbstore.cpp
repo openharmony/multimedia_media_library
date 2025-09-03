@@ -5227,8 +5227,10 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_APPLINK_VERSION, true);
     }
 
-    if (oldVersion < VERSION_CREATE_TMP_COMPATIBLE_DUP) {
+    if (oldVersion < VERSION_CREATE_TMP_COMPATIBLE_DUP &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TMP_COMPATIBLE_DUP, true)) {
         AddCreateTmpCompatibleDup(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TMP_COMPATIBLE_DUP, true);
     }
 
     if (oldVersion < VERSION_ADD_MEDIA_BACKUP_INFO &&
