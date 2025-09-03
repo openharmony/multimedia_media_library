@@ -42,16 +42,16 @@ int32_t MultiStagesCaptureDeferredVideoProcSessionCallback::UpdateVideoQuality(
     MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     NativeRdb::ValuesBucket updateValues;
     if (isDirtyNeedUpdate) {
-        updateValues.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_FDIRTY));
+        updateValues.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_FDIRTY));
     }
 
     int32_t subType = MultiStagesCaptureManager::QuerySubType(videoId);
     if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        updateValues.PutInt(PhotoColumn::STAGE_VIDEO_TASK_STATUS,
+        updateValues.Put(PhotoColumn::STAGE_VIDEO_TASK_STATUS,
             isSuccess ? static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_SUCCESS) :
             static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_FAIL));
     } else {
-        updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+        updateValues.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
     }
 
     updateCmd.SetValueBucket(updateValues);
