@@ -241,5 +241,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_005, TestSize.Level1)
     fileAsset.SetAppLink(TEST_APPLINK);
     EXPECT_EQ(fileAsset.GetAppLink(), TEST_APPLINK);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_006, TestSize.Level1)
+{
+    FileAsset fileAsset;
+
+    const int32_t TEST_EXIST_COMPATIBLE_DUPLICATE = 1;
+    fileAsset.SetExistCompatibleDuplicate(TEST_EXIST_COMPATIBLE_DUPLICATE);
+    EXPECT_EQ(fileAsset.GetExistCompatibleDuplicate(), TEST_EXIST_COMPATIBLE_DUPLICATE);
+}
 } // namespace Media
 } // namespace OHOS
