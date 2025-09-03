@@ -143,6 +143,10 @@ const std::vector<std::string> videoEnhancementTypeEnum {
     "QUALITY_ENHANCEMENT_LOCAL", "QUALITY_ENHANCEMENT_CLOUD", "QUALITY_ENHANCEMENT_LOCAL_AND_CLOUD"
 };
 
+const std::vector<std::string> compositeDisplayModeEnum {
+    "DEFAULT", "CLOUD_ENHANCEMENT"
+};
+
 const std::vector<std::string> cloudMediaDownloadTypeEnum {
     "DOWNLOAD_FORCE", "DOWNLOAD_GENTLE"
 };
@@ -270,6 +274,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("IS_AUTO",                   PhotoColumn::PHOTO_IS_AUTO),
     std::make_pair("MEDIA_SUFFIX",              PhotoColumn::PHOTO_MEDIA_SUFFIX),
     std::make_pair("IS_RECENT_SHOW",            PhotoColumn::PHOTO_IS_RECENT_SHOW),
+    std::make_pair("COMPOSITE_DISPLAY_STATUS",  PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS),
     std::make_pair("SUM_SIZE",                  MEDIA_SUM_SIZE),
     std::make_pair("HAS_APPLINK",               PhotoColumn::PHOTO_HAS_APPLINK),
     std::make_pair("APPLINK",                   PhotoColumn::PHOTO_APPLINK),

@@ -351,6 +351,17 @@ static void SetSupportedWatermarkTypeFuzzer()
     mediaAssetsControllerService->SetSupportedWatermarkType(data, reply);
 }
 
+static void SetCompositeDisplayModeFuzzer()
+{
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = FDP->ConsumeIntegral<int32_t>();
+    reqBody.compositeDisplayMode = FDP->ConsumeIntegral<int32_t>();
+    MessageParcel data;
+    MessageParcel reply;
+    reqBody.Marshalling(data);
+    mediaAssetsControllerService->SetCompositeDisplayMode(data, reply);
+}
+
 static void DuplicateAssetsFuzzer()
 {
     GetAssetsReqBody reqBody;
@@ -930,6 +941,7 @@ static void MediaAssetsControllerServiceFirstFuzzer()
     SetOrientationFuzzer();
     SetVideoEnhancementAttrFuzzer();
     SetSupportedWatermarkTypeFuzzer();
+    SetCompositeDisplayModeFuzzer();
     DuplicateAssetsFuzzer();
     CreateAssetFuzzer();
     CreateAssetForAppFuzzer();

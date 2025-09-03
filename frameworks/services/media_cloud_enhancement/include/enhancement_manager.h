@@ -65,6 +65,7 @@ public:
     EXPORT int32_t HandleAutoAddOperation(bool isReboot = false);
     EXPORT int32_t AddAutoServiceTask(OHOS::MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
         const std::string &photoId);
+    EXPORT int32_t SetCompositeDisplayMode(int32_t fileId, const int32_t &compositeDisplayMode);
 #endif
 
     EXPORT int32_t HandleEnhancementUpdateOperation(MediaLibraryCommand &cmd);
@@ -84,6 +85,13 @@ public:
     EXPORT int32_t HandlePhotosAutoOptionChange(const std::string &photosAutoOption);
     EXPORT int32_t HandleNetChange(const bool isWifiConnected, const bool isCellularNetConnected);
     EXPORT void HandlePhotosWaterMarkChange(const bool shouldAddWaterMark);
+    EXPORT bool IsCloudEnhancementSupposed();
+    EXPORT bool SyncCleanCompositePhoto(const std::string &photoPath);
+    EXPORT bool SyncDealWithCompositePhoto(const std::string &photoPath);
+    EXPORT int32_t SyncDealWithCompositeDisplayStatus(int32_t fileId, const std::string &photoPath, bool exchange);
+    EXPORT int32_t UpdateCompositeDisplayStatus(int32_t fileId, const int32_t &compositeDisplayStatus,
+        bool isSwitchMode = false);
+    EXPORT std::optional<std::tuple<std::string, int32_t, int32_t>> QueryCompositePhotoInfo(int32_t fileId);
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     std::shared_ptr<EnhancementServiceAdapter> enhancementService_;
@@ -105,6 +113,9 @@ private:
     EXPORT int32_t HandleCancelAllAutoOperation();
     void ResetProcessingAutoToSupport();
     bool IsAddOperationEnabled(int32_t triggerMode);
+    int32_t DoChangeDisplayModeFile(int32_t fileId, const string &filePath);
+    int32_t SetCompositeDisplayStatusEdit(int32_t fileId);
+    int32_t SetCompositeDisplayStatusRevertEdit(int32_t fileId);
 #endif
     void InitPhotosSettingsMonitor();
     bool isCameraIdle_ = true;

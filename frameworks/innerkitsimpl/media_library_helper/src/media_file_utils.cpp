@@ -2407,6 +2407,12 @@ int32_t MediaFileUtils::CopyDirectory(const std::string &srcDir, const std::stri
     return E_OK;
 }
 
+bool MediaFileUtils::CheckCompositeDisplayMode(int32_t compositeDisplayMode)
+{
+    return compositeDisplayMode >= static_cast<int32_t>(CompositeDisplayMode::DEFAULT) &&
+        compositeDisplayMode <= static_cast<int32_t>(CompositeDisplayMode::CLOUD_ENHANCEMENT);
+}
+
 bool MediaFileUtils::IsCalledBySelf()
 {
     if (IPCSkeleton::GetCallingFullTokenID() == IPCSkeleton::GetSelfTokenID()) {

@@ -271,6 +271,7 @@ thread_local napi_ref MediaLibraryNapi::sCloudMediaTaskPauseCauseEnumRef_ = null
 thread_local napi_ref MediaLibraryNapi::sNotifyChangeTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sThumbnailChangeStatusEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sStrongAssociationTypeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sCompositeDisplayModeEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -491,6 +492,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("NotifyChangeType", CreateNotifyChangeTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("ThumbnailChangeStatus", CreateThumbnailChangeStatusEnum(env)),
         DECLARE_NAPI_PROPERTY("StrongAssociationType", CreateStrongAssociationTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("CompositeDisplayMode", CreateCompositeDisplayModeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -8266,6 +8268,11 @@ napi_value MediaLibraryNapi::CreateStrongAssociationTypeEnum(napi_env env)
     return CreateNumberEnumProperty(env, strongAssociationTypeEnum, sStrongAssociationTypeEnumRef_);
 }
 
+napi_value MediaLibraryNapi::CreateCompositeDisplayModeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, compositeDisplayModeEnum, sCompositeDisplayModeEnumRef_);
+}
+
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -9663,7 +9670,7 @@ static void PhotoAccessQueryExecute(napi_env env, void *data)
     }
     context->queryRet = UserFileClient::QueryByStep(context->uri);
     if (context->queryRet == nullptr) {
-        context->error = OHOS_PERMISSION_DENIED_CODE;
+        context->error = UFM_SYSCAP_BASE;
         context->errorMsg = "Permission denied";
         return;
     }

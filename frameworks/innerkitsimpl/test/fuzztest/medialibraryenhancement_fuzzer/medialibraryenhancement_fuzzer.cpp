@@ -400,6 +400,7 @@ static void EnhancementManagerExtraTest()
         servicePredicates);
     Media::EnhancementManager::GetInstance().AddAutoServiceTask(mediaEnhanceBundle,
         provider->ConsumeIntegral<int32_t>(), provider->ConsumeBytesAsString(NUM_BYTES));
+    Media::EnhancementManager::GetInstance().SetCompositeDisplayMode(testFileId, provider->ConsumeIntegral<int32_t>());
     Media::EnhancementManager::GetInstance().HandleCancelAllAutoOperation();
     Media::EnhancementManager::GetInstance().HandlePauseAllOperation();
     Media::EnhancementManager::GetInstance().HandleResumeAllOperation();
@@ -494,9 +495,6 @@ static void EnhancementServiceCallbackTest()
     auto resultSet = g_rdbStore->Query(cmd, columns);
     if (resultSet != nullptr && resultSet->GoToFirstRow() == E_OK) {
         Media::EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, resultSet);
-        int32_t sourceFileId = provider->ConsumeIntegral<int32_t>();
-        Media::EnhancementServiceCallback::CreateCloudEnhancementPhoto(sourceFileId, fileInfo,
-            resultSet);
     }
     Media::EnhancementServiceCallback::DealWithSuccessedTask(task);
     Media::EnhancementServiceCallback::DealWithFailedTask(task);

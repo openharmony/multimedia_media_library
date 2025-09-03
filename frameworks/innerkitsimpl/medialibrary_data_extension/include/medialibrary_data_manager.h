@@ -127,6 +127,7 @@ public:
     EXPORT int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
                 const DataShare::DataSharePredicates &predicates);
     EXPORT int32_t RestoreInvalidPosData();
+    EXPORT int32_t RestoreInvalidHDCCloudDataPos();
 private:
     int32_t InitMediaLibraryRdbStore();
     int32_t UpdateDirtyHdcDataStatus();
@@ -164,7 +165,6 @@ private:
     void SubscriberPowerConsumptionDetection();
     int32_t AstcMthAndYearInsert(MediaLibraryCommand &cmd,
         const std::vector<DataShare::DataShareValuesBucket> &values);
-    EXPORT int32_t RestoreInvalidHDCCloudDataPos();
     std::shared_mutex mgrSharedMutex_;
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
     std::string bundleName_ {BUNDLE_NAME};

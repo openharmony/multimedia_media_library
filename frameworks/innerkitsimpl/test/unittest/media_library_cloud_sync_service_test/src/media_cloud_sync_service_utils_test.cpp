@@ -32,6 +32,7 @@
 #include "media_itypes_utils.h"
 #include "safe_vector.h"
 #include "medialibrary_unittest_utils.h"
+#include "media_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
 using namespace testing::ext;
@@ -162,6 +163,50 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, GetThumbParentPath_Test, TestSize.Level
     CloudMediaSyncUtils::RemoveEditDataParentPath("/user/local/test.jpg", "/user/local");
     CloudMediaSyncUtils::InvalidVideoCache("");
     CloudMediaSyncUtils::InvalidVideoCache("/storage/cloud/test/car");
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, RemoveEditDataSourcePath_Test, TestSize.Level1)
+{
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/Photo/16/"), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile("/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg"), true);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg"), true);
+
+    string path = "/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg";
+    CloudMediaSyncUtils::RemoveEditDataSourcePath(path);
+
+    EXPECT_EQ(MediaFileUtils::DeleteFile("/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg"), true);
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, BackUpEditDataSourcePath_Test01, TestSize.Level1)
+{
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/Photo/16/"), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile("/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg"), true);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg"), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(
+        "/storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source.jpg"), true);
+
+    string path = "/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg";
+    CloudMediaSyncUtils::BackUpEditDataSourcePath(path);
+
+    EXPECT_EQ(MediaFileUtils::DeleteFile("/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg"), true);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(
+        "/storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source.jpg"), false);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(
+        "/storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/photo_temp.jpg"), true);
+}
+
+HWTEST_F(CloudMediaSyncServiceUtilsTest, BackUpEditDataSourcePath_Test02, TestSize.Level1)
+{
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/Photo/16/"), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile("/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg"), true);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg"), true);
+
+    string path = "/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg";
+    CloudMediaSyncUtils::BackUpEditDataSourcePath(path);
+
+    EXPECT_EQ(MediaFileUtils::DeleteFile("/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg"), true);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(
+        "/storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/photo_temp.jpg"), true);
 }
 
 HWTEST_F(CloudMediaSyncServiceUtilsTest, CommonPath_Test, TestSize.Level1)
