@@ -743,7 +743,7 @@ static void PeriodicAnalyzePhotosData()
     }
 }
 
-static void AgingTmpCompatibleDuplicates(bool isAge)
+void MedialibrarySubscriber::AgingTmpCompatibleDuplicates(bool isAge)
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
     CHECK_AND_RETURN_LOG(dataManager != nullptr, "dataManager is nullptr");
