@@ -52,7 +52,8 @@ static const string SQL_INSERT_PHOTO =
     MediaColumn::MEDIA_DURATION + ", " + MediaColumn::MEDIA_IS_FAV + ", " + MediaColumn::MEDIA_DATE_TRASHED + ", " +
     MediaColumn::MEDIA_HIDDEN + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH + ", " +
     PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_SHOOTING_MODE + ", " + PhotoColumn::PHOTO_ID + ", " +
-    PhotoColumn::PHOTO_IS_TEMP + ", " + PhotoColumn::PHOTO_DEFERRED_PROC_TYPE + ")";
+    PhotoColumn::PHOTO_IS_TEMP + ", " + PhotoColumn::PHOTO_DEFERRED_PROC_TYPE + ", " +
+    PhotoColumn::PHOTO_CE_AVAILABLE + ", " + PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS + ")";
 static const string VALUES_END = ") ";
 
 static int32_t ClearTable(const string &table)
@@ -104,12 +105,13 @@ static void InsertAsset()
 {
     // data, size, title, display_name, media_type,
     // owner_package, package_name, date_added, date_modified, date_taken, duration, is_favorite, date_trashed, hidden
-    // height, width, edit_time, shooting_mode, photo_id, is_temp, deferred_proc_type
+    // height, width, edit_time, shooting_mode, photo_id, is_temp, deferred_proc_type, ce_available
+    // composite_display_status
     std::string insertSql =
         SQL_INSERT_PHOTO + " VALUES (" +
         "'/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg', 175258, 'cam_pic', 'cam_pic.jpg', 1, " +
         "'com.ohos.camera', '相机', 1501924205218, 0, 1501924205, 0, 0, 0, 0, " +
-        "1280, 960, 0, '1', '202410011800', 0, 0" + VALUES_END;
+        "1280, 960, 0, '1', '202410011800', 0, 0, 0, 0" + VALUES_END;
     int32_t ret = g_rdbStore->ExecuteSql(insertSql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Execute sql %{public}s failed", insertSql.c_str());
@@ -120,12 +122,13 @@ static void InsertTempAsset()
 {
     // data, size, title, display_name, media_type,
     // owner_package, package_name, date_added, date_modified, date_taken, duration, is_favorite, date_trashed, hidden
-    // height, width, edit_time, shooting_mode, photo_id, is_temp, deferred_proc_type
+    // height, width, edit_time, shooting_mode, photo_id, is_temp, deferred_proc_type, ce_available
+    // composite_display_status
     std::string insertSql =
         SQL_INSERT_PHOTO + " VALUES (" +
         "'/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg', 175258, 'cam_pic', 'cam_pic.jpg', 1, " +
         "'com.ohos.camera', '相机', 1501924205218, 0, 1501924205, 0, 0, 0, 0, " +
-        "1280, 960, 0, '1', '202410011800', 1, 0" + VALUES_END;
+        "1280, 960, 0, '1', '202410011800', 1, 0, 0, 0" + VALUES_END;
     int32_t ret = g_rdbStore->ExecuteSql(insertSql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Execute sql %{public}s failed", insertSql.c_str());
@@ -257,6 +260,31 @@ static int32_t SetAppLink(int32_t fileId, string link)
     return respVo.GetErrCode();
 }
 
+static int32_t SetCompositeDisplayMode(int32_t fileId, int32_t compositeDisplayMode)
+{
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileId;
+    reqBody.compositeDisplayMode = compositeDisplayMode;
+
+    MessageParcel data;
+    if (reqBody.Marshalling(data) != true) {
+        MEDIA_ERR_LOG("reqBody.Marshalling failed");
+        return -1;
+    }
+
+    MessageParcel reply;
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->SetCompositeDisplayMode(data, reply);
+
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> respVo;
+    if (respVo.Unmarshalling(reply) != true) {
+        MEDIA_ERR_LOG("respVo.Unmarshalling failed");
+        return -1;
+    }
+    MEDIA_INFO_LOG("SetCompositeDisplayMode ErrCode:%{public}d", respVo.GetErrCode());
+    return respVo.GetErrCode();
+}
+
 static int32_t SetVideoEnhancementAttr(int32_t fileId, string photoId, string path)
 {
     AssetChangeReqBody reqBody;
@@ -361,6 +389,31 @@ static int32_t QueryWatermarkTypeByDisplayName(const string &displayName)
     }
     int32_t watermarkType = GetInt32Val(PhotoColumn::SUPPORTED_WATERMARK_TYPE, resultSet);
     return watermarkType;
+}
+
+static int32_t UpdateCompositeDisplayStatus(int32_t fileId, int32_t compositeDisplayStatus)
+{
+    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t changedRows = -1;
+    ValuesBucket valueBucket;
+    valueBucket.PutInt(PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, compositeDisplayStatus);
+    g_rdbStore->Update(changedRows, valueBucket, rdbPredicates);
+    return changedRows;
+}
+
+static int32_t QueryCompositeDisplayStatusByDisplayName(const string &displayName)
+{
+    vector<string> columns;
+    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.EqualTo(MediaColumn::MEDIA_NAME, displayName);
+    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get watermarkType");
+        return -1;
+    }
+    int32_t compositeDisplayStatus = GetInt32Val(PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, resultSet);
+    return compositeDisplayStatus;
 }
 
 static int32_t QueryPhotoQualityByDisplayName(const string &displayName)
@@ -629,6 +682,203 @@ HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_Test_016, TestSize.Level0)
     int32_t result = SetAppLink(fileId, "www.baid.com");
     MEDIA_INFO_LOG("AssetChangeRequest_Test_016 result:%{public}d", result);
     ASSERT_EQ(result, 0);
+}
+
+// 测试云增强复合图切换场景
+HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_SetCompositeDisplayMode_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AssetChangeRequest_SetCompositeDisplayMode_Test_001 Begin");
+    system("mkdir -p /storage/cloud/files/Photo/16/");
+    system("touch /storage/cloud/files/Photo/16/IMG_1501924305_000.jpg");
+    system("mkdir -p /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg");
+    system("touch /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source_back.jpg");
+
+    InsertAsset();
+
+    int32_t fileId = QueryFileIdByDisplayName("cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+
+    UpdateCompositeDisplayStatus(fileId, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+    int32_t compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+
+    int result = SetCompositeDisplayMode(fileId, static_cast<int32_t>(CompositeDisplayMode::CLOUD_ENHANCEMENT));
+    ASSERT_EQ(result, 0);
+
+    compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+
+    system("rm -rf /storage/cloud/files/Photo/16/IMG_1501924305_000.jpg");
+    system("rm -rf /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source_back.jpg");
+}
+
+HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_SetCompositeDisplayMode_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AssetChangeRequest_SetCompositeDisplayMode_Test_002 Begin");
+    system("mkdir -p /storage/cloud/files/Photo/16/");
+    system("touch /storage/cloud/files/Photo/16/IMG_1501924305_000.jpg");
+    system("mkdir -p /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg");
+    system("touch /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source_back.jpg");
+
+    InsertAsset();
+
+    int32_t fileId = QueryFileIdByDisplayName("cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+
+    UpdateCompositeDisplayStatus(fileId, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+    int32_t compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+
+    int result = SetCompositeDisplayMode(fileId, static_cast<int32_t>(CompositeDisplayMode::DEFAULT));
+    ASSERT_EQ(result, 0);
+
+    compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+
+    system("rm -rf /storage/cloud/files/Photo/16/IMG_1501924305_000.jpg");
+    system("rm -rf /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source_back.jpg");
+}
+
+HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_SetCompositeDisplayMode_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AssetChangeRequest_SetCompositeDisplayMode_Test_003 for setCompositeDisplayMode Begin");
+    InsertAsset();
+
+    int32_t fileId = QueryFileIdByDisplayName("cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+
+    UpdateCompositeDisplayStatus(fileId, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+    int32_t compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+
+    int result = SetCompositeDisplayMode(fileId, static_cast<int32_t>(CompositeDisplayMode::DEFAULT));
+    ASSERT_EQ(result, -1);
+
+    compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+}
+
+HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_SetCompositeDisplayMode_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AssetChangeRequest_SetCompositeDisplayMode_Test_004 Begin");
+    InsertAsset();
+
+    int32_t fileId = QueryFileIdByDisplayName("cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+
+    UpdateCompositeDisplayStatus(fileId, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+    int32_t compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+
+    int result = SetCompositeDisplayMode(fileId, static_cast<int32_t>(CompositeDisplayMode::CLOUD_ENHANCEMENT));
+    ASSERT_EQ(result, -1);
+
+    compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+}
+
+HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_SetCompositeDisplayMode_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AssetChangeRequest_SetCompositeDisplayMode_Test_005 Begin");
+    InsertAsset();
+
+    int32_t fileId = QueryFileIdByDisplayName("cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+
+    UpdateCompositeDisplayStatus(fileId, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL_EDIT));
+    int32_t compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL_EDIT));
+
+    int result = SetCompositeDisplayMode(fileId, static_cast<int32_t>(CompositeDisplayMode::CLOUD_ENHANCEMENT));
+    ASSERT_EQ(result, -1);
+
+    compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL_EDIT));
+}
+
+// when there exists no file
+HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_SetCompositeDisplayMode_Test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AssetChangeRequest_SetCompositeDisplayMode_Test_006 Begin");
+
+    InsertAsset();
+
+    int32_t fileId = QueryFileIdByDisplayName("cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+
+    int32_t result = SetCompositeDisplayMode(fileId, 0);
+    ASSERT_EQ(result, -1);
+}
+
+// when fileID not exist
+HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_SetCompositeDisplayMode_Test_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AssetChangeRequest_SetCompositeDisplayMode_Test_007 Begin");
+     
+    int32_t result = SetCompositeDisplayMode(10, 1);
+    ASSERT_LT(result, 0);
+}
+
+HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_SetCompositeDisplayMode_Test_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AssetChangeRequest_SetCompositeDisplayMode_Test_008 Begin");
+    system("mkdir -p /storage/cloud/files/Photo/16/");
+    system("touch /storage/cloud/files/Photo/16/IMG_1501924305_000.jpg");
+    system("mkdir -p /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg");
+    system("touch /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source.jpg");
+    system("touch /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/editdata_camera");
+    system("touch /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source_back.jpg");
+
+    InsertAsset();
+
+    int32_t fileId = QueryFileIdByDisplayName("cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+
+    UpdateCompositeDisplayStatus(fileId, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+    int32_t compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+
+    int result = SetCompositeDisplayMode(fileId, static_cast<int32_t>(CompositeDisplayMode::CLOUD_ENHANCEMENT));
+    ASSERT_EQ(result, 0);
+
+    compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+
+    system("rm -rf /storage/cloud/files/Photo/16/IMG_1501924305_000.jpg");
+    system("rm -rf /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source.jpg");
+    system("rm -rf /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source_back.jpg");
+    system("rm -rf /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/editdata_camera");
+}
+
+HWTEST_F(AssetChangeRequestTest, AssetChangeRequest_SetCompositeDisplayMode_Test_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AssetChangeRequest_SetCompositeDisplayMode_Test_009 Begin");
+    system("mkdir -p /storage/cloud/files/Photo/16/");
+    system("touch /storage/cloud/files/Photo/16/IMG_1501924305_000.jpg");
+    system("mkdir -p /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg");
+    system("touch /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source.jpg");
+    system("touch /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/editdata_camera");
+    system("touch /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source_back.jpg");
+
+    InsertAsset();
+
+    int32_t fileId = QueryFileIdByDisplayName("cam_pic.jpg");
+    ASSERT_GT(fileId, 0);
+
+    UpdateCompositeDisplayStatus(fileId, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+    int32_t compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+
+    int result = SetCompositeDisplayMode(fileId, static_cast<int32_t>(CompositeDisplayMode::DEFAULT));
+    ASSERT_EQ(result, 0);
+
+    compositeDisplayStatus = QueryCompositeDisplayStatusByDisplayName("cam_pic.jpg");
+    ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
+
+    system("rm -rf /storage/cloud/files/Photo/16/IMG_1501924305_000.jpg");
+    system("rm -rf /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source.jpg");
+    system("rm -rf /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/source_back.jpg");
+    system("rm -rf /storage/cloud/files/.editData/Photo/16/IMG_1501924305_000.jpg/editdata_camera");
 }
 
 }  // namespace OHOS::Media

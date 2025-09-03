@@ -120,7 +120,7 @@ static int32_t ServicePublicCreateAsset(const std::string &ext, const std::strin
     return respVo.GetBody().fileId;
 }
 
-int32_t UpdateCEAvailable(int32_t fileId, int32_t ceAvailable)
+static int32_t UpdateCEAvailable(int32_t fileId, int32_t ceAvailable)
 {
     RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
     rdbPredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);

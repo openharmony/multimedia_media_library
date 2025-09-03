@@ -3644,23 +3644,9 @@ int32_t MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(int32_t 
     string sourcePath = GetEditDataSourcePath(assetPath);
     CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Can not get edit source path");
 
-    // copy source.jpg
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(editDataDirPath), E_HAS_FS_ERROR,
-        "Can not create dir %{private}s, errno:%{public}d", editDataDirPath.c_str(), errno);
-    bool copyResult = MediaFileUtils::CopyFileUtil(assetPath, sourcePath);
-    if (!copyResult) {
-        MEDIA_ERR_LOG("copy to source.jpg failed. errno=%{public}d, path: %{public}s", errno, assetPath.c_str());
-    }
     string editData;
     MediaFileUtils::ReadStrFromFile(editDataCameraSourcePath, editData);
     ParseCloudEnhancementEditData(editData);
-    string editDataCameraDestPath = PhotoFileUtils::GetEditDataCameraPath(assetPath);
-    copyResult = MediaFileUtils::CopyFileUtil(editDataCameraSourcePath, editDataCameraDestPath);
-    if (!copyResult) {
-        MEDIA_ERR_LOG("copy editDataCamera failed. errno=%{public}d, path: %{public}s", errno,
-            editDataCameraSourcePath.c_str());
-    }
-    // normal
     return AddFiltersToPhoto(sourcePath, assetPath, editData);
 }
 

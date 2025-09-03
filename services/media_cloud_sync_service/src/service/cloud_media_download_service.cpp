@@ -36,6 +36,7 @@
 #include "dfx_const.h"
 #include "exif_rotate_utils.h"
 #include "media_gallery_sync_notify.h"
+#include "enhancement_manager.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -365,6 +366,7 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
             MEDIA_WARN_LOG("OnDownloadAsset need slice raw, but file is not live photo");
         }
     }
+    int ret = E_OK;
     if (assetData.needSliceContent) {
         bool isGraffiti = CloudMediaSyncUtils::IsGraffiti(photo);
         std::string videoPath = CloudMediaSyncUtils::GetMovingPhotoVideoPath(assetData.path);
@@ -374,15 +376,27 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
             MEDIA_ERR_LOG("HandleAssetFile %{public}s error %{public}d", extraDir.c_str(), errno);
             return E_PATH;
         }
-        int32_t ret = SliceAssetFile(assetData.localPath, assetData.localPath, videoPath, extraDataPath);
+        ret = SliceAssetFile(assetData.localPath, assetData.localPath, videoPath, extraDataPath);
         if (ret == E_OK && assetData.needParseCover) {
             MEDIA_DEBUG_LOG("cover position is invalid, parse cover position from file");
             CoverPositionParser::GetInstance().AddTask(assetData.path, assetData.fileUri);
         }
-        return ret;
+    }
+    // for cloud enhancement composite photo
+    if (EnhancementManager::GetInstance().IsCloudEnhancementSupposed()) {
+        string photoCloudPath = CloudMediaSyncUtils::RestoreCloudPath(assetData.path);
+        if (PhotoFileUtils::IsEditDataSourceBackExists(photoCloudPath)) {
+            bool exchange = EnhancementManager::GetInstance().SyncCleanCompositePhoto(photoCloudPath);
+            int32_t compositeDisplayStatus = EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(
+                photo.fileId.value_or(0), photoCloudPath, exchange);
+            int32_t updateRet = EnhancementManager::GetInstance().UpdateCompositeDisplayStatus(
+                photo.fileId.value_or(0), compositeDisplayStatus);
+            CHECK_AND_PRINT_LOG(updateRet == E_OK, "fail to update composite display status of fileId: %{public}d",
+                photo.fileId.value_or(0));
+        }
     }
     MEDIA_INFO_LOG("SliceAsset, assetData: %{public}s", assetData.ToString().c_str());
-    return E_OK;
+    return ret;
 }
 
 int32_t CloudMediaDownloadService::OnDownloadAsset(

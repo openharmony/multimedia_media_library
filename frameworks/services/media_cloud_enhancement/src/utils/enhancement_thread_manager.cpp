@@ -95,9 +95,6 @@ void EnhancementThreadManager::DealWithTasks()
             continue;
         }
         task.isSuccessed ? ExecSuccessedTask(task) : ExecFailedTask(task);
-        if (needExtraWork) {
-            ExecExtraWork();
-        }
     }
     MEDIA_INFO_LOG("cloud enhancement thread task queue is empty for %{public}d seconds", WAIT_TIME);
     isThreadAlive = false;

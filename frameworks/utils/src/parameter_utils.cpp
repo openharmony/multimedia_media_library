@@ -354,6 +354,15 @@ int32_t ParameterUtils::CheckWatermarkType(const AssetChangeReqBody &reqBody)
     return E_OK;
 }
 
+int32_t ParameterUtils::CheckCompositeDisplayMode(const AssetChangeReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(reqBody.fileId > 0, -EINVAL, "fileId is invalid");
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckCompositeDisplayMode(reqBody.compositeDisplayMode),
+        -EINVAL, "Invalid compositeDisplayMode");
+
+    return E_OK;
+}
+
 int32_t ParameterUtils::CheckWhereClause(const std::string &whereClause)
 {
     int32_t ret = E_OK;

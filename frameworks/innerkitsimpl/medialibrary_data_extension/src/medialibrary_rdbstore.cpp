@@ -346,6 +346,27 @@ void MediaLibraryRdbStore::CreateBurstIndex(const shared_ptr<MediaLibraryRdbStor
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("end create idx_burstkey");
 }
+void MediaLibraryRdbStore::AddIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
+        PhotoColumn::CREATE_SCHPT_DAY_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
+        PhotoColumn::INDEX_SCHPT_ALBUM,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX,
+        PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
+        PhotoColumn::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX,
+        PhotoColumn::CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX,
+        PhotoColumn::INDEX_QUERY_THUMBNAIL_WHITE_BLOCKS
+    };
+    MEDIA_INFO_LOG("start create idx again");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end create idx again");
+}
 
 void MediaLibraryRdbStore::UpdateBurstDirty(const shared_ptr<MediaLibraryRdbStore> store)
 {
@@ -2692,6 +2713,14 @@ void AddCloudIndex(RdbStore &store)
         PhotoColumn::CREATE_CLOUD_ID_INDEX,
     };
     ExecSqls(sqls, store);
+}
+
+void AddCompositeDisplayStatusColumn(RdbStore &store)
+{
+    const string addCompositeDisplayStatusOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+        " ADD COLUMN " + PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS + " INT NOT NULL DEFAULT 0";
+    const vector<string> addCompositeDisplayStatus = {addCompositeDisplayStatusOnPhotos};
+    ExecSqls(addCompositeDisplayStatus, store);
 }
 
 static void AddPhotoEditTimeColumn(RdbStore &store)
@@ -5215,8 +5244,10 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_APPLINK_VERSION, true);
     }
 
-    if (oldVersion < VERSION_CREATE_TMP_COMPATIBLE_DUP) {
+    if (oldVersion < VERSION_CREATE_TMP_COMPATIBLE_DUP &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TMP_COMPATIBLE_DUP, true)) {
         AddCreateTmpCompatibleDup(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TMP_COMPATIBLE_DUP, true);
     }
 
     if (oldVersion < VERSION_ADD_MEDIA_BACKUP_INFO &&
@@ -5243,9 +5274,14 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS, true);
     }
 
+    if (oldVersion < VERSION_ADD_COMPOSITE_DISPLAY_STATUS_COLUMNS) {
+        AddCompositeDisplayStatusColumn(store);
+    }
+
     if (oldVersion < VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, true)) {
         AddIndexForPhotoSortInAlbum(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, true);
     }
 }
 

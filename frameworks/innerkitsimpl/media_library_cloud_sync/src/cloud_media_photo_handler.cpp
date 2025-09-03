@@ -396,6 +396,7 @@ int32_t CloudMediaPhotoHandler::OnCreateRecords(
         MEDIA_INFO_LOG("OnCreateRecords Record:%{public}s", record.ToString().c_str());
         req.records.emplace_back(record);
         DeleteTempLivePhotoFile(record.livePhotoCachePath);
+        DeleteTempLivePhotoFile(record.sourceLivePhoto);
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_CREATE_RECORDS);
     FailedSizeResp resp;
@@ -452,6 +453,7 @@ int32_t CloudMediaPhotoHandler::OnFdirtyRecords(
         MEDIA_INFO_LOG("OnFdirtyRecords Record: %{public}s", record.ToString().c_str());
         req.AddRecord(record);
         DeleteTempLivePhotoFile(record.livePhotoCachePath);
+        DeleteTempLivePhotoFile(record.sourceLivePhoto);
     }
     FailedSizeResp resp;
     resp.failedSize = 0;

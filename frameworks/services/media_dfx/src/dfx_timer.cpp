@@ -152,6 +152,7 @@ const std::map<uint32_t, int64_t> DfxTimer::operationCodeTimeoutMap = {
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_SUPPORTED_WATERMARK_TYPE), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_HAS_APPLINK), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SET_APPLINK), 200},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_COMPOSITE_DISPLAY_MODE), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ASSETS), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_BURST_ASSETS), 200},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::FIND_ALL_DUPLICATE_ASSETS), 200},

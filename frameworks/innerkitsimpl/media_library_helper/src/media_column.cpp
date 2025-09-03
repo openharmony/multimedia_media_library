@@ -115,6 +115,7 @@ const std::string PhotoColumn::PHOTO_CE_STATUS_CODE = "ce_status_code";
 const std::string PhotoColumn::PHOTO_STRONG_ASSOCIATION = "strong_association";
 const std::string PhotoColumn::PHOTO_ASSOCIATE_FILE_ID = "associate_file_id";
 const std::string PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK = "has_cloud_watermark";
+const std::string PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS = "composite_display_status";
 const std::string PhotoColumn::SUPPORTED_WATERMARK_TYPE = "supported_watermark_type";
 const std::string PhotoColumn::PHOTO_METADATA_FLAGS = "metadata_flags";
 const std::string PhotoColumn::PHOTO_CHECK_FLAG = "check_flag";
@@ -306,7 +307,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_TRANSCODE_TIME + " BIGINT NOT NULL DEFAULT 0, " +
     PHOTO_TRANS_CODE_FILE_SIZE + " BIGINT NOT NULL DEFAULT 0, " +
     PHOTO_EXIST_COMPATIBLE_DUPLICATE + " INT NOT NULL DEFAULT 0, " +
-    PHOTO_SOUTH_DEVICE_TYPE + "INT NOT NULL DEFAULT 0" +
+    PHOTO_SOUTH_DEVICE_TYPE + " INT NOT NULL DEFAULT 0, " +
+    PHOTO_COMPOSITE_DISPLAY_STATUS + " INT NOT NULL DEFAULT 0 " +
     ") ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
@@ -494,7 +496,7 @@ const std::string PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_SIZE_INDEX = BaseCol
     PHOTO_SORT_MEDIA_TYPE_SIZE_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
     "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + MEDIA_TYPE +
-    "," + MEDIA_SIZE + " DESC," + MEDIA_ID + " DESC);";
+    "," + MEDIA_SIZE + " DESC," + MEDIA_ID + " DESC," + PHOTO_STRONG_ASSOCIATION + ");";
 
 const std::string PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DISPLAY_NAME_INDEX = BaseColumn::CreateIndex() +
     PHOTO_SORT_IN_ALBUM_DISPLAY_NAME_INDEX + " ON " + PHOTOS_TABLE +
@@ -505,8 +507,8 @@ const std::string PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DISPLAY_NAME_INDEX = B
 const std::string PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DISPLAY_NAME_INDEX = BaseColumn::CreateIndex() +
     PHOTO_SORT_MEDIA_TYPE_DISPLAY_NAME_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
-    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + MEDIA_TYPE + "," + PHOTO_BURST_COVER_LEVEL +
-    "," + MEDIA_NAME + " DESC);";
+    "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + MEDIA_TYPE +
+    "," + MEDIA_NAME + " DESC," + PHOTO_STRONG_ASSOCIATION + ");";
 
 const std::string PhotoColumn::CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX = BaseColumn::CreateIndex() +
     PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX + " ON " + PHOTOS_TABLE +
@@ -645,7 +647,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_IS_AUTO,
     PhotoColumn::PHOTO_MEDIA_SUFFIX, PhotoColumn::PHOTO_IS_RECENT_SHOW, PhotoColumn::PHOTO_IS_RECTIFICATION_COVER,
     PhotoColumn::PHOTO_EXIF_ROTATE, PhotoColumn::PHOTO_HAS_APPLINK, PhotoColumn::PHOTO_APPLINK,
-    PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
+    PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

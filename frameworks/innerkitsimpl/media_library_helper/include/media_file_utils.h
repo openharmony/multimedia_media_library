@@ -193,6 +193,7 @@ public:
     EXPORT static std::string GetUriWithoutDisplayname(const std::string &uri);
     EXPORT static bool CheckSupportedWatermarkType(int32_t watermarkType);
     EXPORT static int32_t CopyDirectory(const std::string &srcDir, const std::string &dstDir);
+    EXPORT static bool CheckCompositeDisplayMode(int32_t compositeDisplayMode);
     EXPORT static bool GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key);
     EXPORT static bool IsCalledBySelf();
     EXPORT static std::vector<std::string> GetAllTypes(const int32_t extension);

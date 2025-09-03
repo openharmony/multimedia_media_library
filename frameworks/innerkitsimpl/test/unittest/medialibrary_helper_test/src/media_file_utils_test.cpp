@@ -1023,6 +1023,16 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckSupportedWatermarkType_
     EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(10), false);
 }
 
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckCompositeDisplayMode_Test_001, TestSize.Level1)
+{
+    EXPECT_EQ(MediaFileUtils::CheckCompositeDisplayMode(-10), false);
+    EXPECT_EQ(MediaFileUtils::CheckCompositeDisplayMode(-1), false);
+    EXPECT_EQ(MediaFileUtils::CheckCompositeDisplayMode(0), true);
+    EXPECT_EQ(MediaFileUtils::CheckCompositeDisplayMode(1), true);
+    EXPECT_EQ(MediaFileUtils::CheckCompositeDisplayMode(2), false);
+    EXPECT_EQ(MediaFileUtils::CheckCompositeDisplayMode(10), false);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateAssetRealName_Test_001, TestSize.Level1)
 {
     int32_t fileId = 1;

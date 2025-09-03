@@ -2411,6 +2411,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::SUPPORTED_WATERMARK_TYPE, { IsInt32 } },
     { PhotoColumn::PHOTO_IS_AUTO, { IsInt32 } },
     { PhotoColumn::PHOTO_IS_RECENT_SHOW, { IsBool, IsUniqueValue } },
+    { PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, { IsInt32 } },
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)
