@@ -3051,7 +3051,7 @@ static void UpdateDetailTimeByDateTaken(napi_env env, const shared_ptr<FileAsset
     }
 }
 
-static napi_value HandleGettingDetailTimeKey(napi_env env, const shared_ptr<FileAsset> &fileAssetPtr)
+napi_value FileAssetNapi::HandleGettingDetailTimeKey(napi_env env, const shared_ptr<FileAsset> &fileAssetPtr)
 {
     napi_value jsResult = nullptr;
     auto detailTimeValue = fileAssetPtr->GetMemberMap().at(PhotoColumn::PHOTO_DETAIL_TIME);

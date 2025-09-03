@@ -227,6 +227,7 @@ public:
     static void ReplaceSelection(std::string &selection, std::vector<std::string> &selectionArgs,
         const std::string &key, const std::string &keyInstead, const int32_t mode = ReplaceSelectionMode::DEFAULT);
     static void OnThumbnailGenerated(napi_env env, napi_value cb, void *context, void *data);
+    static napi_value ProcessSingleAsset(napi_env env, napi_value asset, std::vector<std::string>& inputKeys);
     int32_t GetUserId();
     void SetUserId(const int32_t &userId);
 

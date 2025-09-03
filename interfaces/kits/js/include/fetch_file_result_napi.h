@@ -45,6 +45,8 @@ public:
     FetchResType fetchResType_;
 };
 
+class FetchFileResultAsyncContext;
+
 class FetchFileResultNapi {
 public:
     EXPORT FetchFileResultNapi();
@@ -78,6 +80,8 @@ public:
     static void SolveConstructorRef(unique_ptr<FetchResult<PhotoAssetCustomRecord>> &fileResult,
         napi_ref &constructorRef);
     static void SolveConstructorRef(unique_ptr<FetchResult<AlbumOrder>> &fileResult, napi_ref &constructorRef);
+    static napi_value ProcessValidContext(napi_env env, unique_ptr<FetchFileResultAsyncContext> &asyncContext,
+     napi_value argv[], napi_value &result);
 
 private:
     EXPORT static void FetchFileResultNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
@@ -134,6 +138,7 @@ public:
     std::vector<std::unique_ptr<AlbumOrder>> fileAlbumOrderArray;
     void GetFirstAsset();
     void GetObjectAtPosition();
+    void GetPhotosInRange();
     void GetAllObjectFromFetchResult();
     void GetObjectsInRange();
     void GetLastObject();
