@@ -1126,7 +1126,7 @@ int32_t MediaLibraryManager::GetAlbumLpaths(uint32_t albumType, std::shared_ptr<
     CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_FAIL, "dataShareHelper is nullptr");
 
     QueryAlbumsReqBody reqBody;
-    reqBody.albumType = albumType;
+    reqBody.albumType = static_cast<int32_t>(albumType);
     reqBody.albumSubType =
         (albumType == PhotoAlbumType::SOURCE ? PhotoAlbumSubType::SOURCE_GENERIC : PhotoAlbumSubType::USER_GENERIC);
     reqBody.columns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_LPATH};
