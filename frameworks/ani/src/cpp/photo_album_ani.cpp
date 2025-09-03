@@ -43,7 +43,7 @@
 #include "ani_transfer_lib_manager.h"
 
 namespace OHOS::Media {
-using CreatePhotoAlbumNapiFn = napi_value (*)(napi_env, std::shared_ptr<PhotoAlbum>);
+using CreatePhotoAlbumNapiFn = napi_value (*)(napi_env, TransferUtils::TransferSharedPtr);
 using GetPhotoAlbumInstanceFn = TransferUtils::TransferSharedPtr (*)(PhotoAlbumNapi*);
 
 using namespace arkts::ani_signature;
@@ -1417,9 +1417,15 @@ ani_ref PhotoAlbumAni::TransferToDynamicAlbum(ani_env *env, [[maybe_unused]] ani
         arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
         return undefinedRef;
     }
-
-    napi_value napiPhotoAlbum = funcHandle(jsEnv, aniPhotoAlbum->GetPhotoAlbumInstance());
-    CHECK_COND_RET(napiPhotoAlbum != nullptr, undefinedRef, "CreatePhotoAlbumNapi failed");
+    std::shared_ptr<PhotoAlbum> photoAlbum = aniPhotoAlbum->GetPhotoAlbumInstance();
+    TransferUtils::TransferSharedPtr transferPtr;
+    transferPtr.photoAlbumPtr = photoAlbum.get();
+    napi_value napiPhotoAlbum = funcHandle(jsEnv, transferPtr);
+    if (napiPhotoAlbum == nullptr) {
+        ANI_ERR_LOG("CreatePhotoAlbumNapi failed");
+        arkts_napi_scope_close_n(jsEnv, 0, nullptr, &undefinedRef);
+        return undefinedRef;
+    }
 
     ani_ref result {};
     arkts_napi_scope_close_n(jsEnv, 1, &napiPhotoAlbum, &result);
@@ -1438,7 +1444,7 @@ ani_object PhotoAlbumAni::TransferToStaticAlbum(ani_env *env, [[maybe_unused]] a
     CHECK_COND_RET(funcHandle != nullptr, nullptr, "funcHandle is null");
     TransferUtils::TransferSharedPtr nativePhotoAlbumPtr = funcHandle(napiPhotoAlbum);
     CHECK_COND_RET(nativePhotoAlbumPtr.photoAlbumPtr != nullptr, nullptr, "nativePhotoAlbumPtr is null");
-    std::shared_ptr<PhotoAlbum> nativePhotoAlbum = std::shared_ptr<PhotoAlbum>(nativePhotoAlbumPtr.photoAlbumPtr);
+    std::unique_ptr<PhotoAlbum> nativePhotoAlbum = std::unique_ptr<PhotoAlbum>(nativePhotoAlbumPtr.photoAlbumPtr);
     CHECK_COND_RET(nativePhotoAlbum != nullptr, nullptr, "nativeFileAsset is null");
     auto aniFileAsset = CreatePhotoAlbumAni(env, nativePhotoAlbum);
     CHECK_COND_RET(aniFileAsset != nullptr, nullptr, "null aniWrapper");

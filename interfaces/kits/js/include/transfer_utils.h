@@ -48,11 +48,15 @@ public:
         PhotoAlbum* photoAlbumPtr;
         FetchResult<FileAsset>* fetchFileResultPtr;
         FetchResult<PhotoAlbum>* fetchPhotoAlbumPtr;
+        FetchResult<AlbumAsset>* fetchAlbumResultPtr;
+        FetchResult<SmartAlbumAsset>* fetchSmartAlbumResultPtr;
+        FetchResult<PhotoAssetCustomRecord>* fetchPhotoAssetCustomRecordPtr;
+        FetchResult<AlbumOrder>* fetchAlbumOrderPtr;
     } TransferSharedPtr;
 
     EXPORT static napi_value AttachCreateFileAsset(napi_env env, std::shared_ptr<FileAsset> &iAsset);
     EXPORT static std::shared_ptr<FileAsset> GetFileAssetInstance(FileAssetNapi* napiFileAsset);
-    EXPORT static napi_value CreatePhotoAlbumNapi(napi_env env, std::shared_ptr<PhotoAlbum> &albumData);
+    EXPORT static napi_value CreatePhotoAlbumNapi(napi_env env, std::unique_ptr<PhotoAlbum> &albumData);
     EXPORT static std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance(PhotoAlbumNapi* napiPhotoAlbum);
     EXPORT static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<FileAsset>> &fileResult);
     EXPORT static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<AlbumAsset>> &fileResult);
