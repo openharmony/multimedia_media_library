@@ -1429,7 +1429,7 @@ export namespace photoAccessHelper {
     }
 
     private static native transferToDynamicFetchResult(input: Object): Any;
-    private static native transferToStaticFetchResult(input: ESValue): FetchResultHandle<T>;
+    private static native transferToStaticFetchResult(input: ESValue): Object;
 
     static transferDynamic(input: Object): Any {
         return FetchResultHandle.transferToDynamicFetchResult(input);
@@ -3891,7 +3891,7 @@ export namespace photoAccessHelper {
     }
 
     private static native transferToDynamicMovingPhoto(input: MovingPhotoHandle): Any;
-    private static native transferToStaticMovingPhoto(input: Any): MovingPhotoHandle;
+    private static native transferToStaticMovingPhoto(input: ESValue): MovingPhotoHandle;
 
     static transferDynamic(input: Object): Any {
       return MovingPhotoHandle.transferToDynamicMovingPhoto(input as MovingPhotoHandle);

@@ -53,8 +53,8 @@ namespace OHOS {
 namespace Media {
 using CreateTransferMovingPhotoFn = napi_value (*)(napi_env,
     std::string, int, OHOS::Media::TransferUtils::TransferMovingPhotoParam);
-using GetPropertyMovingPhotoNapiFn = bool (*)(OHOS::Media::MovingPhotoNapi*, std::string, int,
-    OHOS::Media::TransferUtils::TransferMovingPhotoParam);
+using GetPropertyMovingPhotoNapiFn = bool (*)(OHOS::Media::MovingPhotoNapi*, std::string&, int&,
+    OHOS::Media::TransferUtils::TransferMovingPhotoParam&);
 std::mutex LibManager::mutex_;
 std::shared_ptr<LibHandle> LibManager::instance_ = nullptr;
 namespace {
