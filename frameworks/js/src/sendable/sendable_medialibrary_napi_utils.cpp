@@ -999,8 +999,10 @@ int32_t SendableMediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
 int32_t SendableMediaLibraryNapiUtils::GetAllLocationPredicates(DataSharePredicates &predicates)
 {
     SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
-    predicates.And()->NotEqualTo(PhotoColumn::PHOTO_LATITUDE, to_string(0));
-    predicates.And()->NotEqualTo(PhotoColumn::PHOTO_LONGITUDE, to_string(0));
+    predicates.BeginWrap();
+    predicates.NotEqualTo(PhotoColumn::PHOTO_LATITUDE, to_string(0));
+    predicates.Or()->NotEqualTo(PhotoColumn::PHOTO_LONGITUDE, to_string(0));
+    predicates.EndWrap();
     return E_SUCCESS;
 }
 
