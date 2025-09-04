@@ -69,6 +69,7 @@ public:
     void ClearChangeInfos();
 
 protected:
+    int32_t AddAlbumIdForMoveOperation(const NativeRdb::AbsRdbPredicates &predicates) override;
     int32_t UpdateModifiedDatasInner(const std::vector<int> &albumIds, RdbOperation operation,
         PendingInfo pendingInfo = PendingInfo()) override;
     std::string GetReturningKeyName() override;
