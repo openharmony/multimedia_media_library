@@ -3149,18 +3149,20 @@ int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<Fil
     return E_OK;
 }
 
-static int32_t DeletePhotoPermanentlyFromVector(vector<shared_ptr<FileAsset>> &fileAssetVector)
+static int32_t DeletePhotoPermanentlyFromVector(vector<shared_ptr<FileAsset>> &fileAssetVector,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     for (auto& fileAssetPtr : fileAssetVector) {
         MEDIA_DEBUG_LOG("Delete photo display name %{public}s", fileAssetPtr->GetDisplayName().c_str());
         CHECK_AND_RETURN_RET_LOG(fileAssetPtr != nullptr, E_HAS_DB_ERROR,
             "Photo Asset is nullptr");
-        MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(fileAssetPtr);
+        MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(fileAssetPtr, assetRefresh);
     }
     return E_OK;
 }
 
-static int32_t DeleteBurstPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
+static int32_t DeleteBurstPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
+    std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     MEDIA_DEBUG_LOG("DeleteBurstPhotoPermanently begin");
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_HAS_DB_ERROR,
@@ -3179,7 +3181,7 @@ static int32_t DeleteBurstPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
     };
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rbdPredicates, columns);
     GetFileAssetsFromResultSet(resultSet, columns, burstFileAssetVector);
-    DeletePhotoPermanentlyFromVector(burstFileAssetVector);
+    DeletePhotoPermanentlyFromVector(burstFileAssetVector, assetRefresh);
     return E_OK;
 }
 
@@ -3280,7 +3282,7 @@ static int32_t DeleteLocalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
         CHECK_AND_PRINT_LOG(DeleteMovingPhotoPermanently(fileAsset) == E_OK,
             "Delete moving photo file failed id %{public}d", id);
 
-        CHECK_AND_PRINT_LOG(DeleteBurstPhotoPermanently(fileAsset) == E_OK,
+        CHECK_AND_PRINT_LOG(DeleteBurstPhotoPermanently(fileAsset, assetRefresh) == E_OK,
             "Delete moving photo file failed id %{public}d", id);
 
         CHECK_AND_PRINT_LOG(MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(fileAsset, assetRefresh) == E_OK,
