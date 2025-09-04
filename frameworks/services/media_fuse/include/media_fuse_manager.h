@@ -36,7 +36,7 @@ public:
     int32_t DoHdcOpen(const char *path, int flags, int &fd);
     int32_t DoHdcCreate(const char *path, mode_t mode, struct fuse_file_info *fi);
     int32_t DoRelease(const char *path, const int &fd);
-    int32_t DoHdcRelease(const char *path, struct fuse_file_info *fi);
+    int32_t DoHdcRelease(const char *path, const int32_t &fd);
     int32_t DoHdcUnlink(const char *path);
     int32_t DoHdcReadDir(const char *path, void *buf, fuse_fill_dir_t filler,
         enum fuse_readdir_flags flags);

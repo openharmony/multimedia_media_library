@@ -105,7 +105,8 @@ static int Release(const char *path, struct fuse_file_info *fi)
 
     int32_t err = -1;
     if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) || (ctx->uid == 0 && ctx->gid == 0)) {
-        err = MediaFuseManager::GetInstance().DoHdcRelease(path, fi->fh);
+        int32_t fd = static_cast<int32_t>(fi->fh);
+        err = MediaFuseManager::GetInstance().DoHdcRelease(path, fd);
     } else {
         err = MediaFuseManager::GetInstance().DoRelease(path, fi->fh);
     }
@@ -185,11 +186,12 @@ static const struct fuse_operations high_ops = {
     .read       = Read,
     .write      = Write,
     .release    = Release,
-    .create     = Create,
     .opendir    = OpenDir,
+    .create     = Create,
     .readdir    = ReadDir,
-    .releasedir = ReleaseDir,
     .unlink     = Unlink,
+    .releasedir = ReleaseDir,
+
 };
 
 int32_t MediaFuseDaemon::StartFuse()
