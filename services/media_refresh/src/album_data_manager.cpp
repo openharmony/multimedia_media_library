@@ -297,9 +297,9 @@ bool AlbumDataManager::CheckIsExceed(const string &sql,
     return isExceed_;
 };
 
-bool AlbumDataManager::CheckIsExceed(const vector<AlbumChangeInfo> &changeInfos)
+bool AlbumDataManager::CheckIsExceed(size_t length)
 {
-    if (changeInfos.size() >= MAX_DATA_LENGTH) {
+    if (length >= MAX_DATA_LENGTH) {
         isExceed_ = true;
         this->changeDatas_.clear();
     }

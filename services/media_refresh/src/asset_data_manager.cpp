@@ -152,10 +152,9 @@ bool AssetDataManager::CheckIsExceed(const string &sql,
     return isExceed_;
 }
 
-bool AssetDataManager::CheckIsExceed(const vector<PhotoAssetChangeInfo> &changeInfos)
+bool AssetDataManager::CheckIsExceed(size_t length)
 {
-    SetAlbumIdByChangeInfos(changeInfos);
-    if (changeInfos.size() >= MAX_DATA_LENGTH) {
+    if (length >= MAX_DATA_LENGTH) {
         isExceed_ = true;
         this->SetAlbumIdFromChangeDates();
         this->changeDatas_.clear();
