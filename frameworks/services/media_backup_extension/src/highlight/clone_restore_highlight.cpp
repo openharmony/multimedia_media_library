@@ -32,6 +32,7 @@ const std::string GARBLE_DST_PATH = "/storage/media/local/files";
 const int32_t HIGHLIGHT_STATUS_NOT_PRODUCE = -1;
 const int32_t HIGHLIGHT_STATUS_DELETE = -4;
 const std::string RESTORE_STATUS_SUCCESS = "1";
+const int32_t DEFAULT_IS_VIEWED_VALUE = 1;
 
 const std::unordered_map<std::string, std::unordered_set<std::string>> ALBUM_COLUMNS_MAP = {
     { "AnalysisAlbum",
@@ -760,7 +761,8 @@ void CloneRestoreHighlight::GetHighlightInsertValue(NativeRdb::ValuesBucket &val
     PutIfInIntersection(value, "pin_time", info.pinTime, intersection);
     PutIfInIntersection(value, "use_subtitle", info.useSubtitle, intersection);
     PutIfInIntersection(value, "highlight_location", info.highlightLocation, intersection);
-    PutIfInIntersection(value, "is_viewed", info.isViewed, intersection);
+    // 历史时刻克隆到新机 默认已读
+    value.PutInt("is_viewed", DEFAULT_IS_VIEWED_VALUE);
     PutIfInIntersection(value, "notification_time", info.notificationTime, intersection);
 }
 
