@@ -47,7 +47,7 @@ ani_status FetchFileResultAni::PhotoAccessHelperInit(ani_env *env)
         return status;
     }
 
-    std::array methods = {
+    std::array instanceMethods = {
         ani_native_function {"isAfterLast", nullptr, reinterpret_cast<void *>(IsAfterLast)},
         ani_native_function {"getAllObjectsSync", nullptr, reinterpret_cast<void *>(GetAllObjects)},
         ani_native_function {"getFirstObjectSync", nullptr, reinterpret_cast<void *>(GetFirstObject)},
@@ -56,14 +56,21 @@ ani_status FetchFileResultAni::PhotoAccessHelperInit(ani_env *env)
         ani_native_function {"getObjectByPositionSync", nullptr, reinterpret_cast<void *>(GetPositionObject)},
         ani_native_function {"getCount", nullptr, reinterpret_cast<void *>(GetCount)},
         ani_native_function {"close", nullptr, reinterpret_cast<void *>(Close)},
+    };
+    status = env->Class_BindNativeMethods(cls, instanceMethods.data(), instanceMethods.size());
+    if (status != ANI_OK) {
+        ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
+        return status;
+    }
+    std::array staticMethods = {
         ani_native_function {"transferToDynamicFetchResult", nullptr,
             reinterpret_cast<void *>(TransferToDynamicFetchResult)},
         ani_native_function {"transferToStaticFetchResult", nullptr,
             reinterpret_cast<void *>(TransferToStaticFetchResult)},
     };
-    status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
+    status = env->Class_BindStaticNativeMethods(cls, staticMethods.data(), staticMethods.size());
     if (status != ANI_OK) {
-        ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
+        ANI_ERR_LOG("Failed to bind static native methods to: %{public}s", className);
         return status;
     }
 

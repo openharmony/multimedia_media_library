@@ -81,7 +81,7 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
         return ANI_ERROR;
     }
 
-    std::array methods = {
+    std::array instanceMethods = {
         ani_native_function {"getAssetsInner", nullptr, reinterpret_cast<void *>(PhotoAccessGetPhotoAssets)},
         ani_native_function {"getAssetsSync", nullptr, reinterpret_cast<void *>(PhotoAccessGetPhotoAssetsSync)},
         ani_native_function {"commitModifyInner", nullptr, reinterpret_cast<void *>(PhotoAccessHelperCommitModify)},
@@ -97,12 +97,19 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
             reinterpret_cast<void *>(PhotoAccessGetSharedPhotoAssets)},
         ani_native_function {"getdateAdded", nullptr, reinterpret_cast<void *>(GetdateAdded)},
         ani_native_function {"getdateModified", nullptr, reinterpret_cast<void *>(GetdateModified)},
-        ani_native_function {"transferToDynamicAlbum", nullptr, reinterpret_cast<void *>(TransferToDynamicAlbum)},
-        ani_native_function {"transferToStaticAlbum", nullptr, reinterpret_cast<void *>(TransferToStaticAlbum)}
     };
 
-    if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
+    if (ANI_OK != env->Class_BindNativeMethods(cls, instanceMethods.data(), instanceMethods.size())) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE.c_str());
+        return ANI_ERROR;
+    }
+
+    std::array staticMethods = {
+        ani_native_function {"transferToDynamicAlbum", nullptr, reinterpret_cast<void *>(TransferToDynamicAlbum)},
+        ani_native_function {"transferToStaticAlbum", nullptr, reinterpret_cast<void *>(TransferToStaticAlbum)},
+    };
+    if (ANI_OK != env->Class_BindStaticNativeMethods(cls, staticMethods.data(), staticMethods.size())) {
+        ANI_ERR_LOG("Failed to bind static native methods to: %{public}s", PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE.c_str());
         return ANI_ERROR;
     }
     return ANI_OK;
