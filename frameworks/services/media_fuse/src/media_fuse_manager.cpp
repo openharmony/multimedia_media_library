@@ -731,8 +731,8 @@ static int32_t HandleDirStat(int32_t &albumId, struct stat *stbuf)
     };
 
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query album id from db");
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query date from db");
         return E_ERR;
     }
 
