@@ -125,7 +125,8 @@ template <typename ChangeInfo, typename ChangeData>
 int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::InsertInitChangeInfos(
     const vector<ChangeInfo> &changeInfos, PendingInfo pendingInfo)
 {
-    CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(changeInfos), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
+    SetAlbumIdByChangeInfos(changeInfos);
+    CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(changeInfos.size()), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     for (auto const &changeInfo : changeInfos) {
         auto key = GetChangeInfoKey(changeInfo);
         if (changeDatas_.find(key) != changeDatas_.end()) {

@@ -65,7 +65,7 @@ protected:
         const std::vector<NativeRdb::ValueObject> &bindArgs, bool isLengthChanged = false) override;
     bool CheckIsExceed(const std::vector<int32_t> &keys) override;
     bool CheckIsExceed(bool isLengthChanged = false) override;
-    bool CheckIsExceed(const std::vector<AlbumChangeInfo> &changeInfos) override;
+    bool CheckIsExceed(size_t length) override;
 };
 
 } // namespace Media
