@@ -244,6 +244,7 @@ int32_t AccurateRefreshBase::UpdateWithNoDateTime(int32_t &changedRows, const Va
 
     vector<int32_t> keys = GetReturningKeys(retWithResults);
     changedRows = retWithResults.second.changed;
+    AddAlbumIdForMoveOperation(predicates);
     UpdateModifiedDatasInner(keys, operation);
     return ACCURATE_REFRESH_RET_OK;
 }
