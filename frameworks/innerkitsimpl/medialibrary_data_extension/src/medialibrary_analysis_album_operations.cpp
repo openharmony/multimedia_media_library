@@ -379,6 +379,16 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAnalysisAlbumOperations::Query
 static int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumInfo &currentAlbum,
     const MergeAlbumInfo &targetAlbum)
 {
+    if (targetAlbum.isCoverSatisfied == static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING)) {
+        return E_ERR;
+    }
+    if (currentAlbum.isCoverSatisfied == static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING) ||
+        currentAlbum.isCoverSatisfied == static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING_EDITE)) {
+        updateAlbumInfo.isCoverSatisfied = currentAlbum.isCoverSatisfied;
+        updateAlbumInfo.coverUri = currentAlbum.coverUri;
+        return E_OK;
+    }
+
     string currentFileId = MediaFileUri::GetPhotoId(currentAlbum.coverUri);
     string targetFileId = MediaFileUri::GetPhotoId(targetAlbum.coverUri);
     bool cond = (currentFileId.empty() || targetFileId.empty());
@@ -497,9 +507,13 @@ static int32_t UpdateForMergeGroupAlbums(const shared_ptr<MediaLibraryRdbStore> 
     for (auto it : updateMaps) {
         int32_t renameOperation =
             it.second.renameOperation != GROUP_ALBUM_RENAMED ? ALBUM_TO_RENAME_FOR_ANALYSIS : GROUP_ALBUM_RENAMED;
+        int32_t isCoverSatisfied =
+            (it.second.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING) &&
+            it.second.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING_EDITE)) ?
+            static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING) : it.second.isCoverSatisfied;
         string sql = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + TAG_ID + " = '" + it.first + "', " +
             GROUP_TAG + " = '" + it.first + "', " + COVER_URI + " = '" + it.second.coverUri + "', " +
-            IS_REMOVED + " = 0, " + IS_COVER_SATISFIED  + " = " + to_string(it.second.isCoverSatisfied) + ", " +
+            IS_REMOVED + " = 0, " + IS_COVER_SATISFIED  + " = " + to_string(isCoverSatisfied) + ", " +
             RENAME_OPERATION + " = " + to_string(renameOperation) + ", " + ALBUM_NAME + " = '" +
             it.second.albumName + "' WHERE " + ALBUM_ID + " = " + to_string(it.second.albumId);
         updateSqls.push_back(sql);
@@ -604,18 +618,14 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
                 deleteId.push_back(std::to_string(info.albumId));
                 updateMap[reorderedTagId].repeatedAlbumIds.push_back(std::to_string(info.albumId));
                 continue;
-            } else if (GetMergeAlbumCoverUri(newInfo, info, it->second) != E_OK) {
-                return E_HAS_DB_ERROR;
-            }
-            if (info.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING) ||
-                it->second.isCoverSatisfied != static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING)) {
-                updateMap[reorderedTagId].isCoverSatisfied = static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING);
+            } else if (GetMergeAlbumCoverUri(newInfo, info, it->second) == E_OK) {
+                updateMap[reorderedTagId].coverUri = newInfo.coverUri;
+                updateMap[reorderedTagId].isCoverSatisfied = newInfo.isCoverSatisfied;
             }
             if (info.renameOperation == GROUP_ALBUM_RENAMED) {
                 updateMap[reorderedTagId].albumName = info.albumName;
                 updateMap[reorderedTagId].renameOperation = info.renameOperation;
             }
-            updateMap[reorderedTagId].coverUri = newInfo.coverUri;
             updateMap[reorderedTagId].repeatedAlbumIds.push_back(std::to_string(info.albumId));
             deleteId.push_back(std::to_string(info.albumId));
         }
