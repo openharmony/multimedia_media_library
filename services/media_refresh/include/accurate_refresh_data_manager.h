@@ -60,7 +60,7 @@ protected:
         const std::vector<NativeRdb::ValueObject> &bindArgs, bool isLengthChanged = false) = 0;
     virtual bool CheckIsExceed(const std::vector<int32_t> &keys) = 0;
     virtual bool CheckIsExceed(bool isLengthChanged = false) = 0;
-    virtual bool CheckIsExceed(const std::vector<ChangeInfo> &changeInfos) = 0;
+    virtual bool CheckIsExceed(size_t length) = 0;
 
 private:
     int32_t CheckAndUpdateOperation(RdbOperation &newOperation, RdbOperation oldOperation);
@@ -82,7 +82,7 @@ private:
     virtual int32_t SetAlbumIdsByPredicates(const NativeRdb::AbsRdbPredicates &predicates) = 0;
     virtual int32_t SetAlbumIdsBySql(const std::string &sql, const std::vector<NativeRdb::ValueObject> &bindArgs) = 0;
     virtual int32_t SetAlbumIdsByFileds(const std::vector<int32_t> &fileIds) = 0;
-    virtual void SetAlbumIdByChangeInfos(const std::vector<PhotoAssetChangeInfo> &changeInfos) {};
+    virtual void SetAlbumIdByChangeInfos(const std::vector<ChangeInfo> &changeInfos) {};
     void SetAlbumIdFromChangeDates();
 
 protected:
