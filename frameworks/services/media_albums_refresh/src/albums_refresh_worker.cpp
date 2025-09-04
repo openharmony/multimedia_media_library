@@ -65,7 +65,7 @@ AlbumsRefreshWorker::~AlbumsRefreshWorker()
 
 void AlbumsRefreshWorker::StartConsumerThread()
 {
-    if (!isThreadAlive) {
+    if (!isThreadAlive && !stop) {
         isThreadAlive = true;
         thread taskThread(&AlbumsRefreshWorker::DealWithTasks, this);
         SetCpu(taskThread);
@@ -227,13 +227,13 @@ void AlbumsRefreshWorker::DealWithTasks()
 {
     MEDIA_INFO_LOG("albums refresh consumer thread start");
     bool loopCondition = true;
-    while (loopCondition) {
+    while (loopCondition && !stop) {
         bool needExecute = false;
         SyncNotifyInfo info;
         {
             unique_lock<mutex> lock(queueMutex_);
-            if (condVar_.wait_for(lock, chrono::seconds(WAIT_TIME), [this]() { return !taskQueue_.empty() || stop; })) {
-                if (taskQueue_.empty() || stop) {
+            if (condVar_.wait_for(lock, chrono::seconds(WAIT_TIME), [this]() { return stop || !taskQueue_.empty(); })) {
+                if (stop || taskQueue_.empty()) {
                     loopCondition = false;
                     break;
                 }
