@@ -19,6 +19,7 @@
 #include <thread>
 #include <fuzzer/FuzzedDataProvider.h>
 #include "ability_context_impl.h"
+#include "dfx_const.h"
 #include "media_log.h"
 #include "rdb_utils.h"
 #include "medialibrary_rdbstore.h"
@@ -136,7 +137,7 @@ static void MultistagesPhotoCaptureManagerTest()
 static void MultistagesVideoCaptureManagerTest()
 {
     std::string videoId = provider->ConsumeBytesAsString(NUM_BYTES);
-    std::string filePath = provider->ConsumeBytesAsString(NUM_BYTES);
+    std::string filePath = Media::CLOUD_FILE_PATH + provider->ConsumeBytesAsString(NUM_BYTES) + ".mp4";
     Media::MultiStagesVideoCaptureManager &instance =
         Media::MultiStagesVideoCaptureManager::GetInstance();
     int32_t fileId = InsertAsset(videoId);
