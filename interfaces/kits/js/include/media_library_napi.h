@@ -227,6 +227,7 @@ public:
     static void ReplaceSelection(std::string &selection, std::vector<std::string> &selectionArgs,
         const std::string &key, const std::string &keyInstead, const int32_t mode = ReplaceSelectionMode::DEFAULT);
     static void OnThumbnailGenerated(napi_env env, napi_value cb, void *context, void *data);
+    static napi_value ProcessSingleAsset(napi_env env, napi_value asset, std::vector<std::string>& inputKeys);
     int32_t GetUserId();
     void SetUserId(const int32_t &userId);
 
@@ -342,6 +343,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperSetForceHideSensitiveType(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetAssetMemberBatch(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessStartAssetAnalysis(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbumOrder(napi_env env, napi_callback_info info);
