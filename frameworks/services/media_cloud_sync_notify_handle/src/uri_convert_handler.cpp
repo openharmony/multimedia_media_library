@@ -16,6 +16,7 @@
 #include "uri_convert_handler.h"
 
 #include "media_column.h"
+#include "media_log.h"
 #include "photo_album_column.h"
 
 using namespace std;
@@ -34,6 +35,10 @@ static void AddNewNotify(CloudSyncHandleData &newHandleData,
     const list<Uri> &sendUris, const ChangeType &changeType)
 {
     if (sendUris.size() <= 0) {
+        return;
+    }
+    if (NotifyTypeChangeMap.find(changeType) == NotifyTypeChangeMap.end()) {
+        MEDIA_WARN_LOG("can't find changetype: %{public}d", changeType);
         return;
     }
     if (changeType == ChangeType::INSERT) {
