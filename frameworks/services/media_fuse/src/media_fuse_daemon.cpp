@@ -157,6 +157,11 @@ static int OpenDir(const char *path, struct fuse_file_info *fi)
     DfxTimer dfxTimer(
         DfxType::FUSE_OPENDIR, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
+
+    if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
+        (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
+        return E_OK;
+    }
     return E_OK;
 }
 
@@ -184,6 +189,11 @@ static int ReleaseDir(const char *path, struct fuse_file_info *fi)
     DfxTimer dfxTimer(
         DfxType::FUSE_RELEASEDIR, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
+
+    if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
+        (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
+        return E_OK;
+    }
     return E_OK;
 }
 
