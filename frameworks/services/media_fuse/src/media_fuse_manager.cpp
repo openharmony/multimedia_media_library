@@ -913,6 +913,7 @@ static int32_t CreateFd(const string &displayName, const int32_t &albumId, int32
     assetInfo.PutInt(MediaColumn::MEDIA_TYPE, MEDIA_TYPE_IMAGE);
     assetInfo.PutString(MediaColumn::MEDIA_TITLE, title);
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
+    assetInfo.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
     if (albumId == 0) {
         assetInfo.Put(MediaColumn::MEDIA_PACKAGE_NAME, FIXED_PHOTO_ALBUM);
     } else {
