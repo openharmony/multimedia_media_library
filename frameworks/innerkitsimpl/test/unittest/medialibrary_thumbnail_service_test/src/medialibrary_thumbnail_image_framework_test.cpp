@@ -16,9 +16,10 @@
 #include "medialibrary_thumbnail_image_framework_test.h"
 
 #include "image_source.h"
+
+#include "medialibrary_errno.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_errno.h"
 
 #define private public
 #define protected public
@@ -32,6 +33,7 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 const int32_t TEST_PIXELMAP_WIDTH_AND_HEIGHT = 100;
+const string TEST_HDR_JPG = "/data/local/tmp/hdr.jpg";
 
 void MediaLibraryThumbnailImageFrameworkTest::SetUpTestCase(void) {}
 
@@ -75,9 +77,8 @@ static std::shared_ptr<Picture> CreateTestPicture(std::shared_ptr<PixelMap> pixe
 
 static const string HDR_PICTURE_PATH = "/data/local/tmp/HDR_picture.jpg";
 
-static unique_ptr<ImageSource> CreateTestImageSource()
+static unique_ptr<ImageSource> CreateTestImageSource(const std::string &path)
 {
-    string path = HDR_PICTURE_PATH;
     MEDIA_INFO_LOG("file: %{public}s exist: %{public}d", path.c_str(), MediaFileUtils::IsFileExists(path));
     uint32_t err;
     SourceOptions opts;
@@ -88,7 +89,7 @@ static unique_ptr<ImageSource> CreateTestImageSource()
 
 static shared_ptr<Picture> CreateTestPicture()
 {
-    unique_ptr<ImageSource> imageSource = CreateTestImageSource();
+    unique_ptr<ImageSource> imageSource = CreateTestImageSource(HDR_PICTURE_PATH);
     CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, nullptr, "ImageSource::CreateImageSource failed");
 
     DecodingOptionsForPicture pictureOpts;
@@ -105,6 +106,25 @@ static std::shared_ptr<PixelMap> CreateTestPixelMap()
     CHECK_AND_RETURN_RET_LOG(picture != nullptr, nullptr, "CreateTestPicture() failed");
 
     return picture->GetMainPixel();
+}
+
+static std::shared_ptr<PixelMap> CreateTestHdrPixelMap(bool isYuv)
+{
+    unique_ptr<ImageSource> imageSource = CreateTestImageSource(TEST_HDR_JPG);
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, nullptr, "ImageSource::CreateImageSource failed");
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    if (isYuv) {
+        decodeOpts.photoDesiredPixelFormat = PixelFormat::YCBCR_P010;
+    }
+    uint32_t errorCode = 0;
+    unique_ptr<PixelMap> pixelMapPtr = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    CHECK_AND_RETURN_RET_LOG(errorCode == 0 && pixelMapPtr != nullptr, nullptr,
+        "Failed to create pixelMap, err:%{public}d", errorCode);
+
+    std::shared_ptr<PixelMap> pixelMap = std::move(pixelMapPtr);
+    return pixelMap;
 }
 
 HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsYuvPixelMap_test_001, TestSize.Level0)
@@ -376,5 +396,50 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, FlipAndRotatePixelMap_002, Tes
     MEDIA_INFO_LOG("FlipAndRotatePixelMap_002 end");
 }
 
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, ConvertPixelMapToSdrAndFormatRGBA8888_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ConvertPixelMapToSdrAndFormatRGBA8888_001");
+    auto pixelMap = CreateTestHdrPixelMap(true);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(pixelMap->IsHdr(), true);
+    auto ret = ThumbnailImageFrameWorkUtils::ConvertPixelMapToSdrAndFormatRGBA8888(pixelMap);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(pixelMap->IsHdr(), false);
+    EXPECT_EQ(pixelMap->GetPixelFormat(), PixelFormat::RGBA_8888);
+    MEDIA_INFO_LOG("ConvertPixelMapToSdrAndFormatRGBA8888_001 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, ConvertPixelMapToSdrAndFormatRGBA8888_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ConvertPixelMapToSdrAndFormatRGBA8888_002");
+    auto pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    ASSERT_NE(pixelMap, nullptr);
+    auto ret = ThumbnailImageFrameWorkUtils::ConvertPixelMapToSdrAndFormatRGBA8888(pixelMap);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(pixelMap->GetPixelFormat(), PixelFormat::RGBA_8888);
+    MEDIA_INFO_LOG("ConvertPixelMapToSdrAndFormatRGBA8888_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, ConvertPixelMapToSdrAndFormatRGBA8888_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ConvertPixelMapToSdrAndFormatRGBA8888_003");
+    auto pixelMap = CreateTestPixelMap(PixelFormat::NV12, true);
+    ASSERT_NE(pixelMap, nullptr);
+    auto ret = ThumbnailImageFrameWorkUtils::ConvertPixelMapToSdrAndFormatRGBA8888(pixelMap);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(pixelMap->GetPixelFormat(), PixelFormat::RGBA_8888);
+    MEDIA_INFO_LOG("ConvertPixelMapToSdrAndFormatRGBA8888_003 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, ConvertPixelMapToSdrAndFormatRGBA8888_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ConvertPixelMapToSdrAndFormatRGBA8888_004");
+    auto pixelMap = CreateTestHdrPixelMap(false);
+    ASSERT_NE(pixelMap, nullptr);
+    auto ret = ThumbnailImageFrameWorkUtils::ConvertPixelMapToSdrAndFormatRGBA8888(pixelMap);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(pixelMap->GetPixelFormat(), PixelFormat::RGBA_8888);
+    MEDIA_INFO_LOG("ConvertPixelMapToSdrAndFormatRGBA8888_004 end");
+}
 } // namespace Media
 } // namespace OHOS

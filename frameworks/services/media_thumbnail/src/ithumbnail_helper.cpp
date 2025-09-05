@@ -852,6 +852,8 @@ bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
     auto pixelMapEx = data.source.GetPixelMapEx();
     CHECK_AND_RETURN_RET_LOG(pixelMapEx != nullptr, false,
         "sourceEx is nullptr when generate thumbnailEx, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::ConvertPixelMapToSdrAndFormatRGBA8888(pixelMapEx), false,
+        "Failed to convert pixelMap to sdr and RGBA_8888, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
     CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::CompressImage(pixelMapEx, data.thumbnail, false), false,
         "CompressImage failed id %{public}s", opts.row.c_str());
     CHECK_AND_RETURN_RET_LOG(TrySavePixelMap(data, ThumbnailType::THUMB_EX), false,
@@ -1007,11 +1009,9 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
         return false;
     }
     auto pixelMap = data.source.GetPixelMap();
-    if (pixelMap != nullptr && pixelMap->IsHdr()) {
-        uint32_t ret = pixelMap->ToSdr();
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, false,
-            "DoCreateThumbnail failed to transform to sdr, id: %{public}s.", data.id.c_str());
-    }
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::ConvertPixelMapToSdrAndFormatRGBA8888(pixelMap), false,
+        "Failed to convert pixelMap to sdr and RGBA_8888, id: %{public}s", data.id.c_str());
+
     CHECK_AND_RETURN_RET(GenThumbnail(opts, data, ThumbnailType::THUMB), false);
     if (opts.table == AudioColumn::AUDIOS_TABLE) {
         MEDIA_DEBUG_LOG("AUDIOS_TABLE, no need to create all thumbnail");
@@ -1161,11 +1161,8 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
     auto pixelMap = data.source.GetPixelMap();
-    if (pixelMap != nullptr && pixelMap->IsHdr()) {
-        uint32_t ret = pixelMap->ToSdr();
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, false,
-            "DoCreateAstc failed to transform to sdr, id: %{public}s.", data.id.c_str());
-    }
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::ConvertPixelMapToSdrAndFormatRGBA8888(pixelMap), false,
+        "Failed to convert pixelMap to sdr and RGBA_8888, id: %{public}s", data.id.c_str());
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         MEDIA_ERR_LOG("DoCreateAstc GenThumbnail THUMB failed, id: %{public}s", data.id.c_str());
         return false;
@@ -1198,6 +1195,8 @@ bool IThumbnailHelper::DoCreateAstcMthAndYear(ThumbRdbOpt &opts, ThumbnailData &
     auto pixelMap = data.source.GetPixelMap();
     CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false,
         "DoCreateAstc failed, no available pixelMap, id: %{public}s.", data.id.c_str());
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::ConvertPixelMapToSdrAndFormatRGBA8888(pixelMap), false,
+        "Failed to convert pixelMap to sdr and RGBA_8888, id: %{public}s", data.id.c_str());
     if (!GenThumbnail(opts, data, ThumbnailType::MTH_ASTC) || !GenThumbnail(opts, data, ThumbnailType::YEAR_ASTC)) {
         MEDIA_ERR_LOG("DoCreateAstc failed, GenThumbnail failed, id: %{public}s.", data.id.c_str());
         return false;

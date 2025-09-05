@@ -154,6 +154,7 @@ bool ThumbnailUtils::LoadVideoFrame(ThumbnailData &data, Size &desiredSize, int6
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
     param.isSupportFlip = true;
+    param.convertColorSpace = false;
     int32_t queryOption = (timeStamp == AV_FRAME_TIME) ?
         AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC : AVMetadataQueryOption::AV_META_QUERY_CLOSEST;
 
@@ -1702,18 +1703,9 @@ bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, const bool is
         MEDIA_ERR_LOG("Fail to scale thumbnail, data source is empty, isSourceEx: %{public}d.", isSourceEx);
         return false;
     }
-    if (dataSource != nullptr && dataSource->IsHdr()) {
-        uint32_t ret = dataSource->ToSdr();
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "Fail to transform to sdr, isSourceEx: %{public}d.", isSourceEx);
-    }
-    ImageInfo imageInfo;
-    dataSource->GetImageInfo(imageInfo);
-    if (imageInfo.pixelFormat != PixelFormat::RGBA_8888) {
-        uint32_t ret = ImageFormatConvert::ConvertImageFormat(dataSource, PixelFormat::RGBA_8888);
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, false,
-            "Fail to scale convert image format, isSourceEx: %{public}d, format: %{public}d.",
-            isSourceEx, imageInfo.pixelFormat);
-    }
+
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::ConvertPixelMapToSdrAndFormatRGBA8888(dataSource), false,
+        "Failed to convert pixelMap to sdr and RGBA_8888, isSourceEx: %{public}d", isSourceEx);
     if (isSourceEx) {
         data.source.SetPixelMapEx(dataSource);
     } else {
