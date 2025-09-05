@@ -51,7 +51,7 @@
 #include "media_app_uri_permission_column.h"
 #include "medialibrary_ptp_operations.h"
 #include "medialibrary_photo_operations.h"
-#include "mtp_data_utils.h"
+#include "result_set_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -68,7 +68,7 @@ const std::string FUSE_LOCAL_MEDIA_DIR = "/storage/media/local/files/Photo";
 const std::string FUSE_URI_PREFIX = "file://media";
 const std::string HIDDEN_ALBUM = ".hiddenAlbum";
 const std::string PHOTO_EXTENSION = "jpg";
-const std::string VODIO_EXTENSION = "mp4";
+const std::string VIDEO_EXTENSION = "mp4";
 const std::string FIXED_PHOTO_ALBUM = "DeveloperAlbum";
 const int32_t URI_SLASH_NUM_API9 = 2;
 const int32_t URI_SLASH_NUM_API10 = 4;
@@ -910,7 +910,11 @@ static int32_t CreateFd(const string &displayName, const int32_t &albumId, int32
 
     NativeRdb::ValuesBucket assetInfo;
     assetInfo.PutString(ASSET_EXTENTION, extension);
-    assetInfo.PutInt(MediaColumn::MEDIA_TYPE, MEDIA_TYPE_IMAGE);
+    if (extension == PHOTO_EXTENSION) {
+        assetInfo.PutInt(MediaColumn::MEDIA_TYPE, MEDIA_TYPE_IMAGE);
+    } else if (extension == VIDEO_EXTENSION) {
+        assetInfo.PutInt(MediaColumn::MEDIA_TYPE, MEDIA_TYPE_VIDEO);
+    }
     assetInfo.PutString(MediaColumn::MEDIA_TITLE, title);
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
     assetInfo.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
@@ -1088,6 +1092,7 @@ int32_t MediaFuseManager::DoHdcUnlink(const char *path)
 
     string fileId;
     if (filePath.empty()) {
+        // If not found displayname check is moving Photo
         string title;
         string ext;
         res = ExtractFileNameAndExtension(displayName, title, ext);
@@ -1145,8 +1150,8 @@ static void JpgToMp4(const std::string& displayName, std::set<std::string>& file
 {
     size_t dotPos = displayName.find_last_of('.');
     std::string videoName = (dotPos != std::string::npos)
-        ? displayName.substr(0, dotPos) + "." + VODIO_EXTENSION
-        : displayName + "." + VODIO_EXTENSION;
+        ? displayName.substr(0, dotPos) + "." + VIDEO_EXTENSION
+        : displayName + "." + VIDEO_EXTENSION;
 
     fileNames.insert(videoName);
 }
