@@ -713,7 +713,6 @@ static bool IsMovingPhoto(int32_t subtype, int32_t effectMode)
 
 static int32_t HandleMovingPhoto(string &filePath, string &displayName, int32_t albumId)
 {
-
     string title;
     string ext;
     int32_t res = ExtractFileNameAndExtension(displayName, title, ext);
