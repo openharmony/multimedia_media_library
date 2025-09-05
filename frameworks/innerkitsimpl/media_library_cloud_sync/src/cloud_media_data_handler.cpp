@@ -30,7 +30,6 @@
 #include "cloud_media_thread_limiter.h"
 
 namespace OHOS::Media::CloudSync {
-// LCOV_EXCL_START
 CloudMediaDataHandler::CloudMediaDataHandler(const std::string &tableName, int32_t cloudType, int32_t userId)
     : cloudType_(cloudType), userId_(userId), tableName_(tableName)
 {
@@ -286,5 +285,4 @@ int32_t CloudMediaDataHandler::OnCompleteCheck()
     CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnCompleteCheck();
 }
-// LCOV_EXCL_STOP
 }  // namespace OHOS::Media::CloudSync
