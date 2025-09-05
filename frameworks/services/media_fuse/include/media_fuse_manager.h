@@ -69,4 +69,3 @@ private:
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIA_FUSE_MANAGER_H
-
