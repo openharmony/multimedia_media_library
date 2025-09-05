@@ -126,11 +126,12 @@ static int Create(const char *path, mode_t mode, struct fuse_file_info *fi)
         DfxType::FUSE_CREATE, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
 
+    int32_t err = -1;
     if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
         (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
-        int32_t err = MediaFuseManager::GetInstance().DoHdcCreate(path, mode, fi);
-        CHECK_AND_RETURN_RET_LOG(err == 0, err, "Create file failed, path = %{private}s", path);
+        err = MediaFuseManager::GetInstance().DoHdcCreate(path, mode, fi);
     }
+    CHECK_AND_RETURN_RET_LOG(err == 0, err, "Create file failed, path = %{private}s", path);
     return E_OK;
 }
 
@@ -142,11 +143,12 @@ static int Unlink(const char *path)
         DfxType::FUSE_UNLINK, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
 
+    int32_t err = -1;
     if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
         (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
-        int32_t err = MediaFuseManager::GetInstance().DoHdcUnlink(path);
-        CHECK_AND_RETURN_RET_LOG(err == 0, -ENOENT, "Unlink: DoHdcUnlink failed, path = %{public}s", path);
+        err = MediaFuseManager::GetInstance().DoHdcUnlink(path);
     }
+    CHECK_AND_RETURN_RET_LOG(err == 0, -ENOENT, "Unlink: DoHdcUnlink failed, path = %{public}s", path);
     return E_OK;
 }
 
@@ -162,7 +164,7 @@ static int OpenDir(const char *path, struct fuse_file_info *fi)
         (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
         return E_OK;
     }
-    return E_OK;
+    return E_ERR;
 }
 
 static int ReadDir(const char *path, void *buf, fuse_fill_dir_t fullDir, off_t offset,
@@ -174,11 +176,12 @@ static int ReadDir(const char *path, void *buf, fuse_fill_dir_t fullDir, off_t o
         DfxType::FUSE_READDIR, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
 
+    int32_t err = -1;
     if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
         (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
-        int32_t err = MediaFuseManager::GetInstance().DoHdcReadDir(path, buf, fullDir, FUSE_READDIR_PLUS);
-        CHECK_AND_RETURN_RET_LOG(err == 0, -ENOENT, "DoHdcReadDir failed, path = %{public}s", path);
+        err = MediaFuseManager::GetInstance().DoHdcReadDir(path, buf, fullDir, FUSE_READDIR_PLUS);
     }
+    CHECK_AND_RETURN_RET_LOG(err == 0, -ENOENT, "DoHdcReadDir failed, path = %{public}s", path);
     return E_OK;
 }
 
@@ -194,7 +197,7 @@ static int ReleaseDir(const char *path, struct fuse_file_info *fi)
         (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
         return E_OK;
     }
-    return E_OK;
+    return E_ERR;
 }
 
 static const struct fuse_operations high_ops = {
