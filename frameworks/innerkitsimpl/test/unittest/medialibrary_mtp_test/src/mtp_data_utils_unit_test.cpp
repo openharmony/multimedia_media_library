@@ -33,7 +33,7 @@
 #include "userfilemgr_uri.h"
 #include "photo_album_column.h"
 #include "album_operation_uri.h"
-#include "get_self_permissions.h"
+#include "medialibrary_mock_tocken.h"
 #include "mtp_manager.h"
 
 using namespace std;
@@ -52,25 +52,46 @@ const std::string FILE_SUBTYPE = "1";
 const std::string EMPTY_COLUMN_NAME = "0";
 static constexpr int64_t MILLI_TO_SECOND = 1000;
 const std::string OTHER_ALBUM_NAME = "其它";
-
+static uint64_t g_shellToken = 0;
+static MediaLibraryMockHapToken* mockToken = nullptr;
+ 
 void MtpDataUtilsUnitTest::SetUpTestCase(void)
 {
+    // mock hap token
+    g_shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
+
     vector<string> perms;
     perms.push_back("ohos.permission.READ_IMAGEVIDEO");
     perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MtpDataUtilsUnitTest", perms, tokenId);
-    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saManager == nullptr) {
-        MEDIA_ERR_LOG("Get system ability mgr failed.");
-        return;
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO");
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
+    mockToken = new MediaLibraryMockHapToken("com.ohos.medialibrary.medialibrarydata", perms);
+    for (auto &perm : perms) {
+        MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
     }
+
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    ASSERT_NE(saManager, nullptr);
+
     auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
     if (dataShareHelper_ == nullptr) {
         dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+        ASSERT_NE(dataShareHelper_, nullptr);
     }
 }
-void MtpDataUtilsUnitTest::TearDownTestCase(void) {}
+void MtpDataUtilsUnitTest::TearDownTestCase(void)
+{
+    if (mockToken != nullptr) {
+        delete mockToken;
+        mockToken = nullptr;
+    }
+
+    SetSelfTokenID(g_shellToken);
+    MediaLibraryMockTokenUtils::ResetToken();
+    EXPECT_EQ(g_shellToken, IPCSkeleton::GetSelfTokenID());
+}
+
 void MtpDataUtilsUnitTest::SetUp() {}
 void MtpDataUtilsUnitTest::TearDown(void) {}
 

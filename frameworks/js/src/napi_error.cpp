@@ -62,7 +62,7 @@ void NapiError::ThrowError(napi_env env, int32_t err, const std::string &errMsg)
         }
     }
 
-    NAPI_ERR_LOG("ThrowError errCode:%{public}d errMsg:%{public}s", err, message.c_str());
+    NAPI_DEBUG_LOG("ThrowError errCode:%{public}d errMsg:%{public}s", err, message.c_str());
     NAPI_CALL_RETURN_VOID(env, napi_throw_error(env, to_string(err).c_str(), message.c_str()));
 }
 
