@@ -35,6 +35,7 @@
 #include "moving_photo_file_utils.h"
 #include "post_proc.h"
 #include "thumbnail_utils.h"
+#include "ohos_account_kits.h"
 
 namespace OHOS {
 namespace Media {
@@ -853,6 +854,40 @@ int32_t BackupFileUtils::IsCloneCloudSyncSwitchOn(int32_t sceneCode)
         return CheckSwitchType::UPGRADE_FAILED_ON;
     }
     return (switchOn == MOBILE_NETWORK_STATUS_ON) ? CheckSwitchType::SUCCESS_ON : CheckSwitchType::SUCCESS_OFF;
+}
+
+bool BackupFileUtils::GetAccountValid(const int32_t sceneCode, const std::string restoreInfo)
+{
+    if (sceneCode == UPGRADE_RESTORE_ID) {
+        return true;
+    }
+    string oldId = "";
+    string newId = "";
+    nlohmann::json json_arr = nlohmann::json::parse(restoreInfo, nullptr, false);
+    CHECK_AND_RETURN_RET_LOG(!json_arr.is_discarded(), false, "cloud account parse failed.");
+
+    for (const auto& item : json_arr) {
+        if (!item.contains("type") || !item.contains("detail") || item["type"] != "dualAccountId") {
+            continue;
+        } else {
+            oldId = item["detail"];
+            MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
+            break;
+        }
+    }
+    std::pair<bool, OHOS::AccountSA::OhosAccountInfo> ret =
+        OHOS::AccountSA::OhosAccountKits::GetInstance().QueryOhosAccountInfo();
+    if (ret.first) {
+        OHOS::AccountSA::OhosAccountInfo& resultInfo = ret.second;
+        newId = resultInfo.uid_;
+    } else {
+        MEDIA_ERR_LOG("new account logins failed.");
+        return false;
+    }
+    MEDIA_INFO_LOG("the old id is %{public}s, new id is %{public}s",
+        BackupFileUtils::GarbleFilePath(oldId, sceneCode).c_str(),
+        BackupFileUtils::GarbleFilePath(newId, sceneCode).c_str());
+    return ((oldId != "") && (oldId == newId));
 }
 
 bool BackupFileUtils::IsValidFile(const std::string &path)
