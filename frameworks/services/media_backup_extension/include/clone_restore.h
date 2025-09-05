@@ -119,7 +119,6 @@ private:
     std::vector<NativeRdb::ValuesBucket> GetCloudInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType) override;
     int InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType) override;
-    std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
     int32_t MoveAsset(FileInfo &fileInfo);
     bool IsFilePathExist(const std::string &filePath) const;
     int32_t QueryTotalNumber(const std::string &tableName);
@@ -188,43 +187,6 @@ private:
         FileInfo &fileInfo);
     bool IsSameFileForClone(const std::string &tableName, FileInfo &fileInfo);
     NativeRdb::ValuesBucket GetInsertValue(const AnalysisAlbumTbl &portraitAlbumInfo);
-    int32_t InsertPortraitAlbumByTable(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
-    void InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl, int64_t maxAlbumId);
-    void ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        AnalysisAlbumTbl &analysisAlbumTbl);
-    std::vector<AnalysisAlbumTbl> QueryPortraitAlbumTbl(int32_t offset,
-        const std::vector<std::string>& commonColumns);
-    void RestoreFromGalleryPortraitAlbum();
-    int32_t QueryPortraitAlbumTotalNumber(std::shared_ptr<NativeRdb::RdbStore> rdbPtr, std::string query);
-    std::unordered_map<std::string, std::string> CreateImgFaceColumnFieldMap();
-    void ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, ImageFaceTbl &imageFaceTbl);
-    void ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FaceTagTbl &faceTagTbl);
-    NativeRdb::ValuesBucket CreateValuesBucketFromImageFaceTbl(const ImageFaceTbl& imageFaceTbl);
-    void BatchInsertImageFaces(const std::vector<ImageFaceTbl>& imageFaceTbls);
-    std::vector<ImageFaceTbl> ProcessImageFaceTbls(const std::vector<ImageFaceTbl>& imageFaceTbls,
-        const std::vector<FileIdPair>& fileIdPairs);
-    std::vector<ImageFaceTbl> QueryImageFaceTbl(int32_t offset, std::string &fileIdClause,
-        const std::vector<std::string>& commonColumns);
-    std::vector<PortraitAlbumDfx> QueryAllPortraitAlbum(int32_t& offset, int32_t& rowCount);
-    void RecordOldPortraitAlbumDfx();
-    std::unordered_set<std::string> QueryAllPortraitAlbum();
-    void LogPortraitCloneDfx();
-    void RestoreImageFaceInfo(std::vector<FileInfo> &fileInfos);
-    NativeRdb::ValuesBucket CreateValuesBucketFromFaceTagTbl(const FaceTagTbl& faceTagTbl);
-    void BatchInsertFaceTags(const std::vector<FaceTagTbl>& faceTagTbls);
-    void DeleteExistingFaceTagData(const std::string& inClause);
-    std::vector<FaceTagTbl> QueryFaceTagTbl(int32_t offset, const std::string& inClause);
-    void RestorePortraitClusteringInfo();
-    void ReportPortraitCloneStat(int32_t sceneCode);
-    void AppendExtraWhereClause(std::string& whereClause, const std::string& tableName);
-    void GenNewCoverUris(const std::vector<CoverUriInfo>& coverUriInfo,
-        std::vector<FileInfo> &fileInfos);
-    bool GetFileInfoByFileId(int32_t fileId, const std::vector<FileInfo>& fileInfos, FileInfo& outFileInfo);
-    std::string GenCoverUriUpdateSql(const std::unordered_map<std::string, std::pair<std::string, int32_t>>&
-        tagIdToCoverInfo, const std::unordered_map<std::string, int32_t>& oldToNewFileId,
-        const std::vector<FileInfo>& fileInfos, std::vector<std::string>& tagIds);
-    std::string ProcessUriAndGenNew(const std::string& tagId, const std::string& oldCoverUri,
-        const std::unordered_map<std::string, int32_t>& oldToNewFileId, const std::vector<FileInfo>& fileInfos);
     int32_t MovePicture(FileInfo &fileInfo);
     int32_t MoveMovingPhotoVideo(FileInfo &fileInfo);
     int32_t MoveEditedData(FileInfo &fileInfo);
@@ -249,7 +211,9 @@ private:
     void RestoreAnalysisData();
     void RestoreSearchIndexData();
     void RestoreAnalysisClassify();
+    void RestoreAnalysisPortrait();
     void RestoreAnalysisGeo();
+    void RestoreGroupPhoto();
     void RestoreBeautyScoreData();
     void RestoreVideoFaceData();
     void PrepareShootingModeVal(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
@@ -293,8 +257,6 @@ private:
     std::unordered_map<std::string, std::unordered_map<int32_t, int32_t>> tableAlbumIdMap_;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tableCommonColumnInfoMap_;
     std::string garbagePath_;
-    std::vector<CoverUriInfo> coverUriInfo_;
-    std::vector<PortraitAlbumDfx> portraitAlbumDfx_;
     PhotoAlbumClone photoAlbumClone_;
     PhotosClone photosClone_;
     static constexpr int32_t INVALID_COVER_SATISFIED_STATUS = 0;
@@ -312,7 +274,6 @@ private:
     CloneRestoreGeoDictionary cloneRestoreGeoDictionary_;
     CloneRestoreAnalysisData cloneRestoreAnalysisData_;
     int64_t maxSearchId_ {0};
-    int64_t maxAnalysisAlbumId_ {0};
     int64_t maxBeautyFileId_ {0};
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
     std::unordered_set<std::string> existNewAddColumnSet_;
