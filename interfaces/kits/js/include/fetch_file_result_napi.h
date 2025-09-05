@@ -45,6 +45,8 @@ public:
     FetchResType fetchResType_;
 };
 
+class FetchFileResultAsyncContext;
+
 class FetchFileResultNapi {
 public:
     EXPORT FetchFileResultNapi();
@@ -78,6 +80,8 @@ public:
     static void SolveConstructorRef(unique_ptr<FetchResult<PhotoAssetCustomRecord>> &fileResult,
         napi_ref &constructorRef);
     static void SolveConstructorRef(unique_ptr<FetchResult<AlbumOrder>> &fileResult, napi_ref &constructorRef);
+    static napi_value ProcessValidContext(napi_env env, unique_ptr<FetchFileResultAsyncContext> &asyncContext,
+     napi_value argv[], napi_value &result);
 
 private:
     EXPORT static void FetchFileResultNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
@@ -91,6 +95,7 @@ private:
     EXPORT static napi_value JSGetLastObject(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetPositionObject(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetAllObject(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetRangeObjects(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSClose(napi_env env, napi_callback_info info);
 
     napi_env env_;
@@ -117,6 +122,8 @@ public:
     std::shared_ptr<FetchResultProperty> objectPtr;
     bool status;
     int32_t position;
+    int32_t offset;
+    int32_t length;
     std::unique_ptr<FileAsset> fileAsset;
     std::unique_ptr<AlbumAsset> albumAsset;
     std::unique_ptr<PhotoAlbum> photoAlbum;
@@ -131,7 +138,9 @@ public:
     std::vector<std::unique_ptr<AlbumOrder>> fileAlbumOrderArray;
     void GetFirstAsset();
     void GetObjectAtPosition();
+    void GetPhotosInRange();
     void GetAllObjectFromFetchResult();
+    void GetObjectsInRange();
     void GetLastObject();
     void GetNextObject();
 };

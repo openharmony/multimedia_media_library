@@ -156,6 +156,7 @@
             "OHOS::Media::FetchFileResultNapi::JSGetLastObject(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::FetchFileResultNapi::JSIsAfterLast(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::FetchFileResultNapi::JSGetNextObject(napi_env__ *,napi_callback_info__ *)";
+            "OHOS::Media::FetchFileResultNapi::JSGetRangeObjects(napi_env__ *,napi_callback_info__ *)";
 
             "_binary_medialibraryinf_abc_start";
             "_binary_medialibraryinf_abc_end";
