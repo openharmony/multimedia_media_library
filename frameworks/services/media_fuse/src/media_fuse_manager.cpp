@@ -1000,8 +1000,7 @@ static int32_t UpdatePhotoRdb(const string &displayName, const string &filePath)
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "ExtractFileNameAndExtension fail");
     res = GetFileIdFromPath(filePath, fileId);
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetFileIdFromPath fail");
-    string uri;
-    uri = FUSE_URI_PREFIX + FUSE_OPEN_PHOTO_PRE + "/" + fileId + "/" + title + "/" + displayName;
+    string uri = FUSE_URI_PREFIX + FUSE_OPEN_PHOTO_PRE + "/" + fileId + "/" + title + "/" + displayName;
     MEDIA_INFO_LOG("UpdatePhotoRdb uri = %{private}s", uri.c_str());
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
