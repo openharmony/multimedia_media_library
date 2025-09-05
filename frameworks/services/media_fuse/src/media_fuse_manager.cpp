@@ -75,7 +75,6 @@ const int32_t URI_SLASH_NUM_API10 = 4;
 const int32_t FUSE_VIRTUAL_ID_DIVIDER = 5;
 const int32_t FUSE_PHOTO_VIRTUAL_IDENTIFIER = 4;
 const int32_t BASE_USER_RANGE = 200000;
-
 static constexpr int32_t HDC_FIRST_ARGS = 1;
 static constexpr int32_t HDC_SECOND_ARGS = 2;
 static constexpr int32_t HDC_THIRD_ARGS = 3;
@@ -1189,6 +1188,12 @@ static std::shared_ptr<NativeRdb::ResultSet> QueryAlbumPhotos(const int32_t &alb
     return MediaLibraryRdbStore::Query(photoPred, columns);
 }
 
+static bool IsMovingPhoto(int32_t subtype, int32_t effectMode)
+{
+    return (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+        effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
+}
+
 static int32_t ReadAlbumDir(const string &inputPath, void* buf, fuse_fill_dir_t filler)
 {
     string albumName = inputPath.substr(FUSE_OPEN_PHOTO_PRE.length() + 1);
@@ -1220,7 +1225,7 @@ static int32_t ReadAlbumDir(const string &inputPath, void* buf, fuse_fill_dir_t 
         set<string> fileNames;
         string videoPath;
         fileNames.insert(displayName);
-        if (MtpDataUtils::IsMtpMovingPhoto(subtype, effectMode)) {
+        if (IsMovingPhoto(subtype, effectMode)) {
             videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(localPath);
             JpgToMp4(displayName, fileNames);
         }
