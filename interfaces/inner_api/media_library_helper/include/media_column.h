@@ -193,6 +193,10 @@ public:
     static const std::string PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX EXPORT;
     static const std::string PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX EXPORT;
     static const std::string PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX EXPORT;
+    static const std::string PHOTO_SORT_IN_ALBUM_SIZE_INDEX EXPORT;
+    static const std::string PHOTO_SORT_MEDIA_TYPE_SIZE_INDEX EXPORT;
+    static const std::string PHOTO_SORT_IN_ALBUM_DISPLAY_NAME_INDEX EXPORT;
+    static const std::string PHOTO_SORT_MEDIA_TYPE_DISPLAY_NAME_INDEX EXPORT;
     static const std::string PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX EXPORT;
     static const std::string PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX EXPORT;
     static const std::string PHOTO_BURST_MODE_ALBUM_INDEX EXPORT;
@@ -278,6 +282,10 @@ public:
     static const std::string CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX;
     static const std::string CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX;
     static const std::string CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX;
+    static const std::string CREATE_PHOTO_SORT_IN_ALBUM_SIZE_INDEX;
+    static const std::string CREATE_PHOTO_SORT_MEDIA_TYPE_SIZE_INDEX;
+    static const std::string CREATE_PHOTO_SORT_IN_ALBUM_DISPLAY_NAME_INDEX;
+    static const std::string CREATE_PHOTO_SORT_MEDIA_TYPE_DISPLAY_NAME_INDEX;
     static const std::string CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX;
     static const std::string CREATE_PHOTO_BURST_MODE_ALBUM_INDEX;
     static const std::string CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX;
