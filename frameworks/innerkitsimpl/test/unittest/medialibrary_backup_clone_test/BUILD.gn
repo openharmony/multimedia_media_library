@@ -82,6 +82,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/photos_count_statistic.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/upgrade_restore_gallery_media_task.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/report/upgrade_restore_task_report.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/asset_map_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/db_upgrade_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/gallery_db_upgrade.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/gallery_media_dao.cpp",

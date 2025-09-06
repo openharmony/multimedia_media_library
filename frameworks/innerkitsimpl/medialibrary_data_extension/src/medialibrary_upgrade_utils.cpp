@@ -12,15 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "medialibrary_upgrade_utils.h"
- 
+
 #include <unordered_map>
 #include "medialibrary_db_const.h"
 #include "media_log.h"
- 
+
 using namespace std;
- 
+
 namespace OHOS {
 namespace Media {
 static unordered_map<int32_t, string> UPGRADE_VALUE_MAP = {
@@ -34,8 +34,9 @@ static unordered_map<int32_t, string> UPGRADE_VALUE_MAP = {
     { VERSION_ADD_SOUTH_DEVICE_TYPE, "VERSION_ADD_SOUTH_DEVICE_TYPE"},
     { VERSION_ADD_TAB_ANALYSIS_PROGRESS, "VERSION_ADD_TAB_ANALYSIS_PROGRESS" },
     { VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, "VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM" },
+    { VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE, "VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE" },
 };
- 
+
 bool RdbUpgradeUtils::HasUpgraded(int32_t version, bool isSync)
 {
     if (UPGRADE_VALUE_MAP.find(version) == UPGRADE_VALUE_MAP.end()) {
@@ -54,11 +55,11 @@ bool RdbUpgradeUtils::HasUpgraded(int32_t version, bool isSync)
     if (upgradeStatus == UPGRADE_STATUS::UNKNOWN) {
         return false;
     }
- 
+
     return isSync ? (upgradeStatus == UPGRADE_STATUS::SYNC || upgradeStatus == UPGRADE_STATUS::ALL) :
         (upgradeStatus == UPGRADE_STATUS::ASYNC || upgradeStatus == UPGRADE_STATUS::ALL);
 }
- 
+
 void RdbUpgradeUtils::SetUpgradeStatus(int32_t version, bool isSync)
 {
     if (UPGRADE_VALUE_MAP.find(version) == UPGRADE_VALUE_MAP.end()) {
@@ -75,7 +76,7 @@ void RdbUpgradeUtils::SetUpgradeStatus(int32_t version, bool isSync)
     int32_t currentStatus = prefs->GetInt(versionKey, UPGRADE_STATUS::UNKNOWN);
     MEDIA_INFO_LOG("SetUpgradeStatus current version:%{public}s, current upgradeStatus: %{public}d",
         versionKey.c_str(), currentStatus);
- 
+
     int32_t nextStatus = UPGRADE_STATUS::UNKNOWN;
     switch (currentStatus) {
         case UPGRADE_STATUS::UNKNOWN:
@@ -93,7 +94,7 @@ void RdbUpgradeUtils::SetUpgradeStatus(int32_t version, bool isSync)
         default:
             break;
     }
- 
+
     prefs->PutInt(versionKey, nextStatus);
     prefs->FlushSync();
     MEDIA_INFO_LOG("version %{public}s set to: %{public}d", versionKey.c_str(), nextStatus);

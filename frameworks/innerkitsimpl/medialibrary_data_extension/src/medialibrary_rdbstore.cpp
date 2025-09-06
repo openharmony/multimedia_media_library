@@ -5230,6 +5230,16 @@ static void AddAnalysisProgress(RdbStore &store)
     MEDIA_INFO_LOG("end add analysis progress table");
 }
 
+static void AddCloneSequenceColumns(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::TAB_OLD_PHOTOS_TABLE + " ADD COLUMN clone_sequence INT"
+    };
+    MEDIA_INFO_LOG("add tab_old_photos clone_sequence columns start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("add tab_old_photos clone_sequence columns end");
+}
+
 static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER &&
@@ -5282,6 +5292,12 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, true)) {
         AddIndexForPhotoSortInAlbum(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, true);
+    }
+
+    if (oldVersion < VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE, true)) {
+        AddCloneSequenceColumns(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE, true);
     }
 }
 
@@ -5409,7 +5425,7 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS_RETRY) {
         TabFaCardPhotosTableEventHandler().OnCreate(store);
     }
-    
+
     if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_IS_FAVORITE) {
         UpdateSearchStatusTriggerForIsFavorite(store);
     }
@@ -5719,7 +5735,7 @@ static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_UPDATE_PORTRAIT_COVER_SELECTION_COLUMNS) {
         UpdatePortraitCoverSelectionColumns(store);
     }
-    
+
     if (oldVersion < VERSION_ADD_APP_URI_PERMISSION_INFO) {
         AddAppUriPermissionInfo(store);
     }
@@ -6039,7 +6055,7 @@ pair<int32_t, NativeRdb::Results> MediaLibraryRdbStore::BatchInsert(const string
     for (auto &value : values) {
         refRows.Put(value);
     }
-    
+
     pair<int32_t, NativeRdb::Results> retWithResults = {E_HAS_DB_ERROR, -1};
     int32_t ret = ExecSqlWithRetry([&]() {
         retWithResults = MediaLibraryRdbStore::GetRaw()->BatchInsert(table, values, { returningField });

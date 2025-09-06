@@ -1958,11 +1958,18 @@ void CloneRestore::RestoreAnalysisTablesData()
 
 void CloneRestore::RestoreAnalysisData()
 {
+    RestoreAssetMapData();
     RestoreSearchIndexData();
     RestoreBeautyScoreData();
     RestoreVideoFaceData();
     RestoreAnalysisTablesData();
     RestoreHighlightAlbums();
+}
+
+void CloneRestore::RestoreAssetMapData()
+{
+    AssetMapClone assetMapClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_);
+    assetMapClone.CloneAssetMapInfo();
 }
 
 void CloneRestore::RestoreSearchIndexData()

@@ -67,6 +67,8 @@ public:
     EXPORT int32_t Insert(int64_t &rowId, const std::string tableName, const NativeRdb::ValuesBucket &values);
     EXPORT int32_t BatchInsert(int64_t &outRowId, const std::string &table,
         const std::vector<NativeRdb::ValuesBucket> &values);
+    EXPORT int32_t BatchInsert(int64_t &changeRows, const std::string &table,
+        const std::vector<NativeRdb::ValuesBucket> &values, NativeRdb::ConflictResolution resolution);
     EXPORT int32_t BatchInsert(MediaLibraryCommand &cmd, int64_t &outInsertNum,
         const std::vector<NativeRdb::ValuesBucket> &values);
     EXPORT int32_t Update(NativeRdb::ValuesBucket &values, const NativeRdb::AbsRdbPredicates &predicates);

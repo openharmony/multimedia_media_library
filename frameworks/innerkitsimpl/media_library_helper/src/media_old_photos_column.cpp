@@ -24,9 +24,10 @@ const std::string TabOldPhotosColumn::MEDIA_ID = "file_id";
 const std::string TabOldPhotosColumn::MEDIA_FILE_PATH = "data";
 const std::string TabOldPhotosColumn::MEDIA_OLD_ID = "old_file_id";
 const std::string TabOldPhotosColumn::MEDIA_OLD_FILE_PATH = "old_data";
+const std::string TabOldPhotosColumn::MEDIA_CLONE_SEQUENCE = "clone_sequence";
 
 const std::set<std::string> TabOldPhotosColumn::DEFAULT_TAB_OLD_PHOTOS_COLUMNS = {
-    MEDIA_ID, MEDIA_FILE_PATH, MEDIA_OLD_ID, MEDIA_OLD_FILE_PATH
+    MEDIA_ID, MEDIA_FILE_PATH, MEDIA_OLD_ID, MEDIA_OLD_FILE_PATH, MEDIA_CLONE_SEQUENCE
 };
 
 } // namespace Media
