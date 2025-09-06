@@ -25,7 +25,7 @@ ohos_unittest("media_library_manager_test") {
 
   include_dirs = [
     "./include",
-    "../get_self_permissions/include",
+    "../medialibrary_unittest_utils/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
@@ -39,7 +39,7 @@ ohos_unittest("media_library_manager_test") {
   cflags = [ "-fno-access-control" ]
 
   sources = [
-    "../get_self_permissions/src/get_self_permissions.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
     "./src/media_library_manager_test.cpp",
   ]
 
