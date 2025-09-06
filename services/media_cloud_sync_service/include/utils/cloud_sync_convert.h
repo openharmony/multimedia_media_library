@@ -66,7 +66,6 @@ public:
     static int32_t CompensatePropPosition(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropHeight(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropWidth(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
-    static int32_t CompensateFormattedDate(const int64_t createTime, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropDataAdded(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropDetailTime(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropSourcePath(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
