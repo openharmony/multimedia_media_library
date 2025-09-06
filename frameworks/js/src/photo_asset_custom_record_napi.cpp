@@ -34,6 +34,7 @@ namespace OHOS {
 namespace Media {
 thread_local PhotoAssetCustomRecord *PhotoAssetCustomRecordNapi::cRecordData_ = nullptr;
 thread_local napi_ref PhotoAssetCustomRecordNapi::constructor_ = nullptr;
+std::mutex PhotoAssetCustomRecordNapi::mutex_;
 
 napi_value PhotoAssetCustomRecordNapi::Init(napi_env env, napi_value exports)
 {
@@ -90,6 +91,7 @@ napi_value PhotoAssetCustomRecordNapi::Constructor(napi_env env, napi_callback_i
 void PhotoAssetCustomRecordNapi::Destructor(napi_env env, void* nativeObject, void* finalizeHint)
 {
     auto* photoAssetCustomRecordNapi = reinterpret_cast<PhotoAssetCustomRecordNapi*>(nativeObject);
+    lock_guard<mutex> lock(mutex_);
     if (photoAssetCustomRecordNapi == nullptr) {
         NAPI_ERR_LOG("PhotoAssetCustomRecordNapi is nullptr");
         return;
@@ -105,6 +107,11 @@ napi_value PhotoAssetCustomRecordNapi::CreateCustomRecordNapi(napi_env env,
         return nullptr;
     }
 
+    if (constructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        PhotoAssetCustomRecordNapi::Init(env, exports);
+    }
     napi_value constructor;
     napi_ref constructorRef = constructor_;
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));

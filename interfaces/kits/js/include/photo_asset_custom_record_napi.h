@@ -65,6 +65,7 @@ private:
     std::shared_ptr<PhotoAssetCustomRecord> customRecordPtr = nullptr;
     static thread_local napi_ref constructor_;
     napi_env env_;
+    static std::mutex mutex_;
 };
 
 struct PhotoAssetCustomRecordNapiContext : public NapiError {
