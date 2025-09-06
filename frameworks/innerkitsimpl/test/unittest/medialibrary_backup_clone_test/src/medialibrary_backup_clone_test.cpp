@@ -3878,11 +3878,11 @@ static bool ClearTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, con
 }
 
 static bool UpdatePhotosSouthDeviceType(const std::shared_ptr<NativeRdb::RdbStore>& rdbStore,
-    SouthDeviceType SouthDeviceType)
+    SouthDeviceType southDeviceType)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore, false, "rdbStore is null");
     std::string sqlStr = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE +
-        "=" + std::to_string(static_cast<int32_t>(SouthDeviceType)) + ";";
+        "=" + std::to_string(static_cast<int32_t>(southDeviceType)) + ";";
     MEDIA_INFO_LOG("UpdatePhotosSouthDeviceType sql:%{public}s", sqlStr.c_str());
     std::vector<NativeRdb::ValueObject> args;
     CHECK_AND_RETURN_RET_LOG(rdbStore->ExecuteSql(sqlStr, args) == NativeRdb::E_OK, false,
@@ -4070,7 +4070,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_check_south_device_type_match
     MEDIA_INFO_LOG("Start medialibrary_check_south_device_type_match_switch_status_test_002");
     
     CloneSource cloneSource;
-    std::vector<std::string> tableList = {CPhotoColumn::PHOTOS_TABLE};
+    std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE};
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
 
@@ -4087,7 +4087,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_check_south_device_type_match
     MEDIA_INFO_LOG("Start medialibrary_check_south_device_type_match_switch_status_test_003");
     
     CloneSource cloneSource;
-    std::vector<std::string> tableList = {CPhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE};
+    std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE};
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
 
@@ -4105,7 +4105,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_check_south_device_type_match
     MEDIA_INFO_LOG("Start medialibrary_check_south_device_type_match_switch_status_test_004");
     
     CloneSource cloneSource;
-    std::vector<std::string> tableList = {CPhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE};
+    std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE};
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
 
@@ -4129,7 +4129,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_check_south_device_type_match
     MEDIA_INFO_LOG("Start medialibrary_check_south_device_type_match_switch_status_test_005");
     
     CloneSource cloneSource;
-    std::vector<std::string> tableList = {CPhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE};
+    std::vector<std::string> tableList = {PhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE};
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
 

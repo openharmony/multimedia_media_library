@@ -1212,7 +1212,7 @@ BackupDatabaseUtils::ConfigInfoType BackupDatabaseUtils::QueryConfigInfo(
     return configInfo;
 }
 
-std::vector<SouthDeviceType> QueryPhotoUniqueSouthDeviceType(
+std::vector<SouthDeviceType> BackupDatabaseUtils::QueryPhotoUniqueSouthDeviceType(
     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
     std::vector<SouthDeviceType> uniqueSouthDeviceType;
@@ -1221,7 +1221,7 @@ std::vector<SouthDeviceType> QueryPhotoUniqueSouthDeviceType(
     auto resultSet = GetQueryResultSet(rdbStore, SQL_QUERY_PHOTO_UNIQUE_SOUTH_DEVICE_TYPE);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, uniqueSouthDeviceType, "resultSet in nullptr");
 
-    while(resultSet->GoToNextRow() == NativeRdb::E_OK) {
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int southDeviceTypeInt = GetInt32Val(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, resultSet);
         CHECK_AND_RETURN_RET_LOG(INT_SOUTH_DEVICE_TYPE_MAP.count(southDeviceTypeInt), {},
             "invalid SouthDeviceType value: %{public}d", southDeviceTypeInt);
