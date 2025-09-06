@@ -561,10 +561,10 @@ static void FillDirStat(struct stat *stbuf, time_t mtime = 0)
         .st_uid = CUSTOM_UID,
         .st_gid = CUSTOM_UID,
         .st_size = DIR_DEFAULT_SIZE,
-        .st_atime = stbuf->st_mtime
-        .st_mtime = mtime ? mtime : time(nullptr),
-        .st_ctime = stbuf->st_mtime,
     };
+    stbuf->st_mtime = mtime ? mtime : time(nullptr);
+    stbuf->st_ctime = stbuf->st_mtime;
+    stbuf->st_atime = stbuf->st_mtime;
 }
 
 static int32_t GetArgs(const string &path, vector<string> &parts)
@@ -934,9 +934,10 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
 
     fd = open(localPath.c_str(), flags);
     if (fd < 0) {
+        int32_t err = -errno;
         MEDIA_ERR_LOG("Open failed, localPath=%{public}s, errno=%{public}d",
-                      localPath.c_str(), errno);
-        return -errno;
+                      localPath.c_str(), err);
+        return err;
     }
     return E_SUCCESS;
 }
@@ -977,9 +978,9 @@ static int32_t CreateFd(const string &displayName, const int32_t &albumId, int32
     MediaLibraryCommand openLivePhotoCmd(uri, Media::OperationType::OPEN);
     fd = MediaLibraryPhotoOperations::Open(openLivePhotoCmd, "w");
     if (fd <= 0) {
-        MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Open failed, path = %{private}s, err = %{public}d",
-            filePath.c_str(), errno);
-        return -errno;
+        int32_t err = -errno;
+        MEDIA_ERR_LOG("Open failed, errno=%{public}d", err);
+        return err;
     }
     MEDIA_INFO_LOG("CreateFd success, fd = %{private}d", fd);
     return E_SUCCESS;
