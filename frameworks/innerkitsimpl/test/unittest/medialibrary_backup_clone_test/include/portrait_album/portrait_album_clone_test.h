@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-class PortraitAlbumCloneTest: public testing::Test {
+class PortraitAlbumCloneTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);

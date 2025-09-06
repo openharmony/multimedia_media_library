@@ -44,11 +44,14 @@ const string INSERT_PHOTO = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + "(" + M
     MediaColumn::MEDIA_DURATION + ", " + MediaColumn::MEDIA_IS_FAV + ", " + MediaColumn::MEDIA_DATE_TRASHED + ", " +
     MediaColumn::MEDIA_HIDDEN + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH + ", " +
     PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_POSITION + ")";
-const string INSERT_ANALYSIS_ALBUM = "INSERT INTO " + ANALYSIS_ALBUM_TABLE + "(album_id, album_type, album_subtype, album_name, tag_id, cover_uri, is_cover_satisfied)";
+const string INSERT_ANALYSIS_ALBUM = "INSERT INTO " + ANALYSIS_ALBUM_TABLE +
+    "(album_id, album_type, album_subtype, album_name, tag_id, cover_uri, is_cover_satisfied)";
 const string INSERT_ANALYSIS_PHOTO_MAP = "INSERT INTO " + ANALYSIS_PHOTO_MAP_TABLE + "(" + MAP_ALBUM + ", " +
     MAP_ASSET + ", " + ORDER_POSITION + ")";
-const string INSERT_TAB_FACE_TAG = "INSERT INTO " + VISION_FACE_TAG_TABLE + "(tag_id, tag_name, center_features, tag_version, analysis_version)";
-const string INSERT_TAB_IMAGE_FACE = "INSERT INTO " + VISION_IMAGE_FACE_TABLE + " (file_id, face_id, tag_id, scale_x, scale_y) ";
+const string INSERT_TAB_FACE_TAG = "INSERT INTO " + VISION_FACE_TAG_TABLE +
+    "(tag_id, tag_name, center_features, tag_version, analysis_version)";
+const string INSERT_TAB_IMAGE_FACE = "INSERT INTO " +
+    VISION_IMAGE_FACE_TABLE + " (file_id, face_id, tag_id, scale_x, scale_y) ";
 const string VALUES_BEGIN = " VALUES (";
 const string VALUES_END = ") ";
 
@@ -107,7 +110,7 @@ void PortraitAlbumSource::Insert(const vector<string> &tableList, std::shared_pt
 void PortraitAlbumSource::InsertByType(InsertType insertType, std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
 {
     switch (insertType) {
-         case InsertType::PHOTOS: {
+        case InsertType::PHOTOS: {
             InsertPhoto(rdbPtr);
             break;
         }
@@ -142,7 +145,8 @@ void PortraitAlbumSource::InsertPhoto(std::shared_ptr<NativeRdb::RdbStore> rdbPt
 
 void PortraitAlbumSource::InsertAnalysisAlbum(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
 {
-    rdbPtr->ExecuteSql(INSERT_ANALYSIS_ALBUM + VALUES_BEGIN + "1, 4096, 4102, 'test_portrait_album_001', 'test_tag_id', 'test_cover_uri', 1" + VALUES_END);
+    rdbPtr->ExecuteSql(INSERT_ANALYSIS_ALBUM + VALUES_BEGIN +
+        "1, 4096, 4102, 'test_portrait_album_001', 'test_tag_id', 'test_cover_uri', 1" + VALUES_END);
 }
 
 void PortraitAlbumSource::InsertAnalysisPhotoMap(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
@@ -152,12 +156,14 @@ void PortraitAlbumSource::InsertAnalysisPhotoMap(std::shared_ptr<NativeRdb::RdbS
 
 void PortraitAlbumSource::InsertFaceTag(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
 {
-    rdbPtr->ExecuteSql(INSERT_TAB_FACE_TAG + VALUES_BEGIN + "'test_tag_id', 'test_face_tag_name', 'test_center_features', 1, 1" + VALUES_END);
+    rdbPtr->ExecuteSql(INSERT_TAB_FACE_TAG + VALUES_BEGIN +
+        "'test_tag_id', 'test_face_tag_name', 'test_center_features', 1, 1" + VALUES_END);
 }
 
 void PortraitAlbumSource::InsertImageFace(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
 {
-    rdbPtr->ExecuteSql(INSERT_TAB_IMAGE_FACE + VALUES_BEGIN + "1, 'test_face_id', 'test_tag_id', 1.0, 1.0" + VALUES_END);
+    rdbPtr->ExecuteSql(INSERT_TAB_IMAGE_FACE + VALUES_BEGIN +
+        "1, 'test_face_id', 'test_tag_id', 1.0, 1.0" + VALUES_END);
 }
 }
 }

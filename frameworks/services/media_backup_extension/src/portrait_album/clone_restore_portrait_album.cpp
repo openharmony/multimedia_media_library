@@ -29,7 +29,7 @@ namespace OHOS::Media {
 void CloneRestorePortrait::Init(int32_t sceneCode, const std::string &taskId,
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
-    const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap) 
+    const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
 {
     MEDIA_INFO_LOG("CloneRestorePortrait Init");
     this->sceneCode_ = sceneCode;
