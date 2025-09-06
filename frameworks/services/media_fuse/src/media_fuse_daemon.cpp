@@ -168,7 +168,7 @@ static int OpenDir(const char *path, struct fuse_file_info *fi)
 }
 
 static int ReadDir(const char *path, void *buf, fuse_fill_dir_t fullDir, off_t offset,
-	struct fuse_file_info *fi, enum fuse_readdir_flags flags)
+    struct fuse_file_info *fi, enum fuse_readdir_flags flags)
 {
     fuse_context *ctx = fuse_get_context();
     CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
