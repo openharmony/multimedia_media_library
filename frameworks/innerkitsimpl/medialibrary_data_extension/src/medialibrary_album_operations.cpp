@@ -61,6 +61,7 @@
 #include "photo_storage_operation.h"
 #include "asset_accurate_refresh.h"
 #include "refresh_business_name.h"
+#include "parameters.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -91,9 +92,12 @@ constexpr int32_t HIGHLIGHT_COVER_STATUS_COVER = 1;
 constexpr int32_t ALBUM_RENAMED = 2;
 constexpr int32_t ALBUM_TO_RENAME_FOR_ANALYSIS = 3;
 constexpr int32_t IS_ME_ALBUM = 1;
+constexpr int32_t STORE_PORTRAIT_FIRST_PAGE_MIN_COUNT = 5;
+constexpr int32_t STORE_PORTRAIT_SECOND_PAGE_MIN_COUNT = 1;
 const std::string ALBUM_LPATH_PREFIX = "/Pictures/Users/";
 const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
 const std::string ME_RELATIONSHIP = "me";
+const std::string RETAIL_MODE_KEY = "const.dfx.enable_retail";
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -786,11 +790,15 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
             to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME) + ")";
     std::string whereClauseAlbumName = ALBUM_NAME + " IS NOT NULL AND " + ALBUM_NAME + " != ''";
 
+    bool isStore = OHOS::system::GetBoolParameter(RETAIL_MODE_KEY, false);
+    int32_t minFirstPageCount = isStore ? STORE_PORTRAIT_FIRST_PAGE_MIN_COUNT : PORTRAIT_FIRST_PAGE_MIN_COUNT;
+    int32_t minSecondPageCount = isStore ?
+        STORE_PORTRAIT_SECOND_PAGE_MIN_COUNT : PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT;
     if (value == FIRST_PAGE) {
         string relatedMeFirstPage = ALBUM_ID + " IN " + whereClauseRelatedMe;
         string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 1";
         string whereClauseIsMe = IS_ME + " = 1";
-        string whereClauseSatifyCount = COUNT + " >= " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND (" +
+        string whereClauseSatifyCount = COUNT + " >= " + to_string(minFirstPageCount) + " AND (" +
             USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (((" + USER_DISPLAY_LEVEL + " != 3 AND " +
                       USER_DISPLAY_LEVEL + " !=2) OR " + USER_DISPLAY_LEVEL + " IS NULL) AND ((" + whereClauseDisplay +
@@ -801,8 +809,8 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
     } else if (value == SECOND_PAGE) {
         string whereClauseIsNotMe = IS_ME + " != 1 OR " + IS_ME + " IS NULL";
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 2 OR ((" +
-                      whereClauseIsNotMe + ") AND " + COUNT + " < " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) +
-                      " AND " + COUNT + " >= " + to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " AND (" +
+                      whereClauseIsNotMe + ") AND " + COUNT + " < " + to_string(minFirstPageCount) +
+                      " AND " + COUNT + " >= " + to_string(minSecondPageCount) + " AND (" +
                       USER_DISPLAY_LEVEL + " != 1 OR " + USER_DISPLAY_LEVEL + " IS NULL) AND (" + USER_DISPLAY_LEVEL +
                       " != 3 OR " + USER_DISPLAY_LEVEL + " IS NULL) " + " AND NOT (" + whereClauseAlbumName +
                       ") AND (" + ALBUM_ID + " NOT IN " + whereClauseRelatedMe + ")))" + " GROUP BY " + GROUP_TAG +
