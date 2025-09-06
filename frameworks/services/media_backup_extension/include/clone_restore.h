@@ -37,6 +37,7 @@
 #include "search_index_clone.h"
 #include "video_face_clone.h"
 #include "beauty_score_clone.h"
+#include "asset_map_clone.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
 #include "settings_data_manager.h"
@@ -247,6 +248,7 @@ private:
     void ProcessCloudPhotosFailedOffsets(int32_t isRelatedToPhotoMap = 0);
     void RestoreAnalysisTablesData();
     void RestoreAnalysisData();
+    void RestoreAssetMapData();
     void RestoreSearchIndexData();
     void RestoreAnalysisClassify();
     void RestoreAnalysisGeo();

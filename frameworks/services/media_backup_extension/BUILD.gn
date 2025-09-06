@@ -85,6 +85,7 @@ ohos_shared_library("mediabackup") {
     "./src/report/photos_count_statistic.cpp",
     "./src/report/upgrade_restore_gallery_media_task.cpp",
     "./src/report/upgrade_restore_task_report.cpp",
+    "./src/restore/asset_map_clone.cpp",
     "./src/restore/db_upgrade_utils.cpp",
     "./src/restore/gallery_db_upgrade.cpp",
     "./src/restore/gallery_media_dao.cpp",

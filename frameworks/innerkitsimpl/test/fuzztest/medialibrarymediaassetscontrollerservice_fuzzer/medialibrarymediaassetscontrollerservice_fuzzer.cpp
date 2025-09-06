@@ -862,6 +862,7 @@ static void GetUrisByOldUrisInnerFuzzer()
     reqBody.columns.push_back(TabOldPhotosColumn::OLD_PHOTOS_TABLE + "." + "data");
     reqBody.columns.push_back(TabOldPhotosColumn::OLD_PHOTOS_TABLE + "." + "old_file_id");
     reqBody.columns.push_back(TabOldPhotosColumn::OLD_PHOTOS_TABLE + "." + "old_data");
+    reqBody.columns.push_back(TabOldPhotosColumn::OLD_PHOTOS_TABLE + "." + "clone_sequence");
     reqBody.columns.push_back(PhotoColumn::PHOTOS_TABLE + "." + "display_name");
    
     MessageParcel data;
