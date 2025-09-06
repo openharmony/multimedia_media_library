@@ -57,6 +57,8 @@ const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE,
 };
 
+const int32_t EXPECTED_GROUP_ALBUM_COUNT = 2;
+
 static void ExecuteSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> &sqls)
 {
     for (const auto &sql : sqls) {
@@ -127,7 +129,7 @@ void CloneRestoreGroupPhotoTest::VerifyGroupAlbumRestore(const std::shared_ptr<N
     int32_t count = 0;
     int32_t errCode = resultSet->GetRowCount(count);
     EXPECT_EQ(errCode, E_OK);
-    EXPECT_EQ(count, 2);
+    EXPECT_EQ(count, EXPECTED_GROUP_ALBUM_COUNT);
     EXPECT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
 
     int index;
@@ -231,7 +233,8 @@ HWTEST_F(CloneRestoreGroupPhotoTest, medialibrary_backup_clone_restore_group_pho
     VerifyGroupAlbumRestore(restoreService->mediaLibraryRdb_);
 }
 
-HWTEST_F(CloneRestoreGroupPhotoTest, medialibrary_backup_clone_restore_group_photo_album_no_data_test_001, TestSize.Level2)
+HWTEST_F(CloneRestoreGroupPhotoTest, medialibrary_backup_clone_restore_group_photo_album_no_data_test_001,
+    TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_group_photo_album_no_data_test_001");
     EXPECT_NE(g_rdbStore, nullptr);

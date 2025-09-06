@@ -55,6 +55,9 @@ const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + VISION_IMAGE_FACE_TABLE,
 };
 
+const int32_t EXPECTED_MAP_ALBUM = 201;
+const int32_t EXPECTED_MAP_ASSET = 101;
+
 static void ExecuteSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> &sqls)
 {
     for (const auto &sql : sqls) {
@@ -95,7 +98,8 @@ void PortraitAlbumCloneTest::SetUp() {}
 
 void PortraitAlbumCloneTest::TearDown() {}
 
-void PortraitAlbumCloneTest::Init(PortraitAlbumSource &portraitAlbumSource, const string &path, const vector<string>& tableList)
+void PortraitAlbumCloneTest::Init(PortraitAlbumSource &portraitAlbumSource, const string &path,
+    const vector<string>& tableList)
 {
     MEDIA_INFO_LOG("Start init clone source database");
     portraitAlbumSource.Init(path, tableList);
@@ -105,7 +109,7 @@ void PortraitAlbumCloneTest::SetupMockPortraitAlbumInfoMap(std::vector<AnalysisA
 {
     AnalysisAlbumTbl portraitAlbumTbl;
     portraitAlbumTbl.albumIdOld = 1;
-    portraitAlbumTbl.albumIdNew = 201;
+    portraitAlbumTbl.albumIdNew = EXPECTED_MAP_ALBUM;
     portraitAlbumInfoMap.push_back(portraitAlbumTbl);
 }
 
@@ -126,11 +130,11 @@ void PortraitAlbumCloneTest::VerifyMaps(const std::shared_ptr<NativeRdb::RdbStor
 
     (void)resultSet->GetColumnIndex("map_album", index);
     resultSet->GetInt(index, map_album);
-    EXPECT_EQ(map_album, 201);
+    EXPECT_EQ(map_album, EXPECTED_MAP_ALBUM);
 
     (void)resultSet->GetColumnIndex("map_asset", index);
     resultSet->GetInt(index, map_asset);
-    EXPECT_EQ(map_asset, 101);
+    EXPECT_EQ(map_asset, EXPECTED_MAP_ASSET);
 
     EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
 }
@@ -272,7 +276,8 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_clus
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_portrait_clustering_test_001");
     ClearPortraitData();
     PortraitAlbumSource portraitAlbumSource;
-    vector<string> tableList = { VISION_FACE_TAG_TABLE, PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
+    vector<string> tableList = { VISION_FACE_TAG_TABLE, PhotoColumn::PHOTOS_TABLE,
+        ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(portraitAlbumSource, TEST_DB_PATH, tableList);
     cloneRestorePortrait->Init(CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, {});
     cloneRestorePortrait->RestorePortraitClusteringInfo();
@@ -306,7 +311,8 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_photo_map_tes
     SetupMockPhotoInfoMap(photoInfoMap);
     std::vector<AnalysisAlbumTbl> portraitAlbumInfoMap;
     SetupMockPortraitAlbumInfoMap(portraitAlbumInfoMap);
-    cloneRestorePortrait->Init(CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, photoInfoMap);
+    cloneRestorePortrait->Init(CLONE_RESTORE_ID, "",
+        newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, photoInfoMap);
     cloneRestorePortrait->portraitAlbumInfoMap_ = portraitAlbumInfoMap;
     cloneRestorePortrait->RestoreMaps();
     VerifyMaps(newRdbStore->GetRaw());

@@ -22,7 +22,7 @@
 #include "medialibrary_rdb_transaction.h"
 
 #include <vector>
-#include <algorithm> 
+#include <algorithm>
 #include "backup_const.h"
 #include "vision_column.h"
 #include "medialibrary_errno.h"
@@ -227,7 +227,7 @@ std::string CloneRestorePortraitBase::ProcessUriAndGenNew(const std::string& tag
             if (GetFileInfoByFileId(fileIdNew, photoInfoMap, photoInfo)) {
                 std::string extraUri = MediaFileUtils::GetExtraUri(photoInfo.displayName, photoInfo.cloudPath);
                 return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-                std::to_string(fileIdNew), extraUri);
+                    std::to_string(fileIdNew), extraUri);
             }
         }
     }
@@ -238,7 +238,8 @@ bool CloneRestorePortraitBase::GetFileInfoByFileId(int32_t fileId,
     const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, PhotoInfo& outPhotoInfo)
 {
     auto it = std::find_if(photoInfoMap.begin(), photoInfoMap.end(),
-        [fileId](const auto& entry){
+        [fileId](const auto& entry)
+        {
             return entry.second.fileIdNew == fileId;
         });
     if (it != photoInfoMap.end()) {
