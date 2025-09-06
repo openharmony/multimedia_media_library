@@ -30,8 +30,11 @@
 #include "medialibrary_errno.h"
 #include "shooting_mode_column.h"
 #include "media_file_utils.h"
+#include "photo_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
+const std::string ANOMALY_DAY = "19700101";
+
 static bool convertToLong(const std::string &str, int64_t &value)
 {
     auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
@@ -320,48 +323,55 @@ int32_t CloudSyncConvert::CompensatePropWidth(const CloudMediaPullDataDto &data,
     return E_OK;
 }
 
-int32_t CloudSyncConvert::CompensateFormattedDate(const int64_t createTime, NativeRdb::ValuesBucket &values)
-{
-    std::string year = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, createTime);
-    std::string month = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, createTime);
-    std::string day = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, createTime);
-    values.PutString(PhotoColumn::PHOTO_DATE_YEAR, year);
-    values.PutString(PhotoColumn::PHOTO_DATE_MONTH, month);
-    values.PutString(PhotoColumn::PHOTO_DATE_DAY, day);
-    return E_OK;
-}
-
 int32_t CloudSyncConvert::CompensatePropDataAdded(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     int64_t dataAdded = 0;
-    std::string tmpStr = data.propertiesFirstUpdateTime;
+    const std::string &tmpStr = data.propertiesFirstUpdateTime;
 
-    if (tmpStr.empty()) {
+    if (tmpStr.empty() || !convertToLong(tmpStr, dataAdded)) {
+        MEDIA_ERR_LOG("extract dataAdded from propertiesFirstUpdateTime: %{public}s error", tmpStr.c_str());
+        dataAdded = 0;
+    }
+    if (dataAdded <= 0) {
+        MEDIA_ERR_LOG("The dataAdded createTime of record is incorrect: %{public}ld", static_cast<long>(dataAdded));
         dataAdded = data.basicCreatedTime;
-    } else {
-        if (!convertToLong(tmpStr, dataAdded)) {
-            MEDIA_ERR_LOG("extract dataAdded error");
-            return E_CLOUDSYNC_INVAL_ARG;
+        if (dataAdded <= 0) {
+            MEDIA_ERR_LOG("basicCreatedTime: %{public}ld <= 0", static_cast<long>(dataAdded));
+            dataAdded = MediaFileUtils::UTCTimeMilliSeconds();
         }
     }
-    if (dataAdded == 0) {
-        MEDIA_ERR_LOG("The dataAdded createTime of record is incorrect");
-    }
-    values.PutLong(PhotoColumn::MEDIA_DATE_ADDED, dataAdded);
-    int64_t createTime = data.basicCreatedTime;
-    if (createTime <= 0) {
-        createTime = dataAdded;
-    }
-    values.PutLong(PhotoColumn::MEDIA_DATE_TAKEN, createTime);
-    CompensateFormattedDate(createTime / MILLISECOND_TO_SECOND, values);
+    values.Put(PhotoColumn::MEDIA_DATE_ADDED, dataAdded);
     return E_OK;
 }
 
 int32_t CloudSyncConvert::CompensatePropDetailTime(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string detailTime = data.propertiesDetailTime;
-    CHECK_AND_RETURN_RET_WARN_LOG(!detailTime.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find properties::detailTime.");
-    values.PutString(PhotoColumn::PHOTO_DETAIL_TIME, detailTime);
+    auto const [year, month, day] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    if (detailTime.empty() || day.empty() || day == ANOMALY_DAY) {
+        MEDIA_ERR_LOG("Cannot find properties::detailTime");
+        int64_t createTime = data.basicCreatedTime;
+        if (createTime <= 0) {
+            MEDIA_ERR_LOG("basicCreatedTime: %{public}ld <= 0", static_cast<long>(createTime));
+            const std::string &tmpStr = data.propertiesFirstUpdateTime;
+            if (tmpStr.empty() || !convertToLong(tmpStr, createTime)) {
+                MEDIA_ERR_LOG("propertiesFirstUpdateTime: %{public}s invalid", tmpStr.c_str());
+                createTime = 0;
+            }
+            if (createTime <= 0) {
+                MEDIA_ERR_LOG("createTime: %{public}ld <= 0", static_cast<long>(createTime));
+                createTime = MediaFileUtils::UTCTimeMilliSeconds();
+            }
+            values.Put(PhotoColumn::MEDIA_DATE_TAKEN, createTime);
+        }
+        detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, createTime);
+    }
+    values.Put(PhotoColumn::PHOTO_DETAIL_TIME, detailTime);
+
+    auto const [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    values.Put(PhotoColumn::PHOTO_DATE_YEAR, dateYear);
+    values.Put(PhotoColumn::PHOTO_DATE_MONTH, dateMonth);
+    values.Put(PhotoColumn::PHOTO_DATE_DAY, dateDay);
     return E_OK;
 }
 
