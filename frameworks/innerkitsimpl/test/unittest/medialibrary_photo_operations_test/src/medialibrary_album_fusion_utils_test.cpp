@@ -459,8 +459,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_016, TestSize.L
 {
     string extension = "heic";
     struct PhotoResult photoAsset = {1, "IMG_20250903_103737.heic", "IMG_20250903_103737",
-        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 
-        static_cast<int32_t>(PhotoPositionType::CLOUD), 0, 0, 0, 0};
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), static_cast<int32_t>(PhotoPositionType::CLOUD), 0, 0, 0, 0};
     InsertPhotoAsset(photoAsset);
 
     auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
