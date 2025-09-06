@@ -46,6 +46,8 @@ struct UpdatePhoto {
 const std::string REPAIR_DATE_TIME_XML = "/data/storage/el2/base/preferences/repair_date_time.xml";
 const std::string CURRENT_FILE_ID = "CURRENT_FILE_ID";
 const std::string ZEROTIMESTRING = "0000:00:00 00:00:00";
+const std::string ANOMALY_DAY = "19700101";
+
 const std::int32_t BATCH_SIZE = 500;
 const int32_t UPDATE_BATCH_SIZE = 200;
 
@@ -279,6 +281,7 @@ std::vector<DateAnomalyPhoto> PhotoDayMonthYearOperation::QueryDateAnomalyPhotos
                       "  file_id,"
                       "  date_taken,"
                       "  date_modified,"
+                      "  date_added,"
                       "  date_day,"
                       "  detail_time,"
                       "  all_exif "
@@ -308,6 +311,7 @@ std::vector<DateAnomalyPhoto> PhotoDayMonthYearOperation::QueryDateAnomalyPhotos
         photo.fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         photo.dateTaken = GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet);
         photo.dateModified = GetInt64Val(PhotoColumn::MEDIA_DATE_MODIFIED, resultSet);
+        photo.dateAdded = GetInt64Val(PhotoColumn::MEDIA_DATE_ADDED, resultSet);
         photo.dateDay = GetStringVal(PhotoColumn::PHOTO_DATE_DAY, resultSet);
         photo.detailTime = GetStringVal(PhotoColumn::PHOTO_DETAIL_TIME, resultSet);
         photo.exif = GetStringVal(PhotoColumn::PHOTO_ALL_EXIF, resultSet);
@@ -491,20 +495,20 @@ static string ExtractDetailTime(const nlohmann::json &exifJson)
 static UpdatePhoto ExtractDateTime(const std::string &exif)
 {
     if (exif.empty() || !nlohmann::json::accept(exif)) {
-        return {0, "", "", "", ""};
+        return {};
     }
     nlohmann::json exifJson = nlohmann::json::parse(exif, nullptr, false);
     std::string detailTime = ExtractDetailTime(exifJson);
     if (detailTime.empty()) {
-        return {0, "", "", "", ""};
+        return {};
     }
     auto const [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
-    if (dateDay.empty()) {
-        return {0, "", "", "", ""};
+    if (dateDay.empty() || dateDay == ANOMALY_DAY) {
+        return {};
     }
     int64_t dateTaken = ExtractDateTaken(exifJson);
     if (dateTaken <= 0) {
-        return {0, "", "", "", ""};
+        return {};
     }
     return {dateTaken, detailTime, dateYear, dateMonth, dateDay};
 }
@@ -545,7 +549,16 @@ static void HandleZeroDateTakenAndDetailTime(
 {
     auto updatePhoto = ExtractDateTime(photo.exif);
     if (updatePhoto.dateTaken <= 0) {
-        updatePhoto.dateTaken = photo.dateModified;
+        updatePhoto.dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+        if (photo.dateTaken > 0) {
+            updatePhoto.dateTaken = min(updatePhoto.dateTaken, photo.dateTaken);
+        }
+        if (photo.dateModified > 0) {
+            updatePhoto.dateTaken = min(updatePhoto.dateTaken, photo.dateModified);
+        }
+        if (photo.dateAdded > 0) {
+            updatePhoto.dateTaken = min(updatePhoto.dateTaken, photo.dateAdded);
+        }
         updatePhoto.detailTime =
             MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, updatePhoto.dateTaken);
         auto const [detailYear, detailMonth, detailDay] = PhotoFileUtils::ExtractYearMonthDay(updatePhoto.detailTime);
@@ -559,7 +572,8 @@ static void HandleZeroDateTakenAndDetailTime(
 static bool HandleAnomalyDetailTime(const std::shared_ptr<MediaLibraryRdbStore> rdbStore, const DateAnomalyPhoto &photo)
 {
     auto updatePhoto = ExtractDateTime(photo.exif);
-    if (!updatePhoto.detailTime.empty() && updatePhoto.detailTime != photo.detailTime) {
+    if (!updatePhoto.detailTime.empty() &&
+        (updatePhoto.detailTime != photo.detailTime || updatePhoto.dateDay != photo.dateDay)) {
         UpdatePhotoDetails(rdbStore, photo, updatePhoto);
         return true;
     }
@@ -574,7 +588,7 @@ void PhotoDayMonthYearOperation::RepairDateAnomalyPhotos(
     for (const DateAnomalyPhoto &photo : photos) {
         CHECK_AND_BREAK_INFO_LOG(MedialibrarySubscriber::IsCurrentStatusOn(), "current status is off, break");
         curFileId = photo.fileId;
-        if (photo.dateTaken <= 0 || photo.detailTime.empty()) {
+        if (photo.dateTaken <= 0 || photo.detailTime.empty() || photo.dateDay.empty() || photo.dateDay == ANOMALY_DAY) {
             HandleZeroDateTakenAndDetailTime(rdbStore, photo);
             continue;
         }
