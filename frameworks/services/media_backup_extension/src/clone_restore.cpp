@@ -297,6 +297,8 @@ CloneRestoreConfigInfo CloneRestore::GetCloneConfigInfoFromOriginDB()
 
         cloneConfigInfo.deviceId = \
             configInfo[ConfigInfoSceneId::CLONE_RESTORE][CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY];
+        CHECK_AND_RETURN_RET_LOG(CheckSouthDeviceTypeMatchSwitchStatus(cloneConfigInfo.switchStatus),
+            CloneRestoreConfigInfo{}, "south_device_type and switch status doest not match");
     }
     cloneConfigInfo.isValid = true;
     MEDIA_INFO_LOG("Config of original DB: %{public}s", cloneConfigInfo.ToString().c_str());
@@ -3489,16 +3491,16 @@ void CloneRestore::BackupRelease()
 bool CloneRestore::CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus switchStatus)
 {
     CHECK_AND_RETURN_RET_LOG(this->mediaRdb_, false, "mediaRdb_ is nullptr");
-    auto srcUniqueSouthDeviceType = BackupDatabaseUtils::QueryPhotoUniqueSouthDeviceType(this->mediaRdb_);
+    auto srcUniqueSouthDeviceTypes = BackupDatabaseUtils::QueryPhotoUniqueSouthDeviceType(this->mediaRdb_);
 
-    CHECK_AND_RETURN_RET_LOG(!srcUniqueSouthDeviceType.empty(), false,
+    CHECK_AND_RETURN_RET_LOG(!srcUniqueSouthDeviceTypes.empty(), false,
         "there is no south_device_type in origin db");
     CHECK_AND_RETURN_RET_LOG(PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP.count(switchStatus),
         false, "cannot transfer srcSwitchStatus:%{public}d to srcSouthDeviceType",
         static_cast<int>(switchStatus));
     auto expectedSrcSouthDeviceType = PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP.at(switchStatus);
-    for (const auto& southDeviceType : srcUniqueSouthDeviceType) {
-        CHECK_AND_RETURN_RET_LOG(southDeviceType == SouthDeviceType::SOUTH_DEVICE_TYPE_NULL ||
+    for (const auto& southDeviceType : srcUniqueSouthDeviceTypes) {
+        CHECK_AND_RETURN_RET_LOG(southDeviceType == SouthDeviceType::SOUTH_DEVICE_NULL ||
             southDeviceType == expectedSrcSouthDeviceType, false,
             "south_device_type:%{public}d is not expected, expect %{public}d",
             static_cast<int32_t>(southDeviceType), static_cast<int32_t>(expectedSrcSouthDeviceType));
