@@ -45,6 +45,7 @@
 #include "media_app_uri_sensitive_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
+#include "media_old_photos_column.h"
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
 #include "medialibrary_client_errno.h"
@@ -149,6 +150,7 @@ const int32_t MAX_LEN_LIMIT = 9999;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
 const size_t MAX_SET_ORDER_ARRAY_SIZE = 1000;
+const size_t MAX_TAB_OLD_PHOTOS_URI_COUNT = 100;
 
 static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP = {
     {ANALYSIS_LABEL, FEATURE},
@@ -3515,7 +3517,7 @@ static void PhotoAccessGetAssetsByOldUrisExecute(napi_env env, void *data)
     std::map<std::string, std::string> resultMap;
 
     for (const auto& oldUri : context->uris) {
-        std::string fileIdOld = MediaFileUtils::GetIdFromUri(oldUri)
+        std::string fileIdOld = MediaFileUtils::GetIdFromUri(oldUri);
 
         if (fileIdOld.empty()) {
             NAPI_ERR_LOG("Failed to extract fileId from URI: %{public}s", oldUri.c_str());
@@ -3544,13 +3546,13 @@ static void PhotoAccessGetAssetsByOldUrisExecute(napi_env env, void *data)
         DataSharePredicates photoPredicates;
         photoPredicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileIdNew));
 
-        std::vector<std::string> photoColumns = {PhotoColumn::PHOTO_DISPLAY_NAME};
+        std::vector<std::string> photoColumns = {MediaColumnm::MEDIA_NAME};
         Uri photoUri(PAH_QUERY_PHOTO);
         auto photoResultSet = UserFileClient::Query(photoUri, photoPredicates, photoColumns, errCode);
 
         std::string displayName;
         if (photoResultSet != nullptr && photoResultSet->GoToFirstRow() == NativeRdb::E_OK) {
-            displayName = GetStringVal(PhotoColumn::PHOTO_DISPLAY_NAME, photoResultSet);
+            displayName = GetStringVal(MediaColumnm::MEDIA_NAME, photoResultSet);
         } else {
             context->SaveError(errCode);
             return;
@@ -3590,22 +3592,9 @@ static napi_value ParseArgsGetAssetsByOldUris(napi_env env, napi_callback_info i
         }
     }
 
-    if (uris.size() > MAX_URI_COUNT) {
+    if (uris.size() > MAX_TAB_OLD_PHOTOS_URI_COUNT) {
         NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Too many URIs, maximum allowed is 100!");
         return nullptr;
-    }
-
-    for (auto &uri : uris) {
-        size_t photoPos = uri.find("/Photo/");
-        if (photoPos != std::string::npos) {
-            size_t start = photoPos + 7;
-            size_t end = uri.find("/", start);
-            if (end != std::string::npos) {
-                std::string fileIdStr = uri.substr(start, end - start);
-                int fileId = std::stoi(fileIdStr);
-                context->fileId.emplace(fileId);
-            }
-        }
     }
 
     context->uris = uris;
