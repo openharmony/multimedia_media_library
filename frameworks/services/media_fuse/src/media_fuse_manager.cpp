@@ -591,7 +591,7 @@ static bool IsImageOrVideoFile(const string &fileName)
         (mediaType == Media::MediaType::MEDIA_TYPE_VIDEO);
 }
 
-static int32_t GetPathFormDisplayname(const string &displayName, const int &albumId, string &filePath)
+static int32_t GetPathFormDisplayname(const string &displayName, int albumId, string &filePath)
 {
     if (displayName.empty()) {
         MEDIA_ERR_LOG("Displayname is empty.");
@@ -614,11 +614,10 @@ static int32_t GetPathFormDisplayname(const string &displayName, const int &albu
         return E_ERR;
     }
 
+    filePath = "";
     if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         filePath = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
-        return E_SUCCESS;
     }
-    filePath = "";
     MEDIA_INFO_LOG("get filePath from db, filePath = %{private}s", filePath.c_str());
     return E_SUCCESS;
 }
@@ -977,6 +976,11 @@ static int32_t CreateFd(const string &displayName, const int32_t &albumId, int32
     Uri uri(fileUriStr);
     MediaLibraryCommand openLivePhotoCmd(uri, Media::OperationType::OPEN);
     fd = MediaLibraryPhotoOperations::Open(openLivePhotoCmd, "w");
+    if (fd <= 0) {
+        MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Open failed, path = %{private}s, err = %{public}d",
+            filePath.c_str(), errno);
+        return -errno;
+    }
     MEDIA_INFO_LOG("CreateFd success, fd = %{private}d", fd);
     return E_SUCCESS;
 }
@@ -988,9 +992,8 @@ int32_t MediaFuseManager::DoHdcCreate(const char *path, mode_t mode, struct fuse
         MEDIA_ERR_LOG("Invalid path");
         return -EINVAL;
     }
-
     string target = path;
-    MEDIA_CREATE_WRITE_MAP.insert(make_pair(path, false));
+    MEDIA_CREATE_WRITE_MAP[target] = false;
 
     int32_t albumId = -1;
     string filePath;
@@ -1001,12 +1004,12 @@ int32_t MediaFuseManager::DoHdcCreate(const char *path, mode_t mode, struct fuse
     int32_t fd;
     res = CreateFd(displayName, albumId, fd);
     if (fd <= 0) {
-        MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Create failed, path = %{public}s, err = %{public}d",
+        MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Create failed, path = %{private}s, err = %{public}d",
             filePath.c_str(), errno);
         return -errno;
     }
     fi->fh = static_cast<uint64_t>(fd);
-    MEDIA_CREATE_WRITE_MAP[target] = true;
+        MEDIA_CREATE_WRITE_MAP[target] = true;
     return E_SUCCESS;
 }
 
