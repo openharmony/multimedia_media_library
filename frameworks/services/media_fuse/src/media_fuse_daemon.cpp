@@ -109,7 +109,7 @@ static int Release(const char *path, struct fuse_file_info *fi)
     int32_t err = -1;
     if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
         (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
-        int32_t fd = static_cast<int32_t>(fi->fh);
+        int fd = static_cast<int32_t>(fi->fh);
         err = MediaFuseManager::GetInstance().DoHdcRelease(path, fd);
     } else {
         err = MediaFuseManager::GetInstance().DoRelease(path, fi->fh);
