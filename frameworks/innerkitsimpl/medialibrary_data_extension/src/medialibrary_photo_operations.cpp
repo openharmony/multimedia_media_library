@@ -2125,7 +2125,7 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientation(MediaLibraryCommand &cmd,
         MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
             to_string(fileAsset->GetId()), __func__);
     }
-    return E_OK;
+    return rowId;
 }
 
 int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
@@ -3727,6 +3727,10 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
     if (isEdit) {
         CHECK_AND_RETURN_RET(PhotoEditingRecord::GetInstance()->StartCommitEdit(id), E_IS_IN_REVERT);
         int32_t errCode = SubmitEditCacheExecute(cmd, fileAsset, cachePath, isWriteGpsAdvanced);
+        if (fileAsset->GetExistCompatibleDuplicate() != 0) {
+            MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
+                to_string(fileAsset->GetId()), __func__);
+        }
         PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
         return errCode;
     } else if (IsCameraEditData(cmd)) {
@@ -3956,7 +3960,8 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
 
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
         PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED,
-        PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_OWNER_ALBUM_ID };
+        PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
         PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
