@@ -3872,8 +3872,33 @@ static bool ClearTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, con
     std::string sqlStr = "DELETE FROM " + tableName;
     MEDIA_INFO_LOG("ClearTable sql: %{public}s", sqlStr.c_str());
     std::vector<NativeRdb::ValueObject> args;
-    CHECK_AND_RETURN_RET_LOG(rdbStore->ExecuteSql(sqlStr, args), false, "fail to execute sql:%{public}s",
-        sqlStr.c_str());
+    CHECK_AND_RETURN_RET_LOG(rdbStore->ExecuteSql(sqlStr, args) == NativeRdb::E_OK, false,
+        "fail to execute sql:%{public}s", sqlStr.c_str());
+    return true;
+}
+
+static bool UpdatePhotosSouthDeviceType(const std::shared_ptr<NativeRdb::RdbStore>& rdbStore,
+    SouthDeviceType SouthDeviceType)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore, false, "rdbStore is null");
+    std::string sqlStr = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE +
+        "=" + std::to_string(static_cast<int32_t>(SouthDeviceType)) + ";";
+    MEDIA_INFO_LOG("UpdatePhotosSouthDeviceType sql:%{public}s", sqlStr.c_str());
+    std::vector<NativeRdb::ValueObject> args;
+    CHECK_AND_RETURN_RET_LOG(rdbStore->ExecuteSql(sqlStr, args) == NativeRdb::E_OK, false,
+        "fail to execute sql:%{public}s", sqlStr.c_str());
+    return true;
+}
+
+static bool UpdatePhotosOwnerAlbumIdAndPosition(const std::shared_ptr<NativeRdb::RdbStore>& rdbStore,
+    const std::string& albumId)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore, false, "rdbStore is null");
+    std::string sqlStr = "UPDATE Photos SET owner_album_id=" + albumId + ", position=2;";
+    MEDIA_INFO_LOG("UpdatePhotosOwnerAlbumIdAndPosition sql:%{public}s", sqlStr.c_str());
+    std::vector<NativeRdb::ValueObject> args;
+    CHECK_AND_RETURN_RET_LOG(rdbStore->ExecuteSql(sqlStr, args) == NativeRdb::E_OK, false,
+        "fail to execute sql:%{public}s", sqlStr.c_str());
     return true;
 }
 
@@ -3980,6 +4005,28 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_or
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_origin_db_test_007, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_get_clone_config_info_from_origin_db_test_007");
+    CloneRestoreConfigInfo expectedConfigInfo;
+
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+
+    EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
+        CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY, std::to_string(static_cast<int>(SwitchStatus::NONE))));
+    EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
+        CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY, DEFAULT_DEVICE_ID));
+
+    
+    CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
+    EXPECT_TRUE(expectedConfigInfo == result);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_origin_db_test_008, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_get_clone_config_info_from_origin_db_test_008");
@@ -3990,7 +4037,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_or
     };
 
     CloneSource cloneSource;
-    std::vector<std::string> tableList = {ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME, PhotoColumn::PHOTOS_TABLE};
+    std::vector<std::string> tableList = {ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME, PhotoColumn::PHOTOS_TABLE,
+        PhotoAlbumColumns::TABLE};
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
 
@@ -3998,10 +4046,97 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_or
         CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY, std::to_string(static_cast<int>(SwitchStatus::HDC))));
     EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
         CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY, DEFAULT_DEVICE_ID));
+    EXPECT_TRUE(UpdatePhotosSouthDeviceType(restoreService->mediaRdb_, SouthDeviceType::SOUTH_DEVICE_HDC));
+    EXPECT_TRUE(UpdatePhotosOwnerAlbumIdAndPosition(restoreService->mediaRdb_, "11"));
 
     
     CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
     EXPECT_TRUE(expectedConfigInfo == result);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_check_south_device_type_match_switch_status_test_001,
+    TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_check_south_device_type_match_switch_status_test_001");
+    restoreService->mediaRdb_ = nullptr;
+    EXPECT_FALSE(restoreService->CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::NONE));
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_check_south_device_type_match_switch_status_test_002,
+    TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_check_south_device_type_match_switch_status_test_002");
+    
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {CPhotoColumn::PHOTOS_TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+
+    EXPECT_TRUE(ClearTable(restoreService->mediaRdb_, PhotoColumn::PHOTOS_TABLE));
+
+    EXPECT_FALSE(restoreService->CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::NONE));
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_check_south_device_type_match_switch_status_test_003,
+    TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_check_south_device_type_match_switch_status_test_003");
+    
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {CPhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+
+    EXPECT_TRUE(UpdatePhotosSouthDeviceType(restoreService->mediaRdb_, SouthDeviceType::SOUTH_DEVICE_HDC));
+    EXPECT_TRUE(UpdatePhotosOwnerAlbumIdAndPosition(restoreService->mediaRdb_, "11"));
+
+    EXPECT_FALSE(restoreService->CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::CLOUD));
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_check_south_device_type_match_switch_status_test_004,
+    TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_check_south_device_type_match_switch_status_test_004");
+    
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {CPhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+
+    EXPECT_TRUE(UpdatePhotosSouthDeviceType(restoreService->mediaRdb_, SouthDeviceType::SOUTH_DEVICE_HDC));
+    EXPECT_TRUE(UpdatePhotosOwnerAlbumIdAndPosition(restoreService->mediaRdb_, "11"));
+
+    std::string sqlStr = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE + "=" +
+        std::to_string(static_cast<int>(SouthDeviceType::SOUTH_DEVICE_CLOUD)) +
+        " WHERE " + MediaColumn::MEDIA_ID + "=1;";
+    std::vector<NativeRdb::ValueObject> args;
+    EXPECT_EQ(restoreService->mediaRdb_->ExecuteSql(sqlStr, args), NativeRdb::E_OK);
+
+    EXPECT_FALSE(restoreService->CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::HDC));
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_check_south_device_type_match_switch_status_test_005,
+    TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_check_south_device_type_match_switch_status_test_005");
+    
+    CloneSource cloneSource;
+    std::vector<std::string> tableList = {CPhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE};
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+
+    EXPECT_TRUE(UpdatePhotosSouthDeviceType(restoreService->mediaRdb_, SouthDeviceType::SOUTH_DEVICE_HDC));
+    EXPECT_TRUE(UpdatePhotosOwnerAlbumIdAndPosition(restoreService->mediaRdb_, "11"));
+
+    EXPECT_TRUE(restoreService->CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus::HDC));
 
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }

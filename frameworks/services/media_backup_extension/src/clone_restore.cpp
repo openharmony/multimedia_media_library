@@ -3485,5 +3485,25 @@ void CloneRestore::BackupRelease()
     BackupFileUtils::RestoreInvalidHDCCloudDataPos();
     StopParameterForBackup();
 }
+
+bool CloneRestore::CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus switchStatus)
+{
+    CHECK_AND_RETURN_RET_LOG(this->mediaRdb_, false, "mediaRdb_ is nullptr");
+    auto srcUniqueSouthDeviceType = BackupDatabaseUtils::QueryPhotoUniqueSouthDeviceType(this->mediaRdb_);
+
+    CHECK_AND_RETURN_RET_LOG(!srcUniqueSouthDeviceType.empty(), false,
+        "there is no south_device_type in origin db");
+    CHECK_AND_RETURN_RET_LOG(PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP.count(switchStatus),
+        false, "cannot transfer srcSwitchStatus:%{public}d to srcSouthDeviceType",
+        static_cast<int>(switchStatus));
+    auto expectedSrcSouthDeviceType = PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP.at(switchStatus);
+    for (const auto& southDeviceType : srcUniqueSouthDeviceType) {
+        CHECK_AND_RETURN_RET_LOG(southDeviceType == SouthDeviceType::SOUTH_DEVICE_TYPE_NULL ||
+            southDeviceType == expectedSrcSouthDeviceType, false,
+            "south_device_type:%{public}d is not expected, expect %{public}d",
+            static_cast<int32_t>(southDeviceType), static_cast<int32_t>(expectedSrcSouthDeviceType));
+    }
+    return true;
+}
 } // namespace Media
 } // namespace OHOS

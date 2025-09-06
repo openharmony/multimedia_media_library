@@ -48,6 +48,12 @@ const int32_t ARG_COUNT = 2;
 const std::vector<uint32_t> HEX_MAX = { 0xff, 0xffff, 0xffffff, 0xffffffff };
 static SafeMap<int32_t, int32_t> fileIdOld2NewForCloudEnhancement;
 
+const std::unordered_map<int32_t, SouthDeviceType> INT_SOUTH_DEVICE_TYPE_MAP = {
+    {static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_NULL), SouthDeviceType::SOUTH_DEVICE_NULL},
+    {static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_CLOUD), SouthDeviceType::SOUTH_DEVICE_CLOUD},
+    {static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_HDC), SouthDeviceType::SOUTH_DEVICE_HDC},
+};
+
 int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
     const std::string &dbPath, const std::string &bundleName, bool isMediaLibrary, int32_t area)
 {
@@ -1204,6 +1210,26 @@ BackupDatabaseUtils::ConfigInfoType BackupDatabaseUtils::QueryConfigInfo(
     }
     resultSet->Close();
     return configInfo;
+}
+
+std::vector<SouthDeviceType> QueryPhotoUniqueSouthDeviceType(
+    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    std::vector<SouthDeviceType> uniqueSouthDeviceType;
+    MEDIA_DEBUG_LOG("QueryPhotoUniqueSouthDeviceType sql: %{public}s",
+        SQL_QUERY_PHOTO_UNIQUE_SOUTH_DEVICE_TYPE.c_str());
+    auto resultSet = GetQueryResultSet(rdbStore, SQL_QUERY_PHOTO_UNIQUE_SOUTH_DEVICE_TYPE);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, uniqueSouthDeviceType, "resultSet in nullptr");
+
+    while(resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int southDeviceTypeInt = GetInt32Val(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, resultSet);
+        CHECK_AND_RETURN_RET_LOG(INT_SOUTH_DEVICE_TYPE_MAP.count(southDeviceTypeInt), {},
+            "invalid SouthDeviceType value: %{public}d", southDeviceTypeInt);
+        uniqueSouthDeviceType.push_back(INT_SOUTH_DEVICE_TYPE_MAP.at(southDeviceTypeInt));
+        MEDIA_INFO_LOG("south_device_type: %{public}d", southDeviceTypeInt);
+    }
+    resultSet->Close();
+    return uniqueSouthDeviceType;
 }
 } // namespace Media
 } // namespace OHOS
