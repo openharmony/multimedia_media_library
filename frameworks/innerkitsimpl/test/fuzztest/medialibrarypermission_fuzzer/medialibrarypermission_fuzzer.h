@@ -169,7 +169,7 @@ const std::vector<MediaLibraryBusinessCode> BUSINESS_CODE_LIST = {
     MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE,
     MediaLibraryBusinessCode::INNER_CUSTOM_RESTORE_CANCEL,
     MediaLibraryBusinessCode::INNER_GET_RESULT_SET_FROM_PHOTOS,
-    MediaLibraryBusinessCode::INNER_BUSINESS_CODE_END,
+    MediaLibraryBusinessCode::INNER_BUSINESS_CODE_END
 };
 
 const std::vector<int32_t> CALLING_UID_LIST = {
