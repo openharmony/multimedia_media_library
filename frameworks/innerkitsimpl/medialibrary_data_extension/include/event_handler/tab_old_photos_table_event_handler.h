@@ -40,7 +40,8 @@ private:
             file_id     INTEGER PRIMARY KEY, \
             data        TEXT, \
             old_file_id INTEGER, \
-            old_data    TEXT \
+            old_data    TEXT, \
+            clone_sequence INTEGER \
         );";
     const std::string TRIGGER_DELETE_CLEAR_TAB_OLD_PHOTOS = "\
         CREATE TRIGGER IF NOT EXISTS delete_clear_tab_photos \

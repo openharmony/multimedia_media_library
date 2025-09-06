@@ -50,6 +50,7 @@ namespace Media {
 static const std::string MEDIA_LIB_NAPI_CLASS_NAME = "MediaLibrary";
 static const std::string USERFILE_MGR_NAPI_CLASS_NAME = "UserFileManager";
 static const std::string PHOTOACCESSHELPER_NAPI_CLASS_NAME = "PhotoAccessHelper";
+static const std::string MEDIA_URI_PREFIX = "file://media";
 
 enum ListenerType {
     INVALID_LISTENER = -1,
@@ -238,6 +239,7 @@ public:
 private:
     EXPORT static void MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
     EXPORT static napi_value MediaLibraryNapiConstructor(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetPhotoAssetsByOldUris(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value GetMediaLibraryNewInstance(napi_env env, napi_callback_info info);
     EXPORT static napi_value GetMediaLibraryNewInstanceAsync(napi_env env, napi_callback_info info);
@@ -497,6 +499,8 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::vector<std::string> selectionArgs;
     std::string order;
     std::string uri;
+    std::vector<std::string> oldUris;
+    std::map<std::string, std::string> uriMap;
     std::vector<std::string> uriArray;
     std::string networkId;
     std::string extendArgs;

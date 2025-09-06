@@ -34,6 +34,7 @@ public:
     static const std::string MEDIA_FILE_PATH EXPORT;
     static const std::string MEDIA_OLD_ID EXPORT;
     static const std::string MEDIA_OLD_FILE_PATH EXPORT;
+    static const std::string MEDIA_CLONE_SEQUENCE EXPORT;
 
     // columns only in tab_old_photos
     static const std::set<std::string> DEFAULT_TAB_OLD_PHOTOS_COLUMNS EXPORT;
