@@ -45,6 +45,7 @@ public:
     EXPORT int32_t AssetChangeSubmitCache(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AssetChangeCreateAsset(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AssetChangeAddImage(MessageParcel &data, MessageParcel &reply);
+    EXPORT int32_t CameraInnerAddImage(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SetCameraShotKey(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t SaveCameraPhoto(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t DiscardCameraPhoto(MessageParcel &data, MessageParcel &reply);

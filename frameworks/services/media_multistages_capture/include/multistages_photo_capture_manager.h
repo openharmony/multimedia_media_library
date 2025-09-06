@@ -26,6 +26,7 @@
 #include "medialibrary_command.h"
 #include "result_set.h"
 #include "picture_manager_thread.h"
+#include "add_image_dto.h"
 
 namespace OHOS {
 namespace Media {
@@ -47,6 +48,7 @@ public:
     void RemoveImage(const std::string &photoId, bool isRestorable = true);
     void RestoreImage(const std::string &photoId);
     EXPORT void AddImage(int32_t fileId, const std::string &photoId, int32_t deferredProcType);
+    void AddImage(AddImageDto &dto);
     void AddImage(MediaLibraryCommand &cmd);
     void ProcessImage(int fileId, int deliveryMode);
 
@@ -76,6 +78,7 @@ private:
 
     void CancelRequestAndRemoveImage(const std::vector<std::string> &columns);
     int32_t UpdatePictureQuality(const std::string &photoId);
+    int32_t UpdatePictureQualityByFileId(int32_t fileId);
 
     std::unordered_set<int32_t> setOfDeleted_;
 

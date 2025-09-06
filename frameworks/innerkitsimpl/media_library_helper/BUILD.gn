@@ -32,7 +32,16 @@ ohos_shared_library("media_library") {
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_assets_manager/include/vo",
   ]
+
+  user_ipc_client_include_dirs = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/util",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/vo",
+  ]
+
+  include_dirs += user_ipc_client_include_dirs
 
   sources = [
     "src/acl.cpp",
@@ -80,7 +89,14 @@ ohos_shared_library("media_library") {
     "src/smart_album_asset.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/album_change_info.cpp",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/src/photo_asset_change_info.cpp",
+    "${MEDIALIB_NEW_SERVICES_PATH}/media_assets_manager/src/vo/add_image_vo.cpp",
   ]
+
+  user_ipc_client_source = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_inner_ipc_client.cpp",
+  ]
+
+  sources += user_ipc_client_source
 
   public_configs = [ ":media_library_config" ]
   cflags = [

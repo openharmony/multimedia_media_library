@@ -35,6 +35,9 @@
 #include "userfilemgr_uri.h"
 #include "datashare_helper.h"
 #include "media_exif.h"
+#include "medialibrary_business_code.h"
+#include "user_inner_ipc_client.h"
+#include "add_image_vo.h"
 
 using namespace std;
 
@@ -217,6 +220,27 @@ void PhotoAssetProxy::SetPhotoIdForAsset(const sptr<PhotoProxy> &photoProxy, Dat
     }
 }
 
+std::string PhotoAssetProxy::GetPhotoIdForAsset(const sptr<PhotoProxy> &photoProxy)
+{
+    if (photoProxy == nullptr) {
+        MEDIA_ERR_LOG("photoProxy is nullptr.");
+        return "";
+    }
+
+    std::string photoId = photoProxy->GetPhotoId();
+    if (!photoId.empty()) {
+        return photoId;
+    }
+    stringstream result;
+    std::string displayName = photoProxy->GetTitle();
+    for (size_t i = 0; i < displayName.length(); i++) {
+        if (isdigit(displayName[i])) {
+            result << displayName[i];
+        }
+    }
+    return result.str();
+}
+
 int32_t CloseFd(const shared_ptr<DataShare::DataShareHelper> &dataShareHelper, const string &uri, const int32_t fd)
 {
     MediaLibraryTracer tracer;
@@ -363,28 +387,22 @@ std::string PhotoAssetProxy::LocationValueToString(double value)
 int32_t PhotoAssetProxy::AddProcessImage(shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
     const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t subType)
 {
-    string uri = PAH_ADD_IMAGE;
-    MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    if (photoProxy->GetFormat() == PhotoFormat::YUV) {
-        MediaFileUtils::UriAppendKeyValue(uri, SAVE_PICTURE, OPRN_ADD_LOWQUALITY_IMAGE);
+    if (dataShareHelper == nullptr || photoProxy == nullptr) {
+        MEDIA_ERR_LOG("photoProxy or dataShareHelper is nullptr.");
+        return E_ERR;
     }
-    Uri updateAssetUri(uri);
-    DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({ to_string(fileId) });
+    AddImageReqBody reqBody;
+    reqBody.fileId = fileId;
+    reqBody.photoId = GetPhotoIdForAsset(photoProxy);
+    reqBody.deferredProcType = static_cast<int32_t>(photoProxy->GetDeferredProcType());
+    reqBody.photoQuality = static_cast<int32_t>(photoProxy->GetPhotoQuality());
+    reqBody.subType = subType;
 
-    DataShare::DataShareValuesBucket valuesBucket;
-    SetPhotoIdForAsset(photoProxy, valuesBucket);
-    valuesBucket.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, static_cast<int32_t>(photoProxy->GetDeferredProcType()));
-    valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
-    valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(subType));
-    valuesBucket.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(photoProxy->GetPhotoQuality()));
-
-    int32_t changeRows = dataShareHelper->Update(updateAssetUri, predicates, valuesBucket);
-    CHECK_AND_PRINT_LOG(changeRows >= 0, "update fail, error: %{public}d", changeRows);
-    MEDIA_INFO_LOG("MultistagesCapture photoId: %{public}s, fileId: %{public}d",
-        photoProxy->GetPhotoId().c_str(), fileId);
-    return changeRows;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CAMERA_INNER_ADD_IMAGE);
+    int32_t ret = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody);
+    MEDIA_INFO_LOG("MultistagesCapture photoId: %{public}s, fileId: %{public}d, ret: %{public}d",
+        photoProxy->GetPhotoId().c_str(), fileId, ret);
+    return ret;
 }
 
 int PhotoAssetProxy::SaveLowQualityPhoto(std::shared_ptr<DataShare::DataShareHelper>  &dataShareHelper,
