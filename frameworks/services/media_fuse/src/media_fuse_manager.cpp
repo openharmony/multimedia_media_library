@@ -561,9 +561,9 @@ static void FillDirStat(struct stat *stbuf, time_t mtime = 0)
         .st_uid = CUSTOM_UID,
         .st_gid = CUSTOM_UID,
         .st_size = DIR_DEFAULT_SIZE,
+        .st_atime = stbuf->st_mtime
         .st_mtime = mtime ? mtime : time(nullptr),
         .st_ctime = stbuf->st_mtime,
-        .st_atime = stbuf->st_mtime
     };
 }
 
