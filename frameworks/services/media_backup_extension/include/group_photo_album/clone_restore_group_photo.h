@@ -27,7 +27,8 @@ namespace OHOS::Media {
 class CloneRestoreGroupPhoto : public CloneRestorePortraitBase {
 public:
     void Init(int32_t sceneCode, const std::string &taskId, std::string restoreInfo,
-        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb);
+        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+        std::shared_ptr<NativeRdb::RdbStore> mediaRdb, bool isCloudRestoreSatisfied);
     void Restore(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
 
 private:

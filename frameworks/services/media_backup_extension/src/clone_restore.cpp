@@ -2276,7 +2276,6 @@ void CloneRestore::RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap
     vector<FileInfo> fileInfos = QueryFileInfos(offset, isRelatedToPhotoMap);
     CHECK_AND_EXECUTE(InsertPhoto(fileInfos) == E_OK, AddToPhotosFailedOffsets(offset));
 
-    auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
     MEDIA_INFO_LOG("end restore photo, offset: %{public}d", offset);
 }
 
@@ -2288,7 +2287,6 @@ void CloneRestore::RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhoto
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, fileInfos, SourceType::PHOTOS) == E_OK,
         AddToPhotosFailedOffsets(offset));
 
-    auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
     MEDIA_INFO_LOG("singleCloud end restore photo, offset: %{public}d", offset);
 }
 
@@ -2719,7 +2717,8 @@ void CloneRestore::RestoreAnalysisClassify()
 void CloneRestore::RestoreAnalysisPortrait()
 {
     CloneRestorePortrait portraitAlbumClone;
-    portraitAlbumClone.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, photoInfoMap_);
+    bool isCloudRestoreSatisfied = isAccountValid_ && isSrcDstSwitchStatusMatch_;
+    portraitAlbumClone.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, photoInfoMap_, isCloudRestoreSatisfied);
     portraitAlbumClone.Preprocess();
     portraitAlbumClone.Restore();
 }
@@ -2735,7 +2734,9 @@ void CloneRestore::RestoreGroupPhoto()
 {
     MEDIA_INFO_LOG("start RestoreGroupPhoto");
     CloneRestoreGroupPhoto cloneRestoreGroupPhoto;
-    cloneRestoreGroupPhoto.Init(sceneCode_, taskId_, restoreInfo_, mediaLibraryRdb_, mediaRdb_);
+    bool isCloudRestoreSatisfied = isAccountValid_ && isSrcDstSwitchStatusMatch_;
+    cloneRestoreGroupPhoto.Init(sceneCode_, taskId_, restoreInfo_,
+        mediaLibraryRdb_, mediaRdb_, isCloudRestoreSatisfied);
     cloneRestoreGroupPhoto.Restore(photoInfoMap_);
     MEDIA_INFO_LOG("end RestoreGroupPhoto");
 }

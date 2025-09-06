@@ -29,7 +29,8 @@ const int32_t BATCH_SIZE = 200;
 class CloneRestorePortrait : public CloneRestorePortraitBase {
 public:
     void Init(int32_t sceneCode, const std::string &taskId, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
-        std::shared_ptr<NativeRdb::RdbStore> mediaRdb, const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+        std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
+        const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, bool isCloudRestoreSatisfied);
     void Preprocess();
     void Restore();
     void RestoreFromGalleryPortraitAlbum();
@@ -66,7 +67,7 @@ private:
     void PutWithDefault(NativeRdb::ValuesBucket& values, const std::string& columnName,
         const std::optional<T>& optionalValue, const U& defaultValue);
     std::vector<ImageFaceTbl> ProcessImageFaceTbls(const std::vector<ImageFaceTbl>& imageFaceTbls,
-    const std::vector<FileIdPair>& fileIdPairs);
+        const std::vector<FileIdPair>& fileIdPairs);
     std::vector<ImageFaceTbl> QueryImageFaceTbl(int32_t offset, std::string &fileIdClause,
         const std::vector<std::string> &commonColumns);
     void ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,
@@ -74,7 +75,6 @@ private:
     void ParseImageFaceResultSet1(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, ImageFaceTbl& imageFaceTbl);
     NativeRdb::ValuesBucket CreateValuesBucketFromImageFaceTbl(const ImageFaceTbl& imageFaceTbl);
     void BatchInsertImageFaces(const std::vector<ImageFaceTbl>& imageFaceTbls);
-    using CoverUriInfo = std::pair<std::string, std::pair<std::string, int32_t>>;
     void RestoreMapsBatch();
     void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values);
     void UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb::ValuesBucket> &values,
@@ -92,7 +92,6 @@ private:
     std::string taskId_;
     std::string analysisAlbumExtraWhereClause_;
     std::vector<PortraitAlbumDfx> portraitAlbumDfx_;
-    bool isCloudRestoreSatisfied_ {false};
     int32_t totalPortraitAlbumNumber_ = 0;
     int32_t lastIdOfMap_{0};
     bool isMapOrder_{false};

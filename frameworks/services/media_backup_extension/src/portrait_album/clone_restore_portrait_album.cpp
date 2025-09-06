@@ -29,7 +29,7 @@ namespace OHOS::Media {
 void CloneRestorePortrait::Init(int32_t sceneCode, const std::string &taskId,
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
-    const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
+    const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, bool isCloudRestoreSatisfied)
 {
     MEDIA_INFO_LOG("CloneRestorePortrait Init");
     this->sceneCode_ = sceneCode;
@@ -37,8 +37,7 @@ void CloneRestorePortrait::Init(int32_t sceneCode, const std::string &taskId,
     this->mediaRdb_ = mediaRdb;
     this->mediaLibraryRdb_ = mediaLibraryRdb;
     this->photoInfoMap_ = photoInfoMap;
-    GetAccountValid();
-    GetSyncSwitchOn();
+    this->isCloudRestoreSatisfied_ = isCloudRestoreSatisfied;
 }
 
 void CloneRestorePortrait::Preprocess()
@@ -95,7 +94,7 @@ void CloneRestorePortrait::DeleteExistingImageFaceInfos()
 
     std::string fileIdFilterClause = std::string("(") + "SELECT " + IMAGE_FACE_COL_FILE_ID + " FROM " +
         VISION_IMAGE_FACE_TABLE + ")";
-    std::string fileIdCondition = IMAGE_FACE_COL_FILE_ID + " IN " + fileIdFilterClause;
+    std::string fileIdCondition = IMAGE_FACE_COL_FILE_ID + " IN " + fileIdFilterClause + "AND status != -2";
     totalTablePredicates->SetWhereClause(fileIdCondition);
     NativeRdb::ValuesBucket totalValues;
     totalValues.PutInt("face", 0);
@@ -408,7 +407,7 @@ std::vector<FaceTagTbl> CloneRestorePortrait::QueryFaceTagTbl(int32_t offset, co
         " LEFT JOIN AnalysisPhotoMap apm ON aa.album_id = apm.map_album" +
         " LEFT JOIN Photos ph ON ph.file_id = apm.map_asset" +
         " WHERE " +
-        (IsCloudRestoreSatisfied() ? "ph.position IN (1, 2, 3)" : "ph.position IN (1, 3)");
+        (isCloudRestoreSatisfied_ ? "ph.position IN (1, 2, 3)" : "ph.position IN (1, 3)");
 
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
