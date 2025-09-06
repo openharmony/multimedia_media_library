@@ -280,6 +280,7 @@ private:
     bool InvalidateHdcCloudData();
     CloneRestoreConfigInfo GetCurrentDeviceCloneConfigInfo();
     CloneRestoreConfigInfo GetCloneConfigInfoFromOriginDB();
+    bool CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus switchStatus);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
