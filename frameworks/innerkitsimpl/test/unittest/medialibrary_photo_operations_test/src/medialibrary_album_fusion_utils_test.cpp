@@ -95,6 +95,36 @@ static int32_t CreatePhotoApi10(const int32_t mediaType, const string &displayNa
     return ret;
 }
 
+struct PhotoResult {
+    int64_t fileId;
+    string title;
+    string displayName;
+    int32_t mediaType;
+    int32_t position;
+    int32_t isTemp;
+    int64_t timePending;
+    int32_t hidden;
+    int64_t dateDeleted;
+};
+
+static int32_t InsertPhotoAsset(PhotoResult  &result)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    EXPECT_NE(rdbStore, nullptr);
+
+    NativeRdb::ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_NAME, result.displayName);
+    values.PutInt(MediaColumn::MEDIA_TYPE, result.mediaType);
+    values.PutInt(PhotoColumn::PHOTO_POSITION, result.position);
+    values.PutInt(PhotoColumn::PHOTO_IS_TEMP, result.isTemp);
+    values.PutInt(MediaColumn::MEDIA_TIME_PENDING, result.timePending);
+    values.PutInt(MediaColumn::MEDIA_HIDDEN, result.hidden);
+    values.PutInt(PhotoColumn::MEDIA_DATE_DELETED, result.dateDeleted);
+
+    rdbStore->Insert(result.fileId, PhotoColumn::PHOTOS_TABLE, values);
+    return static_cast<int32_t>(result.fileId);
+}
+
 static void CleanTestTables()
 {
     vector<string> dropTableList = {
@@ -412,6 +442,94 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_014, TestSize.L
     MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(upgradeStore);
     MediaLibraryAlbumFusionUtils::HandleDuplicateAlbum(rdbStorePtr);
     ASSERT_NE(rdbStorePtr, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_015, TestSize.Level1)
+{
+    string extension = "heic";
+    struct PhotoResult photoAsset = {0, "IMG_20250903_103737.heic", "IMG_20250903_103737",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 1, 0, 0, 0, 0};
+    InsertPhotoAsset(photoAsset);
+
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
+    EXPECT_EQ(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_016, TestSize.Level1)
+{
+    string extension = "heic";
+    struct PhotoResult photoAsset = {1, "IMG_20250903_103737.heic", "IMG_20250903_103737",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 
+        static_cast<int32_t>(PhotoPositionType::CLOUD), 0, 0, 0, 0};
+    InsertPhotoAsset(photoAsset);
+
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
+    EXPECT_EQ(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_017, TestSize.Level1)
+{
+    string extension = "heic";
+    struct PhotoResult photoAsset = {1, "IMG_20250903_103737.heic", "IMG_20250903_103737",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 1, 1, 0, 0, 0};
+    InsertPhotoAsset(photoAsset);
+
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
+    EXPECT_EQ(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_018, TestSize.Level1)
+{
+    string extension = "heic";
+    struct PhotoResult photoAsset = {1, "IMG_20250903_103737.heic", "IMG_20250903_103737",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 1, 0, -1, 0, 0};
+    InsertPhotoAsset(photoAsset);
+
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
+    EXPECT_EQ(resultSet, nullptr);
+}HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_015, TestSize.Level1)
+{
+    string extension = "heic";
+    struct PhotoResult photoAsset = {0, "IMG_20250903_103737.heic", "IMG_20250903_103737",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 1, 0, 0, 0, 0};
+    InsertPhotoAsset(photoAsset);
+
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
+    EXPECT_EQ(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_016, TestSize.Level1)
+{
+    string extension = "heic";
+    struct PhotoResult photoAsset = {1, "IMG_20250903_103737.heic", "IMG_20250903_103737",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 
+        static_cast<int32_t>(PhotoPositionType::CLOUD), 0, 0, 0, 0};
+    InsertPhotoAsset(photoAsset);
+
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
+    EXPECT_EQ(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_017, TestSize.Level1)
+{
+    string extension = "heic";
+    struct PhotoResult photoAsset = {1, "IMG_20250903_103737.heic", "IMG_20250903_103737",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 1, 1, 0, 0, 0};
+    InsertPhotoAsset(photoAsset);
+
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
+    EXPECT_EQ(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_018, TestSize.Level1)
+{
+    string extension = "heic";
+    struct PhotoResult photoAsset = {1, "IMG_20250903_103737.heic", "IMG_20250903_103737",
+        static_cast<int32_t>(MEDIA_TYPE_IMAGE), 1, 0, -1, 0, 0};
+    InsertPhotoAsset(photoAsset);
+
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(photoAsset.fileId, photoAsset.title, extension);
+    EXPECT_EQ(resultSet, nullptr);
 }
 }
 }
