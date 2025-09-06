@@ -11078,6 +11078,8 @@ napi_value MediaLibraryNapi::RequestPhotoUrisReadPermission(napi_env env, napi_c
 static void StartPhotoPickerExecute(napi_env env, void *data)
 {
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    CHECK_NULL_PTR_RETURN_VOID(context->pickerCallBack, "pickerCallBack is null");
     while (!context->pickerCallBack->ready) {
         std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
     }
