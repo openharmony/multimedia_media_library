@@ -100,27 +100,10 @@ int32_t CloneRestorePortraitBase::BatchInsertWithRetry(const std::string &tableN
     return errCode;
 }
 
-void CloneRestorePortraitBase::GetAccountValid()
-{
-    isAccountValid_ = BackupFileUtils::GetAccountValid(sceneCode_, restoreInfo_);
-}
-
-void CloneRestorePortraitBase::GetSyncSwitchOn()
-{
-    syncSwitchType_ = BackupFileUtils::IsCloneCloudSyncSwitchOn(sceneCode_);
-    isSyncSwitchOn_ = (syncSwitchType_ == CheckSwitchType::SUCCESS_ON ||
-        syncSwitchType_ == CheckSwitchType::UPGRADE_FAILED_ON);
-}
-
-bool CloneRestorePortraitBase::IsCloudRestoreSatisfied()
-{
-    return isAccountValid_ && isSyncSwitchOn_;
-}
-
 void CloneRestorePortraitBase::AppendExtraWhereClause(std::string& whereClause)
 {
     std::string photoQueryWhereClause;
-    if (IsCloudRestoreSatisfied()) {
+    if (isCloudRestoreSatisfied_) {
         photoQueryWhereClause = PhotoColumn::PHOTO_POSITION + " IN (1, 2, 3) AND ";
     } else {
         photoQueryWhereClause = PhotoColumn::PHOTO_POSITION + " IN (1, 3) AND ";

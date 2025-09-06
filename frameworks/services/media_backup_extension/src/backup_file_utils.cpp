@@ -856,7 +856,7 @@ int32_t BackupFileUtils::IsCloneCloudSyncSwitchOn(int32_t sceneCode)
     return (switchOn == MOBILE_NETWORK_STATUS_ON) ? CheckSwitchType::SUCCESS_ON : CheckSwitchType::SUCCESS_OFF;
 }
 
-bool BackupFileUtils::GetAccountValid(const int32_t sceneCode, const std::string restoreInfo)
+bool BackupFileUtils::GetAccountValid(const int32_t sceneCode, const std::string &restoreInfo)
 {
     if (sceneCode == UPGRADE_RESTORE_ID) {
         return true;

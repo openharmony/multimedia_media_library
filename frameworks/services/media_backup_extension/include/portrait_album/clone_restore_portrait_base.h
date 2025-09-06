@@ -20,6 +20,8 @@
 #include <sstream>
 
 #include "backup_const.h"
+#include "backup_database_utils.h"
+#include "backup_file_utils.h"
 #include "rdb_store.h"
 
 namespace OHOS::Media {
@@ -48,6 +50,16 @@ struct AnalysisAlbumInfo {
     std::optional<int32_t> isCoverSatisfied;
     std::optional<std::string> relationship;
 
+    std::string GarbleCoverUri(const std::string coverUri) const
+    {
+        auto uriParts = BackupDatabaseUtils::SplitString(coverUri, '/');
+        if (uriParts.size() >= COVER_URI_NUM) {
+            std::string fileName = uriParts[uriParts.size() - 1];
+            return BackupFileUtils::GarbleFileName(fileName);
+        }
+        return "Unknown";
+    }
+
     std::string ToString() const
     {
         std::stringstream outputStr;
@@ -58,8 +70,8 @@ struct AnalysisAlbumInfo {
         outputStr << ", albumName: ";
         if (albumName.has_value()) { outputStr << albumName.value(); }
         outputStr << ", oldCoverUri: ";
-        if (oldCoverUri.has_value()) { outputStr << oldCoverUri.value(); }
-        outputStr << ", coverUri: " << coverUri << "]";
+        if (oldCoverUri.has_value()) { outputStr << GarbleCoverUri(oldCoverUri.value()); }
+        outputStr << ", coverUri: " << GarbleCoverUri(coverUri) << "]";
         return outputStr.str();
     }
 };
@@ -72,9 +84,6 @@ public:
         AnalysisAlbumTbl &analysisAlbumTbl);
     int32_t BatchInsertWithRetry(const std::string &tableName,
         const std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum);
-    void GetAccountValid();
-    void GetSyncSwitchOn();
-    bool IsCloudRestoreSatisfied();
     void AppendExtraWhereClause(std::string& whereClause);
     void GenNewCoverUris(const std::vector<CoverUriInfo>& coverUriInfo);
     std::string GenCoverUriUpdateSql(const std::unordered_map<std::string, std::pair<std::string, int32_t>>&
@@ -92,12 +101,10 @@ public:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     int32_t sceneCode_;
     std::string restoreInfo_;
-    bool isSyncSwitchOn_{false};
-    bool isAccountValid_{false};
     int32_t syncSwitchType_{0};
     int32_t maxAnalysisAlbumId_{0};
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
+    bool isCloudRestoreSatisfied_{false};
 };
 } // OHOS::Media
-
 #endif

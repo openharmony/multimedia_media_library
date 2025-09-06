@@ -37,7 +37,8 @@ const int32_t PAGE_SIZE = 200;
 const std::string RESTORE_STATUS_SUCCESS = "1";
 
 void CloneRestoreGroupPhoto::Init(int32_t sceneCode, const std::string &taskId, std::string restoreInfo,
-    std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
+    std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    std::shared_ptr<NativeRdb::RdbStore> mediaRdb, bool isCloudRestoreSatisfied)
 {
     sceneCode_ = sceneCode;
     taskId_ = taskId;
@@ -45,10 +46,8 @@ void CloneRestoreGroupPhoto::Init(int32_t sceneCode, const std::string &taskId, 
     mediaRdb_ = mediaRdb;
     analysisType_ = "";
     restoreInfo_ = restoreInfo;
-    GetSyncSwitchOn();
-    GetAccountValid();
-    MEDIA_INFO_LOG("syncSwitch statu is %{public}d, account vaild statu is %{public}d",
-        (int)isSyncSwitchOn_, (int)isAccountValid_);
+    isCloudRestoreSatisfied_ = isCloudRestoreSatisfied;
+    MEDIA_INFO_LOG("isCloudRestoreSatisfied_ is %{public}d", (int)isCloudRestoreSatisfied_);
 }
 
 void CloneRestoreGroupPhoto::Restore(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)

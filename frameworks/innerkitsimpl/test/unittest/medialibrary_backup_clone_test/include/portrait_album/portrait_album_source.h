@@ -22,7 +22,6 @@
 #include "result_set_utils.h"
 #include "rdb_helper.h"
 #include "backup_const_column.h"
-#include "story_album_column.h"
 
 namespace OHOS {
 namespace Media {

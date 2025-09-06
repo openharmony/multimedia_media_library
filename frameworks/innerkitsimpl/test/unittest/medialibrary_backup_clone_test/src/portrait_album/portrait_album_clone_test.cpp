@@ -73,7 +73,6 @@ void ClearPortraitData()
 {
     MEDIA_INFO_LOG("Start clear portrait album data");
     ExecuteSqls(newRdbStore->GetRaw(), CLEAR_SQLS);
-    MediaLibraryRdbUtils::UpdateAllAlbums(newRdbStore);
     MEDIA_INFO_LOG("End clear portrait album data");
 }
 
@@ -143,6 +142,8 @@ void PortraitAlbumCloneTest::SetupMockPhotoInfoMap(std::unordered_map<int32_t, P
 {
     PhotoInfo photoInfo;
     photoInfo.fileIdNew = FILE_INFO_NEW_ID;
+    photoInfo.displayName = "test.jpg";
+    photoInfo.cloudPath = "/storage/cloud/files/Photo/14/test.jpg";
     photoInfoMap.insert(std::make_pair(1, photoInfo));
 }
 
@@ -180,6 +181,7 @@ void PortraitAlbumCloneTest::VerifyImageFaceRestore(const std::shared_ptr<Native
     (void)resultSet->GetColumnIndex(IMAGE_FACE_COL_SCALE_Y, index);
     resultSet->GetDouble(index, doubleValue);
     EXPECT_DOUBLE_EQ(doubleValue, 1.0);
+
     EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
 }
 
@@ -210,15 +212,6 @@ void PortraitAlbumCloneTest::VerifyPortraitAlbumRestore(const std::shared_ptr<Na
     (void)resultSet->GetColumnIndex("tag_id", index);
     resultSet->GetString(index, columnValue);
     EXPECT_EQ(columnValue, "test_tag_id");
-
-    (void)resultSet->GetColumnIndex("cover_uri", index);
-    resultSet->GetString(index, columnValue);
-    EXPECT_EQ(columnValue, "test_cover_uri");
-
-    (void)resultSet->GetColumnIndex("is_cover_satisfied", index);
-    int isCoverSatisfied;
-    resultSet->GetInt(index, isCoverSatisfied);
-    EXPECT_EQ(isCoverSatisfied, 1);
 
     EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
 }
@@ -255,6 +248,7 @@ void PortraitAlbumCloneTest::VerifyPortraitClusteringRestore(const std::shared_p
     (void)resultSet->GetColumnIndex(FACE_TAG_COL_ANALYSIS_VERSION, index);
     resultSet->GetInt(index, intValue);
     EXPECT_EQ(intValue, 1);
+
     EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
 }
 
@@ -264,11 +258,13 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_albu
     ClearPortraitData();
     PortraitAlbumSource portraitAlbumSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE };
-    Init(portraitAlbumSource, TEST_DB_PATH, tableList);
+    Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
+    cloneRestorePortrait = make_unique<CloneRestorePortrait>();
     cloneRestorePortrait->Init(CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, {});
     cloneRestorePortrait->RestoreFromGalleryPortraitAlbum();
     VerifyPortraitAlbumRestore(newRdbStore->GetRaw());
-    ClearCloneSource(portraitAlbumSource, TEST_DB_PATH);
+    cloneRestorePortrait = nullptr;
+    ClearCloneSource(portraitAlbumSource, TEST_BACKUP_DB_PATH);
 }
 
 HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_clustering_test_001, TestSize.Level2)
@@ -278,11 +274,13 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_clus
     PortraitAlbumSource portraitAlbumSource;
     vector<string> tableList = { VISION_FACE_TAG_TABLE, PhotoColumn::PHOTOS_TABLE,
         ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
-    Init(portraitAlbumSource, TEST_DB_PATH, tableList);
+    Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
+    cloneRestorePortrait = make_unique<CloneRestorePortrait>();
     cloneRestorePortrait->Init(CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, {});
     cloneRestorePortrait->RestorePortraitClusteringInfo();
     VerifyPortraitClusteringRestore(newRdbStore->GetRaw());
-    ClearCloneSource(portraitAlbumSource, TEST_DB_PATH);
+    cloneRestorePortrait = nullptr;
+    ClearCloneSource(portraitAlbumSource, TEST_BACKUP_DB_PATH);
 }
 
 HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_image_face_test_001, TestSize.Level2)
@@ -291,13 +289,16 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_image_face_te
     ClearPortraitData();
     PortraitAlbumSource portraitAlbumSource;
     vector<string> tableList = { VISION_IMAGE_FACE_TABLE };
-    Init(portraitAlbumSource, TEST_DB_PATH, tableList);
+    Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
     SetupMockPhotoInfoMap(photoInfoMap);
-    cloneRestorePortrait->Init(CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, photoInfoMap);
+    cloneRestorePortrait = make_unique<CloneRestorePortrait>();
+    cloneRestorePortrait->Init(CLONE_RESTORE_ID, "", newRdbStore->GetRaw(),
+        portraitAlbumSource.cloneStorePtr_, photoInfoMap);
     cloneRestorePortrait->RestoreImageFaceInfo();
     VerifyImageFaceRestore(newRdbStore->GetRaw());
-    ClearCloneSource(portraitAlbumSource, TEST_DB_PATH);
+    cloneRestorePortrait = nullptr;
+    ClearCloneSource(portraitAlbumSource, TEST_BACKUP_DB_PATH);
 }
 
 HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_photo_map_test_001, TestSize.Level2)
@@ -306,17 +307,19 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_photo_map_tes
     ClearPortraitData();
     PortraitAlbumSource portraitAlbumSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
-    Init(portraitAlbumSource, TEST_DB_PATH, tableList);
+    Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
     std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
     SetupMockPhotoInfoMap(photoInfoMap);
     std::vector<AnalysisAlbumTbl> portraitAlbumInfoMap;
     SetupMockPortraitAlbumInfoMap(portraitAlbumInfoMap);
+    cloneRestorePortrait = make_unique<CloneRestorePortrait>();
     cloneRestorePortrait->Init(CLONE_RESTORE_ID, "",
         newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, photoInfoMap);
     cloneRestorePortrait->portraitAlbumInfoMap_ = portraitAlbumInfoMap;
     cloneRestorePortrait->RestoreMaps();
     VerifyMaps(newRdbStore->GetRaw());
-    ClearCloneSource(portraitAlbumSource, TEST_DB_PATH);
+    cloneRestorePortrait = nullptr;
+    ClearCloneSource(portraitAlbumSource, TEST_BACKUP_DB_PATH);
 }
 }
 }

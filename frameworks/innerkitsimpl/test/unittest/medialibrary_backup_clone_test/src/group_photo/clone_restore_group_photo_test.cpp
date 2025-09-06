@@ -110,7 +110,8 @@ static void ClearGroupPhotoData(std::shared_ptr<NativeRdb::RdbStore>& mediaRdbPt
     MEDIA_INFO_LOG("End clear data");
 }
 
-void CloneRestoreGroupPhotoTest::Init(CloneGroupPhotoSource &cloneGroupPhotoSource, const string &path, const vector<string> &tableList)
+void CloneRestoreGroupPhotoTest::Init(CloneGroupPhotoSource &cloneGroupPhotoSource,
+    const string &path, const vector<string> &tableList)
 {
     MEDIA_INFO_LOG("Start init clone source database");
     cloneGroupPhotoSource.Init(path, tableList);
