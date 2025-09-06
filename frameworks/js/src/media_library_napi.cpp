@@ -3546,13 +3546,13 @@ static void PhotoAccessGetAssetsByOldUrisExecute(napi_env env, void *data)
         DataSharePredicates photoPredicates;
         photoPredicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileIdNew));
 
-        std::vector<std::string> photoColumns = {MediaColumnm::MEDIA_NAME};
+        std::vector<std::string> photoColumns = {MediaColumn::MEDIA_NAME};
         Uri photoUri(PAH_QUERY_PHOTO);
         auto photoResultSet = UserFileClient::Query(photoUri, photoPredicates, photoColumns, errCode);
 
         std::string displayName;
         if (photoResultSet != nullptr && photoResultSet->GoToFirstRow() == NativeRdb::E_OK) {
-            displayName = GetStringVal(MediaColumnm::MEDIA_NAME, photoResultSet);
+            displayName = GetStringVal(MediaColumn::MEDIA_NAME, photoResultSet);
         } else {
             context->SaveError(errCode);
             return;
