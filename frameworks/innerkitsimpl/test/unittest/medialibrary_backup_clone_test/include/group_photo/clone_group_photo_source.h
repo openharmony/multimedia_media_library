@@ -18,13 +18,13 @@
 
 #include <string>
 
-#include "location_db_sqls.h"
 #include "result_set_utils.h"
 #include "rdb_helper.h"
 #include "backup_const_column.h"
 #include "story_album_column.h"
 #include "vision_db_sqls_more.h"
 #include "vision_column.h"
+#include "vision_photo_map_column.h"
 #include "photo_map_column.h"
 
 namespace OHOS {

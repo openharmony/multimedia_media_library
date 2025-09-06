@@ -43,7 +43,7 @@ void CloneRestoreGroupPhoto::Init(int32_t sceneCode, const std::string &taskId, 
     taskId_ = taskId;
     mediaLibraryRdb_ = mediaLibraryRdb;
     mediaRdb_ = mediaRdb;
-    analysisType_ = "label";
+    analysisType_ = "";
     restoreInfo_ = restoreInfo;
     GetSyncSwitchOn();
     GetAccountValid();

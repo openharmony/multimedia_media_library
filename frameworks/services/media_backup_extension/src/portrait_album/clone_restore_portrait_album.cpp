@@ -116,8 +116,10 @@ void CloneRestorePortrait::DeleteExistingImageFaceInfos()
         ") ";
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, deleteAnalysisPhotoMapSql);
     MEDIA_INFO_LOG("Delete ImageFaceTable");
-    std::string deleteFaceSql = "DELETE FROM " + VISION_IMAGE_FACE_TABLE;
-    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, deleteFaceSql);
+    std::string deleteImageFaceSql = "DELETE FROM " + VISION_IMAGE_FACE_TABLE;
+    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, deleteImageFaceSql);
+    std::string deleteVideoFaceSql = "DELETE FROM " + VISION_VIDEO_FACE_TABLE;
+    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, deleteVideoFaceSql);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migratePortraitTotalTimeCost_ += end - start;
 }

@@ -55,8 +55,7 @@ void CloneRestorePortraitBase::GetAnalysisAlbumInsertValue(NativeRdb::ValuesBuck
     BackupDatabaseUtils::PutIfPresent(value, ANALYSIS_COL_IS_REMOVED, info.isRemoved);
     BackupDatabaseUtils::PutIfPresent(value, ANALYSIS_COL_RENAME_OPERATION, info.renameOperation);
     BackupDatabaseUtils::PutIfPresent(value, ANALYSIS_COL_IS_LOCAL, info.isLocal);
-    // BackupDatabaseUtils::PutIfPresent<int32_t>(value, "is_cover_satisfied", info.isCoverSatisfied);
-    // BackupDatabaseUtils::PutIfPresent<std::string>(value, "relationship", info.relationship);
+    BackupDatabaseUtils::PutIfPresent<std::string>(value, "relationship", info.relationship);
 }
 
 void CloneRestorePortraitBase::ParseAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
