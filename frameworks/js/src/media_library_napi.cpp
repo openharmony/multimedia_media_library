@@ -411,6 +411,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_WRITABLE_NAPI_FUNCTION("applyChanges", JSApplyChanges),
             DECLARE_NAPI_FUNCTION("saveFormInfo", PhotoAccessSaveFormInfo),
             DECLARE_NAPI_FUNCTION("saveGalleryFormInfo", PhotoAccessSaveGalleryFormInfo),
+            DECLARE_NAPI_FUNCTION("getAssetsByOldUris", PhotoAccessGetPhotoAssetsByOldUris),
             DECLARE_NAPI_FUNCTION("removeFormInfo", PhotoAccessRemoveFormInfo),
             DECLARE_NAPI_FUNCTION("removeGalleryFormInfo", PhotoAccessRemoveGalleryFormInfo),
             DECLARE_NAPI_FUNCTION("updateGalleryFormInfo", PhotoAccessUpdateGalleryFormInfo),
@@ -2866,7 +2867,7 @@ void ChangeListenerNapi::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallbac
         }
         if (extraIds.size() != 0) {
             wrapper->extraSharedAssets_ = GetSharedResultSetFromIds(extraIds, true);
-        }    
+        }
     }
 }
 
@@ -3427,6 +3428,215 @@ static napi_value UserFileMgrOffCheckArgs(napi_env env, napi_callback_info info,
 
     return thisVar;
 }
+
+static napi_value GetOldUriMap(napi_env env, MediaLibraryAsyncContext *context)
+{
+    napi_status status;
+    napi_value mapNapiValue {nullptr};
+
+    status = napi_create_map(env, &mapNapiValue);
+    CHECK_COND_RET(status == napi_ok && mapNapiValue != nullptr, nullptr,
+        "Failed to create map napi value, napi status: %{public}d", static_cast<int>(status));
+
+    for (auto &iter : context->uriMap) {
+        napi_value key {nullptr};
+        napi_value value {nullptr};
+
+        status = napi_create_string_utf8(env, iter.first.c_str(), NAPI_AUTO_LENGTH, &key);
+        CHECK_COND_RET(status == napi_ok && key != nullptr, nullptr,
+            "Failed to create string key, napi status: %{public}d", static_cast<int>(status));
+
+        status = napi_create_string_utf8(env, iter.second.c_str(), NAPI_AUTO_LENGTH, &value);
+        CHECK_COND_RET(status == napi_ok && value != nullptr, nullptr,
+            "Failed to create string value, napi status: %{public}d", static_cast<int>(status));
+
+        status = napi_map_set_property(env, mapNapiValue, key, value);
+        CHECK_COND_RET(status == napi_ok, nullptr,
+            "Failed to set uriMap property, napi status: %{public}d", static_cast<int>(status));
+    }
+
+    return mapNapiValue;
+}
+
+static void GetOldUriQueryResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    napi_value fileResult = GetOldUriMap(env, context);
+
+    if (fileResult == nullptr) {
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+        MediaLibraryNapiUtils::CreateNapiErrorObject(
+            env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Failed to create js object for Fetch Album Result"
+        );
+        return;
+    }
+
+    jsContext->data = fileResult;
+    jsContext->status = true;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+}
+
+static void JSGetPhotoAlbumsCompleteCallbackforOldUri(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPhotoAlbumsCompleteCallbackforOldUri");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+
+    if (context->error == ERR_DEFAULT) {
+        napi_value mapNapiValue {nullptr};
+        napi_create_map(env, &mapNapiValue);
+        jsContext->data = mapNapiValue;
+        jsContext->status = true;
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    }
+
+    GetOldUriQueryResult(env, context, jsContext);
+    tracer.Finish();
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext
+        );
+    }
+
+    delete context;
+}
+
+static void PhotoAccessGetAssetsByOldUrisExecute(napi_env env, void *data)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    std::map<std::string, std::string> resultMap;
+
+    for (const auto& oldUri : context->uris) {
+        std::string fileIdOld = MediaFileUtils::GetIdFromUri(oldUri)
+
+        if (fileIdOld.empty()) {
+            NAPI_ERR_LOG("Failed to extract fileId from URI: %{public}s", oldUri.c_str());
+            continue;
+        }
+
+        DataSharePredicates predicates;
+        predicates.EqualTo(TabOldPhotosColumn::MEDIA_OLD_ID, fileIdOld);
+        predicates.OrderByDesc(TabOldPhotosColumn::MEDIA_CLONE_SEQUENCE);
+        predicates.Limit(0, 1);
+
+        std::vector<std::string> columns = { TabOldPhotosColumn::MEDIA_ID, TabOldPhotosColumn::MEDIA_FILE_PATH,
+            TabOldPhotosColumn::MEDIA_OLD_ID, TabOldPhotosColumn::MEDIA_OLD_FILE_PATH };
+        Uri uri(QUERY_TAB_OLD_PHOTO);
+        int errCode = 0;
+        auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+            NAPI_ERR_LOG("Failed to query tab_old_photos for fileIdOld: %{public}s", fileIdOld.c_str());
+            context->SaveError(errCode);
+            return;
+        }
+
+        int32_t fileIdNew = GetInt32Val(TabOldPhotosColumn::MEDIA_ID, resultSet);
+        std::string data = GetStringVal(TabOldPhotosColumn::MEDIA_FILE_PATH, resultSet);
+
+        DataSharePredicates photoPredicates;
+        photoPredicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileIdNew));
+
+        std::vector<std::string> photoColumns = {PhotoColumn::PHOTO_DISPLAY_NAME};
+        Uri photoUri(PAH_QUERY_PHOTO);
+        auto photoResultSet = UserFileClient::Query(photoUri, photoPredicates, photoColumns, errCode);
+
+        std::string displayName;
+        if (photoResultSet != nullptr && photoResultSet->GoToFirstRow() == NativeRdb::E_OK) {
+            displayName = GetStringVal(PhotoColumn::PHOTO_DISPLAY_NAME, photoResultSet);
+        } else {
+            context->SaveError(errCode);
+            return;
+        }
+
+        std::string newUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
+            std::to_string(fileIdNew), MediaFileUtils::GetExtraUri(displayName, data));
+        resultMap[oldUri] = newUri;
+        NAPI_DEBUG_LOG("Successfully mapped oldUri:%{public}s to newUri:%{public}s", oldUri.c_str(), newUri.c_str());
+    }
+
+    context->uriMap = std::move(resultMap);
+}
+
+static napi_value ParseArgsGetAssetsByOldUris(napi_env env, napi_callback_info info,
+    std::unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL,
+            "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    vector<string> uris;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringArrayCallback(env, info, context, uris),
+        JS_E_PARAM_INVALID);
+
+    if (uris.empty()) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check empty uri!");
+        return nullptr;
+    }
+
+    for (const auto &uri : uris) {
+        if (uri.find(MEDIA_URI_PREFIX) == string::npos) {
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check uri format, not a photo uri!");
+            return nullptr;
+        }
+    }
+
+    if (uris.size() > MAX_URI_COUNT) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Too many URIs, maximum allowed is 100!");
+        return nullptr;
+    }
+
+    for (auto &uri : uris) {
+        size_t photoPos = uri.find("/Photo/");
+        if (photoPos != std::string::npos) {
+            size_t start = photoPos + 7;
+            size_t end = uri.find("/", start);
+            if (end != std::string::npos) {
+                std::string fileIdStr = uri.substr(start, end - start);
+                int fileId = std::stoi(fileIdStr);
+                context->fileId.emplace(fileId);
+            }
+        }
+    }
+
+    context->uris = uris;
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    return result;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssetsByOldUris(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetPhotoAssetsByOldUris");
+
+    std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
+    asyncContext->assetType = TYPE_PHOTO;
+
+    CHECK_NULLPTR_RET(ParseArgsGetAssetsByOldUris(env, info, asyncContext));
+
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ASSETS);
+    SetUserIdFromObjectInfo(asyncContext);
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env,
+        asyncContext,
+        "PhotoAccessGetPhotoAssetsByOldUris",
+        PhotoAccessGetAssetsByOldUrisExecute,
+        JSGetPhotoAlbumsCompleteCallbackforOldUri
+    );
+}
+
 
 napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_info info)
 {
@@ -4527,7 +4737,7 @@ napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info i
         std::function<void()> task = [env, status, context]() {
             JSGetActivePeersCompleteCallback(env, status, context);
         };
-    
+
         status = napi_send_event(env, task, napi_eprio_immediate);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
@@ -6899,7 +7109,7 @@ static std::string GetTotalCount()
         ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
 
     vector<string> column = {
-        "SUM(CASE WHEN (media_type = 1 OR (media_type = 2 AND (position = 1 OR position = 3))) THEN 1 ELSE 0 END) AS " 
+        "SUM(CASE WHEN (media_type = 1 OR (media_type = 2 AND (position = 1 OR position = 3))) THEN 1 ELSE 0 END) AS "
             "totalCount"
     };
 
@@ -8258,12 +8468,12 @@ napi_value MediaLibraryNapi::CreateNotifyChangeTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, notifyChangeTypeEnum, sNotifyChangeTypeEnumRef_);
 }
- 
+
 napi_value MediaLibraryNapi::CreateThumbnailChangeStatusEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, thumbnailChangeStatusEnum, sThumbnailChangeStatusEnumRef_);
 }
- 
+
 napi_value MediaLibraryNapi::CreateStrongAssociationTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, strongAssociationTypeEnum, sStrongAssociationTypeEnumRef_);
@@ -11086,10 +11296,10 @@ static void StartPhotoPickerExecute(napi_env env, void *data)
 static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, MediaLibraryAsyncContext* context, napi_value result)
 {
     NAPI_INFO_LOG("getPhotoPickerContextRecoveryInfo start");
- 
+
     napi_value recoverInfo = nullptr;
     napi_create_object(env, &recoverInfo);
- 
+
     napi_value albumUri = nullptr;
     const string &jsAlbumUri = context->pickerCallBack->albumUri;
     napi_create_string_utf8(env, jsAlbumUri.c_str(), NAPI_AUTO_LENGTH, &albumUri);
@@ -11097,14 +11307,14 @@ static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, 
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property albumUri failed");
     }
- 
+
     napi_value time = nullptr;
     napi_create_int64(env, context->pickerCallBack->time, &time);
     status = napi_set_named_property(env, recoverInfo, "time", time);
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property time failed");
     }
- 
+
     napi_value displayName = nullptr;
     const string &jsDisplayName = context->pickerCallBack->displayName;
     napi_create_string_utf8(env, jsDisplayName.c_str(), NAPI_AUTO_LENGTH, &displayName);
@@ -11112,21 +11322,21 @@ static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, 
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property displayName failed");
     }
- 
+
     napi_value recommendationType = nullptr;
     napi_create_int32(env, context->pickerCallBack->recommendationType, &recommendationType);
     status = napi_set_named_property(env, recoverInfo, "recommendationType", recommendationType);
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property recommendationType failed");
     }
- 
+
     napi_value selectedRecommendationType = nullptr;
     napi_create_int32(env, context->pickerCallBack->selectedRecommendationType, &selectedRecommendationType);
     status = napi_set_named_property(env, recoverInfo, "selectedRecommendationType", selectedRecommendationType);
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property selectedRecommendationType failed");
     }
- 
+
     napi_value version = nullptr;
     std::string recoverSceneVersion = "1.0";
     napi_create_string_utf8(env, recoverSceneVersion.c_str(), NAPI_AUTO_LENGTH, &version);
@@ -11134,7 +11344,7 @@ static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, 
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property version failed");
     }
-    
+
     status = napi_set_named_property(env, result, "contextRecoveryInfo", recoverInfo);
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property contextRecoveryInfo failed");
@@ -11563,7 +11773,7 @@ static napi_value ParseArgsGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callb
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
         return nullptr;
     }
-    
+
     constexpr size_t minArgs = ARGS_ZERO;
     constexpr size_t maxArgs = ARGS_ONE;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
@@ -11576,7 +11786,7 @@ static napi_value ParseArgsGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callb
             context->argc -= 1;
         }
     }
-    
+
     if (context->argc == maxArgs) {
         auto status =
             MediaLibraryNapiUtils::GetFetchOption(env, context->argv[maxArgs - 1], ALBUM_FETCH_OPT, context);
@@ -11701,7 +11911,7 @@ static napi_value ParseArgsGetPhotoAlbumOrder(napi_env env, napi_callback_info i
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
         return nullptr;
     }
-    
+
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
@@ -11714,7 +11924,7 @@ static napi_value ParseArgsGetPhotoAlbumOrder(napi_env env, napi_callback_info i
             context->argc -= 1;
         }
     }
-    
+
     OrderStyleType orderStyle;
     CHECK_ARGS_WITH_MEG(env, CheckOrderStyle(env, context, orderStyle), JS_E_PARAM_INVALID,
         "Failed to check orderStyle");
@@ -11726,7 +11936,7 @@ static napi_value ParseArgsGetPhotoAlbumOrder(napi_env env, napi_callback_info i
     }
     RestrictAlbumSubtypeOptions(context->predicates);
 
-    CHECK_ARGS_WITH_MEG(env, AddDefaultAlbumOrderColumns(env, context, context->fetchColumn, orderStyle), 
+    CHECK_ARGS_WITH_MEG(env, AddDefaultAlbumOrderColumns(env, context, context->fetchColumn, orderStyle),
         JS_E_PARAM_INVALID, "Failed to add default columns");
 
     napi_value result = nullptr;
@@ -11794,7 +12004,7 @@ static void GetAlbumOrderCallbackComplete(napi_env env, napi_status status, void
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
-    
+
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, jsContext->error);
     } else {
@@ -11860,7 +12070,7 @@ static napi_status TransAlbumOrderToBuckets(AlbumOrderNapi *obj, DataShare::Data
         i <= static_cast<int32_t>(AlbumOrderParam::ORDER_STATUS); i++) {
         AlbumOrderParam param = static_cast<AlbumOrderParam>(i);
         CHECK_COND_RET(HandleAlbumOrderParam(obj, values, orderStyle, param) == napi_ok, napi_invalid_arg,
-            "orderStyle cannot be mapped to the actual rdb columnName");     
+            "orderStyle cannot be mapped to the actual rdb columnName");
     }
     return napi_ok;
 }
@@ -11885,7 +12095,7 @@ static napi_value ParseAlbumOrderArray(napi_env env, napi_value arg, OrderStyleT
         DataShareValuesBucket valuesBucket;
         CHECK_ARGS(env, napi_unwrap(env, orderData, reinterpret_cast<void **>(&obj)), JS_E_INNER_FAIL);
         CHECK_ARGS_WITH_MEG(env, obj != nullptr, JS_E_PARAM_INVALID, "Failed to get albumOrder napi object");
-        
+
         if (obj->GetAlbumId() <= 0) {
             NAPI_ERR_LOG("Skip invalid album order, albumId: %{public}d", obj->GetAlbumId());
             continue;
@@ -11909,7 +12119,7 @@ static napi_value ParseArgsSetPhotoAlbumOrder(napi_env env, napi_callback_info i
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
         return nullptr;
     }
-    
+
     napi_value result = nullptr;
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_TWO;
@@ -11932,7 +12142,7 @@ static napi_value ParseArgsSetPhotoAlbumOrder(napi_env env, napi_callback_info i
     return result;
 }
 
-static void TransValueBucketToReqBody(const std::vector<OHOS::DataShare::DataShareValuesBucket> &valuesBucketArray, 
+static void TransValueBucketToReqBody(const std::vector<OHOS::DataShare::DataShareValuesBucket> &valuesBucketArray,
     const int32_t &orderStyle, SetPhotoAlbumOrderReqBody &reqBody)
 {
     reqBody.albumOrderColumn = PhotoAlbumColumns::ALBUM_ORDER_COLUMNS[orderStyle];

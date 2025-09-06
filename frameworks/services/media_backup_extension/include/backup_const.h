@@ -735,6 +735,7 @@ const std::vector<std::string> EXCLUDED_FACE_TAG_COLUMNS = {"id", "user_operatio
 const std::vector<std::string> EXCLUDED_IMAGE_FACE_COLUMNS = {"id"};
 const std::vector<std::string> EXCLUDED_VIDEO_FACE_COLUMNS = {"id"};
 const std::vector<std::string> EXCLUDED_BEAUTY_SCORE_COLUMNS = {"id"};
+const std::vector<std::string> EXCLUDED_ASSET_MAP_COLUMNS = {"id"};
 const std::string SQL_SELECT_ERROR_BURST_PHOTOS  = "COALESCE(burst_key, '') <> '' and NOT EXISTS ( \
         SELECT 1 FROM Photos p1 WHERE p1.burst_key = photos.burst_key AND p1.burst_cover_level = 1)";
 const std::string SQL_SELECT_ERROR_BURST_COVER_PHOTOS  = "COALESCE(burst_key, '') <> '' and NOT EXISTS ( \

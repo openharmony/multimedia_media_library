@@ -339,6 +339,25 @@ int32_t TransactionOperations::BatchInsert(
     return ret;
 }
 
+int32_t TransactionOperations::BatchInsert(int64_t &changeRows, const std::string &table,
+    const std::vector<NativeRdb::ValuesBucket> &values, NativeRdb::ConflictResolution resolution)
+{
+    if (transaction_ == nullptr) {
+        MEDIA_ERR_LOG("transaction_ is null");
+        return E_HAS_DB_ERROR;
+    }
+ 
+    auto [ret, rows] = transaction_->BatchInsert(table, values, resolution);
+    changeRows = rows;
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("transaction_->BatchInsert failed, ret = %{public}d", ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
+        return E_HAS_DB_ERROR;
+    }
+    MEDIA_DEBUG_LOG("transaction_->BatchInsert end, changeRows = %d, ret = %{public}d", (int)changeRows, ret);
+    return ret;
+}
+
 int32_t TransactionOperations::BatchInsert(
     MediaLibraryCommand &cmd, int64_t &outInsertNum, const std::vector<ValuesBucket> &values)
 {

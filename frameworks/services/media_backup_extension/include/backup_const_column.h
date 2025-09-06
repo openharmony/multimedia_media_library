@@ -197,6 +197,13 @@ const std::string BEAUTY_SCORE_COL_IS_BLACK_WHITE_STRIPE = "is_black_white_strip
 const std::string BEAUTY_SCORE_COL_IS_BLURRY = "is_blurry";
 const std::string BEAUTY_SCORE_COL_IS_MOSAIC = "is_mosaic";
 
+// Asset Map TBL COL_NAME
+const std::string TAB_OLD_PHOTOS = "tab_old_photos";
+const std::string ASSET_MAP_COL_FILE_ID = "file_id";
+const std::string ASSET_MAP_COL_DATA = "data";
+const std::string ASSET_MAP_COL_OLD_FILE_ID = "old_file_id";
+const std::string ASSET_MAP_COL_OLD_DATA = "old_data";
+const std::string ASSET_MAP_COL_CLONE_SEQUENCE = "clone_sequence";
 
 const std::string QUERY_FACE_TAG_COUNT = "SELECT count(1) AS count FROM " + VISION_FACE_TAG_TABLE;
 const std::string QUERY_IMAGE_FACE_COUNT = "SELECT count(1) AS count FROM " + VISION_IMAGE_FACE_TABLE;

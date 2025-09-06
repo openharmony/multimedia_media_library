@@ -1753,7 +1753,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_0
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_ex_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_start_backup_ex_001 start");
-    
+
     BackupRestoreService &instance = BackupRestoreService::GetInstance();
     ASSERT_NE(&instance, nullptr);
     std::string backupExResult = EMPTY_STR;
@@ -3417,7 +3417,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_te
     cloneAnalysisData->cloneRestoreAnalysisTotal_.type_ = SEGMENTATION_TYPE;
     cloneAnalysisData->cloneRestoreAnalysisTotal_.lastId_ = 0;
     cloneAnalysisData->cloneRestoreAnalysisTotal_.pageSize_ = PAGE_SIZE;
-    
+
     cloneAnalysisData->cloneRestoreAnalysisTotal_.GetInfos(photoInfoMap);
     cloneAnalysisData->GetAnalysisDataInfo();
     EXPECT_EQ(cloneAnalysisData->analysisDataInfos_.size(), 1);
@@ -3443,7 +3443,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_te
     cloneAnalysisData->cloneRestoreAnalysisTotal_.type_ = SEGMENTATION_TYPE;
     cloneAnalysisData->cloneRestoreAnalysisTotal_.lastId_ = 0;
     cloneAnalysisData->cloneRestoreAnalysisTotal_.pageSize_ = PAGE_SIZE;
-    
+
     cloneAnalysisData->cloneRestoreAnalysisTotal_.GetInfos(photoInfoMap);
     cloneAnalysisData->GetAnalysisDataInfo();
     std::unordered_set<int32_t> existingFileIds = cloneAnalysisData->GetExistingFileIds();
@@ -3469,7 +3469,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_analysis_data_te
     PhotoInfo photoInfo;
     photoInfoMap[1] = photoInfo;
     std::unordered_set<std::string> excludedColumns = {"id", "file_id"};
-    
+
     cloneAnalysisData->CloneAnalysisData(SEGMENTATION_ANALYSIS_TABLE, SEGMENTATION_TYPE, photoInfoMap,
         excludedColumns);
     EXPECT_EQ(cloneAnalysisData->successCnt_, 1);
@@ -3847,6 +3847,66 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_update_config_info_test_002, 
         DEFAULT_DEVICE_ID);
 }
 
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_asset_map_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_asset_map_test_001");
+    ClearData();
+
+    CloneSource cloneSource;
+    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    std::unordered_map<int32_t, OHOS::Media::PhotoInfo> photoInfoMap;
+    int32_t sourceOldFileId = 1;
+    int32_t newFileId = 60005;
+    photoInfoMap[sourceOldFileId] = { .fileIdNew = newFileId };
+
+    AssetMapClone assetMapClone(cloneSource.cloneStorePtr_, g_rdbStore->GetRaw(), photoInfoMap);
+    bool cloneSuccess = assetMapClone.CloneAssetMapInfo();
+    ASSERT_TRUE(cloneSuccess) << "AssetMapClone::CloneAssetMapInfo failed";
+
+    VerifyAssetMapRestore(g_rdbStore->GetRaw(), photoInfoMap);
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_asset_map_test_001");
+}
+
+void MediaLibraryBackupCloneTest::VerifyAssetMapRestore(const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
+    const std::unordered_map<int32_t, OHOS::Media::PhotoInfo>& photoInfoMap)
+{
+    if (!destRdb) {
+        MEDIA_ERR_LOG("Destination RDB store is null for asset map verification");
+        return;
+    }
+
+    std::string querySql = "SELECT * FROM " + TAB_OLD_PHOTOS;
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(destRdb, querySql);
+    ASSERT_NE(resultSet, nullptr) << "Failed to query destination DB for asset map verification";
+
+    int32_t rowCount = 0;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        rowCount++;
+
+        int32_t fileIdIdx = -1;
+        int32_t fileIdVal = -1;
+        resultSet->GetColumnIndex(ASSET_MAP_COL_FILE_ID, fileIdIdx);
+        ASSERT_NE(fileIdIdx, -1) << "Column " << ASSET_MAP_COL_FILE_ID << " not found in result set.";
+        resultSet->GetInt(fileIdIdx, fileIdVal);
+
+        // Verify that the file ID has been mapped correctly
+        bool found = false;
+        for (const auto& pair : photoInfoMap) {
+            if (pair.second.fileIdNew == fileIdVal) {
+                found = true;
+                break;
+            }
+        }
+        ASSERT_TRUE(found) << "Expected fileId " << fileIdVal << " not found in photoInfoMap mapping";
+    }
+
+    ASSERT_GT(rowCount, 0) << "No asset map records found in destination database";
+    resultSet->Close();
+}
+
 static bool InsertIntoConfigInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
     ConfigInfoSceneId sceneId, const std::string& key, const std::string& value)
 {
@@ -3914,7 +3974,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_or
     std::vector<std::string> tableList = {ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME};
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
-    
+
     CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
     EXPECT_TRUE(expectedConfigInfo == result);
 
@@ -3933,7 +3993,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_or
 
     EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
         CONFIG_INFO_INVALID_KEY, CONFIG_INFO_INVALID_VALUE));
-    
+
     CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
     EXPECT_TRUE(expectedConfigInfo == result);
 
@@ -3952,7 +4012,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_or
 
     EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
         CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY, CONFIG_INFO_INVALID_VALUE));
-    
+
     CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
     EXPECT_TRUE(expectedConfigInfo == result);
 
@@ -3973,7 +4033,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_or
         CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY, CONFIG_INFO_INVALID_VALUE));
     EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
         CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY, CONFIG_INFO_INVALID_VALUE));
-    
+
     CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
     EXPECT_TRUE(expectedConfigInfo == result);
 
@@ -3999,7 +4059,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_get_clone_config_info_from_or
     EXPECT_TRUE(InsertIntoConfigInfo(restoreService->mediaRdb_, ConfigInfoSceneId::CLONE_RESTORE,
         CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY, DEFAULT_DEVICE_ID));
 
-    
+
     CloneRestoreConfigInfo result = restoreService->GetCloneConfigInfoFromOriginDB();
     EXPECT_TRUE(expectedConfigInfo == result);
 
