@@ -51,9 +51,6 @@ static const std::string MEDIA_LIB_NAPI_CLASS_NAME = "MediaLibrary";
 static const std::string USERFILE_MGR_NAPI_CLASS_NAME = "UserFileManager";
 static const std::string PHOTOACCESSHELPER_NAPI_CLASS_NAME = "PhotoAccessHelper";
 static const std::string MEDIA_URI_PREFIX = "file://media";
-static const std::string WHERE_CLAUSE_FOR_MAX_CLONE_SEQUNCE = "clone_sequence = (SELECT MAX(clone_sequence) FROM tab_old_photos);";
-static const std::string OLD_DATA_COLOMN = "old_data";
-static const std::string DATA_COLOMN = "data";
 
 enum ListenerType {
     INVALID_LISTENER = -1,
