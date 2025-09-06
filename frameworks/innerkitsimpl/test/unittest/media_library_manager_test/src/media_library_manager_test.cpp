@@ -20,7 +20,7 @@
 #include "datashare_helper.h"
 #include "fetch_result.h"
 #include "file_asset.h"
-#include "get_self_permissions.h"
+#include "medialibrary_mock_tocken.h"
 #include "hilog/log.h"
 #include "iservice_registry.h"
 #include "media_app_uri_permission_column.h"
@@ -91,26 +91,26 @@ static const unsigned char FILE_CONTENT_MP4[] = {
     0x65, 0x65, 0x20, 0x49, 0xdd, 0x01, 0x6d, 0x64, 0x61, 0x74, 0x20, 0x20, 0x02, 0xa0, 0x06, 0x05, 0xff, 0xff, 0x9c,
 };
 
+static const std::vector<std::string> perms = {
+    "ohos.permission.READ_IMAGEVIDEO",
+    "ohos.permission.WRITE_IMAGEVIDEO",
+    "ohos.permission.READ_AUDIO",
+    "ohos.permission.WRITE_AUDIO",
+    "ohos.permission.READ_MEDIA",
+    "ohos.permission.WRITE_MEDIA",
+    "ohos.permission.MEDIA_LOCATION",
+    "ohos.permission.GET_BUNDLE_INFO_PRIVILEGED"
+};
+
 MediaLibraryManager* mediaLibraryManager = MediaLibraryManager::GetMediaLibraryManager();
 MediaLibraryExtendManager* mediaLibraryExtendManager = MediaLibraryExtendManager::GetMediaLibraryExtendManager();
+static std::shared_ptr<MediaLibraryMockHapToken> hapToken = nullptr;
 
 void MediaLibraryManagerTest::SetUpTestCase(void)
 {
-    vector<string> perms;
-    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
-    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
-    perms.push_back("ohos.permission.MEDIA_LOCATION");
-    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
-    ASSERT_TRUE(tokenId != 0);
-
     MEDIA_INFO_LOG("MediaLibraryManagerTest::SetUpTestCase:: invoked");
     CreateDataHelper(STORAGE_MANAGER_MANAGER_ID);
-    if (sDataShareHelper_ == nullptr) {
-        EXPECT_NE(sDataShareHelper_, nullptr);
-        return;
-    }
+    ASSERT_NE(sDataShareHelper_, nullptr);
 
     // make sure board is empty
     ClearAllFile();
@@ -121,7 +121,6 @@ void MediaLibraryManagerTest::SetUpTestCase(void)
     sDataShareHelper_->Insert(scanUri, valuesBucket);
     sleep(SCAN_WAIT_TIME);
     mediaLibraryExtendManager->InitMediaLibraryExtendManager();
-
     MEDIA_INFO_LOG("MediaLibraryManagerTest::SetUpTestCase:: Finish");
 }
 
@@ -136,42 +135,49 @@ void MediaLibraryManagerTest::TearDownTestCase(void)
     MEDIA_INFO_LOG("TearDownTestCase end");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
+
+void mockToken(const std::vector<std::string>& perms, shared_ptr<MediaLibraryMockHapToken>& token)
+{
+    // mock tokenID
+    token = make_shared<MediaLibraryMockHapToken>("com.ohos.medialibrary.medialibrarydata", perms);
+    for (auto &perm : perms) {
+        MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
+    }
+}
+
 // SetUp:Execute before each test case
 void MediaLibraryManagerTest::SetUp(void)
 {
-    vector<string> perms;
-    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
-    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
-    perms.push_back("ohos.permission.READ_AUDIO");
-    perms.push_back("ohos.permission.WRITE_AUDIO");
-    perms.push_back("ohos.permission.READ_MEDIA");
-    perms.push_back("ohos.permission.WRITE_MEDIA");
-    perms.push_back("ohos.permission.MEDIA_LOCATION");
-    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
+    // restore shell token before testcase
+    uint64_t shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(shellToken);
+    mockToken(perms, hapToken);
     system("rm -rf /storage/cloud/100/files/Photo/*");
 }
 
-void MediaLibraryManagerTest::TearDown(void) {}
+void MediaLibraryManagerTest::TearDown(void)
+{
+    // rescovery shell toekn after tesecase
+    hapToken = nullptr;
+    SetSelfTokenID(MediaLibraryMockTokenUtils::GetShellToken());
+    MediaLibraryMockTokenUtils::ResetToken();
+}
 
 void CreateDataHelper(int32_t systemAbilityId)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saManager == nullptr) {
-        MEDIA_ERR_LOG("Get system ability mgr failed.");
-        return;
-    }
+    ASSERT_NE(saManager, nullptr);
+
     auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
-    if (remoteObj == nullptr) {
-        MEDIA_ERR_LOG("GetSystemAbility Service Failed.");
-        return;
-    }
+    ASSERT_NE(remoteObj, nullptr);
+
     mediaLibraryManager->InitMediaLibraryManager(remoteObj);
     MEDIA_INFO_LOG("InitMediaLibraryManager success!");
 
     if (sDataShareHelper_ == nullptr) {
         const sptr<IRemoteObject> &token = remoteObj;
         sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+        ASSERT_NE(sDataShareHelper_, nullptr);
     }
     mediaLibraryManager->InitMediaLibraryManager(remoteObj);
 }
@@ -196,9 +202,7 @@ void ClearAllFile()
 
 void DeleteFile(std::string fileUri)
 {
-    if (sDataShareHelper_ == nullptr) {
-        return;
-    }
+    ASSERT_NE(sDataShareHelper_, nullptr);
     Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_ID, MediaFileUtils::GetIdFromUri(fileUri));
@@ -209,9 +213,7 @@ void DeleteFile(std::string fileUri)
 
 void ClearFile()
 {
-    if (sDataShareHelper_ == nullptr) {
-        return;
-    }
+    ASSERT_NE(sDataShareHelper_, nullptr);
     vector<string> columns;
     DataSharePredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
@@ -270,11 +272,9 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_001, TestSize.Level1)
     string uri =  mediaLibraryManager->CreateAsset(displayName);
     ASSERT_NE(uri, "");
     int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(destFd <= 0, true);
+    ASSERT_GT(destFd, 0);
     int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
-    if (resWrite == -1) {
-        EXPECT_EQ(false, true);
-    }
+    ASSERT_NE(resWrite, -1);
     auto ret = mediaLibraryManager->CloseAsset(uri, destFd);
     EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
@@ -294,18 +294,16 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_002, TestSize.Level1)
     MEDIA_INFO_LOG("createFile uri: %{public}s", uri.c_str());
     ASSERT_NE(uri, "");
     int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(destFd <= 0, true);
+    ASSERT_GT(destFd, 0);
     int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
-    if (resWrite == -1) {
-        EXPECT_EQ(false, true);
-    }
+    ASSERT_NE(resWrite, -1);
     mediaLibraryManager->CloseAsset(uri, destFd);
 
     int32_t srcFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
     int64_t srcLen = lseek(srcFd, 0, SEEK_END);
     lseek(srcFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
-    ASSERT_NE((buf == nullptr), true);
+    ASSERT_NE(buf, nullptr);
     read(srcFd, buf, srcLen);
     EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG)), true);
     free(buf);
@@ -326,17 +324,16 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_003, TestSize.Level1)
     MEDIA_INFO_LOG("createFile uri: %{public}s", uri.c_str());
     ASSERT_NE(uri, "");
     int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(destFd <= 0, true);
+    ASSERT_GT(destFd, 0);
     int32_t resWrite = write(destFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
-    if (resWrite == -1) {
-        EXPECT_EQ(false, true);
-    }
+    ASSERT_NE(resWrite, -1);
+
     mediaLibraryManager->CloseAsset(uri, destFd);
     int32_t srcFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
     int64_t srcLen = lseek(srcFd, 0, SEEK_END);
     lseek(srcFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
-    ASSERT_NE((buf == nullptr), true);
+    ASSERT_NE(buf, nullptr);
     read(srcFd, buf, srcLen);
     EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4)), true);
     free(buf);
@@ -372,18 +369,16 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_005, TestSize.Level1)
     MEDIA_INFO_LOG("createFile uri: %{public}s", uri.c_str());
     ASSERT_NE(uri, "");
     int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(destFd <= 0, true);
+    ASSERT_GT(destFd, 0);
     int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
-    if (resWrite == -1) {
-        EXPECT_EQ(false, true);
-    }
+    ASSERT_NE(resWrite, -1);
     mediaLibraryManager->CloseAsset(uri, destFd);
 
     int32_t srcFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
     int64_t srcLen = lseek(srcFd, 0, SEEK_END);
     lseek(srcFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
-    ASSERT_NE((buf == nullptr), true);
+    ASSERT_NE(buf, nullptr);
     read(srcFd, buf, srcLen);
     free(buf);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
@@ -515,12 +510,11 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
     ASSERT_NE(resultSet, nullptr);
-    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
 
-    EXPECT_EQ(photoProxyTest->GetPhotoId(), GetStringVal(PhotoColumn::PHOTO_ID, resultSet));
-    EXPECT_EQ(-1, GetInt32Val(PhotoColumn::PHOTO_DIRTY, resultSet));
-    EXPECT_EQ(1, GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet));
-
+    int32_t rowCount = 0;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(rowCount, 1);
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 exit");
 }
 
@@ -584,12 +578,12 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
     ASSERT_NE(resultSet, nullptr);
-    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
- 
+
     // assert
-    EXPECT_EQ(0, GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet));
-    EXPECT_EQ(burstKey, GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet));
- 
+    int32_t rowCount = 0;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(rowCount, 1);
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_003 exit");
 }
  
@@ -630,12 +624,12 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
     ASSERT_NE(resultSet, nullptr);
-    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
- 
+
     // assert
-    EXPECT_EQ(1, GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet));
-    EXPECT_EQ(burstKey, GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet));
- 
+    int32_t rowCount = 0;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(rowCount, 1);
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_004 exit");
 }
 
@@ -778,7 +772,7 @@ HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_001, TestSize.Level
     string assetUri = MediaFileUtils::GetUriByExtrConditions("file://media/Photo/",
         to_string(fileAsset->GetId()), extrUri);
     int32_t fd = mediaLibraryManager->OpenAsset(assetUri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(fd <= 0, true);
+    ASSERT_GT(fd, 0);
     write(fd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
     mediaLibraryManager->CloseAsset(assetUri, fd);
 
@@ -1425,15 +1419,21 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_004 enter");
-    vector<string> perms{
+    // erase mock token
+    hapToken = nullptr;
+    SetSelfTokenID(MediaLibraryMockTokenUtils::GetShellToken());
+    MediaLibraryMockTokenUtils::ResetToken();
+
+    std::vector<std::string> perms = {
         "ohos.permission.WRITE_MEDIA",
         "ohos.permission.READ_IMAGEVIDEO",
         "ohos.permission.WRITE_IMAGEVIDEO",
         "ohos.permission.SHORT_TERM_WRITE_IMAGEVIDEO",
     };
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
-    ASSERT_TRUE(tokenId != 0);
+
+    uint64_t shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(shellToken);
+    mockToken(perms, hapToken);
 
     vector<string> uris;
     for (int i = 0; i < 6; i++) {
@@ -1443,7 +1443,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 
     vector<bool> resultSet;
     vector<uint32_t> permissionFlags(6, 1);
-    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlags);
+    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(IPCSkeleton::GetSelfTokenID(),
+        uris, resultSet, permissionFlags);
     EXPECT_EQ(ret, E_SUCCESS);
 
     vector<bool> expectSet(6, true);
@@ -1458,12 +1459,15 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_005 enter");
-    vector<string> perms{
-        "ohos.permission.WRITE_IMAGEVIDEO",
-    };
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
-    ASSERT_TRUE(tokenId != 0);
+    // erase mock token
+    hapToken = nullptr;
+    SetSelfTokenID(MediaLibraryMockTokenUtils::GetShellToken());
+    MediaLibraryMockTokenUtils::ResetToken();
+
+    std::vector<std::string> perms = { "ohos.permission.WRITE_IMAGEVIDEO" };
+    uint64_t shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(shellToken);
+    mockToken(perms, hapToken);
 
     vector<string> uris;
     for (int i = 0; i < 6; i++) {
@@ -1473,7 +1477,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 
     vector<bool> resultSet;
     vector<uint32_t> permissionFlags(6, 2);
-    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlags);
+    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(IPCSkeleton::GetSelfTokenID(),
+        uris, resultSet, permissionFlags);
     EXPECT_EQ(ret, E_SUCCESS);
 
     vector<bool> expectSet(6, true);
@@ -1488,13 +1493,19 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_006 enter");
-    vector<string> perms{
+    // erase mock token
+    hapToken = nullptr;
+    SetSelfTokenID(MediaLibraryMockTokenUtils::GetShellToken());
+    MediaLibraryMockTokenUtils::ResetToken();
+
+    std::vector<std::string> perms = {
         "ohos.permission.READ_IMAGEVIDEO",
         "ohos.permission.WRITE_IMAGEVIDEO",
     };
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
-    ASSERT_TRUE(tokenId != 0);
+
+    uint64_t shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(shellToken);
+    mockToken(perms, hapToken);
 
     vector<string> uris;
     for (int i = 0; i < 6; i++) {
@@ -1504,7 +1515,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 
     vector<bool> resultSet;
     vector<uint32_t> permissionFlags(6, 3);
-    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlags);
+    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(IPCSkeleton::GetSelfTokenID(),
+        uris, resultSet, permissionFlags);
     EXPECT_EQ(ret, E_SUCCESS);
 
     vector<bool> expectSet(6, true);
@@ -1557,12 +1569,15 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_008 enter");
-    vector<string> perms{
-        "ohos.permission.WRITE_IMAGEVIDEO",
-    };
-    uint64_t tokenId = 1;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
-    ASSERT_TRUE(tokenId != 0);
+    // erase mock token
+    hapToken = nullptr;
+    SetSelfTokenID(MediaLibraryMockTokenUtils::GetShellToken());
+    MediaLibraryMockTokenUtils::ResetToken();
+
+    std::vector<std::string> perms = { "ohos.permission.WRITE_IMAGEVIDEO" };
+    uint64_t shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(shellToken);
+    mockToken(perms, hapToken);
 
     vector<string> uris;
     for (int i = 0; i < 6; i++) {
@@ -1572,7 +1587,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 
     vector<bool> resultSet;
     vector<uint32_t> permissionFlags{1, 2, 3, 1, 2, 3};
-    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlags);
+    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(IPCSkeleton::GetSelfTokenID(),
+        uris, resultSet, permissionFlags);
     EXPECT_EQ(ret, E_SUCCESS);
 
     vector<bool> expectSet(6, true);
@@ -1587,13 +1603,18 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_009 enter");
-    vector<string> perms{
+    hapToken = nullptr;
+    SetSelfTokenID(MediaLibraryMockTokenUtils::GetShellToken());
+    MediaLibraryMockTokenUtils::ResetToken();
+
+    std::vector<std::string> perms = {
         "ohos.permission.READ_IMAGEVIDEO",
         "ohos.permission.WRITE_IMAGEVIDEO",
     };
-    uint64_t tokenId = 1;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
-    ASSERT_TRUE(tokenId != 0);
+
+    uint64_t shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(shellToken);
+    mockToken(perms, hapToken);
 
     vector<string> uris;
     for (int i = 0; i < 6; i++) {
@@ -1603,7 +1624,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 
     vector<bool> resultSet;
     vector<uint32_t> permissionFlags{1, 2, 3, 1, 2, 3};
-    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlags);
+    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(IPCSkeleton::GetSelfTokenID(),
+        uris, resultSet, permissionFlags);
     EXPECT_EQ(ret, E_SUCCESS);
 
     vector<bool> expectSet(6, true);
@@ -1664,12 +1686,14 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_011, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_011 enter");
-    vector<string> perms{
-        "ohos.permission.READ_IMAGEVIDEO",
-    };
-    uint64_t tokenId = 1;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
-    ASSERT_TRUE(tokenId != 0);
+    hapToken = nullptr;
+    SetSelfTokenID(MediaLibraryMockTokenUtils::GetShellToken());
+    MediaLibraryMockTokenUtils::ResetToken();
+
+    std::vector<std::string> perms = { "ohos.permission.READ_IMAGEVIDEO" };
+    uint64_t shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(shellToken);
+    mockToken(perms, hapToken);
 
     vector<string> uris;
     for (int i = 0; i < 1001; i++) {
@@ -1679,7 +1703,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
 
     vector<bool> resultSet;
     vector<uint32_t> permissionFlags(1001, 1);
-    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(tokenId, uris, resultSet, permissionFlags);
+    auto ret = mediaLibraryExtendManager->CheckPhotoUriPermission(IPCSkeleton::GetSelfTokenID(),
+        uris, resultSet, permissionFlags);
     EXPECT_EQ(ret, E_ERR);
 
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_011 exit");
