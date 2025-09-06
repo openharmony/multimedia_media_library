@@ -50,13 +50,6 @@ enum class SouthDeviceType : int32_t {
     SOUTH_DEVICE_HDC = 2
 };
 
-const std::unordered_map<int32_t, SouthDeviceType> INT_SOUTH_DEVICE_TYPE_MAP = {
-    {static_cast<int>(SouthDeviceType::SOUTH_DEVICE_NULL), SouthDeviceType::SOUTH_DEVICE_NULL},
-    {static_cast<int>(SouthDeviceType::SOUTH_DEVICE_CLOUD), SouthDeviceType::SOUTH_DEVICE_CLOUD},
-    {static_cast<int>(SouthDeviceType::SOUTH_DEVICE_HDC), SouthDeviceType::SOUTH_DEVICE_HDC},
-};
-
-
 class MediaColumn {
 public:
     // Asset Base Parameter
