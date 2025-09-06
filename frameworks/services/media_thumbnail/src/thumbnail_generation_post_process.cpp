@@ -34,7 +34,9 @@ namespace Media {
 
 int32_t ThumbnailGenerationPostProcess::PostProcess(ThumbnailData& data, const ThumbRdbOpt& opts)
 {
-    CHECK_AND_RETURN_RET_INFO_LOG(!data.rdbUpdateCache.IsEmpty(), E_OK, "RdbUpdateCache is empty, no need update.");
+    CHECK_AND_RETURN_RET_INFO_LOG(!data.rdbUpdateCache.IsEmpty(), E_OK,
+        "RdbUpdateCache is empty, no need update id: %{public}s, path: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
     bool hasGeneratedThumb = HasGeneratedThumb(data);
     MEDIA_INFO_LOG("HasGeneratedThumb: %{public}d id: %{public}s, path: %{public}s",
         hasGeneratedThumb, data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
@@ -104,7 +106,7 @@ int32_t ThumbnailGenerationPostProcess::Notify(const ThumbnailData& data, const 
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "SendThumbNotify watch is nullptr");
     watch->Notify(data.fileUri, notifyType);
     MEDIA_INFO_LOG("ThumbnailGenerationPostProcess::Notify() "
-        "fileUri: %{public}s, notifyType: %{public}d", data.fileUri.c_str(), notifyType);
+        "fileUri: %{public}s, notifyType: %{public}d", DfxUtils::GetSafePath(data.fileUri).c_str(), notifyType);
     return E_OK;
 }
 
