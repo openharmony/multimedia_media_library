@@ -13,17 +13,35 @@
  * limitations under the License.
  */
 
+#include <sstream>
 #include "add_image_dto.h"
+#include "media_log.h"
 
 namespace OHOS::Media {
 
 AddImageDto AddImageDto::Create(const AddImageReqBody &req)
 {
+    MEDIA_INFO_LOG("IPC::Camera addImage: %{public}s.", req.ToString().c_str());
     AddImageDto dto;
     dto.fileId = req.fileId;
     dto.photoId = req.photoId;
     dto.deferredProcType = req.deferredProcType;
+    dto.photoQuality = req.photoQuality;
+    dto.subType = req.subType;
+    MEDIA_INFO_LOG("IPC::Camera addImage: %{public}s.", dto.ToString().c_str());
     return dto;
 }
 
+std::string AddImageDto::ToString() const
+{
+    std::stringstream ss;
+        ss << "{"
+        << "\"fileId\": \"" << std::to_string(this->fileId) << "\","
+        << "\"photoId\": \"" << this->photoId << "\","
+        << "\"deferredProcType\": \"" << std::to_string(this->deferredProcType) << "\","
+        << "\"photoQuality\": \"" << std::to_string(this->photoQuality) << "\","
+        << "\"subType\": \"" << std::to_string(this->subType)
+        << "}";
+    return ss.str();
+}
 }  // namespace OHOS::Media

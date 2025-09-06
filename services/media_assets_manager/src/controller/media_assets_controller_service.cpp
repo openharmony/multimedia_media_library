@@ -492,6 +492,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_COMPOSITE_DISPLAY_MODE),
         &MediaAssetsControllerService::SetCompositeDisplayMode
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CAMERA_INNER_ADD_IMAGE),
+        &MediaAssetsControllerService::CameraInnerAddImage
+    },
 };
 
 bool MediaAssetsControllerService::Accept(uint32_t code)
@@ -910,6 +914,25 @@ int32_t MediaAssetsControllerService::AssetChangeAddImage(MessageParcel &data, M
     }
     auto dto = AddImageDto::Create(reqBody);
     ret = MediaAssetsService::GetInstance().AssetChangeAddImage(dto);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::CameraInnerAddImage(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter CameraInnerAddImage");
+    AddImageReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CameraInnerAddImage Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+
+    if (reqBody.fileId <= 0) {
+        MEDIA_ERR_LOG("params is invalid");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, -EINVAL);
+    }
+    auto dto = AddImageDto::Create(reqBody);
+    ret = MediaAssetsService::GetInstance().CameraInnerAddImage(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 

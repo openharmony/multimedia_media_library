@@ -370,6 +370,13 @@ int32_t MediaAssetsService::AssetChangeAddImage(AddImageDto &dto)
     return E_OK;
 }
 
+int32_t MediaAssetsService::CameraInnerAddImage(AddImageDto &dto)
+{
+    MEDIA_INFO_LOG("enter CameraInnerAddImage");
+    MultiStagesPhotoCaptureManager::GetInstance().AddImage(dto);
+    return E_OK;
+}
+
 int32_t MediaAssetsService::SetCameraShotKey(const int32_t fileId, const std::string &cameraShotKey)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
