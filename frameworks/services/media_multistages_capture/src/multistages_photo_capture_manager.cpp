@@ -334,6 +334,23 @@ void MultiStagesPhotoCaptureManager::AddImage(int32_t fileId, const string &phot
     AddImageInternal(fileId, photoId, deferredProcType, false);
 }
 
+void MultiStagesPhotoCaptureManager::AddImage(AddImageDto &dto)
+{
+    MEDIA_INFO_LOG("Calling AddImage");
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    if (pictureManagerThread == nullptr) {
+        return;
+    }
+    if (dto.photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
+        pictureManagerThread->SavePictureWithImageId(dto.photoId);
+        UpdatePictureQualityByFileId(dto.fileId);
+        return;
+    }
+    AddImage(dto.fileId, dto.photoId, dto.deferredProcType);
+    MultiStagesCaptureDfxTotalTime::GetInstance().AddStartTime(dto.photoId);
+    MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::AUTO);
+}
+
 void MultiStagesPhotoCaptureManager::AddImage(MediaLibraryCommand &cmd)
 {
     MEDIA_DEBUG_LOG("calling addImage");
@@ -394,6 +411,28 @@ int32_t MultiStagesPhotoCaptureManager::UpdatePictureQuality(const std::string &
     updateCmd.SetValueBucket(updateValuesDirty);
     auto isDirtyResult = DatabaseAdapter::Update(updateCmd);
     CHECK_AND_PRINT_LOG(isDirtyResult >= 0, "update dirty flag fail, photoId: %{public}s", photoId.c_str());
+    return updatePhotoQualityResult;
+}
+
+int32_t MultiStagesPhotoCaptureManager::UpdatePictureQualityByFileId(int32_t fileId)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdatePictureQuality " + std::to_string(fileId));
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    NativeRdb::ValuesBucket updateValues;
+    updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+    updateCmd.SetValueBucket(updateValues);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t updatePhotoQualityResult = DatabaseAdapter::Update(updateCmd);
+ 
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, false);
+    updateCmd.GetAbsRdbPredicates()->NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
+        to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+    NativeRdb::ValuesBucket updateValuesDirty;
+    updateValuesDirty.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    updateCmd.SetValueBucket(updateValuesDirty);
+    auto isDirtyResult = DatabaseAdapter::Update(updateCmd);
+    CHECK_AND_PRINT_LOG(isDirtyResult >= 0, "update dirty flag fail, photoId: %{public}d", fileId);
     return updatePhotoQualityResult;
 }
 
