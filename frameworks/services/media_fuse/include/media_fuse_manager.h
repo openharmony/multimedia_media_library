@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,6 +18,8 @@
 
 #include <string>
 #include <sys/stat.h>
+#define FUSE_USE_VERSION 34
+#include <fuse.h>
 
 namespace OHOS {
 namespace Media {
@@ -29,8 +31,15 @@ public:
     void Start();
     void Stop();
     int32_t DoGetAttr(const char *path, struct stat *stbuf);
+    int32_t DoHdcGetAttr(const char *path, struct stat *stbuf, struct fuse_file_info *fi);
     int32_t DoOpen(const char *path, int flags, int &fd);
+    int32_t DoHdcOpen(const char *path, int flags, int &fd);
+    int32_t DoHdcCreate(const char *path, mode_t mode, struct fuse_file_info *fi);
     int32_t DoRelease(const char *path, const int &fd);
+    int32_t DoHdcRelease(const char *path, const int32_t &fd);
+    int32_t DoHdcUnlink(const char *path);
+    int32_t DoHdcReadDir(const char *path, void *buf, fuse_fill_dir_t filler,
+        enum fuse_readdir_flags flags);
 private:
     MediaFuseManager() = default;
     ~MediaFuseManager() = default;
@@ -60,4 +69,3 @@ private:
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIA_FUSE_MANAGER_H
-

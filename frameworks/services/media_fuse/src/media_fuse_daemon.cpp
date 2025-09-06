@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,9 +34,17 @@ namespace Media {
 using namespace std;
 
 static constexpr int32_t FUSE_CFG_MAX_THREADS = 5;
+static constexpr int32_t USER_AND_GROUP_ID = 2000;
+static constexpr int32_t ROOT_AND_GROUP_ID = 0;
 // LCOV_EXCL_START
 static int GetAttr(const char *path, struct stat *stbuf, struct fuse_file_info *fi)
 {
+    fuse_context *ctx = fuse_get_context();
+    CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
+    if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
+        (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
+        return MediaFuseManager::GetInstance().DoHdcGetAttr(path, stbuf, fi);
+    }
     return MediaFuseManager::GetInstance().DoGetAttr(path, stbuf);
 }
 
@@ -49,11 +57,17 @@ static int Open(const char *path, struct fuse_file_info *fi)
         DfxType::FUSE_OPEN, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), OPEN_FILE_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
 
-    int32_t err = MediaFuseManager::GetInstance().DoOpen(path, fi->flags, fd);
-    CHECK_AND_RETURN_RET_LOG(err == 0, err, "Open file failed, path = %{private}s", path);
+    int32_t err = -1;
+    if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
+        (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
+        err = MediaFuseManager::GetInstance().DoHdcOpen(path, fi->flags, fd);
+    } else {
+        err = MediaFuseManager::GetInstance().DoOpen(path, fi->flags, fd);
+    }
 
+    CHECK_AND_RETURN_RET_LOG(err == 0, -ENOENT, "Open failed, path = %{public}s", path);
     fi->fh = static_cast<uint64_t>(fd);
-    return 0;
+    return E_OK;
 }
 
 static int Read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
@@ -92,8 +106,98 @@ static int Release(const char *path, struct fuse_file_info *fi)
         DfxType::FUSE_RELEASE, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
 
-    int32_t err = MediaFuseManager::GetInstance().DoRelease(path, fi->fh);
-    return err;
+    int32_t err = -1;
+    if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
+        (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
+        int fd = static_cast<int32_t>(fi->fh);
+        err = MediaFuseManager::GetInstance().DoHdcRelease(path, fd);
+    } else {
+        err = MediaFuseManager::GetInstance().DoRelease(path, fi->fh);
+    }
+    CHECK_AND_RETURN_RET_LOG(err == 0, -ENOENT, "Release failed, path = %{public}s", path);
+    return E_OK;
+}
+
+static int Create(const char *path, mode_t mode, struct fuse_file_info *fi)
+{
+    fuse_context *ctx = fuse_get_context();
+    CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
+    DfxTimer dfxTimer(
+        DfxType::FUSE_CREATE, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
+    dfxTimer.SetCallerUid(ctx->uid);
+
+    int32_t err = -1;
+    if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
+        (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
+        err = MediaFuseManager::GetInstance().DoHdcCreate(path, mode, fi);
+    }
+    CHECK_AND_RETURN_RET_LOG(err == 0, err, "Create file failed, path = %{private}s", path);
+    return E_OK;
+}
+
+static int Unlink(const char *path)
+{
+    fuse_context *ctx = fuse_get_context();
+    CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
+    DfxTimer dfxTimer(
+        DfxType::FUSE_UNLINK, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
+    dfxTimer.SetCallerUid(ctx->uid);
+
+    int32_t err = -1;
+    if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
+        (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
+        err = MediaFuseManager::GetInstance().DoHdcUnlink(path);
+    }
+    CHECK_AND_RETURN_RET_LOG(err == 0, -ENOENT, "Unlink: DoHdcUnlink failed, path = %{public}s", path);
+    return E_OK;
+}
+
+static int OpenDir(const char *path, struct fuse_file_info *fi)
+{
+    fuse_context *ctx = fuse_get_context();
+    CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
+    DfxTimer dfxTimer(
+        DfxType::FUSE_OPENDIR, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
+    dfxTimer.SetCallerUid(ctx->uid);
+
+    if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
+        (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
+        return E_OK;
+    }
+    return E_ERR;
+}
+
+static int ReadDir(const char *path, void *buf, fuse_fill_dir_t fullDir, off_t offset,
+    struct fuse_file_info *fi, enum fuse_readdir_flags flags)
+{
+    fuse_context *ctx = fuse_get_context();
+    CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
+    DfxTimer dfxTimer(
+        DfxType::FUSE_READDIR, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
+    dfxTimer.SetCallerUid(ctx->uid);
+
+    int32_t err = -1;
+    if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
+        (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
+        err = MediaFuseManager::GetInstance().DoHdcReadDir(path, buf, fullDir, FUSE_READDIR_PLUS);
+    }
+    CHECK_AND_RETURN_RET_LOG(err == 0, -ENOENT, "DoHdcReadDir failed, path = %{public}s", path);
+    return E_OK;
+}
+
+static int ReleaseDir(const char *path, struct fuse_file_info *fi)
+{
+    fuse_context *ctx = fuse_get_context();
+    CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
+    DfxTimer dfxTimer(
+        DfxType::FUSE_RELEASEDIR, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
+    dfxTimer.SetCallerUid(ctx->uid);
+
+    if ((ctx->uid == USER_AND_GROUP_ID && ctx->gid == USER_AND_GROUP_ID) ||
+        (ctx->uid == ROOT_AND_GROUP_ID && ctx->gid == ROOT_AND_GROUP_ID)) {
+        return E_OK;
+    }
+    return E_ERR;
 }
 
 static const struct fuse_operations high_ops = {
@@ -102,6 +206,11 @@ static const struct fuse_operations high_ops = {
     .read       = Read,
     .write      = Write,
     .release    = Release,
+    .opendir    = OpenDir,
+    .create     = Create,
+    .readdir    = ReadDir,
+    .unlink     = Unlink,
+    .releasedir = ReleaseDir,
 };
 
 int32_t MediaFuseDaemon::StartFuse()
@@ -161,4 +270,3 @@ void MediaFuseDaemon::DaemonThread()
 // LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
-

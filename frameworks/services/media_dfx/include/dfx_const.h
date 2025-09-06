@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -99,7 +99,12 @@ enum DfxType {
     FUSE_OPEN = 1500,
     FUSE_RELEASE,
     FUSE_WRITE,
-    FUSE_READ
+    FUSE_READ,
+    FUSE_CREATE,
+    FUSE_UNLINK,
+    FUSE_OPENDIR,
+    FUSE_READDIR,
+    FUSE_RELEASEDIR
 };
 
 const std::string NULL_STRING = "";
