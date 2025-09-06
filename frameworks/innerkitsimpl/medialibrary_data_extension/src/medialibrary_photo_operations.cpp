@@ -95,6 +95,7 @@
 #include "medialibrary_data_manager.h"
 #include "shooting_mode_column.h"
 #include "refresh_business_name.h"
+#include "medialibrary_bundle_manager.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -167,6 +168,7 @@ public:
     DeleteBehaviorTaskData() = default;
     ~DeleteBehaviorTaskData() override = default;
 
+    std::string bundleName_;
     vector<string> notifyUris_;
     int32_t updatedRows_;
 };
@@ -1046,7 +1048,7 @@ static void DeleteBehaviorAsync(AsyncTaskData *data)
     GetAlbumNamesById(filesParams);
     DeleteBehaviorData dataInfo {filesParams.displayNames, filesParams.albumNames, filesParams.ownerAlbumIds};
     DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::TRASH_PHOTO,
-        taskData->updatedRows_, taskData->notifyUris_, "", dataInfo);
+        taskData->updatedRows_, taskData->notifyUris_, taskData->bundleName_, dataInfo);
 }
 
 static void HandleQualityAndHiddenSingle(NativeRdb::AbsRdbPredicates predicates,  const vector<string> &fileIds,
@@ -1138,7 +1140,6 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     HandleQualityAndHidden(rdbPredicate, fileIds, albumData);
 
     // 1、AssetRefresh -> Init(rdbPredicate)
-
     UpdateSourcePath(fileIds);
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
@@ -1169,6 +1170,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET_LOG(taskData != nullptr, updatedRows, "Failed to alloc async data!");
     taskData->notifyUris_ = move(notifyUris);
     taskData->updatedRows_ = updatedRows;
+    taskData->bundleName_ = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(DeleteBehaviorAsync, taskData);
     asyncWorker->AddTask(asyncTask, false);
     return updatedRows;
