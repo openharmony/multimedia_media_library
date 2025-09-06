@@ -121,7 +121,8 @@ void AssetMapClone::ParseAssetMapResultSet(
     const std::shared_ptr<NativeRdb::ResultSet>& resultSet, AssetMapTbl& assetMapTbl)
 {
     // Read original values from source database
-    std::optional<int32_t> originalFileId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ASSET_MAP_COL_FILE_ID);
+    std::optional<int32_t> originalFileId =
+        BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ASSET_MAP_COL_FILE_ID);
     assetMapTbl.OldFileId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ASSET_MAP_COL_FILE_ID);
     assetMapTbl.OldData = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ASSET_MAP_COL_DATA);
  
@@ -133,7 +134,7 @@ void AssetMapClone::ParseAssetMapResultSet(
             assetMapTbl.fileId = it->second.fileIdNew;
             assetMapTbl.data = it->second.cloudPath;
         } else {
-            MEDIA_WARN_LOG("Original fileId %{public}d not found in photoInfoMap_, cannot generate new fileId.", oldFileId);
+            MEDIA_WARN_LOG("Original fileId %{public}d not found in photoInfoMap_", oldFileId);
         }
     }
 }
