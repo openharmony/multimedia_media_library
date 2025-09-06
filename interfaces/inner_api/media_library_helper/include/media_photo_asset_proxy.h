@@ -73,6 +73,7 @@ private:
     static std::string LocationValueToString(double value);
     
     static void SetPhotoIdForAsset(const sptr<PhotoProxy> &photoProxy, DataShare::DataShareValuesBucket &values);
+    static std::string GetPhotoIdForAsset(const sptr<PhotoProxy> &photoProxy);
 
     sptr<PhotoProxy> photoProxy_;
     int32_t fileId_ {0};

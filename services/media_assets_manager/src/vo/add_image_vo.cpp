@@ -13,21 +13,56 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "MediaAddImage"
 #include "add_image_vo.h"
 
 #include <sstream>
 
 #include "itypes_util.h"
+#include "media_log.h"
 
 namespace OHOS::Media {
 
 bool AddImageReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return ITypesUtil::Unmarshal(parcel, fileId, photoId, deferredProcType);
+    bool status = parcel.ReadInt32(this->fileId);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadString(this->photoId);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadInt32(this->deferredProcType);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadInt32(this->photoQuality);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadInt32(this->subType);
+    CHECK_AND_RETURN_RET(status, subType);
+    return true;
 }
 
 bool AddImageReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return ITypesUtil::Marshal(parcel, fileId, photoId, deferredProcType);
+    bool status = parcel.WriteInt32(this->fileId);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteString(this->photoId);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteInt32(this->deferredProcType);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteInt32(this->photoQuality);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteInt32(this->subType);
+    CHECK_AND_RETURN_RET(status, subType);
+    return true;
+}
+
+std::string AddImageReqBody::ToString() const
+{
+    std::stringstream ss;
+    ss << "{"
+       << "\"fileId\": \"" << std::to_string(this->fileId) << "\","
+       << "\"photoId\": \"" << this->photoId << "\","
+       << "\"deferredProcType\": \"" << std::to_string(this->deferredProcType) << "\","
+       << "\"photoQuality\": \"" << std::to_string(this->photoQuality) << "\","
+       << "\"subType\": \"" << std::to_string(this->subType)
+       << "}";
+    return ss.str();
 }
 }  // namespace OHOS::Media

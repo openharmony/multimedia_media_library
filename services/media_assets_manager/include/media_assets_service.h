@@ -91,6 +91,7 @@ public:
     int32_t AssetChangeSubmitCache(SubmitCacheDto &dto);
     int32_t AssetChangeCreateAsset(AssetChangeCreateAssetDto &dto);
     int32_t AssetChangeAddImage(AddImageDto &dto);
+    int32_t CameraInnerAddImage(AddImageDto &dto);
     int32_t SetCameraShotKey(const int32_t fileId, const std::string &cameraShotKey);
     int32_t SaveCameraPhoto(const SaveCameraPhotoDto &dto);
     int32_t DiscardCameraPhoto(const int32_t fileId);

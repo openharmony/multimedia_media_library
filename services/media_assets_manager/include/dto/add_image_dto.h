@@ -24,8 +24,12 @@ public:
     int32_t fileId{0};
     std::string photoId;
     int32_t deferredProcType;
+    int32_t photoQuality;
+    int32_t subType;
 
+public:
     static AddImageDto Create(const AddImageReqBody &req);
+    std::string ToString() const;
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_ASSETS_MANAGER_ADD_IMAGE_DTO_H
