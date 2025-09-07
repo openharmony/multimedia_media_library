@@ -3466,7 +3466,7 @@ static void GetOldUriQueryResult(napi_env env, MediaLibraryAsyncContext *context
     napi_value fileResult = GetOldUriMap(env, context);
 
     if (fileResult == nullptr) {
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
         MediaLibraryNapiUtils::CreateNapiErrorObject(
             env, jsContext->error, ERR_INVALID_OUTPUT,
             "Failed to create js object for Fetch Album Result"
@@ -3476,25 +3476,25 @@ static void GetOldUriQueryResult(napi_env env, MediaLibraryAsyncContext *context
 
     jsContext->data = fileResult;
     jsContext->status = true;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
 }
 
-static void JSGetPhotoAlbumsCompleteCallbackforOldUri(napi_env env, napi_status status, void *data)
+static void JSGetAssetsByOldUrisCompleteCallback(napi_env env, napi_status status, void *data)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("JSGetPhotoAlbumsCompleteCallbackforOldUri");
+    tracer.Start("JSGetAssetsByOldUrisCompleteCallback");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
 
     if (context->error == ERR_DEFAULT) {
         napi_value mapNapiValue {nullptr};
         napi_create_map(env, &mapNapiValue);
         jsContext->data = mapNapiValue;
         jsContext->status = true;
-        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
     }
 
     GetOldUriQueryResult(env, context, jsContext);
@@ -3509,57 +3509,58 @@ static void JSGetPhotoAlbumsCompleteCallbackforOldUri(napi_env env, napi_status 
     delete context;
 }
 
+static std::string GetNewUriByOldUri(const std::string &oldUri)
+{
+    std::string fileIdOld = MediaFileUtils::GetIdFromUri(oldUri);
+    CHECK_COND_RET(!fileIdOld.empty(), "", "Failed to extract fileId from URI: %{private}s", oldUri.c_str());
+
+    DataSharePredicates predicates;
+    predicates.EqualTo(TabOldPhotosColumn::MEDIA_OLD_ID, fileIdOld);
+    predicates.OrderByDesc(TabOldPhotosColumn::MEDIA_CLONE_SEQUENCE);
+    predicates.Limit(1, 0);
+
+    std::vector<std::string> columns = { TabOldPhotosColumn::MEDIA_ID, TabOldPhotosColumn::MEDIA_FILE_PATH,
+        TabOldPhotosColumn::MEDIA_OLD_ID, TabOldPhotosColumn::MEDIA_OLD_FILE_PATH };
+    Uri uri(QUERY_TAB_OLD_PHOTO);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    CHECK_COND_RET(resultSet != nullptr, "",
+        "Failed to query fileIdNew for fileIdOld: %{public}s: resultSet is nullptr", fileIdOld.c_str());
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return "";
+    }
+
+    int32_t fileIdNew = GetInt32Val(TabOldPhotosColumn::MEDIA_ID, resultSet);
+    std::string data = GetStringVal(TabOldPhotosColumn::MEDIA_FILE_PATH, resultSet);
+    resultSet->Close();
+
+    DataSharePredicates photoPredicates;
+    photoPredicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileIdNew));
+    std::vector<std::string> photoColumns = {MediaColumn::MEDIA_NAME};
+    Uri photoUri(PAH_QUERY_PHOTO);
+    auto photoResultSet = UserFileClient::Query(photoUri, photoPredicates, photoColumns, errCode);
+    CHECK_COND_RET(photoResultSet != nullptr, "",
+        "Failed to query displayName for fileIdNew: %{public}d: resultSet is nullptr", fileIdNew);
+    if (photoResultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        photoResultSet->Close();
+        return "";
+    }
+
+    std::string displayName = GetStringVal(MediaColumn::MEDIA_NAME, photoResultSet);
+    photoResultSet->Close();
+    return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
+        std::to_string(fileIdNew), MediaFileUtils::GetExtraUri(displayName, data));
+}
+
 static void PhotoAccessGetAssetsByOldUrisExecute(napi_env env, void *data)
 {
     auto *context = static_cast<MediaLibraryAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     std::map<std::string, std::string> resultMap;
-
     for (const auto& oldUri : context->uris) {
-        std::string fileIdOld = MediaFileUtils::GetIdFromUri(oldUri);
-
-        if (fileIdOld.empty()) {
-            NAPI_ERR_LOG("Failed to extract fileId from URI: %{public}s", oldUri.c_str());
-            continue;
-        }
-
-        DataSharePredicates predicates;
-        predicates.EqualTo(TabOldPhotosColumn::MEDIA_OLD_ID, fileIdOld);
-        predicates.OrderByDesc(TabOldPhotosColumn::MEDIA_CLONE_SEQUENCE);
-        predicates.Limit(0, 1);
-
-        std::vector<std::string> columns = { TabOldPhotosColumn::MEDIA_ID, TabOldPhotosColumn::MEDIA_FILE_PATH,
-            TabOldPhotosColumn::MEDIA_OLD_ID, TabOldPhotosColumn::MEDIA_OLD_FILE_PATH };
-        Uri uri(QUERY_TAB_OLD_PHOTO);
-        int errCode = 0;
-        auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-            NAPI_ERR_LOG("Failed to query tab_old_photos for fileIdOld: %{public}s", fileIdOld.c_str());
-            context->SaveError(errCode);
-            return;
-        }
-
-        int32_t fileIdNew = GetInt32Val(TabOldPhotosColumn::MEDIA_ID, resultSet);
-        std::string data = GetStringVal(TabOldPhotosColumn::MEDIA_FILE_PATH, resultSet);
-
-        DataSharePredicates photoPredicates;
-        photoPredicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileIdNew));
-
-        std::vector<std::string> photoColumns = {MediaColumn::MEDIA_NAME};
-        Uri photoUri(PAH_QUERY_PHOTO);
-        auto photoResultSet = UserFileClient::Query(photoUri, photoPredicates, photoColumns, errCode);
-
-        std::string displayName;
-        if (photoResultSet != nullptr && photoResultSet->GoToFirstRow() == NativeRdb::E_OK) {
-            displayName = GetStringVal(MediaColumn::MEDIA_NAME, photoResultSet);
-        } else {
-            context->SaveError(errCode);
-            return;
-        }
-
-        std::string newUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-            std::to_string(fileIdNew), MediaFileUtils::GetExtraUri(displayName, data));
+        std::string newUri = GetNewUriByOldUri(oldUri);
         resultMap[oldUri] = newUri;
         NAPI_DEBUG_LOG("Successfully mapped oldUri:%{public}s to newUri:%{public}s", oldUri.c_str(), newUri.c_str());
     }
@@ -3610,22 +3611,17 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssetsByOldUris(napi_env env, na
     tracer.Start("PhotoAccessGetPhotoAssetsByOldUris");
 
     std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
-    asyncContext->assetType = TYPE_PHOTO;
-
     CHECK_NULLPTR_RET(ParseArgsGetAssetsByOldUris(env, info, asyncContext));
 
-    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_ASSETS);
     SetUserIdFromObjectInfo(asyncContext);
-
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(
         env,
         asyncContext,
         "PhotoAccessGetPhotoAssetsByOldUris",
         PhotoAccessGetAssetsByOldUrisExecute,
-        JSGetPhotoAlbumsCompleteCallbackforOldUri
+        JSGetAssetsByOldUrisCompleteCallback
     );
 }
-
 
 napi_value MediaLibraryNapi::UserFileMgrOffCallback(napi_env env, napi_callback_info info)
 {

@@ -35,6 +35,7 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_old_photos_column.h"
 #include "media_remote_thumbnail_column.h"
 #include "media_smart_album_column.h"
 #include "medialibrary_album_fusion_utils.h"
@@ -5233,7 +5234,8 @@ static void AddAnalysisProgress(RdbStore &store)
 static void AddCloneSequenceColumns(RdbStore &store)
 {
     const vector<string> sqls = {
-        "ALTER TABLE " + PhotoColumn::TAB_OLD_PHOTOS_TABLE + " ADD COLUMN clone_sequence INT"
+        "ALTER TABLE " + TabOldPhotosColumn::OLD_PHOTOS_TABLE + " ADD COLUMN " +
+            TabOldPhotosColumn::MEDIA_CLONE_SEQUENCE + " INTEGER"
     };
     MEDIA_INFO_LOG("add tab_old_photos clone_sequence columns start");
     ExecSqls(sqls, store);
