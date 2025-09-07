@@ -69,8 +69,8 @@ public:
     EXPORT static void SetParameterToStartSync();
     EXPORT static int32_t CleanInvalidCloudAlbumAndData(bool isBackgroundExecute = false);
     EXPORT static int32_t CloneSingleAsset(const int64_t &assetId, const std::string title);
-    EXPORT static int32_t ConvertFormatAsset(const int64_t &assetId, const std::string &title,
-        const std::string &extension);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> ConvertFormatAsset(const int64_t &assetId,
+        const std::string &title, const std::string &extension);
     EXPORT static int32_t CreateTmpCompatibleDup(int32_t fileId, const std::string &path, size_t &size,
         int32_t &dupExist);
     EXPORT static int32_t CopyLocalSingleFile(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,

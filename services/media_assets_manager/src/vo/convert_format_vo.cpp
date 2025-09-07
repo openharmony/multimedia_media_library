@@ -55,4 +55,17 @@ string ConvertFormatReqBody::ToString() const
         << "}";
     return ss.str();
 }
+bool ConvertFormatRespBody::Unmarshalling(MessageParcel &parcel)
+{
+    resultSet = DataShare::DataShareResultSet::Unmarshal(parcel);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultSet Unmarshal failed");
+    return true;
+}
+
+bool ConvertFormatRespBody::Marshalling(MessageParcel &parcel) const
+{
+    bool status = resultSet == nullptr || !DataShare::DataShareResultSet::Marshal(resultSet, parcel);
+    CHECK_AND_RETURN_RET_LOG(!status, false, "resultSet marshal failed");
+    return true;
+}
 } // namespace OHOS::Media

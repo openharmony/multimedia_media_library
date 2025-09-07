@@ -1050,13 +1050,17 @@ int32_t MediaAssetsService::CloneAsset(const CloneAssetDto& cloneAssetDto)
     return MediaLibraryAlbumFusionUtils::CloneSingleAsset(fileId, title);
 }
 
-int32_t MediaAssetsService::ConvertFormat(const ConvertFormatDto& convertFormatDto)
+shared_ptr<DataShare::DataShareResultSet> MediaAssetsService::ConvertFormat(const ConvertFormatDto& convertFormatDto)
 {
     MEDIA_INFO_LOG("ConvertFormat: %{public}s", convertFormatDto.ToString().c_str());
     int32_t fileId = convertFormatDto.fileId;
     std::string title = convertFormatDto.title;
     std::string extension = convertFormatDto.extension;
-    return MediaLibraryAlbumFusionUtils::ConvertFormatAsset(fileId, title, extension);
+    
+    auto resultSet = MediaLibraryAlbumFusionUtils::ConvertFormatAsset(fileId, title, extension);
+    CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to ConvertFormatAsset");
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+    return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 }
 
 int32_t MediaAssetsService::CreateTmpCompatibleDup(const CreateTmpCompatibleDupDto &createTmpCompatibleDupDto)
