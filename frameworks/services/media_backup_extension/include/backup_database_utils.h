@@ -127,7 +127,7 @@ public:
     static std::unordered_map<int32_t, int32_t> QueryMediaTypeCount(
         const std::shared_ptr<NativeRdb::RdbStore>& rdbStore, const std::string& querySql);
     static std::shared_ptr<NativeRdb::ResultSet> QuerySql(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
-        const std::string &querySql, const std::vector<NativeRdb::ValueObject> &params);
+        const std::string &querySql, const std::vector<NativeRdb::ValueObject> &params = {});
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
     template <typename T>
@@ -140,6 +140,9 @@ public:
     template <typename T>
     static std::optional<T> GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::string &columnName);
+    template <typename T>
+    static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
+        const std::optional<T>& optionalValue);
     static void UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::vector<int32_t> QueryIntVec(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::string& sql, const std::string& columnName);
@@ -255,6 +258,25 @@ std::optional<T> BackupDatabaseUtils::GetOptionalValue(const std::shared_ptr<Nat
     }
 
     return errCode ? std::nullopt : std::optional<T>(value);
+}
+
+template <typename T>
+void BackupDatabaseUtils::PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
+    const std::optional<T>& optionalValue)
+{
+    if (optionalValue.has_value()) {
+        if constexpr (std::is_same_v<std::decay_t<T>, int32_t>) {
+            values.PutInt(columnName, optionalValue.value());
+        } else if constexpr (std::is_same_v<std::decay_t<T>, int64_t>) {
+            values.PutLong(columnName, optionalValue.value());
+        } else if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
+            values.PutString(columnName, optionalValue.value());
+        } else if constexpr (std::is_same_v<std::decay_t<T>, double>) {
+            values.PutDouble(columnName, optionalValue.value());
+        }  else if constexpr (std::is_same_v<std::decay_t<T>, std::vector<uint8_t>>) {
+            values.PutBlob(columnName, optionalValue.value());
+        }
+    }
 }
 } // namespace Media
 } // namespace OHOS

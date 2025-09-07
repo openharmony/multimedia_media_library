@@ -24,8 +24,10 @@
 #include "backup_log_utils.h"
 #include "clone_restore_classify.h"
 #include "clone_restore_cv_analysis.h"
+#include "clone_restore_portrait_album.h"
 #include "clone_restore_highlight.h"
 #include "clone_restore_geo.h"
+#include "clone_restore_group_photo.h"
 #include "cloud_sync_utils.h"
 #include "database_report.h"
 #include "exif_rotate_utils.h"
@@ -649,10 +651,6 @@ void CloneRestore::RestorePhotoForCloud()
     ffrt::wait();
     ProcessCloudPhotosFailedOffsets();
     this->photosClone_.OnStop(otherTotalNumber_, otherProcessStatus_);
-
-    BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
-    BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
-    ReportPortraitCloneStat(sceneCode_);
 }
 
 void CloneRestore::RestoreAlbum()
@@ -660,8 +658,6 @@ void CloneRestore::RestoreAlbum()
     MEDIA_INFO_LOG("Start clone restore: albums");
     maxSearchId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
         ANALYSIS_SEARCH_INDEX_TABLE, SEARCH_IDX_COL_ID);
-    maxAnalysisAlbumId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
-        ANALYSIS_ALBUM_TABLE, ANALYSIS_COL_ALBUM_ID);
     maxBeautyFileId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
         ANALYSIS_BEAUTY_SCORE_TABLE, BEAUTY_SCORE_COL_FILE_ID);
 
@@ -690,8 +686,6 @@ void CloneRestore::RestoreAlbum()
         UpdateSystemAlbumColumns(tableName);
     }
 
-    RestoreFromGalleryPortraitAlbum();
-    RestorePortraitClusteringInfo();
     cloneRestoreGeoDictionary_.RestoreAlbums();
 }
 
@@ -1912,14 +1906,12 @@ void CloneRestore::RestoreGallery()
         (long long)migratePhotoDuplicateNumber_, (long long)migrateVideoDuplicateNumber_,
         (long long)migrateDatabaseAlbumNumber_, (long long)migrateDatabaseMapNumber_);
     MEDIA_INFO_LOG("singlCloud Start update group tags");
-    BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
-    BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
-    BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
     RestoreAnalysisClassify();
     RestoreAnalysisGeo();
+    RestoreAnalysisPortrait();
+    RestoreGroupPhoto();
     cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
     RestoreAnalysisData();
-    ReportPortraitCloneStat(sceneCode_);
     InheritManualCover();
 }
 
@@ -2290,11 +2282,7 @@ void CloneRestore::RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap
         "start restore photo, offset: %{public}d, isRelatedToPhotoMap: %{public}d", offset, isRelatedToPhotoMap);
     vector<FileInfo> fileInfos = QueryFileInfos(offset, isRelatedToPhotoMap);
     CHECK_AND_EXECUTE(InsertPhoto(fileInfos) == E_OK, AddToPhotosFailedOffsets(offset));
-    RestoreImageFaceInfo(fileInfos);
 
-    auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
-    BackupDatabaseUtils::UpdateAnalysisTotalTblNoFaceStatus(mediaLibraryRdb_, mediaRdb_, fileIdPairs);
-    BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
     MEDIA_INFO_LOG("end restore photo, offset: %{public}d", offset);
 }
 
@@ -2305,11 +2293,7 @@ void CloneRestore::RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhoto
     vector<FileInfo> fileInfos = QueryCloudFileInfos(offset, isRelatedToPhotoMap);
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, fileInfos, SourceType::PHOTOS) == E_OK,
         AddToPhotosFailedOffsets(offset));
-    RestoreImageFaceInfo(fileInfos);
 
-    auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
-    BackupDatabaseUtils::UpdateAnalysisTotalTblNoFaceStatus(mediaLibraryRdb_, mediaRdb_, fileIdPairs);
-    BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
     MEDIA_INFO_LOG("singleCloud end restore photo, offset: %{public}d", offset);
 }
 
@@ -2512,155 +2496,6 @@ bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInf
     return ExtraCheckForCloneSameFile(fileInfo, rowData);
 }
 
-void CloneRestore::RestoreFromGalleryPortraitAlbum()
-{
-    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-    RecordOldPortraitAlbumDfx();
-
-    std::string querySql =   "SELECT count(1) AS count FROM " + ANALYSIS_ALBUM_TABLE + " WHERE ";
-    std::string whereClause = "(" + SMARTALBUM_DB_ALBUM_TYPE + " = " + std::to_string(SMART) + " AND " +
-        "album_subtype" + " = " + std::to_string(PORTRAIT) + ")";
-    AppendExtraWhereClause(whereClause, ANALYSIS_ALBUM_TABLE);
-    querySql += whereClause;
-
-    int32_t totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb_, querySql, CUSTOM_COUNT);
-    MEDIA_INFO_LOG("QueryPortraitAlbum totalNumber = %{public}d", totalNumber);
-
-    std::vector<std::string> commonColumn = BackupDatabaseUtils::GetCommonColumnInfos(mediaRdb_, mediaLibraryRdb_,
-        ANALYSIS_ALBUM_TABLE);
-    std::vector<std::string> commonColumns = BackupDatabaseUtils::filterColumns(commonColumn,
-        EXCLUDED_PORTRAIT_COLUMNS);
-
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        std::vector<AnalysisAlbumTbl> analysisAlbumTbl = QueryPortraitAlbumTbl(offset, commonColumns);
-        for (const auto& album : analysisAlbumTbl) {
-            if (album.tagId.has_value() && album.coverUri.has_value()) {
-                coverUriInfo_.emplace_back(album.tagId.value(),
-                    std::make_pair(album.coverUri.value(),
-                    album.isCoverSatisfied.value_or(INVALID_COVER_SATISFIED_STATUS)));
-            }
-        }
-
-        InsertPortraitAlbum(analysisAlbumTbl, maxAnalysisAlbumId_);
-    }
-
-    LogPortraitCloneDfx();
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    migratePortraitTotalTimeCost_ += end - start;
-}
-
-vector<AnalysisAlbumTbl> CloneRestore::QueryPortraitAlbumTbl(int32_t offset,
-    const std::vector<std::string>& commonColumns)
-{
-    vector<AnalysisAlbumTbl> result;
-    result.reserve(QUERY_COUNT);
-
-    std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
-    std::string querySql =
-        "SELECT " + inClause +
-        " FROM " + ANALYSIS_ALBUM_TABLE +
-        " WHERE ";
-    std::string whereClause = "(" +
-        SMARTALBUM_DB_ALBUM_TYPE + " = " + std::to_string(SMART) + " AND " +
-        "album_subtype" + " = " + std::to_string(PORTRAIT) + ")";
-    AppendExtraWhereClause(whereClause, ANALYSIS_ALBUM_TABLE);
-    querySql += whereClause;
-    querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
-
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
-
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        AnalysisAlbumTbl analysisAlbumTbl;
-        ParsePortraitAlbumResultSet(resultSet, analysisAlbumTbl);
-        result.emplace_back(analysisAlbumTbl);
-    }
-    resultSet->Close();
-    return result;
-}
-
-void CloneRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    AnalysisAlbumTbl &analysisAlbumTbl)
-{
-    analysisAlbumTbl.albumType = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_ALBUM_TYPE);
-    analysisAlbumTbl.albumSubtype = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
-        ANALYSIS_COL_ALBUM_SUBTYPE);
-    analysisAlbumTbl.albumName = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_ALBUM_NAME);
-    analysisAlbumTbl.coverUri = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_COVER_URI);
-    analysisAlbumTbl.tagId = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_TAG_ID);
-    analysisAlbumTbl.userOperation = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
-        ANALYSIS_COL_USER_OPERATION);
-    analysisAlbumTbl.groupTag = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_GROUP_TAG);
-    analysisAlbumTbl.userDisplayLevel = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
-        ANALYSIS_COL_USER_DISPLAY_LEVEL);
-    analysisAlbumTbl.isMe = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_ME);
-    analysisAlbumTbl.isRemoved = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_REMOVED);
-    analysisAlbumTbl.renameOperation = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
-        ANALYSIS_COL_RENAME_OPERATION);
-    analysisAlbumTbl.isLocal = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_IS_LOCAL);
-    analysisAlbumTbl.isCoverSatisfied = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
-        ANALYSIS_COL_IS_COVER_SATISFIED);
-    analysisAlbumTbl.relationship = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
-        ANALYSIS_COL_RELATIONSHIP);
-}
-
-void CloneRestore::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, FaceTagTbl& faceTagTbl)
-{
-    faceTagTbl.tagId = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_TAG_ID);
-    faceTagTbl.tagName = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_TAG_NAME);
-    faceTagTbl.groupTag = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_GROUP_TAG);
-    faceTagTbl.centerFeatures = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
-        FACE_TAG_COL_CENTER_FEATURES);
-    faceTagTbl.tagVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, FACE_TAG_COL_TAG_VERSION);
-    faceTagTbl.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
-        FACE_TAG_COL_ANALYSIS_VERSION);
-}
-
-void CloneRestore::InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl, int64_t maxAlbumId)
-{
-    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
-    CHECK_AND_RETURN_LOG(!analysisAlbumTbl.empty(), "analysisAlbumTbl are empty");
-
-    std::vector<std::string> albumNames;
-    std::vector<std::string> tagIds;
-
-    for (const auto &album : analysisAlbumTbl) {
-        CHECK_AND_EXECUTE(!album.albumName.has_value(), albumNames.emplace_back(album.albumName.value()));
-        CHECK_AND_EXECUTE(!album.tagId.has_value(), tagIds.emplace_back(album.tagId.value()));
-    }
-    MEDIA_INFO_LOG("Total albums: %{public}zu, Albums with names: %{public}zu, Albums with tagIds: %{public}zu",
-                   analysisAlbumTbl.size(), albumNames.size(), tagIds.size());
-
-    CHECK_AND_RETURN_LOG(BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(maxAlbumId, albumNames,
-        tagIds, mediaLibraryRdb_), "Batch delete failed.");
-
-    int32_t albumRowNum = InsertPortraitAlbumByTable(analysisAlbumTbl);
-    CHECK_AND_PRINT_LOG(albumRowNum != E_ERR, "Failed to insert album");
-
-    migratePortraitAlbumNumber_ += static_cast<uint64_t>(albumRowNum);
-    return;
-}
-
-int32_t CloneRestore::InsertPortraitAlbumByTable(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl)
-{
-    std::vector<NativeRdb::ValuesBucket> valuesBuckets = GetInsertValues(analysisAlbumTbl);
-
-    int64_t rowNum = 0;
-    int32_t ret = BatchInsertWithRetry(ANALYSIS_ALBUM_TABLE, valuesBuckets, rowNum);
-    CHECK_AND_RETURN_RET(ret == E_OK, E_ERR);
-    return rowNum;
-}
-
-std::vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl)
-{
-    std::vector<NativeRdb::ValuesBucket> values;
-    for (auto &portraitAlbumInfo : analysisAlbumTbl) {
-        NativeRdb::ValuesBucket value = GetInsertValue(portraitAlbumInfo);
-        values.emplace_back(value);
-    }
-    return values;
-}
-
 NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const AnalysisAlbumTbl &portraitAlbumInfo)
 {
     NativeRdb::ValuesBucket values;
@@ -2679,555 +2514,6 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const AnalysisAlbumTbl &por
     PutIfPresent(values, ANALYSIS_COL_RELATIONSHIP, portraitAlbumInfo.relationship);
 
     return values;
-}
-
-NativeRdb::ValuesBucket CloneRestore::CreateValuesBucketFromFaceTagTbl(const FaceTagTbl& faceTagTbl)
-{
-    NativeRdb::ValuesBucket values;
-
-    PutIfPresent(values, FACE_TAG_COL_TAG_ID, faceTagTbl.tagId);
-    PutIfPresent(values, FACE_TAG_COL_TAG_NAME, faceTagTbl.tagName);
-    PutIfPresent(values, FACE_TAG_COL_CENTER_FEATURES, faceTagTbl.centerFeatures);
-    PutIfPresent(values, FACE_TAG_COL_TAG_VERSION, faceTagTbl.tagVersion);
-    PutIfPresent(values, FACE_TAG_COL_ANALYSIS_VERSION, faceTagTbl.analysisVersion);
-
-    return values;
-}
-
-std::vector<PortraitAlbumDfx> CloneRestore::QueryAllPortraitAlbum(int32_t& offset, int32_t& rowCount)
-{
-    std::vector<PortraitAlbumDfx> result;
-    result.reserve(QUERY_COUNT);
-
-    const std::string querySql = "SELECT album_name, cover_uri, tag_id, count "
-        "FROM AnalysisAlbum "
-        "WHERE album_type = ? "
-        "AND album_subtype = ? "
-        "LIMIT ?, ?";
-
-    std::vector<NativeRdb::ValueObject> bindArgs = { SMART, PORTRAIT, offset, QUERY_COUNT };
-    CHECK_AND_RETURN_RET_LOG(this->mediaRdb_ != nullptr, result, "Media_Restore: mediaRdb_ is null.");
-    auto resultSet = mediaRdb_->QuerySql(querySql, bindArgs);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
-
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        PortraitAlbumDfx dfxInfo;
-        dfxInfo.albumName = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_ALBUM_NAME);
-        dfxInfo.coverUri = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_COVER_URI);
-        dfxInfo.tagId = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_TAG_ID);
-        dfxInfo.count = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_COUNT);
-
-        result.push_back(dfxInfo);
-    }
-    resultSet->GetRowCount(rowCount);
-    resultSet->Close();
-    return result;
-}
-
-void CloneRestore::RecordOldPortraitAlbumDfx()
-{
-    int32_t offset {0};
-    int32_t rowCount {0};
-    std::vector<PortraitAlbumDfx> albums;
-
-    do {
-        auto batchResults =  QueryAllPortraitAlbum(offset, rowCount);
-        if (!batchResults.empty()) {
-            albums.insert(albums.end(), batchResults.begin(), batchResults.end());
-        }
-
-        offset += QUERY_COUNT;
-    } while (rowCount > 0);
-
-    for (const auto& album : albums) {
-        PortraitAlbumDfx dfxInfo;
-        if (album.albumName.has_value()) {
-            dfxInfo.albumName = album.albumName.value();
-        }
-        if (album.coverUri.has_value()) {
-            auto uriParts = BackupDatabaseUtils::SplitString(album.coverUri.value(), '/');
-            if (uriParts.size() >= COVER_URI_NUM) {
-                std::string fileName = uriParts[uriParts.size() - 1];
-                dfxInfo.coverUri = BackupFileUtils::GarbleFileName(fileName);
-            }
-        }
-        if (album.tagId.has_value()) {
-            dfxInfo.tagId = album.tagId.value();
-        }
-        if (album.count.has_value()) {
-            dfxInfo.count = album.count.value();
-        }
-
-        portraitAlbumDfx_.push_back(dfxInfo);
-    }
-}
-
-std::unordered_set<std::string> CloneRestore::QueryAllPortraitAlbum()
-{
-    std::unordered_set<std::string> result;
-    std::vector<std::string> tagIds;
-    for (const auto& oldAlbum : portraitAlbumDfx_) {
-        if (oldAlbum.tagId.has_value()) {
-            tagIds.push_back(oldAlbum.tagId.value());
-        }
-    }
-
-    CHECK_AND_RETURN_RET_LOG(!tagIds.empty(), result, "No valid tag_ids found in old albums");
-
-    std::string querySql = "SELECT tag_id FROM " + ANALYSIS_ALBUM_TABLE +
-        " WHERE tag_id IN (" + BackupDatabaseUtils::JoinSQLValues<string>(tagIds, ", ") + ")";
-
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
-
-    std::string dfxInfo;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        dfxInfo =
-            BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_TAG_ID).value_or("");
-        result.insert(dfxInfo);
-    }
-
-    resultSet->Close();
-    return result;
-}
-
-void CloneRestore::LogPortraitCloneDfx()
-{
-    std::vector<std::string> failedAlbums;
-    std::unordered_set<std::string> existingTagIds = QueryAllPortraitAlbum();
-
-    for (const auto& oldAlbum : portraitAlbumDfx_) {
-        if (!oldAlbum.tagId.has_value()) {
-            continue;
-        }
-
-        if (existingTagIds.find(oldAlbum.tagId.value()) == existingTagIds.end()) {
-            std::string albumInfo = "Album: " + oldAlbum.albumName.value_or("Unknown") +
-                ", TagId: " + oldAlbum.tagId.value() +
-                ", Cover: " + oldAlbum.coverUri.value_or("Unknown") +
-                ", Count: " + std::to_string(oldAlbum.count.value_or(0));
-            failedAlbums.push_back(albumInfo);
-        }
-    }
-
-    if (!failedAlbums.empty()) {
-        MEDIA_ERR_LOG("Following portrait albums failed to clone completely:");
-        for (const auto& failedAlbum : failedAlbums) {
-            MEDIA_ERR_LOG("%{public}s", failedAlbum.c_str());
-        }
-    } else {
-        MEDIA_INFO_LOG("All portrait albums cloned successfully");
-    }
-
-    MEDIA_INFO_LOG("Stat: Total albums: %{public}zu, Failed albums count: %{public}zu",
-        portraitAlbumDfx_.size(), failedAlbums.size());
-}
-
-void CloneRestore::RestorePortraitClusteringInfo()
-{
-    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-    int32_t totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb_, QUERY_FACE_TAG_COUNT, CUSTOM_COUNT);
-    MEDIA_INFO_LOG("QueryPortraitClustering totalNumber = %{public}d", totalNumber);
-
-    std::vector<std::string> commonColumn = BackupDatabaseUtils::GetCommonColumnInfos(mediaRdb_, mediaLibraryRdb_,
-        VISION_FACE_TAG_TABLE);
-    std::vector<std::string> commonColumns = BackupDatabaseUtils::filterColumns(commonColumn,
-        EXCLUDED_FACE_TAG_COLUMNS);
-    BackupDatabaseUtils::LeftJoinValues<string>(commonColumns, "vft.");
-    std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
-    BackupDatabaseUtils::ExecuteSQL(mediaRdb_, CREATE_FACE_TAG_INDEX);
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        vector<FaceTagTbl> faceTagTbls = QueryFaceTagTbl(offset, inClause);
-        BatchInsertFaceTags(faceTagTbls);
-        if (static_cast<std::int32_t>(faceTagTbls.size()) < QUERY_COUNT) {
-            break;
-        }
-    }
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    migratePortraitTotalTimeCost_ += end - start;
-}
-
-std::vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, const std::string &inClause)
-{
-    std::vector<FaceTagTbl> result;
-
-    std::string querySql = "SELECT DISTINCT " + inClause +
-        " FROM " + VISION_FACE_TAG_TABLE + " vft" +
-        " LEFT JOIN AnalysisAlbum aa ON aa.tag_id = vft.tag_id" +
-        " LEFT JOIN AnalysisPhotoMap apm ON aa.album_id = apm.map_album" +
-        " LEFT JOIN Photos ph ON ph.file_id = apm.map_asset" +
-        " WHERE " +
-        (IsCloudRestoreSatisfied() ? "ph.position IN (1, 2, 3)" : "ph.position IN (1, 3)");
-
-    querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
-
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSet is null.");
-    int resultRowCount = 0;
-    resultSet->GetRowCount(resultRowCount);
-    result.reserve(resultRowCount);
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        FaceTagTbl faceTagTbl;
-        ParseFaceTagResultSet(resultSet, faceTagTbl);
-        result.emplace_back(faceTagTbl);
-    }
-
-    resultSet->Close();
-    return result;
-}
-
-void CloneRestore::BatchInsertFaceTags(const std::vector<FaceTagTbl>& faceTagTbls)
-{
-    std::vector<NativeRdb::ValuesBucket> valuesBuckets;
-    for (const auto& faceTagTbl : faceTagTbls) {
-        valuesBuckets.push_back(CreateValuesBucketFromFaceTagTbl(faceTagTbl));
-    }
-
-    int64_t rowNum = 0;
-    int32_t ret = BatchInsertWithRetry(VISION_FACE_TAG_TABLE, valuesBuckets, rowNum);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to batch insert face tags");
-}
-
-void CloneRestore::RestoreImageFaceInfo(std::vector<FileInfo> &fileInfos)
-{
-    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-    auto uniqueFileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
-    auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(uniqueFileIdPairs);
-
-    std::string fileIdOldInClause = "(" + BackupDatabaseUtils::JoinValues<int>(oldFileIds, ", ") + ")";
-
-    std::string querySql = QUERY_IMAGE_FACE_COUNT;
-    querySql += " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdOldInClause;
-    int32_t totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb_, querySql, CUSTOM_COUNT);
-    MEDIA_INFO_LOG("QueryImageFaceTotalNumber, totalNumber = %{public}d", totalNumber);
-    if (totalNumber == 0) {
-        int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-        migratePortraitTotalTimeCost_ += end - start;
-        return;
-    }
-
-    std::vector<std::string> commonColumn = BackupDatabaseUtils::GetCommonColumnInfos(mediaRdb_, mediaLibraryRdb_,
-        VISION_IMAGE_FACE_TABLE);
-    std::vector<std::string> commonColumns = BackupDatabaseUtils::filterColumns(commonColumn,
-        EXCLUDED_IMAGE_FACE_COLUMNS);
-
-    BackupDatabaseUtils::DeleteExistingImageFaceData(mediaLibraryRdb_, uniqueFileIdPairs);
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        std::vector<ImageFaceTbl> imageFaceTbls = QueryImageFaceTbl(offset, fileIdOldInClause, commonColumns);
-        auto imageFaces = ProcessImageFaceTbls(imageFaceTbls, uniqueFileIdPairs);
-        BatchInsertImageFaces(imageFaces);
-    }
-
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    migratePortraitTotalTimeCost_ += end - start;
-
-    GenNewCoverUris(coverUriInfo_, fileInfos);
-}
-
-std::vector<ImageFaceTbl> CloneRestore::QueryImageFaceTbl(int32_t offset, std::string &fileIdClause,
-    const std::vector<std::string> &commonColumns)
-{
-    std::vector<ImageFaceTbl> result;
-    result.reserve(QUERY_COUNT);
-
-    std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
-    std::string querySql =
-        "SELECT " + inClause +
-        " FROM " + VISION_IMAGE_FACE_TABLE;
-    querySql += " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdClause;
-    querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
-
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSet is null.");
-
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        ImageFaceTbl imageFaceTbl;
-        ParseImageFaceResultSet(resultSet, imageFaceTbl);
-        result.emplace_back(imageFaceTbl);
-    }
-
-    resultSet->Close();
-    return result;
-}
-
-bool CloneRestore::GetFileInfoByFileId(int32_t fileId, const std::vector<FileInfo>& fileInfos, FileInfo& outFileInfo)
-{
-    auto it = std::find_if(fileInfos.begin(), fileInfos.end(),
-        [fileId](const FileInfo& info) { return info.fileIdNew == fileId; });
-    if (it != fileInfos.end()) {
-        outFileInfo = *it;
-        return true;
-    }
-
-    return false;
-}
-
-void CloneRestore::GenNewCoverUris(const std::vector<CloneRestore::CoverUriInfo>& coverUriInfo,
-    std::vector<FileInfo> &fileInfos)
-{
-    bool cond = (coverUriInfo.empty() && fileInfos.empty());
-    CHECK_AND_RETURN_LOG(!cond, "Empty coverUriInfo or fileIdPairs, skipping.");
-
-    std::unordered_map<std::string, std::pair<std::string, int32_t>> tagIdToCoverInfo;
-    for (const auto& [tagId, coverInfo] : coverUriInfo) {
-        tagIdToCoverInfo[tagId] = coverInfo;
-    }
-
-    auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(fileInfos);
-    std::unordered_map<std::string, int32_t> oldToNewFileId;
-    for (const auto& [oldId, newId] : fileIdPairs) {
-        oldToNewFileId[std::to_string(oldId)] = newId;
-    }
-
-    std::vector<std::string> tagIds;
-    std::string updateSql = GenCoverUriUpdateSql(tagIdToCoverInfo, oldToNewFileId, fileInfos, tagIds);
-    if (updateSql.empty()) {
-        return;
-    }
-
-    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updateSql);
-}
-
-std::string CloneRestore::GenCoverUriUpdateSql(const std::unordered_map<std::string, std::pair<std::string, int32_t>>&
-    tagIdToCoverInfo, const std::unordered_map<std::string, int32_t>& oldToNewFileId,
-    const std::vector<FileInfo>& fileInfos, std::vector<std::string>& tagIds)
-{
-    std::unordered_map<std::string, std::string> coverUriUpdates;
-    std::unordered_map<std::string, int32_t> isCoverSatisfiedUpdates;
-
-    for (const auto& [tagId, coverInfo] : tagIdToCoverInfo) {
-        const auto& [oldCoverUri, isCoverSatisfied] = coverInfo;
-        std::string newUri = ProcessUriAndGenNew(tagId, oldCoverUri, oldToNewFileId, fileInfos);
-        if (!newUri.empty()) {
-            coverUriUpdates[tagId] = newUri;
-            isCoverSatisfiedUpdates[tagId] = isCoverSatisfied;
-            tagIds.push_back(tagId);
-        }
-    }
-
-    bool cond = (coverUriUpdates.empty() || isCoverSatisfiedUpdates.empty());
-    CHECK_AND_RETURN_RET(!cond, "");
-
-    std::string updateSql = "UPDATE AnalysisAlbum SET ";
-
-    updateSql += "cover_uri = CASE ";
-    for (const auto& [tagId, newUri] : coverUriUpdates) {
-        updateSql += "WHEN tag_id = '" + tagId + "' THEN '" + newUri + "' ";
-    }
-    updateSql += "ELSE cover_uri END";
-
-    bool hasValidIsCoverSatisfied = false;
-    std::string isCoverSatisfiedSql = ", is_cover_satisfied = CASE ";
-    for (const auto& [tagId, isCoverSatisfied] : isCoverSatisfiedUpdates) {
-        if (isCoverSatisfied != INVALID_COVER_SATISFIED_STATUS) {
-            hasValidIsCoverSatisfied = true;
-            isCoverSatisfiedSql += "WHEN tag_id = '" + tagId + "' THEN " + std::to_string(isCoverSatisfied) + " ";
-        }
-    }
-
-    isCoverSatisfiedSql += "ELSE is_cover_satisfied END ";
-    CHECK_AND_EXECUTE(!hasValidIsCoverSatisfied, updateSql += isCoverSatisfiedSql);
-
-    updateSql += "WHERE tag_id IN ('" +
-        BackupDatabaseUtils::JoinValues(tagIds, "','") + "')";
-
-    return updateSql;
-}
-
-std::string CloneRestore::ProcessUriAndGenNew(const std::string& tagId, const std::string& oldCoverUri,
-    const std::unordered_map<std::string, int32_t>& oldToNewFileId, const std::vector<FileInfo>& fileInfos)
-{
-    auto uriParts = BackupDatabaseUtils::SplitString(oldCoverUri, '/');
-    if (uriParts.size() >= COVER_URI_NUM) {
-        std::string fileIdOld = uriParts[uriParts.size() - 3];
-        auto it = oldToNewFileId.find(fileIdOld);
-        if (it != oldToNewFileId.end()) {
-            int32_t fileIdNew = it->second;
-            FileInfo fileInfo {};
-            if (GetFileInfoByFileId(fileIdNew, fileInfos, fileInfo)) {
-                std::string extraUri = MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.cloudPath);
-                return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-                    std::to_string(fileIdNew), extraUri);
-            }
-        }
-    }
-    return "";
-}
-
-std::vector<ImageFaceTbl> CloneRestore::ProcessImageFaceTbls(const std::vector<ImageFaceTbl>& imageFaceTbls,
-    const std::vector<FileIdPair>& fileIdPairs)
-{
-    CHECK_AND_RETURN_RET_LOG(!imageFaceTbls.empty(), {}, "image faces tbl empty");
-
-    std::vector<ImageFaceTbl> imageFaceNewTbls;
-    imageFaceNewTbls.reserve(imageFaceTbls.size());
-
-    for (const auto& imageFaceTbl : imageFaceTbls) {
-        if (imageFaceTbl.fileId.has_value()) {
-            int32_t oldFileId = imageFaceTbl.fileId.value();
-            auto it = std::find_if(fileIdPairs.begin(), fileIdPairs.end(),
-                [oldFileId](const FileIdPair& pair) { return pair.first == oldFileId; });
-            if (it != fileIdPairs.end()) {
-                ImageFaceTbl updatedFace = imageFaceTbl;
-                updatedFace.fileId = it->second;
-                imageFaceNewTbls.push_back(std::move(updatedFace));
-            }
-        }
-    }
-
-    return imageFaceNewTbls;
-}
-
-void CloneRestore::BatchInsertImageFaces(const std::vector<ImageFaceTbl>& imageFaceTbls)
-{
-    std::vector<NativeRdb::ValuesBucket> valuesBuckets;
-    std::unordered_set<int32_t> fileIdSet;
-    for (const auto& imageFaceTbl : imageFaceTbls) {
-        valuesBuckets.push_back(CreateValuesBucketFromImageFaceTbl(imageFaceTbl));
-    }
-
-    int64_t rowNum = 0;
-    int32_t ret = BatchInsertWithRetry(VISION_IMAGE_FACE_TABLE, valuesBuckets, rowNum);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to batch insert image faces");
-
-    for (const auto& imageFaceTbl : imageFaceTbls) {
-        if (imageFaceTbl.fileId.has_value()) {
-            fileIdSet.insert(imageFaceTbl.fileId.value());
-        }
-    }
-
-    migratePortraitFaceNumber_ += rowNum;
-    migratePortraitPhotoNumber_ += fileIdSet.size();
-}
-
-NativeRdb::ValuesBucket CloneRestore::CreateValuesBucketFromImageFaceTbl(const ImageFaceTbl& imageFaceTbl)
-{
-    NativeRdb::ValuesBucket values;
-
-    PutIfPresent(values, IMAGE_FACE_COL_FILE_ID, imageFaceTbl.fileId);
-    PutIfPresent(values, IMAGE_FACE_COL_FACE_ID, imageFaceTbl.faceId);
-    PutIfPresent(values, IMAGE_FACE_COL_TAG_ID, imageFaceTbl.tagId);
-    PutIfPresent(values, IMAGE_FACE_COL_SCALE_X, imageFaceTbl.scaleX);
-    PutIfPresent(values, IMAGE_FACE_COL_SCALE_Y, imageFaceTbl.scaleY);
-    PutIfPresent(values, IMAGE_FACE_COL_SCALE_WIDTH, imageFaceTbl.scaleWidth);
-    PutIfPresent(values, IMAGE_FACE_COL_SCALE_HEIGHT, imageFaceTbl.scaleHeight);
-    PutIfPresent(values, IMAGE_FACE_COL_LANDMARKS, imageFaceTbl.landmarks);
-    PutIfPresent(values, IMAGE_FACE_COL_PITCH, imageFaceTbl.pitch);
-    PutIfPresent(values, IMAGE_FACE_COL_YAW, imageFaceTbl.yaw);
-    PutIfPresent(values, IMAGE_FACE_COL_ROLL, imageFaceTbl.roll);
-    PutIfPresent(values, IMAGE_FACE_COL_PROB, imageFaceTbl.prob);
-    PutIfPresent(values, IMAGE_FACE_COL_TOTAL_FACES, imageFaceTbl.totalFaces);
-    PutIfPresent(values, IMAGE_FACE_COL_FACE_VERSION, imageFaceTbl.faceVersion);
-    PutIfPresent(values, IMAGE_FACE_COL_FEATURES_VERSION, imageFaceTbl.featuresVersion);
-    PutIfPresent(values, IMAGE_FACE_COL_FEATURES, imageFaceTbl.features);
-    PutIfPresent(values, IMAGE_FACE_COL_FACE_OCCLUSION, imageFaceTbl.faceOcclusion);
-    PutIfPresent(values, IMAGE_FACE_COL_ANALYSIS_VERSION, imageFaceTbl.analysisVersion);
-    PutIfPresent(values, IMAGE_FACE_COL_BEAUTY_BOUNDER_X, imageFaceTbl.beautyBounderX);
-    PutIfPresent(values, IMAGE_FACE_COL_BEAUTY_BOUNDER_Y, imageFaceTbl.beautyBounderY);
-    PutIfPresent(values, IMAGE_FACE_COL_BEAUTY_BOUNDER_WIDTH, imageFaceTbl.beautyBounderWidth);
-    PutIfPresent(values, IMAGE_FACE_COL_BEAUTY_BOUNDER_HEIGHT, imageFaceTbl.beautyBounderHeight);
-    PutIfPresent(values, IMAGE_FACE_COL_AESTHETICS_SCORE, imageFaceTbl.aestheticsScore);
-    PutIfPresent(values, IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION, imageFaceTbl.beautyBounderVersion);
-    PutWithDefault<int>(values, IMAGE_FACE_COL_IS_EXCLUDED, imageFaceTbl.isExcluded, 0);
-    PutIfPresent(values, IMAGE_FACE_COL_FACE_CLARITY, imageFaceTbl.faceClarity);
-    PutIfPresent(values, IMAGE_FACE_COL_FACE_LUMINANCE, imageFaceTbl.faceLuminance);
-    PutIfPresent(values, IMAGE_FACE_COL_FACE_SATURATION, imageFaceTbl.faceSaturation);
-    PutIfPresent(values, IMAGE_FACE_COL_FACE_EYE_CLOSE, imageFaceTbl.faceEyeClose);
-    PutIfPresent(values, IMAGE_FACE_COL_FACE_EXPRESSION, imageFaceTbl.faceExpression);
-    PutIfPresent(values, IMAGE_FACE_COL_PREFERRED_GRADE, imageFaceTbl.preferredGrade);
-    PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_X, imageFaceTbl.jointBeautyBounderX);
-    PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_Y, imageFaceTbl.jointBeautyBounderY);
-    PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_WIDTH, imageFaceTbl.jointBeautyBounderWidth);
-    PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_HEIGHT, imageFaceTbl.jointBeautyBounderHeight);
-    return values;
-}
-
-void ParseImageFaceResultSet1(const std::shared_ptr<NativeRdb::ResultSet>& resultSet, ImageFaceTbl& imageFaceTbl)
-{
-    imageFaceTbl.preferredGrade = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
-        IMAGE_FACE_COL_PREFERRED_GRADE);
-    imageFaceTbl.jointBeautyBounderX = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
-        IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_X);
-    imageFaceTbl.jointBeautyBounderY = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
-        IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_Y);
-    imageFaceTbl.jointBeautyBounderWidth = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
-        IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_WIDTH);
-    imageFaceTbl.jointBeautyBounderHeight = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
-        IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_HEIGHT);
-    imageFaceTbl.groupVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
-        IMAGE_FACE_COL_GROUP_VERSION);
-}
-
-void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,
-    ImageFaceTbl& imageFaceTbl)
-{
-    imageFaceTbl.fileId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_FILE_ID);
-    imageFaceTbl.faceId = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_FACE_ID);
-    imageFaceTbl.tagId = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_TAG_ID);
-    imageFaceTbl.scaleX = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_SCALE_X);
-    imageFaceTbl.scaleY = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_SCALE_Y);
-    imageFaceTbl.scaleWidth = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_SCALE_WIDTH);
-    imageFaceTbl.scaleHeight = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_SCALE_HEIGHT);
-    imageFaceTbl.landmarks = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, IMAGE_FACE_COL_LANDMARKS);
-    imageFaceTbl.pitch = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_PITCH);
-    imageFaceTbl.yaw = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_YAW);
-    imageFaceTbl.roll = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_ROLL);
-    imageFaceTbl.prob = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_PROB);
-    imageFaceTbl.totalFaces = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_TOTAL_FACES);
-    imageFaceTbl.faceVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
-        IMAGE_FACE_COL_FACE_VERSION);
-    imageFaceTbl.featuresVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
-        IMAGE_FACE_COL_FEATURES_VERSION);
-    imageFaceTbl.features = BackupDatabaseUtils::GetOptionalValue<std::vector<uint8_t>>(resultSet,
-        IMAGE_FACE_COL_FEATURES);
-    imageFaceTbl.faceOcclusion = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
-        IMAGE_FACE_COL_FACE_OCCLUSION);
-    imageFaceTbl.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
-        IMAGE_FACE_COL_ANALYSIS_VERSION);
-    imageFaceTbl.beautyBounderX = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
-        IMAGE_FACE_COL_BEAUTY_BOUNDER_X);
-    imageFaceTbl.beautyBounderY = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
-        IMAGE_FACE_COL_BEAUTY_BOUNDER_Y);
-    imageFaceTbl.beautyBounderWidth = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
-        IMAGE_FACE_COL_BEAUTY_BOUNDER_WIDTH);
-    imageFaceTbl.beautyBounderHeight = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
-        IMAGE_FACE_COL_BEAUTY_BOUNDER_HEIGHT);
-    imageFaceTbl.aestheticsScore = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
-        IMAGE_FACE_COL_AESTHETICS_SCORE);
-    imageFaceTbl.beautyBounderVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
-        IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION);
-    imageFaceTbl.isExcluded = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, IMAGE_FACE_COL_IS_EXCLUDED);
-    imageFaceTbl.faceClarity = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, IMAGE_FACE_COL_FACE_CLARITY);
-    imageFaceTbl.faceLuminance = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
-        IMAGE_FACE_COL_FACE_LUMINANCE);
-    imageFaceTbl.faceSaturation = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
-        IMAGE_FACE_COL_FACE_SATURATION);
-    imageFaceTbl.faceEyeClose = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
-        IMAGE_FACE_COL_FACE_EYE_CLOSE);
-    imageFaceTbl.faceExpression = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
-        IMAGE_FACE_COL_FACE_EXPRESSION);
-    ParseImageFaceResultSet1(resultSet, imageFaceTbl);
-}
-
-void CloneRestore::ReportPortraitCloneStat(int32_t sceneCode)
-{
-    CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID, "err scenecode %{public}d", sceneCode);
-
-    MEDIA_INFO_LOG("PortraitStat: album %{public}lld, photo %{public}lld, face %{public}lld, cost %{public}lld",
-        (long long)migratePortraitAlbumNumber_, (long long)migratePortraitPhotoNumber_,
-        (long long)migratePortraitFaceNumber_, (long long)migratePortraitTotalTimeCost_);
-
-    BackupDfxUtils::PostPortraitStat(static_cast<uint32_t>(migratePortraitAlbumNumber_), migratePortraitPhotoNumber_,
-        migratePortraitFaceNumber_, migratePortraitTotalTimeCost_);
-}
-
-void CloneRestore::AppendExtraWhereClause(std::string& whereClause, const std::string& tableName)
-{
-    auto it = tableExtraQueryWhereClauseMap_.find(tableName);
-    if (it != tableExtraQueryWhereClauseMap_.end()) {
-        whereClause += whereClause.empty() ? "" : " AND ";
-        whereClause += it->second;
-    }
 }
 
 bool CloneRestore::InitAllKvStore()
@@ -3435,11 +2721,31 @@ void CloneRestore::RestoreAnalysisClassify()
     cloneRestoreClassify.Restore(photoInfoMap_);
 }
 
+void CloneRestore::RestoreAnalysisPortrait()
+{
+    CloneRestorePortrait portraitAlbumClone;
+    bool isCloudRestoreSatisfied = IsCloudRestoreSatisfied();
+    portraitAlbumClone.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, photoInfoMap_, isCloudRestoreSatisfied);
+    portraitAlbumClone.Preprocess();
+    portraitAlbumClone.Restore();
+}
+
 void CloneRestore::RestoreAnalysisGeo()
 {
     CloneRestoreGeo cloneRestoreGeo;
     cloneRestoreGeo.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_);
     cloneRestoreGeo.Restore(photoInfoMap_);
+}
+
+void CloneRestore::RestoreGroupPhoto()
+{
+    MEDIA_INFO_LOG("start RestoreGroupPhoto");
+    CloneRestoreGroupPhoto cloneRestoreGroupPhoto;
+    bool isCloudRestoreSatisfied = IsCloudRestoreSatisfied();
+    cloneRestoreGroupPhoto.Init(sceneCode_, taskId_, restoreInfo_,
+        mediaLibraryRdb_, mediaRdb_, isCloudRestoreSatisfied);
+    cloneRestoreGroupPhoto.Restore(photoInfoMap_);
+    MEDIA_INFO_LOG("end RestoreGroupPhoto");
 }
 
 void CloneRestore::UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverInfos)

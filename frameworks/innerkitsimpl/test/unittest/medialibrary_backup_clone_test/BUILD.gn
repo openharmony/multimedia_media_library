@@ -37,6 +37,8 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/geo_dictionary",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/geo_knowledge",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/highlight",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/portrait_album",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/group_photo_album",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/log",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/report",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/restore",
@@ -45,11 +47,15 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "../medialibrary_unittest_utils/include",
     "./include",
     "./include/highlight",
+    "./include/group_photo",
+    "./include/portrait_album",
   ]
 
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/event_handler/album_plugin_table_event_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_album/beauty_score_clone.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/portrait_album/clone_restore_portrait_album.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/portrait_album/clone_restore_portrait_base.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_album/search_index_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_album/video_face_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_data/clone_restore_analysis_data.cpp",
@@ -70,6 +76,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/highlight/clone_restore_cv_analysis.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/highlight/clone_restore_highlight.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/highlight/highlight_restore.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/group_photo_album/clone_restore_group_photo.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/log/backup_hi_audit.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/log/backup_hi_audit_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/log/backup_log_utils.cpp",
@@ -102,6 +109,10 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./src/highlight/clone_highlight_source.cpp",
     "./src/highlight/clone_restore_highlight_test.cpp",
     "./src/medialibrary_backup_clone_test.cpp",
+    "./src/group_photo/clone_group_photo_source.cpp",
+    "./src/group_photo/clone_restore_group_photo_test.cpp",
+    "./src/portrait_album/portrait_album_clone_test.cpp",
+    "./src/portrait_album/portrait_album_source.cpp",
   ]
 
   source_ipc_client = [
