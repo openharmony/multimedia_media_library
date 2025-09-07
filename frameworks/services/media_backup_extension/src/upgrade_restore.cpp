@@ -1735,7 +1735,7 @@ void UpgradeRestore::BatchDeleteEmptyAlbums(const std::vector<int32_t> &batchAlb
     NativeRdb::AbsRdbPredicates deletePredicates("PhotoAlbum");
     int32_t maxAlbumId = this->photoAlbumRestore_.GetMaxAlbumId();
     std::string whereClause = "album_id > ? AND album_id IN (";
-    for (auto i = 0; i < batchAlbumIds.size(); i++) {
+    for (std::size_t i = 0; i < batchAlbumIds.size(); i++) {
         if (i != 0) {
             whereClause += ",";
         }
@@ -1746,7 +1746,7 @@ void UpgradeRestore::BatchDeleteEmptyAlbums(const std::vector<int32_t> &batchAlb
     deletePredicates.SetWhereClause(whereClause);
     std::vector<std::string> whereArgs;
     whereArgs.push_back(to_string(maxAlbumId));
-    for (auto i = 0; i < batchAlbumIds.size(); i++) {
+    for (std::size_t i = 0; i < batchAlbumIds.size(); i++) {
         whereArgs.push_back(to_string(batchAlbumIds[i]));
     }
     deletePredicates.SetWhereArgs(whereArgs);

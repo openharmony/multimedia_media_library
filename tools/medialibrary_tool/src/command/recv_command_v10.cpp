@@ -74,7 +74,12 @@ static int32_t RecvFile(const ExecEnv &env, const FileAsset &fileAsset, bool isR
     if (!GetWriteFilePath(env, displayName, wFilePath)) {
         return Media::E_ERR;
     }
-    auto wfd = open(wFilePath.c_str(), O_CREAT | O_WRONLY | O_CLOEXEC, OPEN_MODE);
+    std::string realFilePath;
+    if (!PathToRealPath(wFilePath, realFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", wFilePath.c_str());
+        return Media::E_ERR;
+    }
+    auto wfd = open(realFilePath.c_str(), O_CREAT | O_WRONLY | O_CLOEXEC, OPEN_MODE);
     if (wfd <= 0) {
         MEDIA_ERR_LOG("Open write path failed. errno:%{public}d, path name:%{public}s", errno, wFilePath.c_str());
         printf("%s open write path failed. errno:%d, path name:%s\n", STR_FAIL.c_str(), errno, wFilePath.c_str());
