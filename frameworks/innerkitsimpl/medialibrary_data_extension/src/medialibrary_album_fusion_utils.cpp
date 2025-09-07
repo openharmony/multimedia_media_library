@@ -53,6 +53,7 @@
 #include "album_accurate_refresh.h"
 #include "refresh_business_name.h"
 #include "medialibrary_subscriber.h"
+#include "media_scanner_manager.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -93,11 +94,8 @@ static unordered_map<string, ResultSetDataType> convertFormatCommonColumn = {
     {PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, ResultSetDataType::TYPE_INT32},
     {MediaColumn::MEDIA_IS_FAV, ResultSetDataType::TYPE_INT32},
     {MediaColumn::MEDIA_TYPE, ResultSetDataType::TYPE_INT32},
-    {MediaColumn::MEDIA_DURATION, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::SUPPORTED_WATERMARK_TYPE, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_IS_RECENT_SHOW, ResultSetDataType::TYPE_INT32},
-    {PhotoColumn::PHOTO_FIRST_VISIT_TIME, ResultSetDataType::TYPE_INT64},
-    {PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, ResultSetDataType::TYPE_INT32},
 };
 
 static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
@@ -1035,80 +1033,50 @@ static void SavePackageMetaDate(NativeRdb::ValuesBucket &values)
     std::string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     std::string packageName = PermissionUtils::GetPackageNameByBundleName(bundleName);
     std::string appId = PermissionUtils::GetAppIdByBundleName(bundleName);
-    values.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, bundleName);
-    values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
-    values.PutString(MediaColumn::MEDIA_OWNER_APPID, appId);
+    values.Put(MediaColumn::MEDIA_OWNER_PACKAGE, bundleName);
+    values.Put(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
+    values.Put(MediaColumn::MEDIA_OWNER_APPID, appId);
 }
 
-static void SaveScanMetaDate(NativeRdb::ValuesBucket &values, const std::string &path, const std::string &displayName,
-    bool isMovingPhoto, const struct stat &statInfo)
+static void SaveDefaultMetaData(NativeRdb::ValuesBucket &values, shared_ptr<NativeRdb::ResultSet> resultSet,
+    const std::string &path, bool isBurst, const std::string &displayName)
 {
-    std::unique_ptr<Metadata> data = std::make_unique<Metadata>();
-    data->SetFilePath(path);
-    data->SetFileName(displayName);
-    data->SetFileTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
-    data->SetFileExtension(MediaFileUtils::GetExtensionFromPath(displayName));
-    data->SetFileMimeType(MediaFileUtils::GetMimeTypeFromDisplayName(displayName));
-    data->SetFileMediaType(MediaFileUtils::GetMediaType(displayName));
-    data->SetFileSize(statInfo.st_size);
-    data->SetFileDateModified(static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim)));
-    if (isMovingPhoto) {
-        data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
-    }
-    MetadataExtractor::Extract(data, isMovingPhoto);
+    std::string sourcePath = GetStringVal(PhotoColumn::PHOTO_SOURCE_PATH, resultSet);
+    int64_t editTime = GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet);
+    int32_t supportedWaterMark = GetInt32Val(PhotoColumn::SUPPORTED_WATERMARK_TYPE, resultSet);
 
-    values.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
-    values.PutString(MediaColumn::MEDIA_NAME, data->GetFileName());
-    values.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
-    values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, data->GetFileExtension());
-    values.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
-    values.PutInt(MediaColumn::MEDIA_TYPE, data->GetFileMediaType());
-    values.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
-    values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
-    values.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
-    values.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
-    values.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
-    values.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, data->GetExifRotate());
-    values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data->GetLongitude());
-    values.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
-    values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
-    values.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());
-    values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
-    values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, data->GetShootingMode());
-    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
-}
+    values.Put(MediaColumn::MEDIA_FILE_PATH, path);
+    values.Put(MediaColumn::MEDIA_NAME, displayName);
+    values.Put(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
+    values.Put(PhotoColumn::PHOTO_MEDIA_SUFFIX, MediaFileUtils::GetExtensionFromPath(displayName));
 
-static void SaveDefaultMetaDate(NativeRdb::ValuesBucket &values, bool isBurst, const std::string &sourcePath,
-    const std::string &displayName, int64_t editTime)
-{
-    int64_t curTime = MediaFileUtils::UTCTimeMilliSeconds();
-    values.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
-    values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
-    values.PutLong(MediaColumn::MEDIA_DATE_DELETED, 0);
-    values.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
-    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
-    values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
-    values.PutLong(PhotoColumn::PHOTO_CLOUD_VERSION, 0);
-    values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_TIME, static_cast<int64_t>(LcdReady::GENERATE_LCD_COMPLETED));
-    values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
-    values.PutLong(PhotoColumn::PHOTO_HIDDEN_TIME, 0);
-    values.PutInt(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
-    values.PutInt(PhotoColumn::PHOTO_IS_TEMP, 0);
-    values.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
-    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::COVER));
-    values.PutInt(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int32_t>(MetadataFlags::TYPE_NEW));
-    values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, curTime);
-    values.PutLong(PhotoColumn::MEDIA_DATE_ADDED, curTime);
-    values.PutLong(PhotoColumn::PHOTO_EDIT_TIME, editTime > 0 ? editTime : 0);
+    // data
+    values.Put(MediaColumn::MEDIA_TIME_PENDING, 0);
+    values.Put(MediaColumn::MEDIA_DATE_TRASHED, 0);
+    values.Put(MediaColumn::MEDIA_DATE_DELETED, 0);
+    values.Put(MediaColumn::MEDIA_HIDDEN, 0);
+    values.Put(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
+    values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
+    values.Put(PhotoColumn::PHOTO_CLOUD_VERSION, 0);
+    values.Put(PhotoColumn::PHOTO_LCD_VISIT_TIME, static_cast<int64_t>(LcdReady::GENERATE_LCD_COMPLETED));
+    values.Put(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    values.Put(PhotoColumn::PHOTO_HIDDEN_TIME, 0);
+    values.Put(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
+    values.Put(PhotoColumn::PHOTO_IS_TEMP, 0);
+    values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+    values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::COVER));
+    values.Put(PhotoColumn::PHOTO_METADATA_FLAGS, static_cast<int32_t>(MetadataFlags::TYPE_NEW));
+    values.Put(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    values.Put(PhotoColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
+    values.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWaterMark);
+    values.Put(PhotoColumn::PHOTO_EDIT_TIME, editTime > 0 ? MediaFileUtils::UTCTimeSeconds() : 0);
     if (isBurst) {
-        values.Delete(PhotoColumn::PHOTO_SUBTYPE);
-        values.Delete(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE);
-        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
-        values.PutInt(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
+        values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
+        values.Put(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
     }
     if (!sourcePath.empty()) {
         std::string newSourcePath = MediaFileUtils::GetParentPath(sourcePath) + "/" + displayName;
-        values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, newSourcePath);
+        values.Put(PhotoColumn::PHOTO_SOURCE_PATH, newSourcePath);
     }
 }
 
@@ -1129,17 +1097,11 @@ static bool SaveConvertFormatMetaData(std::shared_ptr<AccurateRefresh::AssetAccu
     }
 
     int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-    int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
     int32_t originalSubtype = GetInt32Val(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, resultSet);
-    bool isMovingPhoto = ((subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) ||
-        (effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)));
     bool isBurst = (subtype == static_cast<int32_t>(PhotoSubType::BURST) ||
         originalSubtype == static_cast<int32_t>(PhotoSubType::BURST));
-    std::string sourcePath = GetStringVal(PhotoColumn::PHOTO_SOURCE_PATH, resultSet);
-    int64_t editTime = GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet);
 
-    SaveDefaultMetaDate(values, isBurst, sourcePath, displayName, editTime);
-    SaveScanMetaDate(values, path, displayName, isMovingPhoto, statInfo);
+    SaveDefaultMetaData(values, resultSet, path, isBurst, displayName);
     SavePackageMetaDate(values);
 
     int32_t ret = assetRefresh->Insert(newAssetId, PhotoColumn::PHOTOS_TABLE, values);
@@ -1154,7 +1116,7 @@ static bool SaveConvertFormatMetaData(std::shared_ptr<AccurateRefresh::AssetAccu
 
 static int32_t ConvertFormatFileSync(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
     shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh, std::shared_ptr<NativeRdb::ResultSet> resultSet,
-    const std::string &displayName, int64_t &newAssetId)
+    const std::string &displayName, int64_t &newAssetId, std::string &targetPath)
 {
     MediaLibraryTracer tracer;
     tracer.Start("ConvertFormatFileSync");
@@ -1164,7 +1126,6 @@ static int32_t ConvertFormatFileSync(const std::shared_ptr<MediaLibraryRdbStore>
     }
 
     int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
-    std::string targetPath;
     buildTargetFilePath(targetPath, displayName, mediaType);
     std::string extension = MediaFileUtils::GetExtensionFromPath(displayName);
     MEDIA_INFO_LOG("ConvertFormatPhoto failed, displayName: %{public}s, targetPath: %{public}s",
@@ -1180,16 +1141,6 @@ static int32_t ConvertFormatFileSync(const std::shared_ptr<MediaLibraryRdbStore>
         DeleteFile(targetPath);
         return E_ERR;
     }
-
-    int32_t ownerAlbumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
-    int32_t assetId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    err = UpdateRelationship(upgradeStore, {assetId, newAssetId, ownerAlbumId}, assetRefresh);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("UpdateRelationship fail, assetId: %{public}d, newAssetId: %{public}" PRId64
-            ", ownerAlbumId: %{public}d, ret = %{public}d", assetId, newAssetId, ownerAlbumId, err);
-        return err;
-    }
-
     err = PhotoFileOperation().CopyThumbnail(resultSet, targetPath, newAssetId);
     if (err != E_OK && GenerateThumbnail(newAssetId, targetPath, resultSet, true) != E_SUCCESS) {
         MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(upgradeStore, newAssetId);
@@ -1200,8 +1151,7 @@ static int32_t ConvertFormatFileSync(const std::shared_ptr<MediaLibraryRdbStore>
     return E_OK;
 }
 
-static bool CheckConvertFormatAsset(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-    std::shared_ptr<NativeRdb::ResultSet> resultSet, const std::string &newTitle)
+static bool CheckConvertFormatAsset(std::shared_ptr<NativeRdb::ResultSet> resultSet, const std::string &newTitle)
 {
     int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
     if (position == static_cast<int32_t>(PhotoPositionType::CLOUD)) {
@@ -1230,33 +1180,16 @@ static bool CheckConvertFormatAsset(std::shared_ptr<MediaLibraryRdbStore> rdbSto
             dateTrashed, dateDeleted);
         return false;
     }
-
-    int32_t ownerAlbumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
-    RdbPredicates newPredicates(PhotoColumn::PHOTOS_TABLE);
-    newPredicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, ownerAlbumId);
-    shared_ptr<NativeRdb::ResultSet> titleResultSet = rdbStore->Query(newPredicates, { MediaColumn::MEDIA_TITLE });
-    if (titleResultSet == nullptr) {
-        MEDIA_ERR_LOG("query albumId: %{public}d title failed", ownerAlbumId);
-        return false;
-    }
-    while (titleResultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        std::string title = GetStringVal(MediaColumn::MEDIA_TITLE, titleResultSet);
-        if (title == newTitle) {
-            MEDIA_ERR_LOG("newTitle is same in album: %{public}d", ownerAlbumId);
-            return false;
-        }
-    }
-
     return true;
 }
 
-int32_t MediaLibraryAlbumFusionUtils::ConvertFormatAsset(const int64_t &assetId, const std::string &title,
-    const std::string &extension)
+std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumFusionUtils::ConvertFormatAsset(const int64_t &assetId,
+    const std::string &title, const std::string &extension)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Failed to get rdbStore.");
-        return E_DB_FAIL;
+        return nullptr;
     }
 
     const std::string querySql = "SELECT * FROM Photos WHERE file_id = ?";
@@ -1264,43 +1197,39 @@ int32_t MediaLibraryAlbumFusionUtils::ConvertFormatAsset(const int64_t &assetId,
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql, params);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("Query not matched data fails");
-        return E_DB_FAIL;
+        return nullptr;
     }
-    if (!CheckConvertFormatAsset(rdbStore, resultSet, title)) {
+    if (!CheckConvertFormatAsset(resultSet, title)) {
         MEDIA_ERR_LOG("CheckConvertFormatAsset failed");
-        return E_INVALID_VALUES;
+        return nullptr;
     }
-
     auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
         AccurateRefresh::CONVERT_FORMAT_ASSET_BUSSINESS_NAME);
     string displayName = title + "." + extension;
     int64_t newAssetId = -1;
-    int32_t err = ConvertFormatFileSync(rdbStore, assetRefresh, resultSet, displayName, newAssetId);
+    std::string targetPath;
+    int32_t err = ConvertFormatFileSync(rdbStore, assetRefresh, resultSet, displayName, newAssetId, targetPath);
     if (err != E_OK) {
         MEDIA_ERR_LOG("ConvertFormatFileSync failed, ret = %{public}d, assetId = %{public}" PRId64, err, assetId);
-        return err;
+        return nullptr;
     }
+    MediaScannerManager::GetInstance()->ScanFileSync(targetPath, nullptr, MediaLibraryApi::API_10, true, newAssetId);
 
     RdbPredicates newPredicates(PhotoColumn::PHOTOS_TABLE);
     newPredicates.EqualTo(PhotoColumn::MEDIA_ID, newAssetId);
-    vector<string> columns = {
-        PhotoColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_HIDDEN
-    };
+    std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_NAME, MediaColumn::MEDIA_FILE_PATH,
+        MediaColumn::MEDIA_TITLE, MediaColumn::MEDIA_TYPE, PhotoColumn::PHOTO_SUBTYPE };
     shared_ptr<NativeRdb::ResultSet> newResultSet = rdbStore->Query(newPredicates, columns);
-    if (newResultSet == nullptr || newResultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (newResultSet == nullptr) {
         MEDIA_INFO_LOG("Query not matched data fails");
-        return E_DB_FAIL;
+        return nullptr;
     }
 
     string newFileAssetUri = MediaFileUtils::GetFileAssetUri(GetStringVal(MediaColumn::MEDIA_FILE_PATH, newResultSet),
         displayName, newAssetId);
-    int32_t isHidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, newResultSet);
-    if (isHidden == 1) {
-        MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore);
-    }
     SendNewAssetNotify(newFileAssetUri, rdbStore, assetRefresh);
     MEDIA_INFO_LOG("ConvertFormatAsset success, newAssetId = %{public}" PRId64, newAssetId);
-    return newAssetId;
+    return newResultSet;
 }
 
 static int32_t GetNoOwnerDataCnt(const std::shared_ptr<MediaLibraryRdbStore> store)

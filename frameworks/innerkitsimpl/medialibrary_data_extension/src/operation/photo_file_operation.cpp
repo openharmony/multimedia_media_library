@@ -496,6 +496,7 @@ int32_t PhotoFileOperation::ConvertFormatPhoto(const std::shared_ptr<NativeRdb::
     sourcePhotoInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
     sourcePhotoInfo.videoFilePath = this->FindVideoFilePath(sourcePhotoInfo);
     sourcePhotoInfo.editDataFolder = this->FindEditDataFolder(sourcePhotoInfo);
+
     // Build the Target Photo Asset Info
     PhotoFileOperation::PhotoAssetInfo targetPhotoInfo;
     targetPhotoInfo.displayName = sourcePhotoInfo.displayName;

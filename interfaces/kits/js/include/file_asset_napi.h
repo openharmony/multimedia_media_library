@@ -220,6 +220,7 @@ struct FileAssetAsyncContext : public NapiError {
 
     napi_ref napiArrayBufferRef;
     uint32_t businessCode = 0;
+    std::shared_ptr<FileAsset> fileAsset = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

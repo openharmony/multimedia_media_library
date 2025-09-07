@@ -505,6 +505,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/save_camera_photo_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/get_assets_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/restore_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/convert_format_dto.cpp",
   ]
 
   media_albums_manager_source = [

@@ -1613,21 +1613,15 @@ int32_t MediaAssetsControllerService::ConvertFormat(MessageParcel &data, Message
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 
-    ConvertFormatDto convertFormatDto;
-    convertFormatDto.fileId = reqBody.fileId;
-    convertFormatDto.title = reqBody.title;
-    convertFormatDto.extension = reqBody.extension;
-    int32_t newAssetId = MediaAssetsService::GetInstance().ConvertFormat(convertFormatDto);
-    if (newAssetId < 0) {
-        MEDIA_ERR_LOG("ConvertFormat failed, ret: %{public}d", newAssetId);
-        if (newAssetId == E_INVALID_VALUES) {
-            return IPC::UserDefineIPC().WriteResponseBody(reply, E_PARAM_CONVERT_FORMAT);
-        } else {
-            return IPC::UserDefineIPC().WriteResponseBody(reply, E_INNER_CONVERT_FORMAT);
-        }
-    } else {
-        return IPC::UserDefineIPC().WriteResponseBody(reply, newAssetId);
+    ConvertFormatDto convertFormatDto = ConvertFormatDto::Create(reqBody);
+    auto resultSet = MediaAssetsService::GetInstance().ConvertFormat(convertFormatDto);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to convertFormat.");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_PARAM_CONVERT_FORMAT);
     }
+    ConvertFormatRespBody respBody;
+    respBody.resultSet = move(resultSet);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
 int32_t MediaAssetsControllerService::CreateTmpCompatibleDup(MessageParcel &data, MessageParcel &reply)
