@@ -1479,7 +1479,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("MultistagesCapture, get fileId fail");
         return 0;
     }
-    MEDIA_INFO_LOG("MultistagesCapture, start fileId: %{public}s", fileId.c_str());
+    MEDIA_INFO_LOG("MultistagesCapture, start save fileId: %{public}s", fileId.c_str());
     tracer.Start("MediaLibraryPhotoOperations::UpdateIsTempAndDirty");
 
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
@@ -1496,6 +1496,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     std::shared_ptr<Media::Picture> resultPicture = nullptr;
     if (!fileType.empty()) {
         SavePicture(stoi(fileType), stoi(fileId), getPicRet, photoExtInfo, resultPicture);
+        MEDIA_DEBUG_LOG("MultistagesCapture, save picture end, fileId: %{public}s", fileId.c_str());
     }
     tracer.Finish();
 
@@ -1507,6 +1508,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     int32_t burstCoverLevel = fileAsset->GetBurstCoverLevel();
     tracer.Start("MediaLibraryPhotoOperations::Scan");
     if (!path.empty()) {
+        MEDIA_DEBUG_LOG("MultistagesCapture, scan file start, fileId: %{public}s", fileId.c_str());
         if (burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
             ScanFile(path, false, true, true, stoi(fileId), resultPicture);
         } else {
@@ -1516,7 +1518,8 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         }
     }
     tracer.Finish();
-    MEDIA_INFO_LOG("MultistagesCapture Success, ret: %{public}d, needScanStr: %{public}s", ret, needScanStr.c_str());
+    MEDIA_INFO_LOG("MultistagesCapture Success, fileId: %{public}s, ret: %{public}d, needScanStr: %{public}s",
+        fileId.c_str(), ret, needScanStr.c_str());
     return ret;
 }
 
