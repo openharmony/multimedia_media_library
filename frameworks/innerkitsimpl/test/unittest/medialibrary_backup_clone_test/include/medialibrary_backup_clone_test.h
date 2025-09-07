@@ -32,11 +32,6 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
-    static void VerifyPortraitAlbumRestore(const std::shared_ptr<NativeRdb::RdbStore>& db);
-    static void VerifyPortraitClusteringRestore(const std::shared_ptr<NativeRdb::RdbStore>& db);
-    static void SetupMockImgFaceData(std::vector<FileInfo>& fileInfos);
-    static void VerifyImageFaceRestore(const std::shared_ptr<NativeRdb::RdbStore>& db,
-        const std::vector<FileInfo>& fileInfos);
     static void VerifyGeoDictionaryRestore(const std::shared_ptr<NativeRdb::RdbStore>& db);
     static void VerifyClassifyRestore(const std::shared_ptr<NativeRdb::RdbStore>& db);
     static void VerifyClassifyVideoRestore(const std::shared_ptr<NativeRdb::RdbStore>& db);
