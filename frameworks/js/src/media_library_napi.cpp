@@ -9870,13 +9870,14 @@ static void PhotoAccessQueryExecute(napi_env env, void *data)
     }
     context->queryRet = UserFileClient::QueryByStep(context->uri);
     if (context->queryRet == nullptr) {
-        context->error = UFM_SYSCAP_BASE;
+        context->error = OHOS_PERMISSION_DENIED_CODE;
         context->errorMsg = "Permission denied";
         return;
     }
     int count = -1;
     context->queryRet->GetRowCount(count);
     if (count == -1) {
+        context->queryRet = nullptr;
         context->error = JS_E_PARAM_INVALID;
         context->errorMsg = "Invalid sql";
         return;
@@ -9926,6 +9927,7 @@ napi_value MediaLibraryNapi::PhotoAccessQuery(napi_env env, napi_callback_info i
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessQuery");
+    CHECK_COND_WITH_ERR_MESSAGE(env, MediaLibraryNapiUtils::IsSystemApp(), UFM_SYSCAP_BASE, "Not system app");
     unique_ptr<ResultSetAsyncContext> asyncContext = make_unique<ResultSetAsyncContext>();
     CHECK_COND_WITH_ERR_MESSAGE(
         env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri) == napi_ok,
