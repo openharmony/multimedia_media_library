@@ -50,6 +50,7 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_napi_enum_comm.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
@@ -4340,31 +4341,25 @@ static void ConvertFormatHandlerCompleteCallback(napi_env env, napi_status statu
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    int32_t userId = -1;
     if (context->error == ERR_DEFAULT) {
         napi_value jsFileAsset = nullptr;
-        int64_t assetId = context->assetId;
-        userId = context->objectInfo != nullptr ? context->objectInfo->GetFileAssetInstance()->GetUserId() : userId;
-        if (assetId == 0) {
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-                "Clone file asset failed");
-            napi_get_undefined(env, &jsContext->data);
-        } else {
-            shared_ptr<FileAsset> newFileAsset = getFileAsset(to_string(assetId), userId);
-            CHECK_NULL_PTR_RETURN_VOID(newFileAsset, "newFileAset is null.");
+        std::shared_ptr<FileAsset> fileAsset = context->fileAsset;
+        std::string fileAssetUri = MediaFileUtils::GetFileAssetUri(fileAsset->GetPath(), fileAsset->GetDisplayName(),
+            fileAsset->GetId());
+        fileAsset->SetUri(fileAssetUri);
+        CHECK_NULL_PTR_RETURN_VOID(fileAsset, "fileAsset is null.");
 
-            newFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-            jsFileAsset = FileAssetNapi::CreatePhotoAsset(env, newFileAsset);
-            if (jsFileAsset == nullptr) {
-                NAPI_ERR_LOG("Failed to clone file asset napi object");
-                napi_get_undefined(env, &jsContext->data);
-                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL, "System inner fail");
-            } else {
-                NAPI_DEBUG_LOG("JSCreateAssetCompleteCallback jsFileAsset != nullptr");
-                jsContext->data = jsFileAsset;
-                napi_get_undefined(env, &jsContext->error);
-                jsContext->status = true;
-            }
+        fileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+        jsFileAsset = FileAssetNapi::CreatePhotoAsset(env, fileAsset);
+        if (jsFileAsset == nullptr) {
+            NAPI_ERR_LOG("Failed to clone file napi object");
+            napi_get_undefined(env, &jsContext->data);
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL, "System inner fail");
+        } else {
+            NAPI_DEBUG_LOG("JSCreateAssetCompleteCallback jsFileAsset != nullptr");
+            jsContext->data = jsFileAsset;
+            napi_get_undefined(env, &jsContext->error);
+            jsContext->status = true;
         }
     } else {
         context->HandleError(env, jsContext->error);
@@ -4382,6 +4377,7 @@ static void ConvertFormatHandlerExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("ConvertFormatHandlerExecute");
+    NAPI_INFO_LOG("Begin ConvertFormatHandlerExecute.");
 
     auto* context = static_cast<FileAssetAsyncContext*>(data);
     auto fileAsset = context->objectInfo->GetFileAssetInstance();
@@ -4395,6 +4391,7 @@ static void ConvertFormatHandlerExecute(napi_env env, void *data)
     reqBody.fileId = fileAsset->GetId();
     reqBody.title = context->title;
     reqBody.extension = context->extension;
+    ConvertFormatRespBody respBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CONVERT_FORMAT);
     IPC::UserDefineIPCClient client;
     // db permission
@@ -4403,13 +4400,20 @@ static void ConvertFormatHandlerExecute(napi_env env, void *data)
         { URI_TYPE, TYPE_PHOTOS },
     };
     client.SetHeader(headerMap);
-    int32_t newAssetId = client.Call(businessCode, reqBody);
-    if (newAssetId < 0) {
-        context->SaveError(newAssetId);
-        NAPI_ERR_LOG("Failed to convert format, ret: %{public}d", newAssetId);
+    int32_t errcode = client.Call(businessCode, reqBody, respBody);
+    if (errcode < 0 || respBody.resultSet == nullptr) {
+        context->SaveError(errcode);
+        NAPI_ERR_LOG("Failed to convert format, ret: %{public}d", errcode);
         return;
     }
-    context->assetId = newAssetId;
+    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(respBody.resultSet));
+    if (fetchResult == nullptr) {
+        context->SaveError(E_FAIL);
+        NAPI_ERR_LOG("fetchResult is null");
+        return;
+    }
+    context->fileAsset = fetchResult->GetFirstObject();
+    NAPI_INFO_LOG("End ConvertFormatHandlerExecute.");
 }
 
 static bool CheckConvertFormatParams(const std::string &originExtension, const std::string &title,
@@ -4420,12 +4424,19 @@ static bool CheckConvertFormatParams(const std::string &originExtension, const s
         NAPI_ERR_LOG("displayName: %{public}s is invalid", displayName.c_str());
         return false;
     }
-    if (extension != "jpg") {
-        NAPI_ERR_LOG("extension must be jpg");
+    bool supportedImageFormat = false;
+    for (auto formatProperty : SUPPORTED_IMAGE_FORMAT_ENUM_PROPERTIES) {
+        if (extension == formatProperty.second) {
+            supportedImageFormat = true;
+            break;
+        }
+    }
+    if (!supportedImageFormat) {
+        NAPI_ERR_LOG("The format of transition is not supported.");
         return false;
     }
     if (originExtension != "heif" && originExtension != "heic") {
-        NAPI_ERR_LOG("originExtension must be heif|heic");
+        NAPI_ERR_LOG("The requested asset must be heif|heic");
         return false;
     }
     return true;

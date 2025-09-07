@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "datashare_result_set.h"
 #include "i_media_parcelable.h"
 
 namespace OHOS::Media {
@@ -33,6 +34,13 @@ public:  // functions of Parcelable.
 
 public:  // basic functions
     std::string ToString() const;
+};
+class ConvertFormatRespBody : public IPC::IMediaParcelable {
+public:
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
+
+    bool Unmarshalling(MessageParcel &parcel) override;
+    bool Marshalling(MessageParcel &parcel) const override;
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIA_ASSETS_MANAGER_CONVERT_FORMAT_VO_H

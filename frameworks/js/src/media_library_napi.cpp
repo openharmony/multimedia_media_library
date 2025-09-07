@@ -274,6 +274,7 @@ thread_local napi_ref MediaLibraryNapi::sNotifyChangeTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sThumbnailChangeStatusEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sStrongAssociationTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sCompositeDisplayModeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sSupportedImageFormatEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -497,6 +498,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("ThumbnailChangeStatus", CreateThumbnailChangeStatusEnum(env)),
         DECLARE_NAPI_PROPERTY("StrongAssociationType", CreateStrongAssociationTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("CompositeDisplayMode", CreateCompositeDisplayModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("SupportedImageFormat", CreateSupportedImageFormatEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -8406,6 +8408,11 @@ napi_value MediaLibraryNapi::CreateCloudEnhancementTaskStageEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateCloudEnhancementStateEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, cloudEnhancementStateEnum, sCloudEnhancementStateEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateSupportedImageFormatEnum(napi_env env)
+{
+    return CreateStringEnumProperty(env, SUPPORTED_IMAGE_FORMAT_ENUM_PROPERTIES, sSupportedImageFormatEnumRef_);
 }
 
 napi_value MediaLibraryNapi::CreateVideoEnhancementTypeEnum(napi_env env)
