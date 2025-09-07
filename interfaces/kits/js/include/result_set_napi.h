@@ -84,7 +84,6 @@ struct ResultSetAsyncContext : public NapiError {
 template <typename T>
 napi_value Convert2JSValue(napi_env env, const T &value)
 {
-    NAPI_ERR_LOG("No conversion implemented for this type, returning undefined");
     return nullptr;
 }
 
