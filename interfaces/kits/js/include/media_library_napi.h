@@ -383,6 +383,7 @@ private:
     EXPORT static napi_value CreateThumbnailChangeStatusEnum(napi_env env);
     EXPORT static napi_value CreateStrongAssociationTypeEnum(napi_env env);
     EXPORT static napi_value CreateCompositeDisplayModeEnum(napi_env env);
+    EXPORT static napi_value CreateSupportedImageFormatEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
@@ -466,6 +467,7 @@ private:
     static thread_local napi_ref sThumbnailChangeStatusEnumRef_;
     static thread_local napi_ref sStrongAssociationTypeEnumRef_;
     static thread_local napi_ref sCompositeDisplayModeEnumRef_;
+    static thread_local napi_ref sSupportedImageFormatEnumRef_;
 
     static std::mutex sOnOffMutex_;
 };

@@ -134,7 +134,7 @@ public:
     int32_t SyncCloudEnhancementTaskStatus();
     int32_t QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRespBody &resp);
     int32_t LogMovingPhoto(const AdaptedReqBody &req);
-    int32_t ConvertFormat(const ConvertFormatDto &convertFormatDto);
+    std::shared_ptr<DataShare::DataShareResultSet> ConvertFormat(const ConvertFormatDto &convertFormatDto);
     int32_t CreateTmpCompatibleDup(const CreateTmpCompatibleDupDto &createTmpCompatibleDupDto);
     int32_t GetResultSetFromDb(const GetResultSetFromDbDto &getResultSetFromDbDto, GetResultSetFromDbRespBody &resp);
     int32_t GetResultSetFromPhotosExtend(const std::string &value, std::vector<std::string> &columns,

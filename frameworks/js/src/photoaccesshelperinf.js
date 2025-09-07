@@ -1209,4 +1209,5 @@ export default {
   ThumbnailChangeStatus: photoAccessHelper.ThumbnailChangeStatus,
   StrongAssociationType: photoAccessHelper.StrongAssociationType,
   CompositeDisplayMode: photoAccessHelper.CompositeDisplayMode,
+  SupportedImageFormat: photoAccessHelper.SupportedImageFormat,
 };

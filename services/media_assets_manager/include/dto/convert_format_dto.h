@@ -19,6 +19,8 @@
 #include <string>
 #include <sstream>
 
+#include "convert_format_vo.h"
+
 namespace OHOS::Media {
 class ConvertFormatDto {
 public:
@@ -27,16 +29,8 @@ public:
     std::string extension;
 
 public:
-    std::string ToString() const
-    {
-        std::stringstream ss;
-        ss << "{"
-           << "\"fileId\": \"" << std::to_string(this->fileId) << "\", "
-           << "\"title\": " << this->title << ", "
-           << "\"extension\": " << this->extension
-           << "}";
-        return ss.str();
-    }
+    static ConvertFormatDto Create(const ConvertFormatReqBody &req);
+    std::string ToString() const;
 };
 }  // namespace OHOS::Media
 #endif // OHOS_MEDIA_ASSETS_MANAGER_CONVERT_FORMAT_DTO_H
