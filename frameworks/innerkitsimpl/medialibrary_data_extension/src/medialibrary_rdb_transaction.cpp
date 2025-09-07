@@ -354,7 +354,8 @@ int32_t TransactionOperations::BatchInsert(int64_t &changeRows, const std::strin
         MediaLibraryRestore::GetInstance().CheckRestore(ret);
         return E_HAS_DB_ERROR;
     }
-    MEDIA_DEBUG_LOG("transaction_->BatchInsert end, changeRows = %d, ret = %{public}d", (int)changeRows, ret);
+    MEDIA_DEBUG_LOG("transaction_->BatchInsert end, changeRows = %{public}" PRId64 ", ret = %{public}d",
+        changeRows, ret);
     return ret;
 }
 
