@@ -260,7 +260,7 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_albu
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE };
     Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
     cloneRestorePortrait = make_unique<CloneRestorePortrait>();
-    cloneRestorePortrait->Init(CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, {});
+    cloneRestorePortrait->Init(CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, {}, false);
     cloneRestorePortrait->RestoreFromGalleryPortraitAlbum();
     VerifyPortraitAlbumRestore(newRdbStore->GetRaw());
     cloneRestorePortrait = nullptr;
@@ -276,7 +276,7 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_clus
         ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
     cloneRestorePortrait = make_unique<CloneRestorePortrait>();
-    cloneRestorePortrait->Init(CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, {});
+    cloneRestorePortrait->Init(CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, {}, false);
     cloneRestorePortrait->RestorePortraitClusteringInfo();
     VerifyPortraitClusteringRestore(newRdbStore->GetRaw());
     cloneRestorePortrait = nullptr;
@@ -294,7 +294,7 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_image_face_te
     SetupMockPhotoInfoMap(photoInfoMap);
     cloneRestorePortrait = make_unique<CloneRestorePortrait>();
     cloneRestorePortrait->Init(CLONE_RESTORE_ID, "", newRdbStore->GetRaw(),
-        portraitAlbumSource.cloneStorePtr_, photoInfoMap);
+        portraitAlbumSource.cloneStorePtr_, photoInfoMap, false);
     cloneRestorePortrait->RestoreImageFaceInfo();
     VerifyImageFaceRestore(newRdbStore->GetRaw());
     cloneRestorePortrait = nullptr;
@@ -314,7 +314,7 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_photo_map_tes
     SetupMockPortraitAlbumInfoMap(portraitAlbumInfoMap);
     cloneRestorePortrait = make_unique<CloneRestorePortrait>();
     cloneRestorePortrait->Init(CLONE_RESTORE_ID, "",
-        newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, photoInfoMap);
+        newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, photoInfoMap, false);
     cloneRestorePortrait->portraitAlbumInfoMap_ = portraitAlbumInfoMap;
     cloneRestorePortrait->RestoreMaps();
     VerifyMaps(newRdbStore->GetRaw());

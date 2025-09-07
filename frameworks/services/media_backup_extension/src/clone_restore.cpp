@@ -2717,7 +2717,7 @@ void CloneRestore::RestoreAnalysisClassify()
 void CloneRestore::RestoreAnalysisPortrait()
 {
     CloneRestorePortrait portraitAlbumClone;
-    bool isCloudRestoreSatisfied = isAccountValid_ && isSrcDstSwitchStatusMatch_;
+    bool isCloudRestoreSatisfied = IsCloudRestoreSatisfied();
     portraitAlbumClone.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, photoInfoMap_, isCloudRestoreSatisfied);
     portraitAlbumClone.Preprocess();
     portraitAlbumClone.Restore();
@@ -2734,7 +2734,7 @@ void CloneRestore::RestoreGroupPhoto()
 {
     MEDIA_INFO_LOG("start RestoreGroupPhoto");
     CloneRestoreGroupPhoto cloneRestoreGroupPhoto;
-    bool isCloudRestoreSatisfied = isAccountValid_ && isSrcDstSwitchStatusMatch_;
+    bool isCloudRestoreSatisfied = IsCloudRestoreSatisfied();
     cloneRestoreGroupPhoto.Init(sceneCode_, taskId_, restoreInfo_,
         mediaLibraryRdb_, mediaRdb_, isCloudRestoreSatisfied);
     cloneRestoreGroupPhoto.Restore(photoInfoMap_);
