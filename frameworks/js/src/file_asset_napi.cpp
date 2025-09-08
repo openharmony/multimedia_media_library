@@ -3202,7 +3202,7 @@ napi_value FileAssetNapi::HandleDateTransitionKey(napi_env env, const string &ke
     return jsResult;
 }
 
-inline int64_t FileAssetNapi::GetCompatDate(const string inputKey, const int64_t date)
+int64_t FileAssetNapi::GetCompatDate(const string inputKey, const int64_t date)
 {
     if (inputKey == MEDIA_DATA_DB_DATE_ADDED || inputKey == MEDIA_DATA_DB_DATE_MODIFIED ||
         inputKey == MEDIA_DATA_DB_DATE_TRASHED || inputKey == MEDIA_DATA_DB_DATE_TAKEN) {
