@@ -28,16 +28,13 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 
+std::once_flag MediaLibraryBundleManager::oc_;
 shared_ptr<MediaLibraryBundleManager> MediaLibraryBundleManager::instance_ = nullptr;
-mutex MediaLibraryBundleManager::mutex_;
 shared_ptr<MediaLibraryBundleManager> MediaLibraryBundleManager::GetInstance()
 {
-    if (instance_ == nullptr) {
-        lock_guard<mutex> lock(mutex_);
-        if (instance_ == nullptr) {
-            instance_ = make_shared<MediaLibraryBundleManager>();
-        }
-    }
+    std::call_once(oc_, []() {
+        instance_ = std::make_shared<MediaLibraryBundleManager>();
+    });
     return instance_;
 }
 
