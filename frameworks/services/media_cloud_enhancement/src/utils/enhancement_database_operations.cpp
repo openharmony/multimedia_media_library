@@ -29,6 +29,7 @@
 #include "photo_album_column.h"
 #include "media_app_uri_permission_column.h"
 #include "media_library_extend_manager.h"
+#include "medialibrary_data_manager_utils.h"
 #include "moving_photo_file_utils.h"
 
 using namespace std;
@@ -69,6 +70,10 @@ std::shared_ptr<NativeRdb::ResultSet> EnhancementDatabaseOperations::BatchQuery(
             continue;
         }
         string fileId = MediaFileUri::GetPhotoId(arg);
+        if (!MediaLibraryDataManagerUtils::IsNumber(fileId)) {
+            MEDIA_ERR_LOG("invalid fileId: %{public}s", fileId.c_str());
+            continue;
+        }
         fileId2Uri.emplace(stoi(fileId), arg);
         whereIdArgs.push_back(fileId);
     }

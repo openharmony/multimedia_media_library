@@ -736,7 +736,12 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
 
     string filePath = data->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_AVMETADATA, "AV metadata file path is empty");
-    int32_t fd = open(filePath.c_str(), O_RDONLY);
+    std::string realFilePath;
+    if (!PathToRealPath(filePath, realFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
+        return E_AVMETADATA;
+    }
+    int32_t fd = open(realFilePath.c_str(), O_RDONLY);
     CHECK_AND_RETURN_RET_LOG(fd > 0, E_SYSCALL, "Open file descriptor failed, errno = %{public}d", errno);
 
     struct stat64 st;

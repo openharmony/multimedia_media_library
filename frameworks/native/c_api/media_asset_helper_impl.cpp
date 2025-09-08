@@ -107,7 +107,7 @@ OH_MediaAsset* MediaAssetHelperImpl::GetMediaAsset(std::string uri, int32_t came
 
     fileAsset->SetUri(uri);
     std::string fileId = MediaFileUtils::GetIdFromUri(uri);
-    if (!fileId.empty()) {
+    if (!fileId.empty() && all_of(fileId.begin(), fileId.end(), ::isdigit)) {
         fileAsset->SetId(stoi(fileId));
     }
     fileAsset->SetDisplayName(MediaFileUtils::GetFileName(uri));
