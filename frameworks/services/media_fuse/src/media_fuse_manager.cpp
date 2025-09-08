@@ -441,7 +441,6 @@ static int32_t GetFileMtime(const string &filePath, time_t &mtime)
         return E_ERR;
     }
     mtime = statInfo.st_mtime;
-    MEDIA_INFO_LOG("cpp--Get file mtime success, mtime = %{public}lld", mtime);
     return E_OK;
 }
 
