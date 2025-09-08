@@ -16,20 +16,9 @@
 #include "asset_map_clone.h"
  
 #include "backup_database_utils.h"
-#include "backup_const.h"
 #include "backup_const_column.h"
-#include "backup_dfx_utils.h"
-#include "backup_file_utils.h"
-#include "backup_log_utils.h"
-#include "database_report.h"
-#include "media_column.h"
 #include "media_file_utils.h"
-#include "media_library_db_upgrade.h"
 #include "media_log.h"
-#include "medialibrary_data_manager.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_type_const.h"
-#include "rdb_store.h"
 #include "result_set_utils.h"
  
 namespace OHOS::Media {
@@ -101,7 +90,7 @@ std::vector<AssetMapTbl> AssetMapClone::QueryAssetMapTbl(const std::string &file
 {
     std::vector<AssetMapTbl> result;
  
-    std::string querySql = "SELECT file_id, data FROM  photos ";
+    std::string querySql = "SELECT file_id, data FROM Photos ";
     querySql += " WHERE " + ASSET_MAP_COL_FILE_ID + " IN " + fileIdClause;
  
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(sourceRdb_, querySql);
@@ -121,14 +110,12 @@ void AssetMapClone::ParseAssetMapResultSet(
     const std::shared_ptr<NativeRdb::ResultSet>& resultSet, AssetMapTbl& assetMapTbl)
 {
     // Read original values from source database
-    std::optional<int32_t> originalFileId =
-        BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ASSET_MAP_COL_FILE_ID);
     assetMapTbl.OldFileId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ASSET_MAP_COL_FILE_ID);
     assetMapTbl.OldData = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ASSET_MAP_COL_DATA);
  
     // Generate new fileId based on mapping
-    if (originalFileId.has_value()) {
-        int32_t oldFileId = originalFileId.value();
+    if (assetMapTbl.OldFileId.has_value()) {
+        int32_t oldFileId = assetMapTbl.OldFileId.value();
         const auto it = photoInfoMap_.find(oldFileId);
         if (it != photoInfoMap_.end()) {
             assetMapTbl.fileId = it->second.fileIdNew;
