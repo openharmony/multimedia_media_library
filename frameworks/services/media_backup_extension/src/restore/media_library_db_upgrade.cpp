@@ -22,7 +22,10 @@
 #include "media_log.h"
 #include "album_plugin_table_event_handler.h"
 #include "db_upgrade_utils.h"
+#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_rdb_transaction.h"
+#include "parameter.h"
+#include "parameters.h"
 #include "photo_album_update_date_modified_operation.h"
 #include "photo_day_month_year_operation.h"
 #include "result_set_utils.h"
@@ -31,6 +34,9 @@
 
 namespace OHOS::Media {
 namespace DataTransfer {
+const std::string CATEGORY_REFRESH_ENABLE_TAG = "persist.multimedia.media_analysis_service.categoryfresh.enable";
+const int32_t CATEGORY_REFRESH_ENABLE_VALUE = 1;
+const int32_t CATEGORY_REFRESH_LENGTH = 3;
 // LCOV_EXCL_START
 /**
  * @brief Upgrade the database, before data restore or clone.
@@ -114,8 +120,24 @@ static std::string BuildInClause(const std::vector<std::string> &values)
     return result;
 }
 
+void MediaLibraryDbUpgrade::SetAggregateBit(const int32_t &bitPosition)
+{
+    MEDIA_INFO_LOG("SetAggregateBit start, bitPosition: %{public}d", bitPosition);
+    CHECK_AND_RETURN_LOG(bitPosition < CATEGORY_REFRESH_LENGTH && bitPosition >= 0,
+        "bitPosition out of range");
+    std::string flagStr = system::GetParameter(CATEGORY_REFRESH_ENABLE_TAG, "0");
+    CHECK_AND_RETURN_INFO_LOG(MediaLibraryDataManagerUtils::IsNumber(flagStr),
+        "categoryfresh flag is not number: %{public}s", flagStr.c_str());
+    int32_t flag = std::stoi(flagStr);
+    std::bitset<CATEGORY_REFRESH_LENGTH> binary(flag);
+    binary.set(bitPosition, CATEGORY_REFRESH_ENABLE_VALUE);
+    std::string refreshFlagStr = std::to_string(binary.to_ulong());
+    int32_t ret = system::SetParameter(CATEGORY_REFRESH_ENABLE_TAG, refreshFlagStr);
+    MEDIA_INFO_LOG("SetAggregateBit end, refreshFlagStr: %{public}s, ret: %{public}d",
+        refreshFlagStr.c_str(), ret);
+}
 bool MediaLibraryDbUpgrade::CheckClassifyAlbumExist(const std::string &newAlbumName,
-    NativeRdb::RdbStore &store)
+    NativeRdb::RdbStore &store, bool &isSetAggregateBit)
 {
     std::vector<NativeRdb::ValueObject> params = {};
     params.push_back(NativeRdb::ValueObject(std::to_string(PhotoAlbumType::SMART)));
@@ -125,6 +147,7 @@ bool MediaLibraryDbUpgrade::CheckClassifyAlbumExist(const std::string &newAlbumN
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultSet is nullptr");
     if (resultSet->GoToNextRow() == NativeRdb::E_OK && GetInt32Val("count", resultSet) > 0) {
         resultSet->Close();
+        isSetAggregateBit = true;
         return true;
     }
     resultSet->Close();
@@ -148,9 +171,9 @@ int32_t MediaLibraryDbUpgrade::CreateClassifyAlbum(const std::string &newAlbumNa
 }
 
 void MediaLibraryDbUpgrade::ProcessClassifyAlbum(const std::string &newAlbumName,
-    const std::vector<std::string> &oriAlbumNames, NativeRdb::RdbStore &store)
+    const std::vector<std::string> &oriAlbumNames, NativeRdb::RdbStore &store, bool &isSetAggregateBitSecond)
 {
-    CHECK_AND_RETURN_INFO_LOG(!CheckClassifyAlbumExist(newAlbumName, store),
+    CHECK_AND_RETURN_INFO_LOG(!CheckClassifyAlbumExist(newAlbumName, store, isSetAggregateBitSecond),
         "Media_Restore: classify album: %{public}s already exist.", newAlbumName.c_str());
     int32_t ret = CreateClassifyAlbum(newAlbumName, store);
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK,
@@ -173,7 +196,8 @@ void MediaLibraryDbUpgrade::ProcessClassifyAlbum(const std::string &newAlbumName
 void MediaLibraryDbUpgrade::ProcessOcrClassifyAlbum(const std::string &newAlbumName,
     const std::vector<std::string> &ocrText, NativeRdb::RdbStore &store)
 {
-    CHECK_AND_RETURN_INFO_LOG(!CheckClassifyAlbumExist(newAlbumName, store),
+    bool isSetAggregateBit;
+    CHECK_AND_RETURN_INFO_LOG(!CheckClassifyAlbumExist(newAlbumName, store, isSetAggregateBit),
         "Media_Restore: classify album: %{public}s already exist.", newAlbumName.c_str());
     int32_t ret = CreateClassifyAlbum(newAlbumName, store);
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK,
@@ -217,12 +241,15 @@ void MediaLibraryDbUpgrade::AggregateClassifyAlbum(NativeRdb::RdbStore &store)
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::AggregateClassifyAlbum start");
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     std::unordered_map<std::string, std::vector<std::string>> newAlbumMaps;
+    bool isSetAggregateBitSecond = false;
     GetAggregateMap(newAlbumMaps);
     for (const auto &pair : newAlbumMaps) {
         std::string newAlbumName = pair.first;
         std::vector<std::string> oriAlbumNames = newAlbumMaps[newAlbumName];
-        ProcessClassifyAlbum(newAlbumName, oriAlbumNames, store);
+        ProcessClassifyAlbum(newAlbumName, oriAlbumNames, store, isSetAggregateBitSecond);
     }
+    int32_t bitPosition = 1;
+    CHECK_AND_EXECUTE(!isSetAggregateBitSecond, SetAggregateBit(bitPosition));
     for (const auto &pair : OCR_AGGREGATE_MAPPING_TABLE) {
         int32_t newAlbum = static_cast<int32_t>(pair.first);
         std::vector<std::string> ocrText = pair.second;
