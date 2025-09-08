@@ -106,7 +106,8 @@ int32_t ThumbnailGenerationPostProcess::Notify(const ThumbnailData& data, const 
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "SendThumbNotify watch is nullptr");
     watch->Notify(data.fileUri, notifyType);
     MEDIA_INFO_LOG("ThumbnailGenerationPostProcess::Notify() "
-        "fileUri: %{public}s, notifyType: %{public}d", DfxUtils::GetSafePath(data.fileUri).c_str(), notifyType);
+        "id: %{public}s, path: %{public}s, notifyType: %{public}d",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str(), notifyType);
     return E_OK;
 }
 
