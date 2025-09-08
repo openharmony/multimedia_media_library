@@ -396,6 +396,7 @@ static int32_t OpenFile(const string &filePath, const string &fileId, const stri
 {
     MEDIA_DEBUG_LOG("fuse open file");
     fuse_context *ctx = fuse_get_context();
+    CHECK_AND_RETURN_RET_LOG(ctx != nullptr, E_INNER_FAIL, "fuse_get_context returned nullptr");
     uid_t uid = ctx->uid;
     string bundleName;
     AccessTokenID tokenCaller = INVALID_TOKENID;

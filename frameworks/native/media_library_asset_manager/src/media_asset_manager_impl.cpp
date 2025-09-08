@@ -317,17 +317,22 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
     }
 
     int32_t writeResult = E_OK;
+    errno_t strncpyResult = E_OK;
     if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_TARGET_FILE) {
         writeResult = MediaAssetManagerImpl::WriteFileToPath(dataHandler->GetRequestUri(), dataHandler->GetDestUri(),
             dataHandler->GetSourceMode() == NativeSourceMode::ORIGINAL_MODE);
         Native_RequestId requestId;
-        strncpy_s(requestId.requestId, UUID_STR_LENGTH, assetHandler->requestId.c_str(), UUID_STR_LENGTH);
+        strncpyResult = strncpy_s(requestId.requestId,
+            UUID_STR_LENGTH, assetHandler->requestId.c_str(), UUID_STR_LENGTH);
+        CHECK_AND_RETURN_RET_LOG(strncpyResult == E_OK, false, "strncpy failed");
         if (dataHandler->onDataPreparedHandler_ != nullptr) {
             dataHandler->onDataPreparedHandler_(writeResult, requestId);
         }
     } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_IMAGE_SOURCE) {
         MediaLibrary_RequestId requestId;
-        strncpy_s(requestId.requestId, UUID_STR_LENGTH, assetHandler->requestId.c_str(), UUID_STR_LENGTH);
+        strncpyResult = strncpy_s(requestId.requestId,
+            UUID_STR_LENGTH, assetHandler->requestId.c_str(), UUID_STR_LENGTH);
+        CHECK_AND_RETURN_RET_LOG(strncpyResult == E_OK, false, "strncpy failed");
         if (dataHandler->onRequestImageDataPreparedHandler_ != nullptr) {
             int32_t photoQuality = static_cast<int32_t>(MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS);
             MediaLibrary_MediaQuality quality = (dataHandler->GetPhotoQuality() == photoQuality)
@@ -340,7 +345,9 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
         }
     } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_MOVING_PHOTO) {
         MediaLibrary_RequestId requestId;
-        strncpy_s(requestId.requestId, UUID_STR_LENGTH, assetHandler->requestId.c_str(), UUID_STR_LENGTH);
+        strncpyResult = strncpy_s(requestId.requestId,
+            UUID_STR_LENGTH, assetHandler->requestId.c_str(), UUID_STR_LENGTH);
+        CHECK_AND_RETURN_RET_LOG(strncpyResult == E_OK, false, "strncpy failed");
         if (dataHandler->onRequestMovingPhotoDataPreparedHandler_ != nullptr) {
             int32_t photoQuality = static_cast<int32_t>(MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS);
             MediaLibrary_MediaQuality quality = (dataHandler->GetPhotoQuality() == photoQuality)
