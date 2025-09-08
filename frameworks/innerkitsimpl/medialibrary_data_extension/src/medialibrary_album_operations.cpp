@@ -3230,6 +3230,7 @@ int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbumOrder(const vector<NativeRd
         auto watch = MediaLibraryNotify::GetInstance();
         CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
         watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
+        AlbumAccurateRefresh::NotifyForReCheck();
     }
     return successSetOrderRows == 0 ? E_INNER_FAIL : E_OK;
 }
