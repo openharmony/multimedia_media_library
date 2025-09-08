@@ -470,7 +470,7 @@ static void UpdateIsRectificationCover(const shared_ptr<MediaLibraryRdbStore> rd
     predicates.NotEqualTo(PhotoColumn::PHOTO_COVER_POSITION, 0);
 
     ValuesBucket values;
-    values.PutLong(PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, 1);
+    values.PutInt(PhotoColumn::PHOTO_IS_RECTIFICATION_COVER, 1);
 
     int32_t changedRows = 0;
     int32_t err = rdbStore->Update(changedRows, values, predicates);
