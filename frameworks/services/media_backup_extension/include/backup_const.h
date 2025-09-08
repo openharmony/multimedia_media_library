@@ -756,6 +756,18 @@ constexpr size_t SQL_BATCH_SIZE = 1000;
 const std::string CONFIG_INFO_CLONE_PHOTO_SYNC_OPTION_KEY = "photo_sync_status";
 const std::string CONFIG_INFO_CLONE_HDC_DEVICE_ID_KEY = "hdc_device_id";
 const std::string BACKUP_DST_DEVICE_HDC_ENABLE_KEY = "backupHdcEnable";
+
+const std::string SQL_QUERY_PHOTO_UNIQUE_SOUTH_DEVICE_TYPE = "\
+    SELECT DISTINCT south_device_type \
+    FROM Photos \
+        LEFT JOIN PhotoAlbum \
+        ON Photos.owner_album_id = PhotoAlbum.album_id \
+    WHERE position = 2 AND \
+        Photos.sync_status = 0 AND \
+        Photos.clean_flag = 0 AND \
+        Photos.time_pending = 0 AND \
+        Photos.is_temp = 0 AND \
+        (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum');";
 } // namespace Media
 } // namespace OHOS
 
