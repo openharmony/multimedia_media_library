@@ -6956,7 +6956,7 @@ static void GetFaceAnalysisProgress(MediaLibraryAsyncContext* context)
     shared_ptr<DataShare::DataShareResultSet> ret = respBody.resultSet;
     if (ret == nullptr) {
         NAPI_ERR_LOG("ret is nullptr");
-        return "";
+        return;
     }
     if (ret->GoToNextRow() != NativeRdb::E_OK) {
         ret->Close();
@@ -6988,7 +6988,7 @@ static void GetFaceAnalysisProgress(MediaLibraryAsyncContext* context)
     ret->Close();
 }
 
-static std::string GetHighlightAnalysisProgress(MediaLibraryAsyncContext* context)
+static void GetHighlightAnalysisProgress(MediaLibraryAsyncContext* context)
 {
     unordered_map<int, string> idxToCount = {
         {0, "ClearCount"}, {1, "DeleteCount"}, {2, "NotProduceCount"}, {3, "ProduceCount"}, {4, "PushCount"}
