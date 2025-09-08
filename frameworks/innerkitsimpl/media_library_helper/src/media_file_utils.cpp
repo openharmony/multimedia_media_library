@@ -841,6 +841,20 @@ bool MediaFileUtils::ConvertFormatCopy(const std::string &srcFile, const std::st
     return errCode;
 }
 
+static bool IsTranscodeFile(const std::string &filePath)
+{
+    std::string displayName = filePath;
+    size_t pos = filePath.find_last_of("/");
+    if (pos != std::string::npos) {
+        displayName = filePath.substr(pos + 1);
+    }
+    if (displayName == "transcode.jpg" && filePath.find(".editData") != std::string::npos) {
+        MEDIA_INFO_LOG("displayname %{private}s, success", displayName.c_str());
+        return true;
+    }
+    return false;
+}
+
 bool MediaFileUtils::ConvertFormatExtraDataDirectory(const std::string &srcDir, const std::string &dstDir,
     const std::string &extension)
 {
@@ -872,6 +886,7 @@ bool MediaFileUtils::ConvertFormatExtraDataDirectory(const std::string &srcDir, 
                 return E_FAIL;
             }
         } else if (entry.is_regular_file()) {
+            CHECK_AND_CONTINUE(!IsTranscodeFile(srcFilePath));
             error_code ec;
             bool ret = false;
             bool isEqual = std::filesystem::equivalent(srcFilePath, sourceFilePath, ec);
@@ -2394,6 +2409,7 @@ int32_t MediaFileUtils::CopyDirectory(const std::string &srcDir, const std::stri
                 return E_FAIL;
             }
         } else if (entry.is_regular_file()) {
+            CHECK_AND_CONTINUE(!IsTranscodeFile(srcFilePath));
             if (!CopyFileUtil(srcFilePath, dstFilePath)) {
                 MEDIA_ERR_LOG("Copy file from %{public}s to %{public}s failed.",
                     DesensitizePath(srcFilePath).c_str(), DesensitizePath(dstFilePath).c_str());

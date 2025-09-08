@@ -299,6 +299,16 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ClearContinueCloneData_test_002, TestSize
     medialibrarySubscriberPtr->ClearContinueCloneData(&data);
 }
 
+HWTEST_F(MediaLibraryRdbTest, medialib_AgingTmpCompatibleDuplicates_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("AgingTmpCompatibleDuplicates_test_001 start");
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    medialibrarySubscriberPtr->AgingTmpCompatibleDuplicates(true);
+    medialibrarySubscriberPtr->AgingTmpCompatibleDuplicates(false);
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+}
+
 HWTEST_F(MediaLibraryRdbTest, medialib_DoAgingOperation_test_001, TestSize.Level1)
 {
     shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();

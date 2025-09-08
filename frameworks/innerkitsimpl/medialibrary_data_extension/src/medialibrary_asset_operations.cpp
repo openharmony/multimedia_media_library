@@ -1604,9 +1604,6 @@ int32_t MediaLibraryAssetOperations::SetTranscodeUriToFileAsset(std::shared_ptr<
     CHECK_AND_RETURN_RET_LOG(mediaLibraryBundleManager != nullptr, E_INVALID_VALUES,
         "MediaLibraryBundleManager::GetInstance() returned nullptr");
     string clientBundle = mediaLibraryBundleManager->GetClientBundleName();
-    CHECK_AND_RETURN_RET_LOG(!clientBundle.empty(), E_INNER_FAIL,
-        "Get client bundle name failed, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    MEDIA_INFO_LOG("SetTranscodeUriToFileAsset clientBundle: %{public}s", clientBundle.c_str());
     CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(clientBundle),
         E_INNER_FAIL, "clientBundle support heif, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
     CHECK_AND_RETURN_RET_LOG(fileAsset->GetExistCompatibleDuplicate(), E_INNER_FAIL,
