@@ -32,6 +32,7 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "power_efficiency_manager.h"
+#include "settings_data_manager.h"
 #include "userfile_manager_types.h"
 
 namespace OHOS {
@@ -52,6 +53,7 @@ const int32_t FILE_HEIGHT_AND_WIDTH_1440 = 1440;
 const int32_t FILE_HEIGHT_AND_WIDTH_2000 = 2000;
 const int32_t FILE_HEIGHT_AND_WIDTH_4000 = 4000;
 const int64_t PHOTO_FILE_SIZE = 1024;
+
 static const std::vector<std::pair<int64_t, std::string>> sizeRanges = {
     {100, "size100K"},
     {250, "size250K"},
@@ -274,6 +276,35 @@ static void BuildDbInfo(PhotoRecordInfo &photoRecordInfo)
     }
 }
 
+static void FillWaitUploadCount(PhotoRecordInfo &photoRecordInfo, bool &ret)
+{
+    const string filterCondition = MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
+        PhotoColumn::PHOTO_SYNC_STATUS + " = " +
+        to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) + " AND " +
+        PhotoColumn::PHOTO_CLEAN_FLAG + " = " +
+        to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
+    auto switchStatus = SettingsDataManager::GetPhotosSyncSwitchStatus();
+    if (switchStatus == SwitchStatus::CLOUD) {
+        const string photoWaitUploadCloudCountQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM "
+            + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::PHOTO_POSITION + " = "
+            + to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)) + " AND " + filterCondition;
+        ret = ParseResultSet(photoWaitUploadCloudCountQuerySql, 0, photoRecordInfo.photoWaitUploadCloudCount) && ret;
+        photoRecordInfo.photoWaitUploadHdcCount = -1;
+    } else if (switchStatus == SwitchStatus::HDC) {
+        const string photoWaitUploadHdcCountQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM "
+            + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::PHOTO_POSITION + " = "
+            + to_string(static_cast<int32_t>(PhotoPositionType::LOCAL)) + " AND " + filterCondition;
+        ret = ParseResultSet(photoWaitUploadHdcCountQuerySql, 0, photoRecordInfo.photoWaitUploadHdcCount) && ret;
+        photoRecordInfo.photoWaitUploadCloudCount = -1;
+    } else if (switchStatus == SwitchStatus::CLOSE) {
+        photoRecordInfo.photoWaitUploadCloudCount = 0;
+        photoRecordInfo.photoWaitUploadHdcCount = 0;
+    } else {
+        photoRecordInfo.photoWaitUploadCloudCount = -1;
+        photoRecordInfo.photoWaitUploadHdcCount = -1;
+    }
+}
+
 int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
 {
     const string filterCondition = MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
@@ -309,7 +340,7 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
     const string duplicateLpathCountQuerySql = GetDuplicateLpathCountQuerrySql();
     const string abnormalLpathCountQuerySql = GetAbnormalLpathCountQuerySql();
 
-    int32_t ret = ParseResultSet(imageAndVideoCountQuerySql, MEDIA_TYPE_VIDEO, photoRecordInfo.videoCount);
+    bool ret = ParseResultSet(imageAndVideoCountQuerySql, MEDIA_TYPE_VIDEO, photoRecordInfo.videoCount);
     ret = ParseResultSet(imageAndVideoCountQuerySql, MEDIA_TYPE_IMAGE, photoRecordInfo.imageCount) && ret;
     ret = ParseResultSet(abnormalSizeCountQuerySql, 0, photoRecordInfo.abnormalSizeCount) && ret;
     ret = ParseResultSet(abnormalWidthHeightQuerySql, 0, photoRecordInfo.abnormalWidthOrHeightCount) && ret;
@@ -317,7 +348,7 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
     ret = ParseResultSet(totalAbnormalRecordSql, 0, photoRecordInfo.toBeUpdatedRecordCount) && ret;
     ret = ParseResultSet(duplicateLpathCountQuerySql, 0, photoRecordInfo.duplicateLpathCount) && ret;
     ret = ParseResultSet(abnormalLpathCountQuerySql, 0, photoRecordInfo.abnormalLpathCount) && ret;
-
+    FillWaitUploadCount(photoRecordInfo, ret);
     BuildDbInfo(photoRecordInfo);
     return ret;
 }

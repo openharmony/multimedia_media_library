@@ -77,6 +77,7 @@ struct PhotoStatistics {
     int32_t cloudVideoCount;   // 纯云端视频数量
     int32_t sharedImageCount;  // 端云共存照片数量
     int32_t sharedVideoCount;  // 端云共存视频数量
+    int32_t southDeviceType;
 };
 
 struct LcdAndAstcCount {
@@ -138,7 +139,7 @@ public:
     void ReportAdaptationToMovingPhoto();
     void ReportAlibHeifDuplicate();
     static int32_t ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,
-        const int32_t& totalDownload);
+        const int32_t& totalDownload, const int32_t& southDeviceType);
     EXPORT static void ReportStartResult(int32_t scene, int32_t errorCode, int32_t startTime);
     void ReportPhotoRecordInfo();
     static int32_t ReportMedialibraryAPI(const std::string& callerPackage, const std::string& saveUri);
@@ -149,9 +150,9 @@ public:
     static int32_t ReportPhotoError(const PhotoErrorCount& reportData);
 
     static int32_t ReportSyncFault(const std::string& taskId, const std::string& position,
-        const SyncFaultEvent& event);
+        const SyncFaultEvent& event, const int32_t& southDeviceType);
     static int32_t ReportSyncStat(const std::string& taskId, const CloudSyncInfo& info, const CloudSyncStat& stat,
-        const std::string& syncInfo);
+        const std::string& syncInfo, const int32_t& southDeviceType);
     void ReportPhotoSizeAndResolutionInfo(const QuerySizeAndResolution& querySizeAndResolution,
         const std::string& photoMimeType);
     void ReportAccurateRefreshResult(const AccurateRefreshDfxDataPoint& reportData);

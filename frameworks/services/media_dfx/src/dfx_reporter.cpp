@@ -253,7 +253,8 @@ void DfxReporter::ReportPhotoInfo(const PhotoStatistics& stats)
         "CLOUD_IMAGE_COUNT", stats.cloudImageCount,
         "CLOUD_VIDEO_COUNT", stats.cloudVideoCount,
         "SHARED_IMAGE_COUNT", stats.sharedImageCount,
-        "SHARED_VIDEO_COUNT", stats.sharedVideoCount);
+        "SHARED_VIDEO_COUNT", stats.sharedVideoCount,
+        "SOUTH_DEVICE_TYPE", stats.southDeviceType);
     if (ret != 0) {
         MEDIA_ERR_LOG("ReportPhotoInfo error:%{public}d", ret);
     }
@@ -394,7 +395,7 @@ std::string SecondsToTime(const int64_t& seconds)
 }
 
 int32_t DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb,
-    const int32_t& generatedThumb, const int32_t& totalDownload)
+    const int32_t& generatedThumb, const int32_t& totalDownload, const int32_t& southDeviceType)
 {
     if (totalDownload == 0) {
         return 0;
@@ -421,7 +422,8 @@ int32_t DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloa
         "DOWNLOADED_THUMB_RATIO", downloadedThumb / total,
         "GENERATED_THUMB_NUM", generatedThumb,
         "GENERATED_THUMB_RATIO", generatedThumb / total,
-        "CLOUD_DOWN_TOTAL_DURATION", SecondsToTime(cost));
+        "CLOUD_DOWN_TOTAL_DURATION", SecondsToTime(cost),
+        "SOUTH_DEVICE_TYPE", southDeviceType);
     if (ret != 0) {
         MEDIA_ERR_LOG("Report CloudSyncThumbGenerationStatus error:%{public}d", ret);
     }
@@ -455,6 +457,8 @@ void DfxReporter::ReportPhotoRecordInfo()
     int64_t dbFileSize = photoRecordInfo.dbFileSize;
     int32_t duplicateLpathCount = photoRecordInfo.duplicateLpathCount;
     int32_t abnormalLpathCount = photoRecordInfo.abnormalLpathCount;
+    int32_t photoWaitUploadCloudCount = photoRecordInfo.photoWaitUploadCloudCount;
+    int32_t photoWaitUploadHdcCount = photoRecordInfo.photoWaitUploadHdcCount;
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
         "MEDIALIB_DATABASE_INFO",
@@ -469,6 +473,8 @@ void DfxReporter::ReportPhotoRecordInfo()
         "ABNORMAL_COUNT_TO_UPDATE", toBeUpdatedRecordCount,
         "DUPLICATE_LPATH_COUNT", duplicateLpathCount,
         "ABNORMAL_LPATH_COUNT", abnormalLpathCount,
+        "PHOTO_WAIT_UPLOAD_CLOUD_COUNT", photoWaitUploadCloudCount,
+        "PHOTO_WAIT_UPLOAD_HDC_COUNT", photoWaitUploadHdcCount,
         "WATCH_LIST_INFO", GetWatchListInfo());
     if (ret != 0) {
         MEDIA_ERR_LOG("ReportPhotoRecordInfo error:%{public}d", ret);
@@ -605,7 +611,7 @@ int32_t DfxReporter::ReportPhotoError(const PhotoErrorCount& reportData)
 }
 
 int32_t DfxReporter::ReportSyncFault(const std::string& taskId, const std::string& position,
-    const SyncFaultEvent& event)
+    const SyncFaultEvent& event, const int32_t& southDeviceType)
 {
     int32_t ret = HiSysEventWrite(
         MEDIA_LIBRARY,
@@ -616,7 +622,8 @@ int32_t DfxReporter::ReportSyncFault(const std::string& taskId, const std::strin
         "FAULT_TYPE", static_cast<uint32_t>(event.type),
         "FAULT_ERROR_CODE", event.errorCode,
         "FUNCTION_NAME", position,
-        "MESSAGE", event.message);
+        "MESSAGE", event.message,
+        "SOUTH_DEVICE_TYPE", southDeviceType);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("report ReportSyncFault error %{public}d", ret);
     }
@@ -624,7 +631,7 @@ int32_t DfxReporter::ReportSyncFault(const std::string& taskId, const std::strin
 }
 
 int32_t DfxReporter::ReportSyncStat(const std::string& taskId, const CloudSyncInfo& info, const CloudSyncStat& stat,
-    const std::string& syncInfo)
+    const std::string& syncInfo, const int32_t& southDeviceType)
 {
     int32_t ret = HiSysEventWrite(
         MEDIA_LIBRARY,
@@ -642,7 +649,8 @@ int32_t DfxReporter::ReportSyncStat(const std::string& taskId, const CloudSyncIn
         "UPLOAD_ALBUM", stat.uploadAlbum,
         "DOWNLOAD_ALBUM", stat.downloadAlbum,
         "UPLOAD_META_ERR", stat.uploadMetaErr,
-        "SYNC_INFO", syncInfo);
+        "SYNC_INFO", syncInfo,
+        "SOUTH_DEVICE_TYPE", southDeviceType);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("report ReportSyncStat error %{public}d", ret);
     }
