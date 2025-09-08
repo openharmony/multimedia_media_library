@@ -38,6 +38,7 @@
 #include "result_set_utils.h"
 #include "values_bucket.h"
 #include "cloud_enhancement_uri.h"
+#include "asset_accurate_refresh.h"
 
 #define private public
 #define protected public
@@ -856,6 +857,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_save_cloud_enhan
     MEDIA_INFO_LOG("enhancement_callback_save_cloud_enhancement_photo_002 Start");
     string sourceDisplayName;
     CloudEnhancementThreadTask task("", 0, nullptr, 0, true);
+    auto assetRefresh = std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
     int32_t sourceFileId = -1;
     uint32_t size = static_cast<uint32_t>(sizeof(BUFFER));
     uint8_t* buffer = new uint8_t[size];
@@ -875,11 +877,11 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_save_cloud_enhan
     auto resultSet = GetQueryResultSet(photoId);
     ASSERT_NE(resultSet, nullptr);
 
-    int32_t ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, resultSet);
+    int32_t ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, assetRefresh);
     EXPECT_EQ(ret <= 0, true);
     fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath, sourceDisplayName, sourceSubtype, 0);
 
-    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, resultSet);
+    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, assetRefresh);
     EXPECT_EQ(ret, -1);
 
     string photoId2 = "202408302001002";
@@ -889,7 +891,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_save_cloud_enhan
     fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath, sourceDisplayName, sourceSubtype, 0);
     resultSet = GetQueryResultSet(photoId2);
     ASSERT_NE(resultSet, nullptr);
-    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, resultSet);
+    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, assetRefresh);
     EXPECT_NE(ret, 0);
 
     string photoId3 = "202408302001003";
@@ -903,7 +905,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_save_cloud_enhan
     fileInfo = make_shared<CloudEnhancementFileInfo>(sourceFileId, sourceFilePath, sourceDisplayName, sourceSubtype, 0);
     resultSet = GetQueryResultSet(photoId3);
     ASSERT_NE(resultSet, nullptr);
-    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, resultSet);
+    ret = EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, assetRefresh);
     EXPECT_NE(ret, 0);
     MEDIA_INFO_LOG("enhancement_callback_save_cloud_enhancement_photo_002 End");
 }
@@ -938,7 +940,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_on_failed_004, T
     ASSERT_NE(resultSet, nullptr);
     ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
 
-    int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
+    int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, assetRefresh);
     EXPECT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::FAILED_RETRY));
 
     MEDIA_INFO_LOG("enhancement_callback_on_failed_004 End");
