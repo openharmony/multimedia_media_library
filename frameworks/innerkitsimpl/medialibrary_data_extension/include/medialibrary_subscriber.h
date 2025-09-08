@@ -91,6 +91,7 @@ private:
     EXPORT void StopBackgroundOperation();
     EXPORT void StopThumbnailBgOperation();
     EXPORT void StartAnalysisService();
+    EXPORT void AgingTmpCompatibleDuplicates(bool isAge);
     EXPORT static void ClearContinueCloneData(AsyncTaskData *data);
     EXPORT int32_t DoClearContinueCloneData();
     EXPORT bool IsClearContinueCloneData(const std::string &path);

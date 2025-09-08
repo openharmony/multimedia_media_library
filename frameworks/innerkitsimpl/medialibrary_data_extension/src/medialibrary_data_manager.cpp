@@ -3306,15 +3306,14 @@ int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryComman
     return E_FAIL;
 }
 
-static int32_t GetExistsDupSize(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int64_t threshold,
+static int32_t GetExistsDupSize(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
     int32_t &totalCount, int64_t &totalSize)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_INNER_FAIL, "[HeifDup] rdbStore is nullptr");
 
     const std::string sql = R"(SELECT SUM(trans_code_file_size) AS total_size, COUNT(1) AS total_count FROM Photos
-        WHERE transcode_time > 0 and transcode_time < ?)";
-    std::vector<NativeRdb::ValueObject> params = { threshold };
-    auto resultSet = rdbStore->QuerySql(sql, params);
+        WHERE exist_compatible_duplicate = 1)";
+    auto resultSet = rdbStore->QuerySql(sql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, E_INNER_FAIL,
         "[HeifDup] Query dup size, resultSet is nullptr or empty.");
 
@@ -3323,6 +3322,20 @@ static int32_t GetExistsDupSize(const std::shared_ptr<MediaLibraryRdbStore> &rdb
         totalSize = GetInt64Val("total_size", resultSet);
     }
     return E_OK;
+}
+
+static int32_t GetExpiredCount(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int64_t threshold)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, 0, "[HeifDup] rdbStore is nullptr");
+
+    const std::string sql = R"(SELECT COUNT(1) AS expired_count FROM Photos
+        WHERE transcode_time > 0 and transcode_time < ?)";
+    std::vector<NativeRdb::ValueObject> params = { threshold };
+    auto resultSet = rdbStore->QuerySql(sql, params);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, 0,
+        "[HeifDup] Query dup size, resultSet is nullptr or empty.");
+
+    return GetInt32Val("expired_count", resultSet);
 }
 
 int32_t MediaLibraryDataManager::AgingTmpCompatibleDuplicate(int32_t fileId, const std::string &filePath)
@@ -3352,14 +3365,16 @@ void MediaLibraryDataManager::AgingTmpCompatibleDuplicatesThread()
 
     // transcode_time < current_Time - 24 hours
     int64_t threshold = MediaFileUtils::UTCTimeMilliSeconds() - transcodeTimeThreshold;
+    int32_t expiredCount = GetExpiredCount(rdbStore, threshold);
+    CHECK_AND_RETURN_INFO_LOG(expiredCount > 0, "[HeifDup] No duplicate transcode photos to delete");
+
     int32_t totalCount = 0;
     int64_t totalSize = 0;
-    CHECK_AND_RETURN(GetExistsDupSize(rdbStore, threshold, totalCount, totalSize) == E_OK);
-    CHECK_AND_RETURN_INFO_LOG(totalCount > 0, "[HeifDup] No duplicate transcode photos to delete");
+    CHECK_AND_RETURN(GetExistsDupSize(rdbStore, totalCount, totalSize) == E_OK);
 
     int dealCnt = 0;
     int64_t dealSize = 0;
-    int32_t queryTimes = static_cast<int32_t>(ceil(static_cast<double>(totalCount) / batchSize));
+    int32_t queryTimes = static_cast<int32_t>(ceil(static_cast<double>(expiredCount) / batchSize));
     for (int32_t i = 0; i < queryTimes; i++) {
         std::vector<NativeRdb::ValueObject> params = { threshold, batchSize };
         auto resultSet = rdbStore->QuerySql(querySql, params);
@@ -3375,7 +3390,7 @@ void MediaLibraryDataManager::AgingTmpCompatibleDuplicatesThread()
             int64_t size = GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet);
             dealCnt++;
             dealSize += size;
-            MEDIA_INFO_LOG("[HeifDup] total: %{public}d, aged: %{public}d", totalCount, dealCnt);
+            MEDIA_INFO_LOG("[HeifDup] expired: %{public}d, aged: %{public}d", expiredCount, dealCnt);
         } while (resultSet->GoToNextRow() == NativeRdb::E_OK && isAgingDup_.load());
 
         CHECK_AND_EXECUTE(resultSet == nullptr, resultSet->Close());
