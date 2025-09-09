@@ -243,7 +243,6 @@ inline const std::unordered_map<PhotoLabel, AggregateType> AGGREGATE_MAPPING_TAB
     {PhotoLabel::BUILDING, AggregateType::CULTURAL_LANDSCAPE},
     {PhotoLabel::CITY_OVERLOOK, AggregateType::CULTURAL_LANDSCAPE},
     {PhotoLabel::FOUNTAIN, AggregateType::CULTURAL_LANDSCAPE},
-    {PhotoLabel::BEIJING_TIANANMEN, AggregateType::CULTURAL_LANDSCAPE},
     {PhotoLabel::THE_GREAT_WALL, AggregateType::CULTURAL_LANDSCAPE},
     {PhotoLabel::ORIENTAL_PEARL_TOWER, AggregateType::CULTURAL_LANDSCAPE},
     {PhotoLabel::UANGZHOU_TOWER, AggregateType::CULTURAL_LANDSCAPE},
