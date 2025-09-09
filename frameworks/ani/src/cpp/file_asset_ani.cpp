@@ -126,6 +126,8 @@ const std::array fileAssetAniMethods = {
         reinterpret_cast<void *>(FileAssetAni::GetExif)},
     ani_native_function {"setPendingSync", nullptr,
         reinterpret_cast<void *>(FileAssetAni::PhotoAccessHelperSetPending)},
+};
+const std::array fileAssetAniStaticMethods = {
     ani_native_function {"transferToDynamicPhotoAsset", nullptr,
         reinterpret_cast<void *>(FileAssetAni::TransferToDynamicPhotoAsset)},
     ani_native_function {"transferToStaticPhotoAsset", nullptr,
@@ -247,6 +249,12 @@ ani_status FileAssetAni::PhotoAccessHelperInit(ani_env *env)
     status = env->Class_BindNativeMethods(cls, fileAssetAniMethods.data(), fileAssetAniMethods.size());
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
+        return status;
+    }
+    status = env->Class_BindStaticNativeMethods(
+        cls, fileAssetAniStaticMethods.data(), fileAssetAniStaticMethods.size());
+    if (status != ANI_OK) {
+        ANI_ERR_LOG("Failed to bind static native methods to: %{public}s", className);
         return status;
     }
     return ANI_OK;
