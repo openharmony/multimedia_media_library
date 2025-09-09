@@ -196,6 +196,7 @@ void ChangeListener::SolveOnChange(UvChangeMsg *msg, ChangeData &changeData)
         shared_ptr<MessageParcel> parcel = make_shared<MessageParcel>();
         if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(msg->data_), msg->changeInfo_.size_)) {
             SetSubUris(parcel, changeData);
+            msg->data_ = nullptr;
         }
     } else {
         changeData.type = static_cast<int32_t>(msg->changeInfo_.changeType_);
