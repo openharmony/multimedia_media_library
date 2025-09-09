@@ -48,6 +48,7 @@
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_facard_operations.h"
 #include "medialibrary_inotify.h"
 #include "medialibrary_kvstore_manager.h"
 #ifdef META_RECOVERY_SUPPORT
@@ -147,7 +148,8 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE,
     EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE,
     EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK,
-    EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT
+    EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT,
+    EventFwk::CommonEventSupport::COMMON_EVENT_DATA_SHARE_READY,
 };
 
 const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
@@ -444,10 +446,13 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 {
     const AAFwk::Want &want = eventData.GetWant();
     std::string action = want.GetAction();
-    if (action != EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
-        action != EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK) {
-        MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
-    }
+    CHECK_AND_EXECUTE(action != EventFwk::CommonEventSupport::COMMON_EVENT_DATA_SHARE_READY,
+        MediaLibraryFaCardOperations::InitFaCard());
+
+    bool cond = action != EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
+                action != EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK;
+    CHECK_AND_PRINT_INFO_LOG(!cond, "OnReceiveEvent action:%{public}s.", action.c_str());
+
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
         isWifiConnected_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
         UpdateBackgroundTimer();
