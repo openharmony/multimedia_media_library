@@ -220,6 +220,7 @@ private:
     void RestoreVideoFaceData();
     void PrepareShootingModeVal(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     void GetInsertValueFromValMap(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
+    void SetAggregateBitThird();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -284,6 +285,16 @@ private:
     CloneRestoreConfigInfo dstCloneRestoreConfigInfo_;
     CloneRestoreConfigInfo srcCloneRestoreConfigInfo_;
     DstDeviceBackupInfo dstDeviceBackupInfo_;
+
+private:
+    const std::string SQL_QUERY_CLASSIFY_ALBUM_EXIST = " \
+        SELECT \
+            count(1) AS count \
+        FROM AnalysisAlbum \
+        WHERE \
+            album_type = ? \
+        AND \
+            album_subtype = ?;";
 };
 
 template<typename T>
