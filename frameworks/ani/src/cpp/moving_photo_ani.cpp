@@ -80,7 +80,7 @@ ani_status MovingPhotoAni::Init(ani_env *env)
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
         return status;
     }
-    std::array methods = {
+    std::array instanceMethods = {
         ani_native_function {"requestContentByImageFileAndVideoFile", nullptr,
             reinterpret_cast<void *>(MovingPhotoAni::RequestContentByImageFileAndVideoFile)},
         ani_native_function {"requestContentByResourceTypeAndFile", nullptr,
@@ -88,15 +88,23 @@ ani_status MovingPhotoAni::Init(ani_env *env)
         ani_native_function {"requestContentByResourceType", nullptr,
             reinterpret_cast<void *>(MovingPhotoAni::RequestContentByResourceType)},
         ani_native_function {"getUri", nullptr, reinterpret_cast<void *>(MovingPhotoAni::GetUri)},
+    };
+
+    status = env->Class_BindNativeMethods(cls, instanceMethods.data(), instanceMethods.size());
+    if (status != ANI_OK) {
+        ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
+        return status;
+    }
+
+    std::array staticMethods = {
         ani_native_function {"transferToDynamicMovingPhoto", nullptr,
             reinterpret_cast<void *>(TransferToDynamicMovingPhoto)},
         ani_native_function {"transferToStaticMovingPhoto", nullptr,
             reinterpret_cast<void *>(TransferToStaticMovingPhoto)},
     };
-
-    status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
+    status = env->Class_BindStaticNativeMethods(cls, staticMethods.data(), staticMethods.size());
     if (status != ANI_OK) {
-        ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
+        ANI_ERR_LOG("Failed to bind static native methods to: %{public}s", className);
         return status;
     }
     return ANI_OK;
