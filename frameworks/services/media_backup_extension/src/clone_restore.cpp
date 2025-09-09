@@ -658,6 +658,7 @@ void CloneRestore::RestorePhotoForCloud()
 void CloneRestore::RestoreAlbum()
 {
     MEDIA_INFO_LOG("Start clone restore: albums");
+    SetAggregateBitThird();
     maxSearchId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
         ANALYSIS_SEARCH_INDEX_TABLE, SEARCH_IDX_COL_ID);
     maxBeautyFileId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
@@ -2819,6 +2820,25 @@ bool CloneRestore::CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus switchStat
             static_cast<int32_t>(southDeviceType), static_cast<int32_t>(expectedSrcSouthDeviceType));
     }
     return true;
+}
+
+void CloneRestore::SetAggregateBitThird()
+{
+    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "SetAggregateBitThird failed, rdbStore is nullptr");
+    DataTransfer::MediaLibraryDbUpgrade medialibraryDbUpgrade;
+    std::vector<NativeRdb::ValueObject> params = {};
+    params.push_back(NativeRdb::ValueObject(std::to_string(PhotoAlbumType::SMART)));
+    params.push_back(NativeRdb::ValueObject(std::to_string(PhotoAlbumSubType::CLASSIFY)));
+    auto resultSet = mediaLibraryRdb_->QuerySql(SQL_QUERY_CLASSIFY_ALBUM_EXIST, params);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK && GetInt32Val("count", resultSet) > 0) {
+        resultSet->Close();
+        MEDIA_INFO_LOG("classify album already exist, no need to SetAggregateBitThird");
+        return;
+    }
+    resultSet->Close();
+    int32_t bitPosition = 2;
+    medialibraryDbUpgrade.SetAggregateBit(bitPosition);
 }
 } // namespace Media
 } // namespace OHOS

@@ -27,7 +27,9 @@ class MediaLibraryDbUpgrade {
 public:
     int32_t OnUpgrade(NativeRdb::RdbStore &store);
     int32_t CreateClassifyAlbum(const std::string &newAlbumName, NativeRdb::RdbStore &store);
-    bool CheckClassifyAlbumExist(const std::string &newAlbumName, NativeRdb::RdbStore &store);
+    bool CheckClassifyAlbumExist(const std::string &newAlbumName, NativeRdb::RdbStore &store,
+        bool &isSetAggregateBit);
+    void SetAggregateBit(const int32_t &bitPosition);
 
 private:
     int32_t UpgradeAlbumPlugin(NativeRdb::RdbStore &store);
@@ -45,7 +47,7 @@ private:
     int32_t UpdatelPathColumn(NativeRdb::RdbStore &store);
     int32_t ExecSqlWithRetry(std::function<int32_t()> execSql);
     void ProcessClassifyAlbum(const std::string &newAlbumName, const std::vector<std::string> &oriAlbumNames,
-        NativeRdb::RdbStore &store);
+        NativeRdb::RdbStore &store, bool &isSetAggregateBitSecond);
     void ProcessOcrClassifyAlbum(const std::string &newAlbumName, const std::vector<std::string> &ocrText,
         NativeRdb::RdbStore &store);
 

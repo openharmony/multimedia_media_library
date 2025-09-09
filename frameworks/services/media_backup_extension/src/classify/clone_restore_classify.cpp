@@ -582,7 +582,9 @@ void CloneRestoreClassify::AddSelfieAlbum()
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "AddSelfieAlbum failed, rdbStore is nullptr");
     std::string selfieAlbum = std::to_string(static_cast<int32_t>(AggregateType::SELFIE_ALBUM));
     DataTransfer::MediaLibraryDbUpgrade medialibraryDbUpgrade;
-    bool isExist =  medialibraryDbUpgrade.CheckClassifyAlbumExist(selfieAlbum, *this->mediaLibraryRdb_);
+    bool isSetAggregateBit;
+    bool isExist =  medialibraryDbUpgrade.CheckClassifyAlbumExist(selfieAlbum,
+        *this->mediaLibraryRdb_, isSetAggregateBit);
     CHECK_AND_RETURN_INFO_LOG(!isExist, "SelfieAlbum already exist.");
     std::string querySql = "SELECT count(1) AS count FROM Photos WHERE front_camera = ?;";
     std::vector<NativeRdb::ValueObject> params;
@@ -605,7 +607,9 @@ void CloneRestoreClassify::AddUserCommentAlbum()
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "AddUserCommentAlbum failed, rdbStore is nullptr");
     std::string userCommentAlbum = std::to_string(static_cast<int32_t>(AggregateType::USER_COMMENT_ALBUM));
     DataTransfer::MediaLibraryDbUpgrade medialibraryDbUpgrade;
-    bool isExist =  medialibraryDbUpgrade.CheckClassifyAlbumExist(userCommentAlbum, *this->mediaLibraryRdb_);
+    bool isSetAggregateBit;
+    bool isExist =  medialibraryDbUpgrade.CheckClassifyAlbumExist(userCommentAlbum,
+        *this->mediaLibraryRdb_, isSetAggregateBit);
     CHECK_AND_RETURN_INFO_LOG(!isExist, "UserCommentAlbum already exist.");
     std::string querySql = "SELECT count(1) AS count FROM Photos "
         "WHERE user_comment IS NOT NULL AND user_comment != '';";
