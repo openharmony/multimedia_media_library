@@ -775,6 +775,9 @@ class PhotoBrowserRangeInfo {
 class PhotoBrowserUIElementVisibility {
 }
 
+class PreselectedInfo {    
+}
+
 export class SingleLineConfig {
     constructor() {
         this.itemDisplayRatio = ItemDisplayRatio.SQUARE_RATIO;
