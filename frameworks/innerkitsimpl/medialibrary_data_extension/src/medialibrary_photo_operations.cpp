@@ -319,7 +319,9 @@ static bool AppendValidOrderClause(MediaLibraryCommand &cmd, RdbPredicates &pred
     }
     string columnName = " (" + dateType + ", " + MediaColumn::MEDIA_ID + ") ";
     string value = " (SELECT " + dateType + ", " + MediaColumn::MEDIA_ID + " FROM " +
-        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + photoId + ") ";
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + photoId + " AND " +
+        MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " + MediaColumn::MEDIA_HIDDEN + " = 0 AND " +
+        PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " + MediaColumn::MEDIA_TIME_PENDING + " = 0 ) ";
     string whereClause = predicates.GetWhereClause();
     whereClause += " AND " + columnName + comparisonOperator + value;
     predicates.SetWhereClause(whereClause);
