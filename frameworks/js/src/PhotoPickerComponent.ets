@@ -45,6 +45,10 @@ export struct PhotoPickerComponent {
   onExceedMaxSelected?: ExceedMaxSelectedCallback;
   onCurrentAlbumDeleted?: CurrentAlbumDeletedCallback;
   onVideoPlayStateChanged?: VideoPlayStateChangedCallback;
+  badgeConfig?: BadgeConfig;
+  batchBadgeConfigSize: number = 1000;
+  maxBadgeConfigSize: number = 200000;
+  badgeConfigIsSending: boolean = false;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
   @State revokeIndex = 0;
@@ -72,6 +76,16 @@ export struct PhotoPickerComponent {
     }
   }
 
+  private onChangedBadgeConfigs(data?: Map<string, Object>) {
+    console.log('controller onChanged: SET_BADGE_CONFIGS,badgeConfigIsSending:',this.badgeConfigIsSending)
+    if (this.badgeConfigIsSending !== true) {
+      this.badgeConfig = data.get('SET_BADGE_CONFIGS');
+      this.badgeConfigIsSending = true;
+      this.badgeConfig.uris?.splice(this.maxBadgeConfigSize);
+      this.proxy.send({needSendBadgeConfigs: true, BadgeOptionType: data.get('BADGE_CONFIGS_OPTION_TYPE')});
+    }
+  }
+
   private otherOnChange(data?: Map<string, Object>) {
     if (data?.has('EXIT_PHOTO_BROWSER')) {
       this.handleExitPhotoBrowser();
@@ -86,6 +100,8 @@ export struct PhotoPickerComponent {
     } else if (data?.has('SAVE_TRUSTED_PHOTO_ASSETS')) {
       this.onSaveTrustedPhotoAssets(data);
       console.info('PhotoPickerComponent onChanged: SAVE_REPLACE_PHOTO_ASSETS');
+    } else if (data?.has('SET_BADGE_CONFIGS')) {
+      this.onChangedBadgeConfigs(data);
     } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
@@ -242,12 +258,17 @@ export struct PhotoPickerComponent {
     } else if (dataType === 'remoteReady') {
       if (this.onPickerControllerReady) {
         this.onPickerControllerReady();
+        if(this.badgeConfig && this.badgeConfig.uris.length > 0) {
+          console.log('handleOnReceive: send msg to photo:uri.length:',this.badgeConfig?.uris?.length)
+          this.badgeConfigIsSending = true;
+          this.proxy.send({needSendBadgeConfigs : true, BadgeOptionType : BadgeOptionType.SET_DATA});
+        }
         console.info('PhotoPickerComponent onReceive: onPickerControllerReady');
       }
     } else if (dataType === 'onPhotoBrowserChanged') {
       this.handlePhotoBrowserChange(wantParam);
     } else if (dataType === 'onVideoPlayStateChanged') {
-      this.handleVideoPlayStateChange(wantParam)
+      this.handleVideoPlayStateChange(wantParam);
     } else if (dataType === 'replaceCallback') {
       this.handleReplaceCallback(wantParam);
     } else if (dataType === 'createCallback') {
@@ -257,11 +278,28 @@ export struct PhotoPickerComponent {
     } else if (dataType === 'onBackground') {
       console.info('PhotoPickerComponent onReceive: onBackground');
       this.revokeIndex = 0;
+    } else if (dataType === 'onBadgeConfigSend') {
+      this.handleBadgeConfigSend(wantParam)
+      console.info('PhotoPickerComponent onReceive: onBadgeConfigSend');
     } else {
       this.handleOtherOnReceive(wantParam);
       console.info('PhotoPickerComponent onReceive: other case');
     }
     console.info('PhotoPickerComponent onReceive' + this.pickerController.encrypt(JSON.stringify(wantParam)));
+  }
+
+  private handleBadgeConfigSend(wantParam: Record<string, Object>): void {
+    let index = wantParam.nextIndex as string;
+    if (this.badgeConfig && this.badgeConfig.uris.length > 0) {
+      const unitBadgeConfig = this.badgeConfig.uris.slice(this.batchBadgeConfigSize * size, this.batchBadgeConfigSize * (index + 1));
+      console.log('handleBadgeConfigSend: send piece msg to photo index-:',index,'----',unitBadgeConfig.length)
+      this.proxy.send({badgeConfig : unitBadgeConfig, index: index, 
+          isOver : index >= Math.ceil(this.badgeConfig.uris.length / this.batchBadgeConfigSize) ? true : false, 
+          badgeConfigType : this.badgeConfig.badgeType});
+    }
+    if (index >= Math.ceil(this.badgeConfig.uris.length / this.batchBadgeConfigSize)) {
+        this.badgeConfigIsSending = false;
+    }
   }
 
   private handleOtherOnReceive(wantParam: Record<string, Object>): void {
@@ -370,7 +408,7 @@ export struct PhotoPickerComponent {
 
   private handleVideoPlayStateChange(wantParam: Record<string, Object>): void {
     if (this.onVideoPlayStateChanged) {
-      this.onVideoPlayStateChanged(wantParam.state as VideoPlayerState)
+      this.onVideoPlayStateChanged(wantParam.state as VideoPlayerState);
     }
     console.info('PhotoPickerComponent onReceive: onVideoPlayStateChanged = ' + JSON.stringify(wantParam));
   }
@@ -436,7 +474,7 @@ export struct PhotoPickerComponent {
       singleLineConfig.itemDisplayRatio;
     singleLineConfig.itemBorderRadius = this.getSingleLineConfigItemBorderRadius(singleLineConfig.itemBorderRadius);
     singleLineConfig.itemGap = this.getLength(singleLineConfig.itemGap);
-    return singleLineConfig
+    return singleLineConfig;
   }
 
   private getSingleLineConfigItemBorderRadius(itemBorderRadius?: Length | BorderRadiuses |
@@ -587,6 +625,11 @@ export class PickerController {
         this.data = new Map([['SET_ALBUM_URI', albumUri]]);
         console.info('PhotoPickerComponent SET_ALBUM_URI' + this.encrypt(JSON.stringify(albumUri)));
       }
+    } else if (type === DataType.SET_BADGE_CONFIGS) {
+      let uris: string = data as string;
+      if (uris !== undefined) {
+        this.data = new Map([['SET_BADGE_CONFIGS', uris], ['BADGE_CONFIGS_OPTION_TYPE',BadgeOptionType.SET_DATA]]);
+        console.info('PhotoPickerComponent SET_BADGE_CONFIGS' + this.encrypt(JSON.stringify(uris)));
     } else if (type === DataType.SET_SELECTED_INFO) {
       let uriAndPickerIndexLists: Array<PreselectedInfo> = data as Array<PreselectedInfo>;
       if (uriAndPickerIndexLists !== undefined) {
@@ -595,6 +638,32 @@ export class PickerController {
       }
     } else {
       console.info('PhotoPickerComponent setData: other case');
+    }
+  }
+
+  addData(type: DataType, data: Object) {
+    if (data === undefined) {
+        return;
+    }
+    if (type === DataType.SET_BADGE_CONFIGS) {
+        let uris = data as string;
+        if (uris !== undefined) {
+            this.data = new Map([['SET_BADGE_CONFIGS', e], ['BADGE_CONFIGS_OPTION_TYPE', BadgeOptionType.ADD_DATA]]);
+        }
+        return;
+    }
+  }
+
+  deleteData(type: DataType, data: Object) {
+    if (data === undefined) {
+        return;
+    }
+    if (type === DataType.SET_BADGE_CONFIGS) {
+        let uris = data as string;
+        if (uris !== undefined) {
+            this.data = new Map([['SET_BADGE_CONFIGS', e], ['BADGE_CONFIGS_OPTION_TYPE', BadgeOptionType.DELETE_DATA]]);
+        }
+        return;
     }
   }
 
@@ -800,6 +869,10 @@ class PhotoBrowserUIElementVisibility {
   isVisible?: boolean;
 }
 
+export class BadgeConfig {
+  badgeConfigType?: BadgeTypes,
+  uris?: string[]
+} 
 class PreselectedInfo {
   uri:string;
   preselectablePickerIndex?: number = -1;
@@ -875,4 +948,14 @@ export enum SaveMode {
 export enum ItemDisplayRatio {
   SQUARE_RATIO = 0,
   ORIGINAL_SIZE_RATIO = 1
+}
+
+export enum BadgeTypes {
+  BADGE_UPLOADED = 1
+}
+
+export enum BadgeOptionType {
+  SET_DATA = 1,
+  ADD_DATA = 2,
+  DELETE_DATA = 3
 }

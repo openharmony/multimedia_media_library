@@ -53,6 +53,10 @@ export class PhotoPickerComponent extends ViewPU {
         this.onExceedMaxSelected = void 0;
         this.onCurrentAlbumDeleted = void 0;
         this.onVideoPlayStateChanged = void 0;
+        this.badgeConfig = void 0;
+        this.batchBadgeConfigSize = 1000;
+        this.maxBadgeConfigSize = 200000;
+        this.badgeConfigIsSending = void 0;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
         this.__revokeIndex = new ObservedPropertySimplePU(0, this, 'revokeIndex');
@@ -73,7 +77,13 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onExceedMaxSelected && (this.onExceedMaxSelected = e.onExceedMaxSelected);
         void 0 !== e.onCurrentAlbumDeleted && (this.onCurrentAlbumDeleted = e.onCurrentAlbumDeleted);
         void 0 !== e.onVideoPlayStateChanged && (this.onVideoPlayStateChanged = e.onVideoPlayStateChanged);
+        void 0 !== e.pickerOptions.badgeConfig && (this.badgeConfig = e.pickerOptions.badgeConfig);
         this.__pickerController.set(e.pickerController);
+        if (this.badgeConfig && this.badgeConfig.uris !== undefined) {
+            console.log('badgeConfig.uris.length:' + this.badgeConfig.uris.length);
+            console.log('badgeConfig.badge_type:' + this.badgeConfig.badgeType);
+            this.badgeConfig.uris.splice(this.maxBadgeConfigSize);
+        }
         void 0 !== e.proxy && (this.proxy = e.proxy);
         if (e.revokeIndex !== undefined) {
             this.revokeIndex = e.revokeIndex;
@@ -134,6 +144,19 @@ export class PhotoPickerComponent extends ViewPU {
         }
     }
 
+    onChangedBadgeConfigs(o) {
+        console.log('PhotoPickerComponent onChanged: onChangedBadgeConfigs');
+        //上锁 只要还在发送中 就不做其他操作
+        if (this.badgeConfigIsSending !== true) {
+            console.log('badgeConfigType:' + o.get('BADGE_CONFIGS_OPTION_TYPE'));
+            this.badgeConfig = o.get('SET_BADGE_CONFIGS');
+            this.badgeConfigIsSending = true;
+            this.badgeConfig.uris?.splice(this.maxBadgeConfigSize);
+            this.proxy.send({needSendBadgeConfigs: true, BadgeOptionType: o.get('BADGE_CONFIGS_OPTION_TYPE')});
+            console.log('badgeConfig.uris.length:' + this.badgeConfig?.uris?.length || '--');
+        }
+    }
+
     otherOnChange(o) {
         if (null == o ? void 0 : o.has('SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY')) {
             this.onSetPhotoBrowserUIElementVisibility(o);
@@ -146,6 +169,8 @@ export class PhotoPickerComponent extends ViewPU {
         } else if (null == o ? void 0 : o.has('SAVE_REPLACE_PHOTO_ASSETS')) {
             this.onSaveTrustedPhotoAssets(o);
             console.info('PhotoPickerComponent onChanged: SAVE_REPLACE_PHOTO_ASSETS');
+        } else if (null == o ? void 0 : o.has('SET_BADGE_CONFIGS')) {
+           this.onChangedBadgeConfigs(o);
         } else {
             console.info('PhotoPickerComponent onChanged: other case');
         }
@@ -308,6 +333,12 @@ export class PhotoPickerComponent extends ViewPU {
         } else if ('remoteReady' === o) {
             if (this.onPickerControllerReady) {
                 this.onPickerControllerReady();
+                if (this.badgeConfig && this.badgeConfig?.uris?.length > 0) {
+                    console.log('i need send msg to photo' + this.badgeConfig?.uris?.length + '---' +
+                        this.badgeConfig?.badgeType + '---' + new Date().getTime().toString());
+                    this.badgeConfigIsSending = true;
+                    this.proxy.send({needSendBadgeConfigs: true, BadgeOptionType: BadgeOptionType.SET_DATA});
+                }
                 console.info('PhotoPickerComponent onReceive: onPickerControllerReady');
             }
         } else if ('replaceCallback' === o) {
@@ -320,11 +351,30 @@ export class PhotoPickerComponent extends ViewPU {
             this.handlePhotoBrowserChange(e);
         } else if ('onVideoPlayStateChanged' === o) {
             this.handleVideoPlayStateChanged(e);
+        } else if ('onBadgeConfigSend' === o) {
+            this.handleBadgeConfigSend(e);
         } else {
             this.handleOtherOnReceive(e);
             console.info('PhotoPickerComponent onReceive: other case');
         }
         console.info('PhotoPickerComponent onReceive' + this.pickerController.encrypt(JSON.stringify(e)));
+    }
+
+    handleBadgeConfigSend(e) {
+        let index = e.nextIndex;
+        if (this.badgeConfig && this.badgeConfig?.uris?.length > 0) {
+            console.log('handleBadgeConfigSend uris.length: ' + this.badgeConfig.uris.length);
+            const unitBadgeConfig = this.badgeConfig.uris.slice(this.batchBadgeConfigSize * index, this.batchBadgeConfigSize * (index + 1));
+            console.log('index,unitunitBadgeConfig.length' + unitBadgeConfig?.length + 'index: ' + index +
+                'this.badgeConfig.uris.length: ' + this.badgeConfig?.uris?.length
+            );
+            this.proxy.send({badgeConfig : unitBadgeConfig, index: index, 
+                isOver : index >= Math.ceil(this.badgeConfig.uris.length / this.batchBadgeConfigSize) ? true : false, 
+                badgeConfigType : this.badgeConfig.badgeType});
+        }
+        if (index >= Math.ceil(this.badgeConfig.uris.length / this.batchBadgeConfigSize)) {
+            this.badgeConfigIsSending = false;
+        }
     }
 
     handleOtherOnReceive(e) {
@@ -607,6 +657,12 @@ let PickerController = class {
                 this.data = new Map([['SET_ALBUM_URI', e]]);
                 console.info('PhotoPickerComponent SET_ALBUM_URI' + this.encrypt(JSON.stringify(e)));
             }
+        } else if (e === DataType.SET_BADGE_CONFIGS) {
+            let e = o;
+            if (e !== undefined) {
+                this.data = new Map([['SET_BADGE_CONFIGS', e], ['BADGE_CONFIGS_OPTION_TYPE', BadgeOptionType.SET_DATA]]);
+                console.info('PhotoPickerComponent SET_BADGE_CONFIGS set_data' + this.encrypt(JSON.stringify(e)));
+            }
         } else if (e === DataType.SET_SELECTED_INFO) {
             if (o instanceof Array) {
                 let e = o;
@@ -617,6 +673,35 @@ let PickerController = class {
             }
         } else {
             console.info('PhotoPickerComponent setData: other case');
+        } 
+    }
+
+    addData(e, o) {
+        if (o === undefined) {
+            return;
+        }
+        if (e === DataType.SET_BADGE_CONFIGS) {
+            let e = o;
+            if (e !== undefined) {
+                this.data = new Map([['SET_BADGE_CONFIGS', e], ['BADGE_CONFIGS_OPTION_TYPE', BadgeOptionType.ADD_DATA]]);
+                console.info('PhotoPickerComponent SET_BADGE_CONFIGS add_data' + this.encrypt(JSON.stringify(e)));
+            }
+            return;
+        }
+    }
+
+    deleteData(e, o) {
+        if (o === undefined) {
+            return;
+        }
+        if (e === DataType.SET_BADGE_CONFIGS) {
+            let e = o;
+            if (e !== undefined) {
+                this.data = new Map([['SET_BADGE_CONFIGS', e], ['BADGE_CONFIGS_OPTION_TYPE', BadgeOptionType.DELETE_DATA]]);
+                console.info('PhotoPickerComponent SET_BADGE_CONFIGS delete_data' + this.encrypt(JSON.stringify(e)));
+
+            }
+            return;
         }
     }
 
@@ -786,11 +871,16 @@ export class SingleLineConfig {
     }
 }
 
+export class BadgeConfig {
+
+}
+
 export var DataType;
 !function(e) {
     e[e.SET_SELECTED_URIS = 1] = 'SET_SELECTED_URIS';
     e[e.SET_ALBUM_URI = 2] = 'SET_ALBUM_URI';
     e[e.SET_SELECTED_INFO = 3] = 'SET_SELECTED_INFO';
+    e[e.SET_BADGE_CONFIGS = 4] = 'SET_BADGE_CONFIGS';
 }(DataType || (DataType = {}));
 
 export var ItemType;
@@ -871,6 +961,18 @@ export var ItemDisplayRatio;
     e[e.ORIGINAL_SIZE_RATIO = 1] = 'ORIGINAL_SIZE_RATIO';
 }(ItemDisplayRatio || (ItemDisplayRatio = {}));
 
+export var BadgeTypes;
+!function(e) {
+    e[e.BADGE_UPLOADED = 1] = 'BADGE_UPLOADED';
+}(BadgeTypes || (BadgeTypes = {}));
+
+export var BadgeOptionType;
+!function(e) {
+    e[e.SET_DATA = 1] = 'SET_DATA';
+    e[e.ADD_DATA = 2] = 'ADD_DATA';
+    e[e.DELETE_DATA = 3] = 'DELETE_DATA';
+}(BadgeOptionType || (BadgeOptionType = {}));
+
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
     MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement,
-    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio };
+    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeTypes, BadgeConfig };
