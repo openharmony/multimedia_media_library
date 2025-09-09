@@ -661,8 +661,7 @@ let PickerController = class {
             let e = o;
             if (e !== undefined) {
                 this.data = new Map([['SET_BADGE_CONFIGS', e], ['BADGE_CONFIGS_OPTION_TYPE', BadgeOptionType.SET_DATA]]);
-                console.info('PhotoPickerComponent SET_BADGE_CONFIGS' + this.encrypt(JSON.stringify(e)));
-                console.info('PhotoPickerComponent BADGE_CONFIGS_OPTION_TYPE: set_data');
+                console.info('PhotoPickerComponent SET_BADGE_CONFIGS set_data' + this.encrypt(JSON.stringify(e)));
             }
         } else if (e === DataType.SET_SELECTED_INFO) {
             if (o instanceof Array) {
@@ -685,8 +684,7 @@ let PickerController = class {
             let e = o;
             if (e !== undefined) {
                 this.data = new Map([['SET_BADGE_CONFIGS', e], ['BADGE_CONFIGS_OPTION_TYPE', BadgeOptionType.ADD_DATA]]);
-                console.info('PhotoPickerComponent SET_BADGE_CONFIGS' + this.encrypt(JSON.stringify(e)));
-                console.info('PhotoPickerComponent BADGE_CONFIGS_OPTION_TYPE: add_data');
+                console.info('PhotoPickerComponent SET_BADGE_CONFIGS add_data' + this.encrypt(JSON.stringify(e)));
             }
             return;
         }
@@ -700,8 +698,7 @@ let PickerController = class {
             let e = o;
             if (e !== undefined) {
                 this.data = new Map([['SET_BADGE_CONFIGS', e], ['BADGE_CONFIGS_OPTION_TYPE', BadgeOptionType.DELETE_DATA]]);
-                console.info('PhotoPickerComponent SET_BADGE_CONFIGS' + this.encrypt(JSON.stringify(e)));
-                console.info('PhotoPickerComponent BADGE_CONFIGS_OPTION_TYPE: delete_data');
+                console.info('PhotoPickerComponent SET_BADGE_CONFIGS delete_data' + this.encrypt(JSON.stringify(e)));
 
             }
             return;
