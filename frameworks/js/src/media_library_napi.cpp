@@ -7011,7 +7011,8 @@ napi_value MediaLibraryNapi::PhotoAccessStopCreateThumbnailTask(napi_env env, na
     RETURN_NAPI_UNDEFINED(env);
 }
 
-static void GetMediaAnalysisServiceProgress(nlohmann::json& jsonObj, unordered_map<int, string>& idxToCount)
+static void GetMediaAnalysisServiceProgress(nlohmann::json& jsonObj, unordered_map<int, string>& idxToCount,
+    MediaLibraryAsyncContext* context)
 {
     int errCode = 0;
     GetAnalysisProcessReqBody reqBody;
@@ -7019,6 +7020,14 @@ static void GetMediaAnalysisServiceProgress(nlohmann::json& jsonObj, unordered_m
     QueryResultRespBody respBody;
     errCode = IPC::UserDefineIPCClient().Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, respBody);
+    if (errCode != E_OK) {
+        if (errCode == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(errCode);
+        }
+        NAPI_ERR_LOG("Get Label Analysis Progress failed! errCode is = %{public}d", errCode);
+    }
     shared_ptr<DataShare::DataShareResultSet> ret = respBody.resultSet;
     if (ret == nullptr) {
         NAPI_ERR_LOG("ret is nullptr");
@@ -7037,7 +7046,7 @@ static void GetMediaAnalysisServiceProgress(nlohmann::json& jsonObj, unordered_m
     ret->Close();
 }
 
-static std::string GetAnalysisProgress()
+static void GetAnalysisProgress(MediaLibraryAsyncContext* context)
 {
     int errCode = 0;
     GetAnalysisProcessReqBody reqBody;
@@ -7045,15 +7054,23 @@ static std::string GetAnalysisProgress()
     QueryResultRespBody respBody;
     errCode = IPC::UserDefineIPCClient().Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, respBody);
+    if (errCode != E_OK) {
+        if (errCode == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(errCode);
+        }
+        NAPI_ERR_LOG("Get Analysis Progress failed! errCode is = %{public}d", errCode);
+    }
     shared_ptr<DataShare::DataShareResultSet> ret = respBody.resultSet;
     if (ret == nullptr) {
         NAPI_ERR_LOG("ret is nullptr");
-        return "";
+        return;
     }
     if (ret->GoToFirstRow() != NativeRdb::E_OK) {
         NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
         ret->Close();
-        return "";
+        return;
     }
     vector<string> columnList = {SEARCH_FINISH_CNT, LOCATION_FINISH_CNT, FACE_FINISH_CNT, OBJECT_FINISH_CNT,
         AESTHETIC_FINISH_CNT, OCR_FINISH_CNT, POSE_FINISH_CNT, SALIENCY_FINISH_CNT, RECOMMENDATION_FINISH_CNT,
@@ -7068,20 +7085,19 @@ static std::string GetAnalysisProgress()
         jsonObj[columnName] = colValue;
     }
     ret->Close();
-    string retStr = jsonObj.dump();
-    NAPI_INFO_LOG("Progress json is %{public}s", retStr.c_str());
-    return retStr;
+    context->analysisProgress = jsonObj.dump();
+    NAPI_INFO_LOG("Progress json is %{public}s", context->analysisProgress.c_str());
 }
 
-static std::string GetLabelAnalysisProgress()
+static void GetLabelAnalysisProgress(MediaLibraryAsyncContext* context)
 {
     unordered_map<int, string> idxToCount = {
         {0, "totalCount"}, {1, "finishedCount"}, {2, "LabelCount"}
     };
     nlohmann::json jsonObj;
-    GetMediaAnalysisServiceProgress(jsonObj, idxToCount);
+    GetMediaAnalysisServiceProgress(jsonObj, idxToCount, context);
     NAPI_INFO_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
-    return jsonObj.dump();
+    context->analysisProgress = jsonObj.dump();
 }
 
 static std::string GetTotalCount()
@@ -7117,7 +7133,7 @@ static std::string GetTotalCount()
     return to_string(totalCount);
 }
 
-static std::string GetFaceAnalysisProgress()
+static void GetFaceAnalysisProgress(MediaLibraryAsyncContext* context)
 {
     string curTotalCount = GetTotalCount();
 
@@ -7127,10 +7143,18 @@ static std::string GetFaceAnalysisProgress()
     QueryResultRespBody respBody;
     errCode = IPC::UserDefineIPCClient().Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, respBody);
+    if (errCode != E_OK) {
+        if (errCode == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(errCode);
+        }
+        NAPI_ERR_LOG("Get Face Analysis Progress failed! errCode is = %{public}d", errCode);
+    }
     shared_ptr<DataShare::DataShareResultSet> ret = respBody.resultSet;
     if (ret == nullptr) {
         NAPI_ERR_LOG("ret is nullptr");
-        return "";
+        return;
     }
     if (ret->GoToNextRow() != NativeRdb::E_OK) {
         ret->Close();
@@ -7139,16 +7163,16 @@ static std::string GetFaceAnalysisProgress()
         jsonObj["geoFinishedCount"] = 0;
         jsonObj["searchFinishedCount"] = 0;
         jsonObj["totalCount"] = curTotalCount;
-        string retJson = jsonObj.dump();
+        context->analysisProgress = jsonObj.dump();
         NAPI_ERR_LOG("GetFaceAnalysisProgress failed, errCode is %{public}d, json is %{public}s", errCode,
-            retJson.c_str());
-        return retJson;
+            context->analysisProgress.c_str());
+        return;
     }
     string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(ret, HIGHLIGHT_ANALYSIS_PROGRESS);
     if (retJson == "" || !nlohmann::json::accept(retJson)) {
         ret->Close();
         NAPI_ERR_LOG("retJson is empty or invalid");
-        return "";
+        return;
     }
     nlohmann::json curJsonObj = nlohmann::json::parse(retJson);
     int preTotalCount = curJsonObj["totalCount"];
@@ -7157,13 +7181,12 @@ static std::string GetFaceAnalysisProgress()
             curTotalCount.c_str(), preTotalCount);
         curJsonObj["totalCount"] = curTotalCount;
     }
-    retJson = curJsonObj.dump();
-    NAPI_INFO_LOG("GoToNextRow successfully and json is %{public}s", retJson.c_str());
+    context->analysisProgress = curJsonObj.dump();
+    NAPI_INFO_LOG("GoToNextRow successfully and json is %{public}s", context->analysisProgress.c_str());
     ret->Close();
-    return retJson;
 }
 
-static std::string GetHighlightAnalysisProgress()
+static void GetHighlightAnalysisProgress(MediaLibraryAsyncContext* context)
 {
     unordered_map<int, string> idxToCount = {
         {0, "ClearCount"}, {1, "DeleteCount"}, {2, "NotProduceCount"}, {3, "ProduceCount"}, {4, "PushCount"}
@@ -7174,15 +7197,23 @@ static std::string GetHighlightAnalysisProgress()
     QueryResultRespBody respBody;
     errCode = IPC::UserDefineIPCClient().Call(
         static_cast<uint32_t>(MediaLibraryBusinessCode::GET_ANALYSIS_PROCESS), reqBody, respBody);
+    if (errCode != E_OK) {
+        if (errCode == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(errCode);
+        }
+        NAPI_ERR_LOG("Get Highlight Analysis Progress failed! errCode is = %{public}d", errCode);
+    }
     shared_ptr<DataShare::DataShareResultSet> ret = respBody.resultSet;
     if (ret == nullptr) {
         NAPI_ERR_LOG("ret is nullptr");
-        return "";
+        return;
     }
     if (ret->GoToFirstRow() != NativeRdb::E_OK) {
         NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
         ret->Close();
-        return "";
+        return;
     }
     nlohmann::json jsonObj;
     for (size_t i = 0; i < idxToCount.size(); ++i) {
@@ -7191,9 +7222,8 @@ static std::string GetHighlightAnalysisProgress()
         jsonObj[idxToCount[i]] = tmp;
     }
     ret->Close();
-    string retStr = jsonObj.dump();
-    NAPI_INFO_LOG("Progress json is %{public}s", retStr.c_str());
-    return retStr;
+    context->analysisProgress = jsonObj.dump();
+    NAPI_INFO_LOG("Progress json is %{public}s", context->analysisProgress.c_str());
 }
 
 static void JSGetAnalysisProgressExecute(MediaLibraryAsyncContext* context)
@@ -7205,19 +7235,19 @@ static void JSGetAnalysisProgressExecute(MediaLibraryAsyncContext* context)
     switch (context->analysisType) {
         case ANALYSIS_INVALID: {
             // 处理总进度
-            context->analysisProgress = GetAnalysisProgress();
+            GetAnalysisProgress(context);
             break;
         }
         case ANALYSIS_LABEL: {
-            context->analysisProgress = GetLabelAnalysisProgress();
+            GetLabelAnalysisProgress(context);
             break;
         }
         case ANALYSIS_FACE: {
-            context->analysisProgress = GetFaceAnalysisProgress();
+            GetFaceAnalysisProgress(context);
             break;
         }
         case ANALYSIS_HIGHLIGHT: {
-            context->analysisProgress = GetHighlightAnalysisProgress();
+            GetHighlightAnalysisProgress(context);
             break;
         }
         default:
@@ -7268,6 +7298,11 @@ napi_value MediaLibraryNapi::PhotoAccessHelperGetDataAnalysisProgress(napi_env e
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperGetDataAnalysisProgress");
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
@@ -9761,7 +9796,11 @@ static void JSStartAssetAnalysisExecute(napi_env env, void *data)
         respBody.resultSet->Close();
     }
     if (errCode != E_OK) {
-        context->SaveError(errCode);
+        if (errCode == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(errCode);
+        }
         NAPI_ERR_LOG("Start assets analysis failed! errCode is = %{public}d", errCode);
     }
 }
