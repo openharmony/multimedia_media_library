@@ -60,6 +60,9 @@ export struct PhotoPickerComponent {
     } else if (data?.has('SET_ALBUM_URI')) {
       this.proxy.send({ 'albumUri': data?.get('SET_ALBUM_URI') as string });
       console.info('PhotoPickerComponent onChanged: SET_ALBUM_URI');
+    } else if (data?.has('SET_SELECTED_INFO')) {
+      this.proxy.send({ 'uriAndPickerIndexLists': data?.get('SET_SELECTED_INFO') as Array<PreselectedInfo> });
+      console.info('PhotoPickerComponent onChanged: SET_SELECTED_INFO');
     } else if (data?.has('SET_MAX_SELECT_COUNT')) {
       this.onSetMaxSelectCount(data);
     } else if (data?.has('SET_PHOTO_BROWSER_ITEM')) {
@@ -200,6 +203,8 @@ export struct PhotoPickerComponent {
             singleLineConfig: this.getSingleLineConfig(this.pickerOptions?.singleLineConfig as SingleLineConfig),
             uiComponentColorMode: this.pickerOptions?.uiComponentColorMode as PickerColorMode,
             combinedMediaTypeFilter: this.pickerOptions?.combinedMediaTypeFilter as Array<string>,
+            pickerIndex: this.pickerOptions?.pickerIndex as number,
+            preselectedInfos: this.pickerOptions?.preselectedInfos as Array<PreselectedInfo>
           }
         })
           .height('100%')
@@ -582,6 +587,12 @@ export class PickerController {
         this.data = new Map([['SET_ALBUM_URI', albumUri]]);
         console.info('PhotoPickerComponent SET_ALBUM_URI' + this.encrypt(JSON.stringify(albumUri)));
       }
+    } else if (type === DataType.SET_SELECTED_INFO) {
+      let uriAndPickerIndexLists: Array<PreselectedInfo> = data as Array<PreselectedInfo>;
+      if (uriAndPickerIndexLists !== undefined) {
+        this.data = new Map([['SET_SELECTED_INFO', uriAndPickerIndexLists]]);
+        console.info('PhotoPickerComponent SET_SELECTED_INFO' + this.encrypt(JSON.stringify(uriAndPickerIndexLists)));
+      }
     } else {
       console.info('PhotoPickerComponent setData: other case');
     }
@@ -737,6 +748,8 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   singleLineConfig?: SingleLineConfig;
   uiComponentColorMode?: PickerColorMode;
   combinedMediaTypeFilter?: Array<string>;
+  pickerIndex?: number;
+  preselectedInfos?: Array<PreselectedInfo>;
 }
 
 export class BaseItemInfo {
@@ -787,9 +800,15 @@ class PhotoBrowserUIElementVisibility {
   isVisible?: boolean;
 }
 
+class PreselectedInfo {
+  uri:string;
+  preselectablePickerIndex?: number = -1;
+}
+
 export enum DataType {
   SET_SELECTED_URIS = 1,
-  SET_ALBUM_URI = 2
+  SET_ALBUM_URI = 2,
+  SET_SELECTED_INFO = 3
 }
 
 export enum ItemType {
