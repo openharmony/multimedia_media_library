@@ -75,6 +75,10 @@ int32_t TransactionOperations::Start(bool isBackup)
             this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
             currentTime++;
             MEDIA_ERR_LOG("CreateTransaction busy, ret:%{public}d, time:%{public}d", ret, currentTime);
+        } else if (ret == NativeRdb::E_SQLITE_CORRUPT) {
+            MediaLibraryRestore::GetInstance().CheckRestore(ret);
+            MEDIA_ERR_LOG("CreateTransaction corrupt, ret = %{public}d", ret);
+            return E_HAS_DB_ERROR;
         } else {
             MEDIA_ERR_LOG("CreateTransaction faile, ret = %{public}d", ret);
             break;
