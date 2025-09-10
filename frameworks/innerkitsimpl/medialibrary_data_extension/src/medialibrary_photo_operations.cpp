@@ -2932,9 +2932,10 @@ int32_t MediaLibraryPhotoOperations::DoRevertAfterAddFiltersFailed(const std::sh
     editDataJson[FORMAT_VERSION] = SPECIAL_EDIT_FORMAT_VERSION;
     editDataJson[EDIT_DATA] = SPECIAL_EDIT_EDIT_DATA;
     editDataJson[APP_ID] = SPECIAL_EDIT_APP_ID;
-    string editData = editDataJson.dump();
+    string editData = editDataJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataPath, editData), E_HAS_FS_ERROR,
         "Failed to write editdata:%{private}s", editDataPath.c_str());
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_ERR, "fileAsset is nullptr");
     UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     return E_OK;
 }
