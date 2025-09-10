@@ -391,7 +391,6 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     CloudSyncSwitchManager cloudSyncSwitchManager;
     cloudSyncSwitchManager.RegisterObserver();
     SubscriberPowerConsumptionDetection();
-    MediaLibraryFaCardOperations::InitFaCard();
 
     refCnt_++;
 
