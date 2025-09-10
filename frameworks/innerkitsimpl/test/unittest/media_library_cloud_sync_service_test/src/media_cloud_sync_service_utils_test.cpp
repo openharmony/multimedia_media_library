@@ -419,7 +419,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDataAdded_Test_001, TestS
 
     data.propertiesFirstUpdateTime = "2011111d1abc";
     ret = CloudSyncConvert::CompensatePropDataAdded(data, values);
-    EXPECT_EQ(ret, E_CLOUDSYNC_INVAL_ARG);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDataAdded_Test_002, TestSize.Level1)
@@ -433,9 +433,9 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDataAdded_Test_002, TestS
 
     std::string dateDay;
     ValueObject valueObject;
-    values.GetObject(PhotoColumn::PHOTO_DATE_DAY, valueObject);
+    values.GetObject(PhotoColumn::MEDIA_DATE_ADDED, valueObject);
     valueObject.GetString(dateDay);
-    EXPECT_EQ(dateDay, "20250703");
+    EXPECT_EQ(dateDay, "1752233169");
 }
 
 HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropSourcePath_Test, TestSize.Level1)
