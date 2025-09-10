@@ -2905,11 +2905,14 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
 #endif
-    ThumbnailService::GetInstance()->HasInvalidateThumbnail(to_string(fileId), PhotoColumn::PHOTOS_TABLE);
+    string fileIdStr = to_string(fileId);
+    ThumbnailService::GetInstance()->HasInvalidateThumbnail(fileIdStr, PhotoColumn::PHOTOS_TABLE);
     ScanFile(path, true, true, true);
     if (revertMovingPhotoGraffiti) {
         UpdateAndNotifyMovingPhotoAlbum();
     }
+    AccurateRefresh::AlbumAccurateRefresh albumRefresh;
+    albumRefresh.IsCoverContentChange(fileIdStr);
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     MEDIA_INFO_LOG("end to do revertEdit");
     return E_OK;
