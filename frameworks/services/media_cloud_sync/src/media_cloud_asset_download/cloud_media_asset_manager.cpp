@@ -750,7 +750,7 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia(CloudMediaRetainTy
         SetSouthDeviceCleanStatus(CloudMediaRetainType::HDC_RETAIN_FORCE, CloudSyncStatus::SYNC_SWITCHED_OFF);
         CHECK_AND_PRINT_LOG(ret == E_OK, "hdc force retain. ret %{public}d.", ret);
     }
-    if (SettingsDataManager::GetPhotosSyncSwitchStatus() >= SwitchStatus::CLOUD) {
+    if (CloudSyncHelper::GetInstance()->IsSyncSwitchOpen()) {
         FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor(true);
     }
     SetSouthDeviceSyncSwitchStatus(CloudSyncStatus::SYNC_SWITCHED_OFF);
