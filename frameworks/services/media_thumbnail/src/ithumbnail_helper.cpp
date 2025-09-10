@@ -597,7 +597,7 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         return ret == WaitStatus::WAIT_SUCCESS;
     }
     CHECK_AND_RETURN_RET_LOG(IsCreateLcdSuccess(opts, data), false,
-        "Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
+        "Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
     if (ThumbnailUtils::NeedRotateThumbnail(data) && data.needGenerateExThumbnail) {
         CHECK_AND_PRINT_LOG(IsCreateLcdExSuccess(opts, data), "Fail to create lcdEx, path: %{public}s",
             DfxUtils::GetSafePath(opts.path).c_str());
@@ -1115,10 +1115,12 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
         isPrevStepSuccess = false;
     }
 
-    if (!isPrevStepSuccess || !ScaleLcdToThumbnail(data)) {
-        MEDIA_ERR_LOG("Fail to scale lcd to thumb, path: %{public}s, prev step: %{public}d",
-            DfxUtils::GetSafePath(data.path).c_str(), isPrevStepSuccess);
-        isPrevStepSuccess = false;
+    if (isPrevStepSuccess && !data.source.IsEmptySource()) {
+        CHECK_AND_EXECUTE(ScaleLcdToThumbnail(data), {
+            MEDIA_ERR_LOG("ScaleLcdToThumbnail failed. id: %{public}s, path: %{public}s",
+                data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+            isPrevStepSuccess = false;
+        });
     }
 
     if (isPrevStepSuccess) {
