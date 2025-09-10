@@ -123,7 +123,7 @@ const std::unordered_map<SourceState, StateFunc> STATE_FUNC_MAP = {
     { SourceState::FINISH, { FinishSource::GetSourcePath, FinishSource::IsSizeLargeEnough } },
 };
 
-class SourceLoader {
+class EXPORT SourceLoader {
 public:
     /*
      * Define source loading states sequence for creating thumbnails from local photo.

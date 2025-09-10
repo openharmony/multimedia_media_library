@@ -29,6 +29,7 @@
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
+#include "thumbnail_source_loading.h"
 
  
 using namespace std;
@@ -48,6 +49,7 @@ void MediaLibraryIthumbnailHelperTest::SetUp() {}
 void MediaLibraryIthumbnailHelperTest::TearDown(void) {}
 
 const int32_t TEST_PIXELMAP_WIDTH_AND_HEIGHT = 100;
+const string TEST_IMAGE_PATH = "/storage/cloud/files/Photo/1/CreateImageThumbnailTest_001.jpg";
 
 static std::shared_ptr<PixelMap> CreateTestPixelMap(PixelFormat format, bool useDMA)
 {
@@ -192,6 +194,23 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, GetLcdDesiredSize_test_001, TestSize.
     Size ret = IThumbnailHelper::GetLcdDesiredSize(data, true);
     bool res = ret.width == data.lcdDesiredSize.width && ret.height == data.lcdDesiredSize.height;
     EXPECT_EQ(res, true);
+}
+
+HWTEST_F(MediaLibraryIthumbnailHelperTest, DoCreatetLcdAndThumbnail_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DoCreatetLcdAndThumbnail_test_001");
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    data.id = "1234";
+    data.path = TEST_IMAGE_PATH;
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    
+    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcd,
+        opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::HIGH);
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    bool ret = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, data);
+    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("DoCreatetLcdAndThumbnail_test_001 end");
 }
 
 } // namespace Media
