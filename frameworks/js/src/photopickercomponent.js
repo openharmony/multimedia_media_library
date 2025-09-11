@@ -422,6 +422,9 @@ export class PhotoPickerComponent extends ViewPU {
             i.height = e.height;
             i.size = e.size;
             i.duration = e.duration;
+            i.photoSubtype = e.subtype;
+            i.dynamicRangeType = e.dynamicRangeType;
+            i.orientation = e.imageOrientation;
             let r = this.onItemClicked(i, o);
             console.info('PhotoPickerComponent onReceive: onItemClicked = ' + o);
             if (this.proxy) {
