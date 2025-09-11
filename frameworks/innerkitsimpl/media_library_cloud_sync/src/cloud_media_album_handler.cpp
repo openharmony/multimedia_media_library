@@ -34,6 +34,7 @@
 #include "cloud_album_data_convert.h"
 #include "get_check_records_album_vo.h"
 #include "failed_size_resp_vo.h"
+#include "media_operate_result_vo.h"
 
 namespace OHOS::Media::CloudSync {
 void CloudMediaAlbumHandler::SetUserId(const int32_t &userId)

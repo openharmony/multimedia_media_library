@@ -296,7 +296,8 @@ static void CloudMediaAlbumServiceFuzzer()
     cloudMediaAlbumService->HandleFetchOldRecord(record, bContinue, type, resp);
     cloudMediaAlbumService->OnStartSync();
     cloudMediaAlbumService->OnCompleteSync();
-    cloudMediaAlbumService->OnCompletePull();
+    MediaOperateResult optRet = {"", 0, ""};
+    cloudMediaAlbumService->OnCompletePull(optRet);
     cloudMediaAlbumService->OnCompletePush();
     cloudMediaAlbumService->OnCompleteCheck();
 }
@@ -467,13 +468,12 @@ static void OnRecordFuzzer()
 
 static void CloudMediadPhotoServiceFuzzer()
 {
-    if (cloudMediaPhotosService == nullptr) {
-        MEDIA_ERR_LOG("cloudMediaPhotosService is nuulptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(cloudMediaPhotosService != nullptr, "cloudMediaPhotosService is nuulptr");
+
+    MediaOperateResult optRet = {"", 0, ""};
     cloudMediaPhotosService->OnStartSync();
     cloudMediaPhotosService->OnCompleteSync();
-    cloudMediaPhotosService->OnCompletePull();
+    cloudMediaPhotosService->OnCompletePull(optRet);
     cloudMediaPhotosService->OnCompletePush();
     cloudMediaPhotosService->OnCompleteCheck();
     PullDeleteAndUpdateFuzzer();

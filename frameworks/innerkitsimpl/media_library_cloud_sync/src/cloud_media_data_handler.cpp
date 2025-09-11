@@ -263,7 +263,7 @@ int32_t CloudMediaDataHandler::OnCompletePull(const MediaOperateResult &optRet)
         return E_IPC_INVAL_ARG;
     }
     CLOUD_SYNC_HANDLER_WRITE_LOCK;
-    return this->dataHandler_->OnCompletePull();
+    return this->dataHandler_->OnCompletePull(optRet);
 }
 
 int32_t CloudMediaDataHandler::OnCompletePush()
