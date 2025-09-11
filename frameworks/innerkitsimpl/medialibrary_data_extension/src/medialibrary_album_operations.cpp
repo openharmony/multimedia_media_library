@@ -2722,6 +2722,14 @@ void SetMyOldAlbum(vector<string>& updateSqls, shared_ptr<MediaLibraryRdbStore> 
         clearIsMeAlbum= "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 0, " +
             ALBUM_RELATIONSHIP + " = '', " + RENAME_OPERATION +
             " = " + to_string(renameOperation) + " WHERE " + IS_ME + " = 1";
+        std::string updateSqlForGroupPhoto = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RENAME_OPERATION + " = " +
+            to_string(ALBUM_TO_RENAME_FOR_ANALYSIS) + " WHERE " + ALBUM_ID + " IN (SELECT " + ALBUM_ID + " FROM " +
+            ANALYSIS_ALBUM_TABLE + " WHERE " + GROUP_TAG + " LIKE ( SELECT CONCAT('%', " + GROUP_TAG + ", '%') FROM " +
+            ANALYSIS_ALBUM_TABLE + " WHERE " + IS_ME + " =  1 AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " +
+            to_string(PhotoAlbumSubType::PORTRAIT) +  " LIMIT 1) AND " +PhotoAlbumColumns::ALBUM_SUBTYPE + " = " +
+            to_string(PhotoAlbumSubType::GROUP_PHOTO) + " AND (" + RENAME_OPERATION + " != " + to_string(ALBUM_RENAMED)
+            + " OR " + RENAME_OPERATION + " IS NULL))";
+        updateSqls.push_back(updateSqlForGroupPhoto);
         updateSqls.push_back(clearIsMeAlbum);
     }
 }
@@ -2960,14 +2968,14 @@ int32_t MediaLibraryAlbumOperations::SetIsMe(const ValuesBucket &values, const D
     std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " +
         ALBUM_RELATIONSHIP + " = 'me', " + RENAME_OPERATION + " = 1 WHERE " + GROUP_TAG + " IN(SELECT " +
         GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ")";
-    std::string updateReNameOperation = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RENAME_OPERATION + " = " +
-        std::to_string(ALBUM_TO_RENAME_FOR_ANALYSIS) + " WHERE " + ALBUM_ID + " IN (SELECT " + ALBUM_ID + " FROM " +
-        ANALYSIS_ALBUM_TABLE + " WHERE " + GROUP_TAG + " LIKE ( SELECT CONCAT('%', " + GROUP_TAG + ", '%') FROM " +
-        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ") AND " +
+    std::string updateSqlForGroupPhoto = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RENAME_OPERATION + " = " +
+        std::to_string(ALBUM_TO_RENAME_FOR_ANALYSIS) + " , " + IS_ME + " = 1 WHERE " + ALBUM_ID + " IN (SELECT " +
+        ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + GROUP_TAG + " LIKE ( SELECT CONCAT('%', " +
+        GROUP_TAG + ", '%') FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ") AND " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(PhotoAlbumSubType::GROUP_PHOTO) + " AND (" +
         RENAME_OPERATION + " != " + std::to_string(ALBUM_RENAMED) + " OR " + RENAME_OPERATION + " IS NULL))";
     updateSqls.push_back(updateForSetIsMe);
-    updateSqls.push_back(updateReNameOperation);
+    updateSqls.push_back(updateSqlForGroupPhoto);
     vector<string> needUpdateSearchAlbumIds;
     QueryIsMeAlbumIds(needUpdateSearchAlbumIds, uniStore);
     int32_t err = ExecSqls(updateSqls, uniStore);
