@@ -60,7 +60,7 @@ public:
     int32_t GetRetryRecords(std::vector<std::string> &records) override;
     int32_t OnStartSync() override;
     int32_t OnCompleteSync() override;
-    int32_t OnCompletePull() override;
+    int32_t OnCompletePull(const MediaOperateResult &optRet = {"", 0, ""}) override;
     int32_t OnCompletePush() override;
     int32_t OnCompleteCheck() override;
 

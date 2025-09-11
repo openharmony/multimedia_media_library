@@ -28,6 +28,7 @@
 #include "dataobs_mgr_changeinfo.h"
 #include "cloud_media_album_dao.h"
 #include "cloud_media_define.h"
+#include "media_operate_result.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaAlbumService {
@@ -51,7 +52,7 @@ public:
     int32_t OnDentryFileInsert();
     int32_t OnStartSync();
     int32_t OnCompleteSync();
-    int32_t OnCompletePull();
+    int32_t OnCompletePull(const MediaOperateResult &optRet = {"", 0, ""});
     int32_t OnCompletePush();
     int32_t OnCompleteCheck();
     void CheckAlbumManualCover();

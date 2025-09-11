@@ -376,13 +376,17 @@ int32_t CloudMediaAlbumHandler::OnCompleteSync()
         .Post(operationCode);
 }
 
-int32_t CloudMediaAlbumHandler::OnCompletePull()
+int32_t CloudMediaAlbumHandler::OnCompletePull(const MediaOperateResult &optRet)
 {
     MEDIA_INFO_LOG("OnCompletePull enter");
+    MediaOperateResultRespBodyResultNode reqBody;
+    reqBody.cloudId = optRet.cloudId;
+    reqBody.errorCode = optRet.errorCode;
+    reqBody.errorMsg = optRet.errorMsg;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_COMPLETE_PULL);
     return IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
         .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}})
-        .Post(operationCode);
+        .Post(operationCode, reqBody);
 }
 
 int32_t CloudMediaAlbumHandler::OnCompletePush()
