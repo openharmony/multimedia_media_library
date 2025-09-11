@@ -42,7 +42,7 @@ private:
     std::unordered_map<int32_t, std::list<std::pair<int32_t, std::string>>::iterator> cacheMap_;
     std::mutex uninstallMutex_;
 
-    static std::mutex mutex_;
+    static std::once_flag oc_;
     static std::shared_ptr<MediaLibraryBundleManager> instance_;
 };
 } // Media
