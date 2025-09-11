@@ -48,6 +48,7 @@ if (media_library_feature_mtp) {
       "../get_self_permissions/src/get_self_permissions.cpp",
       "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
       "src/mtp_medialibrary_manager_unit_test.cpp",
+      "src/mtp_medialibrary_manager_test.cpp",
       "src/debug_printf.cpp",
       "src/medialibrary_mtp_unit_test.cpp",
       "src/medialibrary_ptp_unit_test.cpp",
@@ -69,7 +70,7 @@ if (media_library_feature_mtp) {
       "src/mtp_test.cpp",
       "src/mtp_unit_test.cpp",
       "src/ptp_album_handles_unit_test.cpp",
-      "src/ptp_media_sync_observer_test.cpp",
+      "src/ptp_media_sync_observer_test.cpp"
     ]
 
     deps = [
