@@ -256,7 +256,7 @@ int32_t CloudMediaDataHandler::OnCompleteSync()
     return this->dataHandler_->OnCompleteSync();
 }
 
-int32_t CloudMediaDataHandler::OnCompletePull()
+int32_t CloudMediaDataHandler::OnCompletePull(const MediaOperateResult &optRet)
 {
     if (this->dataHandler_ == nullptr) {
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());

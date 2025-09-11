@@ -31,6 +31,7 @@
 #include "on_mdirty_records_album_vo.h"
 #include "get_check_records_album_vo.h"
 #include "failed_size_resp_vo.h"
+#include "media_operate_result_vo.h"
 
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaAlbumControllerService::OnFetchRecords(MessageParcel &data, MessageParcel &reply)
@@ -263,7 +264,18 @@ int32_t CloudMediaAlbumControllerService::OnCompleteSync(MessageParcel &data, Me
 
 int32_t CloudMediaAlbumControllerService::OnCompletePull(MessageParcel &data, MessageParcel &reply)
 {
-    int32_t ret = this->albumService_.OnCompletePull();
+    MediaOperateResultRespBodyResultNode reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CloudMediaAlbumControllerService::OnCompletePull Read Req Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    MediaOperateResult optRet;
+    optRet.cloudId = reqBody.cloudId;
+    optRet.errorCode = reqBody.errorCode;
+    optRet.errorMsg = reqBody.errorMsg;
+    MEDIA_INFO_LOG("album OnCompletePull: %{public}s", reqBody.ToString().c_str());
+    ret = this->albumService_.OnCompletePull(optRet);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 

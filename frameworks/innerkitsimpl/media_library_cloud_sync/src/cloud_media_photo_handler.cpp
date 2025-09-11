@@ -535,7 +535,7 @@ int32_t CloudMediaPhotoHandler::OnCompleteSync()
         .Post(operationCode);
 }
 
-int32_t CloudMediaPhotoHandler::OnCompletePull()
+int32_t CloudMediaPhotoHandler::OnCompletePull(const MediaOperateResult &optRet)
 {
     MEDIA_INFO_LOG("OnCompletePull enter");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_COMPLETE_PULL);
