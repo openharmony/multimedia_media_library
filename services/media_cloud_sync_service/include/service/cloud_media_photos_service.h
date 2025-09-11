@@ -33,6 +33,7 @@
 #include "accurate_common_data.h"
 #include "asset_accurate_refresh.h"
 #include "album_accurate_refresh.h"
+#include "media_operate_result.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaPhotosService {
@@ -63,7 +64,7 @@ public:
     int32_t GetRetryRecords(std::vector<std::string> &cloudIds);
     int32_t OnStartSync();
     int32_t OnCompleteSync();
-    int32_t OnCompletePull();
+    int32_t OnCompletePull(const MediaOperateResult &optRet);
     int32_t OnCompletePush();
     int32_t OnCompleteCheck();
     int32_t ReportFailure(const ReportFailureDto &reportFailureDto);

@@ -553,7 +553,7 @@ int32_t CloudMediaAlbumService::OnCompleteSync()
 
 int32_t CloudMediaAlbumService::OnCompletePull(const MediaOperateResult &optRet)
 {
-    CHECK_AND_RETURN_RET_LOG(optRet.errorCode == 0, E_OK, "OnCompletePull errCode:%{public}d", optRet.errorCode);
+    CHECK_AND_RETURN_RET_LOG(optRet.errorCode == 0, E_OK, "album OnCompletePull errCode:%{public}d", optRet.errorCode);
     std::vector<std::string> failedAlbumIds;
     int32_t ret = OnDeleteAlbums(failedAlbumIds);
     return ret;

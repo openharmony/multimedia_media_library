@@ -31,7 +31,6 @@
 #include "on_mdirty_records_album_vo.h"
 #include "get_check_records_album_vo.h"
 #include "failed_size_resp_vo.h"
-#include "media_operate_result_vo.h"
 
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaAlbumControllerService::OnFetchRecords(MessageParcel &data, MessageParcel &reply)

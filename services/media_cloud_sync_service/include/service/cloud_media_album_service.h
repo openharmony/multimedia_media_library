@@ -52,7 +52,7 @@ public:
     int32_t OnDentryFileInsert();
     int32_t OnStartSync();
     int32_t OnCompleteSync();
-    int32_t OnCompletePull(const MediaOperateResult &optRet = {"", 0, ""});
+    int32_t OnCompletePull(const MediaOperateResult &optRet);
     int32_t OnCompletePush();
     int32_t OnCompleteCheck();
     void CheckAlbumManualCover();

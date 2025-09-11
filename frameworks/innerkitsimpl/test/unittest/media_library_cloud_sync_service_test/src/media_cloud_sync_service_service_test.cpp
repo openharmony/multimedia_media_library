@@ -553,7 +553,8 @@ HWTEST_F(CloudMediaSyncServiceTest, AlbumService_OnCompleteSync_Test_001, TestSi
 HWTEST_F(CloudMediaSyncServiceTest, AlbumService_OnCompletePull_Test_001, TestSize.Level1)
 {
     CloudMediaAlbumService service;
-    int32_t ret = service.OnCompletePull();
+    MediaOperateResult optRet = {"", 0, ""};
+    int32_t ret = service.OnCompletePull(optRet);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -1148,7 +1149,8 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnCompleteSync_Test_
 HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_OnCompletePull_Test_001, TestSize.Level1)
 {
     CloudMediaPhotosService service;
-    int32_t ret = service.OnCompletePull();
+    MediaOperateResult optRet = {"", 0, ""};
+    int32_t ret = service.OnCompletePull(optRet);
     EXPECT_EQ(ret, E_OK);
 }
 
