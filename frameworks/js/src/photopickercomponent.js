@@ -964,10 +964,10 @@ export var ItemDisplayRatio;
     e[e.ORIGINAL_SIZE_RATIO = 1] = 'ORIGINAL_SIZE_RATIO';
 }(ItemDisplayRatio || (ItemDisplayRatio = {}));
 
-export var BadgeTypes;
+export var BadgeType;
 !function(e) {
     e[e.BADGE_UPLOADED = 1] = 'BADGE_UPLOADED';
-}(BadgeTypes || (BadgeTypes = {}));
+}(BadgeType || (BadgeType = {}));
 
 export var BadgeOptionType;
 !function(e) {
@@ -978,4 +978,4 @@ export var BadgeOptionType;
 
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
     MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement,
-    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeTypes, BadgeConfig };
+    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig };
