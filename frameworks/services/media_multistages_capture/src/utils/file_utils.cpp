@@ -39,7 +39,7 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-const uint8_t PACKOPTION_QUALITY = 95;
+const uint8_t PACKOPTION_QUALITY = 90;
 FileUtils::FileUtils() {}
 
 FileUtils::~FileUtils() {}
