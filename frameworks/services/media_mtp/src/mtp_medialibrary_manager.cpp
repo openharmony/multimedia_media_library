@@ -219,7 +219,6 @@ int32_t MtpMedialibraryManager::GetHandles(int32_t parentId, vector<int> &outHan
         predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(parentId));
         predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
         predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
-        predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
         predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
         resultSet = dataShareHelper_->Query(uri, predicates, columns);
     }
@@ -335,7 +334,6 @@ std::shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetOwnerA
     DataShare::DataSharePredicates predicates;
     predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
     predicates.Distinct();
     return dataShareHelper_->Query(uri, predicates, columns);
@@ -367,7 +365,6 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetPhotosInfo(
         predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(context->parent));
         predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
         predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
-        predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
         predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
         predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
         if (!burstKeys.empty()) {
@@ -504,7 +501,6 @@ int32_t MtpMedialibraryManager::GetAllHandles(
     DataShare::DataSharePredicates predicates;
     predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, ZERO);
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, ZERO);
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, ZERO);
 
     auto burstKeys = GetBurstKeyFromPhotosInfo();
@@ -1581,7 +1577,6 @@ int32_t MtpMedialibraryManager::GetCopyAlbumObjectPath(uint32_t handle, PathMap 
     predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(handle));
     predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, DEFAULT_PREDICATE);
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, DEFAULT_PREDICATE);
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, DEFAULT_PREDICATE);
     if (!burstKeys.empty()) {
         predicates.BeginWrap()
@@ -1682,7 +1677,6 @@ int32_t MtpMedialibraryManager::GetCloudPhotoCountFromAlbum(const std::shared_pt
     predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(context->parent));
     predicates.EqualTo(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
     predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, MEDIA_PHOTO_TYPE);
