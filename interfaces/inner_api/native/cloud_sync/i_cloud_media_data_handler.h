@@ -24,6 +24,7 @@
 #include "mdk_record.h"
 #include "mdk_reference.h"
 #include "mdk_database.h"
+#include "media_operate_result.h"
 
 namespace OHOS::Media::CloudSync {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -54,7 +55,7 @@ public:
     virtual int32_t GetRetryRecords(std::vector<std::string> &records) = 0;
     virtual int32_t OnStartSync() = 0;
     virtual int32_t OnCompleteSync() = 0;
-    virtual int32_t OnCompletePull() = 0;
+    virtual int32_t OnCompletePull(const MediaOperateResult &optRet) = 0;
     virtual int32_t OnCompletePush() = 0;
     virtual int32_t OnCompleteCheck() = 0;
 };

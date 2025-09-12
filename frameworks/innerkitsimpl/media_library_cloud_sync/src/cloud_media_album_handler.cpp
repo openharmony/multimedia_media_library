@@ -34,6 +34,7 @@
 #include "cloud_album_data_convert.h"
 #include "get_check_records_album_vo.h"
 #include "failed_size_resp_vo.h"
+#include "media_operate_result_vo.h"
 
 namespace OHOS::Media::CloudSync {
 void CloudMediaAlbumHandler::SetUserId(const int32_t &userId)
@@ -376,13 +377,17 @@ int32_t CloudMediaAlbumHandler::OnCompleteSync()
         .Post(operationCode);
 }
 
-int32_t CloudMediaAlbumHandler::OnCompletePull()
+int32_t CloudMediaAlbumHandler::OnCompletePull(const MediaOperateResult &optRet)
 {
     MEDIA_INFO_LOG("OnCompletePull enter");
+    MediaOperateResultRespBodyResultNode reqBody;
+    reqBody.cloudId = optRet.cloudId;
+    reqBody.errorCode = optRet.errorCode;
+    reqBody.errorMsg = optRet.errorMsg;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_COMPLETE_PULL);
     return IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
         .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}})
-        .Post(operationCode);
+        .Post(operationCode, reqBody);
 }
 
 int32_t CloudMediaAlbumHandler::OnCompletePush()

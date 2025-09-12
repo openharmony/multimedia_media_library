@@ -70,7 +70,8 @@ static void MediaLibraryCloudMediaPhotoHandlerFuzzer()
     cloudMediaPhotoHandler.GetRetryRecords(recordsVec);
     cloudMediaPhotoHandler.OnStartSync();
     cloudMediaPhotoHandler.OnCompleteSync();
-    cloudMediaPhotoHandler.OnCompletePull();
+    MediaOperateResult optRet = {"", 0, ""};
+    cloudMediaPhotoHandler.OnCompletePull(optRet);
     cloudMediaPhotoHandler.OnCompletePush();
     cloudMediaPhotoHandler.OnCompleteCheck();
 }

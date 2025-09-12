@@ -37,6 +37,7 @@
 #include "user_define_ipc_client.h"
 #include "failed_size_resp_vo.h"
 #include "get_check_records_vo.h"
+#include "media_operate_result_vo.h"
 
 namespace OHOS::Media::CloudSync {
 void CloudMediaPhotoHandler::SetUserId(const int32_t &userId)
@@ -535,13 +536,17 @@ int32_t CloudMediaPhotoHandler::OnCompleteSync()
         .Post(operationCode);
 }
 
-int32_t CloudMediaPhotoHandler::OnCompletePull()
+int32_t CloudMediaPhotoHandler::OnCompletePull(const MediaOperateResult &optRet)
 {
     MEDIA_INFO_LOG("OnCompletePull enter");
+    MediaOperateResultRespBodyResultNode reqBody;
+    reqBody.cloudId = optRet.cloudId;
+    reqBody.errorCode = optRet.errorCode;
+    reqBody.errorMsg = optRet.errorMsg;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_ON_COMPLETE_PULL);
     return IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
         .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}})
-        .Post(operationCode);
+        .Post(operationCode, reqBody);
 }
 
 int32_t CloudMediaPhotoHandler::OnCompletePush()

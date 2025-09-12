@@ -652,9 +652,10 @@ HWTEST_F(CloudMediaPhotoAlbumHandlerTest, OnCompletePull, TestSize.Level1)
     std::string tableName = "PhotoAlbum";
     int32_t cloudType = 0;
     int32_t userId = 100;
+    MediaOperateResult optRet = {"", 0, ""};
     std::shared_ptr<CloudMediaDataHandler> dataHandler =
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
-    int32_t ret = dataHandler->OnCompletePull();
+    int32_t ret = dataHandler->OnCompletePull(optRet);
     EXPECT_EQ(ret, 0);
     /* 变更：取消预期 - dirty = 6 ，count != 0 修改dirty，否则删除；
     下一步：使用监听器处理消息

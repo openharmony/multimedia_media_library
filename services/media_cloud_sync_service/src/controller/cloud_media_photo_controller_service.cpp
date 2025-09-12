@@ -417,7 +417,18 @@ int32_t CloudMediaPhotoControllerService::OnCompleteSync(MessageParcel &data, Me
 
 int32_t CloudMediaPhotoControllerService::OnCompletePull(MessageParcel &data, MessageParcel &reply)
 {
-    int32_t ret = this->photosService_.OnCompletePull();
+    MediaOperateResultRespBodyResultNode reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CloudMediaPhotoControllerService::OnCompletePull Read Req Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    MediaOperateResult optRet;
+    optRet.cloudId = reqBody.cloudId;
+    optRet.errorCode = reqBody.errorCode;
+    optRet.errorMsg = reqBody.errorMsg;
+    MEDIA_INFO_LOG("photo OnCompletePull: %{public}s", reqBody.ToString().c_str());
+    ret = this->photosService_.OnCompletePull(optRet);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 
