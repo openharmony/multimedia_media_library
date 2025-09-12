@@ -1132,8 +1132,9 @@ int32_t CloudMediaPhotosService::OnCompleteSync()
     return 0;
 }
 
-int32_t CloudMediaPhotosService::OnCompletePull()
+int32_t CloudMediaPhotosService::OnCompletePull(const MediaOperateResult &optRet)
 {
+    CHECK_AND_RETURN_RET_LOG(optRet.errorCode == 0, E_OK, "photo OnCompletePull errCode:%{public}d", optRet.errorCode);
     return this->photosDao_.UpdatePhotoVisible();
 }
 

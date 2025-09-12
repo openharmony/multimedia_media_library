@@ -181,7 +181,8 @@ HWTEST_F(CloudMediaServiceTest, GetAlbumCallback_Test, TestSize.Level1)
 
     auto ret = services->OnStartSync();
     EXPECT_EQ(ret, E_OK);
-    ret = services->OnCompletePull();
+    MediaOperateResult optRet = {"", 0, ""};
+    ret = services->OnCompletePull(optRet);
     EXPECT_EQ(ret, E_OK);
     ret = services->OnCompletePush();
     EXPECT_EQ(ret, E_OK);

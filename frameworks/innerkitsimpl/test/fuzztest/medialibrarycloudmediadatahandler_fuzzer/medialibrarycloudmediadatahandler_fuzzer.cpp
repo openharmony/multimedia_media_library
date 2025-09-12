@@ -104,9 +104,10 @@ static void MediaLibraryICloudMediaDataHandlerFuzzer()
     dataHandler->OnDentryFileInsert(records, failedRecords);
     dataHandler->GetRetryRecords(strRecords);
 
+    MediaOperateResult optRet = {"", 0, ""};
     dataHandler->OnStartSync();
     dataHandler->OnCompleteSync();
-    dataHandler->OnCompletePull();
+    dataHandler->OnCompletePull(optRet);
     dataHandler->OnCompletePush();
     dataHandler->OnCompleteCheck();
 
@@ -160,9 +161,10 @@ static void MediaLibraryCloudMediaDataHandlerFuzzer()
     dataHandler->OnDentryFileInsert(records, failedRecords);
     dataHandler->GetRetryRecords(strRecords);
 
+    MediaOperateResult optRet = {"", 0, ""};
     dataHandler->OnStartSync();
     dataHandler->OnCompleteSync();
-    dataHandler->OnCompletePull();
+    dataHandler->OnCompletePull(optRet);
     dataHandler->OnCompletePush();
     dataHandler->OnCompleteCheck();
 }

@@ -1218,9 +1218,10 @@ HWTEST_F(CloudMediaPhotoHandlerTest, OnCompletePull, TestSize.Level1)
     std::string tableName = "Photos";
     int32_t cloudType = 0;
     int32_t userId = 100;
+    MediaOperateResult optRet = {"", 0, ""};
     std::shared_ptr<CloudMediaDataHandler> dataHandler =
         std::make_shared<CloudMediaDataHandler>(tableName, cloudType, userId);
-    int32_t ret = dataHandler->OnCompletePull();
+    int32_t ret = dataHandler->OnCompletePull(optRet);
     EXPECT_EQ(ret, 0);
 
     PhotosDao dao;
