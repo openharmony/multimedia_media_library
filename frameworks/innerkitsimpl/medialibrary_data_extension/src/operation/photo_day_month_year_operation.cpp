@@ -56,6 +56,9 @@ const int32_t MINUTES_TO_SECOND = 60;
 const size_t OFFSET_STR_SIZE = 6;  // ±HH:MM
 const size_t COLON_POSITION = 3;
 
+const int64_t MIN_MICROSECONDS_DATE_TAKEN = 1'000'000'000'000'000LL;
+const int32_t MICSEC_TO_MILSEC = 1000;
+
 std::mutex PhotoDayMonthYearOperation::mutex_;
 
 const std::string QUERY_NEED_UPDATE_FILE_IDS = ""
@@ -292,9 +295,12 @@ std::vector<DateAnomalyPhoto> PhotoDayMonthYearOperation::QueryDateAnomalyPhotos
                       "  AND time_pending = 0 "
                       "  AND ("
                       "    date_taken <= 0 "
+                      "    OR date_taken >= " +
+                      to_string(MIN_MICROSECONDS_DATE_TAKEN) +
                       "    OR all_exif != '' "
                       "    OR date_day IS NULL "
                       "    OR date_day = '' "
+                      "    OR date_day = '19700101' "
                       "    OR detail_time IS NULL "
                       "    OR detail_time = '' "
                       "    OR date_day != REPLACE ( SUBSTR( detail_time, 1, 10 ), ':', '' ) "
@@ -549,7 +555,7 @@ static void HandleZeroDateTakenAndDetailTime(
 {
     auto updatePhoto = ExtractDateTime(photo.exif);
     if (updatePhoto.dateTaken <= 0) {
-        updatePhoto.dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+        updatePhoto.dateTaken = INT64_MAX;
         if (photo.dateTaken > 0) {
             updatePhoto.dateTaken = min(updatePhoto.dateTaken, photo.dateTaken);
         }
@@ -558,6 +564,12 @@ static void HandleZeroDateTakenAndDetailTime(
         }
         if (photo.dateAdded > 0) {
             updatePhoto.dateTaken = min(updatePhoto.dateTaken, photo.dateAdded);
+        }
+        if (updatePhoto.dateTaken == INT64_MAX) {
+            updatePhoto.dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+        }
+        if (updatePhoto.dateTaken >= MIN_MICROSECONDS_DATE_TAKEN) {
+            updatePhoto.dateTaken /= MICSEC_TO_MILSEC;
         }
         updatePhoto.detailTime =
             MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, updatePhoto.dateTaken);
@@ -588,7 +600,8 @@ void PhotoDayMonthYearOperation::RepairDateAnomalyPhotos(
     for (const DateAnomalyPhoto &photo : photos) {
         CHECK_AND_BREAK_INFO_LOG(MedialibrarySubscriber::IsCurrentStatusOn(), "current status is off, break");
         curFileId = photo.fileId;
-        if (photo.dateTaken <= 0 || photo.detailTime.empty() || photo.dateDay.empty() || photo.dateDay == ANOMALY_DAY) {
+        if (photo.dateTaken <= 0 || photo.dateTaken >= MIN_MICROSECONDS_DATE_TAKEN || photo.detailTime.empty() ||
+            photo.dateDay.empty() || photo.dateDay == ANOMALY_DAY) {
             HandleZeroDateTakenAndDetailTime(rdbStore, photo);
             continue;
         }
