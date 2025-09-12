@@ -142,7 +142,8 @@ static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {PhotoColumn::PHOTO_BURST_COVER_LEVEL, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::SUPPORTED_WATERMARK_TYPE, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_MEDIA_SUFFIX, ResultSetDataType::TYPE_STRING},
-    {PhotoColumn::PHOTO_IS_RECENT_SHOW, ResultSetDataType::TYPE_INT32}
+    {PhotoColumn::PHOTO_IS_RECENT_SHOW, ResultSetDataType::TYPE_INT32},
+    {PhotoColumn::PHOTO_FILE_SOURCE_TYPE, ResultSetDataType::TYPE_INT32},
 };
 
 static unordered_map<string, ResultSetDataType> thumbnailColumnTypeMap = {
@@ -613,6 +614,10 @@ static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStor
         string columnName = it->first;
         ResultSetDataType columnType = it->second;
         ParsingAndFillValue(values, columnName, columnType, resultSet);
+        if (columnName == PhotoColumn::PHOTO_FILE_SOURCE_TYPE) {
+            values.Delete(PhotoColumn::PHOTO_FILE_SOURCE_TYPE);
+            values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceTypes::MEDIA));
+        }
     }
     if (copyInfo.isCopyThumbnail) {
         for (auto it = thumbnailColumnTypeMap.begin(); it != thumbnailColumnTypeMap.end(); ++it) {

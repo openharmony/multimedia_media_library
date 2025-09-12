@@ -824,6 +824,9 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand &cmd)
     }
     int32_t mediaType = 0;
     CHECK_AND_RETURN_RET(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_TYPE, mediaType), E_HAS_DB_ERROR);
+    int32_t fileResourceType = 0;
+    GetInt32FromValuesBucket(values, PhotoColumn::PHOTO_FILE_SOURCE_TYPE, fileResourceType);
+    fileAsset.SetFileResourceType(fileResourceType);
     fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
     SetPhotoSubTypeFromCmd(cmd, fileAsset);
     SetCameraShotKeyFromCmd(cmd, fileAsset);
@@ -4504,6 +4507,8 @@ static bool QueryHiddenFilesList(set<string>& hiddenFiles)
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is nullptr!");
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, 1);
+    predicates.NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+        static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER));
     vector<string> columns;
     columns.push_back(MediaColumn::MEDIA_FILE_PATH);
     columns.push_back(PhotoColumn::PHOTO_SUBTYPE);

@@ -44,6 +44,14 @@ enum class ExtraChangeType : uint32_t {
     PHOTO_TIME_UPDATE = 100
 };
 
+enum class FileSourceTypes : int32_t {
+    MEDIA,
+    FILE_MANAGER,
+    PERIPHERAL,
+    MEDIA_HO_LAKE,
+    TEMP_FILE_MANAGER,
+};
+
 enum class SouthDeviceType : int32_t {
     SOUTH_DEVICE_NULL = 0,
     SOUTH_DEVICE_CLOUD = 1,
@@ -155,6 +163,7 @@ public:
     static const std::string PHOTO_TRANSCODE_TIME EXPORT;
     static const std::string PHOTO_TRANS_CODE_FILE_SIZE EXPORT;
     static const std::string PHOTO_EXIST_COMPATIBLE_DUPLICATE EXPORT;
+    static const std::string PHOTO_FILE_SOURCE_TYPE EXPORT;
     static const std::string PHOTO_IS_RECENT_SHOW EXPORT;
     static const std::string PHOTO_HAS_APPLINK EXPORT;
     static const std::string PHOTO_APPLINK EXPORT;
@@ -196,6 +205,7 @@ public:
     static const std::string PHOTO_FRONT_CAMERA_ALBUM_INDEX EXPORT;
     static const std::string PHOTO_RAW_IMAGE_ALBUM_INDEX EXPORT;
     static const std::string PHOTO_MOVING_PHOTO_ALBUM_INDEX EXPORT;
+    static const std::string PHOTO_FILE_SOURCE_TYPE_INDEX EXPORT;
     // for clone query
     static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // for burst query

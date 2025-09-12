@@ -177,6 +177,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setHasAppLink", JSSetHasAppLink),
             DECLARE_NAPI_FUNCTION("setAppLinkInfo", JSSetAppLink),
             DECLARE_NAPI_FUNCTION("setCompositeDisplayMode", JSSetCompositeDisplayMode),
+            DECLARE_NAPI_FUNCTION("addResourceForPicker", JSAddResourceForPicker),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -397,8 +398,10 @@ bool MediaAssetChangeRequestNapi::CheckChangeOperations(napi_env env)
     bool containsEdit = Contains(AssetChangeOperation::SET_EDIT_DATA);
     bool containsGetHandler = Contains(AssetChangeOperation::GET_WRITE_CACHE_HANDLER);
     bool containsAddResource = Contains(AssetChangeOperation::ADD_RESOURCE);
+    bool containsAddResourceForPicker = Contains(AssetChangeOperation::ADD_RESOURCE_FOR_PICKER);
     bool isSaveCameraPhoto = Contains(AssetChangeOperation::SAVE_CAMERA_PHOTO);
-    if ((isCreateFromScratch || containsEdit) && !containsGetHandler && !containsAddResource && !isSaveCameraPhoto) {
+    if ((isCreateFromScratch || containsEdit) && !containsGetHandler && !containsAddResource &&
+        !containsAddResourceForPicker && !isSaveCameraPhoto) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Cannot create or edit asset without data to write");
         return false;
     }
@@ -1761,6 +1764,39 @@ napi_value MediaAssetChangeRequestNapi::JSAddResource(napi_env env, napi_callbac
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value MediaAssetChangeRequestNapi::JSAddResourceForPicker(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext,
+        ARGS_TWO, ARGS_TWO) == napi_ok, "Failed to get object info");
+    auto changeRequest = asyncContext->objectInfo;
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
+
+    int32_t resourceType = static_cast<int32_t>(ResourceType::INVALID_RESOURCE);
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM0],
+        resourceType) == napi_ok, "Failed to get resourceType");
+    CHECK_COND(env, CheckWriteOperation(env, changeRequest, GetResourceType(resourceType)), JS_E_OPERATION_NOT_SUPPORT);
+    if (changeRequest->IsMovingPhoto() && resourceType == static_cast<int32_t>(ResourceType::VIDEO_RESOURCE)) {
+        return AddMovingPhotoVideoResource(env, info);
+    }
+    CHECK_COND_WITH_MESSAGE(env, resourceType == static_cast<int32_t>(fileAsset->GetMediaType()) ||
+        resourceType == static_cast<int32_t>(ResourceType::PHOTO_PROXY), "Failed to check resourceType");
+
+    napi_valuetype valueType;
+    napi_value value = asyncContext->argv[PARAM1];
+    CHECK_COND_WITH_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, "Failed to get napi type");
+    
+    // addResource by file uri
+    CHECK_COND(env, ParseFileUri(env, value, fileAsset->GetMediaType(), asyncContext), OHOS_INVALID_PARAM_CODE);
+    changeRequest->realPath_ = asyncContext->realPath;
+    changeRequest->addResourceMode_ = AddResourceMode::FILE_URI;
+
+    changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_RESOURCE_FOR_PICKER);
+    changeRequest->addResourceTypes_.push_back(GetResourceType(resourceType));
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 void MediaAssetChangeRequestNapi::SetNewFileAsset(int32_t id, const string& uri)
 {
     if (fileAsset_ == nullptr) {
@@ -1792,6 +1828,13 @@ static bool IsSetEffectMode(MediaAssetChangeRequestAsyncContext& context)
     auto assetChangeOperations = context.assetChangeOperations;
     return std::find(assetChangeOperations.begin(), assetChangeOperations.end(),
         AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE) != assetChangeOperations.end();
+}
+
+static bool IsAddResourceForPicker(MediaAssetChangeRequestAsyncContext& context)
+{
+    auto assetChangeOperations = context.assetChangeOperations;
+    return std::find(assetChangeOperations.begin(), assetChangeOperations.end(),
+        AssetChangeOperation::ADD_RESOURCE_FOR_PICKER) != assetChangeOperations.end();
 }
 
 static int32_t SendFile(const UniqueFd& srcFd, const UniqueFd& destFd)
@@ -2063,6 +2106,48 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(
     return ret == E_OK ? respBody.fileId : ret;
 }
 
+int32_t MediaAssetChangeRequestNapi::SubmitCacheForPicker(bool isCreation, const int32_t userId)
+{
+    CHECK_COND_RET(fileAsset_ != nullptr, E_FAIL, "Failed to check fileAsset_");
+    CHECK_COND_RET(
+        !cacheFileName_.empty() || !cacheMovingPhotoVideoName_.empty(), E_FAIL, "Failed to check cache file");
+
+    int32_t ret{E_FAIL};
+    SubmitCacheReqBody reqBody;
+    SubmitCacheRespBody respBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SUBMIT_CACHE);
+    if (isCreation) {
+        creationValuesBucket_.Put(CACHE_FILE_NAME, cacheFileName_);
+        if (IsMovingPhoto()) {
+            creationValuesBucket_.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
+        }
+        creationValuesBucket_.Put(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+            static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER));
+        reqBody.values = RdbDataShareAdapter::RdbUtils::ToValuesBucket(creationValuesBucket_);
+        ret = IPC::UserDefineIPCClient().SetUserId(userId).Call(businessCode, reqBody, respBody);
+    } else {
+        DataShare::DataShareValuesBucket valuesBucket;
+        valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset_->GetId());
+        valuesBucket.Put(CACHE_FILE_NAME, cacheFileName_);
+        ret = PutMediaAssetEditData(valuesBucket);
+        CHECK_COND_RET(ret == E_OK, ret, "Failed to put editData");
+        if (IsMovingPhoto()) {
+            valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
+        }
+        valuesBucket.Put(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int64_t>(FileSourceTypes::TEMP_FILE_MANAGER));
+        reqBody.values = RdbDataShareAdapter::RdbUtils::ToValuesBucket(valuesBucket);
+        std::unordered_map<std::string, std::string> headerMap{
+            {MediaColumn::MEDIA_ID, to_string(fileAsset_->GetId())}, {URI_TYPE, TYPE_PHOTOS}};
+        ret = IPC::UserDefineIPCClient().SetUserId(userId).SetHeader(headerMap).Call(businessCode, reqBody, respBody);
+    }
+    if (respBody.fileId > 0 && isCreation) {
+        SetNewFileAsset(respBody.fileId, respBody.outUri);
+    }
+    cacheFileName_.clear();
+    cacheMovingPhotoVideoName_.clear();
+    return ret == E_OK ? respBody.fileId : ret;
+}
+
 static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -2073,11 +2158,22 @@ static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
     auto changeRequest = context.objectInfo;
     CHECK_COND_RET(changeRequest != nullptr, false, "changeRequest is nullptr");
     bool isWriteGpsAdvanced = changeRequest->GetIsWriteGpsAdvanced();
-    int32_t ret = changeRequest->SubmitCache(isCreation, isSetEffectMode, isWriteGpsAdvanced, context.userId_);
-    if (ret < 0) {
-        context.SaveError(ret);
-        NAPI_ERR_LOG("Failed to write cache, ret: %{public}d", ret);
-        return false;
+    bool isAddResourceForPicker = IsAddResourceForPicker(context);
+    if (isAddResourceForPicker && !isSetEffectMode && !isWriteGpsAdvanced) {
+        int32_t ret = changeRequest->SubmitCacheForPicker(isCreation, context.userId_);
+        if (ret < 0) {
+            context.SaveError(ret);
+            NAPI_ERR_LOG("Failed to write cache, ret: %{public}d", ret);
+            return false;
+        }
+    } else {
+        int32_t ret = changeRequest->SubmitCache(
+            isCreation, isSetEffectMode, isWriteGpsAdvanced, context.userId_);
+        if (ret < 0) {
+            context.SaveError(ret);
+            NAPI_ERR_LOG("Failed to write cache, ret: %{public}d", ret);
+            return false;
+        }
     }
     return true;
 }
@@ -2813,6 +2909,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_HAS_APPLINK, SetHasAppLinkExecute },
     { AssetChangeOperation::SET_APPLINK, SetAppLinkExecute },
     { AssetChangeOperation::SET_COMPOSITE_DISPLAY_MODE, SetCompositeDisplayModeExecute },
+    { AssetChangeOperation::ADD_RESOURCE_FOR_PICKER, AddResourceExecute },
 };
 
 static void RecordAddResourceAndSetLocation(MediaAssetChangeRequestAsyncContext& context)

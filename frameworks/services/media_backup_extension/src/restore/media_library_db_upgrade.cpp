@@ -347,6 +347,21 @@ int32_t MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store)
 }
 
 /**
+ * @brief Add file_source_type column to Photos table.
+ */
+int32_t MediaLibraryDbUpgrade::AddFileSourceTypeColumn(NativeRdb::RdbStore &store)
+{
+    CHECK_AND_RETURN_RET(!this->dbUpgradeUtils_.IsColumnExists(store, "Photos", "file_source_type"), NativeRdb::E_OK);
+    std::string sql = this->SQL_PHOTOS_TABLE_ADD_FILE_SOURCE_TYPE;
+    int32_t ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(sql); });
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Media_Restore: MediaLibraryDbUpgrade::AddFileSourceTypeColumn failed, ret=%{public}d, sql=%{public}s",
+        ret, sql.c_str());
+    MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::AddFileSourceTypeColumn success");
+    return ret;
+}
+
+/**
  * @brief Add lpath column to PhotoAlbum table.
  */
 int32_t MediaLibraryDbUpgrade::AddlPathColumn(NativeRdb::RdbStore &store)
@@ -411,6 +426,9 @@ int32_t MediaLibraryDbUpgrade::UpgradePhotos(NativeRdb::RdbStore &store)
     CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
 
     ret = this->AddOwnerAlbumIdColumn(store);
+    CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
+
+    ret = this->AddFileSourceTypeColumn(store);
     CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, ret);
 
     ret = ExecSqlWithRetry([&]() { return PhotoDayMonthYearOperation::UpdatePhotosDate(store); });

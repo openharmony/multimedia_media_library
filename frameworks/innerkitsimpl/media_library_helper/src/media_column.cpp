@@ -125,6 +125,7 @@ const std::string PhotoColumn::PHOTO_MEDIA_SUFFIX = "media_suffix";
 const std::string PhotoColumn::PHOTO_REAL_LCD_VISIT_TIME = "real_lcd_visit_time";
 const std::string PhotoColumn::PHOTO_VISIT_COUNT = "visit_count";
 const std::string PhotoColumn::PHOTO_LCD_VISIT_COUNT = "lcd_visit_count";
+const std::string PhotoColumn::PHOTO_FILE_SOURCE_TYPE = "file_source_type";
 const std::string PhotoColumn::PHOTO_IS_RECENT_SHOW = "is_recent_show";
 const std::string PhotoColumn::PHOTO_HAS_APPLINK = "has_applink";
 const std::string PhotoColumn::PHOTO_APPLINK = "applink";
@@ -170,6 +171,7 @@ const std::string PhotoColumn::PHOTO_BURST_MODE_ALBUM_INDEX = "idx_burst_mode_al
 const std::string PhotoColumn::PHOTO_FRONT_CAMERA_ALBUM_INDEX = "idx_front_camera_album";
 const std::string PhotoColumn::PHOTO_RAW_IMAGE_ALBUM_INDEX = "idx_raw_image_album";
 const std::string PhotoColumn::PHOTO_MOVING_PHOTO_ALBUM_INDEX = "idx_moving_photo_album";
+const std::string PhotoColumn::PHOTO_FILE_SOURCE_TYPE_INDEX = "idx_file_source_type";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -308,7 +310,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_TRANS_CODE_FILE_SIZE + " BIGINT NOT NULL DEFAULT 0, " +
     PHOTO_EXIST_COMPATIBLE_DUPLICATE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_SOUTH_DEVICE_TYPE + " INT NOT NULL DEFAULT 0, " +
-    PHOTO_COMPOSITE_DISPLAY_STATUS + " INT NOT NULL DEFAULT 0 " +
+    PHOTO_COMPOSITE_DISPLAY_STATUS + " INT NOT NULL DEFAULT 0, " +
+    PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0 " +
     ") ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
@@ -548,6 +551,8 @@ const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN new." + PhotoColumn::PHOTO_DIRTY +
                         " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
                         " AND OLD." + PhotoColumn::PHOTO_POSITION + " = 1 AND is_caller_self_func() = 'true'" +
+                        " AND OLD." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+                        to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
                         " BEGIN DELETE FROM " + PhotoColumn::PHOTOS_TABLE +
                         " WHERE " + PhotoColumn::MEDIA_ID + " = old." + PhotoColumn::MEDIA_ID + ";" +
                         " END;";
@@ -557,6 +562,8 @@ const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.position <> 1 AND" +
                         " new.date_modified <> old.date_modified " +
                         " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
+                        " AND OLD." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+                        to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
                         " BEGIN " +
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_FDIRTY)) +
@@ -573,6 +580,8 @@ const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_TDIRTY)) +
                         ") AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
                         " AND " + PhotoColumn::CheckUploadPhotoColumns() +
+                        " AND OLD." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+                        to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
                         " BEGIN " +
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
@@ -600,12 +609,17 @@ const std::string PhotoColumn::INDEX_HIGHLIGHT_FILEID =
 
 const std::string  PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC =
                         " CREATE TRIGGER IF NOT EXISTS photo_insert_cloud_sync_trigger AFTER INSERT ON " +
-                        PhotoColumn::PHOTOS_TABLE + " BEGIN SELECT cloud_sync_func(); END;";
+                        PhotoColumn::PHOTOS_TABLE +
+                        " WHEN new." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+                        to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
+                        " BEGIN SELECT cloud_sync_func(); END;";
 
 const std::string PhotoColumn::CREATE_PHOTOS_UPDATE_CLOUD_SYNC =
                         " CREATE TRIGGER IF NOT EXISTS photo_update_cloud_sync_trigger AFTER UPDATE ON " +
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.dirty IN (1,2,3,5) AND new.dirty != " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
+                        " AND OLD." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+                        to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
                         " BEGIN SELECT cloud_sync_func(); END;";
 
 const std::string PhotoColumn::UPDATE_READY_ON_THUMBNAIL_UPGRADE =
@@ -619,6 +633,8 @@ const std::string PhotoColumn::CREATE_PHOTOS_METADATA_DIRTY_TRIGGER =
                         std::to_string(static_cast<int32_t>(MetadataFlags::TYPE_UPTODATE)) +
                         " AND new.metadata_flags = old.metadata_flags" +
                         " AND " + PhotoColumn::CheckMetaRecoveryPhotoColumns() +
+                        " AND OLD." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+                        to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
                         " BEGIN " +
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET metadata_flags = " +
                         std::to_string(static_cast<int32_t>(MetadataFlags::TYPE_DIRTY)) +

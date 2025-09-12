@@ -1013,6 +1013,10 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
             HandleBurstPhoto(cmd, assetInfo, displayName);
         }
     }
+    assetInfo.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, fileAsset.GetFileResourceType());
+    if (fileAsset.GetFileResourceType() == static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) {
+        assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, -1);
+    }
 
     HandleCallingPackage(cmd, fileAsset, assetInfo);
 

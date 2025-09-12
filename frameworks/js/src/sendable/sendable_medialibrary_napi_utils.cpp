@@ -231,6 +231,24 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
 }
 
 template <class AsyncContext>
+static void HandleSpecialPredicateProcessUri(AsyncContext &context, const FetchOptionType &fetchOptType,
+    const OperationItem &item, vector<OperationItem> &operations, bool &hasUri)
+{
+    constexpr int32_t VALUE_IDX = 1;
+    hasUri = true;
+    string uri = static_cast<string>(item.GetSingle(VALUE_IDX));
+    MediaFileUri::RemoveAllFragment(uri);
+    MediaFileUri fileUri(uri);
+    context->uri = uri;
+    if ((fetchOptType != ALBUM_FETCH_OPT) && (!fileUri.IsApi10())) {
+        fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
+    }
+    context->networkId = fileUri.GetNetworkId();
+    string field = (fetchOptType == ALBUM_FETCH_OPT) ? PhotoAlbumColumns::ALBUM_ID : MEDIA_DATA_DB_ID;
+    operations.push_back({ item.operation, { field, fileUri.GetFileId() } });
+}
+
+template <class AsyncContext>
 bool SendableMediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
     shared_ptr<DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType,
     vector<OperationItem> operations)
@@ -238,6 +256,7 @@ bool SendableMediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
     auto &items = predicate->GetOperationList();
+    bool hasUri = false;
     for (auto &item : items) {
         if (item.singleParams.empty()) {
             operations.push_back(item);
@@ -262,16 +281,7 @@ bool SendableMediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context
                 NAPI_ERR_LOG("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
                 return false;
             }
-            string uri = static_cast<string>(item.GetSingle(VALUE_IDX));
-            MediaFileUri::RemoveAllFragment(uri);
-            MediaFileUri fileUri(uri);
-            context->uri = uri;
-            if ((fetchOptType != ALBUM_FETCH_OPT) && (!fileUri.IsApi10())) {
-                fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
-            }
-            context->networkId = fileUri.GetNetworkId();
-            string field = (fetchOptType == ALBUM_FETCH_OPT) ? PhotoAlbumColumns::ALBUM_ID : MEDIA_DATA_DB_ID;
-            operations.push_back({ item.operation, { field, fileUri.GetFileId() } });
+            HandleSpecialPredicateProcessUri(context, fetchOptType, item, operations, hasUri);
             continue;
         }
         if (static_cast<string>(item.GetSingle(FIELD_IDX)) == PENDING_STATUS) {
@@ -283,7 +293,16 @@ bool SendableMediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context
         }
         operations.push_back(item);
     }
+    if (!hasUri && fetchOptType != ALBUM_FETCH_OPT) {
+        operations.push_back({ DataShare::EQUAL_TO, { PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+            to_string(static_cast<int32_t>(FileSourceTypes::MEDIA)) } });
+    }
     context->predicates = DataSharePredicates(move(operations));
+    if (!hasUri && fetchOptType == ALBUM_FETCH_OPT) {
+        context->predicates.And()->BeginWrap()->NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/图库")
+        ->NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/其它")->Or()
+        ->IsNull(PhotoAlbumColumns::ALBUM_LPATH)->EndWrap();
+    }
     return true;
 }
 

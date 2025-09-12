@@ -182,6 +182,9 @@ public:
     void SetStageVideoTaskStatus(const VariantData &stageVideoTaskStatus);
     int32_t GetStageVideoTaskStatus() const;
 
+    EXPORT void SetFileSourceType(const VariantData &fileSourceType);
+    EXPORT int32_t GetFileSourceType() const;
+
     EXPORT void Init();
     void InitV2();
 
@@ -275,6 +278,8 @@ private:
     int32_t burstCoverLevel_;
 
     int32_t stageVideoTaskStatus_;
+
+    int32_t fileSourceType_;
 };
 } // namespace Media
 } // namespace OHOS

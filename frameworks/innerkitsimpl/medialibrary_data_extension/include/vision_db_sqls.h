@@ -445,6 +445,8 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE =
     "CREATE TRIGGER IF NOT EXISTS insert_vision_trigger AFTER INSERT ON " +
     PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
     " WHEN (NEW.MEDIA_TYPE = 1 OR NEW.MEDIA_TYPE = 2)" +
+    " AND NEW." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+    std::to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
     " BEGIN " +
     " INSERT INTO " + VISION_TOTAL_TABLE +" (" + FILE_ID + ", " + STATUS + ", " + OCR + ", " + AESTHETICS_SCORE + ", " +
     LABEL + ", " + FACE + ", " + OBJECT + ", " + RECOMMENDATION + ", " + SEGMENTATION + ", " + COMPOSITION + "," +
