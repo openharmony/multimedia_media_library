@@ -61,6 +61,7 @@ const map<std::string, ResultSetDataType> PhotoAssetChangeInfo::photoAssetCloumn
     { PhotoColumn::PHOTO_DIRTY, TYPE_INT32 },
     { PhotoColumn::PHOTO_POSITION, TYPE_INT32 },
     { PhotoColumn::MEDIA_SIZE, TYPE_INT64 },
+    { PhotoColumn::PHOTO_FILE_SOURCE_TYPE, TYPE_INT32 },
 };
 
 const vector<std::string> PhotoAssetChangeInfo::photoAssetColumns_ = []() {

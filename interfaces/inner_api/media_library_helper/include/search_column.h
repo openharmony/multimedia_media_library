@@ -83,6 +83,8 @@ const std::string CREATE_SEARCH_INSERT_TRIGGER =
     std::string("CREATE TRIGGER IF NOT EXISTS insert_search_trigger AFTER INSERT ON ") +
     PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
     " WHEN (NEW.media_type = 1 OR NEW.media_type = 2)" +
+    " AND NEW." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+    to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
     " BEGIN " +
     " INSERT INTO " + SEARCH_TOTAL_TABLE +
     " (" + TBL_SEARCH_FILE_ID + ", " + TBL_SEARCH_DATA + ", " + TBL_SEARCH_DATE_MODIFIED + ", " +

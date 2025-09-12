@@ -56,6 +56,7 @@ enum class AssetChangeOperation {
     SET_APPLINK,
     SET_VIDEO_ENHANCEMENT_ATTR,
     SET_COMPOSITE_DISPLAY_MODE,
+    ADD_RESOURCE_FOR_PICKER,
 };
 
 enum class AddResourceMode {
@@ -108,6 +109,7 @@ public:
     void SetCacheFileName(std::string& fileName);
     void SetCacheMovingPhotoVideoName(std::string& fileName);
     int32_t SubmitCache(bool isCreation, bool isSetEffectMode, bool isWriteGpsAdvanced, const int32_t userId = -1);
+    int32_t SubmitCacheForPicker(bool isCreation, const int32_t userId = -1);
     int32_t CopyToMediaLibrary(bool isCreation, AddResourceMode mode);
     int32_t CreateAssetBySecurityComponent(std::string& assetUri);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
@@ -152,6 +154,7 @@ private:
     EXPORT static napi_value JSSetAppLink(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetVideoEnhancementAttr(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetCompositeDisplayMode(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSAddResourceForPicker(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteLocalAssetsPermanently(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteLocalAssetsPermanentlyWithUri(napi_env env, napi_callback_info info);
 

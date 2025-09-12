@@ -100,14 +100,20 @@ const std::string SOURCE_ALBUM_WHERE_UPDATE =
 
 const std::string WHEN_SOURCE_PHOTO_COUNT =
     " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND NEW." + MediaColumn::MEDIA_PACKAGE_NAME +
-    " != '' AND ( SELECT COUNT(1) FROM " + PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " )";
+    " != '' AND NEW." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+    to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) + " AND ( SELECT COUNT(1) FROM " +
+    PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " )" ;
 
 const std::string WHEN_SOURCE_PHOTO_COUNT_FOR_BUNDLENAME =
     " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND NEW." +  MediaColumn::MEDIA_PACKAGE_NAME +
-    " != '' AND ( SELECT COUNT(1) FROM " + PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " AND " +
-    PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " IS NULL" + " )";
+    " != '' AND NEW." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+    to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) + " AND ( SELECT COUNT(1) FROM " +
+    PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " AND " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME +
+    " IS NULL" + " )";
 
-const std::string WHEN_UPDATE_AND_DELETE = " WHEN OLD." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL ";
+const std::string WHEN_UPDATE_AND_DELETE = " WHEN OLD." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL " +
+    " AND OLD." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+    to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER));
 
 const std::string TRIGGER_CODE_UPDATE_AND_DELETE =
     WHEN_UPDATE_AND_DELETE +
@@ -150,6 +156,8 @@ const std::string CLEAR_ANALYSIS_SOURCE_ALBUM = "DELETE FROM " + ANALYSIS_ALBUM_
 const std::string INSERT_PHOTO_INSERT_SOURCE_ALBUM =
     "CREATE TRIGGER IF NOT EXISTS insert_photo_insert_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
     WHEN_SOURCE_PHOTO_COUNT + " = 0 " +
+    " WHEN NEW." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+    to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
     " BEGIN INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
     PhotoAlbumColumns::ALBUM_TYPE + " , " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " , " +
@@ -265,6 +273,8 @@ const std::string UPDATE_PHOTO_OWNER_ALBUM_ID =
 const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS insert_source_photo_update_album_id_trigger AFTER INSERT ON " +
     PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT_FOR_LPATH + "> 0 AND NEW.owner_album_id = 0" +
+    " AND NEW." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+    to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
     " BEGIN " + UPDATE_PHOTO_OWNER_ALBUM_ID + ";" +
     " END;";
 
@@ -287,6 +297,8 @@ const std::string REMOVE_DELETED_SOURCE_ALBUM =
 const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS insert_source_photo_create_source_album_trigger AFTER INSERT ON " +
     PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT_FOR_LPATH + " = 0 AND NEW.owner_album_id = 0 " +
+    " AND NEW." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
+    to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
     " BEGIN " + REMOVE_DELETED_SOURCE_ALBUM + "; "
     " INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
     PhotoAlbumColumns::ALBUM_TYPE + " , " +

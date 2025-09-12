@@ -86,7 +86,8 @@ private:
             (-1 = ? OR 0 = ? AND COALESCE(date_trashed, 0) = 0 OR 1 = ? AND COALESCE(date_trashed, 0) <> 0) AND \
             (-1 = ? OR 0 = ? AND position IN (1, 3) OR 1 = ? AND position = 2) AND \
             (-1 = ? OR 0 = ? AND COALESCE(is_favorite, 1) = 0 OR 1 = ? AND COALESCE(is_favorite, 1) = 1) AND \
-            (-1 = ? OR 0 = ? AND subtype = 4 OR 1 = ? AND subtype = 4 AND COALESCE(burst_cover_level, 1) = 1) \
+            (-1 = ? OR 0 = ? AND subtype = 4 OR 1 = ? AND subtype = 4 AND COALESCE(burst_cover_level, 1) = 1) AND \
+            (-1 = ? OR file_source_type = ?) \
         ;";
     const std::string SQL_PHOTOS_ALL_RESTORE_COUNT = "\
         SELECT COUNT(1) AS count \
@@ -100,7 +101,8 @@ private:
             (-1 = ? OR 0 = ? AND COALESCE(date_trashed, 0) = 0 OR 1 = ? AND COALESCE(date_trashed, 0) <> 0) AND \
             (-1 = ? OR 0 = ? AND position IN (1, 3) OR 1 = ? AND position = 2) AND \
             (-1 = ? OR 0 = ? AND COALESCE(is_favorite, 1) = 0 OR 1 = ? AND COALESCE(is_favorite, 1) = 1) AND \
-            (-1 = ? OR 0 = ? AND subtype = 4 OR 1 = ? AND subtype = 4 AND COALESCE(burst_cover_level, 1) = 1) \
+            (-1 = ? OR 0 = ? AND subtype = 4 OR 1 = ? AND subtype = 4 AND COALESCE(burst_cover_level, 1) = 1) AND \
+            (-1 = ? OR file_source_type = ?) \
         ;";
     const std::string SQL_PHOTOS_PICTURES_TOTAL_COUNT = "\
         SELECT COUNT(1) AS count \
@@ -111,7 +113,8 @@ private:
             (-1 = ? OR 0 = ? AND COALESCE(date_trashed, 0) = 0 OR 1 = ? AND COALESCE(date_trashed, 0) <> 0) AND \
             (-1 = ? OR 0 = ? AND position IN (1, 3) OR 1 = ? AND position = 2) AND \
             (-1 = ? OR 0 = ? AND COALESCE(is_favorite, 1) = 0 OR 1 = ? AND COALESCE(is_favorite, 1) = 1) AND \
-            (-1 = ? OR 0 = ? AND subtype = 4 OR 1 = ? AND subtype = 4 AND COALESCE(burst_cover_level, 1) = 1) \
+            (-1 = ? OR 0 = ? AND subtype = 4 OR 1 = ? AND subtype = 4 AND COALESCE(burst_cover_level, 1) = 1) AND \
+            (-1 = ? OR file_source_type = ?) \
         ;";
     const std::string SQL_PHOTOS_COUNT_BY_ALBUM_NAME = "\
         SELECT PhotoAlbum.lpath, \
@@ -131,7 +134,8 @@ private:
             (-1 = ? OR 0 = ? AND COALESCE(date_trashed, 0) = 0 OR 1 = ? AND COALESCE(date_trashed, 0) <> 0) AND \
             (-1 = ? OR 0 = ? AND position IN (1, 3) OR 1 = ? AND position = 2) AND \
             (-1 = ? OR 0 = ? AND COALESCE(is_favorite, 1) = 0 OR 1 = ? AND COALESCE(is_favorite, 1) = 1) AND \
-            (-1 = ? OR 0 = ? AND subtype = 4 OR 1 = ? AND subtype = 4 AND COALESCE(burst_cover_level, 1) = 1) \
+            (-1 = ? OR 0 = ? AND subtype = 4 OR 1 = ? AND subtype = 4 AND COALESCE(burst_cover_level, 1) = 1) AND \
+            (-1 = ? OR file_source_type = ?) \
         GROUP BY PhotoAlbum.lpath, album_plugin.album_name;";
     const std::string SQL_PHOTO_ALBUM_COUNT = "\
         SELECT COUNT(1) AS count \
