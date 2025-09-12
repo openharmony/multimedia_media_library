@@ -387,7 +387,6 @@ void CloneRestorePortrait::RestorePortraitClusteringInfo()
     BackupDatabaseUtils::ExecuteSQL(mediaRdb_, CREATE_FACE_TAG_INDEX);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         vector<FaceTagTbl> faceTagTbls = QueryFaceTagTbl(offset, inClause);
-        MEDIA_INFO_LOG("wzzz faceTagTbls size, %{public}d", (int)faceTagTbls.size());
         BatchInsertFaceTags(faceTagTbls);
         if (static_cast<std::int32_t>(faceTagTbls.size()) < QUERY_COUNT) {
             break;
@@ -416,7 +415,6 @@ std::vector<FaceTagTbl> CloneRestorePortrait::QueryFaceTagTbl(int32_t offset, co
     int resultRowCount = 0;
     resultSet->GetRowCount(resultRowCount);
     result.reserve(resultRowCount);
-    MEDIA_INFO_LOG("wzz, resultRowCount, %{public}d", resultRowCount);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FaceTagTbl faceTagTbl;
         ParseFaceTagResultSet(resultSet, faceTagTbl);
@@ -504,7 +502,6 @@ void CloneRestorePortrait::RestoreImageFaceInfo()
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<ImageFaceTbl> imageFaceTbls = QueryImageFaceTbl(offset, fileIdOldInClause, commonColumns);
         auto imageFaces = ProcessImageFaceTbls(imageFaceTbls, uniqueFileIdPairs);
-        MEDIA_INFO_LOG("wzz, %{public}d", (int)imageFaces.size());
         BatchInsertImageFaces(imageFaces);
     }
 
