@@ -84,6 +84,7 @@ constexpr int32_t CLOUD_POSITION_STATUS = 2;
 constexpr int32_t UPDATE_ALBUM_TIME_OUT = 1000;
 constexpr int32_t PERSIST_READ_IMAGEVIDEO = 1;
 constexpr int32_t PERSIST_READWRITE_IMAGEVIDEO = 4;
+constexpr int32_t IS_COVER_SATISFIED_FIVE = 5;
 
 const string INTEGRITY_CHECK_COLUMN = "quick_check";
 const std::string DB_INTEGRITY_CHECK = "ok";
@@ -3501,5 +3502,36 @@ bool MediaLibraryRdbUtils::ExecuteDatabaseQuickCheck(const shared_ptr<MediaLibra
     MEDIA_INFO_LOG("Check db integrity: %{public}s", result.c_str());
     resultSet->Close();
     return result == DB_INTEGRITY_CHECK;
+}
+
+void MediaLibraryRdbUtils::UpdateAnalysisAlbumByCoverUri(
+    const std::shared_ptr<MediaLibraryRdbStore>& rdbStore, const string& fileId)
+{
+    MEDIA_INFO_LOG("Start UpdateAnalysisAlbumByCoverUri");
+    std::vector<std::string> updateAlbumIds;
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COVER_URI};
+    vector<string> tempAlbumId = {};
+    shared_ptr<ResultSet> resultSet = GetAnalysisAlbum(rdbStore, tempAlbumId, columns);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t curAlbumId = GetAlbumId(resultSet);
+        string coverUri = GetAlbumCover(resultSet, PhotoAlbumColumns::ALBUM_COVER_URI);
+        string coverId = GetPhotoId(coverUri);
+        MEDIA_INFO_LOG("UpdateAnalysisAlbumByCoverUri curAlbumId: %{public}d, coverId: %{public}s, fileId: %{public}s",
+            curAlbumId, coverId.c_str(), fileId.c_str());
+        if (coverId == fileId) {
+            updateAlbumIds.push_back(to_string(curAlbumId));
+        }
+    }
+    resultSet->Close();
+
+    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.In(PhotoAlbumColumns::ALBUM_ID, updateAlbumIds);
+    ValuesBucket values;
+    values.PutInt(IS_COVER_SATISFIED, IS_COVER_SATISFIED_FIVE);
+    int32_t updateCount = 0;
+    int32_t updateRet = rdbStore->Update(updateCount, values, predicates);
+    MEDIA_INFO_LOG("UpdateAnalysisAlbumByCoverUri updateRet: %{public}d, updateCount: %{public}d",
+        updateRet, updateCount);
 }
 } // namespace OHOS::Media

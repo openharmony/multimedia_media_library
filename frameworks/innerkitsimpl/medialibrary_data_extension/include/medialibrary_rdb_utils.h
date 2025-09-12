@@ -184,6 +184,8 @@ public:
         DataShare::DataSharePredicates &predicates, const std::string tableName);
     EXPORT static int32_t GetAlbumIdBySubType(PhotoAlbumSubType subtype);
     EXPORT static bool ExecuteDatabaseQuickCheck(const std::shared_ptr<MediaLibraryRdbStore> &rdbStore);
+    EXPORT static void UpdateAnalysisAlbumByCoverUri(const std::shared_ptr<MediaLibraryRdbStore>& rdbStore,
+        const std::string& fileId);
 
 private:
     static std::atomic<bool> isNeedRefreshAlbum;
