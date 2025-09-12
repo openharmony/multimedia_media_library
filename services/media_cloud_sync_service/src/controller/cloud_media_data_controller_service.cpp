@@ -174,7 +174,6 @@ int32_t CloudMediaDataControllerService::GetFilePosStat(MessageParcel &data, Mes
 
 int32_t CloudMediaDataControllerService::GetCloudThmStat(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("enter CloudMediaDataControllerService::GetCloudThmStat");
     std::vector<uint64_t> statList = this->dataService_.GetCloudThmStat();
     GetCloudThmStatRespBody respBody;
     respBody.statList = statList;
