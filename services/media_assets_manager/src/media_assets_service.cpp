@@ -39,7 +39,9 @@
 #include "dfx_manager.h"
 #include "multistages_capture_request_task_manager.h"
 #include "multistages_capture_manager.h"
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
+#endif
 #include "story_album_column.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_photo_operations.h"
@@ -49,7 +51,6 @@
 #include "uri.h"
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_album_operations.h"
-#include "enhancement_manager.h"
 #include "rdb_utils.h"
 #include "location_column.h"
 #include "vision_column.h"
@@ -1130,7 +1131,11 @@ int32_t MediaAssetsService::PrioritizeCloudEnhancementTask(const CloudEnhancemen
     DataShare::DataSharePredicates predicate;
     predicate.EqualTo(MediaColumn::MEDIA_ID, cloudEnhancementDto.fileUris.front());
     cmd.SetDataSharePred(predicate);
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     return EnhancementManager::GetInstance().HandlePrioritizeOperation(cmd);
+#else
+    return E_ERR;
+#endif
 }
 
 int32_t MediaAssetsService::CancelCloudEnhancementTasks(const CloudEnhancementDto& cloudEnhancementDto)
@@ -1139,12 +1144,20 @@ int32_t MediaAssetsService::CancelCloudEnhancementTasks(const CloudEnhancementDt
     DataShare::DataSharePredicates predicate;
     predicate.In(MediaColumn::MEDIA_ID, cloudEnhancementDto.fileUris);
     cmd.SetDataSharePred(predicate);
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     return EnhancementManager::GetInstance().HandleCancelOperation(cmd);
+#else
+    return E_ERR;
+#endif
 }
 
 int32_t MediaAssetsService::CancelAllCloudEnhancementTasks()
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     return EnhancementManager::GetInstance().HandleCancelAllOperation();
+#else
+    return E_ERR;
+#endif
 }
 
 int32_t MediaAssetsService::GrantPhotoUriPermission(const GrantUriPermissionDto &grantUriPermissionDto)
@@ -1250,7 +1263,11 @@ shared_ptr<NativeRdb::ResultSet> MediaAssetsService::GetCloudEnhancementPair(con
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, photoUri);
     cmd.SetDataSharePred(predicates);
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     return EnhancementManager::GetInstance().HandleGetPairOperation(cmd);
+#else
+    return E_ERR;
+#endif
 }
 
 int32_t MediaAssetsService::QueryCloudEnhancementTaskState(const string& photoUri,
@@ -1261,7 +1278,11 @@ int32_t MediaAssetsService::QueryCloudEnhancementTaskState(const string& photoUr
 
 int32_t MediaAssetsService::SyncCloudEnhancementTaskStatus()
 {
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     return EnhancementManager::GetInstance().HandleSyncOperation();
+#else
+    return E_ERR;
+#endif
 }
 
 int32_t MediaAssetsService::QueryPhotoStatus(const QueryPhotoReqBody &req, QueryPhotoRespBody &resp)

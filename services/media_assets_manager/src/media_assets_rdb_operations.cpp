@@ -41,7 +41,9 @@
 #include "result_set_utils.h"
 #include "dfx_manager.h"
 #include "multistages_capture_manager.h"
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
+#endif
 #include "media_analysis_helper.h"
 #include "story_album_column.h"
 #include "media_app_uri_permission_column.h"
@@ -548,6 +550,7 @@ int32_t MediaAssetsRdbOperations::QueryEnhancementTaskState(const string& photoU
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, photoUri);
     cmd.SetDataSharePred(predicates);
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     auto resultSet = EnhancementManager::GetInstance().HandleQueryOperation(cmd, columns);
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
     CHECK_AND_RETURN_RET_LOG(!cond, -E_HAS_DB_ERROR, "Failed to query album!");
@@ -556,6 +559,7 @@ int32_t MediaAssetsRdbOperations::QueryEnhancementTaskState(const string& photoU
     dto.ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
     dto.ceErrorCode = GetInt32Val(PhotoColumn::PHOTO_CE_STATUS_CODE, resultSet);
     resultSet->Close();
+#endif
     return E_OK;
 }
 
