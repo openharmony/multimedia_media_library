@@ -247,7 +247,7 @@ static ani_status BindAniAttributes(ani_env *env, const AniPhotoAlbumOperator &o
             "ToAniString albumUri fail");
         CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumUri, albumUri), "<set>albumUri fail");
 
-        ani_double count = static_cast<ani_double>(attrs.count);
+        ani_int count = static_cast<ani_int>(attrs.count);
         CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setCount, count), "<set>count fail");
 
         ani_string coverUri {};
