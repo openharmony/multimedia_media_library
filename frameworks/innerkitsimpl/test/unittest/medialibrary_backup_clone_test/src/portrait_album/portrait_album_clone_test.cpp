@@ -257,7 +257,7 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_albu
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_portrait_album_test_001");
     ClearPortraitData();
     PortraitAlbumSource portraitAlbumSource;
-    vector<string> tableList = { ANALYSIS_ALBUM_TABLE };
+    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, PhotoColumn::PHOTOS_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
     cloneRestorePortrait = make_unique<CloneRestorePortrait>();
     cloneRestorePortrait->Init(CLONE_RESTORE_ID, "", newRdbStore->GetRaw(), portraitAlbumSource.cloneStorePtr_, {}, false);
