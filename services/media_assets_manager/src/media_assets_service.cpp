@@ -1105,6 +1105,10 @@ int32_t MediaAssetsService::RevertToOriginal(const RevertToOriginalDto& revertTo
         string fileUri = revertToOriginalDto.fileUri;
         Uri uri(fileUri);
         MediaLibraryCommand cmdEditCommit(uri);
+        cmdEditCommit.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+        ValuesBucket values;
+        values.Put(PhotoColumn::MEDIA_ID, fileId);
+        cmdEditCommit.SetValueBucket(values);
         MediaLibraryVisionOperations::EditCommitOperation(cmdEditCommit);
     }
     return errCode;
