@@ -39,16 +39,17 @@ namespace OHOS {
 using namespace std;
 using namespace AbilityRuntime;
 using namespace OHOS::Media;
-static const int64_t MIN_DATE_TAKEN = 1111111111111;
-static const int64_t MAX_DATE_TAKEN = 1733333333333;
-static const int32_t MIN_PHOTO_POSITION = 1;
-static const int32_t MAX_PHOTO_POSITION = 3;
-static const int32_t MAX_BYTE_VALUE = 256;
-static const int32_t SEED_SIZE = 1024;
+const int64_t MIN_DATE_TAKEN = 1111111111111;
+const int64_t MAX_DATE_TAKEN = 1733333333333;
+const int32_t MIN_PHOTO_POSITION = 1;
+const int32_t MAX_PHOTO_POSITION = 3;
+const int32_t MAX_BYTE_VALUE = 256;
+const int32_t SEED_SIZE = 1024;
 FuzzedDataProvider *provider = nullptr;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
-static std::atomic<int> g_num{0};
-static constexpr int64_t SEC_TO_MSEC = 1e3;
+std::atomic<int> g_num{0};
+const int64_t SEC_TO_MSEC = 1000;
+const int32_t MILSEC_TO_MICSEC = 1000;
 
 static inline int32_t FuzzPhotoPosition()
 {
@@ -197,9 +198,11 @@ static void PrepareAbnormalPhotos()
 
     InsertPhotoWithDateTime(-1, detailTime, dateDay, exif);
 
-    InsertPhotoWithDateTime(dateTaken, "2020:08:08 00:08:53", dateDay, exif);
+    InsertPhotoWithDateTime(dateTaken * MILSEC_TO_MICSEC, detailTime, dateDay, exif);
 
-    InsertPhotoWithDateTime(dateTaken, detailTime, "20200808", exif);
+    InsertPhotoWithDateTime(dateTaken, "1970:01:01 08:00:00", dateDay, exif);
+
+    InsertPhotoWithDateTime(dateTaken, detailTime, "19700101", exif);
 
     exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+08:00\","
            "\"SubsecTimeOriginal\":\"120000\",\"GPSDateStamp\":\"\",\"GPSTimeStamp\":\"\"}";

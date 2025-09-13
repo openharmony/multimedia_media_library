@@ -35,10 +35,11 @@ namespace Media {
 using namespace std;
 using namespace testing::ext;
 
-static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
-static std::atomic<int> g_num{0};
+shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+std::atomic<int> g_num{0};
 
-static constexpr int64_t SEC_TO_MSEC = 1e3;
+const int64_t SEC_TO_MSEC = 1000;
+const int32_t MILSEC_TO_MICSEC = 1000;
 
 int32_t ExecSqls(const vector<string> &sqls)
 {
@@ -211,10 +212,13 @@ void PrepareAbnormalPhotos()
     fileId = InsertPhotoWithDateTime(-1, detailTime, dateDay, exif);
     EXPECT_GT(fileId, 0);
 
-    fileId = InsertPhotoWithDateTime(dateTaken, "2020:08:08 00:08:53", dateDay, exif);
+    fileId = InsertPhotoWithDateTime(dateTaken * MILSEC_TO_MICSEC, detailTime, dateDay, exif);
     EXPECT_GT(fileId, 0);
 
-    fileId = InsertPhotoWithDateTime(dateTaken, detailTime, "20200808", exif);
+    fileId = InsertPhotoWithDateTime(dateTaken, "1970:01:01 08:00:00", dateDay, exif);
+    EXPECT_GT(fileId, 0);
+
+    fileId = InsertPhotoWithDateTime(dateTaken, detailTime, "19700101", exif);
     EXPECT_GT(fileId, 0);
 
     exif = "{\"DateTimeOriginal\":\"2020:08:08 00:08:53\",\"OffsetTimeOriginal\":\"+08:00\","
@@ -250,6 +254,7 @@ int32_t QueryAbnormalPhotosCount()
                        "  date_taken <= 0 "
                        "  OR date_day IS NULL "
                        "  OR date_day = '' "
+                       "  OR date_day = '19700101' "
                        "  OR detail_time IS NULL "
                        "  OR detail_time = '' "
                        "  OR date_day != REPLACE ( SUBSTR( detail_time, 1, 10 ), ':', '' );";
