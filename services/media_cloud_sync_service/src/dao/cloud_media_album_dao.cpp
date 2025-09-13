@@ -283,7 +283,7 @@ bool CloudMediaAlbumDao::ReplaceCoverUriCondition(const std::string &coverUri, c
                        coverUri.c_str());
         return false;
     }
-    MEDIA_DEBUG_LOG("IsCoverIdExist:coverUri:%{public}s", coverUri.c_str());
+    MEDIA_DEBUG_LOG("IsCoverIdExist:coverUri:%{public}s, lPath:%{public}s", coverUri.c_str(), lPath.c_str());
     return true;
 }
 

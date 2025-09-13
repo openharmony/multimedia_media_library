@@ -160,12 +160,12 @@ void ClearAndRestart(std::shared_ptr<MediaLibraryRdbStore> rdbStore)
 
 void SetValuesBucketInPhotosTable(const string &columnKey, const string &columnValue, ValuesBucket &values)
 {
-    if (FILEASSET_MEMBER_MAP.find(columnKey) == FILEASSET_MEMBER_MAP.end()) {
+    if (GetFileAssetMemberMap().find(columnKey) == GetFileAssetMemberMap().end()) {
         GTEST_LOG_(ERROR) << "columnKey: " << columnKey << " not found";
         return;
     }
 
-    int type = FILEASSET_MEMBER_MAP.at(columnKey);
+    int type = GetFileAssetMemberMap().at(columnKey);
     switch (type) {
         case MEMBER_TYPE_INT32:
             values.PutInt(columnKey, stoi(columnValue));

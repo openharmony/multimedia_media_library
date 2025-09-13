@@ -517,11 +517,11 @@ int32_t GetPhotoAssetCountIndb(const string &key, const string &value)
 void SetValuesBucketInUpdate(const string &columnKey, const string &columnValue,
     ValuesBucket &values)
 {
-    if (FILEASSET_MEMBER_MAP.find(columnKey) == FILEASSET_MEMBER_MAP.end()) {
+    if (GetFileAssetMemberMap().find(columnKey) == GetFileAssetMemberMap().end()) {
         MEDIA_ERR_LOG("this columnKey %{public}s is not excepted", columnKey.c_str());
         return;
     }
-    int type = FILEASSET_MEMBER_MAP.at(columnKey);
+    int type = GetFileAssetMemberMap().at(columnKey);
     switch (type) {
         case MEMBER_TYPE_INT32:
             values.PutInt(columnKey, stoi(columnValue));
@@ -602,7 +602,7 @@ int32_t TestQueryAsset(const string &queryKey, const string &queryValue, const s
     columns.push_back(columnKey);
     auto queryResultSet = rdbStore->Query(cmd, columns);
     if (queryResultSet != nullptr && queryResultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        int type = FILEASSET_MEMBER_MAP.at(columnKey);
+        int type = GetFileAssetMemberMap().at(columnKey);
         switch (type) {
             case MEMBER_TYPE_INT32: {
                 int intValue = GetInt32Val(columnKey, queryResultSet);
