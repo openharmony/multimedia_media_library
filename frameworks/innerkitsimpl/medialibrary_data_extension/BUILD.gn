@@ -218,6 +218,7 @@ ohos_shared_library("medialibrary_data_extension") {
 
   media_fuse_source = [
     "${MEDIALIB_SERVICES_PATH}/media_fuse/src/media_fuse_daemon.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_fuse/src/media_fuse_hdc_operations.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_fuse/src/media_fuse_manager.cpp",
   ]
 
