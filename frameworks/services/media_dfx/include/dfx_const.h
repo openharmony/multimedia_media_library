@@ -181,6 +181,8 @@ struct PhotoRecordInfo {
     int64_t slaveDbFileSize;
     int32_t duplicateLpathCount;
     int32_t abnormalLpathCount;
+    int32_t photoWaitUploadCloudCount;
+    int32_t photoWaitUploadHdcCount;
 };
 
 struct AdaptationToMovingPhotoInfo {

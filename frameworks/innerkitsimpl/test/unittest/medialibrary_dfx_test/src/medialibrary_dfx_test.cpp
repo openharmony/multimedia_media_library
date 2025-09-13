@@ -602,6 +602,7 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_ReportPhotoInfo_test_001, TestSize.Le
     PhotoStatistics stats = {};
     DfxReporter dfxReporter;
     dfxReporter.ReportPhotoInfo(stats);
+    stats.southDeviceType = 0;
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
         "MEDIALIB_PHOTO_INFO",
@@ -611,7 +612,8 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_ReportPhotoInfo_test_001, TestSize.Le
         "CLOUD_IMAGE_COUNT", stats.cloudImageCount,
         "CLOUD_VIDEO_COUNT", stats.cloudVideoCount,
         "SHARED_IMAGE_COUNT", stats.sharedImageCount,
-        "SHARED_VIDEO_COUNT", stats.sharedVideoCount);
+        "SHARED_VIDEO_COUNT", stats.sharedVideoCount,
+        "SOUTH_DEVICE_TYPE", stats.southDeviceType);
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -720,9 +722,10 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_ReportCloudSyncThumbGenerationStatus_
     int32_t downloadedThumb = 1;
     int32_t generatedThumb = 1;
     int32_t totalDownload = 0;
+    int32_t southDeviceType = 0;
     DfxReporter dfxReporter;
     int32_t result = dfxReporter.ReportCloudSyncThumbGenerationStatus(downloadedThumb,
-        generatedThumb, totalDownload);
+        generatedThumb, totalDownload, southDeviceType);
     EXPECT_EQ(result, 0);
 }
 
@@ -731,9 +734,10 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_ReportCloudSyncThumbGenerationStatus_
     int32_t downloadedThumb = 1;
     int32_t generatedThumb = 1;
     int32_t totalDownload = 1;
+    int32_t southDeviceType = 0;
     DfxReporter dfxReporter;
     int32_t result = dfxReporter.ReportCloudSyncThumbGenerationStatus(downloadedThumb,
-        generatedThumb, totalDownload);
+        generatedThumb, totalDownload, southDeviceType);
     EXPECT_EQ(result, 0);
 }
 

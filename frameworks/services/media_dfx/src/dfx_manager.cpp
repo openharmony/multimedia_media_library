@@ -17,6 +17,7 @@
 #include <sstream>
 #include "dfx_manager.h"
 
+#include "cloud_media_context.h"
 #include "dfx_cloud_manager.h"
 #include "dfx_utils.h"
 #include "media_file_utils.h"
@@ -37,6 +38,7 @@
 #include "hi_audit.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
+#include "settings_data_manager.h"
 
 using namespace std;
 
@@ -277,7 +279,7 @@ static void HandlePhotoInfo(std::shared_ptr<DfxReporter>& dfxReporter)
                    stats.localImageCount, stats.localVideoCount,
                    stats.cloudImageCount, stats.cloudVideoCount,
                    stats.sharedImageCount, stats.sharedVideoCount);
-
+    stats.southDeviceType = static_cast<int32_t>(SettingsDataManager::GetPhotosSyncSwitchStatus());
     dfxReporter->ReportPhotoInfo(stats);
 }
 
@@ -787,7 +789,8 @@ void EndState::Process(CloudSyncDfxManager& manager)
         }
         SetReported(true);
         manager.ShutDownTimer();
-        DfxReporter::ReportCloudSyncThumbGenerationStatus(downloadedThumb, generatedThumb, totalDownload);
+        DfxReporter::ReportCloudSyncThumbGenerationStatus(downloadedThumb, generatedThumb, totalDownload,
+            static_cast<int32_t>(SettingsDataManager::GetPhotosSyncSwitchStatus()));
     }
 }
 
@@ -816,7 +819,8 @@ void CloudSyncDfxManager::StartTimer()
                     "download: %{public}d, generate: %{public}d", downloadedThumb, generatedThumb);
                 SetReported(true);
             }
-            DfxReporter::ReportCloudSyncThumbGenerationStatus(downloadedThumb, generatedThumb, totalDownload);
+            DfxReporter::ReportCloudSyncThumbGenerationStatus(downloadedThumb, generatedThumb, totalDownload,
+                static_cast<int32_t>(SettingsDataManager::GetPhotosSyncSwitchStatus()));
         }
     };
     timerId_ = timer_.Register(timerCallback, SIX_HOUR * TO_MILLION, false);
@@ -1026,13 +1030,14 @@ void DfxManager::HandleSyncEnd(const int32_t stopReason)
             break;
         }
     }
-
-    DfxReporter::ReportSyncStat(taskId_, syncInfo_, stat, syncInfo);
+    DfxReporter::ReportSyncStat(taskId_, syncInfo_, stat, syncInfo,
+        CloudSync::CloudMediaContext::GetInstance().GetCloudType());
 }
 
 void DfxManager::HandleReportSyncFault(const std::string& position, const SyncFaultEvent& event)
 {
-    DfxReporter::ReportSyncFault(taskId_, position, event);
+    DfxReporter::ReportSyncFault(taskId_, position, event,
+        CloudSync::CloudMediaContext::GetInstance().GetCloudType());
 }
 
 void DfxManager::HandleAccurateRefreshTimeOut(const AccurateRefreshDfxDataPoint& reportData)
