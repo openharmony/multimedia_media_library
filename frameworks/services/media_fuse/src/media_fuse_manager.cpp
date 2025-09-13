@@ -25,6 +25,7 @@
 #include "dfx_reporter.h"
 #include "iservice_registry.h"
 #include "media_fuse_daemon.h"
+#include "media_fuse_hdc_operations.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
@@ -64,12 +65,6 @@ using namespace std;
 
 const std::string FUSE_ROOT_MEDIA_DIR = "/storage/cloud/files/Photo";
 const std::string FUSE_OPEN_PHOTO_PRE = "/Photo";
-const std::string FUSE_LOCAL_MEDIA_DIR = "/storage/media/local/files/Photo";
-const std::string FUSE_URI_PREFIX = "file://media";
-const std::string HIDDEN_ALBUM = ".hiddenAlbum";
-const std::string PHOTO_EXTENSION = "jpg";
-const std::string VIDEO_EXTENSION = "mp4";
-const std::string FIXED_PHOTO_ALBUM = "DeveloperAlbum";
 const int32_t URI_SLASH_NUM_API9 = 2;
 const int32_t URI_SLASH_NUM_API10 = 4;
 const int32_t FUSE_VIRTUAL_ID_DIVIDER = 5;
@@ -78,12 +73,6 @@ const int32_t BASE_USER_RANGE = 200000;
 static constexpr int32_t HDC_FIRST_ARGS = 1;
 static constexpr int32_t HDC_SECOND_ARGS = 2;
 static constexpr int32_t HDC_THIRD_ARGS = 3;
-static constexpr uid_t CUSTOM_UID = 1008;
-static constexpr mode_t DIR_PERMISSION = 0777;
-static constexpr mode_t FILE_PERMISSION = 0664;
-static constexpr off_t DIR_DEFAULT_SIZE = 3440;
-static constexpr int64_t NANOSECONDS_PER_SECOND = 1000000000000LL;
-static constexpr int64_t MILLISECONDS_PER_SECOND = 1000LL;
 static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDONLY, MEDIA_FILEMODE_READONLY },
     { O_WRONLY, MEDIA_FILEMODE_WRITEONLY },
@@ -538,329 +527,20 @@ int32_t MediaFuseManager::UMountFuse()
     return E_OK;
 }
 
-static time_t GetAlbumMTime(const shared_ptr<NativeRdb::ResultSet>& resultSet)
-{
-    int64_t dateModified = GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, resultSet);
-    int64_t dateAdded = GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_ADDED, resultSet);
-    int64_t mtimeRaw = (dateModified > 0) ? dateModified : dateAdded;
-    if (mtimeRaw > NANOSECONDS_PER_SECOND) {
-        mtimeRaw /= MILLISECONDS_PER_SECOND;
-    }
-    return (mtimeRaw > 0) ? static_cast<time_t>(mtimeRaw) : time(nullptr);
-}
-
-static void FillDirStat(struct stat *stbuf, time_t mtime = 0)
-{
-    if (!stbuf) {
-        return;
-    }
-
-    *stbuf = (struct stat) {
-        .st_mode = S_IFDIR | DIR_PERMISSION,
-        .st_nlink = 2,
-        .st_uid = CUSTOM_UID,
-        .st_gid = CUSTOM_UID,
-        .st_size = DIR_DEFAULT_SIZE,
-    };
-    stbuf->st_mtime = mtime ? mtime : time(nullptr);
-    stbuf->st_ctime = stbuf->st_mtime;
-    stbuf->st_atime = stbuf->st_mtime;
-}
-
-static int32_t GetArgs(const string &path, vector<string> &parts)
-{
-    if (path.find(FUSE_OPEN_PHOTO_PRE) != 0) {
-        MEDIA_ERR_LOG("GetArgs inputPath err.");
-        return E_ERR;
-    }
-
-    stringstream ss(path);
-    string part;
-    while (getline(ss, part, '/')) {
-        if (!part.empty()) {
-            parts.push_back(part);
-        }
-    }
-    return E_SUCCESS;
-}
-
-static bool IsImageOrVideoFile(const string &fileName)
-{
-    auto mediaType = MediaFileUtils::GetMediaType(fileName);
-    return (mediaType == Media::MediaType::MEDIA_TYPE_IMAGE) ||
-        (mediaType == Media::MediaType::MEDIA_TYPE_VIDEO);
-}
-
-static int32_t GetPathFormDisplayname(const string &displayName, int albumId, string &filePath)
-{
-    if (displayName.empty()) {
-        MEDIA_ERR_LOG("Displayname is empty.");
-        return E_ERR;
-    }
-
-    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicate.EqualTo(MediaColumn::MEDIA_NAME, displayName);
-    rdbPredicate.And()->EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
-    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    vector<string> positions = {to_string(1), to_string(3)};
-    rdbPredicate.And()->In(PhotoColumn::PHOTO_POSITION, positions);
-
-    vector<string> columns;
-    columns.push_back(MediaColumn::MEDIA_FILE_PATH);
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to get filePath from db");
-        return E_ERR;
-    }
-
-    filePath = "";
-    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        filePath = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
-    }
-    MEDIA_INFO_LOG("get filePath from db, filePath = %{private}s", filePath.c_str());
-    return E_SUCCESS;
-}
-
-static int32_t GetAlbumIdFromAlbumName(const string &name, int32_t &albumId)
-{
-    if (name.empty()) {
-        MEDIA_ERR_LOG("AlbumName is empty.");
-        return E_ERR;
-    }
-
-    NativeRdb::RdbPredicates rdbPredicate(PhotoAlbumColumns::TABLE);
-    rdbPredicate.EqualTo(PhotoAlbumColumns::ALBUM_NAME, name);
-    rdbPredicate.And()->IsNotNull(MEDIA_DATA_DB_ALBUM_NAME);
-    rdbPredicate.And()->NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
-
-    vector<string> columns;
-    columns.push_back(PhotoAlbumColumns::ALBUM_ID);
-
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query albumName and id from db");
-        return E_ERR;
-    }
-
-    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        albumId = MediaLibraryRdbStore::GetInt(resultSet, PhotoAlbumColumns::ALBUM_ID);
-        return E_SUCCESS;
-    }
-    albumId = 0;
-    MEDIA_INFO_LOG("get albumId from db, albumId = %{private}d", albumId);
-    return E_SUCCESS;
-}
-
-static int32_t Parse(const string &path, int32_t &albumId, string &filePath, string &displayName)
-{
-    vector<string> args;
-    int32_t res = GetArgs(path, args);
-    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetArgs fail.");
-    if (args.size() < HDC_SECOND_ARGS) {
-        MEDIA_ERR_LOG("invalid path.");
-        return E_ERR;
-    }
-    displayName = args[args.size() - 1];
-
-    if (args.size() == HDC_SECOND_ARGS) {
-        res = GetAlbumIdFromAlbumName(FIXED_PHOTO_ALBUM, albumId);
-        CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetAlbumIdFromAlbumName fail");
-    } else {
-        res = GetAlbumIdFromAlbumName(args[HDC_FIRST_ARGS], albumId);
-        CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetAlbumIdFromAlbumName fail");
-    }
-    res = GetPathFormDisplayname(displayName, albumId, filePath);
-    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetPathFormDisplayname fail");
-    return res;
-}
-
-static int32_t ExtractFileNameAndExtension(const string &input, string &outName, string &outExt)
-{
-    if (input.empty()) {
-        return E_ERR;
-    }
-
-    string fileName;
-    size_t lastSlashPos = input.find_last_of('/');
-    if (lastSlashPos == string::npos) {
-        fileName = input;
-    } else {
-        fileName = input.substr(lastSlashPos + 1);
-        if (fileName.empty()) {
-            return E_ERR;
-        }
-    }
-
-    size_t lastDotPos = fileName.find_last_of('.');
-    if (lastDotPos == string::npos || lastDotPos == 0 || lastDotPos == fileName.length() - 1) {
-        outName = fileName;
-        outExt = "";
-        return E_SUCCESS;
-    }
-
-    outName = fileName.substr(0, lastDotPos);
-    outExt = fileName.substr(lastDotPos + 1);
-    return E_SUCCESS;
-}
-
-static bool IsMovingPhoto(int32_t subtype, int32_t effectMode)
-{
-    return (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
-        effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
-}
-
-static int32_t HandleMovingPhoto(string &filePath, string &displayName, int32_t albumId)
-{
-    string title;
-    string ext;
-    int32_t res = ExtractFileNameAndExtension(displayName, title, ext);
-    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "ExtractFileNameAndExtension fail");
-    displayName = title + "." + PHOTO_EXTENSION;
-
-    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicate.EqualTo(MediaColumn::MEDIA_NAME, displayName);
-    rdbPredicate.And()->EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
-    vector<string> columns = {
-        PhotoColumn::PHOTO_SUBTYPE,
-        PhotoColumn::MOVING_PHOTO_EFFECT_MODE
-    };
-
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query date from db");
-        return E_ERR;
-    }
-
-    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t subtype = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_SUBTYPE);
-        int32_t effectMode = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::MOVING_PHOTO_EFFECT_MODE);
-        if (IsMovingPhoto(subtype, effectMode)) {
-            res = GetPathFormDisplayname(displayName, albumId, filePath);
-            CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetPathFormDisplayname fail");
-        }
-    }
-    return res;
-}
-
-static int32_t HandleFstat(const struct fuse_file_info *fi, struct stat *stbuf)
-{
-    int32_t res = fstat(static_cast<int32_t>(fi->fh), stbuf);
-    if (res < 0) {
-        MEDIA_ERR_LOG("fstat failed, res = %{public}d", res);
-        return -errno;
-    }
-    return E_SUCCESS;
-}
-
-static int32_t HandleRootOrPhoto(const char *path, struct stat *stbuf)
-{
-    if (strcmp(path, "/") == 0 || strcmp(path, "/Photo") == 0) {
-        FillDirStat(stbuf);
-        return E_SUCCESS;
-    }
-    return E_ERR;
-}
-
-static int32_t HandleDirStat(const int32_t &albumId, struct stat *stbuf)
-{
-    NativeRdb::RdbPredicates rdbPredicate(PhotoAlbumColumns::TABLE);
-    rdbPredicate.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
-    rdbPredicate.Limit(1);
-
-    vector<string> columns = {
-        PhotoAlbumColumns::ALBUM_DATE_MODIFIED,
-        PhotoAlbumColumns::ALBUM_DATE_ADDED
-    };
-
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to query date from db");
-        return E_ERR;
-    }
-
-    time_t mtime = GetAlbumMTime(resultSet);
-    FillDirStat(stbuf, mtime);
-    return E_SUCCESS;
-}
-
-static int32_t HandleLstat(const string &localPath, struct stat *stbuf)
-{
-    int32_t res = lstat(localPath.c_str(), stbuf);
-    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR,
-        "lstat fail localPath = %{private}s, errno = %{public}d.", localPath.c_str(), errno);
-    stbuf->st_mode = stbuf->st_mode | 0x6;
-    return E_SUCCESS;
-}
-
-static int32_t HandlePhotoPath(const string &inputPath, int32_t &albumId,
-    string &localPath, struct stat *stbuf)
-{
-    int32_t res = -1;
-    if (IsImageOrVideoFile(inputPath)) {
-        /* /Photo/xxx.jpg || /Photo/xxx.mp4 */
-        res = GetAlbumIdFromAlbumName(FIXED_PHOTO_ALBUM, albumId);
-        CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetAlbumIdFromAlbumName fail");
-        res = GetPathFormDisplayname(inputPath, albumId, localPath);
-        CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetPathFormDisplayname fail");
-        if (localPath.empty()) {
-            MEDIA_ERR_LOG("LocalPath is empty.");
-            return -ENOENT;
-        }
-        return E_SUCCESS;
-    }
-    /* /Photo/xxx */
-    res = GetAlbumIdFromAlbumName(inputPath, albumId);
-    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetAlbumIdFromAlbumName fail");
-    if (albumId <= 0) {
-        MEDIA_ERR_LOG("not exit album %{public}s.", inputPath.c_str());
-        return -ENOENT;
-    }
-    res = HandleDirStat(albumId, stbuf);
-    if (res != E_SUCCESS) {
-        MEDIA_ERR_LOG("HandleDirStat fail");
-        return res;
-    }
-    return E_SUCCESS;
-}
-
-static int32_t HandleImageFilePath(const vector<string> &args, int32_t &albumId, string &localPath)
-{
-    int32_t res = GetAlbumIdFromAlbumName(args[HDC_FIRST_ARGS], albumId);
-    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetAlbumIdFromAlbumName fail");
-    res = GetPathFormDisplayname(args[HDC_SECOND_ARGS], albumId, localPath);
-    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetPathFormDisplayname fail");
-
-    string displayName = args[HDC_SECOND_ARGS];
-    if (localPath.empty()) {
-        res = HandleMovingPhoto(localPath, displayName, albumId);
-        if (res != E_SUCCESS) {
-            MEDIA_ERR_LOG("HandleMovingPhoto fail");
-            return res;
-        }
-    }
-
-    if (localPath.empty()) {
-        MEDIA_ERR_LOG("Displayname is not exited.");
-        return -ENOENT;
-    }
-    return E_SUCCESS;
-}
-
 int32_t MediaFuseManager::DoHdcGetAttr(const char *path, struct stat *stbuf, struct fuse_file_info *fi)
 {
     MEDIA_INFO_LOG("Hdc getattr start, path = %{private}s", path);
     if (fi) {
-        return HandleFstat(fi, stbuf);
+        return MediaFuseHdcOperations::HandleFstat(fi, stbuf);
     }
 
-    int32_t res = HandleRootOrPhoto(path, stbuf);
+    int32_t res = MediaFuseHdcOperations::HandleRootOrPhoto(path, stbuf);
     if (res == E_SUCCESS) {
         return res;
     }
 
     vector<string> args;
-    res = GetArgs(path, args);
+    res = MediaFuseHdcOperations::GetArgs(path, args);
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetArgs fail.");
     if (args.size() < HDC_SECOND_ARGS) {
         MEDIA_ERR_LOG("Invalid path.");
@@ -870,37 +550,27 @@ int32_t MediaFuseManager::DoHdcGetAttr(const char *path, struct stat *stbuf, str
     int32_t albumId = -1;
     string localPath;
     if (args.size() == HDC_SECOND_ARGS) {
-        int32_t result = HandlePhotoPath(args[HDC_FIRST_ARGS], albumId, localPath, stbuf);
+        int32_t result = MediaFuseHdcOperations::HandlePhotoPath(args[HDC_FIRST_ARGS], albumId, localPath, stbuf);
         if (result != E_SUCCESS) {
             return result;
         }
         return E_SUCCESS;
     }
 
-    if (args.size() > HDC_THIRD_ARGS || !IsImageOrVideoFile(args[HDC_SECOND_ARGS])) {
+    if (args.size() > HDC_THIRD_ARGS || !MediaFuseHdcOperations::IsImageOrVideoFile(args[HDC_SECOND_ARGS])) {
         MEDIA_ERR_LOG("Invalid path.");
         return E_ERR;
     }
 
-    res = HandleImageFilePath(args, albumId, localPath);
+    res = MediaFuseHdcOperations::HandleFilePath(args, albumId, localPath);
     if (res != E_SUCCESS) {
         return res;
     }
 
-    res = HandleLstat(localPath, stbuf);
+    res = MediaFuseHdcOperations::HandleLstat(localPath, stbuf);
     if (res != E_SUCCESS) {
         return res;
     }
-    return E_SUCCESS;
-}
-
-static int32_t ConvertToLocalPhotoPath(const string &inputPath, string &output)
-{
-    if (inputPath.find(FUSE_ROOT_MEDIA_DIR) != 0) {
-        MEDIA_ERR_LOG("ConvertToLocalPhotoPath inputPath err");
-        return E_ERR;
-    }
-    output = FUSE_LOCAL_MEDIA_DIR + inputPath.substr(FUSE_ROOT_MEDIA_DIR.length());
     return E_SUCCESS;
 }
 
@@ -916,18 +586,36 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
     int32_t albumId = -1;
     string filePath;
     string displayName;
-    int32_t res = Parse(target, albumId, filePath, displayName);
+    int32_t res = MediaFuseHdcOperations::Parse(target, albumId, filePath, displayName);
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "Parse fail");
     if (filePath.empty()) {
-        res = HandleMovingPhoto(filePath, displayName, albumId);
+        // handle moving photo mp4
+        res = MediaFuseHdcOperations::HandleMovingPhoto(filePath, displayName, albumId);
         if (res != E_SUCCESS) {
             MEDIA_ERR_LOG("HandleMovingPhoto fail");
             return res;
         }
+        res = MediaFuseHdcOperations::GetPathFromDisplayname(displayName, albumId, filePath);
+        CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetPathFromDisplayname fail");
+        filePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
+    }
+    if (flags & (O_CREAT | O_WRONLY)) {
+        if (MediaFuseHdcOperations::DeletePhotoByFilePath(filePath) != 0) {
+            MEDIA_ERR_LOG("Delete failed");
+            return E_ERR;
+        }
+        MEDIA_CREATE_WRITE_MAP[target] = false;
+        res = MediaFuseHdcOperations::CreateFd(displayName, albumId, fd);
+        if (fd <= 0) {
+            MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Create failed, path = %{public}s", filePath.c_str());
+            return E_ERR;
+        }
+        MEDIA_CREATE_WRITE_MAP[target] = true;
+        return E_SUCCESS;
     }
 
     string localPath;
-    if (ConvertToLocalPhotoPath(filePath, localPath) != E_SUCCESS) {
+    if (MediaFuseHdcOperations::ConvertToLocalPhotoPath(filePath, localPath) != E_SUCCESS) {
         MEDIA_ERR_LOG("ConvertToLocalPhotoPath failed, filePath = %{public}s", filePath.c_str());
         return E_ERR;
     }
@@ -939,50 +627,6 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
                       localPath.c_str(), err);
         return err;
     }
-    return E_SUCCESS;
-}
-
-static int32_t CreateFd(const string &displayName, const int32_t &albumId, int32_t &fd)
-{
-    string title;
-    string extension;
-    int ret = ExtractFileNameAndExtension(displayName, title, extension);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "ExtractFileNameAndExtension failed.");
-
-    NativeRdb::ValuesBucket assetInfo;
-    assetInfo.PutString(ASSET_EXTENTION, extension);
-    if (extension == PHOTO_EXTENSION) {
-        assetInfo.PutInt(MediaColumn::MEDIA_TYPE, MEDIA_TYPE_IMAGE);
-    } else if (extension == VIDEO_EXTENSION) {
-        assetInfo.PutInt(MediaColumn::MEDIA_TYPE, MEDIA_TYPE_VIDEO);
-    }
-    assetInfo.PutString(MediaColumn::MEDIA_TITLE, title);
-    assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
-    assetInfo.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
-    if (albumId == 0) {
-        assetInfo.Put(MediaColumn::MEDIA_PACKAGE_NAME, FIXED_PHOTO_ALBUM);
-    } else {
-        assetInfo.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
-    }
-
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
-    cmd.SetValueBucket(assetInfo);
-    ret = MediaLibraryPhotoOperations::Create(cmd);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Create failed, ret = %{public}d", ret);
-        return E_ERR;
-    }
-
-    string fileUriStr = cmd.GetResult();
-    Uri uri(fileUriStr);
-    MediaLibraryCommand openLivePhotoCmd(uri, Media::OperationType::OPEN);
-    fd = MediaLibraryPhotoOperations::Open(openLivePhotoCmd, "w");
-    if (fd <= 0) {
-        int32_t err = -errno;
-        MEDIA_ERR_LOG("Open failed, errno=%{public}d", err);
-        return err;
-    }
-    MEDIA_INFO_LOG("CreateFd success, fd = %{private}d", fd);
     return E_SUCCESS;
 }
 
@@ -999,110 +643,17 @@ int32_t MediaFuseManager::DoHdcCreate(const char *path, mode_t mode, struct fuse
     int32_t albumId = -1;
     string filePath;
     string displayName;
-    int32_t res = Parse(target, albumId, filePath, displayName);
+    int32_t res = MediaFuseHdcOperations::Parse(target, albumId, filePath, displayName);
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "Parse fail");
 
     int32_t fd;
-    res = CreateFd(displayName, albumId, fd);
+    res = MediaFuseHdcOperations::CreateFd(displayName, albumId, fd);
     if (fd <= 0) {
-        MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Create failed, path = %{private}s, err = %{public}d",
-            filePath.c_str(), errno);
-        return -errno;
+        MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Create failed, path = %{public}s", filePath.c_str());
+        return res;
     }
     fi->fh = static_cast<uint64_t>(fd);
-        MEDIA_CREATE_WRITE_MAP[target] = true;
-    return E_SUCCESS;
-}
-
-static int32_t GetFileIdFromPath(const string &filePath, string &fileId)
-{
-    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicate.EqualTo(MediaColumn::MEDIA_FILE_PATH, filePath);
-
-    vector<string> columns;
-    columns.push_back(MediaColumn::MEDIA_ID);
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to get rslt.");
-        return E_ERR;
-    }
-
-    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to find row.");
-        return E_ERR;
-    }
-    fileId = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_ID);
-    MEDIA_INFO_LOG("get fileId from db, fileId = %{private}s", fileId.c_str());
-    return E_SUCCESS;
-}
-
-static int32_t UpdatePhotoRdb(const string &displayName, const string &filePath)
-{
-    string title;
-    string ext;
-    string fileId;
-    int32_t res = ExtractFileNameAndExtension(filePath, title, ext);
-    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "ExtractFileNameAndExtension fail");
-    res = GetFileIdFromPath(filePath, fileId);
-    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetFileIdFromPath fail");
-    string uri = FUSE_URI_PREFIX + FUSE_OPEN_PHOTO_PRE + "/" + fileId + "/" + title + "/" + displayName;
-    MEDIA_INFO_LOG("UpdatePhotoRdb uri = %{private}s", uri.c_str());
-
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Failed to get rdbStore instance.");
-        return E_HAS_DB_ERROR;
-    }
-
-    MediaLibraryCommand updatePendingCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    updatePendingCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
-    ValuesBucket values;
-    int64_t pendingTime = UNCLOSE_FILE_TIMEPENDING;
-    values.PutLong(MediaColumn::MEDIA_TIME_PENDING, pendingTime);
-    updatePendingCmd.SetValueBucket(values);
-    int32_t rowId = 0;
-    int32_t result = rdbStore->Update(updatePendingCmd, rowId);
-    if (result != NativeRdb::E_OK || rowId <= 0) {
-        MEDIA_ERR_LOG("Update File pending failed. Result %{public}d.", result);
-        return E_HAS_DB_ERROR;
-    }
-
-    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
-    ValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_URI, uri);
-    closeCmd.SetValueBucket(valuesBucket);
-    closeCmd.SetTableName(PhotoColumn::PHOTOS_TABLE);
-    int32_t ret = MediaLibraryPhotoOperations::Close(closeCmd);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Close failed ret = %{public}d.", ret);
-        return E_HAS_DB_ERROR;
-    }
-    return E_SUCCESS;
-}
-
-static int32_t ScanFileByPath(const string &path)
-{
-    MEDIA_INFO_LOG("hdc write start, path=%{private}s.", path.c_str());
-    if (path.empty()) {
-        MEDIA_ERR_LOG("Invalid path");
-        return -EINVAL;
-    }
-
-    int32_t albumId = -1;
-    string filePath;
-    string displayName;
-    int32_t res = Parse(path, albumId, filePath, displayName);
-    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "Parse fail");
-    if (filePath.empty()) {
-        res = HandleMovingPhoto(filePath, displayName, albumId);
-        if (res != E_SUCCESS) {
-            MEDIA_ERR_LOG("HandleMovingPhoto fail");
-            return res;
-        }
-    }
-
-    res = UpdatePhotoRdb(displayName, filePath);
-    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "UpdatePhotoRdb fail");
+    MEDIA_CREATE_WRITE_MAP[target] = true;
     return E_SUCCESS;
 }
 
@@ -1127,7 +678,7 @@ int32_t MediaFuseManager::DoHdcRelease(const char *path, const int32_t &fd)
     string target = path;
     if (MEDIA_CREATE_WRITE_MAP.find(target) != MEDIA_CREATE_WRITE_MAP.end()) {
         if (MEDIA_CREATE_WRITE_MAP[target]) {
-            int32_t res = ScanFileByPath(target);
+            int32_t res = MediaFuseHdcOperations::ScanFileByPath(target);
             MEDIA_CREATE_WRITE_MAP.erase(target);
             return res;
         } else {
@@ -1151,151 +702,28 @@ int32_t MediaFuseManager::DoHdcUnlink(const char *path)
     int32_t albumId = -1;
     string filePath;
     string displayName;
-    int32_t res = Parse(target, albumId, filePath, displayName);
+    int32_t res = MediaFuseHdcOperations::Parse(target, albumId, filePath, displayName);
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "Parse fail");
 
     string fileId;
     if (filePath.empty()) {
-        res = HandleMovingPhoto(filePath, displayName, albumId);
+        res = MediaFuseHdcOperations::HandleMovingPhoto(filePath, displayName, albumId);
         if (res != E_SUCCESS) {
             MEDIA_ERR_LOG("HandleMovingPhoto fail");
             return res;
         }
+        res = MediaFuseHdcOperations::GetPathFromDisplayname(displayName, albumId, filePath);
+        CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetPathFromDisplayname fail");
     }
-    res = GetFileIdFromPath(filePath, fileId);
-    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetFileIdFromPath fail");
-
-    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicate.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    int ret = MediaLibraryPtpOperations::DeletePtpPhoto(rdbPredicate);
+    int ret = MediaFuseHdcOperations::DeletePhotoByFilePath(filePath);
     if (ret != 0) {
-        MEDIA_ERR_LOG("Unlink failed, errno=%{public}d", errno);
-        return E_ERR;
+        MEDIA_ERR_LOG("Unlink failed");
+        return ret;
     }
     return E_SUCCESS;
 }
 
-static int32_t ReadPhotoRootDir(void *buf, fuse_fill_dir_t filler)
-{
-    NativeRdb::RdbPredicates rdbPredicate(PhotoAlbumColumns::TABLE);
-    rdbPredicate.IsNotNull(MEDIA_DATA_DB_ALBUM_NAME);
-    rdbPredicate.NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
-
-    vector<string> columns = {
-        PhotoAlbumColumns::ALBUM_NAME,
-        PhotoAlbumColumns::ALBUM_DATE_ADDED,
-        PhotoAlbumColumns::ALBUM_DATE_MODIFIED
-    };
-
-    auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query albumName and date from db");
-        return E_ERR;
-    }
-
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        string albumName = MediaLibraryRdbStore::GetString(resultSet, PhotoAlbumColumns::ALBUM_NAME);
-        time_t mtime = GetAlbumMTime(resultSet);
-        struct stat st;
-        FillDirStat(&st, mtime);
-        off_t nextoff = 0;
-        if (filler(buf, albumName.c_str(), &st, nextoff, FUSE_FILL_DIR_PLUS)) {
-            break;
-        }
-    }
-    return E_SUCCESS;
-}
-
-static void JpgToMp4(const string& displayName, set<string>& fileNames)
-{
-    size_t dotPos = displayName.find_last_of('.');
-    string videoName = (dotPos != string::npos)
-        ? displayName.substr(0, dotPos) + "." + VIDEO_EXTENSION
-        : displayName + "." + VIDEO_EXTENSION;
-    fileNames.insert(videoName);
-}
-
-static bool FillDirectoryEntry(void* buf, fuse_fill_dir_t filler, const string& name, const string& fullPath)
-{
-    struct stat st;
-    if (lstat(fullPath.c_str(), &st) == -1) {
-        st.st_mode = S_IFREG | FILE_PERMISSION;
-        st.st_nlink = 1;
-        st.st_uid = CUSTOM_UID;
-        st.st_gid = CUSTOM_UID;
-        st.st_size = 0;
-    }
-    off_t nextoff = 0;
-    return filler(buf, name.c_str(), &st, nextoff, FUSE_FILL_DIR_PLUS);
-}
-
-static shared_ptr<NativeRdb::ResultSet> QueryAlbumPhotos(const int32_t &albumId)
-{
-    NativeRdb::RdbPredicates photoPred(PhotoColumn::PHOTOS_TABLE);
-    photoPred.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
-    photoPred.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    photoPred.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-
-    vector<string> positions = {to_string(1), to_string(3)};
-    photoPred.And()->In(PhotoColumn::PHOTO_POSITION, positions);
-
-    vector<string> columns = {
-        MediaColumn::MEDIA_NAME,
-        MediaColumn::MEDIA_FILE_PATH,
-        PhotoColumn::PHOTO_SUBTYPE,
-        PhotoColumn::MOVING_PHOTO_EFFECT_MODE
-    };
-    return MediaLibraryRdbStore::Query(photoPred, columns);
-}
-
-static int32_t ReadAlbumDir(const string &inputPath, void* buf, fuse_fill_dir_t filler)
-{
-    string albumName = inputPath.substr(FUSE_OPEN_PHOTO_PRE.length() + 1);
-    int32_t albumId;
-    int32_t res = GetAlbumIdFromAlbumName(albumName, albumId);
-    if (res != E_SUCCESS) {
-        MEDIA_ERR_LOG("Failed to get album ID for: %{public}s", albumName.c_str());
-        return res;
-    }
-
-    auto resultSet = QueryAlbumPhotos(albumId);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query photos in album");
-        return E_ERR;
-    }
-
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        string displayName = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_NAME);
-        int32_t subtype = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_SUBTYPE);
-        int32_t effectMode = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::MOVING_PHOTO_EFFECT_MODE);
-        string filePath = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
-
-        string localPath;
-        if (ConvertToLocalPhotoPath(filePath, localPath) != E_SUCCESS) {
-            MEDIA_ERR_LOG("Failed to convert to local path: %{public}s", filePath.c_str());
-            continue;
-        }
-
-        set<string> fileNames;
-        string videoPath;
-        fileNames.insert(displayName);
-        if (IsMovingPhoto(subtype, effectMode)) {
-            videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(localPath);
-            JpgToMp4(displayName, fileNames);
-        }
-
-        for (const auto& name : fileNames) {
-            string fullPath = (name == displayName) ? localPath : videoPath;
-            if (FillDirectoryEntry(buf, filler, name, fullPath)) {
-                return E_SUCCESS;
-            }
-        }
-    }
-    return E_SUCCESS;
-}
-
-int32_t MediaFuseManager::DoHdcReadDir(const char *path, void *buf, fuse_fill_dir_t filler,
+int32_t MediaFuseManager::DoHdcReadDir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset,
     enum fuse_readdir_flags flags)
 {
     MEDIA_INFO_LOG("hdc readdir start, path=%{private}s.", path);
@@ -1306,11 +734,11 @@ int32_t MediaFuseManager::DoHdcReadDir(const char *path, void *buf, fuse_fill_di
 
     string target = path;
     if (target == FUSE_OPEN_PHOTO_PRE) {
-        return ReadPhotoRootDir(buf, filler);
+        return MediaFuseHdcOperations::ReadPhotoRootDir(buf, filler, offset);
     }
 
     if (target.find(FUSE_OPEN_PHOTO_PRE + "/") == 0) {
-        return ReadAlbumDir(target, buf, filler);
+        return MediaFuseHdcOperations::ReadAlbumDir(target, buf, filler, offset);
     }
 
     MEDIA_ERR_LOG("Invalid path format: %{public}s", path);

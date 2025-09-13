@@ -34,6 +34,7 @@ ohos_unittest("medialibrary_fuse_test") {
 
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_fuse/src/media_fuse_daemon.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_fuse/src/media_fuse_hdc_operations.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_fuse/src/media_fuse_manager.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/medialibrary_fuse_test.cpp",
