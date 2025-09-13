@@ -121,6 +121,98 @@ struct DeletedFilesParams {
     bool containsHidden = false;
 };
 
+const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
+    { MediaColumn::MEDIA_ID, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_FILE_PATH, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_SIZE, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_TITLE, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_NAME, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_TYPE, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_MIME_TYPE, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_OWNER_PACKAGE, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_OWNER_APPID, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_PACKAGE_NAME, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_DEVICE_NAME, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_DATE_ADDED, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_DATE_MODIFIED, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_DATE_TAKEN, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_DATE_DELETED, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_DURATION, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_TIME_PENDING, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_IS_FAV, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_DATE_TRASHED, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_HIDDEN, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_PARENT_ID, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_RELATIVE_PATH, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_VIRTURL_PATH, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_ORIENTATION, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_LATITUDE, MEMBER_TYPE_DOUBLE },
+    { PhotoColumn::PHOTO_LONGITUDE, MEMBER_TYPE_DOUBLE },
+    { PhotoColumn::PHOTO_HEIGHT, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_WIDTH, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_ALL_EXIF, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_EDIT_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_TRANSCODE_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_SUBTYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_COVER_POSITION, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_CE_AVAILABLE, MEMBER_TYPE_INT32 },
+    { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
+    { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_OWNER_ALBUM_ID, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_BURST_KEY, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_BURST_COVER_LEVEL, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_THUMBNAIL_READY, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_POSITION, MEMBER_TYPE_INT32 },
+    { PhotoColumn::SUPPORTED_WATERMARK_TYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_SOURCE_PATH, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_DIRTY, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_CLOUD_ID, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_META_DATE_MODIFIED, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_SYNC_STATUS, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_CLOUD_VERSION, MEMBER_TYPE_INT64 },
+    { PhotoColumn::CAMERA_SHOT_KEY, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_USER_COMMENT, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_DATE_YEAR, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_DATE_MONTH, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_DATE_DAY, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_SHOOTING_MODE, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_SHOOTING_MODE_TAG, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_LAST_VISIT_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_HIDDEN_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_THUMB_STATUS, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_CLEAN_FLAG, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_ID, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_QUALITY, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_FIRST_VISIT_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_LCD_SIZE, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_THUMB_SIZE, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_FRONT_CAMERA, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_IS_TEMP, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_CE_STATUS_CODE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_STRONG_ASSOCIATION, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_DETAIL_TIME, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_METADATA_FLAGS, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_IS_AUTO, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_MEDIA_SUFFIX, MEMBER_TYPE_STRING },
+    { PhotoColumn::STAGE_VIDEO_TASK_STATUS, MEMBER_TYPE_INT32 },
+};
+
+const std::unordered_map<std::string, int>& GetFileAssetMemberMap()
+{
+    return FILEASSET_MEMBER_MAP;
+}
+
 int32_t MediaLibraryAssetOperations::HandleInsertOperationExt(MediaLibraryCommand& cmd)
 {
     int errCode = E_ERR;
@@ -426,9 +518,9 @@ static shared_ptr<FileAsset> FetchFileAssetFromResultSet(
         int32_t columnIndex = 0;
         CHECK_AND_RETURN_RET_LOG(resultSet->GetColumnIndex(column, columnIndex) == NativeRdb::E_OK,
             nullptr, "Can not get column %{private}s index", column.c_str());
-        CHECK_AND_RETURN_RET_LOG(FILEASSET_MEMBER_MAP.find(column) != FILEASSET_MEMBER_MAP.end(), nullptr,
+        CHECK_AND_RETURN_RET_LOG(GetFileAssetMemberMap().find(column) != GetFileAssetMemberMap().end(), nullptr,
             "Can not find column %{private}s from member map", column.c_str());
-        switch (FILEASSET_MEMBER_MAP.at(column)) {
+        switch (GetFileAssetMemberMap().at(column)) {
             case MEMBER_TYPE_INT32: {
                 int32_t value = 0;
                 CHECK_AND_RETURN_RET_LOG(resultSet->GetInt(columnIndex, value) == NativeRdb::E_OK, nullptr,
@@ -569,7 +661,7 @@ std::vector<std::string> MediaLibraryAssetOperations::QueryPhotosTableColumnInfo
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string columnName = GetStringVal("name", resultSet);
-        if (FILEASSET_MEMBER_MAP.count(columnName) == 0) {
+        if (GetFileAssetMemberMap().count(columnName) == 0) {
             MEDIA_WARN_LOG("FILEASSET_MEMBER_MAP not find column: %{public}s", columnName.c_str());
             continue;
         }

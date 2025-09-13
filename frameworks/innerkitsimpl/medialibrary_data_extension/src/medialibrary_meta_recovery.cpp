@@ -1302,8 +1302,8 @@ void MediaLibraryMetaRecovery::RestartCloudSync()
 
 ResultSetDataType MediaLibraryMetaRecovery::GetDataType(const std::string &name)
 {
-    auto it = FILEASSET_MEMBER_MAP.find(name);
-    if (it == FILEASSET_MEMBER_MAP.end()) {
+    auto it = GetFileAssetMemberMap().find(name);
+    if (it == GetFileAssetMemberMap().end()) {
         MEDIA_ERR_LOG("FILEASSET_MEMBER_MAP not find name: %{public}s", name.c_str());
         return TYPE_NULL;
     }

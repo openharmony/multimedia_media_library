@@ -642,7 +642,7 @@ void CloudMediaAlbumService::CheckAlbumManualCover()
         ->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC))
         ->EndWrap();
     vector<string> queryColumns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COVER_URI,
-        PhotoAlbumColumns::COVER_URI_SOURCE, PhotoAlbumColumns::COVER_CLOUD_ID };
+        PhotoAlbumColumns::COVER_URI_SOURCE, PhotoAlbumColumns::COVER_CLOUD_ID, PhotoAlbumColumns::ALBUM_LPATH };
     auto resultSet = rdbStore->Query(predicates, queryColumns);
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is null");
 
