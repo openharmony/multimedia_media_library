@@ -85,7 +85,8 @@ public:
     EXPORT int32_t GetCurrentTemperatureLevel();
     EXPORT void CheckLcdSizeAndUpdateStatus();
     EXPORT int32_t RepairExifRotateBackground();
-    EXPORT int32_t FixThumbnailExifRotateAfterDownloadAsset(const std::string &fileId);
+    EXPORT int32_t FixThumbnailExifRotateAfterDownloadAsset(const std::string &fileId,
+        bool needDeleteFromVisionTables = true);
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();

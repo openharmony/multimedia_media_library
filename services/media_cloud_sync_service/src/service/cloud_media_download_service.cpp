@@ -525,6 +525,6 @@ int32_t CloudMediaDownloadService::CheckRegenerateThumbnail(
     int32_t fileId = photo.fileId.value_or(0);
     MEDIA_INFO_LOG("Need regenerate thumbnail, id:%{public}d, exifRotate:%{public}d", fileId, assetData.exifRotate);
     auto thumbnailService = ThumbnailService::GetInstance();
-    return thumbnailService->FixThumbnailExifRotateAfterDownloadAsset(std::to_string(fileId));
+    return thumbnailService->FixThumbnailExifRotateAfterDownloadAsset(std::to_string(fileId), false);
 }
 }  // namespace OHOS::Media::CloudSync
