@@ -41,8 +41,6 @@ public:
     EXPORT static int32_t TriggerHighlightThumbnail(ThumbRdbOpt &opts, std::string &id, std::string &tracks,
         std::string &trigger, std::string &genType);
     EXPORT static int32_t UpgradeThumbnailBackground(ThumbRdbOpt &opts, bool isWifiConnected);
-    EXPORT static int32_t RestoreAstcDualFrame(ThumbRdbOpt &opts,
-        const int32_t &restoreAstcCount = ASTC_GENERATE_COUNT_AFTER_RESTORE);
     EXPORT static int32_t CreateAstcBatchOnDemand(ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate,
         int32_t requestId);
     EXPORT static int32_t CreateLocalThumbnail(ThumbRdbOpt &opts);
@@ -69,10 +67,6 @@ private:
     EXPORT static int32_t GetThumbnailDataNeedUpgrade(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas,
         bool isWifiConnected);
     EXPORT static void CheckMonthAndYearKvStoreValid(ThumbRdbOpt &opts);
-    EXPORT static void CheckAndReportRestoreThumbnailProgress(bool isScreenOn, int32_t status, int64_t totalAstc = 1,
-        int64_t readyAstc = 0);
-    EXPORT static void RestoreAstcDualFrameTask(std::shared_ptr<ThumbnailTaskData> &data);
-    EXPORT static void AddCompletedTasks();
 };
 } // namespace Media
 } // namespace OHOS

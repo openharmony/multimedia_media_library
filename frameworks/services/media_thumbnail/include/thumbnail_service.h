@@ -50,6 +50,7 @@ public:
         std::string &genType);
 
     EXPORT int32_t RestoreThumbnailDualFrame(const int32_t &restoreAstcCount = ASTC_GENERATE_COUNT_AFTER_RESTORE);
+    EXPORT void RestoreThumbnailOnScreenStateChanged(bool isScreenOn);
     EXPORT void InterruptBgworker();
     EXPORT void StopAllWorker();
     EXPORT int32_t CreateThumbnailFileScaned(const std::string &uri, const std::string &path,

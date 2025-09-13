@@ -350,7 +350,6 @@ static void ThumbnailGenerateHelperTest()
     Media::ThumbnailGenerateHelper::GetAvailableKeyFrameFile(opts, thumbData, thumbType, fileName);
     Media::ThumbnailGenerateHelper::GetThumbnailPixelMap(thumbData, opts, FuzzThumbnailType());
     Media::ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, provider->ConsumeBool());
-    Media::ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
     outDatas.clear();
     Media::ThumbnailGenerateHelper::GetThumbnailDataNeedUpgrade(opts, outDatas, provider->ConsumeBool());
     Media::ThumbnailGenerateHelper::CheckMonthAndYearKvStoreValid(opts);

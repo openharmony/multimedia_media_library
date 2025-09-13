@@ -21,6 +21,7 @@
 #include "thumbnail_service.h"
 #include "ithumbnail_helper.h"
 #include "thumbnail_generate_helper.h"
+#include "thumbnail_restore_manager.h"
 #undef private
 #include "media_file_utils.h"
 #include "medialibrary_db_const_sqls.h"
@@ -38,6 +39,9 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static constexpr int32_t SLEEP_FIVE_MS = 5000;
+static constexpr int64_t TOTALTASKS = 10;
+static constexpr int64_t COMPLETEDTASKS = 5;
 class ConfigTestOpenCall : public NativeRdb::RdbOpenCallback {
 public:
     int OnCreate(NativeRdb::RdbStore &rdbStore) override;
@@ -802,13 +806,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_002, T
     EXPECT_NE(res, 0);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_003, TestSize.Level1)
-{
-    ThumbRdbOpt opts;
-    auto res = ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
-    EXPECT_EQ(res, -1);
-}
-
 HWTEST_F(MediaLibraryThumbnailServiceTest, UpgradeThumbnailBackground_test_001, TestSize.Level1)
 {
     auto res = serverTest->UpgradeThumbnailBackground(false);
@@ -1024,14 +1021,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_012, T
     std::string genType = "update";
     auto res = ThumbnailGenerateHelper::TriggerHighlightThumbnail(opts, id, tracks, trigger, genType);
     EXPECT_EQ(res, E_OK);
-}
-
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_013, TestSize.Level1)
-{
-    ThumbRdbOpt opts;
-    opts.store = storePtr;
-    auto res = ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
-    EXPECT_NE(res, E_OK);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_019, TestSize.Level1)
@@ -1495,6 +1484,109 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_AddThumbnai
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
     EXPECT_NE(thumbnailWorker, nullptr);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_restore_manager_test_001, TestSize.Level0)
+{
+    auto& thumbnailRestoreManager = ThumbnailRestoreManager::GetInstance();
+    thumbnailRestoreManager.InitializeRestore(TOTALTASKS);
+    EXPECT_EQ(thumbnailRestoreManager.totalTasks_.load(), TOTALTASKS);
+    thumbnailRestoreManager.Reset();
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_restore_manager_test_002, TestSize.Level0)
+{
+    auto& thumbnailRestoreManager = ThumbnailRestoreManager::GetInstance();
+    thumbnailRestoreManager.ReportProgressBegin();
+    thumbnailRestoreManager.totalTasks_.store(TOTALTASKS);
+    thumbnailRestoreManager.ReportProgressBegin();
+    thumbnailRestoreManager.AddCompletedTasks(0);
+    thumbnailRestoreManager.AddCompletedTasks(COMPLETEDTASKS);
+    thumbnailRestoreManager.AddCompletedTasks(COMPLETEDTASKS);
+    EXPECT_EQ(thumbnailRestoreManager.completedTasks_.load(), TOTALTASKS);
+    thumbnailRestoreManager.Reset();
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_restore_manager_test_003, TestSize.Level0)
+{
+    auto& thumbnailRestoreManager = ThumbnailRestoreManager::GetInstance();
+    thumbnailRestoreManager.StartProgressReporting(SLEEP_FIVE_MS);
+    thumbnailRestoreManager.isReporting_.store(true);
+
+    thumbnailRestoreManager.StartProgressReporting(SLEEP_FIVE_MS);
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
+    EXPECT_EQ(thumbnailRestoreManager.isReporting_.load(), true);
+    thumbnailRestoreManager.Reset();
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_restore_manager_test_004, TestSize.Level0)
+{
+    auto& thumbnailRestoreManager = ThumbnailRestoreManager::GetInstance();
+    thumbnailRestoreManager.OnScreenStateChanged(false);
+
+    thumbnailRestoreManager.isRestoreActive_.store(true);
+    thumbnailRestoreManager.OnScreenStateChanged(false);
+
+    thumbnailRestoreManager.lastScreenState_.store(true);
+    thumbnailRestoreManager.OnScreenStateChanged(false);
+
+    thumbnailRestoreManager.OnScreenStateChanged(false);
+
+    thumbnailRestoreManager.isRestoreActive_.store(false);
+    thumbnailRestoreManager.OnScreenStateChanged(true);
+
+    thumbnailRestoreManager.OnScreenStateChanged(true);
+
+    thumbnailRestoreManager.isRestoreActive_.store(true);
+    thumbnailRestoreManager.OnScreenStateChanged(true);
+
+    thumbnailRestoreManager.lastScreenState_.store(false);
+    thumbnailRestoreManager.OnScreenStateChanged(true);
+    EXPECT_EQ(thumbnailRestoreManager.lastScreenState_.load(), true);
+    thumbnailRestoreManager.Reset();
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_restore_manager_test_005, TestSize.Level0)
+{
+    auto& thumbnailRestoreManager = ThumbnailRestoreManager::GetInstance();
+    thumbnailRestoreManager.ReportProgress(false);
+    thumbnailRestoreManager.ReportProgress(true);
+    thumbnailRestoreManager.completedTasks_.store(COMPLETEDTASKS);
+
+    thumbnailRestoreManager.ReportProgress(true);
+    thumbnailRestoreManager.totalTasks_.store(TOTALTASKS);
+    thumbnailRestoreManager.ReportProgress(true);
+    EXPECT_EQ(thumbnailRestoreManager.readyAstc_.load(), COMPLETEDTASKS);
+    thumbnailRestoreManager.Reset();
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_restore_manager_test_006, TestSize.Level1)
+{
+    auto& thumbnailRestoreManager = ThumbnailRestoreManager::GetInstance();
+    ThumbRdbOpt opts;
+    auto res = thumbnailRestoreManager.RestoreAstcDualFrame(opts);
+    EXPECT_EQ(res, -1);
+
+    opts.store = storePtr;
+    res = thumbnailRestoreManager.RestoreAstcDualFrame(opts);
+    EXPECT_NE(res, E_OK);
+    thumbnailRestoreManager.Reset();
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_restore_manager_test_007, TestSize.Level1)
+{
+    std::shared_ptr<ThumbnailTaskData> data;
+    ThumbRdbOpt opts;
+    ThumbnailData thumbData;
+    int32_t requestId;
+    std::shared_ptr<ThumbnailTaskData> dataValue = std::make_shared<ThumbnailTaskData>(opts, thumbData, requestId);
+    ThumbnailRestoreManager::RestoreAstcDualFrameTask(data);
+
+    ThumbnailRestoreManager::RestoreAstcDualFrameTask(dataValue);
+
+    auto& thumbnailRestoreManager = ThumbnailRestoreManager::GetInstance();
+    EXPECT_EQ(thumbnailRestoreManager.readyAstc_.load(), 0);
+    thumbnailRestoreManager.Reset();
 }
 
 } // namespace Media
