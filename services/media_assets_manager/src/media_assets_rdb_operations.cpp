@@ -406,9 +406,9 @@ static shared_ptr<FileAsset> FetchFileAssetFromResultSet(
         int32_t columnIndex = 0;
         CHECK_AND_RETURN_RET_LOG(resultSet->GetColumnIndex(column, columnIndex) == NativeRdb::E_OK,
             nullptr, "Can not get column %{private}s index", column.c_str());
-        CHECK_AND_RETURN_RET_LOG(FILEASSET_MEMBER_MAP.find(column) != FILEASSET_MEMBER_MAP.end(), nullptr,
+        CHECK_AND_RETURN_RET_LOG(GetFileAssetMemberMap().find(column) != GetFileAssetMemberMap().end(), nullptr,
             "Can not find column %{private}s from member map", column.c_str());
-        switch (FILEASSET_MEMBER_MAP.at(column)) {
+        switch (GetFileAssetMemberMap().at(column)) {
             case MEMBER_TYPE_INT32: {
                 int32_t value = 0;
                 CHECK_AND_RETURN_RET_LOG(resultSet->GetInt(columnIndex, value) == NativeRdb::E_OK, nullptr,
