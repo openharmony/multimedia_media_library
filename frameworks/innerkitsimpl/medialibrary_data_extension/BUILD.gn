@@ -124,6 +124,7 @@ config("media_data_extension_public_config") {
   include_accurate_refresh = [
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include",
     "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/controller",
+    "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/dfx",
   ]
 
   include_backround_task = [
@@ -172,7 +173,6 @@ config("media_data_extension_public_config") {
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/enhancement_service",
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/utils",
       "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/include/dfx",
-      "${MEDIALIB_ACCURATE_REFRESH_PATH}/include/dfx",
     ]
     include_dirs += include_cloud_enhancement
   }
