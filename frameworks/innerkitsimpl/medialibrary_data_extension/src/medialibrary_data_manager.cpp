@@ -2264,6 +2264,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryAnalysisAlbum(Med
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
     int32_t albumSubtype = MediaLibraryRdbUtils::GetAlbumSubtypeArgument(rdbPredicates);
     MEDIA_DEBUG_LOG("Query analysis album of subtype: %{public}d", albumSubtype);
+    if (cmd.GetOprnType() == OperationType::QUERY_RAW_ANALYSIS_ALBUM) {
+        return MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+    }
     if (albumSubtype == PhotoAlbumSubType::GROUP_PHOTO) {
         return MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
     }

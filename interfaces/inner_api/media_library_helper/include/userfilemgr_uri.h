@@ -99,6 +99,7 @@ const std::string URI_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE = "/" + OPRN_FIND_ALL_
 const std::string OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE = "update_supported_watermark_type";
 const std::string OPRN_UPDATE_HAS_APPLINK = "update_supported_has_applink";
 const std::string OPRN_UPDATE_APPLINK = "update_supported_applink";
+const std::string OPRN_QUERY_RAW_ANALYSIS_ALBUM = "query_raw_analysis_album";
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_PHOTOOPRN = "photo_operation";
