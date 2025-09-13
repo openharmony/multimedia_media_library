@@ -904,14 +904,15 @@ int32_t ThumbnailService::RepairExifRotateBackground()
     return E_OK;
 }
 
-int32_t ThumbnailService::FixThumbnailExifRotateAfterDownloadAsset(const std::string &fileId)
+int32_t ThumbnailService::FixThumbnailExifRotateAfterDownloadAsset(const std::string &fileId,
+    bool needDeleteFromVisionTables)
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE,
         .fileId = fileId,
     };
-    int err = ThumbnailGenerateHelper::FixThumbnailExifRotateAfterDownloadAsset(opts);
+    int err = ThumbnailGenerateHelper::FixThumbnailExifRotateAfterDownloadAsset(opts, needDeleteFromVisionTables);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "FixThumbnailExifRotateAfterDownloadAsset failed, err: %{public}d", err);
     return E_OK;
 }

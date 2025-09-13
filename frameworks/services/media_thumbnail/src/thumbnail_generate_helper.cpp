@@ -34,6 +34,7 @@
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
+#include "media_assets_rdb_operations.h"
 #include "media_file_utils.h"
 #include "media_image_framework_utils.h"
 #include "media_log.h"
@@ -1138,12 +1139,14 @@ void RepairExifRotateBackgroundTask(std::shared_ptr<ThumbnailTaskData> &data)
     if (thumbnailData.mediaType == MediaType::MEDIA_TYPE_IMAGE) {
         MediaImageFrameWorkUtils::GetExifRotate(thumbnailData.path, thumbnailData.exifRotate);
         if (thumbnailData.exifRotate != static_cast<int32_t>(ExifRotateType::TOP_LEFT)) {
+            MediaAssetsRdbOperations::DeleteFromVisionTables(thumbnailData.id);
             ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, thumbnailData);
             IThumbnailHelper::CreateLcdAndThumbnail(data);
         }
     } else {
         MediaPlayerFrameWorkUtils::GetExifRotate(thumbnailData.path, thumbnailData.exifRotate);
         if (ExifRotateUtils::IsExifRotateWithFlip(thumbnailData.exifRotate)) {
+            MediaAssetsRdbOperations::DeleteFromVisionTables(thumbnailData.id);
             ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, thumbnailData);
             IThumbnailHelper::CreateLcdAndThumbnail(data);
             dirtyType = DirtyType::TYPE_FDIRTY;
@@ -1188,13 +1191,20 @@ void FixThumbnailExifRotateAfterDownloadAssetTask(std::shared_ptr<ThumbnailTaskD
     IThumbnailHelper::CreateLcdAndThumbnail(data);
 }
 
-int32_t ThumbnailGenerateHelper::FixThumbnailExifRotateAfterDownloadAsset(ThumbRdbOpt &opts)
+int32_t ThumbnailGenerateHelper::FixThumbnailExifRotateAfterDownloadAsset(ThumbRdbOpt &opts,
+    bool needDeleteFromVisionTables)
 {
     ThumbnailData data;
     data.id = opts.fileId;
     opts.row = data.id;
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
-    IThumbnailHelper::AddThumbnailGenerateTask(FixThumbnailExifRotateAfterDownloadAssetTask,
+    auto taskWithDeleteFromVisionTables = [](std::shared_ptr<ThumbnailTaskData> &data) {
+        CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
+        MediaAssetsRdbOperations::DeleteFromVisionTables(data->thumbnailData_.id);
+        FixThumbnailExifRotateAfterDownloadAssetTask(data);
+    };
+    IThumbnailHelper::AddThumbnailGenerateTask(
+        needDeleteFromVisionTables ? taskWithDeleteFromVisionTables : FixThumbnailExifRotateAfterDownloadAssetTask,
         opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::MID);
     return E_OK;
 }
