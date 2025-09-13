@@ -40,6 +40,7 @@
 #include "thumbnail_source_loading.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
+#include "thumbnail_restore_manager.h"
 #ifdef HAS_THERMAL_MANAGER_PART
 #include "thermal_mgr_client.h"
 #endif
@@ -492,7 +493,13 @@ int32_t ThumbnailService::RestoreThumbnailDualFrame(const int32_t &restoreAstcCo
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE
     };
-    return ThumbnailGenerateHelper::RestoreAstcDualFrame(opts, restoreAstcCount);
+
+    return ThumbnailRestoreManager::GetInstance().RestoreAstcDualFrame(opts, restoreAstcCount);
+}
+
+void ThumbnailService::RestoreThumbnailOnScreenStateChanged(bool isScreenOn)
+{
+    ThumbnailRestoreManager::GetInstance().OnScreenStateChanged(isScreenOn);
 }
 
 int32_t ThumbnailService::LcdAging()

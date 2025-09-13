@@ -967,6 +967,10 @@ void MedialibrarySubscriber::DealWithEventsAfterUpdateStatus(const StatusEventTy
     MediaLibraryKvStoreManager::GetInstance().TryCloseAllKvStore();
     PowerEfficiencyManager::SetSubscriberStatus(isCharging_, isScreenOff_);
 
+    if (statusEventType == StatusEventType::SCREEN_ON || statusEventType == StatusEventType::SCREEN_OFF) {
+        ThumbnailService::GetInstance()->RestoreThumbnailOnScreenStateChanged(!isScreenOff_);
+    }
+
     if (statusEventType == StatusEventType::SCREEN_OFF || statusEventType == StatusEventType::CHARGING) {
         WalCheckPointAsync();
         CheckHalfDayMissions();
