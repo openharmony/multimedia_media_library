@@ -394,6 +394,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_SYSTEM_ALBUM_COVER_URI, OperationType::SET_SYSTEM_ALBUM_COVER_URI},
         { OPRN_RESET_COVER_URI, OperationType::RESET_COVER_URI},
         { MEDIA_QUERY_OPRN_MOVING_PHOTO_VIDEO_READY, OperationType::MOVING_PHOTO_VIDEO_READY },
+        { OPRN_QUERY_RAW_ANALYSIS_ALBUM, OperationType::QUERY_RAW_ANALYSIS_ALBUM },
     };
     return oprnTypeMap;
 }

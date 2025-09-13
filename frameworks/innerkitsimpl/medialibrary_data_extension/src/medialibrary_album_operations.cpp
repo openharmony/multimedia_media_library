@@ -789,6 +789,7 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
             IS_ME + " = 1)" + " GROUP BY " + MAP_ALBUM + " HAVING count(" + MAP_ALBUM + ") >= " +
             to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME) + ")";
     std::string whereClauseAlbumName = ALBUM_NAME + " IS NOT NULL AND " + ALBUM_NAME + " != ''";
+    std::string whereClauseDisplayNull = USER_DISPLAY_LEVEL + " IS NULL";
 
     bool isStore = OHOS::system::GetBoolParameter(RETAIL_MODE_KEY, false);
     int32_t minFirstPageCount = isStore ? STORE_PORTRAIT_FIRST_PAGE_MIN_COUNT : PORTRAIT_FIRST_PAGE_MIN_COUNT;
@@ -796,26 +797,27 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
         STORE_PORTRAIT_SECOND_PAGE_MIN_COUNT : PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT;
     if (value == FIRST_PAGE) {
         string relatedMeFirstPage = ALBUM_ID + " IN " + whereClauseRelatedMe;
-        string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 1";
+        string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 1 OR " + USER_DISPLAY_LEVEL + " = 0";
         string whereClauseIsMe = IS_ME + " = 1";
-        string whereClauseSatifyCount = COUNT + " >= " + to_string(minFirstPageCount) + " AND (" +
-            USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
-        whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (((" + USER_DISPLAY_LEVEL + " != 3 AND " +
-                      USER_DISPLAY_LEVEL + " !=2) OR " + USER_DISPLAY_LEVEL + " IS NULL) AND ((" + whereClauseDisplay +
-                      ") OR (" + whereClauseIsMe + ") OR (" + relatedMeFirstPage + ") OR (" + whereClauseSatifyCount +
-                      ") OR (" + whereClauseAlbumName + "))) GROUP BY " + GROUP_TAG + " ORDER BY CASE WHEN " + IS_ME +
-                      " != 0 THEN 0 ELSE 1 END, CASE WHEN " + RENAME_OPERATION + " != 0 THEN 0 ELSE 1 END, " + COUNT +
-                      " DESC";
+        string whereClauseSatifyCount = COUNT + " >= " + to_string(minFirstPageCount);
+        string whereClauseWhenDisplayNull = "(" + whereClauseIsMe + ") OR (" + relatedMeFirstPage + ") OR (" +
+                                            whereClauseSatifyCount + ") OR (" + whereClauseAlbumName + ")";
+        whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND ((" + whereClauseDisplay + ") OR ((" +
+                      whereClauseDisplayNull + ") AND (" + whereClauseWhenDisplayNull + "))) GROUP BY " +
+                      GROUP_TAG + " ORDER BY CASE WHEN " + IS_ME + " != 0 THEN 0 ELSE 1 END, CASE WHEN " +
+                      RENAME_OPERATION + " != 0 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == SECOND_PAGE) {
         string whereClauseIsNotMe = IS_ME + " != 1 OR " + IS_ME + " IS NULL";
-        whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 2 OR ((" +
-                      whereClauseIsNotMe + ") AND " + COUNT + " < " + to_string(minFirstPageCount) +
-                      " AND " + COUNT + " >= " + to_string(minSecondPageCount) + " AND (" +
-                      USER_DISPLAY_LEVEL + " != 1 OR " + USER_DISPLAY_LEVEL + " IS NULL) AND (" + USER_DISPLAY_LEVEL +
-                      " != 3 OR " + USER_DISPLAY_LEVEL + " IS NULL) " + " AND NOT (" + whereClauseAlbumName +
-                      ") AND (" + ALBUM_ID + " NOT IN " + whereClauseRelatedMe + ")))" + " GROUP BY " + GROUP_TAG +
-                      " ORDER BY CASE WHEN " + IS_ME + " != 0 THEN 0 ELSE 1 END, CASE WHEN " + RENAME_OPERATION +
-                      " != 0 THEN 0 ELSE 1 END, " + COUNT + " DESC";
+        string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 2 OR " + USER_DISPLAY_LEVEL + " = -2";
+        string whereClauseSatifyCount =
+            COUNT + " < " + to_string(minFirstPageCount) + " AND " + COUNT + " >= " + to_string(minSecondPageCount);
+        string whereClauseWhenDisplayNull = "(" + whereClauseIsNotMe + ") AND (" + whereClauseSatifyCount +
+                                            ") AND NOT (" + whereClauseAlbumName + ") AND (" + ALBUM_ID + " NOT IN " +
+                                            whereClauseRelatedMe + ")";
+        whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND ((" + whereClauseDisplay + ") OR ((" +
+                      whereClauseDisplayNull + ") AND (" + whereClauseWhenDisplayNull + "))) GROUP BY " +
+                      GROUP_TAG + " ORDER BY CASE WHEN " + IS_ME + " != 0 THEN 0 ELSE 1 END, CASE WHEN " +
+                      RENAME_OPERATION + " != 0 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == FAVORITE_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 3 )GROUP BY " +
             GROUP_TAG + " ORDER BY " + RANK;
