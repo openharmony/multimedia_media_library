@@ -169,11 +169,11 @@ int32_t MediaFuseHdcOperations::Parse(
     if (args.size() == HDC_SECOND_ARGS) {
         res = GetAlbumIdFromAlbumName(FIXED_PHOTO_ALBUM, albumId);
         CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR,
-        "GetAlbumIdFromAlbumName fail, use FIXED_PHOTO_ALBUM: %{private}s", FIXED_PHOTO_ALBUM.c_str());
+            "GetAlbumIdFromAlbumName fail, use FIXED_PHOTO_ALBUM: %{private}s", FIXED_PHOTO_ALBUM.c_str());
     } else {
         res = GetAlbumIdFromAlbumName(args[HDC_FIRST_ARGS], albumId);
         CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR,
-        "GetAlbumIdFromAlbumName fail, albumName: %{private}s", args[HDC_FIRST_ARGS].c_str());
+            "GetAlbumIdFromAlbumName fail, albumName: %{private}s", args[HDC_FIRST_ARGS].c_str());
     }
     res = GetPathFromDisplayname(displayName, albumId, filePath);
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetPathFromDisplayname fail");
@@ -523,7 +523,7 @@ int32_t MediaFuseHdcOperations::ReadPhotoRootDir(void *buf, fuse_fill_dir_t fill
     }
     off_t curr_off = 0;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        if (curr_off < offset){
+        if (curr_off < offset) {
             curr_off++;
             continue;
         }
@@ -602,7 +602,7 @@ int32_t MediaFuseHdcOperations::ReadAlbumDir(
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Failed to query photos in album");
     off_t curr_off = 0;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        if (curr_off < offset){
+        if (curr_off < offset) {
             curr_off++;
             continue;
         }
