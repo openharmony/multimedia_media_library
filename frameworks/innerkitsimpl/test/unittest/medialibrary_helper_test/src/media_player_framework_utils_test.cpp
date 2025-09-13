@@ -31,7 +31,7 @@ void MediaPlayerFrameWorkUtilsTest::TearDownTestCase(void) {}
 void MediaPlayerFrameWorkUtilsTest::SetUp(void) {}
 void MediaPlayerFrameWorkUtilsTest::TearDown(void) {}
 
-static const string VIDEO_PATH = "/data/local/tmp/CreateVideoThumbnailTest_001.mp4";
+static const string VIDEO_PATH = "/data/local/tmp/test_not_exist.mp4";
 
 HWTEST_F(MediaPlayerFrameWorkUtilsTest, GetAVMetadataHelper_Test_001, TestSize.Level1)
 {
