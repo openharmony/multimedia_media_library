@@ -249,6 +249,7 @@ static void SetImageVideoValuesFromMetaDataApi10(const Metadata &metadata, Value
     values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, metadata.GetShootingModeTag());
     values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, metadata.GetLastVisitTime());
     values.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, metadata.GetDynamicRangeType());
+    values.PutInt(PhotoColumn::PHOTO_HDR_MODE, metadata.GetHdrMode());
     values.PutLong(PhotoColumn::PHOTO_COVER_POSITION, metadata.GetCoverPosition());
     values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, metadata.GetFrontCamera());
     values.PutString(PhotoColumn::PHOTO_DETAIL_TIME, metadata.GetDetailTime());

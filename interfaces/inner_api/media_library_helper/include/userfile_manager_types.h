@@ -159,6 +159,15 @@ enum class DynamicRangeType : int32_t {
     HDR
 };
 
+enum class HdrMode : int32_t {
+    DEFAULT = 0,
+    HDR_ISO_SINGLE = 1,
+    HDR_ISO_DUAL = 2,
+    HDR_CUVA = 3,
+    HDR_VIVID_SINGLE = 4,
+    HDR_VIVID_DUAL = 5,
+};
+
 enum class MovingPhotoEffectMode : int32_t {
     EFFECT_MODE_START = 0,
     DEFAULT = EFFECT_MODE_START,

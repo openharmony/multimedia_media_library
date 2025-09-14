@@ -87,6 +87,7 @@ private:
     DelayTask thumbnailBgDelayTask_{"thumbnailBgTask"};
     EXPORT void ClearDirtyData();
     EXPORT void DoBackgroundOperation();
+    EXPORT void DoBackgroundOperationStepTwo();
     EXPORT void DoThumbnailBgOperation();
     EXPORT void StopBackgroundOperation();
     EXPORT void StopThumbnailBgOperation();

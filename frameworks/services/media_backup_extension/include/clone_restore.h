@@ -248,6 +248,8 @@ private:
     CloneRestoreConfigInfo GetCurrentDeviceCloneConfigInfo();
     CloneRestoreConfigInfo GetCloneConfigInfoFromOriginDB();
     bool CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus switchStatus);
+    void RestoreHdrMode(std::vector<FileInfo> &fileInfos);
+    bool CheckIsHdrModeNeedUpdate();
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};

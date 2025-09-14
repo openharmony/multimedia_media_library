@@ -3451,6 +3451,16 @@ void AddDynamicRangeType(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddHdrMode(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_HDR_MODE + " INT DEFAULT 0 NOT NULL"
+    };
+    MEDIA_INFO_LOG("start add hdr_mode column");
+    ExecSqls(sqls, store);
+}
+
 void AddLcdAndThumbSizeColumns(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -5284,6 +5294,12 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_FILE_SOURCE_TYPE, true)) {
         AddFileSourceType(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_FILE_SOURCE_TYPE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_HDR_MODE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_HDR_MODE, true)) {
+        AddHdrMode(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_HDR_MODE, true);
     }
 }
 

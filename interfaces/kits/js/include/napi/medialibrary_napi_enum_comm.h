@@ -118,6 +118,10 @@ const std::vector<std::string> dynamicRangeTypeEnum {
     "SDR", "HDR"
 };
 
+const std::vector<std::string> hdrModeEnum {
+    "DEFAULT", "HDR_ISO_SINGLE", "HDR_ISO_DUAL", "HDR_CUVA", "HDR_VIVID_SINGLE", "HDR_VIVID_DUAL"
+};
+
 const std::vector<std::string> movingPhotoEffectModeEnum {
     "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE", "CINEMA_GRAPH"
 };
@@ -279,6 +283,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("HAS_APPLINK",               PhotoColumn::PHOTO_HAS_APPLINK),
     std::make_pair("APPLINK",                   PhotoColumn::PHOTO_APPLINK),
     std::make_pair("EXIST_COMPATIBLE_DUPLICATE", PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE),
+    std::make_pair("HDR_MODE",                  PhotoColumn::PHOTO_HDR_MODE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

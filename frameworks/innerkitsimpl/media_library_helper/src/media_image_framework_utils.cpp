@@ -21,11 +21,22 @@
 #include "medialibrary_errno.h"
 #include "media_exif.h"
 #include "media_log.h"
+#include "hdr_type.h"
 
 using namespace std;
 
 namespace OHOS {
 namespace Media {
+
+static const std::map<ImageHdrType, HdrMode> hdrMap = {
+    { ImageHdrType::UNKNOWN, HdrMode::DEFAULT },
+    { ImageHdrType::SDR, HdrMode::DEFAULT },
+    { ImageHdrType::HDR_ISO_SINGLE, HdrMode::HDR_ISO_SINGLE },
+    { ImageHdrType::HDR_ISO_DUAL, HdrMode::HDR_ISO_DUAL },
+    { ImageHdrType::HDR_CUVA, HdrMode::HDR_CUVA },
+    { ImageHdrType::HDR_VIVID_SINGLE, HdrMode::HDR_VIVID_SINGLE },
+    { ImageHdrType::HDR_VIVID_DUAL, HdrMode::HDR_VIVID_DUAL },
+};
 
 int32_t MediaImageFrameWorkUtils::GetExifRotate(
     const std::unique_ptr<ImageSource> &imageSource, int32_t &exifRotate)
@@ -100,6 +111,14 @@ bool MediaImageFrameWorkUtils::FlipAndRotatePixelMap(PixelMap &pixelMap, const F
         PostProc::RotateInRectangularSteps(pixelMap, static_cast<float>(info.orientation), true);
     }
     return true;
+}
+
+HdrMode MediaImageFrameWorkUtils::ConvertImageHdrTypeToHdrMode(ImageHdrType hdrType)
+{
+    if (hdrMap.find(hdrType) == hdrMap.end()) {
+        return HdrMode::DEFAULT;
+    }
+    return hdrMap.at(hdrType);
 }
 } // namespace Media
 } // namespace OHOS

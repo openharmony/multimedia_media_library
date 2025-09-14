@@ -20,6 +20,7 @@
 #include "picture.h"
 
 #include "exif_rotate_utils.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -37,6 +38,7 @@ public:
     static int32_t GetExifRotate(const std::string &path, int32_t &exifRotate);
     static bool FlipAndRotatePixelMap(PixelMap &pixelMap, int32_t exifRotate);
     static bool FlipAndRotatePixelMap(PixelMap &pixelMap, const FlipAndRotateInfo &info);
+    static HdrMode ConvertImageHdrTypeToHdrMode(ImageHdrType hdrType);
 };
 } // namespace Media
 } // namespace OHOS

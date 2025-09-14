@@ -702,6 +702,30 @@ static int32_t DoUpdateBurstCoverLevelFromGallery()
     return E_SUCCESS;
 }
 
+static void UpdatePhotoHdrModeTask(AsyncTaskData *data)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    CHECK_AND_RETURN_LOG(dataManager != nullptr, "dataManager is nullptr");
+
+    int32_t result = dataManager->UpdatePhotoHdrMode();
+    CHECK_AND_PRINT_LOG(result == E_OK, "UpdatePhotoHdrMode faild");
+}
+
+static int32_t DoUpdatePhotoHdrMode()
+{
+    MEDIA_INFO_LOG("Begin DoUpdatePhotoHdrMode");
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
+        "Failed to get async worker instance!");
+
+    shared_ptr<MediaLibraryAsyncTask> updateHdrModeTask =
+        make_shared<MediaLibraryAsyncTask>(UpdatePhotoHdrModeTask, nullptr);
+    CHECK_AND_RETURN_RET_LOG(updateHdrModeTask != nullptr, E_FAIL,
+        "Failed to create async task for updateHdrModeTask!");
+    asyncWorker->AddTask(updateHdrModeTask, false);
+    return E_SUCCESS;
+}
+
 static void UpdateDirtyForBeta(const shared_ptr<NativePreferences::Preferences>& prefs)
 {
     CHECK_AND_RETURN_LOG((IsBetaVersion() && prefs != nullptr), "not need UpdateDirtyForBeta");
@@ -804,6 +828,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     }
     ret = DoUpdateBurstCoverLevelFromGallery();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstCoverLevelFromGallery faild");
+    DoUpdatePhotoHdrMode();
     RecoverBackgroundDownloadCloudMediaAsset();
     CloudMediaAssetManager::GetInstance().StartDeleteCloudMediaAssets();
     // compat old-version moving photo
@@ -813,6 +838,11 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (watch != nullptr) {
         watch->DoAging();
     }
+    DoBackgroundOperationStepTwo();
+}
+
+void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
+{
     DfxMovingPhoto::AbnormalMovingPhotoStatistics();
     PhotoMimetypeOperation::UpdateInvalidMimeType();
     DfxManager::GetInstance()->HandleTwoDayMissions();

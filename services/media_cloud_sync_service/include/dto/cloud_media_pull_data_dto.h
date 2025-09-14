@@ -63,6 +63,7 @@ public:
     std::string attributesShootingMode;           /* shooting_mode */
     std::string attributesShootingModeTag;        /* shooting_mode_tag */
     int32_t attributesDynamicRangeType{-1};       /* dynamic_range_type */
+    int32_t attributesHdrMode{-1};                /* hdr_mode */
     std::string attributesFrontCamera;            /* front_camera */
     int64_t attributesEditTime{-1};               /* edit_time */
     int32_t attributesOriginalSubtype{-1};        /* original_subtype */
