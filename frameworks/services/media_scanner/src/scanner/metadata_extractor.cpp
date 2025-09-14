@@ -443,6 +443,8 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
 
     if (imageSource->IsHdrImage()) {
         data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::HDR));
+        HdrMode hdrMode = MediaImageFrameWorkUtils::ConvertImageHdrTypeToHdrMode(imageSource->CheckHdrType());
+        data->SetHdrMode(static_cast<int32_t>(hdrMode));
     } else {
         data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::SDR));
     }

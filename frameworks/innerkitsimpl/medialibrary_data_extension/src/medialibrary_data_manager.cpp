@@ -137,6 +137,7 @@
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_upgrade_utils.h"
 #include "settings_data_manager.h"
+#include "media_image_framework_utils.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -182,6 +183,7 @@ static const std::string NO_UPDATE_EDITDATA_SIZE = "no_update_editdata_size";
 static const std::string UPDATE_EDITDATA_SIZE_COUNT = "update_editdata_size_count";
 
 static int32_t g_updateBurstMaxId = 0;
+static int32_t g_updateHdrModeId = -1;
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -3261,6 +3263,91 @@ int32_t MediaLibraryDataManager::UpdateBurstCoverLevelFromGallery()
             E_FAIL, "Failed to DoUpdateBurstCoverLevelOperation");
     }
     return E_OK;
+}
+
+static shared_ptr<NativeRdb::ResultSet> BatchQueryUninitHdrPhoto(const shared_ptr<MediaLibraryRdbStore> &rdbStore)
+{
+    string querySql = "SELECT " + MediaColumn::MEDIA_FILE_PATH + ", " + MediaColumn::MEDIA_ID + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " > " + to_string(g_updateHdrModeId) +
+        " AND " + MediaColumn::MEDIA_TYPE + " = " + to_string(MEDIA_TYPE_IMAGE) +
+        " AND " + PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE + " = " +
+        to_string(static_cast<int32_t>(DynamicRangeType::HDR)) +
+        " AND " + PhotoColumn::PHOTO_HDR_MODE + " = " + to_string(static_cast<int32_t>(HdrMode::DEFAULT)) +
+        " ORDER BY " + MediaColumn::MEDIA_ID + " LIMIT " + to_string(UPDATE_BATCH_SIZE);
+
+    auto resultSet = rdbStore->QueryByStep(querySql);
+    CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "failed to acquire result from visitor query");
+    return resultSet;
+}
+
+static int32_t UpdateHdrMode(const shared_ptr<MediaLibraryRdbStore> &rdbStore,
+    shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    CHECK_AND_RETURN_RET_LOG(resultSet, E_ERR, "resultSet is nullptr");
+    int32_t count = -1;
+    int32_t retCount = resultSet->GetRowCount(count);
+    if (count == 0) {
+        MEDIA_INFO_LOG("no HDR mode need to update");
+        return E_SUCCESS;
+    }
+    if (retCount != E_SUCCESS || count < 0) {
+        return E_ERR;
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        if (!isChargingAndScreenOffPtr()) {
+            MEDIA_ERR_LOG("current status is not charging or screenOn");
+            return E_ERR;
+        }
+        string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        SourceOptions opts;
+        uint32_t err = E_OK;
+        std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, err);
+        if (err != E_OK || imageSource == nullptr) {
+            MEDIA_ERR_LOG("CreateImageSource failed, filePath: %{public}s", filePath.c_str());
+            return E_ERR;
+        }
+        HdrMode hdrMode = HdrMode::DEFAULT;
+        if (imageSource->IsHdrImage()) {
+            hdrMode = MediaImageFrameWorkUtils::ConvertImageHdrTypeToHdrMode(imageSource->CheckHdrType());
+        }
+
+        int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_HDR_MODE + " = " +
+            to_string(static_cast<int32_t>(hdrMode)) + " WHERE " + MediaColumn::MEDIA_ID + " = " + to_string(fileId);
+        int32_t ret = rdbStore->ExecuteSql(updateSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to update rdb");
+            return E_ERR;
+        }
+        g_updateHdrModeId = fileId;
+    }
+    return E_SUCCESS;
+}
+
+int32_t MediaLibraryDataManager::UpdatePhotoHdrMode()
+{
+    MEDIA_INFO_LOG("Begin UpdatePhotoHdrMode");
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryDataManager::UpdatePhotoHdrMode");
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    CHECK_AND_RETURN_RET_LOG(refCnt_.load() > 0, E_FAIL, "MediaLibraryDataManager is not initialized");
+    CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore_ is nullptr");
+
+    while (isChargingAndScreenOffPtr()) {
+        auto resultSet = BatchQueryUninitHdrPhoto(rdbStore_);
+        CHECK_AND_RETURN_RET_LOG(resultSet, E_ERR, "resultSet is nullptr");
+        int32_t count = -1;
+        auto ret = resultSet->GetRowCount(count);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK && count >= 0, E_ERR, "rdb failed");
+        if (count == 0) {
+            break;
+        }
+        int32_t updateRet = UpdateHdrMode(rdbStore_, resultSet);
+        CHECK_AND_RETURN_RET_LOG(updateRet == E_SUCCESS, E_FAIL, "failed to UpdateHdrMode");
+    }
+    MEDIA_INFO_LOG("End UpdatePhotoHdrMode");
+    return E_SUCCESS;
 }
 
 int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryCommand &cmd,

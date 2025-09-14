@@ -856,6 +856,7 @@ void OthersCloneRestore::HandleInsertBatch(int32_t offset)
         insertInfos.push_back(info);
     }
     InsertPhoto(insertInfos);
+    UpdateHdrMode(insertInfos);
 }
 
 void OthersCloneRestore::ReportCloneBefore()

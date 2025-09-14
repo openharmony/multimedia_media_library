@@ -93,6 +93,7 @@ const std::string PhotoColumn::PHOTO_QUALITY = "photo_quality";
 const std::string PhotoColumn::PHOTO_FIRST_VISIT_TIME = "first_visit_time";
 const std::string PhotoColumn::PHOTO_DEFERRED_PROC_TYPE = "deferred_proc_type";
 const std::string PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE = "dynamic_range_type";
+const std::string PhotoColumn::PHOTO_HDR_MODE = "hdr_mode";
 const std::string PhotoColumn::MOVING_PHOTO_EFFECT_MODE = "moving_photo_effect_mode";
 const std::string PhotoColumn::PHOTO_LCD_SIZE = "lcd_size";
 const std::string PhotoColumn::PHOTO_THUMB_SIZE = "thumb_size";
@@ -311,7 +312,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_EXIST_COMPATIBLE_DUPLICATE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_SOUTH_DEVICE_TYPE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_COMPOSITE_DISPLAY_STATUS + " INT NOT NULL DEFAULT 0, " +
-    PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0 " +
+    PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0, " +
+    PHOTO_HDR_MODE + " INT NOT NULL DEFAULT 0 " +
     ") ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
@@ -664,6 +666,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_MEDIA_SUFFIX, PhotoColumn::PHOTO_IS_RECENT_SHOW, PhotoColumn::PHOTO_IS_RECTIFICATION_COVER,
     PhotoColumn::PHOTO_EXIF_ROTATE, PhotoColumn::PHOTO_HAS_APPLINK, PhotoColumn::PHOTO_APPLINK,
     PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS,
+    PhotoColumn::PHOTO_HDR_MODE,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

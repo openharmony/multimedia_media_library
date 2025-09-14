@@ -125,6 +125,8 @@ public:  // attributes getter & setter
     MDKRecordPhotosData &SetShootingModeTag(const std::string &shootingModeTag);
     std::optional<int32_t> GetDynamicRangeType() const;
     MDKRecordPhotosData &SetDynamicRangeType(const int32_t dynamicRangeType);
+    std::optional<int32_t> GetHdrMode() const;
+    MDKRecordPhotosData &SetHdrMode(const int32_t hdrMode);
     std::optional<std::string> GetFrontCamera() const;
     MDKRecordPhotosData &SetFrontCamera(const std::string &frontCamera);
     std::optional<int64_t> GetEditTime() const;

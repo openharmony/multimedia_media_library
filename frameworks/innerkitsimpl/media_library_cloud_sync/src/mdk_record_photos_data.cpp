@@ -372,6 +372,15 @@ MDKRecordPhotosData &MDKRecordPhotosData::SetDynamicRangeType(const int32_t dyna
     this->attributes_[PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE] = MDKRecordField(dynamicRangeType);
     return *this;
 }
+std::optional<int32_t> MDKRecordPhotosData::GetHdrMode() const
+{
+    return this->recordReader_.GetIntValue(this->attributes_, PhotoColumn::PHOTO_HDR_MODE);
+}
+MDKRecordPhotosData &MDKRecordPhotosData::SetHdrMode(const int32_t hdrMode)
+{
+    this->attributes_[PhotoColumn::PHOTO_HDR_MODE] = MDKRecordField(hdrMode);
+    return *this;
+}
 std::optional<std::string> MDKRecordPhotosData::GetFrontCamera() const
 {
     return this->recordReader_.GetStringValue(this->attributes_, PhotoColumn::PHOTO_FRONT_CAMERA);

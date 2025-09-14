@@ -100,6 +100,8 @@ public:
     EXPORT int32_t UpdateBurstFromGallery();
     // update burst_cover_level from gallery
     EXPORT int32_t UpdateBurstCoverLevelFromGallery();
+    // update hdr mode
+    EXPORT int32_t UpdatePhotoHdrMode();
 
     EXPORT std::shared_ptr<MediaLibraryRdbStore> rdbStore_;
 
