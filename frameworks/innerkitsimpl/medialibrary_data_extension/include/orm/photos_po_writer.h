@@ -88,6 +88,7 @@ private:
         {PhotoColumn::PHOTO_SHOOTING_MODE, &PhotosPoWriter::SetShootingMode},
         {PhotoColumn::PHOTO_SHOOTING_MODE_TAG, &PhotosPoWriter::SetShootingModeTag},
         {PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, &PhotosPoWriter::SetDynamicRangType},
+        {PhotoColumn::PHOTO_HDR_MODE, &PhotosPoWriter::SetHdrMode},
         {PhotoColumn::PHOTO_FRONT_CAMERA, &PhotosPoWriter::SetFrontCamera},
         {PhotoColumn::PHOTO_DETAIL_TIME, &PhotosPoWriter::SetDetailTime},
         {PhotoColumn::PHOTO_EDIT_TIME, &PhotosPoWriter::SetEditTime},
@@ -320,6 +321,12 @@ private:
         bool errConn = !std::holds_alternative<int32_t>(val);
         CHECK_AND_RETURN(!errConn);
         this->photosPo_.dynamicRangeType = std::get<int32_t>(val);
+    }
+    void SetHdrMode(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool errConn = !std::holds_alternative<int32_t>(val);
+        CHECK_AND_RETURN(!errConn);
+        this->photosPo_.hdrMode = std::get<int32_t>(val);
     }
     void SetFrontCamera(std::variant<int32_t, int64_t, double, std::string> &val)
     {

@@ -656,6 +656,7 @@ void UpgradeRestore::RestoreBatchForCloud(int32_t minId)
     int64_t startInsertPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, infos, SourceType::GALLERY) == E_OK,
         AddToGalleryFailedOffsets(minId));
+    UpdateHdrMode(infos);
     int64_t startUpdateAnalysisTotal = MediaFileUtils::UTCTimeMilliSeconds();
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);

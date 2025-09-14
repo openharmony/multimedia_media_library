@@ -45,6 +45,7 @@ Metadata::Metadata()
     shootingMode_(FILE_SHOOTINGMODE_DEFAULT),
     lastVisitTime_(FILE_LAST_VISIT_TIME_DEFAULT),
     dynamicRangeType_(FILE_DYNAMIC_RANGE_TYPE_DEFAULT),
+    hdrMode_(FILE_HDR_MODE_DEFAULT),
     dateTaken_(FILE_DATE_TAKEN_DEFAULT),
     longitude_(FILE_LONGITUDE_DEFAULT),
     latitude_(FILE_LATITUDE_DEFAULT),
@@ -535,6 +536,16 @@ void Metadata::SetDynamicRangeType(const VariantData &type)
 int32_t Metadata::GetDynamicRangeType() const
 {
     return dynamicRangeType_;
+}
+
+void Metadata::SetHdrMode(const VariantData &type)
+{
+    hdrMode_ = std::get<int32_t>(type);
+}
+
+int32_t Metadata::GetHdrMode() const
+{
+    return hdrMode_;
 }
 
 void Metadata::SetMovingPhotoImagePath(const VariantData &imagePath)

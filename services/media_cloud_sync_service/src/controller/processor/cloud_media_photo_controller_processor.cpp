@@ -140,6 +140,7 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const PhotosPo &recor
     photosVo.shootingMode = record.shootingMode.value_or("");
     photosVo.shootingModeTag = record.shootingModeTag.value_or("");
     photosVo.dynamicRangeType = record.dynamicRangeType.value_or(0);
+    photosVo.hdrMode = record.hdrMode.value_or(0);
     photosVo.frontCamera = record.frontCamera.value_or("");
     photosVo.originalSubtype = record.originalSubtype.value_or(0);
     photosVo.coverPosition = record.coverPosition.value_or(0);
@@ -237,6 +238,7 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const OnFetchPhotosVo
     data.attributesSubtype = photosVo.subtype;
     data.attributesOriginalSubtype = photosVo.originalSubtype;
     data.attributesDynamicRangeType = photosVo.dynamicRangeType;
+    data.attributesHdrMode = photosVo.hdrMode;
     data.attributesFrontCamera = photosVo.frontCamera;
     data.attributesMovingPhotoEffectMode = photosVo.movingPhotoEffectMode;
     data.attributesCoverPosition = photosVo.coverPosition;

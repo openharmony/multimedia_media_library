@@ -197,6 +197,7 @@ const std::vector<std::string> MEDIA_CLOUD_SYNC_COLUMNS = {
     PhotoColumn::PHOTO_SHOOTING_MODE,
     PhotoColumn::PHOTO_SHOOTING_MODE_TAG,
     PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE,
+    PhotoColumn::PHOTO_HDR_MODE,
     PhotoColumn::PHOTO_FRONT_CAMERA,
     PhotoColumn::PHOTO_DETAIL_TIME,
     PhotoColumn::PHOTO_EDIT_TIME,
