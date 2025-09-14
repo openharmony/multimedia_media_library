@@ -62,6 +62,7 @@ public:
     int32_t subtype;
     int32_t originalSubtype;
     int32_t dynamicRangeType;
+    int32_t hdrMode;
     int32_t movingPhotoEffectMode;
     int32_t supportedWatermarkType;
     int32_t strongAssociation;

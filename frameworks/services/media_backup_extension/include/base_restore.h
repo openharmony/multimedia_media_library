@@ -188,6 +188,7 @@ protected:
     nlohmann::json GetBackupErrorInfoJson();
     void SetParameterForRestore();
     void StopParameterForRestore();
+    void UpdateHdrMode(std::vector<FileInfo> &fileInfos);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};

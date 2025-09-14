@@ -2288,6 +2288,7 @@ void CloneRestore::RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap
     vector<FileInfo> fileInfos = QueryFileInfos(offset, isRelatedToPhotoMap);
     CHECK_AND_EXECUTE(InsertPhoto(fileInfos) == E_OK, AddToPhotosFailedOffsets(offset));
 
+    RestoreHdrMode(fileInfos);
     MEDIA_INFO_LOG("end restore photo, offset: %{public}d", offset);
 }
 
@@ -2299,7 +2300,29 @@ void CloneRestore::RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhoto
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, fileInfos, SourceType::PHOTOS) == E_OK,
         AddToPhotosFailedOffsets(offset));
 
+    RestoreHdrMode(fileInfos);
     MEDIA_INFO_LOG("singleCloud end restore photo, offset: %{public}d", offset);
+}
+
+void CloneRestore::RestoreHdrMode(std::vector<FileInfo> &fileInfos)
+{
+    if (CheckIsHdrModeNeedUpdate()) {
+        UpdateHdrMode(fileInfos);
+    }
+}
+
+bool CloneRestore::CheckIsHdrModeNeedUpdate()
+{
+    if (tableCommonColumnInfoMap_.find(PhotoColumn::PHOTOS_TABLE) == tableCommonColumnInfoMap_.end()) {
+        // without PHOTOS_TABLE
+        return false;
+    }
+    if (tableCommonColumnInfoMap_[PhotoColumn::PHOTOS_TABLE].find(PhotoColumn::PHOTO_HDR_MODE) ==
+        tableCommonColumnInfoMap_[PhotoColumn::PHOTOS_TABLE].end()) {
+        // without PHOTO_HDR_MODE
+        return true;
+    }
+    return false;
 }
 
 int CloneRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType)

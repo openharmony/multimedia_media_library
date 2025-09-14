@@ -151,6 +151,9 @@ public:
     EXPORT void SetDynamicRangeType(const VariantData &type);
     EXPORT int32_t GetDynamicRangeType() const;
 
+    EXPORT void SetHdrMode(const VariantData &type);
+    EXPORT int32_t GetHdrMode() const;
+
     EXPORT void SetCoverPosition(const VariantData &coverPosition);
     EXPORT int64_t GetCoverPosition() const;
 
@@ -226,6 +229,7 @@ private:
     string shootingModeTag_;
     int64_t lastVisitTime_;
     int32_t dynamicRangeType_;
+    int32_t hdrMode_;
 
     // video, audio, image
     int64_t dateTaken_ {0};

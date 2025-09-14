@@ -145,6 +145,7 @@ void CloudBackupRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::Val
     value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
     value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
     value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
+    value.PutInt(PhotoColumn::PHOTO_HDR_MODE, data->GetHdrMode());
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, data->GetUserComment());
     BaseRestore::SetOrientationAndExifRotate(fileInfo, value, data);
 
