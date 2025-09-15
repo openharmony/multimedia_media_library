@@ -257,17 +257,13 @@ vector<PhotoAssetChangeInfo> AssetDataManager::GetInfosByPredicates(const AbsRdb
 {
     MediaLibraryTracer tracer;
     tracer.Start("AssetDataManager::GetInfosByPredicates");
-    AbsRdbPredicates fileSourceTypePredicates = predicates;
-    fileSourceTypePredicates.And();
-    fileSourceTypePredicates.NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
-        to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)));
     shared_ptr<ResultSet> resultSet;
     if (CanTransOperate()) {
-        resultSet = trans_->QueryByStep(fileSourceTypePredicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
+        resultSet = trans_->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     } else {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, vector<PhotoAssetChangeInfo>(), "rdbStore null");
-        resultSet = rdbStore->QueryByStep(fileSourceTypePredicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
+        resultSet = rdbStore->QueryByStep(predicates, PhotoAssetChangeInfo::GetPhotoAssetColumns());
     }
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, vector<PhotoAssetChangeInfo>(), "resultSet null");
     auto ret = GetInfosByResult(resultSet);
