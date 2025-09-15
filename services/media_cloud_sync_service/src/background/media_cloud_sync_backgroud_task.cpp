@@ -28,7 +28,6 @@ MediaCloudSyncBackgroundTask::MediaCloudSyncBackgroundTask()
 {
     this->tasks_ = {
         std::make_shared<MediaHiddenAndRecycleTask>(),
-        std::make_shared<RepairVideoDirtyAndQualityTask>(),
     };
 }
 
