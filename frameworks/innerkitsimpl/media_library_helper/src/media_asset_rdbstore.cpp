@@ -317,7 +317,8 @@ bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& 
     return true;
 }
 
-static void PrintPredicatesInfo(const NativeRdb::RdbPredicates& predicates, const vector<string>& columns)
+static void PrintPredicatesInfo(const NativeRdb::RdbPredicates& predicates, const vector<string>& columns,
+    int64_t timeCost)
 {
     string argsInfo;
     for (const auto& arg : predicates.GetWhereArgs()) {
@@ -326,8 +327,8 @@ static void PrintPredicatesInfo(const NativeRdb::RdbPredicates& predicates, cons
         }
         argsInfo += arg;
     }
-    MEDIA_DEBUG_LOG("PhotosApp Predicates Statement is %{public}s",
-        RdbSqlUtils::BuildQueryString(predicates, columns).c_str());
+    MEDIA_DEBUG_LOG("PhotosApp Predicates Statement is %{public}s, time cost is %{public}" PRId64 " ms",
+        RdbSqlUtils::BuildQueryString(predicates, columns).c_str(), timeCost);
     MEDIA_DEBUG_LOG("PhotosApp Predicates Args are %{public}s", argsInfo.c_str());
 }
 
@@ -343,8 +344,9 @@ std::shared_ptr<NativeRdb::ResultSet> MediaAssetRdbStore::QueryRdb(
     }
 
     AddQueryFilter(rdbPredicates);
-    PrintPredicatesInfo(rdbPredicates, columns);
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     auto resultSet = rdbStore_->QueryByStep(rdbPredicates, columns, false);
+    PrintPredicatesInfo(rdbPredicates, columns, MediaFileUtils::UTCTimeMilliSeconds() - startTime);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "fail to acquire result from visitor query");
     return resultSet;
 }
