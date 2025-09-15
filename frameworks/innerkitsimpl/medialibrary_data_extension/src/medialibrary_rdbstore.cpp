@@ -5039,22 +5039,23 @@ static void AddFileSourceType(RdbStore &store)
 {
     const vector<string> sqls = {
         "DROP TRIGGER IF EXISTS " + INSERT_SEARCH_TRIGGER,
-        DROP_INSERT_VISION_TRIGGER,
-        "DROP TABLE IF EXISTS operation_asset_insert_trigger",
-        "DROP TABLE IF EXISTS operation_asset_delete_trigger",
-        "DROP TABLE IF EXISTS operation_asset_update_trigger",
-        DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
-        DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
         CREATE_SEARCH_INSERT_TRIGGER,
+        DROP_INSERT_VISION_TRIGGER,
         CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
+        "DROP TRIGGER IF EXISTS operation_asset_insert_trigger",
         CREATE_OPERATION_ASSET_INSERT_TRIGGER,
+        "DROP TRIGGER IF EXISTS operation_asset_delete_trigger",
         CREATE_OPERATION_ASSET_DELETE_TRIGGER,
+        "DROP TRIGGER IF EXISTS operation_asset_update_trigger",
         CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
+        DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
         INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+        DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
         CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        "DROP TRIGGER IF EXISTS photos_metadata_dirty_trigger",
         PhotoColumn::CREATE_PHOTOS_METADATA_DIRTY_TRIGGER,
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
-        PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0 "
+            PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0 "
     };
     ExecSqls(sqls, store);
 }
