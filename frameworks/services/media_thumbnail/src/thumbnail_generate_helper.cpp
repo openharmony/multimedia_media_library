@@ -585,6 +585,7 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
     }
 
     // Check if unrotated file exists
+    data.isOpeningCloudFile = false;
     string fileParentPath = MediaFileUtils::GetParentPath(fileName);
     string tempFileName = fileParentPath + "/THM_EX" + fileName.substr(fileParentPath.length());
     if (access(tempFileName.c_str(), F_OK) == 0) {
@@ -727,26 +728,33 @@ void UpdatePhotoLastVisitTimeAsync(ThumbnailData &data, ThumbRdbOpt &opts)
         ThumbnailTaskType::ASYNC_UPDATE_RDB, ThumbnailTaskPriority::LOW);
 }
 
-int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbnailData& data, ThumbRdbOpt &opts, ThumbnailType thumbType)
+void GetThumbnailPixelMapPreStep(ThumbnailData& data, ThumbRdbOpt &opts, ThumbnailType thumbType)
 {
-    int32_t err;
     ThumbnailWait thumbnailWait(false);
     thumbnailWait.CheckAndWait(opts.row, thumbType == ThumbnailType::LCD);
     ThumbnailUtils::GetThumbnailInfo(opts, data);
+    int32_t err;
     ThumbnailUtils::QueryThumbnailDataFromFileId(opts, data.id, data, err);
+}
 
+int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbnailData& data, ThumbRdbOpt &opts, ThumbnailType thumbType)
+{
+    GetThumbnailPixelMapPreStep(data, opts, thumbType);
     string fileName;
-    err = GetAvailableFile(opts, data, thumbType, fileName);
+    int32_t err = GetAvailableFile(opts, data, thumbType, fileName);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GetAvailableFile failed, path: %{public}s",
         DfxUtils::GetSafePath(data.path).c_str());
-
     bool isLocalThumbnailAvailable = IsLocalThumbnailAvailable(data, thumbType);
     DfxTimer dfxTimer(thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN,
         INVALID_DFX, thumbType == ThumbnailType::LCD ? CLOUD_LCD_TIME_OUT : CLOUD_DEFAULT_TIME_OUT, false);
-
     string absFilePath;
-    CHECK_AND_RETURN_RET_LOG(PathToRealPath(fileName, absFilePath), E_ERR,
-        "file is not real path, file path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
+    if (!PathToRealPath(fileName, absFilePath)) { // 为读删并发场景兜底重试一次
+        err = GetAvailableFile(opts, data, thumbType, fileName);
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GetAvailableFile failed, path: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        CHECK_AND_RETURN_RET_LOG(PathToRealPath(fileName, absFilePath), E_ERR,
+            "file is not real path, file path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
+    }
     auto fd = open(absFilePath.c_str(), O_RDONLY);
     dfxTimer.End();
     if (fd < 0) {
