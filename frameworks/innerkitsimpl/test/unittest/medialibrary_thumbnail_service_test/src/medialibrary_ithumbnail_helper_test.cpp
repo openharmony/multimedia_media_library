@@ -208,6 +208,7 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, DoCreatetLcdAndThumbnail_test_001, Te
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcd,
         opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::HIGH);
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    data.tracks = "test";
     bool ret = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, data);
     EXPECT_EQ(ret, true);
     MEDIA_INFO_LOG("DoCreatetLcdAndThumbnail_test_001 end");
