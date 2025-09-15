@@ -96,6 +96,7 @@
 #include "shooting_mode_column.h"
 #include "refresh_business_name.h"
 #include "medialibrary_bundle_manager.h"
+#include "cloud_media_dao_utils.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -1133,6 +1134,40 @@ static void HandleQualityAndHidden(NativeRdb::RdbPredicates predicates, const ve
     }
 }
 
+static void GetBurstMemberIds(vector<string> &fileIds)
+{
+    CHECK_AND_RETURN_LOG(!fileIds.empty(), "GetBurstMemberIds fileIds is empty");
+    string inClause = CloudSync::CloudMediaDaoUtils::ToStringWithComma(fileIds);
+    /**
+        SELECT p.file_id
+        FROM photos p
+        WHERE p.PHOTO_BURST_KEY IN (
+            SELECT DISTINCT p1.PHOTO_BURST_KEY 
+            FROM photos p1 
+            WHERE p1.fileid IN (1, 2, 3)
+            AND p1.PHOTO_BURST_COVER_LEVEL = 1
+        )
+        AND p.PHOTO_BURST_COVER_LEVEL = 2
+    */
+    string sql = "SELECT p." + MediaColumn::MEDIA_ID
+        + " FROM " + PhotoColumn::PHOTOS_TABLE + " p "
+        + " WHERE p." + PhotoColumn::PHOTO_BURST_KEY + " IN ("
+        + " SELECT DISTINCT p1." + PhotoColumn::PHOTO_BURST_KEY
+        + " FROM " + PhotoColumn::PHOTOS_TABLE + " p1 "
+        + " WHERE p1." + MediaColumn::MEDIA_ID + " IN (" + inClause + ") "
+        + " AND p1." + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + std::to_string(static_cast<int32_t>(BurstCoverLevelType::COVER))
+        + " ) "
+        + " AND p." + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + std::to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER));
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    auto resultSet = rdbStore->QuerySql(sql);
+    CHECK_AND_RETURN_LOG(resultSet!=nullptr, "Failed to query selected files!");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        string burstMemberFileId = to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32)));
+        fileIds.push_back(burstMemberFileId);
+    }
+    resultSet->Close();
+}
+
 int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 {
     AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::TRASH_PHOTOS_BUSSINESS_NAME);
@@ -1149,7 +1184,12 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     cmd.SetValueBucket(values);
-     // 2、AssetRefresh -> Update()
+    // 2、AssetRefresh -> Update()
+    // 删除适配连拍照片
+    GetBurstMemberIds(fileIds);
+    CHECK_AND_RETURN_RET_LOG(!fileIds.empty(), E_INVALID_FILEID, "Trash photo failed. fileIds is empty.");
+    rdbPredicate.Clear();
+    rdbPredicate.In(PhotoColumn::MEDIA_ID, fileIds);
     int32_t updatedRows = assetRefresh.UpdateWithDateTime(values, rdbPredicate);
     // 3、AssetRefresh -> RefreshAlbums()
     assetRefresh.RefreshAlbum(NotifyAlbumType::SYS_ALBUM);
