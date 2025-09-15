@@ -676,6 +676,18 @@ static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore
     MEDIA_INFO_LOG("Update south_device_type for %{public}d photos in cloud space, ret: %{public}d", changedRows, ret);
 }
 
+static void UpgradePhotoSortIndex(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+{
+    const vector<string> sqls = {
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
+    };
+    for (const auto& sql : sqls) {
+        int ret = rdbStore->ExecuteSql(sql);
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    }
+}
+
 void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API18) {
@@ -717,6 +729,11 @@ void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         FillSouthDeviceType(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_SOUTH_DEVICE_TYPE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_SOUTH_DEVICE_TYPE, false);
+    }
+
+    if (oldVersion < VERSION_REUSE_PHOTO_SORT_INDEX) {
+        UpgradePhotoSortIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_REUSE_PHOTO_SORT_INDEX);
     }
 }
 
