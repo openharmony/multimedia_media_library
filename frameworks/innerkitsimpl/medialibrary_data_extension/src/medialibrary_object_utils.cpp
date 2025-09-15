@@ -907,25 +907,23 @@ void MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(const string &path,
     }
 }
 
-void MediaLibraryObjectUtils::ScanMovingPhotoVideoAsync(const std::string &path, bool isCameraShotMovingPhoto)
+void MediaLibraryObjectUtils::ScanMovingPhotoVideoAsync(
+    const std::string &path, bool isCameraShotMovingPhoto, bool isScanCreateThumb)
 {
-    string tableName;
-    if (MediaFileUtils::IsFileTablePath(path)) {
-        tableName = MEDIALIBRARY_TABLE;
-    } else if (MediaFileUtils::IsPhotoTablePath(path)) {
-        tableName = PhotoColumn::PHOTOS_TABLE;
+    int ret = E_ERR;
+    if (isScanCreateThumb) {
+        shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
+        if (scanFileCb == nullptr) {
+            MEDIA_ERR_LOG("Failed to create scan file callback object");
+            return;
+        }
+        scanFileCb->SetOriginalPhotoPicture(nullptr);
+        ret = MediaScannerManager::GetInstance()->ScanFile(
+            path, scanFileCb, MediaLibraryApi::API_10, isCameraShotMovingPhoto);
     } else {
-        tableName = AudioColumn::AUDIOS_TABLE;
+        ret = MediaScannerManager::GetInstance()->ScanFile(
+            path, nullptr, MediaLibraryApi::API_10, isCameraShotMovingPhoto);
     }
-
-    shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
-    if (scanFileCb == nullptr) {
-        MEDIA_ERR_LOG("Failed to create scan file callback object");
-        return ;
-    }
-    scanFileCb->SetOriginalPhotoPicture(nullptr);
-    int ret = MediaScannerManager::GetInstance()->ScanFile(path, scanFileCb,
-        MediaLibraryApi::API_10, isCameraShotMovingPhoto);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Scan file failed!");
     }
