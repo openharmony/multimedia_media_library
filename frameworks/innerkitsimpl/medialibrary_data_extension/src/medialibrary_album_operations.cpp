@@ -1173,8 +1173,16 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
 
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
-
-    albumRefresh->Notify();
+    std::vector<AlbumChangeData> albumChangeDatas = albumRefresh->GetAlbumChangeDatas();
+    for (size_t i = 0; i < albumChangeDatas.size(); i++) {
+        if (albumChangeDatas[i].infoAfterChange_.albumId_ == newAlbumId &&
+            albumChangeDatas[i].infoAfterChange_.coverInfo_.fileId_ > 0) {
+            albumChangeDatas[i].infoAfterChange_.coverInfo_.ownerAlbumId_ = newAlbumId;
+            albumChangeDatas[i].infoAfterChange_.coverInfo_.ownerAlbumUri_ = MediaFileUtils::GetUriByExtrConditions(
+                PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(newAlbumId));
+        }
+    }
+    albumRefresh->Notify(albumChangeDatas, dfxRefreshManager);
     assetRefresh->Notify();
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
         to_string(newAlbumId)), NotifyType::NOTIFY_UPDATE);
