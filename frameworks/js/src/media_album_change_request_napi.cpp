@@ -1340,6 +1340,8 @@ napi_value MediaAlbumChangeRequestNapi::JSSetHighlightAttribute(napi_env env, na
     CHECK_ARGS_WITH_MEG(env, asyncContext->argc == ARGS_TWO, MEDIA_LIBRARY_PARAM_ERROR,
         "Number of args is invalid");
     
+    CHECK_ARGS_WITH_MEG(env, !value.empty(), MEDIA_LIBRARY_PARAM_ERROR, "value is empty");
+
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_ARGS_WITH_MEG(env, photoAlbum != nullptr, MEDIA_LIBRARY_PARAM_ERROR, "photoAlbum is null");
     CHECK_ARGS_WITH_MEG(env,
