@@ -3483,14 +3483,14 @@ void MediaLibraryDataManager::AgingTmpCompatibleDuplicatesThread()
         } while (resultSet->GoToNextRow() == NativeRdb::E_OK && isAgingDup_.load());
 
         CHECK_AND_EXECUTE(resultSet == nullptr, resultSet->Close());
-        HeifAgingStatistics heifAgingStatistics;
-        heifAgingStatistics.transcodeFileNum = totalCount;
-        heifAgingStatistics.transcodeTotalSize = totalSize;
-        heifAgingStatistics.agingFileNum = dealCnt;
-        heifAgingStatistics.agingTotalSize = dealSize;
-        DfxReporter::reportHeifAgingStatistics(heifAgingStatistics);
         CHECK_AND_BREAK(isAgingDup_.load());
     }
+    HeifAgingStatistics heifAgingStatistics;
+    heifAgingStatistics.transcodeFileNum = totalCount;
+    heifAgingStatistics.transcodeTotalSize = totalSize;
+    heifAgingStatistics.agingFileNum = dealCnt;
+    heifAgingStatistics.agingTotalSize = dealSize;
+    DfxReporter::reportHeifAgingStatistics(heifAgingStatistics);
 }
 
 void MediaLibraryDataManager::AgingTmpCompatibleDuplicates()
