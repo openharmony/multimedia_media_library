@@ -3513,62 +3513,183 @@ static void JSGetAssetsByOldUrisCompleteCallback(napi_env env, napi_status statu
     delete context;
 }
 
-static std::string GetNewUriByOldUri(const std::string &oldUri)
+static bool ExtractOldFileIds(const std::vector<std::string>& oldUris,
+    std::map<std::string, std::string>& resultMap,
+    std::vector<std::string>& fileIdsOld,
+    std::map<std::string, std::vector<std::string>>& oldIdToUris)
 {
-    std::string fileIdOld = MediaFileUtils::GetIdFromUri(oldUri);
-    CHECK_COND_RET(!fileIdOld.empty(), "", "Failed to extract fileId from URI: %{private}s", oldUri.c_str());
+    fileIdsOld.reserve(oldUris.size());
 
+    for (const auto& oldUri : oldUris) {
+        resultMap[oldUri] = "";
+        
+        std::string fileIdOld = MediaFileUtils::GetIdFromUri(oldUri);
+        if (!fileIdOld.empty()) {
+            auto& uriList = oldIdToUris[fileIdOld];
+            if (uriList.empty()) {
+                fileIdsOld.push_back(fileIdOld);
+            }
+            uriList.push_back(oldUri);
+        } else {
+            NAPI_ERR_LOG("ExtractOldFileIds: Failed to extract fileId from URI: %{private}s", oldUri.c_str());
+        }
+    }
+
+    if (fileIdsOld.empty()) {
+        NAPI_ERR_LOG("ExtractOldFileIds: No valid fileIds extracted from any URI");
+        return false;
+    }
+
+    return true;
+}
+
+static bool QueryOldPhotosTable(const std::vector<std::string>& fileIdsOld,
+    std::map<std::string, int32_t>& oldToNewIdMapping,
+    std::vector<std::string>& fileIdsNew)
+{
     DataSharePredicates predicates;
-    predicates.EqualTo(TabOldPhotosColumn::MEDIA_OLD_ID, fileIdOld);
+    predicates.In(TabOldPhotosColumn::MEDIA_OLD_ID, fileIdsOld);
     predicates.OrderByDesc(TabOldPhotosColumn::MEDIA_CLONE_SEQUENCE);
-    predicates.Limit(1, 0);
 
-    std::vector<std::string> columns = { TabOldPhotosColumn::MEDIA_ID, TabOldPhotosColumn::MEDIA_FILE_PATH,
-        TabOldPhotosColumn::MEDIA_OLD_ID, TabOldPhotosColumn::MEDIA_OLD_FILE_PATH };
+    // Only need MEDIA_ID and MEDIA_OLD_ID for the mapping
+    std::vector<std::string> columns = {
+        TabOldPhotosColumn::MEDIA_ID,
+        TabOldPhotosColumn::MEDIA_OLD_ID
+    };
+
     Uri uri(QUERY_TAB_OLD_PHOTO);
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
-    CHECK_COND_RET(resultSet != nullptr, "",
-        "Failed to query fileIdNew for fileIdOld: %{public}s: resultSet is nullptr", fileIdOld.c_str());
-    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        resultSet->Close();
-        return "";
+
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("QueryOldPhotosTable: Query failed - resultSet is nullptr, errCode: %{public}d", errCode);
+        return false;
     }
 
-    int32_t fileIdNew = GetInt32Val(TabOldPhotosColumn::MEDIA_ID, resultSet);
-    std::string data = GetStringVal(TabOldPhotosColumn::MEDIA_FILE_PATH, resultSet);
+    std::set<std::string> processedOldIds;
+    fileIdsNew.reserve(fileIdsOld.size());
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string oldId = GetStringVal(TabOldPhotosColumn::MEDIA_OLD_ID, resultSet);
+
+        // Use only the highest clone_sequence per oldId
+        if (processedOldIds.emplace(oldId).second) {
+            int32_t newId = GetInt32Val(TabOldPhotosColumn::MEDIA_ID, resultSet);
+
+            oldToNewIdMapping.emplace(oldId, newId);
+            fileIdsNew.emplace_back(std::to_string(newId));
+        }
+    }
+
     resultSet->Close();
 
-    DataSharePredicates photoPredicates;
-    photoPredicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileIdNew));
-    std::vector<std::string> photoColumns = {MediaColumn::MEDIA_NAME};
-    Uri photoUri(PAH_QUERY_PHOTO);
-    auto photoResultSet = UserFileClient::Query(photoUri, photoPredicates, photoColumns, errCode);
-    CHECK_COND_RET(photoResultSet != nullptr, "",
-        "Failed to query displayName for fileIdNew: %{public}d: resultSet is nullptr", fileIdNew);
-    if (photoResultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        photoResultSet->Close();
-        return "";
+    if (oldToNewIdMapping.empty()) {
+        NAPI_WARN_LOG("QueryOldPhotosTable: No matching records found in old photos table");
+        return false;
     }
 
-    std::string displayName = GetStringVal(MediaColumn::MEDIA_NAME, photoResultSet);
+    return true;
+}
+
+static bool QueryDisplayNamesAndFilePaths(const std::vector<std::string>& fileIdsNew,
+    std::map<std::string, std::string>& newIdToDisplayName,
+    std::map<std::string, std::string>& newIdToFilePath)
+{
+    DataSharePredicates photoPredicates;
+    photoPredicates.In(MediaColumn::MEDIA_ID, fileIdsNew);
+
+    std::vector<std::string> photoColumns = {
+        MediaColumn::MEDIA_NAME,
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_FILE_PATH 
+    };
+
+    Uri photoUri(PAH_QUERY_PHOTO);
+    int errCode = 0;
+    auto photoResultSet = UserFileClient::Query(photoUri, photoPredicates, photoColumns, errCode);
+
+    if (photoResultSet == nullptr) {
+        NAPI_ERR_LOG("QueryDisplayNamesAndFilePaths: Query failed - resultSet is nullptr, errCode: %{public}d", errCode);
+        return false;
+    }
+
+    while (photoResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string newId = GetStringVal(MediaColumn::MEDIA_ID, photoResultSet);
+        std::string displayName = GetStringVal(MediaColumn::MEDIA_NAME, photoResultSet);
+        std::string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, photoResultSet);
+
+        newIdToDisplayName.emplace(newId, std::move(displayName));
+        newIdToFilePath.emplace(newId, std::move(filePath));
+    }
+
     photoResultSet->Close();
-    return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-        std::to_string(fileIdNew), MediaFileUtils::GetExtraUri(displayName, data));
+    return true;
+}
+
+static void GenerateFinalUris(const std::map<std::string, int32_t>& oldToNewIdMapping,
+    const std::map<std::string, std::string>& newIdToDisplayName,
+    const std::map<std::string, std::string>& newIdToFilePath,
+    const std::map<std::string, std::vector<std::string>>& oldIdToUris,
+    std::map<std::string, std::string>& resultMap)
+{
+    for (const auto& [oldId, newId] : oldToNewIdMapping) {
+        std::string newIdStr = std::to_string(newId);
+
+        auto displayNameIt = newIdToDisplayName.find(newIdStr);
+        auto filePathIt = newIdToFilePath.find(newIdStr);
+        
+        if (displayNameIt != newIdToDisplayName.end() && filePathIt != newIdToFilePath.end()) {
+            // Use both displayName and filePath from photos table
+            std::string newUri = MediaFileUtils::GetUriByExtrConditions(
+                PhotoColumn::PHOTO_URI_PREFIX,
+                newIdStr,
+                MediaFileUtils::GetExtraUri(displayNameIt->second, filePathIt->second)
+            );
+
+            for (const std::string& oldUri : oldIdToUris.at(oldId)) {
+                resultMap[oldUri] = newUri;
+            }
+        } else {
+            const auto& affectedUris = oldIdToUris.at(oldId);
+            NAPI_WARN_LOG(
+                "GenerateFinalUris: Failed to generate newUri for oldId %{public}s (missing display name or file path), affects %{public}zu URIs",
+                oldId.c_str(), affectedUris.size()
+            );
+        }
+    }
+}
+
+static std::map<std::string, std::string> GetNewUriByOldUriBatch(const std::vector<std::string>& oldUris)
+{
+    if (oldUris.empty()) {
+        NAPI_WARN_LOG("GetNewUriByOldUriBatch: Input URIs vector is empty");
+        return {};
+    }
+    std::map<std::string, std::string> resultMap;
+    std::vector<std::string> fileIdsOld;
+    std::map<std::string, std::vector<std::string>> oldIdToUris;
+    if (!ExtractOldFileIds(oldUris, resultMap, fileIdsOld, oldIdToUris)) {
+        return resultMap;
+    }
+    std::map<std::string, int32_t> oldToNewIdMapping;
+    std::vector<std::string> fileIdsNew;
+    if (!QueryOldPhotosTable(fileIdsOld, oldToNewIdMapping, fileIdsNew)) {
+        return resultMap;
+    }
+    std::map<std::string, std::string> newIdToDisplayName;
+    std::map<std::string, std::string> newIdToFilePath;
+    if (!QueryDisplayNamesAndFilePaths(fileIdsNew, newIdToDisplayName, newIdToFilePath)) {
+        return resultMap;
+    }
+    GenerateFinalUris(oldToNewIdMapping, newIdToDisplayName, newIdToFilePath, oldIdToUris, resultMap);
+    return resultMap;
 }
 
 static void PhotoAccessGetAssetsByOldUrisExecute(napi_env env, void *data)
 {
     auto *context = static_cast<MediaLibraryAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
-    std::map<std::string, std::string> resultMap;
-    for (const auto& oldUri : context->uris) {
-        std::string newUri = GetNewUriByOldUri(oldUri);
-        resultMap[oldUri] = newUri;
-        NAPI_DEBUG_LOG("Successfully mapped oldUri:%{public}s to newUri:%{public}s", oldUri.c_str(), newUri.c_str());
-    }
-
+    std::map<std::string, std::string> resultMap = GetNewUriByOldUriBatch(context->uris);
     context->uriMap = std::move(resultMap);
 }
 
