@@ -251,13 +251,23 @@ HWTEST_F(DeleteAssetTest, PublicDeleteBurstAsset_Test_001, TestSize.Level0)
 
     auto uri = "file://media/Photo/" + to_string(fileId);
     std::vector<std::string> testUris = {uri};
+    // 进入回收站
     int32_t result = PublicDeleteAsset(testUris);
     ASSERT_GT(result, 0);
 
     std::string sql = "select * from Photos"
-        " where burst_key='c628b4a3-828e-4f05-9781-487bf4de7f73' and date_trashed=0";
+        " where burst_key='c628b4a3-828e-4f05-9781-487bf4de7f73' and date_trashed>0";
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     auto resultSet = rdbStore->QuerySql(sql);
+    EXPECT_EQ(resultSet->GoToNextRow(), NativeRdb::E_OK);
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t ret = MediaLibraryAssetOperations::DeleteFromDisk(predicates, false);
+    // 彻底删除2张照片
+    EXPECT_EQ(ret, 2);
+
+    resultSet = rdbStore->QuerySql(sql);
     EXPECT_NE(resultSet->GoToNextRow(), NativeRdb::E_OK);
 }
 
@@ -271,14 +281,24 @@ HWTEST_F(DeleteAssetTest, PublicDeleteBurstAsset_Test_002, TestSize.Level0)
 
     auto uri = "file://media/Photo/" + to_string(fileId);
     std::vector<std::string> testUris = {uri};
+    // 进入回收站
     int32_t result = PublicDeleteAsset(testUris);
     ASSERT_GT(result, 0);
 
     std::string sql = "select * from Photos"
-        " where burst_key='c628b4a3-828e-4f05-9781-487bf4de7f73' and date_trashed=0";
+        " where burst_key='c628b4a3-828e-4f05-9781-487bf4de7f73' and date_trashed>0";
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     auto resultSet = rdbStore->QuerySql(sql);
     EXPECT_EQ(resultSet->GoToNextRow(), NativeRdb::E_OK);
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t ret = MediaLibraryAssetOperations::DeleteFromDisk(predicates, false);
+    // 彻底删除1张照片，传入的不是封面
+    EXPECT_EQ(ret, 1);
+
+    resultSet = rdbStore->QuerySql(sql);
+    EXPECT_NE(resultSet->GoToNextRow(), NativeRdb::E_OK);
 }
 
 HWTEST_F(DeleteAssetTest, SystemDeleteAsset_Test_001, TestSize.Level0)
