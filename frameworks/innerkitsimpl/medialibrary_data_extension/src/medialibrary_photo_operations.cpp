@@ -1142,8 +1142,8 @@ static void GetBurstMemberIds(vector<string> &fileIds)
         SELECT p.file_id
         FROM photos p
         WHERE p.PHOTO_BURST_KEY IN (
-            SELECT DISTINCT p1.PHOTO_BURST_KEY 
-            FROM photos p1 
+            SELECT DISTINCT p1.PHOTO_BURST_KEY
+            FROM photos p1
             WHERE p1.fileid IN (1, 2, 3)
             AND p1.PHOTO_BURST_COVER_LEVEL = 1
         )
@@ -1155,14 +1155,17 @@ static void GetBurstMemberIds(vector<string> &fileIds)
         + " SELECT DISTINCT p1." + PhotoColumn::PHOTO_BURST_KEY
         + " FROM " + PhotoColumn::PHOTOS_TABLE + " p1 "
         + " WHERE p1." + MediaColumn::MEDIA_ID + " IN (" + inClause + ") "
-        + " AND p1." + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + std::to_string(static_cast<int32_t>(BurstCoverLevelType::COVER))
+        + " AND p1." + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = "
+        + std::to_string(static_cast<int32_t>(BurstCoverLevelType::COVER))
         + " ) "
-        + " AND p." + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + std::to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER));
+        + " AND p." + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = "
+        + std::to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER));
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     auto resultSet = rdbStore->QuerySql(sql);
     CHECK_AND_RETURN_LOG(resultSet!=nullptr, "Failed to query selected files!");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        string burstMemberFileId = to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32)));
+        string burstMemberFileId = to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID,
+            resultSet, TYPE_INT32)));
         fileIds.push_back(burstMemberFileId);
     }
     resultSet->Close();

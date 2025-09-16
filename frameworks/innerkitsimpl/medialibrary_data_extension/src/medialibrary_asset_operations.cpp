@@ -2779,15 +2779,15 @@ static shared_ptr<NativeRdb::ResultSet> GetBurstMemberResultSet(const shared_ptr
 {
     vector<string> burstKeyList;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t burstLevel = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet, TYPE_INT32));
- 
+        int32_t burstLevel = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+            resultSet, TYPE_INT32));
         if (burstLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
-            string burstKey = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_KEY, resultSet, TYPE_STRING));
+            string burstKey = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_KEY,
+                resultSet, TYPE_STRING));
             MEDIA_INFO_LOG("delete brust burstKey is %{public}s", burstKey.c_str());
             burstKeyList.push_back(burstKey);
         }
     }
- 
     AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
     rbdPredicates.In(PhotoColumn::PHOTO_BURST_KEY, burstKeyList);
     rbdPredicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::MEMBER));
