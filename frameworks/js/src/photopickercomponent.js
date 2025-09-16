@@ -77,7 +77,7 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onExceedMaxSelected && (this.onExceedMaxSelected = e.onExceedMaxSelected);
         void 0 !== e.onCurrentAlbumDeleted && (this.onCurrentAlbumDeleted = e.onCurrentAlbumDeleted);
         void 0 !== e.onVideoPlayStateChanged && (this.onVideoPlayStateChanged = e.onVideoPlayStateChanged);
-        void 0 !== e.pickerOptions.badgeConfig && (this.badgeConfig = e.pickerOptions.badgeConfig);
+        void 0 !== e.pickerOptions?.badgeConfig && (this.badgeConfig = e.pickerOptions?.badgeConfig);
         this.__pickerController.set(e.pickerController);
         if (this.badgeConfig && this.badgeConfig.uris !== undefined) {
             console.log('badgeConfig.uris.length:' + this.badgeConfig.uris.length);
