@@ -95,6 +95,10 @@
     {
       "name": "permission_memospace_sync",
       "value": "Allow mediaLibrary to call memospace interface"
+    },
+    {
+      "name": "permission_receive_update_message",
+      "value": "Allow mediaLibrary to receive update message"
     }
   ]
 }
