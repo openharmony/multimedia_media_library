@@ -23,6 +23,7 @@ bool SaveCameraPhotoReqBody::Unmarshalling(MessageParcel &parcel)
 {
     return ITypesUtil::Unmarshal(parcel,
         fileId,
+        mediaType,
         photoSubType,
         imageFileType,
         supportedWatermarkType,
@@ -36,6 +37,7 @@ bool SaveCameraPhotoReqBody::Marshalling(MessageParcel &parcel) const
 {
     return ITypesUtil::Marshal(parcel,
         fileId,
+        mediaType,
         photoSubType,
         imageFileType,
         supportedWatermarkType,

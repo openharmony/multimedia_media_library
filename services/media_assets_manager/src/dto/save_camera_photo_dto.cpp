@@ -21,6 +21,7 @@ SaveCameraPhotoDto SaveCameraPhotoDto::Create(const SaveCameraPhotoReqBody &req)
 {
     SaveCameraPhotoDto dto;
     dto.fileId = req.fileId;
+    dto.mediaType = req.mediaType;
     dto.photoSubType = req.photoSubType;
     dto.imageFileType = req.imageFileType;
     dto.supportedWatermarkType = req.supportedWatermarkType;

@@ -109,6 +109,8 @@ public:
     static int32_t SetTranscodeUriToFileAsset(std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
         const bool isHeif);
     static void DoTranscodeDfx(const int32_t &type);
+    static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
+        bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
@@ -165,8 +167,6 @@ protected:
     EXPORT static std::string CreateExtUriForV10Asset(FileAsset &fileAsset);
     EXPORT static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode,
         const std::string &fileId, int32_t type = -1);
-    static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
-        bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
     static void ScanFileWithoutAlbumUpdate(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
 

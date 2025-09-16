@@ -132,22 +132,24 @@ DataShare::DataShareValuesBucket PhotoAssetProxy::HandleAssetValues(const sptr<P
     DataShare::DataShareValuesBucket values;
     values.Put(MediaColumn::MEDIA_NAME, displayName);
     values.Put(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(mediaType));
+    values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
+    values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
+    if (photoProxy->GetPhotoId().size() > 0) {
+        values.Put(PhotoColumn::PHOTO_ID, photoProxy->GetPhotoId());
+    }
     if (cameraShotType_ == CameraShotType::MOVING_PHOTO) {
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
         values.Put(PhotoColumn::STAGE_VIDEO_TASK_STATUS, photoProxy->GetStageVideoTaskStatus());
-    }
-    if (cameraShotType_ == CameraShotType::BURST) {
+    } else if (cameraShotType_ == CameraShotType::BURST) {
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
         values.Put(PhotoColumn::PHOTO_BURST_KEY, photoProxy->GetBurstKey());
         values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
             photoProxy->IsCoverPhoto() ? static_cast<int32_t>(BurstCoverLevelType::COVER)
                                        : static_cast<int32_t>(BurstCoverLevelType::MEMBER));
         values.Put(PhotoColumn::PHOTO_DIRTY, -1);
-    }
-    values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
-    values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
-    if (photoProxy->GetPhotoId().size() > 0) {
-        values.Put(PhotoColumn::PHOTO_ID, photoProxy->GetPhotoId());
+    } else if (cameraShotType_ == CameraShotType::VIDEO) {
+        values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(photoProxy->GetPhotoQuality()));
+        return values;
     }
 
     if (photoProxy->GetCloudImageEnhanceFlag() & AUTO_ENHANCEMENT) {
@@ -499,6 +501,11 @@ int32_t PhotoAssetProxy::GetVideoFd()
 
 void PhotoAssetProxy::NotifyVideoSaveFinished()
 {
+    if (cameraShotType_ == CameraShotType::VIDEO) {
+        MEDIA_INFO_LOG("NotifyVideoSaveFinished exit, cameraShotType: %{public}d.",
+            static_cast<int32_t>(cameraShotType_));
+        return;
+    }
     isMovingPhotoVideoSaved_ = true;
     CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "datashareHelper is nullptr");
     string uriStr = PAH_ADD_FILTERS;
