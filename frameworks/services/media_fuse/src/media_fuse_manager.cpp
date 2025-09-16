@@ -367,8 +367,7 @@ static int32_t GetTranscodeUri(string &filePath, const string &bundleName, const
     CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(bundleName), E_INNER_FAIL,
         "Get client bundle name failed, filePath: %{private}s", filePath.c_str());
     int32_t compatibleMode = 0;
-    CHECK_AND_RETURN_RET_LOG(GetCompatibleModeFromFileId(compatibleMode, fileId), E_INNER_FAIL,
-        "Get compatible mode failed, fileId: %{private}s", fileId.c_str());
+    GetCompatibleModeFromFileId(compatibleMode, fileId);
     CHECK_AND_RETURN_RET_LOG(compatibleMode != 0, E_INNER_FAIL,
         "Is not have transcode file, filePath: %{private}s", filePath.c_str());
     string path = MediaLibraryAssetOperations::GetEditDataDirPath(filePath);
