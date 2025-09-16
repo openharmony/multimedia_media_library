@@ -321,7 +321,7 @@ int32_t MediaFuseHdcOperations::HandlePhotoPath(
     res = GetAlbumIdFromAlbumName(inputPath, albumId);
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetAlbumIdFromAlbumName fail");
     if (albumId <= 0) {
-        MEDIA_ERR_LOG("not exit album %{public}s.", inputPath.c_str());
+        MEDIA_ERR_LOG("not exit album %{private}s.", inputPath.c_str());
         return -ENOENT;
     }
     res = HandleDirStat(albumId, stbuf);
@@ -356,7 +356,7 @@ int32_t MediaFuseHdcOperations::HandleFilePath(
 int32_t MediaFuseHdcOperations::ConvertToLocalPhotoPath(const std::string &inputPath, std::string &output)
 {
     if (inputPath.empty() || inputPath.find(FUSE_ROOT_MEDIA_DIR) != 0) {
-        MEDIA_ERR_LOG("ConvertToLocalPhotoPath inputPath err");
+        MEDIA_ERR_LOG("ConvertToLocalPhotoPath inputPath err, filePath:%{private}s", inputPath.c_str());
         return E_ERR;
     }
     output = FUSE_LOCAL_MEDIA_DIR + inputPath.substr(FUSE_ROOT_MEDIA_DIR.length());
@@ -384,7 +384,7 @@ int32_t MediaFuseHdcOperations::CreateFd(const std::string &displayName, const i
     assetInfo.PutString(MediaColumn::MEDIA_TITLE, title);
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
     assetInfo.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
-    if (albumId == 0) {
+    if (albumId <= 0) {
         assetInfo.Put(MediaColumn::MEDIA_PACKAGE_NAME, FIXED_PHOTO_ALBUM);
     } else {
         assetInfo.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
@@ -437,7 +437,7 @@ int32_t MediaFuseHdcOperations::GetFileIdFromPath(const std::string &filePath, s
 int32_t MediaFuseHdcOperations::UpdatePhotoRdb(const std::string &displayName, const std::string &filePath)
 {
     if (displayName.find('/') != std::string::npos) {
-        MEDIA_ERR_LOG("Invalid displayName: contains '/'. displayName = %{public}s", displayName.c_str());
+        MEDIA_ERR_LOG("Invalid displayName: contains '/'. displayName = %{private}s", displayName.c_str());
         return E_ERR;
     }
     std::string title;
@@ -541,17 +541,17 @@ int32_t MediaFuseHdcOperations::ReadPhotoRootDir(void *buf, fuse_fill_dir_t fill
     return E_SUCCESS;
 }
 
-void MediaFuseHdcOperations::JpgToMp4(const std::string& displayName, std::set<std::string>& fileNames)
+std::string MediaFuseHdcOperations::JpgToMp4(const std::string& displayName)
 {
     if (displayName.empty()) {
         MEDIA_ERR_LOG("Invalid displayName");
-        return;
+        return "";
     }
     size_t dotPos = displayName.find_last_of('.');
     std::string videoName = (dotPos != std::string::npos)
         ? displayName.substr(0, dotPos) + "." + VIDEO_EXTENSION
         : displayName + "." + VIDEO_EXTENSION;
-    fileNames.insert(videoName);
+    return videoName;
 }
 
 bool MediaFuseHdcOperations::FillDirectoryEntry(
@@ -591,11 +591,11 @@ int32_t MediaFuseHdcOperations::ReadAlbumDir(
 {
     std::string albumName;
     if (inputPath.find(FUSE_OPEN_PHOTO_PRE + "/") == 0) {
-        std::string albumName = inputPath.substr(FUSE_OPEN_PHOTO_PRE.length() + 1);
+        albumName = inputPath.substr(FUSE_OPEN_PHOTO_PRE.length() + 1);
     }
     int32_t albumId;
     if (GetAlbumIdFromAlbumName(albumName, albumId) != E_SUCCESS) {
-        MEDIA_ERR_LOG("Failed to get album ID for: %{public}s", albumName.c_str());
+        MEDIA_ERR_LOG("Failed to get album ID for: %{private}s", albumName.c_str());
         return E_ERR;
     }
     auto resultSet = QueryAlbumPhotos(albumId);
@@ -612,7 +612,7 @@ int32_t MediaFuseHdcOperations::ReadAlbumDir(
         std::string filePath = MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_FILE_PATH);
         std::string localPath;
         if (ConvertToLocalPhotoPath(filePath, localPath) != E_SUCCESS) {
-            MEDIA_ERR_LOG("Failed to convert to local path: %{public}s", filePath.c_str());
+            MEDIA_ERR_LOG("Failed to convert to local path: %{private}s", filePath.c_str());
             continue;
         }
         std::set<std::string> fileNames;
@@ -620,7 +620,8 @@ int32_t MediaFuseHdcOperations::ReadAlbumDir(
         fileNames.insert(displayName);
         if (IsMovingPhoto(subtype, effectMode)) {
             videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(localPath);
-            JpgToMp4(displayName, fileNames);
+            std::string videoName = JpgToMp4(displayName);
+            fileNames.insert(videoName);
         }
         for (const auto& name : fileNames) {
             std::string fullPath = (name == displayName) ? localPath : videoPath;
