@@ -27,6 +27,7 @@
 #include <sstream>
 
 #include "abs_shared_result_set.h"
+#include "album_plugin_config.h"
 #include "directory_ex.h"
 #include "duplicate_photo_operation.h"
 #include "file_asset.h"
@@ -47,6 +48,7 @@
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_async_worker.h"
+#include "medialibrary_bundle_manager.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
@@ -106,6 +108,7 @@ namespace OHOS {
 namespace Media {
 static const string ANALYSIS_HAS_DATA = "1";
 const string PHOTO_ALBUM_URI_PREFIX_V0 = "file://media/PhotoAlbum/";
+const string FILE_MANAGER_BUNDLE_NAME = "com." + AlbumPlugin::BRAND_NAME + ".hmos.filemanager";
 constexpr int SAVE_PHOTO_WAIT_MS = 300;
 constexpr int TASK_NUMBER_MAX = 5;
 
@@ -587,6 +590,10 @@ static bool CheckPermissionToOpenFileAsset(const shared_ptr<FileAsset>& fileAsse
             " %{public}d, %{public}d, %{public}d, %{public}d", PermissionUtils::IsSystemApp(),
             PermissionUtils::IsNativeSAApp(), PermissionUtils::IsHdcShell(),
             OHOS::system::GetBoolParameter("const.security.developermode.state", true));
+
+        string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+        CHECK_AND_RETURN_RET_LOG(!(bundleName == FILE_MANAGER_BUNDLE_NAME), false,
+            "The filemanager application is not allowed to open hidden photo");
     }
     return true;
 }
