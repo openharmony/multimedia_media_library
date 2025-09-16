@@ -46,6 +46,7 @@ public:
     static int32_t ReadPhotoRootDir(void *buf, fuse_fill_dir_t filler, off_t offset);
     static int32_t ReadAlbumDir(const std::string &inputPath, void* buf, fuse_fill_dir_t filler, off_t offset);
     static int32_t DeletePhotoByFilePath(const std::string &filePath);
+    static std::string JpgToMp4(const std::string& displayName);
 
 private:
     static time_t GetAlbumMTime(const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
@@ -56,7 +57,6 @@ private:
     static bool IsMovingPhoto(int32_t subtype, int32_t effectMode);
     static int32_t HandleDirStat(const int32_t &albumId, struct stat *stbuf);
     static int32_t UpdatePhotoRdb(const std::string &displayName, const std::string &filePath);
-    static void JpgToMp4(const std::string& displayName, std::set<std::string>& fileNames);
     static bool FillDirectoryEntry(void* buf, fuse_fill_dir_t filler,
         const std::string& name, const std::string& fullPath, off_t nextoff);
     static std::shared_ptr<NativeRdb::ResultSet> QueryAlbumPhotos(const int32_t &albumId);

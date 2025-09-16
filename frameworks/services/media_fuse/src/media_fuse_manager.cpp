@@ -581,51 +581,47 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
         MEDIA_ERR_LOG("Invalid path");
         return -EINVAL;
     }
-
     string target = path;
     int32_t albumId = -1;
     string filePath;
     string displayName;
     int32_t res = MediaFuseHdcOperations::Parse(target, albumId, filePath, displayName);
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "Parse fail");
+    bool isMovingPhoto = false;
+    string tempPath;
     if (filePath.empty()) {
         // handle moving photo mp4
         res = MediaFuseHdcOperations::HandleMovingPhoto(filePath, displayName, albumId);
-        if (res != E_SUCCESS) {
-            MEDIA_ERR_LOG("HandleMovingPhoto fail");
-            return res;
-        }
+        CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "HandleMovingPhoto fail");
         res = MediaFuseHdcOperations::GetPathFromDisplayname(displayName, albumId, filePath);
         CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetPathFromDisplayname fail");
+        isMovingPhoto = true;
+        tempPath = filePath;
         filePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
     }
     if (flags & (O_CREAT | O_WRONLY)) {
-        if (MediaFuseHdcOperations::DeletePhotoByFilePath(filePath) != 0) {
-            MEDIA_ERR_LOG("Delete failed");
-            return E_ERR;
+        if (isMovingPhoto) {
+            filePath = tempPath;
+            displayName = MediaFuseHdcOperations::JpgToMp4(displayName);
         }
+        res = MediaFuseHdcOperations::DeletePhotoByFilePath(filePath);
+        CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "Delete failed");
         MEDIA_CREATE_WRITE_MAP[target] = false;
         res = MediaFuseHdcOperations::CreateFd(displayName, albumId, fd);
         if (fd <= 0) {
-            MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Create failed, path = %{public}s", filePath.c_str());
+            MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Create failed, path = %{private}s", filePath.c_str());
             return E_ERR;
         }
         MEDIA_CREATE_WRITE_MAP[target] = true;
         return E_SUCCESS;
     }
-
     string localPath;
-    if (MediaFuseHdcOperations::ConvertToLocalPhotoPath(filePath, localPath) != E_SUCCESS) {
-        MEDIA_ERR_LOG("ConvertToLocalPhotoPath failed, filePath = %{public}s", filePath.c_str());
-        return E_ERR;
-    }
-
+    res = MediaFuseHdcOperations::ConvertToLocalPhotoPath(filePath, localPath);
+    CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "ConvertToLocalPhotoPath failed");
     fd = open(localPath.c_str(), flags);
     if (fd < 0) {
-        int32_t err = -errno;
-        MEDIA_ERR_LOG("Open failed, localPath=%{public}s, errno=%{public}d",
-                      localPath.c_str(), err);
-        return err;
+        MEDIA_ERR_LOG("Open failed, localPath=%{private}s, errno=%{public}d", localPath.c_str(), -errno);
+        return E_ERR;
     }
     return E_SUCCESS;
 }
@@ -649,7 +645,7 @@ int32_t MediaFuseManager::DoHdcCreate(const char *path, mode_t mode, struct fuse
     int32_t fd;
     res = MediaFuseHdcOperations::CreateFd(displayName, albumId, fd);
     if (fd <= 0) {
-        MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Create failed, path = %{public}s", filePath.c_str());
+        MEDIA_ERR_LOG("MediaLibraryPhotoOperations::Create failed, path = %{private}s", filePath.c_str());
         return res;
     }
     fi->fh = static_cast<uint64_t>(fd);
@@ -671,7 +667,7 @@ int32_t MediaFuseManager::DoHdcRelease(const char *path, const int32_t &fd)
     }
 
     if (close(fd) == -1) {
-        MEDIA_ERR_LOG("Close fd failed, path=%{private}s, fd=%d, errno=%{public}d", path, fd, errno);
+        MEDIA_ERR_LOG("Close fd failed, path=%{private}s, fd=%{private}d, errno=%{private}d", path, fd, errno);
         return -errno;
     }
 
@@ -741,7 +737,7 @@ int32_t MediaFuseManager::DoHdcReadDir(const char *path, void *buf, fuse_fill_di
         return MediaFuseHdcOperations::ReadAlbumDir(target, buf, filler, offset);
     }
 
-    MEDIA_ERR_LOG("Invalid path format: %{public}s", path);
+    MEDIA_ERR_LOG("Invalid path format: %{private}s", path);
     return -EINVAL;
 }
 } // namespace Media
