@@ -17,11 +17,13 @@
 #define OHOS_MEDIA_ASSETS_MANAGER_SAVE_CAMERA_PHOTO_VO_H
 
 #include "i_media_parcelable.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS::Media {
 class SaveCameraPhotoReqBody : public IPC::IMediaParcelable {
 public:
     int32_t fileId{INT32_MIN};
+    int32_t mediaType = static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE);
     int32_t photoSubType{INT32_MIN};
     int32_t imageFileType{INT32_MIN};
     int32_t supportedWatermarkType{INT32_MIN};
