@@ -117,7 +117,9 @@ static void OnChangeNotifyDetail(NewJsOnChangeCallbackWrapper* wrapper)
 
     napi_env env = wrapper->env_;
     napi_handle_scope scope = nullptr;
-    napi_open_handle_scope(env, &scope);
+    napi_status status = napi_open_handle_scope(env, &scope);
+    CHECK_AND_RETURN_LOG(status == napi_ok && scope != nullptr,
+        "Failed to open handle scope, napi status: %{public}d", static_cast<int>(status));
     napi_value buildResult = nullptr;
     switch (wrapper->observerUriType_) {
         case Notification::PHOTO_URI:
