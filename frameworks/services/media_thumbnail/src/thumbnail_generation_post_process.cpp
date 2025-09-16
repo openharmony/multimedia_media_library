@@ -34,9 +34,7 @@ namespace Media {
 
 int32_t ThumbnailGenerationPostProcess::PostProcess(ThumbnailData& data, const ThumbRdbOpt& opts)
 {
-    CHECK_AND_RETURN_RET_INFO_LOG(!data.rdbUpdateCache.IsEmpty(), E_OK,
-        "RdbUpdateCache is empty, no need update id: %{public}s, path: %{public}s",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    CHECK_AND_RETURN_RET(!data.rdbUpdateCache.IsEmpty(), E_OK);
     bool hasGeneratedThumb = HasGeneratedThumb(data);
     MEDIA_INFO_LOG("HasGeneratedThumb: %{public}d id: %{public}s, path: %{public}s",
         hasGeneratedThumb, data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
