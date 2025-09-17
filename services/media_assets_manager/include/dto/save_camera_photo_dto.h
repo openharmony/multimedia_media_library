@@ -22,6 +22,7 @@ namespace OHOS::Media {
 class SaveCameraPhotoDto {
 public:
     int32_t fileId{INT32_MIN};
+    int32_t mediaType = static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE);
     int32_t photoSubType{INT32_MIN};
     int32_t imageFileType{INT32_MIN};
     int32_t supportedWatermarkType{INT32_MIN};

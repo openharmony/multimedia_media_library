@@ -2653,6 +2653,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext &context)
         changeOpreations.end();
     SaveCameraPhotoReqBody reqBody;
     reqBody.fileId = fileAsset->GetId();
+    reqBody.mediaType = static_cast<int32_t>(fileAsset->GetMediaType());
     if (containsAddResource && !MediaLibraryNapiUtils::IsSystemApp()) {
         // remove high quality photo
         // set dirty flag when third-party hap calling addResource to save camera photo
