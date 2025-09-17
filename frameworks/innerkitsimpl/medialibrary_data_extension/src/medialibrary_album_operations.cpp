@@ -2926,7 +2926,8 @@ int32_t MediaLibraryAlbumOperations::SetPortraitAlbumRelationship(const ValuesBu
         sql << " = \"" << relationship << "\"";
     }
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
-    sql << " WHERE " << rdbPredicates.GetWhereClause();
+    sql << " WHERE " << GROUP_TAG + " IN(SELECT " +
+        GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + rdbPredicates.GetWhereClause() + ")";
     string sqlStr = sql.str();
     auto bindArgs = rdbPredicates.GetBindArgs();
 
