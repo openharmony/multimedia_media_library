@@ -106,6 +106,7 @@ public:
         std::shared_ptr<NativeRdb::ResultSet> sharedAssets_;
         std::vector<std::shared_ptr<RowObject>> sharedAssetsRowObjVector_;
         std::shared_ptr<NativeRdb::ResultSet> extraSharedAssets_;
+        std::string trashAlbumUriCached_;
     };
 
     explicit ChangeListenerNapi(napi_env env) : env_(env) {}
@@ -135,6 +136,9 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> GetSharedResultSetFromIds(std::vector<string>& Ids, bool isPhoto);
     void GetIdsFromUris(std::list<Uri>& listValue, std::vector<string>& ids, bool isPhoto);
     static string GetTrashAlbumUri();
+    static int32_t trashAlbumUserId_;
+    static void InvalidateTrashAlbumUri();
+    static std::mutex trashMutex_;
     static std::string trashAlbumUri_;
     napi_ref cbOnRef_ = nullptr;
     napi_ref cbOffRef_ = nullptr;
