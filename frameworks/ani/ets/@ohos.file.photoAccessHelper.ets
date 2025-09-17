@@ -68,15 +68,6 @@ export namespace photoAccessHelper {
     HDR = 1
   }
 
-  export enum HdrMode {
-    DEFAULT = 0,
-    HDR_ISO_SINGLE = 1,
-    HDR_ISO_DUAL = 2,
-    HDR_CUVA = 3,
-    HDR_VIVID_SINGLE = 4,
-    HDR_VIVID_DUAL = 5,
-  }
-
   export enum PositionType {
     LOCAL = 1 << 0,
     CLOUD = 1 << 1
@@ -580,7 +571,6 @@ export namespace photoAccessHelper {
     PHOTO_SUBTYPE = 'subtype',
     MOVING_PHOTO_EFFECT_MODE = 'moving_photo_effect_mode',
     DYNAMIC_RANGE_TYPE = 'dynamic_range_type',
-    HDR_MODE = 'hdr_mode',
     COVER_POSITION = 'cover_position',
     BURST_KEY = 'burst_key',
     THUMBNAIL_READY = 'thumbnail_ready',

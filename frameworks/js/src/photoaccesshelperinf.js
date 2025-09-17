@@ -1210,4 +1210,5 @@ export default {
   StrongAssociationType: photoAccessHelper.StrongAssociationType,
   CompositeDisplayMode: photoAccessHelper.CompositeDisplayMode,
   SupportedImageFormat: photoAccessHelper.SupportedImageFormat,
+  HdrMode: photoAccessHelper.HdrMode,
 };
