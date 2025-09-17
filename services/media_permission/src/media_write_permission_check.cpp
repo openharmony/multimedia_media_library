@@ -32,6 +32,11 @@ static const int32_t GRANT_PERMISSION_CALLING_UID = 5523; // foundation调用方
 static const int32_t ROOT_UID = 0;
 static const int32_t HDC_SHELL_UID = 2000;
 static const int32_t SANDBOX_UID = 3076;
+static const std::unordered_map<int32_t, bool> SAVE_COMPONENT_VERIFICATION = {
+    { static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET), true },
+    { static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_CREATE_ASSET), true },
+    { static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_CAMERA_PHOTO), true },
+};
 static int32_t AcrossLocalAccountsPermCheck(const PermissionHeaderReq &data);
 WriteCompositePermCheck::WriteCompositePermCheck()
 {
@@ -141,17 +146,21 @@ int32_t MediaToolWritePermCheck::CheckPermission(uint32_t businessCode, const Pe
 int32_t SecurityComponentPermCheck::CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data)
 {
     MEDIA_INFO_LOG("SecurityComponentPermCheck enter, API code=%{public}d", businessCode);
+    if (SAVE_COMPONENT_VERIFICATION.find(businessCode) != SAVE_COMPONENT_VERIFICATION.end() &&
+        SAVE_COMPONENT_VERIFICATION.at(businessCode)) {
 #ifdef MEDIALIBRARY_SECURITY_OPEN
-    auto tokenId = PermissionUtils::GetTokenId();
-    if (!Security::SecurityComponent::SecCompKit::VerifySavePermission(tokenId)) {
-        MEDIA_ERR_LOG("Failed to verify save permission of security component");
-        return E_PERMISSION_DENIED;
-    }
-    return E_SUCCESS;
+        auto tokenId = PermissionUtils::GetTokenId();
+        if (!Security::SecurityComponent::SecCompKit::VerifySavePermission(tokenId)) {
+            MEDIA_ERR_LOG("Failed to verify save permission of security component");
+            return E_PERMISSION_DENIED;
+        }
+        return E_SUCCESS;
 #else
-    MEDIA_ERR_LOG("Security component is not existed");
-    return E_PERMISSION_DENIED;
+        MEDIA_ERR_LOG("Security component is not existed");
+        return E_PERMISSION_DENIED;
 #endif
+    }
+    return E_PERMISSION_DENIED;
 };
 
 int32_t ShortTermWritePermCheck::CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data)
