@@ -1231,5 +1231,19 @@ std::vector<SouthDeviceType> BackupDatabaseUtils::QueryPhotoUniqueSouthDeviceTyp
     resultSet->Close();
     return uniqueSouthDeviceType;
 }
+
+bool BackupDatabaseUtils::ClearConfigInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore, false, "rdbStore is nullptr");
+    std::string sqlStr = "DELETE FROM " + ConfigInfoColumn::MEDIA_CONFIG_INFO_TABLE_NAME + " WHERE " +
+        ConfigInfoColumn::MEDIA_CONFIG_INFO_SCENE_ID + "=" +
+        std::to_string(static_cast<int>(ConfigInfoSceneId::CLONE_RESTORE));
+    MEDIA_DEBUG_LOG("Clear ConfigInfo sql: %{public}s", sqlStr.c_str());
+    int32_t ret = BackupDatabaseUtils::ExecuteSQL(rdbStore, sqlStr);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false,
+        "fail to clear ConfigInfo, sql: %{public}s, ret:%{public}d", sqlStr.c_str(), ret);
+    MEDIA_INFO_LOG("succeed to clear ConfigInfo");
+    return true;
+}
 } // namespace Media
 } // namespace OHOS
