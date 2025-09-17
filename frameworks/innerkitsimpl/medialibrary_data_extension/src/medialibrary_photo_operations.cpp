@@ -1146,6 +1146,7 @@ static void GetBurstMemberIds(vector<string> &fileIds)
             FROM photos p1
             WHERE p1.fileid IN (1, 2, 3)
             AND p1.PHOTO_BURST_COVER_LEVEL = 1
+            AND p1.PHOTO_SUBTYPE = 4
         )
         AND p.PHOTO_BURST_COVER_LEVEL = 2
     */
@@ -1157,10 +1158,13 @@ static void GetBurstMemberIds(vector<string> &fileIds)
         + " WHERE p1." + MediaColumn::MEDIA_ID + " IN (" + inClause + ") "
         + " AND p1." + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = "
         + std::to_string(static_cast<int32_t>(BurstCoverLevelType::COVER))
+        + " AND p1." + PhotoColumn::PHOTO_SUBTYPE + " = "
+        + std::to_string(static_cast<int32_t>(PhotoSubType::BURST))
         + " ) "
         + " AND p." + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = "
         + std::to_string(static_cast<int32_t>(BurstCoverLevelType::MEMBER));
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "get rdb store fail");
     auto resultSet = rdbStore->QuerySql(sql);
     CHECK_AND_RETURN_LOG(resultSet!=nullptr, "Failed to query selected files!");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {

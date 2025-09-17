@@ -2783,7 +2783,11 @@ static shared_ptr<NativeRdb::ResultSet> GetBurstMemberResultSet(const shared_ptr
     do {
         int32_t burstLevel = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
             resultSet, TYPE_INT32));
-        if (burstLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
+        int32_t subtype = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE,
+            resultSet, TYPE_INT32));
+        bool isBurstCover = (burstLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) &&
+            (subtype == static_cast<int32_t>(BurstCoverLevelType::COVER));
+        if (isBurstCover) {
             string burstKey = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_KEY,
                 resultSet, TYPE_STRING));
             MEDIA_INFO_LOG("delete brust burstKey is %{public}s", burstKey.c_str());
@@ -2830,7 +2834,9 @@ int32_t QueryFileInfoAndHandleRemovePhotos(const AbsRdbPredicates &predicates, D
         HandlePhotosResultSet(resultSet, filesParams);
         // delete brust member photo
         auto burstMemberResultSet = GetBurstMemberResultSet(resultSet);
-        HandlePhotosResultSet(burstMemberResultSet, filesParams);
+        if (burstMemberResultSet) {
+            HandlePhotosResultSet(burstMemberResultSet, filesParams);
+        }
     } else if (predicates.GetTableName() == AudioColumn::AUDIOS_TABLE) {
         HandleAudiosResultSet(resultSet, filesParams);
     } else {
