@@ -16,22 +16,23 @@
 #include "medialibrary_ithumbnail_helper_test.h"
 
 #include <thread>
-#include "medialibrary_mocksinglekvstore.h"
-#include "highlight_column.h"
-#include "kvstore.h"
-#include "vision_db_sqls.h"
 
 #define private public
 #include "thumbnail_service.h"
 #include "ithumbnail_helper.h"
 #include "thumbnail_generate_helper.h"
 #undef private
+#include "highlight_column.h"
+#include "kvstore.h"
+#include "media_file_utils.h"
 #include "medialibrary_db_const_sqls.h"
+#include "medialibrary_kvstore_manager.h"
+#include "medialibrary_mocksinglekvstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "thumbnail_source_loading.h"
+#include "vision_db_sqls.h"
 
- 
 using namespace std;
 using namespace OHOS;
 using namespace testing::ext;
@@ -40,9 +41,70 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 
-void MediaLibraryIthumbnailHelperTest::SetUpTestCase(void) {}
+static shared_ptr<MediaLibraryRdbStore> g_rdbStore = nullptr;
+static int64_t g_id;
+const string KV_STORE_DIR = "/data/medialibrary/database";
+const int64_t DATE_TAKEN_TEST_VALUE = 1756111539577;
 
-void MediaLibraryIthumbnailHelperTest::TearDownTestCase(void) {}
+class TddRdbOpenCallback : public NativeRdb::RdbOpenCallback {
+public:
+    int OnCreate(NativeRdb::RdbStore &rdbStore) override
+    {
+        return E_OK;
+    }
+    int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override
+    {
+        return E_OK;
+    }
+};
+
+static void InitRdbStore()
+{
+    const string dbPath = "/data/test/medialibrary_thumbnail_rdb_utils_test.db";
+    NativeRdb::RdbStoreConfig config(dbPath);
+    TddRdbOpenCallback openCallback;
+
+    int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, 1, openCallback);
+    ASSERT_EQ(ret, E_OK);
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    ASSERT_NE(g_rdbStore, nullptr);
+
+    ret = g_rdbStore->ExecuteSql(PhotoColumn::CREATE_PHOTO_TABLE);
+    ASSERT_EQ(ret, NativeRdb::E_OK);
+
+    NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 0);
+    values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, DATE_TAKEN_TEST_VALUE);
+    ret = g_rdbStore->Insert(g_id, PhotoColumn::PHOTOS_TABLE, values);
+    ASSERT_EQ(ret, NativeRdb::E_OK);
+}
+
+static void DeleteRdbStore()
+{
+    string dropSql = "DROP TABLE IF EXIST " + PhotoColumn::PHOTOS_TABLE + ";";
+    int32_t ret = g_rdbStore->ExecuteSql(dropSql);
+    MEDIA_INFO_LOG("Drop photos table ret: %{public}d", ret == NativeRdb::E_OK);
+    MediaLibraryUnitTestUtils::StopUnistore();
+}
+
+void MediaLibraryIthumbnailHelperTest::SetUpTestCase(void)
+{
+    InitRdbStore();
+    if (!MediaFileUtils::IsDirExists(KV_STORE_DIR)) {
+        bool ret = MediaFileUtils::CreateDirectory(KV_STORE_DIR);
+        ASSERT_EQ(ret, true);
+    }
+}
+
+void MediaLibraryIthumbnailHelperTest::TearDownTestCase(void)
+{
+    DeleteRdbStore();
+    MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
+    if (MediaFileUtils::IsDirExists(KV_STORE_DIR)) {
+        bool ret = MediaFileUtils::DeleteDir("/data/medialibrary");
+        ASSERT_EQ(ret, true);
+    }
+}
     
 void MediaLibraryIthumbnailHelperTest::SetUp() {}
     
@@ -201,14 +263,15 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, DoCreatetLcdAndThumbnail_test_001, Te
     MEDIA_INFO_LOG("DoCreatetLcdAndThumbnail_test_001");
     ThumbRdbOpt opts;
     ThumbnailData data;
-    data.id = "1234";
+    opts.store = g_rdbStore;
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    data.id = std::to_string(g_id);
     data.path = TEST_IMAGE_PATH;
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
     
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcd,
         opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::HIGH);
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    data.tracks = "test";
     bool ret = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, data);
     EXPECT_EQ(ret, true);
     MEDIA_INFO_LOG("DoCreatetLcdAndThumbnail_test_001 end");
