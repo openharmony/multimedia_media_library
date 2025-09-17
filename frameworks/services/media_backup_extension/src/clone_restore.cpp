@@ -2574,6 +2574,18 @@ void CloneRestore::CloseAllKvStore()
 void CloneRestore::StartBackup()
 {
     MEDIA_INFO_LOG("enter clone backup");
+    if (BaseRestore::Init() != E_OK || !mediaLibraryRdb_) {
+        MEDIA_ERR_LOG("init db failed when start backup");
+        SetErrorCode(RestoreError::INIT_FAILED);
+        return;
+    }
+    if (!BackupDatabaseUtils::ClearConfigInfo(mediaLibraryRdb_)) {
+        MEDIA_ERR_LOG("Clear ConfigInfo failed");
+        SetErrorCode(RestoreError::BACKUP_CLEAR_CONFIGINFO_FAILED);
+        return;
+    }
+    bool cond = (!BackupKvStore() && !MediaFileUtils::DeleteDir(CLONE_KVDB_BACKUP_DIR));
+    CHECK_AND_PRINT_LOG(!cond, "BackupKvStore failed and delete old backup kvdb failed, errno:%{public}d", errno);
     if (WaitSouthDeviceExitTimeout()) {
         MEDIA_ERR_LOG("backup, wait south device cleaning data timeout.");
         SetErrorCode(RestoreError::RETAIN_FORCE_TIMEOUT);
@@ -2584,20 +2596,13 @@ void CloneRestore::StartBackup()
     }
     MEDIA_INFO_LOG("Start clone backup");
     SetParameterForBackup();
-    if (BaseRestore::Init() != E_OK || !mediaLibraryRdb_) {
-        MEDIA_ERR_LOG("init db failed when start backup");
-        SetErrorCode(RestoreError::INIT_FAILED);
-        return;
-    }
     srcCloneRestoreConfigInfo_ = GetCurrentDeviceCloneConfigInfo();
+    CHECK_AND_RETURN_LOG(BackupPreprocess(), "backup preprocess failed");
     if (!UpdateConfigInfo()) {
         MEDIA_ERR_LOG("update configInfo failed when start backup");
         SetErrorCode(RestoreError::BACKUP_UPDATE_CONFIG_INFO_FAILED);
         return;
     }
-    CHECK_AND_RETURN_LOG(BackupPreprocess(), "backup preprocess failed");
-    bool cond = (!BackupKvStore() && !MediaFileUtils::DeleteDir(CLONE_KVDB_BACKUP_DIR));
-    CHECK_AND_PRINT_LOG(!cond, "BackupKvStore failed and delete old backup kvdb failed, errno:%{public}d", errno);
     MEDIA_INFO_LOG("End clone backup");
 }
 
