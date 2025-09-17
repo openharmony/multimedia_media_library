@@ -398,6 +398,9 @@ int32_t MediaAssetsService::SetCameraShotKey(const int32_t fileId, const std::st
 
 int32_t MediaAssetsService::SaveCameraPhoto(const SaveCameraPhotoDto &dto)
 {
+    if (dto.mediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+        return MultiStagesVideoCaptureManager::GetInstance().SaveCameraVideo(dto);
+    }
     MediaLibraryCommand cmd(
         OperationObject::FILESYSTEM_PHOTO, OperationType::SAVE_CAMERA_PHOTO, MediaLibraryApi::API_10);
 

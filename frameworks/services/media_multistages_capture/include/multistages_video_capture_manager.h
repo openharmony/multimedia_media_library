@@ -25,6 +25,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_command.h"
 #include "result_set.h"
+#include "save_camera_photo_dto.h"
 
 namespace OHOS {
 namespace Media {
@@ -42,6 +43,8 @@ public:
     EXPORT void RemoveVideo(const std::string &videoId, const std::string &mediaFilePath, const int32_t &photoSubType,
         const bool restorable);
     EXPORT void RestoreVideo(const std::string &videoId);
+    int32_t SaveCameraVideo(const SaveCameraPhotoDto &dto);
+
 private:
     MultiStagesVideoCaptureManager();
     ~MultiStagesVideoCaptureManager();

@@ -18,6 +18,7 @@
 #include "multistages_video_capture_manager.h"
 
 #include <fcntl.h>
+#include <string>
 
 #include "database_adapter.h"
 #include "dfx_utils.h"
@@ -26,7 +27,9 @@
 #include "media_log.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_command.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "moving_photo_file_utils.h"
 #include "multistages_capture_dfx_total_time.h"
@@ -37,6 +40,7 @@ using namespace std;
 using namespace OHOS::CameraStandard;
 #endif
 
+using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 MultiStagesVideoCaptureManager::MultiStagesVideoCaptureManager()
@@ -266,6 +270,36 @@ void MultiStagesVideoCaptureManager::RemoveVideo(const std::string &videoId, con
 void MultiStagesVideoCaptureManager::RestoreVideo(const std::string &videoId)
 {
     deferredProcSession_->RestoreVideo(videoId);
+}
+
+static int32_t UpdateIsTempAndDirty(int32_t fileId, int32_t subType)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
+    values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+
+    int32_t updateRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
+    CHECK_AND_RETURN_RET_LOG(updateRows >= 0, E_ERR, "update temp flag fail.");
+    return updateRows;
+}
+
+int32_t MultiStagesVideoCaptureManager::SaveCameraVideo(const SaveCameraPhotoDto &dto)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MultiStagesVideoCaptureManager::SaveCameraVideo");
+    MEDIA_INFO_LOG("MultistagesCapture, start save fileId: %{public}d", dto.fileId);
+
+    int32_t ret = UpdateIsTempAndDirty(dto.fileId, dto.photoSubType);
+    if (dto.path.empty()) {
+        MEDIA_ERR_LOG("path is empty.");
+        return E_ERR;
+    }
+    MediaLibraryAssetOperations::ScanFile(dto.path, false, true, true, dto.fileId);
+    MEDIA_INFO_LOG("MultistagesCapture Success, fileId: %{public}d, ret: %{public}d", dto.fileId, ret);
+    return ret;
 }
 } // Media
 } // OHOS
