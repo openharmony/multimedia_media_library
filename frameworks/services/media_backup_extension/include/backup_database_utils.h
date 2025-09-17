@@ -158,6 +158,7 @@ public:
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static std::vector<SouthDeviceType> QueryPhotoUniqueSouthDeviceType(
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static bool ClearConfigInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
