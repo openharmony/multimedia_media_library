@@ -1241,7 +1241,7 @@ bool BackupDatabaseUtils::ClearConfigInfo(const std::shared_ptr<NativeRdb::RdbSt
     MEDIA_DEBUG_LOG("Clear ConfigInfo sql: %{public}s", sqlStr.c_str());
     int32_t ret = BackupDatabaseUtils::ExecuteSQL(rdbStore, sqlStr);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false,
-        "fail to clear ConfigInfo, sql: %{public}s, ret:%{public}d", sqlStr.c_str(), ret);
+        "fail to clear ConfigInfo, sql: %{private}s, ret:%{public}d", sqlStr.c_str(), ret);
     MEDIA_INFO_LOG("succeed to clear ConfigInfo");
     return true;
 }
