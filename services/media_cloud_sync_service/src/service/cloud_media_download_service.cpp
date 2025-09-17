@@ -408,8 +408,9 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
     int32_t ret = this->dao_.QueryDownloadAssetByCloudIds(cloudIds, photosPoVec);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "QueryDownloadAssetByCloudIds failed, ret:%{public}d", ret);
     // Requirement: If any asset is not in the database, return error. Caller should check the result.
-    CHECK_AND_WARN_LOG(photosPoVec.size() == cloudIds.size(),
-        "QueryDownloadAssetByCloudIds length not met, cloudIds size:%{public}zu, photosPoVec size:%{public}zu",
+    CHECK_AND_RETURN_RET_LOG(photosPoVec.size() == cloudIds.size(),
+        E_CLOUDSYNC_INVAL_ARG,
+        "QueryDownloadAssetByCloudIds failed, cloudIds size:%{public}zu, photosPoVec size:%{public}zu",
         cloudIds.size(),
         photosPoVec.size());
     // Update
