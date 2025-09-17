@@ -162,6 +162,18 @@ static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
 string ChangeListenerNapi::trashAlbumUri_;
+int32_t ChangeListenerNapi::trashAlbumUserId_ = -1;
+std::mutex ChangeListenerNapi::trashMutex_;
+static std::once_flag g_prewarmTrashOnce;
+
+static void PrewarmTrashAlbumUriAsync()
+{
+    std::call_once(g_prewarmTrashOnce, []() {
+        std::thread([]() {
+            (void)ChangeListenerNapi::GetTrashAlbumUri();
+        }).detach();
+    });
+}
 static SafeMap<int32_t, std::shared_ptr<ThumbnailBatchGenerateObserver>> thumbnailGenerateObserverMap;
 static SafeMap<int32_t, std::shared_ptr<ThumbnailGenerateHandler>> thumbnailGenerateHandlerMap;
 static std::atomic<int32_t> requestIdCounter_ = 0;
@@ -598,6 +610,7 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
     if (!isAsync) {
         unique_lock<mutex> helperLock(sUserFileClientMutex_);
         if (!UserFileClient::IsValid(obj->GetUserId())) {
+            ChangeListenerNapi::InvalidateTrashAlbumUri();
             UserFileClient::Init(env, info, obj->GetUserId());
             if (!UserFileClient::IsValid(obj->GetUserId())) {
                 NAPI_ERR_LOG("UserFileClient creation failed");
@@ -728,6 +741,7 @@ static void GetMediaLibraryAsyncExecute(napi_env env, void *data)
     asyncContext->error = ERR_DEFAULT;
     unique_lock<mutex> helperLock(MediaLibraryNapi::sUserFileClientMutex_);
     if (!UserFileClient::IsValid()) {
+        ChangeListenerNapi::InvalidateTrashAlbumUri();
         UserFileClient::Init(asyncContext->token_, true);
         if (!UserFileClient::IsValid()) {
             NAPI_ERR_LOG("UserFileClient creation failed");
@@ -2724,11 +2738,20 @@ static napi_status SetSubUris(const napi_env& env, ChangeListenerNapi::JsOnChang
     return status;
 }
 
+void ChangeListenerNapi::InvalidateTrashAlbumUri()
+{
+    std::lock_guard<std::mutex> lk(trashMutex_);
+    trashAlbumUri_.clear();
+    trashAlbumUserId_ = -1;
+}
+
 string ChangeListenerNapi::GetTrashAlbumUri()
 {
     MediaLibraryTracer tracer;
     tracer.Start("ChangeListenerNapi::GetTrashAlbumUri");
-    if (!trashAlbumUri_.empty()) {
+    std::lock_guard<std::mutex> lk(trashMutex_);
+    int32_t currentUserId = UserFileClient::GetUserId();
+    if (!trashAlbumUri_.empty() && trashAlbumUserId_ == currentUserId) {
         return trashAlbumUri_;
     }
     string queryUri = UFM_QUERY_PHOTO_ALBUM;
@@ -2749,7 +2772,9 @@ string ChangeListenerNapi::GetTrashAlbumUri()
     if (albumAssetPtr == nullptr) {
         return trashAlbumUri_;
     }
-    return albumSet->GetFirstObject()->GetAlbumUri();
+    trashAlbumUri_ = albumSet->GetFirstObject()->GetAlbumUri();
+    trashAlbumUserId_ = currentUserId;
+    return trashAlbumUri_;
 }
 
 napi_value ChangeListenerNapi::SolveOnChange(napi_env env, ChangeListenerNapi::JsOnChangeCallbackWrapper* wrapper)
@@ -2774,10 +2799,12 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, ChangeListenerNapi::J
     }
 
     if (msg->changeInfo_.uris_.size() == DEFAULT_ALBUM_COUNT) {
-        if (msg->changeInfo_.uris_.front().ToString().compare(GetTrashAlbumUri()) == 0) {
+        const std::string &trash = wrapper->trashAlbumUriCached_;
+        if (!trash.empty() &&
+            msg->changeInfo_.uris_.front().ToString().compare(trash) == 0) {
             if (!MediaLibraryNapiUtils::IsSystemApp()) {
                 napi_get_undefined(env, &result);
-                NAPI_ERR_LOG("tha app is not system");
+                NAPI_ERR_LOG("the app is not system");
                 return nullptr;
             }
         }
@@ -2917,6 +2944,7 @@ void ChangeListenerNapi::QueryRdbAndNotifyChange(UvChangeMsg *msg)
     MediaLibraryTracer tracer;
     tracer.Start("GetResultSetFromMsg");
     GetResultSetFromMsg(msg, wrapper);
+    wrapper->trashAlbumUriCached_ = ChangeListenerNapi::GetTrashAlbumUri();
     tracer.Finish();
     int ret = 0;
     if (msg->strUri_.find(PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
@@ -3113,6 +3141,7 @@ void MediaLibraryNapi::RegisterChange(napi_env env, const string &type, ChangeLi
         default:
             NAPI_ERR_LOG("Invalid Media Type!");
     }
+    PrewarmTrashAlbumUriAsync();
 }
 
 void MediaLibraryNapi::RegisterNotifyChange(napi_env env,
@@ -3124,6 +3153,7 @@ void MediaLibraryNapi::RegisterNotifyChange(napi_env env,
         static_cast<shared_ptr<DataShare::DataShareObserver>>(observer), isDerived);
     lock_guard<mutex> lock(sOnOffMutex_);
     listObj.observers_.push_back(observer);
+    PrewarmTrashAlbumUriAsync();
 }
 
 napi_value MediaLibraryNapi::JSOnCallback(napi_env env, napi_callback_info info)
@@ -12461,6 +12491,9 @@ int32_t MediaLibraryNapi::GetUserId()
 
 void MediaLibraryNapi::SetUserId(const int32_t &userId)
 {
+    if (userId_ != userId) { 
+        ChangeListenerNapi::InvalidateTrashAlbumUri(); 
+    }
     userId_ = userId;
 }
 } // namespace Media
