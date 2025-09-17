@@ -1166,7 +1166,7 @@ static void GetBurstMemberIds(vector<string> &fileIds)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "get rdb store fail");
     auto resultSet = rdbStore->QuerySql(sql);
-    CHECK_AND_RETURN_LOG(resultSet!=nullptr, "Failed to query selected files!");
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query selected files!");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         string burstMemberFileId = to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID,
             resultSet, TYPE_INT32)));
@@ -1194,7 +1194,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     // 2、AssetRefresh -> Update()
     // 删除适配连拍照片
     GetBurstMemberIds(fileIds);
-    CHECK_AND_RETURN_RET_LOG(!fileIds.empty(), E_INVALID_FILEID, "Trash photo failed. fileIds is empty.");
+    CHECK_AND_PRINT_LOG(!fileIds.empty(), "get burst member photo failed. fileIds is empty.");
     rdbPredicate.Clear();
     rdbPredicate.In(PhotoColumn::MEDIA_ID, fileIds);
     int32_t updatedRows = assetRefresh.UpdateWithDateTime(values, rdbPredicate);
