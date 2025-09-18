@@ -508,13 +508,13 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     CHECK_AND_RETURN_RET_LOG(mediaRdb_ != nullptr, E_FAIL, "Init remote medialibrary rdb fail, err = %{public}d", err);
 
     BackupDatabaseUtils::CheckDbIntegrity(mediaRdb_, sceneCode_, "OLD_MEDIA_LIBRARY");
+    srcCloneRestoreConfigInfo_ = GetCloneConfigInfoFromOriginDB();
+    dstCloneRestoreConfigInfo_ = GetCurrentDeviceCloneConfigInfo();
+    CheckSrcDstSwitchStatusMatch();
     InitThumbnailStatus();
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_, IsCloudRestoreSatisfied());
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreGeoDictionary_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
-    srcCloneRestoreConfigInfo_ = GetCloneConfigInfoFromOriginDB();
-    dstCloneRestoreConfigInfo_ = GetCurrentDeviceCloneConfigInfo();
-    CheckSrcDstSwitchStatusMatch();
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
