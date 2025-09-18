@@ -45,6 +45,7 @@ ohos_unittest("event_create_test") {
 
   external_deps = [
     "ability_base:zuri",
+    "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
@@ -100,6 +101,7 @@ ohos_unittest("event_scan_test") {
 
   external_deps = [
     "ability_base:zuri",
+    "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
@@ -149,6 +151,7 @@ ohos_unittest("event_query_test") {
 
   external_deps = [
     "ability_base:zuri",
+    "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
@@ -204,6 +207,7 @@ ohos_unittest("event_thumbnail_test") {
 
   external_deps = [
     "ability_base:zuri",
+    "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
