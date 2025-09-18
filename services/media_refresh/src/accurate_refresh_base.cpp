@@ -138,14 +138,17 @@ int32_t AccurateRefreshBase::BatchInsert(MediaLibraryCommand &cmd, int64_t& chan
     if (!IsValidTable(cmd.GetTableName())) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
-    int32_t ret = BatchInsert(changedRows, cmd.GetTableName(), values);
+    int rdbError = 0;
+    int32_t ret = BatchInsert(changedRows, cmd.GetTableName(), values, rdbError);
     DfxRefreshHander::SetOptEndTimeHander(cmd, dfxRefreshManager_);
     return ret;
 }
 
+// 当rdb操作数据库失败时，将rdb返回的错误码存放于rdbError中
 int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &table,
-    vector<ValuesBucket> &values)
+    vector<ValuesBucket> &values, int &rdbError)
 {
+    rdbError = 0;
     if (!IsValidTable(table)) {
         return ACCURATE_REFRESH_RDB_INVALITD_TABLE;
     }
@@ -155,14 +158,20 @@ int32_t AccurateRefreshBase::BatchInsert(int64_t &changedRows, const string &tab
     pair<int32_t, Results> retWithResults = {E_HAS_DB_ERROR, -1};
     if (trans_) {
         retWithResults = trans_->BatchInsert(table, values, GetReturningKeyName());
-        CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
-            "rdb trans BatchInsert error.");
+        if (retWithResults.first != ACCURATE_REFRESH_RET_OK) {
+            rdbError = retWithResults.first;
+            MEDIA_ERR_LOG("rdb trans BatchInsert error, rdbError: %{public}d.", rdbError);
+            return E_HAS_DB_ERROR;
+        }
     } else {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, ACCURATE_REFRESH_RDB_NULL, "rdbStore null.");
         retWithResults = rdbStore->BatchInsert(table, values, GetReturningKeyName());
-        CHECK_AND_RETURN_RET_LOG(retWithResults.first == ACCURATE_REFRESH_RET_OK, E_HAS_DB_ERROR,
-            "rdb BatchInsert error.");
+        if (retWithResults.first != ACCURATE_REFRESH_RET_OK) {
+            rdbError = retWithResults.first;
+            MEDIA_ERR_LOG("rdb BatchInsert error, rdbError: %{public}d.", rdbError);
+            return E_HAS_DB_ERROR;
+        }
     }
     changedRows = retWithResults.second.changed;
     vector<int32_t> keys = GetReturningKeys(retWithResults);

@@ -598,9 +598,10 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_Trans_cm
 HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_008, TestSize.Level2)
 {
     int64_t insertNums = 0;
+    int rdbError = 0;
     AlbumAccurateRefresh albumRefresh;
     auto values = GetBatchInsertValues();
-    auto ret = albumRefresh.BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values);
+    auto ret = albumRefresh.BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values, rdbError);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
     EXPECT_TRUE(insertNums == values.size());
     // 数据库执行结果
@@ -620,12 +621,13 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_008, Tes
 HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_Trans_009, TestSize.Level2)
 {
     int64_t insertNums = 0;
+    int rdbError = 0;
     std::shared_ptr<TransactionOperations> trans =
         make_shared<TransactionOperations>("AlbumAccurateRefreshTest_BatchInsert_Trans_009");
     AlbumAccurateRefresh albumRefresh(trans);
     auto values = GetBatchInsertValues();
     std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefresh.BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values);
+        auto ret = albumRefresh.BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values, rdbError);
         return ret;
     };
     auto ret = trans->RetryTrans(transFunc);
@@ -1608,11 +1610,12 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_Trans_cm
 HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_041, TestSize.Level2)
 {
     int64_t insertNums = 0;
+    int rdbError = 0;
     AlbumAccurateRefresh albumRefresh("AlbumAccurateRefreshTest_BatchInsert_041");
     vector<ValuesBucket> values;
     values.push_back(GetPhotoAlbumInsertValue(FAVORITE_ALBUM_INFO_TOW));
     values.push_back(GetPhotoAlbumInsertValue(TRASH_ALBUM_INFO_TOW));
-    auto ret = albumRefresh.BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values);
+    auto ret = albumRefresh.BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values, rdbError);
     EXPECT_TRUE(ret == ACCURATE_REFRESH_RET_OK);
     EXPECT_TRUE(insertNums == values.size());
     // 数据库执行结果
@@ -1632,6 +1635,7 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_041, Tes
 HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_Trans_042, TestSize.Level2)
 {
     int64_t insertNums = 0;
+    int rdbError = 0;
     std::shared_ptr<TransactionOperations> trans =
         make_shared<TransactionOperations>("AlbumAccurateRefreshTest_BatchInsert_Trans_042");
     AlbumAccurateRefresh albumRefresh("AlbumAccurateRefreshTest_BatchInsert_Trans_042", trans);
@@ -1639,7 +1643,7 @@ HWTEST_F(AlbumAccurateRefreshTest, AlbumAccurateRefreshTest_BatchInsert_Trans_04
     values.push_back(GetPhotoAlbumInsertValue(FAVORITE_ALBUM_INFO_TOW));
     values.push_back(GetPhotoAlbumInsertValue(TRASH_ALBUM_INFO_TOW));
     std::function<int(void)> transFunc = [&]()->int {
-        auto ret = albumRefresh.BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values);
+        auto ret = albumRefresh.BatchInsert(insertNums, PhotoAlbumColumns::TABLE, values, rdbError);
         return ret;
     };
     auto ret = trans->RetryTrans(transFunc);
