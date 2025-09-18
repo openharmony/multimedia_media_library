@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include "media_column.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS::Media::CloudSync {
 using namespace OHOS::Media::ORM;

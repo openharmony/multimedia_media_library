@@ -216,7 +216,7 @@ void BackgroundCloudFileProcessorTest::TearDown()
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_006 Start");
-    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD)); // 10 count
     EXPECT_EQ(QueryPhotosCount(), 10);
 
     std::vector<std::string> curDownloadFiles = QueryCurDownloadFiles();
@@ -228,7 +228,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_008 Start");
-    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD)); // 10 count
     PrepareAbnormalPhotos(MediaColumn::MEDIA_SIZE);
     auto resultSet = BackgroundCloudFileProcessor::QueryUpdateData(true, false);
     int32_t rowCount;
@@ -242,7 +242,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_009 Start");
-    PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD)); // 10 count
     PrepareAbnormalPhotos(MediaColumn::MEDIA_SIZE);
     auto resultSet = BackgroundCloudFileProcessor::QueryUpdateData(true, true);
     int32_t rowCount;
@@ -255,7 +255,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_010, TestSize.Level1)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_010 Start");
-    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL)); // 10 count
     PrepareAbnormalPhotos(MediaColumn::MEDIA_SIZE);
     auto resultSet = BackgroundCloudFileProcessor::QueryUpdateData(false, false);
     int32_t rowCount;
@@ -268,7 +268,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_011, TestSize.Level1)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_011 Start");
-    PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::LOCAL)); // 10 count
     PrepareAbnormalPhotos(MediaColumn::MEDIA_SIZE);
     auto resultSet = BackgroundCloudFileProcessor::QueryUpdateData(false, true);
     int32_t rowCount;
@@ -339,7 +339,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_QueryCloudFiles_Test_001, TestS
     double freeRatio = 0.5;
     auto resultSet = BackgroundCloudFileProcessor::QueryCloudFiles(freeRatio);
     EXPECT_NE(resultSet, nullptr);
-    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
+    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD)); // 10 count
     EXPECT_EQ(QueryPhotosCount(), 10);
     resultSet = BackgroundCloudFileProcessor::QueryCloudFiles(freeRatio);
     EXPECT_NE(resultSet, nullptr);

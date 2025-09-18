@@ -40,6 +40,16 @@ struct MarshallingPtrVisitor {
     }
 };
 
+std::shared_ptr<AssetManagerNotifyInfo> NotificationUtils::UnmarshalAssetManagerNotify(Parcel &parcel)
+{
+    AssetManagerNotifyInfo* info = new (std::nothrow)AssetManagerNotifyInfo();
+    if ((info != nullptr) && (!info->ReadFromParcel(parcel))) {
+        delete info;
+        info = nullptr;
+    }
+    return std::shared_ptr<AssetManagerNotifyInfo>(info);
+}
+
 std::shared_ptr<MediaChangeInfo> NotificationUtils::UnmarshalInMultiMode(Parcel &parcel)
 {
     MediaChangeInfo* info = new (std::nothrow)MediaChangeInfo();
@@ -154,6 +164,16 @@ int32_t NotificationUtils::SendNotification(const sptr<AAFwk::IDataAbilityObserv
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL_TIME_MS));
     }
-    return true;
+    return E_OK;
+}
+
+int32_t NotificationUtils::SendDownloadProgressInfoNotification(const sptr<AAFwk::IDataAbilityObserver> &dataObserver,
+    const std::shared_ptr<AAFwk::ChangeInfo> &changeInfo)
+{
+    MEDIA_INFO_LOG("SendDownloadProgressInfoNotification OnChangeExt");
+    CHECK_AND_RETURN_RET_LOG(dataObserver != nullptr && changeInfo != nullptr, E_ERR,
+        "dataObserver or changeInfo is nullptr");
+    dataObserver->OnChangeExt(*changeInfo);
+    return E_OK;
 }
 } // OHOS::Media

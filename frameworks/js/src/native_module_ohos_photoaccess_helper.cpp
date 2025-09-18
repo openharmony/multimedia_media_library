@@ -28,6 +28,7 @@
 #include "native_module_ohos_medialibrary.h"
 #include "photo_proxy_napi.h"
 #include "photo_asset_custom_record_manager_napi.h"
+#include "cloud_media_download_resources_status_napi.h"
 #include "result_set_napi.h"
 
 namespace OHOS {
@@ -61,6 +62,7 @@ static napi_value PhotoAccessHelperExport(napi_env env, napi_value exports)
     CloudMediaAssetStatusNapi::Init(env, exports);
     PhotoAssetCustomRecordManager::Init(env, exports);
     PhotoAssetCustomRecordNapi::Init(env, exports);
+    CloudMediaDownloadResourcesStatusNapi::Init(env, exports);
     return exports;
 }
 

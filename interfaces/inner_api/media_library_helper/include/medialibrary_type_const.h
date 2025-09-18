@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -223,6 +223,23 @@ enum class FirstStageModifyType : int32_t {
     NOT_MODIFIED = 0,
     EDITED,
     TRASHED,
+};
+
+enum class BatchDownloadStatusType : int32_t {
+    TYPE_WAITING = 0,
+    TYPE_DOWNLOADING,
+    TYPE_PAUSE,
+    TYPE_FAIL,
+    TYPE_SUCCESS,
+    TYPE_AUTO_PAUSE
+};
+
+enum class BatchDownloadAutoPauseReasonType : int32_t {
+    TYPE_DEFAULT = 0,
+    TYPE_NETWORK_DISCONNECT,
+    TYPE_CELLNET_LIMIT,
+    TYPE_POWER_LOW,
+    TYPE_ROM_LOW
 };
 
 constexpr int32_t DEFAULT_INT32 = 0;

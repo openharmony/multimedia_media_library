@@ -90,9 +90,11 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_notify_new.h"
 #include "photo_map_table_event_handler.h"
+#include "download_resources_table_event_handler.h"
 #include "media_app_uri_sensitive_column.h"
 #include "medialibrary_upgrade_utils.h"
 #include "media_config_info_column.h"
+#include "download_resources_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1863,6 +1865,8 @@ static const vector<string> onCreateSqlStrs = {
 
     // tab_analysis_progress
     CREATE_TAB_ANALYSIS_PROGRESS,
+    DownloadResourcesColumn::CREATE_TABLE,
+    DownloadResourcesColumn::INDEX_DRTR_ID_STATUS,
 };
 
 static int32_t ExecuteSql(RdbStore &store)

@@ -68,6 +68,12 @@
 #include "get_filepath_from_uri_vo.h"
 #include "get_uri_from_filepath_vo.h"
 #include "heif_transcoding_check_vo.h"
+#include "start_batch_download_cloud_resources_vo.h"
+#include "resume_batch_download_cloud_resources_vo.h"
+#include "pause_batch_download_cloud_resources_vo.h"
+#include "cancel_batch_download_cloud_resources_vo.h"
+#include "get_batch_download_cloud_resources_status_vo.h"
+#include "get_batch_download_cloud_resources_count_vo.h"
 
 namespace OHOS::Media {
 class MediaAssetsService {
@@ -154,6 +160,15 @@ public:
     int32_t RequestEditData(const RequestEditDataDto &dto, RequestEditDataRespBody &respBody);
     int32_t GetEditData(const GetEditDataDto &dto, GetEditDataRespBody &respBody);
     int32_t GetCloudMediaAssetStatus(std::string &status);
+    int32_t StartBatchDownloadCloudResources(StartBatchDownloadCloudResourcesReqBody &reqBody,
+        StartBatchDownloadCloudResourcesRespBody &respBody);
+    int32_t ResumeBatchDownloadCloudResources(ResumeBatchDownloadCloudResourcesReqBody &reqBody);
+    int32_t PauseBatchDownloadCloudResources(PauseBatchDownloadCloudResourcesReqBody &reqBody);
+    int32_t CancelBatchDownloadCloudResources(CancelBatchDownloadCloudResourcesReqBody &reqBody);
+    int32_t GetCloudMediaBatchDownloadResourcesStatus(GetBatchDownloadCloudResourcesStatusReqBody &reqBody,
+        GetBatchDownloadCloudResourcesStatusRespBody &respBody);
+    int32_t GetCloudMediaBatchDownloadResourcesCount(
+        GetBatchDownloadCloudResourcesCountReqBody &reqBody, GetBatchDownloadCloudResourcesCountRespBody &respBody);
     int32_t StartAssetAnalysis(const StartAssetAnalysisDto &dto, StartAssetAnalysisRespBody &respBody);
     int32_t GetCloudEnhancementPair(const GetCloudEnhancementPairDto &dto, GetCloudEnhancementPairRespBody &respBody);
     int32_t GetFilePathFromUri(const std::string &virtualId, GetFilePathFromUriRespBody &respBody);

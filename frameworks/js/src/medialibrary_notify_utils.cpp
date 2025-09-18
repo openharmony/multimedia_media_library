@@ -34,6 +34,22 @@ const std::string RegisterNotifyType::TRASH_PHOTO_CHANGE = "trashedPhotoChange";
 const std::string RegisterNotifyType::PHOTO_ALBUM_CHANGE = "photoAlbumChange";
 const std::string RegisterNotifyType::HIDDEN_ALBUM_CHANGE = "hiddenAlbumChange";
 const std::string RegisterNotifyType::TRASHED_ALBUM_CHANGE = "trashedAlbumChange";
+const std::string RegisterNotifyType::BATCH_DOWNLOAD_PROGRESS_CHANGE = "downloadProgressChange";
+
+const std::map<std::string, Notification::NotifyUriType>
+    MediaLibraryNotifyUtils::REGISTER_ASSET_MANAGER_NOTIFY_TYPE_MAP = {
+    { RegisterNotifyType::BATCH_DOWNLOAD_PROGRESS_CHANGE, Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI },
+};
+
+const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
+    MediaLibraryNotifyUtils::REGISTER_ASSET_MANAGER_TYPE_MAP = {
+    { Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI,
+        Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI },
+};
+
+const std::map<Notification::NotifyUriType, std::string> MediaLibraryNotifyUtils::REGISTER_ASSET_MANAGER_URI_MAP = {
+    { Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI, RegisterNotifyType::BATCH_DOWNLOAD_PROGRESS_CHANGE },
+};
 
 const std::map<std::string, Notification::NotifyUriType> MediaLibraryNotifyUtils::REGISTER_NOTIFY_TYPE_MAP = {
     { RegisterNotifyType::PHOTO_CHANGE, Notification::NotifyUriType::PHOTO_URI },
@@ -77,6 +93,33 @@ const std::unordered_map<int32_t, int32_t> ERROR_MAP = {
     { JS_E_PARAM_INVALID,      JS_E_PARAM_INVALID },
     { OHOS_INVALID_PARAM_CODE, OHOS_INVALID_PARAM_CODE },
 };
+
+int32_t MediaLibraryNotifyUtils::GetRegisterAssetManagerNotifyType(const string &type,
+    Notification::NotifyUriType &uriType)
+{
+    if (REGISTER_ASSET_MANAGER_NOTIFY_TYPE_MAP.find(type) == REGISTER_ASSET_MANAGER_NOTIFY_TYPE_MAP.end()) {
+        NAPI_ERR_LOG("registerAssetManagerNotifyType is invalid");
+        return E_ERR;
+    }
+    uriType = REGISTER_ASSET_MANAGER_NOTIFY_TYPE_MAP.at(type);
+    return E_OK;
+}
+
+int32_t MediaLibraryNotifyUtils::GetAssetManagerNotifyTypeAndUri(const Notification::NotifyUriType type,
+    Notification::NotifyUriType &uriType, string &uri)
+{
+    if (REGISTER_ASSET_MANAGER_TYPE_MAP.find(type) == REGISTER_ASSET_MANAGER_TYPE_MAP.end()) {
+        NAPI_ERR_LOG("type is invalid");
+        return E_ERR;
+    }
+    uriType = REGISTER_ASSET_MANAGER_TYPE_MAP.at(type);
+    if (REGISTER_ASSET_MANAGER_URI_MAP.find(uriType) == REGISTER_ASSET_MANAGER_URI_MAP.end()) {
+        NAPI_ERR_LOG("uriType is invalid");
+        return E_ERR;
+    }
+    uri = REGISTER_ASSET_MANAGER_URI_MAP.at(uriType);
+    return E_OK;
+}
 
 int32_t MediaLibraryNotifyUtils::GetRegisterNotifyType(const string &type, Notification::NotifyUriType &uriType)
 {
@@ -600,6 +643,89 @@ int32_t MediaLibraryNotifyUtils::ConvertToJsError(int32_t innerErr)
         err = ERROR_MAP.at(innerErr);
     }
     return err;
+}
+
+napi_status MediaLibraryNotifyUtils::BuildFileIdPercentSubInfos(napi_env env,
+    const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo, napi_value &result)
+{
+    napi_status status = napi_ok;
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "fileId", changeInfo->fileId, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: fileId");
+        return status;
+    }
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "percent", changeInfo->percent, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: percent");
+    }
+    return status;
+}
+
+napi_status MediaLibraryNotifyUtils::BuildFileIdSubInfos(napi_env env,
+    const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo, napi_value &result)
+{
+    napi_status status = napi_ok;
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "fileId", changeInfo->fileId, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: fileId");
+    }
+    return status;
+}
+
+napi_status MediaLibraryNotifyUtils::BuildPauseReasonSubInfos(napi_env env,
+    const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo, napi_value &result)
+{
+    napi_status status = napi_ok;
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "autoPauseReason", changeInfo->fileId, result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: fileId");
+    }
+    return status;
+}
+
+napi_value MediaLibraryNotifyUtils::BuildBatchDownloadProgressInfos(napi_env env,
+    const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("BuildBatchDownloadProgressInfos");
+    if (changeInfo == nullptr) {
+        NAPI_ERR_LOG("Invalid changeInfo");
+        return nullptr;
+    }
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_status status = napi_ok;
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "downloadEventType",
+        static_cast<int32_t>(changeInfo->downloadAssetNotifyType), result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: downloadEventType");
+        return nullptr;
+    }
+
+    switch (changeInfo->downloadAssetNotifyType) {
+        case Notification::DownloadAssetsNotifyType::DOWNLOAD_PROGRESS:
+        case Notification::DownloadAssetsNotifyType::DOWNLOAD_FINISH:
+        case Notification::DownloadAssetsNotifyType::DOWNLOAD_FAILED:
+            status = BuildFileIdPercentSubInfos(env, changeInfo, result);
+            break;
+        case Notification::DownloadAssetsNotifyType::DOWNLOAD_ASSET_DELETE:
+            status = BuildFileIdSubInfos(env, changeInfo, result);
+            break;
+        case Notification::DownloadAssetsNotifyType::DOWNLOAD_AUTO_PAUSE:
+            status = BuildPauseReasonSubInfos(env, changeInfo, result);
+            break;
+        case Notification::DownloadAssetsNotifyType::DOWNLOAD_AUTO_RESUME:
+        case Notification::DownloadAssetsNotifyType::DOWNLOAD_REFRESH:
+            NAPI_INFO_LOG("set downloadProgressInfo AUTO Action");
+            break;
+        default:
+            NAPI_ERR_LOG("Invalid registerUriType");
+    }
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set array named property error: type");
+        return nullptr;
+    }
+    return result;
 }
 }  // namespace Media
 }  // namespace OHOS
