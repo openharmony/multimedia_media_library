@@ -1282,6 +1282,20 @@ int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vec
     return errCode;
 }
 
+static bool IsTranscodeFile(const std::string &filePath)
+{
+    std::string displayName = filePath;
+    size_t pos = filePath.find_last_of("/");
+    if (pos != std::string::npos) {
+        displayName = filePath.substr(pos + 1);
+    }
+    if (displayName == "transcode.jpg" && filePath.find(".editData") != std::string::npos) {
+        MEDIA_INFO_LOG("displayname %{private}s, success", displayName.c_str());
+        return true;
+    }
+    return false;
+}
+
 int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string &dstDir, bool deleteOriginalFile) const
 {
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dstDir), E_FAIL,
@@ -1290,6 +1304,7 @@ int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string 
         "%{public}s doesn't exist, skip.", srcDir.c_str());
     for (const auto &dirEntry : std::filesystem::directory_iterator{ srcDir }) {
         std::string srcFilePath = dirEntry.path();
+        CHECK_AND_CONTINUE(!IsTranscodeFile(srcFilePath));
         std::string tmpFilePath = srcFilePath;
         std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
         int32_t opRet = E_FAIL;
