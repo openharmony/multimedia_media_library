@@ -85,7 +85,7 @@ void CloudMediaDataClientTest::TearDown(void)
 }
 HWTEST_F(CloudMediaDataClientTest, UpdateDirty, TestSize.Level1)
 {
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec74422b348e";
     DirtyTypes type = DirtyTypes::TYPE_SYNCED;
     int32_t ret = cloudMediaDataClient.UpdateDirty(cloudId, type);
@@ -109,7 +109,7 @@ HWTEST_F(CloudMediaDataClientTest, UpdateDirty, TestSize.Level1)
 
 HWTEST_F(CloudMediaDataClientTest, UpdatePosition, TestSize.Level1)
 {
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec74422b348e";
     PhotoPositionType position = PhotoPositionType::LOCAL_AND_CLOUD;
     std::vector<std::string> cloudIds = {cloudId};
@@ -134,7 +134,7 @@ HWTEST_F(CloudMediaDataClientTest, UpdatePosition, TestSize.Level1)
 
 HWTEST_F(CloudMediaDataClientTest, UpdateSyncStatus, TestSize.Level1)
 {
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec74422b348e";
     int32_t syncStatus = static_cast<int32_t>(SyncStatusType::TYPE_UPLOAD);
     int32_t ret = cloudMediaDataClient.UpdateSyncStatus(cloudId, syncStatus);
@@ -178,7 +178,7 @@ HWTEST_F(CloudMediaDataClientTest, UpdateSyncStatus, TestSize.Level1)
 // UPDATE Photos SET thumb_status = ? WHERE cloud_id = ?
 HWTEST_F(CloudMediaDataClientTest, UpdateThmStatus, TestSize.Level1)
 {
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec74422b348e";
     PhotosPo photo;
     std::vector<PhotosPo> photosList;
@@ -217,7 +217,7 @@ HWTEST_F(CloudMediaDataClientTest, GetAgingFile, TestSize.Level1)
     int32_t sizeLimit = 10;
     int32_t offset = 0;
     std::vector<CloudMetaData> metaDataList;
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     int32_t ret = cloudMediaDataClient.GetAgingFile(time, mediaType, sizeLimit, offset, metaDataList);
     EXPECT_EQ(ret, 0);
     EXPECT_GT(metaDataList.size(), 0);
@@ -239,7 +239,7 @@ HWTEST_F(CloudMediaDataClientTest, GetActiveAgingFile, TestSize.Level1)
     int32_t sizeLimit = 10;
     int32_t offset = 0;
     std::vector<CloudMetaData> metaDataList;
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     int32_t ret = cloudMediaDataClient.GetActiveAgingFile(time, mediaType, sizeLimit, offset, metaDataList);
     EXPECT_EQ(ret, 0);
     EXPECT_GT(metaDataList.size(), 0);
@@ -268,7 +268,7 @@ HWTEST_F(CloudMediaDataClientTest, GetDownloadAsset, TestSize.Level1)
     std::vector<PhotosPo> photosList = photosDao.QueryPhotosByCloudIds(cloudIds);
     EXPECT_GT(photosList.size(), 0);
 
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<std::string> uris;
     std::vector<std::string> fileKeyVec;
     std::vector<CloudMetaData> cloudMetaDataVec;
@@ -312,7 +312,7 @@ HWTEST_F(CloudMediaDataClientTest, GetDownloadAsset_Video, TestSize.Level1)
     std::vector<PhotosPo> photosList = photosDao.QueryPhotosByCloudIds(cloudIds);
     EXPECT_GT(photosList.size(), 0);
 
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<std::string> uris;
     std::vector<std::string> fileKeyVec;
     std::vector<CloudMetaData> cloudMetaDataVec;
@@ -351,7 +351,7 @@ HWTEST_F(CloudMediaDataClientTest, GetDownloadThmsByUri, TestSize.Level1)
     std::vector<PhotosPo> photosList = photosDao.QueryPhotosByCloudIds(cloudIds);
     EXPECT_GT(photosList.size(), 0);
 
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<std::string> uris;
     int32_t thmType = TYPE_THM_AND_LCD;
     std::vector<CloudMetaData> cloudMetaDataVec;
@@ -384,7 +384,7 @@ HWTEST_F(CloudMediaDataClientTest, OnDownloadAsset, TestSize.Level1)
 {
     std::vector<std::string> cloudIds;
     cloudIds.push_back("3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec74422b338e");
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<MediaOperateResult> result;
     int32_t ret = cloudMediaDataClient.OnDownloadAsset(cloudIds, result);
     EXPECT_EQ(ret, 0);
@@ -402,7 +402,7 @@ HWTEST_F(CloudMediaDataClientTest, OnDownloadAsset_case001, TestSize.Level1)
 {
     std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec7442210036";
     std::vector<std::string> cloudIds = {cloudId};
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<MediaOperateResult> result;
     int32_t ret = cloudMediaDataClient.OnDownloadAsset(cloudIds, result);
     TestUtils::PhotosDao dao;
@@ -427,7 +427,7 @@ HWTEST_F(CloudMediaDataClientTest, OnDownloadAsset_case002, TestSize.Level1)
 {
     std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec7442210037";
     std::vector<std::string> cloudIds = {cloudId};
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<MediaOperateResult> result;
     int32_t ret = cloudMediaDataClient.OnDownloadAsset(cloudIds, result);
     TestUtils::PhotosDao dao;
@@ -452,7 +452,7 @@ HWTEST_F(CloudMediaDataClientTest, OnDownloadAsset_case003, TestSize.Level1)
 {
     std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec7442210038";
     std::vector<std::string> cloudIds = {cloudId};
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<MediaOperateResult> result;
     int32_t ret = cloudMediaDataClient.OnDownloadAsset(cloudIds, result);
     TestUtils::PhotosDao dao;
@@ -477,7 +477,7 @@ HWTEST_F(CloudMediaDataClientTest, OnDownloadAsset_case004, TestSize.Level1)
 {
     std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec7442210039";
     std::vector<std::string> cloudIds = {cloudId};
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<MediaOperateResult> result;
     int32_t ret = cloudMediaDataClient.OnDownloadAsset(cloudIds, result);
     TestUtils::PhotosDao dao;
@@ -502,7 +502,7 @@ HWTEST_F(CloudMediaDataClientTest, OnDownloadAsset_case005, TestSize.Level1)
 {
     std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec7442210040";
     std::vector<std::string> cloudIds = {cloudId};
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<MediaOperateResult> result;
     int32_t ret = cloudMediaDataClient.OnDownloadAsset(cloudIds, result);
     TestUtils::PhotosDao dao;
@@ -527,7 +527,7 @@ HWTEST_F(CloudMediaDataClientTest, OnDownloadAsset_case006, TestSize.Level1)
 {
     std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec7442210041";
     std::vector<std::string> cloudIds = {cloudId};
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<MediaOperateResult> result;
     int32_t ret = cloudMediaDataClient.OnDownloadAsset(cloudIds, result);
     TestUtils::PhotosDao dao;
@@ -552,7 +552,7 @@ HWTEST_F(CloudMediaDataClientTest, OnDownloadAsset_case007, TestSize.Level1)
 {
     std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec7442210042";
     std::vector<std::string> cloudIds = {cloudId};
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<MediaOperateResult> result;
     int32_t ret = cloudMediaDataClient.OnDownloadAsset(cloudIds, result);
     TestUtils::PhotosDao dao;
@@ -577,7 +577,7 @@ HWTEST_F(CloudMediaDataClientTest, OnDownloadAsset_case008, TestSize.Level1)
 {
     std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec7442210043";
     std::vector<std::string> cloudIds = {cloudId};
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<MediaOperateResult> result;
     int32_t ret = cloudMediaDataClient.OnDownloadAsset(cloudIds, result);
     TestUtils::PhotosDao dao;
@@ -605,7 +605,7 @@ HWTEST_F(CloudMediaDataClientTest, GetDownloadThms_ThumAndLcd_Default, TestSize.
     int32_t size = 10;
     int32_t offset = 0;
     int32_t type = 3;
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     DownloadThumPara param;
     param.size = size;
     param.offset = offset;
@@ -655,7 +655,7 @@ HWTEST_F(CloudMediaDataClientTest, GetDownloadThms_OnlyThum, TestSize.Level1)
     int32_t size = 10;
     int32_t offset = 0;
     int32_t type = 1;
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     DownloadThumPara param;
     param.size = size;
     param.offset = offset;
@@ -705,7 +705,7 @@ HWTEST_F(CloudMediaDataClientTest, GetDownloadThms_OnlyLcd, TestSize.Level1)
     int32_t size = 10;
     int32_t offset = 0;
     int32_t type = 2;
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     DownloadThumPara param;
     param.size = size;
     param.offset = offset;
@@ -755,7 +755,7 @@ HWTEST_F(CloudMediaDataClientTest, GetDownloadThms_ThumAndLcd_Display_True, Test
     int32_t size = 10;
     int32_t offset = 0;
     int32_t type = 3;
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     DownloadThumPara param;
     param.size = size;
     param.offset = offset;
@@ -805,7 +805,7 @@ HWTEST_F(CloudMediaDataClientTest, GetDownloadThms_ThumAndLcd_Offset_100, TestSi
     int32_t size = 10;
     int32_t offset = 5;
     int32_t type = 3;
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     DownloadThumPara param;
     param.size = size;
     param.offset = offset;
@@ -860,7 +860,7 @@ HWTEST_F(CloudMediaDataClientTest, OnDownloadThms, TestSize.Level1)
         {0x1, TYPE_LCD},
         {0x3, TYPE_THM_AND_LCD},
     };
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     int32_t failSize;
     int32_t ret = cloudMediaDataClient.OnDownloadThms(cloudIdThmStatusMap, failSize);
     EXPECT_EQ(ret, 0);
@@ -897,7 +897,7 @@ HWTEST_F(CloudMediaDataClientTest, GetVideoToCache, TestSize.Level1)
     std::vector<PhotosPo> photosList = photosDao.QueryPhotosByCloudIds(cloudIds);
     EXPECT_GT(photosList.size(), 0);
 
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<CloudMetaData> cloudMetaDataList;
     int32_t size = 10;
     int32_t ret = cloudMediaDataClient.GetVideoToCache(cloudMetaDataList, size);
@@ -933,7 +933,7 @@ HWTEST_F(CloudMediaDataClientTest, GetVideoToCache_Empty, TestSize.Level1)
     TestUtils::PhotosDao photosDao = TestUtils::PhotosDao();
     photosDao.UpdatePhotoPositionByCloudId(cloudId, 1);
 
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<CloudMetaData> cloudMetaDataList;
     int32_t size = 10;
     int32_t ret = cloudMediaDataClient.GetVideoToCache(cloudMetaDataList, size);
@@ -955,7 +955,7 @@ HWTEST_F(CloudMediaDataClientTest, GetVideoToCache_Empty, TestSize.Level1)
 
 HWTEST_F(CloudMediaDataClientTest, GetDownloadThmNum_test_01, TestSize.Level1)
 {
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<CloudMetaData> cloudMetaDataList;
     int32_t totalNum = 0;
     int32_t type = static_cast<int32_t>(ThmLcdState::THMLCD);
@@ -998,7 +998,7 @@ HWTEST_F(CloudMediaDataClientTest, GetDownloadThmNum_test_01, TestSize.Level1)
 
 HWTEST_F(CloudMediaDataClientTest, GetFilePosStat, TestSize.Level1)
 {
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<uint64_t> filePosStat = {0, 0, 0};
     int32_t position = static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD);
     int32_t ret = cloudMediaDataClient.GetFilePosStat(filePosStat);
@@ -1046,7 +1046,7 @@ HWTEST_F(CloudMediaDataClientTest, GetFilePosStat, TestSize.Level1)
 HWTEST_F(CloudMediaDataClientTest, GetCloudThmStat, TestSize.Level1)
 {
     std::vector<uint64_t> cloudThmStat{0, 0, 0, 0};
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     int32_t ret = cloudMediaDataClient.GetCloudThmStat(cloudThmStat);
     EXPECT_EQ(ret, 0);
     TestUtils::PhotosDao photosDao = TestUtils::PhotosDao();
@@ -1059,7 +1059,7 @@ HWTEST_F(CloudMediaDataClientTest, GetCloudThmStat, TestSize.Level1)
 HWTEST_F(CloudMediaDataClientTest, GetDirtyTypeStat, TestSize.Level1)
 {
     std::vector<uint64_t> dirtyTypeStat{0, 0, 0, 0, 0};
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     int32_t ret = cloudMediaDataClient.GetDirtyTypeStat(dirtyTypeStat);
     EXPECT_EQ(ret, 0);
     TestUtils::PhotosDao photosDao = TestUtils::PhotosDao();
@@ -1088,7 +1088,7 @@ HWTEST_F(CloudMediaDataClientTest, UpdateLocalFileDirty, TestSize.Level1)
     JsonFileReader reader("/data/test/cloudsync/data_client_update_local_file_dirty_test.json");
     std::vector<MDKRecord> records;
     reader.ConvertToMDKRecordVector(records);
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     int32_t ret = cloudMediaDataClient.UpdateLocalFileDirty(records);
     EXPECT_EQ(ret, 0);
     EXPECT_TRUE(rdbStore_ != nullptr);
