@@ -1770,6 +1770,7 @@ napi_value MediaAssetChangeRequestNapi::JSAddResourceForPicker(napi_env env, nap
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext,
         ARGS_TWO, ARGS_TWO) == napi_ok, "Failed to get object info");
     auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND_WITH_MESSAGE(env, changeRequest != nullptr, "changeRequest is null");
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
 

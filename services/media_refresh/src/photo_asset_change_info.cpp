@@ -83,6 +83,12 @@ vector<PhotoAssetChangeInfo> PhotoAssetChangeInfo::GetInfoFromResult(const share
     vector<PhotoAssetChangeInfo> assetChangeInfos;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         PhotoAssetChangeInfo assetChangeInfo;
+        assetChangeInfo.fileSourceType_ =
+            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+            resultSet, GetDataType(PhotoColumn::PHOTO_FILE_SOURCE_TYPE)));
+        if (assetChangeInfo.fileSourceType_ == static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) {
+            continue;
+        }
         assetChangeInfo.fileId_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_ID, resultSet,
             GetDataType(PhotoColumn::MEDIA_ID)));
         assetChangeInfo.dateDay_ = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_DATE_DAY,

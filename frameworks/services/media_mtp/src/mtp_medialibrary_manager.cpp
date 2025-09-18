@@ -186,6 +186,10 @@ static uint32_t HandleConvertToAdded(uint32_t key)
 
 static void GetHandlesProcessResultSet(shared_ptr<DataShare::DataShareResultSet> &resultSet, vector<int> &outHandles)
 {
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("fail to get handles");
+        return;
+    }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         outHandles.push_back(id);
@@ -213,7 +217,6 @@ int32_t MtpMedialibraryManager::GetHandles(int32_t parentId, vector<int> &outHan
         predicates.NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
         predicates.NotEqualTo(MEDIA_DATA_DB_IS_LOCAL, IS_LOCAL);
         predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/图库");
-        predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/其它");
         resultSet = dataShareHelper_->Query(uri, predicates, columns);
     } else {
         Uri uri(PAH_QUERY_PHOTO);
@@ -320,7 +323,6 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetAlbumInfo(
     predicates.IsNotNull(MEDIA_DATA_DB_ALBUM_NAME);
     predicates.NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
     predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/图库");
-    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/其它");
     predicates.BeginWrap();
     predicates.NotEqualTo(MEDIA_DATA_DB_IS_LOCAL, IS_LOCAL);
     predicates.Or();
