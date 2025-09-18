@@ -102,6 +102,56 @@ export struct PhotoPickerComponent {
       console.info('PhotoPickerComponent onChanged: SAVE_REPLACE_PHOTO_ASSETS');
     } else if (data?.has('SET_BADGE_CONFIGS')) {
       this.onChangedBadgeConfigs(data);
+    }     } else {
+      this.onSetMimeTypeChange(data)
+    }
+  }
+
+  private onSetMimeTypeChange(data?: Map<string, Object>) {
+    if (data?.has('SET_MIME_TYPE')) {
+      this.onSetMimeType(data);
+    } else if (data?.has('MIME_TYPE_FILTER')) {
+      this.onMimeTypeFilter(data);
+    } else {
+      this.onSelectNumberChange(data);
+    }
+  }
+
+  private onSelectNumberChange(data?: Map<string, Object>) {
+    if (data?.has('MAX_SELECT_NUMBER')) {
+      this.onMaxSelectNumber(data);
+    } else if (data?.has('MAX_PHOTO_SELECT_NUMBER')) {
+      this.onMaxPhotoSelectNumber(data);
+    } else if (data?.has('MAX_VIDEO_SELECT_NUMBER')) {
+      this.onMaxVideoSelectNumber(data);
+    } else {
+      this.onSelectModesChange(data);
+    }
+  }
+
+  private onSelectModesChange(data?: Map<string, Object>) {
+    if (data?.has('SET_SELECT_MODE')) {
+      this.onSetSelectMode(data);
+    } else if (data?.has('SET_SINGLE_SELECT_MODE')) {
+      this.onSetSingleSelectMode(data);
+    } else if (data?.has('IS_REPEAT_SELECT_SUPPORTED')) {
+      this.onIsRepeatSelectSupported(data);
+    } else if (data?.has('PRESELECTED_URIS')) {
+      this.onPreselectedUris(data);
+    } else {
+      this.onColorsChange(data)
+    }
+  }
+
+  private onColorsChange(data?: Map<string, Object>){
+    if (data?.has('CHECK_BOX_COLOR')) {
+      this.onCheckBoxColor(data);
+    } else if (data?.has('CHECK_BOX_TEXT_COLOR')) {
+      this.onCheckBoxTextColor(data);
+    } else if (data?.has('BACKGROUND_COLOR')) {
+      this.onBackgroundColor(data);
+    } else if (data?.has('PHOTO_BROWSER_BACKGROUND_COLOR_MODE')) {
+      this.onPhotoBrowserBackgroundColorMode(data);
     } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
@@ -117,6 +167,98 @@ export struct PhotoPickerComponent {
     });
     console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
   }
+
+  onSetMimeType(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      mimeType: data?.get('SET_MIME_TYPE') as photoAccessHelper.PhotoViewMIMETypes
+    });
+    console.info('PhotoPickerComponent onChanged: SET_MIME_TYPE');
+  }
+  
+  onMimeTypeFilter(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      mimeTypeFilter: data?.get('MIME_TYPE_FILTER') as photoAccessHelper.MimeTypeFilter
+    });
+    console.info('PhotoPickerComponent onChanged: MIME_TYPE_FILTER');
+  }
+  
+  onMaxSelectNumber(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      maxSelectNumber: data?.get('MAX_SELECT_NUMBER') as number
+    });
+    console.info('PhotoPickerComponent onChanged: MAX_SELECT_NUMBER');
+  }
+  
+  onMaxPhotoSelectNumber(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      maxPhotoSelectNumber: data?.get('MAX_PHOTO_SELECT_NUMBER') as number
+    });
+    console.info('PhotoPickerComponent onChanged: MAX_PHOTO_SELECT_NUMBER');
+  }
+  
+  onMaxVideoSelectNumber(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      maxVideoSelectNumber: data?.get('MAX_VIDEO_SELECT_NUMBER') as number
+    });
+    console.info('PhotoPickerComponent onChanged: MAX_VIDEO_SELECT_NUMBER');
+  }
+  
+  onSetSelectMode(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      selectMode: data?.get('SET_SELECT_MODE') as SelectMode
+    });
+    console.info('PhotoPickerComponent onChanged: SET_SELECT_MODE');
+  }
+  
+  onSetSingleSelectMode(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      singleSelectionMode: data?.get('SET_SINGLE_SELECT_MODE') as photoAccessHelper.SingleSelectionMode
+    });
+    console.info('PhotoPickerComponent onChanged: SET_SINGLE_SELECT_MODE');
+  }
+  
+  onIsRepeatSelectSupported(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      isRepeatSelectSupported: data?.get('IS_REPEAT_SELECT_SUPPORTED') as boolean
+    });
+    console.info('PhotoPickerComponent onChanged: IS_REPEAT_SELECT_SUPPORTED');
+  }
+  
+  onPreselectedUris(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      preselectedUris: data?.get('PRESELECTED_URIS') as string[]
+    });
+    console.info('PhotoPickerComponent onChanged: PRESELECTED_URIS');
+  }
+  
+  onCheckBoxColor(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      checkBoxColor: data?.get('CHECK_BOX_COLOR') as string
+    });
+    console.info('PhotoPickerComponent onChanged: CHECK_BOX_COLOR');
+  }
+  
+  onCheckBoxTextColor(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      checkBoxTextColor: data?.get('CHECK_BOX_TEXT_COLOR') as string
+    });
+    console.info('PhotoPickerComponent onChanged: CHECK_BOX_TEXT_COLOR');
+  }
+  
+  onBackgroundColor(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      backgroundColor: data?.get('BACKGROUND_COLOR') as string
+    });
+    console.info('PhotoPickerComponent onChanged: BACKGROUND_COLOR');
+  }
+  
+  onPhotoBrowserBackgroundColorMode(data: Map<string, unknown> | any) {
+    this.proxy?.send({
+      photoBrowserBackgroundColorMode: data?.get('PHOTO_BROWSER_BACKGROUND_COLOR_MODE') as PickerColorMode
+    });
+    console.info('PhotoPickerComponent onChanged: PHOTO_BROWSER_BACKGROUND_COLOR_MODE');
+  }
+
 
   private onSetPhotoBrowserItem(data?: Map<string, Object>): void {
     let photoBrowserRangeInfo: PhotoBrowserRangeInfo = data?.get('SET_PHOTO_BROWSER_ITEM') as PhotoBrowserRangeInfo;
@@ -677,6 +819,132 @@ export class PickerController {
     }
   }
 
+  updatePickerOptions(updatablePickerOptions: UpdatablePickerOptions): Promise<void> {
+    return new Promise((resolve, reject) => {
+      console.info('PhotoPickerComponent UPDATE_PICKER_OPTIONS ' + JSON.stringify(updatablePickerOptions));
+
+      if (updatablePickerOptions.MIMEType !== undefined) {
+        this.setMimeType(updatablePickerOptions.MIMEType);
+      }
+
+      if (updatablePickerOptions.mimeTypeFilter !== undefined) {
+        this.setMimeTypeFilter(updatablePickerOptions.mimeTypeFilter);
+      }
+
+      if (updatablePickerOptions.maxSelectNumber !== undefined) {
+        this.setMaxSelectNumber(updatablePickerOptions.maxSelectNumber);
+      }
+
+      if (updatablePickerOptions.maxPhotoSelectNumber !== undefined) {
+        this.setMaxPhotoSelectNumber(updatablePickerOptions.maxPhotoSelectNumber);
+      }
+
+      if (updatablePickerOptions.maxVideoSelectNumber !== undefined) {
+        this.setMaxVideoSelectNumber(updatablePickerOptions.maxVideoSelectNumber);
+      }
+
+      if (updatablePickerOptions.selectMode !== undefined) {
+        this.setSelectMode(updatablePickerOptions.selectMode);
+      }
+
+      if (updatablePickerOptions.singleSelectionMode !== undefined) {
+        this.setSingleSelectMode(updatablePickerOptions.singleSelectionMode);
+      }
+
+      if (updatablePickerOptions.isRepeatSelectSupported !== undefined) {
+        this.setIsRepeatSelectSupported(updatablePickerOptions.isRepeatSelectSupported);
+      }
+
+      if (updatablePickerOptions.preselectedUris !== undefined) {
+        this.setPreselectedUris(updatablePickerOptions.preselectedUris);
+      }
+
+      if (updatablePickerOptions.checkBoxColor !== undefined) {
+        this.setCheckBoxColor(updatablePickerOptions.checkBoxColor);
+      }
+
+      if (updatablePickerOptions.checkBoxTextColor !== undefined) {
+        this.setCheckBoxTextColor(updatablePickerOptions.checkboxTextColor);
+      }
+
+      if (updatablePickerOptions.backgroundColor !== undefined) {
+        this.setBackgroundColor(updatablePickerOptions.backgroundColor);
+      }
+
+      if (updatablePickerOptions.photoBrowserBackgroundColorMode !== undefined) {
+        this.setPhotoBrowserBackgroundColorMode(updatablePickerOptions.photoBrowserBackgroundColorMode);
+      }
+
+      resolve();
+    });
+  }
+
+  private setMimeType(value: string): void {
+    this.data = new Map([['SET_MIME_TYPE', value]]);
+    console.info('PhotoPickerComponent SET_MIME_TYPE ' + value);
+  }
+
+  private setMimeTypeFilter(value: photoAccessHelper.MimeTypeFilter): void {
+    this.data = new Map([['MIME_TYPE_FILTER', value]]);
+    console.info('PhotoPickerComponent MIME_TYPE_FILTER ' + JSON.stringify(value));
+  }
+
+  private setMaxSelectNumber(value: number): void {
+    this.data = new Map([['MAX_SELECT_NUMBER', value]]);
+    console.info('PhotoPickerComponent MAX_SELECT_NUMBER ' + JSON.stringify(value));
+  }
+
+  private setMaxPhotoSelectNumber(value: number): void {
+    this.data = new Map([['MAX_PHOTO_SELECT_NUMBER', value]]);
+    console.info('PhotoPickerComponent MAX_PHOTO_SELECT_NUMBER ' + JSON.stringify(value));
+  }
+
+  private setMaxVideoSelectNumber(value: number): void {
+    this.data = new Map([['MAX_VIDEO_SELECT_NUMBER', value]]);
+    console.info('PhotoPickerComponent MAX_VIDEO_SELECT_NUMBER ' + JSON.stringify(value));
+  }
+
+  private setSelectMode(value: SelectMode): void {
+    this.data = new Map([['SET_SELECT_MODE', value]]);
+    console.info('PhotoPickerComponent SET_SELECT_MODE ' + JSON.stringify(value));
+  }
+
+  private setSingleSelectMode(value: photoAccessHelper.SingleSelectionMode): void {
+    this.data = new Map([['SET_SINGLE_SELECT_MODE', value]]);
+    console.info('PhotoPickerComponent SET_SINGLE_SELECT_MODE ' + JSON.stringify(value));
+  }
+
+  private setIsRepeatSelectSupported(value: boolean): void {
+    this.data = new Map([['IS_REPEAT_SELECT_SUPPORTED', value]]);
+    console.info('PhotoPickerComponent IS_REPEAT_SELECT_SUPPORTED ' + JSON.stringify(value));
+  }
+
+  private setPreselectedUris(value: string[]): void {
+    this.data = new Map([['PRESELECTED_URIS', value]]);
+    console.info('PhotoPickerComponent PRESELECTED_URIS ' + value);
+  }
+
+  private setCheckBoxColor(value: string): void {
+    this.data = new Map([['CHECK_BOX_COLOR', value]]);
+    console.info('PhotoPickerComponent CHECK_BOX_COLOR ' + value);
+  }
+
+  private setCheckBoxTextColor(value: string): void {
+    this.data = new Map([['CHECK_BOX_TEXT_COLOR', value]]);
+    console.info('PhotoPickerComponent CHECK_BOX_TEXT_COLOR ' + value);
+  }
+
+  private setBackgroundColor(value: string): void {
+    this.data = new Map([['BACKGROUND_COLOR', value]]);
+    console.info('PhotoPickerComponent BACKGROUND_COLOR ' + value);
+  }
+
+  private setPhotoBrowserBackgroundColorMode(value: PickerColorMode): void {
+    this.data = new Map([['PHOTO_BROWSER_BACKGROUND_COLOR_MODE', value]]);
+    console.info('PhotoPickerComponent PHOTO_BROWSER_BACKGROUND_COLOR_MODE ' + JSON.stringify(value));
+  }
+
+
   setPhotoBrowserItem(uri: string, photoBrowserRange?: PhotoBrowserRange) {
     let photoBrowserRangeInfo: PhotoBrowserRangeInfo = new PhotoBrowserRangeInfo();
     photoBrowserRangeInfo.uri = uri;
@@ -824,6 +1092,22 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   preselectedInfos?: Array<PreselectedInfo>;
 }
 
+export class UpdatablePickerOptions {
+  MIMEType?: photoAccessHelper.PhotoViewMIMETypes;
+  mimeTypeFilter?: photoAccessHelper.MimeTypeFilter;
+  maxSelectNumber?: number;
+  maxPhotoSelectNumber?: number;
+  maxVideoSelectNumber?: number;
+  selectMode?: SelectMode;
+  singleSelectionMode?: photoAccessHelper.SingleSelectionMode;
+  isRepeatSelectSupported?: boolean;
+  preselectedUris?: Array<string>;
+  checkBoxColor?: string;
+  checkboxTextColor?: string;
+  backgroundColor?: string;
+  photoBrowserBackgroundColorMode?: PickerColorMode
+}
+
 export class BaseItemInfo {
   uri?: string;
   mimeType?: string;
@@ -961,4 +1245,10 @@ export enum BadgeOptionType {
   SET_DATA = 1,
   ADD_DATA = 2,
   DELETE_DATA = 3
+}
+
+export enum SingleSelectMode {
+  BROWSER_MODE = 0,
+  SELECT_MODE = 1,
+  BROWSER_AND_SELECT_MODE = 2
 }

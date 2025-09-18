@@ -172,6 +172,57 @@ export class PhotoPickerComponent extends ViewPU {
         } else if (null == o ? void 0 : o.has('SET_BADGE_CONFIGS')) {
            this.onChangedBadgeConfigs(o);
         } else {
+            this.onSetMimeTypeChange(o);
+        }
+    }
+
+
+    onSetMimeTypeChange(o) { 
+        if (null == o ? void 0 : o.has('SET_MIME_TYPE')) {
+            this.onSetMimeType(o);
+        } else if (null == o ? void 0 : o.has('MIME_TYPE_FILTER')) {
+            this.onMimeTypeFilter(o);
+        } else {
+            this.onSelectNumberChange(o);
+        }
+    }
+
+    onSelectNumberChange(o) {
+        if (null == o ? void 0 : o.has('MAX_SELECT_NUMBER')) {
+            this.onMaxSelectNumber(o);
+        } else if (null == o ? void 0 : o.has('MAX_PHOTO_SELECT_NUMBER')) {
+            this.onMaxPhotoSelectNumber(o);
+        } else if (null == o ? void 0 : o.has('MAX_VIDEO_SELECT_NUMBER')) {
+            this.onMaxVideoSelectNumber(o);
+        } else {
+            this.onSelectModesChange(o);
+        }
+    }
+
+    onSelectModesChange(o) {
+        if (null == o ? void 0 : o.has('SET_SELECT_MODE')) {
+            this.onSetSelectMode(o);
+        } else if (null == o ? void 0 : o.has('SET_SINGLE_SELECT_MODE')) {
+            this.onSetSingleSelectMode(o);
+        } else if (null == o ? void 0 : o.has('IS_REPEAT_SELECT_SUPPORTED')) {
+            this.onIsRepeatSelectSupported(o);
+        } else if (null == o ? void 0 : o.has('PRESELECTED_URIS')) {
+            this.onPreselectedUris(o);
+        } else {
+            this.onColorsChange(o);
+        }
+    }
+
+    onColorsChange(o) {
+        if (null == o ? void 0 : o.has('CHECK_BOX_COLOR')) {
+            this.onCheckBoxColor(o);
+        } else if (null == o ? void 0 : o.has('CHECK_BOX_TEXT_COLOR')) {
+            this.onCheckBoxTextColor(o);
+        } else if (null == o ? void 0 : o.has('BACKGROUND_COLOR')) {
+            this.onBackgroundColor(o);
+        } else if (null == o ? void 0 : o.has('PHOTO_BROWSER_BACKGROUND_COLOR_MODE')) {
+            this.onPhotoBrowserBackgroundColorMode(o);
+        } else {
             console.info('PhotoPickerComponent onChanged: other case');
         }
     }
@@ -185,6 +236,71 @@ export class PhotoPickerComponent extends ViewPU {
             videoCount: null == t ? void 0 : t.get(MaxCountType.VIDEO_MAX_COUNT)
         });
         console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
+    }
+
+    onSetMimeType(o) {
+        this.proxy.send({ mimeType: null == o ? void 0 : o.get('SET_MIME_TYPE') });
+        console.info('PhotoPickerComponent onChanged: SET_MIME_TYPE');
+    }
+
+    onMimeTypeFilter(o) {
+        this.proxy.send({ mimeTypeFilter: null == o ? void 0 : o.get('MIME_TYPE_FILTER') });
+        console.info('PhotoPickerComponent onChanged: MIME_TYPE_FILTER');
+    }
+
+    onMaxSelectNumber(o) {
+        this.proxy.send({ maxSelectNumber: null == o ? void 0 : o.get('MAX_SELECT_NUMBER') });
+        console.info('PhotoPickerComponent onChanged: MAX_SELECT_NUMBER');
+    }
+
+    onMaxPhotoSelectNumber(o) {
+        this.proxy.send({ maxPhotoSelectNumber: null == o ? void 0 : o.get('MAX_PHOTO_SELECT_NUMBER') });
+        console.info('PhotoPickerComponent onChanged: MAX_PHOTO_SELECT_NUMBER');
+    }
+
+    onMaxVideoSelectNumber(o) {
+        this.proxy.send({ maxVideoSelectNumber: null == o ? void 0 : o.get('MAX_VIDEO_SELECT_NUMBER') });
+        console.info('PhotoPickerComponent onChanged: MAX_VIDEO_SELECT_NUMBER');
+    }
+
+    onSetSelectMode(o) {
+        this.proxy.send({ selectMode: null == o ? void 0 : o.get('SET_SELECT_MODE') });
+        console.info('PhotoPickerComponent onChanged: SET_SELECT_MODE');
+    }
+
+    onSetSingleSelectMode(o) {
+        this.proxy.send({ singleSelectionMode: null == o ? void 0 : o.get('SET_SINGLE_SELECT_MODE') });
+        console.info('PhotoPickerComponent onChanged: SET_SINGLE_SELECT_MODE');
+    }
+
+    onIsRepeatSelectSupported(o) {
+        this.proxy.send({ isRepeatSelectSupported: null == o ? void 0 : o.get('IS_REPEAT_SELECT_SUPPORTED') });
+        console.info('PhotoPickerComponent onChanged: IS_REPEAT_SELECT_SUPPORTED');
+    }
+
+    onPreselectedUris(o) {
+        this.proxy.send({ preselectedUris: null == o ? void 0 : o.get('PRESELECTED_URIS') });
+        console.info('PhotoPickerComponent onChanged: PRESELECTED_URIS');
+    }
+
+    onCheckBoxColor(o) {
+        this.proxy.send({ checkBoxColor: null == o ? void 0 : o.get('CHECK_BOX_COLOR') });
+        console.info('PhotoPickerComponent onChanged: CHECK_BOX_COLOR');
+    }
+
+    onCheckBoxTextColor(o) {
+        this.proxy.send({ checkBoxTextColor: null == o ? void 0 : o.get('CHECK_BOX_TEXT_COLOR') });
+        console.info('PhotoPickerComponent onChanged: CHECK_BOX_TEXT_COLOR');
+    }
+
+    onBackgroundColor(o) {
+        this.proxy.send({ backgroundColor: null == o ? void 0 : o.get('BACKGROUND_COLOR') });
+        console.info('PhotoPickerComponent onChanged: BACKGROUND_COLOR');
+    }
+
+    onPhotoBrowserBackgroundColorMode(o) {
+        this.proxy.send({ photoBrowserBackgroundColorMode: null == o ? void 0 : o.get('PHOTO_BROWSER_BACKGROUND_COLOR_MODE') });
+        console.info('PhotoPickerComponent onChanged: PHOTO_BROWSER_BACKGROUND_COLOR_MODE');
     }
 
     onSetPhotoBrowserItem(o) {
@@ -715,6 +831,130 @@ let PickerController = class {
         }
     }
 
+    updatePickerOptions(updatablePickerOptions) {
+      return new Promise((resolve, reject) => {
+        console.info('PhotoPickerComponent UPDATE_PICKER_OPTIONS ' + JSON.stringify(updatablePickerOptions));
+      
+        if (updatablePickerOptions.MIMEType !== undefined) {
+          this._setMimeType(updatablePickerOptions.MIMEType);
+        }
+    
+        if (updatablePickerOptions.mimeTypeFilter !== undefined) {
+          this._setMimeTypeFilter(updatablePickerOptions.mimeTypeFilter);
+        }
+    
+        if (updatablePickerOptions.maxSelectNumber !== undefined) {
+          this._setMaxSelectNumber(updatablePickerOptions.maxSelectNumber);
+        }
+    
+        if (updatablePickerOptions.maxPhotoSelectNumber !== undefined) {
+          this._setMaxPhotoSelectNumber(updatablePickerOptions.maxPhotoSelectNumber);
+        }
+    
+        if (updatablePickerOptions.maxVideoSelectNumber !== undefined) {
+          this._setMaxVideoSelectNumber(updatablePickerOptions.maxVideoSelectNumber);
+        }
+    
+        if (updatablePickerOptions.selectMode !== undefined) {
+          this._setSelectMode(updatablePickerOptions.selectMode);
+        }
+    
+        if (updatablePickerOptions.singleSelectionMode !== undefined) {
+          this._setSingleSelectMode(updatablePickerOptions.singleSelectionMode);
+        }
+    
+        if (updatablePickerOptions.isRepeatSelectSupported !== undefined) {
+          this._setIsRepeatSelectSupported(updatablePickerOptions.isRepeatSelectSupported);
+        }
+    
+        if (updatablePickerOptions.preselectedUris !== undefined) {
+          this._setPreselectedUris(updatablePickerOptions.preselectedUris);
+        }
+    
+        if (updatablePickerOptions.checkBoxColor !== undefined) {
+          this._setCheckBoxColor(updatablePickerOptions.checkBoxColor);
+        }
+    
+        if (updatablePickerOptions.checkboxTextColor !== undefined) {
+          this._setCheckBoxTextColor(updatablePickerOptions.checkboxTextColor);
+        }
+    
+        if (updatablePickerOptions.backgroundColor !== undefined) {
+          this._setBackgroundColor(updatablePickerOptions.backgroundColor);
+        }
+    
+        if (updatablePickerOptions.photoBrowserBackgroundColorMode !== undefined) {
+          this._setPhotoBrowserBackgroundColorMode(updatablePickerOptions.photoBrowserBackgroundColorMode);
+        }
+        resolve();
+      });
+    }
+
+    _setMimeType(e) {
+        this.data = new Map([['SET_MIME_TYPE', e]]);
+        console.info('PhotoPickerComponent SET_MIME_TYPE ' + JSON.stringify(e));
+    }
+
+    _setMimeTypeFilter(e) {
+        this.data = new Map([['MIME_TYPE_FILTER', e]]);
+        console.info('PhotoPickerComponent MIME_TYPE_FILTER ' + JSON.stringify(e));
+    }
+    
+    _setMaxSelectNumber(e) {
+        this.data = new Map([['MAX_SELECT_NUMBER', e]]);
+        console.info('PhotoPickerComponent MAX_SELECT_NUMBER ' + JSON.stringify(e));
+    }
+    
+    _setMaxPhotoSelectNumber(e) {
+        this.data = new Map([['MAX_PHOTO_SELECT_NUMBER', e]]);
+        console.info('PhotoPickerComponent MAX_PHOTO_SELECT_NUMBER ' + JSON.stringify(e));
+    }
+    
+    _setMaxVideoSelectNumber(e) {
+        this.data = new Map([['MAX_VIDEO_SELECT_NUMBER', e]]);
+        console.info('PhotoPickerComponent MAX_VIDEO_SELECT_NUMBER ' + JSON.stringify(e));
+    }
+
+    _setSelectMode(e) {
+        this.data = new Map([['SET_SELECT_MODE', e]]);
+        console.info('PhotoPickerComponent SET_SELECT_MODE ' + JSON.stringify(e));
+    }
+
+    _setSingleSelectMode(e) {
+        this.data = new Map([['SET_SINGLE_SELECT_MODE', e]]);
+        console.info('PhotoPickerComponent SET_SINGLE_SELECT_MODE ' + JSON.stringify(e));
+    }
+
+    _setIsRepeatSelectSupported(e) {
+        this.data = new Map([['IS_REPEAT_SELECT_SUPPORTED', e]]);
+        console.info('PhotoPickerComponent IS_REPEAT_SELECT_SUPPORTED ' + JSON.stringify(e));
+    }
+    
+    _setPreselectedUris(e) {
+        this.data = new Map([['PRESELECTED_URIS', e]]);
+        console.info('PhotoPickerComponent PRESELECTED_URIS ' + JSON.stringify(e));
+    }
+    
+    _setCheckBoxColor(e) {
+        this.data = new Map([['CHECK_BOX_COLOR', e]]);
+        console.info('PhotoPickerComponent CHECK_BOX_COLOR ' + JSON.stringify(e));
+    }
+    
+    _setCheckBoxTextColor(e) {
+        this.data = new Map([['CHECK_BOX_TEXT_COLOR', e]]);
+        console.info('PhotoPickerComponent CHECK_BOX_TEXT_COLOR ' + JSON.stringify(e));
+    }
+    
+    _setBackgroundColor(e) {
+        this.data = new Map([['BACKGROUND_COLOR', e]]);
+        console.info('PhotoPickerComponent BACKGROUND_COLOR ' + JSON.stringify(e));
+    }
+    
+    _setPhotoBrowserBackgroundColorMode(e) {
+        this.data = new Map([['PHOTO_BROWSER_BACKGROUND_COLOR_MODE', e]]);
+        console.info('PhotoPickerComponent PHOTO_BROWSER_BACKGROUND_COLOR_MODE ' + JSON.stringify(e));
+    }  
+    
     setPhotoBrowserItem(e, o) {
         let l = new PhotoBrowserRangeInfo;
         l.uri = e;
@@ -840,6 +1080,9 @@ let PickerController = class {
 PickerController = __decorate([Observed], PickerController);
 
 export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
+}
+
+export class UpdatablePickerOptions {    
 }
 
 export class BaseItemInfo {
@@ -978,4 +1221,4 @@ export var BadgeOptionType;
 
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
     MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement,
-    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig };
+    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig, UpdatablePickerOptions };
