@@ -305,6 +305,8 @@ static int32_t ReconstructMediaLibraryPhotoMap()
 
 void MediaLibraryDataManager::HandleOtherInitOperations()
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("HandleOtherInitOperations");
     InitRefreshAlbum();
     UriPermissionOperations::DeleteAllTemporaryAsync();
     UriSensitiveOperations::DeleteAllSensitiveAsync();
@@ -328,6 +330,27 @@ static int32_t ExcuteAsyncWork()
     return E_OK;
 }
 
+static void ExecuteInitMimeTypeWork()
+{
+    std::thread([&]() {
+        MEDIA_INFO_LOG("start ExecuteInitMimeTypeWork");
+        MimeTypeUtils::InitMimeTypeMap();
+    }).detach();
+}
+
+static void ExecuteInitThumnailWork()
+{
+    std::thread([&]() {
+        MEDIA_INFO_LOG("start ExecuteInitThumnailWork");
+        if (!MediaLibraryKvStoreManager::GetInstance().InitMonthAndYearKvStore(KvStoreRoleType::OWNER)) {
+            MEDIA_ERR_LOG("failed at InitMonthAndYearKvStore");
+        }
+        if (Acl::AclSetDatabase() != E_OK) {
+            MEDIA_ERR_LOG("Failed to set the acl db permission for the media db dir");
+        }
+    }).detach();
+}
+
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
     const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode, bool isNeedCreateDir,
@@ -348,10 +371,14 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
         sceneCode = DfxType::START_RDB_STORE_FAIL;
         return errCode;
     }
-    if (!MediaLibraryKvStoreManager::GetInstance().InitMonthAndYearKvStore(KvStoreRoleType::OWNER)) {
-        MEDIA_ERR_LOG("failed at InitMonthAndYearKvStore");
+    if (access(KVDB_DIR.c_str(), F_OK) != E_OK) {
+        ExecuteInitThumnailWork();
+    } else {
+        if (!MediaLibraryKvStoreManager::GetInstance().InitMonthAndYearKvStore(KvStoreRoleType::OWNER)) {
+            MEDIA_ERR_LOG("failed at InitMonthAndYearKvStore");
+        }
     }
-    MimeTypeUtils::InitMimeTypeMap();
+    ExecuteInitMimeTypeWork();
     errCode = MakeDirQuerySetMap(dirQuerySetMap_);
     CHECK_AND_WARN_LOG(errCode == E_OK, "failed at MakeDirQuerySetMap");
     InitACLPermission();
@@ -2714,6 +2741,8 @@ int32_t MediaLibraryDataManager::RevertPendingByPackage(const std::string &bundl
 void MediaLibraryDataManager::SetStartupParameter()
 {
     MEDIA_INFO_LOG("Start to set parameter.");
+    MediaLibraryTracer tracer;
+    tracer.Start("InitCheckList Excute");
     static constexpr uint32_t BASE_USER_RANGE = 200000; // for get uid
     uid_t uid = getuid() / BASE_USER_RANGE;
     const string key = "multimedia.medialibrary.startup." + to_string(uid);

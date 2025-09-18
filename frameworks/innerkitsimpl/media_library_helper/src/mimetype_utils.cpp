@@ -41,6 +41,7 @@ namespace Media {
 using MimeTypeMap = unordered_map<string, vector<string>>;
 
 MimeTypeMap MimeTypeUtils::mediaJsonMap_;
+std::mutex MimeTypeUtils::lockCreateMap_;
 const string MIMETYPE_JSON_PATH = "/system/etc/userfilemanager/userfilemanager_mimetypes.json";
 const string DEFAULT_MIME_TYPE = "application/octet-stream";
 
@@ -52,6 +53,7 @@ const string DEFAULT_MIME_TYPE = "application/octet-stream";
 */
 void MimeTypeUtils::CreateMapFromJson()
 {
+    std::lock_guard<std::mutex> guard(lockCreateMap_);
     std::ifstream jFile(MIMETYPE_JSON_PATH);
     if (!jFile.is_open()) {
         MEDIA_ERR_LOG("Failed to open: %{private}s", MIMETYPE_JSON_PATH.c_str());
@@ -177,6 +179,9 @@ string MimeTypeUtils::GetMimeTypeFromContent(const string &filePath)
 
 string MimeTypeUtils::GetMimeTypeFromExtension(const string &extension)
 {
+    if (IsMimeTypeMapEmpty()) {
+        CreateMapFromJson();
+    }
     return GetMimeTypeFromExtension(extension, mediaJsonMap_);
 }
 
