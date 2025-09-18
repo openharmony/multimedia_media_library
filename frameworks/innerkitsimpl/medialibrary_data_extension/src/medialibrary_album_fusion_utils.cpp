@@ -1195,7 +1195,8 @@ static bool CheckConvertFormatAsset(std::shared_ptr<MediaLibraryRdbStore> rdbSto
     newPredicates.And()->EqualTo(MediaColumn::MEDIA_TITLE, newTitle);
     shared_ptr<NativeRdb::ResultSet> titleResultSet = rdbStore->Query(newPredicates, {MediaColumn::MEDIA_TITLE});
     CHECK_AND_RETURN_RET_LOG(titleResultSet != nullptr, false, "query albumId: %{public}d title failed", ownerAlbumId);
-    CHECK_AND_RETURN_RET_LOG(titleResultSet->GoToFirstRow() != NativeRdb::E_OK, false, "newTitle is same in album: %{public}d", ownerAlbumId);
+    CHECK_AND_RETURN_RET_LOG(titleResultSet->GoToFirstRow() != NativeRdb::E_OK, false,
+    "newTitle is same in album: %{public}d", ownerAlbumId);
     return true;
 }
 
