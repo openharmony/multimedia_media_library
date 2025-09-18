@@ -316,12 +316,14 @@ int32_t MediaFuseHdcOperations::HandlePhotoPath(
             MEDIA_ERR_LOG("LocalPath is empty.");
             return -ENOENT;
         }
+        res = HandleLstat(localPath, stbuf);
+        CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "HandleLstat fail");
         return E_SUCCESS;
     }
     res = GetAlbumIdFromAlbumName(inputPath, albumId);
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetAlbumIdFromAlbumName fail");
     if (albumId <= 0) {
-        MEDIA_ERR_LOG("not exit album %{private}s.", inputPath.c_str());
+        MEDIA_ERR_LOG("not exist album %{private}s.", inputPath.c_str());
         return -ENOENT;
     }
     res = HandleDirStat(albumId, stbuf);
