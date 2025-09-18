@@ -34,6 +34,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
 #include "media_file_uri.h"
+#include "medialibrary_asset_operations.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -52,6 +53,17 @@ static const string SQL_INSERT_PHOTO =
     MediaColumn::MEDIA_HIDDEN + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH + ", " +
     PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_SHOOTING_MODE + ")";
 static const string VALUES_END = ") ";
+
+static const string SQL_INSERT_BURST_PHOTO =
+    "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + "(" + MediaColumn::MEDIA_FILE_PATH + ", " + MediaColumn::MEDIA_SIZE +
+    ", " + MediaColumn::MEDIA_TITLE + ", " + MediaColumn::MEDIA_NAME + ", " + MediaColumn::MEDIA_TYPE + ", " +
+    MediaColumn::MEDIA_OWNER_PACKAGE + ", " + MediaColumn::MEDIA_PACKAGE_NAME + ", " + MediaColumn::MEDIA_DATE_ADDED +
+    ", " + MediaColumn::MEDIA_DATE_MODIFIED + ", " + MediaColumn::MEDIA_DATE_TAKEN + ", " +
+    MediaColumn::MEDIA_DURATION + ", " + MediaColumn::MEDIA_IS_FAV + ", " + MediaColumn::MEDIA_DATE_TRASHED + ", " +
+    MediaColumn::MEDIA_HIDDEN + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH + ", " +
+    PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_SHOOTING_MODE + ", " +
+    PhotoColumn::PHOTO_BURST_COVER_LEVEL + ", " + PhotoColumn::PHOTO_BURST_KEY +
+    ")";
 
 static int32_t ClearTable(const string &table)
 {
@@ -160,6 +172,24 @@ static void InsertAsset()
     }
 }
 
+static void InsertBurstAsset()
+{
+    // data, size, title, display_name, media_type,
+    // owner_package, package_name, date_added, date_modified, date_taken, duration, is_favorite, date_trashed, hidden
+    // height, width, edit_time, shooting_mode, burst_cover_level, burst_key
+    std::string insertSql = SQL_INSERT_BURST_PHOTO + " VALUES (" +
+        "'/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg', 175258, 'cam_pic_burst_cover', " +
+        "'cam_pic_burst_cover.jpg', 1, 'com.ohos.camera', '相机', 1501924205218, 0, 1501924205, 0, 0, 0, 0, " +
+        "1280, 960, 0, '1', 1, 'c628b4a3-828e-4f05-9781-487bf4de7f73'), " +
+        "('/storage/cloud/files/Photo/16/IMG_1501924305_001.jpg', 175258, 'cam_pic_burst_001', " +
+        "'cam_pic_burst_001.jpg', 1, 'com.ohos.camera', '相机', 1501924205218, 0, 1501924205, 0, 0, 0, 0, " +
+        "1280, 960, 0, '1', 2, 'c628b4a3-828e-4f05-9781-487bf4de7f73')";
+    int32_t ret = g_rdbStore->ExecuteSql(insertSql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Execute sql %{public}s failed", insertSql.c_str());
+    }
+}
+
 static void InsertAssetSystem()
 {
     std::string insertSql =
@@ -210,6 +240,66 @@ HWTEST_F(DeleteAssetTest, PublicDeleteAsset_Test_002, TestSize.Level0)
     std::vector<std::string> testUris = {uri};
     int32_t result = PublicDeleteAsset(testUris);
     ASSERT_GT(result, 0);
+}
+
+HWTEST_F(DeleteAssetTest, PublicDeleteBurstAsset_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("PublicDeleteBurstAsset_Test_001 Begin");
+    InsertBurstAsset();
+    int32_t fileId = QueryPhotoIdByDisplayName("cam_pic_burst_cover.jpg");
+    MEDIA_INFO_LOG("PublicDeleteBurstAsset_Test_001 fileId = %{public}d", fileId);
+    ASSERT_GT(fileId, 0);
+
+    auto uri = "file://media/Photo/" + to_string(fileId);
+    std::vector<std::string> testUris = {uri};
+    // 进入回收站
+    int32_t result = PublicDeleteAsset(testUris);
+    ASSERT_GT(result, 0);
+
+    std::string sql = "select * from Photos"
+        " where burst_key='c628b4a3-828e-4f05-9781-487bf4de7f73' and date_trashed>0";
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    auto resultSet = rdbStore->QuerySql(sql);
+    EXPECT_EQ(resultSet->GoToNextRow(), NativeRdb::E_OK);
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t ret = MediaLibraryAssetOperations::DeleteFromDisk(predicates, false);
+    // 彻底删除2张照片
+    EXPECT_EQ(ret, 2);
+
+    resultSet = rdbStore->QuerySql(sql);
+    EXPECT_NE(resultSet->GoToNextRow(), NativeRdb::E_OK);
+}
+
+HWTEST_F(DeleteAssetTest, PublicDeleteBurstAsset_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("PublicDeleteBurstAsset_Test_002 Begin");
+    InsertBurstAsset();
+    int32_t fileId = QueryPhotoIdByDisplayName("cam_pic_burst_001.jpg");
+    MEDIA_INFO_LOG("PublicDeleteBurstAsset_Test_002 fileId = %{public}d", fileId);
+    ASSERT_GT(fileId, 0);
+
+    auto uri = "file://media/Photo/" + to_string(fileId);
+    std::vector<std::string> testUris = {uri};
+    // 进入回收站
+    int32_t result = PublicDeleteAsset(testUris);
+    ASSERT_GT(result, 0);
+
+    std::string sql = "select * from Photos"
+        " where burst_key='c628b4a3-828e-4f05-9781-487bf4de7f73' and date_trashed>0";
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    auto resultSet = rdbStore->QuerySql(sql);
+    EXPECT_EQ(resultSet->GoToNextRow(), NativeRdb::E_OK);
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t ret = MediaLibraryAssetOperations::DeleteFromDisk(predicates, false);
+    // 彻底删除1张照片，传入的不是封面
+    EXPECT_EQ(ret, 1);
+
+    resultSet = rdbStore->QuerySql(sql);
+    EXPECT_NE(resultSet->GoToNextRow(), NativeRdb::E_OK);
 }
 
 HWTEST_F(DeleteAssetTest, SystemDeleteAsset_Test_001, TestSize.Level0)

@@ -2775,6 +2775,34 @@ void HandlePhotosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet, De
     }
 }
 
+static shared_ptr<NativeRdb::ResultSet> GetBurstMemberResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    vector<string> burstKeyList;
+    int32_t ret = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, resultSet, "GetBurstMemberResultSet Failed to GoToFirstRow");
+    do {
+        int32_t burstLevel = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+            resultSet, TYPE_INT32));
+        int32_t subtype = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE,
+            resultSet, TYPE_INT32));
+        bool isBurstCover = (burstLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) &&
+            (subtype == static_cast<int32_t>(BurstCoverLevelType::COVER));
+        if (isBurstCover) {
+            string burstKey = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_KEY,
+                resultSet, TYPE_STRING));
+            MEDIA_INFO_LOG("delete brust burstKey is %{public}s", burstKey.c_str());
+            burstKeyList.push_back(burstKey);
+        }
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.In(PhotoColumn::PHOTO_BURST_KEY, burstKeyList);
+    rbdPredicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::MEMBER));
+    vector<string> columns = {};
+    auto burstMemberResultSet = MediaLibraryRdbStore::Query(rbdPredicates, columns);
+    return burstMemberResultSet;
+}
+
 int32_t QueryFileInfoAndHandleRemovePhotos(const AbsRdbPredicates &predicates, DeletedFilesParams &filesParams)
 {
     vector<string> columns = {
@@ -2793,6 +2821,8 @@ int32_t QueryFileInfoAndHandleRemovePhotos(const AbsRdbPredicates &predicates, D
         columns.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
         columns.push_back(MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS);
         columns.push_back(MediaColumn::MEDIA_HIDDEN);
+        columns.push_back(PhotoColumn::PHOTO_BURST_COVER_LEVEL);
+        columns.push_back(PhotoColumn::PHOTO_BURST_KEY);
     }
 
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
@@ -2802,6 +2832,11 @@ int32_t QueryFileInfoAndHandleRemovePhotos(const AbsRdbPredicates &predicates, D
 
     if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         HandlePhotosResultSet(resultSet, filesParams);
+        // delete brust member photo
+        auto burstMemberResultSet = GetBurstMemberResultSet(resultSet);
+        if (burstMemberResultSet) {
+            HandlePhotosResultSet(burstMemberResultSet, filesParams);
+        }
     } else if (predicates.GetTableName() == AudioColumn::AUDIOS_TABLE) {
         HandleAudiosResultSet(resultSet, filesParams);
     } else {
@@ -3377,10 +3412,10 @@ static int32_t DeleteLocalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
             "Delete moving photo file failed id %{public}d", id);
 
         CHECK_AND_PRINT_LOG(DeleteBurstPhotoPermanently(fileAsset, assetRefresh) == E_OK,
-            "Delete moving photo file failed id %{public}d", id);
+            "Delete burst photo file failed id %{public}d", id);
 
         CHECK_AND_PRINT_LOG(MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(fileAsset, assetRefresh) == E_OK,
-            "Delete moving photo file failed id %{public}d", id);
+            "Delete normal photo file failed id %{public}d", id);
     }
     if (position == CLOUD_PHOTO_POSITION) {
         MEDIA_DEBUG_LOG("Don't delete cloud Photo");

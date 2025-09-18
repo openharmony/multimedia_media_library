@@ -420,8 +420,8 @@ int32_t AccurateRefreshBase::ExecuteForChangedRowCount(int64_t &outValue, const 
 int32_t AccurateRefreshBase::UpdateWithDateTime(ValuesBucket &values, const AbsRdbPredicates &predicates)
 {
     if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
-        values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+        values.Put(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+        values.Put(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     }
     int32_t changedRows = -1;
     auto ret = Update(changedRows, values, predicates);
