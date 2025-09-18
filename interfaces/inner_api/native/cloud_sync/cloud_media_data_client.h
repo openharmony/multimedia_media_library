@@ -26,7 +26,6 @@
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaDataClient : public ICloudMediaDataClient {
 public:  // constructors
-    CloudMediaDataClient(const int32_t &userId);
     CloudMediaDataClient(const int32_t cloudType, const int32_t userId);
     virtual ~CloudMediaDataClient() = default;
 

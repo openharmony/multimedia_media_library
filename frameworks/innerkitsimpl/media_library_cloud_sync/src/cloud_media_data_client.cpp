@@ -25,12 +25,6 @@
 #include "cloud_media_thread_limiter.h"
 
 namespace OHOS::Media::CloudSync {
-CloudMediaDataClient::CloudMediaDataClient(const int32_t &userId) : userId_(userId)
-{
-    this->dataHandler_ = std::make_shared<CloudMediaDataClientHandler>();
-    this->dataHandler_->SetUserId(userId);
-}
-
 CloudMediaDataClient::CloudMediaDataClient(const int32_t cloudType, const int32_t userId)
     : cloudType_(cloudType), userId_(userId)
 {

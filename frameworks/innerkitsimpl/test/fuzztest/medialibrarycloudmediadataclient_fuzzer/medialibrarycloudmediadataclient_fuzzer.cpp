@@ -102,7 +102,7 @@ static int32_t InsertPhotoAsset(string &cloudId)
 
 static void UpdateDirtyFuzzer()
 {
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     std::string cloudId = provider->ConsumeBytesAsString(NUM_BYTES);
     InsertPhotoAsset(cloudId);
     cloudMediaDataClient.UpdateDirty(cloudId, FuzzDirtyTypes());
@@ -113,7 +113,7 @@ static void UpdateDirtyFuzzer()
 
 static void UpdatePositionFuzzer()
 {
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     std::string cloudId = provider->ConsumeBytesAsString(NUM_BYTES);
     InsertPhotoAsset(cloudId);
     PhotoPositionType position = FuzzPhotoPositionType();
@@ -127,7 +127,7 @@ static void UpdatePositionFuzzer()
 
 static void UpdateSyncStatusFuzzer()
 {
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     std::string cloudId = provider->ConsumeBytesAsString(NUM_BYTES);
     InsertPhotoAsset(cloudId);
     int32_t syncStatus = static_cast<int32_t>(FuzzSyncStatusType());
@@ -139,7 +139,7 @@ static void UpdateSyncStatusFuzzer()
 
 static void UpdateThmStatusFuzzer()
 {
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     std::string cloudId = provider->ConsumeBytesAsString(NUM_BYTES);
     InsertPhotoAsset(cloudId);
     ThumbStatus thumbStatus = provider->ConsumeBool() ? ThumbStatus::DOWNLOADED : ThumbStatus::TO_DOWNLOAD;
@@ -156,7 +156,7 @@ static void GetAgingFileFuzzer()
     int32_t sizeLimit = provider->ConsumeIntegral<int32_t>();
     int32_t offset = 0;
     vector<CloudMetaData> metaDataList;
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     cloudMediaDataClient.GetAgingFile(time, mediaType, sizeLimit, offset, metaDataList);
 
     cloudMediaDataClient.dataHandler_ = nullptr;
@@ -170,7 +170,7 @@ static void GetActiveAgingFileFuzzer()
     int32_t sizeLimit = provider->ConsumeIntegral<int32_t>();
     int32_t offset = 0;
     vector<CloudMetaData> metaDataList;
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     cloudMediaDataClient.GetActiveAgingFile(time, mediaType, sizeLimit, offset, metaDataList);
 
     cloudMediaDataClient.dataHandler_ = nullptr;
@@ -179,7 +179,7 @@ static void GetActiveAgingFileFuzzer()
 
 static void GetDownloadAssetFuzzer()
 {
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     vector<string> uris;
     string uri = provider->ConsumeBytesAsString(NUM_BYTES);
     uris.push_back(uri);
@@ -192,7 +192,7 @@ static void GetDownloadAssetFuzzer()
 
 static void GetDownloadThmsByUriFuzzer()
 {
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     vector<string> uris;
     int32_t thmType = FuzzThmsType();
     vector<CloudMetaData> cloudMetaDataVec;
@@ -210,7 +210,7 @@ static void OnDownloadAssetFuzzer()
     string cloudId = provider->ConsumeBytesAsString(NUM_BYTES);
     vector<string> cloudIds;
     cloudIds.push_back(cloudId);
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     vector<MediaOperateResult> result;
     cloudMediaDataClient.OnDownloadAsset(cloudIds, result);
 
@@ -224,7 +224,7 @@ static void GetDownloadThmsFuzzer()
     int32_t paramSize = provider->ConsumeIntegral<int32_t>();
     int32_t offset = 0;
     int32_t type = provider->ConsumeIntegral<int32_t>();
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     DownloadThumPara param;
     param.size = paramSize;
     param.offset = offset;
@@ -241,7 +241,7 @@ static void OnDownloadThmsFuzzer()
     std::unordered_map<std::string, int32_t> cloudIdThmStatusMap = {
         { provider->ConsumeBytesAsString(NUM_BYTES), FuzzThmsType() },
     };
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     int32_t failSize = provider->ConsumeIntegral<int32_t>();
     cloudMediaDataClient.OnDownloadThms(cloudIdThmStatusMap, failSize);
 
@@ -251,7 +251,7 @@ static void OnDownloadThmsFuzzer()
 
 static void GetVideoToCacheFuzzer()
 {
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     std::vector<CloudMetaData> cloudMetaDataList;
     int32_t sizeTest = provider->ConsumeIntegral<int32_t>();
     cloudMediaDataClient.GetVideoToCache(cloudMetaDataList, sizeTest);
@@ -262,7 +262,7 @@ static void GetVideoToCacheFuzzer()
 
 static void GetDownloadThmNumFuzzer()
 {
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     std::vector<CloudMetaData> cloudMetaDataList;
     int32_t totalNum = 0;
     int32_t type = FuzzThmsType();
@@ -274,7 +274,7 @@ static void GetDownloadThmNumFuzzer()
 
 static void GetFilePosStatFuzzer()
 {
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     vector<uint64_t> filePosStat = { 0, 0 };
     cloudMediaDataClient.GetFilePosStat(filePosStat);
     uint64_t filePos = provider->ConsumeIntegral<uint64_t>();
@@ -288,7 +288,7 @@ static void GetFilePosStatFuzzer()
 static void GetCloudThmStatFuzzer()
 {
     std::vector<uint64_t> cloudThmStat{ 0, 0, 0 };
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     cloudMediaDataClient.GetCloudThmStat(cloudThmStat);
     uint64_t cloudThm = provider->ConsumeIntegral<uint64_t>();
     cloudThmStat.push_back(cloudThm);
@@ -301,7 +301,7 @@ static void GetCloudThmStatFuzzer()
 static void GetDirtyTypeStatFuzzer()
 {
     vector<uint64_t> dirtyTypeStat{ 0, 0, 0, 0 };
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     cloudMediaDataClient.GetDirtyTypeStat(dirtyTypeStat);
     uint64_t dirtyType = provider->ConsumeIntegral<uint64_t>();
     dirtyTypeStat.push_back(dirtyType);
@@ -317,7 +317,7 @@ static void UpdateLocalFileDirtyFuzzer()
     vector<MDKRecord> records;
     string id = provider->ConsumeBytesAsString(NUM_BYTES);
     mDKRecord.SetRecordId(id);
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     cloudMediaDataClient.UpdateLocalFileDirty(records);
 
     cloudMediaDataClient.dataHandler_ = nullptr;
@@ -327,7 +327,7 @@ static void UpdateLocalFileDirtyFuzzer()
 static void TraceIdFuzzer()
 {
     string traceId = provider->ConsumeBytesAsString(NUM_BYTES);
-    CloudMediaDataClient cloudMediaDataClient(1);
+    CloudMediaDataClient cloudMediaDataClient(1, 1);
     cloudMediaDataClient.SetTraceId(traceId);
     cloudMediaDataClient.GetTraceId();
 
