@@ -102,7 +102,7 @@ export struct PhotoPickerComponent {
       console.info('PhotoPickerComponent onChanged: SAVE_REPLACE_PHOTO_ASSETS');
     } else if (data?.has('SET_BADGE_CONFIGS')) {
       this.onChangedBadgeConfigs(data);
-    }     } else {
+    } else {
       this.onSetMimeTypeChange(data)
     }
   }
