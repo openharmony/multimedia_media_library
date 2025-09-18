@@ -84,6 +84,7 @@
 #include "media_empty_obj_vo.h"
 #include "media_permission_check.h"
 #include "user_define_ipc.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -200,6 +201,8 @@ void MediaDataShareExtAbility::InitPermissionHandler()
 
 void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("OnStartSub");
 #ifdef MEDIALIBRARY_MTP_ENABLE
     MediaMtpManager::GetInstance().Init();
 #endif
@@ -210,6 +213,8 @@ void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 
 static bool CheckUnlockScene(int64_t startTime)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckUnlockScene");
     if (IsStartBeforeUserUnlock()) {
         DfxReporter::ReportStartResult(DfxType::CHECK_USER_UNLOCK_FAIL, 0, startTime);
         MEDIA_INFO_LOG("%{public}s Killing self caused by booting before unlocking", __func__);
@@ -238,6 +243,13 @@ static void RestartCloudMediaAssetDownload()
             return;
         }
         CloudMediaAssetManager::GetInstance().StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);
+    }).detach();
+}
+
+static void ExecuteSubscribeWork()
+{
+    std::thread([&] {
+        Media::MedialibrarySubscriber::Subscribe();
     }).detach();
 }
 
@@ -285,7 +297,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
         return;
     }
     OnStartSub(want);
-    Media::MedialibrarySubscriber::Subscribe();
+    ExecuteSubscribeWork();
     Media::HeifTranscodingCheckUtils::InitCheckList();
     dataManager->SetStartupParameter();
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
