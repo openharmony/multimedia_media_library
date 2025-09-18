@@ -32,6 +32,7 @@ enum NotifyChangeType {
     NOTIFY_CHANGE_ADD,
     NOTIFY_CHANGE_UPDATE,
     NOTIFY_CHANGE_REMOVE,
+    NOTIFY_CHANGE_BATCH_DOWNLOAD_PROGRESS,
 };
 
 class RegisterNotifyType {
@@ -42,15 +43,23 @@ public:
     static const std::string PHOTO_ALBUM_CHANGE EXPORT;
     static const std::string HIDDEN_ALBUM_CHANGE EXPORT;
     static const std::string TRASHED_ALBUM_CHANGE EXPORT;
+    static const std::string BATCH_DOWNLOAD_PROGRESS_CHANGE EXPORT;
 };
 
 class MediaLibraryNotifyUtils {
 public:
+    static const std::map<std::string, Notification::NotifyUriType> REGISTER_ASSET_MANAGER_NOTIFY_TYPE_MAP;
+    static const std::map<Notification::NotifyUriType, Notification::NotifyUriType> REGISTER_ASSET_MANAGER_TYPE_MAP;
+    static const std::map<Notification::NotifyUriType, std::string> REGISTER_ASSET_MANAGER_URI_MAP;
+
     static const std::map<std::string, Notification::NotifyUriType> REGISTER_NOTIFY_TYPE_MAP;
     static const std::map<Notification::NotifyUriType, Notification::NotifyUriType> REGISTER_TYPE_MAP;
     static const std::map<Notification::NotifyUriType, std::string> REGISTER_URI_MAP;
     static const std::map<Notification::NotifyType, NotifyChangeType> NOTIFY_CHANGE_TYPE_MAP;
 
+    static int32_t GetRegisterAssetManagerNotifyType(const std::string &type, Notification::NotifyUriType &uriType);
+    static int32_t GetAssetManagerNotifyTypeAndUri(const Notification::NotifyUriType type,
+        Notification::NotifyUriType &uriType, std::string &uri);
     static int32_t GetRegisterNotifyType(const std::string &type, Notification::NotifyUriType &uriType);
     static int32_t GetNotifyTypeAndUri(const Notification::NotifyUriType type,
         Notification::NotifyUriType &uriType, std::string &uri);
@@ -82,7 +91,15 @@ public:
         const std::shared_ptr<Notification::MediaChangeInfo> &changeInfo);
     static napi_value BuildPhotoAssetRecheckChangeInfos(napi_env env);
     static napi_value BuildAlbumRecheckChangeInfos(napi_env env);
+    static napi_value BuildBatchDownloadProgressInfos(napi_env env,
+        const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo);
     static int32_t ConvertToJsError(int32_t innerErr);
+    static napi_status BuildFileIdPercentSubInfos(napi_env env,
+        const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo, napi_value &result);
+    static napi_status BuildFileIdSubInfos(napi_env env,
+        const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo, napi_value &result);
+    static napi_status BuildPauseReasonSubInfos(napi_env env,
+        const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo, napi_value &result);
 };
 }
 }

@@ -40,7 +40,7 @@ void MediaOnNotifyNewObserver::OnChange(const ChangeInfo &changeInfo)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaOnNotifyNewObserver::OnChange");
-    NAPI_DEBUG_LOG("begin OnChange");
+    NAPI_DEBUG_LOG("begin MediaOnNotifyNewObserver OnChange");
     if (changeInfo.data_ == nullptr || changeInfo.size_ <= 0) {
         NAPI_ERR_LOG("changeInfo.data_ is null or changeInfo.size_ is invalid");
         return;

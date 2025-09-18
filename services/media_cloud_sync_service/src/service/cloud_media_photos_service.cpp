@@ -42,6 +42,7 @@
 #include "cloud_media_operation_code.h"
 #include "cloud_media_dfx_service.h"
 #include "enhancement_manager.h"
+#include "background_cloud_batch_selected_file_processor.h"
 
 using ChangeType = OHOS::AAFwk::ChangeInfo::ChangeType;
 namespace OHOS::Media::CloudSync {
@@ -616,7 +617,26 @@ int32_t CloudMediaPhotosService::OnFetchRecords(const std::vector<std::string> &
     }
     MEDIA_INFO_LOG("OnFetchRecords cloudIdRelativeMap: %{public}zu.", cloudIdRelativeMap.size());
     ret = HandleRecord(cloudIds, cloudIdRelativeMap, newData, fdirtyData, stats, failedRecords);
+    HandleCloudDeleteRecord(cloudIdRelativeMap);
     return ret;
+}
+
+int32_t CloudMediaPhotosService::HandleCloudDeleteRecord(
+    const std::map<std::string, CloudMediaPullDataDto> &cloudIdRelativeMap)
+{
+    std::vector<std::string> cloudDeleteFileIds;  // 云侧被删除的文件
+    bool isValid = false;
+    for (const auto &it : cloudIdRelativeMap) {
+        CloudMediaPullDataDto pullData = it.second;
+        isValid = !pullData.localPath.empty();
+        isValid = isValid && pullData.basicIsDelete;
+        CHECK_AND_CONTINUE(isValid);
+        cloudDeleteFileIds.emplace_back(std::to_string(pullData.localFileId));
+    }
+    CHECK_AND_RETURN_RET_INFO_LOG(!cloudDeleteFileIds.empty(), E_OK, "CloudDeleteFileIds List Empty.");
+    // 检查点 批量下载 云删除 通知应用 notify type 3
+    BackgroundCloudBatchSelectedFileProcessor::TriggerCancelBatchDownloadProcessor(cloudDeleteFileIds, true);
+    return E_OK;
 }
 
 int32_t CloudMediaPhotosService::OnDentryFileInsert(

@@ -1554,6 +1554,58 @@ int32_t MediaAssetsService::GetCloudMediaAssetStatus(string &status)
     return E_OK;
 }
 
+int32_t MediaAssetsService::StartBatchDownloadCloudResources(StartBatchDownloadCloudResourcesReqBody &reqBody,
+    StartBatchDownloadCloudResourcesRespBody &respBody)
+{
+    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
+    int32_t ret = instance.StartBatchDownloadCloudResources(reqBody, respBody);
+    MEDIA_INFO_LOG("MediaAssetsService StartBatchDownloadCloudResources END ret: %{public}d", ret);
+    return ret;
+}
+
+int32_t MediaAssetsService::ResumeBatchDownloadCloudResources(ResumeBatchDownloadCloudResourcesReqBody &reqBody)
+{
+    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
+    int32_t ret = instance.ResumeBatchDownloadCloudResources(reqBody);
+    MEDIA_INFO_LOG("MediaAssetsService ResumeBatchDownloadCloudResources END ret: %{public}d", ret);
+    return ret;
+}
+
+int32_t MediaAssetsService::PauseBatchDownloadCloudResources(PauseBatchDownloadCloudResourcesReqBody &reqBody)
+{
+    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
+    int32_t ret = instance.PauseBatchDownloadCloudResources(reqBody);
+    MEDIA_INFO_LOG("MediaAssetsService PauseBatchDownloadCloudResources END ret: %{public}d", ret);
+    return ret;
+}
+
+int32_t MediaAssetsService::CancelBatchDownloadCloudResources(CancelBatchDownloadCloudResourcesReqBody &reqBody)
+{
+    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
+    int32_t ret = instance.CancelBatchDownloadCloudResources(reqBody);
+    MEDIA_INFO_LOG("MediaAssetsService CancelBatchDownloadCloudResources END ret: %{public}d", ret);
+    return ret;
+}
+
+int32_t MediaAssetsService::GetCloudMediaBatchDownloadResourcesStatus(
+    GetBatchDownloadCloudResourcesStatusReqBody &reqBody, GetBatchDownloadCloudResourcesStatusRespBody &respBody)
+{
+    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
+    int32_t ret = instance.GetCloudMediaBatchDownloadResourcesStatus(reqBody, respBody);
+    MEDIA_INFO_LOG("MediaAssetsService GetCloudMediaBatchDownloadResourcesStatus ret: %{public}d", ret);
+    return ret;
+}
+
+int32_t MediaAssetsService::GetCloudMediaBatchDownloadResourcesCount(
+    GetBatchDownloadCloudResourcesCountReqBody &reqBody, GetBatchDownloadCloudResourcesCountRespBody &respBody)
+{
+    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
+    int32_t ret = instance.GetCloudMediaBatchDownloadResourcesCount(reqBody, respBody);
+    MEDIA_INFO_LOG("MediaAssetsService GetCloudMediaBatchDownloadResourcesCount ret: %{public}d resp size: %{public}d",
+        ret, respBody.count);
+    return ret;
+}
+
 int32_t MediaAssetsService::StartAssetAnalysis(const StartAssetAnalysisDto &dto, StartAssetAnalysisRespBody &respBody)
 {
     Uri uri(dto.uri);

@@ -67,7 +67,8 @@ int32_t NotifyRegisterPermission::HiddenPermissionCheck()
 int32_t NotifyRegisterPermission::ExecuteCheckPermission(const NotifyUriType &registerUriType)
 {
     int32_t ret = -1;
-    if (registerUriType == NotifyUriType::PHOTO_URI || registerUriType == NotifyUriType::PHOTO_ALBUM_URI) {
+    if (registerUriType == NotifyUriType::PHOTO_URI || registerUriType == NotifyUriType::PHOTO_ALBUM_URI
+        || registerUriType == NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI) {
         ret = BasicPermissionCheck();
     } else if (registerUriType == NotifyUriType::HIDDEN_PHOTO_URI ||
                registerUriType == NotifyUriType::HIDDEN_ALBUM_URI) {

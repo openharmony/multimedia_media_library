@@ -89,9 +89,12 @@
 #include "medialibrary_restore.h"
 #include "cloud_sync_helper.h"
 #include "refresh_business_name.h"
+#include "background_cloud_batch_selected_file_processor.h"
+#include "cloud_media_dao_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::Media::CloudSync;
 
 namespace OHOS {
 namespace Media {
@@ -2708,6 +2711,11 @@ static void DeleteFiles(AsyncTaskData *data)
     DeleteBehaviorData dataInfo {taskData->displayNames_, taskData->albumNames_, taskData->ownerAlbumIds_};
     DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS, taskData->deleteRows_,
         taskData->notifyUris_, taskData->bundleName_, dataInfo);
+
+    // 检查点 批量下载 本地删除 停止并清理 通知应用 notify type 3
+    MEDIA_INFO_LOG("BatchSelectFileDownload DeleteFiles DealWithBatchDownloadingFilesById");
+    MediaLibraryAssetOperations::DealWithBatchDownloadingFilesById(taskData->ids_);
+
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
@@ -3391,6 +3399,58 @@ static int32_t DeleteLocalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
     return E_OK;
 }
 
+int32_t MediaLibraryAssetOperations::AddOtherBurstIdsToFileIds(std::vector<std::string> &fileIds)
+{
+    CHECK_AND_RETURN_RET_LOG(!fileIds.empty(), E_ERR, "AddOtherBurstIdsToFileIds No uris");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "QueryDownloadResources Failed to get rdbStore.");
+    std::string sqlBefore = "SELECT p1." + PhotoColumn::MEDIA_ID + ", p1." + PhotoColumn::PHOTO_BURST_KEY +
+        ", p2." + PhotoColumn::MEDIA_ID + " AS related_file_id FROM " +
+        PhotoColumn::PHOTOS_TABLE +" p1 JOIN "+ PhotoColumn::PHOTOS_TABLE +
+        " p2 ON p1." + PhotoColumn::PHOTO_BURST_KEY + " = p2." + PhotoColumn::PHOTO_BURST_KEY +
+        " WHERE p1." + PhotoColumn::MEDIA_ID + " IN ({0}) AND p1." + PhotoColumn::PHOTO_BURST_COVER_LEVEL +
+        " = 1 AND p1." + PhotoColumn::PHOTO_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoSubType::BURST)) +
+        "AND p1." + PhotoColumn::PHOTO_BURST_KEY + " IS NOT NULL AND p1." + PhotoColumn::MEDIA_ID +
+        " != p2." + PhotoColumn::MEDIA_ID;
+    std::string inClause = CloudMediaDaoUtils::ToStringWithComma(fileIds);
+    std::string sql = CloudMediaDaoUtils::FillParams(sqlBefore, {inClause});
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "Failed to query batch selected files!");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t relatedFileId = get<int32_t>(ResultSetUtils::GetValFromColumn("related_file_id",
+            resultSet, TYPE_INT32));
+        MEDIA_INFO_LOG("BatchSelectFileDownload Add burst relatedFileId %{public}d", relatedFileId);
+        fileIds.emplace_back(std::to_string(relatedFileId));
+    }
+    resultSet->Close();
+    return NativeRdb::E_OK;
+}
+
+
+int32_t MediaLibraryAssetOperations::DealWithBatchDownloadingFilesById(std::vector<std::string> &fileIds)
+{
+    MEDIA_INFO_LOG("BatchSelectFileDownload DealWithBatchDownloadingFilesById ids In"); // 自动取消
+    // 检查点 批量下载 通知应用 notify type 3 任务应该被通知并删任务表
+    std::vector<std::string> needStopDownloadFileIds;
+    for (auto& fileId : fileIds) {
+        needStopDownloadFileIds.push_back(fileId);
+    }
+    AddOtherBurstIdsToFileIds(needStopDownloadFileIds);
+    BackgroundCloudBatchSelectedFileProcessor::TriggerCancelBatchDownloadProcessor(needStopDownloadFileIds, true);
+    MEDIA_INFO_LOG("BatchSelectFileDownload ManualCancel DealWithBatchDownloadingFilesById");
+    return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::DealWithBatchDownloadingFiles(vector<shared_ptr<FileAsset>> &subFileAssetVector)
+{
+    MEDIA_INFO_LOG("BatchSelectFileDownload DealWithBatchDownloadingFiles FileAsset In");
+    std::vector<std::string> needStopDownloadFileIds;
+    for (auto& fileAssetPtr : subFileAssetVector) {
+        needStopDownloadFileIds.push_back(to_string(fileAssetPtr->GetId()));
+    }
+    return DealWithBatchDownloadingFilesById(needStopDownloadFileIds);
+}
+
 int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predicates, const bool isAging,
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
@@ -3437,7 +3497,9 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
         DeleteLocalPhotoPermanently(fileAssetPtr, subFileAssetVector, assetRefresh);
         changedAlbumIds.insert(fileAssetPtr->GetOwnerAlbumId());
     }
-
+    MEDIA_INFO_LOG("BatchSelectFileDownload DeletePermanently DealWithBatchDownloadingFiles");
+    // 检查点 批量下载 本地删除 停止并清理 通知应用 notify type 3
+    DealWithBatchDownloadingFiles(fileAssetVector);
     //delete both local and cloud image
     DeleteLocalAndCloudPhotos(subFileAssetVector);
     NotifyPhotoAlbum(std::vector<int32_t>(changedAlbumIds.begin(), changedAlbumIds.end()), assetRefresh);

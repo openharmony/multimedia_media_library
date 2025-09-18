@@ -162,6 +162,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/cloud_enhancement_task_state_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/cloud_media_asset_manager_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/cloud_media_asset_status_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/cloud_media_download_resources_status_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/confirm_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/default_album_name_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/delete_callback.cpp",
@@ -180,6 +181,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/media_library_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_scanner_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_napi_utils.cpp",
+    "${MEDIALIB_JS_PATH}/src/medialibrary_notify_asset_manager_observer.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_notify_new_observer.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_notify_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/modal_ui_callback.cpp",
@@ -237,6 +239,12 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/query_cloud_enhancement_task_state_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/query_photo_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/adapted_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/cancel_batch_download_cloud_resources_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/pause_batch_download_cloud_resources_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/resume_batch_download_cloud_resources_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/start_batch_download_cloud_resources_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_batch_download_cloud_resources_status_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_batch_download_cloud_resources_count_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/heif_transcoding_check_vo.cpp"
   ]
 

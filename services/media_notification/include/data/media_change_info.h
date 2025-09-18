@@ -40,6 +40,17 @@ enum NotifyType {
     NOTIFY_ALBUM_UPDATE,
     NOTIFY_ALBUM_REMOVE,
 };
+
+enum DownloadAssetsNotifyType {
+    DOWNLOAD_PROGRESS = 0,
+    DOWNLOAD_FINISH = 1,
+    DOWNLOAD_FAILED = 2,
+    DOWNLOAD_ASSET_DELETE = 3,
+    DOWNLOAD_AUTO_PAUSE = 4,
+    DOWNLOAD_AUTO_RESUME = 5,
+    DOWNLOAD_REFRESH = 6,
+};
+
 enum NotifyUriType {
     PHOTO_URI,
     HIDDEN_PHOTO_URI,
@@ -48,7 +59,8 @@ enum NotifyUriType {
     HIDDEN_ALBUM_URI,
     TRASH_ALBUM_URI,
     ANALYSIS_ALBUM_URI,
-    INVALID
+    INVALID,
+    BATCH_DOWNLOAD_PROGRESS_URI
 };
 
 class NotifyDetailInfo : public Parcelable {
@@ -125,6 +137,59 @@ struct ToStringVisitor {
     }
 };
 
+class AssetManagerNotifyInfo : public Parcelable {
+public:
+    NotifyUriType notifyUri;
+    DownloadAssetsNotifyType downloadAssetNotifyType;
+    int32_t fileId;
+    int32_t percent;
+    int32_t autoPauseReason;
+ 
+public:
+    std::string ToString(bool isDetail = false) const
+    {
+        std::stringstream ss;
+        ss << "notifyUri:" << static_cast<uint16_t>(notifyUri)
+            << ", downloadAssetNotifyType:" << static_cast<uint16_t>(downloadAssetNotifyType)
+            << ", fileId:" << fileId
+            << ", percent:" << percent
+            << ", autoPauseReason:" << autoPauseReason;
+        return ss.str();
+    }
+
+    static std::shared_ptr<AssetManagerNotifyInfo> Unmarshalling(Parcel &parcel)
+    {
+        AssetManagerNotifyInfo* info = new (std::nothrow)AssetManagerNotifyInfo();
+        if ((info != nullptr) && (!info->ReadFromParcel(parcel))) {
+            delete info;
+            info = nullptr;
+        }
+        return std::shared_ptr<AssetManagerNotifyInfo>(info);
+    }
+
+    bool Marshalling(Parcel &parcel) const override
+    {
+        parcel.WriteUint16(static_cast<uint16_t>(notifyUri));
+        parcel.WriteUint16(static_cast<uint16_t>(downloadAssetNotifyType));
+        parcel.WriteInt32(fileId);
+        parcel.WriteInt32(percent);
+        parcel.WriteInt32(autoPauseReason);
+        MEDIA_INFO_LOG("Marshalling parcel size is: %{public}d", (int)parcel.GetDataSize());
+        return true;
+    }
+
+    bool ReadFromParcel(Parcel &parcel)
+    {
+        this->notifyUri = static_cast<NotifyUriType>(parcel.ReadUint16());
+        this->downloadAssetNotifyType = static_cast<DownloadAssetsNotifyType>(parcel.ReadUint16());
+        this->fileId = parcel.ReadInt32();
+        this->percent = parcel.ReadInt32();
+        this->autoPauseReason = parcel.ReadInt32();
+        MEDIA_INFO_LOG("ReadFromParcel notifyUri %{public}d", static_cast<int32_t>(this->notifyUri));
+        return true;
+    }
+};
+
 class MediaChangeInfo : public Parcelable {
 public:
     std::vector<std::variant<PhotoAssetChangeData, AlbumChangeData>> changeInfos;
@@ -194,7 +259,6 @@ public:
         this->notifyUri = static_cast<NotifyUriType>(parcel.ReadUint16());
         this->notifyType = static_cast<NotifyType>(parcel.ReadUint16());
         this->isSystem = parcel.ReadBool();
-
         bool validFlag = parcel.ReadBool();
         while (validFlag) {
             bool type = parcel.ReadBool();
