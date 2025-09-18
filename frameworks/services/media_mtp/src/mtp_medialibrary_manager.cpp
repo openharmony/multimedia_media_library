@@ -609,7 +609,8 @@ int32_t MtpMedialibraryManager::SetObject(const std::shared_ptr<DataShare::DataS
         }
         outObjectInfo->handle = HandleConvertToAdded(context->handle);
         outObjectInfo->name = GetMovingPhotoVideoDisplayName(displayName, sourcePath);
-        outObjectInfo->parent = static_cast<uint32_t>(GetInt32Val(MediaColumn::MEDIA_PARENT_ID, resultSet));
+        uint32_t parentHandle = static_cast<uint32_t>(GetInt32Val(MediaColumn::MEDIA_PARENT_ID, resultSet));
+        outObjectInfo->parent = HandleConvertToAdded(parentHandle);
         outObjectInfo->storageID = context->storageID;
         struct stat statInfo;
         CHECK_AND_RETURN_RET_LOG(stat(sourcePath.c_str(), &statInfo) == 0,
@@ -642,7 +643,7 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
     } else {
         outObjectInfo->size = static_cast<uint32_t>(fileAsset->GetSize()); // need support larger than 4GB file
     }
-    outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetParent());
+    outObjectInfo->parent = HandleConvertToAdded(static_cast<uint32_t>(fileAsset->GetParent()));
     outObjectInfo->dateCreated = fileAsset->GetDateAdded() / MILLI_TO_SECOND;
     outObjectInfo->dateModified = fileAsset->GetDateModified() / MILLI_TO_SECOND;
     outObjectInfo->storageID = DEFAULT_STORAGE_ID;
@@ -1195,7 +1196,7 @@ int32_t MtpMedialibraryManager::CopyObject(const std::shared_ptr<MtpOperationCon
         MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR), "fail to create assset");
     std::shared_ptr<MtpOperationContext> newFileContext = std::make_shared<MtpOperationContext>();
     newFileContext->handle = static_cast<uint32_t>(insertId) + COMMON_PHOTOS_OFFSET;
-    newFileContext->parent = context->parent;
+    newFileContext->parent = HandleConvertToAdded(context->parent);
     if (isForMove) {
         auto ptpSpecialHandles = PtpSpecialHandles::GetInstance();
         CHECK_AND_RETURN_RET_LOG(ptpSpecialHandles != nullptr, MTP_ERROR_INVALID_OBJECTPROP_VALUE,
@@ -1382,19 +1383,20 @@ int32_t MtpMedialibraryManager::CloseFd(const shared_ptr<MtpOperationContext> &c
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
         MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
     if (close(fd) == MTP_SUCCESS) {
+        DataShare::DataShareValuesBucket valuesBucketForOwnerAlbumId;
+        string uri = URI_MTP_OPERATION + "/" + OPRN_UPDATE_OWNER_ALBUM_ID;
+        MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri updateOwnerAlbumIdUri(uri);
+        DataShare::DataSharePredicates predicates;
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(context->handle - COMMON_PHOTOS_OFFSET));
+        valuesBucketForOwnerAlbumId.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+            static_cast<int32_t>(HandleConvertToAdded(context->parent)));
+        int32_t changedRows = dataShareHelper_->Update(updateOwnerAlbumIdUri, predicates, valuesBucketForOwnerAlbumId);
+        CHECK_AND_RETURN_RET_LOG(changedRows > 0,
+            MtpErrorUtils::SolveCloseFdError(E_HAS_DB_ERROR), "fail to update owneralbumid");
         errCode = dataShareHelper_->Insert(closeAssetUri, valuesBucket);
     }
     CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, MTP_ERROR_INVALID_OBJECTHANDLE, "fail to Close file");
-    DataShare::DataShareValuesBucket valuesBucketForOwnerAlbumId;
-    string uri = URI_MTP_OPERATION + "/" + OPRN_UPDATE_OWNER_ALBUM_ID;
-    MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateOwnerAlbumIdUri(uri);
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(context->handle - COMMON_PHOTOS_OFFSET));
-    valuesBucketForOwnerAlbumId.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, static_cast<int32_t>(context->parent));
-    int32_t changedRows = dataShareHelper_->Update(updateOwnerAlbumIdUri, predicates, valuesBucketForOwnerAlbumId);
-    CHECK_AND_RETURN_RET_LOG(changedRows > 0,
-        MtpErrorUtils::SolveCloseFdError(E_HAS_DB_ERROR), "fail to update owneralbumid");
     return MtpErrorUtils::SolveCloseFdError(E_SUCCESS);
 }
 

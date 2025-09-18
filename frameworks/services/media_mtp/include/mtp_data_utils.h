@@ -226,6 +226,7 @@ public:
         const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         PropertyValue &outPropValue, bool isVideoOfMovingPhoto);
     static int32_t GetMediaTypeByName(std::string &displayName, MediaType &outMediaType);
+    static uint32_t HandleConvertToDeleted(int32_t realHandle);
     // MTP
     static int32_t GetMtpPropList(const std::shared_ptr<std::unordered_map<uint32_t, std::string>> &handles,
         const std::unordered_map<std::string, uint32_t> &pathHandles,

@@ -14,6 +14,7 @@
  */
 
 #include "ptp_special_handles.h"
+#include "media_log.h"
 
 namespace OHOS {
 namespace Media {
@@ -82,6 +83,13 @@ uint32_t PtpSpecialHandles::HandleConvertToDeleted(uint32_t realHandle)
 void PtpSpecialHandles::ClearDeletedHandles()
 {
     deletedHandleMap_.Clear();
+}
+
+void PtpSpecialHandles::Dump()
+{
+    deletedHandleMap_.Iterate([](const uint32_t key, uint32_t& value) {
+        MEDIA_INFO_LOG("PtpSpecialHandles::Dump  key:%{public}d  value:%{public}d", key, value);
+    });
 }
 } // namespace Media
 } // namespace OHOS
