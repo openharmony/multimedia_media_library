@@ -1159,7 +1159,8 @@ static int32_t ConvertFormatFileSync(const std::shared_ptr<MediaLibraryRdbStore>
     return E_OK;
 }
 
-static bool CheckConvertFormatAsset(std::shared_ptr<NativeRdb::ResultSet> resultSet, const std::string &newTitle)
+static bool CheckConvertFormatAsset(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+    std::shared_ptr<NativeRdb::ResultSet> resultSet, const std::string &newTitle)
 {
     int32_t position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
     if (position == static_cast<int32_t>(PhotoPositionType::CLOUD)) {
@@ -1188,6 +1189,19 @@ static bool CheckConvertFormatAsset(std::shared_ptr<NativeRdb::ResultSet> result
             dateTrashed, dateDeleted);
         return false;
     }
+    int32_t ownerAlbumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
+    RdbPredicates newPredicates(PhotoColumn::PHOTOS_TABLE);
+    newPredicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, ownerAlbumId);
+    newPredicates.And()->EqualTo(MediaColumn::MEDIA_TITLE, newTitle);
+    shared_ptr<NativeRdb::ResultSet> titleResultSet = rdbStore->Query(newPredicates, {MediaColumn::MEDIA_TITLE});
+    if (titleResultSet == nullptr) {
+        MEDIA_ERR_LOG("query albumId: %{public}d title failed", ownerAlbumId);
+        return false;
+    }
+    if (titleResultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("newTitle is same in album: %{public}d", ownerAlbumId);
+        return false;
+    }
     return true;
 }
 
@@ -1207,7 +1221,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumFusionUtils::ConvertForma
         MEDIA_INFO_LOG("Query not matched data fails");
         return nullptr;
     }
-    if (!CheckConvertFormatAsset(resultSet, title)) {
+    if (!CheckConvertFormatAsset(rdbStore, resultSet, title)) {
         MEDIA_ERR_LOG("CheckConvertFormatAsset failed");
         return nullptr;
     }
