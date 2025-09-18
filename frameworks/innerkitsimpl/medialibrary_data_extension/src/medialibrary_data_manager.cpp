@@ -676,6 +676,20 @@ static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore
     MEDIA_INFO_LOG("Update south_device_type for %{public}d photos in cloud space, ret: %{public}d", changedRows, ret);
 }
 
+static void UpdateMovingPhotoAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("Start to update shooting mode album index");
+    const vector<string> sqls = {
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_MOVING_PHOTO_ALBUM_INDEX,
+        PhotoColumn::CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX,
+    };
+    for (const auto& sql : sqls) {
+        int ret = store->ExecuteSql(sql);
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    }
+    MEDIA_INFO_LOG("End update shooting mode album index");
+}
+
 static void UpgradePhotoSortIndex(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
 {
     const vector<string> sqls = {
@@ -731,9 +745,20 @@ void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_SOUTH_DEVICE_TYPE, false);
     }
 
-    if (oldVersion < VERSION_REUSE_PHOTO_SORT_INDEX) {
+    if (oldVersion < VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, false)) {
+        MediaLibraryRdbStore::AddIndexForPhotoSortInAlbum(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, false);
+    }
+
+    if (oldVersion < VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA, false)) {
+        MediaLibraryRdbStore::AddIndexForCloudAndPitaya(rdbStore);
+        UpdateMovingPhotoAlbumIndex(rdbStore);
         UpgradePhotoSortIndex(rdbStore);
-        rdbStore->SetOldVersion(VERSION_REUSE_PHOTO_SORT_INDEX);
+        rdbStore->SetOldVersion(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA, false);
     }
 }
 

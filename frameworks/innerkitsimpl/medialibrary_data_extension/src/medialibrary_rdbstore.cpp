@@ -1042,8 +1042,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
     return resultSet;
 }
 
-static void PrintPredicatesInfo(const AbsRdbPredicates& predicates, const vector<string>& columns,
-    int64_t timeCost)
+static void PrintPredicatesInfo(const AbsRdbPredicates& predicates, const vector<string>& columns)
 {
     string argsInfo;
     for (const auto& arg : predicates.GetWhereArgs()) {
@@ -1052,8 +1051,7 @@ static void PrintPredicatesInfo(const AbsRdbPredicates& predicates, const vector
         }
         argsInfo += arg;
     }
-    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s, time cost is %{public}" PRId64 " ms",
-        RdbSqlUtils::BuildQueryString(predicates, columns).c_str(), timeCost);
+    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", RdbSqlUtils::BuildQueryString(predicates, columns).c_str());
     MEDIA_DEBUG_LOG("PhotosApp Predicates Args are %{public}s", argsInfo.c_str());
 }
 
@@ -1073,9 +1071,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryWithFilter(const Abs
     DfxTimer dfxTimer(RDB_QUERY, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QueryByPredicates");
-    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    PrintPredicatesInfo(predicates, columns);
     auto resultSet = MediaLibraryRdbStore::GetRaw()->QueryByStep(predicates, columns);
-    PrintPredicatesInfo(predicates, columns, MediaFileUtils::UTCTimeMilliSeconds() - startTime);
     MediaLibraryRestore::GetInstance().CheckResultSet(resultSet);
     if (resultSet == nullptr) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
@@ -1704,7 +1701,6 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_TABLE,
     PhotoColumn::CREATE_CLOUD_ID_INDEX,
     PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
-    PhotoColumn::INDEX_SCHPT_ALBUM,
     PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED,
     PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
     PhotoColumn::CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX,
@@ -1712,17 +1708,12 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX,
     PhotoColumn::CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX,
     PhotoColumn::CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX,
-    PhotoColumn::INDEX_QUERY_THUMBNAIL_WHITE_BLOCKS,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::INDEX_SCHPT_READY,
-    PhotoColumn::CREATE_YEAR_INDEX,
-    PhotoColumn::CREATE_MONTH_INDEX,
-    PhotoColumn::CREATE_DAY_INDEX,
+    PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
     PhotoColumn::CREATE_SCHPT_DAY_INDEX,
     PhotoColumn::CREATE_SCHPT_YEAR_COUNT_READY_INDEX,
     PhotoColumn::CREATE_SCHPT_MONTH_COUNT_READY_INDEX,
-    PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
-    PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
     PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
     PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
     PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
@@ -1849,7 +1840,6 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INSERT_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::UPDATE_GENERATE_HIGHLIGHT_THUMBNAIL,
     PhotoColumn::INDEX_HIGHLIGHT_FILEID,
-    PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
     PhotoColumn::INDEX_LATITUDE,
     PhotoColumn::INDEX_LONGITUDE,
     CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
@@ -2964,6 +2954,48 @@ void MediaLibraryRdbStore::AddIndexForFileIdAsync(const shared_ptr<MediaLibraryR
     };
     ExecSqls(updateSql, *store->GetRaw().get());
     MEDIA_INFO_LOG("AddIndexForFileIdAsync end");
+}
+
+void MediaLibraryRdbStore::AddIndexForPhotoSortInAlbum(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    const std::vector<std::string> sqls = {
+        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_SIZE_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_SIZE_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DISPLAY_NAME_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DISPLAY_NAME_INDEX,
+    };
+    MEDIA_INFO_LOG("Start add index for photo sort in album");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("End add index for photo sort in album");
+}
+
+void MediaLibraryRdbStore::AddIndexForCloudAndPitaya(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ADDED_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ALBUM_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_HIDDEN_TIME_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_DATE_DAY_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_DATE_MONTH_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_DATE_YEAR_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ALBUM_GENERAL_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_ADDED_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DATE_TAKEN_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_ADDED_INDEX,
+        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
+    };
+    MEDIA_INFO_LOG("Start add index for Cloud Enhancement and Pitaya");
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("End add index for Cloud Enhancement and Pitaya");
 }
 
 static void AddMetaRecovery(RdbStore& store)
@@ -4994,22 +5026,6 @@ static void AddExifRotateColumn(RdbStore& store)
     MEDIA_INFO_LOG("End add exif_rotate column");
 }
 
-static void AddIndexForPhotoSortInAlbum(RdbStore& store)
-{
-    const vector<string> sqls = {
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ALBUM_GENERAL_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ADDED_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX,
-        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_SIZE_INDEX,
-        PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_SIZE_INDEX,
-        PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DISPLAY_NAME_INDEX,
-        PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DISPLAY_NAME_INDEX,
-    };
-    MEDIA_INFO_LOG("Start add index for photo sort");
-    ExecSqls(sqls, store);
-    MEDIA_INFO_LOG("End add index for photo sort");
-}
-
 static void DealWithAlbumMapTrigger(RdbStore &store)
 {
     const vector<std::string> exeSqls = {
@@ -5282,12 +5298,6 @@ static void AddCloneSequenceColumns(RdbStore &store)
 
 static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
 {
-    if (oldVersion < VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM &&
-        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, true)) {
-        AddIndexForPhotoSortInAlbum(store);
-        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, true);
-    }
-
     if (oldVersion < VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE, true)) {
         AddCloneSequenceColumns(store);
