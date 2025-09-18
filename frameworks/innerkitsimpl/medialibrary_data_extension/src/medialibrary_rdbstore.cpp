@@ -5055,9 +5055,13 @@ static void AddFileSourceType(RdbStore &store)
         "DROP TRIGGER IF EXISTS photos_metadata_dirty_trigger",
         PhotoColumn::CREATE_PHOTOS_METADATA_DIRTY_TRIGGER,
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
-            PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0 "
+            PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0 ",
+        "ALTER TABLE " + AudioColumn::AUDIOS_TABLE + " ADD COLUMN " +
+            AudioColumn::AUDIO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0 "
     };
+    MEDIA_INFO_LOG("AddFileSourceType start");
     ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("AddFileSourceType end");
 }
 
 static void UpgradeFromAllVersionFirstPart(RdbStore &store, unordered_map<string, bool> &photoColumnExists)

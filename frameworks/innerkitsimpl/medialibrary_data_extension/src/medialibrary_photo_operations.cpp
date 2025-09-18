@@ -4507,8 +4507,6 @@ static bool QueryHiddenFilesList(set<string>& hiddenFiles)
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is nullptr!");
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, 1);
-    predicates.NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
-        static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER));
     vector<string> columns;
     columns.push_back(MediaColumn::MEDIA_FILE_PATH);
     columns.push_back(PhotoColumn::PHOTO_SUBTYPE);

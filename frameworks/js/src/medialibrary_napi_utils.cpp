@@ -449,11 +449,6 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context, shared
             to_string(static_cast<int32_t>(FileSourceTypes::MEDIA)) } });
     }
     context->predicates = DataSharePredicates(move(operations));
-    if (!hasUri && fetchOptType == ALBUM_FETCH_OPT) {
-        context->predicates.And()->BeginWrap()->NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/图库")
-            ->NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/其它")->Or()
-            ->IsNull(PhotoAlbumColumns::ALBUM_LPATH)->EndWrap();
-    }
     return true;
 }
 
