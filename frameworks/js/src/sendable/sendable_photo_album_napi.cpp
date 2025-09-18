@@ -504,6 +504,8 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
             NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
             return nullptr;
         }
+        // sort by hidden time desc if is hidden asset
+        context->OrderByDesc(PhotoColumn::PHOTO_HIDDEN_TIME);
     }
 
     napi_value result = nullptr;

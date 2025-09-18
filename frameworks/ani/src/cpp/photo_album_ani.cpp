@@ -323,6 +323,8 @@ static ani_status ParseArgsGetPhotoAssets(ani_env *env, ani_object object, ani_o
             AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
             return ANI_ERROR;
         }
+        // sort by hidden time desc if is hidden asset
+        context->predicates.OrderByDesc(PhotoColumn::PHOTO_HIDDEN_TIME);
     }
     return ANI_OK;
 }
