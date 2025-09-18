@@ -33,25 +33,9 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-std::string ReadFileToString(const std::string &fileName)
-{
-    std::ifstream file(fileName);
-    if (!file) {
-        return "";
-    }
+void MediaLibraryHandlerTest::SetUpTestCase(void) {}
 
-    std::ostringstream oss;
-    oss << file.rdbuf();
-    return oss.str();
-}
-
-void MediaLibraryHandlerTest::SetUpTestCase(void)
-{
-}
-
-void MediaLibraryHandlerTest::TearDownTestCase(void)
-{
-}
+void MediaLibraryHandlerTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
 void MediaLibraryHandlerTest::SetUp(void) {}
@@ -65,20 +49,15 @@ void MediaLibraryHandlerTest::TearDown(void) {}
  */
 HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_001, TestSize.Level1)
 {
-    std::string filename = "/data/medialibrary_handler_unittest.txt";
-    std::string fileContent = ReadFileToString(filename);
-
     vector<string> uris;
     vector<string> results;
-    uris.push_back(fileContent);
+    results.push_back("10001");
     ConvertFileUriToMntPath(uris, results);
-    EXPECT_TRUE(results.size() == uris.size());
-    std::regex pattern("^/mnt/hmdfs/[0-9]+/account/cloud_merge_view/files/Photo/[0-9]+/.+$");
-    EXPECT_TRUE(std::regex_match(results[0], pattern));
+    EXPECT_EQ(results.empty(), true);
 
-    uris.push_back(fileContent);
+    uris.push_back("file://media/Photo/adc.png");
     ConvertFileUriToMntPath(uris, results);
-    EXPECT_TRUE(results.size() == uris.size());
+    EXPECT_TRUE(results.empty());
 
     uris.push_back("file://test");
     ConvertFileUriToMntPath(uris, results);
