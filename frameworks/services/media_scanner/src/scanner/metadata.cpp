@@ -15,12 +15,14 @@
 
 #include "metadata.h"
 #include "medialibrary_db_const.h"
+#include "media_log.h"
 #include "fetch_result.h"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
 const MediaType FILE_MEDIA_TYPE_DEFAULT = MEDIA_TYPE_FILE;
+const MediaType FILE_MEDIA_TYPE_MAX = MEDIA_TYPE_DEFAULT;
 
 Metadata::Metadata()
     : id_(FILE_ID_DEFAULT),
@@ -180,6 +182,11 @@ const std::string &Metadata::GetFileMimeType() const
 
 void Metadata::SetFileMediaType(const VariantData &mediaType)
 {
+    if (std::get<int32_t>(mediaType) < FILE_MEDIA_TYPE_DEFAULT || std::get<int32_t>(mediaType) > FILE_MEDIA_TYPE_MAX) {
+        mediaType_ = FILE_MEDIA_TYPE_DEFAULT;
+        MEDIA_ERR_LOG("SetFileMediaType invalid media type %{public}d", std::get<int32_t>(mediaType));
+        return;
+    }
     mediaType_ = static_cast<MediaType>(std::get<int32_t>(mediaType));
 }
 
