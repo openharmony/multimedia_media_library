@@ -42,6 +42,8 @@ private:
     static int32_t GetVideoMimetype(const std::string &filePath, std::string &mimeType);
     static int32_t GetImageMimetype(const std::string &filePath, std::string &mimeType);
 
+    static std::mutex lockCreateMap_;
+
     static std::unordered_map<std::string, std::vector<std::string>> mediaJsonMap_;
 };
 }

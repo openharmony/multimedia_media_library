@@ -25,6 +25,7 @@
 
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
 #include "bundle_mgr_proxy.h"
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
@@ -202,6 +203,8 @@ void HeifTranscodingCheckUtils::UnsubscribeCotaUpdatedEvent()
 
 int32_t HeifTranscodingCheckUtils::InitCheckList()
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("InitCheckList Excute");
     CHECK_AND_RETURN_RET_INFO_LOG(ReadCheckList() == E_OK, E_FAIL, "ReadCheckList failed");
     CHECK_AND_RETURN_RET_INFO_LOG(SubscribeCotaUpdatedEvent() == E_OK, E_FAIL, "SubscribeCotaUpdatedEvent failed");
     return E_OK;
