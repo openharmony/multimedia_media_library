@@ -78,11 +78,6 @@ struct PhotoStatistics {
     int32_t sharedImageCount;  // 端云共存照片数量
     int32_t sharedVideoCount;  // 端云共存视频数量
     int32_t southDeviceType;
-    int32_t userAlbumCount;
-    int32_t sourceAlbumCount;
-    int32_t uploadUserAlbumCount;
-    int32_t uploadSourceAlbumCount;
-    int32_t notUploadAssetCount;
     int32_t tasksWaitingCount;
     int32_t tasksDownloadingCount;
     int32_t tasksPauseCount;
