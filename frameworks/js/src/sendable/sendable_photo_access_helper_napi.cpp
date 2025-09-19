@@ -1231,6 +1231,14 @@ static void RestrictAlbumSubtypeOptions(unique_ptr<SendablePhotoAccessHelperAsyn
     }
 }
 
+static void HandleSpecialAlbumFilters(const bool isAnalysisAlbum, DataSharePredicates &predicates)
+{
+    if (!isAnalysisAlbum) {
+        predicates.And()->BeginWrap()->NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/图库")
+            ->Or()->IsNull(PhotoAlbumColumns::ALBUM_LPATH)->EndWrap();
+    }
+}
+
 static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
     unique_ptr<SendablePhotoAccessHelperAsyncContext> &context)
 {
@@ -1266,6 +1274,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
             return nullptr;
     }
     RestrictAlbumSubtypeOptions(context);
+    HandleSpecialAlbumFilters(context->isAnalysisAlbum, context->predicates);
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
         context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
         CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
@@ -1364,6 +1373,7 @@ napi_value ParseArgsGetHiddenAlbums(napi_env env, napi_callback_info info,
                 env, OHOS_INVALID_PARAM_CODE, "Invalid parameter count: " + to_string(context->argc));
             return nullptr;
     }
+    HandleSpecialAlbumFilters(context->isAnalysisAlbum, context->predicates);
     CHECK_NULLPTR_RET(ParseHiddenPhotosDisplayMode(env, context, fetchMode));
     CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
     context->hiddenAlbumFetchMode = fetchMode;

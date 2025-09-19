@@ -206,7 +206,6 @@ public:
     static const std::string PHOTO_FRONT_CAMERA_ALBUM_INDEX EXPORT;
     static const std::string PHOTO_RAW_IMAGE_ALBUM_INDEX EXPORT;
     static const std::string PHOTO_MOVING_PHOTO_ALBUM_INDEX EXPORT;
-    static const std::string PHOTO_FILE_SOURCE_TYPE_INDEX EXPORT;
     // for clone query
     static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // for burst query
@@ -354,6 +353,7 @@ public:
     // column only in AudioTable
     static const std::string AUDIO_ALBUM EXPORT;
     static const std::string AUDIO_ARTIST EXPORT;
+    static const std::string AUDIO_FILE_SOURCE_TYPE EXPORT;
 
     // table name
     static const std::string AUDIOS_TABLE EXPORT;

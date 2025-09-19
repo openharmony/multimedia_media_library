@@ -159,7 +159,8 @@ const std::string CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS " +
     PhotoColumn::STAGE_VIDEO_TASK_STATUS + " INT NOT NULL DEFAULT 0, " +
     PhotoColumn::PHOTO_IS_AUTO + " INT NOT NULL DEFAULT 0, " +
     PhotoColumn::PHOTO_MEDIA_SUFFIX + " TEXT, " +
-    PhotoColumn::PHOTO_IS_RECENT_SHOW + " INT NOT NULL DEFAULT 1)";
+    PhotoColumn::PHOTO_IS_RECENT_SHOW + " INT NOT NULL DEFAULT 1, " +
+    PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0)";
 
 const AccurateRefresh::PhotoAssetChangeInfo NORMAL_ASSET = { ASSET_FILE_ID, ASSET_URI, ASSET_DATE_DAY,
     "uri", // owner album uri

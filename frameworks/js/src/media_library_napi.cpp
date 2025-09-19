@@ -9174,6 +9174,14 @@ static void RestrictAlbumSubtypeOptions(DataSharePredicates &predicates)
     }
 }
 
+static void HandleSpecialAlbumFilters(const bool isAnalysisAlbum, DataSharePredicates &predicates)
+{
+    if (!isAnalysisAlbum) {
+        predicates.And()->BeginWrap()->NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/图库")
+            ->Or()->IsNull(PhotoAlbumColumns::ALBUM_LPATH)->EndWrap();
+    }
+}
+
 static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -9209,6 +9217,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
             return nullptr;
     }
     RestrictAlbumSubtypeOptions(context->predicates);
+    HandleSpecialAlbumFilters(context->isAnalysisAlbum, context->predicates);
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
         context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
         CHECK_COND(env, CheckAlbumFetchColumns(context->fetchColumn), JS_ERR_PARAMETER_INVALID);
@@ -10860,6 +10869,7 @@ napi_value ParseArgsPahGetHiddenAlbums(napi_env env, napi_callback_info info,
         status = MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM1], ALBUM_FETCH_OPT, context);
         CHECK_ARGS(env, status, OHOS_INVALID_PARAM_CODE);
     }
+    HandleSpecialAlbumFilters(context->isAnalysisAlbum, context->predicates);
 
     CHECK_COND(env, CheckAlbumFetchColumns(context->fetchColumn), JS_ERR_PARAMETER_INVALID);
     context->hiddenAlbumFetchMode = fetchMode;
@@ -11986,6 +11996,7 @@ static napi_value ParseArgsGetPhotoAlbumsWithoutSubtype(napi_env env, napi_callb
         CHECK_ARGS(env, status, JS_E_INNER_FAIL);
     }
     RestrictAlbumSubtypeOptions(context->predicates);
+    HandleSpecialAlbumFilters(context->isAnalysisAlbum, context->predicates);
 
     CHECK_COND(env, CheckAlbumFetchColumns(context->fetchColumn), JS_E_INNER_FAIL);
     AddNoSmartFetchColumns(context->fetchColumn);
@@ -12128,6 +12139,7 @@ static napi_value ParseArgsGetPhotoAlbumOrder(napi_env env, napi_callback_info i
         CHECK_ARGS(env, status, JS_E_INNER_FAIL);
     }
     RestrictAlbumSubtypeOptions(context->predicates);
+    HandleSpecialAlbumFilters(context->isAnalysisAlbum, context->predicates);
 
     CHECK_ARGS_WITH_MEG(env, AddDefaultAlbumOrderColumns(env, context, context->fetchColumn, orderStyle),
         JS_E_PARAM_INVALID, "Failed to add default columns");
