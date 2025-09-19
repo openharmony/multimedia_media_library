@@ -1006,6 +1006,7 @@ bool MediaFileUtils::WriteStrToFile(const string &filePath, const string &str)
         return false;
     }
 
+    string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
         return false;
