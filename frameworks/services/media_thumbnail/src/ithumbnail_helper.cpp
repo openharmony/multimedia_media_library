@@ -721,7 +721,8 @@ bool IThumbnailHelper::StoreLcdPixelMapLowQuality(ThumbnailData& data, const std
     CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "PixelMap is null, isSourceEx: %{public}d", isSourceEx);
 
     size_t lastGeneratedSize = -1;
-    ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize);
+    ThumbnailType thumbType = (!isSourceEx) ? ThumbnailType::LCD : ThumbnailType::LCD_EX;
+    ThumbnailFileUtils::GetThumbFileSize(data, thumbType, lastGeneratedSize);
     MEDIA_INFO_LOG("Create low quality lcd. SizeLimit: %{public}zu, lastGeneratedSize: %{public}zu",
         sizeLimit, lastGeneratedSize);
     vector<ThumbnailQuality> tryQualityList = { ThumbnailQuality::DEFAULT, ThumbnailQuality::GOOD,
@@ -729,9 +730,9 @@ bool IThumbnailHelper::StoreLcdPixelMapLowQuality(ThumbnailData& data, const std
     for (const ThumbnailQuality quality : tryQualityList) {
         CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::CompressImage(pixelMap, data.lcd, false, false, quality),
             false, "CompressImage failed");
-        CHECK_AND_RETURN_RET_LOG(TrySavePixelMap(data, isSourceEx ? ThumbnailType::LCD_EX : ThumbnailType::LCD),
+        CHECK_AND_RETURN_RET_LOG(TrySavePixelMap(data, thumbType),
             false, "SaveLcd PixelMap failed: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
-        CHECK_AND_RETURN_RET_LOG(ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize),
+        CHECK_AND_RETURN_RET_LOG(ThumbnailFileUtils::GetThumbFileSize(data, thumbType, lastGeneratedSize),
             false, "GetThumbFileSize failed");
         if (lastGeneratedSize <= sizeLimit) {
             return true;
