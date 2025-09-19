@@ -867,10 +867,8 @@ static int32_t SetAlbumCoverUri(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         predicates.OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN);
     } else if (subtype == PhotoAlbumSubType::USER_GENERIC || subtype == PhotoAlbumSubType::SOURCE_GENERIC) {
         predicates.OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN);
-        predicates.OrderByDesc(MediaColumn::MEDIA_ID);
     } else {
         predicates.OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN);
-        predicates.OrderByDesc(MediaColumn::MEDIA_ID);
     }
     predicates.Limit(1);
 
@@ -1518,12 +1516,10 @@ static void DetermineQueryOrder(RdbPredicates& predicates, const UpdateAlbumData
         predicates.OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN);
     } else if (subtype == PhotoAlbumSubType::USER_GENERIC || subtype == PhotoAlbumSubType::SOURCE_GENERIC) {
         predicates.OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN);
-        predicates.OrderByDesc(MediaColumn::MEDIA_ID);
     } else if (subtype == PhotoAlbumSubType::SHOOTING_MODE) {
         SetShootingModeAlbumQueryOrder(predicates, data.albumName, columns);
     } else {
         predicates.OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN);
-        predicates.OrderByDesc(MediaColumn::MEDIA_ID);
     }
 }
 
