@@ -38,6 +38,7 @@ public:
     bool FindDeletedHandle(uint32_t deletedHandle);
     uint32_t HandleConvertToDeleted(uint32_t deletedHandle);
     void ClearDeletedHandles();
+    void Dump();
 private:
     OHOS::SafeMap<uint32_t, uint32_t> deletedHandleMap_;
     static std::mutex mutex_;

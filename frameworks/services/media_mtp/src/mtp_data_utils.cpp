@@ -32,6 +32,7 @@
 #include "rdb_errno.h"
 #include "playback_formats.h"
 #include "moving_photo_file_utils.h"
+#include "ptp_special_handles.h"
 
 using namespace std;
 namespace OHOS {
@@ -428,6 +429,14 @@ int32_t MtpDataUtils::GetPropListBySet(const std::shared_ptr<MtpOperationContext
     return GetPropList(context, resultSet, properties, outProps);
 }
 
+uint32_t MtpDataUtils::HandleConvertToDeleted(int32_t realHandle)
+{
+    auto ptpSpecialHandles = PtpSpecialHandles::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(ptpSpecialHandles != nullptr, E_ERR, "ptpSpecialHandles is nullptr");
+    uint32_t parentId = ptpSpecialHandles->HandleConvertToDeleted(static_cast<uint32_t>(realHandle));
+    return parentId;
+}
+
 int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &context,
     const shared_ptr<DataShare::DataShareResultSet> &resultSet,
     const shared_ptr<UInt16List> &properties, shared_ptr<vector<Property>> &outProps)
@@ -452,7 +461,7 @@ int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &co
             CHECK_AND_RETURN_RET_LOG(!path.empty(), E_FAIL, "MtpDataUtils::GetPropList get sourcePath failed");
             MovingType movingType;
             movingType.displayName = displayName;
-            movingType.parent = static_cast<uint64_t>(parent);
+            movingType.parent = static_cast<uint64_t>(HandleConvertToDeleted(parent));
             GetMovingOrEnditOneRowPropList(properties, path, context, outProps, movingType);
         } else {
             MEDIA_INFO_LOG("GetPropList %{public}d",
@@ -596,7 +605,11 @@ void MtpDataUtils::SetProperty(const std::string &column, const shared_ptr<DataS
             prop.currentValue->str_ = make_shared<std::string>(get<std::string>(columnValue));
             break;
         case TYPE_INT32:
-            prop.currentValue->bin_.i32 = get<int32_t>(columnValue);
+            if (column.compare(MEDIA_DATA_DB_PARENT_ID) == 0) {
+                prop.currentValue->bin_.i32 = static_cast<int32_t>(HandleConvertToDeleted(get<int32_t>(columnValue)));
+            } else {
+                prop.currentValue->bin_.i32 = get<int32_t>(columnValue);
+            }
             {
                 // if ptp in mtp mode, set parent id to PTP_IN_MTP_ID
                 bool isParent = column.compare(MEDIA_DATA_DB_PARENT_ID) == 0;
@@ -687,7 +700,6 @@ int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
     const shared_ptr<DataShare::DataShareResultSet> &resultSet, PropertyValue &outPropValue, bool isVideoOfMovingPhoto)
 {
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "resultSet is nullptr");
-
     CHECK_AND_RETURN_RET(resultSet->GoToFirstRow() == 0, MTP_ERROR_INVALID_OBJECTHANDLE);
     if (isVideoOfMovingPhoto && property != MTP_PROPERTY_PARENT_OBJECT_CODE) {
         string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
@@ -704,7 +716,6 @@ int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
         outPropValue.outIntVal = static_cast<uint64_t>(statInfo.st_size);
         return MTP_SUCCESS;
     }
-
     if (PropColumnMap.find(property) != PropColumnMap.end()) {
         std::string column = PropColumnMap.at(property);
         ResultSetDataType type = ColumnTypeMap.at(column);
@@ -715,6 +726,10 @@ int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
                 outPropValue.outStrVal = get<std::string>(columnValue);
                 break;
             case TYPE_INT32:
+                if (column.compare(MEDIA_DATA_DB_PARENT_ID) == 0) {
+                    outPropValue.outIntVal = static_cast<uint64_t>(HandleConvertToDeleted(get<int32_t>(columnValue)));
+                    break;
+                }
                 outPropValue.outIntVal = static_cast<uint64_t>(get<int32_t>(columnValue));
                 break;
             case TYPE_INT64:

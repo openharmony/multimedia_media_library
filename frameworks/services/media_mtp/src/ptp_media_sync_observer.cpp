@@ -222,6 +222,8 @@ void MediaSyncObserver::StopDelayInfoThread()
 
 void MediaSyncObserver::DelayInfoThread()
 {
+    auto specialHandles = PtpSpecialHandles::GetInstance();
+    CHECK_AND_RETURN_LOG(specialHandles != nullptr, "specialHandles is nullptr");
     while (isRunningDelay_.load()) {
         DelayInfo delayInfo;
         {
@@ -240,11 +242,12 @@ void MediaSyncObserver::DelayInfoThread()
             std::this_thread::sleep_until(delayInfo.tp);
         }
         if (delayInfo.objectHandle > COMMON_MOVING_OFFSET) {
-            SendEventPackets(delayInfo.objectHandle, delayInfo.eventCode);
+            SendEventPackets(specialHandles->HandleConvertToDeleted(delayInfo.objectHandle), delayInfo.eventCode);
         } else {
             AddBurstPhotoHandle(delayInfo.burstKey);
         }
-        SendEventPacketAlbum(delayInfo.objectHandleAlbum, delayInfo.eventCodeAlbum);
+        uint32_t albumHandle = specialHandles->HandleConvertToDeleted(delayInfo.objectHandleAlbum);
+        SendEventPacketAlbum(albumHandle, delayInfo.eventCodeAlbum);
     }
 }
 
@@ -253,6 +256,8 @@ void MediaSyncObserver::AddBurstPhotoHandle(string burstKey)
     if (needAddMemberBurstKeys_.find(burstKey) == needAddMemberBurstKeys_.end()) {
         return;
     }
+    auto specialHandles = PtpSpecialHandles::GetInstance();
+    CHECK_AND_RETURN_LOG(specialHandles != nullptr, "specialHandles is nullptr");
     Uri uri(PAH_QUERY_PHOTO);
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
@@ -272,7 +277,8 @@ void MediaSyncObserver::AddBurstPhotoHandle(string burstKey)
         "Mtp AddBurstPhotoHandle failed to get resultSet");
     do {
         int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-        SendEventPackets(fileId + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
+        uint32_t actualHandle = specialHandles->HandleConvertToDeleted(fileId + COMMON_PHOTOS_OFFSET);
+        SendEventPackets(actualHandle, MTP_EVENT_OBJECT_ADDED_CODE);
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     needAddMemberBurstKeys_.erase(burstKey);
 }
@@ -330,7 +336,7 @@ void MediaSyncObserver::AddPhotoHandle(int32_t handle)
         AddDelayInfo(handle + COMMON_PHOTOS_OFFSET, ownerAlbumId, burstKey, DELAY_FOR_BURST_MS);
     }
     auto albumHandles = PtpAlbumHandles::GetInstance();
-    if (!albumHandles->FindHandle(ownerAlbumId)) {
+    if (!albumHandles->FindHandle(ownerAlbumId) && !FindRealHandle(static_cast<uint32_t>(ownerAlbumId))) {
         albumHandles->AddHandle(ownerAlbumId);
         SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_ADDED_CODE);
         SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
@@ -375,7 +381,7 @@ void MediaSyncObserver::GetAddEditPhotoHandles(int32_t handle)
         SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
     }
     auto albumHandles = PtpAlbumHandles::GetInstance();
-    if (!albumHandles->FindHandle(ownerAlbumId)) {
+    if (!albumHandles->FindHandle(ownerAlbumId) && !FindRealHandle(static_cast<uint32_t>(ownerAlbumId))) {
         albumHandles->AddHandle(ownerAlbumId);
         SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_ADDED_CODE);
         SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
@@ -407,7 +413,7 @@ void MediaSyncObserver::SendPhotoRemoveEvent(std::string &suffixString)
     vector<int32_t> handles;
     auto specialHandles = PtpSpecialHandles::GetInstance();
     CHECK_AND_RETURN_LOG(specialHandles != nullptr, "specialHandles is nullptr");
-
+    uint32_t actualHandle = 0;
     if (suffixString.empty()) {
         allDeletedHandles = GetAllDeleteHandles();
         for (auto deleteHandle : allDeletedHandles) {
@@ -417,18 +423,19 @@ void MediaSyncObserver::SendPhotoRemoveEvent(std::string &suffixString)
             }
             uint32_t fileId = static_cast<uint32_t>(atoi(deleteHandle.c_str()));
             if (FindRealHandle(fileId + COMMON_PHOTOS_OFFSET)) {
-                uint32_t actualHandle = specialHandles->HandleConvertToDeleted(fileId + COMMON_PHOTOS_OFFSET);
+                actualHandle = specialHandles->HandleConvertToDeleted(fileId + COMMON_PHOTOS_OFFSET);
                 SendEventPackets(actualHandle, MTP_EVENT_OBJECT_REMOVED_CODE);
                 continue;
             }
             SendEventPackets(atoi(deleteHandle.c_str()) + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
-            SendEventPackets(atoi(deleteHandle.c_str()) + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+            actualHandle = specialHandles->HandleConvertToDeleted(atoi(deleteHandle.c_str()) + COMMON_MOVING_OFFSET);
+            SendEventPackets(actualHandle, MTP_EVENT_OBJECT_REMOVED_CODE);
         }
     } else {
         CHECK_AND_RETURN_LOG(IsNumber(suffixString), "Mtp SendPhotoRemoveEvent deleteHandle is incorrect ");
         uint32_t fileId = static_cast<uint32_t>(atoi(suffixString.c_str()));
         if (FindRealHandle(fileId + COMMON_PHOTOS_OFFSET)) {
-            uint32_t actualHandle = specialHandles->HandleConvertToDeleted(fileId + COMMON_PHOTOS_OFFSET);
+            actualHandle = specialHandles->HandleConvertToDeleted(fileId + COMMON_PHOTOS_OFFSET);
             SendEventPackets(actualHandle, MTP_EVENT_OBJECT_REMOVED_CODE);
             return;
         }
@@ -447,7 +454,8 @@ void MediaSyncObserver::SendPhotoRemoveEvent(std::string &suffixString)
     }
     handles = GetHandlesFromPhotosInfoBurstKeys(allDeletedHandles);
     for (const auto handle : handles) {
-        SendEventPackets(handle + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_REMOVED_CODE);
+        actualHandle = specialHandles->HandleConvertToDeleted(handle + COMMON_PHOTOS_OFFSET);
+        SendEventPackets(actualHandle, MTP_EVENT_OBJECT_REMOVED_CODE);
     }
 }
 
@@ -523,9 +531,9 @@ void MediaSyncObserver::SendEventToPTP(ChangeType changeType, const std::vector<
     std::vector<int32_t> removeIds;
     std::set<int32_t> localAlbumIds;
     auto albumHandles = PtpAlbumHandles::GetInstance();
-    auto specialHandles = PtpSpecialHandles::GetInstance();
+    auto ptpHandles = PtpSpecialHandles::GetInstance();
     CHECK_AND_RETURN_LOG(albumHandles != nullptr, "albumHandles is nullptr");
-    CHECK_AND_RETURN_LOG(specialHandles != nullptr, "specialHandles is nullptr");
+    CHECK_AND_RETURN_LOG(ptpHandles != nullptr, "ptpHandles is nullptr");
     switch (changeType) {
         case static_cast<int32_t>(NotifyType::NOTIFY_ADD):
         case static_cast<int32_t>(NotifyType::NOTIFY_UPDATE):
@@ -534,7 +542,7 @@ void MediaSyncObserver::SendEventToPTP(ChangeType changeType, const std::vector<
             GetOwnerAlbumIdList(localAlbumIds);
             albumHandles->UpdateHandle(localAlbumIds, removeIds);
             for (auto removeId : removeIds) {
-                if (specialHandles->FindDeletedHandle(removeId)) {
+                if (ptpHandles->FindDeletedHandle(removeId)) {
                     continue;
                 }
                 albumHandles->RemoveHandle(removeId);
@@ -549,18 +557,19 @@ void MediaSyncObserver::SendEventToPTP(ChangeType changeType, const std::vector<
                     albumHandles->AddHandle(albumId);
                     SendEventPacketAlbum(albumId, MTP_EVENT_OBJECT_ADDED_CODE);
                 }
-                SendEventPacketAlbum(albumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+                SendEventPacketAlbum(ptpHandles->HandleConvertToDeleted(albumId), MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
             }
             SendEventPacketAlbum(GetParentId(), MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            ptpHandles->Dump();
             break;
         case static_cast<int32_t>(NotifyType::NOTIFY_REMOVE):
             MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM REMOVE");
             for (auto albumId : albumIds) {
-                if (specialHandles->FindDeletedHandle(albumId)) {
+                if (ptpHandles->FindDeletedHandle(albumId)) {
                     continue;
                 }
-                albumHandles->RemoveHandle(specialHandles->HandleConvertToDeleted(albumId));
-                SendEventPacketAlbum(specialHandles->HandleConvertToDeleted(albumId), MTP_EVENT_OBJECT_REMOVED_CODE);
+                albumHandles->RemoveHandle(ptpHandles->HandleConvertToDeleted(albumId));
+                SendEventPacketAlbum(ptpHandles->HandleConvertToDeleted(albumId), MTP_EVENT_OBJECT_REMOVED_CODE);
             }
             SendEventPacketAlbum(GetParentId(), MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
             break;
