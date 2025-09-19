@@ -271,6 +271,17 @@
           ],
           "when": "always"
         }
+      },
+      {
+        "name": "ohos.permission.RECEIVE_UPDATE_MESSAGE",
+        "reason": "$string:permission_receive_update_message",
+        "usedScene":{
+          "abilities":[
+            "MainAbility",
+            "DataShareExtAbility"
+          ],
+          "when": "always"
+        }
       }
     ],
     "proxyDatas": [
