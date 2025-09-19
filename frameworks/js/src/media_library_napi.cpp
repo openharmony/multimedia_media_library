@@ -11700,6 +11700,14 @@ napi_value MediaLibraryNapi::PhotoAccessGetSharedPhotoAssets(napi_env env, napi_
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessGetSharedPhotoAssets");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system app");
+        return nullptr;
+    }
+    if (access(MEDIA_DB_DIR.c_str(), E_OK) != 0) {
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "Have no permission");
+        return nullptr;
+    }
     unique_ptr<MediaLibraryAsyncContext> asyncContext =
         make_unique<MediaLibraryAsyncContext>();
     asyncContext->assetType = TYPE_PHOTO;
