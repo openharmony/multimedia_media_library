@@ -172,7 +172,6 @@ const std::string PhotoColumn::PHOTO_BURST_MODE_ALBUM_INDEX = "idx_burst_mode_al
 const std::string PhotoColumn::PHOTO_FRONT_CAMERA_ALBUM_INDEX = "idx_front_camera_album";
 const std::string PhotoColumn::PHOTO_RAW_IMAGE_ALBUM_INDEX = "idx_raw_image_album";
 const std::string PhotoColumn::PHOTO_MOVING_PHOTO_ALBUM_INDEX = "idx_moving_photo_album";
-const std::string PhotoColumn::PHOTO_FILE_SOURCE_TYPE_INDEX = "idx_file_source_type";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -759,6 +758,7 @@ std::string PhotoColumn::CheckMetaRecoveryPhotoColumns()
 
 const std::string AudioColumn::AUDIO_ALBUM = "audio_album";
 const std::string AudioColumn::AUDIO_ARTIST = "artist";
+const std::string AudioColumn::AUDIO_FILE_SOURCE_TYPE = "file_source_type";
 
 const std::string AudioColumn::AUDIOS_TABLE = "Audios";
 
@@ -780,6 +780,7 @@ const std::string AudioColumn::CREATE_AUDIO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_PACKAGE_NAME + " TEXT, " +
     MEDIA_DEVICE_NAME + " TEXT, " +
     AUDIO_ARTIST + " TEXT, " +
+    AUDIO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0, " +
     MEDIA_DATE_ADDED + " BIGINT, " +
     MEDIA_DATE_MODIFIED + " BIGINT, " +
     MEDIA_DATE_TAKEN + " BIGINT DEFAULT 0, " +
@@ -801,7 +802,7 @@ const std::string AudioColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn:
     MediaColumn::MEDIA_TYPE;
 
 const std::set<std::string> AudioColumn::AUDIO_COLUMNS = {
-    AudioColumn::AUDIO_ALBUM, AudioColumn::AUDIO_ARTIST
+    AudioColumn::AUDIO_ALBUM, AudioColumn::AUDIO_ARTIST, AudioColumn::AUDIO_FILE_SOURCE_TYPE
 };
 
 bool AudioColumn::IsAudioColumn(const std::string &columnName)
