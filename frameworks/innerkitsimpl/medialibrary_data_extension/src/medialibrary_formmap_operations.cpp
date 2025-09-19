@@ -23,6 +23,7 @@
 
 #include "abs_shared_result_set.h"
 #include "file_ex.h"
+#include "map_operation_flag.h"
 #include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -258,8 +259,12 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, const v
 
 int32_t MediaLibraryFormMapOperations::RemoveFormIdOperations(RdbPredicates &predicates)
 {
-    lock_guard<mutex> lock(mutex_);
-    return MediaLibraryRdbStore::Delete(predicates);
+    if (MAP_OPERATION_FLAG) {
+        MEDIA_INFO_LOG("GetParameter map operation flag end, flag is true");
+        lock_guard<mutex> lock(mutex_);
+        return MediaLibraryRdbStore::Delete(predicates);
+    }
+    return E_OK;
 }
 
 static string GetStringObject(MediaLibraryCommand &cmd, const string &columnName)

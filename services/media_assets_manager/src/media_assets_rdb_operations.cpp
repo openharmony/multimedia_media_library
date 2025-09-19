@@ -20,6 +20,7 @@
 #include <string>
 
 #include "abs_rdb_predicates.h"
+#include "map_operation_flag.h"
 #include "media_log.h"
 #include "form_map.h"
 #include "medialibrary_formmap_operations.h"
@@ -119,6 +120,10 @@ bool MediaAssetsRdbOperations::QueryFormIdIfExists(const string& formId)
 int32_t MediaAssetsRdbOperations::RemoveFormInfo(const string& formId)
 {
     MEDIA_INFO_LOG("MediaAssetsRdbOperation::RemoveFormInfo enter");
+
+    MAP_OPERATION_FLAG = true;
+    MEDIA_INFO_LOG("Set map operation flag, flag is true");
+
     NativeRdb::RdbPredicates rdbPredicate(FormMap::FORM_MAP_TABLE);
     rdbPredicate.EqualTo(FormMap::FORMMAP_FORM_ID, formId);
     int32_t deleteRows = MediaLibraryRdbStore::Delete(rdbPredicate);
@@ -137,6 +142,9 @@ int32_t MediaAssetsRdbOperations::RemoveGalleryFormInfo(const string& formId)
 
 int32_t MediaAssetsRdbOperations::SaveFormInfo(const string& formId, const string& uri)
 {
+    MAP_OPERATION_FLAG = true;
+    MEDIA_INFO_LOG("Set map operation flag, flag is true");
+
     ValuesBucket value;
     value.PutString(FormMap::FORMMAP_URI, uri);
 
