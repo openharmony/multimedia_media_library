@@ -3726,9 +3726,11 @@ static void PhotoAccessGetAssetsByOldUrisExecute(napi_env env, void *data)
 static napi_value ParseArgsGetAssetsByOldUris(napi_env env, napi_callback_info info,
     std::unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL,
-            "This interface can be called only by system apps");
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int haveReadPermission = AccessTokenKit::VerifyAccessToken(tokenCaller, PERM_READ_IMAGEVIDEO);
+
+    if(haveReadPermission != PermissionState::PERMISSION_GRANTED) {
+        NapiError::ThrowError(env, E_PERMISSION_DENIED, "Permission Denied : PERM_READ_IMAGEVIDEO required.");
         return nullptr;
     }
 
