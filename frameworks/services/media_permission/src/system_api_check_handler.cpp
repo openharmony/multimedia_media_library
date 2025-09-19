@@ -43,6 +43,7 @@ static const std::unordered_set<std::string> SYSTEM_API_URIS = {
     PAH_QUERY_HIDDEN_ALBUM,
     PAH_HIDE_PHOTOS,
     PAH_BATCH_UPDATE_OWNER_ALBUM_ID,
+    QUERY_TAB_OLD_PHOTO,
 };
 
 int32_t SystemApiCheckHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, PermParam &permParam)
