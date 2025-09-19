@@ -77,7 +77,7 @@ private:
     int32_t ForceUpdateAlbums(int32_t albumId, bool isHidden, NotifyAlbumType notifyAlbumType);
     // 从Photos表中获取相册信息
     int32_t GetUpdateValues(NativeRdb::ValuesBucket &values, const AlbumChangeInfo &albumInfo, bool isHidden,
-        NotifyType &type);
+        OHOS::Media::NotifyType &type);
 
     bool IsValidCover(const PhotoAssetChangeInfo &assetInfo);
 
@@ -88,7 +88,7 @@ private:
 
     // 老通知发送
     void CheckNotifyOldNotification(NotifyAlbumType notifyAlbumType, const AlbumChangeInfo &albumInfo,
-        NotifyType type);
+        OHOS::Media::NotifyType type);
 
     // 测试增量数据和强制数据是否一致
     void CheckHiddenAlbumInfo(NativeRdb::ValuesBucket &values, std::stringstream &ss);

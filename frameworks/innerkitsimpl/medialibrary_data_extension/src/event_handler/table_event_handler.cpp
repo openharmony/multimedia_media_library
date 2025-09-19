@@ -22,17 +22,21 @@
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "photo_map_table_event_handler.h"
+#include "download_resources_table_event_handler.h"
 
 namespace OHOS::Media {
 TableEventHandler::TableEventHandler()
 {
     this->handlers_ = {
         std::make_shared<PhotoMapTableEventHandler>(),
+        std::make_shared<DownloadResourcesTableEventHandler>(),
     };
 }
 
 int32_t TableEventHandler::OnCreate(std::shared_ptr<MediaLibraryRdbStore> store)
 {
+    MEDIA_INFO_LOG("TableEventHandler OnCreate, in");
+    CHECK_AND_RETURN_RET_LOG(store != nullptr, E_OK, "store is null");
     int32_t ret = E_OK;
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     for (auto handler : this->handlers_) {
@@ -49,6 +53,7 @@ int32_t TableEventHandler::OnCreate(std::shared_ptr<MediaLibraryRdbStore> store)
 int32_t TableEventHandler::OnUpgrade(
     std::shared_ptr<MediaLibraryRdbStore> store, int32_t oldVersion, int32_t newVersion)
 {
+    CHECK_AND_RETURN_RET_LOG(store != nullptr, E_OK, "store is null");
     int32_t ret = E_OK;
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     for (auto handler : this->handlers_) {

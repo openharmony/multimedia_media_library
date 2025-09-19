@@ -16,6 +16,7 @@ group("test") {
 
   deps = [
     "unittest/album_count_cover_test:AlbumCountCoverTest",
+    "unittest/background_cloud_batch_selected_file_processor_test:unittest",
     "unittest/background_cloud_file_processor_test:unittest",
     "unittest/media_albums_controller_service_test:unittest",
     "unittest/media_albums_refresh_test:unittest",
@@ -45,6 +46,7 @@ group("test") {
     "unittest/medialibrary_audio_operations_test:unittest",
     "unittest/medialibrary_client_report_test:unittest",
     "unittest/medialibrary_cloud_asset_download_test:unittest",
+    "unittest/medialibrary_cloud_asset_batch_download_test:unittest",
     "unittest/medialibrary_cloud_enhancement_test:unittest",
     "unittest/medialibrary_common_utils_test:unittest",
     "unittest/medialibrary_cover_position_parser_test:unittest",

@@ -254,7 +254,15 @@ void DfxReporter::ReportPhotoInfo(const PhotoStatistics& stats)
         "CLOUD_VIDEO_COUNT", stats.cloudVideoCount,
         "SHARED_IMAGE_COUNT", stats.sharedImageCount,
         "SHARED_VIDEO_COUNT", stats.sharedVideoCount,
-        "SOUTH_DEVICE_TYPE", stats.southDeviceType);
+        "SOUTH_DEVICE_TYPE", stats.southDeviceType,
+        "WAITING_COUNT", stats.tasksWaitingCount,
+        "DOWNLOADING_COUNT", stats.tasksDownloadingCount,
+        "PAUSE_COUNT", stats.tasksPauseCount,
+        "FAILED_COUNT", stats.tasksFailedCount,
+        "SUCC_COUNT", stats.tasksSuccessCount,
+        "AUTO_PAUSE_COUNT", stats.tasksAutoPauseCount,
+        "SUCC_TOTAL_SIZE", stats.tasksSuccessTotalSize,
+        "SUCC_TOTAL_TIME", stats.tasksSuccessTotalTime);
     if (ret != 0) {
         MEDIA_ERR_LOG("ReportPhotoInfo error:%{public}d", ret);
     }

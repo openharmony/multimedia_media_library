@@ -16,6 +16,7 @@
 #define MEDIALIBRARY_SUBSCRIBER_H
 
 #include <thread>
+#include <atomic>
 
 #include "common_event_manager.h"
 #include "common_event_subscribe_info.h"
@@ -100,6 +101,7 @@ private:
     EXPORT std::string GetDataCloneDescriptionJsonPath();
     EXPORT bool GetCloneTimestamp(const std::string &path, int64_t &cloneTimestamp);
     EXPORT void WalCheckPointAsync();
+    EXPORT void TriggerBatchDownloadResource();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();

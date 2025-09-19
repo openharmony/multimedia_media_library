@@ -224,7 +224,7 @@ int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden,
     auto &albumInfo = iter->second;
     PhotoAlbumSubType subtype = static_cast<PhotoAlbumSubType>(albumInfo.albumSubType_);
     ValuesBucket values;
-    NotifyType type = NOTIFY_INVALID;
+    OHOS::Media::NotifyType type = OHOS::Media::NotifyType::NOTIFY_INVALID;
     GetUpdateValues(values, albumInfo, isHidden, type);
     if (values.IsEmpty()) {
         MEDIA_ERR_LOG("albumId[%{public}d], subType[%{public}d], hidden[%{public}d] no need update.", albumId, subtype,
@@ -252,7 +252,7 @@ int32_t AlbumRefreshExecution::ForceUpdateAlbums(int32_t albumId, bool isHidden,
 }
 
 int32_t AlbumRefreshExecution::GetUpdateValues(ValuesBucket &values, const AlbumChangeInfo &albumInfo,
-    bool isHidden, NotifyType &type)
+    bool isHidden, OHOS::Media::NotifyType &type)
 {
     MediaLibraryTracer tracer;
     tracer.Start("AlbumRefreshExecution::GetUpdateValues");
@@ -309,7 +309,7 @@ int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumT
         }
 
         auto &initAlbumInfo = initIter->second;
-        NotifyType type = NOTIFY_INVALID;
+        OHOS::Media::NotifyType type = OHOS::Media::NotifyType::NOTIFY_INVALID;
         ValuesBucket values = albumInfo.GetUpdateValues(initAlbumInfo, type);
         CheckUpdateValues(albumInfo, iter.second.first, values);
         if (values.IsEmpty()) {
@@ -319,7 +319,7 @@ int32_t AlbumRefreshExecution::AccurateUpdateAlbums(NotifyAlbumType notifyAlbumT
         RdbPredicates predicates(PhotoAlbumColumns::TABLE);
         predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumInfo.albumId_));
         int32_t changedRows = 0;
-        
+
         albumRefresh_.Update(changedRows, values, predicates);
         auto &albumChangeInfo = iter.second.first;
         if (albumChangeInfo.IsAlbumInfoRefresh()) {
@@ -517,7 +517,7 @@ bool AlbumRefreshExecution::CalHiddenAlbumInfo(AlbumChangeInfo &albumInfo, const
     bool isRefreshHiddenAlbumCount = CalAlbumHiddenCount(albumInfo, refreshInfo);
     // 更新hiddenCoverUri、dateTimeForHiddenCover
     bool isRefreshHiddenAlbumCover = CalAlbumHiddenCover(albumInfo, refreshInfo);
-    
+
     // 增量刷新场景：不强制刷新 && hidden count/cover无变化
     return forceRefreshHiddenAlbums_.find(albumInfo.albumId_) ==
         forceRefreshHiddenAlbums_.end() && (isRefreshHiddenAlbumCover || isRefreshHiddenAlbumCount);
@@ -651,13 +651,13 @@ void AlbumRefreshExecution::ClearHiddenAlbumInfo(AlbumChangeInfo &albumInfo)
 }
 
 void AlbumRefreshExecution::CheckNotifyOldNotification(NotifyAlbumType notifyAlbumType,
-    const AlbumChangeInfo &albumInfo, NotifyType type)
+    const AlbumChangeInfo &albumInfo, OHOS::Media::NotifyType type)
 {
     if (notifyAlbumType == NotifyAlbumType::NO_NOTIFY || notifyAlbumType == NotifyAlbumType::ANA_ALBUM) {
         ACCURATE_DEBUG("no need old notification");
         return;
     }
-    if (type == NotifyType::NOTIFY_INVALID) {
+    if (type == OHOS::Media::NotifyType::NOTIFY_INVALID) {
         ACCURATE_ERR("invalid notify type.");
         return;
     }

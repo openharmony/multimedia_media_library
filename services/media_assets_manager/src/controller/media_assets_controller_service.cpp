@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2025 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License"){return 0;}
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -90,6 +90,12 @@
 #include "get_cloud_enhancement_pair_dto.h"
 #include "permission_utils.h"
 #include "media_app_uri_permission_column.h"
+#include "start_batch_download_cloud_resources_vo.h"
+#include "resume_batch_download_cloud_resources_vo.h"
+#include "pause_batch_download_cloud_resources_vo.h"
+#include "cancel_batch_download_cloud_resources_vo.h"
+#include "get_batch_download_cloud_resources_status_vo.h"
+#include "get_batch_download_cloud_resources_count_vo.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -403,6 +409,30 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_ASSET_STATUS),
         &MediaAssetsControllerService::GetCloudMediaAssetStatus
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::START_BATCH_DOWNLOAD_CLOUD_RESOURCES),
+        &MediaAssetsControllerService::StartBatchDownloadCloudResources
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::RESUME_BATCH_DOWNLOAD_CLOUD_RESOURCES),
+        &MediaAssetsControllerService::ResumeBatchDownloadCloudResources
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::PAUSE_BATCH_DOWNLOAD_CLOUD_RESOURCES),
+        &MediaAssetsControllerService::PauseBatchDownloadCloudResources
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::CANCEL_BATCH_DOWNLOAD_CLOUD_RESOURCES),
+        &MediaAssetsControllerService::CancelBatchDownloadCloudResources
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_BATCH_RESOURCES_STATUS),
+        &MediaAssetsControllerService::GetCloudMediaBatchDownloadResourcesStatus
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_GET_CLOUDMEDIA_BATCH_RESOURCES_COUNT),
+        &MediaAssetsControllerService::GetCloudMediaBatchDownloadResourcesCount
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::QUERY_START_ASSET_ANALYSIS),
@@ -2129,6 +2159,93 @@ int32_t MediaAssetsControllerService::GetCloudMediaAssetStatus(MessageParcel &da
     }
 
     ret = MediaAssetsService::GetInstance().GetCloudMediaAssetStatus(respBody.status);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::StartBatchDownloadCloudResources(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsControllerService StartBatchDownloadCloudResources");
+    StartBatchDownloadCloudResourcesReqBody reqBody;
+    StartBatchDownloadCloudResourcesRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("StartBatchDownloadCloudResources Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().StartBatchDownloadCloudResources(reqBody, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::ResumeBatchDownloadCloudResources(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsControllerService ResumeBatchDownloadCloudResources");
+    ResumeBatchDownloadCloudResourcesReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ResumeBatchDownloadCloudResources Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().ResumeBatchDownloadCloudResources(reqBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::PauseBatchDownloadCloudResources(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsControllerService PauseBatchDownloadCloudResources");
+    PauseBatchDownloadCloudResourcesReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("PauseBatchDownloadCloudResources Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().PauseBatchDownloadCloudResources(reqBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::CancelBatchDownloadCloudResources(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsControllerService CancelBatchDownloadCloudResources");
+    CancelBatchDownloadCloudResourcesReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CancelBatchDownloadCloudResources Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().CancelBatchDownloadCloudResources(reqBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAssetsControllerService::GetCloudMediaBatchDownloadResourcesStatus(MessageParcel &data,
+    MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsControllerService GetCloudMediaBatchDownloadResourcesStatus");
+    GetBatchDownloadCloudResourcesStatusReqBody reqBody;
+    GetBatchDownloadCloudResourcesStatusRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetCloudMediaBatchDownloadResourcesStatus Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().GetCloudMediaBatchDownloadResourcesStatus(reqBody, respBody);
+    MEDIA_INFO_LOG("MediaAssetsControllerService GetCloudMediaBatchDownloadResourcesStatus"
+        "size: %{public}zu", respBody.downloadResourcesStatus.size());
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::GetCloudMediaBatchDownloadResourcesCount(MessageParcel &data,
+    MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter MediaAssetsControllerService GetCloudMediaBatchDownloadResourcesCount");
+    GetBatchDownloadCloudResourcesCountReqBody reqBody;
+    GetBatchDownloadCloudResourcesCountRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetCloudMediaBatchDownloadResourcesCount Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().GetCloudMediaBatchDownloadResourcesCount(reqBody, respBody);
+    MEDIA_INFO_LOG("MediaAssetsControllerService GetCloudMediaBatchDownloadResourcesCount count: %{public}d",
+        respBody.count);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 

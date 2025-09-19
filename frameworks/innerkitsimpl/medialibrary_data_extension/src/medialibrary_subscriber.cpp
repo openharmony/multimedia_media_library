@@ -19,6 +19,7 @@
 #include <memory>
 #include "appexecfwk_errors.h"
 #include "background_cloud_file_processor.h"
+#include "background_cloud_batch_selected_file_processor.h"
 #include "background_task_mgr_helper.h"
 #ifdef HAS_BATTERY_MANAGER_PART
 #include "battery_srv_client.h"
@@ -84,7 +85,6 @@
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "medialibrary_astc_stat.h"
-#include "background_cloud_file_processor.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #include "cloud_enhancement_checker.h"
@@ -960,9 +960,30 @@ void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleNam
     MediaLibraryDataManager::GetInstance()->RevertPendingByPackage(bundleName);
 }
 
+
+void MedialibrarySubscriber::TriggerBatchDownloadResource()
+{
+    MEDIA_DEBUG_LOG("BatchSelectFileDownload MedialibrarySubscriber Timely check downloading: %{public}d",
+        BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus());
+    if (!BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()
+        && BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag()
+        && BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition()) { // 停止且有添加任务且可恢复状态
+        MEDIA_INFO_LOG("BatchSelectFileDownload MedialibrarySubscriber Timely Check AutoResume Processor");
+        BackgroundCloudBatchSelectedFileProcessor::LaunchAutoResumeBatchDownloadProcessor(); // 自动恢复
+    }
+}
+
 void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    TriggerBatchDownloadResource();
+    MEDIA_INFO_LOG("UpdateBackgroundTimer TriggerBatchDownloadResource after");
+    if (BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()) {
+        // 触发了批量下载 后台下载可以暂不触发
+        MEDIA_INFO_LOG("UpdateBackgroundTimer no allow download 30 day pic");
+        return;
+    }
+    MEDIA_INFO_LOG("UpdateBackgroundTimer Allow Download 30 day Pic");
     bool isPowerSufficient = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY;
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient &&
         isDeviceTemperatureProper_ && isWifiConnected_;

@@ -70,6 +70,7 @@ public:
     int32_t ReportFailure(const ReportFailureDto &reportFailureDto);
 
 private:
+    int32_t HandleCloudDeleteRecord(const std::map<std::string, CloudMediaPullDataDto> &cloudIdRelativeMap);
     int32_t HandleRecord(const std::vector<std::string> &cloudIds,
         std::map<std::string, CloudMediaPullDataDto> &cloudIdRelativeMap, std::vector<PhotosDto> &newData,
         std::vector<PhotosDto> &fdirtyData, std::vector<int32_t> &stats, std::vector<std::string> &failedRecords);

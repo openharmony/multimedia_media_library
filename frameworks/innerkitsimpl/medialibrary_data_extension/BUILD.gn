@@ -61,6 +61,7 @@ config("media_data_extension_public_config") {
   include_cloud_asset_download = [
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_sync_utils",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/media_cloud_asset_download",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/dao",
   ]
 
   include_cloud_dirty_handle = [
@@ -187,6 +188,8 @@ config("media_data_extension_public_config") {
   ldflags = [ "-Wl,--gc-sections" ]
 
   cflags = [
+    "-Wunused-const-variable",
+    "-Wno-unused-but-set-variable",
     "-fvisibility=hidden",
     "-fdata-sections",
     "-ffunction-sections",
@@ -311,6 +314,7 @@ ohos_shared_library("medialibrary_data_extension") {
 
   media_cloud_asset_download_source = [
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync_utils/cloud_sync_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/dao/batch_download_resources_task_dao.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_asset_callback.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_asset_download_operation.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_asset_manager.cpp",
@@ -462,7 +466,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/cloud_enhancement_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/modify_assets_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/retain_cloud_media_asset_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/start_download_cloud_media_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/grant_photo_uri_permission_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/grant_photo_uris_permission_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/cancel_photo_uri_permission_vo.cpp",
@@ -493,6 +496,13 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/restore_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/stop_restore_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/heif_transcoding_check_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/start_download_cloud_media_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/cancel_batch_download_cloud_resources_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/pause_batch_download_cloud_resources_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/resume_batch_download_cloud_resources_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/start_batch_download_cloud_resources_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_batch_download_cloud_resources_status_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_batch_download_cloud_resources_count_vo.cpp",
   ]
 
   media_assets_manager_dto_source = [
@@ -612,11 +622,14 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "${MEDIALIB_UTILS_PATH}/src/parameter_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/settings_data_manager.cpp",
+    "src/background_cloud_batch_selected_file_download_callback.cpp",
     "src/background_cloud_file_download_callback.cpp",
     "src/background_cloud_file_processor.cpp",
+    "src/background_cloud_batch_selected_file_processor.cpp",
     "src/custom_record_operations.cpp",
     "src/event_handler/album_plugin_table_event_handler.cpp",
     "src/event_handler/database_utils.cpp",
+    "src/event_handler/download_resources_table_event_handler.cpp",
     "src/event_handler/photo_map_table_event_handler.cpp",
     "src/event_handler/tab_facard_photos_table_event_handler.cpp",
     "src/event_handler/tab_old_photos_table_event_handler.cpp",

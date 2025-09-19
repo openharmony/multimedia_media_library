@@ -36,6 +36,7 @@
 #include "values_bucket.h"
 #include "medialibrary_rdb_transaction.h"
 #include "asset_accurate_refresh.h"
+#include "batch_download_resources_task_dao.h"
 
 namespace OHOS {
 namespace Media {
@@ -109,6 +110,8 @@ public:
     static int32_t SetTranscodeUriToFileAsset(std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
         const bool isHeif);
     static void DoTranscodeDfx(const int32_t &type);
+    EXPORT static int32_t DealWithBatchDownloadingFiles(std::vector<shared_ptr<FileAsset>> &subFileAssetVector);
+    EXPORT static int32_t DealWithBatchDownloadingFilesById(std::vector<std::string> &fileIds);
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
 protected:
@@ -173,6 +176,7 @@ protected:
     EXPORT static std::string GetEditDataPath(const std::string &path);
     EXPORT static std::string GetEditDataCameraPath(const std::string &path);
     static std::string GetAssetCacheDir();
+    static int32_t AddOtherBurstIdsToFileIds(std::vector<std::string> &fileIds);
 
 private:
     static int32_t CreateAssetRealName(int32_t fileId, int32_t mediaType, const std::string &extension,

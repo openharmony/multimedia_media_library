@@ -22,8 +22,8 @@
 #include <variant>
  
 #include "notify_info.h"
-#include "media_change_info.h"
- 
+#include "media_notification_utils.h"
+
 namespace OHOS {
 namespace Media {
 namespace Notification {
@@ -33,6 +33,9 @@ public:
     EXPORT NotificationMerging();
     EXPORT ~NotificationMerging();
     EXPORT static std::vector<NotifyInfo> MergeNotifyInfo(std::vector<MediaChangeInfo> changeInfos);
+    EXPORT static int32_t ProcessNotifyDownloadProgressInfo(
+        Notification::DownloadAssetsNotifyType downloadAssetsNotifyType, int32_t fileId = -1, int32_t percent = -1,
+            int32_t autoPauseReason = 0);
 private:
     static std::vector<NotifyInfo> ProcessNotifyInfos(const std::vector<MediaChangeInfo>& mediaChangeInfos);
     static std::vector<ObserverInfo> findObservers(NotifyUriType notifyUriType);

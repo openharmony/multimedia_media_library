@@ -39,6 +39,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
 #include "settings_data_manager.h"
+#include "result_set_utils.h"
 
 using namespace std;
 
@@ -247,7 +248,93 @@ void DfxManager::HandleDeleteBehavior(int32_t type, int32_t size, std::vector<st
     dfxWorker_->AddTask(deleteBehaviorTask);
 }
 
-static void HandlePhotoInfo(std::shared_ptr<DfxReporter>& dfxReporter)
+const std::string SQL_ALBUM_UPLOAD_STATISTICS = "\
+    SELECT \
+        COUNT(CASE WHEN album_type = 2048 THEN 1 END) AS SOURCE_ALBUM_COUNT, \
+        COUNT(CASE WHEN album_type = 0 THEN 1 END) AS USER_ALBUM_COUNT, \
+        COUNT(CASE WHEN album_type = 2048 AND upload_status = 1 THEN 1 END) AS UPLOAD_SOURCE_ALBUM_COUNT, \
+        COUNT(CASE WHEN album_type = 0 AND upload_status = 1 THEN 1 END) AS UPLOAD_USER_ALBUM_COUNT \
+    FROM PhotoAlbum;";
+
+const std::string SQL_NOT_UPLOAD_ASSET_COUNT = "\
+    WITH NOT_UPLOAD_ALBUM AS ( \
+        SELECT album_id \
+        FROM PhotoAlbum \
+        WHERE album_type IN (0, 2048) AND \
+            upload_status = 0 \
+    ) \
+    SELECT \
+        COUNT(CASE WHEN dirty = 1 THEN 1 END) AS NOT_UPLOAD_ASSET_COUNT \
+    FROM Photos \
+    WHERE owner_album_id IN (SELECT album_id FROM NOT_UPLOAD_ALBUM);";
+
+const std::string SQL_BATCH_DOWNLOAD_INFO_COUNT = "\
+    SELECT \
+        COUNT(CASE WHEN download_status = 0 THEN 1 END) AS WAITING_COUNT, \
+        COUNT(CASE WHEN download_status = 1 THEN 1 END) AS DOWNLOADING_COUNT, \
+        COUNT(CASE WHEN download_status = 2 THEN 1 END) AS PAUSE_COUNT, \
+        COUNT(CASE WHEN download_status = 3 THEN 1 END) AS FAILED_COUNT, \
+        COUNT(CASE WHEN download_status = 4 THEN 1 END) AS SUCC_COUNT, \
+        COUNT(CASE WHEN download_status = 5 THEN 1 END) AS AUTO_PAUSE_COUNT, \
+        SUM(CASE WHEN download_status = 4 THEN size ELSE 0 END) AS SUCC_TOTAL_SIZE, \
+        SUM(CASE WHEN download_status = 4 THEN (finish_time - add_time) ELSE 0 END) AS SUCC_TOTAL_TIME \
+    FROM download_resources_task_records;";
+
+PhotoStatistics QueryAlbumCountByUpload()
+{
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, PhotoStatistics(), "rdbStore is nullptr");
+    std::vector<NativeRdb::ValueObject> params = {};
+    auto resultSet1 = rdbStore->QuerySql(SQL_ALBUM_UPLOAD_STATISTICS, params);
+    CHECK_AND_RETURN_RET(resultSet1 != nullptr, {});
+    auto resultSet2 = rdbStore->QuerySql(SQL_NOT_UPLOAD_ASSET_COUNT, params);
+    CHECK_AND_RETURN_RET(resultSet2 != nullptr, {});
+
+    PhotoStatistics stat;
+    if (resultSet1->GoToNextRow() == NativeRdb::E_OK) {
+        stat.sourceAlbumCount = GetInt32Val("SOURCE_ALBUM_COUNT", resultSet1);
+        stat.userAlbumCount = GetInt32Val("USER_ALBUM_COUNT", resultSet1);
+        stat.uploadSourceAlbumCount = GetInt32Val("UPLOAD_SOURCE_ALBUM_COUNT", resultSet1);
+        stat.uploadUserAlbumCount = GetInt32Val("UPLOAD_USER_ALBUM_COUNT", resultSet1);
+    }
+
+    if (resultSet2->GoToNextRow() == NativeRdb::E_OK) {
+        stat.notUploadAssetCount = GetInt32Val("NOT_UPLOAD_ASSET_COUNT", resultSet2);
+    }
+
+    resultSet1->Close();
+    resultSet2->Close();
+    return stat;
+}
+
+static void HandleUploadAlbumInfo(std::shared_ptr<DfxReporter> &dfxReporter)
+{
+    PhotoStatistics uploadStatus = QueryAlbumCountByUpload();
+    dfxReporter->ReportPhotoInfo(uploadStatus);
+}
+
+static void AddDownloadTaskInfo(PhotoStatistics &stats)
+{
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
+    std::vector<NativeRdb::ValueObject> params = {};
+    auto resultSet = rdbStore->QuerySql(SQL_BATCH_DOWNLOAD_INFO_COUNT, params);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
+
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        stats.tasksWaitingCount = GetInt32Val("WAITING_COUNT", resultSet);
+        stats.tasksDownloadingCount = GetInt32Val("DOWNLOADING_COUNT", resultSet);
+        stats.tasksPauseCount = GetInt32Val("PAUSE_COUNT", resultSet);
+        stats.tasksFailedCount = GetInt32Val("FAILED_COUNT", resultSet);
+        stats.tasksSuccessCount = GetInt32Val("SUCC_COUNT", resultSet);
+        stats.tasksAutoPauseCount = GetInt32Val("AUTO_PAUSE_COUNT", resultSet);
+        stats.tasksSuccessTotalSize = GetInt64Val("SUCC_TOTAL_SIZE", resultSet);
+        stats.tasksSuccessTotalTime = GetInt64Val("SUCC_TOTAL_TIME", resultSet);
+    };
+    resultSet->Close();
+}
+
+static void AddPhotoStats(PhotoStatistics &stats)
 {
     const std::vector<QueryParams> queryParamsList = {
         {MediaType::MEDIA_TYPE_IMAGE, PhotoPositionType::LOCAL},
@@ -258,7 +345,6 @@ static void HandlePhotoInfo(std::shared_ptr<DfxReporter>& dfxReporter)
         {MediaType::MEDIA_TYPE_VIDEO, PhotoPositionType::LOCAL_AND_CLOUD}
     };
 
-    PhotoStatistics stats = {};
     int32_t* countPtrs[] = {
         &stats.localImageCount,
         &stats.localVideoCount,
@@ -272,14 +358,35 @@ static void HandlePhotoInfo(std::shared_ptr<DfxReporter>& dfxReporter)
         const auto& params = queryParamsList[i];
         *countPtrs[i] = DfxDatabaseUtils::QueryFromPhotos(params.mediaType, static_cast<int32_t>(params.positionType));
     }
+}
 
+static void AddSouthDeviceType(PhotoStatistics &stats)
+{
+    stats.southDeviceType = static_cast<int32_t>(SettingsDataManager::GetPhotosSyncSwitchStatus());
+}
+
+static void HandlePhotoInfo(std::shared_ptr<DfxReporter>& dfxReporter)
+{
+    PhotoStatistics stats = {};
+    AddPhotoStats(stats);
+    AddDownloadTaskInfo(stats);
+    AddSouthDeviceType(stats);
     MEDIA_INFO_LOG("localImageCount: %{public}d, localVideoCount: %{public}d, "
                    "cloudImageCount: %{public}d, cloudVideoCount: %{public}d, "
-                   "sharedImageCount: %{public}d, sharedVideoCount: %{public}d",
+                   "sharedImageCount: %{public}d, sharedVideoCount: %{public}d, "
+                   "DownloadTasksWaitingCount: %{public}d, DownloadTasksDownloadingCount: %{public}d, "
+                   "DownloadTasksPauseCount: %{public}d, DownloadTasksFailedCount: %{public}d, "
+                   "DownloadTasksSuccessCount: %{public}d, DownloadTasksAutoPauseCount: %{public}d, "
+                   "DownloadTasksSuccessTotalSize: %{public}" PRId64 " bytes, "
+                   "DownloadTasksSuccessTotalTime: %{public}" PRId64 " seconds",
                    stats.localImageCount, stats.localVideoCount,
                    stats.cloudImageCount, stats.cloudVideoCount,
-                   stats.sharedImageCount, stats.sharedVideoCount);
-    stats.southDeviceType = static_cast<int32_t>(SettingsDataManager::GetPhotosSyncSwitchStatus());
+                   stats.sharedImageCount, stats.sharedVideoCount,
+                   stats.tasksWaitingCount, stats.tasksDownloadingCount,
+                   stats.tasksPauseCount, stats.tasksFailedCount,
+                   stats.tasksSuccessCount, stats.tasksAutoPauseCount,
+                   stats.tasksSuccessTotalSize, stats.tasksSuccessTotalTime
+                   );
     dfxReporter->ReportPhotoInfo(stats);
 }
 
@@ -376,6 +483,7 @@ static void HandleStatistic(DfxData *data)
     HandleDirtyCloudPhoto(dfxReporter);
     HandleLocalVersion(dfxReporter);
     HandleAstcInfo(dfxReporter);
+    HandleUploadAlbumInfo(dfxReporter);
 #ifdef META_RECOVERY_SUPPORT
     MediaLibraryMetaRecovery::GetInstance().RecoveryStatistic();
 #endif

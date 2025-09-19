@@ -62,6 +62,11 @@ enum class CloudMediaTaskRecoverCause : int32_t {
     RETRY_FOR_FREQUENT_REQUESTS,
     RETRY_FOR_CLOUD_ERROR,
 };
+
+enum class CloudMediaTaskDownloadCloudAssetCode : int32_t {
+    ADD_DOWNLOAD_TASK_SUCC = 0,
+    ADD_DOWNLOAD_ASSET_NOT_EXIST = 1,
+};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_CLOUD_MEDIA_ASSET_TYPES_H
