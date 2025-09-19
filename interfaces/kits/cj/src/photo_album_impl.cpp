@@ -160,6 +160,8 @@ void PhotoAlbumImpl::ParseArgsGetPhotoAssets(COptions options, DataSharePredicat
             errCode = E_CHECK_SYSTEMAPP_FAIL;
             return;
         }
+        // sort by hidden time desc if is hidden asset
+        predicates.OrderByDesc(PhotoColumn::PHOTO_HIDDEN_TIME);
     }
 }
 
