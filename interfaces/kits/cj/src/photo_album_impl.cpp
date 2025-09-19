@@ -161,7 +161,7 @@ void PhotoAlbumImpl::ParseArgsGetPhotoAssets(COptions options, DataSharePredicat
             return;
         }
         // sort by hidden time desc if is hidden asset
-        predicates.IndexedBy(PhotoColumn::PHOTO_HIDDEN_TIME_INDEX);
+        predicates.OrderByDesc(PhotoColumn::PHOTO_HIDDEN_TIME);
     }
 }
 

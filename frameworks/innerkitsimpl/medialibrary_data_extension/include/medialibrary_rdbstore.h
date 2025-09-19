@@ -88,6 +88,8 @@ public:
     EXPORT static void SetOldVersion(int32_t oldVersion);
     EXPORT static int32_t GetOldVersion();
     EXPORT static void CreateBurstIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddIndexForPhotoSortInAlbum(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddIndexForCloudAndPitaya(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateBurstDirty(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateReadyOnThumbnailUpgrade(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateDateTakenToMillionSecond(const std::shared_ptr<MediaLibraryRdbStore> store);
