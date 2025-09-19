@@ -51,6 +51,7 @@ struct NewJsOnChangeCallbackWrapper {
     napi_env env_;
     Notification::NotifyUriType observerUriType_;
     std::shared_ptr<Notification::MediaChangeInfo> mediaChangeInfo_;
+    std::shared_ptr<Notification::AssetManagerNotifyInfo> assetManagerInfo_;
     std::vector<std::shared_ptr<ClientObserver>> clientObservers_;
 };
 

@@ -25,6 +25,14 @@
 #include "cloud_media_asset_types.h"
 #include "medialibrary_command.h"
 #include "rdb_store.h"
+#include "download_resources_column.h"
+#include "start_batch_download_cloud_resources_vo.h"
+#include "resume_batch_download_cloud_resources_vo.h"
+#include "pause_batch_download_cloud_resources_vo.h"
+#include "cancel_batch_download_cloud_resources_vo.h"
+#include "get_batch_download_cloud_resources_status_vo.h"
+#include "get_batch_download_cloud_resources_count_vo.h"
+#include "batch_download_resources_task_dao.h"
 
 namespace OHOS {
 namespace Media {
@@ -58,6 +66,20 @@ public:
     EXPORT static void StartDeleteCloudMediaAssets();
     EXPORT static void StopDeleteCloudMediaAssets();
     EXPORT void RestartForceRetainCloudAssets();
+    EXPORT int32_t UpdateAddTaskStatus(const std::vector<std::string> &fileIds,
+        const CloudMediaTaskDownloadCloudAssetCode &status, std::map<std::string, int32_t> &uriStatusMap);
+    EXPORT int32_t BuildTaskValuesAndBatchInsert(
+        int64_t &insertCount, std::vector<DownloadResourcesTaskPo> &newTaskPos);
+    EXPORT int32_t StartBatchDownloadCloudResources(StartBatchDownloadCloudResourcesReqBody &reqBody,
+        StartBatchDownloadCloudResourcesRespBody &respBody);
+    EXPORT int32_t ResumeBatchDownloadCloudResources(ResumeBatchDownloadCloudResourcesReqBody &reqBody);
+    EXPORT int32_t PauseBatchDownloadCloudResources(PauseBatchDownloadCloudResourcesReqBody &reqBody);
+    EXPORT int32_t CancelBatchDownloadCloudResources(CancelBatchDownloadCloudResourcesReqBody &reqBody);
+    EXPORT int32_t GetCloudMediaBatchDownloadResourcesStatus(
+    GetBatchDownloadCloudResourcesStatusReqBody &reqBody, GetBatchDownloadCloudResourcesStatusRespBody &respBody);
+    EXPORT int32_t GetCloudMediaBatchDownloadResourcesCount(
+        GetBatchDownloadCloudResourcesCountReqBody &reqBody, GetBatchDownloadCloudResourcesCountRespBody &respBody);
+    EXPORT void CleanDownloadTasksTable();
 
 private:
     CloudMediaAssetManager() {}
@@ -94,6 +116,8 @@ private:
     inline static std::atomic<TaskDeleteState> doDeleteTask_{TaskDeleteState::IDLE};
     inline static std::mutex deleteMutex_;
     std::mutex updateMutex_;
+    std::mutex batchDownloadMutex_;
+    BatchDownloadResourcesTaskDao batchDownloadResourcesTaskDao_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -179,6 +179,15 @@ const std::vector<std::string> thumbnailChangeStatusEnum {
  
 const std::vector<std::string> strongAssociationTypeEnum {
     "NORMAL", "CLOUD_ENHANCEMENT"
+};
+
+const std::vector<std::string> downloadCloudAssetCodeEnum {
+    "ADD_DOWNLOAD_TASK_SUCCESS", "DOWNLOAD_ASSET_NOT_EXIST"
+};
+
+const std::vector<std::string> downloadAssetsNotifyTypeEnum {
+    "DOWNLOAD_PROGRESS", "DOWNLOAD_FINISHED", "DOWNLOAD_FAILED", "DOWNLOAD_ASSET_DELETED", "DOWNLOAD_AUTO_PAUSED",
+    "DOWNLOAD_AUTO_RESUMED", "DOWNLOAD_REFRESHED"
 };
 
 const std::vector<std::pair<std::string, std::string>> FILE_KEY_ENUM_PROPERTIES = {

@@ -1,0 +1,128 @@
+# Copyright (C) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
+
+group("unittest") {
+  testonly = true
+  deps = [ ":medialibrary_cloud_asset_batch_download_test" ]
+}
+
+ohos_unittest("medialibrary_cloud_asset_batch_download_test") {
+  module_out_path = "media_library/media_library-asset"
+
+  visibility = [ ":*" ]
+
+  cflags = [
+    "-std=c++17",
+    "-fno-rtti",
+    "-fno-exceptions",
+    "-Wall",
+    "-fno-common",
+    "-fstack-protector-strong",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wfloat-equal",
+    "-Wdate-time",
+    "-Wimplicit-fallthrough",
+    "-Wsign-compare",
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
+
+  include_dirs = [
+    "./include",
+    "../get_self_permissions/include",
+    "../medialibrary_unittest_utils/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync/include",
+    "${MEDIALIB_SERVICES_PATH}/media_file_extension/include",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/dto",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/vo",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/orm",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/orm/po",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/controller",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/controller/processor",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/dao",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/service",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/service/processor",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/utils",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/background",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/native/cloud_sync",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/media_cloud_asset_download",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/dao",
+    "${MEDIALIB_SERVICES_PATH}/media_assets_manager/include/vo",
+  ]
+
+  sources = [
+    "../get_self_permissions/src/get_self_permissions.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/start_batch_download_cloud_resources_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/pause_batch_download_cloud_resources_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/resume_batch_download_cloud_resources_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/cancel_batch_download_cloud_resources_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_batch_download_cloud_resources_status_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_batch_download_cloud_resources_count_vo.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "./src/medialibrary_cloud_asset_batch_download_test.cpp",
+  ]
+
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync:media_library_cloud_sync",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
+
+  external_deps = [
+    "ability_base:configuration",
+    "ability_base:zuri",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:ability_manager",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "ability_runtime:runtime",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken",
+    "access_token:libtoken_setproc",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "data_share:datashare_common",
+    "data_share:datashare_provider",
+    "dfs_service:cloudsync_kit_inner",
+    "hilog:libhilog",
+    "image_framework:image_native",
+    "ipc:ipc_single",
+    "kv_store:distributeddata_inner",
+    "napi:ace_napi",
+    "relational_store:native_rdb",
+  ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  if (is_standard_system) {
+    external_deps += [ "hilog:libhilog" ]
+  } else {
+    external_deps += [ "hilog:libhilog" ]
+  }
+
+  resource_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
+}

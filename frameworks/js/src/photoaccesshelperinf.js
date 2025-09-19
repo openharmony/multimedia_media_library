@@ -1211,4 +1211,7 @@ export default {
   CompositeDisplayMode: photoAccessHelper.CompositeDisplayMode,
   SupportedImageFormat: photoAccessHelper.SupportedImageFormat,
   HdrMode: photoAccessHelper.HdrMode,
+  CloudMediaDownloadResourcesStatus: photoAccessHelper.CloudMediaDownloadResourcesStatus,
+  CloudAssetDownloadNotifyType: photoAccessHelper.CloudAssetDownloadNotifyType,
+  CloudAssetDownloadCode: photoAccessHelper.CloudAssetDownloadCode,
 };

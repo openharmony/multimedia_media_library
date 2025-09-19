@@ -17,7 +17,7 @@
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_CLOUD_MEDIA_ASSET_MANAGER_NAPI_H
 
 #include <vector>
-
+#include <map>
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
 #include "file_asset_napi.h"
@@ -29,10 +29,40 @@
 #include "napi/native_node_api.h"
 #include "fetch_file_result_napi.h"
 #include "cloud_media_asset_types.h"
+#include "medialibrary_notify_asset_manager_observer.h"
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+
+class MediaOnNotifyAssetManagerObserver;
+class AssetManagerChangeListenerNapi {
+public:
+    explicit AssetManagerChangeListenerNapi(napi_env env) : env_(env) {}
+
+    AssetManagerChangeListenerNapi(const AssetManagerChangeListenerNapi &listener)
+    {
+        this->env_ = listener.env_;
+        this->cbOnRef_ = listener.cbOnRef_;
+        this->cbOffRef_ = listener.cbOffRef_;
+    }
+
+    AssetManagerChangeListenerNapi& operator=(const AssetManagerChangeListenerNapi &listener)
+    {
+        this->env_ = listener.env_;
+        this->cbOnRef_ = listener.cbOnRef_;
+        this->cbOffRef_ = listener.cbOffRef_;
+        return *this;
+    }
+
+    ~AssetManagerChangeListenerNapi() {};
+    napi_ref cbOnRef_ = nullptr;
+    napi_ref cbOffRef_ = nullptr;
+    std::vector<std::shared_ptr<MediaOnNotifyAssetManagerObserver>> observers_;
+private:
+    napi_env env_ = nullptr;
+};
+
 
 class CloudMediaAssetManagerNapi {
 public:
@@ -51,8 +81,31 @@ private:
     EXPORT static napi_value JSCancelDownloadCloudMedia(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSRetainCloudMediaAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetCloudMediaAssetStatus(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSStartBatchDownloadCloudResources(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSResumeBatchDownloadCloudResources(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPauseDownloadCloudResources(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSCancelDownloadCloudResources(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetBatchDownloadCloudResourcesStatus(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetBatchDownloadSpecificTaskCount(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JsBatchDownloadRegisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JsBatchDownloadUnRegisterCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CreateDownloadCloudAssetCodeEnum(napi_env env);
+    EXPORT static napi_value CreateDownloadAssetsNotifyTypeEnum(napi_env env);
+
+    static int32_t RegisterObserverExecute(napi_env env, napi_ref ref, AssetManagerChangeListenerNapi &listObj,
+        const Notification::NotifyUriType uriType);
+    static int32_t UnregisterObserverExecute(napi_env env,
+        const Notification::NotifyUriType uriType, napi_ref ref, AssetManagerChangeListenerNapi &listObj);
+    static int32_t AddClientObserver(napi_env env, napi_ref ref,
+        std::map<Notification::NotifyUriType, std::vector<std::shared_ptr<ClientObserver>>> &clientObservers,
+        const Notification::NotifyUriType uriType);
+    static int32_t RemoveClientObserver(napi_env env, napi_ref ref,
+        std::map<Notification::NotifyUriType, std::vector<shared_ptr<ClientObserver>>> &clientObservers,
+        const Notification::NotifyUriType uriType);
 
     static thread_local napi_ref constructor_;
+    static thread_local napi_ref sdownloadCloudAssetCodeeEnumRef_;
+    static thread_local napi_ref sdownloadAssetsNotifyTypeEnumRef_;
 };
 
 struct CloudMediaAssetAsyncContext : public NapiError {
@@ -70,6 +123,15 @@ struct CloudMediaAssetAsyncContext : public NapiError {
     CloudMediaAssetTaskStatus cloudMediaAssetTaskStatus_;
     CloudMediaTaskPauseCause cloudMediaTaskPauseCause_;
     string taskInfo_;
+    vector<string> startBatchDownloadUris;
+    std::map<std::string, int32_t> startBatchDownloadResp;
+    vector<string> resumeBatchDownloadUris;
+    vector<string> pauseBatchDownloadUris;
+    vector<string> cancelBatchDownloadUris;
+    DataShare::DataSharePredicates getStatusBatchDownloadPredicates;
+    std::vector<std::string> allBatchDownloadStatus;
+    DataShare::DataSharePredicates getCountBatchDownloadPredicates;
+    int32_t allBatchDownloadCount;
 };
 }
 }

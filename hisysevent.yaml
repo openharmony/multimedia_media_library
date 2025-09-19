@@ -277,3 +277,21 @@ MEDIALIB_HEIF_ACCESS_STAT:
   TRANSCODE_FAILED_TIMES: { type: INT32, desc: Total number of failures }
   INNER_FAILED_TIMES: { type: INT32, desc: Number of failures due to internal errors }
   CODEC_FAILED_TIMES: { type: INT32, desc: Codec error failure count }
+
+MEDIALIB_PHOTO_INFO:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: Report the photo assets info and batch download tasks info, preserve: true }
+  LOCAL_IMAGE_COUNT: { type: INT32, desc: Count of local images }
+  LOCAL_VIDEO_COUNT: { type: INT32, desc: Count of local videos }
+  CLOUD_IMAGE_COUNT: { type: INT32, desc: Count of cloud images }
+  CLOUD_VIDEO_COUNT: { type: INT32, desc: Count of cloud videos }
+  SHARED_IMAGE_COUNT: { type: INT32, desc: Count of shared images }
+  SHARED_VIDEO_COUNT: { type: INT32, desc: Count of shared videos }
+  SOUTH_DEVICE_TYPE: { type: INT32, desc: Photos sync options}
+  WAITING_COUNT: { type: INT32, desc: Count of batch download task that status is waiting }
+  DOWNLOADING_COUNT: { type: INT32, desc: Count of batch download task that status is downloading }
+  PAUSE_COUNT: { type: INT32, desc: Count of batch download task that status is paused }
+  FAILED_COUNT: { type: INT32, desc: Count of batch download task that status is failed }
+  SUCC_COUNT: { type: INT32, desc: Count of batch download task that status is succeed }
+  AUTO_PAUSE_COUNT: { type: INT32, desc: Count of batch download task that status is auto paused }
+  SUCC_TOTAL_SIZE: { type: INT64, desc: Total size of batch download task that status is succeed }
+  SUCC_TOTAL_TIME: { type: INT64, desc: Total time of batch download task that status is succeed }

@@ -16,28 +16,12 @@
 #ifndef OHOS_MEDIALIBRARY_BACKGROUND_CLOUD_FILE_PROCESSOR_H
 #define OHOS_MEDIALIBRARY_BACKGROUND_CLOUD_FILE_PROCESSOR_H
 
-#include "abs_shared_result_set.h"
+#include "background_cloud_file_processor_common.h"
 #include "background_cloud_file_download_callback.h"
-#include "medialibrary_async_worker.h"
-#include "metadata.h"
-#include "rdb_predicates.h"
-#include "timer.h"
-#include "userfile_manager_types.h"
-#include "values_bucket.h"
-#include "media_file_uri.h"
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-constexpr int32_t PROCESS_INTERVAL = 5 * 60 * 1000;  // 5 minute
-constexpr int32_t DOWNLOAD_INTERVAL = 1 * 60 * 1000;  // 1 minute
-constexpr int32_t DOWNLOAD_DURATION = 10 * 1000; // 10 seconds
-constexpr int32_t DOWNLOAD_FAIL_MAX_TIMES = 5; // 5 times
-
-typedef struct {
-    bool isCloud;
-    bool isVideo;
-} QueryOption;
 
 class BackgroundCloudFileProcessor {
 public:
@@ -123,8 +107,8 @@ private:
     static void SetPredicates(NativeRdb::RdbPredicates &predicates, bool isCloud, bool isVideo);
     static void ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet, UpdateData &updateData,
         bool isCloud, bool isVideo);
-        static int32_t AddUpdateDataTask(const UpdateData &updateData);
-        static void UpdateCloudDataExecutor(AsyncTaskData *data);
+    static int32_t AddUpdateDataTask(const UpdateData &updateData);
+    static void UpdateCloudDataExecutor(AsyncTaskData *data);
     static void UpdateAbnormaldata(std::unique_ptr<Metadata> &metadata, const std::string &tableName);
     static void GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata);
     static int32_t GetExtractMetadata(std::unique_ptr<Metadata> &metadata);
