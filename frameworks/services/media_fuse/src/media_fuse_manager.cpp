@@ -666,7 +666,7 @@ int32_t MediaFuseManager::DoHdcRelease(const char *path, const int32_t &fd)
     }
 
     if (close(fd) == -1) {
-        MEDIA_ERR_LOG("Close fd failed, path=%{private}s, fd=%{private}d, errno=%{private}d", path, fd, errno);
+        MEDIA_ERR_LOG("Close fd failed, path=%{private}s, fd=%{private}d, errno=%{public}d", path, fd, errno);
         return -errno;
     }
 
