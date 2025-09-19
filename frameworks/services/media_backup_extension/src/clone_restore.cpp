@@ -133,7 +133,8 @@ const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
             PhotoColumn::PHOTO_LCD_VISIT_TIME, // lcd related
             PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_CE_STATUS_CODE, // cloud enhancement
             PhotoColumn::PHOTO_METADATA_FLAGS, // meta recovery related
-            PhotoColumn::PHOTO_EXIF_ROTATE,
+            PhotoColumn::PHOTO_EXIF_ROTATE, PhotoColumn::PHOTO_TRANSCODE_TIME,
+            PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
         }},
     { PhotoAlbumColumns::TABLE,
         {

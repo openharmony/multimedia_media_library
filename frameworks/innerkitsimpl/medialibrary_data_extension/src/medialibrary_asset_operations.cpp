@@ -3429,6 +3429,10 @@ static int32_t DeleteLocalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
         MEDIA_DEBUG_LOG("Don't delete cloud Photo");
     }
     if (position == BOTH_LOCAL_CLOUD_PHOTO_POSITION) {
+        if (fileAsset->GetExistCompatibleDuplicate() != 0) {
+            MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
+                to_string(fileAsset->GetId()), __func__);
+        }
         subFileAssetVector.push_back(fileAsset);
     }
     return E_OK;
@@ -3519,6 +3523,7 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
         PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         PhotoColumn::PHOTO_EDIT_TIME,
         PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
     };
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     vector<shared_ptr<FileAsset>> fileAssetVector;
