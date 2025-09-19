@@ -42,6 +42,7 @@
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
 #include "location_column.h"
+#include "map_operation_flag.h"
 #include "media_analysis_helper.h"
 #include "media_column.h"
 #include "media_datashare_ext_ability.h"
@@ -1220,8 +1221,13 @@ int32_t MediaLibraryDataManager::SolveInsertCmdSub(MediaLibraryCommand &cmd)
         case OperationObject::GEO_KNOWLEDGE:
         case OperationObject::GEO_PHOTO:
             return MediaLibraryLocationOperations::InsertOperation(cmd);
-        case OperationObject::PAH_FORM_MAP:
-            return MediaLibraryFormMapOperations::HandleStoreFormIdOperation(cmd);
+        case OperationObject::PAH_FORM_MAP: {
+            if (MAP_OPERATION_FLAG) {
+                MEDIA_INFO_LOG("map operation flag is true");
+                return MediaLibraryFormMapOperations::HandleStoreFormIdOperation(cmd);
+            }
+            return E_OK;
+        }
         case OperationObject::TAB_FACARD_PHOTO:
             return MediaLibraryFaCardOperations::HandleStoreGalleryFormOperation(cmd);
         case OperationObject::SEARCH_TOTAL: {

@@ -33,6 +33,7 @@
 #include "file_asset.h"
 #include "file_utils.h"
 #include "image_source.h"
+#include "map_operation_flag.h"
 #include "media_analysis_helper.h"
 #include "image_packer.h"
 #include "iservice_registry.h"
@@ -923,10 +924,14 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(const vector<string> &no
         watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
         watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_REMOVE);
     }
-    vector<int64_t> formIds;
-    MediaLibraryFormMapOperations::GetFormIdsByUris(notifyUris, formIds);
-    if (!formIds.empty()) {
-        MediaLibraryFormMapOperations::PublishedChange("", formIds, false);
+
+    if (MAP_OPERATION_FLAG) {
+        MEDIA_INFO_LOG("map operation flag is true");
+        vector<int64_t> formIds;
+        MediaLibraryFormMapOperations::GetFormIdsByUris(notifyUris, formIds);
+        if (!formIds.empty()) {
+            MediaLibraryFormMapOperations::PublishedChange("", formIds, false);
+        }
     }
 }
 
@@ -1387,16 +1392,19 @@ int32_t MediaLibraryPhotoOperations::CalSingleEditDataSize(const std::string &fi
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return E_DB_FAIL;
     }
-
-    std::string filePath;
-    int ret = MediaLibraryPhotoOperations::GetFilePathById(rdbStore, fileId, filePath);
-    if (ret != E_OK) {
-        MEDIA_WARN_LOG("Skip invalid file ID: %{public}s (error code: %{public}d)",
-            fileId.c_str(), ret);
-        return ret;
+    if (MAP_OPERATION_FLAG) {
+        MEDIA_INFO_LOG("map operation flag is true");
+        std::string filePath;
+        int ret = MediaLibraryPhotoOperations::GetFilePathById(rdbStore, fileId, filePath);
+        if (ret != E_OK) {
+            MEDIA_WARN_LOG("Skip invalid file ID: %{public}s (error code: %{public}d)",
+                fileId.c_str(), ret);
+            return ret;
+        }
+        return MediaLibraryRdbStore::UpdateEditDataSize(rdbStore, fileId, filePath);
     }
 
-    return MediaLibraryRdbStore::UpdateEditDataSize(rdbStore, fileId, filePath);
+    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::Get500FileIdsAndPathS(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
@@ -1661,9 +1669,12 @@ static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState
             watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_ADD);
         }
     }
-    MediaLibraryFormMapOperations::GetFormIdsByUris(notifyUris, formIds);
-    if (!formIds.empty()) {
-        MediaLibraryFormMapOperations::PublishedChange("", formIds, false);
+    if (MAP_OPERATION_FLAG) {
+        MEDIA_INFO_LOG("map operation flag is true");
+        MediaLibraryFormMapOperations::GetFormIdsByUris(notifyUris, formIds);
+        if (!formIds.empty()) {
+            MediaLibraryFormMapOperations::PublishedChange("", formIds, false);
+        }
     }
 }
 
@@ -2755,13 +2766,16 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsert(MediaLibraryCommand &cmd)
 
 static void NotifyFormMap(const int32_t fileId, const string& path, const bool isSave)
 {
-    string uri = MediaLibraryFormMapOperations::GetUriByFileId(fileId, path);
-    CHECK_AND_RETURN_LOG(!uri.empty(), "Failed to GetUriByFileId(%{public}d, %{private}s)", fileId, path.c_str());
+    if (MAP_OPERATION_FLAG) {
+        MEDIA_INFO_LOG("map operation flag is true");
+        string uri = MediaLibraryFormMapOperations::GetUriByFileId(fileId, path);
+        CHECK_AND_RETURN_LOG(!uri.empty(), "Failed to GetUriByFileId(%{public}d, %{private}s)", fileId, path.c_str());
 
-    vector<int64_t> formIds;
-    MediaLibraryFormMapOperations::GetFormMapFormId(uri.c_str(), formIds);
-    if (!formIds.empty()) {
-        MediaLibraryFormMapOperations::PublishedChange(uri, formIds, isSave);
+        vector<int64_t> formIds;
+        MediaLibraryFormMapOperations::GetFormMapFormId(uri.c_str(), formIds);
+        if (!formIds.empty()) {
+            MediaLibraryFormMapOperations::PublishedChange(uri, formIds, isSave);
+        }
     }
 }
 
