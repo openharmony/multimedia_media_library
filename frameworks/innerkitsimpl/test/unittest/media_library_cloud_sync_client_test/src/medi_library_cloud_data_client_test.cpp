@@ -53,7 +53,7 @@ void CloudMediaDataClientTest::TearDown() {}
 HWTEST_F(CloudMediaDataClientTest, CloudMediaDataClientTraceId_Test, TestSize.Level1)
 {
     std::string traceId = "test";
-    auto client = std::make_shared<CloudMediaDataClient>(1);
+    auto client = std::make_shared<CloudMediaDataClient>(1, 1);
     ASSERT_TRUE(client);
 
     client->SetTraceId(traceId);
@@ -75,7 +75,7 @@ HWTEST_F(CloudMediaDataClientTest, CloudMediaDataClientVacantHandler_Test, TestS
     std::vector<CloudMetaData> metaData;
     std::vector<MediaOperateResult> result;
     std::unordered_map<std::string, int32_t> resMap;
-    auto client = std::make_shared<CloudMediaDataClient>(1);
+    auto client = std::make_shared<CloudMediaDataClient>(1, 1);
     ASSERT_TRUE(client);
     client->dataHandler_ = nullptr;
 
