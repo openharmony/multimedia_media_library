@@ -181,7 +181,8 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_LPATH + " TEXT, " +
     ALBUM_PRIORITY + " INT, " +
     ALBUM_CHECK_FLAG + " INT DEFAULT 0, " +
-    PhotoAlbumColumns::COVER_URI_SOURCE + " INT DEFAULT 0, " +
+    COVER_URI_SOURCE + " INT NOT NULL DEFAULT 0, " +
+    COVER_CLOUD_ID + " TEXT, " +
     COVER_DATE_TIME + " BIGINT DEFAULT 0, " +
     HIDDEN_COVER_DATE_TIME + " BIGINT DEFAULT 0, " +
     ALBUMS_ORDER + " INT DEFAULT -1, " +
