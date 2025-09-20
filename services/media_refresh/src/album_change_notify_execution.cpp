@@ -24,11 +24,22 @@ using namespace OHOS::Media::Notification;
 namespace OHOS {
 namespace Media::AccurateRefresh {
 
+bool IsNotifyUpdateForHiddenAlbum(const AlbumChangeInfo& beforeChangeInfo, const AlbumChangeInfo& afterChangeInfo)
+{
+    const std::string EMPTY_STR = "";
+    return (afterChangeInfo.hiddenCount_ > 0 && afterChangeInfo.hiddenCoverUri_ != EMPTY_STR &&
+        beforeChangeInfo.hiddenCount_ == INVALID_INT32_VALUE && beforeChangeInfo.hiddenCoverUri_ == EMPTY_STR) ?
+        true : false;
+}
+
 void AlbumChangeNotifyExecution::Notify(vector<AlbumChangeData> changeDatas)
 {
     for (auto &changeData : changeDatas) {
         if (changeData.operation_ == RDB_OPERATION_ADD) {
             InsertNotifyInfo(ALBUM_OPERATION_ADD, changeData);
+            if (IsNotifyUpdateForHiddenAlbum(changeData.infoBeforeChange_, changeData.infoAfterChange_)) {
+                InsertNotifyInfo(ALBUM_OPERATION_UPDATE_HIDDEN, changeData);
+            }
         } else if (changeData.operation_ == RDB_OPERATION_REMOVE) {
             InsertNotifyInfo(ALBUM_OPERATION_REMOVE, changeData);
         } else if (changeData.operation_ == RDB_OPERATION_UPDATE) {
