@@ -49,7 +49,7 @@ void CloudMediaDataClientEmptyRequestTest::TearDown(void)
 HWTEST_F(CloudMediaDataClientEmptyRequestTest, OnDownloadAsset_EMPTY, TestSize.Level1)
 {
     std::vector<std::string> cloudIds;
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<MediaOperateResult> result;
     int32_t ret = cloudMediaDataClient.OnDownloadAsset(cloudIds, result);
     EXPECT_EQ(ret, E_OK);
@@ -58,7 +58,7 @@ HWTEST_F(CloudMediaDataClientEmptyRequestTest, OnDownloadAsset_EMPTY, TestSize.L
 HWTEST_F(CloudMediaDataClientEmptyRequestTest, UpdatePosition_EMPTY, TestSize.Level1)
 {
     std::vector<std::string> cloudIds;
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     int32_t position = 0;
     int32_t ret = cloudMediaDataClient.UpdatePosition(cloudIds, position);
     EXPECT_EQ(ret, E_OK);
@@ -67,7 +67,7 @@ HWTEST_F(CloudMediaDataClientEmptyRequestTest, UpdatePosition_EMPTY, TestSize.Le
 HWTEST_F(CloudMediaDataClientEmptyRequestTest, GetDownloadAsset_EMPTY, TestSize.Level1)
 {
     std::vector<std::string> cloudIds;
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<CloudMetaData> cloudMetaDataVec;
     int32_t ret = cloudMediaDataClient.GetDownloadAsset(cloudIds, cloudMetaDataVec);
     EXPECT_EQ(ret, E_OK);
@@ -76,7 +76,7 @@ HWTEST_F(CloudMediaDataClientEmptyRequestTest, GetDownloadAsset_EMPTY, TestSize.
 HWTEST_F(CloudMediaDataClientEmptyRequestTest, GetDownloadThmsByUri_EMPTY, TestSize.Level1)
 {
     std::vector<std::string> cloudIds;
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     int32_t type = 0;
     std::vector<CloudMetaData> metaData;
     int32_t ret = cloudMediaDataClient.GetDownloadThmsByUri(cloudIds, type, metaData);
@@ -85,7 +85,7 @@ HWTEST_F(CloudMediaDataClientEmptyRequestTest, GetDownloadThmsByUri_EMPTY, TestS
 
 HWTEST_F(CloudMediaDataClientEmptyRequestTest, OnDownloadThms_EMPTY, TestSize.Level1)
 {
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::unordered_map<std::string, int32_t> resMap;
     int32_t failSize = 0;
     int32_t ret = cloudMediaDataClient.OnDownloadThms(resMap, failSize);
@@ -94,7 +94,7 @@ HWTEST_F(CloudMediaDataClientEmptyRequestTest, OnDownloadThms_EMPTY, TestSize.Le
 
 HWTEST_F(CloudMediaDataClientEmptyRequestTest, UpdateLocalFileDirty_EMPTY, TestSize.Level1)
 {
-    CloudMediaDataClient cloudMediaDataClient(100);
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
     std::vector<MDKRecord> records;
     int32_t ret = cloudMediaDataClient.UpdateLocalFileDirty(records);
     EXPECT_EQ(ret, E_OK);
