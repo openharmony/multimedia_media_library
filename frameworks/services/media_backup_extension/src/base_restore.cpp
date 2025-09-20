@@ -54,7 +54,7 @@
 #include "medialibrary_rdb_transaction.h"
 #include "database_report.h"
 #include "ohos_account_kits.h"
-
+#include "medialibrary_photo_operations.h"
 
 namespace OHOS {
 namespace Media {
@@ -1030,6 +1030,10 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
             CHECK_AND_EXECUTE(RestoreLcdAndThumbFromCloud(fileInfos[i], MIGRATE_CLOUD_THM_TYPE, sceneCode),
                 RestoreLcdAndThumbFromKvdb(fileInfos[i], MIGRATE_CLOUD_THM_TYPE, sceneCode));
         }
+
+        MediaLibraryPhotoOperations::StoreThumbnailAndEditSize(to_string(fileInfos[i].fileIdNew),
+            fileInfos[i].cloudPath);
+
         fileMoveCount++;
         videoFileMoveCount += fileInfos[i].fileType == MediaType::MEDIA_TYPE_VIDEO;
     }
