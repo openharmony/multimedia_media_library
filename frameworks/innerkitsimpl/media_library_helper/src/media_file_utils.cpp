@@ -2550,6 +2550,8 @@ void MediaFileUtils::StatDirSize(const std::string& rootPath, size_t& totalSize)
             } else if (S_ISREG(statBuf.st_mode)) {
                 size_t fileSize = 0;
                 MediaFileUtils::GetFileSize(fullPath, fileSize);
+                MEDIA_DEBUG_LOG("GetFileSize, file: %{public}s, size: %{public}lld bytes",
+                    fullPath.c_str(), static_cast<long long>(fileSize));
                 totalSize += fileSize;
             }
         }
