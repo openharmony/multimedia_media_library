@@ -27,6 +27,7 @@
 #include "directory_ex.h"
 #include "file_asset.h"
 #include "heif_transcoding_check_utils.h"
+#include "map_operation_flag.h"
 #include "media_app_uri_permission_column.h"
 #include "media_column.h"
 #include "media_exif.h"
@@ -1964,10 +1965,14 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
     NotifyType type = (notifyData->trashDate > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSET :
         NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     watch->Notify(notifyData->notifyUri, type, trashAlbumId);
-    vector<int64_t> formIds;
-    MediaLibraryFormMapOperations::GetFormMapFormId(notifyData->notifyUri, formIds);
-    if (!formIds.empty()) {
-        MediaLibraryFormMapOperations::PublishedChange("", formIds, false);
+
+    if (MAP_OPERATION_FLAG) {
+        MEDIA_INFO_LOG("map operation flag true");
+        vector<int64_t> formIds;
+        MediaLibraryFormMapOperations::GetFormMapFormId(notifyData->notifyUri, formIds);
+        if (!formIds.empty()) {
+            MediaLibraryFormMapOperations::PublishedChange("", formIds, false);
+        }
     }
 }
 

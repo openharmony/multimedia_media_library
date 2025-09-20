@@ -24,6 +24,7 @@
 
 #include "dfx_manager.h"
 #include "dfx_reporter.h"
+#include "map_operation_flag.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_notify.h"
@@ -760,13 +761,16 @@ static int32_t UpdateCoverInfoForAlbum(const std::shared_ptr<MediaLibraryRdbStor
         MEDIA_INFO_LOG("ResultSet GoToNextRow error, ret:%{public}d, ownerAlbumId:%{public}d", ret, ownerAlbumId);
         return E_OK;
     }
-    string newCoverUri = MediaLibraryFormMapOperations::GetUriByFileId(newAssetId, targetPath);
-    MEDIA_INFO_LOG("New cover uri is %{public}s", targetPath.c_str());
-    const std::string UPDATE_ALBUM_COVER_URI =
-        "UPDATE PhotoAlbum SET cover_uri = '" + newCoverUri +"' WHERE album_id = " + to_string(ownerAlbumId);
-    ret = upgradeStore->ExecuteSql(UPDATE_ALBUM_COVER_URI);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
-        "update cover uri failed, ret = %{public}d, target album is %{public}d", ret, ownerAlbumId);
+    if (MAP_OPERATION_FLAG) {
+        MEDIA_INFO_LOG("map operation flag is true");
+        string newCoverUri = MediaLibraryFormMapOperations::GetUriByFileId(newAssetId, targetPath);
+        MEDIA_INFO_LOG("New cover uri is %{public}s", targetPath.c_str());
+        const std::string updateAlbumCoverUri =
+            "UPDATE PhotoAlbum SET cover_uri = '" + newCoverUri +"' WHERE album_id = " + to_string(ownerAlbumId);
+        ret = upgradeStore->ExecuteSql(updateAlbumCoverUri);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+            "update cover uri failed, ret = %{public}d, target album is %{public}d", ret, ownerAlbumId);
+    }
     return E_OK;
 }
 
