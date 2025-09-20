@@ -32,7 +32,7 @@ void MediaImageFrameWorkUtilsTest::TearDownTestCase(void) {}
 void MediaImageFrameWorkUtilsTest::SetUp(void) {}
 void MediaImageFrameWorkUtilsTest::TearDown(void) {}
 
-static const string HDR_PICTURE_PATH = "/data/local/tmp/HDR_picture.jpg";
+static const string HDR_PICTURE_PATH = "/data/local/tmp/HasHdrNoRotate.jpg";
 
 static unique_ptr<ImageSource> CreateTestImageSource()
 {

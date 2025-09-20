@@ -30,6 +30,7 @@
 #include "medialibrary_mocksinglekvstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
+#include "thumbnail_file_utils.h"
 #include "thumbnail_source_loading.h"
 #include "vision_db_sqls.h"
 
@@ -45,7 +46,13 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore = nullptr;
 static int64_t g_id;
 const string KV_STORE_DIR = "/data/medialibrary/database";
 const int64_t DATE_TAKEN_TEST_VALUE = 1756111539577;
-
+const int32_t TEST_PIXELMAP_WIDTH_AND_HEIGHT = 100;
+const string TEST_IMAGE_PATH = "/storage/cloud/files/Photo/1/CreateImageThumbnailTest_001.jpg";
+const string NO_HDR_NO_ROTATE_IMAGE_PATH = "/storage/cloud/files/Photo/1/NoHdrNoRotate.jpg";
+const string HAS_HDR_NO_ROTATE_IMAGE_PATH = "/storage/cloud/files/Photo/1/HasHdrNoRotate.jpg";
+const string NO_HDR_HAS_ROTATE_IMAGE_PATH = "/storage/cloud/files/Photo/1/NoHdrHasRotate.jpg";
+const string HAS_HDR_HAS_ROTATE_IMAGE_PATH = "/storage/cloud/files/Photo/1/HasHdrHasRotate.jpg";
+const string LARGE_IMAGE_PATH = "/data/local/tmp/hdr.jpg";
 class TddRdbOpenCallback : public NativeRdb::RdbOpenCallback {
 public:
     int OnCreate(NativeRdb::RdbStore &rdbStore) override
@@ -109,9 +116,6 @@ void MediaLibraryIthumbnailHelperTest::TearDownTestCase(void)
 void MediaLibraryIthumbnailHelperTest::SetUp() {}
     
 void MediaLibraryIthumbnailHelperTest::TearDown(void) {}
-
-const int32_t TEST_PIXELMAP_WIDTH_AND_HEIGHT = 100;
-const string TEST_IMAGE_PATH = "/storage/cloud/files/Photo/1/CreateImageThumbnailTest_001.jpg";
 
 static std::shared_ptr<PixelMap> CreateTestPixelMap(PixelFormat format, bool useDMA)
 {
@@ -275,6 +279,124 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, DoCreatetLcdAndThumbnail_test_001, Te
     bool ret = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, data);
     EXPECT_EQ(ret, true);
     MEDIA_INFO_LOG("DoCreatetLcdAndThumbnail_test_001 end");
+}
+
+HWTEST_F(MediaLibraryIthumbnailHelperTest, CreateLowQulityLcd_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CreateLowQulityLcd_test_001");
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    opts.store = g_rdbStore;
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    data.id = std::to_string(g_id);
+    data.createLowQulityLcd = true;
+    data.path = NO_HDR_NO_ROTATE_IMAGE_PATH;
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+
+    MediaFileUtils::DeleteDir(ThumbnailFileUtils::GetThumbnailDir(data));
+    MediaFileUtils::CreateDirectory(ThumbnailFileUtils::GetThumbnailDir(data));
+    MediaFileUtils::CopyFileUtil(LARGE_IMAGE_PATH, GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX));
+    
+    bool ret = IThumbnailHelper::DoCreateLcd(opts, data);
+    EXPECT_EQ(ret, true);
+    size_t size;
+    ret = ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, size);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(size < LCD_UPLOAD_LIMIT_SIZE, true);
+    MEDIA_INFO_LOG("CreateLowQulityLcd_test_001 end");
+}
+
+HWTEST_F(MediaLibraryIthumbnailHelperTest, CreateLowQulityLcd_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CreateLowQulityLcd_test_002");
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    opts.store = g_rdbStore;
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    data.id = std::to_string(g_id);
+    data.createLowQulityLcd = true;
+    data.path = NO_HDR_HAS_ROTATE_IMAGE_PATH;
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    data.orientation = 90;
+    data.exifRotate = 6;
+    data.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+
+    MediaFileUtils::DeleteDir(ThumbnailFileUtils::GetThumbnailDir(data));
+    MediaFileUtils::CreateDirectory(ThumbnailFileUtils::GetThumbnailDir(data));
+    MediaFileUtils::CopyFileUtil(LARGE_IMAGE_PATH, GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX));
+    MediaFileUtils::CreateDirectory(ThumbnailFileUtils::GetThumbExDir(data));
+    MediaFileUtils::CopyFileUtil(LARGE_IMAGE_PATH, GetThumbnailPath(data.path, THUMBNAIL_LCD_EX_SUFFIX));
+    
+    bool ret = IThumbnailHelper::DoCreateLcd(opts, data);
+    EXPECT_EQ(ret, true);
+    size_t size;
+    ret = ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, size);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(size < LCD_UPLOAD_LIMIT_SIZE, true);
+    ret = ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD_EX, size);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(size < LCD_UPLOAD_LIMIT_SIZE, true);
+    MEDIA_INFO_LOG("CreateLowQulityLcd_test_002 end");
+}
+
+HWTEST_F(MediaLibraryIthumbnailHelperTest, CreateLowQulityLcd_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CreateLowQulityLcd_test_003");
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    opts.store = g_rdbStore;
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    data.id = std::to_string(g_id);
+    data.createLowQulityLcd = true;
+    data.path = HAS_HDR_NO_ROTATE_IMAGE_PATH;
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    data.loaderOpts.isHdr = true;
+
+    MediaFileUtils::DeleteDir(ThumbnailFileUtils::GetThumbnailDir(data));
+    MediaFileUtils::CreateDirectory(ThumbnailFileUtils::GetThumbnailDir(data));
+    MediaFileUtils::CopyFileUtil(LARGE_IMAGE_PATH, GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX));
+    
+    bool ret = IThumbnailHelper::DoCreateLcd(opts, data);
+    EXPECT_EQ(ret, true);
+    size_t size;
+    ret = ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, size);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(size < LCD_UPLOAD_LIMIT_SIZE, true);
+    MEDIA_INFO_LOG("CreateLowQulityLcd_test_003 end");
+}
+
+HWTEST_F(MediaLibraryIthumbnailHelperTest, CreateLowQulityLcd_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("CreateLowQulityLcd_test_004");
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    opts.store = g_rdbStore;
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    data.id = std::to_string(g_id);
+    data.createLowQulityLcd = true;
+    data.path = HAS_HDR_HAS_ROTATE_IMAGE_PATH;
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    data.orientation = 90;
+    data.exifRotate = 6;
+    data.mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    data.loaderOpts.isHdr = true;
+
+    MediaFileUtils::DeleteDir(ThumbnailFileUtils::GetThumbnailDir(data));
+    MediaFileUtils::CreateDirectory(ThumbnailFileUtils::GetThumbnailDir(data));
+    MediaFileUtils::CopyFileUtil(LARGE_IMAGE_PATH, GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX));
+    MediaFileUtils::CreateDirectory(ThumbnailFileUtils::GetThumbExDir(data));
+    MediaFileUtils::CopyFileUtil(LARGE_IMAGE_PATH, GetThumbnailPath(data.path, THUMBNAIL_LCD_EX_SUFFIX));
+    
+    bool ret = IThumbnailHelper::DoCreateLcd(opts, data);
+    EXPECT_EQ(ret, true);
+    size_t size;
+    ret = ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, size);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(size < LCD_UPLOAD_LIMIT_SIZE, true);
+    ret = ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD_EX, size);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(size < LCD_UPLOAD_LIMIT_SIZE, true);
+    MEDIA_INFO_LOG("CreateLowQulityLcd_test_004 end");
 }
 
 } // namespace Media
