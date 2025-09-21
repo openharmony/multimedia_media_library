@@ -403,6 +403,8 @@ void PhotoAlbumColumns::GetSourceAlbumPredicates(const int32_t albumId, RdbPredi
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     SetDefaultPredicatesCondition(predicates, 0, hiddenState, 0, false);
+    predicates.NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+        to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)));
     predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
 }
 

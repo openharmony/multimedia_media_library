@@ -297,8 +297,6 @@ const std::string REMOVE_DELETED_SOURCE_ALBUM =
 const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS insert_source_photo_create_source_album_trigger AFTER INSERT ON " +
     PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT_FOR_LPATH + " = 0 AND NEW.owner_album_id = 0 " +
-    " AND NEW." + PhotoColumn::PHOTO_FILE_SOURCE_TYPE + " <> " +
-    to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) +
     " BEGIN " + REMOVE_DELETED_SOURCE_ALBUM + "; "
     " INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
     PhotoAlbumColumns::ALBUM_TYPE + " , " +
