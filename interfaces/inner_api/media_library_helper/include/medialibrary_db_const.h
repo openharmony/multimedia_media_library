@@ -24,7 +24,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 364;
+const int32_t MEDIA_RDB_VERSION = 365;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -254,6 +254,7 @@ enum {
     VERSION_ADD_FILE_SOURCE_TYPE = 362,
     VERSION_ADD_HDR_MODE = 363,
     VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA = 364,
+    VERSION_ADD_ANALYSIS_STATUS = 365,
 };
 enum {
     MEDIA_API_VERSION_DEFAULT = 8,
