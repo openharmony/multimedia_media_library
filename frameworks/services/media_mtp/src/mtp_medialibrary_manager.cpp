@@ -216,7 +216,6 @@ int32_t MtpMedialibraryManager::GetHandles(int32_t parentId, vector<int> &outHan
         predicates.IsNotNull(MEDIA_DATA_DB_ALBUM_NAME);
         predicates.NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
         predicates.NotEqualTo(MEDIA_DATA_DB_IS_LOCAL, IS_LOCAL);
-        predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/图库");
         resultSet = dataShareHelper_->Query(uri, predicates, columns);
     } else {
         Uri uri(PAH_QUERY_PHOTO);
@@ -322,7 +321,6 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetAlbumInfo(
     predicates.BeginWrap();
     predicates.IsNotNull(MEDIA_DATA_DB_ALBUM_NAME);
     predicates.NotEqualTo(MEDIA_DATA_DB_ALBUM_NAME, HIDDEN_ALBUM);
-    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_LPATH, "/Pictures/图库");
     predicates.BeginWrap();
     predicates.NotEqualTo(MEDIA_DATA_DB_IS_LOCAL, IS_LOCAL);
     predicates.Or();
