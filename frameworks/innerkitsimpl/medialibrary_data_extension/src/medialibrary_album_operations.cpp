@@ -94,6 +94,9 @@ constexpr int32_t ALBUM_TO_RENAME_FOR_ANALYSIS = 3;
 constexpr int32_t IS_ME_ALBUM = 1;
 constexpr int32_t STORE_PORTRAIT_FIRST_PAGE_MIN_COUNT = 5;
 constexpr int32_t STORE_PORTRAIT_SECOND_PAGE_MIN_COUNT = 1;
+constexpr int32_t ANALYSIS_STATUS_TO_REFRESH = 1;
+constexpr int32_t NO_FIRST_PAGE_SINGLE_PORTRAIT = -2;
+constexpr int32_t NO_FIRST_PAGE_SINGLE_PORTRAIT_MANUAL = 2;
 const std::string ALBUM_LPATH_PREFIX = "/Pictures/Users/";
 const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
 const std::string ME_RELATIONSHIP = "me";
@@ -2601,10 +2604,21 @@ static int32_t UpdateDisplayLevel(const int32_t value, const int32_t albumId)
         MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
         return E_DB_FAIL;
     }
+    vector<string> updateDisplayLevelAlbumsSqls = {};
+    if (value == FIRST_PAGE) {
+        std::string setAnalysisStatusSqls = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ANALYSIS_STATUS + " = " +
+            std::to_string(ANALYSIS_STATUS_TO_REFRESH) + " WHERE " + ALBUM_ID + " IN (SELECT " + ALBUM_ID + " FROM " +
+            ANALYSIS_ALBUM_TABLE + " WHERE " + GROUP_TAG + " LIKE ( SELECT CONCAT('%', " + GROUP_TAG + " , '%') FROM " +
+            ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + to_string(albumId) + " AND (" + USER_DISPLAY_LEVEL +
+            " = " + to_string(NO_FIRST_PAGE_SINGLE_PORTRAIT_MANUAL) + " OR " + USER_DISPLAY_LEVEL + " = " +
+            std::to_string(NO_FIRST_PAGE_SINGLE_PORTRAIT) + " OR " + USER_DISPLAY_LEVEL + " IS NULL))) AND " +
+            PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::GROUP_PHOTO);
+        updateDisplayLevelAlbumsSqls.push_back(setAnalysisStatusSqls);
+    }
     std::string updateDisplayLevel = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + USER_DISPLAY_LEVEL + " = " +
         to_string(value) + " WHERE " + GROUP_TAG + " IN (SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
         " WHERE " + ALBUM_ID + " = " + to_string(albumId) + ")";
-    vector<string> updateDisplayLevelAlbumsSqls = { updateDisplayLevel };
+    updateDisplayLevelAlbumsSqls.push_back(updateDisplayLevel);
     return ExecSqls(updateDisplayLevelAlbumsSqls, uniStore);
 }
 

@@ -3571,6 +3571,15 @@ static void AddCloudEnhancementColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddAnalysisStatus(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "ALTER TABLE " + ANALYSIS_ALBUM_TABLE = " ADD COLUNN " + ANALYSIS_STATUS + " INT ",
+    };
+    MEDIA_INFO_LOG("start add analysis status column");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void AddIsAutoColumns(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -5322,6 +5331,12 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_HDR_MODE, true)) {
         AddHdrMode(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_HDR_MODE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_ANALYSIS_STATUS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ANALYSIS_STATUS, true)) {
+        AddAnalysisStatus(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ANALYSIS_STATUS, true);
     }
 }
 
