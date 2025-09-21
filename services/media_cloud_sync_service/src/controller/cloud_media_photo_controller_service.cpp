@@ -323,7 +323,7 @@ int32_t CloudMediaPhotoControllerService::OnFdirtyRecords(MessageParcel &data, M
     for (const auto &entry : req.records) {
         PhotosDto photo;
         this->processor_.ConvertToPhotosDto(entry, photo);
-        MEDIA_ERR_LOG(
+        MEDIA_INFO_LOG(
             "OnFdirtyRecords Photo: %{public}s, entry: %{public}s", photo.ToString().c_str(), entry.ToString().c_str());
         photos.emplace_back(photo);
     }
