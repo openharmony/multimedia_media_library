@@ -174,7 +174,7 @@ int32_t CloudMediaPhotoHandler::GetCheckRecords(
             cloudCheckData.attachment[key] = fileData;
         }
         checkRecords[cloudId] = cloudCheckData;
-        MEDIA_INFO_LOG("GetCheckRecords CloudCheckData: %{public}s", cloudCheckData.ToString().c_str());
+        MEDIA_DEBUG_LOG("GetCheckRecords CloudCheckData: %{public}s", cloudCheckData.ToString().c_str());
     }
     return E_OK;
 }
