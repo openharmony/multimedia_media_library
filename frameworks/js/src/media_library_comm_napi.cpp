@@ -42,7 +42,7 @@ napi_value MediaLibraryCommNapi::CreatePhotoAssetNapi(
     string fileId = MediaFileUtils::GetIdFromUri(uri);
     size_t MAX_INTEGER = 2147483647;
     if (!fileId.empty() && all_of(fileId.begin(), fileId.end(), ::isdigit)
-        && fileId < MAX_INTEGER) {
+        && fileId.length() < MAX_INTEGER) {
         fileAsset->SetId(stoi(fileId));
     }
 
