@@ -126,7 +126,7 @@ int32_t CloudMediaPhotosDao::BatchInsertAssetMaps(std::map<std::string, std::set
         MEDIA_ERR_LOG("fail to insert album mapping, ret %{public}d", ret);
         return ret;
     }
-    MEDIA_ERR_LOG("add mapping success");
+    MEDIA_INFO_LOG("add mapping success");
     return E_OK;
 }
 
