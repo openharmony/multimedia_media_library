@@ -235,7 +235,7 @@ int32_t MediaFuseHdcOperations::HandleMovingPhoto(std::string &filePath, std::st
     if (resultSet->GoToNextRow() != NativeRdb::E_OK) {
         resultSet->Close();
         MEDIA_ERR_LOG("Failed to query subtype from db");
-        return E_ERR;
+        return E_NO_SUCH_FILE;
     }
     int32_t subtype = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::PHOTO_SUBTYPE);
     int32_t effectMode = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::MOVING_PHOTO_EFFECT_MODE);
