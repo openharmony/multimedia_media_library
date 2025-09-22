@@ -703,10 +703,11 @@ int32_t MediaFuseManager::DoHdcUnlink(const char *path)
     string fileId;
     if (filePath.empty()) {
         res = MediaFuseHdcOperations::HandleMovingPhoto(filePath, displayName, albumId);
-        if (res != E_SUCCESS) {
-            MEDIA_ERR_LOG("HandleMovingPhoto fail");
-            return res;
+        if (res == E_NO_SUCH_FILE) {
+            MEDIA_INFO_LOG("MovingPhoto mp4 has deleted");
+            return E_SUCCESS;
         }
+        CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "HandleMovingPhoto fail");
         res = MediaFuseHdcOperations::GetPathFromDisplayname(displayName, albumId, filePath);
         CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "GetPathFromDisplayname fail");
     }
