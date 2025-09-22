@@ -79,6 +79,10 @@ using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
     napi_value ctorObj;
+    NapiScopeHandler scopeHandler(env);
+    if (!scopeHandler.IsValid()) {
+        break;
+    }
     NAPI_CALL(env, napi_define_class(env, info.name.c_str(), NAPI_AUTO_LENGTH, info.constructor, nullptr,
         info.props.size(), info.props.data(), &ctorObj));
     NAPI_CALL(env, napi_create_reference(env, ctorObj, NAPI_INIT_REF_COUNT, info.ref));
@@ -337,7 +341,7 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
         NAPI_ERR_LOG("intercepted fileId is empty");
         return ERROR;
     }
-    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)) {
+    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit) && fileIdStr.length() < MAX_INTEGER) {  
         return std::stoi(fileIdStr);
     }
 
