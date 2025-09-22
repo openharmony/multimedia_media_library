@@ -74,15 +74,15 @@ static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP
     {ANALYSIS_OCR, OCR_TEXT_MSG}
 };
 static const uint8_t BINARY_FEATURE_END_FLAG = 0x01;
-
+const size_t MAX_INTEGER = 2147483647;
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
-    napi_value ctorObj;
     NapiScopeHandler scopeHandler(env);
     if (!scopeHandler.IsValid()) {
-        break;
+        return nullptr;
     }
+    napi_value ctorObj;
     NAPI_CALL(env, napi_define_class(env, info.name.c_str(), NAPI_AUTO_LENGTH, info.constructor, nullptr,
         info.props.size(), info.props.data(), &ctorObj));
     NAPI_CALL(env, napi_create_reference(env, ctorObj, NAPI_INIT_REF_COUNT, info.ref));
@@ -341,7 +341,8 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
         NAPI_ERR_LOG("intercepted fileId is empty");
         return ERROR;
     }
-    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit) && fileIdStr.length() < MAX_INTEGER) {  
+    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)
+        && fileIdStr.length() < MAX_INTEGER) {  
         return std::stoi(fileIdStr);
     }
 

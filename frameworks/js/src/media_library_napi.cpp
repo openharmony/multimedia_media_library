@@ -4716,8 +4716,11 @@ static void PeerInfoToJsArray(const napi_env &env, const vector<unique_ptr<PeerI
     if (info == nullptr) {
         return;
     }
+    NapiScopeHandler scopeHandler(env);
+    if (!scopeHandler.IsValid()) {
+        return;
+    }
     napi_value result = nullptr;
-    NapiScopeHandler NapiScopeHandler(env);
     napi_create_object(env, &result);
     SetValueUtf8String(env, "deviceName", info->deviceName.c_str(), result);
     SetValueUtf8String(env, "networkId", info->networkId.c_str(), result);
