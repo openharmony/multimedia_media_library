@@ -248,26 +248,6 @@ void DfxManager::HandleDeleteBehavior(int32_t type, int32_t size, std::vector<st
     dfxWorker_->AddTask(deleteBehaviorTask);
 }
 
-const std::string SQL_ALBUM_UPLOAD_STATISTICS = "\
-    SELECT \
-        COUNT(CASE WHEN album_type = 2048 THEN 1 END) AS SOURCE_ALBUM_COUNT, \
-        COUNT(CASE WHEN album_type = 0 THEN 1 END) AS USER_ALBUM_COUNT, \
-        COUNT(CASE WHEN album_type = 2048 AND upload_status = 1 THEN 1 END) AS UPLOAD_SOURCE_ALBUM_COUNT, \
-        COUNT(CASE WHEN album_type = 0 AND upload_status = 1 THEN 1 END) AS UPLOAD_USER_ALBUM_COUNT \
-    FROM PhotoAlbum;";
-
-const std::string SQL_NOT_UPLOAD_ASSET_COUNT = "\
-    WITH NOT_UPLOAD_ALBUM AS ( \
-        SELECT album_id \
-        FROM PhotoAlbum \
-        WHERE album_type IN (0, 2048) AND \
-            upload_status = 0 \
-    ) \
-    SELECT \
-        COUNT(CASE WHEN dirty = 1 THEN 1 END) AS NOT_UPLOAD_ASSET_COUNT \
-    FROM Photos \
-    WHERE owner_album_id IN (SELECT album_id FROM NOT_UPLOAD_ALBUM);";
-
 const std::string SQL_BATCH_DOWNLOAD_INFO_COUNT = "\
     SELECT \
         COUNT(CASE WHEN download_status = 0 THEN 1 END) AS WAITING_COUNT, \
@@ -279,39 +259,6 @@ const std::string SQL_BATCH_DOWNLOAD_INFO_COUNT = "\
         SUM(CASE WHEN download_status = 4 THEN size ELSE 0 END) AS SUCC_TOTAL_SIZE, \
         SUM(CASE WHEN download_status = 4 THEN (finish_time - add_time) ELSE 0 END) AS SUCC_TOTAL_TIME \
     FROM download_resources_task_records;";
-
-PhotoStatistics QueryAlbumCountByUpload()
-{
-    std::shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, PhotoStatistics(), "rdbStore is nullptr");
-    std::vector<NativeRdb::ValueObject> params = {};
-    auto resultSet1 = rdbStore->QuerySql(SQL_ALBUM_UPLOAD_STATISTICS, params);
-    CHECK_AND_RETURN_RET(resultSet1 != nullptr, {});
-    auto resultSet2 = rdbStore->QuerySql(SQL_NOT_UPLOAD_ASSET_COUNT, params);
-    CHECK_AND_RETURN_RET(resultSet2 != nullptr, {});
-
-    PhotoStatistics stat;
-    if (resultSet1->GoToNextRow() == NativeRdb::E_OK) {
-        stat.sourceAlbumCount = GetInt32Val("SOURCE_ALBUM_COUNT", resultSet1);
-        stat.userAlbumCount = GetInt32Val("USER_ALBUM_COUNT", resultSet1);
-        stat.uploadSourceAlbumCount = GetInt32Val("UPLOAD_SOURCE_ALBUM_COUNT", resultSet1);
-        stat.uploadUserAlbumCount = GetInt32Val("UPLOAD_USER_ALBUM_COUNT", resultSet1);
-    }
-
-    if (resultSet2->GoToNextRow() == NativeRdb::E_OK) {
-        stat.notUploadAssetCount = GetInt32Val("NOT_UPLOAD_ASSET_COUNT", resultSet2);
-    }
-
-    resultSet1->Close();
-    resultSet2->Close();
-    return stat;
-}
-
-static void HandleUploadAlbumInfo(std::shared_ptr<DfxReporter> &dfxReporter)
-{
-    PhotoStatistics uploadStatus = QueryAlbumCountByUpload();
-    dfxReporter->ReportPhotoInfo(uploadStatus);
-}
 
 static void AddDownloadTaskInfo(PhotoStatistics &stats)
 {
@@ -483,7 +430,6 @@ static void HandleStatistic(DfxData *data)
     HandleDirtyCloudPhoto(dfxReporter);
     HandleLocalVersion(dfxReporter);
     HandleAstcInfo(dfxReporter);
-    HandleUploadAlbumInfo(dfxReporter);
 #ifdef META_RECOVERY_SUPPORT
     MediaLibraryMetaRecovery::GetInstance().RecoveryStatistic();
 #endif

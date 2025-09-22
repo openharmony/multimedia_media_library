@@ -141,10 +141,10 @@ static int32_t InsertPhoto(const MediaType &mediaType, int32_t position, int32_t
     valuesBucket.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
     valuesBucket.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, coverLevel);
     valuesBucket.PutString(PhotoColumn::PHOTO_BURST_KEY, burstKey);
-    g_rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     if (burstKey != "") {
         valuesBucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
     }
+    g_rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     return static_cast<int32_t>(fileId);
 }

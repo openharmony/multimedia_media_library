@@ -2803,7 +2803,7 @@ static shared_ptr<NativeRdb::ResultSet> GetBurstMemberResultSet(const shared_ptr
         if (isBurstCover) {
             string burstKey = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_KEY,
                 resultSet, TYPE_STRING));
-            MEDIA_INFO_LOG("delete brust burstKey is %{public}s", burstKey.c_str());
+            MEDIA_DEBUG_LOG("delete brust burstKey is %{public}s", burstKey.c_str());
             burstKeyList.push_back(burstKey);
         }
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
