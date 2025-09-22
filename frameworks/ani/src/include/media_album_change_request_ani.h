@@ -17,13 +17,14 @@
 #define FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_ALBUM_CHANGE_REQUEST_ANI_H
 
 #include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
-#include <ani.h>
 #include "ani_error.h"
-#include "datashare_helper.h"
 #include "datashare_predicates.h"
+#include "datashare_values_bucket.h"
 #include "photo_album.h"
-#include "values_bucket.h"
 #include "media_change_request_ani.h"
 
 namespace OHOS {
@@ -47,6 +48,11 @@ enum class AlbumChangeOperation {
     DISMISS_ASSET,
     SET_IS_ME,
     DISMISS,
+    SET_ORDER_POSITION,
+    MOVE_ASSETS_WITH_URI,
+    RECOVER_ASSETS_WITH_URI,
+    DELETE_ASSETS_WITH_URI,
+    RESET_COVER_URI,
 };
 
 struct PhotoAlbumPtrCompare {
@@ -66,8 +72,9 @@ public:
     MediaAlbumChangeRequestAni() = default;
     ~MediaAlbumChangeRequestAni() = default;
     static MediaAlbumChangeRequestAni* Unwrap(ani_env *env, ani_object mediaAlbumChangeRequestHandle);
-    static ani_status MediaAlbumChangeRequestInit(ani_env *env);
-    static ani_object Constructor(ani_env *env, [[maybe_unused]] ani_class clazz, ani_object albumHandle);
+    static ani_status Init(ani_env *env);
+    static ani_status MediaAnalysisAlbumChangeRequestInit(ani_env *env);
+    static ani_status Constructor(ani_env *env, ani_object object, ani_object albumHandle);
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
     std::shared_ptr<PhotoAlbum> GetTargetPhotoAlbumInstance() const;
     std::shared_ptr<PhotoAlbum> GetReferencePhotoAlbumInstance() const;
@@ -76,25 +83,37 @@ public:
     std::vector<std::string> GetRecoverAssetArray() const;
     std::vector<std::string> GetDeleteAssetArray() const;
     std::vector<std::string> GetDismissAssetArray() const;
+    std::vector<std::pair<std::string, int32_t>> GetIdOrderPositionPairs() const;
+    int32_t GetUserId() const;
     void ClearAddAssetArray();
     void ClearRemoveAssetArray();
     void ClearRecoverAssetArray();
     void ClearDeleteAssetArray();
     void ClearDismissAssetArray();
     void ClearMoveMap();
+    static ani_object GetAlbum(ani_env *env, ani_object object);
+    static ani_object CreateAlbumRequest(ani_env *env, ani_object object, ani_object aniContext,
+        ani_string aniName);
     static ani_status PlaceBefore(ani_env *env, ani_object object, ani_object albumHandle);
     static ani_status DismissAssets(ani_env *env, ani_object object, ani_object arrayPhotoAssetStr);
     static ani_status MergeAlbum(ani_env *env, ani_object object, ani_object albumHandle);
     static ani_status SetAlbumName(ani_env *env, ani_object object, ani_string name);
     static ani_status AddAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
+    static ani_status RemoveAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
     static ani_status RecoverAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
-    static ani_status MoveAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset, ani_object targetAblum);
+    static ani_status MoveAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset, ani_object targetAlbum);
+    static ani_status MoveAssetsWithUri(ani_env *env, ani_object object, ani_object arrayUris, ani_object targetAlbum);
     static ani_status SetDisplayLevel(ani_env *env, ani_object object, ani_int displayLevel);
     static ani_status SetCoverUri(ani_env *env, ani_object object, ani_string coverUri);
     static ani_status SetIsMe(ani_env *env, ani_object object);
-    static ani_status DeleteAlbums(ani_env *env, ani_object context, ani_object arrayAlbum);
+    static ani_status Dismiss(ani_env *env, ani_object object);
+    static ani_status DeleteAlbums(ani_env *env, ani_class clazz, ani_object context, ani_object arrayAlbum);
+    static ani_status DeleteAlbumsWithUri(ani_env *env, ani_class clazz, ani_object context, ani_object arrayAlbum);
     static ani_status DeleteAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
-    ani_status ApplyChanges(ani_env *env, ani_object object) override;
+    static ani_status SetOrderPosition(ani_env *env, ani_object object, ani_object assets, ani_object position);
+    static ani_status RecoverAssetsWithUri(ani_env *env, ani_object object, ani_object uriArray);
+    static ani_status DeleteAssetsWithUri(ani_env *env, ani_object object, ani_object uriArray);
+    ani_status ApplyChanges(ani_env *env) override;
     bool CheckChangeOperations(ani_env *env);
 
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> GetMoveMap() const;
@@ -113,6 +132,8 @@ private:
     std::vector<std::string> dismissAssets_;
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> moveMap_;
     std::vector<AlbumChangeOperation> albumChangeOperations_;
+    std::vector<std::pair<std::string, int32_t>> idOrderPositionPairs_;
+    int32_t userId_;
 };
 
 struct MediaAlbumChangeRequestContext : public AniError {
@@ -120,6 +141,9 @@ struct MediaAlbumChangeRequestContext : public AniError {
     std::vector<AlbumChangeOperation> albumChangeOperations;
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
+    std::vector<std::string> deleteIds;
+    std::vector<int32_t> photoAlbumTypes;
+    std::vector<int32_t> photoAlbumSubtypes;
 };
 
 } // namespace Media
