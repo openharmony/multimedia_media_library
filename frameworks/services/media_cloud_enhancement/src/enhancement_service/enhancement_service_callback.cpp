@@ -111,9 +111,10 @@ static int32_t CheckAddrAndBytes(CloudEnhancementThreadTask& task)
 }
 
 int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEnhancementFileInfo> info,
-    CloudEnhancementThreadTask& task, shared_ptr<NativeRdb::ResultSet> resultSet)
+    CloudEnhancementThreadTask& task, shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     CHECK_AND_RETURN_RET(CheckAddrAndBytes(task) == E_OK, E_ERR);
+    CHECK_AND_RETURN_RET_LOG(info, E_FAIL, "cloud enhancement file info is empty");
     std::unique_ptr<uint8_t[]> buffer(task.addr);
     task.addr = nullptr;
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckDisplayName(info->displayName) == E_OK,
@@ -152,9 +153,32 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
         MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(info->fileId,
             info->filePath, editDataCameraPath, mimeType);
     }
+
+    int err = UpdateCloudEnhancementPhotoInfo(info->fileId, assetRefresh);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "fail to update composite enhancement photo info");
+
     MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(
         info->filePath, to_string(info->fileId), MediaLibraryApi::API_10);
     return info->fileId;
+}
+
+int32_t EnhancementServiceCallback::UpdateCloudEnhancementPhotoInfo(int32_t fileId,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh);
+{
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    NativeRdb::ValuesBucket rdbValues;
+    rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
+    rdbValues.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
+        static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT));
+    rdbValues.PutInt(PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS,
+        static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
+
+    int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, predicates, assetRefresh);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "update enhancement photo info failed. ret:%{public}d, fileId:%{public}s",
+        ret, fileId);
+
+    return E_OK;
 }
 
 void EnhancementServiceCallback::OnSuccess(const char* photoId, MediaEnhanceBundleHandle* bundle)
@@ -218,21 +242,13 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
     // save 120 per
     shared_ptr<CloudEnhancementFileInfo> info = make_shared<CloudEnhancementFileInfo>(sourceFileId,
         sourceFilePath, sourceDisplayName, sourceSubtype, hidden);
-    int32_t newFileId = SaveCloudEnhancementPhoto(info, task, resultSet);
-    CHECK_AND_RETURN_LOG(newFileId > 0, "invalid file id");
     resultSet->Close();
-    NativeRdb::ValuesBucket rdbValues;
-    rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
-    rdbValues.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
-        static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT));
-    rdbValues.PutInt(
-        PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
     auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
         AccurateRefresh::DEAL_WITH_SUCCESSED_BUSSINESS_NAME);
-    int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates, assetRefresh);
-    CHECK_AND_PRINT_LOG(ret == E_OK, "update source photo failed. ret: %{public}d, photoId: %{public}s",
-        ret, taskId.c_str());
+    int32_t newFileId = SaveCloudEnhancementPhoto(info, task, assetRefresh);
+    CHECK_AND_RETURN_LOG(newFileId > 0, "invalid file id");
     assetRefresh->RefreshAlbum(NotifyAlbumType::SYS_ALBUM);
+
     int32_t taskType = EnhancementTaskManager::QueryTaskTypeByPhotoId(taskId);
     EnhancementTaskManager::RemoveEnhancementTask(taskId);
     CloudEnhancementGetCount::GetInstance().Report("SuccessType", taskId, taskType);

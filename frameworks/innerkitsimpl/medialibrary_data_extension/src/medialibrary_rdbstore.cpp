@@ -5384,8 +5384,10 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS, true);
     }
 
-    if (oldVersion < VERSION_ADD_COMPOSITE_DISPLAY_STATUS_COLUMNS) {
+    if (oldVersion < VERSION_ADD_COMPOSITE_DISPLAY_STATUS_COLUMNS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_COMPOSITE_DISPLAY_STATUS_COLUMNS, true)) {
         AddCompositeDisplayStatusColumn(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_COMPOSITE_DISPLAY_STATUS_COLUMNS, true);
     }
 
     UpgradeExtensionPart10(store, oldVersion);
