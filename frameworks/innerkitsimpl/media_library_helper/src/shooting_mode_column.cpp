@@ -39,12 +39,12 @@ void ShootingModeAlbum::GetMovingPhotoAlbumPredicates(T& predicates, const bool 
     config.hiddenConfig = hiddenState ? PhotoQueryFilter::ConfigType::INCLUDE : PhotoQueryFilter::ConfigType::EXCLUDE;
     PhotoQueryFilter::ModifyPredicate(config, predicates);
     predicates.BeginWrap();
-    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     predicates.Or();
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
-        to_string(static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)));
-    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::DEFAULT)));
+        static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
+    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
     predicates.EndWrap();
     predicates.EndWrap();
 }
