@@ -27,7 +27,7 @@ public:
     static MediaChangeRequestAni* Unwrap(ani_env *env, ani_object aniObject);
 
     static bool InitUserFileClient(ani_env *env, ani_object object);
-    virtual ani_status ApplyChanges(ani_env *env, ani_object aniObject) = 0;
+    virtual ani_status ApplyChanges(ani_env *env) = 0;
 };
 } // namespace Media
 } // namespace OHOS
