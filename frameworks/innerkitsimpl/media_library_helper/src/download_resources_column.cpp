@@ -34,6 +34,7 @@ const string DownloadResourcesColumn::MEDIA_DATE_FINISH = "finish_time";
 const string DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS = "download_status";
 const string DownloadResourcesColumn::MEDIA_PERCENT = "percent";
 const string DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON = "auto_pause_reason";
+const string DownloadResourcesColumn::MEDIA_COVER_LEVEL = "cover_level";
 
 // index
 const std::string DownloadResourcesColumn::IDSTATUS_INDEX = "idx_drtr_idstatus";
@@ -50,7 +51,8 @@ const std::string DownloadResourcesColumn::CREATE_TABLE = CreateTable() +
     MEDIA_DATE_FINISH + " BIGINT NOT NULL DEFAULT -1, " +
     MEDIA_DOWNLOAD_STATUS + " INT NOT NULL DEFAULT -1, " +
     MEDIA_PERCENT + " INT NOT NULL DEFAULT -1, " +
-    MEDIA_AUTO_PAUSE_REASON + " INT NOT NULL DEFAULT 0 " +
+    MEDIA_AUTO_PAUSE_REASON + " INT NOT NULL DEFAULT 0, " +
+    MEDIA_COVER_LEVEL + " INT NOT NULL DEFAULT 1 " +
     ")";
 
 const std::string DownloadResourcesColumn::INDEX_DRTR_ID_STATUS =

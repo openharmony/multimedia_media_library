@@ -38,7 +38,7 @@ public:
     static const std::string MEDIA_DOWNLOAD_STATUS EXPORT;
     static const std::string MEDIA_PERCENT EXPORT;
     static const std::string MEDIA_AUTO_PAUSE_REASON EXPORT;
-
+    static const std::string MEDIA_COVER_LEVEL EXPORT;
     static const std::string TABLE EXPORT;
 
     static const std::string CREATE_TABLE EXPORT;
