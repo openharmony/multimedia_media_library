@@ -57,7 +57,6 @@ public:
     static const std::map<Notification::NotifyUriType, std::string> REGISTER_URI_MAP;
     static const std::map<Notification::NotifyType, NotifyChangeType> NOTIFY_CHANGE_TYPE_MAP;
 
-    static int32_t GetRegisterAssetManagerNotifyType(const std::string &type, Notification::NotifyUriType &uriType);
     static int32_t GetAssetManagerNotifyTypeAndUri(const Notification::NotifyUriType type,
         Notification::NotifyUriType &uriType, std::string &uri);
     static int32_t GetRegisterNotifyType(const std::string &type, Notification::NotifyUriType &uriType);

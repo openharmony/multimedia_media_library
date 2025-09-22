@@ -1177,7 +1177,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(BatchDownlo
         autoPauseReason = (IsWifiConnected() || IsCellularNetConnected()) ?
             BatchDownloadAutoPauseReasonType::TYPE_CELLNET_LIMIT :
             BatchDownloadAutoPauseReasonType::TYPE_NETWORK_DISCONNECT;
-        return false;
+        return true;
     }
     bool isPowerSufficient = true;
     #ifdef HAS_BATTERY_MANAGER_PART
@@ -1185,7 +1185,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(BatchDownlo
         isPowerSufficient = batteryCapacity > ABLE_STOP_DOWNLOAD_POWER;
         if (!isPowerSufficient) {
             autoPauseReason = BatchDownloadAutoPauseReasonType::TYPE_POWER_LOW;
-            return false;
+            return true;
         }
     #endif
     double freeRatio = 0.0;
@@ -1193,7 +1193,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(BatchDownlo
     bool isDiskEnough = freeRatio > ABLE_STOP_DOWNLOAD_STORAGE_FREE_RATIO;
     if (!isDiskEnough) {
         autoPauseReason = BatchDownloadAutoPauseReasonType::TYPE_ROM_LOW;
-        return false;
+        return true;
     }
     bool isCloudSyncOn = CloudSyncUtils::IsCloudSyncSwitchOn();
     bool ableAutoStopDownload = !(isCloudSyncOn && isNetworkAvailable && isPowerSufficient && isDiskEnough);
