@@ -40,6 +40,7 @@ const std::vector<std::string> PULL_QUERY_DOWNLOAD_COLUMNS = {
     PhotoColumn::MEDIA_NAME,
     PhotoColumn::MEDIA_SIZE,
     PhotoColumn::MEDIA_FILE_PATH,
+    PhotoColumn::PHOTO_BURST_COVER_LEVEL,
 };
 
 const std::vector<std::string> PULL_QUERY_DOWNLOAD_STATUS_COLUMNS = {
@@ -52,6 +53,7 @@ const std::vector<std::string> PULL_QUERY_DOWNLOAD_STATUS_COLUMNS = {
     DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
     DownloadResourcesColumn::MEDIA_PERCENT,
     DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON,
+    DownloadResourcesColumn::MEDIA_COVER_LEVEL,
 };
 
 class BatchDownloadResourcesTaskDao {

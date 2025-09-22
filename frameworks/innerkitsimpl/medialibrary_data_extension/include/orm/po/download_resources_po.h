@@ -32,6 +32,7 @@ public:
     std::optional<int32_t> downloadStatus;
     std::optional<int32_t> percent;
     std::optional<int32_t> autoPauseReason;
+    std::optional<int32_t> coverLevel;
 
 public:
     std::string ToString()
@@ -45,6 +46,7 @@ public:
            << "\"finish_time\": " << dateFinish.value_or(-1) << ","
            << "\"download_status\": " << downloadStatus.value_or(-1) << ","
            << "\"auto_pause_reason\": " << autoPauseReason.value_or(0) << ","
+           << "\"coverLevel\": " << coverLevel.value_or(1) << ","
            << "\"percent\": " << percent.value_or(-1) << "}";
         return ss.str();
     }
