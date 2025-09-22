@@ -94,7 +94,7 @@ int32_t CloudMediaPhotoControllerService::OnDentryFileInsert(MessageParcel &data
     }
     ret = this->photosService_.OnDentryFileInsert(pullDatas, failedRecords);
     respBody.failedRecords = failedRecords;
-    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
 }
 
 int32_t CloudMediaPhotoControllerService::GetCheckRecords(MessageParcel &data, MessageParcel &reply)

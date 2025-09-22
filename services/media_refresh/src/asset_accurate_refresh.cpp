@@ -276,5 +276,10 @@ int32_t AssetAccurateRefresh::AddAlbumIdForMoveOperation(const AbsRdbPredicates 
 {
     return dataManager_.AddAlbumIdForMoveOperation(predicates);
 }
+
+std::shared_ptr<TransactionOperations> AssetAccurateRefresh::GetTransaction()
+{
+    return dataManager_.GetTransaction();
+}
 }  // namespace Media::AccurateRefresh
 }  // namespace OHOS

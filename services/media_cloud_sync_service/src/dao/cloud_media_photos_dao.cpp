@@ -80,9 +80,8 @@ int32_t CloudMediaPhotosDao::BatchInsertFile(std::map<std::string, int> &recordA
         ret = BatchInsertQuick(rowId, PhotoColumn::PHOTOS_TABLE, insertFiles, photoRefresh);
         CHECK_AND_RETURN_RET_LOG(ret != E_STOP, ret, "BatchInsertFile E_STOP failed");
         if (ret != E_OK) {
-            MEDIA_INFO_LOG("BatchInsertFile batch insert failed return %{public}d", ret);
+            MEDIA_ERR_LOG("BatchInsertFile batch insert failed return %{public}d", ret);
             /* 打点 UpdateMetaStat(INDEX_DL_META_ERROR_RDB, records->size() - params.insertFiles.size()); */
-            ret = E_RDB;
             return ret;
         } else {
             /* 打点 UpdateMetaStat(INDEX_DL_META_SUCCESS, params.insertFiles.size(), META_DL_INSERT); */
@@ -172,17 +171,25 @@ int32_t CloudMediaPhotosDao::BatchInsertQuick(int64_t &outRowId, const std::stri
     if (initialBatchValues.size() == 0) {
         return E_OK;
     }
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+
     std::function<int(void)> transFunc = [&]()->int {
-        auto retInner = photoRefresh->BatchInsert(outRowId, PhotoColumn::PHOTOS_TABLE, initialBatchValues);
+        int rdbError = 0;
+        auto retInner = photoRefresh->BatchInsert(outRowId, PhotoColumn::PHOTOS_TABLE, initialBatchValues, rdbError);
         CHECK_AND_RETURN_RET_LOG(
             retInner == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
-            retInner,
-            "Failed to BatchInsertQuick func, ret=%{public}d",
-            retInner);
+            rdbError,
+            "Failed to BatchInsertQuick func, ret=%{public}d, rdbError=%{public}d",
+            retInner, rdbError);
         return retInner;
     };
-    int32_t ret = trans->RetryTrans(transFunc);
+    int32_t ret = E_ERR;
+    if (photoRefresh->GetTransaction() != nullptr) {
+        ret = photoRefresh->GetTransaction()->RetryTrans(transFunc);
+    } else {
+        std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+        CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_RDB_STORE_NULL, "BatchInsertQuick Failed to get trans.");
+        ret = trans->RetryTrans(transFunc);
+    }
     CHECK_AND_RETURN_RET_LOG(
         ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, ret, "Failed to BatchInsertQuick, ret=%{public}d", ret);
     return ret;
@@ -337,7 +344,6 @@ int CloudMediaPhotosDao::UpdateProxy(int &changedRows, const std::string &table,
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
     CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "UpdateProxy-merge Failed to get rdbStore.");
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
  
     std::function<int(void)> func = [&]() -> int {
         int32_t retInner = photoRefresh->Update(changedRows, table, row, whereClause, args);
@@ -355,7 +361,14 @@ int CloudMediaPhotosDao::UpdateProxy(int &changedRows, const std::string &table,
         int32_t dirtyChangedRows = DEFAULT_VALUE;
         return photoRefresh->Update(dirtyChangedRows, table, values, whereClause, args);
     };
-    int ret = trans->RetryTrans(func);
+    int ret = E_ERR;
+    if (photoRefresh->GetTransaction() != nullptr) {
+        ret = photoRefresh->GetTransaction()->RetryTrans(func);
+    } else {
+        std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+        CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_RDB_STORE_NULL, "UpdateProxy-merge Failed to get trans.");
+        ret = trans->RetryTrans(func);
+    }
     CHECK_AND_RETURN_RET_LOG(
         ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK, ret, "Failed to UpdateProxy, ret=%{public}d", ret);
     return E_OK;
