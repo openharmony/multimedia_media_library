@@ -341,8 +341,8 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
         NAPI_ERR_LOG("intercepted fileId is empty");
         return ERROR;
     }
-    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)
-        && fileIdStr.length() < MAX_INTEGER) {  
+    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit) &&
+        fileIdStr.length() < MAX_INTEGER) {
         return std::stoi(fileIdStr);
     }
 
