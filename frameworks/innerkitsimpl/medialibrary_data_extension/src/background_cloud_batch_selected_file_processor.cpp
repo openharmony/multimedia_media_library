@@ -816,21 +816,6 @@ bool BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadForAutoResumeTa
     return (num > 0);
 }
 
-void BackgroundCloudBatchSelectedFileProcessor::ResetDownloadResourcesTimer()
-{
-    MEDIA_INFO_LOG("BatchSelectFileDownload ResetDownloadResourcesTimer START");
-    CHECK_AND_RETURN_INFO_LOG(GetDownloadQueueSizeWithLock() != 0,
-        "Not downloading, skip ResetDownloadResourcesTimer");
-    StopAllDownloadingTask(true);
-    lock_guard<recursive_mutex> lock(mutex_);
-    CHECK_AND_EXECUTE(batchDownloadResourcesStartTimerId_ <= 0,
-        batchDownloadResourceTimer_.Unregister(batchDownloadResourcesStartTimerId_));
-    batchDownloadResourcesStartTimerId_ = 0;
-    batchDownloadResourceTimer_.Register(DownloadSelectedBatchResources,
-        downloadSelectedInterval_);
-    MEDIA_INFO_LOG("ResetDownloadResourcesTimer END");
-}
-
 bool BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning()
 {
     MEDIA_INFO_LOG("BatchSelectFileDownload IsStartTimerRunning IN");
@@ -854,13 +839,13 @@ void BackgroundCloudBatchSelectedFileProcessor::StartBatchDownloadResourcesTimer
 void BackgroundCloudBatchSelectedFileProcessor::StopBatchDownloadResourcesTimer(bool needClean)
 {
     SetBatchDownloadProcessRunningStatus(false); // 无任务 且timer 停止重新设置状态 先设置保证不重复进
+    StopAllDownloadingTask(needClean);
     lock_guard<recursive_mutex> lockRec(mutex_);
     MEDIA_INFO_LOG("BatchSelectFileDownload StopBatchDownloadResourcesTimer START");
-    StopAllDownloadingTask(needClean);
     CHECK_AND_EXECUTE(batchDownloadResourcesStartTimerId_ <= 0,
         batchDownloadResourceTimer_.Unregister(batchDownloadResourcesStartTimerId_));
     batchDownloadResourcesStartTimerId_ = 0;
-    batchDownloadResourceTimer_.Shutdown(true);
+    batchDownloadResourceTimer_.Shutdown(false);
     MEDIA_INFO_LOG("BatchSelectFileDownload StopBatchDownloadResourcesTimer END");
 }
 
@@ -925,7 +910,7 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::UpdateAllStatusAutoPauseToDow
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "UpdatePauseDownload Failed to get rdbStore.");
-    MEDIA_INFO_LOG("BatchSelectFileDownload bg ALL Pause In fileid");
+    MEDIA_INFO_LOG("BatchSelectFileDownload bg ALL Pause To Downloading");
     // update download_resources_task_records set download_status = 1 where (download_status = 5 AND percent > -1)
     NativeRdb::AbsRdbPredicates predicates(DownloadResourcesColumn::TABLE);
     NativeRdb::ValuesBucket value;
@@ -944,7 +929,7 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::UpdateAllStatusAutoPauseToWai
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "UpdatePauseDownload Failed to get rdbStore.");
-    MEDIA_INFO_LOG("BatchSelectFileDownload bg ALL Pause In fileid");
+    MEDIA_INFO_LOG("BatchSelectFileDownload bg ALL Pause To Waiting");
     // update download_resources_task_records set download_status = 0 where (download_status = 5 AND percent == -1)
     NativeRdb::AbsRdbPredicates predicates(DownloadResourcesColumn::TABLE);
     NativeRdb::ValuesBucket value;
@@ -998,15 +983,18 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::DeleteCancelStateDownloadReso
 
 void BackgroundCloudBatchSelectedFileProcessor::AutoStopAction(BatchDownloadAutoPauseReasonType &autoPauseReason)
 {
-    MEDIA_INFO_LOG("BatchSelectFileDownload AutoStopAction");
+    MEDIA_INFO_LOG("BatchSelectFileDownload AutoStopAction cause: %{public}d", static_cast<int32_t>(autoPauseReason));
     // 检查点 批量下载 通知应用 notify type 4 自动暂停
     int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
         DownloadAssetsNotifyType::DOWNLOAD_AUTO_PAUSE, -1, -1,
         static_cast<int32_t>(autoPauseReason));
     MEDIA_INFO_LOG("BatchSelectFileDownload StartNotify DOWNLOAD_AUTO_PAUSE ret: %{public}d", ret);
-    TriggerStopBatchDownloadProcessor(false);
+    MEDIA_INFO_LOG("BatchSelectFileDownload autoPause START");
+    StopAllDownloadingTask(false);
     // updateDB
     UpdateAllAutoPauseDownloadResourcesInfo(autoPauseReason);
+    MEDIA_INFO_LOG("BatchSelectFileDownload autoPause END");
+    TriggerStopBatchDownloadProcessor(false);
 }
 
 void BackgroundCloudBatchSelectedFileProcessor::AutoResumeAction()
@@ -1082,7 +1070,7 @@ void BackgroundCloudBatchSelectedFileProcessor::TriggerCancelBatchDownloadProces
     if (BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning()) {
         MEDIA_INFO_LOG("LaunchBatchDownloadProcessor TriggerCancelBatchDownloadProcessor End");
         CHECK_AND_RETURN_INFO_LOG(GetDownloadQueueSizeWithLock() != 0,
-            "Not downloading, skip ResetDownloadResourcesTimer");
+            "Not downloading, skip StopDownloadFiles");
         std::vector<int64_t> needStopDownloadIds;
         ClassifyCurrentRoundFileIdInList(existedTaskFileId, needStopDownloadIds);
         for (auto downloadId : needStopDownloadIds) {
@@ -1112,7 +1100,7 @@ void BackgroundCloudBatchSelectedFileProcessor::TriggerPauseBatchDownloadProcess
     if (BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning()) {
         MEDIA_INFO_LOG("LaunchBatchDownloadProcessor TriggerPauseBatchDownloadProcessor End");
         CHECK_AND_RETURN_INFO_LOG(GetDownloadQueueSizeWithLock() != 0,
-            "Not downloading, skip ResetDownloadResourcesTimer");
+            "Not downloading, skip StopDownloadFiles");
         std::vector<int64_t> needStopDownloadIds;
         ClassifyCurrentRoundFileIdInList(fileIdsDownloading, needStopDownloadIds);
         for (auto downloadId : needStopDownloadIds) {
