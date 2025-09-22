@@ -151,6 +151,7 @@ enum class PhotoSubType : int32_t {
     CAMERA,
     MOVING_PHOTO,
     BURST,
+    D3GS = 7,
     SUBTYPE_END
 };
 

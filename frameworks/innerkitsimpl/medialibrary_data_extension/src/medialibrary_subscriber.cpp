@@ -72,6 +72,7 @@
 #include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "userfilemgr_uri.h"
+#include "video_3dgs_operation.h"
 #include "common_timer_errors.h"
 #include "parameters.h"
 #ifdef HAS_WIFI_MANAGER_PART
@@ -845,6 +846,7 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
 {
     DfxMovingPhoto::AbnormalMovingPhotoStatistics();
     PhotoMimetypeOperation::UpdateInvalidMimeType();
+    Video3DgsOperation::Update3DgsType();
     DfxManager::GetInstance()->HandleTwoDayMissions();
     DfxManager::GetInstance()->HandleOneWeekMissions();
     PhotoDayMonthYearOperation::RepairDateTime();
@@ -875,6 +877,7 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     PauseBackgroundDownloadCloudMedia();
     PhotoAlbumLPathOperation::GetInstance().Stop();
     CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
+    Video3DgsOperation::Stop();
     AgingTmpCompatibleDuplicates(false);
 }
 
