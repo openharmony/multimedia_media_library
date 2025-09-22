@@ -28,6 +28,7 @@ const std::string DATE_MODIFIED = "date_modified";
 const std::string RANK = "rank";
 const std::string IS_LOCAL = "is_local";
 const std::string ALBUM_RELATIONSHIP = "relationship";
+const std::string ANALYSIS_STATUS = "analysis_status";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_ALBUM_COLUMN_H
