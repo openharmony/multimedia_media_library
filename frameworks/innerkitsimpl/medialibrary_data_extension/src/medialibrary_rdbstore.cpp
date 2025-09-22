@@ -6156,7 +6156,7 @@ pair<int32_t, NativeRdb::Results> MediaLibraryRdbStore::BatchInsert(const string
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->BatchInsert failed, ret = %{public}d", ret);
         MediaLibraryRestore::GetInstance().CheckRestore(ret);
-        return {E_HAS_DB_ERROR, -1};
+        return {ret, -1};
     }
 
     MEDIA_DEBUG_LOG("rdbStore_->BatchInsert end, ret = %{public}d", ret);
