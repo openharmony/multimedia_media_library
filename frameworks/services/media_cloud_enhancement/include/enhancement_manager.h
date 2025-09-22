@@ -30,7 +30,6 @@
 #include "result_set.h"
 #include "rdb_predicates.h"
 #include "rdb_store.h"
-#include "rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "enhancement_thread_manager.h"
 #include "cloud_enhancement_dfx_get_count.h"
@@ -47,6 +46,12 @@ const std::string SETTINGS_DATASHARE_URI =
     "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true";
 const std::string SETTINGS_DATASHARE_WATER_MARK_URI = SETTINGS_DATASHARE_URI +
     "&key=persist.photos.ce.watermark.enable";
+
+enum class CompositePhotoOperation {
+    COMPOSITE_PHOTO_EDIT,
+    COMPOSITE_PHOTO_REVERT_EDIT,
+};
+
 class EnhancementManager {
 public:
     EXPORT static EnhancementManager& GetInstance();
@@ -89,8 +94,7 @@ public:
     EXPORT bool SyncCleanCompositePhoto(const std::string &photoPath);
     EXPORT bool SyncDealWithCompositePhoto(const std::string &photoPath);
     EXPORT int32_t SyncDealWithCompositeDisplayStatus(int32_t fileId, const std::string &photoPath, bool exchange);
-    EXPORT int32_t UpdateCompositeDisplayStatus(int32_t fileId, const int32_t &compositeDisplayStatus,
-        bool isSwitchMode = false);
+    EXPORT int32_t UpdateCompositeDisplayStatus(int32_t fileId, const int32_t &compositeDisplayStatus);
     EXPORT std::optional<std::tuple<std::string, int32_t, int32_t>> QueryCompositePhotoInfo(int32_t fileId);
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
@@ -114,8 +118,7 @@ private:
     void ResetProcessingAutoToSupport();
     bool IsAddOperationEnabled(int32_t triggerMode);
     int32_t DoChangeDisplayModeFile(int32_t fileId, const string &filePath);
-    int32_t SetCompositeDisplayStatusEdit(int32_t fileId);
-    int32_t SetCompositeDisplayStatusRevertEdit(int32_t fileId);
+    int32_t CompositePhotoSetOperation(int32_t fileId, CompositePhotoOperation operation);
 #endif
     void InitPhotosSettingsMonitor();
     bool isCameraIdle_ = true;

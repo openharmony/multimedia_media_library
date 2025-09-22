@@ -2499,7 +2499,7 @@ void CloneRestore::SetSpecialAttributes(const string &tableName, const shared_pt
     fileInfo.photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
     fileInfo.recycledTime = GetInt64Val(MediaColumn::MEDIA_DATE_TRASHED, resultSet);
     fileInfo.hidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, resultSet);
-fileInfo.compositeDisplayStatus = GetInt32Val(PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, resultSet);
+    fileInfo.compositeDisplayStatus = GetInt32Val(PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS, resultSet);
     // find PhotoAlbum info in target database. PackageName and BundleName should be fixed after clone.
     fileInfo.lPath = this->photosClone_.FindlPath(fileInfo);
     fileInfo.ownerAlbumId = this->photosClone_.FindAlbumId(fileInfo);

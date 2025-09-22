@@ -1145,7 +1145,7 @@ int32_t MediaAssetsControllerService::SetCompositeDisplayMode(MessageParcel &dat
 
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("SetCompositeDisplayMode Read Request Error");
+        MEDIA_ERR_LOG("SetCompositeDisplayMode Read Request Error, errCode:%{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
 

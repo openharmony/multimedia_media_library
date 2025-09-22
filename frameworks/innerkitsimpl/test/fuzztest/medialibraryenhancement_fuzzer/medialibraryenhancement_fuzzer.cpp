@@ -36,6 +36,7 @@
 #include "result_set_utils.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_kvstore_manager.h"
+#include "asset_accurate_refresh.h"
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 #define private public
@@ -466,6 +467,7 @@ static void EnhancementServiceAdpterTest()
 static void EnhancementServiceCallbackTest()
 {
     Media::EnhancementServiceCallback::OnServiceReconnected();
+    auto assetRefresh = std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
 
     string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
     MediaEnhance::MediaEnhanceBundleHandle* bundle = FuzzMediaEnhanceBundle(photoId);
@@ -494,7 +496,7 @@ static void EnhancementServiceCallbackTest()
     cmd.GetAbsRdbPredicates()->EqualTo(Media::PhotoColumn::PHOTO_ID, photoId);
     auto resultSet = g_rdbStore->Query(cmd, columns);
     if (resultSet != nullptr && resultSet->GoToFirstRow() == E_OK) {
-        Media::EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, resultSet);
+        Media::EnhancementServiceCallback::SaveCloudEnhancementPhoto(fileInfo, task, assetRefresh);
     }
     Media::EnhancementServiceCallback::DealWithSuccessedTask(task);
     Media::EnhancementServiceCallback::DealWithFailedTask(task);
