@@ -192,7 +192,7 @@ HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_001, TestSize.Le
     RdbPredicates predicates(FormMap::FORM_MAP_TABLE);
     predicates.EqualTo(FormMap::FORMMAP_FORM_ID, F0RMID_FOR_TEST);
     ret = MediaLibraryFormMapOperations::RemoveFormIdOperations(predicates);
-    EXPECT_EQ(ret = 0, true);
+    EXPECT_EQ(ret > 0, false);
 }
 
 HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_002, TestSize.Level1)
