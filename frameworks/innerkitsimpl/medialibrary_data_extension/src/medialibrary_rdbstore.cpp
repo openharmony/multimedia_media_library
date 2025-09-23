@@ -5109,6 +5109,17 @@ static void AddFileSourceType(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("AddFileSourceType end");
 }
 
+static void AddTempFileAssetsCreateAlbum(RdbStore &store)
+{
+    const vector<string> sqls = {
+        DROP_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+        CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER
+    };
+    MEDIA_INFO_LOG("AddTempFileAssetsCreateAlbum start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("AddTempFileAssetsCreateAlbum end");
+}
+
 static void UpgradeFromAllVersionFirstPart(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
 {
     MEDIA_INFO_LOG("Start VERSION_ADD_DETAIL_TIME");
@@ -5350,6 +5361,12 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ANALYSIS_STATUS, true)) {
         AddAnalysisStatus(store, VERSION_ADD_ANALYSIS_STATUS);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ANALYSIS_STATUS, true);
+    }
+
+    if (oldVersion < VERSION_ADD_TEMP_FILE_ASSETS_CREATE_ALBUM &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TEMP_FILE_ASSETS_CREATE_ALBUM, true)) {
+        AddTempFileAssetsCreateAlbum(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TEMP_FILE_ASSETS_CREATE_ALBUM, true);
     }
 }
 
