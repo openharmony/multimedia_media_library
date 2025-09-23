@@ -32,22 +32,16 @@ void BackgroundBatchSelectedFileDownloadCallback::OnDownloadProcess(const Downlo
         }
         case DownloadProgressObj::Status::COMPLETED: {
             if (progress.downloadErrorType == static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::NO_ERROR)) {
-                std::thread([progress]() {
-                    BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedSuccessCallback(progress);
-                }).detach();
+                BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedSuccessCallback(progress);
             }
             break;
         }
         case DownloadProgressObj::Status::FAILED: {
-            std::thread([progress]() {
-                BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallback(progress);
-            }).detach();
+            BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallback(progress);
             break;
         }
         case DownloadProgressObj::Status::STOPPED: {
-            std::thread([progress]() {
-                BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedStoppedCallback(progress);
-            }).detach();
+            BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedStoppedCallback(progress);
             break;
         }
         default: {
