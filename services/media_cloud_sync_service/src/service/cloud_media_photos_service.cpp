@@ -58,7 +58,7 @@ int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, s
         isLocal,
         data.ToString().c_str());
     if (isLocal && CloudMediaSyncUtils::IsLocalDirty(data.localDirty, true)) {
-        MEDIA_ERR_LOG("local record dirty, ignore cloud delete");
+        MEDIA_INFO_LOG("local record dirty, ignore cloud delete");
         return this->photosDao_.ClearCloudInfo(cloudId);
     }
 
