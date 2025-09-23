@@ -500,16 +500,10 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
     data_ = make_unique<Metadata>();
     if (data_ == nullptr) {
         MEDIA_ERR_LOG("failed to make unique ptr for metadata");
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_DATA},
-            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_DATA;
     }
 
     if (S_ISDIR(statInfo.st_mode)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_INVALID_ARGUMENTS},
-            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_INVALID_ARGUMENTS;
     }
 
@@ -548,6 +542,9 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
     // Temp file will not be notified. Do not set fileDateModified to keep GetForAdd true
     if (!data_->GetIsTemp()) {
         data_->SetFileDateModified(static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim)));
+        if (data_->GetFileDateModified() == 0) {
+            MEDIA_INFO_LOG("setFileDateModified error, dateModified is 0, fileId = %{public}d", data_->GetFileId());
+        }
     }
 
     // extension and type
