@@ -28,6 +28,7 @@ static const std::string DETAIL_TIME_FIXED = "detail_time_fixed";
 static const std::string THUMBNAIL_VISIBLE_FIXED = "thumbnail_visible_fixed";
 static const int32_t NEED_FIXED = 1;
 static const int32_t ALREADY_FIXED = 2;
+static constexpr uint32_t UPGRADE_EXCEPTION_VERSIONS_STR_LIMIT = 1024;
  
 enum UPGRADE_STATUS : int32_t {
     UNKNOWN,
@@ -44,6 +45,9 @@ public:
     EXPORT static bool HasUpgraded(int32_t version, bool isSync);
     EXPORT static void SetUpgradeStatus(int32_t version, bool isSync);
     static void AddMapValueToPreference();
+    static void AddUpgradeDfxMessages(int32_t version, int32_t index, int32_t error);
+    static void ReportUpgradeDfxMessages(int64_t startTime, int32_t srcVersion,
+        int32_t dstVersion, bool isSync);
 };
  
 } // Media

@@ -124,6 +124,14 @@ struct HeifAgingStatistics {
     uint64_t agingTotalSize = 0;
 };
 
+struct UpgradeExceptionInfo {
+    uint32_t srcVersion = 0;
+    uint32_t dstVersion = 0;
+    bool isSync;
+    std::string exceptionVersions;
+    uint32_t duration = 0;
+};
+
 class DfxReporter {
 public:
     DfxReporter();
@@ -165,6 +173,7 @@ public:
         const std::string& photoMimeType);
     void ReportAccurateRefreshResult(const AccurateRefreshDfxDataPoint& reportData);
     static int32_t reportHeifAgingStatistics(const HeifAgingStatistics& heifAgingStatistics);
+    static int32_t ReportUpgradeFault(const UpgradeExceptionInfo& reportData);
 };
 } // namespace Media
 } // namespace OHOS

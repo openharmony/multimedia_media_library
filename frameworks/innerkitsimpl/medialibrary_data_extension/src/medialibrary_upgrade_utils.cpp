@@ -18,6 +18,9 @@
 #include <unordered_map>
 #include "medialibrary_db_const.h"
 #include "media_log.h"
+#include "dfx_reporter.h"
+#include "dfx_manager.h"
+#include "media_file_utils.h"
 
 using namespace std;
 
@@ -41,6 +44,7 @@ static unordered_map<int32_t, string> UPGRADE_VALUE_MAP = {
     { VERSION_ADD_HDR_MODE, "VERSION_ADD_HDR_MODE" },
     { VERSION_ADD_ANALYSIS_STATUS, "VERSION_ADD_ANALYSIS_STATUS" },
 };
+static vector<string> UPGRADE_DFX_MESSAGES;
 
 bool RdbUpgradeUtils::HasUpgraded(int32_t version, bool isSync)
 {
@@ -116,6 +120,41 @@ void RdbUpgradeUtils::AddMapValueToPreference()
         prefs->PutInt(pair.second, UPGRADE_STATUS::ALL);
     }
     prefs->FlushSync();
+}
+
+void RdbUpgradeUtils::AddUpgradeDfxMessages(int32_t version, int32_t index, int32_t error)
+{
+    if (error == NativeRdb::E_OK) {
+        return;
+    }
+    MEDIA_INFO_LOG("[add dfx messages] version: %{public}d, index: %{public}d, error: %{public}d",
+        version, index, error);
+    string message = to_string(version) + "_" + to_string(index) + "_" + to_string(error);
+    UPGRADE_DFX_MESSAGES.emplace_back(message);
+}
+
+void RdbUpgradeUtils::ReportUpgradeDfxMessages(int64_t startTime, int32_t srcVersion,
+    int32_t dstVersion, bool isSync)
+{
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    UpgradeExceptionInfo reportData;
+    reportData.srcVersion = srcVersion;
+    reportData.dstVersion = dstVersion;
+    reportData.duration = endTime - startTime;
+    reportData.isSync = isSync;
+    string exceptionVersions = std::accumulate(UPGRADE_DFX_MESSAGES.begin(),
+        UPGRADE_DFX_MESSAGES.end(),
+        std::string(),
+        [](std::string a, const std::string &b) {
+            if (!a.empty()) {
+                a += ",";
+            }
+            a += b;
+            return a;
+        });
+    reportData.exceptionVersions = exceptionVersions.substr(0, UPGRADE_EXCEPTION_VERSIONS_STR_LIMIT);
+    DfxManager::GetInstance()->HandleUpgradeFault(reportData);
+    UPGRADE_DFX_MESSAGES.clear();
 }
 } // namespace Media
 } // namespace OHOS

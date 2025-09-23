@@ -330,6 +330,21 @@ static int32_t ExecSqls(const vector<string> &sqls, RdbStore &store)
     return NativeRdb::E_OK;
 }
 
+static int32_t ExecSqlsWithDfx(const vector<string> &sqls, RdbStore &store, int32_t version)
+{
+    for (size_t i = 0; i < sqls.size(); ++i) {
+        int32_t err = ExecSqlWithRetry([&]() { return store.ExecuteSql(sqls[i]); });
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to exec: %{private}s", sqls[i].c_str());
+            /* try update as much as possible */
+            UpdateFail(__FILE__, __LINE__);
+            RdbUpgradeUtils::AddUpgradeDfxMessages(version, i, err);
+            continue;
+        }
+    }
+    return NativeRdb::E_OK;
+}
+
 void MediaLibraryRdbStore::CreateBurstIndex(const shared_ptr<MediaLibraryRdbStore> store)
 {
     const vector<string> sqls = {
@@ -349,7 +364,7 @@ void MediaLibraryRdbStore::CreateBurstIndex(const shared_ptr<MediaLibraryRdbStor
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("end create idx_burstkey");
 }
-void MediaLibraryRdbStore::AddIndex(const shared_ptr<MediaLibraryRdbStore> store)
+void MediaLibraryRdbStore::AddUpgradeIndex(const shared_ptr<MediaLibraryRdbStore> store)
 {
     const vector<string> sqls = {
         PhotoColumn::CREATE_SCHPT_DAY_INDEX,
@@ -2710,12 +2725,12 @@ void AddCloudIndex(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void AddCompositeDisplayStatusColumn(RdbStore &store)
+void AddCompositeDisplayStatusColumn(RdbStore &store, int32_t version)
 {
     const string addCompositeDisplayStatusOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
         " ADD COLUMN " + PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS + " INT NOT NULL DEFAULT 0";
     const vector<string> addCompositeDisplayStatus = {addCompositeDisplayStatusOnPhotos};
-    ExecSqls(addCompositeDisplayStatus, store);
+    ExecSqlsWithDfx(addCompositeDisplayStatus, store, version);
 }
 
 static void AddPhotoEditTimeColumn(RdbStore &store)
@@ -2957,7 +2972,8 @@ void MediaLibraryRdbStore::AddIndexForFileIdAsync(const shared_ptr<MediaLibraryR
     MEDIA_INFO_LOG("AddIndexForFileIdAsync end");
 }
 
-void MediaLibraryRdbStore::AddIndexForPhotoSortInAlbum(const std::shared_ptr<MediaLibraryRdbStore> store)
+void MediaLibraryRdbStore::AddIndexForPhotoSortInAlbum(const std::shared_ptr<MediaLibraryRdbStore> store,
+    int32_t version)
 {
     const std::vector<std::string> sqls = {
         PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_SIZE_INDEX,
@@ -2966,11 +2982,12 @@ void MediaLibraryRdbStore::AddIndexForPhotoSortInAlbum(const std::shared_ptr<Med
         PhotoColumn::CREATE_PHOTO_SORT_MEDIA_TYPE_DISPLAY_NAME_INDEX,
     };
     MEDIA_INFO_LOG("Start add index for photo sort in album");
-    ExecSqls(sqls, *store->GetRaw().get());
+    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
     MEDIA_INFO_LOG("End add index for photo sort in album");
 }
 
-void MediaLibraryRdbStore::AddIndexForCloudAndPitaya(const std::shared_ptr<MediaLibraryRdbStore> store)
+void MediaLibraryRdbStore::AddIndexForCloudAndPitaya(const std::shared_ptr<MediaLibraryRdbStore> store,
+    int32_t version)
 {
     const vector<string> sqls = {
         BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
@@ -2994,7 +3011,7 @@ void MediaLibraryRdbStore::AddIndexForCloudAndPitaya(const std::shared_ptr<Media
         PhotoColumn::CREATE_PHOTO_SORT_IN_ALBUM_DATE_TAKEN_INDEX,
     };
     MEDIA_INFO_LOG("Start add index for Cloud Enhancement and Pitaya");
-    ExecSqls(sqls, *store->GetRaw().get());
+    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
     MEDIA_INFO_LOG("End add index for Cloud Enhancement and Pitaya");
 }
 
@@ -3162,10 +3179,10 @@ void AddMultiStagesCaptureColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-static void CreateBackupInfoTable(RdbStore& store)
+static void CreateBackupInfoTable(RdbStore& store, int32_t version)
 {
     MEDIA_INFO_LOG("create table ConfigInfo start");
-    ExecSqls({ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE}, store);
+    ExecSqlsWithDfx({ConfigInfoColumn::CREATE_CONFIG_INFO_TABLE}, store, version);
     MEDIA_INFO_LOG("create table ConfigInfo end");
 }
 
@@ -3272,7 +3289,7 @@ void AddHighlightChangeFunction(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-static void AddHighlightViewedNotification(RdbStore &store)
+static void AddHighlightViewedNotification(RdbStore &store, int32_t version)
 {
     MEDIA_INFO_LOG("start AddHighlightViewedNotification");
     const vector<string> sqls = {
@@ -3281,7 +3298,7 @@ static void AddHighlightViewedNotification(RdbStore &store)
         "ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " +
             HIGHLIGHT_NOTIFICATION_TIME + " BIGINT NOT NULL DEFAULT 0 ",
     };
-    ExecSqls(sqls, store);
+    ExecSqlsWithDfx(sqls, store, version);
     MEDIA_INFO_LOG("end AddHighlightViewedNotification");
 }
 
@@ -3486,14 +3503,14 @@ void AddDynamicRangeType(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void AddHdrMode(RdbStore &store)
+void AddHdrMode(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
             PhotoColumn::PHOTO_HDR_MODE + " INT DEFAULT 0 NOT NULL"
     };
     MEDIA_INFO_LOG("start add hdr_mode column");
-    ExecSqls(sqls, store);
+    ExecSqlsWithDfx(sqls, store, version);
 }
 
 void AddLcdAndThumbSizeColumns(RdbStore &store)
@@ -3505,17 +3522,17 @@ void AddLcdAndThumbSizeColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void UpdatePhotoAlbumTigger(RdbStore &store)
+void UpdatePhotoAlbumTigger(RdbStore &store, int32_t version)
 {
     static const vector<string> executeSqlStrs = {
         "DROP TRIGGER IF EXISTS album_modify_trigger",
         PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER,
     };
     MEDIA_INFO_LOG("Start update album modify trigger");
-    ExecSqls(executeSqlStrs, store);
+    ExecSqlsWithDfx(executeSqlStrs, store, version);
 }
 
-static void UpdateAnalysisAlbumRelationship(RdbStore &store)
+static void UpdateAnalysisAlbumRelationship(RdbStore &store, int32_t version)
 {
     const string addRelationColumn = "ALTER TABLE " + ANALYSIS_ALBUM_TABLE + " ADD COLUMN " +
         ALBUM_RELATIONSHIP + " TEXT(64) ";
@@ -3525,7 +3542,7 @@ static void UpdateAnalysisAlbumRelationship(RdbStore &store)
         CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
     };
     MEDIA_INFO_LOG("Start update album modify trigger");
-    ExecSqls(executeSqlStrs, store);
+    ExecSqlsWithDfx(executeSqlStrs, store, version);
 }
 
 static void AddMovingPhotoEffectMode(RdbStore &store)
@@ -3567,13 +3584,13 @@ static void AddCloudEnhancementColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-static void AddAnalysisStatus(RdbStore &store)
+static void AddAnalysisStatus(RdbStore &store, int32_t version)
 {
     static const vector<string> executeSqlStrs = {
         "ALTER TABLE " + ANALYSIS_ALBUM_TABLE = " ADD COLUNN " + ANALYSIS_STATUS + " INT ",
     };
     MEDIA_INFO_LOG("start add analysis status column");
-    ExecSqls(executeSqlStrs, store);
+    ExecSqlsWithDfx(executeSqlStrs, store, version);
 }
 
 static void AddIsAutoColumns(RdbStore &store)
@@ -4537,7 +4554,7 @@ static void AddGroupVersion(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-static void AddCreateTmpCompatibleDup(RdbStore &store)
+static void AddCreateTmpCompatibleDup(RdbStore &store, int32_t version)
 {
     MEDIA_INFO_LOG("Start add create_tmp_compatible_dup columns");
     const vector<string> sqls = {
@@ -4548,17 +4565,17 @@ static void AddCreateTmpCompatibleDup(RdbStore &store)
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
             " ADD COLUMN " + PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE  + " INT NOT NULL DEFAULT 0"
     };
-    ExecSqls(sqls, store);
+    ExecSqlsWithDfx(sqls, store, version);
 }
 
-static void AddSouthDeviceType(RdbStore &store)
+static void AddSouthDeviceType(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE +
             " INT NOT NULL DEFAULT 0",
     };
     MEDIA_INFO_LOG("Add south_device_type column start");
-    ExecSqls(sqls, store);
+    ExecSqlsWithDfx(sqls, store, version);
     MEDIA_INFO_LOG("Add south_device_type column end");
 }
 
@@ -4660,7 +4677,7 @@ static void AddMediaSuffixColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-static void AddAppLinkColumn(RdbStore &store)
+static void AddAppLinkColumn(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_HAS_APPLINK +
@@ -4669,7 +4686,7 @@ static void AddAppLinkColumn(RdbStore &store)
             " TEXT",
     };
     MEDIA_INFO_LOG("add has_applink/applink column start");
-    ExecSqls(sqls, store);
+    ExecSqlsWithDfx(sqls, store, version);
     MEDIA_INFO_LOG("add has_applink/applink column end");
 }
 
@@ -5063,7 +5080,7 @@ static void AddUriSensitiveColumns(RdbStore &store)
     MEDIA_INFO_LOG("AddUriSensitiveColumns end");
 }
 
-static void AddFileSourceType(RdbStore &store)
+static void AddFileSourceType(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
         "DROP TRIGGER IF EXISTS " + INSERT_SEARCH_TRIGGER,
@@ -5088,7 +5105,7 @@ static void AddFileSourceType(RdbStore &store)
             AudioColumn::AUDIO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0 "
     };
     MEDIA_INFO_LOG("AddFileSourceType start");
-    ExecSqls(sqls, store);
+    ExecSqlsWithDfx(sqls, store, version);
     MEDIA_INFO_LOG("AddFileSourceType end");
 }
 
@@ -5288,24 +5305,24 @@ static void UpgradeFromAllVersionFourthPart(RdbStore &store, unordered_map<strin
     MEDIA_INFO_LOG("End ADD_URI_SENSITIVE_COLUMNS");
 }
 
-static void AddAnalysisProgress(RdbStore &store)
+static void AddAnalysisProgress(RdbStore &store, int32_t version)
 {
     const vector<string> exeSqls = {
         CREATE_TAB_ANALYSIS_PROGRESS,
     };
     MEDIA_INFO_LOG("start add analysis progress table");
-    ExecSqls(exeSqls, store);
+    ExecSqlsWithDfx(exeSqls, store, version);
     MEDIA_INFO_LOG("end add analysis progress table");
 }
 
-static void AddCloneSequenceColumns(RdbStore &store)
+static void AddCloneSequenceColumns(RdbStore &store, int32_t version)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + TabOldPhotosColumn::OLD_PHOTOS_TABLE + " ADD COLUMN " +
             TabOldPhotosColumn::MEDIA_CLONE_SEQUENCE + " INTEGER"
     };
     MEDIA_INFO_LOG("add tab_old_photos clone_sequence columns start");
-    ExecSqls(sqls, store);
+    ExecSqlsWithDfx(sqls, store, version);
     MEDIA_INFO_LOG("add tab_old_photos clone_sequence columns end");
 }
 
@@ -5313,25 +5330,25 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE, true)) {
-        AddCloneSequenceColumns(store);
+        AddCloneSequenceColumns(store, VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_OLD_PHOTOS_CLONE_SEQUENCE, true);
     }
 
     if (oldVersion < VERSION_ADD_FILE_SOURCE_TYPE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_FILE_SOURCE_TYPE, true)) {
-        AddFileSourceType(store);
+        AddFileSourceType(store, VERSION_ADD_FILE_SOURCE_TYPE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_FILE_SOURCE_TYPE, true);
     }
 
     if (oldVersion < VERSION_ADD_HDR_MODE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_HDR_MODE, true)) {
-        AddHdrMode(store);
+        AddHdrMode(store, VERSION_ADD_HDR_MODE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_HDR_MODE, true);
     }
 
     if (oldVersion < VERSION_ADD_ANALYSIS_STATUS &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_ANALYSIS_STATUS, true)) {
-        AddAnalysisStatus(store);
+        AddAnalysisStatus(store, VERSION_ADD_ANALYSIS_STATUS);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_ANALYSIS_STATUS, true);
     }
 }
@@ -5340,49 +5357,49 @@ static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true)) {
-        UpdateAnalysisAlbumRelationship(store);
+        UpdateAnalysisAlbumRelationship(store, VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_RELATIONSHIP_AND_UPDATE_TRIGGER, true);
     }
 
     if (oldVersion < VERSION_ADD_APPLINK_VERSION &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_APPLINK_VERSION, true)) {
-        AddAppLinkColumn(store);
+        AddAppLinkColumn(store, VERSION_ADD_APPLINK_VERSION);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_APPLINK_VERSION, true);
     }
 
     if (oldVersion < VERSION_CREATE_TMP_COMPATIBLE_DUP &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TMP_COMPATIBLE_DUP, true)) {
-        AddCreateTmpCompatibleDup(store);
+        AddCreateTmpCompatibleDup(store, VERSION_CREATE_TMP_COMPATIBLE_DUP);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TMP_COMPATIBLE_DUP, true);
     }
 
     if (oldVersion < VERSION_ADD_MEDIA_BACKUP_INFO &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_MEDIA_BACKUP_INFO, true)) {
-        CreateBackupInfoTable(store);
+        CreateBackupInfoTable(store, VERSION_ADD_MEDIA_BACKUP_INFO);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_MEDIA_BACKUP_INFO, true);
     }
 
     if (oldVersion < VERSION_ADD_HIGHLIGHT_VIEWED_NOTIFICATION &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_HIGHLIGHT_VIEWED_NOTIFICATION, true)) {
-        AddHighlightViewedNotification(store);
+        AddHighlightViewedNotification(store, VERSION_ADD_HIGHLIGHT_VIEWED_NOTIFICATION);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_HIGHLIGHT_VIEWED_NOTIFICATION, true);
     }
 
     if (oldVersion < VERSION_ADD_SOUTH_DEVICE_TYPE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_SOUTH_DEVICE_TYPE, true)) {
-        AddSouthDeviceType(store);
+        AddSouthDeviceType(store, VERSION_ADD_SOUTH_DEVICE_TYPE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_SOUTH_DEVICE_TYPE, true);
     }
 
     if (oldVersion < VERSION_ADD_TAB_ANALYSIS_PROGRESS &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_ANALYSIS_PROGRESS, true)) {
-        AddAnalysisProgress(store);
+        AddAnalysisProgress(store, VERSION_ADD_TAB_ANALYSIS_PROGRESS);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS, true);
     }
 
     if (oldVersion < VERSION_ADD_COMPOSITE_DISPLAY_STATUS_COLUMNS &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_COMPOSITE_DISPLAY_STATUS_COLUMNS, true)) {
-        AddCompositeDisplayStatusColumn(store);
+        AddCompositeDisplayStatusColumn(store, VERSION_ADD_COMPOSITE_DISPLAY_STATUS_COLUMNS);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_COMPOSITE_DISPLAY_STATUS_COLUMNS, true);
     }
 
@@ -5433,7 +5450,7 @@ static void UpgradeExtensionPart8(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER, true)) {
-        UpdatePhotoAlbumTigger(store);
+        UpdatePhotoAlbumTigger(store, VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER, true);
     }
 
@@ -5882,7 +5899,7 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
     }
 
     if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_TIGGER) {
-        UpdatePhotoAlbumTigger(store);
+        UpdatePhotoAlbumTigger(store, VERSION_UPDATE_PHOTO_ALBUM_DATEMODIFIED_TIGGER);
     }
 
     if (oldVersion < VERSION_ADD_THUMB_LCD_SIZE_COLUMN) {
@@ -5920,15 +5937,8 @@ static void AddVisionColumnSearchTag(RdbStore &store, int32_t oldVersion)
     }
 }
 
-int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
+static void UpgradeOriginalVersion(RdbStore &store, int32_t oldVersion)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("MediaLibraryDataCallBack::OnUpgrade");
-    if (MediaLibraryRdbStore::GetOldVersion() == -1) {
-        MediaLibraryRdbStore::SetOldVersion(oldVersion);
-    }
-    MEDIA_INFO_LOG("OnUpgrade old:%{public}d, new:%{public}d", oldVersion, newVersion);
-    g_upgradeErr = false;
     if (oldVersion < VERSION_ADD_CLOUD) {
         VersionAddCloud(store);
     }
@@ -5972,7 +5982,19 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     if (oldVersion < VERSION_ADD_CLOUD_ID_INDEX) {
         AddCloudIndex(store);
     }
+}
 
+int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryDataCallBack::OnUpgrade");
+    if (MediaLibraryRdbStore::GetOldVersion() == -1) {
+        MediaLibraryRdbStore::SetOldVersion(oldVersion);
+    }
+    MEDIA_INFO_LOG("OnUpgrade old:%{public}d, new:%{public}d", oldVersion, newVersion);
+    g_upgradeErr = false;
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    UpgradeOriginalVersion(store, oldVersion);
     UpgradeOtherTable(store, oldVersion);
     UpgradeGalleryFeatureTable(store, oldVersion);
     UpgradeVisionTable(store, oldVersion);
@@ -5988,6 +6010,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};
         PostEventUtils::GetInstance().PostStatProcess(StatType::DB_UPGRADE_STAT, map);
     }
+    RdbUpgradeUtils::ReportUpgradeDfxMessages(startTime, oldVersion, MEDIA_RDB_VERSION, true);
     return NativeRdb::E_OK;
 }
 
