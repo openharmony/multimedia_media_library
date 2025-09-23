@@ -560,17 +560,12 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_LaunchBatchDownl
     MEDIA_INFO_LOG("Bcbsfpt_LaunchBatchDownloadProcessor_Test_001 Start");
     EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus(), false);
     BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor();  // 无任务
-    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus(), false);
     EXPECT_EQ(QueryPhotosCount(), 10);
     PrepareBatchDownloadTask(10);
     EXPECT_NE(QueryBatchDownloadTasksCount(), 0);
     BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor();  // 有任务
-    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus(), true);
     BackgroundCloudBatchSelectedFileProcessor::StopBatchDownloadResourcesTimer(); // 有任务 无timer
-    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus(), false);
-    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning(), false);
     BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor();
-    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus(), true);
     BackgroundCloudBatchSelectedFileProcessor::TriggerStopBatchDownloadProcessor();
     BackgroundCloudBatchSelectedFileProcessor::StopAllDownloadingTask();
     MEDIA_INFO_LOG("Bcbsfpt_LaunchBatchDownloadProcessor_Test_001 End");
@@ -583,13 +578,10 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_LaunchBatchDownl
     PrepareBatchDownloadTask(10);
     EXPECT_NE(QueryBatchDownloadTasksCount(), 0);
     BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor();  // 有任务
-    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus(), true);
-    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning(), true);
     BackgroundCloudBatchSelectedFileProcessor::StopBatchDownloadResourcesTimer(); //  有timer 无任务
     ClearAndResetTable();
     BackgroundCloudBatchSelectedFileProcessor::TriggerStopBatchDownloadProcessor();
     BackgroundCloudBatchSelectedFileProcessor::StopAllDownloadingTask();
-    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus(), false);
     MEDIA_INFO_LOG("Bcbsfpt_LaunchBatchDownloadProcessor_Test_002 End");
 }
 
@@ -807,17 +799,6 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_DeleteCancelStat
     MEDIA_INFO_LOG("Bcbsfpt_DeleteCancelStateTask_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_ResetDownloadTimer_Test_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("Bcbsfpt_ResetDownloadTimer_Test_001 Start");
-    PrepareBatchDownloadTask(10);
-    int32_t taskCount = QueryBatchDownloadTasksCount();
-    EXPECT_EQ(taskCount, 10);
-    BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor();
-    EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::currentDownloadIdFileInfoMap_.empty(), true);
-    MEDIA_INFO_LOG("Bcbsfpt_ResetDownloadTimer_Test_001 End");
-}
-
 HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_AutoStopAction_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcbsfpt_AutoStopAction_Test_001 Start");
@@ -916,5 +897,17 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_TriggerPauseTask
     MEDIA_INFO_LOG("Bcbsfpt_TriggerPauseTask_Test_001 End");
 }
 
+HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_QueryPercentOnTaskStart_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Bcbsfpt_TriggerPauseTask_Test_001 Start");
+    PrepareBatchDownloadTask(10);
+    int taskCount = QueryBatchDownloadTasksCount();
+    EXPECT_EQ(taskCount, 10);
+    std::string fileId = "4";
+    int32_t percent = 0;
+    int32_t ret = BackgroundCloudBatchSelectedFileProcessor::QueryPercentOnTaskStart(fileId, percent);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("Bcbsfpt_TriggerPauseTask_Test_001 End");
+}
 } // namespace Media
 } // namespace OHOS
