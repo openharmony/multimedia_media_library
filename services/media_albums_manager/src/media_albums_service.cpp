@@ -833,16 +833,16 @@ int32_t MediaAlbumsService::GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqB
     if (HIGHLIGHT_ALBUM_INFO_MAP.find(reqBody.highlightAlbumInfoType) != HIGHLIGHT_ALBUM_INFO_MAP.end()) {
         columns = HIGHLIGHT_ALBUM_INFO_MAP.at(reqBody.highlightAlbumInfoType).fetchColumn;
         string tabStr;
-        if (reqBody.highlightAlbumInfoType == COVER_INFO || reqBody.highlightAlbumInfoType == ALBUM_INFO) {
+        if (reqBody.highlightAlbumInfoType == COVER_INFO) {
             tabStr = HIGHLIGHT_COVER_INFO_TABLE;
         } else {
             tabStr = HIGHLIGHT_PLAY_INFO_TABLE;
         }
         vector<string> onClause = {
-            tabStr + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
-            HIGHLIGHT_ALBUM_TABLE + "." + ID
+            tabStr + "." + PhotoAlbumColumns::ALBUM_ID + " = " + HIGHLIGHT_ALBUM_TABLE + "." + ID
         };
-        predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
+        CHECK_AND_EXECUTE(reqBody.highlightAlbumInfoType == ALBUM_INFO,
+            predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause));
     } else {
         MEDIA_ERR_LOG("Invalid highlightAlbumInfoType");
         return E_ERR;
@@ -859,11 +859,12 @@ int32_t MediaAlbumsService::GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqB
     }
 
     std::string tableName = "";
-    if (reqBody.highlightAlbumInfoType == static_cast<int32_t>(HighlightAlbumInfoType::COVER_INFO) ||
-        reqBody.highlightAlbumInfoType == static_cast<int32_t>(HighlightAlbumInfoType::ALBUM_INFO)) {
+    if (reqBody.highlightAlbumInfoType == static_cast<int32_t>(HighlightAlbumInfoType::COVER_INFO)) {
         tableName = HIGHLIGHT_COVER_INFO_TABLE;
     } else if (reqBody.highlightAlbumInfoType == static_cast<int32_t>(HighlightAlbumInfoType::PLAY_INFO)) {
         tableName = HIGHLIGHT_PLAY_INFO_TABLE;
+    } else if (reqBody.highlightAlbumInfoType == static_cast<int32_t>(HighlightAlbumInfoType::ALBUM_INFO)) {
+        tableName = HIGHLIGHT_ALBUM_TABLE;
     } else {
         MEDIA_ERR_LOG("highlightAlbumInfoType not valid");
         return E_ERR;
@@ -871,9 +872,8 @@ int32_t MediaAlbumsService::GetHighlightAlbumInfo(GetHighlightAlbumReqBody &reqB
 
     shared_ptr<NativeRdb::ResultSet> resSet = MediaLibraryRdbStore::QueryWithFilter(
         RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, tableName), columns);
-    if (resSet == nullptr) {
-        return E_FAIL;
-    }
+
+    CHECK_AND_RETURN_RET(resSet != nullptr, E_FAIL);
     auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resSet);
     respBody.resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
     return E_SUCCESS;
