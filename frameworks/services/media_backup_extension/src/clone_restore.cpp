@@ -126,7 +126,7 @@ const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_EXCEPTION_MAP 
 const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
     { PhotoColumn::PHOTOS_TABLE,
         {
-            PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::PHOTO_DIRTY,
+            PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE,
             PhotoColumn::PHOTO_SYNC_STATUS, PhotoColumn::PHOTO_CLOUD_VERSION, PhotoColumn::PHOTO_POSITION,
             PhotoColumn::PHOTO_THUMB_STATUS, PhotoColumn::PHOTO_CLEAN_FLAG, // cloud related
             PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, // thumbnail related
