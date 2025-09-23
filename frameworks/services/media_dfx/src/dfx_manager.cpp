@@ -1127,5 +1127,10 @@ void DfxManager::HandleTranscodeCostTime(const int32_t costTime)
     CHECK_AND_RETURN_LOG(dfxAnalyzer_, "dfxAnalyzer_ is nullptr");
     dfxAnalyzer_->FlushTranscodeCostTime(costTime);
 }
+
+void DfxManager::HandleUpgradeFault(const UpgradeExceptionInfo& reportData)
+{
+    dfxReporter_->ReportUpgradeFault(reportData);
+}
 } // namespace Media
 } // namespace OHOS
