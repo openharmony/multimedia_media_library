@@ -322,6 +322,12 @@ void AccurateRefreshDataManager<ChangeInfo, ChangeData>::SetTransaction(std::sha
 }
 
 template <typename ChangeInfo, typename ChangeData>
+std::shared_ptr<TransactionOperations> AccurateRefreshDataManager<ChangeInfo, ChangeData>::GetTransaction()
+{
+    return trans_;
+}
+
+template <typename ChangeInfo, typename ChangeData>
 bool AccurateRefreshDataManager<ChangeInfo, ChangeData>::CanTransOperate()
 {
     return trans_ != nullptr && trans_->GetIsOperate();

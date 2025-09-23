@@ -58,7 +58,7 @@ int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, s
         isLocal,
         data.ToString().c_str());
     if (isLocal && CloudMediaSyncUtils::IsLocalDirty(data.localDirty, true)) {
-        MEDIA_ERR_LOG("local record dirty, ignore cloud delete");
+        MEDIA_INFO_LOG("local record dirty, ignore cloud delete");
         return this->photosDao_.ClearCloudInfo(cloudId);
     }
 
@@ -341,8 +341,9 @@ int32_t CloudMediaPhotosService::PullInsert(
     const std::vector<CloudMediaPullDataDto> &pullDatas, std::vector<std::string> &failedRecords)
 {
     CHECK_AND_RETURN_RET_INFO_LOG(!pullDatas.empty(), E_OK, "PullInsert No need to pull insert.");
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh =
-        std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
+        std::make_shared<AccurateRefresh::AssetAccurateRefresh>(trans);
     CHECK_AND_RETURN_RET_LOG(
         photoRefresh != nullptr, E_RDB_STORE_NULL, "Photos OnDentryFileInsert Failed to get photoRefresh.");
     std::set<std::string> refreshAlbums;
@@ -370,12 +371,12 @@ int32_t CloudMediaPhotosService::PullInsert(
         stats[StatsIndex::META_MODIFY_RECORDS_COUNT],
         stats[StatsIndex::DELETE_RECORDS_COUNT],
         recordAlbumMaps.size());
-    this->photosDao_.BatchInsertFile(recordAnalysisAlbumMaps, recordAlbumMaps, insertFiles, photoRefresh);
+    ret = this->photosDao_.BatchInsertFile(recordAnalysisAlbumMaps, recordAlbumMaps, insertFiles, photoRefresh);
     photoRefresh->RefreshAlbumNoDateModified();
     photoRefresh->Notify();
     this->photosDao_.UpdateAlbumInternal(refreshAlbums);
     NotifyPhotoInserted(insertFiles);
-    return E_OK;
+    return ret;
 }
 
 void CloudMediaPhotosService::NotifyPhotoInserted(const std::vector<NativeRdb::ValuesBucket> &insertFiles)

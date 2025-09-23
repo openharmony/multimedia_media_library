@@ -53,7 +53,7 @@ int32_t BatchDownloadResourcesTaskDao::AddOtherBurstIdsToFileIds(std::vector<std
         " p2 ON p1." + PhotoColumn::PHOTO_BURST_KEY + " = p2." + PhotoColumn::PHOTO_BURST_KEY +
         " WHERE p1." + PhotoColumn::MEDIA_ID + " IN ({0}) AND p1." + PhotoColumn::PHOTO_BURST_COVER_LEVEL +
         " = 1 AND p1." + PhotoColumn::PHOTO_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoSubType::BURST)) +
-        "AND p1." + PhotoColumn::PHOTO_BURST_KEY + " IS NOT NULL AND p1." + PhotoColumn::MEDIA_ID +
+        " AND p1." + PhotoColumn::PHOTO_BURST_KEY + " IS NOT NULL AND p1." + PhotoColumn::MEDIA_ID +
         " != p2." + PhotoColumn::MEDIA_ID;
     std::string inClause = CloudMediaDaoUtils::ToStringWithComma(fileIds);
     std::string sql = CloudMediaDaoUtils::FillParams(sqlBefore, {inClause});
@@ -95,6 +95,7 @@ int32_t BatchDownloadResourcesTaskDao::QueryValidBatchDownloadPoFromPhotos(std::
         taskPo.downloadStatus = 0; // default
         taskPo.percent = -1; // default
         taskPo.autoPauseReason = 0; // default
+        taskPo.coverLevel = GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet); // default
         downloadResourcesTasks.emplace_back(taskPo);
     }
     resultSet->Close();
@@ -649,6 +650,7 @@ void BatchDownloadResourcesTaskDao::CloudMediaBatchDownloadResourcesStatusToTask
         taskPo.downloadStatus = GetInt32Val(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS, resultSet);
         taskPo.percent = GetInt32Val(DownloadResourcesColumn::MEDIA_PERCENT, resultSet);
         taskPo.autoPauseReason = GetInt32Val(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON, resultSet);
+        taskPo.coverLevel = GetInt32Val(DownloadResourcesColumn::MEDIA_COVER_LEVEL, resultSet);
         downloadResourcesTasks.emplace_back(taskPo);
     }
     resultSet->Close();

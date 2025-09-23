@@ -16,6 +16,7 @@
 #include "parameter_utils.h"
 
 #include <algorithm>
+#include "permission_utils.h"
 #include "medialibrary_errno.h"
 #include "mimetype_utils.h"
 #include "media_log.h"
@@ -408,6 +409,7 @@ static bool CheckPathCross(const string& path)
 
 int32_t ParameterUtils::CheckRestore(const RestoreReqBody &reqBody)
 {
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsNativeSAApp(), E_CHECK_NATIVE_SA_FAIL, "caller is not native SA.");
     CHECK_AND_RETURN_RET_LOG(!reqBody.albumLpath.empty(), E_INVALID_VALUES, "albumLpath is empty.");
     CHECK_AND_RETURN_RET_LOG(!CheckPathCross(reqBody.albumLpath), E_INVALID_PATH, "albumLpath is path crossing.");
     CHECK_AND_RETURN_RET_LOG(!reqBody.keyPath.empty(), E_INVALID_VALUES, "keyPath is empty.");

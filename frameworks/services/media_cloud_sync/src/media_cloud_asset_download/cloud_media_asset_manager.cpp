@@ -853,6 +853,7 @@ int32_t CloudMediaAssetManager::BuildTaskValuesAndBatchInsert(
         values.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS, po.downloadStatus.value_or(0));
         values.PutInt(DownloadResourcesColumn::MEDIA_PERCENT, po.percent.value_or(-1));
         values.PutInt(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON, po.autoPauseReason.value_or(0));
+        values.PutInt(DownloadResourcesColumn::MEDIA_COVER_LEVEL, po.coverLevel.value_or(1));
         batchValues.push_back(values);
     }
     MEDIA_INFO_LOG("BatchSelectFileDownload Insert Bucket Size:%{public}zu", batchValues.size());
@@ -1009,7 +1010,8 @@ int32_t CloudMediaAssetManager::GetCloudMediaBatchDownloadResourcesStatus(
                     << downloadResourcesTask.dateFinish.value_or(0) << "|"
                     << downloadResourcesTask.downloadStatus.value_or(0) << "|"
                     << downloadResourcesTask.percent.value_or(0) << "|"
-                    << downloadResourcesTask.autoPauseReason.value_or(0);
+                    << downloadResourcesTask.autoPauseReason.value_or(0) << "|"
+                    << downloadResourcesTask.coverLevel.value_or(1);
 
         std::string entry = entryStream.str();
         respBody.downloadResourcesStatus.emplace_back(std::move(entry));

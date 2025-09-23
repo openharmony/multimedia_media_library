@@ -352,14 +352,10 @@ void MediaLibraryRdbStore::CreateBurstIndex(const shared_ptr<MediaLibraryRdbStor
 void MediaLibraryRdbStore::AddIndex(const shared_ptr<MediaLibraryRdbStore> store)
 {
     const vector<string> sqls = {
-        PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
         PhotoColumn::CREATE_SCHPT_DAY_INDEX,
         PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
         PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
         PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
-        PhotoColumn::CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX,
-        PhotoColumn::INDEX_SCHPT_ALBUM,
-        PhotoColumn::INDEX_SCTHP_ADDTIME,
         PhotoColumn::CREATE_PHOTO_SHOOTING_MODE_ALBUM_GENERAL_INDEX,
         PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
         PhotoColumn::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX,
@@ -1710,6 +1706,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX,
     PhotoColumn::CREATE_PHOTO_RAW_IMAGE_ALBUM_INDEX,
     PhotoColumn::CREATE_PHOTO_MOVING_PHOTO_ALBUM_INDEX,
+    PhotoColumn::INDEX_QUERY_THUMBNAIL_WHITE_BLOCKS,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::INDEX_SCHPT_READY,
     PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
@@ -2980,7 +2977,6 @@ void MediaLibraryRdbStore::AddIndexForCloudAndPitaya(const std::shared_ptr<Media
         BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ADDED_INDEX,
         BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_ALBUM_INDEX,
         BaseColumn::DropIndex() + PhotoColumn::PHOTO_HIDDEN_TIME_INDEX,
-        BaseColumn::DropIndex() + PhotoColumn::PHOTO_QUERY_THUMBNAIL_WHITE_BLOCKS_INDEX,
         BaseColumn::DropIndex() + PhotoColumn::PHOTO_DATE_DAY_INDEX,
         BaseColumn::DropIndex() + PhotoColumn::PHOTO_DATE_MONTH_INDEX,
         BaseColumn::DropIndex() + PhotoColumn::PHOTO_DATE_YEAR_INDEX,
@@ -6156,7 +6152,7 @@ pair<int32_t, NativeRdb::Results> MediaLibraryRdbStore::BatchInsert(const string
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->BatchInsert failed, ret = %{public}d", ret);
         MediaLibraryRestore::GetInstance().CheckRestore(ret);
-        return {E_HAS_DB_ERROR, -1};
+        return {ret, -1};
     }
 
     MEDIA_DEBUG_LOG("rdbStore_->BatchInsert end, ret = %{public}d", ret);
