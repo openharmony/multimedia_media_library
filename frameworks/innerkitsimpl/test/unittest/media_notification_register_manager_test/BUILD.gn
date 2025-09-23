@@ -29,20 +29,24 @@ ohos_unittest("media_notification_register_manager_test") {
     "../medialibrary_unittest_utils/include",
     "./include",
     "../get_self_permissions/include",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js/include/napi",
   ]
  
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "src/media_notification_register_manager_test.cpp",
+    "src/media_notify_asset_manager_observer_test.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/register_manager/media_observer_manager.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/register_manager/notify_register_permission.cpp",
     "${MEDIALIB_NEW_SERVICES_PATH}/media_notification/src/register_manager/observer_callback_recipient.cpp",
+    "${MEDIALIB_JS_PATH}/src/medialibrary_notify_asset_manager_observer.cpp",
   ]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary_nutils",
   ]
  
   external_deps = [
