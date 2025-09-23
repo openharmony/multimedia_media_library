@@ -1194,7 +1194,7 @@ napi_value CloudMediaAssetManagerNapi::JsBatchDownloadRegisterCallback(napi_env 
         if (ret == E_OK) {
             NAPI_INFO_LOG("JsBatchDownloadRegisterCallback success");
         } else {
-            NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+            NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(JS_E_INIT_FAIL));
             napi_delete_reference(env, cbOnRef);
             return undefinedResult;
         }
@@ -1206,21 +1206,15 @@ static napi_value CheckUnregisterCallbackArgs(napi_env env, napi_callback_info i
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
     napi_value thisVar = nullptr;
-    context->argc = ARGS_TWO;
+    context->argc = ARGS_ONE;
     GET_JS_ARGS(env, info, context->argc, context->argv, thisVar);
 
-    if (context->argc < ARGS_ONE || context->argc > ARGS_TWO) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requires one or two parameters.");
+    if (context->argc > ARGS_ONE) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requires parameters.");
         return nullptr;
     }
 
     if (thisVar == nullptr || context->argv[PARAM0] == nullptr) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE);
-        return nullptr;
-    }
-
-    napi_valuetype valueType = napi_undefined;
-    if (napi_typeof(env, context->argv[PARAM0], &valueType) != napi_ok || valueType != napi_string) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE);
         return nullptr;
     }
@@ -1254,7 +1248,7 @@ napi_value CloudMediaAssetManagerNapi::JsBatchDownloadUnRegisterCallback(napi_en
     }
     int32_t ret = UnregisterObserverExecute(env, uriType, cbOffRef, *g_listAssetListenerObj);
     if (ret != E_OK) {
-        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(ret));
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(JS_E_INIT_FAIL));
     }
     if (cbOffRef != nullptr) {
         napi_delete_reference(env, cbOffRef);
@@ -1292,7 +1286,7 @@ int32_t CloudMediaAssetManagerNapi::AddClientObserver(napi_env env, napi_ref ref
         napi_strict_equals(env, callback, onCallback, &hasRegister);
         if (hasRegister) {
             NAPI_INFO_LOG("clientObserver hasRegister");
-            return JS_E_PARAM_INVALID;
+            return E_OK;
         }
     }
     if (!hasRegister) {
@@ -1348,7 +1342,7 @@ int32_t CloudMediaAssetManagerNapi::RemoveClientObserver(napi_env env, napi_ref 
         return JS_E_PARAM_INVALID;
     }
     if (ref == nullptr) {
-        NAPI_ERR_LOG("remove all client observers of uriType");
+        NAPI_INFO_LOG("remove all client observers of uriType");
         clientObservers.erase(uriType);
         return E_OK;
     }
@@ -1386,8 +1380,8 @@ int32_t CloudMediaAssetManagerNapi::UnregisterObserverExecute(napi_env env,
     const Notification::NotifyUriType uriType, napi_ref ref, AssetManagerChangeListenerNapi &listObj)
 {
     if (listObj.observers_.size() == 0) {
-        NAPI_ERR_LOG("listObj.observers_ size 0");
-        return JS_E_PARAM_INVALID;
+        NAPI_INFO_LOG("listObj.observers_ size 0");
+        return E_OK;
     }
     // 根据uri获取对应的 注册uri
     Notification::NotifyUriType registerUriType = Notification::NotifyUriType::INVALID;
