@@ -95,6 +95,7 @@ public:
     EXPORT void HandleTranscodeFailed(const TranscodeErrorType type);
     EXPORT void HandleTranscodeCostTime(const int32_t costTime);
     void HandleAccurateRefreshTimeOut(const AccurateRefreshDfxDataPoint& reportData);
+    void HandleUpgradeFault(const UpgradeExceptionInfo& reportData);
 
 private:
     void Init();

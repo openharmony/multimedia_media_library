@@ -87,5 +87,18 @@ HWTEST_F(MediaLibraryDfxPatchTest, ReportSyncFault_001, TestSize.Level0)
     int32_t ret = dfxReporter.ReportSyncFault(taskId, position, event, southDeviceType);
     EXPECT_EQ(ret, E_OK);
 }
+
+HWTEST_F(MediaLibraryDfxPatchTest, ReportUpgradeFault_001, TestSize.Level0)
+{
+    DfxReporter dfxReporter;
+    UpgradeExceptionInfo reportData;
+    reportData.srcVersion = 501;
+    reportData.dstVersion = 502;
+    reportData.isSync = false;
+    reportData.exceptionVersions = "0,1,2,3";
+    reportData.duration = 3000;
+    int32_t ret = dfxReporter.ReportUpgradeFault(reportData);
+    EXPECT_EQ(ret, E_OK);
+}
 } // namespace Media
 } // namespace OHOS

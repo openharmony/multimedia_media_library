@@ -775,5 +775,21 @@ void DfxReporter::ReportAlibHeifDuplicate()
     prefs->FlushSync();
 }
 
+int32_t DfxReporter::ReportUpgradeFault(const UpgradeExceptionInfo& reportData)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_UPGRADE_EXCEPTION",
+        HiviewDFX::HiSysEvent::EventType::FAULT,
+        "SRC_VERSION", reportData.srcVersion,
+        "DTS_VERSION", reportData.dstVersion,
+        "IS_SYNC", reportData.isSync,
+        "EXCEPTION_VERSIONS", reportData.exceptionVersions,
+        "DURATION", reportData.duration);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportUpgradeFault error:%{public}d", ret);
+    }
+    return ret;
+}
 } // namespace Media
 } // namespace OHOS
