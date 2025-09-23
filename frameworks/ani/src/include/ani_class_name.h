@@ -21,38 +21,61 @@
 namespace OHOS {
 namespace Media {
 
-static const std::string PHOTO_ACCESS_HELPER_CLASS_SPACE = "L@ohos/file/photoAccessHelper/photoAccessHelper/";
-static const std::string USER_FILE_MANAGER_CLASS_SPACE = "L@ohos/filemanagement/userFileManager/userFileManager/";
+static const std::string PAH_CLASS_SPACE = "@ohos.file.photoAccessHelper.photoAccessHelper.";
+static const std::string UFM_CLASS_SPACE = "@ohos.filemanagement.userFileManager.userFileManager.";
 
-static const std::string ANI_CLASS_FILE_ASSET_INFO = PHOTO_ACCESS_HELPER_CLASS_SPACE + "FileAssetInfoHandle";
-static const std::string ANI_CLASS_CLOUD_ENHANCEMENT = PHOTO_ACCESS_HELPER_CLASS_SPACE + "CloudEnhancementHandle;";
-static const std::string ANI_CLASS_FETCH_RESULT = PHOTO_ACCESS_HELPER_CLASS_SPACE + "FetchResultHandle;";
-static const std::string PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE = PHOTO_ACCESS_HELPER_CLASS_SPACE + "AlbumHandle;";
-static const std::string ANI_CLASS_PHOTO_ASSET = PHOTO_ACCESS_HELPER_CLASS_SPACE + "PhotoAssetHandle;";
-static const std::string ANI_CLASS_PHOTO_ACCESS_HELPER = PHOTO_ACCESS_HELPER_CLASS_SPACE + "PhotoAccessHelperHandle;";
-static const std::string ANI_CLASS_PHOTO_PROXY = PHOTO_ACCESS_HELPER_CLASS_SPACE + "PhotoProxyHandle;";
-static const std::string ANI_CLASS_SIZE = PHOTO_ACCESS_HELPER_CLASS_SPACE + "SizeImpl;";
-static const std::string ANI_CLASS_MOVING_PHOTO = PHOTO_ACCESS_HELPER_CLASS_SPACE + "MovingPhotoHandle;";
-static const std::string ANI_CLASS_MEDIA_ALBUM_CHANGE_REQUEST =
-    PHOTO_ACCESS_HELPER_CLASS_SPACE + "MediaAlbumChangeRequest;";
-static const std::string ANI_CLASS_MEDIA_ASSET_CHANGE_REQUEST =
-    PHOTO_ACCESS_HELPER_CLASS_SPACE + "MediaAssetChangeRequest;";
-static const std::string ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST =
-    PHOTO_ACCESS_HELPER_CLASS_SPACE + "MediaAssetsChangeRequest;";
+// ETS Class in photoAccessHelper
+static const std::string PAH_ANI_CLASS_FILE_ASSET_INFO = PAH_CLASS_SPACE + "FileAssetInfoHandle";
+static const std::string PAH_ANI_CLASS_CLOUD_ENHANCEMENT = PAH_CLASS_SPACE + "CloudEnhancement";
+static const std::string PAH_ANI_CLASS_CLOUD_ENHANCEMENT_TASK_STATE_HANDLE =
+    PAH_CLASS_SPACE + "CloudEnhancementTaskStateHandle";
+static const std::string PAH_ANI_CLASS_CLOUD_MEDIA_ASSET_MANAGER =
+    PAH_CLASS_SPACE + "CloudMediaAssetManager";
+static const std::string PAH_ANI_CLASS_CLOUD_MEDIA_ASSET_STATUS_HANDLE =
+    PAH_CLASS_SPACE + "CloudMediaAssetStatusHandle";
+static const std::string PAH_ANI_CLASS_FETCH_RESULT_HANDLE = PAH_CLASS_SPACE + "FetchResultHandle";
+static const std::string PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE = PAH_CLASS_SPACE + "AlbumHandle";
+static const std::string PAH_ANI_CLASS_HIGHLIGHT_ALBUM = PAH_CLASS_SPACE + "HighlightAlbum";
+static const std::string PAH_ANI_CLASS_ANALYSIS_ALBUM = PAH_CLASS_SPACE + "AnalysisAlbum";
+static const std::string PAH_ANI_CLASS_PHOTO_ASSET = PAH_CLASS_SPACE + "PhotoAsset";
+static const std::string PAH_ANI_CLASS_PHOTO_ASSET_HANDLE = PAH_CLASS_SPACE + "PhotoAssetHandle";
+static const std::string PAH_ANI_CLASS_PHOTO_ACCESS_HELPER_HANDLE = PAH_CLASS_SPACE + "PhotoAccessHelperHandle";
+static const std::string PAH_ANI_CLASS_PHOTO_PROXY_HANDLE = PAH_CLASS_SPACE + "PhotoProxyHandle";
+static const std::string PAH_ANI_CLASS_SIZE = PAH_CLASS_SPACE + "SizeImpl";
+static const std::string PAH_ANI_CLASS_MOVING_PHOTO_HANDLE = PAH_CLASS_SPACE + "MovingPhotoHandle";
+static const std::string PAH_ANI_CLASS_CHANGE_DATA_HANDLE = PAH_CLASS_SPACE + "ChangeDataHandle";
+static const std::string PAH_ANI_CLASS_MEDIA_ALBUM_CHANGE_REQUEST = PAH_CLASS_SPACE + "MediaAlbumChangeRequest";
+static const std::string PAH_ANI_CLASS_MEDIA_ANALYSIS_ALBUM_CHANGE_REQUEST =
+    PAH_CLASS_SPACE + "MediaAnalysisAlbumChangeRequest";
+static const std::string PAH_ANI_CLASS_MEDIA_ASSET_CHANGE_REQUEST = PAH_CLASS_SPACE + "MediaAssetChangeRequest";
+static const std::string PAH_ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST = PAH_CLASS_SPACE + "MediaAssetsChangeRequest";
+static const std::string PAH_ANI_CLASS_MEDIA_ASSETS_EDIT_DATA = PAH_CLASS_SPACE + "MediaAssetEditData";
+static const std::string PAH_ANI_CLASS_MEDIA_MANAGER = PAH_CLASS_SPACE + "MediaAssetManager";
+static const std::string PAH_ANI_CLASS_MEDIA_DATA_HANDLER = PAH_CLASS_SPACE + "MediaAssetDataHandler";
+static const std::string PAH_ANI_CLASS_MEDIA_PROGRESS_HANDLER = PAH_CLASS_SPACE + "MediaAssetProgressHandler";
+static const std::string PAH_ANI_CLASS_SHARED_PHOTO_ASSET_HANDLE = PAH_CLASS_SPACE + "SharedPhotoAssetHandle";
+static const std::string PAH_ANI_CLASS_SHARED_ALBUM_ASSET_HANDLE = PAH_CLASS_SPACE + "SharedAlbumAssetHandle";
 
-static const std::string ANI_CLASS_ENUM_PHOTO_TYPE = PHOTO_ACCESS_HELPER_CLASS_SPACE + "PhotoType;";
-static const std::string ANI_CLASS_ENUM_PHOTO_SUBTYPE = PHOTO_ACCESS_HELPER_CLASS_SPACE + "PhotoSubtype;";
-static const std::string ANI_CLASS_ENUM_DYNAMIC_RANGE_TYPE = PHOTO_ACCESS_HELPER_CLASS_SPACE + "DynamicRangeType;";
-static const std::string ANI_CLASS_ENUM_POSITION_TYPE = PHOTO_ACCESS_HELPER_CLASS_SPACE + "PositionType;";
-static const std::string ANI_CLASS_ENUM_ALBUM_TYPE = PHOTO_ACCESS_HELPER_CLASS_SPACE + "AlbumType;";
-static const std::string ANI_CLASS_ENUM_ALBUM_SUBTYPE = PHOTO_ACCESS_HELPER_CLASS_SPACE + "AlbumSubtype;";
-static const std::string ANI_CLASS_ENUM_NOTIFY_TYPE = PHOTO_ACCESS_HELPER_CLASS_SPACE + "NotifyType;";
-static const std::string ANI_CLASS_ENUM_MOVING_PHOTO_EFFECT_MODE =
-    PHOTO_ACCESS_HELPER_CLASS_SPACE + "MovingPhotoEffectMode;";
-static const std::string ANI_CLASS_ENUM_CLOUD_ENHANCEMENT_TASK_STAGE =
-    PHOTO_ACCESS_HELPER_CLASS_SPACE + "CloudEnhancementTaskStage;";
+// ETS Enum in photoAccessHelper
+static const std::string PAH_ANI_CLASS_ENUM_PHOTO_TYPE = PAH_CLASS_SPACE + "PhotoType";
+static const std::string PAH_ANI_CLASS_ENUM_PHOTO_SUBTYPE = PAH_CLASS_SPACE + "PhotoSubtype";
+static const std::string PAH_ANI_CLASS_ENUM_DYNAMIC_RANGE_TYPE = PAH_CLASS_SPACE + "DynamicRangeType";
+static const std::string PAH_ANI_CLASS_ENUM_POSITION_TYPE = PAH_CLASS_SPACE + "PositionType";
+static const std::string PAH_ANI_CLASS_ENUM_ALBUM_TYPE = PAH_CLASS_SPACE + "AlbumType";
+static const std::string PAH_ANI_CLASS_ENUM_ALBUM_SUBTYPE = PAH_CLASS_SPACE + "AlbumSubtype";
+static const std::string PAH_ANI_CLASS_ENUM_NOTIFY_TYPE = PAH_CLASS_SPACE + "NotifyType";
+static const std::string PAH_ANI_CLASS_ENUM_MOVING_PHOTO_EFFECT_MODE = PAH_CLASS_SPACE + "MovingPhotoEffectMode";
+static const std::string PAH_ANI_CLASS_ENUM_CLOUD_ENHANCEMENT_TASK_STAGE =
+    PAH_CLASS_SPACE + "CloudEnhancementTaskStage";
+static const std::string PAH_ANI_CLASS_ENUM_RESOURCE_TYPE = PAH_CLASS_SPACE + "ResourceType";
+static const std::string PAH_ANI_CLASS_ENUM_IMAGEFILE_TYPE = PAH_CLASS_SPACE + "ImageFileType";
 
-static const std::string UFM_ANI_CLASS_PHOTO_ALBUM_HANDLE = USER_FILE_MANAGER_CLASS_SPACE + "AlbumHandle;";
+// ETS Class in userFileManager
+static const std::string UFM_ANI_CLASS_USER_FILE_MANAGER_HANDLE = UFM_CLASS_SPACE + "UserFileManagerHandle";
+static const std::string UFM_ANI_CLASS_FETCH_RESULT_HANDLE = UFM_CLASS_SPACE + "FetchResultHandle";
+static const std::string UFM_ANI_CLASS_FILE_ASSET = UFM_CLASS_SPACE + "FileAsset";
+static const std::string UFM_ANI_CLASS_FILE_ASSET_HANDLE = UFM_CLASS_SPACE + "FileAssetHandle";
+static const std::string UFM_ANI_CLASS_PHOTO_ALBUM_HANDLE = UFM_CLASS_SPACE + "AlbumHandle";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_ANI_SRC_INCLUDE_ANI_CLASSNAME_H
