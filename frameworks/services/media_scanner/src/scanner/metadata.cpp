@@ -184,7 +184,7 @@ void Metadata::SetFileMediaType(const VariantData &mediaType)
 {
     if (std::get<int32_t>(mediaType) < FILE_MEDIA_TYPE_DEFAULT || std::get<int32_t>(mediaType) > FILE_MEDIA_TYPE_MAX) {
         mediaType_ = FILE_MEDIA_TYPE_DEFAULT;
-        MEDIA_ERR_LOG("SetFileMediaType invalid media type %{public}d", std::get<int32_t>(mediaType));
+        MEDIA_ERR_LOG("Invalid media type %{public}d, set DEFAULT instead", std::get<int32_t>(mediaType));
         return;
     }
     mediaType_ = static_cast<MediaType>(std::get<int32_t>(mediaType));
