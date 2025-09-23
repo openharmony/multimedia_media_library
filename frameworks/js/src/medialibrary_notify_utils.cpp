@@ -36,11 +36,6 @@ const std::string RegisterNotifyType::HIDDEN_ALBUM_CHANGE = "hiddenAlbumChange";
 const std::string RegisterNotifyType::TRASHED_ALBUM_CHANGE = "trashedAlbumChange";
 const std::string RegisterNotifyType::BATCH_DOWNLOAD_PROGRESS_CHANGE = "downloadProgressChange";
 
-const std::map<std::string, Notification::NotifyUriType>
-    MediaLibraryNotifyUtils::REGISTER_ASSET_MANAGER_NOTIFY_TYPE_MAP = {
-    { RegisterNotifyType::BATCH_DOWNLOAD_PROGRESS_CHANGE, Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI },
-};
-
 const std::map<Notification::NotifyUriType, Notification::NotifyUriType>
     MediaLibraryNotifyUtils::REGISTER_ASSET_MANAGER_TYPE_MAP = {
     { Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI,
@@ -93,17 +88,6 @@ const std::unordered_map<int32_t, int32_t> ERROR_MAP = {
     { JS_E_PARAM_INVALID,      JS_E_PARAM_INVALID },
     { OHOS_INVALID_PARAM_CODE, OHOS_INVALID_PARAM_CODE },
 };
-
-int32_t MediaLibraryNotifyUtils::GetRegisterAssetManagerNotifyType(const string &type,
-    Notification::NotifyUriType &uriType)
-{
-    if (REGISTER_ASSET_MANAGER_NOTIFY_TYPE_MAP.find(type) == REGISTER_ASSET_MANAGER_NOTIFY_TYPE_MAP.end()) {
-        NAPI_ERR_LOG("registerAssetManagerNotifyType is invalid");
-        return E_ERR;
-    }
-    uriType = REGISTER_ASSET_MANAGER_NOTIFY_TYPE_MAP.at(type);
-    return E_OK;
-}
 
 int32_t MediaLibraryNotifyUtils::GetAssetManagerNotifyTypeAndUri(const Notification::NotifyUriType type,
     Notification::NotifyUriType &uriType, string &uri)

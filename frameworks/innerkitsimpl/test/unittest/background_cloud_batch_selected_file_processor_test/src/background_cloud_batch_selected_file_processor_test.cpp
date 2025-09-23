@@ -814,7 +814,6 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_ResetDownloadTim
     int32_t taskCount = QueryBatchDownloadTasksCount();
     EXPECT_EQ(taskCount, 10);
     BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor();
-    BackgroundCloudBatchSelectedFileProcessor::ResetDownloadResourcesTimer();
     EXPECT_EQ(BackgroundCloudBatchSelectedFileProcessor::currentDownloadIdFileInfoMap_.empty(), true);
     MEDIA_INFO_LOG("Bcbsfpt_ResetDownloadTimer_Test_001 End");
 }

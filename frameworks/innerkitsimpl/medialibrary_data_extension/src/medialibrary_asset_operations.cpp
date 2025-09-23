@@ -3454,7 +3454,7 @@ int32_t MediaLibraryAssetOperations::AddOtherBurstIdsToFileIds(std::vector<std::
         " p2 ON p1." + PhotoColumn::PHOTO_BURST_KEY + " = p2." + PhotoColumn::PHOTO_BURST_KEY +
         " WHERE p1." + PhotoColumn::MEDIA_ID + " IN ({0}) AND p1." + PhotoColumn::PHOTO_BURST_COVER_LEVEL +
         " = 1 AND p1." + PhotoColumn::PHOTO_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoSubType::BURST)) +
-        "AND p1." + PhotoColumn::PHOTO_BURST_KEY + " IS NOT NULL AND p1." + PhotoColumn::MEDIA_ID +
+        " AND p1." + PhotoColumn::PHOTO_BURST_KEY + " IS NOT NULL AND p1." + PhotoColumn::MEDIA_ID +
         " != p2." + PhotoColumn::MEDIA_ID;
     std::string inClause = CloudMediaDaoUtils::ToStringWithComma(fileIds);
     std::string sql = CloudMediaDaoUtils::FillParams(sqlBefore, {inClause});

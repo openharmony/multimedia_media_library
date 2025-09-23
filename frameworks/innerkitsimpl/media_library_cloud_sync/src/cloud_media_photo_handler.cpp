@@ -119,7 +119,7 @@ int32_t CloudMediaPhotoHandler::OnDentryFileInsert(
         .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}})
         .Post(operationCode, reqBody, respBody);
     failedRecords = respBody.failedRecords;
-    MEDIA_INFO_LOG("OnDentryFileInsert end");
+    MEDIA_INFO_LOG("OnDentryFileInsert end, ret: %{public}d", ret);
     return ret;
 }
 

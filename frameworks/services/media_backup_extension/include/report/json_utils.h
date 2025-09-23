@@ -59,7 +59,7 @@ public:
     std::string GetString(const nlohmann::json &jsonObj, const std::string &key, const std::string defaultValue = "")
     {
         auto iter = jsonObj.find(key);
-        if (iter != jsonObj.end()) {
+        if (iter != jsonObj.end() && iter->is_string()) {
             return iter->get<std::string>();
         }
         return defaultValue;

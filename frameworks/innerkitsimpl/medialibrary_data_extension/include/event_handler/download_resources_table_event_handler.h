@@ -44,7 +44,8 @@ private:
             finish_time     BIGINT NOT NULL DEFAULT -1, \
             download_status INT NOT NULL DEFAULT -1, \
             percent         INT NOT NULL DEFAULT -1, \
-            auto_pause_reason INT NOT NULL DEFAULT 0 \
+            auto_pause_reason INT NOT NULL DEFAULT 0, \
+            cover_level INT NOT NULL DEFAULT 1 \
         );";
 };
 }  // namespace OHOS::Media

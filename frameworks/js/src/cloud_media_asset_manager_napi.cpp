@@ -1174,34 +1174,22 @@ napi_value CloudMediaAssetManagerNapi::JsBatchDownloadRegisterCallback(napi_env 
     tracer.Start("JsBatchDownloadRegisterCallback");
     napi_value undefinedResult = nullptr;
     napi_get_undefined(env, &undefinedResult);
-    size_t argc = ARGS_TWO;
-    napi_value argv[ARGS_TWO] = {nullptr};
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {nullptr};
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, argc == ARGS_TWO, "requires 2 parameters");
+    NAPI_ASSERT(env, argc == ARGS_ONE, "requires 1 parameters");
     CloudMediaAssetManagerNapi *obj = nullptr;
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&obj));
     if (status == napi_ok && obj != nullptr) {
         napi_valuetype valueType = napi_undefined;
-        if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_string ||
-            napi_typeof(env, argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
+        if (napi_typeof(env, argv[PARAM0], &valueType) != napi_ok || valueType != napi_function) {
             return undefinedResult;
         }
-        char buffer[ARG_BUF_SIZE];
-        size_t res = 0;
-        if (napi_get_value_string_utf8(env, argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
-            NAPI_ERR_LOG("Failed to get value string utf8 for type");
-            return undefinedResult;
-        }
-        string type = string(buffer);
-        Notification::NotifyUriType uriType = Notification::NotifyUriType::INVALID;
-        if (MediaLibraryNotifyUtils::GetRegisterAssetManagerNotifyType(type, uriType) != E_OK) {
-            NapiError::ThrowError(env, JS_E_PARAM_INVALID);
-            return undefinedResult;
-        }
+        Notification::NotifyUriType uriType = Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI;
         const int32_t refCount = 1;
         napi_ref cbOnRef = nullptr;
-        napi_create_reference(env, argv[PARAM1], refCount, &cbOnRef);
+        napi_create_reference(env, argv[PARAM0], refCount, &cbOnRef);
         int32_t ret = RegisterObserverExecute(env, cbOnRef, *g_listAssetListenerObj, uriType);
         if (ret == E_OK) {
             NAPI_INFO_LOG("JsBatchDownloadRegisterCallback success");
@@ -1253,27 +1241,16 @@ napi_value CloudMediaAssetManagerNapi::JsBatchDownloadUnRegisterCallback(napi_en
     if (CheckUnregisterCallbackArgs(env, info, context) == nullptr) {
         return undefinedResult;
     }
-    char buffer[ARG_BUF_SIZE];
-    size_t res = 0;
-    if (napi_get_value_string_utf8(env, context->argv[PARAM0], buffer, ARG_BUF_SIZE, &res) != napi_ok) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE);
-        return undefinedResult;
-    }
-    string type = string(buffer);
-    Notification::NotifyUriType uriType = Notification::NotifyUriType::INVALID;
-    if (MediaLibraryNotifyUtils::GetRegisterAssetManagerNotifyType(type, uriType) != E_OK) {
-        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
-        return undefinedResult;
-    }
+    Notification::NotifyUriType uriType = Notification::NotifyUriType::BATCH_DOWNLOAD_PROGRESS_URI;
     napi_valuetype valueType = napi_undefined;
     napi_ref cbOffRef = nullptr;
-    if (context->argc == ARGS_TWO) {
-        if (napi_typeof(env, context->argv[PARAM1], &valueType) != napi_ok || valueType != napi_function) {
+    if (context->argc == ARGS_ONE) {
+        if (napi_typeof(env, context->argv[PARAM0], &valueType) != napi_ok || valueType != napi_function) {
             NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE);
             return undefinedResult;
         }
         const int32_t refCount = 1;
-        napi_create_reference(env, context->argv[PARAM1], refCount, &cbOffRef);
+        napi_create_reference(env, context->argv[PARAM0], refCount, &cbOffRef);
     }
     int32_t ret = UnregisterObserverExecute(env, uriType, cbOffRef, *g_listAssetListenerObj);
     if (ret != E_OK) {

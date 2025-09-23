@@ -175,6 +175,7 @@ static void PrepareBatchDownloadDatas()
         values.PutLong(DownloadResourcesColumn::MEDIA_DATE_FINISH, 0);
         values.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS, 0);
         values.PutInt(DownloadResourcesColumn::MEDIA_PERCENT, 0);
+        values.PutInt(DownloadResourcesColumn::MEDIA_COVER_LEVEL, 1);
         int64_t rowId = 0;
         g_rdbStore->Insert(rowId, DownloadResourcesColumn::TABLE, values);
         MEDIA_INFO_LOG("batch insert RowId %{public}" PRId64, rowId);
@@ -192,6 +193,7 @@ static void InsertBatchDownloadData(int32_t fileId, std::string uri, int32_t sta
     values.PutLong(DownloadResourcesColumn::MEDIA_DATE_FINISH, 0);
     values.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS, status);
     values.PutInt(DownloadResourcesColumn::MEDIA_PERCENT, percent);
+    values.PutInt(DownloadResourcesColumn::MEDIA_COVER_LEVEL, 1);
     int64_t rowId = 0;
     g_rdbStore->Insert(rowId, DownloadResourcesColumn::TABLE, values);
 }

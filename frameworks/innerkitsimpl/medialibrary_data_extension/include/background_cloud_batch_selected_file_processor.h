@@ -49,7 +49,6 @@ public:
     EXPORT static void StartBatchDownloadResourcesTimer();
     EXPORT static void StopBatchDownloadResourcesTimer(bool needClean = false);
     EXPORT static bool IsStartTimerRunning();
-    EXPORT static void ResetDownloadResourcesTimer();
 
     EXPORT static bool CanAutoStopCondition(BatchDownloadAutoPauseReasonType &autoPauseReason);
     EXPORT static bool CanAutoRestoreCondition();
