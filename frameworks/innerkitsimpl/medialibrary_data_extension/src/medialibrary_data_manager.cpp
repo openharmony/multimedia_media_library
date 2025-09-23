@@ -583,7 +583,6 @@ static void SetExifRotateAfterAddColumn(const shared_ptr<MediaLibraryRdbStore>& 
             " ELSE exif_rotate " +
         " END ";
     int ret = store->ExecuteSql(sql);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
     MEDIA_INFO_LOG("End set exif rotate");
 }
 
@@ -682,7 +681,7 @@ static void AsyncUpgradeFromAllVersionSecondPart(const shared_ptr<MediaLibraryRd
     MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX");
 }
 
-static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore, int32_t version)
 {
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
 
@@ -701,6 +700,7 @@ static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore
     values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(southDeviceType));
     int32_t changedRows = 0;
     int32_t ret = rdbStore->Update(changedRows, values, predicates);
+    RdbUpgradeUtils::AddUpgradeDfxMessages(version, 0, ret);
     MEDIA_INFO_LOG("Update south_device_type for %{public}d photos in cloud space, ret: %{public}d", changedRows, ret);
 }
 
@@ -742,21 +742,21 @@ void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 
     if (oldVersion < VERSION_ADD_SOUTH_DEVICE_TYPE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_SOUTH_DEVICE_TYPE, false)) {
-        FillSouthDeviceType(rdbStore);
+        FillSouthDeviceType(rdbStore, VERSION_ADD_SOUTH_DEVICE_TYPE);
         rdbStore->SetOldVersion(VERSION_ADD_SOUTH_DEVICE_TYPE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_SOUTH_DEVICE_TYPE, false);
     }
 
     if (oldVersion < VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, false)) {
-        MediaLibraryRdbStore::AddIndexForPhotoSortInAlbum(rdbStore);
+        MediaLibraryRdbStore::AddIndexForPhotoSortInAlbum(rdbStore, VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM);
         rdbStore->SetOldVersion(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM, false);
     }
 
     if (oldVersion < VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA, false)) {
-        MediaLibraryRdbStore::AddIndexForCloudAndPitaya(rdbStore);
+        MediaLibraryRdbStore::AddIndexForCloudAndPitaya(rdbStore, VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA);
         rdbStore->SetOldVersion(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_INDEX_FOR_CLOUD_AND_PITAYA, false);
     }
@@ -990,10 +990,14 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr!");
         int32_t oldVersion = rdbStore->GetOldVersion();
+        int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
         if (oldVersion != -1 && oldVersion < MEDIA_RDB_VERSION) {
             UpgradeAsync(rdbStore, oldVersion);
         }
-        MediaLibraryRdbStore::AddIndex(rdbStore);
+        // !! Do not add index here !!
+        MediaLibraryRdbStore::AddUpgradeIndex(rdbStore);
+        RdbUpgradeUtils::ReportUpgradeDfxMessages(startTime, oldVersion, MEDIA_RDB_VERSION,
+            false);
     }).detach();
 }
 
