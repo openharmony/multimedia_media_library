@@ -15,11 +15,18 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_ASSETS_CHANGE_REQUEST_HANDLEIMPL_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_ASSETS_CHANGE_REQUEST_HANDLEIMPL_H
 
-#include <string>
+#include <memory>
 #include <vector>
 
-#include "ani_error.h"
+#include <ani.h>
+#include "datashare_result_set.h"
 #include "file_asset.h"
+#include "ipc_skeleton.h"
+#include "media_column.h"
+#include "medialibrary_db_const.h"
+#include "tokenid_kit.h"
+#include "userfilemgr_uri.h"
+#include "medialibrary_ani_utils.h"
 #include "media_change_request_ani.h"
 
 namespace OHOS {
@@ -29,43 +36,31 @@ enum class AssetsChangeOperation {
     BATCH_SET_FAVORITE,
     BATCH_SET_HIDDEN,
     BATCH_SET_USER_COMMENT,
-    BATCH_SET_RECENT_SHOW,
 };
 
 class MediaAssetsChangeRequestAni : public MediaChangeRequestAni {
 public:
-    static ani_status Init(ani_env *env);
-    explicit MediaAssetsChangeRequestAni(std::vector<std::shared_ptr<FileAsset>> fileAssets);
+    static ani_status MediaAssetsChangeRequestAniInit(ani_env *env);
+    MediaAssetsChangeRequestAni(std::vector<std::shared_ptr<FileAsset>> fileAssets);
     ~MediaAssetsChangeRequestAni();
-
+    static void RecordChangeOperation(AssetsChangeOperation changeOperation);
     static void SetFavorite([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object, ani_boolean isFavorite);
     static void SetHidden([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object, ani_boolean isHidden);
-    static ani_object SetUserComment([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
-        ani_string comment);
-    static ani_object SetIsRecentShow([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
-        ani_boolean isRecentShowAni);
-    static ani_status Constructor(ani_env *env, ani_object object, ani_object arrayPhotoAssets);
-    static MediaAssetsChangeRequestAni* Unwrap(ani_env *env, ani_object object);
-    std::vector<std::string> GetFileAssetUriArray();
-    bool GetFavoriteStatus() const;
-    bool GetHiddenStatus() const;
-    std::string GetUserComment() const;
-    bool GetRecentShowStatus() const;
-    ani_status ApplyChanges(ani_env *env) override;
-    void GetFileAssetIds(std::vector<int32_t> &fileIds) const;
-private:
-    bool isFavorite_;
-    bool isHidden_;
-    std::string userComment_;
-    bool isRecentShow_;
-    std::vector<std::shared_ptr<FileAsset>> fileAssets_;
-    std::vector<AssetsChangeOperation> assetsChangeOperations_;
-};
+    static ani_object create([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz);
+    static MediaAssetsChangeRequestAni* unwrapp(ani_env *env, ani_object object);
+    static std::vector<std::shared_ptr<FileAsset>> fileAssets_;
+    static std::vector<AssetsChangeOperation> assetsChangeOperations_;
+    static std::vector<std::string> GetFileAssetUriArray();
+    static bool GetFavoriteStatus();
+    static bool GetHiddenStatus();
+    static bool SetAssetsPropertyExecute(const AssetsChangeOperation& changeOperation);
+    virtual ani_status ApplyChanges(ani_env *env, ani_object aniObject) override;
 
-struct MediaAssetsChangeRequestAniContext : public AniError {
-    MediaAssetsChangeRequestAni* objectInfo;
-    std::vector<AssetsChangeOperation> assetsChangeOperations;
+private:
+    static bool isFavorite_;
+    static bool isHidden_;
 };
 } // namespace Media
 } // namespace OHOS
+
 #endif // FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_ASSETS_CHANGE_REQUEST_HANDLEIMPL_H

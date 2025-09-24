@@ -21,7 +21,6 @@ namespace OHOS {
 namespace Media {
 MediaChangeRequestAni* MediaChangeRequestAni::Unwrap(ani_env *env, ani_object aniObject)
 {
-    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     ani_long nativeHandle;
     if (ANI_OK != env->Object_GetFieldByName_Long(aniObject, "nativeHandle", &nativeHandle)) {
         return nullptr;

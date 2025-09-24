@@ -16,46 +16,47 @@
 #ifndef __MEDIA_ANI_NATIVE_IMPL_H__
 #define __MEDIA_ANI_NATIVE_IMPL_H__
 
-#include <memory>
+#include <array>
 #include <string>
+#include <memory>
 #include <vector>
-#include "datashare_predicates.h"
+#include <functional>
+
 #include "fetch_result.h"
 #include "file_asset.h"
+#include "datashare_predicates.h"
 #include "media_library_ani.h"
+#include "medialibrary_ani_utils.h"
 
 namespace OHOS {
 namespace Media {
 class MediaAniNativeImpl {
 private:
-    static std::shared_ptr<MediaLibraryAsyncContext> GetAssetsContext(ani_env *env,
-        const std::vector<std::string> &fetchColumns, const DataShare::DataSharePredicates *predicate);
+    static std::shared_ptr<MediaLibraryAsyncContext> GetAssetsContext(const std::vector<std::string> &fetchColumns,
+        const DataShare::DataSharePredicates *predicate);
     static bool HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyncContext> context,
         const DataShare::DataSharePredicates *predicate, const FetchOptionType &fetchOptType);
     static bool GetLocationPredicate(std::shared_ptr<MediaLibraryAsyncContext> context,
         const DataShare::DataSharePredicates *predicate);
-    static bool AddDefaultAssetColumns(ani_env *env, std::vector<std::string> &fetchColumn,
+    static bool AddDefaultAssetColumns(std::vector<std::string> &fetchColumn,
         std::function<bool(const std::string &columnName)> isValidColumn,
         const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
     static bool PhotoAccessGetAssetsExecuteSync(std::shared_ptr<MediaLibraryAsyncContext> context,
         std::vector<std::unique_ptr<FileAsset>>& fileAssetArray);
     static bool PhotoAccessGetAssetsExecute(std::shared_ptr<MediaLibraryAsyncContext> context);
     static bool PhotoAccessGetFileAssetsInfoExecute(std::shared_ptr<MediaLibraryAsyncContext> context,
-        std::vector<std::unique_ptr<FileAsset>> &fileAssetArray);
+        std::vector<std::unique_ptr<FileAsset>>& fileAssetArray);
     static std::unique_ptr<FileAsset> GetNextRowFileAsset(shared_ptr<NativeRdb::ResultSet> resultSet);
     static void GetFileAssetField(int32_t index, string name, const shared_ptr<NativeRdb::ResultSet> resultSet,
         std::unique_ptr<FileAsset> &fileAsset);
-    static bool ExtractSpecialFields(std::shared_ptr<MediaLibraryAsyncContext> context,
-        const DataShare::OperationItem &item, const FetchOptionType &fetchOptType,
-        std::vector<DataShare::OperationItem> &operations);
 
 public:
-    static std::vector<std::unique_ptr<FileAsset>> GetAssetsSync(ani_env *env,
-        const std::vector<std::string> &fetchColumns, const DataShare::DataSharePredicates *predicate);
-    static std::unique_ptr<FetchResult<FileAsset>> GetAssets(ani_env *env,
-        const std::vector<std::string> &fetchColumns, const DataShare::DataSharePredicates *predicate);
-    static std::vector<std::unique_ptr<FileAsset>> GetFileAssetsInfo(ani_env *env,
-        const std::vector<std::string> &fetchColumns, const DataShare::DataSharePredicates *predicate);
+    static std::vector<std::unique_ptr<FileAsset>> GetAssetsSync(const std::vector<std::string> &fetchColumns,
+        const DataShare::DataSharePredicates *predicate);
+    static std::unique_ptr<FetchResult<FileAsset>> GetAssets(const std::vector<std::string> &fetchColumns,
+        const DataShare::DataSharePredicates *predicate);
+    static std::vector<std::unique_ptr<FileAsset>> GetFileAssetsInfo(const std::vector<std::string> &fetchColumns,
+        const DataShare::DataSharePredicates *predicate);
 };
 } // namespace Media
 } // namespace OHOS
