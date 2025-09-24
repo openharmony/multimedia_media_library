@@ -660,7 +660,7 @@ napi_status MediaLibraryNotifyUtils::BuildPauseReasonSubInfos(napi_env env,
     const shared_ptr<Notification::AssetManagerNotifyInfo> &changeInfo, napi_value &result)
 {
     napi_status status = napi_ok;
-    status = MediaLibraryNotifyUtils::SetValueInt32(env, "autoPauseReason", changeInfo->fileId, result);
+    status = MediaLibraryNotifyUtils::SetValueInt32(env, "autoPauseReason", changeInfo->autoPauseReason, result);
     if (status != napi_ok) {
         NAPI_ERR_LOG("set array named property error: fileId");
     }
