@@ -2799,7 +2799,7 @@ static shared_ptr<NativeRdb::ResultSet> GetBurstMemberResultSet(const shared_ptr
         int32_t subtype = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE,
             resultSet, TYPE_INT32));
         bool isBurstCover = (burstLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) &&
-            (subtype == static_cast<int32_t>(BurstCoverLevelType::COVER));
+            (subtype == static_cast<int32_t>(PhotoSubType::BURST));
         if (isBurstCover) {
             string burstKey = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_KEY,
                 resultSet, TYPE_STRING));
