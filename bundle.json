@@ -240,6 +240,15 @@
                 ]
               },
               "name": "//foundation/multimedia/media_library/interfaces/kits/cj:cj_photoaccesshelper_ffi"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/frameworks/ani/src/include",
+                "header_files": [
+                  "media_library_comm_ani.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/frameworks/ani:medialibrary_ani_utils"
             }
         ],
         "test": [
