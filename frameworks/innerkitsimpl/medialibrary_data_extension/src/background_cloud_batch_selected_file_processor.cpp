@@ -484,6 +484,24 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::AddSelectedBatchDownloadTask(
     return E_OK;
 }
 
+int32_t BackgroundCloudBatchSelectedFileProcessor::QueryPercentOnTaskStart(std::string &fileId, int32_t &percent)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "QueryPercentOnTaskStart Failed to get rdbStore.");
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(DownloadResourcesColumn::TABLE);
+    predicates.EqualTo(DownloadResourcesColumn::MEDIA_ID, fileId);
+    auto resultSet = rdbStore->Query(predicates, {DownloadResourcesColumn::MEDIA_PERCENT});
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "QueryPercentOnTaskStart rs is null");
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        percent = GetInt32Val(DownloadResourcesColumn::MEDIA_PERCENT, resultSet);
+        MEDIA_INFO_LOG("BatchSelectFileDownload percent resume fileId %{public}s, percent %{public}d",
+            fileId.c_str(), percent);
+    }
+    resultSet->Close();
+    percent = (percent == -1) ? 0 : percent; // -1 not start
+    return NativeRdb::E_OK;
+}
+
 void BackgroundCloudBatchSelectedFileProcessor::DownloadSelectedBatchFilesExecutor(AsyncTaskData *data)
 {
     auto *taskData = static_cast<BatchDownloadCloudFilesData *>(data);
@@ -504,28 +522,27 @@ void BackgroundCloudBatchSelectedFileProcessor::DownloadSelectedBatchFilesExecut
         return;
     }
     MEDIA_INFO_LOG("BatchSelectFileDownload StartFileCache downloadId: %{public}s.", to_string(downloadId).c_str());
+    int32_t percentDB = 0;
+    QueryPercentOnTaskStart(fileId, percentDB);
     int32_t cnt = GetDownloadFileIdCnt(fileId);
     CheckAndUpdateDownloadFileIdCnt(fileId, cnt);
     InDownloadingFileInfo currentDownloadFileInfo;
     currentDownloadFileInfo.fileId = fileId;
-    currentDownloadFileInfo.percent = 0;
+    currentDownloadFileInfo.percent = percentDB;
     currentDownloadFileInfo.status = BatchDownloadStatus::INIT;
     unique_lock<mutex> downloadLock(downloadResultMutex_);
     downloadResult_[fileId] = BatchDownloadStatus::INIT;
     currentDownloadIdFileInfoMap_[downloadId] = currentDownloadFileInfo;
     downloadLock.unlock();
-    MEDIA_INFO_LOG("BatchSelectFileDownload StartFileCache END");
+    MEDIA_DEBUG_LOG("BatchSelectFileDownload StartFileCache END");
     // 更新任务表
-    ret = UpdateDBProgressInfoForFileId(fileId, 0, -1,
+    ret = UpdateDBProgressInfoForFileId(fileId, percentDB, -1,
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_DOWNLOADING));
-    downloadLock.lock();
-    if (ret == E_OK) {
-        downloadResult_[fileId] = BatchDownloadStatus::SKIP_UPDATE_DB; // 下载过程只更新一次
-    }
-    downloadLock.unlock();
+    CHECK_AND_PRINT_LOG(ret == E_OK,
+        "BatchSelectFileDownload Failed to start Executor UpdateDBProgress, ret: %{public}d", ret);
     // 检查点 批量下载 通知应用 notify type 0 开始进度
     int32_t retProgress = NotificationMerging::ProcessNotifyDownloadProgressInfo(
-        DownloadAssetsNotifyType::DOWNLOAD_PROGRESS, std::stoi(fileId), 0);
+        DownloadAssetsNotifyType::DOWNLOAD_PROGRESS, std::stoi(fileId), percentDB);
     MEDIA_INFO_LOG("BatchSelectFileDownload StartNotify DOWNLOAD_PROGRESS downloadId: %{public}" PRId64
         ", ret: %{public}d", downloadId, retProgress);
 }
@@ -536,6 +553,19 @@ void BackgroundCloudBatchSelectedFileProcessor::StopDownloadFiles(int64_t downlo
         int32_t ret = CloudSyncManager::GetInstance().StopFileCache(downloadId, needClean, -1);
         MEDIA_INFO_LOG("Stop downloading cloud file, err: %{public}d, downloadId: %{public}s",
             ret, to_string(downloadId).c_str());
+        int32_t percent = -1;
+        std::string fileId;
+        unique_lock<mutex> downloadLock(downloadResultMutex_);
+        bool cond = currentDownloadIdFileInfoMap_.find(downloadId) == currentDownloadIdFileInfoMap_.end();
+        CHECK_AND_RETURN_WARN_LOG(!cond, "downloadId progress not update, downloadId: %{public}s,",
+            to_string(downloadId).c_str());
+        fileId = currentDownloadIdFileInfoMap_[downloadId].fileId;
+        percent = currentDownloadIdFileInfoMap_[downloadId].percent;
+        downloadLock.unlock();
+        CHECK_AND_RETURN_LOG(!fileId.empty(), "fileId invalid, skip update progress");
+        ret = UpdateDBProgressInfoForFileId(fileId, percent, -1, -1);
+        MEDIA_INFO_LOG("BatchSelectFileDownload stop update downloadId: %{public}s, percent: %{public}d,"
+            "ret: %{public}d", fileId.c_str(), percent, ret);
     }
 }
 
@@ -636,17 +666,16 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedSuccessCallba
     downloadFileIdAndCount_.erase(fileId);
     currentDownloadIdFileInfoMap_.erase(progress.downloadId);
     downloadLock.unlock();
-
     MEDIA_INFO_LOG("BatchSelectFileDownload SuccessCallback download success, fileId: %{public}s.", fileId.c_str());
-    // 检查点 批量下载 通知应用 notify type 1 完成
-    CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s", fileId.c_str());
-    int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FINISH,
-        std::stoi(fileId), 100);
-    MEDIA_INFO_LOG("BatchSelectFileDownload SuccessCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
     // 更新任务表
-    ret = UpdateDBProgressInfoForFileId(fileId, 100, MediaFileUtils::UTCTimeSeconds(), // 100 finish
+    int32_t ret = UpdateDBProgressInfoForFileId(fileId, 100, MediaFileUtils::UTCTimeSeconds(), // 100 finish
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_SUCCESS));
     MEDIA_INFO_LOG("BatchSelectFileDownload SuccessCallback UpdateDBProgress, ret: %{public}d", ret);
+    // 检查点 批量下载 通知应用 notify type 1 完成
+    CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s", fileId.c_str());
+    ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FINISH,
+        std::stoi(fileId), 100); // 100 finish
+    MEDIA_INFO_LOG("BatchSelectFileDownload SuccessCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
 }
 
 void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallback(const DownloadProgressObj& progress)
@@ -680,16 +709,16 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallbac
             "downloadId: %{public}" PRId64, fileId.c_str(), progress.downloadId);
         int32_t percent = (100 * progress.downloadedSize) / progress.totalSize;
         MEDIA_INFO_LOG("BatchSelectFileDownload FailedCallback, percent: %{public}d", percent);
+        // 更新任务表
+        int32_t ret = UpdateDBProgressInfoForFileId(fileId, percent, -1,
+            static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL));
+        MEDIA_INFO_LOG("BatchSelectFileDownload FailedCallback UpdateDBProgress, ret: %{public}d", ret);
         // 检查点 批量下载 通知应用 notify type 2 失败
         CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s",
             fileId.c_str());
-        int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FAILED,
+        ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FAILED,
             std::stoi(fileId), percent);
         MEDIA_INFO_LOG("BatchSelectFileDownload FailedCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
-        // 更新任务表
-        ret = UpdateDBProgressInfoForFileId(fileId, percent, -1,
-            static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL));
-        MEDIA_INFO_LOG("BatchSelectFileDownload FailedCallback UpdateDBProgress, ret: %{public}d", ret);
     }
 }
 
@@ -886,6 +915,10 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::UpdateAllAutoPauseDownloadRes
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_SUCCESS));
     predicates.And()->NotEqualTo(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL));
+    predicates.And()->NotEqualTo(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
+        static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_PAUSE));
+    predicates.And()->NotEqualTo(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
+        static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_AUTO_PAUSE));
     value.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_AUTO_PAUSE));
     value.PutInt(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON,
@@ -1098,7 +1131,7 @@ void BackgroundCloudBatchSelectedFileProcessor::TriggerPauseBatchDownloadProcess
 {
     CHECK_AND_RETURN_LOG(!fileIdsDownloading.empty(), "UpdatePauseDownload empty");
     if (BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning()) {
-        MEDIA_INFO_LOG("LaunchBatchDownloadProcessor TriggerPauseBatchDownloadProcessor End");
+        MEDIA_INFO_LOG("BatchSelectFileDownload TriggerPauseBatchDownloadProcessor IN");
         CHECK_AND_RETURN_INFO_LOG(GetDownloadQueueSizeWithLock() != 0,
             "Not downloading, skip StopDownloadFiles");
         std::vector<int64_t> needStopDownloadIds;

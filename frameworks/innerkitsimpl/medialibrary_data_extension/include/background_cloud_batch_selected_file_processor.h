@@ -125,6 +125,7 @@ private:
     EXPORT static int32_t ClassifyFileIdsInDownloadResourcesTable(const std::vector<std::string> &fileIds,
         std::vector<std::string> &existedIds);
     EXPORT static int32_t DeleteCancelStateDownloadResources(const std::vector<std::string> &fileIds);
+    EXPORT static int32_t QueryPercentOnTaskStart(std::string &fileId, int32_t &percent);
 
     // Auto pause resume
     EXPORT static int32_t UpdateAllAutoPauseDownloadResourcesInfo(BatchDownloadAutoPauseReasonType &autoPauseReason);
