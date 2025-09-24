@@ -16,14 +16,15 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_FETCH_RESULT_ANI_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_FETCH_RESULT_ANI_H
 
-#include <memory>
-#include <vector>
+#include <ani.h>
 #include "ani_error.h"
+#include "datashare_helper.h"
+#include "datashare_predicates.h"
+#include "photo_album.h"
+#include "values_bucket.h"
 #include "fetch_result.h"
 #include "file_asset.h"
-
-typedef struct napi_env__* napi_env;
-typedef struct napi_value__* napi_value;
+#include "medialibrary_type_const.h"
 
 namespace OHOS {
 namespace Media {
@@ -41,18 +42,15 @@ class FetchFileResultAni {
 public:
     FetchFileResultAni() = default;
     ~FetchFileResultAni() = default;
-    static ani_status UserFileMgrInit(ani_env *env);
-    static ani_status PhotoAccessHelperInit(ani_env *env);
+    static ani_status FetchFileResultInit(ani_env *env);
     static FetchFileResultAni* Unwrap(ani_env *env, ani_object fetchFileResultHandle);
     static ani_object Constructor(ani_env *env, [[maybe_unused]] ani_class clazz);
+
     static ani_object GetAllObjects(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
-    static ani_boolean IsAfterLast([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_status Close(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_object GetFirstObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_object GetNextObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
-    static ani_object GetLastObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
-    static ani_object GetPositionObject(ani_env *env, ani_object fetchFileResultHandle, ani_int index);
-    static ani_int GetCount([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
+    static ani_double GetCount([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
 
     static ani_object CreateFetchFileResult(ani_env *env, std::unique_ptr<FetchResult<FileAsset>> fileResult);
     static ani_object CreateFetchFileResult(ani_env *env, std::unique_ptr<FetchResult<PhotoAlbum>> fileResult);
@@ -60,9 +58,6 @@ public:
     std::shared_ptr<FetchResult<AlbumAsset>> GetFetchAlbumResultObject();
     std::shared_ptr<FetchResult<PhotoAlbum>> GetFetchPhotoAlbumResultObject();
     std::shared_ptr<FetchResult<SmartAlbumAsset>> GetFetchSmartAlbumResultObject();
-
-    static ani_ref TransferToDynamicFetchResult(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
-    static ani_object TransferToStaticFetchResult(ani_env *env, [[maybe_unused]] ani_class, ani_object input);
 
     FetchResType GetFetchResType();
     bool CheckIfPropertyPtrNull();
@@ -74,16 +69,6 @@ public:
 private:
     EXPORT static void GetFetchResult(unique_ptr<FetchFileResultAni> &obj);
     EXPORT static ani_object FetchFileResultAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz);
-    EXPORT static napi_value CreateFetchFileResultNapiByType(napi_env jsEnv,
-        FetchResType fetchType, FetchFileResultAni *aniFetchFileResult);
-    EXPORT static bool CreateFetchFileResultNapiFile(napi_env jsEnv, napi_value &result,
-    FetchFileResultAni *aniFetchFileResult);
-    EXPORT static bool CreateFetchFileResultNapiAlbum(napi_env jsEnv, napi_value &result,
-    FetchFileResultAni *aniFetchFileResult);
-    EXPORT static bool CreateFetchFileResultNapiPhotoAlbum(napi_env jsEnv, napi_value &result,
-    FetchFileResultAni *aniFetchFileResult);
-    EXPORT static bool CreateFetchFileResultNapiSmartAlbum(napi_env jsEnv, napi_value &result,
-    FetchFileResultAni *aniFetchFileResult);
 
     ani_env *env_;
     std::shared_ptr<FetchResultProperty> propertyPtr;

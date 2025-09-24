@@ -19,7 +19,9 @@
 #include <ani.h>
 #include <memory>
 #include <string>
+
 #include "file_asset.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {

@@ -16,14 +16,14 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_LIBRARY_ENUM_ANI_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_LIBRARY_ENUM_ANI_H
 
-#include <ani.h>
 #include <string>
-
+#include "ani.h"
 #include "userfile_manager_types.h"
-#include "media_asset_data_handler_ani.h"
+#include "media_asset_data_handler_capi.h"
 
 namespace OHOS {
 namespace Media {
+
 class MediaLibraryEnumAni {
 public:
     static ani_status EnumGetValueInt32(ani_env *env, ani_enum_item enumItem, int32_t &value);
@@ -39,6 +39,7 @@ public:
     static ani_status ToAniEnum(ani_env *env, MovingPhotoEffectMode value, ani_enum_item &aniEnumItem);
     static ani_status ToAniEnum(ani_env *env, CloudEnhancementTaskStage value, ani_enum_item &aniEnumItem);
 };
+
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_LIBRARY_ENUM_ANI_H
