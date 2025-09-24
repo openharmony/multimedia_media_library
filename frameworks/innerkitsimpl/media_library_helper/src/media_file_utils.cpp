@@ -91,6 +91,7 @@ const std::string DEFAULT_AUDIO_NAME = "AUD_";
 const int64_t UNIT = 1000;
 const int64_t STD_UNIT = 1024;
 const int64_t THRESHOLD = 512;
+const int64_t VIRTUAL_ID_MAX_SIZE = 18;
 const std::string DATA_PATH = "/data/storage/el2/base";
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
 #define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
@@ -487,13 +488,14 @@ bool MediaFileUtils::CreateFile(const string &filePath)
         return state;
     }
 
-    ofstream file(filePath);
+    auto normalizedDstPath = std::filesystem::absolute(filePath).lexically_normal();
+    ofstream file(normalizedDstPath);
     if (!file) {
         MEDIA_ERR_LOG("Output file path could not be created");
         return state;
     }
 
-    if (chmod(filePath.c_str(), CHOWN_RW_USR_GRP) == E_SUCCESS) {
+    if (chmod(normalizedDstPath.c_str(), CHOWN_RW_USR_GRP) == E_SUCCESS) {
         state = true;
     } else {
         MEDIA_ERR_LOG("Failed to change permissions, error: %{public}d", errno);
@@ -1004,16 +1006,21 @@ bool MediaFileUtils::WriteStrToFile(const string &filePath, const string &str)
         return false;
     }
 
-    ofstream file(filePath);
+    string absFilePath;
+    if (!PathToRealPath(filePath, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
+        return false;
+    }
+    ofstream file(absFilePath);
     if (!file.is_open()) {
-        MEDIA_ERR_LOG("Can not open FilePath %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("Can not open FilePath %{private}s", absFilePath.c_str());
         return false;
     }
 
     file << str;
     file.close();
     if (!file.good()) {
-        MEDIA_ERR_LOG("Can not write FilePath %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("Can not write FilePath %{private}s", absFilePath.c_str());
         return false;
     }
     return true;
@@ -1633,7 +1640,8 @@ int32_t MediaFileUtils::CreateAsset(const string &filePath)
         }
     }
 
-    ofstream file(filePath);
+    auto normalizedDstPath = std::filesystem::absolute(filePath).lexically_normal();
+    ofstream file(normalizedDstPath);
     if (!file) {
         MEDIA_ERR_LOG("Output file path could not be created errno %{public}d", errno);
         return errCode;
@@ -1947,6 +1955,10 @@ string MediaFileUtils::GetTableFromVirtualUri(const std::string &virtualUri)
         return "";
     }
     string virtualId = uri.GetFileId();
+    if (virtualId.size() > VIRTUAL_ID_MAX_SIZE) {
+        MEDIA_ERR_LOG("virtualId too long");
+        return "";
+    }
     if (std::all_of(virtualId.begin(), virtualId.end(), ::isdigit)) {
         int64_t id = stol(virtualId);
         int64_t remainNumber = id % VIRTUAL_ID_DIVIDER;
