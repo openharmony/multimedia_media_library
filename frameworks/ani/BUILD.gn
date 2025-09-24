@@ -17,7 +17,6 @@ import("//foundation/multimedia/media_library/media_library.gni")
 
 group("media_library_ani") {
   deps = [
-    ":medialibrary_ani_utils",
     ":photo_access_helper_ani",
     ":photo_access_helper_etc",
   ]
