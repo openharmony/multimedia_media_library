@@ -248,4 +248,465 @@ HWTEST_F(CloudMediaDataClientInnerApiTest, MDKError_GetErrorType_Test, TestSize.
     ASSERT_TRUE(mdkError);
     EXPECT_EQ(mdkError->GetErrorType(), MDKErrorType::TYPE_UNKNOWN);
 }
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_GetInt_Test_01, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(1.1);
+    ASSERT_TRUE(field);
+    int result = 0;
+    auto ret = field->GetInt(result);
+    EXPECT_EQ(ret, MDKLocalErrorCode::DATA_TYPE_ERROR);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_GetLong_Test_01, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(1.1);
+    ASSERT_TRUE(field);
+    int64_t result = 0;
+    auto ret = field->GetLong(result);
+    EXPECT_EQ(ret, MDKLocalErrorCode::DATA_TYPE_ERROR);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_GetDouble_Test_01, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(1);
+    ASSERT_TRUE(field);
+    double result = 0;
+    auto ret = field->GetDouble(result);
+    EXPECT_EQ(ret, MDKLocalErrorCode::DATA_TYPE_ERROR);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_GetBool_Test_01, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(1.1);
+    ASSERT_TRUE(field);
+    bool result = false;
+    auto ret = field->GetBool(result);
+    EXPECT_EQ(ret, MDKLocalErrorCode::DATA_TYPE_ERROR);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_GetString_Test_01, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(1);
+    ASSERT_TRUE(field);
+    string result;
+    auto ret = field->GetString(result);
+    EXPECT_EQ(ret, MDKLocalErrorCode::DATA_TYPE_ERROR);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_GetBlob_Test_01, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(1);
+    ASSERT_TRUE(field);
+    std::vector<uint8_t> result;
+    auto ret = field->GetBlob(result);
+    EXPECT_EQ(ret, MDKLocalErrorCode::DATA_TYPE_ERROR);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_GetRecordList_Test_01, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(1);
+    ASSERT_TRUE(field);
+    std::vector<MDKRecordField> result;
+    auto ret = field->GetRecordList(result);
+    EXPECT_EQ(ret, MDKLocalErrorCode::DATA_TYPE_ERROR);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_GetRecordMap_Test_01, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(1);
+    ASSERT_TRUE(field);
+    std::map<std::string, MDKRecordField> result;
+    auto ret = field->GetRecordMap(result);
+    EXPECT_EQ(ret, MDKLocalErrorCode::DATA_TYPE_ERROR);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_GetAsset_Test_01, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(1);
+    ASSERT_TRUE(field);
+    MDKAsset result;
+    auto ret = field->GetAsset(result);
+    EXPECT_EQ(ret, MDKLocalErrorCode::DATA_TYPE_ERROR);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_GetReference_Test_01, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(1);
+    ASSERT_TRUE(field);
+    MDKReference result;
+    auto ret = field->GetReference(result);
+    EXPECT_EQ(ret, MDKLocalErrorCode::DATA_TYPE_ERROR);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ToJsonValue_Test_01, TestSize.Level1)
+{
+    std::vector<uint8_t> blobField;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(blobField);
+    ASSERT_TRUE(field);
+    Json::Value jsonValue = field->ToJsonValue();
+    EXPECT_TRUE(jsonValue.isNull());
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseFromJsonValue_Test_01, TestSize.Level1)
+{
+    int64_t value = 1;
+    Json::Value jsonValue = value;
+    MDKSchemaField schema;
+    schema.type = MDKRecordFieldType::FIELD_TYPE_INT;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseFromJsonValue(schema, jsonValue);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseFromJsonValue_Test_02, TestSize.Level1)
+{
+    double value = 1;
+    Json::Value jsonValue = value;
+    MDKSchemaField schema;
+    schema.type = MDKRecordFieldType::FIELD_TYPE_DOUBLE;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseFromJsonValue(schema, jsonValue);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseFromJsonValue_Test_03, TestSize.Level1)
+{
+    Json::Value jsonValue;
+    MDKSchemaField schema;
+    schema.type = MDKRecordFieldType::FIELD_TYPE_NULL;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseFromJsonValue(schema, jsonValue);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseFromJsonValue_Test_04, TestSize.Level1)
+{
+    std::string value = "test";
+    Json::Value jsonValue = value;
+    MDKSchemaField schema;
+    schema.type = MDKRecordFieldType::FIELD_TYPE_STRING;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseFromJsonValue(schema, jsonValue);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseFromJsonValue_Test_05, TestSize.Level1)
+{
+    bool value = true;
+    Json::Value jsonValue = value;
+    MDKSchemaField schema;
+    schema.type = MDKRecordFieldType::FIELD_TYPE_BOOL;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseFromJsonValue(schema, jsonValue);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseFromJsonValue_Test_06, TestSize.Level1)
+{
+    Json::Value jsonValue(Json::arrayValue);
+    jsonValue.append("a");
+    jsonValue.append("b");
+    jsonValue.append("c");
+    MDKSchemaField schema;
+    schema.type = MDKRecordFieldType::FIELD_TYPE_LIST;
+    schema.listType = MDKRecordFieldType::FIELD_TYPE_STRING;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseFromJsonValue(schema, jsonValue);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseFromJsonValue_Test_07, TestSize.Level1)
+{
+    Json::Value jsonValue(Json::objectValue);
+    jsonValue["1"] = static_cast<int64_t>(1);
+    jsonValue["2"] = 1.11;
+    jsonValue["3"] = "test";
+    jsonValue["4"] = true;
+    MDKSchemaField schema;
+    schema.type = MDKRecordFieldType::FIELD_TYPE_MAP;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseFromJsonValue(schema, jsonValue);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseFromJsonValue_Test_08, TestSize.Level1)
+{
+    Json::Value jsonValue;
+    MDKSchemaField schema;
+    schema.type = MDKRecordFieldType::FIELD_TYPE_BLOB;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseFromJsonValue(schema, jsonValue);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseFromJsonValue_Test_09, TestSize.Level1)
+{
+    Json::Value jsonValue(Json::objectValue);
+    jsonValue["assetOperType"] = 2;
+    MDKSchemaField schema;
+    schema.type = MDKRecordFieldType::FIELD_TYPE_ASSET;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseFromJsonValue(schema, jsonValue);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseFromJsonValue_Test_10, TestSize.Level1)
+{
+    Json::Value jsonValue(Json::objectValue);
+    jsonValue["recordId"] = "testId";
+    jsonValue["recordType"] = "testType";
+    MDKSchemaField schema;
+    schema.type = MDKRecordFieldType::FIELD_TYPE_REFERENCE;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseFromJsonValue(schema, jsonValue);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseIntFromJson_Test_01, TestSize.Level1)
+{
+    string value = "";
+    Json::Value jsonValue = value;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseIntFromJson(jsonValue);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseDoubleFromJson_Test_01, TestSize.Level1)
+{
+    string value = "";
+    Json::Value jsonValue = value;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseDoubleFromJson(jsonValue);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseStringFromJson_Test_01, TestSize.Level1)
+{
+    int32_t value = 1;
+    Json::Value jsonValue = value;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseStringFromJson(jsonValue);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseBoolFromJson_Test_01, TestSize.Level1)
+{
+    int32_t value = 1;
+    Json::Value jsonValue = value;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseBoolFromJson(jsonValue);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseListFromJson_Test_01, TestSize.Level1)
+{
+    int32_t value = 1;
+    Json::Value jsonValue = value;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseListFromJson(MDKRecordFieldType::FIELD_TYPE_STRING, jsonValue);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseListFromJson_Test_02, TestSize.Level1)
+{
+    Json::Value jsonValue(Json::arrayValue);
+    jsonValue.append("a");
+    jsonValue.append("b");
+    jsonValue.append("c");
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseListFromJson(MDKRecordFieldType::FIELD_TYPE_STRING, jsonValue);
+    EXPECT_TRUE(ret);
+    ret = field->ParseListFromJson(MDKRecordFieldType::FIELD_TYPE_INT, jsonValue);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseMapFromJson_Test_01, TestSize.Level1)
+{
+    int32_t value = 1;
+    Json::Value jsonValue = value;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseMapFromJson(jsonValue);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseMapFromJson_Test_02, TestSize.Level1)
+{
+    Json::Value jsonValue(Json::objectValue);
+    jsonValue["1"] = Json::nullValue;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseMapFromJson(jsonValue);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseAssetFromJson_Test_01, TestSize.Level1)
+{
+    int32_t value = 1;
+    Json::Value jsonValue = value;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseAssetFromJson(jsonValue);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseAssetFromJson_Test_02, TestSize.Level1)
+{
+    Json::Value jsonValue(Json::objectValue);
+    jsonValue["assetOperType"] = -10;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseAssetFromJson(jsonValue);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseAssetFromJson_Test_03, TestSize.Level1)
+{
+    Json::Value jsonValue(Json::objectValue);
+    jsonValue["assetOperType"] = 100;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseAssetFromJson(jsonValue);
+    EXPECT_TRUE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_ParseReferenceFromJson_Test_01, TestSize.Level1)
+{
+    int32_t value = 1;
+    Json::Value jsonValue = value;
+    std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>();
+    ASSERT_TRUE(field);
+    bool ret = field->ParseReferenceFromJson(jsonValue);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecord_ToJsonValue_Test_01, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecord> record = std::make_shared<MDKRecord>();
+    ASSERT_TRUE(record);
+    record->SetRecordType("media");
+    std::vector<MDKRecordField> fieldVec;
+    MDKRecordField innerField(1);
+    fieldVec.emplace_back(innerField);
+    MDKRecordField fieldList(fieldVec);
+    record->fields_["attachments"] = fieldList;
+    MDKRelation relation {"test", "test", "1"};
+    record->relations_.emplace_back(relation);
+    Json::Value jsonValue = record->ToJsonValue();
+    EXPECT_EQ(jsonValue["attachments"][0]["asset"].asInt(), 1);
+    EXPECT_EQ(jsonValue["relations"][0]["relationName"].asString(), "test");
+    EXPECT_FALSE(jsonValue.isMember("isShared"));
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecord_ToJsonValue_Test_02, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecord> record = std::make_shared<MDKRecord>();
+    ASSERT_TRUE(record);
+    record->SetRecordType("media");
+    MDKRecordField innerField(1);
+    record->fields_["attachments"] = innerField;
+    Json::Value jsonValue = record->ToJsonValue();
+    EXPECT_EQ(jsonValue["attachments"].asInt(), 1);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecord_ParseFromJsonValue_Test_01, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecord> record = std::make_shared<MDKRecord>();
+    ASSERT_TRUE(record);
+    MDKSchema schema;
+    Json::Value jvData;
+    jvData["recordId"] = "123";
+    jvData["recordType"] = "invalidType";
+    bool ret = record->ParseFromJsonValue(schema, jvData);
+    EXPECT_FALSE(ret);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecord_ParseFromJsonValue_Test_02, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecord> record = std::make_shared<MDKRecord>();
+    ASSERT_TRUE(record);
+    MDKSchemaNode schemaNode;
+    MDKSchemaField field1;
+    field1.type = MDKRecordFieldType::FIELD_TYPE_INT;
+    MDKSchemaField field2;
+    field1.type = MDKRecordFieldType::FIELD_TYPE_INT;
+    schemaNode.fields["field1"] = field1;
+    schemaNode.fields["field2"] = field2;
+    MDKSchema schema;
+    schema.recordTypes["testType"] = schemaNode;
+
+    Json::Value jvData;
+    jvData["recordId"] = "123";
+    jvData["recordType"] = "testType";
+    jvData["deleted"] = false;
+    jvData["isNew"] = true;
+    jvData["version"] = 1;
+    jvData["createdTime"] = 1625107200;
+    jvData["editedTime"] = 1625107200;
+    jvData["ownerId"] = "owner123";
+    jvData["shareUri"] = "share123";
+    jvData["privilege"] = 1;
+    jvData["isShared"] = true;
+    
+    Json::Value jvRecord;
+    jvRecord["field1"] = "value1";
+    jvRecord["field2"] = 123;
+    jvRecord["field3"] = 123;
+    jvData["record"] = jvRecord;
+    
+    bool result = record->ParseFromJsonValue(schema, jvData);
+    EXPECT_TRUE(result);
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecord_ParseFromJsonValue_Test_03, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecord> record = std::make_shared<MDKRecord>();
+    ASSERT_TRUE(record);
+    MDKSchemaNode schemaNode;
+    MDKSchema schema;
+    schema.recordTypes["testType"] = schemaNode;
+
+    Json::Value jvData;
+    jvData["recordId"] = "123";
+    jvData["recordType"] = "testType";
+    
+    bool result = record->ParseFromJsonValue(schema, jvData);
+    EXPECT_TRUE(result);
+    EXPECT_TRUE(record->fields_.empty());
+}
+
+HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecord_ParseFromJsonValue_Test_04, TestSize.Level1)
+{
+    std::shared_ptr<MDKRecord> record = std::make_shared<MDKRecord>();
+    ASSERT_TRUE(record);
+    MDKSchemaNode schemaNode;
+    MDKSchema schema;
+    schema.recordTypes["testType"] = schemaNode;
+
+    Json::Value jvData;
+    jvData["recordId"] = "123";
+    jvData["recordType"] = "testType";
+    jvData["record"] = "invalid";
+    
+    bool result = record->ParseFromJsonValue(schema, jvData);
+    EXPECT_TRUE(result);
+    EXPECT_TRUE(record->fields_.empty());
+}
 }
