@@ -262,7 +262,7 @@ HWTEST_F(CloudMediaDataClientInnerApiTest, MDKRecordField_GetLong_Test_01, TestS
 {
     std::shared_ptr<MDKRecordField> field = std::make_shared<MDKRecordField>(1.1);
     ASSERT_TRUE(field);
-    long result = 0l;
+    int64_t result = 0;
     auto ret = field->GetLong(result);
     EXPECT_EQ(ret, MDKLocalErrorCode::DATA_TYPE_ERROR);
 }
