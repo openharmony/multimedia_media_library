@@ -126,7 +126,7 @@ const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_EXCEPTION_MAP 
 const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
     { PhotoColumn::PHOTOS_TABLE,
         {
-            PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::PHOTO_DIRTY,
+            PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE,
             PhotoColumn::PHOTO_SYNC_STATUS, PhotoColumn::PHOTO_CLOUD_VERSION, PhotoColumn::PHOTO_POSITION,
             PhotoColumn::PHOTO_THUMB_STATUS, PhotoColumn::PHOTO_CLEAN_FLAG, // cloud related
             PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, // thumbnail related
@@ -2845,8 +2845,7 @@ bool CloneRestore::CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus switchStat
         static_cast<int>(switchStatus));
     auto expectedSrcSouthDeviceType = PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP.at(switchStatus);
     for (const auto& southDeviceType : srcUniqueSouthDeviceTypes) {
-        CHECK_AND_RETURN_RET_LOG(southDeviceType == SouthDeviceType::SOUTH_DEVICE_NULL ||
-            southDeviceType == expectedSrcSouthDeviceType, false,
+        CHECK_AND_RETURN_RET_LOG(southDeviceType == expectedSrcSouthDeviceType, false,
             "south_device_type:%{public}d is not expected, expect %{public}d",
             static_cast<int32_t>(southDeviceType), static_cast<int32_t>(expectedSrcSouthDeviceType));
     }
