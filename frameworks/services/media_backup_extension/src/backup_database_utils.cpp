@@ -1212,24 +1212,23 @@ BackupDatabaseUtils::ConfigInfoType BackupDatabaseUtils::QueryConfigInfo(
     return configInfo;
 }
 
-std::vector<SouthDeviceType> BackupDatabaseUtils::QueryPhotoUniqueSouthDeviceType(
-    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+bool BackupDatabaseUtils::QueryPhotoUniqueSouthDeviceType(
+    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::vector<SouthDeviceType>& uniqueSouthDeviceType)
 {
-    std::vector<SouthDeviceType> uniqueSouthDeviceType;
     MEDIA_DEBUG_LOG("QueryPhotoUniqueSouthDeviceType sql: %{public}s",
         SQL_QUERY_PHOTO_UNIQUE_SOUTH_DEVICE_TYPE.c_str());
     auto resultSet = GetQueryResultSet(rdbStore, SQL_QUERY_PHOTO_UNIQUE_SOUTH_DEVICE_TYPE);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, uniqueSouthDeviceType, "resultSet in nullptr");
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultSet in nullptr");
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int southDeviceTypeInt = GetInt32Val(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, resultSet);
-        CHECK_AND_RETURN_RET_LOG(INT_SOUTH_DEVICE_TYPE_MAP.count(southDeviceTypeInt), {},
+        CHECK_AND_RETURN_RET_LOG(INT_SOUTH_DEVICE_TYPE_MAP.count(southDeviceTypeInt), false,
             "invalid SouthDeviceType value: %{public}d", southDeviceTypeInt);
         uniqueSouthDeviceType.push_back(INT_SOUTH_DEVICE_TYPE_MAP.at(southDeviceTypeInt));
         MEDIA_INFO_LOG("south_device_type: %{public}d", southDeviceTypeInt);
     }
     resultSet->Close();
-    return uniqueSouthDeviceType;
+    return true;
 }
 
 bool BackupDatabaseUtils::ClearConfigInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)

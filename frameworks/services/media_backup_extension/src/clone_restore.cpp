@@ -2836,10 +2836,11 @@ void CloneRestore::BackupRelease()
 bool CloneRestore::CheckSouthDeviceTypeMatchSwitchStatus(SwitchStatus switchStatus)
 {
     CHECK_AND_RETURN_RET_LOG(this->mediaRdb_, false, "mediaRdb_ is nullptr");
-    auto srcUniqueSouthDeviceTypes = BackupDatabaseUtils::QueryPhotoUniqueSouthDeviceType(this->mediaRdb_);
+    std::vector<SouthDeviceType> srcUniqueSouthDeviceTypes;
+    CHECK_AND_RETURN_RET_LOG(
+        BackupDatabaseUtils::QueryPhotoUniqueSouthDeviceType(this->mediaRdb_, srcUniqueSouthDeviceTypes), false,
+        "fail to query unique south_device_type");
 
-    CHECK_AND_RETURN_RET_LOG(!srcUniqueSouthDeviceTypes.empty(), false,
-        "there is no south_device_type in origin db");
     CHECK_AND_RETURN_RET_LOG(PHOTO_SYNC_OPTION_SOUTH_DEVICE_TYPE_MAP.count(switchStatus),
         false, "cannot transfer srcSwitchStatus:%{public}d to srcSouthDeviceType",
         static_cast<int>(switchStatus));
