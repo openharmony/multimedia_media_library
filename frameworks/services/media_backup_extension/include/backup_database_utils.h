@@ -156,8 +156,8 @@ public:
         const std::string &tableName, bool& result);
     static ConfigInfoType QueryConfigInfo(
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    static std::vector<SouthDeviceType> QueryPhotoUniqueSouthDeviceType(
-        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static bool QueryPhotoUniqueSouthDeviceType(
+        const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::vector<SouthDeviceType>& uniqueSouthDeviceType);
     static bool ClearConfigInfo(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 
 private:
