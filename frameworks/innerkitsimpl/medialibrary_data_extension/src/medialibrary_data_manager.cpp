@@ -23,6 +23,7 @@
 #include <unordered_set>
 #include <sstream>
 #include <regex>
+#include <iomanip>
 
 #include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
@@ -2345,6 +2346,14 @@ inline bool CheckLatitudeAndLongitude(const string &latitude, const string &long
     return latitude != "" && longitude != "" && !(latitude == "0" && longitude == "0");
 }
 
+static string ConvertDoubleToString(double value)
+{
+    const int precision = 17;
+    std::ostringstream stringStream;
+    stringStream << std::setprecision(precision) << std::fixed  << value; //
+    return stringStream.str();
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryGeo(const RdbPredicates &rdbPredicates,
     const vector<string> &columns)
 {
@@ -2360,8 +2369,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryGeo(const RdbPred
     CHECK_AND_RETURN_RET_LOG(queryResult->GoToNextRow() == NativeRdb::E_OK, queryResult,
         "Query Geographic Information Failed, fileId: %{public}s", fileId.c_str());
 
-    string latitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, queryResult);
-    string longitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult);
+    string latitude = ConvertDoubleToString(GetDoubleVal(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, queryResult));
+    string longitude = ConvertDoubleToString(GetDoubleVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult));
     string addressDescription = GetStringVal(ADDRESS_DESCRIPTION, queryResult);
     MEDIA_INFO_LOG(
         "QueryGeo, fileId: %{public}s, latitude: %{private}s, longitude: %{private}s, addressDescription: %{private}s",
