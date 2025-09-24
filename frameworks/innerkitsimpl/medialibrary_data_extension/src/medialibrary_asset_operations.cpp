@@ -125,6 +125,11 @@ struct DeletedFilesParams {
     bool containsHidden = false;
 };
 
+const static vector<string> PHOTO_COLUMN_VECTOR = {
+    MediaColumn::MEDIA_NAME,
+    PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
+};
+
 const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { MediaColumn::MEDIA_ID, MEMBER_TYPE_INT32 },
     { MediaColumn::MEDIA_FILE_PATH, MEMBER_TYPE_STRING },
@@ -838,6 +843,10 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const strin
                 fileAsset = GetFileAssetFromDb(MediaColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_AUDIO, columns);
             }
         } else {
+            if (isPhoto) {
+                fileAsset = GetFileAssetFromDb(MediaColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_PHOTO,
+                PHOTO_COLUMN_VECTOR);
+            }
             fileAsset->SetPath(path);
             fileAsset->SetMediaType(MediaFileUtils::GetMediaType(path));
             if (MediaFileUtils::IsValidInteger(pendingStatus)) {
