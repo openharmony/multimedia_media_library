@@ -619,7 +619,8 @@ static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStor
         ResultSetDataType columnType = it->second;
         ParsingAndFillValue(values, columnName, columnType, resultSet);
         if (columnName == PhotoColumn::PHOTO_FILE_SOURCE_TYPE) {
-            values.Put(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceTypes::MEDIA));
+            values.Delete(PhotoColumn::PHOTO_FILE_SOURCE_TYPE);	
+            values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceTypes::MEDIA));
         }
     }
     if (copyInfo.isCopyThumbnail) {
