@@ -11082,8 +11082,14 @@ static bool ParseAndSetFileUriArray(const napi_env &env, OHOS::AAFwk::Want &want
             return false;
         }
         NAPI_INFO_LOG("srcFileUri is %{public}s.", srcFileUri.c_str());
-        AppFileService::ModuleFileUri::FileUri fileUri(srcFileUri);
-        std::string realUriPath = fileUri.ToString();
+        std::string prefix = "https://";
+        std::string realUriPath = "";
+        if (srcFileUri.find(prefix) == 0) {
+            realUriPath = srcFileUri.c_str();
+        } else {
+            AppFileService::ModuleFileUri::FileUri fileUri(srcFileUri);
+            realUriPath = fileUri.ToString();
+        }
         NAPI_INFO_LOG("realUriPath is %{public}s.", realUriPath.c_str());
 
         srcFileUris.emplace_back(realUriPath);
