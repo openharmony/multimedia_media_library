@@ -74,7 +74,7 @@ static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP
     {ANALYSIS_OCR, OCR_TEXT_MSG}
 };
 static const uint8_t BINARY_FEATURE_END_FLAG = 0x01;
-const size_t MAX_INTEGER = 2147483647;
+const size_t MAX_INT = 2147483648;
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
@@ -341,8 +341,8 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
         NAPI_ERR_LOG("intercepted fileId is empty");
         return ERROR;
     }
-    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit) &&
-        fileIdStr.length() < MAX_INTEGER) {
+    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)
+        && static_cast<size_t>(stoll(fileIdStr)) < MAX_INT) {
         return std::stoi(fileIdStr);
     }
 
