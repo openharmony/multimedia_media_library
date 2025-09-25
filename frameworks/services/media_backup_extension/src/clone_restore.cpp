@@ -49,6 +49,7 @@
 #include "ohos_account_kits.h"
 #include "media_config_info_column.h"
 #include "settings_data_manager.h"
+#include "restore_map_code_utils.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -917,6 +918,10 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
         (long)(startInsertPhoto - startGenerate), (long)photoRowNum, (long)(startInsertRelated - startInsertPhoto),
         (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
         (long)videoFileMoveCount, (long)(startUpdate - startMove), (long)(end - startUpdate));
+
+    int32_t mapErrCode = RestoreMapCodeUtils::FileInfosToMapCode(mediaLibraryRdb_, fileInfos);
+    MEDIA_INFO_LOG("CloneRestore::InsertPhoto FileInfosToMapCode mapErrCode %{public}d \
+        photoRowNum %{public}" PRId64, mapErrCode, photoRowNum);
     return E_OK;
 }
 

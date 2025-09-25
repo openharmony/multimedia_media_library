@@ -55,6 +55,7 @@
 #include "database_report.h"
 #include "ohos_account_kits.h"
 #include "medialibrary_photo_operations.h"
+#include "restore_map_code_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -1171,6 +1172,10 @@ int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos
         startInsert - startGenerate, rowNum, startInsertRelated - startInsert,
         startMove - startInsertRelated, fileMoveCount, fileMoveCount - videoFileMoveCount, videoFileMoveCount,
         startRestore - startMove, startUpdate - startRestore, end - startUpdate);
+
+    int32_t mapErrCode = RestoreMapCodeUtils::FileInfosToMapCode(mediaLibraryRdb_, fileInfos);
+    MEDIA_INFO_LOG("BaseRestore::InsertPhoto FileInfosToMapCode mapErrCode %{public}d photoRowNum %{public}" PRId64,
+        mapErrCode, rowNum);
     return E_OK;
 }
 
