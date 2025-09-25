@@ -18,6 +18,7 @@ group("test") {
     "unittest/album_count_cover_test:AlbumCountCoverTest",
     "unittest/background_cloud_batch_selected_file_processor_test:unittest",
     "unittest/background_cloud_file_processor_test:unittest",
+    "unittest/heif_transcoding_check_utils_test:unittest",
     "unittest/media_albums_controller_service_test:unittest",
     "unittest/media_albums_refresh_test:unittest",
     "unittest/media_analysis_extension_test:unittest",
