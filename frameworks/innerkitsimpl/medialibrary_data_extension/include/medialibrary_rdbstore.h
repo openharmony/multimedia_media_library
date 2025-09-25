@@ -167,6 +167,9 @@ public:
     EXPORT static int32_t UpdateEditDataSize(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::string &photoId, const std::string &photoPath);
 
+    EXPORT static bool AddPhotoMapTable(NativeRdb::RdbStore &store);
+    EXPORT static bool AddPhotoMapTableIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static bool AddPhotoMapTableData(const std::shared_ptr<MediaLibraryRdbStore> store);
 private:
     EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
