@@ -342,7 +342,7 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
         return ERROR;
     }
     if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)
-        && stoll(fileIdStr) < MAX_INT) {
+        && static_cast<size_t>(stoll(fileIdStr)) < MAX_INT) {
         return std::stoi(fileIdStr);
     }
 
