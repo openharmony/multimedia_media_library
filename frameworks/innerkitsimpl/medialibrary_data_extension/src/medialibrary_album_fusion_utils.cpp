@@ -584,6 +584,16 @@ static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& 
     }
 }
 
+static void HandleTempFileAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& resultSet,
+    NativeRdb::ValuesBucket& values)
+{
+    int32_t type = 0;
+    GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_FILE_SOURCE_TYPE, type);
+    if (type == static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) {
+        values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    }
+}
+
 static void HandleCeAvailableValuesBucket(const MediaAssetCopyInfo &copyInfo,
     shared_ptr<NativeRdb::ResultSet>& resultSet, NativeRdb::ValuesBucket& values)
 {
@@ -619,8 +629,7 @@ static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStor
         ResultSetDataType columnType = it->second;
         ParsingAndFillValue(values, columnName, columnType, resultSet);
         if (columnName == PhotoColumn::PHOTO_FILE_SOURCE_TYPE) {
-            values.Delete(PhotoColumn::PHOTO_FILE_SOURCE_TYPE);	
-            values.PutInt(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceTypes::MEDIA));
+            values.Put(PhotoColumn::PHOTO_FILE_SOURCE_TYPE, static_cast<int32_t>(FileSourceTypes::MEDIA));
         }
     }
     if (copyInfo.isCopyThumbnail) {
@@ -649,6 +658,7 @@ static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStor
         values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, GetPackageName());
     }
     HandleLowQualityAssetValuesBucket(resultSet, values);
+    HandleTempFileAssetValuesBucket(resultSet, values);
     HandleCeAvailableValuesBucket(copyInfo, resultSet, values);
     return E_OK;
 }
