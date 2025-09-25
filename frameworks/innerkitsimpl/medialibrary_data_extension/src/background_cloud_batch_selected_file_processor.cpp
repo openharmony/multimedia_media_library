@@ -90,6 +90,7 @@ std::unordered_map<int64_t, BackgroundCloudBatchSelectedFileProcessor::InDownloa
    BackgroundCloudBatchSelectedFileProcessor::currentDownloadIdFileInfoMap_;
 std::mutex BackgroundCloudBatchSelectedFileProcessor::downloadResultMutex_;
 std::mutex BackgroundCloudBatchSelectedFileProcessor::mutexRunningStatus_;
+std::mutex BackgroundCloudBatchSelectedFileProcessor::autoActionMutex_;
 std::unordered_map<std::string, BackgroundCloudBatchSelectedFileProcessor::BatchDownloadStatus>
     BackgroundCloudBatchSelectedFileProcessor::downloadResult_;
 std::unordered_map<std::string, int32_t> BackgroundCloudBatchSelectedFileProcessor::downloadFileIdAndCount_;
@@ -229,7 +230,7 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudBatchSelectedFileProcessor:
         FROM Photos AS P JOIN download_resources_task_records AS D ON P.file_id = D.file_id
         WHERE clean_flag  = 0 AND P.size > 0 AND D.download_status IN (0,1)
         AND D.file_id NOT IN (xxx)
-        ORDER BY D.add_time ASC, P.file_id DESC LIMIT 10;
+        ORDER BY D.percent DESC, D.add_time ASC, P.file_id DESC LIMIT 10;
         时间升序 保证第一批下载完下载第二批,查10个 取前五个设置为下载任务，后续第二批继续
     */
     return uniStore->QuerySql(sql);
@@ -952,6 +953,8 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::UpdateAllStatusAutoPauseToDow
     predicates.And()->GreaterThan(DownloadResourcesColumn::MEDIA_PERCENT, -1);
     value.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_DOWNLOADING));
+    value.PutInt(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON,
+        static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_DEFAULT));
     int32_t changedRows = -1;
     int32_t ret = rdbStore->Update(changedRows, value, predicates);
     MEDIA_INFO_LOG("AutoResume ToDownloading ret: %{public}d, changedRows %{public}d", ret, changedRows);
@@ -971,6 +974,8 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::UpdateAllStatusAutoPauseToWai
     predicates.And()->EqualTo(DownloadResourcesColumn::MEDIA_PERCENT, -1);
     value.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_WAITING));
+    value.PutInt(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON,
+        static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_DEFAULT));
     int32_t changedRows = -1;
     int32_t ret = rdbStore->Update(changedRows, value, predicates);
     MEDIA_INFO_LOG("AutoResume ToWaiting ret: %{public}d, changedRows %{public}d", ret, changedRows);
@@ -1016,6 +1021,7 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::DeleteCancelStateDownloadReso
 
 void BackgroundCloudBatchSelectedFileProcessor::AutoStopAction(BatchDownloadAutoPauseReasonType &autoPauseReason)
 {
+    unique_lock<std::mutex> lock(autoActionMutex_);
     MEDIA_INFO_LOG("BatchSelectFileDownload AutoStopAction cause: %{public}d", static_cast<int32_t>(autoPauseReason));
     // 检查点 批量下载 通知应用 notify type 4 自动暂停
     int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
@@ -1032,6 +1038,7 @@ void BackgroundCloudBatchSelectedFileProcessor::AutoStopAction(BatchDownloadAuto
 
 void BackgroundCloudBatchSelectedFileProcessor::AutoResumeAction()
 {
+    unique_lock<std::mutex> lock(autoActionMutex_);
     MEDIA_INFO_LOG("BatchSelectFileDownload AutoResumeAction");
     // updateDB
     UpdateAllAutoResumeDownloadResourcesInfo();
@@ -1099,15 +1106,16 @@ void BackgroundCloudBatchSelectedFileProcessor::TriggerCancelBatchDownloadProces
     //检查 fileIds 在任务表 有任务
     ClassifyFileIdsInDownloadResourcesTable(fileIds, existedTaskFileId);
     CHECK_AND_RETURN_INFO_LOG(!existedTaskFileId.empty(), "UpdateCancelDownload tasks empty");
+    CHECK_AND_PRINT_LOG(existedTaskFileId.empty(), "UpdateCancelDownload size: %{public}zu", existedTaskFileId.size());
 
     if (BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning()) {
         MEDIA_INFO_LOG("LaunchBatchDownloadProcessor TriggerCancelBatchDownloadProcessor End");
-        CHECK_AND_RETURN_INFO_LOG(GetDownloadQueueSizeWithLock() != 0,
-            "Not downloading, skip StopDownloadFiles");
-        std::vector<int64_t> needStopDownloadIds;
-        ClassifyCurrentRoundFileIdInList(existedTaskFileId, needStopDownloadIds);
-        for (auto downloadId : needStopDownloadIds) {
-            StopDownloadFiles(downloadId, true);
+        if (GetDownloadQueueSizeWithLock() != 0) {
+            std::vector<int64_t> needStopDownloadIds;
+            ClassifyCurrentRoundFileIdInList(existedTaskFileId, needStopDownloadIds);
+            for (auto downloadId : needStopDownloadIds) {
+                StopDownloadFiles(downloadId, true);
+            }
         }
     }
     int32_t ret = DeleteCancelStateDownloadResources(existedTaskFileId);
@@ -1129,7 +1137,7 @@ void BackgroundCloudBatchSelectedFileProcessor::TriggerCancelBatchDownloadProces
 void BackgroundCloudBatchSelectedFileProcessor::TriggerPauseBatchDownloadProcessor(std::vector<std::string>
     &fileIdsDownloading)
 {
-    CHECK_AND_RETURN_LOG(!fileIdsDownloading.empty(), "UpdatePauseDownload empty");
+    CHECK_AND_RETURN_INFO_LOG(!fileIdsDownloading.empty(), "UpdatePauseDownload empty");
     if (BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning()) {
         MEDIA_INFO_LOG("BatchSelectFileDownload TriggerPauseBatchDownloadProcessor IN");
         CHECK_AND_RETURN_INFO_LOG(GetDownloadQueueSizeWithLock() != 0,
@@ -1218,7 +1226,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(BatchDownlo
     }
     bool isCloudSyncOn = CloudSyncUtils::IsCloudSyncSwitchOn();
     bool ableAutoStopDownload = !(isCloudSyncOn && isNetworkAvailable && isPowerSufficient && isDiskEnough);
-    MEDIA_INFO_LOG("BatchSelectFileDownload AutoStopCondition ableAutoStopDownload: %{public}d, "
+    MEDIA_DEBUG_LOG("BatchSelectFileDownloadAuto AutoStopCondition ableAutoStopDownload: %{public}d, "
         "isNetworkAvailable: %{public}d, power: %{public}d, disk: %{public}d, cloudsync: %{public}d",
         ableAutoStopDownload, isNetworkAvailable, isPowerSufficient, isDiskEnough, isCloudSyncOn);
     return ableAutoStopDownload;
@@ -1240,7 +1248,7 @@ bool BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition()
     BackgroundCloudBatchSelectedFileProcessor::GetStorageFreeRatio(freeRatio);
     bool isDiskEnough =  freeRatio > ABLE_RESTORE_DOWNLOAD_STORAGE_FREE_RATIO;
     bool ableAutoResotreDownload = isCloudSyncOn && isNetworkAvailable && isPowerSufficient && isDiskEnough;
-    MEDIA_INFO_LOG("BatchSelectFileDownload AutoRestoreCondition ableAutoResotreDownload: %{public}d, "
+    MEDIA_DEBUG_LOG("BatchSelectFileDownloadAuto AutoRestoreCondition ableAutoResotreDownload: %{public}d, "
         "isNetworkAvailable: %{public}d, power: %{public}d, disk: %{public}d, cloudsync: %{public}d",
         ableAutoResotreDownload, isNetworkAvailable, isPowerSufficient,
         isDiskEnough, isCloudSyncOn);

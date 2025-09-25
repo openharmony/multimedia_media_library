@@ -449,12 +449,11 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     std::string action = want.GetAction();
     CHECK_AND_EXECUTE(action != EventFwk::CommonEventSupport::COMMON_EVENT_DATA_SHARE_READY,
         MediaLibraryFaCardOperations::InitFaCard());
-
     bool cond = action != EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
                 action != EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK;
     CHECK_AND_PRINT_INFO_LOG(!cond, "OnReceiveEvent action:%{public}s.", action.c_str());
-
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
+        HandleBatchDownloadWhenNetChange();
         isWifiConnected_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
         UpdateBackgroundTimer();
         if (isWifiConnected_) {
@@ -476,7 +475,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         PermissionUtils::ClearBundleInfoInCache();
     } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT) {
         // when turn off gallery switch or quit account, clear the download lastest finished flag,
-        // so we can download lastest images for the subsequent login new account
+        // download lastest images for the subsequent login new account
         BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
     }
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED &&
@@ -484,20 +483,26 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         std::tm nowLocalTime;
         const int32_t BACKUP_START_TIME = 23;
         const int32_t BACKUP_END_TIME = 5;
-        if (GetNowLocalTime(nowLocalTime) &&
-            (nowLocalTime.tm_hour >= BACKUP_START_TIME || nowLocalTime.tm_hour < BACKUP_END_TIME) &&
-            IsTwelveHoursAgo()) {
+        if (GetNowLocalTime(nowLocalTime) && (nowLocalTime.tm_hour >= BACKUP_START_TIME ||
+            nowLocalTime.tm_hour < BACKUP_END_TIME) && IsTwelveHoursAgo()) {
             MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile, now:%{public}d", nowLocalTime.tm_hour);
             UploadDBFile();
         }
     }
-
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE ||
         action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
         EnhancementManager::GetInstance().HandleNetChange(isWifiConnected_, isCellularNetConnected_);
     }
 #endif
+}
+
+void MedialibrarySubscriber::HandleBatchDownloadWhenNetChange()
+{
+    if (BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()) {
+        MEDIA_INFO_LOG("BatchSelectFileDownload COMMON_EVENT_WIFI_CONN_STATE Change");
+        BackgroundCloudBatchSelectedFileProcessor::StopProcessConditionCheck();
+    }
 }
 
 int64_t MedialibrarySubscriber::GetNowTime()

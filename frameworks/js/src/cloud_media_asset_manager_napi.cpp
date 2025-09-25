@@ -1194,7 +1194,7 @@ napi_value CloudMediaAssetManagerNapi::JsBatchDownloadRegisterCallback(napi_env 
         if (ret == E_OK) {
             NAPI_INFO_LOG("JsBatchDownloadRegisterCallback success");
         } else {
-            NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(JS_E_INIT_FAIL));
+            NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(JS_E_INNER_FAIL));
             napi_delete_reference(env, cbOnRef);
             return undefinedResult;
         }
@@ -1218,7 +1218,6 @@ static napi_value CheckUnregisterCallbackArgs(napi_env env, napi_callback_info i
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE);
         return nullptr;
     }
-
     return thisVar;
 }
 
@@ -1248,7 +1247,7 @@ napi_value CloudMediaAssetManagerNapi::JsBatchDownloadUnRegisterCallback(napi_en
     }
     int32_t ret = UnregisterObserverExecute(env, uriType, cbOffRef, *g_listAssetListenerObj);
     if (ret != E_OK) {
-        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(JS_E_INIT_FAIL));
+        NapiError::ThrowError(env, MediaLibraryNotifyUtils::ConvertToJsError(JS_E_INNER_FAIL));
     }
     if (cbOffRef != nullptr) {
         napi_delete_reference(env, cbOffRef);
@@ -1373,7 +1372,7 @@ int32_t CloudMediaAssetManagerNapi::RemoveClientObserver(napi_env env, napi_ref 
         return E_OK;
     }
     NAPI_ERR_LOG("failed to find observer");
-    return JS_E_PARAM_INVALID;
+    return E_OK;
 }
 
 int32_t CloudMediaAssetManagerNapi::UnregisterObserverExecute(napi_env env,
