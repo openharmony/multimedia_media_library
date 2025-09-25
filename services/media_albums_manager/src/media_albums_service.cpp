@@ -449,6 +449,7 @@ static void LogQueryParams(const DataShare::DataSharePredicates &predicates, con
         sqlWhere.replace(sqlWhere.find("?"), 1, whereArg);
     }
     std::string sqlOrder = rdbPredicate.GetOrder();
+    MEDIA_INFO_LOG("Predicates size = %{public}d", static_cast<int32_t>(predicates.GetOperationList().size()));
     MEDIA_INFO_LOG("sqlColumns: %{public}s", sqlColumns.c_str());
     MEDIA_INFO_LOG("sqlWhere: %{public}s", sqlWhere.c_str());
     MEDIA_INFO_LOG("sqlOrder: %{public}s", sqlOrder.c_str());
