@@ -724,7 +724,6 @@ int32_t CloudMediaPhotosService::GetCopyRecords(int32_t size, std::vector<Photos
 
 int32_t CloudMediaPhotosService::OnCreateRecords(std::vector<PhotosDto> &records, int32_t &failedSize)
 {
-    MEDIA_ERR_LOG("enter OnCreateRecords");
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> photoRefresh =
         std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
     CHECK_AND_RETURN_RET_LOG(
