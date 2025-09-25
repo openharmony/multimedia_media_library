@@ -25,6 +25,8 @@ struct DateAnomalyPhoto {
     int64_t dateTaken{0};
     int64_t dateModified{0};
     int64_t dateAdded{0};
+    std::string dateYear;
+    std::string dateMonth;
     std::string dateDay;
     std::string detailTime;
     std::string exif;
