@@ -54,6 +54,7 @@ ohos_unittest("media_notification_register_manager_test") {
     "access_token:libaccesstoken_sdk",
     "access_token:libnativetoken_shared",
     "access_token:libtokensetproc_shared",
+    "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
