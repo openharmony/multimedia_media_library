@@ -107,9 +107,9 @@ OH_MediaAsset* MediaAssetHelperImpl::GetMediaAsset(std::string uri, int32_t came
 
     fileAsset->SetUri(uri);
     std::string fileId = MediaFileUtils::GetIdFromUri(uri);
-    size_t MAX_INT = 2147483647;
+    size_t MAX_INT = 2147483648;
     if (!fileId.empty() && all_of(fileId.begin(), fileId.end(), ::isdigit)
-        && fileId.length() < MAX_INT) {
+        && stoll(fileId) < MAX_INT) {
         fileAsset->SetId(stoi(fileId));
     }
     fileAsset->SetDisplayName(MediaFileUtils::GetFileName(uri));
