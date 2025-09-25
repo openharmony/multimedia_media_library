@@ -1256,8 +1256,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumFusionUtils::ConvertForma
         return nullptr;
     }
 
-    string newFileAssetUri = MediaFileUtils::GetFileAssetUri(GetStringVal(MediaColumn::MEDIA_FILE_PATH, newResultSet),
-        displayName, newAssetId);
+    string newFileAssetUri = MediaFileUtils::GetFileAssetUri(targetPath,displayName, newAssetId);
     SendNewAssetNotify(newFileAssetUri, rdbStore, assetRefresh);
     MEDIA_INFO_LOG("ConvertFormatAsset success, newAssetId = %{public}" PRId64, newAssetId);
     return newResultSet;
