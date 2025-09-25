@@ -62,7 +62,8 @@ static const string SQL_INSERT_BURST_PHOTO =
     MediaColumn::MEDIA_DURATION + ", " + MediaColumn::MEDIA_IS_FAV + ", " + MediaColumn::MEDIA_DATE_TRASHED + ", " +
     MediaColumn::MEDIA_HIDDEN + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH + ", " +
     PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_SHOOTING_MODE + ", " +
-    PhotoColumn::PHOTO_BURST_COVER_LEVEL + ", " + PhotoColumn::PHOTO_BURST_KEY +
+    PhotoColumn::PHOTO_BURST_COVER_LEVEL + ", " + PhotoColumn::PHOTO_BURST_KEY + ", " +
+    PhotoColumn::PHOTO_SUBTYPE +
     ")";
 
 static int32_t ClearTable(const string &table)
@@ -176,14 +177,14 @@ static void InsertBurstAsset()
 {
     // data, size, title, display_name, media_type,
     // owner_package, package_name, date_added, date_modified, date_taken, duration, is_favorite, date_trashed, hidden
-    // height, width, edit_time, shooting_mode, burst_cover_level, burst_key
+    // height, width, edit_time, shooting_mode, burst_cover_level, burst_key, subtype
     std::string insertSql = SQL_INSERT_BURST_PHOTO + " VALUES (" +
         "'/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg', 175258, 'cam_pic_burst_cover', " +
         "'cam_pic_burst_cover.jpg', 1, 'com.ohos.camera', '相机', 1501924205218, 0, 1501924205, 0, 0, 0, 0, " +
-        "1280, 960, 0, '1', 1, 'c628b4a3-828e-4f05-9781-487bf4de7f73'), " +
+        "1280, 960, 0, '1', 1, 'c628b4a3-828e-4f05-9781-487bf4de7f73', 4), " +
         "('/storage/cloud/files/Photo/16/IMG_1501924305_001.jpg', 175258, 'cam_pic_burst_001', " +
         "'cam_pic_burst_001.jpg', 1, 'com.ohos.camera', '相机', 1501924205218, 0, 1501924205, 0, 0, 0, 0, " +
-        "1280, 960, 0, '1', 2, 'c628b4a3-828e-4f05-9781-487bf4de7f73')";
+        "1280, 960, 0, '1', 2, 'c628b4a3-828e-4f05-9781-487bf4de7f73', 4)";
     int32_t ret = g_rdbStore->ExecuteSql(insertSql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Execute sql %{public}s failed", insertSql.c_str());
