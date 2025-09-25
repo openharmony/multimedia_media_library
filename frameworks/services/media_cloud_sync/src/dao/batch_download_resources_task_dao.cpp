@@ -159,7 +159,7 @@ int32_t BatchDownloadResourcesTaskDao::QueryPauseDownloadingStatusResources(std:
     string sql = "SELECT " + DownloadResourcesColumn::MEDIA_ID + " FROM " + DownloadResourcesColumn::TABLE
         + " WHERE " + DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS + " = "
         + std::to_string(static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_DOWNLOADING)) + " AND "
-        + DownloadResourcesColumn::MEDIA_ID + " IN (" + inClause + ") ORDER BY " + DownloadResourcesColumn::MEDIA_ID;
+        + DownloadResourcesColumn::MEDIA_ID + " IN (" + inClause + ")";
     // SELECT file_id FROM download_resources_task_records WHERE download_status = 1 AND file_id in (1,2,3)
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "QueryPauseDownloading resultSet is null!");
@@ -168,6 +168,7 @@ int32_t BatchDownloadResourcesTaskDao::QueryPauseDownloadingStatusResources(std:
     }
     resultSet->Close();
     std::sort(fileIds.begin(), fileIds.end());
+    std::sort(fileIdsDownloading.begin(), fileIdsDownloading.end());
     std::set_difference(fileIds.begin(), fileIds.end(), fileIdsDownloading.begin(), fileIdsDownloading.end(),
                         std::back_inserter(fileIdsNotInDownloading));
     MEDIA_INFO_LOG("QueryPauseDownloadingStatusResources After Query fileIdsDownloading Size: %{public}zu",
@@ -179,11 +180,12 @@ int32_t BatchDownloadResourcesTaskDao::UpdatePauseDownloadResourcesInfo(const st
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "UpdatePauseDownload Failed to get rdbStore.");
-    CHECK_AND_RETURN_RET_LOG(!fileIds.empty(), NativeRdb::E_OK, "UpdatePauseDownload empty");
+    CHECK_AND_RETURN_RET_INFO_LOG(!fileIds.empty(), NativeRdb::E_OK, "UpdatePauseDownload empty");
     // update download_resources_task_records set download_status = 2
-    // where file_id in() AND download_status != 4 AND download_status != 3;
+    // where file_id in() AND download_status != 4 AND download_status != 3 AND download_status != 2;
     std::string inClause = CloudMediaDaoUtils::ToStringWithComma(fileIds);
     std::string whereClauseBefore = DownloadResourcesColumn::MEDIA_ID +  " IN ({0}) AND " +
+        DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS+ " != ? AND " +
         DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS+ " != ? AND " +
         DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS+ " != ?";
     std::string whereClause = CloudMediaDaoUtils::FillParams(whereClauseBefore, {inClause});
@@ -193,7 +195,8 @@ int32_t BatchDownloadResourcesTaskDao::UpdatePauseDownloadResourcesInfo(const st
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_PAUSE));
     std::vector<std::string> whereArgs = {
         to_string(static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_SUCCESS)),
-        to_string(static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL))};
+        to_string(static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL)),
+        to_string(static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_PAUSE))};
     int32_t changedRows = -1;
     int32_t ret = rdbStore->Update(changedRows, DownloadResourcesColumn::TABLE, valuesBucket, whereClause, whereArgs);
     MEDIA_INFO_LOG("BatchSelectFileDownload Pause After ret: %{public}d, changedRows %{public}d",
@@ -213,6 +216,8 @@ int32_t BatchDownloadResourcesTaskDao::UpdateAllPauseDownloadResourcesInfo()
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_SUCCESS));
     predicates.And()->NotEqualTo(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL));
+    predicates.And()->NotEqualTo(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
+        static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_PAUSE));
     value.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_PAUSE));
     int32_t changedRows = -1;
@@ -249,12 +254,12 @@ int32_t BatchDownloadResourcesTaskDao::UpdateStatusPauseToWaiting(const std::vec
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "PauseToWaiting Failed to get rdbStore.");
      // set download_status = waiting where file_id in (1,2,3) AND
-     // download_status = 2 or download_status = 5 AND percent = -1
+     // (download_status = 2 or download_status = 5) AND percent = -1
     std::string inClause = CloudMediaDaoUtils::ToStringWithComma(fileIds);
-    std::string whereClauseBefore = DownloadResourcesColumn::MEDIA_ID +  " IN ({0}) AND " +
-        DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS + " = ? OR (" +
-        DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS + " = ? AND " +
-        DownloadResourcesColumn::MEDIA_PERCENT + " = -1)";
+    std::string whereClauseBefore = DownloadResourcesColumn::MEDIA_ID +  " IN ({0}) AND (" +
+        DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS + " = ? OR " +
+        DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS + " = ?) AND " +
+        DownloadResourcesColumn::MEDIA_PERCENT + " = -1";
     std::string whereClause = CloudMediaDaoUtils::FillParams(whereClauseBefore, {inClause});
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
@@ -334,9 +339,9 @@ int32_t BatchDownloadResourcesTaskDao::UpdateAllStatusPauseToWaiting()
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "All PauseToWaiting Failed to get rdbStore.");
      // set download_status = waiting where download_status = 2 or download_status = 5 AND percent = -1
-    std::string whereClause = DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS + " = ? OR (" +
-        DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS + " = ? AND " +
-        DownloadResourcesColumn::MEDIA_PERCENT + " = -1)";
+    std::string whereClause = "(" + DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS + " = ? OR " +
+        DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS + " = ?) AND " +
+        DownloadResourcesColumn::MEDIA_PERCENT + " = -1";
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_WAITING));
@@ -419,6 +424,7 @@ int32_t BatchDownloadResourcesTaskDao::QueryCancelDownloadingStatusResources(std
         resultSet->Close();
     }
     std::sort(fileIds.begin(), fileIds.end());
+    std::sort(fileIdsDownloading.begin(), fileIdsDownloading.end());
     std::set_difference(fileIds.begin(), fileIds.end(), fileIdsDownloading.begin(), fileIdsDownloading.end(),
                         std::back_inserter(fileIdsNotInDownloading));
     MEDIA_INFO_LOG("QueryCancelDownloadingStatusResources After Query fileIdsDownloading Size: %{public}zu",
@@ -460,7 +466,7 @@ int32_t BatchDownloadResourcesTaskDao::UpdateExistedTasksStatus(
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL,
         "FilterExistedDownloadResources Failed to get rdbStore.");
-    CHECK_AND_RETURN_RET_LOG(!fileIds.empty(), E_ERR, "UpdateExistedTasksStatus Empty Ids");
+    CHECK_AND_RETURN_RET_INFO_LOG(!fileIds.empty(), E_ERR, "UpdateExistedTasksStatus Empty Ids");
     // update download_resources_task_records set download_status = 2 where file_id IN ('1' ,'2');
     std::string inClause = CloudMediaDaoUtils::ToStringWithComma(fileIds);
     std::string whereClauseBefore = DownloadResourcesColumn::MEDIA_ID +  " IN ({0})";
@@ -495,6 +501,7 @@ int32_t BatchDownloadResourcesTaskDao::HandleDuplicateAddTask(std::vector<Downlo
             case static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_DOWNLOADING):
                 break;
             case static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_PAUSE):
+            case static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_AUTO_PAUSE):
                 if (task.percent.value() == -1) {
                     toWaiting.push_back(fileId_);
                 } else {
@@ -524,7 +531,7 @@ int32_t BatchDownloadResourcesTaskDao::HandleDuplicateAddTask(std::vector<Downlo
 int32_t BatchDownloadResourcesTaskDao::ClassifyExistedDownloadTasks(std::vector<std::string> &allFileIds,
     std::vector<std::string> &newIds, std::vector<std::string> &existedIds)
 {
-    CHECK_AND_RETURN_RET_LOG(!allFileIds.empty(), E_ERR, "ClassifyDownloadTasks No uris");
+    CHECK_AND_RETURN_RET_INFO_LOG(!allFileIds.empty(), E_ERR, "ClassifyDownloadTasks No uris");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL,
         "ClassifyExistedDownloadTasks Failed to get rdbStore.");
@@ -539,6 +546,7 @@ int32_t BatchDownloadResourcesTaskDao::ClassifyExistedDownloadTasks(std::vector<
     }
     resultSet->Close();
     std::sort(allFileIds.begin(), allFileIds.end());
+    std::sort(existedIds.begin(), existedIds.end());
     std::set_difference(allFileIds.begin(), allFileIds.end(), existedIds.begin(), existedIds.end(),
                         std::back_inserter(newIds));
     MEDIA_INFO_LOG("ClassifyExistedDownloadTasks After Query NewIds Size: %{public}zu", newIds.size());
@@ -569,6 +577,7 @@ int32_t BatchDownloadResourcesTaskDao::ClassifyInvalidDownloadTasks(std::vector<
         validIds.push_back(to_string(GetInt32Val(PhotoColumn::MEDIA_ID, resultSet)));
     }
     resultSet->Close();
+    std::sort(newIds.begin(), newIds.end());
     std::sort(validIds.begin(), validIds.end());
     std::set_difference(newIds.begin(), newIds.end(), validIds.begin(), validIds.end(),
         std::back_inserter(invalidIds));

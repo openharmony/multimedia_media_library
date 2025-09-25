@@ -143,6 +143,7 @@ private:
     static std::recursive_mutex mutex_;
     static std::mutex downloadResultMutex_;
     static std::mutex mutexRunningStatus_;
+    static std::mutex autoActionMutex_;
     static int32_t downloadSelectedInterval_;
     static Utils::Timer batchDownloadResourceTimer_;
     static uint32_t batchDownloadResourcesStartTimerId_;
