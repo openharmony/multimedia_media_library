@@ -120,8 +120,6 @@ public:
     EXPORT void InsertPictureData(const std::string& imageId, sptr<PicturePair>& picturePair, PictureType pictureType);
     std::shared_ptr<Media::Picture> GetDataWithImageId(const std::string& imageId,
         bool &isHighQualityPicture, bool &isTakeEffect, bool isCleanImmediately = true);
-    std::shared_ptr<Media::Picture> GetDataWithImageIdAndPictureType(const std::string& imageId,
-        PictureType pictureType, bool &isTakeEffect, bool isCleanImmediately = true);
     void DeleteDataWithImageId(const std::string& imageId, PictureType pictureType);
     bool IsExsitDataForPictureType(PictureType pictureType);
     bool IsExsitDataForPictureType(const std::string& imageId, PictureType pictureType);
@@ -136,6 +134,8 @@ private:
         bool isLowQualityPicture);
     void CleanHighQualityPictureDataInternal(const std::string& imageId, sptr<PicturePair>& picturePair,
         std::list<std::string>& pictureImageIdList);
+    std::shared_ptr<Media::Picture> GetDataWithImageIdAndPictureType(const std::string& imageId,
+        PictureType pictureType, bool &isTakeEffect, bool isCleanImmediately = true);
 
     const int MAX_PICTURE_CAPBILITY = 3;
     int max_capibilty = MAX_PICTURE_CAPBILITY;
