@@ -1863,14 +1863,14 @@ static napi_value checkArgsGetSelectedPhotoAssets(napi_env env, napi_callback_in
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
         JS_INNER_FAIL);
  
-    if(context->argc == ARGS_TWO){
+    if (context->argc == ARGS_TWO) {
         unique_ptr<char[]> tmp;
         bool succ;
         size_t ignore;
         tie(succ, tmp, ignore) = MediaLibraryNapiUtils::ToUTF8String(env, context->argv[PARAM1]);
-        if(succ){
+        if (succ) {
             context->filter = string(tmp.get());
-        }  
+        }
     }
  
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
@@ -1910,7 +1910,7 @@ static void JSPhotoAccessGetSelectedPhotoAssetsExecute(napi_env env, void *data)
         }
     }
  
-    if(!context->filter.empty()){
+    if (!context->filter.empty()) {
         reqBody.filter = context->filter;
     }
    

@@ -183,7 +183,8 @@ int32_t MediaAlbumsRdbOperations::GetSelectedPortraitAlbumPredicatesByEmotion(Al
         to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
  
     string condition =  VISION_IMAGE_FACE_TABLE + "." + FACE_AESTHETICS_SCORE;
-    dto.predicates.GreaterThan(condition, 20);
+    int32_t aestheticScore = 20;
+    dto.predicates.GreaterThan(condition, aestheticScore);
     condition =  "total_score";
     dto.predicates.GreaterThan(condition, 0);
     dto.predicates.OrderByDesc("total_score");
@@ -192,7 +193,7 @@ int32_t MediaAlbumsRdbOperations::GetSelectedPortraitAlbumPredicatesByEmotion(Al
 }
  
 std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsRdbOperations::GetSelectedAssets(
-                                                    AlbumGetSelectedAssetsDto &dto)
+    AlbumGetSelectedAssetsDto &dto)
 {
     auto startTime = MediaFileUtils::UTCTimeMilliSeconds();
     MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
