@@ -75,7 +75,7 @@ static std::shared_ptr<Picture> CreateTestPicture(std::shared_ptr<PixelMap> pixe
     return picture;
 }
 
-static const string HDR_PICTURE_PATH = "/data/local/tmp/HasHdrNoRotate.jpg";
+static const string HDR_PICTURE_PATH = "/data/local/tmp/HDR_picture.jpg";
 
 static unique_ptr<ImageSource> CreateTestImageSource(const std::string &path)
 {
