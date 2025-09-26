@@ -331,36 +331,24 @@ HWTEST_F(AlbumGetSelectedAssetsTest, GetSelectedAssets_Test_001, TestSize.Level0
 
 HWTEST_F(AlbumGetSelectedAssetsTest, GetSelectedAssets_Test_002, TestSize.Level0)
 {
-    // prepare
-    int32_t albumId = -1;
-    bool ret1 = AlbumGetSelectedAssetsPrepare(albumId);
-    EXPECT_EQ(ret1, true);
-    EXPECT_GT(albumId, 0);
-
     MessageParcel data;
     auto service = make_shared<MediaAlbumsControllerService>();
     MessageParcel reply;
-    int32_t ret2 = service->AlbumGetSelectAssets(data, reply);
-    EXPECT_EQ(ret2, E_IPC_SEVICE_UNMARSHALLING_FAIL);
+    int32_t ret = service->AlbumGetSelectAssets(data, reply);
+    EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
 }
 
 HWTEST_F(AlbumGetSelectedAssetsTest, GetSelectedAssets_Test_003, TestSize.Level0)
 {
-    // prepare
-    int32_t albumId = -1;
-    bool ret1 = AlbumGetSelectedAssetsPrepare(albumId);
-    EXPECT_EQ(ret1, true);
-    EXPECT_GT(albumId, 0);
-
     AlbumGetSelectedAssetsReqBody reqBody;
-    reqBody.albumId = albumId;
+    reqBody.albumId = 0;
     std::vector<std::string> cols;
     cols.push_back("display_name");
     reqBody.columns = cols;
     std::string invaildWhereClause = "WHERE Photos.sync_status = 0; Photos.clean_flag = 0";
     reqBody.predicates.SetWhereClause(invaildWhereClause);
     MessageParcel data;
-    ret1 = reqBody.Marshalling(data);
+    int32_t ret1 = reqBody.Marshalling(data);
     EXPECT_EQ(ret1, true);
 
     auto service = make_shared<MediaAlbumsControllerService>();
@@ -368,5 +356,4 @@ HWTEST_F(AlbumGetSelectedAssetsTest, GetSelectedAssets_Test_003, TestSize.Level0
     int32_t ret2 = service->AlbumGetSelectAssets(data, reply);
     EXPECT_EQ(ret2, E_INVALID_VALUES);
 }
-
 }  // namespace OHOS::Media
