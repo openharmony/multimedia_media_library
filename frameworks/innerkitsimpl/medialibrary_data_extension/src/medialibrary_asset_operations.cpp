@@ -113,6 +113,7 @@ constexpr int32_t LOCAL_PHOTO_POSITION = 1;
 constexpr int32_t BOTH_LOCAL_CLOUD_PHOTO_POSITION = 3;
 constexpr int32_t MAX_PROCESS_NUM = 200;
 constexpr int64_t INVALID_SIZE = 0;
+constexpr int64_t SHARE_UID = 5520;
 static const std::string ANALYSIS_FILE_PATH = "/storage/cloud/files/highlight/music";
 
 struct DeletedFilesParams {
@@ -1694,6 +1695,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
 int32_t MediaLibraryAssetOperations::SetTranscodeUriToFileAsset(std::shared_ptr<FileAsset> &fileAsset,
     const std::string &mode, const bool isHeif)
 {
+    CHECK_AND_RETURN_RET_INFO_LOG(IPCSkeleton::GetCallingUid() != SHARE_UID, E_INNER_FAIL, "share support heif");
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INNER_FAIL, "fileAsset is nullptr");
 
     if (MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName()) != "heif" &&
