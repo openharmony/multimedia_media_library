@@ -1439,7 +1439,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_049, Te
     Size size;
     unique_ptr<PixelMap> pixelMap;
     auto res = ThumbnailUtils::ResizeImage(data, size, pixelMap);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_TrySavePixelMap_test, TestSize.Level0)
