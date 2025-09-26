@@ -39,6 +39,7 @@
 #include "media_scanner.h"
 #include "medialibrary_rdb_transaction.h"
 #include "upgrade_restore_task_report.h"
+#include "restore_map_code_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -926,6 +927,10 @@ void OthersCloneRestore::InsertPhoto(std::vector<FileInfo> &fileInfos)
         (long)(startInsert - start), (long)rowNum, (long)(startMove - startInsert),
         (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
         (long)videoFileMoveCount, (long)(startUpdate - startMove), (long)(end - startUpdate));
+
+    int32_t mapErrCode = RestoreMapCodeUtils::FileInfosToMapCode(mediaLibraryRdb_, fileInfos);
+    MEDIA_INFO_LOG("OthersCloneRestore::InsertPhoto FileInfosToMapCode mapErrCode \
+        %{public}d rowNum %{public}" PRId64, mapErrCode, rowNum);
 }
 
 bool OthersCloneRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos,

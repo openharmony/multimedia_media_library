@@ -59,6 +59,12 @@
 #include "medialibrary_subscriber.h"
 #include "background_cloud_batch_selected_file_processor.h"
 #include "settings_data_manager.h"
+#include "scanner_map_code_utils.h"
+#include "photos_po.h"
+#include "result_set_reader.h"
+#include "photos_po_writer.h"
+#include "photo_map_code_column.h"
+#include "photo_map_code_operation.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -85,7 +91,7 @@ static const int32_t MAX_BATCH_DOWNLOAD_TASK_SIZE = 500;
 const std::string START_QUERY_ZERO = "0";
 
 const std::string SQL_CONDITION_EMPTY_CLOUD_ALBUMS = "FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
-    "( " + PhotoAlbumColumns::ALBUM_IS_LOCAL + " = " + to_string(ALBUM_FROM_CLOUD) + " AND " +
+    "( " + PhotoAlbumColumns::ALBUM_IS_LOCAL + " = " + to_string(OHOS::Media::ALBUM_FROM_CLOUD) + " AND " +
     PhotoAlbumColumns::ALBUM_ID + " NOT IN ( " +
         "SELECT DISTINCT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
         " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
@@ -223,7 +229,7 @@ int32_t CloudMediaAssetManager::CheckDownloadTypeOfTask(const CloudMediaDownload
         MEDIA_ERR_LOG("CloudMediaDownloadType invalid input. downloadType: %{public}d", static_cast<int32_t>(type));
         return E_ERR;
     }
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 int32_t CloudMediaAssetManager::StartDownloadCloudAsset(const CloudMediaDownloadType &type)
@@ -232,7 +238,7 @@ int32_t CloudMediaAssetManager::StartDownloadCloudAsset(const CloudMediaDownload
         CloudMediaAssetDownloadOperation taskOperator;
         operation_ = taskOperator.GetInstance();
     }
-    if (CheckDownloadTypeOfTask(type) != E_OK) {
+    if (CheckDownloadTypeOfTask(type) != OHOS::Media::E_OK) {
         return E_ERR;
     }
     operation_->ResetDownloadTryTime();
@@ -246,7 +252,7 @@ int32_t CloudMediaAssetManager::StartDownloadCloudAsset(const CloudMediaDownload
         case CloudMediaAssetTaskStatus::DOWNLOADING: {
             if (type == operation_->GetDownloadType()) {
                 MEDIA_WARN_LOG("No status changed.");
-                return E_OK;
+                return OHOS::Media::E_OK;
             }
             if (type == CloudMediaDownloadType::DOWNLOAD_GENTLE) {
                 return operation_->PauseDownloadTask(CloudMediaTaskPauseCause::BACKGROUND_TASK_UNAVAILABLE);
@@ -270,7 +276,7 @@ int32_t CloudMediaAssetManager::RecoverDownloadCloudAsset(const CloudMediaTaskRe
 
     operation_->ResetDownloadTryTime();
     MEDIA_INFO_LOG("enter RecoverDownloadCloudAsset, RecoverCause: %{public}d", static_cast<int32_t>(cause));
-    CHECK_AND_RETURN_RET_LOG(operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::DOWNLOADING, E_OK,
+    CHECK_AND_RETURN_RET_LOG(operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::DOWNLOADING, OHOS::Media::E_OK,
         "The task status is download, no need to recover.");
     int32_t ret = operation_->PassiveStatusRecoverTask(cause);
     MEDIA_INFO_LOG("end to RecoverDownloadCloudAsset, status: %{public}s, ret: %{public}d.",
@@ -291,7 +297,7 @@ int32_t CloudMediaAssetManager::PauseDownloadCloudAsset(const CloudMediaTaskPaus
 {
     if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
         MEDIA_INFO_LOG("no need to pause");
-        return E_OK;
+        return OHOS::Media::E_OK;
     }
     int32_t ret = operation_->PauseDownloadTask(pauseCause);
     MEDIA_INFO_LOG("end to PauseDownloadCloudAsset, status: %{public}s, ret: %{public}d.",
@@ -303,7 +309,7 @@ int32_t CloudMediaAssetManager::CancelDownloadCloudAsset()
 {
     if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
         MEDIA_INFO_LOG("no need to cancel");
-        return E_OK;
+        return OHOS::Media::E_OK;
     }
     int32_t ret = operation_->CancelDownloadTask();
     operation_.reset();
@@ -342,7 +348,7 @@ int32_t CloudMediaAssetManager::DeleteBatchCloudFile(const std::vector<std::stri
         return E_ERR;
     }
     MEDIA_INFO_LOG("Delete db operation successful. ret %{public}d. Deleted %{public}d", ret, deletedRows);
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 int32_t CloudMediaAssetManager::ReadyDataForDelete(std::vector<std::string> &fileIds, std::vector<std::string> &paths,
@@ -372,7 +378,7 @@ int32_t CloudMediaAssetManager::ReadyDataForDelete(std::vector<std::string> &fil
         dateTakens.emplace_back(GetStringVal(MediaColumn::MEDIA_DATE_TAKEN, resultSet));
     }
     resultSet->Close();
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 std::string CloudMediaAssetManager::GetEditDataDirPath(const std::string &path)
@@ -389,7 +395,7 @@ int32_t CloudMediaAssetManager::DeleteEditdata(const std::string &path)
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteDir(editDataDirPath), E_ERR,
             "Failed to delete edit data, path: %{private}s", editDataDirPath.c_str());
     }
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data)
@@ -408,17 +414,21 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
     int32_t cycleNumber = 0;
     while (doDeleteTask_.load() > TaskDeleteState::IDLE && cycleNumber <= CYCLE_NUMBER) {
         int32_t ret = ReadyDataForDelete(fileIds, paths, dateTakens);
-        if (ret != E_OK || fileIds.empty()) {
+        if (ret != OHOS::Media::E_OK || fileIds.empty()) {
             MEDIA_WARN_LOG("ReadyDataForDelete failed or fileIds is empty, ret: %{public}d, size: %{public}zu",
                 ret, fileIds.size());
             break;
         }
         ret = DeleteBatchCloudFile(fileIds);
-        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "DeleteBatchCloudFile failed!");
+
+        bool retMap = ScannerMapCodeUtils::DeleteMapCodesByFileIds(fileIds);
+        CHECK_AND_BREAK_ERR_LOG(retMap, "DeleteMapCodesByFileIds failed!");
+
+        CHECK_AND_BREAK_ERR_LOG(ret == OHOS::Media::E_OK, "DeleteBatchCloudFile failed!");
         for (size_t i = 0; i < fileIds.size(); i++) {
-            CHECK_AND_PRINT_LOG(DeleteEditdata(paths[i]) == E_OK, "DeleteEditdata error.");
+            CHECK_AND_PRINT_LOG(DeleteEditdata(paths[i]) == OHOS::Media::E_OK, "DeleteEditdata error.");
 #ifdef META_RECOVERY_SUPPORT
-            CHECK_AND_PRINT_LOG(MediaLibraryMetaRecovery::DeleteMetaDataByPath(paths[i]) == E_OK,
+            CHECK_AND_PRINT_LOG(MediaLibraryMetaRecovery::DeleteMetaDataByPath(paths[i]) == OHOS::Media::E_OK,
                 "DeleteMetaDataByPath error.");
 #endif
             CloudSyncManager::GetInstance().CleanGalleryDentryFile(paths[i]);
@@ -495,10 +505,10 @@ int32_t CloudMediaAssetManager::UpdateCloudAssets(const std::vector<std::string>
 
     int32_t changedRows = -1;
     int32_t ret = rdbStore->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG((ret == E_OK && changedRows > 0), E_ERR,
+    CHECK_AND_RETURN_RET_LOG((ret == OHOS::Media::E_OK && changedRows > 0), E_ERR,
         "Failed to UpdateCloudAssets, ret: %{public}d, updateRows: %{public}d", ret, changedRows);
     MEDIA_INFO_LOG("UpdateCloudAssets successfully. ret: %{public}d, updateRows: %{public}d", ret, changedRows);
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 void CloudMediaAssetManager::NotifyUpdateAssetsChange(const std::vector<std::string> &notifyFileIds)
@@ -523,15 +533,15 @@ int32_t CloudMediaAssetManager::UpdateCloudMediaAssets(CloudMediaRetainType reta
     std::vector<std::string> notifyFileIds;
     notifyFileIds.reserve(BATCH_NOTIFY_CLOUD_FILE);
     std::vector<std::string> updateFileIds;
-    int32_t actualRet = E_OK;
+    int32_t actualRet = OHOS::Media::E_OK;
     MEDIA_INFO_LOG("begin UpdateCloudMediaAssets");
     while (HasDataForUpdate(retainType, updateFileIds, lastFileId) && cycleNumber <= CYCLE_NUMBER) {
         int32_t ret = UpdateCloudAssets(updateFileIds);
-        if (ret != E_OK) {
+        if (ret != OHOS::Media::E_OK) {
             MEDIA_WARN_LOG("UpdateCloudAssets failed, and try again ret: %{public}d", ret);
             ret = UpdateCloudAssets(updateFileIds);
         }
-        if (ret != E_OK) {
+        if (ret != OHOS::Media::E_OK) {
             MEDIA_ERR_LOG("UpdateCloudAssets failed, ret: %{public}d", ret);
             actualRet = ret;
             continue;
@@ -553,7 +563,7 @@ int32_t CloudMediaAssetManager::UpdateCloudMediaAssets(CloudMediaRetainType reta
     if (cycleNumber > 0) {
         MEDIA_INFO_LOG("begin to refresh all albums.");
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_OK, "UpdateAllAlbums failed. rdbStore is null.");
+        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, OHOS::Media::E_OK, "UpdateAllAlbums failed. rdbStore is null.");
         MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
     }
     return actualRet;
@@ -575,7 +585,7 @@ int32_t CloudMediaAssetManager::DeleteEmptyCloudAlbums()
         "Failed to delete. ret %{public}d.", ret);
     albumRefresh->Notify();
     MEDIA_INFO_LOG("end DeleteEmptyCloudAlbums. ret %{public}d.", ret);
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 bool CloudMediaAssetManager::HasLocalAndCloudAssets(CloudMediaRetainType retainType,
@@ -641,10 +651,10 @@ int32_t CloudMediaAssetManager::UpdateLocalAndCloudAssets(const std::vector<std:
 
     int32_t changedRows = -1;
     int32_t ret = rdbStore->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG((ret == E_OK && changedRows >= 0), E_ERR,
+    CHECK_AND_RETURN_RET_LOG((ret == OHOS::Media::E_OK && changedRows >= 0), E_ERR,
         "Failed to UpdateLocalAndCloudAssets, ret: %{public}d, updateRows: %{public}d", ret, changedRows);
     MEDIA_INFO_LOG("UpdateLocalAndCloudAssets successfully. ret: %{public}d, updateRows: %{public}d", ret, changedRows);
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 int32_t CloudMediaAssetManager::ClearDeletedDbData()
@@ -661,10 +671,62 @@ int32_t CloudMediaAssetManager::ClearDeletedDbData()
 
     int32_t deletedRows = -1;
     auto ret = rdbStore->Delete(deletedRows, predicates);
-    CHECK_AND_RETURN_RET_LOG((ret == E_OK && deletedRows >= 0), E_ERR,
+    CHECK_AND_RETURN_RET_LOG((ret == OHOS::Media::E_OK && deletedRows >= 0), E_ERR,
         "Failed to ClearDeletedDbData, ret: %{public}d, deletedRows: %{public}d", ret, deletedRows);
     MEDIA_INFO_LOG("ClearDeletedDbData successfully. ret: %{public}d, deletedRows: %{public}d", ret, deletedRows);
-    return E_OK;
+    return OHOS::Media::E_OK;
+}
+
+int32_t CloudMediaAssetManager::ClearDeletedMapData()
+{
+    MEDIA_INFO_LOG("start ClearDeletedMapData.");
+    MediaLibraryTracer tracer;
+    tracer.Start("ClearDeletedMapData");
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "ClearDeletedMapData failed. rdbStore is null.");
+
+    AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_DIRTY, to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED)));
+    predicates.Limit(CloudSync::LIMIT_SIZE);
+
+    const std::vector<std::string> COLUMNS_QUERY = {
+        PhotoColumn::MEDIA_ID,
+    };
+    auto resultSet = rdbStore->Query(predicates, COLUMNS_QUERY);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "ClearDeletedMapData Failed to query.");
+    std::vector<ORM::PhotosPo> photosPos;
+    int32_t ret = ORM::ResultSetReader<ORM::PhotosPoWriter, ORM::PhotosPo>(resultSet).ReadRecords(photosPos);
+    if (photosPos.empty()) {
+        MEDIA_ERR_LOG("DeleteMapCodesByPullDatas to-deleted idList size equals to 0");
+        return OHOS::Media::E_OK;
+    }
+
+    vector<string> fileIds;
+    for (const auto &photoPo : photosPos) {
+        if (!(photoPo.fileId.has_value())) {
+            MEDIA_ERR_LOG("DeleteMapCodesByPullData photosPos is null");
+            continue;
+        }
+        int32_t fileId = photoPo.fileId.value();
+        fileIds.push_back(std::to_string(fileId));
+    }
+
+    if (fileIds.empty()) {
+        MEDIA_ERR_LOG("DeleteMapCodesByPullDatas to-deleted fileIds size equals to 0");
+        return OHOS::Media::E_OK;
+    }
+
+    int32_t deletedRows = -1;
+    std::string mapTableName = PhotoMapCodeColumn::PHOTOS_MAP_CODE_TABLE;
+    NativeRdb::RdbPredicates rdbPredicate(mapTableName);
+    rdbPredicate.In(PhotoMapCodeColumn::MAPCODE_FILE_ID, fileIds);
+    ret = rdbStore->Delete(deletedRows, rdbPredicate);
+
+    CHECK_AND_RETURN_RET_LOG((ret == OHOS::Media::E_OK && deletedRows >= 0), E_ERR,
+        "Failed to ClearDeletedDbData, ret: %{public}d, deletedRows: %{public}d", ret, deletedRows);
+    MEDIA_INFO_LOG("ClearDeletedDbData successfully. ret: %{public}d, deletedRows: %{public}d", ret, deletedRows);
+    return OHOS::Media::E_OK;
 }
 
 int32_t CloudMediaAssetManager::UpdateBothLocalAndCloudAssets(CloudMediaRetainType retainType)
@@ -673,20 +735,23 @@ int32_t CloudMediaAssetManager::UpdateBothLocalAndCloudAssets(CloudMediaRetainTy
     MediaLibraryTracer tracer;
     tracer.Start("UpdateBothLocalAndCloudAssets");
 
+    int32_t deleteMapRet = ClearDeletedMapData();
+    MEDIA_INFO_LOG("ClearDeletedMapData result. deleteMapRet %{public}d.", deleteMapRet);
+
     int32_t deleteRet = ClearDeletedDbData();
-    CHECK_AND_PRINT_LOG(deleteRet == E_OK, "ClearDeletedDbData failed. ret %{public}d.", deleteRet);
+    CHECK_AND_PRINT_LOG(deleteRet == OHOS::Media::E_OK, "ClearDeletedDbData failed. ret %{public}d.", deleteRet);
 
     int32_t cycleNumber = 0;
     std::string lastFileId = START_QUERY_ZERO;
     std::vector<std::string> updateFileIds;
     while (HasLocalAndCloudAssets(retainType, updateFileIds, lastFileId) && cycleNumber <= CYCLE_NUMBER) {
         int32_t ret = UpdateLocalAndCloudAssets(updateFileIds);
-        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "UpdateBothLocalAndCloudAssets failed, ret: %{public}d", ret);
+        CHECK_AND_BREAK_ERR_LOG(ret == OHOS::Media::E_OK, "UpdateBothLocalAndCloudAssets failed, ret: %{public}d", ret);
         lastFileId = updateFileIds.back();
         cycleNumber++;
     }
     MEDIA_INFO_LOG("end UpdateBothLocalAndCloudAssets.");
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 int32_t CloudMediaAssetManager::UpdateLocalAlbums()
@@ -704,10 +769,10 @@ int32_t CloudMediaAssetManager::UpdateLocalAlbums()
 
     int32_t changedRows = E_HAS_DB_ERROR;
     int32_t ret = rdbStore->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG((ret == E_OK && changedRows >= 0), E_ERR,
+    CHECK_AND_RETURN_RET_LOG((ret == OHOS::Media::E_OK && changedRows >= 0), E_ERR,
         "Failed to UpdateLocalAlbums, ret: %{public}d, changedRows: %{public}d", ret, changedRows);
     MEDIA_INFO_LOG("UpdateLocalAlbums successfully. ret %{public}d. changedRows %{public}d", ret, changedRows);
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia(CloudMediaRetainType retainType,
@@ -720,7 +785,7 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia(CloudMediaRetainTy
 
     if (needAvoidRepeatedDoing && IsSouthDeviceSyncCleaning(retainType)) {
         MEDIA_INFO_LOG("this south device is cleaning, retainType: %{public}d", retainTypeInt);
-        return E_OK;
+        return OHOS::Media::E_OK;
     }
 
     // 判断是不是已经有个南向设备端在cleaning, 如果有也直接返回
@@ -730,7 +795,7 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia(CloudMediaRetainTy
     if (needAvoidRepeatedDoing && (isCloudCleaning || isHdcCleaning)) {
         MEDIA_INFO_LOG("some south device is cleaning. cloud: %{public}d, hdc: %{public}d",
             isCloudCleaning, isHdcCleaning);
-        return E_OK;
+        return OHOS::Media::E_OK;
     }
     SetSouthDeviceSyncSwitchStatus(CloudSyncStatus::CLOUD_CLEANING);
 
@@ -750,13 +815,13 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia(CloudMediaRetainTy
     if (isCloudCleaning) {
         ret |= ForceRetainDownloadCloudMediaEx(CloudMediaRetainType::RETAIN_FORCE);
         SetSouthDeviceCleanStatus(CloudMediaRetainType::RETAIN_FORCE, CloudSyncStatus::SYNC_SWITCHED_OFF);
-        CHECK_AND_PRINT_LOG(ret == E_OK, "cloud force retain. ret %{public}d.", ret);
+        CHECK_AND_PRINT_LOG(ret == OHOS::Media::E_OK, "cloud force retain. ret %{public}d.", ret);
     }
 
     if (isHdcCleaning) {
         ret |= ForceRetainDownloadCloudMediaEx(CloudMediaRetainType::HDC_RETAIN_FORCE);
         SetSouthDeviceCleanStatus(CloudMediaRetainType::HDC_RETAIN_FORCE, CloudSyncStatus::SYNC_SWITCHED_OFF);
-        CHECK_AND_PRINT_LOG(ret == E_OK, "hdc force retain. ret %{public}d.", ret);
+        CHECK_AND_PRINT_LOG(ret == OHOS::Media::E_OK, "hdc force retain. ret %{public}d.", ret);
     }
     if (CloudSyncHelper::GetInstance()->IsSyncSwitchOpen()) {
         FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor(true);
@@ -788,9 +853,9 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMediaEx(CloudMediaRetain
     doDeleteTask_.store(TaskDeleteState::IDLE);
 
     int32_t updateRet = UpdateCloudMediaAssets(retainType);
-    CHECK_AND_PRINT_LOG(updateRet == E_OK, "UpdateCloudMediaAssets failed. ret %{public}d.", updateRet);
+    CHECK_AND_PRINT_LOG(updateRet == OHOS::Media::E_OK, "UpdateCloudMediaAssets failed. ret %{public}d.", updateRet);
     int32_t ret = DeleteEmptyCloudAlbums();
-    CHECK_AND_PRINT_LOG(ret == E_OK, "DeleteEmptyCloudAlbums failed. ret %{public}d.", ret);
+    CHECK_AND_PRINT_LOG(ret == OHOS::Media::E_OK, "DeleteEmptyCloudAlbums failed. ret %{public}d.", ret);
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch != nullptr) {
         MEDIA_INFO_LOG("begin to notify album update.");
@@ -798,15 +863,15 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMediaEx(CloudMediaRetain
     }
 
     ret = UpdateBothLocalAndCloudAssets(retainType);
-    CHECK_AND_PRINT_LOG(ret == E_OK, "UpdateBothLocalAndCloudAssets failed. ret %{public}d.", ret);
+    CHECK_AND_PRINT_LOG(ret == OHOS::Media::E_OK, "UpdateBothLocalAndCloudAssets failed. ret %{public}d.", ret);
     ret = UpdateLocalAlbums();
-    CHECK_AND_PRINT_LOG(ret == E_OK, "UpdateLocalAlbums failed. ret %{public}d.", ret);
+    CHECK_AND_PRINT_LOG(ret == OHOS::Media::E_OK, "UpdateLocalAlbums failed. ret %{public}d.", ret);
 
     MEDIA_INFO_LOG("start delete cloud media assets task.");
     doDeleteTask_.store(TaskDeleteState::ACTIVE_DELETE);
     DeleteAllCloudMediaAssetsAsync();
 
-    CHECK_AND_RETURN_RET_WARN_LOG(updateRet == E_OK, updateRet,
+    CHECK_AND_RETURN_RET_WARN_LOG(updateRet == OHOS::Media::E_OK, updateRet,
         "exit ForceRetainDownloadCloudMediaEx, Type: %{public}d, updateRet: %{public}d.", retainTypeInt, updateRet);
     MEDIA_INFO_LOG("exit ForceRetainDownloadCloudMediaEx, retainType: %{public}d", retainTypeInt);
     return ret;
@@ -826,7 +891,7 @@ int32_t CloudMediaAssetManager::UpdateAddTaskStatus(const std::vector<std::strin
     const CloudMediaTaskDownloadCloudAssetCode &status, std::map<std::string, int32_t> &uriStatusMap)
 {
     if (fileIds.empty()) {
-        return E_OK;
+        return OHOS::Media::E_OK;
     }
     //set status for add task
     for (auto &fileId : fileIds) {
@@ -835,7 +900,7 @@ int32_t CloudMediaAssetManager::UpdateAddTaskStatus(const std::vector<std::strin
             MEDIA_ERR_LOG("Element with fileId: %{public}s already in map", result.first->first.c_str());
         }
     }
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 int32_t CloudMediaAssetManager::BuildTaskValuesAndBatchInsert(
@@ -883,7 +948,7 @@ int32_t CloudMediaAssetManager::StartBatchDownloadCloudResources(StartBatchDownl
     // 查photos表 构建任务表记录
     std::vector<DownloadResourcesTaskPo> newTaskPos;
     int32_t ret = this->batchDownloadResourcesTaskDao_.QueryValidBatchDownloadPoFromPhotos(newTaskFileIds, newTaskPos);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "QueryValidBatchDownloadPoFromPhotos failed");
+    CHECK_AND_RETURN_RET_LOG(ret == OHOS::Media::E_OK, E_ERR, "QueryValidBatchDownloadPoFromPhotos failed");
     int64_t insertCount = 0;
     int32_t result = BuildTaskValuesAndBatchInsert(insertCount, newTaskPos);
     MEDIA_INFO_LOG("BatchSelectFileDownload AddTask Res:%{public}d, Count:%{public}" PRId64, result, insertCount);
@@ -899,7 +964,7 @@ int32_t CloudMediaAssetManager::StartBatchDownloadCloudResources(StartBatchDownl
         BackgroundCloudBatchSelectedFileProcessor::SetBatchDownloadAddedFlag(true);
         BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor(); // 触发启动检查
     }
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 int32_t CloudMediaAssetManager::ResumeBatchDownloadCloudResources(ResumeBatchDownloadCloudResourcesReqBody &reqBody)
@@ -915,14 +980,14 @@ int32_t CloudMediaAssetManager::ResumeBatchDownloadCloudResources(ResumeBatchDow
     }
     std::vector<std::string> allFileIds;
     this->batchDownloadResourcesTaskDao_.FromUriToAllFileIds(reqBody.uris, allFileIds);
-    
+
     int32_t ret = this->batchDownloadResourcesTaskDao_.UpdateResumeDownloadResourcesInfo(allFileIds);
     MEDIA_INFO_LOG("BatchSelectFileDownload ResumeBatchDownloadCloudResources Resume ret:%{public}d", ret);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "UpdateResumeDownloadResourcesInfo failed");
+    CHECK_AND_RETURN_RET_LOG(ret == OHOS::Media::E_OK, E_ERR, "UpdateResumeDownloadResourcesInfo failed");
     MEDIA_INFO_LOG("BatchSelectFileDownload Resume LaunchBatchDownloadProcessor");
     BackgroundCloudBatchSelectedFileProcessor::SetBatchDownloadAddedFlag(true);
     BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor(); // 触发启动检查
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 int32_t CloudMediaAssetManager::PauseBatchDownloadCloudResources(PauseBatchDownloadCloudResourcesReqBody &reqBody)
@@ -936,7 +1001,7 @@ int32_t CloudMediaAssetManager::PauseBatchDownloadCloudResources(PauseBatchDownl
     if (reqBody.uris.empty()) {
         BackgroundCloudBatchSelectedFileProcessor::TriggerStopBatchDownloadProcessor(false);
         this->batchDownloadResourcesTaskDao_.UpdateAllPauseDownloadResourcesInfo();
-        return E_OK;
+        return OHOS::Media::E_OK;
     }
     std::vector<std::string> allFileIds;
     this->batchDownloadResourcesTaskDao_.FromUriToAllFileIds(reqBody.uris, allFileIds);
@@ -949,7 +1014,7 @@ int32_t CloudMediaAssetManager::PauseBatchDownloadCloudResources(PauseBatchDownl
     BackgroundCloudBatchSelectedFileProcessor::TriggerPauseBatchDownloadProcessor(fileIdsDownloading);
     ret = this->batchDownloadResourcesTaskDao_.UpdatePauseDownloadResourcesInfo(fileIdsDownloading);
     MEDIA_INFO_LOG("BatchSelectFileDownload PauseBatchDownloadCloudResources Pause ret:%{public}d", ret);
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 void CloudMediaAssetManager::CleanDownloadTasksTable()
@@ -969,7 +1034,7 @@ int32_t CloudMediaAssetManager::CancelBatchDownloadCloudResources(CancelBatchDow
     MEDIA_INFO_LOG("BatchSelectFileDownload enter CancelBatchDownloadCloudResources");
     if (reqBody.uris.empty()) {
         CleanDownloadTasksTable();
-        return E_OK;
+        return OHOS::Media::E_OK;
     }
     std::vector<std::string> allFileIds;
     this->batchDownloadResourcesTaskDao_.FromUriToAllFileIds(reqBody.uris, allFileIds);
@@ -981,7 +1046,7 @@ int32_t CloudMediaAssetManager::CancelBatchDownloadCloudResources(CancelBatchDow
     // 取消 处理下载中文件
     BackgroundCloudBatchSelectedFileProcessor::TriggerCancelBatchDownloadProcessor(fileIdsDownloading, false);
     MEDIA_INFO_LOG("CancelBatchDownloadCloudResources ret:%{public}d", ret);
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 int32_t CloudMediaAssetManager::GetCloudMediaBatchDownloadResourcesStatus(
@@ -997,7 +1062,7 @@ int32_t CloudMediaAssetManager::GetCloudMediaBatchDownloadResourcesStatus(
     std::vector<DownloadResourcesTaskPo> downloadResourcesTasks;
     int32_t ret = this->batchDownloadResourcesTaskDao_.QueryCloudMediaBatchDownloadResourcesStatus(rdbPredicates,
         downloadResourcesTasks);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "QueryCloudMediaBatchDownloadResourcesStatus failed");
+    CHECK_AND_RETURN_RET_LOG(ret == OHOS::Media::E_OK, E_ERR, "QueryCloudMediaBatchDownloadResourcesStatus failed");
     MEDIA_INFO_LOG("GetCloudMediaBatchDownload Get after task size:%{public}zu", downloadResourcesTasks.size());
     // 组装 respBody.downloadResourcesStatus
     for (const DownloadResourcesTaskPo &downloadResourcesTask : downloadResourcesTasks) {
@@ -1016,7 +1081,7 @@ int32_t CloudMediaAssetManager::GetCloudMediaBatchDownloadResourcesStatus(
         std::string entry = entryStream.str();
         respBody.downloadResourcesStatus.emplace_back(std::move(entry));
     }
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 int32_t CloudMediaAssetManager::GetCloudMediaBatchDownloadResourcesCount(
@@ -1032,9 +1097,9 @@ int32_t CloudMediaAssetManager::GetCloudMediaBatchDownloadResourcesCount(
     int32_t count = 0;
     int32_t ret = this->batchDownloadResourcesTaskDao_.QueryCloudMediaBatchDownloadResourcesCount(rdbPredicates,
         count);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "QueryCloudMediaBatchDownloadResourcesCount failed");
+    CHECK_AND_RETURN_RET_LOG(ret == OHOS::Media::E_OK, E_ERR, "QueryCloudMediaBatchDownloadResourcesCount failed");
     respBody.count = count;
-    return E_OK;
+    return OHOS::Media::E_OK;
 }
 
 int32_t CloudMediaAssetManager::HandleCloudMediaAssetUpdateOperations(MediaLibraryCommand &cmd)
@@ -1085,7 +1150,7 @@ bool CloudMediaAssetManager::SetIsThumbnailUpdate()
         operation_->isThumbnailUpdate_ = true;
     }
     MEDIA_INFO_LOG("Update count and size of download cloud media asset.");
-    if (operation_->InitDownloadTaskInfo() != E_OK) {
+    if (operation_->InitDownloadTaskInfo() != OHOS::Media::E_OK) {
         MEDIA_INFO_LOG("remainCount of download cloud media assets is 0.");
         operation_->CancelDownloadTask();
     }
@@ -1137,7 +1202,7 @@ void CloudMediaAssetManager::TryToStartSync()
     }
     MEDIA_INFO_LOG("cloud sync manager start sync");
     int32_t ret = CloudSyncManager::GetInstance().StartSync(BUNDLE_NAME);
-    CHECK_AND_PRINT_LOG(ret == E_OK, "cloud sync manager start sync err %{public}d", ret);
+    CHECK_AND_PRINT_LOG(ret == OHOS::Media::E_OK, "cloud sync manager start sync err %{public}d", ret);
     MEDIA_INFO_LOG("cloud sync manager end sync");
 }
 } // namespace Media

@@ -95,6 +95,9 @@
 #include "medialibrary_upgrade_utils.h"
 #include "media_config_info_column.h"
 #include "download_resources_column.h"
+#include "scanner_map_code_utils.h"
+#include "photo_map_code_column.h"
+#include "photo_map_code_operation.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -638,6 +641,50 @@ void MediaLibraryRdbStore::AddPhotoDateAddedIndex(const shared_ptr<MediaLibraryR
     };
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("end AddPhotoDateAddedIndex");
+}
+
+bool MediaLibraryRdbStore::AddPhotoMapTable(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start AddPhotoMapTable");
+
+    const vector<string> sqls = {
+        PhotoMapCodeColumn::CREATE_MAP_CODE_TABLE,
+    };
+    int32_t ret = ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("End AddPhotoMapTable");
+    return ret == NativeRdb::E_OK;
+}
+
+bool MediaLibraryRdbStore::AddPhotoMapTableIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start AddPhotoMapTableIndex");
+    if (store == nullptr) {
+        MEDIA_ERR_LOG("GetStore is failed, store is nullptr.");
+        return false;
+    }
+    const vector<string> sqls = {
+        PhotoMapCodeColumn::CREATE_MAPCODE_LEVEL_4_INDEX,
+        PhotoMapCodeColumn::CREATE_MAPCODE_LEVEL_20_INDEX,
+        PhotoMapCodeColumn::DROP_LONGITUDE_INDEX,
+        PhotoMapCodeColumn::DROP_LATITUDE_INDEX,
+    };
+    int32_t ret = ExecSqls(sqls, *store->GetRaw().get());
+
+    MEDIA_INFO_LOG("End AddPhotoMapTableIndex");
+    return ret == NativeRdb::E_OK;
+}
+
+bool MediaLibraryRdbStore::AddPhotoMapTableData(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start AddPhotoMapTableData");
+    if (store == nullptr) {
+        MEDIA_ERR_LOG("GetStore is failed, store is nullptr.");
+        return false;
+    }
+
+    int32_t ret = PhotoMapCodeOperation::UpgradePhotoMapCode(store);
+    MEDIA_INFO_LOG("End AddPhotoMapTableData");
+    return ret == E_OK;
 }
 
 void MediaLibraryRdbStore::AddPhotoWhiteBlocksIndex(const shared_ptr<MediaLibraryRdbStore> store)
@@ -1869,6 +1916,13 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_PROGRESS,
     DownloadResourcesColumn::CREATE_TABLE,
     DownloadResourcesColumn::INDEX_DRTR_ID_STATUS,
+
+	// tab_map_photo_map
+    PhotoMapCodeColumn::CREATE_MAP_CODE_TABLE,
+    PhotoMapCodeColumn::CREATE_MAPCODE_LEVEL_4_INDEX,
+    PhotoMapCodeColumn::CREATE_MAPCODE_LEVEL_20_INDEX,
+    PhotoMapCodeColumn::DROP_LONGITUDE_INDEX,
+    PhotoMapCodeColumn::DROP_LATITUDE_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2035,6 +2089,7 @@ void API10TableCreate(RdbStore &store)
         TriggerRemoveAssets(),
         TriggerDeletePhotoClearMap(),
         TriggerUpdateUserAlbumCount(),
+        PhotoMapCodeColumn::CREATE_MAP_CODE_TABLE,
     };
 
     for (size_t i = 0; i < executeSqlStrs.size(); i++) {
@@ -5367,6 +5422,12 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TEMP_FILE_ASSETS_CREATE_ALBUM, true)) {
         AddTempFileAssetsCreateAlbum(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TEMP_FILE_ASSETS_CREATE_ALBUM, true);
+    }
+
+    if (oldVersion < VERSION_ADD_MAP_CODE_TABLE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_MAP_CODE_TABLE, true)) {
+        MediaLibraryRdbStore::AddPhotoMapTable(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_MAP_CODE_TABLE, true);
     }
 }
 

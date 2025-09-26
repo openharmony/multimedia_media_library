@@ -34,6 +34,7 @@
 #include "asset_accurate_refresh.h"
 #include "album_accurate_refresh.h"
 #include "media_operate_result.h"
+#include "cloud_map_code_dao.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaPhotosService {
@@ -122,11 +123,16 @@ private:
     std::string GetCloudPath(const std::string &filePath);
     void RefreshAnalysisAlbum(const std::string &cloudId);
     int32_t RemoveLocalFile(const CloudMediaPullDataDto &pullData);
+    void HandleRecordStepTwo(std::set<std::string> &refreshAlbums);
 
+    int32_t MapUpdate(const CloudMediaPullDataDto &pullData);
+    int32_t MapDelete(const CloudMediaPullDataDto &pullData);
+    int32_t MapInsert(const std::vector<CloudMediaPullDataDto> &pullData, std::vector<std::string> &failedRecords);
 private:
     CloudMediaPhotoServiceProcessor processor_;
     CloudMediaPhotosDao photosDao_;
     CloudMediaCommonDao commonDao_;
+    CloudMapCodeDao     mapCodeDao_;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PHOTOS_SERVICE_H
