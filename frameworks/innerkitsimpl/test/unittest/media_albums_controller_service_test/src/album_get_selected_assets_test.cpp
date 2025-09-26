@@ -132,7 +132,7 @@ static shared_ptr<NativeRdb::ResultSet> QueryAsset(
     return resultSet;
 }
 
-static bool executionSql(const std::string &sql)
+static bool ExecutionSql(const std::string &sql)
 {
     int32_t ret = g_rdbStore->ExecuteSql(sql);
     if (ret != NativeRdb::E_OK) {
@@ -149,7 +149,7 @@ static bool InsertAnalysisAlbum(string albumName, string groupTag)
     //                         "('"+ albumName + "', 4096, '" + groupTag + "')";
     std::string insertSql = "INSERT INTO AnalysisAlbum (album_name, album_subtype, group_tag) VALUES ('test01', 4096, "
                             "'ser_1755057945560169000')";
-    return executionSql(insertSql);
+    return ExecutionSql(insertSql);
 }
 
 static bool InsertAnalysisPhotoMap(int mediaId, int fileId)
@@ -157,7 +157,7 @@ static bool InsertAnalysisPhotoMap(int mediaId, int fileId)
     MEDIA_ERR_LOG("InsertAnalysisPhotoMap");
     std::string insertSql = "insert into AnalysisPhotoMap(map_album, map_asset) values(" + std::to_string(mediaId) +
                             ", " + std::to_string(fileId) + ")";
-    return executionSql(insertSql);
+    return ExecutionSql(insertSql);
 }
 
 static bool InsertAnalysisImageFace(int fileId, string tagID)
@@ -165,7 +165,7 @@ static bool InsertAnalysisImageFace(int fileId, string tagID)
     MEDIA_ERR_LOG("InsertAnalysisImageFace");
     std::string insertSql = "insert into tab_analysis_image_face(file_id, tag_id, aesthetics_score) values(" +
                             std::to_string(fileId) + ", '" + tagID + "', 60)";
-    return executionSql(insertSql);
+    return ExecutionSql(insertSql);
 }
 
 static bool CreatTabAnalysisVlm()
@@ -185,7 +185,7 @@ static bool CreatTabAnalysisVlm()
                       "timestamp BIGINT, "
                       "analysis_version TEXT)";
 
-    return executionSql(creatSql);
+    return ExecutionSql(creatSql);
 }
 
 static bool InsertTabAnalysisVlm(int fileId)
@@ -195,7 +195,7 @@ static bool InsertTabAnalysisVlm(int fileId)
                             "(file_id, valence, arousal) "
                             "VALUES(" +
                             std::to_string(fileId) + ", 0.5, 0.1)";
-    return executionSql(insertSql);
+    return ExecutionSql(insertSql);
 }
 
 static int32_t QueryAlbumIdByAlbumName(const string &albumName)
@@ -208,8 +208,8 @@ static int32_t QueryAlbumIdByAlbumName(const string &albumName)
         MEDIA_ERR_LOG("Can not get fileId");
         return -1;
     }
-    int32_t album_id = GetInt32Val("album_id", resultSet);
-    return album_id;
+    int32_t albumId = GetInt32Val("album_id", resultSet);
+    return albumId;
 }
 
 static bool AlbumGetSelectedAssetsPrepare(int32_t &albumId)
