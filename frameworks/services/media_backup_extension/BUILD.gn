@@ -104,6 +104,9 @@ ohos_shared_library("mediabackup") {
     "./src/restore/photos_restore.cpp",
     "./src/restore/tab_old_photos_restore.cpp",
     "./src/upgrade_restore.cpp",
+    "./src/restore_map_code_utils.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_map_code_column.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_map_code_operation.cpp",
   ]
 
   source_ipc_client = [
