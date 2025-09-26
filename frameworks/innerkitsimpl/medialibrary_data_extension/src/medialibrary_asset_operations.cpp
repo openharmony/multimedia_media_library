@@ -94,6 +94,7 @@
 #include "cloud_media_dao_utils.h"
 #include "scanner_map_code_utils.h"
 #include "photo_map_code_operation.h"
+#include "media_file_manager_temp_file_aging_task.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -443,6 +444,14 @@ static int32_t DropAllTables(const shared_ptr<MediaLibraryRdbStore> rdbStore)
     return E_OK;
 }
 
+static void DeleteFileManagerTempFileAgingXml()
+{
+    CHECK_AND_RETURN_LOG(MediaFileUtils::IsFileExists(Background::FILE_MANAGER_TEMP_FILE_AGING_EVENT),
+        "File manager temp file aging xml not exist");
+    CHECK_AND_RETURN_LOG(MediaFileUtils::DeleteFile(Background::FILE_MANAGER_TEMP_FILE_AGING_EVENT),
+        "Failed to delete file manager temp file aging xml, errno: %{public}d", errno);
+}
+
 int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cmd)
 {
     auto valuesBucket = cmd.GetValueBucket();
@@ -478,6 +487,7 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     string photoThumbsPath = ROOT_MEDIA_DIR + ".thumbs/Photo";
     CHECK_AND_PRINT_LOG(MediaFileUtils::CreateDirectory(photoThumbsPath),
         "Create dir %{public}s failed", photoThumbsPath.c_str());
+    DeleteFileManagerTempFileAgingXml();
     return E_OK;
 }
 
@@ -724,6 +734,8 @@ std::shared_ptr<FileAsset> MediaLibraryAssetOperations::QuerySinglePhoto(int32_t
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, rowId);
+    predicates.NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+        to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)));
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columnInfo);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("MediaLibraryPhotoOperations error\n");
