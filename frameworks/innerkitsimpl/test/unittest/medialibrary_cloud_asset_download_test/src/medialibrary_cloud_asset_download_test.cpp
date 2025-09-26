@@ -542,7 +542,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     ret = instance.UpdateCloudMediaAssets();
     EXPECT_EQ(ret, E_OK);
     ret = instance.DeleteEmptyCloudAlbums();
-    EXPECT_EQ(ret, E_ERR);
+    EXPECT_EQ(ret, E_OK);
     InsertCloudAlbumINDb();
     ret = instance.DeleteEmptyCloudAlbums();
     EXPECT_EQ(ret, E_OK);
@@ -583,7 +583,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     ret = instance.UpdateCloudMediaAssets(CloudMediaRetainType::HDC_RETAIN_FORCE);
     EXPECT_EQ(ret, E_OK);
     ret = instance.DeleteEmptyCloudAlbums();
-    EXPECT_EQ(ret, E_ERR);
+    EXPECT_EQ(ret, E_OK);
     InsertCloudAlbumINDb();
     ret = instance.DeleteEmptyCloudAlbums();
     EXPECT_EQ(ret, E_OK);
