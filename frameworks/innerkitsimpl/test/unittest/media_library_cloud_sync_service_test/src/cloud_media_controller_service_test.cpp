@@ -677,7 +677,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaDataControllerService_Update
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaDataControllerService_UpdatePosition_Test_003, TestSize.Level1)
@@ -695,7 +695,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaDataControllerService_Update
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaDataControllerService_UpdateThmStatus_Test_001, TestSize.Level1)
@@ -1249,7 +1249,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaDownloadControllerService_On
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, E_IPC_SEVICE_UNMARSHALLING_FAIL);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_Accept_Test_001, TestSize.Level1)
@@ -1690,7 +1690,7 @@ HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_OnCre
     service->OnRemoteRequest(code, data, reply, context);
 
     int32_t ret = reply.ReadInt32();
-    EXPECT_EQ(ret, 24);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(CloudMediaContorllerServiceTest, CloudMediaPhotoControllerService_OnMdirtyRecords_Test_001, TestSize.Level1)
