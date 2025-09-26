@@ -337,13 +337,42 @@ shared_ptr<AlbumChangeData> AlbumChangeData::Unmarshalling(Parcel &parcel)
 
 bool AlbumChangeData::IsAlbumInfoChange()
 {
-    return infoAfterChange_.isCoverChange_ || (!IsAlbumHiddenInfoChange()) ||
+    MEDIA_INFO_LOG("albumIdOld: %{public}d, albumIdNew: %{public}d",
+        infoBeforeChange_.albumId_, infoAfterChange_.albumId_);
+    MEDIA_INFO_LOG("lpathOld: %{public}s, lpathNew: %{public}s",
+        infoBeforeChange_.lpath_.c_str(), infoAfterChange_.lpath_.c_str());
+    MEDIA_INFO_LOG("imageCountOld: %{public}d, imageCountNew: %{public}d",
+        infoBeforeChange_.imageCount_, infoAfterChange_.imageCount_);
+    MEDIA_INFO_LOG("videoCountOld: %{public}d, videoCountNew: %{public}d",
+        infoBeforeChange_.videoCount_, infoAfterChange_.videoCount_);
+    MEDIA_INFO_LOG("albumTypeOld: %{public}d, albumTypeNew: %{public}d",
+        infoBeforeChange_.albumType_, infoAfterChange_.albumType_);
+    MEDIA_INFO_LOG("albumSubTypeOld: %{public}d, albumSubTypeNew: %{public}d",
+        infoBeforeChange_.albumSubType_, infoAfterChange_.albumSubType_);
+    MEDIA_INFO_LOG("albumNameOld: %{public}s, albumNameNew: %{public}s",
+        infoBeforeChange_.albumName_.c_str(), infoAfterChange_.albumName_.c_str());
+    MEDIA_INFO_LOG("albumUriOld: %{public}s, albumUriNew: %{public}s",
+        infoBeforeChange_.albumUri_.c_str(), infoAfterChange_.albumUri_.c_str());
+    MEDIA_INFO_LOG("countOld: %{public}d, countNew: %{public}d",
+        infoBeforeChange_.count_, infoAfterChange_.count_);
+    MEDIA_INFO_LOG("coverUriOld: %{public}s, coverUriNew: %{public}s",
+        infoBeforeChange_.coverUri_.c_str(), infoAfterChange_.coverUri_.c_str());
+    MEDIA_INFO_LOG("hiddenCountOld: %{public}d, hiddenCountNew: %{public}d",
+        infoBeforeChange_.hiddenCount_, infoAfterChange_.hiddenCount_);
+    MEDIA_INFO_LOG("hiddenCoverUriOld: %{public}s, hiddenCoverUriNew: %{public}s",
+        infoBeforeChange_.hiddenCoverUri_.c_str(), infoAfterChange_.hiddenCoverUri_.c_str());
+    MEDIA_INFO_LOG("albumsOrderOld: %{public}d, albumsOrderNew: %{public}d",
+        infoBeforeChange_.albumsOrder_, infoAfterChange_.albumsOrder_);
+    MEDIA_INFO_LOG("orderSectionOld: %{public}d, orderSectionNew: %{public}d",
+        infoBeforeChange_.orderSection_, infoAfterChange_.orderSection_);
+    MEDIA_INFO_LOG("dirtyOld: %{public}d, dirtyNew: %{public}d",
+        infoBeforeChange_.dirty_, infoAfterChange_.dirty_);
+    return (infoAfterChange_.isCoverChange_)||
         (infoBeforeChange_.imageCount_ != infoAfterChange_.imageCount_) ||
         (infoBeforeChange_.videoCount_ != infoAfterChange_.videoCount_) ||
         (infoBeforeChange_.count_ != infoAfterChange_.count_) ||
         (infoBeforeChange_.lpath_ != infoAfterChange_.lpath_) ||
         (infoBeforeChange_.albumName_ != infoAfterChange_.albumName_) ||
-        (infoBeforeChange_.dirty_ != infoAfterChange_.dirty_) ||
         (infoBeforeChange_.albumsOrder_ != infoAfterChange_.albumsOrder_) ||
         (infoBeforeChange_.orderSection_ != infoAfterChange_.orderSection_);
 }
