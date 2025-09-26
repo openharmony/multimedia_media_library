@@ -102,6 +102,7 @@ private:
     EXPORT bool GetCloneTimestamp(const std::string &path, int64_t &cloneTimestamp);
     EXPORT void WalCheckPointAsync();
     EXPORT void TriggerBatchDownloadResource();
+    EXPORT void HandleBatchDownloadWhenNetChange();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();
