@@ -699,7 +699,7 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallbac
         downloadResult_.find(fileId) == downloadResult_.end());
     CHECK_AND_RETURN_WARN_LOG(!cond, "downloadId or uri is err, fileId: %{public}s, downloadId: %{public}s,",
         fileId.c_str(), to_string(progress.downloadId).c_str());
-    downloadResult_[fileId] = BatchDownloadStatus::FAILED;
+    downloadResult_.erase(fileId);
     currentDownloadIdFileInfoMap_.erase(progress.downloadId);
     downloadLock.unlock();
     MEDIA_ERR_LOG("download failed, error type: %{public}d, uri: %{public}s.", progress.downloadErrorType,
