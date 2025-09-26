@@ -20,12 +20,7 @@
 #include <string>
 #include <vector>
 
-#define private public
-#define protected public
 #include "media_albums_controller_service.h"
-#undef private
-#undef protected
-
 #include "album_get_selected_assets_vo.h"
 #include "album_get_selected_assets_dto.h"
 #include "user_define_ipc_client.h"
