@@ -1273,7 +1273,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_031, Te
     opts.store = storePtr;
     int32_t err = E_ERR;
     auto res = ThumbnailUtils::UpdateLcdReadyStatus(opts, data, err, LcdReady::GENERATE_LCD_COMPLETED);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_036, TestSize.Level1)
