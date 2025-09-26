@@ -332,9 +332,27 @@ ohos_unittest("media_library_cloud_sync_service_service_test") {
   ]
 
   sources = [
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_common_dao.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_photos_dao.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dto/cloud_file_data_dto.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dto/photo_album_dto.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dto/photos_dto.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_media_file_utils.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_media_dao_utils.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_media_sync_utils.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_sync_convert.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/media_gallery_sync_notify.cpp",
+
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "src/media_cloud_sync_service_service_test.cpp",
     "src/media_cloud_sync_test_utils.cpp",
+
+    "${MEDIALIB_UTILS_PATH}/src/cpu_utils.cpp",
+    "src/media_cloud_sync_service_service_mapcode_test.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_map_code_dao.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_map_code_column.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_map_code_operation.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_photos_service.cpp",
   ]
 
   deps = [

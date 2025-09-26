@@ -90,6 +90,7 @@
 #include "enhancement_manager.h"
 #include "cloud_enhancement_checker.h"
 #endif
+#include "map_code_upload_checker.h"
 
 using namespace OHOS::AAFwk;
 
@@ -850,6 +851,7 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
     DfxManager::GetInstance()->HandleTwoDayMissions();
     DfxManager::GetInstance()->HandleOneWeekMissions();
     PhotoDayMonthYearOperation::RepairDateTime();
+    MapCodeUploadChecker::RepairNoMapCodePhoto();
     backgroundTaskFactory_.Execute();
 }
 

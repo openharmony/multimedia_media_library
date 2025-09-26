@@ -283,4 +283,12 @@ string PhotoFileUtils::ExtractDetailTimeFromGPS(const string &gpsDate, const str
 
     return gpsDate + " " + timePart;
 }
+
+int64_t PhotoFileUtils::NormalizeTimestamp(int64_t timestamp, int64_t fallbackValue)
+{
+    while (timestamp >= MAX_MILSEC_TIMESTAMP) {
+        timestamp /= MICSEC_TO_MILSEC;
+    }
+    return (timestamp <= MIN_MILSEC_TIMESTAMP) ? fallbackValue : timestamp;
+}
 } // namespace OHOS::Media
