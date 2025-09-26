@@ -26,6 +26,7 @@
 #include "change_request_move_assets_dto.h"
 #include "change_request_add_assets_dto.h"
 #include "change_request_remove_assets_dto.h"
+#include "album_get_selected_assets_dto.h"
 
 namespace OHOS::Media {
 
@@ -40,6 +41,8 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> MoveAssetsGetAlbumInfo(const ChangeRequestMoveAssetsDto &moveAssetsDto);
     std::shared_ptr<NativeRdb::ResultSet> AddAssetsGetAlbumInfo(const ChangeRequestAddAssetsDto &addAssetsDto);
     std::shared_ptr<NativeRdb::ResultSet> RemoveAssetsGetAlbumInfo(const ChangeRequestRemoveAssetsDto &removeAssetsDto);
+    std::shared_ptr<DataShare::DataShareResultSet> GetSelectedAssets(AlbumGetSelectedAssetsDto &dto);
+    int32_t GetSelectedPortraitAlbumPredicatesByEmotion(AlbumGetSelectedAssetsDto &dto);
 };
 
 } // namespace OHOS::Media
