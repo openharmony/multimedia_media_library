@@ -31,6 +31,7 @@
 #include "vision_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
+#include "vision_affective_column.h"
 #include "vision_photo_map_column.h"
 #include "vision_pose_column.h"
 #include "vision_recommendation_column.h"
@@ -134,6 +135,20 @@ const std::string CREATE_TAB_ANALYSIS_OBJECT = "CREATE TABLE IF NOT EXISTS " + V
     SCALE_Y + " REAL DEFAULT 0, " +
     SCALE_WIDTH + " REAL DEFAULT 0, " +
     SCALE_HEIGHT + " REAL DEFAULT 0, " +
+    ANALYSIS_VERSION + " TEXT)";
+
+const std::string CREATE_TAB_ANALYSIS_AFFECTIVE = "CREATE TABLE IF NOT EXISTS " + VISION_AFFECTIVE_TABLE +
+    " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    FILE_ID + " INT, " +
+    EMOTION_CATEGORY + " INT, " +
+    VALENCE + " REAL, " +
+    AROUSAL + " REAL, " +
+    DOMINANCE + " REAL, " +
+    MODEL_VERSION + " TEXT, " +
+    MODEL_NAME + " TEXT, " +
+    EXTRA + " TEXT, " +
+    CREATE_TIMESTAMP + " BIGINT, " +
     ANALYSIS_VERSION + " TEXT)";
 
 const std::string CREATE_TAB_ANALYSIS_RECOMMENDATION = "CREATE TABLE IF NOT EXISTS " + VISION_RECOMMENDATION_TABLE +
@@ -244,7 +259,8 @@ const std::string CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE = "CREATE TABLE IF NOT 
     POSE + " INT, " +
     GEO + " INT DEFAULT 0, " +
     AESTHETICS_SCORE_ALL_STATUS + " INT NOT NULL DEFAULT 0, " +
-    PRIORITY + " INT NOT NULL DEFAULT 1) ";
+    GRAPH_DB + " INT NOT NULL DEFAULT 0, " +
+    AFFECTIVE + " INT NOT NULL DEFAULT 0) ";
 
 const std::string CREATE_TAB_IMAGE_FACE = "CREATE TABLE IF NOT EXISTS " + VISION_IMAGE_FACE_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +

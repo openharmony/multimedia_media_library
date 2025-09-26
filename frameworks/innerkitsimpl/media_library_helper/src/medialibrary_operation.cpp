@@ -126,6 +126,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_SALIENCY, OperationObject::VISION_SALIENCY },
         { PAH_ANA_FACE_TAG, OperationObject::VISION_FACE_TAG },
         { PAH_ANA_HEAD, OperationObject::VISION_HEAD },
+        { PAH_ANA_AFFECTIVE, OperationObject::VISION_AFFECTIVE },
         { PAH_ANA_POSE, OperationObject::VISION_POSE },
         { PAH_ANA_FOREGROUND, OperationObject::ANALYSIS_FOREGROUND},
 
@@ -211,6 +212,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::VISION_SEGMENTATION, { { OperationType::UNKNOWN_TYPE, VISION_SEGMENTATION_TABLE } } },
         { OperationObject::VISION_COMPOSITION, { { OperationType::UNKNOWN_TYPE, VISION_COMPOSITION_TABLE } } },
         { OperationObject::VISION_HEAD, { { OperationType::UNKNOWN_TYPE, VISION_HEAD_TABLE } } },
+        { OperationObject::VISION_AFFECTIVE, { { OperationType::UNKNOWN_TYPE, VISION_AFFECTIVE_TABLE } } },
         { OperationObject::VISION_POSE, { { OperationType::UNKNOWN_TYPE, VISION_POSE_TABLE } } },
         { OperationObject::VISION_TOTAL, { { OperationType::UNKNOWN_TYPE, VISION_TOTAL_TABLE } } },
         { OperationObject::VISION_IMAGE_FACE, { { OperationType::UNKNOWN_TYPE, VISION_IMAGE_FACE_TABLE } } },
