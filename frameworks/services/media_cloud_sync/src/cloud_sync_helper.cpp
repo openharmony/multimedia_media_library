@@ -122,15 +122,20 @@ bool CloudSyncHelper::IsSyncSwitchOpen()
     }
     MEDIA_DEBUG_LOG("GetPhotosSyncSwitchStatus fail, continue query old sync switch");
 
-    if (!InitDataShareHelper()) {
-        return true;
-    }
+    shared_ptr<DataShare::DataShareResultSet> resultSet;
+    {
+        lock_guard<mutex> lock(uriMutex_);
+        if (!InitDataShareHelper()) {
+            return true;
+        }
 
-    Uri uri(uri_);
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(BUNDLE_NAME_KEY, GALLERY_BUNDLE_NAME);
-    std::vector<std::string> columns = {SWITCH_STATUS_KEY};
-    auto resultSet = dataShareHelper_->Query(uri, predicates, columns);
+        Uri uri(uri_);
+        DataShare::DataSharePredicates predicates;
+        predicates.EqualTo(BUNDLE_NAME_KEY, GALLERY_BUNDLE_NAME);
+        std::vector<std::string> columns = {SWITCH_STATUS_KEY};
+        resultSet = dataShareHelper_->Query(uri, predicates, columns);
+    }
+    
     bool errConn = resultSet == nullptr;
     CHECK_AND_RETURN_RET_LOG(!errConn, false, "Media_Cloud: resultSet is null, maybe never login");
 

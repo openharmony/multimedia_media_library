@@ -67,6 +67,8 @@ private:
     std::string SWITCH_STATUS_KEY = "isSwitchOn";
     std::string BUNDLE_NAME_KEY = "bundleName";
     std::string GALLERY_BUNDLE_NAME;
+
+    std::mutex uriMutex_;
 };
 
 class MediaCloudSyncCallback : public FileManagement::CloudSync::CloudSyncCallback {
