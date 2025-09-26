@@ -32,6 +32,13 @@
 #include "result_set_utils.h"
 #include "vision_column.h"
 #include "change_request_move_assets_dto.h"
+#include "vision_image_face_column.h"
+#include "photo_map_column.h"
+#include "media_column.h"
+#include "rdb_utils.h"
+#include "dfx_refresh_manager.h"
+#include "refresh_business_name.h"
+#include "vision_affective_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -141,5 +148,63 @@ shared_ptr<NativeRdb::ResultSet> MediaAlbumsRdbOperations::RemoveAssetsGetAlbumI
     std::vector<std::string> fetchColumns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COUNT,
         PhotoAlbumColumns::ALBUM_IMAGE_COUNT, PhotoAlbumColumns::ALBUM_VIDEO_COUNT };
     return MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, fetchColumns);
+}
+
+int32_t MediaAlbumsRdbOperations::GetSelectedPortraitAlbumPredicatesByEmotion(AlbumGetSelectedAssetsDto &dto)
+{
+    string column = "( CASE WHEN " + VISION_AFFECTIVE_TABLE + "." + VALENCE + " >= 0.5 AND " + VISION_AFFECTIVE_TABLE +
+                    "." + AROUSAL + " = 0.1 THEN 1 WHEN " + VISION_AFFECTIVE_TABLE + "." + VALENCE + " = 0.1 OR " +
+                    VISION_AFFECTIVE_TABLE + "." + AROUSAL + " >= 0.5 THEN -1 ELSE 0 END ) * 1000 + " +
+                    VISION_IMAGE_FACE_TABLE + "." + FACE_AESTHETICS_SCORE + " AS total_score";
+    dto.columns.push_back(column);
+ 
+    string onClause = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + " = " + ANALYSIS_PHOTO_MAP_TABLE +
+                      "." + PhotoMap::ASSET_ID + " AND " + ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ALBUM_ID +
+                      " = " + to_string(dto.albumId);
+    vector<string> clauses = {onClause};
+    dto.predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On(clauses);
+    onClause = VISION_IMAGE_FACE_TABLE + "." + MediaColumn::MEDIA_ID + " = " + PhotoColumn::PHOTOS_TABLE + "." +
+               MediaColumn::MEDIA_ID + " AND " + VISION_IMAGE_FACE_TABLE + "." + TAG_ID + " = ( SELECT " + GROUP_TAG +
+               " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " +
+               to_string(dto.albumId) + " )";
+    clauses = {onClause};
+    dto.predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On(clauses);
+    onClause = VISION_AFFECTIVE_TABLE + "." + MediaColumn::MEDIA_ID + " = " + PhotoColumn::PHOTOS_TABLE + "." +
+               MediaColumn::MEDIA_ID;
+    clauses = {onClause};
+    dto.predicates.LeftOuterJoin(VISION_AFFECTIVE_TABLE)->On(clauses);
+ 
+    dto.predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0);
+    dto.predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
+    dto.predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
+    bool isTemp = false;
+    dto.predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, isTemp);
+    dto.predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
+ 
+    string condition =  VISION_IMAGE_FACE_TABLE + "." + FACE_AESTHETICS_SCORE;
+    dto.predicates.GreaterThan(condition, 20);
+    condition =  "total_score";
+    dto.predicates.GreaterThan(condition, 0);
+    dto.predicates.OrderByDesc("total_score");
+    dto.predicates.Distinct();
+    return E_SUCCESS;
+}
+ 
+std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsRdbOperations::GetSelectedAssets(
+                                                    AlbumGetSelectedAssetsDto &dto)
+{
+    auto startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
+    GetSelectedPortraitAlbumPredicatesByEmotion(dto);
+    NativeRdb::RdbPredicates predicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, PhotoColumn::PHOTOS_TABLE);
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, dto.columns);
+    auto totalCostTime = MediaFileUtils::UTCTimeMilliSeconds() - startTime;
+    AccurateRefresh::DfxRefreshManager::QueryStatementReport(
+        AccurateRefresh::GET_ASSETS_BUSSINESS_NAME, totalCostTime, predicates.GetStatement());
+    CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to query album assets");
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+    return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 }
 } // namespace OHOS::Media
