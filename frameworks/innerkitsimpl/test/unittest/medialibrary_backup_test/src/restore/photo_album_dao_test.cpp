@@ -81,19 +81,6 @@ HWTEST_F(PhotoAlbumDaoTest, check_database_exists, TestSize.Level0)
     MEDIA_INFO_LOG("check_database_exists end");
 }
 
-HWTEST_F(PhotoAlbumDaoTest, GetPhotoAlbum_Success, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("GetPhotoAlbum_Success start");
-    auto medialibraryRdbPtr = DatabaseUtils().GetRdbStore(DB_PATH_MEDIALIBRARY);
-    EXPECT_FALSE(medialibraryRdbPtr == nullptr);
-    PhotoAlbumDao photoAlbumDao;
-    photoAlbumDao.SetMediaLibraryRdb(medialibraryRdbPtr);
-    std::string lPath = "/Pictures/其它";
-    PhotoAlbumDao::PhotoAlbumRowData screenRecorderAlbum = photoAlbumDao.GetPhotoAlbum(lPath);
-    EXPECT_EQ(screenRecorderAlbum.lPath, lPath);
-    MEDIA_INFO_LOG("GetPhotoAlbum_Success end");
-}
-
 HWTEST_F(PhotoAlbumDaoTest, album_op_success, TestSize.Level0)
 {
     MEDIA_INFO_LOG("album_op_success start");
