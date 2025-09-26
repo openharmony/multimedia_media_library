@@ -41,6 +41,7 @@
 #include "values_bucket.h"
 #include "post_event_utils.h"
 #include "photo_file_utils.h"
+#include "scanner_map_code_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -393,6 +394,11 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata, string &tableNam
     if (mediaTypeUri.empty()) {
         return "";
     }
+
+    if (!ScannerMapCodeUtils::MetadataToMapCode(metadata)) {
+        MEDIA_ERR_LOG("MediaDataAbility Insert MapCode failed, return");
+    }
+
     if (api == MediaLibraryApi::API_10) {
         return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(rowNum),
             MediaFileUtils::GetExtraUri(metadata.GetFileName(), metadata.GetFilePath())) + "?api_version=10";
@@ -471,6 +477,11 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableNam
     }
 
     CHECK_AND_RETURN_RET(!mediaTypeUri.empty(), "");
+
+    if (!ScannerMapCodeUtils::MetadataToMapCode(metadata)) {
+        MEDIA_ERR_LOG("MediaDataAbility Insert MapCode failed, return");
+    }
+
     CHECK_AND_RETURN_RET(api != MediaLibraryApi::API_10, MakeFileUri(mediaTypeUri, metadata));
     return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(metadata.GetFileId()));
 }
@@ -500,6 +511,9 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList, const string &
     NativeRdb::RdbPredicates rdbPredicate(tableName);
     rdbPredicate.In(MEDIA_DATA_DB_ID, idList);
     int32_t ret = rdbStore->Delete(rdbPredicate);
+    if (ret && !ScannerMapCodeUtils::DeleteMapCodesByFileIds(idList)) {
+        MEDIA_ERR_LOG("MediaScannerDb DeleteMetadata MapCode failed, return");
+    }
     return ret == static_cast<int32_t>(idList.size());
 }
 

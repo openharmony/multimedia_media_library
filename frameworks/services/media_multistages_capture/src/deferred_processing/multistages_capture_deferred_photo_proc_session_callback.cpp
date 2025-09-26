@@ -24,6 +24,7 @@
 #include "media_file_uri.h"
 #include "media_log.h"
 #include "medialibrary_asset_operations.h"
+#include "multistages_capture_dao.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
@@ -294,6 +295,8 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
         MEDIA_INFO_LOG("MultistagesCapture, this picture is temp.");
         MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false, false);
         UpdateHighQualityPictureInfo(imageId, cloudImageEnhanceFlag, modifyType);
+        int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        MultiStagesCaptureDao().UpdatePhotoDirtyNew(fileId);
         return;
     }
     ProcessAndSaveHighQualityImage(imageId, picture, resultSet, cloudImageEnhanceFlag, modifyType);

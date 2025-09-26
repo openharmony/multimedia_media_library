@@ -113,6 +113,13 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "./src/group_photo/clone_restore_group_photo_test.cpp",
     "./src/portrait_album/portrait_album_clone_test.cpp",
     "./src/portrait_album/portrait_album_source.cpp",
+
+    "${MEDIALIB_UTILS_PATH}/src/cpu_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore_map_code_utils.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_map_code_column.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_map_code_operation.cpp",
+    "./src/medialibrary_backup_clone_mapcode_test.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/map_code_upload_checker.cpp",
   ]
 
   source_ipc_client = [
@@ -163,6 +170,9 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
     "zlib:shared_libz",
+    "preferences:native_preferences",
+    "googletest:gtest_main",
+    "googletest:gmock_main",
   ]
 
   defines = []

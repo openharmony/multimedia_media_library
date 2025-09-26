@@ -55,6 +55,7 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 static constexpr int32_t NUMBER_TWO = 2;
+static constexpr int32_t NUMBER_ONE = 1;
 
 namespace {
 
@@ -160,7 +161,7 @@ bool CheckInsertResult(const AlbumAccurateRefresh &albumRefresh, const AlbumChan
 bool CheckInsertNotify(const AlbumAccurateRefresh &albumRefresh, const AlbumChangeInfo &albumInfo)
 {
     auto notifyInfos = albumRefresh.notifyExe_.notifyInfos_;
-    if (notifyInfos.size() != 1) {
+    if (notifyInfos.size() != NUMBER_ONE && notifyInfos.size() != NUMBER_TWO) {
         MEDIA_ERR_LOG("notify size error.");
         return false;
     }
@@ -232,7 +233,7 @@ bool CheckBatchInsertNotify(const AlbumAccurateRefresh &albumRefresh, const Albu
     const AlbumChangeInfo &trashAlbumInfo)
 {
     auto notifyInfos = albumRefresh.notifyExe_.notifyInfos_;
-    if (notifyInfos.size() != 1) {
+    if (notifyInfos.size() != NUMBER_ONE && notifyInfos.size() != NUMBER_TWO) {
         MEDIA_ERR_LOG("notify size error.");
         return false;
     }

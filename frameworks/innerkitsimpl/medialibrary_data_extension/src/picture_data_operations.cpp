@@ -187,7 +187,8 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
 std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const std::string& imageId,
     bool &isHighQualityPicture, bool &isTakeEffect, bool isCleanImmediately)
 {
-    MEDIA_DEBUG_LOG("enter %{public}s enter", imageId.c_str());
+    lock_guard<mutex>  lock(pictureMapMutex_);
+    MEDIA_INFO_LOG("enter %{public}s enter", imageId.c_str());
     enum PictureType pictureType;
     std::shared_ptr<Media::Picture> picture;
     isHighQualityPicture = false;
@@ -199,7 +200,7 @@ std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const 
             isHighQualityPicture = (pictureType == HIGH_QUALITY_PICTURE);
             return picture;
         } else {
-            MEDIA_INFO_LOG("GetDataWithImageId not found, pictureType:%{public}d", static_cast<int32_t>(pictureType));
+            MEDIA_WARN_LOG("GetDataWithImageId not found, pictureType:%{public}d", static_cast<int32_t>(pictureType));
         }
     }
     return picture;
@@ -234,7 +235,6 @@ std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageIdAndPict
     PictureType pictureType, bool &isTakeEffect, bool isCleanImmediately)
 {
     MEDIA_DEBUG_LOG("enter ");
-    lock_guard<mutex>  lock(pictureMapMutex_);
     std::map<std::string, sptr<PicturePair>>::iterator iter;
     std::shared_ptr<Media::Picture> picture;
     switch (pictureType) {
