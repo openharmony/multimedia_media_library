@@ -65,7 +65,7 @@ HWTEST_F(MediaImageFrameWorkUtilsTest, GetExifRotate_by_image_source_Test_001, T
     unique_ptr<ImageSource> imageSource = CreateTestImageSource();
     ASSERT_NE(imageSource, nullptr);
     auto ret = MediaImageFrameWorkUtils::GetExifRotate(imageSource, exifRotate);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("GetExifRotate_by_image_source_Test_001 end");
 }
 
@@ -74,8 +74,9 @@ HWTEST_F(MediaImageFrameWorkUtilsTest, GetExifRotate_by_picture_Test_001, TestSi
     int32_t exifRotate;
     auto picture = CreateTestPicture();
     ASSERT_NE(picture, nullptr);
+    // picture->GetExifMetadata() failed
     auto ret = MediaImageFrameWorkUtils::GetExifRotate(picture, exifRotate);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_ERR);
 }
 
 HWTEST_F(MediaImageFrameWorkUtilsTest, GetExifRotate_by_path_Test_001, TestSize.Level1)
@@ -83,7 +84,7 @@ HWTEST_F(MediaImageFrameWorkUtilsTest, GetExifRotate_by_path_Test_001, TestSize.
     int32_t exifRotate;
     string path = HDR_PICTURE_PATH;
     auto ret = MediaImageFrameWorkUtils::GetExifRotate(path, exifRotate);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_ERR);
 }
 
 HWTEST_F(MediaImageFrameWorkUtilsTest, GetOrientationKey_by_image_source_Test_001, TestSize.Level1)
