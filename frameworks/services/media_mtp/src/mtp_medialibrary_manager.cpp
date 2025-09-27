@@ -186,10 +186,7 @@ static uint32_t HandleConvertToAdded(uint32_t key)
 
 static void GetHandlesProcessResultSet(shared_ptr<DataShare::DataShareResultSet> &resultSet, vector<int> &outHandles)
 {
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("fail to get handles");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "fail to get handles");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         outHandles.push_back(id);
