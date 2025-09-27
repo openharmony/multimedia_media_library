@@ -33,6 +33,7 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+#define COMPILE_HIDDEN __attribute__ ((visibility ("hidden")))
 
 class MediaAssetRdbStore {
 public:
@@ -58,7 +59,7 @@ private:
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_ {nullptr};
 };
 
-class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
+class COMPILE_HIDDEN MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
 public:
     int32_t OnCreate(NativeRdb::RdbStore& rdbStore) override;
     int32_t OnUpgrade(NativeRdb::RdbStore& rdbStore, int32_t oldVersion, int32_t newVersion) override;

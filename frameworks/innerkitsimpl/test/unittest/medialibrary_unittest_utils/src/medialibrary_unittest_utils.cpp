@@ -387,5 +387,37 @@ bool MediaLibraryUnitTestUtils::writeBytesToFile(size_t numBytes, const char* pa
 
     return true;
 }
+
+bool MediaLibraryUnitTestUtils::CreateTestTables(
+    const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, const std::vector<std::string> &tables)
+{
+    std::lock_guard<std::mutex> lock(Mutex_);
+    CHECK_AND_RETURN_RET(!tables.empty(), false);
+    for (const auto &table : tables) {
+        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbstore not init, clean table abortion");
+        int32_t ret = rdbStore->ExecuteSql(table);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false, "Execute sql %{private}s failed", table.c_str());
+    }
+    return true;
+}
+//  dropTable default value is false Clear table records but keep the table structure
+bool MediaLibraryUnitTestUtils::CleanTestTables(
+    const std::shared_ptr<MediaLibraryRdbStore> &rdbStore, const std::vector<std::string> &tables, bool dropTable)
+{
+    std::lock_guard<std::mutex> lock(Mutex_);
+    CHECK_AND_RETURN_RET(!tables.empty(), false);
+    for (const auto &table : tables) {
+        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbstore not init, clean table abortion");
+        std::ostringstream oss;
+        oss << (dropTable ? "DROP  TABLE " : "DELETE FROM ") << table << ";";
+        int32_t ret = rdbStore->ExecuteSql(oss.str());
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK,
+            false,
+            "clean table = %{public}s failed dropTable = %{public}d",
+            oss.str().c_str(),
+            dropTable);
+    }
+    return true;
+}
 }
 }

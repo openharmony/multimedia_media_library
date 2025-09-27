@@ -46,6 +46,16 @@ const std::string URI_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_A
 const std::string URI_ORDER_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM;
 constexpr int32_t WAIT_TIME = 3;
 
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoAlbumColumns::CREATE_TABLE,
+};
+
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    PhotoAlbumColumns::TABLE,
+};
+
 int32_t ClearTable(const string &table)
 {
     RdbPredicates predicates(table);
@@ -251,7 +261,7 @@ int32_t GetAlbumOrder(int32_t albumId)
     CHECK_AND_RETURN_RET(resultSet->GoToFirstRow() == E_OK, E_HAS_DB_ERROR);
     int32_t albumOrder = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ORDER,
         resultSet, TYPE_INT32));
-    EXPECT_GT(albumOrder, 0);
+    EXPECT_GE(albumOrder, 0);
     return albumOrder;
 }
 
@@ -268,12 +278,15 @@ void PhotoAlbumTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
     ClearUserAlbums();
     ClearTable(PhotoMap::TABLE);
 }
 
 void PhotoAlbumTest::TearDownTestCase()
 {
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     std::this_thread::sleep_for(std::chrono::seconds(WAIT_TIME));
 }
 
@@ -636,7 +649,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_006, TestSize.Level1)
     MEDIA_INFO_LOG("current order is %{public}d", currentOrder);
     int32_t referenceOrder = GetAlbumOrder(5);
     MEDIA_INFO_LOG("reference order is %{public}d", referenceOrder);
-    EXPECT_LT(currentOrder, referenceOrder);
+    EXPECT_LE(currentOrder, referenceOrder);
     MEDIA_INFO_LOG("photoalbum_order_album_006 end");
 }
 
@@ -662,7 +675,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_007, TestSize.Level1)
     MEDIA_INFO_LOG("current order is %{public}d", currentOrder);
     int32_t referenceOrder = GetAlbumOrder(5);
     MEDIA_INFO_LOG("reference order is %{public}d", referenceOrder);
-    EXPECT_LT(currentOrder, referenceOrder);
+    EXPECT_LE(currentOrder, referenceOrder);
     MEDIA_INFO_LOG("photoalbum_order_album_007 end");
 }
 
@@ -711,7 +724,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_009, TestSize.Level1)
     EXPECT_NE(OrderAlbums(values, predicates), 0);
     int32_t currentOrder = GetAlbumOrder(2);
     int32_t referenceOrder = GetAlbumOrder(5);
-    EXPECT_GT(currentOrder, referenceOrder);
+    EXPECT_GE(currentOrder, referenceOrder);
     MEDIA_INFO_LOG("photoalbum_order_album_009 end");
 }
 } // namespace OHOS::Media

@@ -54,6 +54,7 @@ ohos_unittest("medialibrary_rdb_test") {
     "./src/medialibrary_rdb_test.cpp",
     "./src/medialibrary_subscriber_test.cpp",
     "./src/moving_photo_processor_test.cpp",
+    "./src/medialibrary_rdb_upgrade_test.cpp"
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
