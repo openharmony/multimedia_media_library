@@ -23,6 +23,7 @@
 #include <thread>
 #include <sys/stat.h>
 
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
@@ -216,7 +217,9 @@ std::vector<int> SplitVersion(const std::string& version)
     std::stringstream ss(version);
     std::string item;
     while (std::getline(ss, item, '.')) {
-        parts.push_back(std::stoi(item));
+        if (MediaFileUtils::IsValidInteger(item)) {
+            parts.push_back(std::stoi(item));
+        }
     }
     return parts;
 }
