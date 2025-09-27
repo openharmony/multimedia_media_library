@@ -80,6 +80,7 @@ void InsertSystemAlbums()
         int32_t ret = g_rdbStore->ExecuteSql(sql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Execute sql %{public}s failed", sql.c_str());
+            return;
         }
     }
 }
