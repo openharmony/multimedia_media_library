@@ -29,9 +29,12 @@
 #undef protected
  
 #include "media_column.h"
+#include "vision_db_sqls.h"
+#include "story_db_sqls.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
 #include "story_album_column.h"
 #include "user_define_ipc_client.h"
@@ -48,78 +51,44 @@ using namespace OHOS::NativeRdb;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore = nullptr;
 static constexpr int32_t SLEEP_SECONDS = 1;
 
-static int32_t DeleteDatabaseData()
-{
-    if (g_rdbStore == nullptr) {
-        std::cout << "g_rdbStore == nullptr" << std::endl;
-        return E_ERR;
-    }
-    std::cout << "DeleteDatabaseData" << std::endl;
-    // delete photo
-    std::string deletePhotoData = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
-    int32_t ret = g_rdbStore->ExecuteSql(deletePhotoData);
-    if (ret != NativeRdb::E_OK) {
-        std::cout << "Delete Photos Data Failed:" << deletePhotoData;
-        return E_ERR;
-    }
-    std::cout << "Delete Photos Data success." << std::endl;
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
+    CREATE_HIGHLIGHT_ALBUM_TABLE,
+    CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
+};
 
-    // tab_analysis_total
-    std::string deleteAnalysisTotalSql = "DELETE FROM tab_analysis_total;";
-    ret = g_rdbStore->ExecuteSql(deleteAnalysisTotalSql);
-    if (ret != NativeRdb::E_OK) {
-        std::cout << "Delete tab_analysis_total Data Failed:" << deleteAnalysisTotalSql;
-        return E_ERR;
-    }
-    std::cout << "Delete tab_analysis_total Data success." << std::endl;
-
-    // tab_user_photography_info
-    std::string deleteUserPhotographyInfo = "DELETE FROM tab_user_photography_info;";
-    ret = g_rdbStore->ExecuteSql(deleteUserPhotographyInfo);
-    if (ret != NativeRdb::E_OK) {
-        std::cout << "Delete tab_user_photography_info Data Failed:" << deleteAnalysisTotalSql;
-        return E_ERR;
-    }
-    std::cout << "Delete tab_user_photography_info Data success." << std::endl;
-
-    // tab_highlight_album
-    std::string deleteHightlightAlbum = "DELETE FROM tab_highlight_album;";
-    ret = g_rdbStore->ExecuteSql(deleteHightlightAlbum);
-    if (ret != NativeRdb::E_OK) {
-        std::cout << "Delete tab_highlight_album Data Failed:" << deleteAnalysisTotalSql;
-        return E_ERR;
-    }
-    std::cout << "Delete tab_highlight_album Data success." << std::endl;
-
-    return E_OK;
-}
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    VISION_TOTAL_TABLE,
+    USER_PHOTOGRAPHY_INFO_TABLE,
+    HIGHLIGHT_ALBUM_TABLE,
+};
  
 void GetDataAnalysisProcessTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    DeleteDatabaseData();
-    MEDIA_INFO_LOG("SetUpTestCase");
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    MEDIA_INFO_LOG("GetDataAnalysisProcessTest SetUpTestCase");
 }
  
 void GetDataAnalysisProcessTest::TearDownTestCase(void)
 {
-    DeleteDatabaseData();
-    MEDIA_INFO_LOG("TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
+    MEDIA_INFO_LOG("GetDataAnalysisProcessTest TearDownTestCase");
 }
  
 void GetDataAnalysisProcessTest::SetUp()
 {
-    MEDIA_INFO_LOG("SetUp");
-    DeleteDatabaseData();
+    MEDIA_INFO_LOG("GetDataAnalysisProcessTest SetUp");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
 }
  
-void GetDataAnalysisProcessTest::TearDown(void)
-{
-    MEDIA_INFO_LOG("TearDown");
-    DeleteDatabaseData();
-}
+void GetDataAnalysisProcessTest::TearDown(void) {}
  
 static void InsertAssetIntoPhotosTable(const std::string &filePath)
 {

@@ -31,6 +31,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
 
 namespace OHOS::Media {
@@ -41,19 +42,13 @@ using namespace OHOS::NativeRdb;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static constexpr int32_t SLEEP_SECONDS = 1;
 
-static int32_t ClearUserAlbums()
-{
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
+static std::vector<std::string> createTableSqlLists = {
+    PhotoAlbumColumns::CREATE_TABLE,
+};
 
-    int32_t rows = 0;
-    int32_t err = g_rdbStore->Delete(rows, predicates);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to clear album table, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
-    }
-    return E_OK;
-}
+static std::vector<std::string> testTables = {
+    PhotoAlbumColumns::TABLE,
+};
 
 static const string SQL_CREATE_ALBUM = "INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
     PhotoAlbumColumns::ALBUM_TYPE + ", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ", " +
@@ -118,30 +113,26 @@ void SetPhotoAlbumOrderTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start SetPhotoAlbumOrderTest failed, can not get g_rdbStore");
-        exit(1);
-    }
-    ClearUserAlbums();
-    MEDIA_INFO_LOG("SetUpTestCase");
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    MEDIA_INFO_LOG("SetPhotoAlbumOrderTest SetUpTestCase");
 }
 
 void SetPhotoAlbumOrderTest::TearDownTestCase(void)
 {
-    ClearUserAlbums();
-    MEDIA_INFO_LOG("TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    MEDIA_INFO_LOG("SetPhotoAlbumOrderTest TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 void SetPhotoAlbumOrderTest::SetUp()
 {
-    MEDIA_INFO_LOG("SetUp");
+    MEDIA_INFO_LOG("SetPhotoAlbumOrderTest SetUp");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
 }
 
-void SetPhotoAlbumOrderTest::TearDown(void)
-{
-    MEDIA_INFO_LOG("TearDown");
-}
+void SetPhotoAlbumOrderTest::TearDown(void) {}
 
 HWTEST_F(SetPhotoAlbumOrderTest, SetPhotoAlbumOrderTest_001, TestSize.Level0) {
     MEDIA_INFO_LOG("Start SetPhotoAlbumOrderTest_001");
