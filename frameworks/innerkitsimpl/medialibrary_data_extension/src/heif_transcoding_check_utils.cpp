@@ -217,7 +217,7 @@ std::vector<int> SplitVersion(const std::string& version)
     std::stringstream ss(version);
     std::string item;
     while (std::getline(ss, item, '.')) {
-        if(MediaFileUtils::IsValidInteger(item)) {
+        if (MediaFileUtils::IsValidInteger(item)) {
             parts.push_back(std::stoi(item));
         }
     }
