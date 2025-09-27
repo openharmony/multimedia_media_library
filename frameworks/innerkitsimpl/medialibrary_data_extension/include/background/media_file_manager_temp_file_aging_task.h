@@ -21,8 +21,18 @@
 #include <filesystem>
 
 #include "i_media_background_task.h"
+#include "medialibrary_unistore_manager.h"
 
 namespace OHOS::Media::Background {
+static const std::string FILE_MANAGER_TEMP_FILE_AGING_EVENT =
+    "/data/storage/el2/base/preferences/file_manager_temp_file_aging_events.xml";
+
+struct AgingFilesInfo {
+    std::vector<std::string> fileIds;
+    std::vector<std::string> filePaths;
+    std::vector<std::string> dateTakens;
+};
+
 class MediaFileManagerTempFileAgingTask : public IMediaBackGroundTask {
 public:
     virtual ~MediaFileManagerTempFileAgingTask() = default;
@@ -32,6 +42,11 @@ public:
     void Execute() override;
 
 private:
+    void SetBatchStatus(int32_t startFileId);
+    int32_t GetBatchStatus();
+    AgingFilesInfo QueryAgingFiles(std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t startFileId);
+    void DeleteTempFiles(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
+        const AgingFilesInfo &agingFilesInfo);
     void HandleMediaFileManagerTempFileAging();
 };
 }  // namespace OHOS::Media::Background
