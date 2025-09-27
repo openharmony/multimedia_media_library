@@ -195,21 +195,21 @@ int32_t CloudAlbumDataConvert::ConvertToDoubleScreenshot(
     std::shared_ptr<MDKRecord> record, std::map<std::string, MDKRecordField> &data)
 {
     std::string lPath;
+    CHECK_AND_RETURN_RET_WARN_LOG(record != nullptr, E_MEDIA_CLOUD_ARGS_INVAILD, "record is nullptr");
+    std::string recordId = record->GetRecordId();
     if (data.find("localPath") == data.end() || data.at("localPath").GetString(lPath) != MDKLocalErrorCode::NO_ERROR) {
         MEDIA_ERR_LOG("ConvertToDoubleScreenshot  lpath error");
         return E_MEDIA_CLOUD_ARGS_INVAILD;
     }
 
-    MEDIA_INFO_LOG("ConvertToDoubleScreenshot lpath:%{public}s", lPath.c_str());
+    MEDIA_INFO_LOG("ConvertToDoubleScreenshot lpath:%{public}s, recordId:%{pubilc}s", lPath.c_str(), recordId.c_str());
     if (lPath == DEFAULT_SCREENSHOT_LPATH_EN) {
         data["albumName"] = MDKRecordField(SCREEN_SHOT_AND_RECORDER_EN);
-        record->SetRecordId(DEFAULT_SCREENSHOT_CLOUDID);
     }
 
     if (lPath == DEFAULT_SCREENRECORDS_LPATH) {
         data["localPath"] = MDKRecordField(DEFAULT_SCREENSHOT_LPATH_EN);
         data["albumName"] = MDKRecordField(SCREEN_SHOT_AND_RECORDER_EN);
-        record->SetRecordId(DEFAULT_SCREENSHOT_CLOUDID);
     }
     return E_OK;
 }
