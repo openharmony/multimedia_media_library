@@ -75,33 +75,23 @@ struct PortraitData {
 constexpr int32_t TEST_INDEX_ONE = 1;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    CREATE_ANALYSIS_ALBUM_MAP,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+    CREATE_TAB_IMAGE_FACE,
+};
+
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    ANALYSIS_PHOTO_MAP_TABLE,
+    ANALYSIS_ALBUM_TABLE,
+    VISION_IMAGE_FACE_TABLE,
+};
+
 int GetNumber()
 {
     return ++number;
-}
-
-int32_t ExecSqls(const vector<string> &sqls)
-{
-    EXPECT_NE((g_rdbStore == nullptr), true);
-    int32_t err = E_OK;
-    for (const auto &sql : sqls) {
-        err = g_rdbStore->ExecuteSql(sql);
-        MEDIA_INFO_LOG("exec sql: %{public}s result: %{public}d", sql.c_str(), err);
-        EXPECT_EQ(err, E_OK);
-    }
-    return E_OK;
-}
-
-void ClearTables()
-{
-    string clearPhoto = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
-    string clearAnalysisAlbum = "DELETE FROM " + ANALYSIS_ALBUM_TABLE;
-    string clearAnalysisPhotoMap = "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE;
-    string clearImageFace = "DELETE FROM " + VISION_IMAGE_FACE_TABLE;
-    vector<string> executeSqlStrs = { clearPhoto, clearAnalysisAlbum, clearAnalysisPhotoMap, clearImageFace };
-    MEDIA_INFO_LOG("start clear data");
-    ExecSqls(executeSqlStrs);
-    number = 0;
 }
 
 string GetTitle(int64_t &timestamp)
@@ -268,20 +258,24 @@ void PortraitAlbumUpdateTest::SetUpTestCase()
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    number = 0;
     MEDIA_INFO_LOG("PortraitAlbumUpdateTest SetUpTestCase end");
 }
 
 void PortraitAlbumUpdateTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("PortraitAlbumUpdateTest TearDownTestCase");
-    ClearTables();
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void PortraitAlbumUpdateTest::SetUp()
 {
     MEDIA_INFO_LOG("PortraitAlbumUpdateTest SetUp");
-    ClearTables();
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
+    number = 0;
 }
 
 void PortraitAlbumUpdateTest::TearDown()
