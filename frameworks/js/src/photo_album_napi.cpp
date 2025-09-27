@@ -52,6 +52,8 @@ static const string PHOTO_ALBUM_CLASS = "UserFileMgrPhotoAlbum";
 static const string PHOTOACCESS_PHOTO_ALBUM_CLASS = "PhotoAccessPhotoAlbum";
 static const string COUNT_GROUP_BY = "count(*) AS count";
 std::mutex PhotoAlbumNapi::mutex_;
+static const int32_t NAPI_INVALID_PARAMETER_ERROR = 23800151;
+static const int32_t MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR = 23800301;
 
 struct TrashAlbumExecuteOpt {
     napi_env env;
@@ -1851,17 +1853,20 @@ napi_value PhotoAlbumNapi::JSPhotoAccessGetSharedPhotoAssets(napi_env env, napi_
     return jsFileArray;
 }
 
-static napi_value checkArgsGetSelectedPhotoAssets(napi_env env, napi_callback_info info,
-    unique_ptr<PhotoAlbumNapiAsyncContext> &context)
+static napi_value checkArgsGetSelectedPhotoAssets(
+    napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &context)
 {
+    napi_value result = nullptr;
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
-        JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        NAPI_INVALID_PARAMETER_ERROR);
  
     /* Parse the first argument */
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
-        JS_INNER_FAIL);
+    CHECK_ARGS(env,
+        MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
+        NAPI_INVALID_PARAMETER_ERROR);
  
     if (context->argc == ARGS_TWO) {
         unique_ptr<char[]> tmp;
@@ -1870,23 +1875,16 @@ static napi_value checkArgsGetSelectedPhotoAssets(napi_env env, napi_callback_in
         tie(succ, tmp, ignore) = MediaLibraryNapiUtils::ToUTF8String(env, context->argv[PARAM1]);
         if (succ) {
             context->filter = string(tmp.get());
+        } else {
+            return result;
         }
     }
  
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
-    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
-        PhotoColumn::IsPhotoColumn, NapiAssetType::TYPE_PHOTO));
-    if (photoAlbum->GetHiddenOnly() || photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIDDEN) {
-        if (!MediaLibraryNapiUtils::IsSystemApp()) {
-            NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-            return nullptr;
-        }
-        context->isSystemApi = true;
-        context->predicates.IndexedBy(PhotoColumn::PHOTO_HIDDEN_TIME_INDEX);
-    }
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(
+        env, context->fetchColumn, PhotoColumn::IsPhotoColumn, NapiAssetType::TYPE_PHOTO));
  
-    napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), NAPI_INVALID_PARAMETER_ERROR);
     return result;
 }
  
@@ -1896,42 +1894,38 @@ static void JSPhotoAccessGetSelectedPhotoAssetsExecute(napi_env env, void *data)
     tracer.Start("JSPhotoAccessGetPhotoAssetsExecute");
  
     auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
-    CHECK_IF_EQUAL(context != nullptr, "context is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto *objectInfo = context->objectInfo;
+    CHECK_NULL_PTR_RETURN_VOID(objectInfo, "objectInfo is null");
+    auto photoAlbum = objectInfo->GetPhotoAlbumInstance();
+    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbumInstance is null");
  
     ConvertColumnsForPortrait(context);
-    int32_t errCode = 0;
-    int32_t userId = -1;
-    AlbumGetSelectedAssetsReqBody reqBody;
-    if (context->objectInfo != nullptr) {
-        shared_ptr<PhotoAlbum> photoAlbum =  context->objectInfo->GetPhotoAlbumInstance();
-        if (photoAlbum != nullptr) {
-            userId = photoAlbum->GetUserId();
-            reqBody.albumId = photoAlbum->GetAlbumId();
-        }
-    }
  
+    AlbumGetSelectedAssetsReqBody reqBody;
+    int32_t userId = photoAlbum->GetUserId();
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.predicates = context->predicates;
+    reqBody.columns = context->fetchColumn;
     if (!context->filter.empty()) {
         reqBody.filter = context->filter;
     }
-   
-    reqBody.predicates = context->predicates;
-    reqBody.columns = context->fetchColumn;
-    
+ 
     AlbumGetSelectedAssetsRespBody respBody;
     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_SYS_GET_SELECTED_ASSETS);
     auto client = IPC::UserDefineIPCClient().SetUserId(userId);
-    errCode = client.Call(businessCode, reqBody, respBody);
-    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
-    if (errCode == E_OK) {
-        resultSet = respBody.resultSet;
-    } else {
-        NAPI_ERR_LOG("UserDefineIPCClient Call failed, errCode is %{public}d", errCode);
-    }
- 
-    if (resultSet == nullptr) {
-        context->SaveError(E_HAS_DB_ERROR);
+    int32_t errCode = client.Call(businessCode, reqBody, respBody);
+    if (errCode < 0) {
+        if (errCode == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->error = MEDIA_LIBRARY_INTERNAL_SYSTEM_ERROR;
+        }
+        NAPI_ERR_LOG("get selected assets failed, errCode is %{public}d", errCode);
         return;
     }
+ 
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = respBody.resultSet;
     context->fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     context->fetchResult->SetUserId(userId);
@@ -1939,9 +1933,13 @@ static void JSPhotoAccessGetSelectedPhotoAssetsExecute(napi_env env, void *data)
  
 napi_value PhotoAlbumNapi::JSPhotoAccessGetSelectedPhotoAssets(napi_env env, napi_callback_info info)
 {
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "Only system apps can get the selected photo assets");
+        return nullptr;
+    }
     unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
-    CHECK_NULLPTR_RET(checkArgsGetSelectedPhotoAssets(env, info, asyncContext));
-   
+    CHECK_COND(env, checkArgsGetSelectedPhotoAssets(env, info, asyncContext) != nullptr, NAPI_INVALID_PARAMETER_ERROR);
+ 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetSelectedPhotoAssets",
         JSPhotoAccessGetSelectedPhotoAssetsExecute, JSGetPhotoAssetsCallbackComplete);
 }
