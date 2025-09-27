@@ -22,6 +22,7 @@
 #include "file_asset.h"
 #include "rdb_open_callback.h"
 #include "rdb_store_config.h"
+#include "medialibrary_rdbstore.h"
 
 namespace OHOS {
 namespace Media {
@@ -73,6 +74,10 @@ public:
         const std::string &mode, const int32_t tableType);
     static bool writeBytesToFile(size_t numBytes, const char* path, size_t& resultFileSize);
     static void ClearTable(const std::string &table);
+    static bool CreateTestTables(const std::shared_ptr<MediaLibraryRdbStore>& rdbStore,
+        const std::vector<std::string>& tables);
+    static bool CleanTestTables(const std::shared_ptr<MediaLibraryRdbStore>& rdbStore,
+        const std::vector<std::string>& tables, bool dropTable = false);
     static std::mutex Mutex_;
 private:
     static inline bool isValid_ = false;

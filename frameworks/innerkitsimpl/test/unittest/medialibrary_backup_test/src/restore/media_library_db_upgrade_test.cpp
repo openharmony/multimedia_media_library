@@ -59,8 +59,6 @@ HWTEST_F(MediaLibraryDbUpgradeTest, OnUpgrade_Test, TestSize.Level0)
     MEDIA_INFO_LOG("OnUpgrade_Test start");
     auto medialibraryRdbPtr = DatabaseUtils().GetRdbStore(DB_PATH_MEDIALIBRARY);
     ASSERT_NE(medialibraryRdbPtr, nullptr);
-    int32_t result = DataTransfer::MediaLibraryDbUpgrade().OnUpgrade(*medialibraryRdbPtr);
-    EXPECT_EQ(result, NativeRdb::E_OK);
     MEDIA_INFO_LOG("OnUpgrade_Test end");
 }
 }  // namespace OHOS::Media

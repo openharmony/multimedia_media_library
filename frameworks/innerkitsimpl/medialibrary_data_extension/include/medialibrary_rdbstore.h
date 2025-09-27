@@ -195,7 +195,7 @@ public:
     std::mutex &lock_;
 };
 
-class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
+class EXPORT MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
 public:
     struct DirValuesBucket {
         int32_t directoryType;
