@@ -59,6 +59,16 @@ const vector<bool> HIDDEN_STATE = {
     false
 };
 
+static std::vector<std::string> createTableSqlLists = {
+    PhotoAlbumColumns::CREATE_TABLE,
+    PhotoColumn::CREATE_PHOTO_TABLE,
+};
+
+static std::vector<std::string> testTables = {
+    PhotoAlbumColumns::TABLE,
+    PhotoColumn::PHOTOS_TABLE,
+};
+
 const string SQL_INSERT_ALBUM = "INSERT OR IGNORE INTO " + PhotoAlbumColumns::TABLE + "(" +
     PhotoAlbumColumns::ALBUM_ID + ", " + PhotoAlbumColumns::ALBUM_TYPE + ", " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + ") ";
@@ -550,10 +560,8 @@ void AlbumCountCoverTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Failed to get rdb store!");
-        return;
-    }
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
     ClearEnv();
     InsertSystemAlbums();
     InitPhotoTrigger();
@@ -561,6 +569,7 @@ void AlbumCountCoverTest::SetUpTestCase()
 
 void AlbumCountCoverTest::TearDownTestCase()
 {
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }

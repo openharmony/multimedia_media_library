@@ -43,6 +43,7 @@ static shared_ptr<MediaLibraryRdbStore> rdbStore;
 static std::atomic<int> num{ 0 };
 
 static constexpr int64_t SEC_TO_MSEC = 1e3;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 int32_t ExecSqls(const vector<string> &sqls)
 {
@@ -297,6 +298,7 @@ void BackgroundCloudBatchSelectedFileProcessorTest::TearDownTestCase()
     BackgroundCloudBatchSelectedFileProcessor::currentDownloadIdFileInfoMap_.clear();
     BackgroundCloudBatchSelectedFileProcessor::downloadResult_.clear();
     BackgroundCloudBatchSelectedFileProcessor::downloadFileIdAndCount_.clear();
+    std::this_thread::sleep_for(chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void BackgroundCloudBatchSelectedFileProcessorTest::SetUp()
