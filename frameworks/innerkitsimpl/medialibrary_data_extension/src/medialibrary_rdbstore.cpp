@@ -388,6 +388,7 @@ void MediaLibraryRdbStore::AddUpgradeIndex(const shared_ptr<MediaLibraryRdbStore
 void MediaLibraryRdbStore::UpdateIndexHiddenTime(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
 {
     const vector<string> sqls = {
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX,
         PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
     };
     MEDIA_INFO_LOG("start update idx_schpt_hidden_time");
