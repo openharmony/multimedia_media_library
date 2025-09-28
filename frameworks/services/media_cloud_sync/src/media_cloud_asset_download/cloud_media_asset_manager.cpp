@@ -607,7 +607,10 @@ bool CloudMediaAssetManager::HasLocalAndCloudAssets(CloudMediaRetainType retainT
     predicates.Or();
     predicates.NotEqualTo(PhotoColumn::PHOTO_CLOUD_VERSION, 0);
     predicates.Or();
+    predicates.BeginWrap();
     predicates.NotEqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    predicates.NotEqualTo(PhotoColumn::PHOTO_DIRTY, -1);
+    predicates.EndWrap();
     predicates.Or();
     predicates.NotEqualTo(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE,
         static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_NULL));
