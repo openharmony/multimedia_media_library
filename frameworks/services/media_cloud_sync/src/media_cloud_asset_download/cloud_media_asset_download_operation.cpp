@@ -117,7 +117,7 @@ static const std::map<CloudMediaTaskRecoverCause, CloudMediaTaskPauseCause> RECO
 void CloudDeathRecipient::OnRemoteDied(const wptr<IRemoteObject> &object)
 {
     MEDIA_INFO_LOG("enter.");
-    CHECK_AND_RETURN_LOG(object != nullptr, "remote object is nullptr");
+    CHECK_AND_RETURN_LOG(object.promote() != nullptr, "remote object is nullptr");
     object->RemoveDeathRecipient(this);
     CHECK_AND_RETURN_LOG(operation_, "operation is nullptr");
     operation_->HandleOnRemoteDied();

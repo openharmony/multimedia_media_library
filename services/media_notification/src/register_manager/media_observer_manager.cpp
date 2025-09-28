@@ -97,7 +97,7 @@ int32_t MediaObserverManager::AddObserver(const NotifyUriType &uri,
 int32_t MediaObserverManager::RemoveObserver(const wptr<IRemoteObject> &object)
 {
     MEDIA_INFO_LOG("enter removeObserver");
-    if (object == nullptr) {
+    if (object.promote() == nullptr) {
         MEDIA_ERR_LOG("remoteObject is null");
         return E_DATAOBSERVER_IS_NULL;
     }
@@ -130,11 +130,11 @@ int32_t MediaObserverManager::RemoveObserver(const wptr<IRemoteObject> &object)
 int32_t MediaObserverManager::RemoveObsDeathRecipient(const wptr<IRemoteObject> &object)
 {
     MEDIA_INFO_LOG("enter MediaObserverManager::RemoveObsDeathRecipient");
-    if (object == nullptr || obsCallbackPecipients_.empty()) {
+    sptr<IRemoteObject> objectPtr = object.promote();
+    if (objectPtr == nullptr || obsCallbackPecipients_.empty()) {
         MEDIA_ERR_LOG("remoteObject is nullptr");
         return E_DATAOBSERVER_IS_NULL;
     }
-    sptr<IRemoteObject> objectPtr = object.promote();
     auto iter = obsCallbackPecipients_.find(objectPtr);
     if (iter != obsCallbackPecipients_.end()) {
         objectPtr->RemoveDeathRecipient(obsCallbackPecipients_[objectPtr]);
