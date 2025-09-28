@@ -141,7 +141,7 @@ int32_t CloudMediaDataClient::OnDownloadAsset(
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
-    CLOUD_SYNC_HANDLER_WRITE_LOCK;
+    DOWNLOAD_ASSET_LOCK;
     return this->dataHandler_->OnDownloadAsset(cloudIds, result);
 }
 
