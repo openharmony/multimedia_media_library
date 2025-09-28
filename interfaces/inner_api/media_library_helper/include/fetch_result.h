@@ -99,7 +99,7 @@ private:
     std::string networkId_;
     ResultNapiType resultNapiType_;
     std::shared_ptr<DataShare::DataShareResultSet> resultset_ = nullptr;
-    FetchResType fetchResType_;
+    FetchResType fetchResType_ = FetchResType::TYPE_FILE;
     int32_t userId_ = -1;
     bool hiddenOnly_ = false;
     bool locationOnly_ = false;
