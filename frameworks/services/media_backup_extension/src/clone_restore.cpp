@@ -544,6 +544,7 @@ void CloneRestore::RestorePhoto()
     totalNumber_ += static_cast<uint64_t>(totalNumberInPhotoMap);
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
+    needReportFailed_ = false;
     for (int32_t offset = 0; offset < totalNumberInPhotoMap; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestorePhotoBatch(offset, RELEATED_TO_PHOTO_MAP); }, {&offset}, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -595,13 +596,15 @@ void CloneRestore::GetAccountValid()
 
 void CloneRestore::AddToPhotosFailedOffsets(int32_t offset)
 {
+    if (needReportFailed_) {
+        return;
+    }
     std::lock_guard<ffrt::mutex> lock(photosFailedMutex_);
     photosFailedOffsets_.push_back(offset);
 }
 
 void CloneRestore::ProcessPhotosBatchFailedOffsets(int32_t isRelatedToPhotoMap)
 {
-    std::lock_guard<ffrt::mutex> lock(photosFailedMutex_);
     size_t vectorLen = photosFailedOffsets_.size();
     needReportFailed_ = true;
     for (size_t offset = 0; offset < vectorLen; offset++) {
@@ -612,7 +615,6 @@ void CloneRestore::ProcessPhotosBatchFailedOffsets(int32_t isRelatedToPhotoMap)
 
 void CloneRestore::ProcessCloudPhotosFailedOffsets(int32_t isRelatedToPhotoMap)
 {
-    std::lock_guard<ffrt::mutex> lock(photosFailedMutex_);
     size_t vectorLen = photosFailedOffsets_.size();
     needReportFailed_ = true;
     for (size_t offset = 0; offset < vectorLen; offset++) {
@@ -639,6 +641,7 @@ void CloneRestore::RestorePhotoForCloud()
     totalNumber_ += static_cast<uint64_t>(totalNumberInPhotoMap);
     MEDIA_INFO_LOG("singleClone onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
+    needReportFailed_ = false;
     for (int32_t offset = 0; offset < totalNumberInPhotoMap; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreBatchForCloud(offset, RELEATED_TO_PHOTO_MAP); }, {&offset}, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
