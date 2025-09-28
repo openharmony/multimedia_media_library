@@ -33,6 +33,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
 
 namespace OHOS::Media {
@@ -44,48 +45,38 @@ using namespace IPC;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static constexpr int32_t SLEEP_SECONDS = 1;
 
-// PhotoMap::TABLE
-static int32_t ClearTable(const string &table)
-{
-    RdbPredicates predicates(table);
+static std::vector<std::string> createTableSqlLists = {
+    PhotoAlbumColumns::CREATE_TABLE,
+};
 
-    int32_t rows = 0;
-    int32_t err = g_rdbStore->Delete(rows, predicates);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to clear album table, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
-    }
-    return E_OK;
-}
+static std::vector<std::string> testTables = {
+    PhotoAlbumColumns::TABLE,
+};
 
 void AlbumAddAssetsTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
-        exit(1);
-    }
-    ClearTable(PhotoAlbumColumns::TABLE);
-    MEDIA_INFO_LOG("SetUpTestCase");
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    MEDIA_INFO_LOG("AlbumAddAssetsTest SetUpTestCase done");
 }
 
 void AlbumAddAssetsTest::TearDownTestCase(void)
 {
-    ClearTable(PhotoAlbumColumns::TABLE);
-    MEDIA_INFO_LOG("TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
+    MEDIA_INFO_LOG("AlbumAddAssetsTest TearDownTestCase done");
 }
 
 void AlbumAddAssetsTest::SetUp()
 {
-    MEDIA_INFO_LOG("SetUp");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
+    MEDIA_INFO_LOG("AlbumAddAssetsTest SetUp");
 }
 
-void AlbumAddAssetsTest::TearDown(void)
-{
-    MEDIA_INFO_LOG("TearDown");
-}
+void AlbumAddAssetsTest::TearDown(void) {}
 
 // INSERT INTO PhotoAlbum (album_type, album_subtype, album_name, date_modified, is_local, date_added, lpath, priority)
 // VALUES (0, 1, 'test01', 1748354341383, 1 , 1748354341383, '/Pictures/Users/test01', 1)

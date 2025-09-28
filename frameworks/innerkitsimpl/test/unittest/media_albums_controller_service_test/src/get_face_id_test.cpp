@@ -32,8 +32,10 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
 #include "media_file_uri.h"
+#include "vision_db_sqls_more.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -53,50 +55,43 @@ static const string SQL_INSERT_PHOTO =
     PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_SHOOTING_MODE + ")";
 static const string VALUES_END = ") ";
 
-static int32_t ClearTable(const string &table)
-{
-    RdbPredicates predicates(table);
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoAlbumColumns::CREATE_TABLE,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+};
 
-    int32_t rows = 0;
-    int32_t err = g_rdbStore->Delete(rows, predicates);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to clear photos table, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
-    }
-    return E_OK;
-}
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    PhotoAlbumColumns::TABLE,
+    ANALYSIS_ALBUM_TABLE,
+};
 
 void GetFaceIdTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
-        exit(1);
-    }
-    ClearTable("AnalysisAlbum");
-    MEDIA_INFO_LOG("SetUpTestCase");
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    MEDIA_INFO_LOG("GetFaceIdTest SetUpTestCase");
 }
 
 void GetFaceIdTest::TearDownTestCase(void)
 {
-    ClearTable("AnalysisAlbum");
-    MEDIA_INFO_LOG("TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    MEDIA_INFO_LOG("GetFaceIdTest TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 void GetFaceIdTest::SetUp()
 {
-    ClearTable("AnalysisAlbum");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
-    MEDIA_INFO_LOG("SetUp");
+    MEDIA_INFO_LOG("GetFaceIdTest SetUp");
 }
 
-void GetFaceIdTest::TearDown(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
-    MEDIA_INFO_LOG("TearDown");
-}
+void GetFaceIdTest::TearDown(void) {}
 
 static int32_t GetFaceId(int32_t albumId, int32_t albumSubType, string &groupTag)
 {
