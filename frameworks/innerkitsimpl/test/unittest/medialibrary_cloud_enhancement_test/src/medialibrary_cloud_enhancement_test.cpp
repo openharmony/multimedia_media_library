@@ -940,7 +940,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_callback_on_failed_004, T
     ASSERT_NE(resultSet, nullptr);
     ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
 
-    int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, assetRefresh);
+    int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
     EXPECT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::FAILED_RETRY));
 
     MEDIA_INFO_LOG("enhancement_callback_on_failed_004 End");
@@ -1424,11 +1424,11 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, CancelTasksInternal_Test_001, TestSiz
     int32_t fileId = PrepareHighQualityPhoto("202410011800", "cam_pic.jpg");
     ASSERT_GT(fileId, 0);
 
-    UpdateCEAvailable(fileId, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
+    UpdateCEAvailable(fileId, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
     UpdateCompositeDisplayStatus(fileId, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
     int32_t ceAvailable = QueryCeAvailableByFileID(fileId);
     int32_t compositeDisplayStatus = QueryCompositeDisplayStatusByFileID(fileId);
-    ASSERT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
+    ASSERT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
     ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
 
     vector<string> fileIds, photoIds;
@@ -1579,7 +1579,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, RevertEditUpdateInternal_Test_001, Te
 
     ceAvailable = QueryCeAvailableByFileID(fileId);
     compositeDisplayStatus = QueryCompositeDisplayStatusByFileID(fileId);
-    ASSERT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
+    ASSERT_EQ(ceAvailable, static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
     ASSERT_EQ(compositeDisplayStatus, static_cast<int32_t>(CompositeDisplayStatus::ORIGINAL));
 
     MEDIA_INFO_LOG("End RevertEditUpdateInternal_Test_001");

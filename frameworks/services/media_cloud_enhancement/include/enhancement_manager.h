@@ -94,7 +94,8 @@ public:
     EXPORT bool SyncCleanCompositePhoto(const std::string &photoPath);
     EXPORT bool SyncDealWithCompositePhoto(const std::string &photoPath);
     EXPORT int32_t SyncDealWithCompositeDisplayStatus(int32_t fileId, const std::string &photoPath, bool exchange);
-    EXPORT int32_t UpdateCompositeDisplayStatus(int32_t fileId, const int32_t &compositeDisplayStatus);
+    EXPORT int32_t UpdateCompositeDisplayStatus(int32_t fileId, int32_t compositeDisplayStatus,
+        int32_t ceAvailable = 0);
     EXPORT std::optional<std::tuple<std::string, int32_t, int32_t>> QueryCompositePhotoInfo(int32_t fileId);
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
