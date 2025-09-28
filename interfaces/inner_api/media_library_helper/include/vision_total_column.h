@@ -40,6 +40,7 @@ const std::string NEGATIVE = "negative";
 const std::string ABSTRACT_NODE_ANALYSIS = "abstract_node_analysis";
 const std::string AESTHETICS_SCORE_ALL_STATUS = "aesthetics_score_all";
 const std::string PRIORITY = "priority";
+const std::string AFFECTIVE = "affective";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_TOTAL_COLUMN_H
