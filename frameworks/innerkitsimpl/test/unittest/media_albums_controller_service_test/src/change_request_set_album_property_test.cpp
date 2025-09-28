@@ -30,7 +30,11 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
+#include "vision_db_sqls.h"
+#include "story_db_sqls.h"
+#include "vision_db_sqls_more.h"
 #include "create_album_vo.h"
 #include "create_asset_vo.h"
 #include "change_request_dismiss_vo.h"
@@ -50,49 +54,46 @@ using namespace IPC;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static constexpr int32_t SLEEP_SECONDS = 1;
+static std::vector<std::string> createTableSqlLists = {
+    PhotoAlbumColumns::CREATE_TABLE,
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+    CREATE_ANALYSIS_ALBUM_MAP,
+    CREATE_HIGHLIGHT_ALBUM_TABLE,
+};
 
-static int32_t ClearUserAlbums()
-{
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
-
-    int32_t rows = 0;
-    int32_t err = g_rdbStore->Delete(rows, predicates);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to clear album table, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
-    }
-    return E_OK;
-}
+static std::vector<std::string> testTables = {
+    PhotoAlbumColumns::TABLE,
+    PhotoColumn::PHOTOS_TABLE,
+    ANALYSIS_ALBUM_TABLE,
+    ANALYSIS_PHOTO_MAP_TABLE,
+    HIGHLIGHT_ALBUM_TABLE,
+};
 
 void ChangeRequestSetAlbumPropertyTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
-        exit(1);
-    }
-    ClearUserAlbums();
-    MEDIA_INFO_LOG("SetUpTestCase");
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    MEDIA_INFO_LOG("ChangeRequestSetAlbumPropertyTest SetUpTestCase");
 }
 
 void ChangeRequestSetAlbumPropertyTest::TearDownTestCase(void)
 {
-    ClearUserAlbums();
-    MEDIA_INFO_LOG("TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    MEDIA_INFO_LOG("ChangeRequestSetAlbumPropertyTest TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 void ChangeRequestSetAlbumPropertyTest::SetUp()
 {
-    MEDIA_INFO_LOG("SetUp");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
+    MEDIA_INFO_LOG("ChangeRequestSetAlbumPropertyTest SetUp");
 }
 
-void ChangeRequestSetAlbumPropertyTest::TearDown(void)
-{
-    MEDIA_INFO_LOG("TearDown");
-}
+void ChangeRequestSetAlbumPropertyTest::TearDown(void) {}
 
 static int32_t ServiceCreateAlbum(const std::string &albumName)
 {
