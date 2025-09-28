@@ -112,7 +112,7 @@ private:
     EXPORT static void StopDownloadFiles(int64_t downloadId, bool needClean = false);
     EXPORT static int32_t AddTasksAndStarted(vector<std::string> &pendingURIs);
     EXPORT static void StopAllDownloadingTask(bool needClean = false);
-
+    EXPORT static void RefreshNotRestoreReason(vector<int32_t> &currentNotRestoreReasons);
     // DB
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryBatchSelectedResourceFiles();
     EXPORT static void UpdateDBProgressStatusInfoForBatch(vector<int32_t> fileIds, int32_t status);
@@ -126,6 +126,8 @@ private:
         std::vector<std::string> &existedIds);
     EXPORT static int32_t DeleteCancelStateDownloadResources(const std::vector<std::string> &fileIds);
     EXPORT static int32_t QueryPercentOnTaskStart(std::string &fileId, int32_t &percent);
+    EXPORT static int32_t QueryAutoPauseReason(int32_t &autoStopReason);
+    EXPORT static int32_t UpdateAllAutoPauseReason(int32_t reason);
 
     // Auto pause resume
     EXPORT static int32_t UpdateAllAutoPauseDownloadResourcesInfo(BatchDownloadAutoPauseReasonType &autoPauseReason);
