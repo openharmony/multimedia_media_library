@@ -504,13 +504,15 @@ void UpgradeRestore::InitGarbageAlbum()
 
 void UpgradeRestore::AddToGalleryFailedOffsets(int32_t offset)
 {
+    if (needReportFailed_) {
+        return;
+    }
     std::lock_guard<ffrt::mutex> lock(galleryFailedMutex_);
     galleryFailedOffsets_.push_back(offset);
 }
 
 void UpgradeRestore::ProcessGalleryFailedOffsets()
 {
-    std::lock_guard<ffrt::mutex> lock(galleryFailedMutex_);
     size_t vectorLen = galleryFailedOffsets_.size();
     needReportFailed_ = true;
     for (auto minId : galleryFailedOffsets_) {
@@ -521,7 +523,6 @@ void UpgradeRestore::ProcessGalleryFailedOffsets()
 
 void UpgradeRestore::ProcessCloudGalleryFailedOffsets()
 {
-    std::lock_guard<ffrt::mutex> lock(galleryFailedMutex_);
     size_t vectorLen = galleryFailedOffsets_.size();
     needReportFailed_ = true;
     for (auto minId : galleryFailedOffsets_) {
@@ -532,13 +533,15 @@ void UpgradeRestore::ProcessCloudGalleryFailedOffsets()
 
 void UpgradeRestore::AddToExternalFailedOffsets(int32_t offset)
 {
+    if (needReportFailed_) {
+        return;
+    }
     std::lock_guard<ffrt::mutex> lock(externalFailedMutex_);
     externalFailedOffsets_.push_back(offset);
 }
 
 void UpgradeRestore::ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, int32_t type)
 {
-    std::lock_guard<ffrt::mutex> lock(externalFailedMutex_);
     size_t vectorLen = externalFailedOffsets_.size();
     needReportFailed_ = true;
     for (size_t offset = 0; offset < vectorLen; offset++) {
