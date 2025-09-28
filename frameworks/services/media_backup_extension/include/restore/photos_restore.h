@@ -82,6 +82,7 @@ public:
     bool FindIsLivePhoto(const FileInfo &fileInfo);
     PhotoAlbumDao::PhotoAlbumRowData GetPhotoAlbumDaoRowData(std::string& lPath);
     std::vector<int32_t> GetAlbumIdsFromPhotoAlbumCache();
+    bool IsTrashedByRecycleFlag(const FileInfo &fileInfo);
 
     std::string ToLower(const std::string &str)
     {
