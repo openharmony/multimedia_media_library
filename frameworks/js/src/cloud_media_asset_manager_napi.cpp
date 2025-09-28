@@ -558,6 +558,20 @@ static bool HasReadPermission()
     return result == PermissionState::PERMISSION_GRANTED;
 }
 
+static bool CheckNapiCallerPermission(napi_env env)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL,
+            "This interface can be called only by system apps with read permission");
+        return false;
+    }
+    if (!HasReadPermission()) {
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "Have no read permission");
+        return false;
+    }
+    return true;
+}
+
 static void StartBatchDownloadCloudResourcesExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -670,9 +684,7 @@ static napi_status ParseArgsStartBatchDownloadCloudResources(napi_env env, napi_
 
 napi_value CloudMediaAssetManagerNapi::JSStartBatchDownloadCloudResources(napi_env env, napi_callback_info info)
 {
-    if (!MediaLibraryNapiUtils::IsSystemApp() || !HasReadPermission()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL,
-            "This interface can be called only by system apps with read permission");
+    if (!CheckNapiCallerPermission(env)) {
         return nullptr;
     }
     MediaLibraryTracer tracer;
@@ -764,9 +776,7 @@ static napi_status ParseArgsResumeBatchDownloadCloudResources(napi_env env, napi
 
 napi_value CloudMediaAssetManagerNapi::JSResumeBatchDownloadCloudResources(napi_env env, napi_callback_info info)
 {
-    if (!MediaLibraryNapiUtils::IsSystemApp() || !HasReadPermission()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL,
-            "This interface can be called only by system apps with read permission");
+    if (!CheckNapiCallerPermission(env)) {
         return nullptr;
     }
     MediaLibraryTracer tracer;
@@ -856,9 +866,7 @@ static napi_status ParseArgsPauseDownloadCloudResources(napi_env env, napi_callb
 
 napi_value CloudMediaAssetManagerNapi::JSPauseDownloadCloudResources(napi_env env, napi_callback_info info)
 {
-    if (!MediaLibraryNapiUtils::IsSystemApp() || !HasReadPermission()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL,
-            "This interface can be called only by system apps with read permission");
+    if (!CheckNapiCallerPermission(env)) {
         return nullptr;
     }
     MediaLibraryTracer tracer;
@@ -948,9 +956,7 @@ static napi_status ParseArgsCancelDownloadCloudResources(napi_env env, napi_call
 
 napi_value CloudMediaAssetManagerNapi::JSCancelDownloadCloudResources(napi_env env, napi_callback_info info)
 {
-    if (!MediaLibraryNapiUtils::IsSystemApp() || !HasReadPermission()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL,
-            "This interface can be called only by system apps with read permission");
+    if (!CheckNapiCallerPermission(env)) {
         return nullptr;
     }
     MediaLibraryTracer tracer;
@@ -1050,9 +1056,7 @@ static napi_status ParseArgsGetBatchDownloadCloudResourcesStatus(napi_env env, n
 
 napi_value CloudMediaAssetManagerNapi::JSGetBatchDownloadCloudResourcesStatus(napi_env env, napi_callback_info info)
 {
-    if (!MediaLibraryNapiUtils::IsSystemApp() || !HasReadPermission()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL,
-            "This interface can be called only by system apps with read permission");
+    if (!CheckNapiCallerPermission(env)) {
         return nullptr;
     }
     MediaLibraryTracer tracer;
@@ -1152,9 +1156,7 @@ static napi_status ParseArgsGetBatchDownloadSpecificTaskCount(napi_env env, napi
 
 napi_value CloudMediaAssetManagerNapi::JSGetBatchDownloadSpecificTaskCount(napi_env env, napi_callback_info info)
 {
-    if (!MediaLibraryNapiUtils::IsSystemApp() || !HasReadPermission()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL,
-            "This interface can be called only by system apps with read permission");
+    if (!CheckNapiCallerPermission(env)) {
         return nullptr;
     }
     MediaLibraryTracer tracer;
@@ -1170,6 +1172,9 @@ napi_value CloudMediaAssetManagerNapi::JSGetBatchDownloadSpecificTaskCount(napi_
 // ----------
 napi_value CloudMediaAssetManagerNapi::JsBatchDownloadRegisterCallback(napi_env env, napi_callback_info info)
 {
+    if (!CheckNapiCallerPermission(env)) {
+        return nullptr;
+    }
     MediaLibraryTracer tracer;
     tracer.Start("JsBatchDownloadRegisterCallback");
     napi_value undefinedResult = nullptr;
@@ -1223,6 +1228,9 @@ static napi_value CheckUnregisterCallbackArgs(napi_env env, napi_callback_info i
 
 napi_value CloudMediaAssetManagerNapi::JsBatchDownloadUnRegisterCallback(napi_env env, napi_callback_info info)
 {
+    if (!CheckNapiCallerPermission(env)) {
+        return nullptr;
+    }
     MediaLibraryTracer tracer;
     tracer.Start("JsBatchDownloadUnRegisterCallback");
     napi_value undefinedResult = nullptr;
