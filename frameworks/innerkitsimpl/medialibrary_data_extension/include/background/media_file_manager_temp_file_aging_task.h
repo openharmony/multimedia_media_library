@@ -44,7 +44,8 @@ public:
 private:
     void SetBatchStatus(int32_t startFileId);
     int32_t GetBatchStatus();
-    AgingFilesInfo QueryAgingFiles(std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t startFileId);
+    AgingFilesInfo QueryAgingFiles(std::shared_ptr<MediaLibraryRdbStore> &rdbStore, int32_t startFileId,
+        bool checkOmitted);
     void DeleteTempFiles(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
         const AgingFilesInfo &agingFilesInfo);
     void HandleMediaFileManagerTempFileAging();
