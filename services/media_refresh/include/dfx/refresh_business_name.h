@@ -86,6 +86,8 @@ static const std::string ORDER_SINGLE_ALBUM_BUSSINESS_NAME = "OrderSingleAlbum";
 
 static const std::string GET_ASSETS_BUSSINESS_NAME = "getAssets";
 
+static const std::string GET_SELECTED_ASSETS_BUSSINESS_NAME = "getSelectedAssets";
+
 static const std::string DEAL_ALBUMS_BUSSINESS_NAME = "getAlbums";
 
 static const std::string DELETE_PHOTOS_COMPLETED_BUSSINESS_NAME = "DeletePhotosCompleted";

@@ -31,6 +31,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
 #include "media_file_uri.h"
 
@@ -43,47 +44,40 @@ using namespace IPC;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static constexpr int32_t SLEEP_SECONDS = 1;
 
-static int32_t ClearTable(const string &table)
-{
-    RdbPredicates predicates(table);
+static std::vector<std::string> createTableSqlLists = {
+    PhotoAlbumColumns::CREATE_TABLE,
+    PhotoColumn::CREATE_PHOTO_TABLE,
+};
 
-    int32_t rows = 0;
-    int32_t err = g_rdbStore->Delete(rows, predicates);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to clear album table, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
-    }
-    return E_OK;
-}
+static std::vector<std::string> testTables = {
+    PhotoAlbumColumns::TABLE,
+    PhotoColumn::PHOTOS_TABLE,
+};
 
 void AlbumDeleteAssetsTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
-        exit(1);
-    }
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
-    MEDIA_INFO_LOG("SetUpTestCase");
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    MEDIA_INFO_LOG("AlbumDeleteAssetsTest SetUpTestCase succeed");
 }
 
 void AlbumDeleteAssetsTest::TearDownTestCase(void)
 {
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
-    MEDIA_INFO_LOG("TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    MEDIA_INFO_LOG("AlbumDeleteAssetsTest TearDownTestCase done");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 void AlbumDeleteAssetsTest::SetUp()
 {
-    MEDIA_INFO_LOG("SetUp");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
+    MEDIA_INFO_LOG("AlbumDeleteAssetsTest SetUp");
 }
 
-void AlbumDeleteAssetsTest::TearDown(void)
-{
-    MEDIA_INFO_LOG("TearDown");
-}
+void AlbumDeleteAssetsTest::TearDown(void) {}
 
 static const string SQL_INSERT_PHOTO = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + "(" +
     MediaColumn::MEDIA_FILE_PATH + ", " + MediaColumn::MEDIA_SIZE + ", " + MediaColumn::MEDIA_TITLE + ", " +

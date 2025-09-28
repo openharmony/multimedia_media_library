@@ -419,6 +419,12 @@ int32_t MediaAlbumsService::AlbumRecoverAssets(const AlbumRecoverAssetsDto& reco
     return MediaLibraryAlbumOperations::RecoverPhotoAssets(predicates);
 }
 
+std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetSelectedAssets(
+    AlbumGetSelectedAssetsDto &dto)
+{
+    return this->rdbOperation_.GetSelectedAssets(dto);
+}
+
 std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetAssets(AlbumGetAssetsDto &dto)
 {
     auto startTime = MediaFileUtils::UTCTimeMilliSeconds();

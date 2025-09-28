@@ -75,6 +75,7 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_PHOTO_INDEX), {{SYSTEMAPI_PERM, READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_HIGHLIGHT_ALBUM_INFO), {{SYSTEMAPI_PERM, READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_SYS_GET_ASSETS), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_SYS_GET_SELECTED_ASSETS), {{SYSTEMAPI_PERM, READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_GET_ASSETS), {{READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_RESET_COVER_URI), {{SYSTEMAPI_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_GET_PHOTO_ALBUMS), { {SYSTEMAPI_PERM, READ_PERM} }},

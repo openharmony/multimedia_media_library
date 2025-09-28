@@ -72,7 +72,6 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 using namespace FileManagement::CloudSync;
-using namespace OHOS::Media::CloudSync;
 using namespace OHOS::DataShare;
 using namespace OHOS::RdbDataShareAdapter;
 

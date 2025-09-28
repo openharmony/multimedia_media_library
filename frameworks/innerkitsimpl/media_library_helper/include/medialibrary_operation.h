@@ -68,6 +68,7 @@ enum class EXPORT OperationObject : uint32_t {
     VISION_FACE_TAG,
     VISION_SALIENCY,
     VISION_HEAD,
+    VISION_AFFECTIVE,
     VISION_POSE,
     VISION_END = VISION_POSE,
     GEO_DICTIONARY,

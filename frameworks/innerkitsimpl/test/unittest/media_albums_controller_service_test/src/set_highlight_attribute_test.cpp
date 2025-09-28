@@ -27,9 +27,11 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
 #include "medialibrary_business_code.h"
 #include "story_album_column.h"
+#include "story_db_sqls.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -40,47 +42,42 @@ using namespace IPC;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static constexpr int32_t SLEEP_SECONDS = 1;
 
-static int32_t ClearTable(const string &table)
-{
-    RdbPredicates predicates(table);
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoAlbumColumns::CREATE_TABLE,
+    CREATE_HIGHLIGHT_ALBUM_TABLE,
+};
 
-    int32_t rows = 0;
-    int32_t err = g_rdbStore->Delete(rows, predicates);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to clear album table, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
-    }
-    return E_OK;
-}
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    PhotoAlbumColumns::TABLE,
+    HIGHLIGHT_ALBUM_TABLE,
+};
 
 void SetHighlightAttributeTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start SetHighlightAttributeTest failed, can not get g_rdbStore");
-        exit(1);
-    }
-    ClearTable(HIGHLIGHT_ALBUM_TABLE);
-    MEDIA_INFO_LOG("SetUpTestCase");
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    MEDIA_INFO_LOG("SetHighlightAttributeTest SetUpTestCase");
 }
 
 void SetHighlightAttributeTest::TearDownTestCase(void)
 {
-    ClearTable(HIGHLIGHT_ALBUM_TABLE);
-    MEDIA_INFO_LOG("TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    MEDIA_INFO_LOG("SetHighlightAttributeTest TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 void SetHighlightAttributeTest::SetUp()
 {
-    MEDIA_INFO_LOG("SetUp");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
+    MEDIA_INFO_LOG("SetHighlightAttributeTest SetUp");
 }
 
-void SetHighlightAttributeTest::TearDown()
-{
-    MEDIA_INFO_LOG("TearDown");
-}
+void SetHighlightAttributeTest::TearDown() {}
 
 int32_t InsertValueHighlightAlbum()
 {

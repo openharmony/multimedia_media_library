@@ -297,6 +297,9 @@ void MediaAssetsRdbOperations::DeleteFromVisionTables(const string& fileId)
     selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND head = 1";
     DeleteFromVisionTable(fileId, HEAD, VISION_HEAD_TABLE, selectionTotal);
 
+    selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND affective = 1";
+    DeleteFromVisionTable(fileId, POSE, VISION_AFFECTIVE_TABLE, selectionTotal);
+
     selectionTotal = MediaColumn::MEDIA_ID + " = " + fileId + " AND pose = 1";
     DeleteFromVisionTable(fileId, POSE, VISION_POSE_TABLE, selectionTotal);
 

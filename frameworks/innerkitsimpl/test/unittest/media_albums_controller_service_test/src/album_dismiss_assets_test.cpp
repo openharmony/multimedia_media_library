@@ -26,6 +26,7 @@
 #undef private
 #undef protected
 
+#include "vision_db_sqls_more.h"
 #include "change_request_dismiss_assets_vo.h"
 #include "user_define_ipc_client.h"
 #include "medialibrary_rdbstore.h"
@@ -51,50 +52,46 @@ struct PortraitData {
     string path;
 };
 
-static int32_t ClearTable(const string &table)
-{
-    RdbPredicates predicates(table);
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoAlbumColumns::CREATE_TABLE,
+    CREATE_TAB_IMAGE_FACE,
+    CREATE_ANALYSIS_ALBUM_MAP,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+};
 
-    int32_t rows = 0;
-    int32_t err = g_rdbStore->Delete(rows, predicates);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to clear album table, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
-    }
-    return E_OK;
-}
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    PhotoAlbumColumns::TABLE,
+    VISION_IMAGE_FACE_TABLE,
+    ANALYSIS_PHOTO_MAP_TABLE,
+    ANALYSIS_ALBUM_TABLE,
+};
 
 void AlbumDismissAssetsTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
-        exit(1);
-    }
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
-    MEDIA_INFO_LOG("SetUpTestCase");
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
+    MEDIA_INFO_LOG("AlbumDismissAssetsTest SetUpTestCase done");
 }
 
 void AlbumDismissAssetsTest::TearDownTestCase(void)
 {
-    MEDIA_INFO_LOG("TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    MEDIA_INFO_LOG("AlbumDismissAssetsTest TearDownTestCase");
 }
 
 void AlbumDismissAssetsTest::SetUp()
 {
-    MEDIA_INFO_LOG("SetUp");
+    MEDIA_INFO_LOG("AlbumDismissAssetsTest SetUp");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
 }
 
-void AlbumDismissAssetsTest::TearDown(void)
-{
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
-    ClearTable(VISION_IMAGE_FACE_TABLE);
-    ClearTable(ANALYSIS_PHOTO_MAP_TABLE);
-    ClearTable(ANALYSIS_ALBUM_TABLE);
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
-    MEDIA_INFO_LOG("TearDown");
-}
+void AlbumDismissAssetsTest::TearDown(void) {}
 
 PortraitData InsertPortraitToPhotos(size_t val)
 {
@@ -291,9 +288,8 @@ HWTEST_F(AlbumDismissAssetsTest, DismissAsstes_Test_002, TestSize.Level0)
     std::to_string(poraitData[2].fileId),
     std::to_string(poraitData[3].fileId),
     std::to_string(poraitData[4].fileId)};
-    if (reqBody.Marshalling(data) != true) {
-        MEDIA_ERR_LOG("reqBody.Marshalling failed");
-    }
+    ASSERT_TRUE(reqBody.Marshalling(data));
+
     auto service = make_shared<MediaAlbumsControllerService>();
     service->DismissAssets(data, reply);
 

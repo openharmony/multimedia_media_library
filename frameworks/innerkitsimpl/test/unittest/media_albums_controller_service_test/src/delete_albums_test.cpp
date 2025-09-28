@@ -28,6 +28,7 @@
 
 #include "delete_albums_vo.h"
 #include "user_define_ipc_client.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
@@ -41,47 +42,40 @@ using namespace OHOS::NativeRdb;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static constexpr int32_t SLEEP_SECONDS = 1;
 
-int32_t ClearAlbums()
-{
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoAlbumColumns::CREATE_TABLE,
+};
 
-    int32_t rows = 0;
-    int32_t err = g_rdbStore->Delete(rows, predicates);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to clear album table, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
-    }
-    return E_OK;
-}
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    PhotoAlbumColumns::TABLE,
+    
+};
 
 void DeleteAlbumsTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
-        exit(1);
-    }
-    ClearAlbums();
-    MEDIA_INFO_LOG("SetUpTestCase");
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    MEDIA_INFO_LOG("DeleteAlbumsTest SetUpTestCase succeed");
 }
 
 void DeleteAlbumsTest::TearDownTestCase(void)
 {
-    ClearAlbums();
-    MEDIA_INFO_LOG("TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 void DeleteAlbumsTest::SetUp()
 {
-    MEDIA_INFO_LOG("SetUp");
+    MEDIA_INFO_LOG("DeleteAlbumsTest SetUp");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
 }
 
-void DeleteAlbumsTest::TearDown(void)
-{
-    MEDIA_INFO_LOG("TearDown");
-}
+void DeleteAlbumsTest::TearDown(void) {}
 
 inline int32_t CreatePhotoAlbum(const string &albumName)
 {
