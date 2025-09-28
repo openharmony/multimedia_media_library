@@ -29,6 +29,7 @@
 #include "album_recover_assets_dto.h"
 #include "album_photo_query_vo.h"
 #include "album_get_assets_dto.h"
+#include "album_get_selected_assets_dto.h"
 #include "get_order_position_dto.h"
 #include "get_order_position_vo.h"
 #include "get_photo_index_vo.h"
@@ -73,6 +74,7 @@ public:
     int32_t AlbumRemoveAssets(const AlbumRemoveAssetsDto& removeAssetsDto, AlbumPhotoQueryRespBody& respBody);
     int32_t AlbumRecoverAssets(const AlbumRecoverAssetsDto& recoverAssetsDto);
     std::shared_ptr<DataShare::DataShareResultSet> AlbumGetAssets(AlbumGetAssetsDto &dto);
+    std::shared_ptr<DataShare::DataShareResultSet> AlbumGetSelectedAssets(AlbumGetSelectedAssetsDto &dto);
     int32_t QueryAlbums(QueryAlbumsDto &dto);
     int32_t QueryHiddenAlbums(QueryAlbumsDto &dto);
     int32_t QueryAlbumsLpath(QueryAlbumsDto &dto);

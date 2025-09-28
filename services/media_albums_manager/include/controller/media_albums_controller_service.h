@@ -51,6 +51,7 @@ public:
     EXPORT int32_t AlbumRemoveAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AlbumRecoverAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t AlbumGetAssets(MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context);
+    EXPORT int32_t AlbumGetSelectAssets(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t QueryAlbums(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t QueryHiddenAlbums(MessageParcel &data, MessageParcel &reply);
     EXPORT int32_t GetAlbumsByIds(MessageParcel &data, MessageParcel &reply);

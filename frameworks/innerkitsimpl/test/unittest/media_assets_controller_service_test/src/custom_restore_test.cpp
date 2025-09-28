@@ -111,7 +111,7 @@ HWTEST_F(CustomRestoreTest, CustomRestoreTest_Test_001, TestSize.Level0)
     ASSERT_EQ(respVo.Unmarshalling(reply), true);
 
     MEDIA_INFO_LOG("Restore ErrCode:%{public}d", respVo.GetErrCode());
-    ASSERT_EQ(respVo.GetErrCode(), E_NO_SUCH_FILE);
+    ASSERT_EQ(respVo.GetErrCode(), E_CHECK_NATIVE_SA_FAIL);
 }
 
 HWTEST_F(CustomRestoreTest, CustomRestoreTest_Test_002, TestSize.Level0)

@@ -22,11 +22,13 @@
 
 #include "media_albums_controller_service.h"
 
+#include "vision_db_sqls.h"
 #include "query_albums_vo.h"
 #include "user_define_ipc_client.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 #include "vision_column.h"
 
 namespace OHOS::Media {
@@ -38,6 +40,18 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static constexpr int32_t SLEEP_SECONDS = 3;
 static std::vector<std::string> ALBUM_FETCH_COLUMNS = {
     PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_SUBTYPE
+};
+
+static std::vector<std::string> createTableSqlLists = {
+    PhotoAlbumColumns::CREATE_TABLE,
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    CREATE_ANALYSIS_ALBUM,
+};
+
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    PhotoAlbumColumns::TABLE,
+    ANALYSIS_ALBUM_TABLE,
 };
 
 static std::string Quote(const std::string &str)
@@ -119,35 +133,26 @@ void QueryAlbumsTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
-        exit(1);
-    }
-
-    ClearTable(ANALYSIS_ALBUM_TABLE);
-    ClearTable(PhotoAlbumColumns::TABLE);
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
-    MEDIA_INFO_LOG("SetUpTestCase");
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    MEDIA_INFO_LOG("QueryAlbumsTest  SetUpTestCase done");
 }
 
 void QueryAlbumsTest::TearDownTestCase(void)
 {
-    ClearTable(ANALYSIS_ALBUM_TABLE);
-    ClearTable(PhotoAlbumColumns::TABLE);
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
-    MEDIA_INFO_LOG("TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    MEDIA_INFO_LOG("QueryAlbumsTest TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 void QueryAlbumsTest::SetUp()
 {
-    MEDIA_INFO_LOG("SetUp");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
+    MEDIA_INFO_LOG("QueryAlbumsTest SetUp");
 }
 
-void QueryAlbumsTest::TearDown(void)
-{
-    MEDIA_INFO_LOG("TearDown");
-}
+void QueryAlbumsTest::TearDown(void) {}
 
 using ServiceCall = std::function<void(MessageParcel &data, MessageParcel &reply)>;
 

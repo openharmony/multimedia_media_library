@@ -36,6 +36,7 @@
 #include "vision_db_sqls_more.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -56,32 +57,17 @@ static const string INSERT_HIGHLIGHT_ALBUM_TABLE = "INSERT INTO " + HIGHLIGHT_AL
 static const string VALUES_END = ") ";
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
-int32_t ExecSqls(const vector<string> &sqls)
-{
-    EXPECT_NE((g_rdbStore == nullptr), true);
-    int32_t err = E_OK;
-    for (const auto &sql : sqls) {
-        err = g_rdbStore->ExecuteSql(sql);
-        MEDIA_INFO_LOG("exec sql: %{public}s result: %{public}d", sql.c_str(), err);
-        EXPECT_EQ(err, E_OK);
-    }
-    return E_OK;
-}
+static std::vector<std::string> createTableSqlLists = {
+    PhotoAlbumColumns::CREATE_TABLE,
+    CREATE_ANALYSIS_ALBUM,
+    CREATE_HIGHLIGHT_ALBUM_TABLE,
+};
 
-void ClearAlbumTables()
-{
-    string clearPhotoAlbumSql = "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
-        PhotoAlbumColumns::ALBUM_TYPE + " != " + to_string(PhotoAlbumType::SYSTEM);
-    string clearAnalysisAlbumSql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE;
-    string clearHighlightAlbumSql = "DELETE FROM " + HIGHLIGHT_ALBUM_TABLE;
-    vector<string> executeSqlStrs = {
-        clearPhotoAlbumSql,
-        clearAnalysisAlbumSql,
-        clearHighlightAlbumSql,
-    };
-    MEDIA_INFO_LOG("start clear data in all tables");
-    ExecSqls(executeSqlStrs);
-}
+static std::vector<std::string> testTables = {
+    PhotoAlbumColumns::TABLE,
+    ANALYSIS_ALBUM_TABLE,
+    HIGHLIGHT_ALBUM_TABLE,
+};
 
 void InsertHighlightAlbums()
 {
@@ -91,52 +77,30 @@ void InsertHighlightAlbums()
         VALUES_END);
 }
 
-void SetAllTestTables()
-{
-    vector<string> createTableSqlList = {
-        CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
-        CREATE_HIGHLIGHT_ALBUM_TABLE,
-    };
-    for (auto &createTableSql : createTableSqlList) {
-        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
-            return;
-        }
-        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
-    }
-}
-
 void DeleteHighlightAlbumsTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
-        exit(1);
-    }
-    SetAllTestTables();
-    ClearAlbumTables();
-    MEDIA_INFO_LOG("SetUpTestCase");
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    MEDIA_INFO_LOG("DeleteHighlightAlbumsTest SetUpTestCase succeed");
 }
 
 void DeleteHighlightAlbumsTest::TearDownTestCase(void)
 {
-    MEDIA_INFO_LOG("TearDownTestCase");
-    ClearAlbumTables();
+    MEDIA_INFO_LOG("DeleteHighlightAlbumsTest TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void DeleteHighlightAlbumsTest::SetUp()
 {
-    MEDIA_INFO_LOG("SetUp");
-    ClearAlbumTables();
+    MEDIA_INFO_LOG("DeleteHighlightAlbumsTest SetUp");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
 }
 
-void DeleteHighlightAlbumsTest::TearDown(void)
-{
-    MEDIA_INFO_LOG("TearDown");
-}
+void DeleteHighlightAlbumsTest::TearDown(void) {}
 
 bool QueryHighlightAlbumInfo()
 {

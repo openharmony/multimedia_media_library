@@ -355,4 +355,11 @@ std::vector<int32_t> PhotosRestore::GetAlbumIdsFromPhotoAlbumCache()
 {
     return this->photoAlbumDao_.GetAlbumIdsFromCache();
 }
+
+bool PhotosRestore::IsTrashedByRecycleFlag(const FileInfo &fileInfo)
+{
+    const std::unordered_set<int32_t> RECYCLE_FLAG_SET = { RECYCLE_FLAG_LOCAL, RECYCLE_FLAG_UNSYNCED,
+        RECYCLE_FLAG_SYNCED, RECYCLE_FLAG_DELETE_UNSYNCED, RECYCLE_FLAG_HARD_DELETE_UNSYNCED };
+    return RECYCLE_FLAG_SET.count(fileInfo.recycleFlag) > 0;
+}
 }  // namespace OHOS::Media

@@ -7840,6 +7840,10 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
                       .Call(context->businessCode, reqBody, respBody);
         if (errCode == E_OK) {
             resultSet = respBody.resultSet;
+        } else if (respBody.resultSet == nullptr && !context->uri.empty() && errCode == E_PERMISSION_DENIED) {
+            Uri queryWithUri(context->uri);
+            resultSet = UserFileClient::Query(queryWithUri, context->predicates, context->fetchColumn, errCode,
+                context->userId);
         } else {
             NAPI_ERR_LOG("UserDefineIPCClient Call failed, errCode is %{public}d", errCode);
         }

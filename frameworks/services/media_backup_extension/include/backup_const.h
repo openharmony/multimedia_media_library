@@ -62,6 +62,11 @@ constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 constexpr int32_t MAX_THREAD_NUM = 4;
 constexpr double DEFAULT_LONGITUDE = 0.0;
 constexpr double DEFAULT_LATITUDE = 0.0;
+constexpr int32_t RECYCLE_FLAG_LOCAL = 2;
+constexpr int32_t RECYCLE_FLAG_UNSYNCED = -1;
+constexpr int32_t RECYCLE_FLAG_SYNCED = 1;
+constexpr int32_t RECYCLE_FLAG_DELETE_UNSYNCED = -2;
+constexpr int32_t RECYCLE_FLAG_HARD_DELETE_UNSYNCED = -4;
 
 const std::string RESTORE_FILES_CLOUD_DIR = "/storage/cloud/files/";
 const std::string RESTORE_FILES_LOCAL_DIR = "/storage/media/local/files/";

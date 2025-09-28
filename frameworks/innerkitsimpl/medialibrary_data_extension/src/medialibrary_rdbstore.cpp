@@ -1825,6 +1825,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoMap::CREATE_TABLE,
     TriggerDeletePhotoClearMap(),
     CREATE_TAB_ANALYSIS_OCR,
+    CREATE_TAB_ANALYSIS_AFFECTIVE,
     CREATE_TAB_ANALYSIS_LABEL,
     CREATE_TAB_ANALYSIS_VIDEO_LABEL,
     CREATE_TAB_ANALYSIS_AESTHETICS,
@@ -4645,6 +4646,17 @@ static void AddSouthDeviceType(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("Add south_device_type column end");
 }
 
+static void AddAffective(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("Start add affective");
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + AFFECTIVE +  + " INT NOT NULL DEFAULT 0 ",
+        CREATE_TAB_ANALYSIS_AFFECTIVE,
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("End add affective");
+}
+
 static void AddDetailTimeToPhotos(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -5439,6 +5451,12 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_MAP_CODE_TABLE, true)) {
         MediaLibraryRdbStore::AddPhotoMapTable(store);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_MAP_CODE_TABLE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_AFFECTIVE_TABLE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_AFFECTIVE_TABLE, true)) {
+        AddAffective(store, VERSION_ADD_AFFECTIVE_TABLE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_AFFECTIVE_TABLE, true);
     }
 }
 

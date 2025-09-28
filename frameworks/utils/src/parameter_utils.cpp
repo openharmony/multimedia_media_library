@@ -15,7 +15,6 @@
 
 #include "parameter_utils.h"
 
-#include <algorithm>
 #include "permission_utils.h"
 #include "medialibrary_errno.h"
 #include "mimetype_utils.h"
@@ -389,31 +388,13 @@ bool ParameterUtils::CheckPhotoUri(const string &uri)
     return MediaFileUtils::StartsWith(uri, photoUriPrefix);
 }
 
-static bool CheckPathCross(const string& path)
-{
-    vector<string> components;
-    string::size_type start = 0;
-    string::size_type end = 0;
-    while (end != string::npos) {
-        end = path.find_first_of("/", start);
-        string component = path.substr(start, end - start);
-        if (!components.empty()) {
-            components.push_back(component);
-        }
-        if (end != string::npos) {
-            start = end + 1;
-        }
-    }
-    return std::find(components.begin(), components.end(), "..") != components.end();
-}
-
 int32_t ParameterUtils::CheckRestore(const RestoreReqBody &reqBody)
 {
     CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsNativeSAApp(), E_CHECK_NATIVE_SA_FAIL, "caller is not native SA.");
     CHECK_AND_RETURN_RET_LOG(!reqBody.albumLpath.empty(), E_INVALID_VALUES, "albumLpath is empty.");
-    CHECK_AND_RETURN_RET_LOG(!CheckPathCross(reqBody.albumLpath), E_INVALID_PATH, "albumLpath is path crossing.");
+    CHECK_AND_RETURN_RET_LOG(reqBody.albumLpath.find("..") == string::npos, E_INVALID_PATH, "albumLpath is crossing.");
     CHECK_AND_RETURN_RET_LOG(!reqBody.keyPath.empty(), E_INVALID_VALUES, "keyPath is empty.");
-    CHECK_AND_RETURN_RET_LOG(!CheckPathCross(reqBody.keyPath), E_INVALID_PATH, "keyPath is path crossing.");
+    CHECK_AND_RETURN_RET_LOG(reqBody.keyPath.find("..") == string::npos, E_INVALID_PATH, "keyPath is crossing.");
     CHECK_AND_RETURN_RET_LOG(!reqBody.bundleName.empty(), E_INVALID_VALUES, "bundleName is empty.");
     CHECK_AND_RETURN_RET_LOG(!reqBody.appName.empty(), E_INVALID_VALUES, "appName is empty.");
     return E_OK;
