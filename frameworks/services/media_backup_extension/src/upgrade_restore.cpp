@@ -1222,9 +1222,7 @@ void UpgradeRestore::BatchQueryAlbum(std::vector<PortraitAlbumInfo> &portraitAlb
 
 bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap)
 {
-    if (portraitAlbumIdMap_.empty()) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(!portraitAlbumIdMap_.empty(), false);
     std::string selection;
     for (const auto &fileInfo : fileInfos) {
         BackupDatabaseUtils::UpdateSelection(selection, std::to_string(fileInfo.fileIdOld), false);
@@ -1235,12 +1233,15 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
         " INNER JOIN merge_tag mt ON mf.tag_id = mt.tag_id "
         " INNER JOIN gallery_media gm ON mf.hash = gm.hash "
         " WHERE "
-        " COALESCE(gm.albumId, '') NOT IN ('default-album-3', 'default-album-4') "
+        " COALESCE(gm.recycleFlag, 0) NOT IN (?, ?, ?, ?, ?) "
+        " AND COALESCE(gm.albumId, '') NOT IN (SELECT albumId FROM gallery_album WHERE hide = 1) "
         " AND (mt.tag_name IS NOT NULL AND mt.tag_name != '') "
         " GROUP BY mf.hash, mf.face_id "
         " HAVING gm._id IN (" + selection + ")";
-        
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
+    std::vector<NativeRdb::ValueObject> params = { RECYCLE_FLAG_LOCAL, RECYCLE_FLAG_UNSYNCED, RECYCLE_FLAG_SYNCED,
+        RECYCLE_FLAG_DELETE_UNSYNCED, RECYCLE_FLAG_HARD_DELETE_UNSYNCED };
+
+    auto resultSet = BackupDatabaseUtils::QuerySql(galleryRdb_, querySql, params);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string hash = GetStringVal(GALLERY_MERGE_FACE_HASH, resultSet);
@@ -1305,7 +1306,7 @@ void UpgradeRestore::SetHashReference(const std::vector<FileInfo> &fileInfos, co
 {
     auto needQuerySet = needQueryMap.at(PhotoRelatedType::PORTRAIT);
     for (const auto &fileInfo : fileInfos) {
-        bool isInvalid = fileInfo.hidden || fileInfo.dateTrashed;
+        bool isInvalid = fileInfo.hidden || this->photosRestore_.IsTrashedByRecycleFlag(fileInfo);
         bool notInQuerySet = (needQuerySet.count(fileInfo.hashCode) == 0);
         bool invalidFileId = (fileInfo.fileIdNew <= 0);
         bool cond = isInvalid || notInQuerySet || invalidFileId;
