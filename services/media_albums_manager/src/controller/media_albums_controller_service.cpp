@@ -262,6 +262,10 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_HIGHLIGHT_ATTRIBUTE),
         &MediaAlbumsControllerService::ChangeRequestSetHighlightAttribute
     },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ALBUM_SYS_GET_SELECTED_ASSETS),
+        &MediaAlbumsControllerService::AlbumGetSelectAssets
+    },
 };
 
 bool MediaAlbumsControllerService::Accept(uint32_t code)
@@ -1283,5 +1287,33 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetHighlightAttribute(Message
     dto.albumSubType = reqBody.albumSubType;
     ret = MediaAlbumsService::GetInstance().ChangeRequestSetHighlightAttribute(dto);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t MediaAlbumsControllerService::AlbumGetSelectAssets(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter AlbumGetSelectAssets");
+    AlbumGetSelectedAssetsReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Read Request Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+ 
+    ret = ParameterUtils::CheckWhereClause(reqBody.predicates.GetWhereClause());
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("CheckWhereClause fialed");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    
+    AlbumGetSelectedAssetsDto dto = AlbumGetSelectedAssetsDto::Create(reqBody);
+    auto resultSet = MediaAlbumsService::GetInstance().AlbumGetSelectedAssets(dto);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, E_FAIL);
+    }
+    
+    AlbumGetSelectedAssetsRespBody respBody;
+    respBody.resultSet = resultSet;
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 } // namespace OHOS::Media

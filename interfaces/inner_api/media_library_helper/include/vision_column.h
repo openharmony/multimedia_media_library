@@ -40,6 +40,7 @@ const std::string VISION_IMAGE_FACE_TABLE = "tab_analysis_image_face";
 const std::string VISION_VIDEO_FACE_TABLE = "tab_analysis_video_face";
 const std::string VISION_ANALYSIS_ALBUM_TOTAL_TABLE = "tab_analysis_album_total";
 const std::string VISION_FACE_TAG_TABLE = "tab_analysis_face_tag";
+const std::string VISION_AFFECTIVE_TABLE = "tab_analysis_affective";
 const std::string ANALYSIS_ALBUM_TABLE = "AnalysisAlbum";
 const std::string ANALYSIS_PHOTO_MAP_TABLE = "AnalysisPhotoMap";
 const std::string ANALYSIS_ASSET_SD_MAP_TABLE = "tab_analysis_asset_sd_map";
