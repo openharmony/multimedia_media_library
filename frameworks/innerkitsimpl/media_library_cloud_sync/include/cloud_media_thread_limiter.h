@@ -22,10 +22,13 @@ namespace OHOS::Media::CloudSync {
 class CloudMediaThreadLimiter {
 public:
     static std::shared_mutex READ_WRITE_MUTEX_;
+    static std::shared_mutex DOWNLOAD_ASSET_MUTEX_;
 };
 #define CLOUD_SYNC_HANDLER_READ_LOCK \
     std::shared_lock<std::shared_mutex> readLock(CloudMediaThreadLimiter::READ_WRITE_MUTEX_)
 #define CLOUD_SYNC_HANDLER_WRITE_LOCK \
     std::unique_lock<std::shared_mutex> writeLock(CloudMediaThreadLimiter::READ_WRITE_MUTEX_)
+#define DOWNLOAD_ASSET_LOCK \
+    std::unique_lock<std::shared_mutex> downloadAssetLock(CloudMediaThreadLimiter::DOWNLOAD_ASSET_MUTEX_)
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_THREAD_LIMITER_H
