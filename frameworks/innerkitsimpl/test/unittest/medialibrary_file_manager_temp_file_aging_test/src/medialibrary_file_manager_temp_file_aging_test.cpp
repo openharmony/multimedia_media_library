@@ -73,17 +73,35 @@ static int32_t InsertPhotoForAging()
     return fileId;
 }
 
-static int32_t ClearTable(const string &table)
+static void CleanTestTables()
 {
-    NativeRdb::RdbPredicates predicates(table);
-
-    int32_t rows = 0;
-    int32_t err = g_rdbStore->Delete(rows, predicates);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to clear photos table, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
+    vector<string> dropTableList = {
+        PhotoColumn::PHOTOS_TABLE
+    };
+    for (auto &dropTable : dropTableList) {
+        string dropSql = "DROP TABLE " + dropTable + ";";
+        int32_t ret = g_rdbStore->ExecuteSql(dropSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Drop %{public}s table failed", dropTable.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Drop %{public}s table success", dropTable.c_str());
     }
-    return E_OK;
+}
+
+static void SetTables()
+{
+    vector<string> createTableSqlList = {
+        PhotoColumn::CREATE_PHOTO_TABLE
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
 }
 
 void FileManagerTempFileAgingTest::SetUpTestCase()
@@ -94,20 +112,23 @@ void FileManagerTempFileAgingTest::SetUpTestCase()
         MEDIA_ERR_LOG("Start FileManagerTempFileAgingTest failed, can not get g_rdbStore");
         exit(1);
     }
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
+    CleanTestTables();
+    SetTables();
     MEDIA_INFO_LOG("FileManagerTempFileAgingTest SetUpTestCase");
 }
 
 void FileManagerTempFileAgingTest::TearDownTestCase()
 {
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
+    CleanTestTables();
+    SetTables();
     MEDIA_INFO_LOG("FileManagerTempFileAgingTest TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 void FileManagerTempFileAgingTest::SetUp()
 {
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
+    CleanTestTables();
+    SetTables();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
     MEDIA_INFO_LOG("FileManagerTempFileAgingTest SetUp");
 }
@@ -133,7 +154,19 @@ HWTEST_F(FileManagerTempFileAgingTest, FileManagerTempFileAging_QueryAgingFiles_
         InsertPhotoForAging();
     }
     auto mediaFileManagerTempFileAgingTask = std::make_shared<MediaFileManagerTempFileAgingTask>();
-    AgingFilesInfo agingFilesInfo = mediaFileManagerTempFileAgingTask->QueryAgingFiles(g_rdbStore, startFileId);
+    AgingFilesInfo agingFilesInfo = mediaFileManagerTempFileAgingTask->QueryAgingFiles(g_rdbStore, startFileId, false);
+    EXPECT_EQ(agingFilesInfo.fileIds.size(), insertPhotoNum);
+}
+
+HWTEST_F(FileManagerTempFileAgingTest, FileManagerTempFileAging_QueryAgingFiles_CheckOmitted_Test, TestSize.Level1)
+{
+    int32_t insertPhotoNum = 10;
+    int32_t startFileId = insertPhotoNum + 1;
+    for (int num = 0; num < insertPhotoNum; num++) {
+        InsertPhotoForAging();
+    }
+    auto mediaFileManagerTempFileAgingTask = std::make_shared<MediaFileManagerTempFileAgingTask>();
+    AgingFilesInfo agingFilesInfo = mediaFileManagerTempFileAgingTask->QueryAgingFiles(g_rdbStore, startFileId, true);
     EXPECT_EQ(agingFilesInfo.fileIds.size(), insertPhotoNum);
 }
 

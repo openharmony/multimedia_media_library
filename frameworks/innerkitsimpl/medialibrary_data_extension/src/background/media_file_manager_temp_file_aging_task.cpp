@@ -72,7 +72,7 @@ int32_t MediaFileManagerTempFileAgingTask::GetBatchStatus()
 }
 
 AgingFilesInfo MediaFileManagerTempFileAgingTask::QueryAgingFiles(std::shared_ptr<MediaLibraryRdbStore> &rdbStore,
-    int32_t startFileId)
+    int32_t startFileId, bool checkOmitted)
 {
     AgingFilesInfo agingFilesInfo;
     int64_t current = MediaFileUtils::UTCTimeMilliSeconds();
@@ -80,15 +80,20 @@ AgingFilesInfo MediaFileManagerTempFileAgingTask::QueryAgingFiles(std::shared_pt
     std::string QUERY_FILE_MANAGER_TEMP_FILE_24H_BEFORE_INFO =
         "SELECT file_id, data, date_taken FROM Photos WHERE " + PhotoColumn::PHOTO_FILE_SOURCE_TYPE +
         " = " + std::to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) + " AND " +
-        PhotoColumn::MEDIA_DATE_ADDED + " <= " + std::to_string(timeBefore24Hours) + " AND " +
-        MediaColumn::MEDIA_ID + " IN (";
-    for (int32_t fileId = startFileId; fileId < startFileId + batchSize; fileId++) {
-        QUERY_FILE_MANAGER_TEMP_FILE_24H_BEFORE_INFO += std::to_string(fileId);
-        if (fileId != startFileId + batchSize - 1) {
-            QUERY_FILE_MANAGER_TEMP_FILE_24H_BEFORE_INFO += ",";
+        PhotoColumn::MEDIA_DATE_ADDED + " <= " + std::to_string(timeBefore24Hours);
+    if (checkOmitted) {
+        QUERY_FILE_MANAGER_TEMP_FILE_24H_BEFORE_INFO += " AND " + MediaColumn::MEDIA_ID + " < " +
+            std::to_string(startFileId);
+    } else {
+        QUERY_FILE_MANAGER_TEMP_FILE_24H_BEFORE_INFO += " AND " + MediaColumn::MEDIA_ID + " IN (";
+        for (int32_t fileId = startFileId; fileId < startFileId + batchSize; fileId++) {
+            QUERY_FILE_MANAGER_TEMP_FILE_24H_BEFORE_INFO += std::to_string(fileId);
+            if (fileId != startFileId + batchSize - 1) {
+                QUERY_FILE_MANAGER_TEMP_FILE_24H_BEFORE_INFO += ",";
+            }
         }
+        QUERY_FILE_MANAGER_TEMP_FILE_24H_BEFORE_INFO += ")";
     }
-    QUERY_FILE_MANAGER_TEMP_FILE_24H_BEFORE_INFO += ")";
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(
         QUERY_FILE_MANAGER_TEMP_FILE_24H_BEFORE_INFO);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, agingFilesInfo, "Query not match data fails");
@@ -164,13 +169,18 @@ void MediaFileManagerTempFileAgingTask::HandleMediaFileManagerTempFileAging()
     int32_t currStartFileId = GetBatchStatus();
     CHECK_AND_RETURN_LOG(currStartFileId != prefsNullErrCode, "prefs is nullptr");
     int32_t startFileId = currStartFileId == defaultValueZero ? 1 : currStartFileId;
+
+    AgingFilesInfo omittedAgingFilesInfo = QueryAgingFiles(rdbStore, startFileId, true);
+    CHECK_AND_PRINT_INFO_LOG(omittedAgingFilesInfo.fileIds.size() == 0, "Find omitted temp files num: %{public}d",
+        omittedAgingFilesInfo.fileIds.size());
+    CHECK_AND_EXECUTE(omittedAgingFilesInfo.fileIds.size() == 0, DeleteTempFiles(rdbStore, omittedAgingFilesInfo));
     while (startFileId <= maxFileId) {
         if (!this->Accept()) {
-            MEDIA_ERR_LOG("check accept failed");
+            MEDIA_ERR_LOG("FileManagerTempFileAging check condition failed End");
             SetBatchStatus(startFileId);
             return;
         }
-        AgingFilesInfo agingFilesInfo = QueryAgingFiles(rdbStore, startFileId);
+        AgingFilesInfo agingFilesInfo = QueryAgingFiles(rdbStore, startFileId, false);
         CHECK_AND_EXECUTE(agingFilesInfo.fileIds.size() == 0, DeleteTempFiles(rdbStore, agingFilesInfo));
         startFileId += batchSize;
     }
