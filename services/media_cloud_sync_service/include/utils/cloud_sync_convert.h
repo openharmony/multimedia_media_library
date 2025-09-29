@@ -67,7 +67,7 @@ public:
     static int32_t CompensatePropPosition(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropHeight(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropWidth(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
-    static int32_t CompensatePropDataAdded(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
+    static int32_t CompensatePropDataAdded(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values, int64_t& dateAdded);
     static int32_t CompensatePropDetailTime(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropSourcePath(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
 
@@ -76,7 +76,7 @@ public:
     static int32_t CompensateBasicDisplayName(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateBasicMimeType(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateBasicDeviceName(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
-    static int32_t CompensateBasicDateModified(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
+    static int32_t CompensateBasicDateModified(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values, int64_t dateAdded);
     static int32_t CompensateBasicDateTaken(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateBasicFavorite(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateBasicDateTrashed(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
