@@ -865,6 +865,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const strin
                 fileAsset = GetFileAssetFromDb(MediaColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_PHOTO,
                 PHOTO_COLUMN_VECTOR);
             }
+            CHECK_AND_RETURN_RET(fileAsset != nullptr, nullptr);
             fileAsset->SetPath(path);
             fileAsset->SetMediaType(MediaFileUtils::GetMediaType(path));
             if (MediaFileUtils::IsValidInteger(pendingStatus)) {
@@ -874,9 +875,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const strin
         }
     }
 
-    if (fileAsset == nullptr) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET(fileAsset != nullptr, nullptr);
     if (!isPhoto) {
         fileAsset->SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
     }
