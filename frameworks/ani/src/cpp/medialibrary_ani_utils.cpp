@@ -153,11 +153,11 @@ ani_status MediaLibraryAniUtils::GetByte(ani_env *env, ani_object arg, uint8_t &
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Byte.");
 
     ani_method method {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "unboxed", nullptr, &method),
-        "Can't find method unboxed in std.core.Byte.");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "toByte", nullptr, &method),
+        "Can't find method toByte in std.core.Byte.");
 
     ani_byte result;
-    CHECK_STATUS_RET(env->Object_CallMethod_Byte(arg, method, &result), "Call method unboxed failed.");
+    CHECK_STATUS_RET(env->Object_CallMethod_Byte(arg, method, &result), "Call method toByte failed.");
     return GetByte(env, result, value);
 }
 
@@ -177,11 +177,11 @@ ani_status MediaLibraryAniUtils::GetShort(ani_env *env, ani_object arg, int16_t 
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Short.");
 
     ani_method method {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "unboxed", nullptr, &method),
-        "Can't find method unboxed in std.core.Short.");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "toShort", nullptr, &method),
+        "Can't find method toShort in std.core.Short.");
 
     ani_short result;
-    CHECK_STATUS_RET(env->Object_CallMethod_Short(arg, method, &result), "Call method unboxed failed.");
+    CHECK_STATUS_RET(env->Object_CallMethod_Short(arg, method, &result), "Call method toShort failed.");
     return GetShort(env, result, value);
 }
 
@@ -201,11 +201,11 @@ ani_status MediaLibraryAniUtils::GetInt32(ani_env *env, ani_object arg, int32_t 
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Int.");
 
     ani_method method {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "unboxed", nullptr, &method),
-        "Can't find method unboxed in std.core.Int.");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "toInt", nullptr, &method),
+        "Can't find method toInt in std.core.Int.");
 
     ani_int result;
-    CHECK_STATUS_RET(env->Object_CallMethod_Int(arg, method, &result), "Call method unboxed failed.");
+    CHECK_STATUS_RET(env->Object_CallMethod_Int(arg, method, &result), "Call method toInt failed.");
     return GetInt32(env, result, value);
 }
 
@@ -225,11 +225,11 @@ ani_status MediaLibraryAniUtils::GetUint32(ani_env *env, ani_object arg, uint32_
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Int.");
 
     ani_method method {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "unboxed", nullptr, &method),
-        "Can't find method unboxed in std.core.Int.");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "toInt", nullptr, &method),
+        "Can't find method toInt in std.core.Int.");
 
     ani_int result;
-    CHECK_STATUS_RET(env->Object_CallMethod_Int(arg, method, &result), "Call method unboxed failed.");
+    CHECK_STATUS_RET(env->Object_CallMethod_Int(arg, method, &result), "Call method toInt failed.");
     return GetUint32(env, result, value);
 }
 
@@ -253,7 +253,7 @@ ani_status MediaLibraryAniUtils::GetInt64(ani_env *env, ani_object arg, int64_t 
         "Can't find method toLong in std.core.Int.");
 
     ani_long result;
-    CHECK_STATUS_RET(env->Object_CallMethod_Long(arg, method, &result), "Call method unboxed failed.");
+    CHECK_STATUS_RET(env->Object_CallMethod_Long(arg, method, &result), "Call method toLong failed.");
     return GetInt64(env, result, value);
 }
 
@@ -273,11 +273,11 @@ ani_status MediaLibraryAniUtils::GetFloat(ani_env *env, ani_object arg, float &v
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Float.");
 
     ani_method method {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "unboxed", nullptr, &method),
-        "Can't find method unboxed in std.core.Float.");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "toFloat", nullptr, &method),
+        "Can't find method toFloat in std.core.Float.");
 
     ani_float result;
-    CHECK_STATUS_RET(env->Object_CallMethod_Float(arg, method, &result), "Call method unboxed failed.");
+    CHECK_STATUS_RET(env->Object_CallMethod_Float(arg, method, &result), "Call method toFloat failed.");
     return GetFloat(env, result, value);
 }
 
@@ -297,11 +297,11 @@ ani_status MediaLibraryAniUtils::GetDouble(ani_env *env, ani_object arg, double 
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Double.");
 
     ani_method method {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "unboxed", nullptr, &method),
-        "Can't find method unboxed in std.core.Double.");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "toDouble", nullptr, &method),
+        "Can't find method toDouble in std.core.Double.");
 
     ani_double result;
-    CHECK_STATUS_RET(env->Object_CallMethod_Double(arg, method, &result), "Call method unboxed failed.");
+    CHECK_STATUS_RET(env->Object_CallMethod_Double(arg, method, &result), "Call method toDouble failed.");
     return GetDouble(env, result, value);
 }
 
