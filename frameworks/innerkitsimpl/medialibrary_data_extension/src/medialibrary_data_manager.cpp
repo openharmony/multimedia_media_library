@@ -2861,7 +2861,7 @@ void MediaLibraryDataManager::UploadDBFileInner(int64_t totalFileSize)
             "Failed to delete destDb file, path:%{private}s", destDbPath.c_str());
     }
     zipFile compressZip = Media::ZipUtil::CreateZipFile(destPath);
-    CHECK_AND_RETURN_LOG(compressZip != nullptr, "open zip file failed.");
+    CHECK_AND_RETURN_LOG(compressZip != nullptr, "open zip file failed");
 
     auto errcode = Media::ZipUtil::AddFileInZip(compressZip, zipFileName, Media::KEEP_NONE_PARENT_PATH);
     CHECK_AND_PRINT_LOG(errcode == 0, "AddFileInZip failed, errCode = %{public}d", errcode);
