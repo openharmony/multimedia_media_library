@@ -745,7 +745,6 @@ void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_MAP_CODE_TABLE, false);
     }
 
-    
     if (oldVersion < VERSION_ADD_3DGS_MODE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_3DGS_MODE, false)) {
         UpdateBurstModeAlbumIndex(rdbStore, VERSION_ADD_3DGS_MODE);
