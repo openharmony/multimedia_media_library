@@ -246,6 +246,7 @@ public:
     static const std::string CREATE_MONTH_INDEX EXPORT;
     static const std::string CREATE_DAY_INDEX EXPORT;
     static const std::string DROP_SCHPT_MEDIA_TYPE_INDEX EXPORT;
+    static const std::string DROP_BURST_MODE_ALBUM_INDEX EXPORT;
     static const std::string CREATE_SCHPT_MEDIA_TYPE_INDEX EXPORT;
     static const std::string CREATE_SCHPT_DAY_INDEX EXPORT;
     static const std::string DROP_SCHPT_DAY_INDEX EXPORT;
