@@ -78,7 +78,7 @@ public:
     static int32_t CompensateBasicMimeType(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateBasicDeviceName(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateBasicDateModified(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values,
-        int64_t dateAdded);
+        const int64_t dateAdded);
     static int32_t CompensateBasicDateTaken(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateBasicFavorite(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateBasicDateTrashed(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
