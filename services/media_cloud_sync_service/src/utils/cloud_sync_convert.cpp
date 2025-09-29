@@ -438,7 +438,7 @@ int32_t CloudSyncConvert::CompensateBasicDeviceName(const CloudMediaPullDataDto 
 }
 
 int32_t CloudSyncConvert::CompensateBasicDateModified(
-    const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values, int64_t dateAdded)
+    const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values, const int64_t dateAdded)
 {
     int64_t dateModified = data.attributesEditedTimeMs;
     // data from dual, attributesEditedTimeMs = 0, basicEditedTime != 0
