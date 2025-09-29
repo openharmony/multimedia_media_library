@@ -437,7 +437,7 @@ ani_status MediaLibraryAniUtils::ToAniDoubleObject(ani_env *env, double src, ani
 ani_status MediaLibraryAniUtils::ToAniLongObject(ani_env *env, int64_t src, ani_object &aniObj)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const char *className = "escompat.BigInt";
+    static const char *className = "std.core.BigInt";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
 
