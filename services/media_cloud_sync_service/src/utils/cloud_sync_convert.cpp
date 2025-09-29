@@ -441,6 +441,7 @@ int32_t CloudSyncConvert::CompensateBasicDateModified(
     const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values, int64_t dateAdded)
 {
     int64_t dateModified = data.attributesEditedTimeMs;
+    // data from dual, attributesEditedTimeMs = 0, basicEditedTime != 0
     if (dateModified <= 0) {
         dateModified = data.basicEditedTime;
         CHECK_AND_WARN_LOG(dateModified <= 0, "Cannot find basic::dateModified. dateModified: %{public}ld",
