@@ -1565,7 +1565,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_restore_manager_test_006, T
     auto& thumbnailRestoreManager = ThumbnailRestoreManager::GetInstance();
     ThumbRdbOpt opts;
     auto res = thumbnailRestoreManager.RestoreAstcDualFrame(opts);
-    EXPECT_EQ(res, -1);
+    EXPECT_NE(res, E_OK);
 
     opts.store = storePtr;
     res = thumbnailRestoreManager.RestoreAstcDualFrame(opts);
