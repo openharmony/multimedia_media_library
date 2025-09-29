@@ -1553,6 +1553,26 @@ static int32_t PrepareShootingModeAlbum(RdbStore &store)
     return NativeRdb::E_OK;
 }
 
+static int32_t Prepare3DGSModeAlbum(RdbStore &store, int32_t version)
+{
+    vector<string> existingAlbumNames;
+    if (QueryExistingShootingModeAlbumNames(store, existingAlbumNames) != E_SUCCESS) {
+        MEDIA_ERR_LOG("Query existing shootingMode album names failed");
+        return NativeRdb::E_ERROR;
+    }
+    string albumName = to_string(static_cast<int>(ShootingModeAlbumType::MP4_3DGS_ALBUM));
+    if (find(existingAlbumNames.begin(), existingAlbumNames.end(), albumName) != existingAlbumNames.end()) {
+        return NativeRdb::E_OK;
+    }
+    auto ret = InsertShootingModeAlbumValues(albumName, store);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Prepare shootingMode album failed");
+        RdbUpgradeUtils::AddUpgradeDfxMessages(version, 0, ret);
+        return NativeRdb::E_ERROR;
+    }
+    return NativeRdb::E_OK;
+}
+
 int32_t MediaLibraryDataCallBack::InsertSmartAlbumValues(const SmartAlbumValuesBucket &smartAlbum, RdbStore &store)
 {
     ValuesBucket valuesBucket;
@@ -5457,6 +5477,12 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_AFFECTIVE_TABLE, true)) {
         AddAffective(store, VERSION_ADD_AFFECTIVE_TABLE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_AFFECTIVE_TABLE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_3DGS_MODE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_3DGS_MODE, true)) {
+        Prepare3DGSModeAlbum(store, VERSION_ADD_3DGS_MODE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_3DGS_MODE, true);
     }
 }
 

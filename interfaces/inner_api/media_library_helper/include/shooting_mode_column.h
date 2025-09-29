@@ -64,7 +64,8 @@ enum class ShootingModeAlbumType : int32_t {
     BURST_MODE_ALBUM,
     FRONT_CAMERA_ALBUM,
     RAW_IMAGE_ALBUM,
-    END = RAW_IMAGE_ALBUM
+    MP4_3DGS_ALBUM,
+    END = MP4_3DGS_ALBUM
 };
 
 class ShootingModeAlbum {
@@ -72,6 +73,9 @@ public:
     template <class T>
     EXPORT static void GetMovingPhotoAlbumPredicates(T& predicates,
         const bool hiddenState);
+
+    template <class T>
+    EXPORT static void Get3DGSAlbumPredicates(T& predicates, const bool hiddenState);
 
     template <class T>
     EXPORT static void GetBurstModeAlbumPredicates(T& predicates, const bool hiddenState);
