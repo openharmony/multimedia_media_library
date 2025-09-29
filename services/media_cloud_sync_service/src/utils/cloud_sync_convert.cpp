@@ -444,8 +444,8 @@ int32_t CloudSyncConvert::CompensateBasicDateModified(
     // data from dual, attributesEditedTimeMs = 0, basicEditedTime != 0
     if (dateModified <= 0) {
         dateModified = data.basicEditedTime;
-        CHECK_AND_WARN_LOG(dateModified <= 0, "Cannot find basic::dateModified. dateModified: %{public}ld",
-            dateModified)
+        CHECK_AND_WARN_LOG(dateModified <= 0, "Cannot find basic::dateModified. dateModified: %{public}lld",
+            dateModified);
     }
     dateModified = PhotoFileUtils::NormalizeTimestamp(dateModified, dateAdded);
     values.Put(PhotoColumn::MEDIA_DATE_MODIFIED, dateModified);
