@@ -343,7 +343,7 @@ int32_t CloudSyncConvert::CompensatePropDataAdded(const CloudMediaPullDataDto &d
         dateAdded = 0;
     }
     if (dateAdded <= 0) {
-        MEDIA_ERR_LOG("The dateAdded createTime of record is incorrect: %{public}ld", static_cast<long>(dateAdded));
+        MEDIA_ERR_LOG("The dateAdded createTime of record is incorrect: %{public}lld", static_cast<long>(dateAdded));
         dateAdded = data.basicCreatedTime;
         if (dateAdded <= 0) {
             MEDIA_ERR_LOG("basicCreatedTime: %{public}ld <= 0", static_cast<long>(dateAdded));
