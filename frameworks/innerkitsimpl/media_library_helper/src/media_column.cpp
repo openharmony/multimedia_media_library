@@ -381,7 +381,7 @@ const std::string PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX =
     BaseColumn::CreateIndex() + PHOTO_SCHPT_HIDDEN_TIME_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
     "," + MEDIA_DATE_TRASHED + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
-    "," + PHOTO_HIDDEN_TIME + " DESC);";
+    "," + PHOTO_HIDDEN_TIME + " DESC, " + MEDIA_TYPE + "," + PHOTO_OWNER_ALBUM_ID + ");";
 
 const std::string PhotoColumn::DROP_SCHPT_HIDDEN_TIME_INDEX = BaseColumn::DropIndex() + PHOTO_SCHPT_HIDDEN_TIME_INDEX;
 
