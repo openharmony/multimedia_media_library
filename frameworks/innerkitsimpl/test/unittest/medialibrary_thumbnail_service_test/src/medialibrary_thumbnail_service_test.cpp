@@ -1396,7 +1396,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_045, Te
     ThumbRdbOpt opts;
     ThumbnailData data;
     auto res = ThumbnailUtils::CacheLcdInfo(opts, data);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_CacheLcdInfo_test, TestSize.Level0)
