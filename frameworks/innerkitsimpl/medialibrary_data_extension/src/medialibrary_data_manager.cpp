@@ -756,6 +756,13 @@ void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_ADD_3DGS_MODE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_3DGS_MODE, false);
     }
+    
+    if (oldVersion < VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, false)) {
+        MediaLibraryRdbStore::UpdateIndexHiddenTime(rdbStore, VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
+        rdbStore->SetOldVersion(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, false);
+    }
 }
 
 void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
