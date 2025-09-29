@@ -50,6 +50,15 @@ void ShootingModeAlbum::GetMovingPhotoAlbumPredicates(T& predicates, const bool 
 }
 
 template <class T>
+void ShootingModeAlbum::Get3DGSAlbumPredicates(T& predicates, const bool hiddenState)
+{
+    PhotoQueryFilter::Config config {};
+    config.hiddenConfig = hiddenState ? PhotoQueryFilter::ConfigType::INCLUDE : PhotoQueryFilter::ConfigType::EXCLUDE;
+    PhotoQueryFilter::ModifyPredicate(config, predicates);
+    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::D3GS));
+}
+
+template <class T>
 void ShootingModeAlbum::GetBurstModeAlbumPredicates(T& predicates, const bool hiddenState)
 {
     PhotoQueryFilter::Config config {};
@@ -109,6 +118,10 @@ void ShootingModeAlbum::GetShootingModeAlbumPredicates(const ShootingModeAlbumTy
             GetRAWImageAlbumPredicates(predicates, hiddenState);
             return;
         }
+        case ShootingModeAlbumType::MP4_3DGS_ALBUM: {
+            Get3DGSAlbumPredicates(predicates, hiddenState);
+            return;
+        }
         default: {
             GetGeneralShootingModeAlbumPredicates(type, predicates, hiddenState);
             return;
@@ -146,6 +159,7 @@ string ShootingModeAlbum::GetQueryAssetsIndex(const ShootingModeAlbumType type)
         {ShootingModeAlbumType::BURST_MODE_ALBUM, PhotoColumn::PHOTO_BURST_MODE_ALBUM_INDEX},
         {ShootingModeAlbumType::FRONT_CAMERA_ALBUM, PhotoColumn::PHOTO_FRONT_CAMERA_ALBUM_INDEX},
         {ShootingModeAlbumType::RAW_IMAGE_ALBUM, PhotoColumn::PHOTO_RAW_IMAGE_ALBUM_INDEX},
+        {ShootingModeAlbumType::MP4_3DGS_ALBUM, PhotoColumn::PHOTO_BURST_MODE_ALBUM_INDEX},
     };
     if (SHOOTING_MODE_INDEX_MAP.find(type) == SHOOTING_MODE_INDEX_MAP.end()) {
         MEDIA_ERR_LOG("Shooting mode type %{public}d is not in the map", static_cast<int32_t>(type));
@@ -168,6 +182,9 @@ vector<ShootingModeAlbumType> ShootingModeAlbum::GetShootingModeAlbumOfAsset(int
     if (photoSubType == static_cast<int32_t>(PhotoSubType::BURST)) {
         result.push_back(ShootingModeAlbumType::BURST_MODE_ALBUM);
     }
+    if (photoSubType == static_cast<int32_t>(PhotoSubType::D3GS)) {
+        result.push_back(ShootingModeAlbumType::MP4_3DGS_ALBUM);
+    }
     if (mimetype == "image/x-adobe-dng") {
         result.push_back(ShootingModeAlbumType::RAW_IMAGE_ALBUM);
     }
@@ -183,7 +200,8 @@ vector<ShootingModeAlbumType> ShootingModeAlbum::GetShootingModeAlbumOfAsset(int
             type != ShootingModeAlbumType::MOVING_PICTURE &&
             type != ShootingModeAlbumType::BURST_MODE_ALBUM &&
             type != ShootingModeAlbumType::FRONT_CAMERA_ALBUM &&
-            type != ShootingModeAlbumType::RAW_IMAGE_ALBUM) {
+            type != ShootingModeAlbumType::RAW_IMAGE_ALBUM &&
+            type != ShootingModeAlbumType::MP4_3DGS_ALBUM) {
             result.push_back(type);
         }
     }
@@ -223,6 +241,12 @@ template void ShootingModeAlbum::GetMovingPhotoAlbumPredicates<DataShare::DataSh
     DataShare::DataSharePredicates& predicates, const bool hiddenState);
 
 template void ShootingModeAlbum::GetMovingPhotoAlbumPredicates<NativeRdb::RdbPredicates>(
+    NativeRdb::RdbPredicates& predicates, const bool hiddenState);
+
+template void ShootingModeAlbum::Get3DGSAlbumPredicates<DataShare::DataSharePredicates>(
+    DataShare::DataSharePredicates& predicates, const bool hiddenState);
+
+template void ShootingModeAlbum::Get3DGSAlbumPredicates<NativeRdb::RdbPredicates>(
     NativeRdb::RdbPredicates& predicates, const bool hiddenState);
 
 template void ShootingModeAlbum::GetBurstModeAlbumPredicates<DataShare::DataSharePredicates>(

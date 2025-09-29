@@ -1221,6 +1221,8 @@ int32_t MediaLibraryNapiUtils::GetAllLocationPredicates(DataSharePredicates &pre
     predicates.NotEqualTo(PhotoColumn::PHOTO_LATITUDE, to_string(0));
     predicates.Or()->NotEqualTo(PhotoColumn::PHOTO_LONGITUDE, to_string(0));
     predicates.EndWrap();
+    predicates.NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+        to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)));
     return E_SUCCESS;
 }
 

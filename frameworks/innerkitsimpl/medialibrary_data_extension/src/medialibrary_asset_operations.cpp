@@ -95,6 +95,7 @@
 #include "scanner_map_code_utils.h"
 #include "photo_map_code_operation.h"
 #include "media_file_manager_temp_file_aging_task.h"
+#include "preferences_helper.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -448,8 +449,10 @@ static void DeleteFileManagerTempFileAgingXml()
 {
     CHECK_AND_RETURN_LOG(MediaFileUtils::IsFileExists(Background::FILE_MANAGER_TEMP_FILE_AGING_EVENT),
         "File manager temp file aging xml not exist");
-    CHECK_AND_RETURN_LOG(MediaFileUtils::DeleteFile(Background::FILE_MANAGER_TEMP_FILE_AGING_EVENT),
-        "Failed to delete file manager temp file aging xml, errno: %{public}d", errno);
+    int32_t errCode = NativePreferences::PreferencesHelper::DeletePreferences(
+        Background::FILE_MANAGER_TEMP_FILE_AGING_EVENT);
+    CHECK_AND_RETURN_LOG(errCode == E_OK,
+        "Failed to delete file manager temp file aging xml, errCode: %{public}d", errCode);
 }
 
 int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cmd)
