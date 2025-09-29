@@ -47,6 +47,7 @@ void CloneRestorePortraitBase::GetAnalysisAlbumInsertValue(NativeRdb::ValuesBuck
     BackupDatabaseUtils::PutIfPresent(value, ANALYSIS_COL_ALBUM_TYPE, info.albumType);
     BackupDatabaseUtils::PutIfPresent(value, ANALYSIS_COL_ALBUM_SUBTYPE, info.albumSubtype);
     BackupDatabaseUtils::PutIfPresent(value, ANALYSIS_COL_ALBUM_NAME, info.albumName);
+    BackupDatabaseUtils::PutIfPresent(value, ANALYSIS_COL_RANK, info.rank);
     BackupDatabaseUtils::PutIfPresent(value, ANALYSIS_COL_TAG_ID, info.tagId);
     BackupDatabaseUtils::PutIfPresent(value, ANALYSIS_COL_USER_OPERATION, info.userOperation);
     BackupDatabaseUtils::PutIfPresent(value, ANALYSIS_COL_GROUP_TAG, info.groupTag);
@@ -67,6 +68,7 @@ void CloneRestorePortraitBase::ParseAlbumResultSet(const std::shared_ptr<NativeR
         ANALYSIS_COL_ALBUM_SUBTYPE);
     analysisAlbumTbl.albumName = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_ALBUM_NAME);
     analysisAlbumTbl.coverUri = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_COVER_URI);
+    analysisAlbumTbl.rank = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, ANALYSIS_COL_RANK);
     analysisAlbumTbl.tagId = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, ANALYSIS_COL_TAG_ID);
     analysisAlbumTbl.userOperation = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
         ANALYSIS_COL_USER_OPERATION);
