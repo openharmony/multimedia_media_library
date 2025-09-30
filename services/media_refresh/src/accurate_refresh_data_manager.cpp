@@ -99,7 +99,8 @@ int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::UpdateModifiedDatasI
         MEDIA_WARN_LOG("input keys empty or operation error");
         return ACCURATE_REFRESH_INPUT_PARA_ERR;
     }
-    CHECK_AND_RETURN_RET_WARN_LOG(!CheckIsExceed(keys), ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
+    CHECK_AND_RETURN_RET_WARN_LOG(!(CheckIsExceed(keys) || CheckIsExceedInMultiThread(keys)),
+        ACCURATE_REFRESH_DATA_EXCEED, "data size exceed");
     auto ret = ACCURATE_REFRESH_RET_OK;
     switch (operation) {
         case RDB_OPERATION_REMOVE:

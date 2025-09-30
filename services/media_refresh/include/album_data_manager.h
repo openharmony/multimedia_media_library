@@ -45,6 +45,7 @@ public:
     static std::vector<AlbumChangeData> GetAlbumDatasFromAddAlbum(const std::vector<std::string> &albumIdsStr);
     void ClearChangeInfos();
     bool CheckIsForRecheck() override;
+    bool CheckIsExceedInMultiThread(const vector<int32_t>& keys) override {return false;};
 
 private:
     int32_t GetChangeInfoKey(const AlbumChangeInfo &changeInfo) override;

@@ -173,6 +173,22 @@ bool AssetDataManager::CheckIsExceed(const vector<int32_t> &keys)
     return isExceed_;
 }
 
+bool AssetDataManager::CheckIsExceedInMultiThread(const vector<int32_t> &keys)
+{
+    SetAlbumIdsByFileds(keys);
+    if (MultiThreadAssetChangeInfoMgr::GetInstance().CheckIsExceed()) {
+        isExceed_ = true;
+        this->SetAlbumIdFromChangeDates();
+        this->changeDatas_.clear();
+    }
+    return isExceed_;
+}
+
+bool AssetDataManager::GetIsExceedStatus()
+{
+    return isExceed_;
+}
+
 int32_t AssetDataManager::GetChangeInfoKey(const PhotoAssetChangeInfo &changeInfo)
 {
     return changeInfo.fileId_;

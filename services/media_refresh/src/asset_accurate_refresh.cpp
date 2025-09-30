@@ -83,7 +83,7 @@ int32_t AssetAccurateRefresh::RefreshAlbum(NotifyAlbumType notifyAlbumType, bool
     }
     MediaLibraryTracer tracer;
     tracer.Start("AssetAccurateRefresh::RefreshAlbum");
-    if (dataManager_.CheckIsForRecheck()) {
+    if (dataManager_.CheckIsForRecheck() || dataManager_.GetIsExceedStatus()) {
         MEDIA_INFO_LOG("enter ForRecheck");
         int32_t ret = RefreshAllAlbum(dataManager_.uniqueAlbumIds_, notifyAlbumType, isRefreshWithDateModified);
         dataManager_.ClearMultiThreadChangeDatas();
@@ -254,6 +254,11 @@ int32_t AssetAccurateRefresh::SetThumbnailStatus(int32_t fileId, int32_t status)
 {
     // 函数调用错误
     return dataManager_.SetThumbnailStatus(fileId, status);
+}
+
+bool AssetAccurateRefresh::GetIsExceedStatus()
+{
+    return dataManager_.GetIsExceedStatus();
 }
 
 int32_t AssetAccurateRefresh::NotifyForReCheck()
