@@ -110,7 +110,7 @@ private:
     EXPORT void TryToStartSync();
     EXPORT int32_t ClearDeletedDbData();
     EXPORT int32_t ForceRetainDownloadCloudMediaEx(CloudMediaRetainType retainType);
-
+    EXPORT int32_t BackupAlbumOrderInfo();
     EXPORT int32_t ClearDeletedMapData();
 private:
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation_{nullptr};
