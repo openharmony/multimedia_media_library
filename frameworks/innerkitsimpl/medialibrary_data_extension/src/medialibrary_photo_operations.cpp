@@ -3483,7 +3483,7 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
             "Failed to GetFileAssetFromDb, fileId = %{public}d", id);
         if (fileAsset->GetStageVideoTaskStatus() == static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE)) {
-            MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(fileAsset->GetPhotoId());
+            MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(id);
         }
         return AddFiltersToVideoExecute(fileAsset->GetFilePath(), true, true);
     }
