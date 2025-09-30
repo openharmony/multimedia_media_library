@@ -1558,7 +1558,6 @@ int32_t CloudMediaPhotosDao::OnDeleteRecordsAsset(
 int32_t CloudMediaPhotosDao::OnCopyPhotoRecord(
     const PhotosDto &record, std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> &photoRefresh)
 {
-    MEDIA_INFO_LOG("OnCopyPhotoRecord enter");
     CHECK_AND_RETURN_RET_LOG(photoRefresh != nullptr, E_RDB_STORE_NULL, "OnCopyPhotoRecord get store failed.");
     int32_t fileId = record.fileId;
     string sandboxPath = record.path;
