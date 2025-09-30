@@ -51,6 +51,7 @@ public:
     // 清除所有的fileId
     void ClearMultiThreadChangeDatas();
     bool CheckIsForRecheck() override;
+    bool GetIsExceedStatus();
 
 private:
     void SetAlbumIdByChangeInfos(const std::vector<PhotoAssetChangeInfo> &changeInfos) override;
@@ -66,6 +67,7 @@ private:
     int32_t SetAlbumIdsByPredicates(const NativeRdb::AbsRdbPredicates &predicates) override;
     int32_t SetAlbumIdsBySql(const std::string &sql, const std::vector<NativeRdb::ValueObject> &bindArgs) override;
     int32_t SetAlbumIdsByFileds(const std::vector<int32_t> &fileIds) override;
+    bool CheckIsExceedInMultiThread(const std::vector<int32_t> &keys) override;
 
 private:
     std::unordered_map<int32_t, PhotoAssetContentInfo> contentInfos;
