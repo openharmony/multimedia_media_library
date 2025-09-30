@@ -95,7 +95,8 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(
     watch->Notify(notifyUri, NOTIFY_UPDATE);
 }
 
-void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(const int32_t &fileId, NativeRdb::ValuesBucket &updateValues)
+void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(const int32_t &fileId,
+    NativeRdb::ValuesBucket &updateValues)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdatePhotoQuality " + std::to_string(fileId));
