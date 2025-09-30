@@ -95,6 +95,19 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(
     watch->Notify(notifyUri, NOTIFY_UPDATE);
 }
 
+int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(const string &photoId)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdatePhotoQuality " + photoId);
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    NativeRdb::ValuesBucket updateValues;
+    updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+    updateCmd.SetValueBucket(updateValues);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
+    int32_t updatePhotoQualityResult = DatabaseAdapter::Update(updateCmd);
+    return updatePhotoQualityResult;
+}
+
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(const int32_t &fileId,
     NativeRdb::ValuesBucket &updateValues)
 {
