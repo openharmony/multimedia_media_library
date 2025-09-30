@@ -536,6 +536,21 @@ static void AddShootingModeAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& st
     MEDIA_INFO_LOG("End add shooting mode album index");
 }
 
+static void UpdateBurstModeAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& store, int32_t version)
+{
+    MEDIA_INFO_LOG("Start to Update burst mode album index");
+    const vector<string> sqls = {
+        PhotoColumn::DROP_BURST_MODE_ALBUM_INDEX,
+        PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
+    };
+    for (int i = 0; i < sqls.size(); i++) {
+        int ret = store->ExecuteSql(sqls[i]);
+        RdbUpgradeUtils::AddUpgradeDfxMessages(version, i, ret);
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    }
+    MEDIA_INFO_LOG("End Update burst mode album index");
+}
+
 static void AddHistoryPanoramaModeAlbumData(const shared_ptr<MediaLibraryRdbStore>& store)
 {
     MEDIA_INFO_LOG("Start to add panorama mode album data");
@@ -728,6 +743,25 @@ void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         MediaLibraryRdbStore::AddPhotoMapTableData(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_MAP_CODE_TABLE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_MAP_CODE_TABLE, false);
+    }
+
+    if (oldVersion < VERSION_ADD_3DGS_MODE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_3DGS_MODE, false)) {
+        UpdateBurstModeAlbumIndex(rdbStore, VERSION_ADD_3DGS_MODE);
+        vector<string> albumIdsStr;
+        int32_t albumId = -1;
+        MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(ShootingModeAlbumType::MP4_3DGS_ALBUM, albumId);
+        albumIdsStr.push_back(to_string(albumId));
+        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
+        rdbStore->SetOldVersion(VERSION_ADD_3DGS_MODE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_3DGS_MODE, false);
+    }
+    
+    if (oldVersion < VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, false)) {
+        MediaLibraryRdbStore::UpdateIndexHiddenTime(rdbStore, VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
+        rdbStore->SetOldVersion(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, false);
     }
 }
 
@@ -2861,7 +2895,7 @@ void MediaLibraryDataManager::UploadDBFileInner(int64_t totalFileSize)
             "Failed to delete destDb file, path:%{private}s", destDbPath.c_str());
     }
     zipFile compressZip = Media::ZipUtil::CreateZipFile(destPath);
-    CHECK_AND_RETURN_LOG(compressZip != nullptr, "open zip file failed.");
+    CHECK_AND_RETURN_LOG(compressZip != nullptr, "open zip file failed");
 
     auto errcode = Media::ZipUtil::AddFileInZip(compressZip, zipFileName, Media::KEEP_NONE_PARENT_PATH);
     CHECK_AND_PRINT_LOG(errcode == 0, "AddFileInZip failed, errCode = %{public}d", errcode);
