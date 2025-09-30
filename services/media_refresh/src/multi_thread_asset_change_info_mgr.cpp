@@ -121,5 +121,15 @@ void MultiThreadAssetChangeInfoMgr::ClearMultiThreadChangeData(int32_t fileId)
     }
 }
 
+bool MultiThreadAssetChangeInfoMgr::CheckIsExceed()
+{
+    std::lock_guard<std::mutex> lock(changeDataMutex_);
+    size_t assetSize = assetChangeDataMap_.size();
+    if (assetSize >= MAX_DATA_LENGTH) {
+        MEDIA_INFO_LOG("assetSize in MultiThreadAssetChangeInfoMgr is %{public}d", (int)assetSize);
+    }
+    return assetSize >= MAX_DATA_LENGTH;
+}
+
 } // namespace Media::AccurateRefresh
 } // namespace OHOS
