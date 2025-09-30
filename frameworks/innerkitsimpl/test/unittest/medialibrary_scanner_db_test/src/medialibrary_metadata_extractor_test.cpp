@@ -203,7 +203,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_001, Tes
     resultMap = {{AV_KEY_ALBUM, ""}, {AV_KEY_ARTIST, ""}, {AV_KEY_DURATION, ""}, {AV_KEY_DATE_TIME_FORMAT, ""},
         {AV_KEY_VIDEO_HEIGHT, ""}, {AV_KEY_VIDEO_WIDTH, ""}, {AV_KEY_MIME_TYPE, ""}, {AV_KEY_MIME_TYPE, ""},
         {AV_KEY_VIDEO_ORIENTATION, ""}, {AV_KEY_VIDEO_IS_HDR_VIVID, ""}, {AV_KEY_TITLE, ""}, {AV_KEY_GENRE, ""},
-        {AV_KEY_DATE_TIME_ISO8601, ""}};
+        {AV_KEY_DATE_TIME_ISO8601, ""}, {AV_KEY_GLTF_OFFSET, ""}};
     MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_EQ(data->GetAlbum(), "");
     EXPECT_EQ(data->GetLongitude(), 0);
@@ -228,7 +228,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_002, Tes
     resultMap = {{AV_KEY_ALBUM, "a"}, {AV_KEY_ARTIST, "a"}, {AV_KEY_DURATION, "a"}, {AV_KEY_DATE_TIME_FORMAT, "a"},
         {AV_KEY_VIDEO_HEIGHT, "a"}, {AV_KEY_VIDEO_WIDTH, "a"}, {AV_KEY_MIME_TYPE, "a"}, {AV_KEY_MIME_TYPE, "a"},
         {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_VIDEO_IS_HDR_VIVID, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"},
-        {AV_KEY_DATE_TIME_ISO8601, "2025-06-11T18:00:00.000000Z"}};
+        {AV_KEY_DATE_TIME_ISO8601, "2025-06-11T18:00:00.000000Z"}, {AV_KEY_GLTF_OFFSET, "110"}};
     MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_EQ(data->GetDateTaken(), 1749664800000);
     EXPECT_EQ(data->GetAlbum(), "a");
@@ -251,7 +251,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_003, Tes
     resultMap = {{AV_KEY_ALBUM, "a"}, {AV_KEY_ARTIST, "a"}, {AV_KEY_DURATION, "a"}, {AV_KEY_DATE_TIME_FORMAT, "a"},
         {AV_KEY_VIDEO_HEIGHT, "a"}, {AV_KEY_VIDEO_WIDTH, "a"}, {AV_KEY_MIME_TYPE, "a"}, {AV_KEY_MIME_TYPE, "a"},
         {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_VIDEO_IS_HDR_VIVID, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"},
-        {AV_KEY_DATE_TIME_ISO8601, "11112"}};
+        {AV_KEY_DATE_TIME_ISO8601, "11112"}, {AV_KEY_GLTF_OFFSET, "-1"}};
     MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_EQ(data->GetDateTaken(), dateModify);
 }
@@ -271,7 +271,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_004, Tes
     resultMap = {{AV_KEY_ALBUM, "a"}, {AV_KEY_ARTIST, "a"}, {AV_KEY_DURATION, "a"}, {AV_KEY_DATE_TIME_FORMAT, "a"},
         {AV_KEY_VIDEO_HEIGHT, "a"}, {AV_KEY_VIDEO_WIDTH, "a"}, {AV_KEY_MIME_TYPE, "a"}, {AV_KEY_MIME_TYPE, "a"},
         {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_VIDEO_IS_HDR_VIVID, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"},
-        {AV_KEY_DATE_TIME_ISO8601, "2025/06/11 18:00:00Z"}};
+        {AV_KEY_DATE_TIME_ISO8601, "2025/06/11 18:00:00Z"}, {AV_KEY_GLTF_OFFSET, "10001"}};
     MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_NE(data->GetDateTaken(), dateModify);
 }
@@ -296,7 +296,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_photo, TestSi
     resultMap = {{AV_KEY_ALBUM, "a"}, {AV_KEY_ARTIST, "a"}, {AV_KEY_DURATION, "a"}, {AV_KEY_DATE_TIME_FORMAT, "a"},
         {AV_KEY_VIDEO_HEIGHT, "a"}, {AV_KEY_VIDEO_WIDTH, "a"}, {AV_KEY_MIME_TYPE, "a"}, {AV_KEY_MIME_TYPE, "a"},
         {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_VIDEO_IS_HDR_VIVID, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"},
-        {AV_KEY_DATE_TIME_ISO8601, "a"}};
+        {AV_KEY_DATE_TIME_ISO8601, "a"}, {AV_KEY_GLTF_OFFSET, "a"}};
     MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_EQ(data->GetAlbum(), "a");
     EXPECT_EQ(data->GetLongitude(), longtitude);

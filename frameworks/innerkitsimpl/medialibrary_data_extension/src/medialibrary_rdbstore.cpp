@@ -385,6 +385,17 @@ void MediaLibraryRdbStore::AddUpgradeIndex(const shared_ptr<MediaLibraryRdbStore
     MEDIA_INFO_LOG("end create idx again");
 }
 
+void MediaLibraryRdbStore::UpdateIndexHiddenTime(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
+{
+    const vector<string> sqls = {
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+    };
+    MEDIA_INFO_LOG("start update idx_schpt_hidden_time");
+    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
+    MEDIA_INFO_LOG("end update idx_schpt_hidden_time");
+}
+
 void MediaLibraryRdbStore::UpdateBurstDirty(const shared_ptr<MediaLibraryRdbStore> store)
 {
     const vector<string> sqls = {
@@ -1538,6 +1549,26 @@ static int32_t PrepareShootingModeAlbum(RdbStore &store)
             MEDIA_ERR_LOG("Prepare shootingMode album failed");
             return NativeRdb::E_ERROR;
         }
+    }
+    return NativeRdb::E_OK;
+}
+
+static int32_t Prepare3DGSModeAlbum(RdbStore &store, int32_t version)
+{
+    vector<string> existingAlbumNames;
+    if (QueryExistingShootingModeAlbumNames(store, existingAlbumNames) != E_SUCCESS) {
+        MEDIA_ERR_LOG("Query existing shootingMode album names failed");
+        return NativeRdb::E_ERROR;
+    }
+    string albumName = to_string(static_cast<int>(ShootingModeAlbumType::MP4_3DGS_ALBUM));
+    if (find(existingAlbumNames.begin(), existingAlbumNames.end(), albumName) != existingAlbumNames.end()) {
+        return NativeRdb::E_OK;
+    }
+    auto ret = InsertShootingModeAlbumValues(albumName, store);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Prepare shootingMode album failed");
+        RdbUpgradeUtils::AddUpgradeDfxMessages(version, 0, ret);
+        return NativeRdb::E_ERROR;
     }
     return NativeRdb::E_OK;
 }
@@ -5461,6 +5492,12 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_AFFECTIVE_TABLE, true)) {
         AddAffective(store, VERSION_ADD_AFFECTIVE_TABLE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_AFFECTIVE_TABLE, true);
+    }
+
+    if (oldVersion < VERSION_ADD_3DGS_MODE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_3DGS_MODE, true)) {
+        Prepare3DGSModeAlbum(store, VERSION_ADD_3DGS_MODE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_3DGS_MODE, true);
     }
 }
 

@@ -84,6 +84,7 @@ private:
     virtual int32_t SetAlbumIdsBySql(const std::string &sql, const std::vector<NativeRdb::ValueObject> &bindArgs) = 0;
     virtual int32_t SetAlbumIdsByFileds(const std::vector<int32_t> &fileIds) = 0;
     virtual void SetAlbumIdByChangeInfos(const std::vector<ChangeInfo> &changeInfos) {};
+    virtual bool CheckIsExceedInMultiThread(const std::vector<int32_t>& keys) = 0;
     void SetAlbumIdFromChangeDates();
 
 protected:
