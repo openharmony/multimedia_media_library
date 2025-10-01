@@ -69,6 +69,7 @@
 #include "source_album.h"
 #include "tab_old_photos_table_event_handler.h"
 #include "tab_facard_photos_table_event_handler.h"
+#include "tab_old_albums_table_event_handler.h"
 #include "vision_column.h"
 #include "vision_ocr_column.h"
 #include "form_map.h"
@@ -1965,6 +1966,10 @@ static int32_t ExecuteSql(RdbStore &store)
         CHECK_AND_RETURN_RET(ret == NativeRdb::E_OK, NativeRdb::E_ERROR);
     }
     CHECK_AND_RETURN_RET(TabOldPhotosTableEventHandler().OnCreate(store) == NativeRdb::E_OK,
+        NativeRdb::E_ERROR);
+    CHECK_AND_RETURN_RET(TabOldAlbumTableEventHandler().OnCreate(store) == NativeRdb::E_OK,
+        NativeRdb::E_ERROR);
+    CHECK_AND_RETURN_RET(TabFaCardPhotosTableEventHandler().OnCreate(store) == NativeRdb::E_OK,
         NativeRdb::E_ERROR);
     if (TabFaCardPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
@@ -5444,6 +5449,15 @@ static void AddAlbumOrderBackTable(RdbStore &store)
     MEDIA_INFO_LOG("create album_order_back table end");
 }
 
+static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_CREATE_TAB_OLD_ALBUM &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_TAB_OLD_ALBUM, true)) {
+        TabOldAlbumTableEventHandler().OnCreate(store);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_TAB_OLD_ALBUM, true);
+    }
+}
+
 static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_ALBUM_ORDER_BACK_VERSION &&
@@ -5499,6 +5513,7 @@ static void UpgradeExtensionPart10(RdbStore &store, int32_t oldVersion)
         Prepare3DGSModeAlbum(store, VERSION_ADD_3DGS_MODE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_3DGS_MODE, true);
     }
+    UpgradeExtensionPart11(store, oldVersion);
 }
 
 static void UpgradeExtensionPart9(RdbStore &store, int32_t oldVersion)

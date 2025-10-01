@@ -119,6 +119,7 @@
 #include "set_photo_album_order_vo.h"
 #include "result_set_napi.h"
 #include "heif_transcoding_check_vo.h"
+#include "media_old_albums_column.h"
 
 #include "parcel.h"
 #include "medialibrary_notify_utils.h"
@@ -151,6 +152,7 @@ constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
 const size_t MAX_SET_ORDER_ARRAY_SIZE = 1000;
 const size_t MAX_TAB_OLD_PHOTOS_URI_COUNT = 100;
+const size_t MAX_TAB_OLD_ALBUMS_URI_COUNT = 100;
 
 static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP = {
     {ANALYSIS_LABEL, FEATURE},
@@ -419,6 +421,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("createAlbum", PhotoAccessCreatePhotoAlbum),
             DECLARE_NAPI_FUNCTION("deleteAlbums", PhotoAccessDeletePhotoAlbums),
             DECLARE_NAPI_FUNCTION("getAlbums", PahGetAlbums),
+            DECLARE_NAPI_FUNCTION("getAlbumsByOldUris", PhotoAcessGetAlbumsByOldUris),
             DECLARE_NAPI_FUNCTION("getAlbumsByIds", PhotoAccessGetPhotoAlbumsByIds),
             DECLARE_NAPI_FUNCTION("getPhotoIndex", PhotoAccessGetPhotoIndex),
             DECLARE_NAPI_FUNCTION("getIndexConstructProgress", PhotoAccessGetIndexConstructProgress),
@@ -9449,6 +9452,315 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoAlbumsByIds(napi_env env, napi_c
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetPhotoAlbums", JSGetPhotoAlbumsByIdsExecute,
         JSGetPhotoAlbumsCompleteCallback);
+}
+
+static napi_value GetOldAlbumUriMap(napi_env env, MediaLibraryAsyncContext *context)
+{
+    napi_status status;
+    napi_value mapNapiValue {nullptr};
+
+    status = napi_create_map(env, &mapNapiValue);
+    CHECK_COND_RET(status == napi_ok && mapNapiValue != nullptr, nullptr,
+        "Failed to create map napi value, napi status: %{public}d", static_cast<int>(status));
+
+    for (auto &iter : context->uriAlbumMap) {
+        napi_value key {nullptr};
+        napi_value value {nullptr};
+
+        status = napi_create_string_utf8(env, iter.first.c_str(), NAPI_AUTO_LENGTH, &key);
+        CHECK_COND_RET(status == napi_ok && key != nullptr, nullptr,
+            "Failed to create string key, napi status: %{public}d", static_cast<int>(status));
+
+        status = napi_create_string_utf8(env, iter.second.c_str(), NAPI_AUTO_LENGTH, &value);
+        CHECK_COND_RET(status == napi_ok && value != nullptr, nullptr,
+            "Failed to create string value, napi status: %{public}d", static_cast<int>(status));
+
+        status = napi_map_set_property(env, mapNapiValue, key, value);
+        CHECK_COND_RET(status == napi_ok, nullptr,
+            "Failed to set uriMap property, napi status: %{public}d", static_cast<int>(status));
+    }
+
+    return mapNapiValue;
+}
+
+static void GetOldAlbumUriQueryResult(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    napi_value fileResult = GetOldAlbumUriMap(env, context);
+
+    if (fileResult == nullptr) {
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_E_INNER_FAIL);
+        MediaLibraryNapiUtils::CreateNapiErrorObject(
+            env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Failed to create js object for Fetch Album Result"
+        );
+        return;
+    }
+
+    jsContext->data = fileResult;
+    jsContext->status = true;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+}
+
+static void JSGetAlbumsByOldUrisCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAlbumsByOldUrisCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+
+    if (context->error == ERR_DEFAULT) {
+        napi_value mapNapiValue {nullptr};
+        napi_create_map(env, &mapNapiValue);
+        jsContext->data = mapNapiValue;
+        jsContext->status = true;
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    }
+
+    GetOldAlbumUriQueryResult(env, context, jsContext);
+    tracer.Finish();
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext
+        );
+    }
+
+    delete context;
+    context = nullptr;
+}
+
+static bool IsAllNumeric(const std::string &str) {
+    return std::all_of(str.begin(), str.end(),
+        [](unsigned char c){
+            return std::isdigit(c);
+    });
+}
+
+static std::string GetIdFromAlbumUriHelper(const std::string &uri, const std::string &prefix)
+{
+    size_t lastSlashPos = uri.rfind("/");
+    if (lastSlashPos == std::string::npos) {
+        NAPI_ERR_LOG("Id could not be found in the URI");
+        return "";
+    }
+
+    std::string checkPrefix = uri.substr(0, lastSlashPos + 1);
+    if (checkPrefix != prefix) {
+        NAPI_ERR_LOG("The uri format is incorrect:  %{public}s", uri.c_str());
+        return "";
+    }
+
+    std::string id = uri.substr(lastSlashPos + 1);
+    if (!IsAllNumeric(id)) {
+        NAPI_ERR_LOG("The id is not numeric: %{public}s", id.c_str());
+        return "";
+    }
+
+    return id;
+}
+
+static std::string GetIdFromAlbumUri(const std::string &uri)
+{
+    size_t paPos = uri.find(TabOldAlbumsColumn::PHOTO_ALBUM_PREFIX);
+    if (paPos != 0) {
+        size_t aaPos = uri.find(TabOldAlbumsColumn::ANALYSIS_ALBUM_PREFIX);
+        if (aaPos != 0) {
+            NAPI_ERR_LOG("The prefix is incorrect for the URI:  %{public}s", uri.c_str());
+            return "";
+        }
+        return GetIdFromAlbumUriHelper(uri, TabOldAlbumsColumn::ANALYSIS_ALBUM_PREFIX);
+    }
+    return GetIdFromAlbumUriHelper(uri, TabOldAlbumsColumn::PHOTO_ALBUM_PREFIX);
+}
+
+static std::string GetAlbumTypeFromUriHelper(const std::string &uri)
+{
+
+    size_t pos = uri.find("://");
+    if (pos == std::string::npos) {
+        return "";
+    }
+    std::string path = uri.substr(pos + 3);
+
+    std::istringstream ss(path);
+    std::string token;
+    std::vector<std::string> parts;
+    while (std::getline(ss, token, '/')) {
+        if (!token.empty()) {
+            parts.push_back(token);
+        }
+    }
+
+    if (parts.size() >= 2) {
+        return parts[1];
+    }
+    return "";
+}
+
+static std::vector<std::string> ExtractIDAlbumOldUris(const std::vector<std::string> &oldAlbums)
+{
+    std::vector<std::string> result;
+
+    for (const std::string &oldAlbum : oldAlbums) {
+        auto finalParsing = GetIdFromAlbumUri(oldAlbum);
+        if (!finalParsing.empty()) {
+            result.emplace_back(finalParsing);
+        } else {
+            NAPI_ERR_LOG("SplitPathAndIDAlbumOldUris: Failed to retrieve ID from %{album}s", oldAlbum.c_str());
+        }
+    }
+    return result;
+}
+
+static std::vector<std::pair<std::string, std::string>> ExtractUriAndIDFromOldUris(const std::vector<std::string> &oldAlbums)
+{
+    std::vector<std::pair<std::string, std::string>> result;
+
+    for (const std::string &oldAlbum : oldAlbums) {
+        std::string id = GetIdFromAlbumUri(oldAlbum);
+        result.emplace_back(oldAlbum, id);
+    }
+    return result;
+}
+
+static std::string GetOldAlbumUriFromResultMapById(const std::map<std::string, std::string>& resultMap, const std::string& oldAlbumUri)
+{
+    auto findResult = std::find_if(resultMap.begin(), resultMap.end(), [&oldAlbumUri](const auto& data) {
+        return data.first == oldAlbumUri;
+    });
+
+    return findResult != resultMap.end() ? findResult->first : "";
+}
+
+static std::map<std::string, std::string> prepareMapping(const std::vector<TabOldAlbumsColumn::RawData>& processEnd, const std::vector<std::pair<std::string, std::string>>& oldAlbumData) {
+    std::map<std::string, std::string> result{};
+
+    for (const auto& data : oldAlbumData) {
+        result[data.first] = "";
+    }
+
+    for (auto& value : processEnd) {
+        char albumSubtypeKind = std::to_string(value.album_subtype)[0];
+        std::string oldAlbumId = std::to_string(value.old_album_id);
+        std::string oldAlbumUri = albumSubtypeKind == TabOldAlbumsColumn::IS_ANALYSIS_TABLE ?
+                    TabOldAlbumsColumn::MEDIA_URI + '/' + TabOldAlbumsColumn::ALBUM_ANALYSIS_TAB + '/' + oldAlbumId :
+                    TabOldAlbumsColumn::MEDIA_URI + '/' + TabOldAlbumsColumn::ALBUM_PHOTO_TAB + '/' + oldAlbumId;
+        std::string val = albumSubtypeKind == TabOldAlbumsColumn::IS_ANALYSIS_TABLE ?
+                    TabOldAlbumsColumn::ANALYSIS_ALBUM_PREFIX + std::to_string(value.album_id) :
+                    TabOldAlbumsColumn::PHOTO_ALBUM_PREFIX + std::to_string(value.album_id);
+        std::string foundUri = GetOldAlbumUriFromResultMapById(result, oldAlbumUri);
+
+        if (!foundUri.empty()) {
+            if (GetAlbumTypeFromUriHelper(foundUri) == GetAlbumTypeFromUriHelper(val)) {
+                result[foundUri] = val;
+            }
+        }
+    }
+    return result;
+}
+
+static void PhotoAccessGetAlbumsByOldUrisExecute(napi_env env, void *data)
+{
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    std::vector<std::string> InputAlbumId = ExtractIDAlbumOldUris(context->albumUris);
+    std::vector<std::pair<std::string, std::string>> oldAlbumData = ExtractUriAndIDFromOldUris(context->albumUris);
+
+    int errCode = 0;
+    DataSharePredicates predicates;
+    Uri uri(QUERY_TAB_OLD_ALBUMS);
+    std::vector<std::string> columns= { TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::OLD_ALBUM_ID, TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::ALBUM_ID, TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::ALBUM_TYPE, TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::ALBUM_SUBTYPE, TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::CLONE_SEQUENCE};
+    predicates.In(TabOldAlbumsColumn::OLD_ALBUM_ID, InputAlbumId);
+    predicates.OrderByDesc(TabOldAlbumsColumn::CLONE_SEQUENCE);
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("QueryOldAlbumsTable: ResultSet is nullptr: %{public}d", errCode);
+        return;
+    }
+
+    std::vector<TabOldAlbumsColumn::RawData> processing;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        TabOldAlbumsColumn::RawData row;
+        row.old_album_id = GetInt32Val (TabOldAlbumsColumn::OLD_ALBUM_ID, resultSet);
+        row.album_id = GetInt32Val (TabOldAlbumsColumn::ALBUM_ID, resultSet);
+        row.album_type = GetInt32Val (TabOldAlbumsColumn::ALBUM_TYPE, resultSet);
+        row.album_subtype = GetInt32Val (TabOldAlbumsColumn::ALBUM_SUBTYPE, resultSet);
+        row.clone_sequence = GetInt32Val (TabOldAlbumsColumn::CLONE_SEQUENCE, resultSet);
+
+        auto it = std::find_if(processing.begin(), processing.end(), [&row](const auto &elem) {
+            return row.old_album_id == elem.old_album_id;
+        });
+
+        if (it == processing.end()) {
+            processing.emplace_back(row);
+        } else if (it->album_subtype != row.album_subtype) {
+            processing.emplace_back(row);
+        } else if (row.clone_sequence > it->clone_sequence) {
+            *it = row;
+        }
+    }
+    context->uriAlbumMap = prepareMapping(processing, oldAlbumData);
+}
+
+static napi_value ParseArgsGetAlbumsByOldUris(napi_env env, napi_callback_info info,
+    std::unique_ptr<MediaLibraryAsyncContext> &context)
+{
+     if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL,
+            "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    vector<string> uris;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringArrayCallback(env, info, context, uris),
+        JS_E_PARAM_INVALID);
+
+    if (uris.empty()) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check empty uri!");
+        return nullptr;
+    }
+
+    for (const auto &uri : uris) {
+        if (uri.rfind(MEDIA_URI_PREFIX, 0) != 0) {
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check uri format, not a photo uri!");
+            return nullptr;
+        }
+    }
+
+    if (uris.size() > MAX_TAB_OLD_ALBUMS_URI_COUNT) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Too many URIs, maximum allowed is 100!");
+        return nullptr;
+    }
+
+    context->albumUris = uris;
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_E_INNER_FAIL);
+    return result;
+}
+
+
+napi_value MediaLibraryNapi::PhotoAcessGetAlbumsByOldUris(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAcessGetAlbumsByOldUris");
+    std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsGetAlbumsByOldUris(env, info, asyncContext));
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env,
+        asyncContext,
+        "PhotoAcessGetAlbumsByOldUris",
+        PhotoAccessGetAlbumsByOldUrisExecute,
+        JSGetAlbumsByOldUrisCompleteCallback
+    );
 }
 
 napi_value MediaLibraryNapi::PhotoAccessGetPhotoAlbumsSync(napi_env env, napi_callback_info info)
