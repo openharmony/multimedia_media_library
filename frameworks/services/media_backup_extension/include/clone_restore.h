@@ -33,11 +33,13 @@
 #include "backup_database_utils.h"
 #include "photo_album_clone.h"
 #include "photos_clone.h"
+#include "clone_restore_highlight.h"
 #include "clone_restore_geo_dictionary.h"
 #include "search_index_clone.h"
 #include "video_face_clone.h"
 #include "beauty_score_clone.h"
 #include "asset_map_clone.h"
+#include "tab_old_albums_clone.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
 #include "settings_data_manager.h"
@@ -113,6 +115,7 @@ private:
     bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
     void AnalyzeSource() override;
     void RestoreAlbum(void);
+    void RestoreTabOldAlbumsData(void);
     void RestoreAudio(void) override;
     int InsertPhoto(std::vector<FileInfo> &fileInfos);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
@@ -216,6 +219,8 @@ private:
     void RestoreAnalysisPortrait();
     void RestoreAnalysisGeo();
     void RestoreGroupPhoto();
+    void PopulateAnalysisAlbumIdMap();
+    void StoreHighlightAlbumMappings(CloneRestoreHighlight& cloneRestoreHighlight);
     void RestoreBeautyScoreData();
     void RestoreVideoFaceData();
     void PrepareShootingModeVal(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);

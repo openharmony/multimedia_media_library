@@ -1254,4 +1254,9 @@ void CloneRestoreHighlight::UpdateRestoreTimeCost(int64_t timeCost)
 {
     restoreTimeCost_ += timeCost;
 }
+
+const std::vector<CloneRestoreHighlight::AnalysisAlbumInfo>& CloneRestoreHighlight::GetAnalysisInfos() const
+{
+    return analysisInfos_;
+}
 } // namespace OHOS::Media

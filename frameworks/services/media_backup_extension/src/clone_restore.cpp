@@ -46,7 +46,6 @@
 #include "result_set_utils.h"
 #include "upgrade_restore_task_report.h"
 #include "userfile_manager_types.h"
-#include "ohos_account_kits.h"
 #include "media_config_info_column.h"
 #include "settings_data_manager.h"
 #include "restore_map_code_utils.h"
@@ -175,7 +174,7 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
             { PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumColumns::ALBUM_SUBTYPE + " IN (" +
                 to_string(PhotoAlbumSubType::SHOOTING_MODE) + ", " +
                 to_string(PhotoAlbumSubType::GEOGRAPHY_CITY) + ", " +
-                to_string(PhotoAlbumSubType::CLASSIFY) + ")" },
+                to_string(PhotoAlbumSubType::CLASSIFY) + ")" }
         }},
 };
 const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLAUSE_MAP_WITH_CLOUD = {
@@ -736,6 +735,7 @@ void CloneRestore::RestoreHighlightAlbums()
     CloneRestoreCVAnalysis cloneRestoreCVAnalysis;
     cloneRestoreCVAnalysis.Init(sceneCode_, taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir_);
     cloneRestoreCVAnalysis.RestoreAlbums(cloneRestoreHighlight);
+    StoreHighlightAlbumMappings(cloneRestoreHighlight);
 
     cloneRestoreHighlight.ReportCloneRestoreHighlightTask();
 }
@@ -1970,6 +1970,8 @@ void CloneRestore::RestoreAnalysisData()
     RestoreVideoFaceData();
     RestoreAnalysisTablesData();
     RestoreHighlightAlbums();
+    PopulateAnalysisAlbumIdMap();
+    RestoreTabOldAlbumsData();
 }
 
 void CloneRestore::RestoreAssetMapData()
@@ -1994,6 +1996,12 @@ void CloneRestore::RestoreVideoFaceData()
 {
     VideoFaceClone videoFaceClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_);
     videoFaceClone.CloneVideoFaceInfo();
+}
+
+void CloneRestore::RestoreTabOldAlbumsData()
+{
+    TabOldAlbumsClone tabOldAlbumsClone(mediaRdb_, mediaLibraryRdb_, tableAlbumIdMap_);
+    tabOldAlbumsClone.CloneAlbums(CLONE_ALBUMS);
 }
 
 bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
@@ -2878,6 +2886,91 @@ void CloneRestore::SetAggregateBitThird()
     resultSet->Close();
     int32_t bitPosition = 2;
     medialibraryDbUpgrade.SetAggregateBit(bitPosition);
+}
+
+void CloneRestore::PopulateAnalysisAlbumIdMap()
+{
+    MEDIA_INFO_LOG("Mapping portrait, group photo, and shooting mode albums");
+    
+    std::string srcSql = "SELECT album_id, album_type, album_name, tag_id, album_subtype FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE album_subtype IN (" + std::to_string(PhotoAlbumSubType::PORTRAIT) +
+        ", " + std::to_string(PhotoAlbumSubType::GROUP_PHOTO) +
+        ", " + std::to_string(PhotoAlbumSubType::SHOOTING_MODE) + ")";
+    
+    auto srcResultSet = mediaRdb_->QuerySql(srcSql);
+    CHECK_AND_RETURN_LOG(srcResultSet != nullptr, "Failed to query special album types from source");
+    
+    auto& albumIdMap = tableAlbumIdMap_[ANALYSIS_ALBUM_TABLE];
+    int32_t mappedCount = 0;
+    
+    while (srcResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t oldAlbumId = GetInt32Val("album_id", srcResultSet);
+        int32_t albumType = GetInt32Val("album_type", srcResultSet);
+        int32_t albumSubtype = GetInt32Val("album_subtype", srcResultSet);
+        std::string albumName = GetStringVal("album_name", srcResultSet);
+        std::string tagId = GetStringVal("tag_id", srcResultSet);
+        
+        // Skip if already mapped
+        if (albumIdMap.find(oldAlbumId) != albumIdMap.end()) {
+            continue;
+        }
+        
+        std::string dstSql = "SELECT album_id FROM " + ANALYSIS_ALBUM_TABLE +
+            " WHERE album_type = " + std::to_string(albumType) +
+            " AND album_subtype = " + std::to_string(albumSubtype);
+        
+        if (albumName.empty()) {
+            dstSql += " AND (album_name IS NULL OR album_name = '')";
+        } else {
+            dstSql += " AND album_name = '" + albumName + "'";
+        }
+
+        if (tagId.empty()) {
+            dstSql += " AND (tag_id IS NULL OR tag_id = '')";
+        } else {
+            dstSql += " AND tag_id = '" + tagId + "'";
+        }
+        
+        auto dstResultSet = mediaLibraryRdb_->QuerySql(dstSql);
+        if (dstResultSet != nullptr && dstResultSet->GoToNextRow() == NativeRdb::E_OK) {
+            int32_t newAlbumId = GetInt32Val("album_id", dstResultSet);
+            albumIdMap[oldAlbumId] = newAlbumId;
+            mappedCount++;
+            MEDIA_DEBUG_LOG("Mapped album (subtype=%{public}d): old=%{public}d -> new=%{public}d",
+                albumSubtype, oldAlbumId, newAlbumId);
+        }
+        if (dstResultSet != nullptr) {
+            dstResultSet->Close();
+        }
+    }
+    srcResultSet->Close();
+    
+    MEDIA_INFO_LOG("Album mapping completed. Mapped %{public}d albums", mappedCount);
+}
+
+void CloneRestore::StoreHighlightAlbumMappings(CloneRestoreHighlight& cloneRestoreHighlight)
+{
+    MEDIA_INFO_LOG("Storing highlight album mappings from analysisInfos_");
+    
+    const auto& analysisInfos = cloneRestoreHighlight.GetAnalysisInfos();
+    auto& albumIdMap = tableAlbumIdMap_[ANALYSIS_ALBUM_TABLE];
+    int32_t mappedCount = 0;
+    
+    for (const auto& info : analysisInfos) {
+        if (info.albumIdOld.has_value() && info.albumIdNew.has_value()) {
+            int32_t oldId = info.albumIdOld.value();
+            int32_t newId = info.albumIdNew.value();
+            
+            // Skip if already mapped
+            if (albumIdMap.find(oldId) == albumIdMap.end()) {
+                albumIdMap[oldId] = newId;
+                mappedCount++;
+                MEDIA_DEBUG_LOG("Stored highlight album mapping: old_id=%{public}d -> new_id=%{public}d", oldId, newId);
+            }
+        }
+    }
+    
+    MEDIA_INFO_LOG("Highlight album mappings stored from analysisInfos_. Mapped %{public}d albums", mappedCount);
 }
 } // namespace Media
 } // namespace OHOS

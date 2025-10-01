@@ -38,30 +38,6 @@ public:
         std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
     };
 
-    void Init(const InitInfo &info);
-    void Restore();
-    void ReportCloneRestoreHighlightTask();
-    int32_t GetNewHighlightAlbumId(int32_t oldId);
-    int32_t GetNewHighlightPhotoId(int32_t oldId);
-    std::string GetNewHighlightPhotoUri(int32_t oldId);
-    bool IsCloneHighlight();
-    std::string GetDefaultPlayInfo();
-    void UpdateHighlightStatus(const std::vector<int32_t> &highlightIds);
-    void UpdateRestoreTimeCost(int64_t timeCost);
-
-    template<typename T>
-    static void PutIfPresent(NativeRdb::ValuesBucket &values, const std::string &columnName,
-        const std::optional<T> &optionalValue);
-
-    template<typename T>
-    static void PutIfInIntersection(NativeRdb::ValuesBucket &values, const std::string &columnName,
-        const std::optional<T> &optionalValue, const std::unordered_set<std::string> &intersection);
-
-    template<typename T>
-    static void GetIfInIntersection(const std::string &columnName, std::optional<T> &optionalValue,
-        const std::unordered_set<std::string> &intersection, std::shared_ptr<NativeRdb::ResultSet> resultSet);
-
-private:
     struct AnalysisAlbumInfo {
         std::optional<int32_t> albumIdOld;
         std::optional<int32_t> albumIdNew;
@@ -105,6 +81,31 @@ private:
         }
     };
 
+    void Init(const InitInfo &info);
+    void Restore();
+    void ReportCloneRestoreHighlightTask();
+    int32_t GetNewHighlightAlbumId(int32_t oldId);
+    int32_t GetNewHighlightPhotoId(int32_t oldId);
+    std::string GetNewHighlightPhotoUri(int32_t oldId);
+    bool IsCloneHighlight();
+    std::string GetDefaultPlayInfo();
+    void UpdateHighlightStatus(const std::vector<int32_t> &highlightIds);
+    void UpdateRestoreTimeCost(int64_t timeCost);
+    const std::vector<AnalysisAlbumInfo>& GetAnalysisInfos() const;
+
+    template<typename T>
+    static void PutIfPresent(NativeRdb::ValuesBucket &values, const std::string &columnName,
+        const std::optional<T> &optionalValue);
+
+    template<typename T>
+    static void PutIfInIntersection(NativeRdb::ValuesBucket &values, const std::string &columnName,
+        const std::optional<T> &optionalValue, const std::unordered_set<std::string> &intersection);
+
+    template<typename T>
+    static void GetIfInIntersection(const std::string &columnName, std::optional<T> &optionalValue,
+        const std::unordered_set<std::string> &intersection, std::shared_ptr<NativeRdb::ResultSet> resultSet);
+
+private:
     struct HighlightAlbumInfo {
         std::optional<int32_t> highlightIdOld;
         std::optional<int32_t> highlightIdNew;
