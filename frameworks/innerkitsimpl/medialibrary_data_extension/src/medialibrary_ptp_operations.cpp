@@ -203,7 +203,7 @@ FileManagement::CloudSync::CleanFileInfo MediaLibraryPtpOperations::GetCleanFile
 }
 
 bool MediaLibraryPtpOperations::BatchDeleteLocalAndCloud(const vector<FileManagement::CloudSync::CleanFileInfo>&
-    fileInfos)
+    fileInfos, const map<string, int32_t> &notifyMap)
 {
     CHECK_AND_RETURN_RET_LOG(!fileInfos.empty(), false, "Batch delete local and cloud fileInfo is empty.");
     vector<string> failCloudId;
@@ -212,6 +212,18 @@ bool MediaLibraryPtpOperations::BatchDeleteLocalAndCloud(const vector<FileManage
     if (ret != 0) {
         MEDIA_ERR_LOG("Failed to delete local and cloud photos permanently.");
         return false;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, false, "watch is nullptr");
+    for (const auto &fileInfo : fileInfos) {
+        string cloudId = fileInfo.cloudId;
+        if (find(failCloudId.begin(), failCloudId.end(), cloudId) != failCloudId.end()) {
+            MEDIA_ERR_LOG("Failed to delete, cloudId is %{public}s.", cloudId.c_str());
+            continue;
+        }
+        if (notifyMap.find(cloudId) != notifyMap.end()) {
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(notifyMap.at(cloudId)), NotifyType::NOTIFY_UPDATE);
+        }
     }
     if (failCloudId.empty()) {
         MEDIA_DEBUG_LOG("Delete local and cloud photos permanently success");
@@ -231,13 +243,15 @@ int32_t MediaLibraryPtpOperations::DeleteLocalAndCloudPhotos(vector<shared_ptr<F
         MEDIA_INFO_LOG("DeleteLocalAndCloudPhotos subFileAsset is empty.");
         return E_OK;
     }
+    map<string, int32_t> notifyMap;
     for (auto& fileAssetPtr : subFileAsset) {
         if (fileAssetPtr == nullptr) {
             continue;
         }
+        notifyMap[fileAssetPtr->GetCloudId()] = fileAssetPtr->GetId();
         fileInfos.push_back(GetCleanFileInfo(fileAssetPtr));
     }
-    if (!BatchDeleteLocalAndCloud(fileInfos)) {
+    if (!BatchDeleteLocalAndCloud(fileInfos, notifyMap)) {
         MEDIA_ERR_LOG("BatchDeleteLocalAndCloud delete media assert fail.");
         return E_HAS_DB_ERROR;
     }
