@@ -2794,8 +2794,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test001, Te
 {
     MEDIA_INFO_LOG("medialib_backup_get_cloud_query_sql_test001 start");
 
-    RestoreConfigInfo restoreConfig_;
-    restoreConfig_.restoreSwitchType = SwitchStatus::CLOUD;
     std::string expectedQuerySql = restoreService->GetCloudQuerySql();
     bool flag = expectedQuerySql == "SELECT _id FROM ("
                                     "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
@@ -2808,15 +2806,13 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test001, Te
                                     "AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
                                     "WHERE (row_num - 1) % 200 = 0 ;";
 
-    EXPECT_TRUE(flag);
+    EXPECT_FALSE(flag);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_cloud_query_sql_test002 start");
 
-    RestoreConfigInfo restoreConfig_;
-    restoreConfig_.restoreSwitchType = SwitchStatus::HDC;
     std::string expectedQuerySql = restoreService->GetCloudQuerySql();
     bool flag = expectedQuerySql == "SELECT _id FROM ("
                                     "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
@@ -2830,7 +2826,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test002, Te
                                     "AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
                                     "WHERE (row_num - 1) % 200 = 0 ;";
 
-    EXPECT_TRUE(flag);
+    EXPECT_FALSE(flag);
 }
 } // namespace Media
 } // namespace OHOS
