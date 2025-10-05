@@ -246,7 +246,7 @@ static int32_t UpdateAlbumOrderInfo()
 {
     // MediaLibraryTracer tracer;
     // tracer.Start("UpdateAlbumOrderInfo");
-    MEDIA_INFO_LOG("UpdateAlbumOrderInfo")；
+    MEDIA_INFO_LOG("UpdateAlbumOrderInfo");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "UpdateAlbumOrderInfo failed. rdbStore is null.");
 
@@ -267,12 +267,12 @@ static int32_t UpdateAlbumOrderInfo()
     int32_t failCount = 0;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string lpath = get<std::string>(ResultSetUtils::GetValFromColumn("lpath", resultSet, TYPE_STRING));
-        int32_t albumOrder = get<std::int32_t>(ResultSetUtils::GetValFromColumn("albums_order", resultSet, TYPE_INT32));
-        int32_t orderType = get<std::int32_t>(ResultSetUtils::GetValFromColumn("order_type", resultSet, TYPE_INT32));
-        int32_t orderSection = get<std::int32_t>(ResultSetUtils::GetValFromColumn("order_section", resultSet, TYPE_INT32));
-        int32_t albumOrder2 = get<std::int32_t>(ResultSetUtils::GetValFromColumn("style2_albums_order", resultSet, TYPE_INT32));
-        int32_t orderType2 = get<std::int32_t>(ResultSetUtils::GetValFromColumn("style2_order_type", resultSet, TYPE_INT32));
-        int32_t orderSection2 = get<std::int32_t>(ResultSetUtils::GetValFromColumn("style2_order_section", resultSet, TYPE_INT32));
+        int32_t albumOrder = get<int32_t>(ResultSetUtils::GetValFromColumn("albums_order", resultSet, TYPE_INT32));
+        int32_t orderType = get<int32_t>(ResultSetUtils::GetValFromColumn("order_type", resultSet, TYPE_INT32));
+        int32_t orderSection = get<int32_t>(ResultSetUtils::GetValFromColumn("order_section", resultSet, TYPE_INT32));
+        int32_t albumOrder2 = get<int32_t>(ResultSetUtils::GetValFromColumn("style2_albums_order", resultSet, TYPE_INT32));
+        int32_t orderType2 = get<int32_t>(ResultSetUtils::GetValFromColumn("style2_order_type", resultSet, TYPE_INT32));
+        int32_t orderSection2 = get<int32_t>(ResultSetUtils::GetValFromColumn("style2_order_section", resultSet, TYPE_INT32));
 
         AbsRdbPredicates lpathPredicates(PhotoAlbumColumns::TABLE);
         lpathPredicates.EqualTo(PhotoAlbumColumns::ALBUM_LPATH, lpath);
@@ -638,8 +638,8 @@ void AlbumsRefreshManager::RefreshPhotoAlbums(SyncNotifyInfo &info)
         PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
         return;
     }
-    MediaLibraryTracer tracer;
-    tracer.Start("RefreshPhotoAlbums");
+    // MediaLibraryTracer tracer;
+    // tracer.Start("RefreshPhotoAlbums");
     RefreshPhotoAlbumsBySyncNotifyInfo(rdbStore, info);
     ConstructAssetsNotifyUris(rdbStore, info);
 }

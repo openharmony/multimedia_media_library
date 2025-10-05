@@ -597,7 +597,7 @@ int32_t CloudMediaAssetManager::BackupAlbumOrderInfo()
 
     std::vector<std::string> columns = {PhotoAlbumColumns::ALBUM_LPATH, PhotoAlbumColumns::ALBUMS_ORDER, PhotoAlbumColumns::ORDER_TYPE,
                                         PhotoAlbumColumns::ORDER_SECTION, PhotoAlbumColumns::STYLE2_ALBUMS_ORDER,
-                                        PhotoAlbumColumns::STYLE2_ORDER_TYPE, PhotoAlbumColumns::STYLE2_ORDER_SECTION}
+                                        PhotoAlbumColumns::STYLE2_ORDER_TYPE, PhotoAlbumColumns::STYLE2_ORDER_SECTION};
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Query failed");
     auto rowCount = 0;
@@ -614,20 +614,20 @@ int32_t CloudMediaAssetManager::BackupAlbumOrderInfo()
         ValuesBucket value;
 
         std::string lpath = get<std::string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_LPATH, resultSet, TYPE_STRING));
-        int32_t order = get<std::int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUMS_ORDER, resultSet, TYPE_INT32));
-        int32_t type = get<std::int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_TYPE, resultSet, TYPE_INT32));
-        int32_t section = get<std::int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_SECTION, resultSet, TYPE_INT32));
-        int32_t order2 = get<std::int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ALBUMS_ORDER, resultSet, TYPE_INT32));
-        int32_t type2 = get<std::int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_TYPE, resultSet, TYPE_INT32));
-        int32_t section2 = get<std::int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_SECTION, resultSet, TYPE_INT32));
+        int32_t order = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUMS_ORDER, resultSet, TYPE_INT32));
+        int32_t type = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_TYPE, resultSet, TYPE_INT32));
+        int32_t section = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ORDER_SECTION, resultSet, TYPE_INT32));
+        int32_t order2 = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ALBUMS_ORDER, resultSet, TYPE_INT32));
+        int32_t type2 = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_TYPE, resultSet, TYPE_INT32));
+        int32_t section2 = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::STYLE2_ORDER_SECTION, resultSet, TYPE_INT32));
 
-        values.PutString("lpath", lpath);
-        values.PutInt("albums_order", order);
-        values.PutInt("order_type", type);
-        values.PutInt("order_section", section);
-        values.PutInt("style2_albums_order", order2);
-        values.PutInt("style2_order_type", type2);
-        values.PutInt("style2_order_section", section2);
+        value.PutString("lpath", lpath);
+        value.PutInt("albums_order", order);
+        value.PutInt("order_type", type);
+        value.PutInt("order_section", section);
+        value.PutInt("style2_albums_order", order2);
+        value.PutInt("style2_order_type", type2);
+        value.PutInt("style2_order_section", section2);
         
         values.emplace_back(value);
     }
