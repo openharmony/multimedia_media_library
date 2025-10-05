@@ -244,8 +244,6 @@ static void ConstructAlbumNotifyUris(SyncNotifyInfo &info, int32_t albumId)
 
 static int32_t UpdateAlbumOrderInfo()
 {
-    // MediaLibraryTracer tracer;
-    // tracer.Start("UpdateAlbumOrderInfo");
     MEDIA_INFO_LOG("UpdateAlbumOrderInfo");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "UpdateAlbumOrderInfo failed. rdbStore is null.");
@@ -257,7 +255,6 @@ static int32_t UpdateAlbumOrderInfo()
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Query failed");
     int32_t rowCount = 0;
     int32_t errCode = resultSet->GetRowCount(rowCount);
-    MEDIA_INFO_LOG("the table contains %{public}d records", rowCount);
     if (errCode !=NativeRdb::E_OK || rowCount == 0) {
         MEDIA_INFO_LOG("No records in the table. Nothing to Update.");
         resultSet->Close();
@@ -294,7 +291,6 @@ static int32_t UpdateAlbumOrderInfo()
     }
     resultSet->Close();
     return (failCount == 0) ? E_SUCCESS : E_ERR;
-
 }
 
 static int32_t RefreshAlbumInfoAndUris(
@@ -638,8 +634,6 @@ void AlbumsRefreshManager::RefreshPhotoAlbums(SyncNotifyInfo &info)
         PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
         return;
     }
-    // MediaLibraryTracer tracer;
-    // tracer.Start("RefreshPhotoAlbums");
     RefreshPhotoAlbumsBySyncNotifyInfo(rdbStore, info);
     ConstructAssetsNotifyUris(rdbStore, info);
 }

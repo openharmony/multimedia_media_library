@@ -582,16 +582,11 @@ int32_t CloudMediaAssetManager::BackupAlbumOrderInfo()
     int32_t ret = rdbStore->ExecuteSql(SQL_DELETE_ALL_ALBUM_ORDER_BACK);
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     std::string subWhereClause =
-        "SELECT DISTINCT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
-        " FROM " + PhotoColumn::PHOTOS_TABLE +
-        " WHERE " + PhotoColumn::PHOTO_CLEAN_FLAG +
-        " = " + to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
+        "SELECT DISTINCT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
+        " WHERE " + PhotoColumn::PHOTO_CLEAN_FLAG + " = " + to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
     std::string whereClause =
-        "(" + PhotoAlbumColumns::ALBUM_IS_LOCAL +
-        " = " + to_string(ALBUM_IS_CLOUD) +
-        " AND " + PhotoAlbumColumns::ALBUM_ID +
-        " NOT IN ( " + subWhereClause + " ))" +
-        " OR " + PhotoAlbumColumns::ALBUM_DIRTY +
+        "(" + PhotoAlbumColumns::ALBUM_IS_LOCAL + " = " + to_string(ALBUM_IS_CLOUD) + " AND " + PhotoAlbumColumns::ALBUM_ID +
+        " NOT IN ( " + subWhereClause + " ))" + " OR " + PhotoAlbumColumns::ALBUM_DIRTY +
         " = " + to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED));
     predicates.SetWhereClause(whereClause);
 
@@ -600,15 +595,6 @@ int32_t CloudMediaAssetManager::BackupAlbumOrderInfo()
                                         PhotoAlbumColumns::STYLE2_ORDER_TYPE, PhotoAlbumColumns::STYLE2_ORDER_SECTION};
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Query failed");
-    auto rowCount = 0;
-    int32_t errCode = resultSet->GetRowCount(rowCount);
-    MEDIA_INFO_LOG("Query returned %{public}d rows", rowCount);
-    if (errCode != 0) {
-        MEDIA_INFO_LOG("GetRowCount failed with error: %{public}d", errCode);
-    }
-    if (rowCount == 0) {
-        MEDIA_INFO_LOG("Query returned 0 rows, the result is empty.");        
-    }
     std::vector<NativeRdb::ValuesBucket> values;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         ValuesBucket value;
