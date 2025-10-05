@@ -116,6 +116,7 @@ const std::string GALLERY_DETAIL_TIME = "detail_time";
 const std::string GALLERY_THUMB_TYPE = "thumbType";
 const std::string GALLERY_ALBUM_ID = "albumId";
 const std::string GALLERY_UNIQUE_ID = "uniqueId";
+const std::string GALLERY_HDC_UNIQUE_ID = "hdc_unique_id";
 const std::string GALLERY_LOCAL_THUMB_PATH_ID = "localThumbPath";
 const std::string GALLERY_LOCAL_BIG_THUMB_PATH_ID = "localBigThumbPath";
 const std::string GALLERY_RESOLUTION = "resolution";
