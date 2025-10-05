@@ -104,6 +104,7 @@ const std::string ME_RELATIONSHIP = "me";
 const std::string RETAIL_MODE_KEY = "const.dfx.enable_retail";
 const std::string SQL_DELETE_ALL_ALBUM_ORDER_BACK =
     "DELETE FROM " + ALBUM_ORDER_BACK_TABLE;
+
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
     int64_t outRow = -1;
