@@ -31,8 +31,11 @@ public:
         int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage);
     std::shared_ptr<NativeRdb::ResultSet> GetCloudGalleryMedia(
         int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage);
+    std::shared_ptr<NativeRdb::ResultSet> GetHdcGalleryMedia(
+        int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage);
     int32_t GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQualityImage);
     int32_t GetCloudMetaCount(bool shouldIncludeSd, bool hasLowQualityImage);
+    int32_t GetHdcMetaCount(bool shouldIncludeSd, bool hasLowQualityImage);
     int32_t GetNoNeedMigrateCount(bool shouldIncludeSd);
 
 private:
@@ -67,6 +70,26 @@ private:
             LEFT JOIN relative_album \
             ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
+            (relative_bucket_id IS NULL OR \
+                relative_bucket_id NOT IN ( \
+                    SELECT DISTINCT relative_bucket_id \
+                    FROM garbage_album \
+                    WHERE type = 1 \
+                ) \
+            ) AND \
+            (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
+            _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+            COALESCE(_data, '') <> '' AND \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
+        ORDER BY _id ASC ;";
+    const std::string SQL_HDC_META_QUERY_COUNT = "\
+        SELECT COUNT(1) AS count \
+        FROM gallery_media \
+            LEFT JOIN gallery_album \
+            ON gallery_media.albumId=gallery_album.albumId \
+            LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
+        WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') = '' AND COALESCE(hdc_unique_id,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
                     SELECT DISTINCT relative_bucket_id \
@@ -114,6 +137,7 @@ private:
             gallery_media.albumId, \
             local_media_id, \
             uniqueId, \
+            hdc_unique_id, \
             resolution, \
             CASE WHEN COALESCE(gallery_album.lPath, '') <> '' \
                 THEN gallery_album.lPath \
@@ -178,6 +202,7 @@ private:
             gallery_media.albumId, \
             local_media_id, \
             uniqueId, \
+            hdc_unique_id, \
             resolution, \
             CASE WHEN COALESCE(gallery_album.lPath, '') <> '' \
                 THEN gallery_album.lPath \
@@ -192,6 +217,70 @@ private:
             LEFT JOIN relative_album \
             ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE _id > ? AND (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
+            (relative_bucket_id IS NULL OR \
+                relative_bucket_id NOT IN ( \
+                    SELECT DISTINCT relative_bucket_id \
+                    FROM garbage_album \
+                    WHERE type = 1 \
+                ) \
+            ) AND \
+            (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
+            _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+            COALESCE(_data, '') <> '' AND \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
+        ORDER BY _id ASC \
+        LIMIT ?;";
+    const std::string SQL_GALLERY_HDC_QUERY_FOR_RESTORE = "\
+        SELECT \
+            _id, \
+            local_media_id, \
+            localThumbPath, \
+            localBigThumbPath, \
+            _data, \
+            _display_name, \
+            description, \
+            is_hw_favorite, \
+            recycledTime, \
+            _size, \
+            duration, \
+            media_type, \
+            showDateToken, \
+            height, \
+            width, \
+            title, \
+            orientation, \
+            date_modified, \
+            date_added, \
+            relative_bucket_id, \
+            sourcePath, \
+            is_hw_burst, \
+            recycleFlag, \
+            hash, \
+            special_file_type, \
+            first_update_time, \
+            datetaken, \
+            detail_time, \
+            photo_quality, \
+            thumbType, \
+            gallery_media.albumId, \
+            local_media_id, \
+            uniqueId, \
+            hdc_unique_id, \
+            resolution, \
+            CASE WHEN COALESCE(gallery_album.lPath, '') <> '' \
+                THEN gallery_album.lPath \
+                ELSE relative_album.lPath \
+            END AS lPath, \
+            story_id, \
+            portrait_id, \
+            story_chosen \
+        FROM gallery_media \
+            LEFT JOIN gallery_album \
+            ON gallery_media.albumId=gallery_album.albumId \
+            LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
+        WHERE _id > ? AND (local_media_id == -1) AND \
+            COALESCE(uniqueId,'') = '' AND COALESCE(hdc_unique_id,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
                     SELECT DISTINCT relative_bucket_id \

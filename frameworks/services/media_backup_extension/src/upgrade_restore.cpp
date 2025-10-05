@@ -124,11 +124,47 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
     return InitDbAndXml(photosPreferencesPath, isUpgrade);
 }
 
+RestoreConfigInfo UpgradeRestore::GetCurrentDeviceRestoreConfigInfo()
+{
+    RestoreConfigInfo restoreConfig;
+    restoreConfig.restoreSwitchType = SettingsDataManager::GetPhotosSyncSwitchStatus();
+    if (restoreConfig.restoreSwitchType == SwitchStatus::NONE) {
+        int32_t isCloudSyncSwitchOn = BackupFileUtils::IsCloneCloudSyncSwitchOn(sceneCode_);
+        MEDIA_WARN_LOG("fail to query photo sync switch status, isCloudSyncSwitchOn:%{public}d",
+            isCloudSyncSwitchOn);
+        restoreConfig.restoreSwitchType = (isCloudSyncSwitchOn == CheckSwitchType::SUCCESS_ON ||
+            isCloudSyncSwitchOn == CheckSwitchType::UPGRADE_FAILED_ON) ?
+                SwitchStatus::CLOUD : SwitchStatus::NONE;
+    }
+    switch (restoreConfig.restoreSwitchType) {
+        case SwitchStatus::CLOUD:
+            restoreConfig.photoPositionType = PhotoPositionType::CLOUD;
+            restoreConfig.southDeviceType = SouthDeviceType::SOUTH_DEVICE_CLOUD;
+            break;
+        case SwitchStatus::HDC:
+            restoreConfig.photoPositionType = PhotoPositionType::CLOUD;
+            restoreConfig.southDeviceType = SouthDeviceType::SOUTH_DEVICE_HDC;
+            break;
+        case SwitchStatus::CLOSE:
+            restoreConfig.photoPositionType = PhotoPositionType::LOCAL;
+            restoreConfig.southDeviceType = SouthDeviceType::SOUTH_DEVICE_NULL;
+            break;
+        default:
+            restoreConfig.photoPositionType = PhotoPositionType::INVALID;
+            restoreConfig.southDeviceType = SouthDeviceType::SOUTH_DEVICE_NULL;
+            break;
+    }
+    return restoreConfig;
+}
+
 int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
 {
     int32_t errCode = InitDb(isUpgrade);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
 
+    restoreConfig_ = UpgradeRestore::GetCurrentDeviceRestoreConfigInfo();
+    MEDIA_INFO_LOG("GetPhotosSyncSwitchStatus success, switchstatus: %{public}d",
+        static_cast<int>(restoreConfig_.restoreSwitchType));
     ParseXml(xmlPath);
     this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
@@ -580,7 +616,9 @@ void UpgradeRestore::RestoreCloudFromGallery()
     MEDIA_INFO_LOG("RestoreCloudFromGallery start");
     this->photosRestore_.LoadPhotoAlbums();
     // cloud count
-    int32_t cloudMetaCount = this->photosRestore_.GetCloudMetaCount(this->shouldIncludeSd_, false);
+    int32_t cloudMetaCount = restoreConfig_.restoreSwitchType == SwitchStatus::CLOUD ?
+        this->photosRestore_.GetCloudMetaCount(this->shouldIncludeSd_, false) :
+            this->photosRestore_.GetHdcMetaCount(this->shouldIncludeSd_, false);
     std::vector<int32_t> minIds = GetCloudPhotoMinIds();
     MEDIA_INFO_LOG("the cloud count is %{public}d", cloudMetaCount);
     int64_t startRestoreBatch = MediaFileUtils::UTCTimeMilliSeconds();
@@ -598,19 +636,39 @@ void UpgradeRestore::RestoreCloudFromGallery()
     MEDIA_INFO_LOG("RestoreCloudFromGallery end");
 }
 
+std::string UpgradeRestore::GetCloudQuerySql()
+{
+    MEDIA_INFO_LOG("UpgradeRestore::GetCloudQuerySql() is called");
+    if (restoreConfig_.restoreSwitchType == SwitchStatus::CLOUD) {
+        return "SELECT _id FROM ("
+               "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
+               "WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' "
+               "AND (relative_bucket_id IS NULL OR relative_bucket_id NOT IN ("
+               "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
+               "AND (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) "
+               "AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' "
+               "AND COALESCE(_data, '') <> '' AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
+               "WHERE (row_num - 1) % 200 = 0 ;";
+    }
+    if (restoreConfig_.restoreSwitchType == SwitchStatus::HDC) {
+        return "SELECT _id FROM ("
+               "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
+               "WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') = '' AND COALESCE(hdc_unique_id,'') <> '' "
+               "AND (relative_bucket_id IS NULL OR relative_bucket_id NOT IN ("
+               "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
+               "AND (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) "
+               "AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' "
+               "AND COALESCE(_data, '') <> '' AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
+               "WHERE (row_num - 1) % 200 = 0 ;";
+    }
+    return "";
+}
+
 std::vector<int32_t> UpgradeRestore::GetCloudPhotoMinIds()
 {
     int64_t startGetCloudPhotoMinIds = MediaFileUtils::UTCTimeMilliSeconds();
     std::vector<int32_t> minIds;
-    std::string querySql = "SELECT _id FROM ("
-        "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
-            "WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' "
-            "AND (relative_bucket_id IS NULL OR relative_bucket_id NOT IN ("
-                "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
-            "AND (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) "
-            "AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' "
-            "AND COALESCE(_data, '') <> '' AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
-        "WHERE (row_num - 1) % 200 = 0 ;";
+    std::string querySql = GetCloudQuerySql();
     std::vector<NativeRdb::ValueObject> params = { hasLowQualityImage_, shouldIncludeSd_ };
     auto resultSet = galleryRdb_->QuerySql(querySql, params);
     CHECK_AND_RETURN_RET(resultSet != nullptr, minIds);
@@ -782,8 +840,12 @@ std::vector<FileInfo> UpgradeRestore::QueryCloudFileInfos(int32_t minId)
     std::vector<FileInfo> result;
     result.reserve(RESTORE_CLOUD_QUERY_COUNT);
     CHECK_AND_RETURN_RET_LOG(galleryRdb_ != nullptr, result, "cloud galleryRdb_ is nullptr, Maybe init failed.");
-    auto resultSet = this->photosRestore_.GetCloudGalleryMedia(
-        minId, RESTORE_CLOUD_QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_);
+    // restore based on SwitchStatus
+    auto resultSet = restoreConfig_.restoreSwitchType == SwitchStatus::CLOUD ?
+        this->photosRestore_.GetCloudGalleryMedia(
+            minId, RESTORE_CLOUD_QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_) :
+                this->photosRestore_.GetHdcGalleryMedia(
+                    minId, RESTORE_CLOUD_QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query cloud resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo tmpInfo;
@@ -902,7 +964,10 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.filePath = GetStringVal(GALLERY_FILE_DATA, resultSet);
     info.albumId = GetStringVal(GALLERY_ALBUM_ID, resultSet);
     info.orientation = GetInt32Val(GALLERY_ORIENTATION, resultSet);
-    info.uniqueId = GetStringVal(GALLERY_UNIQUE_ID, resultSet);
+    info.uniqueId = restoreConfig_.restoreSwitchType == SwitchStatus::CLOUD ?
+        GetStringVal(GALLERY_UNIQUE_ID, resultSet) :
+            restoreConfig_.restoreSwitchType == SwitchStatus::HDC ?
+                 GetStringVal(GALLERY_HDC_UNIQUE_ID, resultSet) : "";
     info.localThumbPath = GetStringVal(GALLERY_LOCAL_THUMB_PATH_ID, resultSet);
     info.localBigThumbPath = GetStringVal(GALLERY_LOCAL_BIG_THUMB_PATH_ID, resultSet);
     info.dateTaken = info.showDateToken;
@@ -998,8 +1063,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     // for cloud clone
     if (fileInfo.localMediaId == -1) {
         values.PutString(PhotoColumn::PHOTO_CLOUD_ID, fileInfo.uniqueId);
-        values.PutInt(PhotoColumn::PHOTO_POSITION, PHOTO_CLOUD_POSITION);
-        values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(SouthDeviceType::SOUTH_DEVICE_CLOUD));
+        values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(restoreConfig_.photoPositionType));
+        values.PutInt(PhotoColumn::PHOTO_SOUTH_DEVICE_TYPE, static_cast<int32_t>(restoreConfig_.southDeviceType));
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_SYNCED));
     } else {
         values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));

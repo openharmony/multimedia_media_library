@@ -911,6 +911,8 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, vector<string> &columns, DatashareBusinessError &businessError)
 {
     MediaLibraryCommand cmd(uri);
+    MEDIA_INFO_LOG("cmd tablename: %{pulbic}s", cmd.GetTableName().c_str());
+    MEDIA_INFO_LOG("uri: %{public}s", uri.ToString().c_str());
     PermParam permParam = {.isWrite = false};
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, nullptr, "permissionHandler_ is nullptr");
     cmd.SetDataSharePred(predicates);
