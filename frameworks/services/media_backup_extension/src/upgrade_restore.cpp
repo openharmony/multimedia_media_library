@@ -638,7 +638,7 @@ void UpgradeRestore::RestoreCloudFromGallery()
 
 std::string UpgradeRestore::GetCloudQuerySql()
 {
-    MEDIA_INFO_LOG("UpgradeRestore::GetCloudQuerySql() is called");
+    MEDIA_INFO_LOG("GetCloudQuerySql switchType: %{public}d", static_cast<int32_t>(restoreConfig_.restoreSwitchType));
     if (restoreConfig_.restoreSwitchType == SwitchStatus::CLOUD) {
         return "SELECT _id FROM ("
                "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
