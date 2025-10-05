@@ -57,8 +57,11 @@ public:
         int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage);
     std::shared_ptr<NativeRdb::ResultSet> GetCloudGalleryMedia(
         int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage);
+    std::shared_ptr<NativeRdb::ResultSet> GetHdcGalleryMedia(
+        int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage);
     int32_t GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQualityImage);
     int32_t GetCloudMetaCount(bool shouldIncludeSd, bool hasLowQualityImage);
+    int32_t GetHdcMetaCount(bool shouldIncludeSd, bool hasLowQualityImage);
     void GetDuplicateData(int32_t duplicateDataCount);
     bool IsDuplicateData(const std::string &data);
 

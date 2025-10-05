@@ -28,6 +28,11 @@
 
 namespace OHOS {
 namespace Media {
+struct RestoreConfigInfo {
+    SwitchStatus restoreSwitchType = SwitchStatus::NONE;
+    SouthDeviceType southDeviceType = SouthDeviceType::SOUTH_DEVICE_NULL;
+    PhotoPositionType photoPositionType = PhotoPositionType::INVALID;
+};
 class UpgradeRestore : public BaseRestore {
 public:
     UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode);
@@ -48,6 +53,7 @@ public:
         AlbumCoverInfo& albumCoverInfo);
     void UpdatePhotoAlbumCoverUri(vector<AlbumCoverInfo>& albumCoverInfos);
     void DeleteEmptyAlbums();
+    RestoreConfigInfo GetCurrentDeviceRestoreConfigInfo();
 
 protected:
     virtual void RestoreAnalysisAlbum();
@@ -133,6 +139,7 @@ protected:
     void ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, int32_t type);
     void SetCloneParameterAndStopSync();
     int32_t InitDb(bool isUpgrade);
+    std::string GetCloudQuerySql();
     std::vector<int32_t> GetCloudPhotoMinIds();
     std::vector<int32_t> GetLocalPhotoMinIds();
     void SetOrientationAndExifRotate(FileInfo &info, NativeRdb::ValuesBucket &value,
@@ -167,6 +174,7 @@ protected:
     ffrt::mutex externalFailedMutex_;
     int32_t maxId_{-1};
     int64_t maxAnalysisAlbumId_ {0};
+    RestoreConfigInfo restoreConfig_;
 
 private:
     void BatchDeleteEmptyAlbums(const std::vector<int32_t> &batchAlbumIds, int32_t &deleteRows);
