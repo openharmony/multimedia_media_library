@@ -634,6 +634,8 @@ void AlbumsRefreshManager::RefreshPhotoAlbums(SyncNotifyInfo &info)
         PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
         return;
     }
+    MediaLibraryTracer tracer;
+    tracer.Start("RefreshPhotoAlbums");
     RefreshPhotoAlbumsBySyncNotifyInfo(rdbStore, info);
     ConstructAssetsNotifyUris(rdbStore, info);
 }
