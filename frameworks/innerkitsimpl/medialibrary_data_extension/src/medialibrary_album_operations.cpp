@@ -3267,6 +3267,8 @@ int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbumOrder(const vector<NativeRd
         CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
         watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
     }
+    int32_t ret = rdbStore->ExecuteSql(SQL_DELETE_ALL_ALBUM_ORDER_BACK);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false, "Failed to delete albumOrderBackTable data");
     return successSetOrderRows == 0 ? E_INNER_FAIL : E_OK;
 }
 } // namespace OHOS::Media
