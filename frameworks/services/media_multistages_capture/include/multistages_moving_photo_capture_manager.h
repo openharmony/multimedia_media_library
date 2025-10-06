@@ -27,8 +27,8 @@ public:
     EXPORT MultiStagesMovingPhotoCaptureManager();
     EXPORT ~MultiStagesMovingPhotoCaptureManager();
 
-    EXPORT static void SaveMovingPhotoVideoFinished(const std::string &photoId);
-    EXPORT static void AddVideoFromMovingPhoto(const std::string &photoId);
+    EXPORT static void SaveMovingPhotoVideoFinished(const int32_t &fileId);
+    EXPORT static void AddVideoFromMovingPhoto(const int32_t &fileId);
 };
 } // namespace Media
 } // namespace OHOS
