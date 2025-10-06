@@ -51,6 +51,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_old_photos_column.h"
+#include "media_old_albums_column.h"
 #include "media_facard_photos_column.h"
 #include "media_scanner_manager.h"
 #include "media_smart_album_column.h"
@@ -83,6 +84,7 @@
 #include "medialibrary_story_operations.h"
 #include "medialibrary_subscriber.h"
 #include "medialibrary_tab_old_photos_operations.h"
+#include "medialibrary_tab_old_albums_operations.h"
 #include "medialibrary_tab_asset_and_album_operations.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
@@ -2555,6 +2557,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::TAB_OLD_PHOTO:
             return MediaLibraryTabOldPhotosOperations().Query(
                 RdbUtils::ToPredicates(predicates, TabOldPhotosColumn::OLD_PHOTOS_TABLE), columns);
+        case OperationObject::TAB_OLD_ALBUM:
+            return MediaLibraryTabOldAlbumsOperations().Query(
+                RdbUtils::ToPredicates(predicates, TabOldAlbumsColumn::OLD_ALBUM_TABLE), columns);
         case OperationObject::ASSET_ALBUM_OPERATION:
             return MediaLibraryTableAssetAlbumOperations().Query(
                 RdbUtils::ToPredicates(predicates, PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE), columns);
