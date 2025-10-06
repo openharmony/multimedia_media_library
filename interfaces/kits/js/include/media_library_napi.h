@@ -252,6 +252,7 @@ private:
     EXPORT static napi_value JSGetFileAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAcessGetAlbumsByOldUris(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSCreateAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteAsset(napi_env env, napi_callback_info info);
@@ -509,6 +510,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::string uri;
     std::vector<std::string> oldUris;
     std::map<std::string, std::string> uriMap;
+    std::map<string, string> uriAlbumMap;
     std::vector<std::string> uriArray;
     std::string networkId;
     std::string extendArgs;
@@ -549,6 +551,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;
+    std::vector<std::string> albumUris;
     bool isForce = false;
     bool hiddenOnly = false;
     bool isAnalysisAlbum = false;
