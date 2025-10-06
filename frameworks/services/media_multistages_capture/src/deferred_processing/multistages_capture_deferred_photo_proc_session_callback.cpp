@@ -108,36 +108,40 @@ int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(c
     return updatePhotoQualityResult;
 }
 
-void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const string& photoId,
-    uint32_t cloudImageEnhanceFlag, int32_t modifyType)
+void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(const int32_t &fileId,
+    NativeRdb::ValuesBucket &updateValues)
 {
-    MEDIA_INFO_LOG("photoId: %{public}s, modify type is %{public}d", photoId.c_str(), modifyType);
-    MediaLibraryCommand updateCEAvailableCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    NativeRdb::ValuesBucket updateCEAvailable;
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdatePhotoQuality " + std::to_string(fileId));
+    updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+}
+
+void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const int32_t& fileId,
+    uint32_t cloudImageEnhanceFlag, NativeRdb::ValuesBucket &updateValues, int32_t modifyType)
+{
+    MEDIA_INFO_LOG("fileId: %{public}d, modify type is %{public}d", fileId, modifyType);
+
     int32_t ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT);
     if (modifyType == static_cast<int32_t>(FirstStageModifyType::EDITED)) {
-        MEDIA_INFO_LOG("photoId: %{public}s edited", photoId.c_str());
+        MEDIA_INFO_LOG("fileId: %{public}d edited", fileId);
         ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::EDIT);
     } else if (modifyType == static_cast<int32_t>(FirstStageModifyType::TRASHED)) {
-        MEDIA_INFO_LOG("photoId: %{public}s trashed", photoId.c_str());
+        MEDIA_INFO_LOG("fileId: %{public}d trashed", fileId);
         ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::TRASH);
     }
-    updateCEAvailableCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
+
     if (cloudImageEnhanceFlag & AUTO_ENHANCEMENT) {
-        MEDIA_INFO_LOG("photoId: %{public}s is AUTO_ENHANCEMENT", photoId.c_str());
-        updateCEAvailable.PutInt(PhotoColumn::PHOTO_IS_AUTO, static_cast<int32_t>(CloudEnhancementIsAutoType::AUTO));
-        updateCEAvailable.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+        MEDIA_INFO_LOG("fileId: %{public}d is AUTO_ENHANCEMENT", fileId);
+        updateValues.PutInt(PhotoColumn::PHOTO_IS_AUTO, static_cast<int32_t>(CloudEnhancementIsAutoType::AUTO));
+        updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
     } else if (cloudImageEnhanceFlag & MANUAL_ENHANCEMENT) {
-        MEDIA_INFO_LOG("photoId: %{public}s is MANUAL_ENHANCEMENT", photoId.c_str());
-        updateCEAvailable.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+        MEDIA_INFO_LOG("fileId: %{public}d is MANUAL_ENHANCEMENT", fileId);
+        updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
     } else {
-        MEDIA_INFO_LOG("photoId: %{public}s doesn't support enhancement", photoId.c_str());
-        updateCEAvailable.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
+        MEDIA_INFO_LOG("fileId: %{public}d doesn't support enhancement", fileId);
+        updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
             static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT));
     }
-    updateCEAvailableCmd.SetValueBucket(updateCEAvailable);
-    auto ceAvailableResult = DatabaseAdapter::Update(updateCEAvailableCmd);
-    CHECK_AND_RETURN_LOG(ceAvailableResult >= 0, "update CE available fail, photoId: %{public}s", photoId.c_str());
 }
 
 std::shared_ptr<NativeRdb::ResultSet> QueryPhotoData(const std::string &imageId)
@@ -230,7 +234,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
 
     MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
         imageId, std::move(picture), isEdited, isTakeEffect);
-    UpdateHighQualityPictureInfo(imageId, cloudImageEnhanceFlag, modifyType);
+    UpdateHighQualityPictureInfo(fileId, cloudImageEnhanceFlag, modifyType);
     MediaLibraryObjectUtils::ScanFileAsync(
         data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto, resultPicture,
         HighQualityScanFileCallback::Create(fileId));
@@ -240,9 +244,10 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     MultiStagesCaptureDfxResult::Report(imageId,
         static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS), mediaType);
     if (isMovingPhoto) {
-        MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(imageId);
+        MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(fileId);
     }
-    MEDIA_INFO_LOG("MultistagesCapture yuv success photoid: %{public}s", imageId.c_str());
+    MEDIA_INFO_LOG("MultistagesCapture yuv success photoid: %{public}s, fileid: %{public}d",
+        imageId.c_str(), fileId);
 }
 
 std::shared_ptr<Media::Picture> GetPictureFromPictureIntf(std::shared_ptr<CameraStandard::PictureIntf> pictureIntf)
@@ -288,14 +293,14 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
     int32_t isTemp = GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     bool isTrashed = (GetInt64Val(MediaColumn::MEDIA_DATE_TRASHED, resultSet) > 0);
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     int32_t modifyType = isEdited ? static_cast<int32_t>(FirstStageModifyType::EDITED) :
         (isTrashed ? static_cast<int32_t>(FirstStageModifyType::TRASHED) :
             static_cast<int32_t>(FirstStageModifyType::NOT_MODIFIED));
     if (isTemp) {
         MEDIA_INFO_LOG("MultistagesCapture, this picture is temp.");
         MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false, false);
-        UpdateHighQualityPictureInfo(imageId, cloudImageEnhanceFlag, modifyType);
-        int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        UpdateHighQualityPictureInfo(fileId, cloudImageEnhanceFlag, modifyType);
         MultiStagesCaptureDao().UpdatePhotoDirtyNew(fileId);
         return;
     }
@@ -318,15 +323,27 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::GetCommandByImageId(con
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
 }
 
-void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateHighQualityPictureInfo(const std::string &imageId,
+void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateHighQualityPictureInfo(const int32_t &fileId,
     uint32_t cloudImageEnhanceFlag, int32_t modifyType)
 {
+    MEDIA_INFO_LOG("UpdateHighQualityPictureInfo enter, fileId: %{public}d, "
+                   "cloudImageEnhanceFlag: %{public}u, modifyType: %{public}d",
+                   fileId, cloudImageEnhanceFlag, modifyType);
+    NativeRdb::ValuesBucket updateValues;
     // 2. 更新数据库 photoQuality 到高质量
-    UpdatePhotoQuality(imageId);
+    UpdatePhotoQuality(fileId, updateValues);
     // 3. update cloud enhancement avaiable
     if (cloudImageEnhanceFlag) {
-        UpdateCEAvailable(imageId, cloudImageEnhanceFlag, modifyType);
+        MEDIA_INFO_LOG("UpdateHighQualityPictureInfo UpdateCEAvailable enter");
+        UpdateCEAvailable(fileId, cloudImageEnhanceFlag, updateValues, modifyType);
     }
+
+    CHECK_AND_RETURN_LOG(!updateValues.IsEmpty(), "UpdateHighQualityPictureInfo failed, updateValues is null");
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updateCmd.SetValueBucket(updateValues);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t updatePhotoResult = DatabaseAdapter::Update(updateCmd);
+    CHECK_AND_RETURN_LOG(updatePhotoResult >= 0, "UpdateHighQualityPictureInfo fail, fileId: %{public}d", fileId);
 }
 
 
@@ -406,7 +423,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
         return;
     }
 
-    UpdateHighQualityPictureInfo(imageId, cloudImageEnhanceFlag, modifyType);
+    UpdateHighQualityPictureInfo(fileId, cloudImageEnhanceFlag, modifyType);
 
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto,
         nullptr, HighQualityScanFileCallback::Create(fileId));
@@ -420,7 +437,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
     MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
 
     if (isMovingPhoto) {
-        MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(imageId);
+        MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(fileId);
     }
     CallProcessImageDone(true, imageId);
     MEDIA_INFO_LOG("success photoid: %{public}s", imageId.c_str());

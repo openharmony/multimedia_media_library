@@ -36,11 +36,11 @@ MultiStagesMovingPhotoCaptureManager::MultiStagesMovingPhotoCaptureManager() {}
 
 MultiStagesMovingPhotoCaptureManager::~MultiStagesMovingPhotoCaptureManager() {}
 
-static int32_t UpdateMultStagesMovingPhotoVideoTaskStatus(const std::string &photoId, StageVideoTaskStatus taskStatus)
+static int32_t UpdateMultStagesMovingPhotoVideoTaskStatus(const int32_t &fileId, StageVideoTaskStatus taskStatus)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    string where = PhotoColumn::PHOTO_ID + " = ? ";
-    vector<string> whereArgs { photoId };
+    string where = MediaColumn::MEDIA_ID + " = ? ";
+    vector<string> whereArgs { to_string(fileId) };
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     NativeRdb::ValuesBucket values;
@@ -51,24 +51,24 @@ static int32_t UpdateMultStagesMovingPhotoVideoTaskStatus(const std::string &pho
     return result;
 }
 
-void MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(const std::string &photoId)
+void MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(const int32_t &fileId)
 {
-    int32_t ret = UpdateMultStagesMovingPhotoVideoTaskStatus(photoId, StageVideoTaskStatus::STAGE_TASK_TO_DELIVER);
+    int32_t ret = UpdateMultStagesMovingPhotoVideoTaskStatus(fileId, StageVideoTaskStatus::STAGE_TASK_TO_DELIVER);
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK,
-        "Stage video task status update fail photoId: %{public}s", photoId.c_str());
-    AddVideoFromMovingPhoto(photoId);
+        "Stage video task status update fail fileId: %{public}d", fileId);
+    AddVideoFromMovingPhoto(fileId);
 }
 
-void MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(const std::string &photoId)
+void MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(const int32_t &fileId)
 {
-    MEDIA_INFO_LOG("Enter AddVideoFromMovingPhoto, photoId: %{public}s", photoId.c_str());
+    MEDIA_INFO_LOG("Enter AddVideoFromMovingPhoto, fileId: %{public}d", fileId);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = PhotoColumn::PHOTO_ID + " = ? ";
-    vector<string> whereArgs { photoId };
+    string where = MediaColumn::MEDIA_ID + " = ? ";
+    vector<string> whereArgs { to_string(fileId) };
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_QUALITY,
-        PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_SUBTYPE };
+        PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_ID };
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
     CHECK_AND_RETURN_LOG(!cond, "result set is empty");
@@ -86,8 +86,9 @@ void MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(const std::st
         static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_TO_DELIVER), "moving photo video saving not yet.");
 
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
     MultiStagesVideoCaptureManager::GetInstance().AddVideoInternal(photoId, data, true);
-    UpdateMultStagesMovingPhotoVideoTaskStatus(photoId, StageVideoTaskStatus::STAGE_TASK_DELIVERED);
+    UpdateMultStagesMovingPhotoVideoTaskStatus(fileId, StageVideoTaskStatus::STAGE_TASK_DELIVERED);
     MEDIA_INFO_LOG("Moving photo mulit stage video task has been delivered");
 }
 } // Media
