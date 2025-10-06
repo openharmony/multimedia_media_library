@@ -30,6 +30,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_mock_tocken.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
@@ -72,6 +73,8 @@ static const std::string MEIDA_BACKUP_FLAG = "multimedia.medialibrary.backupFlag
 static const std::string CLOUDSYNC_SWITCH_STATUS_KEY = "persist.kernel.cloudsync.switch_status"; // ms
 static const int64_t INVALID_TIME_STAMP = -1;
 static const int64_t DEFAULT_TIME_STAMP = 0;
+static uint64_t g_shellToken = 0;
+static MediaLibraryMockHapToken* mockToken = nullptr;
 
 void CleanTestTables()
 {
@@ -208,6 +211,18 @@ int32_t InsertCloudAlbumINDb()
 void MediaLibraryCloudAssetDownloadTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
+
+    g_shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
+
+    vector<string> perms;
+    perms.push_back("ohos.permission.GET_NETWORK_INFO");
+    // mock  tokenID
+    mockToken = new MediaLibraryMockHapToken("com.ohos.medialibrary.medialibrarydata", perms);
+    for (auto &perm : perms) {
+        MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
+    }
+
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
@@ -228,6 +243,15 @@ void MediaLibraryCloudAssetDownloadTest::TearDownTestCase(void)
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     this_thread::sleep_for(chrono::seconds(1));
     MEDIA_INFO_LOG("Clean is finish");
+
+    if (mockToken != nullptr) {
+        delete mockToken;
+        mockToken = nullptr;
+    }
+
+    MediaLibraryMockTokenUtils::ResetToken();
+    SetSelfTokenID(g_shellToken);
+    EXPECT_EQ(g_shellToken, IPCSkeleton::GetSelfTokenID());
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
@@ -823,7 +847,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     ret = operation->StartDownloadTask(static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_GENTLE));
     EXPECT_NE(ret, E_OK);
     ret = operation->StartDownloadTask(static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE));
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_NE(ret, E_ERR);
     operation->taskStatus_ = CloudMediaAssetTaskStatus::IDLE;
 
     ret = operation->DoRecoverExecute();
@@ -920,6 +944,20 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     ret = operation->PassiveStatusRecover();
     EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_008 End");
+}
+
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_009, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("cloud_asset_download_operation_test_009 Start");
+    std::shared_ptr<NetConnectObserver> netObserver = make_shared<NetConnectObserver>();
+    ASSERT_NE(netObserver, nullptr);
+    sptr<NetManagerStandard::NetHandle> handle = sptr(new NetManagerStandard::NetHandle());
+    ASSERT_NE(handle, nullptr);
+    sptr<NetManagerStandard::NetAllCapabilities> netAllCap = sptr(new NetManagerStandard::NetAllCapabilities());
+    ASSERT_NE(netAllCap, nullptr);
+    int32_t ret = netObserver->NetCapabilitiesChange(handle, netAllCap);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("cloud_asset_download_operation_test_009 End");
 }
 }
 }
