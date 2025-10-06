@@ -27,6 +27,7 @@ public:
     ~CommonEventUtils();
     static int32_t GetThermalLevel();
     static bool IsWifiConnected();
+    static bool IsCellularNetConnected();
 };
 
 } // namespace Media
