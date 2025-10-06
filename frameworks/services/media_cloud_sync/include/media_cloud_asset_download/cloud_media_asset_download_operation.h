@@ -33,6 +33,7 @@
 #include "datashare_helper.h"
 #include "medialibrary_command.h"
 #include "medialibrary_rdbstore.h"
+#include "net_connect_observer.h"
 
 namespace OHOS {
 namespace Media {
@@ -123,6 +124,9 @@ private:
     EXPORT int32_t SubmitBatchDownloadAgain();
     void MoveDownloadFileToCache(const DownloadProgressObj &progress);
     void MoveDownloadFileToNotFound(const DownloadProgressObj &progress);
+    int32_t RegisterNetObserver();
+    bool IsWifiConnected();
+    bool IsCellularNetConnected();
 
 public:
     static std::shared_ptr<CloudMediaAssetDownloadOperation> instance_;
@@ -141,6 +145,7 @@ private:
     std::shared_ptr<CloudMediaAssetObserver> cloudMediaAssetObserver_;
     std::shared_ptr<MediaCloudDownloadCallback> downloadCallback_;
     OHOS::sptr<OHOS::IRemoteObject> cloudRemoteObject_;
+    OHOS::sptr<NetConnectObserver> netObserver_;
     static std::mutex mutex_;
     static std::mutex callbackMutex_;
 

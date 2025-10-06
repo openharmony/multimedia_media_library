@@ -49,7 +49,7 @@ void CloudMediaAssetObserver::OnChange(const ChangeInfo &changeInfo)
         if (operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::DOWNLOADING) {
             operation_->isUnlimitedTrafficStatusOn_ = isUnlimitedTrafficStatusOn;
             CHECK_AND_RETURN(!isUnlimitedTrafficStatusOn);
-            CloudMediaTaskPauseCause pauseCause = MedialibrarySubscriber::IsCellularNetConnected() ?
+            CloudMediaTaskPauseCause pauseCause = CommonEventUtils::IsCellularNetConnected() ?
                 CloudMediaTaskPauseCause::WIFI_UNAVAILABLE : CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT;
             operation_->PauseDownloadTask(pauseCause);
             MEDIA_INFO_LOG("Cloud media asset download paused, pauseCause: %{public}d.",
@@ -58,7 +58,7 @@ void CloudMediaAssetObserver::OnChange(const ChangeInfo &changeInfo)
         }
 
         if (operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::PAUSED &&
-            MedialibrarySubscriber::IsCellularNetConnected() && isUnlimitedTrafficStatusOn) {
+            CommonEventUtils::IsCellularNetConnected() && isUnlimitedTrafficStatusOn) {
             operation_->PassiveStatusRecoverTask(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
             MEDIA_INFO_LOG("Cloud media asset download recovered, recoverCause: %{public}d.",
                 static_cast<int32_t>(CloudMediaTaskRecoverCause::NETWORK_NORMAL));
