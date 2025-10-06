@@ -55,10 +55,12 @@
 #include "wifi_device.h"
 #include "thermal_mgr_client.h"
 #include "userfile_manager_types.h"
+#include "net_conn_client.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
 using namespace OHOS::NativeRdb;
+using namespace OHOS::NetManagerStandard;
 namespace OHOS {
 namespace Media {
 using namespace FileManagement::CloudSync;
@@ -167,8 +169,8 @@ bool CloudMediaAssetDownloadOperation::IsDataEmpty(const CloudMediaAssetDownload
 
 bool CloudMediaAssetDownloadOperation::IsNetworkAvailable()
 {
-    return (MedialibrarySubscriber::IsWifiConnected() ||
-        (MedialibrarySubscriber::IsCellularNetConnected() && isUnlimitedTrafficStatusOn_));
+    return (IsWifiConnected() ||
+        (IsCellularNetConnected() && isUnlimitedTrafficStatusOn_));
 }
 
 std::shared_ptr<NativeRdb::ResultSet> CloudMediaAssetDownloadOperation::QueryDownloadFilesNeeded(
@@ -352,7 +354,7 @@ void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &i
     isUnlimitedTrafficStatusOn_ = CloudSyncUtils::IsUnlimitedTrafficStatusOn();
     MEDIA_INFO_LOG("isUnlimitedTrafficStatusOn_ is %{public}d", static_cast<int32_t>(isUnlimitedTrafficStatusOn_));
 
-    if (!isForeground && !CommonEventUtils::IsWifiConnected()) {
+    if (!isForeground && !IsWifiConnected()) {
         MEDIA_WARN_LOG("Failed to init startDownloadTaskStatus, wifi is not connected.");
         SetTaskStatus(Status::PAUSE_FOR_BACKGROUND_TASK_UNAVAILABLE);
         return;
@@ -364,7 +366,7 @@ void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &i
         return;
     }
     if (!IsNetworkAvailable()) {
-        Status status = MedialibrarySubscriber::IsCellularNetConnected() ?
+        Status status = IsCellularNetConnected() ?
             Status::PAUSE_FOR_WIFI_UNAVAILABLE : Status::PAUSE_FOR_NETWORK_FLOW_LIMIT;
         SetTaskStatus(status);
         MEDIA_ERR_LOG("No wifi and no cellular data.");
@@ -390,6 +392,15 @@ int32_t CloudMediaAssetDownloadOperation::SetDeathRecipient()
     return E_OK;
 }
 
+int32_t CloudMediaAssetDownloadOperation::RegisterNetObserver()
+{
+    netObserver_ = new (std::nothrow) NetConnectObserver();
+    CHECK_AND_RETURN_RET_LOG(netObserver_ != nullptr, E_ERR, "Failed to get netObserver.");
+    int32_t ret = NetConnClient::GetInstance().RegisterNetConnCallback(netObserver_);
+    CHECK_AND_RETURN_RET_LOG(ret == NETMANAGER_SUCCESS, E_ERR, "Failed to register netObserver.");
+    return E_OK;
+}
+
 int32_t CloudMediaAssetDownloadOperation::DoRelativedRegister()
 {
     // register unlimit traffic status
@@ -409,6 +420,9 @@ int32_t CloudMediaAssetDownloadOperation::DoRelativedRegister()
 
     int32_t ret = SetDeathRecipient();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to register death recipient, ret: %{public}d.", ret);
+
+    ret = RegisterNetObserver();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "failed to register netObserver");
 
     MEDIA_INFO_LOG("success to register");
     return ret;
@@ -605,6 +619,10 @@ int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
         cloudHelper_ = nullptr;
     }
     cloudMediaAssetObserver_ = nullptr;
+    if (netObserver_ != nullptr) {
+        NetConnClient::GetInstance().UnregisterNetConnCallback(netObserver_);
+        netObserver_ = nullptr;
+    }
     return E_OK;
 }
 
@@ -769,6 +787,22 @@ void CloudMediaAssetDownloadOperation::HandleOnRemoteDied()
     cloudRemoteObject_ = nullptr;
     CHECK_AND_RETURN_LOG(taskStatus_ == CloudMediaAssetTaskStatus::DOWNLOADING, "taskStatus is not DOWNLOADING");
     CancelDownloadTask();
+}
+
+bool CloudMediaAssetDownloadOperation::IsWifiConnected()
+{
+    if (netObserver_ == nullptr) {
+        return CommonEventUtils::IsWifiConnected();
+    }
+    return netObserver_->IsWifiConnected();
+}
+
+bool CloudMediaAssetDownloadOperation::IsCellularNetConnected()
+{
+    if (netObserver_ == nullptr) {
+        return CommonEventUtils::IsCellularNetConnected();
+    }
+    return netObserver_->IsCellularNetConnected();
 }
 } // namespace Media
 } // namespace OHOS
