@@ -634,6 +634,11 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
     if (size != 0) {
         remainCount_--;
         remainSize_ -= size;
+        if (remainCount_ < 0 || remainSize_ < 0) {
+            MEDIA_INFO_LOG("Update count and size of download cloud media asset.");
+            isThumbnailUpdate_ = true;
+            InitDownloadTaskInfo();
+        }
     }
     dataForDownload_.fileDownloadMap.erase(progress.path);
 

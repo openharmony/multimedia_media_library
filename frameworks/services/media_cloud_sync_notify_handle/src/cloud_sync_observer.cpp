@@ -110,7 +110,7 @@ void CloudSyncObserver::DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo)
         map = {{KEY_TOTAL_ASSET_NUM, info.urisSize}, {KEY_DELETE_ASSET_NUM, info.urisSize}};
     }
     PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
-    if (notifyInfo.type == ChangeType::DELETE) {
+    if (notifyInfo.type == ChangeType::DELETE || notifyInfo.type == ChangeType::INSERT) {
         CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
     }
 }
