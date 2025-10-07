@@ -450,8 +450,8 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context, shared
         operations.push_back(item);
     }
     if (!hasUri && fetchOptType != ALBUM_FETCH_OPT) {
-        operations.push_back({ DataShare::EQUAL_TO, { PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
-            to_string(static_cast<int32_t>(FileSourceTypes::MEDIA)) } });
+        operations.push_back({ DataShare::NOT_EQUAL_TO, { PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+            to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) } });
     }
     context->predicates = DataSharePredicates(move(operations));
     return true;
