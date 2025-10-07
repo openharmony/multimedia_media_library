@@ -255,7 +255,7 @@ static int32_t UpdateAlbumOrderInfo()
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Query failed");
     int32_t rowCount = 0;
     int32_t errCode = resultSet->GetRowCount(rowCount);
-    if (errCode !=NativeRdb::E_OK || rowCount == 0) {
+    if (errCode != NativeRdb::E_OK || rowCount == 0) {
         MEDIA_INFO_LOG("No records in the table. Nothing to Update.");
         resultSet->Close();
         return E_OK;
@@ -634,6 +634,8 @@ void AlbumsRefreshManager::RefreshPhotoAlbums(SyncNotifyInfo &info)
         PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
         return;
     }
+    MediaLibraryTracer tracer;
+    tracer.Start("RefreshPhotoAlbums");
     RefreshPhotoAlbumsBySyncNotifyInfo(rdbStore, info);
     ConstructAssetsNotifyUris(rdbStore, info);
 }
