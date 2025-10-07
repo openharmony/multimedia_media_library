@@ -17,7 +17,6 @@
 
 #include <sys/stat.h>
 
-#include "cloud_media_asset_manager.h"
 #include "cloud_media_asset_types.h"
 #include "cloud_sync_utils.h"
 #include "medialibrary_album_fusion_utils.h"
@@ -58,16 +57,6 @@ static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
         }
     }
     return true;
-}
-
-static void UpdateCloudAssetDownloadTask(const std::list<Uri> &uris)
-{
-    string uriString = uris.front().ToString();
-    auto pos = uriString.find_last_of('/');
-    CHECK_AND_RETURN_LOG(pos != std::string::npos, "Current status is not suitable for SetIsThumbnailUpdate");
-    string idString = uriString.substr(pos + 1);
-    CHECK_AND_RETURN_LOG(IsCloudNotifyInfoValid(idString), "Failed to check idString");
-    CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
 }
 
 void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
@@ -163,7 +152,6 @@ void CloudSyncNotifyHandler::ThumbnailObserverOnChange(const list<Uri> &uris, co
     switch (type) {
         case ChangeType::INSERT:
             HandleInsertEvent(uris);
-            UpdateCloudAssetDownloadTask(uris);
             break;
         case ChangeType::DELETE:
             HandleDeleteEvent(uris);
