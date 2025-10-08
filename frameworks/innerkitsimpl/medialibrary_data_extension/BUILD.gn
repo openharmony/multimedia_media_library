@@ -286,6 +286,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_worker.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_database_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/xcollie_helper.cpp",
   ]
 
   media_cloud_sync_notify_handle_source = [
@@ -920,6 +921,11 @@ ohos_shared_library("medialibrary_data_extension") {
 
   if (media_library_feature_cloud_enhancement) {
     defines += [ "MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT" ]
+  }
+
+  if (media_library_feature_hicollie_enable) {
+    external_deps += [ "hicollie:libhicollie" ]
+    defines += [ "MEDIALIBRARY_FEATURE_HICOLLIE_ENABLE" ]
   }
 
   if (!media_library_link_opt) {

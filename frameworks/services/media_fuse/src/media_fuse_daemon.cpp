@@ -22,20 +22,26 @@
 #include <thread>
 #include <unistd.h>
 
+#include "app_mgr_client.h"
 #include "dfx_const.h"
 #include "dfx_timer.h"
+#include "dfx_reporter.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_operation.h"
 #include "media_fuse_manager.h"
+#include "singleton.h"
+#include "xcollie_helper.h"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
+using namespace OHOS::AppExecFwk;
 
 static constexpr int32_t FUSE_CFG_MAX_THREADS = 5;
 static constexpr int32_t USER_AND_GROUP_ID = 2000;
 static constexpr int32_t ROOT_AND_GROUP_ID = 0;
+static constexpr int32_t FUSE_TIME_OUT = 60;
 // LCOV_EXCL_START
 static int GetAttr(const char *path, struct stat *stbuf, struct fuse_file_info *fi)
 {
@@ -48,11 +54,18 @@ static int GetAttr(const char *path, struct stat *stbuf, struct fuse_file_info *
     return MediaFuseManager::GetInstance().DoGetAttr(path, stbuf);
 }
 
+static void XCollieCallback(void *xcollie)
+{
+    DfxReporter::ReportStartResult(DfxType::STOP_WITH_FUSE_TIMEOUT, 0, 0);
+    DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+}
+
 static int Open(const char *path, struct fuse_file_info *fi)
 {
     int fd = -1;
     fuse_context *ctx = fuse_get_context();
     CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
+    XCollieHelper xCollieHelper("medialibrary::fuse_open", FUSE_TIME_OUT, XCollieCallback, nullptr, true);
     DfxTimer dfxTimer(
         DfxType::FUSE_OPEN, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), OPEN_FILE_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
@@ -74,9 +87,7 @@ static int Read(const char *path, char *buf, size_t size, off_t offset, struct f
 {
     fuse_context *ctx = fuse_get_context();
     CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
-    DfxTimer dfxTimer(
-        DfxType::FUSE_READ, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
-    dfxTimer.SetCallerUid(ctx->uid);
+    XCollieHelper xCollieHelper("medialibrary::fuse_read", FUSE_TIME_OUT, XCollieCallback, nullptr, true);
 
     int res = pread(fi->fh, buf, size, offset);
     CHECK_AND_RETURN_RET_LOG(res != -1, -errno, "Read file failed, errno = %{public}d", errno);
@@ -88,9 +99,6 @@ static int Write(const char *path, const char *buf, size_t size, off_t offset, s
 {
     fuse_context *ctx = fuse_get_context();
     CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
-    DfxTimer dfxTimer(
-        DfxType::FUSE_WRITE, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
-    dfxTimer.SetCallerUid(ctx->uid);
 
     int res = pwrite(fi->fh, buf, size, offset);
     CHECK_AND_RETURN_RET_LOG(res != -1, -errno, "Read file failed, errno = %{public}d", errno);
