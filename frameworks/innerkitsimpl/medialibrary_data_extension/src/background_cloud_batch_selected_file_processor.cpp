@@ -628,19 +628,19 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedRunningCallba
     currentDownloadIdFileInfoMap_[progress.downloadId].percent = percent;
     downloadLock.unlock();
     MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback, percent: %{public}d", percent);
-    // 检查点 批量下载 通知应用 notify type 0 进度
     CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s", fileId.c_str());
+    if (downloadResult_[fileId] != BatchDownloadStatus::SKIP_UPDATE_DB) { // 更新任务表 减少写表
+        int32_t retDB = UpdateDBProgressInfoForFileId(fileId, percent, -1,
+            static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_DOWNLOADING));
+        MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback UpdateDBProgress, ret: %{public}d", retDB);
+        downloadLock.lock();
+        downloadResult_[fileId] = BatchDownloadStatus::SKIP_UPDATE_DB; // 下载过程只更新一次
+        downloadLock.unlock();
+    }
+    // 检查点 批量下载 通知应用 notify type 0 进度
     int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
         DownloadAssetsNotifyType::DOWNLOAD_PROGRESS, std::stoi(fileId), percent);
     MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
-    CHECK_AND_RETURN(downloadResult_[fileId] != BatchDownloadStatus::SKIP_UPDATE_DB); // 减少写表
-    // 更新任务表
-    ret = UpdateDBProgressInfoForFileId(fileId, percent, -1,
-        static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_DOWNLOADING));
-    downloadLock.lock();
-    downloadResult_[fileId] = BatchDownloadStatus::SKIP_UPDATE_DB; // 下载过程只更新一次
-    downloadLock.unlock();
-    MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback UpdateDBProgress, ret: %{public}d", ret);
 }
 
 void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedSuccessCallback(const DownloadProgressObj& progress)
@@ -1024,16 +1024,16 @@ void BackgroundCloudBatchSelectedFileProcessor::AutoStopAction(BatchDownloadAuto
     unique_lock<std::mutex> lock(autoActionMutex_);
     MEDIA_INFO_LOG("BatchSelectFileDownload AutoStopAction cause: %{public}d", static_cast<int32_t>(autoPauseReason));
     // 检查点 批量下载 通知应用 notify type 4 自动暂停
-    int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
-        DownloadAssetsNotifyType::DOWNLOAD_AUTO_PAUSE, -1, -1,
-        static_cast<int32_t>(autoPauseReason));
-    MEDIA_INFO_LOG("BatchSelectFileDownload StartNotify DOWNLOAD_AUTO_PAUSE ret: %{public}d", ret);
     MEDIA_INFO_LOG("BatchSelectFileDownload autoPause START");
     StopAllDownloadingTask(false);
     // updateDB
     UpdateAllAutoPauseDownloadResourcesInfo(autoPauseReason);
     MEDIA_INFO_LOG("BatchSelectFileDownload autoPause END");
     TriggerStopBatchDownloadProcessor(false);
+    int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
+        DownloadAssetsNotifyType::DOWNLOAD_AUTO_PAUSE, -1, -1,
+        static_cast<int32_t>(autoPauseReason));
+    MEDIA_INFO_LOG("BatchSelectFileDownload StartNotify DOWNLOAD_AUTO_PAUSE ret: %{public}d", ret);
 }
 
 void BackgroundCloudBatchSelectedFileProcessor::AutoResumeAction()
