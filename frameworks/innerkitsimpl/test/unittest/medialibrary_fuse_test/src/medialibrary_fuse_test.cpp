@@ -16,6 +16,8 @@
 #define MLOG_TAG "FuseUnitTest"
 
 #include "medialibrary_fuse_test.h"
+
+#include "app_mgr_client.h"
 #include "media_fuse_daemon.h"
 #include "media_fuse_manager.h"
 #include "medialibrary_unittest_utils.h"
@@ -57,6 +59,7 @@
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_object_utils.h"
 #include "parameter.h"
+#include "singleton.h"
 #define FUSE_USE_VERSION 34
 #include <fuse.h>
 
@@ -69,6 +72,7 @@ using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 using namespace OHOS::RdbDataShareAdapter;
 using namespace OHOS::Security::AccessToken;
+using namespace OHOS::AppExecFwk;
 namespace OHOS {
 namespace Media {
 

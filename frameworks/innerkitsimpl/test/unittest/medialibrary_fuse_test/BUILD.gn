@@ -46,6 +46,7 @@ ohos_unittest("medialibrary_fuse_test") {
     "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
 
+  defines = []
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
@@ -54,6 +55,7 @@ ohos_unittest("medialibrary_fuse_test") {
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
+    "ability_runtime:app_manager",
     "ability_runtime:dataobs_manager",
     "ability_runtime:runtime",
     "access_token:libaccesstoken_sdk",
@@ -84,6 +86,11 @@ ohos_unittest("medialibrary_fuse_test") {
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
   ]
+
+  if (media_library_feature_hicollie_enable) {
+    external_deps += [ "hicollie:libhicollie" ]
+    defines += [ "MEDIALIBRARY_FEATURE_HICOLLIE_ENABLE" ]
+  }
 
   sanitize = {
     cfi = true
