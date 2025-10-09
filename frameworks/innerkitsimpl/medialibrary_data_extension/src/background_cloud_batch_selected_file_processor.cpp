@@ -64,8 +64,8 @@ namespace Media {
 using namespace FileManagement::CloudSync;
 using namespace Notification;
 // The task can be performed only when the ratio of available storage capacity reaches this value
-static const double ABLE_STOP_DOWNLOAD_STORAGE_FREE_RATIO = 0.10;
-static const double ABLE_RESTORE_DOWNLOAD_STORAGE_FREE_RATIO = 0.20;
+static const double ABLE_STOP_DOWNLOAD_STORAGE_FREE_RATIO = 0.05;
+static const double ABLE_RESTORE_DOWNLOAD_STORAGE_FREE_RATIO = 0.10;
 
 #ifdef HAS_THERMAL_MANAGER_PART
 static const int32_t ABLE_STOP_DOWNLOAD_TEMP = 43;
@@ -73,7 +73,7 @@ static const int32_t ABLE_RESTORE_DOWNLOAD_TEMP = 39;
 #endif
 #ifdef HAS_BATTERY_MANAGER_PART
 static const int32_t ABLE_STOP_DOWNLOAD_POWER = 20;
-static const int32_t ABLE_RESTORE_DOWNLOAD_POWER = 50;
+static const int32_t ABLE_RESTORE_DOWNLOAD_POWER = 30;
 #endif
 
 static const int64_t DOWNLOAD_ID_DEFAULT = -1;
@@ -1167,6 +1167,57 @@ void BackgroundCloudBatchSelectedFileProcessor::TriggerStopBatchDownloadProcesso
     }
 }
 
+int32_t BackgroundCloudBatchSelectedFileProcessor::QueryAutoPauseReason(int32_t &autoStopReason)
+{
+    autoStopReason = -1;
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "QueryAutoPauseReason Failed to get rdbStore.");
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(DownloadResourcesColumn::TABLE);
+    predicates.EqualTo(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
+        static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_AUTO_PAUSE));
+    predicates.Limit(1);
+    auto resultSet = rdbStore->Query(predicates, {DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON});
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "QueryAutoPauseReason rs is null");
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        autoStopReason = GetInt32Val(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON, resultSet);
+        MEDIA_INFO_LOG("BatchSelectFileDownload autostop reason  %{public}d", autoStopReason);
+    }
+    resultSet->Close();
+    return NativeRdb::E_OK;
+}
+
+int32_t BackgroundCloudBatchSelectedFileProcessor::UpdateAllAutoPauseReason(int32_t autoStopReason)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "UpdatePauseDownload Failed to get rdbStore.");
+    MEDIA_INFO_LOG("BatchSelectFileDownload bg ALL Pause To Downloading");
+    NativeRdb::AbsRdbPredicates predicates(DownloadResourcesColumn::TABLE);
+    NativeRdb::ValuesBucket value;
+    predicates.EqualTo(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
+        static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_AUTO_PAUSE));
+    value.PutInt(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON, autoStopReason);
+    int32_t changedRows = -1;
+    int32_t ret = rdbStore->Update(changedRows, value, predicates);
+    MEDIA_INFO_LOG("UpdateAllAutoPauseReason ret: %{public}d, changedRows %{public}d", ret, changedRows);
+    return ret;
+}
+
+void BackgroundCloudBatchSelectedFileProcessor::RefreshNotRestoreReason(vector<int32_t>
+    &notRestoreReasons)
+{
+    CHECK_AND_RETURN_INFO_LOG(!notRestoreReasons.empty(), "NotRestoreReasons empty");
+    int32_t autoStopReason = -1;
+    QueryAutoPauseReason(autoStopReason);
+    CHECK_AND_RETURN_INFO_LOG(autoStopReason != -1, "No AutoStop Task"); // 非自动停止状态 跳过 无需刷新
+    if (std::find(notRestoreReasons.begin(), notRestoreReasons.end(), autoStopReason) == notRestoreReasons.end()) {
+        int32_t reason = notRestoreReasons.front();  // 刷新为新原因 并通知
+        UpdateAllAutoPauseReason(reason);
+        int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
+            DownloadAssetsNotifyType::DOWNLOAD_AUTO_PAUSE, -1, -1, reason);
+        MEDIA_INFO_LOG("BatchSelectFileDownload StartNotify NotRestore DOWNLOAD_AUTO_PAUSE ret: %{public}d", ret);
+    }
+}
+
 bool BackgroundCloudBatchSelectedFileProcessor::IsWifiConnected()
 {
     bool isWifiConnected = false;
@@ -1229,29 +1280,53 @@ bool BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(BatchDownlo
     MEDIA_DEBUG_LOG("BatchSelectFileDownloadAuto AutoStopCondition ableAutoStopDownload: %{public}d, "
         "isNetworkAvailable: %{public}d, power: %{public}d, disk: %{public}d, cloudsync: %{public}d",
         ableAutoStopDownload, isNetworkAvailable, isPowerSufficient, isDiskEnough, isCloudSyncOn);
+    if (!ableAutoStopDownload) { // 如果有自动暂停的任务，新增任务都保持同样的自动暂停状态
+        int32_t autoStopReason = -1;
+        QueryAutoPauseReason(autoStopReason);
+        if (autoStopReason != -1) {
+            autoPauseReason = static_cast<BatchDownloadAutoPauseReasonType>(autoStopReason);
+            return true;
+        }
+    }
     return ableAutoStopDownload;
 }
 
 bool BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition()
 {
     // 自动恢复 网络 电量50+ rom 可用20以上 全满足
+    vector<int32_t> currentNotRestoreReasons;
     bool isNetworkAvailable = (IsWifiConnected() ||
         (IsCellularNetConnected() && CloudSyncUtils::IsUnlimitedTrafficStatusOn()));
+    if (!isNetworkAvailable) {
+        BatchDownloadAutoPauseReasonType reason = (IsWifiConnected() || IsCellularNetConnected()) ?
+            BatchDownloadAutoPauseReasonType::TYPE_CELLNET_LIMIT :
+            BatchDownloadAutoPauseReasonType::TYPE_NETWORK_DISCONNECT;
+        currentNotRestoreReasons.push_back(static_cast<int32_t>(reason));
+    }
     bool isCloudSyncOn = CloudSyncUtils::IsCloudSyncSwitchOn();
     bool isPowerSufficient = true;
     #ifdef HAS_BATTERY_MANAGER_PART
         int32_t batteryCapacity = PowerMgr::BatterySrvClient::GetInstance().GetCapacity();
         isPowerSufficient = batteryCapacity > ABLE_RESTORE_DOWNLOAD_POWER;
+        if (!isPowerSufficient) {
+            currentNotRestoreReasons.push_back(static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_POWER_LOW));
+        }
     #endif
 
     double freeRatio = 0.0;
     BackgroundCloudBatchSelectedFileProcessor::GetStorageFreeRatio(freeRatio);
     bool isDiskEnough =  freeRatio > ABLE_RESTORE_DOWNLOAD_STORAGE_FREE_RATIO;
+    if (!isDiskEnough) {
+        currentNotRestoreReasons.push_back(static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_ROM_LOW));
+    }
     bool ableAutoResotreDownload = isCloudSyncOn && isNetworkAvailable && isPowerSufficient && isDiskEnough;
     MEDIA_DEBUG_LOG("BatchSelectFileDownloadAuto AutoRestoreCondition ableAutoResotreDownload: %{public}d, "
         "isNetworkAvailable: %{public}d, power: %{public}d, disk: %{public}d, cloudsync: %{public}d",
         ableAutoResotreDownload, isNetworkAvailable, isPowerSufficient,
         isDiskEnough, isCloudSyncOn);
+    if (!ableAutoResotreDownload) {
+        RefreshNotRestoreReason(currentNotRestoreReasons);
+    }
     return ableAutoResotreDownload;
 }
 

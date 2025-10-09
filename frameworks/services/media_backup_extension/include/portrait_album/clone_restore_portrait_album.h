@@ -44,6 +44,8 @@ protected:
     std::atomic<uint64_t> migratePortraitAlbumNumber_{0};
     std::atomic<uint64_t> migratePortraitFaceNumber_{0};
     std::atomic<uint64_t> migratePortraitPhotoNumber_{0};
+    std::atomic<uint64_t> migratePortraitFaceTagNumber_{0};
+    std::atomic<uint64_t> migratePortraitAnalysisPhotoMapNumber_{0};
     std::atomic<uint64_t> migratePortraitTotalTimeCost_{0};
 
 private:

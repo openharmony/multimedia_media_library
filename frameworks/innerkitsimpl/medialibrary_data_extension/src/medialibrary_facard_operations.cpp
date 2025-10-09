@@ -12,14 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
+#define MLOG_TAG "MediaLibraryFaCardOperations"
+
 #include "medialibrary_facard_operations.h"
- 
+
 #include <memory>
 #include <mutex>
 #include <string>
 #include "abs_shared_result_set.h"
- 
+
 #include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -50,9 +52,17 @@ namespace OHOS {
 namespace Media {
 std::mutex MediaLibraryFaCardOperations::mutex_;
 const string MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata";
-static std::map<std::string, std::vector<std::shared_ptr<CardAssetUriObserver>>> formAssetObserversMap;
 const string CLOUD_SYNC_PROXY_URI = "datashareproxy://com.huawei.hmos.clouddrive/sync_switch";
-static std::map<std::string, std::vector<sptr<FaCloudSyncSwitchObserver>>> formCloudSyncObserversMap;
+
+const std::string ASSET_URI_PREFIX = "file://media/";
+const std::string CLOUD_SYNC_SWITCH_URI_PREFIX = "datashareproxy://";
+
+static unordered_map<string, unordered_set<string>> g_uriMapFormIds;
+static unordered_map<string, unordered_set<string>> g_formIdMapUris;
+
+static unordered_map<string, std::shared_ptr<CardAssetUriObserver>> g_formAssetObserversMap;
+static unordered_map<string, sptr<FaCloudSyncSwitchObserver>> g_formCloudSyncObserversMap;
+
 static std::map<ChangeType, int> changeTypeMap = {
     { ChangeType::INSERT, 0 },
     { ChangeType::DELETE, 1 },
@@ -75,7 +85,6 @@ std::unordered_set<
 // LCOV_EXCL_START
 std::map<std::string, std::vector<std::string>> MediaLibraryFaCardOperations::GetUris()
 {
-    lock_guard<mutex> lock(mutex_);
     MediaLibraryCommand queryFaCardCmd(OperationObject::TAB_FACARD_PHOTO, OperationType::QUERY);
     std::map<std::string, std::vector<std::string>> resultMap;
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -201,118 +210,90 @@ void FaCloudSyncSwitchObserver::OnChange()
 
 void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, const std::string &registerUri)
 {
+    MEDIA_INFO_LOG("formId: %{public}s, registerUri: %{public}s", formId.c_str(), registerUri.c_str());
     if (formId.empty() || registerUri.empty()) {
         MEDIA_ERR_LOG("parameter is null");
         return;
     }
-    const std::string ASSET_URI_PREFIX = "file://media/";
-    const std::string CLOUD_SYNC_SWITCH_URI_PREFIX = "datashareproxy://";
-    MEDIA_INFO_LOG("registerUri = %{public}s", registerUri.c_str());
- 
-    std::shared_ptr<DataShare::DataShareObserver> observer;
-    sptr<FaCloudSyncSwitchObserver> cloudSyncObserver;
-    if (registerUri.find(ASSET_URI_PREFIX) == 0) {
-        auto cardAssetUriObserver = std::make_shared<CardAssetUriObserver>(registerUri);
-        CHECK_AND_RETURN_LOG(cardAssetUriObserver != nullptr, "cardAssetUriObserver is nullptr");
-        MEDIA_DEBUG_LOG("cardAssetUriObserver->uri = %{public}s", cardAssetUriObserver->assetChangeUri.c_str());
-        formAssetObserversMap[formId].push_back(cardAssetUriObserver);
-        observer = std::static_pointer_cast<DataShare::DataShareObserver>(cardAssetUriObserver);
-    } else if (registerUri.find(CLOUD_SYNC_SWITCH_URI_PREFIX) == 0) {
-        sptr<FaCloudSyncSwitchObserver> cloudSwitchObserver(new (std::nothrow) FaCloudSyncSwitchObserver(registerUri));
-        CHECK_AND_RETURN_LOG(cloudSwitchObserver != nullptr, "cloudSwitchObserver is nullptr");
-        MEDIA_INFO_LOG("FaCloudSyncuri = %{public}s", cloudSwitchObserver->cloudSyncChangeUri.c_str());
-        formCloudSyncObserversMap[formId].push_back(cloudSwitchObserver);
-        cloudSyncObserver = cloudSwitchObserver;
-    } else {
-        MEDIA_ERR_LOG("registerUri is inValid");
+    bool isAssetUri = (registerUri.find(ASSET_URI_PREFIX) == 0);
+    if (!isAssetUri && (registerUri.find(CLOUD_SYNC_SWITCH_URI_PREFIX) != 0)) {
+        MEDIA_ERR_LOG("registerUri is inValid: %{public}s", registerUri.c_str());
         return;
     }
+    lock_guard<mutex> lock(mutex_);
+    g_formIdMapUris[formId].emplace(registerUri);
+    auto &formIds = g_uriMapFormIds[registerUri];
+    if (!formIds.empty()) {
+        MEDIA_WARN_LOG("registerUri: %{public}s has been registered", registerUri.c_str());
+        formIds.emplace(formId);
+        return;
+    }
+    formIds.emplace(formId);
+
     Uri notifyUri(registerUri);
     CreateOptions options;
     options.enabled_ = true;
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper;
-    if (registerUri.find(ASSET_URI_PREFIX) == 0) {
-        dataShareHelper = DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
-        if (dataShareHelper == nullptr || observer == nullptr) {
-            MEDIA_ERR_LOG("dataShareHelper is nullptr");
-            return;
-        }
-        dataShareHelper->RegisterObserverExt(notifyUri, observer, true);
-    } else if (registerUri.find(CLOUD_SYNC_SWITCH_URI_PREFIX) == 0) {
-        dataShareHelper = DataShare::DataShareHelper::Creator(CLOUD_SYNC_PROXY_URI, options);
-        if (dataShareHelper == nullptr || cloudSyncObserver == nullptr) {
-            MEDIA_ERR_LOG("dataShareHelper is nullptr");
-            return;
-        }
-        dataShareHelper->RegisterObserver(notifyUri, cloudSyncObserver);
+    if (isAssetUri) {
+        auto cardAssetUriObserver = std::make_shared<CardAssetUriObserver>(registerUri);
+        CHECK_AND_RETURN_LOG(cardAssetUriObserver != nullptr, "cardAssetUriObserver is nullptr");
+        auto dataShareHelper = DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
+        CHECK_AND_RETURN_LOG(dataShareHelper != nullptr, "dataShareHelper is nullptr");
+        dataShareHelper->RegisterObserverExt(notifyUri, cardAssetUriObserver, true);
+        g_formAssetObserversMap.emplace(registerUri, cardAssetUriObserver);
+    } else {
+        sptr<FaCloudSyncSwitchObserver> cloudSwitchObserver(new (std::nothrow) FaCloudSyncSwitchObserver(registerUri));
+        CHECK_AND_RETURN_LOG(cloudSwitchObserver != nullptr, "cloudSwitchObserver is nullptr");
+        auto dataShareHelper = DataShare::DataShareHelper::Creator(CLOUD_SYNC_PROXY_URI, options);
+        CHECK_AND_RETURN_LOG(dataShareHelper != nullptr, "dataShareHelper is nullptr");
+        dataShareHelper->RegisterObserver(notifyUri, cloudSwitchObserver);
+        g_formCloudSyncObserversMap.emplace(registerUri, cloudSwitchObserver);
     }
 }
 
 void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
 {
-    if (formId.empty() || formAssetObserversMap.empty()) {
+    MEDIA_INFO_LOG("formId: %{public}s", formId.c_str());
+    if (formId.empty()) {
         MEDIA_ERR_LOG("parameter is null");
+        return;
+    }
+    lock_guard<mutex> lock(mutex_);
+    auto formIdMapUrisIt = g_formIdMapUris.find(formId);
+    if (formIdMapUrisIt == g_formIdMapUris.end()) {
+        MEDIA_WARN_LOG("formId: %{public}s has been unregistered", formId.c_str());
         return;
     }
     CreateOptions options;
     options.enabled_ = true;
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper;
-    dataShareHelper = DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is nullptr");
-        return;
-    }
-    auto itAsset = formAssetObserversMap.find(formId);
-    if (itAsset == formAssetObserversMap.end()) {
-        MEDIA_ERR_LOG("No formAssetObservers found for formId: %{public}s", formId.c_str());
-        return;
-    }
-    const std::vector<std::shared_ptr<CardAssetUriObserver>>& formAssetObservers = itAsset->second;
-    if (formAssetObservers.empty()) {
-        MEDIA_ERR_LOG("formAssetObservers is null");
-        return;
-    }
-    for (const auto& observer : formAssetObservers) {
-        if (!observer || observer->assetChangeUri.empty()) {
-            MEDIA_ERR_LOG("observer->assetChangeUri is null");
-            return;
+    auto libHelper = DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
+    CHECK_AND_RETURN_LOG(libHelper != nullptr, "libHelper is nullptr");
+    auto syncHelper = DataShare::DataShareHelper::Creator(CLOUD_SYNC_PROXY_URI, options);
+    CHECK_AND_RETURN_LOG(syncHelper != nullptr, "syncHelper is nullptr");
+    for (const auto &uri : formIdMapUrisIt->second) {
+        if (g_uriMapFormIds.count(uri)) {
+            g_uriMapFormIds[uri].erase(formId);
+            if (!g_uriMapFormIds[uri].empty()) {
+                MEDIA_WARN_LOG("uri: %{public}s has been registered for other formId, current formId: %{public}s",
+                    uri.c_str(),
+                    formId.c_str());
+                continue;
+            }
         }
-        MEDIA_DEBUG_LOG("UnregisterObserver assetChangeUri is:%{public}s", (observer->assetChangeUri).c_str());
-        Uri notifyUri(observer->assetChangeUri);
-        dataShareHelper->UnregisterObserverExt(notifyUri,
-            std::static_pointer_cast<DataShare::DataShareObserver>(observer));
-    }
-    formAssetObserversMap.erase(formId);
-    if (formCloudSyncObserversMap.empty()) {
-        MEDIA_ERR_LOG("formCloudSyncObserversMap is null");
-        return;
-    }
-    dataShareHelper = DataShare::DataShareHelper::Creator(CLOUD_SYNC_PROXY_URI, options);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is nullptr");
-        return;
-    }
-    auto cloudItAsset = formCloudSyncObserversMap.find(formId);
-    if (cloudItAsset == formCloudSyncObserversMap.end()) {
-        MEDIA_ERR_LOG("No formCloudSyncObserversMap found for formId: %{public}s", formId.c_str());
-        return;
-    }
-    const std::vector<sptr<FaCloudSyncSwitchObserver>>& formCloudSyncObservers = cloudItAsset->second;
-    if (formCloudSyncObservers.empty()) {
-        MEDIA_ERR_LOG("formCloudSyncObservers is null");
-        return;
-    }
-    for (const auto& observer : formCloudSyncObservers) {
-        if (!observer || observer->cloudSyncChangeUri.empty()) {
-            MEDIA_ERR_LOG("observer->cloudSyncChangeUri is null");
-            return;
+        g_uriMapFormIds.erase(uri);
+        Uri notifyUri(uri);
+        if (uri.find(ASSET_URI_PREFIX) == 0) {
+            auto &cardAssetUriObserver = g_formAssetObserversMap[uri];
+            CHECK_AND_RETURN_LOG(cardAssetUriObserver != nullptr, "cardAssetUriObserver is nullptr");
+            libHelper->UnregisterObserverExt(notifyUri, cardAssetUriObserver);
+            g_formAssetObserversMap.erase(uri);
+        } else {
+            sptr<FaCloudSyncSwitchObserver> &cloudSwitchObserver = g_formCloudSyncObserversMap[uri];
+            CHECK_AND_RETURN_LOG(cloudSwitchObserver != nullptr, "cloudSwitchObserver is nullptr");
+            syncHelper->UnregisterObserver(notifyUri, cloudSwitchObserver);
+            g_formCloudSyncObserversMap.erase(uri);
         }
-        MEDIA_DEBUG_LOG("UnregisterObserver cloudSyncChangeUri is:%{public}s",
-            (observer->cloudSyncChangeUri).c_str());
-        Uri notifyUri(observer->cloudSyncChangeUri);
-        dataShareHelper->UnregisterObserver(notifyUri, observer);
     }
-    formCloudSyncObserversMap.erase(formId);
+    g_formIdMapUris.erase(formIdMapUrisIt);
 }
 
 int32_t MediaLibraryFaCardOperations::HandleStoreGalleryFormOperation(MediaLibraryCommand &cmd)
@@ -322,7 +303,6 @@ int32_t MediaLibraryFaCardOperations::HandleStoreGalleryFormOperation(MediaLibra
         return E_HAS_DB_ERROR;
     }
     int64_t outRowId = -1;
-    lock_guard<mutex> lock(mutex_);
     int32_t errCode = rdbStore->Insert(cmd, outRowId);
     if (errCode != NativeRdb::E_OK || outRowId < 0) {
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
@@ -338,7 +318,6 @@ int32_t MediaLibraryFaCardOperations::HandleStoreGalleryFormOperation(MediaLibra
  
 int32_t MediaLibraryFaCardOperations::HandleRemoveGalleryFormOperation(NativeRdb::RdbPredicates &rdbPredicate)
 {
-    lock_guard<mutex> lock(mutex_);
     string formId = rdbPredicate.GetWhereArgs()[0];
     MediaLibraryFaCardOperations::UnregisterObserver(formId);
     return MediaLibraryRdbStore::Delete(rdbPredicate);

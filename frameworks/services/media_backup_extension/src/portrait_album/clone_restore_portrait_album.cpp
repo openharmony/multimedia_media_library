@@ -43,6 +43,8 @@ void CloneRestorePortrait::Init(int32_t sceneCode, const std::string &taskId,
 void CloneRestorePortrait::Preprocess()
 {
     MEDIA_INFO_LOG("Preprocess");
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+
     CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr.");
     std::string querySql = "SELECT count(1) AS count FROM " + ANALYSIS_ALBUM_TABLE + " WHERE ";
     std::string whereClause = "(" + SMARTALBUM_DB_ALBUM_TYPE + " = " + std::to_string(SMART) + " AND " +
@@ -52,6 +54,9 @@ void CloneRestorePortrait::Preprocess()
     totalPortraitAlbumNumber_ = BackupDatabaseUtils::QueryInt(mediaRdb_, querySql, CUSTOM_COUNT);
     MEDIA_INFO_LOG("QueryPortraitAlbum totalNumber = %{public}d", totalPortraitAlbumNumber_);
     CHECK_AND_EXECUTE(!(totalPortraitAlbumNumber_ > 0), DeleteExistingPortraitInfos());
+    
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    migratePortraitTotalTimeCost_ += end - start;
 }
 
 void CloneRestorePortrait::DeleteExistingPortraitInfos()
@@ -66,66 +71,92 @@ void CloneRestorePortrait::DeleteExistingPortraitAlbums()
 {
     MEDIA_INFO_LOG("DeleteExistingPortraitAlbums");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+
     std::string deletePortraitAlbumSql =
         "DELETE FROM AnalysisAlbum WHERE "
         "album_type = 4096 AND album_subtype = 4102";
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, deletePortraitAlbumSql);
+    
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    migratePortraitTotalTimeCost_ += end - start;
+    MEDIA_INFO_LOG("DeleteExistingPortraitAlbums cost %{public}lld", (long long)(end - start));
 }
 
 void CloneRestorePortrait::DeleteExistingCluseringInfo()
 {
     MEDIA_INFO_LOG("DeleteClusteringInfo");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+
     std::string deleteFaceTagTblSql =
         "DELETE FROM " + VISION_FACE_TAG_TABLE;
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, deleteFaceTagTblSql);
+    
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    migratePortraitTotalTimeCost_ += end - start;
+    MEDIA_INFO_LOG("DeleteExistingClusteringInfo cost %{public}lld", (long long)(end - start));
 }
 
 void CloneRestorePortrait::DeleteExistingImageFaceInfos()
 {
     MEDIA_INFO_LOG("DeleteExistingImageFaceInfos");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-    std::unique_ptr<NativeRdb::AbsRdbPredicates> totalTablePredicates =
-        std::make_unique<NativeRdb::AbsRdbPredicates>(VISION_TOTAL_TABLE);
 
     std::string fileIdFilterClause = std::string("(") + "SELECT " + IMAGE_FACE_COL_FILE_ID + " FROM " +
-        VISION_IMAGE_FACE_TABLE + ")";
-    std::string fileIdCondition = IMAGE_FACE_COL_FILE_ID + " IN " + fileIdFilterClause + "AND status != -2";
-    totalTablePredicates->SetWhereClause(fileIdCondition);
+        VISION_IMAGE_FACE_TABLE + " UNION" + " SELECT " + VIDEO_FACE_COL_FILE_ID + " FROM " +
+        VISION_VIDEO_FACE_TABLE + ")";
+    std::string fileIdCondition = IMAGE_FACE_COL_FILE_ID + " IN " + fileIdFilterClause;
+
+    MEDIA_INFO_LOG("Update TableAnalysisTotal");
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> totalTablePredicates =
+        std::make_unique<NativeRdb::AbsRdbPredicates>(VISION_TOTAL_TABLE);
+    std::string statusCondition = " status = 1";
+    totalTablePredicates->SetWhereClause(fileIdCondition + " AND" + statusCondition);
     NativeRdb::ValuesBucket totalValues;
     totalValues.PutInt("face", 0);
     totalValues.PutInt("status", 0);
-
     int32_t totalUpdatedRows = 0;
     int32_t totalRet = BackupDatabaseUtils::Update(mediaLibraryRdb_,
         totalUpdatedRows, totalValues, totalTablePredicates);
     MEDIA_INFO_LOG("Update TableAnalysisTotal, updatedRows %{public}d", totalUpdatedRows);
     bool totalUpdateFailed = (totalUpdatedRows < 0 || totalRet < 0);
-    CHECK_AND_RETURN_LOG(!totalUpdateFailed, "Failed to update VISION_TOTAL_TABLE face field to 0");
+    CHECK_AND_RETURN_LOG(!totalUpdateFailed, "Failed to update VISION_TOTAL_TABLE face status field to 0");
+
+    MEDIA_INFO_LOG("Update TableAnalysisSearchIndex");
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> searchIndexTablePredicates =
+        std::make_unique<NativeRdb::AbsRdbPredicates>(ANALYSIS_SEARCH_INDEX_TABLE);
+    statusCondition = " cv_status = 1";
+    searchIndexTablePredicates->SetWhereClause(fileIdCondition + " AND" + statusCondition);
+    NativeRdb::ValuesBucket searchIndexValues;
+    searchIndexValues.PutInt("cv_status", 0);
+    totalUpdatedRows = 0;
+    totalRet = BackupDatabaseUtils::Update(mediaLibraryRdb_,
+        totalUpdatedRows, searchIndexValues, searchIndexTablePredicates);
+    MEDIA_INFO_LOG("Update TabAnalysisSearchIndex, updatedRows %{public}d", totalUpdatedRows);
+    totalUpdateFailed = (totalUpdatedRows < 0 || totalRet < 0);
+    CHECK_AND_RETURN_LOG(!totalUpdateFailed, "Failed to update ANALYSIS_SEARCH_INDEX_TABLE cv_status field to 0");
+
     MEDIA_INFO_LOG("Delete AnalysisPhotoMap");
     std::string deleteAnalysisPhotoMapSql =
         "DELETE FROM AnalysisPhotoMap WHERE "
         "map_album IN (SELECT album_id FROM AnalysisAlbum WHERE album_type = 4096 AND album_subtype = 4102) "
-        "AND map_asset IN ("
-        "SELECT " + IMAGE_FACE_COL_FILE_ID + " FROM " + VISION_IMAGE_FACE_TABLE +
-        ") ";
+        "AND map_asset IN" + fileIdFilterClause;
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, deleteAnalysisPhotoMapSql);
+    
     MEDIA_INFO_LOG("Delete ImageFaceTable");
     std::string deleteImageFaceSql = "DELETE FROM " + VISION_IMAGE_FACE_TABLE;
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, deleteImageFaceSql);
+    
+    MEDIA_INFO_LOG("Delete VideoFaceTable");
     std::string deleteVideoFaceSql = "DELETE FROM " + VISION_VIDEO_FACE_TABLE;
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, deleteVideoFaceSql);
+    
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    migratePortraitTotalTimeCost_ += end - start;
+    MEDIA_INFO_LOG("DeleteExistingImageFaceInfo cost %{public}lld", (long long)(end - start));
 }
 
 void CloneRestorePortrait::Restore()
 {
     MEDIA_INFO_LOG("Start Restore");
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+
     CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr.");
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
@@ -137,12 +168,16 @@ void CloneRestorePortrait::Restore()
     int32_t ret = RestoreMaps();
     CHECK_AND_RETURN_LOG(ret == E_OK, "fail to update analysis photo map status");
     ReportPortraitCloneStat(sceneCode_);
+    
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    migratePortraitTotalTimeCost_ += end - start;
 }
 
 void CloneRestorePortrait::RestoreFromGalleryPortraitAlbum()
 {
     MEDIA_INFO_LOG("RestoreFromGalleryPortraitAlbum");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+
     RecordOldPortraitAlbumDfx();
     GetMaxAlbumId();
     std::vector<std::string> commonColumn = BackupDatabaseUtils::GetCommonColumnInfos(mediaRdb_, mediaLibraryRdb_,
@@ -161,9 +196,11 @@ void CloneRestorePortrait::RestoreFromGalleryPortraitAlbum()
         }
         InsertPortraitAlbum(portraitAlbumTbl);
     }
-    LogPortraitCloneDfx();
+
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    migratePortraitTotalTimeCost_ += end - start;
+    MEDIA_INFO_LOG("RestoreFromGalleryPortraitAlbum cost %{public}lld", (long long)(end - start));
+
+    LogPortraitCloneDfx();
 }
 
 void CloneRestorePortrait::RecordOldPortraitAlbumDfx()
@@ -375,6 +412,7 @@ void CloneRestorePortrait::RestorePortraitClusteringInfo()
 {
     MEDIA_INFO_LOG("RestorePortraitClusteringInfo");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb_, QUERY_FACE_TAG_COUNT, CUSTOM_COUNT);
     MEDIA_INFO_LOG("QueryPortraitClustering totalNumber = %{public}d", totalNumber);
 
@@ -392,8 +430,9 @@ void CloneRestorePortrait::RestorePortraitClusteringInfo()
             break;
         }
     }
+
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    migratePortraitTotalTimeCost_ += end - start;
+    MEDIA_INFO_LOG("RestorePortraitClusteringInfo cost %{public}lld", (long long)(end - start));
 }
 
 std::vector<FaceTagTbl> CloneRestorePortrait::QueryFaceTagTbl(int32_t offset, const std::string &inClause)
@@ -447,6 +486,7 @@ void CloneRestorePortrait::BatchInsertFaceTags(const std::vector<FaceTagTbl>& fa
 
     int64_t rowNum = 0;
     int32_t ret = BatchInsertWithRetry(VISION_FACE_TAG_TABLE, valuesBuckets, rowNum);
+    migratePortraitFaceTagNumber_ += rowNum;
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to batch insert face tags");
 }
 
@@ -478,6 +518,7 @@ void CloneRestorePortrait::RestoreImageFaceInfo()
 {
     MEDIA_INFO_LOG("RestoreImageFaceInfo");
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+
     auto uniqueFileIdPairs = CollectFileIdPairs(photoInfoMap_);
     auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(uniqueFileIdPairs);
 
@@ -488,8 +529,6 @@ void CloneRestorePortrait::RestoreImageFaceInfo()
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(mediaRdb_, querySql, CUSTOM_COUNT);
     MEDIA_INFO_LOG("QueryImageFaceTotalNumber, totalNumber = %{public}d", totalNumber);
     if (totalNumber == 0) {
-        int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-        migratePortraitTotalTimeCost_ += end - start;
         return;
     }
 
@@ -505,10 +544,10 @@ void CloneRestorePortrait::RestoreImageFaceInfo()
         BatchInsertImageFaces(imageFaces);
     }
 
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    migratePortraitTotalTimeCost_ += end - start;
-
     GenNewCoverUris(coverUriInfo_);
+
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("RestoreImageFaceInfo cost %{public}lld", (long long)(end - start));
 }
 
 std::vector<ImageFaceTbl> CloneRestorePortrait::ProcessImageFaceTbls(const std::vector<ImageFaceTbl>& imageFaceTbls,
@@ -698,6 +737,7 @@ NativeRdb::ValuesBucket CloneRestorePortrait::CreateValuesBucketFromImageFaceTbl
 void CloneRestorePortrait::UpdateAnalysisTotalTblNoFaceStatus()
 {
     MEDIA_INFO_LOG("UpdateAnalysisTotalTblNoFaceStatus");
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
 
     auto fileIdPairs = CollectFileIdPairs(photoInfoMap_);
     auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(fileIdPairs);
@@ -745,11 +785,15 @@ void CloneRestorePortrait::UpdateAnalysisTotalTblNoFaceStatus()
 
     int32_t errCode = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updateSql);
     CHECK_AND_PRINT_LOG(errCode >= 0, "execute update analysis total for no face failed, ret=%{public}d", errCode);
+    
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("UpdateAnalysisTotalTblNoFaceStatus cost %{public}lld", (long long)(end - start));
 }
 
 void CloneRestorePortrait::UpdateAnalysisTotalTblStatus()
 {
     MEDIA_INFO_LOG("UpdateAnalysisTotalTblStatus");
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
 
     auto fileIdPairs = CollectFileIdPairs(photoInfoMap_);
     auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(fileIdPairs);
@@ -772,10 +816,15 @@ void CloneRestorePortrait::UpdateAnalysisTotalTblStatus()
 
     int32_t errCode = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updateSql);
     CHECK_AND_PRINT_LOG(errCode >= 0, "execute update analysis total failed, ret=%{public}d", errCode);
+
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("UpdateAnalysisTotalTblStatus cost %{public}lld", (long long)(end - start));
 }
 
 int32_t CloneRestorePortrait::RestoreMaps()
 {
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+    
     const std::string QUERY_TOTAL_COUNT_SQL = "SELECT count(1) AS count FROM AnalysisPhotoMap AS map "
         " INNER JOIN AnalysisAlbum AS a ON map.map_album = a.album_id "
         " WHERE a.album_subtype = 4102 AND (a.is_removed != 1 OR a.is_removed IS NULL)";
@@ -784,6 +833,10 @@ int32_t CloneRestorePortrait::RestoreMaps()
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         RestoreMapsBatch();
     }
+
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("RestoreMaps cost %{public}lld", (long long)(end - start));
+
     return E_OK;
 }
 
@@ -859,6 +912,7 @@ void CloneRestorePortrait::InsertAnalysisPhotoMap(std::vector<NativeRdb::ValuesB
 {
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry("AnalysisPhotoMap", values, rowNum);
+    migratePortraitAnalysisPhotoMapNumber_ += rowNum;
     if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
         int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
         ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
@@ -873,9 +927,11 @@ void CloneRestorePortrait::ReportPortraitCloneStat(int32_t sceneCode)
 {
     CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID, "err scenecode %{public}d", sceneCode);
 
-    MEDIA_INFO_LOG("PortraitStat: album %{public}lld, photo %{public}lld, face %{public}lld, cost %{public}lld",
-        (long long)migratePortraitAlbumNumber_, (long long)migratePortraitPhotoNumber_,
-        (long long)migratePortraitFaceNumber_, (long long)migratePortraitTotalTimeCost_);
+    MEDIA_INFO_LOG("PortraitStat: analysisAlbum %{public}lld, faceTag %{public}lld"
+        ", imageFace %{public}lld, photoMap %{public}lld, cost %{public}lld",
+        (long long)migratePortraitAlbumNumber_, (long long)migratePortraitFaceTagNumber_,
+        (long long)migratePortraitFaceNumber_, (long long)migratePortraitAnalysisPhotoMapNumber_,
+        (long long)migratePortraitTotalTimeCost_);
 
     BackupDfxUtils::PostPortraitStat(static_cast<uint32_t>(migratePortraitAlbumNumber_), migratePortraitPhotoNumber_,
         migratePortraitFaceNumber_, migratePortraitTotalTimeCost_);

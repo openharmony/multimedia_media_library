@@ -20,6 +20,7 @@
 #include <chrono>
 #include <thread>
 
+#include "database_adapter.h"
 #include "gmock/gmock.h"
 #include "image_source.h"
 #include "media_exif.h"
@@ -723,7 +724,14 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdatePhotoQuality_001, TestSi
 
     MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
-    auto result = callback->UpdatePhotoQuality(PHOTO_ID_FOR_TEST);
+
+    NativeRdb::ValuesBucket updateValues;
+    callback->UpdatePhotoQuality(fileId, updateValues);
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updateCmd.SetValueBucket(updateValues);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t result = DatabaseAdapter::Update(updateCmd);
+
     EXPECT_EQ(result, E_OK);
     delete callback;
 
@@ -760,8 +768,21 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdateCEAvailable_test, TestSi
     ASSERT_NE(resultSet, nullptr);
 
     callback->NotifyIfTempFile(resultSet);
-    callback->UpdateCEAvailable(to_string(fileId), 1);
-    callback->UpdateCEAvailable(to_string(fileId), 2);
+
+    NativeRdb::ValuesBucket updateValues;
+    callback->UpdateCEAvailable(fileId, 1, updateValues, 0);
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updateCmd.SetValueBucket(updateValues);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
+    int32_t result = DatabaseAdapter::Update(updateCmd);
+
+    NativeRdb::ValuesBucket updateValues1;
+    callback->UpdateCEAvailable(fileId, 2, updateValues1, 0);
+    MediaLibraryCommand updateCmd1(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updateCmd.SetValueBucket(updateValues1);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
+    result = DatabaseAdapter::Update(updateCmd1);
+
     callback->OnError(PHOTO_ID_FOR_TEST, CameraStandard::ERROR_SESSION_SYNC_NEEDED);
     callback->OnError(PHOTO_ID_FOR_TEST, CameraStandard::ERROR_IMAGE_PROC_INTERRUPTED);
     callback->OnStateChanged(CameraStandard::SESSION_STATE_RUNNALBE);
@@ -808,8 +829,8 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdateHighQualityPictureInfo_t
     MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
 
-    callback->UpdateHighQualityPictureInfo(to_string(fileId), true);
-    callback->UpdateHighQualityPictureInfo(to_string(fileId), false);
+    callback->UpdateHighQualityPictureInfo(fileId, true);
+    callback->UpdateHighQualityPictureInfo(fileId, false);
     delete callback;
     MEDIA_INFO_LOG("UpdateHighQualityPictureInfo_test End");
 }

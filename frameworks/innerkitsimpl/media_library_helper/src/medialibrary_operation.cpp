@@ -24,6 +24,7 @@
 #include "media_app_uri_permission_column.h"
 #include "media_column.h"
 #include "media_old_photos_column.h"
+#include "media_old_albums_column.h"
 #include "media_facard_photos_column.h"
 #include "medialibrary_db_const.h"
 #include "photo_album_column.h"
@@ -101,6 +102,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { CHECK_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
         { PAH_CLOUD_ENHANCEMENT_OPERATE, OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE },
         { TAB_OLD_PHOTO, OperationObject::TAB_OLD_PHOTO },
+        { TAB_OLD_ALBUM, OperationObject::TAB_OLD_ALBUM },
         { TAB_FACARD_PHOTO, OperationObject::TAB_FACARD_PHOTO },
         { CLOUD_MEDIA_ASSET_OPERATE, OperationObject::CLOUD_MEDIA_ASSET_OPERATE},
         { ASSET_ALBUM_OPERATION, OperationObject::ASSET_ALBUM_OPERATION},
@@ -233,6 +235,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
             { { OperationType::UNKNOWN_TYPE, VISION_ANALYSIS_ALBUM_TOTAL_TABLE } } },
         { OperationObject::TAB_OLD_PHOTO, { { OperationType::UNKNOWN_TYPE, TabOldPhotosColumn::OLD_PHOTOS_TABLE } }},
+        { OperationObject::TAB_OLD_ALBUM, { { OperationType::UNKNOWN_TYPE, TabOldAlbumsColumn::OLD_ALBUM_TABLE } }},
         { OperationObject::TAB_FACARD_PHOTO,
         { { OperationType::UNKNOWN_TYPE, TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE } }},
         { OperationObject::ASSET_ALBUM_OPERATION,

@@ -251,7 +251,7 @@ private:
             ON gallery_media.albumId=gallery_album.albumId \
             LEFT JOIN relative_album \
             ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
-        WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') = '' AND \
+        WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') = '' AND COALESCE(hdc_unique_id,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
                     SELECT DISTINCT relative_bucket_id \

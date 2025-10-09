@@ -47,7 +47,8 @@ private:
     static void GetMovingPhotoExternalInfo(ExternalInfo &exInfo, std::vector<std::string> &attachment);
     static void GetEditPhotoExternalInfo(ExternalInfo &exInfo, std::vector<std::string> &attachment);
     static FileManagement::CloudSync::CleanFileInfo GetCleanFileInfo(std::shared_ptr<FileAsset> &fileAssetPtr);
-    static bool BatchDeleteLocalAndCloud(const std::vector<FileManagement::CloudSync::CleanFileInfo> &fileInfos);
+    static bool BatchDeleteLocalAndCloud(
+        const std::vector<FileManagement::CloudSync::CleanFileInfo> &fileInfos, const map<string, int32_t> &notifyMap);
     static int32_t DeleteLocalAndCloudPhotos(std::vector<std::shared_ptr<FileAsset>> &subFileAsset);
     static int32_t GetBurstPhotosInfo(const std::string &burstKey, bool &isLastBurstPhoto,
         std::vector<int32_t> &burstFileIds);

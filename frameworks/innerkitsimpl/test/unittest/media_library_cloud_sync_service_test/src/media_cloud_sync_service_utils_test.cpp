@@ -410,15 +410,16 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDataAdded_Test_001, TestS
     CloudMediaPullDataDto data;
     data.propertiesFirstUpdateTime = "";
     data.basicCreatedTime = 0;
-    auto ret = CloudSyncConvert::CompensatePropDataAdded(data, values);
+    int64_t dateAdded = 0;
+    auto ret = CloudSyncConvert::CompensatePropDataAdded(data, values, dateAdded);
     EXPECT_EQ(ret, E_OK);
 
     data.propertiesFirstUpdateTime = "20111111";
-    ret = CloudSyncConvert::CompensatePropDataAdded(data, values);
+    ret = CloudSyncConvert::CompensatePropDataAdded(data, values, dateAdded);
     EXPECT_EQ(ret, E_OK);
 
     data.propertiesFirstUpdateTime = "2011111d1abc";
-    ret = CloudSyncConvert::CompensatePropDataAdded(data, values);
+    ret = CloudSyncConvert::CompensatePropDataAdded(data, values, dateAdded);
     EXPECT_EQ(ret, E_OK);
 
     int64_t dataAdded = 0;
@@ -434,7 +435,8 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDataAdded_Test_002, TestS
     CloudMediaPullDataDto data;
     data.propertiesFirstUpdateTime = "1752233169000";  // 2025:07:11
     data.basicCreatedTime = 1751544669000;             // 2025:07:03
-    auto ret = CloudSyncConvert::CompensatePropDataAdded(data, values);
+    int64_t dateAdded = 0;
+    auto ret = CloudSyncConvert::CompensatePropDataAdded(data, values, dateAdded);
     EXPECT_EQ(ret, E_OK);
 
     int64_t dataAdded = 0;
@@ -534,11 +536,12 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensateBasicDateModified_Test, TestS
 {
     ValuesBucket values;
     CloudMediaPullDataDto data;
-    auto ret = CloudSyncConvert::CompensateBasicDateModified(data, values);
+    int64_t dateAdded = 0;
+    auto ret = CloudSyncConvert::CompensateBasicDateModified(data, values, dateAdded);
     EXPECT_EQ(ret, E_CLOUDSYNC_INVAL_ARG);
 
     data.attributesEditedTimeMs = 1;
-    ret = CloudSyncConvert::CompensateBasicDateModified(data, values);
+    ret = CloudSyncConvert::CompensateBasicDateModified(data, values, dateAdded);
     EXPECT_EQ(ret, E_OK);
 }
 
