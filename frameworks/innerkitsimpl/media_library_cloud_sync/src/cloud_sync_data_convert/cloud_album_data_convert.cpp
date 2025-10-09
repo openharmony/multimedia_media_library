@@ -202,7 +202,7 @@ int32_t CloudAlbumDataConvert::ConvertToDoubleScreenshot(
         return E_MEDIA_CLOUD_ARGS_INVAILD;
     }
 
-    MEDIA_INFO_LOG("ConvertToDoubleScreenshot lpath:%{public}s, recordId:%{pubilc}s", lPath.c_str(), recordId.c_str());
+    MEDIA_INFO_LOG("ConvertToDoubleScreenshot lpath:%{public}s, recordId:%{public}s", lPath.c_str(), recordId.c_str());
     if (lPath == DEFAULT_SCREENSHOT_LPATH_EN) {
         data["albumName"] = MDKRecordField(SCREEN_SHOT_AND_RECORDER_EN);
     }
