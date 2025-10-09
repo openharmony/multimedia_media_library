@@ -165,7 +165,6 @@ int32_t CloudMediaDataControllerService::GetVideoToCache(MessageParcel &data, Me
 
 int32_t CloudMediaDataControllerService::GetFilePosStat(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("GetFilePosStat enter");
     std::vector<uint64_t> statList = this->dataService_.GetFilePosStat();
     GetFilePosStatRespBody respBody;
     respBody.statList = statList;
