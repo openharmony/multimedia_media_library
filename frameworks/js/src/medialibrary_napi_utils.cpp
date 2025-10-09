@@ -17,6 +17,7 @@
 #include "medialibrary_napi_utils.h"
 
 #include <cctype>
+#include <charconv>
 #include "basic/result_set.h"
 #include "datashare_predicates.h"
 #include "location_column.h"
