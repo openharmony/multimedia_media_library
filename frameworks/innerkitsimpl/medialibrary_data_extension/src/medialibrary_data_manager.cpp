@@ -51,6 +51,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_old_photos_column.h"
+#include "media_old_albums_column.h"
 #include "media_facard_photos_column.h"
 #include "media_scanner_manager.h"
 #include "media_smart_album_column.h"
@@ -83,6 +84,7 @@
 #include "medialibrary_story_operations.h"
 #include "medialibrary_subscriber.h"
 #include "medialibrary_tab_old_photos_operations.h"
+#include "medialibrary_tab_old_albums_operations.h"
 #include "medialibrary_tab_asset_and_album_operations.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
@@ -536,6 +538,33 @@ static void AddShootingModeAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& st
     MEDIA_INFO_LOG("End add shooting mode album index");
 }
 
+static void UpdateBurstModeAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& store, int32_t version)
+{
+    MEDIA_INFO_LOG("Start to Update burst mode album index");
+    const vector<string> sqls = {
+        PhotoColumn::DROP_BURST_MODE_ALBUM_INDEX,
+        PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
+    };
+    for (size_t i = 0; i < sqls.size(); i++) {
+        int ret = store->ExecuteSql(sqls[i]);
+        RdbUpgradeUtils::AddUpgradeDfxMessages(version, i, ret);
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
+    }
+    MEDIA_INFO_LOG("End Update burst mode album index");
+}
+
+static void Update3DGSAlbumInternal(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("Start to Update 3DGS mode album");
+    vector<string> albumIdsStr;
+    int32_t albumId = -1;
+    CHECK_AND_RETURN_LOG(MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(
+        ShootingModeAlbumType::MP4_3DGS_ALBUM, albumId), "Failed to query 3DGS album id");
+    albumIdsStr.push_back(to_string(albumId));
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(store, albumIdsStr);
+    MEDIA_INFO_LOG("End Update 3DGS mode album");
+}
+
 static void AddHistoryPanoramaModeAlbumData(const shared_ptr<MediaLibraryRdbStore>& store)
 {
     MEDIA_INFO_LOG("Start to add panorama mode album data");
@@ -728,6 +757,21 @@ void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         MediaLibraryRdbStore::AddPhotoMapTableData(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_MAP_CODE_TABLE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_MAP_CODE_TABLE, false);
+    }
+
+    if (oldVersion < VERSION_ADD_3DGS_MODE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_3DGS_MODE, false)) {
+        UpdateBurstModeAlbumIndex(rdbStore, VERSION_ADD_3DGS_MODE);
+        Update3DGSAlbumInternal(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_3DGS_MODE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_3DGS_MODE, false);
+    }
+    
+    if (oldVersion < VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, false)) {
+        MediaLibraryRdbStore::UpdateIndexHiddenTime(rdbStore, VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
+        rdbStore->SetOldVersion(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, false);
     }
 }
 
@@ -2521,6 +2565,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::TAB_OLD_PHOTO:
             return MediaLibraryTabOldPhotosOperations().Query(
                 RdbUtils::ToPredicates(predicates, TabOldPhotosColumn::OLD_PHOTOS_TABLE), columns);
+        case OperationObject::TAB_OLD_ALBUM:
+            return MediaLibraryTabOldAlbumsOperations().Query(
+                RdbUtils::ToPredicates(predicates, TabOldAlbumsColumn::OLD_ALBUM_TABLE), columns);
         case OperationObject::ASSET_ALBUM_OPERATION:
             return MediaLibraryTableAssetAlbumOperations().Query(
                 RdbUtils::ToPredicates(predicates, PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE), columns);
@@ -2861,7 +2908,7 @@ void MediaLibraryDataManager::UploadDBFileInner(int64_t totalFileSize)
             "Failed to delete destDb file, path:%{private}s", destDbPath.c_str());
     }
     zipFile compressZip = Media::ZipUtil::CreateZipFile(destPath);
-    CHECK_AND_RETURN_LOG(compressZip != nullptr, "open zip file failed.");
+    CHECK_AND_RETURN_LOG(compressZip != nullptr, "open zip file failed");
 
     auto errcode = Media::ZipUtil::AddFileInZip(compressZip, zipFileName, Media::KEEP_NONE_PARENT_PATH);
     CHECK_AND_PRINT_LOG(errcode == 0, "AddFileInZip failed, errCode = %{public}d", errcode);

@@ -125,11 +125,11 @@ struct HeifAgingStatistics {
 };
 
 struct UpgradeExceptionInfo {
-    uint32_t srcVersion = 0;
-    uint32_t dstVersion = 0;
+    int32_t srcVersion = 0;
+    int32_t dstVersion = 0;
     bool isSync;
     std::string exceptionVersions;
-    uint32_t duration = 0;
+    int64_t duration = 0;
 };
 
 class DfxReporter {

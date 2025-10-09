@@ -62,6 +62,7 @@
 #include "asset_accurate_refresh.h"
 #include "refresh_business_name.h"
 #include "parameters.h"
+#include "media_album_order_back.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -101,6 +102,8 @@ const std::string ALBUM_LPATH_PREFIX = "/Pictures/Users/";
 const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
 const std::string ME_RELATIONSHIP = "me";
 const std::string RETAIL_MODE_KEY = "const.dfx.enable_retail";
+const std::string SQL_DELETE_ALL_ALBUM_ORDER_BACK =
+    "DELETE FROM " + ALBUM_ORDER_BACK_TABLE;
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -3264,6 +3267,8 @@ int32_t MediaLibraryAlbumOperations::UpdatePhotoAlbumOrder(const vector<NativeRd
         CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
         watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
     }
+    int32_t ret = rdbStore->ExecuteSql(SQL_DELETE_ALL_ALBUM_ORDER_BACK);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false, "Failed to delete albumOrderBackTable data");
     return successSetOrderRows == 0 ? E_INNER_FAIL : E_OK;
 }
 } // namespace OHOS::Media

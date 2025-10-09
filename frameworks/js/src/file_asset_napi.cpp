@@ -3049,6 +3049,7 @@ int32_t FileAssetNapi::CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::PHOTO_APPLINK,
         PhotoColumn::PHOTO_HAS_APPLINK,
         PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS,
+        PhotoColumn::PHOTO_CLOUD_ID,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
         MEDIA_SUM_SIZE,

@@ -117,7 +117,6 @@ private:
     void CheckHalfDayMissions();
     void UpdateBackgroundTimer();
     void DoAgingOperation();
-    void UpdateCloudMediaAssetDownloadTaskStatus();
     void DealWithEventsAfterUpdateStatus(const StatusEventType statusEventType);
 };
 }  // namespace Media

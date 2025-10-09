@@ -336,6 +336,8 @@ const std::string PhotoColumn::DROP_SCHPT_DAY_INDEX = BaseColumn::DropIndex() + 
 
 const std::string PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX = "DROP INDEX IF EXISTS " + PHOTO_SCHPT_MEDIA_TYPE_INDEX;
 
+const std::string PhotoColumn::DROP_BURST_MODE_ALBUM_INDEX = BaseColumn::DropIndex() + PHOTO_BURST_MODE_ALBUM_INDEX;
+
 const std::string PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX = BaseColumn::CreateIndex() +
     PHOTO_SCHPT_MEDIA_TYPE_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
@@ -379,7 +381,7 @@ const std::string PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX =
     BaseColumn::CreateIndex() + PHOTO_SCHPT_HIDDEN_TIME_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
     "," + MEDIA_DATE_TRASHED + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL +
-    "," + PHOTO_HIDDEN_TIME + " DESC);";
+    "," + PHOTO_HIDDEN_TIME + " DESC, " + MEDIA_TYPE + "," + PHOTO_OWNER_ALBUM_ID + ");";
 
 const std::string PhotoColumn::DROP_SCHPT_HIDDEN_TIME_INDEX = BaseColumn::DropIndex() + PHOTO_SCHPT_HIDDEN_TIME_INDEX;
 
@@ -524,7 +526,7 @@ const std::string PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX = BaseColumn:
     PHOTO_BURST_MODE_ALBUM_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
     "," + MEDIA_TIME_PENDING + ", " + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + PHOTO_SUBTYPE +
-    "," + PHOTO_BURST_KEY + "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC);";
+    "," + MEDIA_DATE_TAKEN + " DESC," + MEDIA_NAME + " DESC," + PHOTO_BURST_KEY + ");";
 
 const std::string PhotoColumn::CREATE_PHOTO_FRONT_CAMERA_ALBUM_INDEX = BaseColumn::CreateIndex() +
     PHOTO_FRONT_CAMERA_ALBUM_INDEX + " ON " + PHOTOS_TABLE +

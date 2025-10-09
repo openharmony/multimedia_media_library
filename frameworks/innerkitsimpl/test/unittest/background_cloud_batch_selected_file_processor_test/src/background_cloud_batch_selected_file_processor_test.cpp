@@ -199,6 +199,8 @@ void InsertBatchDownloadTask(int32_t fileId, std::string path, std::string displ
     values.PutLong(DownloadResourcesColumn::MEDIA_DATE_FINISH, 0);
     values.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS, status);
     values.PutInt(DownloadResourcesColumn::MEDIA_PERCENT, -1);
+    values.PutInt(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON, 1);
+    values.PutInt(DownloadResourcesColumn::MEDIA_COVER_LEVEL, 1);
     int32_t ret = rdbStore->Insert(rowId, DownloadResourcesColumn::TABLE, values);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("InsertBatchDownloadTask fileId is %{public}s", to_string(fileId).c_str());
@@ -337,6 +339,17 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_GetStorageFreeRa
     BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition();
     BatchDownloadAutoPauseReasonType autoPauseReason;
     BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(autoPauseReason);
+    InsertBatchDownloadTask(1, "file://media/Photo/1/1.jpg", "1.jpg",
+        static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_AUTO_PAUSE));
+    int32_t dbReason;
+    int32_t dbRet = BackgroundCloudBatchSelectedFileProcessor::QueryAutoPauseReason(dbReason);
+    EXPECT_EQ(dbRet, 0);
+    dbRet = BackgroundCloudBatchSelectedFileProcessor::UpdateAllAutoPauseReason(
+        static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_POWER_LOW));
+    EXPECT_EQ(dbRet, 0);
+    vector<int32_t> notRestoreReasons;
+    notRestoreReasons.push_back(1);
+    BackgroundCloudBatchSelectedFileProcessor::RefreshNotRestoreReason(notRestoreReasons);
     EXPECT_EQ(ret, true);
     MEDIA_INFO_LOG("Bcbsfpt_GetStorageFreeRatio_Test_001 End");
 }

@@ -29,6 +29,7 @@
 #include "medialibrary_db_const.h"
 #include "vision_db_sqls_more.h"
 #include "smart_album_column.h"
+#include "media_album_order_back.h"
 
 namespace OHOS {
 namespace Media {
@@ -327,6 +328,15 @@ const std::string CREATE_ASSET_UNIQUE_NUMBER_TABLE = "CREATE TABLE IF NOT EXISTS
 
 const std::string CREATE_ALBUM_REFRESH_TABLE = "CREATE TABLE IF NOT EXISTS " + ALBUM_REFRESH_TABLE + " ("
     + REFRESH_ALBUM_ID + " INT PRIMARY KEY, " + ALBUM_REFRESH_STATUS + " INT DEFAULT 0 NOT NULL)";
+
+const std::string CREATE_ALBUM_ORDER_BACK_TABLE = "CREATE TABLE IF NOT EXISTS " + ALBUM_ORDER_BACK_TABLE + "("+
+    LPATH + " TEXT PRIMARY KEY, " +
+    ALBUMS_ORDER + " INT, " +
+    ORDERS_TYPE + " INT, " +
+    ORDERS_SECTION + " INT, " +
+    STYLE2_ALBUMS_ORDER + " INT, " +
+    STYLE2_ORDERS_TYPE + " INT, " +
+    STYLE2_ORDERS_SECTION + " INT) ";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MEDIALIBRARY_DB_CONST_SQLS_H

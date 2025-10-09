@@ -51,6 +51,7 @@ public:
     std::pair<PhotoAssetChangeInfo, PhotoAssetChangeInfo> GetAndUpdateAssetChangeData(int32_t fileId);
 
     void ClearMultiThreadChangeData(int32_t fileId);
+    bool CheckIsExceed();
 
 private:
     MultiThreadAssetChangeInfoMgr() {}
