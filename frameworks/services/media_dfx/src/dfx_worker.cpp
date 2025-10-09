@@ -245,6 +245,9 @@ shared_ptr<DfxTask> DfxWorker::GetTask()
 bool DfxWorker::IsDelayTask()
 {
     lock_guard<mutex> lockGuard(taskLock_);
+    if (taskList_.empty()) {
+        return false;
+    }
     shared_ptr<DfxTask> task = taskList_.back();
     return task->isDelayTask_;
 }
@@ -252,6 +255,9 @@ bool DfxWorker::IsDelayTask()
 std::chrono::system_clock::time_point DfxWorker::GetWaitTime()
 {
     lock_guard<mutex> lockGuard(taskLock_);
+    if (taskList_.empty()) {
+        return std::chrono::system_clock::time_point();
+    }
     shared_ptr<DfxTask> task = taskList_.back();
     return task->executeTime_;
 }
