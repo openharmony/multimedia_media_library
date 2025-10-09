@@ -389,7 +389,7 @@ static ani_status ParseArgsGetPhotoAssets(ani_env *env, ani_object object, ani_o
         }
         context->isSystemApi = true;
         // sort by hidden time desc if is hidden asset
-        context->predicates.OrderByDesc(PhotoColumn::PHOTO_HIDDEN_TIME);
+        context->predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
     }
     return ANI_OK;
 }

@@ -1204,7 +1204,7 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
         }
         context->isSystemApi = true;
         // sort by hidden time desc if is hidden asset
-        context->predicates.OrderByDesc(PhotoColumn::PHOTO_HIDDEN_TIME);
+        context->predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
     }
 
     napi_value result = nullptr;
