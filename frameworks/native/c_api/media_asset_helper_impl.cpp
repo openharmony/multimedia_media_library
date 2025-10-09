@@ -15,6 +15,7 @@
 
 #include "media_asset_helper_impl.h"
 
+#include <charconv>
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_userfile_client.h"
