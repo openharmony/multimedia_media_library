@@ -18,7 +18,6 @@
 #include "media_library_comm_napi.h"
 
 #include <charconv>
-
 #include "file_asset_napi.h"
 #include "media_file_utils.h"
 #include "media_photo_asset_proxy.h"
