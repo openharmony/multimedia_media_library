@@ -23,7 +23,11 @@ namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
 const int64_t MIN_MILSEC_TIMESTAMP = 1'000;
-const int64_t MAX_MILSEC_TIMESTAMP = 2'145'916'800'000;
+// The minimum time that can be set on a mobile phone system is 2008-01-01 00:00:00.
+// Convert it to a timestamp and multiply it by 10 to get 2349-12-30 00:00:00(11'991'456'000'000).
+const int64_t MAX_MILSEC_TIMESTAMP = 11'991'456'000'000;
+const int64_t MAX_TIMESTAMP_DIFF = 93'600'000;
+
 const int64_t MICSEC_TO_MILSEC = 1000;
 
 class PhotoFileUtils {
@@ -47,6 +51,7 @@ public:
     EXPORT static std::tuple<std::string, std::string, std::string> ExtractYearMonthDay(const std::string &detailTime);
     EXPORT static std::string ExtractDetailTimeFromGPS(const std::string &gpsDate, const std::string &gpsTime);
     EXPORT static int64_t NormalizeTimestamp(int64_t timestamp, int64_t fallbackValue);
+    EXPORT static int64_t ParseTimestampFromDetailTime(const std::string &detailTime);
 
 protected:
     EXPORT static std::string AppendUserId(const std::string &path, int32_t userId = -1);

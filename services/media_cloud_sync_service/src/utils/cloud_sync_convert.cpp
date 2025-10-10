@@ -33,8 +33,6 @@
 #include "photo_file_utils.h"
 
 namespace OHOS::Media::CloudSync {
-const std::string ANOMALY_DAY = "19700101";
-
 static bool convertToLong(const std::string &str, int64_t &value)
 {
     auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
@@ -333,56 +331,49 @@ int32_t CloudSyncConvert::CompensatePropWidth(const CloudMediaPullDataDto &data,
     return E_OK;
 }
 
-int32_t CloudSyncConvert::CompensatePropDataAdded(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values,
-    int64_t& dateAdded)
+void CloudSyncConvert::CompensateTimeInfo(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
-    const std::string &tmpStr = data.propertiesFirstUpdateTime;
-
-    if (tmpStr.empty() || !convertToLong(tmpStr, dateAdded)) {
-        MEDIA_ERR_LOG("extract dateAdded from propertiesFirstUpdateTime: %{public}s error", tmpStr.c_str());
+    int64_t dateAdded = 0;
+    if (data.propertiesFirstUpdateTime.empty() || !convertToLong(data.propertiesFirstUpdateTime, dateAdded)) {
+        MEDIA_ERR_LOG("invalid propertiesFirstUpdateTime: %{public}s, cloudId: %{public}s",
+            data.propertiesFirstUpdateTime.c_str(),
+            data.cloudId.c_str());
         dateAdded = 0;
     }
-    if (dateAdded <= 0) {
-        MEDIA_ERR_LOG("The dateAdded createTime of record is incorrect: %{public}ld", static_cast<long>(dateAdded));
-        dateAdded = data.basicCreatedTime;
-        if (dateAdded <= 0) {
-            MEDIA_ERR_LOG("basicCreatedTime: %{public}ld <= 0", static_cast<long>(dateAdded));
-            dateAdded = MediaFileUtils::UTCTimeMilliSeconds();
-        }
-    }
+    dateAdded = PhotoFileUtils::NormalizeTimestamp(dateAdded, MediaFileUtils::UTCTimeMilliSeconds());
     values.Put(PhotoColumn::MEDIA_DATE_ADDED, dateAdded);
-    return E_OK;
-}
 
-int32_t CloudSyncConvert::CompensatePropDetailTime(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
-{
+    int64_t dateModified = data.attributesEditedTimeMs;
+    if (dateModified <= 0) {
+        MEDIA_ERR_LOG("invalid attributesEditedTimeMs: %{public}lld, cloudId: %{public}s",
+            static_cast<long long>(dateModified),
+            data.cloudId.c_str());
+        dateModified = data.basicEditedTime;
+        CHECK_AND_PRINT_LOG(dateModified > 0,
+            "invalid basicEditedTime: %{public}lld, cloudId: %{public}s",
+            static_cast<long long>(dateModified),
+            data.cloudId.c_str());
+    }
+    dateModified = PhotoFileUtils::NormalizeTimestamp(dateModified, dateAdded);
+    values.Put(PhotoColumn::MEDIA_DATE_MODIFIED, dateModified);
+
+    int64_t dateTaken = data.basicCreatedTime;
+    dateTaken = PhotoFileUtils::NormalizeTimestamp(dateTaken, std::min(dateAdded, dateModified));
+    values.Put(PhotoColumn::MEDIA_DATE_TAKEN, dateTaken);
+
     std::string detailTime = data.propertiesDetailTime;
-    auto const [year, month, day] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
-    if (detailTime.empty() || day.empty() || day == ANOMALY_DAY) {
-        MEDIA_ERR_LOG("Cannot find properties::detailTime");
-        int64_t createTime = data.basicCreatedTime;
-        if (createTime <= 0) {
-            MEDIA_ERR_LOG("basicCreatedTime: %{public}ld <= 0", static_cast<long>(createTime));
-            const std::string &tmpStr = data.propertiesFirstUpdateTime;
-            if (tmpStr.empty() || !convertToLong(tmpStr, createTime)) {
-                MEDIA_ERR_LOG("propertiesFirstUpdateTime: %{public}s invalid", tmpStr.c_str());
-                createTime = 0;
-            }
-            if (createTime <= 0) {
-                MEDIA_ERR_LOG("createTime: %{public}ld <= 0", static_cast<long>(createTime));
-                createTime = MediaFileUtils::UTCTimeMilliSeconds();
-            }
-            values.Put(PhotoColumn::MEDIA_DATE_TAKEN, createTime);
-        }
-        detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, createTime);
+    const auto timestamp = PhotoFileUtils::ParseTimestampFromDetailTime(detailTime);
+    if (timestamp <= MIN_MILSEC_TIMESTAMP || timestamp >= MAX_MILSEC_TIMESTAMP ||
+        abs(dateTaken - timestamp) > MAX_TIMESTAMP_DIFF) {
+        MEDIA_ERR_LOG("invalid detailTime: %{public}s, cloudId: %{public}s", detailTime.c_str(), data.cloudId.c_str());
+        detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
     }
     values.Put(PhotoColumn::PHOTO_DETAIL_TIME, detailTime);
 
-    auto const [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    const auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
     values.Put(PhotoColumn::PHOTO_DATE_YEAR, dateYear);
     values.Put(PhotoColumn::PHOTO_DATE_MONTH, dateMonth);
     values.Put(PhotoColumn::PHOTO_DATE_DAY, dateDay);
-    return E_OK;
 }
 
 int32_t CloudSyncConvert::CompensatePropSourcePath(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
@@ -434,29 +425,6 @@ int32_t CloudSyncConvert::CompensateBasicDeviceName(const CloudMediaPullDataDto 
     std::string deviceName = data.basicDeviceName;
     CHECK_AND_RETURN_RET_WARN_LOG(!deviceName.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find basic::deviceName.");
     values.PutString(PhotoColumn::MEDIA_DEVICE_NAME, deviceName);
-    return E_OK;
-}
-
-int32_t CloudSyncConvert::CompensateBasicDateModified(
-    const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values, const int64_t dateAdded)
-{
-    int64_t dateModified = data.attributesEditedTimeMs;
-    // data from dual, attributesEditedTimeMs = 0, basicEditedTime != 0
-    if (dateModified <= 0) {
-        dateModified = data.basicEditedTime;
-        CHECK_AND_WARN_LOG(dateModified <= 0, "Cannot find basic::dateModified. dateModified: %{public}lld",
-            dateModified);
-    }
-    dateModified = PhotoFileUtils::NormalizeTimestamp(dateModified, dateAdded);
-    values.Put(PhotoColumn::MEDIA_DATE_MODIFIED, dateModified);
-    return E_OK;
-}
-
-int32_t CloudSyncConvert::CompensateBasicDateTaken(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
-{
-    int64_t createTime = data.basicCreatedTime;
-    CHECK_AND_RETURN_RET_WARN_LOG(createTime != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find basic::createTime.");
-    values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, createTime);
     return E_OK;
 }
 
@@ -618,23 +586,19 @@ int32_t CloudSyncConvert::ExtractCompatibleValue(const CloudMediaPullDataDto &da
     CompensateBasicDisplayName(data, values);
     CompensateBasicMimeType(data, values);
     CompensateBasicDeviceName(data, values);
-    CompensateBasicDateTaken(data, values);
     CompensateBasicFavorite(data, values);
     CompensateBasicDateTrashed(data, values);
     CompensateBasicCloudId(data, values);
     CompensateBasicDescription(data, values);
     CompensateBasicFixLivePhoto(data, values);
     CompensateDuration(data, values);
+    CompensateTimeInfo(data, values);
 
     /* extract value in properties*/
     CompensatePropOrientation(data, values);
     CompensatePropPosition(data, values);
     CompensatePropHeight(data, values);
     CompensatePropWidth(data, values);
-    int64_t dateAdded = 0;
-    CompensatePropDataAdded(data, values, dateAdded);
-    CompensateBasicDateModified(data, values, dateAdded);
-    CompensatePropDetailTime(data, values);
     CompensatePropSourcePath(data, values);
     return E_OK;
 }
