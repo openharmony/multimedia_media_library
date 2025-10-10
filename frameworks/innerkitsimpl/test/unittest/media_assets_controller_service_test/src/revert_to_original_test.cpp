@@ -99,6 +99,18 @@ static void InsertAssetIntoPhotosTable()
         "1280, 960, 0, '1' )"); // cam, pic, shootingmode = 1
 }
 
+static void InsertHeifAsset()
+{
+    std::string insertSql = R"S(INSERT INTO Photos(data, size, title, display_name, media_type, position, is_temp,
+        time_pending, hidden, date_trashed, transcode_time, trans_code_file_size, exist_compatible_duplicate)
+        VALUES ('/storage/cloud/files/Photo/665/test.heic', 7879, 'test',
+        'test.heic', 1, 0, 0, 0, 0, 0, 1501838589870, 348113, 1))S";
+    int32_t ret = g_rdbStore->ExecuteSql(insertSql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Execute sql %{public}s failed", insertSql.c_str());
+    }
+}
+
 static void SetAllTestTables()
 {
     vector<string> createTableSqlList = {
@@ -168,5 +180,48 @@ HWTEST_F(RevertToOriginalTest, RevertToOriginal_Test_001, TestSize.Level0)
     int32_t errCode = resp.GetErrCode();
     EXPECT_EQ(errCode, E_SUCCESS);
     MEDIA_INFO_LOG("End RevertToOriginal_Test_001");
+}
+
+HWTEST_F(RevertToOriginalTest, RevertToOriginal_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start RevertToOriginal_Test_002");
+    system("mkdir -p /storage/cloud/files/Photo/665/");
+    system("touch /storage/cloud/files/Photo/665/test.heic");
+    system("mkdir -p /storage/cloud/files/.editData/Photo/665/test.heic");
+    system("touch /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");
+    InsertHeifAsset();
+    vector<string> columns;
+    auto resultSet = QueryAsset("test.heic", columns);
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    ASSERT_GT(fileId, 0);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANSCODE_TIME, resultSet), 1501838589870);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet), 348113);
+    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resultSet), 1);
+
+    MessageParcel data;
+    MessageParcel reply;
+    RevertToOriginalReqBody reqBody;
+    reqBody.fileId = fileId;
+    reqBody.fileUri = "file://media/Photo/" + to_string(fileId);
+    bool errConn = !reqBody.Marshalling(data);
+    ASSERT_EQ(errConn, false);
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->RevertToOriginal(data, reply);
+    IPC::MediaEmptyObjVo respVo;
+    IPC::MediaRespVo<MediaEmptyObjVo> resp;
+    bool isValid = resp.Unmarshalling(reply);
+    ASSERT_EQ(isValid, true);
+    int32_t errCode = resp.GetErrCode();
+    EXPECT_EQ(errCode, E_SUCCESS);
+
+    resultSet = QueryAsset("test.heic", columns);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANSCODE_TIME, resultSet), 0);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet), 0);
+    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resultSet), 0);
+
+    system("rm -rf /storage/cloud/files/Photo/665/test.heic");
+    system("rm -rf /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");
+
+    MEDIA_INFO_LOG("End RevertToOriginal_Test_002");
 }
 }  // namespace OHOS::Media
