@@ -1054,7 +1054,8 @@ void BackgroundCloudBatchSelectedFileProcessor::LaunchAutoResumeBatchDownloadPro
     bool isProcessRunning = IsBatchDownloadProcessRunningStatus();
     if (!isProcessRunning) { // 未运行状态
         if (BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadForAutoResumeTask() &&
-            !BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning()) { // 有任务 无timer在运行 启动
+            !BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning() &&
+            BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition()) { // 有任务 无timer在运行 启动
             MEDIA_INFO_LOG("LaunchAutoResumeBatchDownloadProcessor Start Timer");
             AutoResumeAction();
             BackgroundCloudBatchSelectedFileProcessor::StartBatchDownloadResourcesTimer();

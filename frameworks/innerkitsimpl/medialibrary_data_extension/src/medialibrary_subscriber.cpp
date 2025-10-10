@@ -954,8 +954,7 @@ void MedialibrarySubscriber::TriggerBatchDownloadResource()
     MEDIA_DEBUG_LOG("BatchSelectFileDownload MedialibrarySubscriber Timely check downloading: %{public}d",
         BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus());
     if (!BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()
-        && BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag()
-        && BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition()) { // 停止且有添加任务且可恢复状态
+        && BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag()) { // 停止且有添加任务且可恢复状态
         MEDIA_INFO_LOG("BatchSelectFileDownload MedialibrarySubscriber Timely Check AutoResume Processor");
         BackgroundCloudBatchSelectedFileProcessor::LaunchAutoResumeBatchDownloadProcessor(); // 自动恢复
     }
