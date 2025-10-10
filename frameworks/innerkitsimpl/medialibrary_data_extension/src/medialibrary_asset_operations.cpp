@@ -1802,20 +1802,10 @@ int32_t MediaLibraryAssetOperations::OpenHighlightCover(MediaLibraryCommand &cmd
     string path = MediaFileUtils::GetHighlightPath(uriStr);
     CHECK_AND_RETURN_RET_LOG(path.length() != 0, E_INVALID_URI,
         "Open highlight cover invalid uri : %{public}s", uriStr.c_str());
-    string uriString = cmd.GetUri().ToString();
-
-    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromUri(uriString);
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI, "Failed to obtain path from Database");
+    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
     fileAsset->SetPath(path);
     fileAsset->SetUri(uriStr);
-    bool isHeif = cmd.GetQuerySetParam(PHOTO_TRANSCODE_OPERATION) == OPRN_TRANSCODE_HEIF;
-
-    int32_t err = SetTranscodeUriToFileAsset(fileAsset, mode, isHeif);
-    int32_t ret = OpenAsset(fileAsset, mode, cmd.GetApi(), false);
-    if (err == E_OK && ret >= 0) {
-        DoTranscodeDfx(ACCESS_MEDIALIB);
-    }
-    return ret;
+    return OpenAsset(fileAsset, mode, cmd.GetApi(), false);
 }
 
 int32_t MediaLibraryAssetOperations::OpenHighlightVideo(MediaLibraryCommand &cmd, const string &mode)
