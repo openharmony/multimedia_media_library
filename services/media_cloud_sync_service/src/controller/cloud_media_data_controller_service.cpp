@@ -36,6 +36,7 @@
 #include "cloud_mdkrecord_photos_vo.h"
 #include "update_local_file_dirty_vo.h"
 #include "media_operate_result_vo.h"
+#include "query_data_vo.h"
 
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaDataControllerService::UpdateDirty(MessageParcel &data, MessageParcel &reply)
@@ -218,5 +219,30 @@ int32_t CloudMediaDataControllerService::SubmitCloudSyncPreparedDataTask(Message
     int32_t ret = this->enhanceService_.SubmitCloudSyncPreparedDataTask();
     MEDIA_INFO_LOG("SubmitCloudSyncPreparedDataTask, %{public}d", ret);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t CloudMediaDataControllerService::CheckAndFixAlbum(MessageParcel &data, MessageParcel &reply)
+{
+    int32_t ret = this->enhanceService_.CheckAndFixAlbum();
+    MEDIA_INFO_LOG("CheckAndFixAlbum, %{public}d", ret);
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+int32_t CloudMediaDataControllerService::QueryData(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("QueryData enter");
+    QueryDataReqBody req;
+    QueryDataRespBody resp;
+    int32_t ret = IPC::UserDefineIPC().ReadResponseBody(data, req);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret),
+                            "QueryData Read Req Error");
+    DataShare::DataSharePredicates predicates = req.predicates;
+    std::vector<std::string> columnNames = req.columnNames;
+    std::string tableName = req.tableName;
+    std::vector<std::unordered_map<std::string, std::string>> results;
+    ret = this->dataService_.QueryData(predicates, columnNames, tableName, results);
+    resp.queryResults = results;
+    MEDIA_INFO_LOG("QueryData Resp : %{public}s", resp.ToString().c_str());
+    return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
 }
 }  // namespace OHOS::Media::CloudSync
