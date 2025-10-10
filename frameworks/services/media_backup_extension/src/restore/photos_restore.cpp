@@ -52,6 +52,15 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetCloudGalleryMedia(
 }
 
 /**
+ * @brief Get the gallery_media for hdc to restore to Photos.
+ */
+std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetHdcGalleryMedia(
+    int32_t minId, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
+{
+    return this->galleryMediaDao_.GetHdcGalleryMedia(minId, pageSize, shouldIncludeSd, hasLowQualityImage);
+}
+
+/**
  * @brief Get the row count of gallery_media.
  */
 int32_t PhotosRestore::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQualityImage)
@@ -65,6 +74,14 @@ int32_t PhotosRestore::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQua
 int32_t PhotosRestore::GetCloudMetaCount(bool shouldIncludeSd, bool hasLowQualityImage)
 {
     return this->galleryMediaDao_.GetCloudMetaCount(shouldIncludeSd, hasLowQualityImage);
+}
+
+/**
+ * @brief Get the row count of hdc_meta.
+ */
+int32_t PhotosRestore::GetHdcMetaCount(bool shouldIncludeSd, bool hasLowQualityImage)
+{
+    return this->galleryMediaDao_.GetHdcMetaCount(shouldIncludeSd, hasLowQualityImage);
 }
 
 /**

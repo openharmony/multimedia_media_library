@@ -51,6 +51,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_old_photos_column.h"
+#include "media_old_albums_column.h"
 #include "media_facard_photos_column.h"
 #include "media_scanner_manager.h"
 #include "media_smart_album_column.h"
@@ -83,6 +84,7 @@
 #include "medialibrary_story_operations.h"
 #include "medialibrary_subscriber.h"
 #include "medialibrary_tab_old_photos_operations.h"
+#include "medialibrary_tab_old_albums_operations.h"
 #include "medialibrary_tab_asset_and_album_operations.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
@@ -543,12 +545,24 @@ static void UpdateBurstModeAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& st
         PhotoColumn::DROP_BURST_MODE_ALBUM_INDEX,
         PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
     };
-    for (int i = 0; i < sqls.size(); i++) {
+    for (size_t i = 0; i < sqls.size(); i++) {
         int ret = store->ExecuteSql(sqls[i]);
         RdbUpgradeUtils::AddUpgradeDfxMessages(version, i, ret);
         CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
     }
     MEDIA_INFO_LOG("End Update burst mode album index");
+}
+
+static void Update3DGSAlbumInternal(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("Start to Update 3DGS mode album");
+    vector<string> albumIdsStr;
+    int32_t albumId = -1;
+    CHECK_AND_RETURN_LOG(MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(
+        ShootingModeAlbumType::MP4_3DGS_ALBUM, albumId), "Failed to query 3DGS album id");
+    albumIdsStr.push_back(to_string(albumId));
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(store, albumIdsStr);
+    MEDIA_INFO_LOG("End Update 3DGS mode album");
 }
 
 static void AddHistoryPanoramaModeAlbumData(const shared_ptr<MediaLibraryRdbStore>& store)
@@ -748,11 +762,7 @@ void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_ADD_3DGS_MODE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_3DGS_MODE, false)) {
         UpdateBurstModeAlbumIndex(rdbStore, VERSION_ADD_3DGS_MODE);
-        vector<string> albumIdsStr;
-        int32_t albumId = -1;
-        MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(ShootingModeAlbumType::MP4_3DGS_ALBUM, albumId);
-        albumIdsStr.push_back(to_string(albumId));
-        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
+        Update3DGSAlbumInternal(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_3DGS_MODE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_3DGS_MODE, false);
     }
@@ -2562,6 +2572,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::TAB_OLD_PHOTO:
             return MediaLibraryTabOldPhotosOperations().Query(
                 RdbUtils::ToPredicates(predicates, TabOldPhotosColumn::OLD_PHOTOS_TABLE), columns);
+        case OperationObject::TAB_OLD_ALBUM:
+            return MediaLibraryTabOldAlbumsOperations().Query(
+                RdbUtils::ToPredicates(predicates, TabOldAlbumsColumn::OLD_ALBUM_TABLE), columns);
         case OperationObject::ASSET_ALBUM_OPERATION:
             return MediaLibraryTableAssetAlbumOperations().Query(
                 RdbUtils::ToPredicates(predicates, PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE), columns);
