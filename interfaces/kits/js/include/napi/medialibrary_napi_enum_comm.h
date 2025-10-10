@@ -284,7 +284,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("PHOTO_APPLINK",             PhotoColumn::PHOTO_APPLINK),
     std::make_pair("LATITUDE",                  PhotoColumn::PHOTO_LATITUDE),
     std::make_pair("LONGITUDE",                 PhotoColumn::PHOTO_LONGITUDE),
-    std::make_pair("IS_CE_AUTO",                   PhotoColumn::PHOTO_IS_AUTO),
+    std::make_pair("IS_CE_AUTO",                PhotoColumn::PHOTO_IS_AUTO),
     std::make_pair("MEDIA_SUFFIX",              PhotoColumn::PHOTO_MEDIA_SUFFIX),
     std::make_pair("IS_RECENT_SHOW",            PhotoColumn::PHOTO_IS_RECENT_SHOW),
     std::make_pair("COMPOSITE_DISPLAY_STATUS",  PhotoColumn::PHOTO_COMPOSITE_DISPLAY_STATUS),
