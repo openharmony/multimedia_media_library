@@ -174,24 +174,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_UpdateCloudMediaAssetDownloadStatus_test,
     EXPECT_EQ(medialibrarySubscriberPtr->isCharging_, false);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_UpdateCloudMediaAssetDownloadTaskStatus_test_001, TestSize.Level1)
-{
-    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
-    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
-    MedialibrarySubscriber::isCellularNetConnected_ = false;
-    medialibrarySubscriberPtr->UpdateCloudMediaAssetDownloadTaskStatus();
-    EXPECT_EQ(MedialibrarySubscriber::isWifiConnected_, false);
-}
-
-HWTEST_F(MediaLibraryRdbTest, medialib_UpdateCloudMediaAssetDownloadTaskStatus_test_002, TestSize.Level1)
-{
-    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
-    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
-    MedialibrarySubscriber::isCellularNetConnected_ = true;
-    medialibrarySubscriberPtr->UpdateCloudMediaAssetDownloadTaskStatus();
-    EXPECT_EQ(MedialibrarySubscriber::isWifiConnected_, false);
-}
-
 HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_006, TestSize.Level1)
 {
     shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();

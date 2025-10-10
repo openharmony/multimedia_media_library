@@ -106,6 +106,7 @@ enum class EXPORT OperationObject : uint32_t {
     PAH_VIDEO,
     KEY_FRAME,
     TAB_OLD_PHOTO,
+    TAB_OLD_ALBUM,
     TAB_FACARD_PHOTO,
     CLOUD_MEDIA_ASSET_OPERATE,
     PTP_OPERATION,

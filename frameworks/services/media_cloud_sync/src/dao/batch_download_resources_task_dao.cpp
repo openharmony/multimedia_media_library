@@ -475,8 +475,8 @@ int32_t BatchDownloadResourcesTaskDao::UpdateExistedTasksStatus(
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS, status);
     if (isUpdateTimeStamp) {
-        valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
-        valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_DATE_FINISH, 0);
+        valuesBucket.PutLong(DownloadResourcesColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
+        valuesBucket.PutLong(DownloadResourcesColumn::MEDIA_DATE_FINISH, 0);
     }
     std::vector<std::string> whereArgs = {};
     int32_t changedRows = -1;

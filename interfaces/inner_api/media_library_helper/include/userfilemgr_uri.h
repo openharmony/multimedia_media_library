@@ -421,6 +421,9 @@ const std::string MEDIATYPE_DIRECTORY_OBJ = "MediaTypeDirectory";
 const std::string TAB_OLD_PHOTO = "tab_old_photos_operation";
 const std::string QUERY_TAB_OLD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_OLD_PHOTO + "/" + OPRN_QUERY;
 
+const std::string TAB_OLD_ALBUM = "tab_old_albums_operation";
+const std::string QUERY_TAB_OLD_ALBUMS = MEDIALIBRARY_DATA_URI + "/" + TAB_OLD_ALBUM + "/" + OPRN_QUERY;
+
 const std::string TAB_FACARD_PHOTO = "tab_facard_photos_operation";
 const std::string PAH_STORE_FACARD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_FACARD_PHOTO + "/" + OPRN_STORE_FORM_ID;
 const std::string PAH_REMOVE_FACARD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_FACARD_PHOTO + "/" + OPRN_REMOVE_FORM_ID;

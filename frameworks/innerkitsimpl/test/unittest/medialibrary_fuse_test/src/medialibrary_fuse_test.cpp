@@ -16,6 +16,8 @@
 #define MLOG_TAG "FuseUnitTest"
 
 #include "medialibrary_fuse_test.h"
+
+#include "app_mgr_client.h"
 #include "media_fuse_daemon.h"
 #include "media_fuse_manager.h"
 #include "medialibrary_unittest_utils.h"
@@ -57,6 +59,7 @@
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_object_utils.h"
 #include "parameter.h"
+#include "singleton.h"
 #define FUSE_USE_VERSION 34
 #include <fuse.h>
 
@@ -69,6 +72,7 @@ using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 using namespace OHOS::RdbDataShareAdapter;
 using namespace OHOS::Security::AccessToken;
+using namespace OHOS::AppExecFwk;
 namespace OHOS {
 namespace Media {
 
@@ -525,59 +529,59 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_PrepareUniqueNumberTable_test_001, T
     g_rdbStore = nullptr;
     PrepareUniqueNumberTable();
     // Should log error and return
- 
+
     // Restore rdbStore for other tests
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     EXPECT_NE(g_rdbStore, nullptr);
 }
- 
+
 // Test different media types
 HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CreatePhoto_test_001, TestSize.Level1)
 {
     // Test video creation
     int32_t videoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "video.mp4");
     EXPECT_GE(videoId, E_OK);
- 
+
     // Test audio creation
     int32_t audioId = CreatePhotoApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
     EXPECT_GE(audioId, E_OK);
 }
- 
+
 // Test permission combinations
 HWTEST_F(MediaLibraryFuseTest, MediaLibrary_Permission_test_001, TestSize.Level1)
 {
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
     EXPECT_GE(photoId, E_OK);
- 
+
     string fileId = to_string(photoId);
     string path;
     GetPathFromFileId(path, fileId);
- 
+
     // Test with both read and write permissions disabled
     fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = false;
     fuseTestPermsMap[PERM_WRITE_IMAGEVIDEO] = false;
- 
+
     int fd = -1;
     int32_t err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_RDONLY, fd);
     EXPECT_EQ(err, E_ERR);
- 
+
     // Test with write permission but no read permission
     fuseTestPermsMap[PERM_WRITE_IMAGEVIDEO] = true;
     fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = false;
- 
+
     err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_WRONLY, fd);
     EXPECT_EQ(err, E_OK);
 }
- 
+
 // Test invalid paths
 HWTEST_F(MediaLibraryFuseTest, MediaLibrary_InvalidPath_test_001, TestSize.Level1)
 {
     int fd = -1;
- 
+
     // Test with empty path
     int32_t err = MediaFuseManager::GetInstance().DoOpen("", O_RDONLY, fd);
     EXPECT_EQ(err, E_ERR);
- 
+
     // Test with invalid path format
     err = MediaFuseManager::GetInstance().DoOpen("/invalid/path/format", O_RDONLY, fd);
     EXPECT_EQ(err, E_ERR);
@@ -616,6 +620,107 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_DoGetAttr_test_001, TestSize.Level1)
 
     ret = MediaFuseManager::GetInstance().DoGetAttr(path.c_str(), &stbuf);
     EXPECT_EQ(ret, E_ERR);
+}
+
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_DoHdcGetAttr_test_002, TestSize.Level1) {
+    std::string path = "/Photo";
+    struct stat stbuf;
+    (void)memset_s(&stbuf, sizeof(stbuf), 0, sizeof(stbuf));
+    fuse_file_info fi;
+
+    int32_t ret = MediaFuseManager::GetInstance().DoHdcGetAttr(path.c_str(), &stbuf, &fi);
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcOpen_test_002, TestSize.Level1)
+{
+    string path = "";
+    int fd = -1;
+    int32_t err = MediaFuseManager::GetInstance().DoHdcOpen(path.c_str(), O_RDONLY, fd);
+    EXPECT_EQ(err, -EINVAL);
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcCreate_test_001, TestSize.Level1)
+{
+    string path = "";
+    fuse_file_info fi;
+    int32_t err = MediaFuseManager::GetInstance().DoHdcCreate(path.c_str(), 0, &fi);
+    EXPECT_EQ(err, -EINVAL);
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcCreate_test_002, TestSize.Level1)
+{
+    string path = "/invalid/path";
+    fuse_file_info fi;
+    int32_t err = MediaFuseManager::GetInstance().DoHdcCreate(path.c_str(), 0, &fi);
+    EXPECT_EQ(err, E_ERR);
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcRelease_test_001, TestSize.Level1)
+{
+    string path = "";
+    int fd = -1;
+    int32_t err = MediaFuseManager::GetInstance().DoHdcRelease(path.c_str(), fd);
+    EXPECT_EQ(err, -EINVAL);
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcRelease_test_002, TestSize.Level1)
+{
+    string path = "/invalid/path";
+    int fd = -1;
+    int32_t err = MediaFuseManager::GetInstance().DoHdcRelease(path.c_str(), fd);
+    EXPECT_EQ(err, -EBADF);
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcUnlink_test_001, TestSize.Level1)
+{
+    string path = "";
+    int32_t err = MediaFuseManager::GetInstance().DoHdcUnlink(path.c_str());
+    EXPECT_EQ(err, E_ERR);
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcUnlink_test_002, TestSize.Level1)
+{
+    string path = "/invalid/path";
+    int32_t err = MediaFuseManager::GetInstance().DoHdcUnlink(path.c_str());
+    EXPECT_EQ(err, E_ERR);
+}
+
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcUnlink_test_003, TestSize.Level1)
+{
+    int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    ASSERT_GT(photoId, 0);
+
+    MEDIA_INFO_LOG("creat photo succ");
+    string fileId = to_string(photoId);
+    string path;
+    GetPathFromFileId(path, fileId);
+    int32_t err = MediaFuseManager::GetInstance().DoHdcUnlink(path.c_str());
+    EXPECT_EQ(err, E_OK);
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcReadDir_test_001, TestSize.Level1)
+{
+    string path = "";
+    void *buf = nullptr;
+    fuse_fill_dir_t filler = nullptr;
+    off_t offset = 0;
+    enum fuse_readdir_flags flags = FUSE_READDIR_PLUS;
+    int32_t err = MediaFuseManager::GetInstance().DoHdcReadDir(path.c_str(), buf, filler, offset, flags);
+    EXPECT_EQ(err, -EINVAL);
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcReadDir_test_002, TestSize.Level1)
+{
+    string path = "/Photo";
+    void *buf = nullptr;
+    fuse_fill_dir_t filler = nullptr;
+    off_t offset = 0;
+    enum fuse_readdir_flags flags = FUSE_READDIR_PLUS;
+    int32_t err = MediaFuseManager::GetInstance().DoHdcReadDir(path.c_str(), buf, filler, offset, flags);
+    EXPECT_EQ(err, E_OK);
 }
 } // namespace Media
 } // namespace OHOS

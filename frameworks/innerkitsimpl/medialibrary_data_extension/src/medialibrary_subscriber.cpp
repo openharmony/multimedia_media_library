@@ -27,7 +27,6 @@
 #include "bundle_info.h"
 #include "cloud_media_asset_manager.h"
 #include "cloud_media_asset_types.h"
-#include "cloud_sync_utils.h"
 #include "cloud_upload_checker.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
@@ -427,23 +426,6 @@ bool MedialibrarySubscriber::IsCurrentStatusOn()
     return currentStatus_;
 }
 
-void MedialibrarySubscriber::UpdateCloudMediaAssetDownloadTaskStatus()
-{
-    if (!isCellularNetConnected_) {
-        MEDIA_INFO_LOG("CellularNet not connected.");
-        int32_t taskStatus = CloudMediaAssetManager::GetInstance().GetTaskStatus();
-        if (taskStatus == static_cast<int32_t>(CloudMediaAssetTaskStatus::PAUSED)) {
-            CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
-        }
-        return;
-    }
-    if (CloudSyncUtils::IsUnlimitedTrafficStatusOn()) {
-        CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
-    } else if (!isWifiConnected_) {
-        CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::WIFI_UNAVAILABLE);
-    }
-}
-
 void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
 {
     const AAFwk::Want &want = eventData.GetWant();
@@ -457,15 +439,11 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         HandleBatchDownloadWhenNetChange();
         isWifiConnected_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
         UpdateBackgroundTimer();
-        if (isWifiConnected_) {
-            CloudMediaAssetManager::GetInstance().RecoverDownloadCloudAsset(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
-        }
     } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
         int netType = want.GetIntParam("NetType", -1);
         bool isNetConnected = eventData.GetCode() == NET_CONN_STATE_CONNECTED;
         MEDIA_INFO_LOG("netType: %{public}d, isConnected: %{public}d.", netType, static_cast<int32_t>(isNetConnected));
         isCellularNetConnected_ = netType == BEARER_CELLULAR ? isNetConnected : isCellularNetConnected_;
-        UpdateCloudMediaAssetDownloadTaskStatus();
     } else if (BACKGROUND_OPERATION_STATUS_MAP.count(action) != 0) {
         UpdateBackgroundOperationStatus(want, BACKGROUND_OPERATION_STATUS_MAP.at(action));
         UpdateCloudMediaAssetDownloadStatus(want, BACKGROUND_OPERATION_STATUS_MAP.at(action));

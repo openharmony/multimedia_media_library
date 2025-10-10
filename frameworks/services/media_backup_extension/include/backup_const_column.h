@@ -205,6 +205,14 @@ const std::string ASSET_MAP_COL_OLD_FILE_ID = "old_file_id";
 const std::string ASSET_MAP_COL_OLD_DATA = "old_data";
 const std::string ASSET_MAP_COL_CLONE_SEQUENCE = "clone_sequence";
 
+// Tab Old Albums TBL COL_NAME
+const std::string TAB_OLD_ALBUMS = "tab_old_albums";
+const std::string OLD_ALBUM_ID_COL = "old_album_id";
+const std::string ALBUM_ID_COL = "album_id";
+const std::string ALBUM_TYPE_COL = "album_type";
+const std::string ALBUM_SUBTYPE_COL = "album_subtype";
+const std::string ALBUM_CLONE_SEQUENCE_COL = "clone_sequence";
+
 const std::string QUERY_FACE_TAG_COUNT = "SELECT count(1) AS count FROM " + VISION_FACE_TAG_TABLE;
 const std::string QUERY_IMAGE_FACE_COUNT = "SELECT count(1) AS count FROM " + VISION_IMAGE_FACE_TABLE;
 const std::string QUERY_VIDEO_FACE_COUNT = "SELECT count(1) AS count FROM " + VISION_VIDEO_FACE_TABLE;

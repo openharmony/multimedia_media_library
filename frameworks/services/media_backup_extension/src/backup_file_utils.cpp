@@ -183,7 +183,7 @@ void BackupFileUtils::ParseResolution(const std::string &resolution, int32_t &wi
 int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
 {
     string extension = ScannerUtils::GetFileExtension(data->GetFileName()); // in case when trashed or hidden
-    string mimeType = MimeTypeUtils::GetMimeTypeFromContent(data->GetFilePath());
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     data->SetFileExtension(extension);
     data->SetFileMimeType(mimeType);
     std::string path = data->GetFilePath();

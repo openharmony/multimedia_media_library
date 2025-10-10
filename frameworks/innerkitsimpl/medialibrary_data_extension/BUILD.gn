@@ -286,6 +286,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_worker.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_database_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/xcollie_helper.cpp",
   ]
 
   media_cloud_sync_notify_handle_source = [
@@ -320,6 +321,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_asset_download_operation.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_asset_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_asset_observer.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/net_connect_observer.cpp",
   ]
 
   media_cloud_sync_server_source_vo = [
@@ -636,6 +638,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/event_handler/download_resources_table_event_handler.cpp",
     "src/event_handler/photo_map_table_event_handler.cpp",
     "src/event_handler/tab_facard_photos_table_event_handler.cpp",
+    "src/event_handler/tab_old_albums_table_event_handler.cpp",
     "src/event_handler/tab_old_photos_table_event_handler.cpp",
     "src/event_handler/table_event_handler.cpp",
     "src/foreground_analysis_meta.cpp",
@@ -680,6 +683,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_subscriber.cpp",
     "src/medialibrary_tab_asset_and_album_operations.cpp",
     "src/medialibrary_tab_old_photos_operations.cpp",
+    "src/medialibrary_tab_old_albums_operations.cpp",
     "src/medialibrary_upgrade_utils.cpp",
     "src/medialibrary_uripermission_operations.cpp",
     "src/medialibrary_urisensitive_operations.cpp",
@@ -917,6 +921,11 @@ ohos_shared_library("medialibrary_data_extension") {
 
   if (media_library_feature_cloud_enhancement) {
     defines += [ "MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT" ]
+  }
+
+  if (media_library_feature_hicollie_enable) {
+    external_deps += [ "hicollie:libhicollie" ]
+    defines += [ "MEDIALIBRARY_FEATURE_HICOLLIE_ENABLE" ]
   }
 
   if (!media_library_link_opt) {

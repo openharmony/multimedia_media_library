@@ -17,6 +17,7 @@
 #include "medialibrary_napi_utils.h"
 
 #include <cctype>
+#include <charconv>
 #include "basic/result_set.h"
 #include "datashare_predicates.h"
 #include "location_column.h"
@@ -74,7 +75,6 @@ static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP
     {ANALYSIS_OCR, OCR_TEXT_MSG}
 };
 static const uint8_t BINARY_FEATURE_END_FLAG = 0x01;
-const size_t MAX_INT = 2147483648;
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
@@ -341,9 +341,10 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
         NAPI_ERR_LOG("intercepted fileId is empty");
         return ERROR;
     }
-    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)
-        && static_cast<size_t>(stoll(fileIdStr)) < MAX_INT) {
-        return std::stoi(fileIdStr);
+    int32_t value = 0;
+    auto [ptr, ec] = std::from_chars(fileIdStr.data(), fileIdStr.data() + fileIdStr.size(), value);
+    if (ec == std::errc{} && ptr == fileIdStr.data() + fileIdStr.size()) {
+        return value;
     }
 
     NAPI_ERR_LOG("asset fileId is invalid");
@@ -450,8 +451,8 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context, shared
         operations.push_back(item);
     }
     if (!hasUri && fetchOptType != ALBUM_FETCH_OPT) {
-        operations.push_back({ DataShare::EQUAL_TO, { PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
-            to_string(static_cast<int32_t>(FileSourceTypes::MEDIA)) } });
+        operations.push_back({ DataShare::NOT_EQUAL_TO, { PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
+            to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)) } });
     }
     context->predicates = DataSharePredicates(move(operations));
     return true;

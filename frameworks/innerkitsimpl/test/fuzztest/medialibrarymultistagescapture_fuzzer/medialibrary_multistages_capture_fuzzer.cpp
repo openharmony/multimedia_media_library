@@ -115,8 +115,10 @@ static void MultistagesCaptureManagerTest()
 static void MultistagesMovingPhotoCaptureManagerTest()
 {
     std::string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
-    Media::MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(photoId);
-    Media::MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(photoId);
+    int32_t fileId = InsertAsset(photoId);
+    Media::MultiStagesCaptureRequestTaskManager::AddPhotoInProgress(fileId, photoId, false);
+    Media::MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(fileId);
+    Media::MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(fileId);
 }
 
 static void MultistagesPhotoCaptureManagerTest()
