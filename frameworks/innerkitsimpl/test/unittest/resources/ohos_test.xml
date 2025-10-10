@@ -444,11 +444,19 @@
     <target name="media_assets_controller_service_test">
         <preparer>
             <option name="shell" value="rm -rf /storage/cloud/100/files/Photo/666"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/Photo/665"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/.editData/Photo/665/test.heic"/>
+            <option name="shell" value="mkdir -p /storage/cloud/files/Photo/665"/>
+            <option name="shell" value="mkdir -p /storage/cloud/files/.editData/Photo/665/test.heic"/>
             <option name="shell" value="mkdir -p /storage/cloud/100/files/Photo/666"/>
             <option name="push" value="heif_testfile/heif.jpg -> /storage/cloud/100/files/Photo/666/test.heic" src="res"/>
+            <option name="push" value="heif_testfile/test.heic -> /storage/cloud/files/Photo/665" src="res"/>
+            <option name="push" value="heif_testfile/transcode.jpg -> /storage/cloud/files/.editData/Photo/665/test.heic/" src="res"/>
         </preparer>
         <cleaner>
             <option name="shell" value="rm -rf /storage/cloud/100/files/Photo/666"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/Photo/665"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/.editData/Photo/665/test.heic"/>
         </cleaner>
     </target>
      <target name="medialibrary_rdb_test">

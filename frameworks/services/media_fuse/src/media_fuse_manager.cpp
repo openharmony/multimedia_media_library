@@ -415,10 +415,12 @@ static int32_t HasTransCodeFile(const string &filePath, const string &fileId)
         return E_ERR;
     }
     int32_t compatibleMode = 0;
-    if (!GetCompatibleModeFromFileId(compatibleMode, fileId)) {
+    if (GetCompatibleModeFromFileId(compatibleMode, fileId) != E_SUCCESS) {
         MEDIA_ERR_LOG("Get compatible mode failed, fileId: %{public}s", fileId.c_str());
         return E_ERR;
     }
+    CHECK_AND_RETURN_RET_LOG(compatibleMode != 0, E_INNER_FAIL,
+        "Is not have transcode file, filePath: %{private}s", filePath.c_str());
     return E_OK;
 }
 
