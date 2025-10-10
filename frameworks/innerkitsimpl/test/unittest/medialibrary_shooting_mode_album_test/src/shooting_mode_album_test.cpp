@@ -280,6 +280,11 @@ HWTEST_F(ShootingModeAlbumTest, GetShootingModeAlbumPredicates_Test_001, TestSiz
     EXPECT_GT(args.size(), 0);
     rdbPredicates.Clear();
     ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::MP4_3DGS_ALBUM, rdbPredicates, false);
+    args = rdbPredicates.GetWhereArgs();
+    EXPECT_GT(args.size(), 0);
+    rdbPredicates.Clear();
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
         ShootingModeAlbumType::BURST_MODE_ALBUM, rdbPredicates, false);
     args = rdbPredicates.GetWhereArgs();
     EXPECT_GT(args.size(), 0);
@@ -307,6 +312,7 @@ HWTEST_F(ShootingModeAlbumTest, GetShootingModeAlbumPredicates_Test_002, TestSiz
     DataShare::DataSharePredicates dataSharePredicates3;
     DataShare::DataSharePredicates dataSharePredicates4;
     DataShare::DataSharePredicates dataSharePredicates5;
+    DataShare::DataSharePredicates dataSharePredicates6;
 
     ShootingModeAlbum::GetShootingModeAlbumPredicates(
         ShootingModeAlbumType::MOVING_PICTURE, dataSharePredicates1, false);
@@ -332,6 +338,11 @@ HWTEST_F(ShootingModeAlbumTest, GetShootingModeAlbumPredicates_Test_002, TestSiz
         ShootingModeAlbumType::PORTRAIT, dataSharePredicates5, false);
     args = dataSharePredicates5.GetOperationList();
     EXPECT_GT(args.size(), 0);
+
+    ShootingModeAlbum::GetShootingModeAlbumPredicates(
+        ShootingModeAlbumType::MP4_3DGS_ALBUM, dataSharePredicates6, false);
+    args = dataSharePredicates6.GetOperationList();
+    EXPECT_GT(args.size(), 0);
 }
 
 HWTEST_F(ShootingModeAlbumTest, AlbumNameToShootingModeAlbumType_Test_001, TestSize.Level1)
@@ -353,6 +364,10 @@ HWTEST_F(ShootingModeAlbumTest, AlbumNameToShootingModeAlbumType_Test_002, TestS
 
     result = ShootingModeAlbum::GetShootingModeAlbumOfAsset(
         static_cast<int>(PhotoSubType::MOVING_PHOTO), "image/x-adobe-dng", 0, "1", "1");
+    EXPECT_EQ(result.size(), 4);
+
+    result = ShootingModeAlbum::GetShootingModeAlbumOfAsset(
+        static_cast<int>(PhotoSubType::D3GS), "image/x-adobe-dng", 0, "1", "1");
     EXPECT_EQ(result.size(), 4);
 }
 
