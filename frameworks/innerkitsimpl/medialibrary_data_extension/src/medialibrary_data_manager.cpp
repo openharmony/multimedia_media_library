@@ -766,12 +766,19 @@ void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_ADD_3DGS_MODE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_3DGS_MODE, false);
     }
-    
+
     if (oldVersion < VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, false)) {
         MediaLibraryRdbStore::UpdateIndexHiddenTime(rdbStore, VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
         rdbStore->SetOldVersion(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, false);
+    }
+
+    if (oldVersion < VERSION_UPDATE_BURST_MODE_ALBUM_INDEX &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX, false)) {
+        UpdateBurstModeAlbumIndex(rdbStore, VERSION_UPDATE_BURST_MODE_ALBUM_INDEX);
+        rdbStore->SetOldVersion(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX, false);
     }
 }
 
