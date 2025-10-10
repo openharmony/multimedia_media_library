@@ -410,23 +410,28 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDataAdded_Test_001, TestS
     CloudMediaPullDataDto data;
     data.propertiesFirstUpdateTime = "";
     data.basicCreatedTime = 0;
-    int64_t dateAdded = 0;
-    auto ret = CloudSyncConvert::CompensatePropDataAdded(data, values, dateAdded);
-    EXPECT_EQ(ret, E_OK);
+    CloudSyncConvert::CompensateTimeInfo(data, values);
+    int64_t dateAdded1 = 0;
+    ValueObject valueObject1;
+    values.GetObject(PhotoColumn::MEDIA_DATE_ADDED, valueObject1);
+    valueObject1.GetLong(dateAdded1);
+    EXPECT_GT(dateAdded1, 0);
 
     data.propertiesFirstUpdateTime = "20111111";
-    ret = CloudSyncConvert::CompensatePropDataAdded(data, values, dateAdded);
-    EXPECT_EQ(ret, E_OK);
+    CloudSyncConvert::CompensateTimeInfo(data, values);
+    int64_t dateAdded2 = 0;
+    ValueObject valueObject2;
+    values.GetObject(PhotoColumn::MEDIA_DATE_ADDED, valueObject2);
+    valueObject2.GetLong(dateAdded2);
+    EXPECT_GT(dateAdded2, 0);
 
     data.propertiesFirstUpdateTime = "2011111d1abc";
-    ret = CloudSyncConvert::CompensatePropDataAdded(data, values, dateAdded);
-    EXPECT_EQ(ret, E_OK);
-
-    int64_t dataAdded = 0;
-    ValueObject valueObject;
-    values.GetObject(PhotoColumn::MEDIA_DATE_ADDED, valueObject);
-    valueObject.GetLong(dataAdded);
-    EXPECT_GT(dataAdded, 0);
+    CloudSyncConvert::CompensateTimeInfo(data, values);
+    int64_t dateAdded3 = 0;
+    ValueObject valueObject3;
+    values.GetObject(PhotoColumn::MEDIA_DATE_ADDED, valueObject3);
+    valueObject3.GetLong(dateAdded3);
+    EXPECT_GT(dateAdded3, 0);
 }
 
 HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDataAdded_Test_002, TestSize.Level1)
@@ -435,15 +440,13 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDataAdded_Test_002, TestS
     CloudMediaPullDataDto data;
     data.propertiesFirstUpdateTime = "1752233169000";  // 2025:07:11
     data.basicCreatedTime = 1751544669000;             // 2025:07:03
-    int64_t dateAdded = 0;
-    auto ret = CloudSyncConvert::CompensatePropDataAdded(data, values, dateAdded);
-    EXPECT_EQ(ret, E_OK);
+    CloudSyncConvert::CompensateTimeInfo(data, values);
 
-    int64_t dataAdded = 0;
+    int64_t dateAdded = 0;
     ValueObject valueObject;
     values.GetObject(PhotoColumn::MEDIA_DATE_ADDED, valueObject);
-    valueObject.GetLong(dataAdded);
-    EXPECT_EQ(dataAdded, 1752233169000);
+    valueObject.GetLong(dateAdded);
+    EXPECT_EQ(dateAdded, 1752233169000);
 }
 
 HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDetailTime_Test_001, TestSize.Level1)
@@ -453,8 +456,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDetailTime_Test_001, Test
     data.propertiesDetailTime = "2025:07:03 20:11:09";
     data.propertiesFirstUpdateTime = "1752233169000";  // 2025:07:11
     data.basicCreatedTime = 1751544669000;             // 2025:07:03
-    auto ret = CloudSyncConvert::CompensatePropDetailTime(data, values);
-    EXPECT_EQ(ret, E_OK);
+    CloudSyncConvert::CompensateTimeInfo(data, values);
 
     ValueObject valueObject;
     std::string detailTime;
@@ -475,8 +477,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDetailTime_Test_002, Test
     data.propertiesDetailTime = "1970:01:01 08:00:00";
     data.propertiesFirstUpdateTime = "1752233169000";  // 2025:07:11
     data.basicCreatedTime = 1751544669000;             // 2025:07:03
-    auto ret = CloudSyncConvert::CompensatePropDetailTime(data, values);
-    EXPECT_EQ(ret, E_OK);
+    CloudSyncConvert::CompensateTimeInfo(data, values);
 
     ValueObject valueObject;
     std::string detailTime;
@@ -497,8 +498,7 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensatePropDetailTime_Test_003, Test
     data.propertiesDetailTime = "1970:01:01 08:00:00";
     data.propertiesFirstUpdateTime = "1752233169000";  // 2025:07:11
     data.basicCreatedTime = 0;
-    auto ret = CloudSyncConvert::CompensatePropDetailTime(data, values);
-    EXPECT_EQ(ret, E_OK);
+    CloudSyncConvert::CompensateTimeInfo(data, values);
 
     ValueObject valueObject;
     std::string detailTime;
@@ -536,13 +536,20 @@ HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensateBasicDateModified_Test, TestS
 {
     ValuesBucket values;
     CloudMediaPullDataDto data;
-    int64_t dateAdded = 0;
-    auto ret = CloudSyncConvert::CompensateBasicDateModified(data, values, dateAdded);
-    EXPECT_EQ(ret, E_CLOUDSYNC_INVAL_ARG);
+    CloudSyncConvert::CompensateTimeInfo(data, values);
+    int64_t dateModified1 = 0;
+    ValueObject valueObject1;
+    values.GetObject(PhotoColumn::MEDIA_DATE_MODIFIED, valueObject1);
+    valueObject1.GetLong(dateModified1);
+    EXPECT_GT(dateModified1, 0);
 
     data.attributesEditedTimeMs = 1;
-    ret = CloudSyncConvert::CompensateBasicDateModified(data, values, dateAdded);
-    EXPECT_EQ(ret, E_OK);
+    CloudSyncConvert::CompensateTimeInfo(data, values);
+    int64_t dateModified2 = 0;
+    ValueObject valueObject2;
+    values.GetObject(PhotoColumn::MEDIA_DATE_MODIFIED, valueObject2);
+    valueObject2.GetLong(dateModified2);
+    EXPECT_GT(dateModified2, 0);
 }
 
 HWTEST_F(CloudMediaSyncServiceUtilsTest, CompensateBasicDateTrashed_Test, TestSize.Level1)

@@ -59,9 +59,6 @@ const int32_t MINUTES_TO_SECOND = 60;
 const size_t OFFSET_STR_SIZE = 6;  // ±HH:MM
 const size_t COLON_POSITION = 3;
 
-const int64_t MAX_TIMESTAMP_DIFF = 93'600'000;
-const int64_t SEC_TO_MILSEC = 1000;
-
 std::mutex PhotoDayMonthYearOperation::mutex_;
 
 const std::string QUERY_NEED_UPDATE_FILE_IDS = ""
@@ -572,20 +569,6 @@ static void UpdatePhotoDetails(
     }
 }
 
-static int64_t ParseDateTakenFromDetailTime(const std::string &detailTime)
-{
-    std::tm tm{};
-    std::istringstream iss(detailTime);
-    iss >> std::get_time(&tm, PhotoColumn::PHOTO_DETAIL_TIME_FORMAT.c_str());
-    if (iss.fail()) {
-        MEDIA_ERR_LOG("Failed to parse dateTaken, detailTime: %{public}s", detailTime.c_str());
-        return 0;
-    }
-
-    std::time_t time = std::mktime(&tm);
-    return static_cast<int64_t>(time) * SEC_TO_MILSEC;
-}
-
 static void HandleDateAnomalyPhotos(const std::shared_ptr<MediaLibraryRdbStore> rdbStore, const DateAnomalyPhoto &photo)
 {
     auto updatePhoto = ExtractDateTime(photo.exif);
@@ -616,9 +599,9 @@ static void HandleDateAnomalyPhotos(const std::shared_ptr<MediaLibraryRdbStore> 
 
     updatePhoto.dateTaken =
         PhotoFileUtils::NormalizeTimestamp(updatePhoto.dateTaken, MediaFileUtils::UTCTimeMilliSeconds());
-    auto dateTaken = ParseDateTakenFromDetailTime(photo.detailTime);
-    if (dateTaken <= MIN_MILSEC_TIMESTAMP || dateTaken >= MAX_MILSEC_TIMESTAMP ||
-        abs(dateTaken - updatePhoto.dateTaken) > MAX_TIMESTAMP_DIFF) {
+    const auto timestamp = PhotoFileUtils::ParseTimestampFromDetailTime(photo.detailTime);
+    if (timestamp <= MIN_MILSEC_TIMESTAMP || timestamp >= MAX_MILSEC_TIMESTAMP ||
+        abs(timestamp - updatePhoto.dateTaken) > MAX_TIMESTAMP_DIFF) {
         updatePhoto.detailTime =
             MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, updatePhoto.dateTaken);
     } else {
