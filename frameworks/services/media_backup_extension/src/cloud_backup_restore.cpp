@@ -22,6 +22,7 @@
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
 #include "medialibrary_errno.h"
+#include "photo_file_utils.h"
 #include "result_set_utils.h"
 #include "upgrade_restore_task_report.h"
 
@@ -82,10 +83,11 @@ bool CloudBackupRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeR
         return false;
     }
 
-    // [time info]date_taken, date_modified, date_added
+    // [time info]date_taken, date_modified, date_added, detail_time
     info.dateTaken = GetInt64Val(GALLERY_DATE_TAKEN, resultSet);
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
     info.firstUpdateTime = GetInt64Val(EXTERNAL_DATE_ADDED, resultSet) * MSEC_TO_SEC;
+    info.detailTime = GetStringVal(GALLERY_DETAIL_TIME, resultSet);
 
     return true;
 }
@@ -127,7 +129,7 @@ void CloudBackupRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::Val
     // [basic info]size
     SetSize(data, fileInfo, value);
 
-    // [time info]date_taken, date_modified, date_added
+    // [time info]date_taken, date_modified, date_added, detail_time, date_year, date_month, date_day
     SetTimeInfo(data, fileInfo, value);
 
     // [metadata info]
@@ -151,13 +153,6 @@ void CloudBackupRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::Val
 
     // [special type]live photo
     SetCoverPosition(fileInfo, value);
-
-    value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, fileInfo.dateTaken));
-    value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, fileInfo.dateTaken));
-    value.PutString(PhotoColumn::PHOTO_DATE_DAY,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, fileInfo.dateTaken));
 }
 
 void CloudBackupRestore::SetSize(const std::unique_ptr<Metadata> &data, FileInfo &info,
@@ -176,10 +171,15 @@ void CloudBackupRestore::SetTimeInfo(const std::unique_ptr<Metadata> &data, File
     info.dateModified = info.dateModified > 0 ? info.dateModified : data->GetFileDateModified();
     info.firstUpdateTime = info.firstUpdateTime > 0 ? info.firstUpdateTime : info.dateModified;
 
-    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, info.dateTaken);
-    value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, info.dateModified);
-    value.PutLong(MediaColumn::MEDIA_DATE_ADDED, info.firstUpdateTime);
-    InsertDetailTime(value, info);
+    info.firstUpdateTime =
+        PhotoFileUtils::NormalizeTimestamp(info.firstUpdateTime, MediaFileUtils::UTCTimeMilliSeconds());
+    info.dateModified = PhotoFileUtils::NormalizeTimestamp(info.dateModified, info.firstUpdateTime);
+    info.dateTaken = PhotoFileUtils::NormalizeTimestamp(info.dateTaken, min(info.firstUpdateTime, info.dateModified));
+
+    value.Put(MediaColumn::MEDIA_DATE_ADDED, info.firstUpdateTime);
+    value.Put(MediaColumn::MEDIA_DATE_MODIFIED, info.dateModified);
+    value.Put(MediaColumn::MEDIA_DATE_TAKEN, info.dateTaken);
+    InsertDateTime(value, info);
 }
 
 void CloudBackupRestore::RestoreAnalysisAlbum()
