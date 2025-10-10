@@ -562,16 +562,21 @@ static void InsertUserComment(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
 }
 
-void BaseRestore::InsertDetailTime(NativeRdb::ValuesBucket &value, FileInfo &fileInfo)
+void BaseRestore::InsertDateTime(NativeRdb::ValuesBucket &value, FileInfo &fileInfo)
 {
-    if (fileInfo.detailTime.empty()) {
+    const auto timestamp = PhotoFileUtils::ParseTimestampFromDetailTime(fileInfo.detailTime);
+    if (timestamp <= MIN_MILSEC_TIMESTAMP || timestamp >= MAX_MILSEC_TIMESTAMP ||
+        abs(fileInfo.dateTaken - timestamp) > MAX_TIMESTAMP_DIFF) {
+        MEDIA_ERR_LOG("invalid detailTime: %{public}s, dateTaken: %{public}lld",
+            fileInfo.detailTime.c_str(),
+            static_cast<long long>(fileInfo.dateTaken));
         fileInfo.detailTime =
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, fileInfo.dateTaken / MSEC_TO_SEC);
+            MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, fileInfo.dateTaken);
     }
 
     value.Put(PhotoColumn::PHOTO_DETAIL_TIME, fileInfo.detailTime);
 
-    auto const [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(fileInfo.detailTime);
+    const auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(fileInfo.detailTime);
     value.Put(PhotoColumn::PHOTO_DATE_YEAR, dateYear);
     value.Put(PhotoColumn::PHOTO_DATE_MONTH, dateMonth);
     value.Put(PhotoColumn::PHOTO_DATE_DAY, dateDay);
@@ -666,7 +671,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     if (fileInfo.dateTaken <= 0) {
         InsertDateTaken(data, fileInfo, value);
     }
-    InsertDetailTime(value, fileInfo);
+    InsertDateTime(value, fileInfo);
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
     value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
