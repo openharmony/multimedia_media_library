@@ -62,7 +62,7 @@ public:
     int32_t QueryDataFromPhotos(const DataShare::DataSharePredicates &predicates,
                                 const std::vector<std::string> &columnNames, std::vector<PhotosPo> &photoInfos);
     int32_t QueryDataFromPhotoAlbums(const DataShare::DataSharePredicates &predicates,
-                                     const std::vector<std::string> &columnNames, 
+                                     const std::vector<std::string> &columnNames,
                                      std::vector<PhotoAlbumPo> &photoAlbumInfos);
 
 private:

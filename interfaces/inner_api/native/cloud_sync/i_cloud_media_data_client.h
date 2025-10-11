@@ -71,9 +71,9 @@ public:
     virtual int32_t SubmitCloudSyncPreparedDataTask() = 0;
 
     virtual int32_t CheckAndFixAlbum() = 0;
-    virtual int32_t QueryData(const DataShare::DataSharePredicates &predicates, const std::vector<std::string> &columnNames,
-        const std::string &tableName, std::vector<std::unordered_map<std::string, std::string>> &results) = 0;
-
+    virtual int32_t QueryData(const DataShare::DataSharePredicates &predicates,
+            const std::vector<std::string> &columnNames, const std::string &tableName,
+            std::vector<std::unordered_map<std::string, std::string>> &results) = 0;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_I_CLOUD_MEDIA_DATA_CLIENT_H

@@ -493,8 +493,9 @@ int32_t CloudMediaDataClientHandler::CheckAndFixAlbum()
     return ret;
 }
 
-int32_t CloudMediaDataClientHandler::QueryData(const DataShare::DataSharePredicates &predicates, const std::vector<std::string> &columnNames,
-        const std::string &tableName, std::vector<std::unordered_map<std::string, std::string>> &results)
+int32_t CloudMediaDataClientHandler::QueryData(const DataShare::DataSharePredicates &predicates,
+        const std::vector<std::string> &columnNames, const std::string &tableName,
+        std::vector<std::unordered_map<std::string, std::string>> &results)
 {
     MEDIA_INFO_LOG("enter CloudMediaDataClientHandler::QueryData");
     QueryDataReqBody reqBody;

@@ -234,8 +234,8 @@ int32_t CloudMediaDataControllerService::QueryData(MessageParcel &data, MessageP
     QueryDataReqBody req;
     QueryDataRespBody resp;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, req);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret),
-                            "QueryData Read Req Error");
+    CHECK_AND_RETURN_RET_LOG
+        (ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret), "QueryData Read Req Error");
     DataShare::DataSharePredicates predicates = req.predicates;
     std::vector<std::string> columnNames = req.columnNames;
     std::string tableName = req.tableName;

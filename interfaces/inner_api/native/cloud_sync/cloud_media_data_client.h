@@ -69,7 +69,6 @@ public:
     int32_t QueryData(const DataShare::DataSharePredicates &predicates, const std::vector<std::string> &columnNames,
         const std::string &tableName, std::vector<std::unordered_map<std::string, std::string>> &results) override;
 
-
 private:
     std::shared_ptr<ICloudMediaDataClient> dataHandler_;
     int32_t cloudType_;
