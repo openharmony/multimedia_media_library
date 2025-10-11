@@ -47,7 +47,26 @@ public:
         bool errConn = it == this->HANDLERS.end();
         CHECK_AND_RETURN_RET(!errConn, E_ERR);
         (this->*(it->second))(val);
+        std::string columnValue = "";
+        if (std::holds_alternative<int32_t>(val)) {
+            columnValue = std::to_string(std::get<int32_t>(val));
+        } else if (std::holds_alternative<int64_t>(val)) {
+            columnValue = std::to_string(std::get<int64_t>(val));
+        } else if (std::holds_alternative<double>(val)) {
+            columnValue = std::to_string(std::get<double>(val));
+        } else if (std::holds_alternative<std::string>(val)) {
+            columnValue = std::get<std::string>(val);
+        } else {
+            MEDIA_ERR_LOG("PhotoAlbumPoWriter: SetMemberVariable: variant type is not supported");
+        }
+        CHECK_AND_RETURN_RET(!columnValue.empty(), E_OK);
+        this->photosPo_.attributes[name] = columnValue;
         return E_OK;
+    }
+
+    std::unordered_map<std::string, std::string> ToMap(bool isIdentifyOnly = true)
+    {
+        return this->photosPo_.attributes;
     }
 
 private:
@@ -109,6 +128,9 @@ private:
         {PhotoColumn::PHOTO_CLOUD_VERSION, &PhotosPoWriter::SetCloudVersion},
         {"album_cloud_id", &PhotosPoWriter::SetAlbumCloudId},
         {"lpath", &PhotosPoWriter::SetlPath},
+        {PhotoColumn::PHOTO_LCD_VISIT_TIME, &PhotosPoWriter::SetLcdVisitTime},
+        {PhotoColumn::PHOTO_THUMBNAIL_READY, &PhotosPoWriter::SetThumbnailReady},
+        {PhotoColumn::MEDIA_TIME_PENDING, &PhotosPoWriter::SetTimePending},
     };
 
 private:
@@ -447,6 +469,24 @@ private:
         bool errConn = !std::holds_alternative<std::string>(val);
         CHECK_AND_RETURN(!errConn);
         this->photosPo_.albumLPath = std::get<std::string>(val);
+    }
+    void SetLcdVisitTime(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool errConn = !std::holds_alternative<int64_t>(val);
+        CHECK_AND_RETURN(!errConn);
+        this->photosPo_.lcdVisitTime = std::get<int64_t>(val);
+    }
+    void SetThumbnailReady(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool errConn = !std::holds_alternative<int64_t>(val);
+        CHECK_AND_RETURN(!errConn);
+        this->photosPo_.thumbnailReady = std::get<int64_t>(val);
+    }
+    void SetTimePending(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool errConn = !std::holds_alternative<int64_t>(val);
+        CHECK_AND_RETURN(!errConn);
+        this->photosPo_.timePending = std::get<int64_t>(val);
     }
 };
 }  // namespace OHOS::Media::ORM
