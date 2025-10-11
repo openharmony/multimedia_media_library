@@ -733,7 +733,7 @@ NativeRdb::ValuesBucket CloneRestorePortrait::CreateValuesBucketFromImageFaceTbl
         imageFaceTbl.jointBeautyBounderWidth);
     BackupDatabaseUtils::PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_HEIGHT,
         imageFaceTbl.jointBeautyBounderHeight);
-    PutIfPresent(values, IMAGE_FACE_COL_FACE_DETAIL_VERSION, imageFaceTbl.faceDetailVersion);
+    BackupDatabaseUtils::PutIfPresent(values, IMAGE_FACE_COL_FACE_DETAIL_VERSION, imageFaceTbl.faceDetailVersion);
     return values;
 }
 
