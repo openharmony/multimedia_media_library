@@ -267,8 +267,8 @@ bool MarshalStrVec(const std::vector<std::string> &strVec, MessageParcel &parcel
 
 bool UnmarshalStrVec(std::vector<std::string> &strVec, MessageParcel &parcel);
 
-bool MarShalMapVec(const std::vector<std::unordered_map<std::string, std::string>> &val, MessageParcel &parcel);
+bool MarshalMapVec(const std::vector<std::unordered_map<std::string, std::string>> &val, MessageParcel &parcel);
 
-bool UnmarShalMapVec(std::vector<std::unordered_map<std::string, std::string>> &val, MessageParcel &parcel);
+bool UnmarshalMapVec(std::vector<std::unordered_map<std::string, std::string>> &val, MessageParcel &parcel);
 }  // namespace OHOS::Media::IPC::ITypeMediaUtil
 #endif  // OHOS_MEDIA_IPC_ITYPES_MEDIA_UTIL_H
