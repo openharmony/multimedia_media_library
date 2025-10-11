@@ -57,6 +57,13 @@ public:
     int32_t QueryFilePosStat(const int32_t position, int &num);
     int32_t QueryCloudThmStat(const int32_t cloudThmStat, int &num);
     int32_t GetDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat);
+    int32_t CheckAndDeleteAlbum();
+    int32_t CheckAndUpdateAlbum();
+    int32_t QueryDataFromPhotos(const DataShare::DataSharePredicates &predicates,
+                                const std::vector<std::string> &columnNames, std::vector<PhotosPo> &photoInfos);
+    int32_t QueryDataFromPhotoAlbums(const DataShare::DataSharePredicates &predicates,
+                                     const std::vector<std::string> &columnNames,
+                                     std::vector<PhotoAlbumPo> &photoAlbumInfos);
 
 private:
     int32_t QueryDirtyTypeStat(const int32_t dirtyType, int64_t &num);
@@ -76,6 +83,18 @@ private:
         PhotoColumn::PHOTO_ORIENTATION,
     };
     const int32_t DIRTY_TYPE_STAT_SIZE = 9;
+
+private:
+    const std::string SQL_CHECK_AND_DELETE_ALBUM = "\
+        DELETE FROM PhotoAlbum \
+        WHERE COALESCE(cloud_id, '') = '' AND \
+            dirty = 4;";
+    const std::string SQL_CHECK_AND_UPDATE_ALBUM = "\
+        UPDATE PhotoAlbum \
+        SET dirty = 1 \
+        WHERE \
+            COALESCE(cloud_id, '') = '' AND \
+            dirty IN (0, 2);";
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DATA_DAO_H

@@ -249,4 +249,25 @@ int32_t CloudMediaDataClient::SubmitCloudSyncPreparedDataTask()
     }
     return this->dataHandler_->SubmitCloudSyncPreparedDataTask();
 }
+
+int32_t CloudMediaDataClient::CheckAndFixAlbum()
+{
+    if (this->dataHandler_ == nullptr) {
+        MEDIA_ERR_LOG("No data handler found!");
+        return E_IPC_INVAL_ARG;
+    }
+    return this->dataHandler_->CheckAndFixAlbum();
+}
+
+int32_t CloudMediaDataClient::QueryData(const DataShare::DataSharePredicates &predicates,
+                                        const std::vector<std::string> &columnNames,
+                                        const std::string &tableName,
+                                        std::vector<std::unordered_map<std::string, std::string>> &results)
+{
+    if (this->dataHandler_ == nullptr) {
+        MEDIA_ERR_LOG("No data handler found!");
+        return E_IPC_INVAL_ARG;
+    }
+    return this->dataHandler_->QueryData(predicates, columnNames, tableName, results);
+}
 }  // namespace OHOS::Media::CloudSync

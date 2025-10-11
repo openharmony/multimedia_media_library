@@ -50,6 +50,9 @@
 #include "cloud_media_dao_const.h"
 #include "asset_accurate_refresh.h"
 #include "refresh_business_name.h"
+#include "rdb_utils.h"
+
+using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaDataDao::UpdateDirty(const std::string &cloudId, int32_t dirtyType)
@@ -318,6 +321,54 @@ int32_t CloudMediaDataDao::UpdateLocalFileDirty(std::string &cloudId)
     int32_t ret = rdbStore->Update(
         changedRows, PhotoColumn::PHOTOS_TABLE, valuesBucket, PhotoColumn::PHOTO_CLOUD_ID + " = ?", {cloudId});
     MEDIA_INFO_LOG("UpdateLocalFileDirty changedRows: %{public}d, ret: %{public}d", changedRows, ret);
+    return ret;
+}
+
+int32_t CloudMediaDataDao::CheckAndDeleteAlbum()
+{
+    MEDIA_INFO_LOG("enter CheckAndDeleteAlbum");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "CheckAndDeleteAlbum get store failed.");
+    int32_t ret = rdbStore->ExecuteSql(SQL_CHECK_AND_DELETE_ALBUM);
+    MEDIA_INFO_LOG("CheckAndDeleteAlbum: Delete albums, ret: %{public}d", ret);
+    return ret;
+}
+
+int32_t CloudMediaDataDao::CheckAndUpdateAlbum()
+{
+    MEDIA_INFO_LOG("enter CheckAndUpdateAlbum");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "CheckAndUpdateAlbum get store failed.");
+    int32_t ret = rdbStore->ExecuteSql(SQL_CHECK_AND_UPDATE_ALBUM);
+    MEDIA_INFO_LOG("CheckAndUpdateAlbum: Update albums, ret: %{public}d", ret);
+    return ret;
+}
+
+int32_t CloudMediaDataDao::QueryDataFromPhotos(const DataShare::DataSharePredicates &predicates,
+    const std::vector<std::string> &columnNames, std::vector<PhotosPo> &photoInfos)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "QueryData Failed to get rdbStore.");
+    NativeRdb::RdbPredicates rdbPredicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+    auto resultSet = rdbStore->Query(rdbPredicates, columnNames);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "QueryData resultset is null");
+    int32_t ret = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords(photoInfos);
+    MEDIA_INFO_LOG("QueryData, ret: %{public}d, size: %{public}zu", ret, photoInfos.size());
+    return ret;
+}
+
+int32_t CloudMediaDataDao::QueryDataFromPhotoAlbums(const DataShare::DataSharePredicates &predicates,
+    const std::vector<std::string> &columnNames, std::vector<PhotoAlbumPo> &photoAlbumInfos)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "QueryData Failed to get rdbStore.");
+    NativeRdb::RdbPredicates rdbPredicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
+    auto resultSet = rdbStore->Query(rdbPredicates, columnNames);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "QueryData resultset is null");
+    int32_t ret = ResultSetReader<PhotoAlbumPoWriter, PhotoAlbumPo>(resultSet).ReadRecords(photoAlbumInfos);
+    MEDIA_INFO_LOG("QueryData, ret: %{public}d, size: %{public}zu", ret, photoAlbumInfos.size());
     return ret;
 }
 }  // namespace OHOS::Media::CloudSync
