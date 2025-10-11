@@ -23,7 +23,7 @@
 #include "media_log.h"
 #include "cloud_media_sync_const.h"
 #include "itypes_util.h"
-#include "media_itype_utils.h"
+#include "media_itypes_utils.h"
 
 namespace OHOS::Media::CloudSync {
 bool QueryDataReqBody::Unmarshalling(MessageParcel &parcel)
@@ -49,7 +49,7 @@ bool QueryDataRespBody::Unmarshalling(MessageParcel &parcel)
     return IPC::ITypeMediaUtil::UnmarshalMapVec(queryResults, parcel);
 }
 
-bool QueryDataRespBody::Marshalling(MessageParcel &parcel)
+bool QueryDataRespBody::Marshalling(MessageParcel &parcel) const
 {
     return IPC::ITypeMediaUtil::MarshalMapVec(queryResults, parcel);
 }

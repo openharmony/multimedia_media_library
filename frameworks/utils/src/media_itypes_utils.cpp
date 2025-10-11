@@ -137,7 +137,7 @@ bool ReadStreamToMapVec(std::istringstream &iss,
         for(size_t j = 0; j < mapLen; j++) {
             std::string key;
             std::string value;
-            if ((!ReadStreamToString(iss, key)) || (!ReadStreamToString(iss, value))){
+            if (!ReadStreamToString(iss, key) || !ReadStreamToString(iss, value)){
                 return false;
             }
             map[key] = value;

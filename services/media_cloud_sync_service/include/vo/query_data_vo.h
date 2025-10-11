@@ -17,13 +17,13 @@
 #define OHOS_MEDIA_CLOUD_SYNC_QUERY_DATA_VO_H
 
 #include <string>
-#include <map>
+#include <vector>
 #include <sstream>
 
 #include "i_media_parcelable.h"
 #include "cloud_file_data_vo.h"
 #include "cloud_media_define.h"
-#include "media_itype_utils.h"
+#include "media_itypes_utils.h"
 #include "datashare_predicates.h"
 
 namespace OHOS::Media::CloudSync {

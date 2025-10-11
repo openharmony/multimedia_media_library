@@ -223,7 +223,7 @@ int32_t CloudMediaDataControllerService::SubmitCloudSyncPreparedDataTask(Message
 
 int32_t CloudMediaDataControllerService::CheckAndFixAlbum(MessageParcel &data, MessageParcel &reply)
 {
-    int32_t ret = this->enhanceService_.CheckAndFixAlbum();
+    int32_t ret = this->dataService_.CheckAndFixAlbum();
     MEDIA_INFO_LOG("CheckAndFixAlbum, %{public}d", ret);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
@@ -233,7 +233,7 @@ int32_t CloudMediaDataControllerService::QueryData(MessageParcel &data, MessageP
     MEDIA_INFO_LOG("QueryData enter");
     QueryDataReqBody req;
     QueryDataRespBody resp;
-    int32_t ret = IPC::UserDefineIPC().ReadResponseBody(data, req);
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, req);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret),
                             "QueryData Read Req Error");
     DataShare::DataSharePredicates predicates = req.predicates;
