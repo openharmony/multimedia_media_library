@@ -213,8 +213,9 @@ int32_t CloudMediaDataService::CheckAndFixAlbum()
     return E_OK;
 }
 
-int32_t CloudMediaDataService::QueryData(const DataShare::DataSharePredicates &predicates, const std::vector<std::string> &columnNames, 
-    const std::string &tableName, std::vector<std::unordered_map<std::string, std::string>> &results)
+int32_t CloudMediaDataService::QueryData(const DataShare::DataSharePredicates &predicates,
+    const std::vector<std::string> &columnNames, const std::string &tableName,
+    std::vector<std::unordered_map<std::string, std::string>> &results)
 {
     int32_t ret;
     if (tableName == PhotoColumn::PHOTOS_TABLE) {

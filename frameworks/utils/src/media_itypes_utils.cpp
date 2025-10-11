@@ -59,7 +59,7 @@ bool WriteStrVecToStream(std::ostringstream &oss, const std::vector<std::string>
     return oss.good();
 }
 
-bool WriteMapVecToStream(std::ostringstream &oss, 
+bool WriteMapVecToStream(std::ostringstream &oss,
                          const std::vector<std::unordered_map<std::string, std::string>> &mapVec)
 {
     // write vector size
@@ -72,7 +72,7 @@ bool WriteMapVecToStream(std::ostringstream &oss,
         if (!WriteBasicTypeToStream(oss, len)) {
             return false;
         }
-        for(const auto &entry : map){
+        for (const auto &entry : map) {
             if ((!WriteStringToStream(oss, entry.first)) || (!WriteStringToStream(oss, entry.second))) {
                 return false;
             }
@@ -120,7 +120,7 @@ bool ReadStreamToStrVec(std::istringstream &iss, std::vector<std::string> &strVe
     return iss.good();
 }
 
-bool ReadStreamToMapVec(std::istringstream &iss, 
+bool ReadStreamToMapVec(std::istringstream &iss,
                         std::vector<std::unordered_map<std::string, std::string>> &mapVec)
 {
     // Get vec length
@@ -134,10 +134,10 @@ bool ReadStreamToMapVec(std::istringstream &iss,
         if (!ReadStreamToBasicType(iss, mapLen)) {
             return false;
         }
-        for(size_t j = 0; j < mapLen; j++) {
+        for (size_t j = 0; j < mapLen; j++) {
             std::string key;
             std::string value;
-            if (!ReadStreamToString(iss, key) || !ReadStreamToString(iss, value)){
+            if (!ReadStreamToString(iss, key) || !ReadStreamToString(iss, value)) {
                 return false;
             }
             map[key] = value;

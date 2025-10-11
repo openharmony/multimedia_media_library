@@ -53,7 +53,7 @@ public:
     int32_t GetDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat);
 
     int32_t CheckAndFixAlbum();
-    int32_t QueryData(const DataShare::DataSharePredicates &predicates, const std::vector<std::string> &columnNames, 
+    int32_t QueryData(const DataShare::DataSharePredicates &predicates, const std::vector<std::string> &columnNames,
                       const std::string &tableName, std::vector<std::unordered_map<std::string, std::string>> &results);
 
 private:

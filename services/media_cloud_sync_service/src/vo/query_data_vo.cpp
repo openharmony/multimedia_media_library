@@ -58,11 +58,11 @@ std::string QueryDataRespBody::ToString() const
 {
     std::stringstream ss;
     ss << "QueryResults\":[";
-    for (auto &map : queryResults){
+    for (auto &map : queryResults) {
         ss << "{";
         bool isFirstEntry = true;
-        for(auto &entry : map){
-            if(!isFirstEntry){
+        for (auto &entry : map) {
+            if (!isFirstEntry) {
                 ss << ",";
             }
             ss << entry.first << ": " <<entry.second;
