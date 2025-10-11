@@ -260,8 +260,9 @@ int32_t CloudMediaDataClient::CheckAndFixAlbum()
 }
 
 int32_t CloudMediaDataClient::QueryData(const DataShare::DataSharePredicates &predicates,
-        const std::vector<std::string> &columnNames, const std::string &tableName,
-        std::vector<std::unordered_map<std::string, std::string>> &results)
+                                        const std::vector<std::string> &columnNames,
+                                        const std::string &tableName,
+                                        std::vector<std::unordered_map<std::string, std::string>> &results)
 {
     if (this->dataHandler_ == nullptr) {
         MEDIA_ERR_LOG("No data handler found!");
