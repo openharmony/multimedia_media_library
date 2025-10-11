@@ -1133,6 +1133,36 @@ HWTEST_F(CloudMediaDataClientTest, CheckAndFixAlbum, TestSize.Level1)
     resultSet->Close();
 }
 
+HWTEST_F(CloudMediaDataClientTest, QueryDataInPhotos, TestSize.Level1)
+{
+    DataShare::DataSharePredicates predicates;
+    std::string cloudId = "3d4970270f8d4b15b4ced48bd7f25dd44c7ad693ae57426d863fec74422b388e";
+    predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
+    const std::vector<std::string> columnNames = {PhotoColumn::MEDIA_TITLE};
+    const std::string tableName = Media::PhotoColumn::PHOTOS_TABLE;
+    std::vector<std::unordered_map<std::string, std::string>> results;
+    CloudMediaDataClient cloudMediaDataClient(1, 100);
+    int32_t ret = cloudMediaDataClient.QueryData(predicates, columnNames, tableName, results);
+    EXPECT_EQ(ret, 0);
+    EXPECT_GT(results.size(), 0);
+    NativeRdb::AbsRdbPredicates rdbpredicates = NativeRdb::AbsRdbPredicates(Media::PhotoColumn::PHOTOS_TABLE);
+    rdbpredicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
+    auto resultSet = rdbStore_->Query(rdbpredicates, columnNames);
+    EXPECT_TRUE(resultSet != nullptr);
+    int32_t rowCount = 0;
+    ret = resultSet->GetRowCount(rowCount);
+    EXPECT_EQ(ret, 0);
+    EXPECT_GT(rowCount, 0);
+    int32_t pos = 0;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string media_title = GetStringVal(PhotoColumn::MEDIA_TITLE, resultSet);
+        EXPECT_LT(pos, results.size());
+        EXPECT_EQ(media_title, results[pos][PhotoColumn::MEDIA_TITLE]);
+        pos++;
+    }
+    resultSet->Close();
+}
+
 HWTEST_F(CloudMediaDataClientTest, QueryDataInPhotoAlbum, TestSize.Level1)
 {
     DataShare::DataSharePredicates predicates;
