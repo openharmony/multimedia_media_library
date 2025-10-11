@@ -46,6 +46,7 @@
 #include "get_download_thm_by_uri_vo.h"
 #include "media_file_utils.h"
 #include "media_operate_result_vo.h"
+#include "query_data_vo.h"
 
 namespace OHOS::Media::CloudSync {
 // LCOV_EXCL_START

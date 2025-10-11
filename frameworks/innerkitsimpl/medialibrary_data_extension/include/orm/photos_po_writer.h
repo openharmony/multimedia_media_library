@@ -47,7 +47,26 @@ public:
         bool errConn = it == this->HANDLERS.end();
         CHECK_AND_RETURN_RET(!errConn, E_ERR);
         (this->*(it->second))(val);
+        std::string columnValue = "";
+        if (std::holds_alternative<int32_t>(val)) {
+            columnValue = std::to_string(std::get<int32_t>(val));
+        } else if (std::holds_alternative<int64_t>(val)) {
+            columnValue = std::to_string(std::get<int64_t>(val));
+        } else if (std::holds_alternative<double>(val)) {
+            columnValue = std::to_string(std::get<double>(val));
+        } else if (std::holds_alternative<std::string>(val)) {
+            columnValue = std::get<std::string>(val);
+        } else {
+            MEDIA_ERR_LOG("PhotoAlbumPoWriter: SetMemberVariable: variant type is not supported");
+        }
+        CHECK_AND_RETURN_RET(!columnValue.empty(), E_OK);
+        this->photosPo_.attributes[name] = columnValue;
         return E_OK;
+    }
+
+    std::unordered_map<std::string, std::string> ToMap(bool isIdentifyOnly = true)
+    {
+        return this->photosPo_.attributes;
     }
 
 private:

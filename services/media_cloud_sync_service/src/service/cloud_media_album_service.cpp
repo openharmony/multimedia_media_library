@@ -561,7 +561,9 @@ int32_t CloudMediaAlbumService::OnCompletePull(const MediaOperateResult &optRet)
 
 int32_t CloudMediaAlbumService::OnCompletePush()
 {
-    return this->albumDao_.ClearAlbumFailedRecords();
+    int32_t ret = this->albumDao_.ClearAlbumFailedRecords();
+    ret = this->albumDao_.ReportAbnormalLocalRecords();
+    return ret;
 }
 
 int32_t CloudMediaAlbumService::OnCompleteCheck()

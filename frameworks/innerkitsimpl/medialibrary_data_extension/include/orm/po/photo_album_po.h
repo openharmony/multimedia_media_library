@@ -45,6 +45,8 @@ public:
     std::optional<int32_t> priority;
     std::optional<bool> isInWhiteList;
 
+    std::unordered_map<std::string, std::string> attributes;
+
 public:
     std::string ToString()
     {
