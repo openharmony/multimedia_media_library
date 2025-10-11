@@ -673,6 +673,14 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcRelease_test_002, TestSize
     EXPECT_EQ(err, -EBADF);
 }
 
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcRelease_test_003, TestSize.Level1)
+{
+    string path = "/Test";
+    int fd = 0;
+    int32_t err = MediaFuseManager::GetInstance().DoHdcRelease(path.c_str(), fd);
+    EXPECT_EQ(err, E_OK);
+}
+
 HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_DoHdcUnlink_test_001, TestSize.Level1)
 {
     string path = "";
