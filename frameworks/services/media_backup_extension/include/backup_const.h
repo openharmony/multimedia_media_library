@@ -659,7 +659,8 @@ struct ImageFaceTbl {
     std::optional<double> faceClarity;
     std::optional<double> faceLuminance;
     std::optional<double> faceSaturation;
-    std::optional<int32_t> faceEyeClose;
+    std::optional<double> faceEyeClose;
+    std::optional<std::string> faceDetailVersion;
     std::optional<double> faceExpression;
     std::optional<std::string> preferredGrade;
     std::optional<double> jointBeautyBounderX;

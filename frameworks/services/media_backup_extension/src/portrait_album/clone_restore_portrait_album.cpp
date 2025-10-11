@@ -644,7 +644,7 @@ void CloneRestorePortrait::ParseImageFaceResultSet(const std::shared_ptr<NativeR
         IMAGE_FACE_COL_FACE_LUMINANCE);
     imageFaceTbl.faceSaturation = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
         IMAGE_FACE_COL_FACE_SATURATION);
-    imageFaceTbl.faceEyeClose = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet,
+    imageFaceTbl.faceEyeClose = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
         IMAGE_FACE_COL_FACE_EYE_CLOSE);
     imageFaceTbl.faceExpression = BackupDatabaseUtils::GetOptionalValue<double>(resultSet,
         IMAGE_FACE_COL_FACE_EXPRESSION);
@@ -666,6 +666,8 @@ void  CloneRestorePortrait::ParseImageFaceResultSet1(const std::shared_ptr<Nativ
         IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_HEIGHT);
     imageFaceTbl.groupVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
         IMAGE_FACE_COL_GROUP_VERSION);
+    imageFaceTbl.faceDetailVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet,
+        IMAGE_FACE_COL_FACE_DETAIL_VERSION);
 }
 
 void CloneRestorePortrait::BatchInsertImageFaces(const std::vector<ImageFaceTbl>& imageFaceTbls)
@@ -731,6 +733,7 @@ NativeRdb::ValuesBucket CloneRestorePortrait::CreateValuesBucketFromImageFaceTbl
         imageFaceTbl.jointBeautyBounderWidth);
     BackupDatabaseUtils::PutIfPresent(values, IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_HEIGHT,
         imageFaceTbl.jointBeautyBounderHeight);
+    PutIfPresent(values, IMAGE_FACE_COL_FACE_DETAIL_VERSION, imageFaceTbl.faceDetailVersion);
     return values;
 }
 

@@ -141,6 +141,7 @@ const std::string IMAGE_FACE_COL_FACE_CLARITY = "face_clarity";
 const std::string IMAGE_FACE_COL_FACE_LUMINANCE = "face_luminance";
 const std::string IMAGE_FACE_COL_FACE_SATURATION = "face_saturation";
 const std::string IMAGE_FACE_COL_FACE_EYE_CLOSE = "face_eye_close";
+const std::string IMAGE_FACE_COL_FACE_DETAIL_VERSION = "face_detail_version";
 const std::string IMAGE_FACE_COL_FACE_EXPRESSION = "face_expression";
 const std::string IMAGE_FACE_COL_PREFERRED_GRADE = "preferred_grade";
 const std::string IMAGE_FACE_COL_JOINT_BEAUTY_BOUNDER_X = "joint_beauty_bounder_x";
