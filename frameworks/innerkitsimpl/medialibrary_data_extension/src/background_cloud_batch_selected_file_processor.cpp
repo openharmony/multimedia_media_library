@@ -245,6 +245,9 @@ void BackgroundCloudBatchSelectedFileProcessor::UpdateDBProgressStatusInfoForBat
             int32_t ret = UpdateDBProgressInfoForFileId(fileIdStr, 100, MediaFileUtils::UTCTimeSeconds(), status);
             MEDIA_INFO_LOG("BatchSelectFileDownload already download UpdateDBProgressInfo, fileId: %{public}d,"
                 " ret: %{public}d", fileId, ret);
+            ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FINISH,
+                fileId, 100); // 100 finish
+            MEDIA_INFO_LOG("BatchSelectFileDownload Already Success NotifyDownloadProgressInfo, ret: %{public}d", ret);
         }
     } else if (status == static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL)) {
         for (int32_t fileId : fileIds) {
@@ -252,6 +255,11 @@ void BackgroundCloudBatchSelectedFileProcessor::UpdateDBProgressStatusInfoForBat
             int32_t ret = UpdateDBProgressInfoForFileId(fileIdStr, -1, -1, status);
             MEDIA_INFO_LOG("BatchSelectFileDownload exception download UpdateDBProgressInfo, fileId: %{public}d,"
                 " ret: %{public}d", fileId, ret);
+            int32_t percentDB = 0;
+            QueryPercentOnTaskStart(fileIdStr, percentDB);
+            ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FAILED,
+                fileId, percentDB);
+            MEDIA_INFO_LOG("BatchSelectFileDownload Already Failed NotifyDownloadProgressInfo, ret: %{public}d", ret);
         }
     }
 }
