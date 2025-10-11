@@ -894,12 +894,19 @@ void BackgroundCloudBatchSelectedFileProcessor::SetBatchDownloadProcessRunningSt
 
 bool BackgroundCloudBatchSelectedFileProcessor::StopProcessConditionCheck()
 {
-    BatchDownloadAutoPauseReasonType autoPauseReason = BatchDownloadAutoPauseReasonType::TYPE_DEFAULT;
-    if (BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(autoPauseReason)) {
-        AutoStopAction(autoPauseReason);
-        return true;
+    int32_t num = QueryBatchSelectedResourceFilesNum();
+    if (num == 0) {
+        MEDIA_INFO_LOG("BatchSelectFileDownload no task to stop");
+        return false;
     }
-    return false;
+    
+    BatchDownloadAutoPauseReasonType autoPauseReason = BatchDownloadAutoPauseReasonType::TYPE_DEFAULT;
+    if (!BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(autoPauseReason)) {
+        MEDIA_INFO_LOG("BatchSelectFileDownload check result: keep downloading");
+        return false;
+    }
+    AutoStopAction(autoPauseReason);
+    return true;
 }
 
 // 全量设置自动暂停

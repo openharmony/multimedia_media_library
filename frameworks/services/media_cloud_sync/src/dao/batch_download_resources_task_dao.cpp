@@ -193,6 +193,8 @@ int32_t BatchDownloadResourcesTaskDao::UpdatePauseDownloadResourcesInfo(const st
 
     valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_PAUSE));
+    valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON,
+        static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_DEFAULT));
     std::vector<std::string> whereArgs = {
         to_string(static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_SUCCESS)),
         to_string(static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL)),
@@ -220,6 +222,8 @@ int32_t BatchDownloadResourcesTaskDao::UpdateAllPauseDownloadResourcesInfo()
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_PAUSE));
     value.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_PAUSE));
+    value.PutInt(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON,
+        static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_DEFAULT));
     int32_t changedRows = -1;
     int32_t ret = rdbStore->Update(changedRows, value, predicates);
     MEDIA_INFO_LOG("Pause After ret: %{public}d, changedRows %{public}d", ret, changedRows);
