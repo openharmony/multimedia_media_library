@@ -397,6 +397,17 @@ void MediaLibraryRdbStore::UpdateIndexHiddenTime(const shared_ptr<MediaLibraryRd
     MEDIA_INFO_LOG("end update idx_schpt_hidden_time");
 }
 
+void MediaLibraryRdbStore::UpdateIndexDateAdded(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
+{
+    const vector<string> sqls = {
+        BaseColumn::DropIndex() + PhotoColumn::PHOTO_SCHPT_PHOTO_DATEADDED_INDEX,
+        PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED
+    };
+    MEDIA_INFO_LOG("start update idx_schpt_date_added_new");
+    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
+    MEDIA_INFO_LOG("end update idx_schpt_date_added_new");
+}
+
 void MediaLibraryRdbStore::UpdateBurstDirty(const shared_ptr<MediaLibraryRdbStore> store)
 {
     const vector<string> sqls = {
