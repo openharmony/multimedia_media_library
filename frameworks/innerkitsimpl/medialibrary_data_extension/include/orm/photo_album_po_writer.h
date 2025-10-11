@@ -54,7 +54,7 @@ public:
         } else if (std::holds_alternative<double>(val)) {
             columnValue = std::to_string(std::get<double>(val));
         } else if (std::holds_alternative<std::string>(val)) {
-            columnValue = std::to_string(std::get<std::string>(val));
+            columnValue = std::get<std::string>(val);
         } else {
             MEDIA_ERR_LOG("PhotoAlbumPoWriter: SetMemberVariable: variant type is not supported");
         }
