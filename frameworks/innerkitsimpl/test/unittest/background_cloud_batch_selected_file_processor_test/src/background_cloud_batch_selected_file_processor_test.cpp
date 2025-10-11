@@ -354,6 +354,15 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_GetStorageFreeRa
     MEDIA_INFO_LOG("Bcbsfpt_GetStorageFreeRatio_Test_001 End");
 }
 
+HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_StopProcessConditionCheck_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Bcbsfpt_StopProcessConditionCheck_Test_001 Start");
+    // no task
+    bool ret = BackgroundCloudBatchSelectedFileProcessor::StopProcessConditionCheck();
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("Bcbsfpt_StopProcessConditionCheck_Test_001 End");
+}
+
 HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_RemoveFinishedResult_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcbsfpt_RemoveFinishedResult_Test_001 Start");
