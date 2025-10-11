@@ -1797,6 +1797,10 @@ static void JSGetThumbnailDataExecute(napi_env env, FileAssetAsyncContext* conte
     }
 #endif
     context->path = path;
+    if (!ThumbnailManager::QueryThumbnailDataBuffer(context->objectPtr->GetUri(),
+        context->type, context->path, context->buffer)) {
+        context->buffer.clear();
+    }
 }
 
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
@@ -1831,15 +1835,27 @@ static void JSGetKeyFrameThumbnailExecute(FileAssetAsyncContext* context)
         context->type, path);
 }
 
-static napi_value GetReference(napi_env env, napi_ref ref)
+static napi_value GetArrayBufferFromBuffer(napi_env env, const std::vector<uint8_t> &buffer)
 {
-    napi_value obj = nullptr;
-    napi_status status = napi_get_reference_value(env, ref, &obj);
-    if (status != napi_ok) {
-        napi_throw_error(env, nullptr, "napi_get_reference_value fail");
+    if (buffer.empty()) {
+        NAPI_ERR_LOG("Buffer is empty");
         return nullptr;
     }
-    return obj;
+
+    napi_value result = nullptr;
+    void* data = nullptr;
+    size_t size = buffer.size();
+    if (napi_create_arraybuffer(env, size, &data, &result) != napi_ok) {
+        NAPI_ERR_LOG("Failed to napi_create_arraybuffer");
+        return nullptr;
+    }
+
+    int32_t copyRes = memcpy_s(data, size, buffer.data(), size);
+    if (copyRes != 0) {
+        NAPI_ERR_LOG("Failed to copy buffer, copyRes:%{public}d", copyRes);
+        return nullptr;
+    }
+    return result;
 }
 
 static void JSGetThumbnailDataCompleteCallback(napi_env env, napi_status status,
@@ -1850,25 +1866,30 @@ static void JSGetThumbnailDataCompleteCallback(napi_env env, napi_status status,
 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    context->napiArrayBufferRef = ThumbnailManager::QueryThumbnailData(
-        env, context->objectPtr->GetUri(), context->type, context->path);
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
 
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
-    if (context->error == ERR_DEFAULT && context->napiArrayBufferRef != nullptr) {
-        jsContext->data = GetReference(env, context->napiArrayBufferRef);
-        jsContext->status = true;
+    if (context->error == ERR_DEFAULT && !context->buffer.empty()) {
+        napi_value arrayBuffer = nullptr;
+        arrayBuffer = GetArrayBufferFromBuffer(env, context->buffer);
+        if (arrayBuffer == nullptr) {
+            NAPI_ERR_LOG("Failed to get array buffer");
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL, "System inner fail");
+        } else {
+            jsContext->data = arrayBuffer;
+            jsContext->status = true;
+        }
     } else {
-        if (context->napiArrayBufferRef == nullptr) {
+        if (context->buffer.empty()) {
                 MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_ERR_NO_SUCH_FILE,
                     "File is not exist");
                 NAPI_ERR_LOG("File is not exist");
         }
         context->HandleError(env, jsContext->error);
     }
+    context->buffer.clear();
 
     tracer.Finish();
     if (context->work != nullptr) {
@@ -1876,7 +1897,6 @@ static void JSGetThumbnailDataCompleteCallback(napi_env env, napi_status status,
                                                    context->work, *jsContext);
     }
 
-    napi_delete_reference(env, context->napiArrayBufferRef);
     delete context;
 }
 
