@@ -780,6 +780,13 @@ void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX, false);
     }
+
+    if (oldVersion < VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED, false)) {
+        MediaLibraryRdbStore::UpdateIndexDateAdded(rdbStore, VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED);
+        rdbStore->SetOldVersion(VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED, false);
+    }
 }
 
 void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
