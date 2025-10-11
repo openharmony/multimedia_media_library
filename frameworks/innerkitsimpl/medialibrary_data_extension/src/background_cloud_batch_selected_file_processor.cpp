@@ -348,15 +348,17 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::AddTasksAndStarted(vector<std
 {
     CHECK_AND_RETURN_RET_LOG(GetDownloadQueueSizeWithLock() < batchDownloadQueueLimitNum_, E_OK,
         "BatchSelectFileDownload Queue is full tasks still running"); // 队列满 暂不添加
-    MEDIA_INFO_LOG("BatchSelectFileDownload AddTasksAndStarted not full can add task");
+    int32_t canAddCount = batchDownloadQueueLimitNum_ - GetDownloadQueueSizeWithLock();
+    MEDIA_INFO_LOG("BatchSelectFileDownload AddTasksAndStarted not full can add task %{public}d", canAddCount);
     for (std::string &uri : pendingURIs) { // 队列空 加到队列满或者 uri都加完
-        int32_t ret = AddSelectedBatchDownloadTask(uri);
-        CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to add download task! err: %{public}d", ret);
-        downloadLatestFinished_.store(false); // 开始下载
-        if (GetDownloadQueueSizeWithLock() >= batchDownloadQueueLimitNum_) { // 队列满
+        if (canAddCount <= 0) { // 队列满
             MEDIA_INFO_LOG("BatchSelectFileDownload AddTasksAndStarted Queue Is Full");
             return E_OK;
         }
+        int32_t ret = AddSelectedBatchDownloadTask(uri);
+        CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to add download task! err: %{public}d", ret);
+        canAddCount--;
+        downloadLatestFinished_.store(false); // 开始下载
     }
     return E_OK;
 }
