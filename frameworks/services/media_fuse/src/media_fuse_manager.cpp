@@ -671,18 +671,22 @@ int32_t MediaFuseManager::DoHdcRelease(const char *path, const int32_t &fd)
     }
 
     string target = path;
-    if (MEDIA_CREATE_WRITE_MAP.find(target) != MEDIA_CREATE_WRITE_MAP.end()) {
-        if (MEDIA_CREATE_WRITE_MAP[target]) {
-            int32_t res = MediaFuseHdcOperations::ScanFileByPath(target);
-            MEDIA_CREATE_WRITE_MAP.erase(target);
-            return res;
-        } else {
-            MEDIA_ERR_LOG("DoHdcCreate failed.");
-            MEDIA_CREATE_WRITE_MAP.erase(target);
-            return E_ERR;
-        }
+    if (MEDIA_CREATE_WRITE_MAP.find(target) == MEDIA_CREATE_WRITE_MAP.end()) {
+        MEDIA_INFO_LOG("not found, path=%{private}s, try do release.", path);
+        int32_t ret = DoRelease(path, static_cast<int>(fd));
+        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "do release fail");
+        return E_SUCCESS;
     }
-    return E_SUCCESS;
+
+    if (MEDIA_CREATE_WRITE_MAP[target]) {
+        int32_t res = MediaFuseHdcOperations::ScanFileByPath(target);
+        MEDIA_CREATE_WRITE_MAP.erase(target);
+        return res;
+    } else {
+        MEDIA_ERR_LOG("DoHdcCreate failed.");
+        MEDIA_CREATE_WRITE_MAP.erase(target);
+        return E_ERR;
+    }
 }
 
 int32_t MediaFuseManager::DoHdcUnlink(const char *path)
