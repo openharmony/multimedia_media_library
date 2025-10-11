@@ -363,7 +363,7 @@ int32_t CloudMediaDataDao::QueryDataFromPhotoAlbums(const DataShare::DataSharePr
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "QueryData Failed to get rdbStore.");
-    NativeRdb::RdbPredicates rdbPredicates = 
+    NativeRdb::RdbPredicates rdbPredicates =
         RdbDataShareAdapter::RdbUtils::ToPredicates(predicates, PhotoAlbumColumns::TABLE);
     auto resultSet = rdbStore->Query(rdbPredicates, columnNames);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "QueryData resultset is null");
