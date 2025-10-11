@@ -86,13 +86,13 @@ private:
 
 private:
     const std::string SQL_CHECK_AND_DELETE_ALBUM = "\
-        DELETE FROM PhotoAlbum \ 
+        DELETE FROM PhotoAlbum \
         WHERE COALESCE(cloud_id, '') = '' AND \
             dirty = 4;";
     const std::string SQL_CHECK_AND_UPDATE_ALBUM = "\
-        UPDATE PhotoAlbum \ 
+        UPDATE PhotoAlbum \
         SET dirty = 1 \
-        WHERE \ 
+        WHERE \
             COALESCE(cloud_id, '') = '' AND \
             dirty IN (0, 2);";
 };
