@@ -3264,7 +3264,6 @@ static void NotifyPhotoAlbum(const vector<int32_t> &changedAlbumIds,
     }
     assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM | NotifyAlbumType::USER_ALBUM |
         NotifyAlbumType::SOURCE_ALBUM));
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
     assetRefresh->Notify();
 }
 
@@ -3521,6 +3520,17 @@ int32_t MediaLibraryAssetOperations::DealWithBatchDownloadingFiles(vector<shared
     return DealWithBatchDownloadingFilesById(needStopDownloadFileIds);
 }
 
+static void GetAnalysisAlbumIdsOfAssets(const vector<shared_ptr<FileAsset>> fileAssetVector, set<string>& albumIds)
+{
+    vector<string> assetIds;
+    for (auto& fileAssetPtr : fileAssetVector) {
+        CHECK_AND_CONTINUE(fileAssetPtr != nullptr);
+        assetIds.push_back(std::to_string(fileAssetPtr->GetId()));
+    }
+    MediaLibraryRdbUtils::QueryAnalysisAlbumIdOfAssets(assetIds, albumIds);
+    MEDIA_INFO_LOG("Number of Analysis Album is %{public}zu", albumIds.size());
+}
+
 int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predicates, const bool isAging,
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
@@ -3540,21 +3550,11 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     }
 
     vector<string> columns = {
-        PhotoColumn::PHOTO_CLOUD_ID,
-        MediaColumn::MEDIA_SIZE,
-        MediaColumn::MEDIA_DATE_MODIFIED,
-        MediaColumn::MEDIA_FILE_PATH,
-        MediaColumn::MEDIA_NAME,
-        MediaColumn::MEDIA_ID,
-        PhotoColumn::PHOTO_POSITION,
-        PhotoColumn::PHOTO_BURST_KEY,
-        MediaColumn::MEDIA_TYPE,
-        PhotoColumn::PHOTO_SUBTYPE,
-        PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
-        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
-        PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::PHOTO_OWNER_ALBUM_ID,
-        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
+        PhotoColumn::PHOTO_CLOUD_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
+        MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_NAME, MediaColumn::MEDIA_ID,
+        PhotoColumn::PHOTO_POSITION, PhotoColumn::PHOTO_BURST_KEY, MediaColumn::MEDIA_TYPE,
+        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
+        PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
     };
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     vector<shared_ptr<FileAsset>> fileAssetVector;
@@ -3564,6 +3564,8 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     if (resultSet != nullptr) {
         resultSet->Close();
     }
+    set<string> analysisAlbumIds;
+    GetAnalysisAlbumIdsOfAssets(fileAssetVector, analysisAlbumIds);
     for (auto& fileAssetPtr : fileAssetVector) {
         DeleteLocalPhotoPermanently(fileAssetPtr, subFileAssetVector, assetRefresh);
         changedAlbumIds.insert(fileAssetPtr->GetOwnerAlbumId());
@@ -3573,6 +3575,11 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     DealWithBatchDownloadingFiles(fileAssetVector);
     //delete both local and cloud image
     DeleteLocalAndCloudPhotos(subFileAssetVector);
+    vector<string> albumIds(analysisAlbumIds.begin(), analysisAlbumIds.end());
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (albumIds.size() > 0 && rdbStore != nullptr) {
+        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIds);
+    }
     NotifyPhotoAlbum(std::vector<int32_t>(changedAlbumIds.begin(), changedAlbumIds.end()), assetRefresh);
     return E_OK;
 }
