@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <string>
 
+#include "asset_accurate_refresh.h"
 #include "database_adapter.h"
 #include "dfx_utils.h"
 #include "directory_ex.h"
@@ -33,6 +34,7 @@
 #include "medialibrary_type_const.h"
 #include "moving_photo_file_utils.h"
 #include "multistages_capture_dfx_total_time.h"
+#include "refresh_business_name.h"
 #include "result_set_utils.h"
 
 using namespace std;
@@ -279,10 +281,14 @@ static int32_t UpdateIsTempAndDirty(int32_t fileId, int32_t subType)
 
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
+    int32_t updateRows = -1;
+    AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::SAVE_CAMERA_PHOTO_BUSSINESS_NAME);
     values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
 
-    int32_t updateRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
+    updateRows = assetRefresh.UpdateWithDateTime(values, predicates);
     CHECK_AND_RETURN_RET_LOG(updateRows >= 0, E_ERR, "update temp flag fail.");
+    assetRefresh.RefreshAlbum(static_cast<NotifyAlbumType>(SYS_ALBUM | USER_ALBUM | SOURCE_ALBUM));
+    assetRefresh.Notify();
     return updateRows;
 }
 
