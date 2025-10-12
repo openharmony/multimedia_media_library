@@ -551,6 +551,7 @@ struct PortraitAlbumInfo {
     std::string groupTagOld;
     std::string groupTagNew;
     std::string tagName;
+    std::string relationship;
 };
 
 struct FaceInfo {

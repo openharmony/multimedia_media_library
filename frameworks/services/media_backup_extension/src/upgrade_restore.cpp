@@ -43,6 +43,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
+#include "portrait_album_utils.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -1155,8 +1156,8 @@ vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset
     result.reserve(QUERY_COUNT);
 
     std::string querySql = "SELECT " + GALLERY_MERGE_TAG_TAG_ID + ", " + GALLERY_GROUP_TAG + ", " +
-        GALLERY_TAG_NAME + ", " + GALLERY_USER_OPERATION + ", " + GALLERY_RENAME_OPERATION +
-        " FROM " + (IsCloudRestoreSatisfied() ?
+        GALLERY_TAG_NAME + ", " + GALLERY_USER_OPERATION + ", " + GALLERY_RENAME_OPERATION + ", " +
+        GALLERY_RELATIONSHIP + " FROM " + (IsCloudRestoreSatisfied() ?
         GALLERY_PORTRAIT_ALBUM_TABLE_WITH_CLOUD : GALLERY_PORTRAIT_ALBUM_TABLE);
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
@@ -1191,6 +1192,14 @@ bool UpgradeRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb
     portraitAlbumInfo.tagName = GetStringVal(GALLERY_TAG_NAME, resultSet);
     portraitAlbumInfo.userOperation = GetInt32Val(GALLERY_USER_OPERATION, resultSet);
     portraitAlbumInfo.renameOperation = GetInt32Val(GALLERY_RENAME_OPERATION, resultSet);
+    std::string oldRelationshipId = GetStringVal(GALLERY_RELATIONSHIP, resultSet);
+
+    if (oldRelationshipId != std::to_string(INDEX_ME)) {
+        auto it = RELATIONSHIP_MAP.find(oldRelationshipId);
+        if (it != RELATIONSHIP_MAP.end()) {
+            portraitAlbumInfo.relationship = it->second;
+        }
+    }
     return true;
 }
 
@@ -1258,6 +1267,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const PortraitAlbumInfo &
         values.PutString(GROUP_TAG, portraitAlbumInfo.groupTagOld);
         values.PutInt(USER_OPERATION, portraitAlbumInfo.userOperation);
         values.PutInt(RENAME_OPERATION, RENAME_OPERATION_RENAMED);
+        values.PutString("relationship", portraitAlbumInfo.relationship);
         values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
         values.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
         values.PutInt(USER_DISPLAY_LEVEL, PortraitPages::FIRST_PAGE);
@@ -1303,7 +1313,6 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
         " WHERE "
         " COALESCE(gm.recycleFlag, 0) NOT IN (?, ?, ?, ?, ?) "
         " AND COALESCE(gm.albumId, '') NOT IN (SELECT albumId FROM gallery_album WHERE hide = 1) "
-        " AND (mt.tag_name IS NOT NULL AND mt.tag_name != '') "
         " GROUP BY mf.hash, mf.face_id "
         " HAVING gm._id IN (" + selection + ")";
     std::vector<NativeRdb::ValueObject> params = { RECYCLE_FLAG_LOCAL, RECYCLE_FLAG_UNSYNCED, RECYCLE_FLAG_SYNCED,
@@ -1623,6 +1632,13 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
 
 void UpgradeRestore::RestoreAnalysisAlbum()
 {
+    std::string querySql = "SELECT count(1) AS count FROM merge_tag";
+    int32_t totalPortraitAlbumNumber = BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
+    if (totalPortraitAlbumNumber > 0) {
+        int32_t ret = PortraitAlbumUtils::DeleteExistingAlbumData(mediaLibraryRdb_, AlbumDeleteType::ALL);
+        CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to delete portrait album data");
+    }
+
     RestoreFromGalleryPortraitAlbum();
 }
 
