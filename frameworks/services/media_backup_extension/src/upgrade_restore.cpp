@@ -32,6 +32,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_transaction.h"
+#include "media_analysis_helper.h"
 #include "photo_album_restore.h"
 #include "photos_dao.h"
 #include "photos_restore.h"
@@ -170,6 +171,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     geoKnowledgeRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     highlightRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
+    ocrRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -377,8 +379,12 @@ void UpgradeRestore::RestoreSmartAlbums()
     int64_t startRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
     RestoreHighlightAlbums();
     int64_t endRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("TimeCost: RestoreGeo cost: %{public}" PRId64 ", RestoreHighlight cost: %{public}" PRId64,
-        startRestoreHighlight - startRestoreGeo, endRestoreHighlight - startRestoreHighlight);
+    ocrRestore_.RestoreOCR(photoInfoMap_);
+    int64_t endRestoreOCR = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: RestoreGeo cost: %{public}" PRId64 ", RestoreHighlight cost: %{public}" PRId64
+        " RestoreOCR cost: %{public}" PRId64,
+        startRestoreHighlight - startRestoreGeo, endRestoreHighlight - startRestoreHighlight,
+        endRestoreOCR - endRestoreHighlight);
     MEDIA_INFO_LOG("RestoreSmartAlbums end");
 }
 
@@ -489,6 +495,7 @@ void UpgradeRestore::RestorePhoto()
         MEDIA_INFO_LOG("restore mode no need to del gallery db");
     }
     ProcessBurstPhotos();
+    RestoreSearchIndex();
     StopParameterForRestore();
     StopParameterForClone();
 }
@@ -1821,6 +1828,16 @@ void UpgradeRestore::BatchDeleteEmptyAlbums(const std::vector<int32_t> &batchAlb
     }
     deletePredicates.SetWhereArgs(whereArgs);
     BackupDatabaseUtils::Delete(deletePredicates, deleteRows, mediaLibraryRdb_);
+}
+
+void UpgradeRestore::RestoreSearchIndex()
+{
+    int64_t doIndexStartTime = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<std::string> fileIds;
+    MediaAnalysisHelper::StartMediaAnalysisServiceSync(
+        IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX_FULL, fileIds);
+    int64_t doIndexEndTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: doIndex cost: %{public}" PRId64, doIndexEndTime - doIndexStartTime);
 }
 } // namespace Media
 } // namespace OHOS
