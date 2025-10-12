@@ -149,6 +149,7 @@ private:
     int32_t fileId_ = 0;
     bool isSkipAlbumUpdate_ = false;
     bool isCameraShotMovingPhoto_ = false;
+    bool needUpdateAssetName_ = true;
 };
 
 class ScanErrCallback : public IMediaScannerCallback {
