@@ -180,6 +180,18 @@ HWTEST_F(MediaLibraryObjectTest, medialib_OpenFile_test_001, TestSize.Level1)
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
+HWTEST_F(MediaLibraryObjectTest, medialib_OpenFile_test_002, TestSize.Level1)
+{
+    MediaLibraryUnitTestUtils::InitUnistore();
+    string mode = "r";
+    string uriString = "file://media/open_db_dfx/xxx";
+    Uri uri(uriString);
+    MediaLibraryCommand cmd(uri, OperationType::OPEN);
+    int32_t ret = MediaLibraryObjectUtils::OpenFile(cmd, mode);
+    EXPECT_EQ(ret, E_INVALID_URI);
+    MediaLibraryUnistoreManager::GetInstance().Stop();
+}
+
 HWTEST_F(MediaLibraryObjectTest, medialib_CloseFile_test_001, TestSize.Level1)
 {
     Uri uri("//data/test");

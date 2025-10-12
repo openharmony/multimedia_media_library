@@ -102,6 +102,8 @@ ohos_unittest("media_assets_controller_service_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/stop_thumbnail_creation_task_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/submit_cache_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/trash_photos_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_database_dfx_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/remove_database_dfx_vo.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_itypes_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/parameter_utils.cpp",
     "../../../media_library_manager/src/media_library_tab_old_photos_client.cpp",
@@ -148,6 +150,8 @@ ohos_unittest("media_assets_controller_service_test") {
     "./src/start_thumbnail_creation_task_test.cpp",
     "./src/stop_thumbnail_creation_task_test.cpp",
     "./src/sync_cloud_enhancement_task_status_test.cpp",
+    "./src/get_database_dfx_test.cpp",
+    "./src/remove_database_dfx_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",

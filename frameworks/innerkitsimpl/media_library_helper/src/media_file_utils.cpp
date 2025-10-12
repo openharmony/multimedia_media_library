@@ -1898,7 +1898,8 @@ string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
     if ((uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) ||
         (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos) ||
         (uri.find(PhotoColumn::HIGHTLIGHT_COVER_URI) != string::npos) ||
-        (uri.find(URI_MTP_OPERATION) != string::npos)) {
+        (uri.find(URI_MTP_OPERATION) != string::npos) ||
+        (uri.find(MEDIA_FILEOPRN_OPEN_DB_DFX) != string::npos)) {
         return uri;
     }
 
