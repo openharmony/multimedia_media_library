@@ -815,6 +815,7 @@ static void ConvertToString(const vector<int32_t> &fileIds, std::vector<std::str
 
 int32_t MediaAssetsService::SetAssetTitle(int32_t fileId, const std::string &title)
 {
+    MEDIA_INFO_LOG("SetAssetTitle fileId: %{public}d, title: %{public}s.", fileId, title.c_str());
     NativeRdb::ValuesBucket assetInfo;
     assetInfo.PutString(PhotoColumn::MEDIA_TITLE, title);
 
