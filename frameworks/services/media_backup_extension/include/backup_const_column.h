@@ -46,6 +46,7 @@ const std::string GALLERY_TOTAL_FACE = "merge_face.total_face";
 const std::string GALLERY_MERGE_FACE_HASH = GALLERY_TABLE_MERGE_FACE + "." + GALLERY_HASH;
 const std::string GALLERY_MERGE_FACE_TAG_ID = GALLERY_TABLE_MERGE_FACE + "." + GALLERY_TAG_ID;
 const std::string GALLERY_MERGE_TAG_TAG_ID = GALLERY_TABLE_MERGE_TAG + "." + GALLERY_TAG_ID;
+const std::string GALLERY_RELATIONSHIP = "merge_tag.relationship";
 const std::string GALLERY_MEDIA_ID = GALLERY_TABLE_MEDIA + "." + GALLERY_ID;
 const std::string GALLERY_MEDIA_HASH = GALLERY_TABLE_MEDIA + "." + GALLERY_HASH;
 const std::string GALLERY_FACE_HASH = GALLERY_TABLE_FACE + "." + GALLERY_HASH;
@@ -205,6 +206,62 @@ const std::string ASSET_MAP_COL_OLD_FILE_ID = "old_file_id";
 const std::string ASSET_MAP_COL_OLD_DATA = "old_data";
 const std::string ASSET_MAP_COL_CLONE_SEQUENCE = "clone_sequence";
 
+
+// Relationship
+enum RelationshipIndex {
+    INDEX_ME = 0,
+    INDEX_WIFE = 2,
+    INDEX_HUSBAND = 3,
+    INDEX_DAD = 4,
+    INDEX_MUM = 5,
+    INDEX_WORKMATE = 6,
+    INDEX_FRIEND = 7,
+    INDEX_CLASSMATE = 8,
+    INDEX_BESTIE = 9,
+    INDEX_BOYFRIEND = 10,
+    INDEX_GIRLFRIEND = 11,
+    INDEX_FAMILY = 12,
+    INDEX_GRANDFATHER = 13,
+    INDEX_GRANDMOTHER = 14,
+    INDEX_PATERNALGRANDFATHER = 15,
+    INDEX_PATERNALGRANDMOTHER = 16,
+    INDEX_BROTHER = 17,
+    INDEX_SISTER = 18,
+    INDEX_LITTLEBROTHER = 19,
+    INDEX_LITTLESISTER = 20,
+    INDEX_RELATIVE = 21,
+    INDEX_OTHER = 22,
+    INDEX_SON = 23,
+    INDEX_DAUGHTER = 24
+};
+
+const std::unordered_map<std::string, std::string> RELATIONSHIP_MAP = {
+    {std::to_string(INDEX_ME), "me"},
+    {std::to_string(INDEX_SON), "son"},
+    {std::to_string(INDEX_DAUGHTER), "daughter"},
+    {std::to_string(INDEX_WIFE), "wife"},
+    {std::to_string(INDEX_HUSBAND), "husband"},
+    {std::to_string(INDEX_DAD), "father"},
+    {std::to_string(INDEX_MUM), "mother"},
+    {std::to_string(INDEX_WORKMATE), "colleague"},
+    {std::to_string(INDEX_FRIEND), "friend"},
+    {std::to_string(INDEX_CLASSMATE), "classmate"},
+    {std::to_string(INDEX_BESTIE), "best_friend_female"},
+    {std::to_string(INDEX_BOYFRIEND), "boyfriend"},
+    {std::to_string(INDEX_GIRLFRIEND), "girlfriend"},
+    {std::to_string(INDEX_FAMILY), "family"},
+    {std::to_string(INDEX_GRANDFATHER), "maternal_grandfather"},
+    {std::to_string(INDEX_GRANDMOTHER), "maternal_grandmother"},
+    {std::to_string(INDEX_PATERNALGRANDFATHER), "paternal_grandfather"},
+    {std::to_string(INDEX_PATERNALGRANDMOTHER), "paternal_grandmother"},
+    {std::to_string(INDEX_BROTHER), "older_brother"},
+    {std::to_string(INDEX_SISTER), "older_sister"},
+    {std::to_string(INDEX_LITTLEBROTHER), "younger_brother"},
+    {std::to_string(INDEX_LITTLESISTER), "younger_sister"},
+    {std::to_string(INDEX_RELATIVE), "relative"},
+    {std::to_string(INDEX_OTHER), "other"}
+};
+
 // Tab Old Albums TBL COL_NAME
 const std::string TAB_OLD_ALBUMS = "tab_old_albums";
 const std::string OLD_ALBUM_ID_COL = "old_album_id";
@@ -232,10 +289,10 @@ const std::string GALLERY_TAG_WITH_CLOUD_PHOTOS = "EXISTS (SELECT 1 FROM " + GAL
     GALLERY_MERGE_FACE_TAG_ID + " = " + GALLERY_MERGE_TAG_TAG_ID + ")";
 
 const std::string GALLERY_PORTRAIT_ALBUM_TABLE = GALLERY_TABLE_MERGE_TAG + " WHERE " +
-    GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY + " AND " + GALLERY_TAG_WITH_PHOTOS;
+    GALLERY_TAG_WITH_PHOTOS;
 
 const std::string GALLERY_PORTRAIT_ALBUM_TABLE_WITH_CLOUD = GALLERY_TABLE_MERGE_TAG + " WHERE " +
-    GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY + " AND " + GALLERY_TAG_WITH_CLOUD_PHOTOS;
+    GALLERY_TAG_WITH_CLOUD_PHOTOS;
 
 const std::string QUERY_GALLERY_PORTRAIT_ALBUM_COUNT = "SELECT count(1) as count FROM " + GALLERY_PORTRAIT_ALBUM_TABLE;
 

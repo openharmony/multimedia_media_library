@@ -83,6 +83,7 @@ ohos_shared_library("mediabackup") {
     "./src/others_clone_restore.cpp",
     "./src/portrait_album/clone_restore_portrait_album.cpp",
     "./src/portrait_album/clone_restore_portrait_base.cpp",
+    "./src/portrait_album/portrait_album_utils.cpp",
     "./src/report/audios_count_statistic.cpp",
     "./src/report/database_report.cpp",
     "./src/report/external_files_count_statistic.cpp",
