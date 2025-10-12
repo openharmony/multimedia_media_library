@@ -118,6 +118,7 @@ enum class EXPORT OperationObject : uint32_t {
     CUSTOM_RECORDS_OPERATION,
     MOVING_PHOTO_VIDEO_READY,
     PAH_BACKUP_POSTPROCESS,
+    FILESYSTEM_DB_DFX,
 };
 
 enum class EXPORT OperationType : uint32_t {

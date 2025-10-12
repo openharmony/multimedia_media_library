@@ -114,6 +114,7 @@ const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
 const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";
 const std::string PHOTO_TRANSCODE_OPERATION = "photo_transcode_operation";
 const std::string OPRN_TRANSCODE_HEIF = "oprn_transcode_heif";
+const std::string MEDIA_FILEOPRN_OPEN_DB_DFX = "open_db_dfx";
 
 // API9 compat photo operations constants
 const std::string URI_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;

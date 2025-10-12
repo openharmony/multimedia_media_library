@@ -121,6 +121,9 @@
 #include "heif_transcoding_check_vo.h"
 #include "media_old_albums_column.h"
 
+#include "get_database_dfx_vo.h"
+#include "remove_database_dfx_vo.h"
+
 #include "parcel.h"
 #include "medialibrary_notify_utils.h"
 #include "qos.h"
@@ -462,6 +465,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getPhotoAlbumOrder", PhotoAccessGetPhotoAlbumOrder),
             DECLARE_NAPI_FUNCTION("setPhotoAlbumOrder", PhotoAccessSetPhotoAlbumOrder),
             DECLARE_NAPI_FUNCTION("isCompatibleDuplicateSupported", CanSupportedCompatibleDuplicate),
+            DECLARE_NAPI_FUNCTION("getDatabaseDFX", PhotoAccessGetDatabaseDFX),
+            DECLARE_NAPI_FUNCTION("removeDatabaseDFX", PhotoAccessRemoveDatabaseDFX),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -12831,6 +12836,230 @@ void MediaLibraryNapi::SetUserId(const int32_t &userId)
         ChangeListenerNapi::InvalidateTrashAlbumUri(); 
     }
     userId_ = userId;
+}
+
+static napi_value ParseArgsGetDatabaseDFX(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "this api noly can be called by system app");
+        return nullptr;
+    }
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) == napi_ok,
+        "failed to parse object info");
+
+    std::string betaId;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], betaId) == napi_ok,
+        "failed to parse betaId");
+    context->valuesBucket.Put(MEDIA_DATA_DFX_BETA_ID, betaId);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void JSGetDatabaseDFXExecute(napi_env env, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetDatabaseDFXExecute");
+
+    bool isValid = false;
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_IF_EQUAL(context != nullptr, "context is nullptr");
+    std::string betaId = context->valuesBucket.Get(MEDIA_DATA_DFX_BETA_ID, isValid);
+    CHECK_IF_EQUAL(isValid, "JSGetDatabaseDFXExecute betaId is empty");
+    if (context->businessCode != 0) {
+        GetDatabaseDFXReqBody reqBody;
+        reqBody.betaId = betaId;
+        GetDatabaseDFXRespBody respBody;
+        int32_t errCode = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody, respBody);
+        if (errCode != E_OK) {
+            NAPI_ERR_LOG("failed to Call GetDatabaseDFX, errCode = %{public}d", errCode);
+            context->SaveError(errCode);
+            return;
+        }
+        string uri = "file://media/open_db_dfx/" + betaId;
+        Uri openFileUri(uri);
+        int32_t fileFd = UserFileClient::OpenFile(openFileUri, "r");
+        if (fileFd < 0) {
+            context->SaveError(fileFd);
+            NAPI_ERR_LOG("failed to open db.zip, errCode = %{public}d", fileFd);
+            return;
+        }
+        context->databaseDFXMap["FIEL_FD"] = std::to_string(fileFd);
+        context->databaseDFXMap["FILE_NAME"] = respBody.fileName;
+        context->databaseDFXMap["FIEL_SIZE"] = respBody.fileSize;
+    }
+}
+
+static napi_value GetDatabaseDFXMap(napi_env env, unordered_map<string, string> &databaseDFXMap)
+{
+    napi_status status;
+    napi_value mapNapiValue {nullptr};
+    status = napi_create_map(env, &mapNapiValue);
+    CHECK_COND_RET(status == napi_ok && mapNapiValue != nullptr, nullptr,
+        "failed to create map napi value, napi status: %{public}d", static_cast<int32_t>(status));
+    for (auto &iter : databaseDFXMap) {
+        napi_value key, value;
+        CHECK_COND_RET(napi_create_string_utf8(env, iter.first.c_str(), NAPI_AUTO_LENGTH, &key) == napi_ok, nullptr,
+            "failed to create ResultMap key: %{public}s", iter.first.c_str());
+        CHECK_COND_RET(napi_create_string_utf8(env, iter.second.c_str(), NAPI_AUTO_LENGTH, &value) == napi_ok, nullptr,
+            "failed to create ResultMap value: %{public}s", iter.second.c_str());
+        
+        status = napi_map_set_property(env, mapNapiValue, key, value);
+        CHECK_COND_RET(status == napi_ok, nullptr, "failed to set databaseDFXMap, napi status: %{public}d", 
+            static_cast<int32_t>(status));
+    }
+    return mapNapiValue;
+}
+
+static void JSGetDatabaseDFXCallbackComplete(napi_env env, napi_status status, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetDatabaseDFXCallbackComplete");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is nullptr");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+    } else {
+        napi_value resultMap = GetDatabaseDFXMap(env, context->databaseDFXMap);
+        if (resultMap == nullptr) {
+            CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+                "failed to create js object for GetDatabaseDFXMap");
+            return;
+        }
+        jsContext->data = resultMap;
+        jsContext->status = true;
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    }
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetDatabaseDFX(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetDatabaseDFX");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+
+    NAPI_ASSERT(env, ParseArgsGetDatabaseDFX(env, info, asyncContext), "failed to parse js args");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_DATABASE_DFX);
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetDatabaseDFX", 
+        JSGetDatabaseDFXExecute, JSGetDatabaseDFXCallbackComplete);
+}
+
+static napi_value ParseArgsRemoveDatabaseDFX(napi_env env, napi_callback_info info, 
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "this api noly can be called by system app");
+        return nullptr;
+    }
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_THREE;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) == napi_ok,
+        "failed to parse object info");
+
+    std::string betaId;
+    int32_t fileFd;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], betaId) == napi_ok,
+        "failed to parse betaId");
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[ARGS_ONE], fileFd) != nullptr,
+        "failed to parse fileFd");
+    context->valuesBucket.Put(MEDIA_DATA_DFX_BETA_ID, betaId);
+    context->valuesBucket.Put(MEDIA_DATA_DFX_FILE_FD, fileFd);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void JSRemoveDatabaseDFXExecute(napi_env env, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSRemoveDatabaseDFXExecute");
+
+    bool isValid = false;
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_IF_EQUAL(context != nullptr, "context is nullptr");
+    std::string betaId = context->valuesBucket.Get(MEDIA_DATA_DFX_BETA_ID, isValid);
+    CHECK_IF_EQUAL(isValid, "JSRemoveDatabaseDFXExecute betaId is empty");
+    int32_t fileFd = context->valuesBucket.Get(MEDIA_DATA_DFX_FILE_FD, isValid);
+    CHECK_IF_EQUAL(isValid, "JSRemoveDatabaseDFXExecute fileFd is empty");
+    int32_t errCode = close(fileFd);
+    if (errCode != 0) {
+        NAPI_ERR_LOG("failed to close fileFd: %{public}d errCode = %{public}d", fileFd, errCode);
+        context->SaveError(errCode);
+        return;
+    }
+    if (context->businessCode != 0) {
+        RemoveDatabaseDFXReqBody reqBody;
+        reqBody.betaId = betaId;
+        errCode = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody);
+        if (errCode != E_OK) {
+            NAPI_ERR_LOG("failed to Call RemoveDatabaseDFX, errCode = %{public}d", errCode);
+            context->SaveError(errCode);
+        }
+    }
+}
+
+static void JSRemoveDatabaseDFXCallbackComplete(napi_env env, napi_status status, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSRemoveDatabaseDFXCallbackComplete");
+
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is nullptr");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+    } else {
+        jsContext->status = true;
+    }
+    tracer.Finish();
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessRemoveDatabaseDFX(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessRemoveDatabaseDFX");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+
+    NAPI_ASSERT(env, ParseArgsRemoveDatabaseDFX(env, info, asyncContext), "failed to parse js args");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_DATABASE_DFX);
+
+    SetUserIdFromObjectInfo(asyncContext);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "RemoveDatabaseDFX", 
+        JSRemoveDatabaseDFXExecute, JSRemoveDatabaseDFXCallbackComplete);
 }
 } // namespace Media
 } // namespace OHOS

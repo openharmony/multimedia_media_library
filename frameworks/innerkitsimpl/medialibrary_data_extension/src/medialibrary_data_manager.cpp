@@ -17,6 +17,10 @@
 
 #include "medialibrary_data_manager.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <cstdlib>
 #include <future>
 #include <shared_mutex>
@@ -186,6 +190,9 @@ static const std::string COLUMN_OLD_FILE_ID = "old_file_id";
 static const std::string NO_DELETE_DISK_DATA_INDEX = "no_delete_disk_data_index";
 static const std::string NO_UPDATE_EDITDATA_SIZE = "no_update_editdata_size";
 static const std::string UPDATE_EDITDATA_SIZE_COUNT = "update_editdata_size_count";
+static const long long MAX_DFX_DB_FILE_SIZE_TYPE = 3LL * 1024 * 1024 * 1024;
+static const std::string KEY_HIVIEW_VERSION_TYPE = "const.logsystem.versiontype";
+static const std::string DFX_DB_FILE_PATH = "/data/storage/el2/log/logpack/";
 
 static int32_t g_updateBurstMaxId = 0;
 static int32_t g_updateHdrModeId = -1;
@@ -3652,6 +3659,79 @@ int32_t MediaLibraryDataManager::RestoreInvalidPosData()
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Execute sql failed");
     MEDIA_INFO_LOG("MediaLibraryDataManager::RestoreInvalidPosData End");
     return ret;
+}
+
+static long long GetDatabaseFileSize(const std::string &destFileName)
+{
+    struct stat statInfo {};
+    CHECK_AND_RETURN_RET(stat(destFileName.c_str(), &statInfo) == 0, static_cast<long long>(E_FAIL));
+    return statInfo.st_size;
+}
+
+static int32_t GetZipFile(const std::string &srcPath, const std::string &destPath)
+{
+    int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
+    std::string zipFileName = srcPath;
+    zipFile compressZip = Media::ZipUtil::CreateZipFile(destPath);
+    CHECK_AND_RETURN_RET_LOG(compressZip != nullptr, E_FILE_OPER_FAIL, "failed to open zip file");
+    int32_t errCode = Media::ZipUtil::AddFileInZip(compressZip, zipFileName, Media::KEEP_NONE_PARENT_PATH);
+    CHECK_AND_RETURN_RET_LOG(errCode == 0, E_FILE_OPER_FAIL, "AddFileInZip failed, errCode = %{public}d", errCode);
+    Media::ZipUtil::CloseZipFile(compressZip);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("Zip db file success, cost %{public}ld ms", static_cast<long>(end - begin));
+    return E_SUCCESS;
+}
+
+static bool CheckBetaMachine()
+{
+    std::string versionType = system::GetParameter(KEY_HIVIEW_VERSION_TYPE, "unknown");
+    return versionType.find("beta") != std::string::npos;
+}
+
+int32_t MediaLibraryDataManager::GetDatabaseDFX(const std::string &betaId, std::string &fileName, std::string &fileSize)
+{
+    MEDIA_INFO_LOG("MediaLibraryDataManager::GetDatabaseDFX enter");
+    CHECK_AND_RETURN_RET_LOG(CheckBetaMachine(), E_CHECK_SYSTEMAPP_FAIL, "API only can be called by beta mechine");
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
+    const std::string filePath = DFX_DB_FILE_PATH;
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(filePath) || MediaFileUtils::CreateDirectory(filePath),
+        E_FILE_OPER_FAIL, "Create dir failed, dir = %{private}s", filePath.c_str());
+    fileName = "media_library_" + betaId + ".db.zip";
+    const std::string destFileName = filePath + fileName;
+    if (MediaFileUtils::IsFileExists(destFileName)) {
+        MediaFileUtils::DeleteFile(destFileName);
+        MEDIA_WARN_LOG("same betaID File is exist, has been deleted, destFile = %{private}s", destFileName.c_str());
+    }
+    std::string tempFileName = filePath + "media_library_temp.db";
+    int32_t errCode = rdbStore->Backup(tempFileName);
+    CHECK_AND_RETURN_RET_LOG(errCode == 0, E_BACK_UP_DB_FAIL, "rdb backup fail: %{public}d", errCode);
+    
+    CHECK_AND_RETURN_RET_LOG(GetZipFile(tempFileName, destFileName) == E_OK, E_FILE_OPER_FAIL, "failed to get zipFile");
+    CHECK_AND_WARN_LOG(MediaFileUtils::DeleteFile(destFileName), "failed to delete temp DBfile, path = %{private}s",
+        tempFileName.c_str());
+    long long totalFileSize = GetDatabaseFileSize(destFileName);
+    long long err = static_cast<long long>(E_FAIL);
+    CHECK_AND_RETURN_RET_LOG(totalFileSize != err, E_FILE_OPER_FAIL, "failed to get DBfile size");
+    fileSize = std::to_string(totalFileSize);
+    if (totalFileSize > MAX_DFX_DB_FILE_SIZE_TYPE) {
+        MEDIA_ERR_LOG("DB file too large, file size is %{public}s byte, file name is %{public}s",
+            fileSize.c_str(), fileName.c_str());
+        MediaFileUtils::DeleteFile(destFileName);
+        return E_DFX_DB_TOO_LARGE;
+    }
+    return E_SUCCESS;
+}
+
+int32_t MediaLibraryDataManager::RemoveDatabaseDFX(const std::string &betaId)
+{
+    MEDIA_INFO_LOG("MediaLibraryDataManager::RemoveDatabaseDFX enter");
+    CHECK_AND_RETURN_RET_LOG(CheckBetaMachine(), E_CHECK_SYSTEMAPP_FAIL, "only can be called by beta mechine");
+    const std::string filePath = DFX_DB_FILE_PATH + "media_library_" + betaId + ".db.zip";
+    CHECK_AND_RETURN_RET(MediaFileUtils::IsFileExists(filePath), E_SUCCESS);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(filePath), E_FILE_OPER_FAIL,
+        "failed to delete DFX database file, path: %{private}s", filePath.c_str());
+    return E_SUCCESS;
 }
 }  // namespace Media
 }  // namespace OHOS
