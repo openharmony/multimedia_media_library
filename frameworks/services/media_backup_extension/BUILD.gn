@@ -36,6 +36,7 @@ ohos_shared_library("mediabackup") {
     "./include/group_photo_album",
     "./include/highlight",
     "./include/log",
+    "./include/ocr",
     "./include/portrait_album",
     "./include/restore",
     "./include/report",
@@ -46,11 +47,15 @@ ohos_shared_library("mediabackup") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/config",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/event_handler",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/include",
     "${MEDIALIB_UTILS_PATH}/include",
   ]
 
   sources = [
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/event_handler/album_plugin_table_event_handler.cpp",
     "./src/analysis_album/beauty_score_clone.cpp",
     "./src/analysis_album/search_index_clone.cpp",
@@ -80,6 +85,7 @@ ohos_shared_library("mediabackup") {
     "./src/log/backup_zip_util.cpp",
     "./src/medialibrary_backup_napi.cpp",
     "./src/native_module_ohos_medialibrary_backup.cpp",
+    "./src/ocr/ocr_restore.cpp",
     "./src/others_clone_restore.cpp",
     "./src/portrait_album/clone_restore_portrait_album.cpp",
     "./src/portrait_album/clone_restore_portrait_base.cpp",

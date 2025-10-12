@@ -24,6 +24,7 @@
 #include "burst_key_generator.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
+#include "ocr_restore.h"
 #include "photos_restore.h"
 
 namespace OHOS {
@@ -144,6 +145,7 @@ protected:
     std::vector<int32_t> GetLocalPhotoMinIds();
     void SetOrientationAndExifRotate(FileInfo &info, NativeRdb::ValuesBucket &value,
         std::unique_ptr<Metadata> &data) override;
+    void RestoreSearchIndex();
 
 protected:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -168,6 +170,7 @@ protected:
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
     BackupDatabaseHelper backupDatabaseHelper_;
+    OCRRestore ocrRestore_;
     std::vector<int> galleryFailedOffsets_;
     std::vector<int> externalFailedOffsets_;
     ffrt::mutex galleryFailedMutex_;
