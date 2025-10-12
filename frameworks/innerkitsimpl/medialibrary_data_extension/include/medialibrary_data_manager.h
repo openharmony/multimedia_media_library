@@ -130,6 +130,8 @@ public:
                 const DataShare::DataSharePredicates &predicates);
     EXPORT int32_t RestoreInvalidPosData();
     EXPORT int32_t RestoreInvalidHDCCloudDataPos();
+    EXPORT int32_t GetDatabaseDFX(const std::string &betaId, std::string &fileName, std::string &fileSzie);
+    EXPORT int32_t RemoveDatabaseDFX(const std::string &betaId);
 private:
     int32_t InitMediaLibraryRdbStore();
     int32_t UpdateDirtyHdcDataStatus();

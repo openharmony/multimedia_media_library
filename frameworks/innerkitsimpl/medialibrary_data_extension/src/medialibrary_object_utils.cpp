@@ -776,6 +776,16 @@ static int32_t OpenDocument(const string &uri, const string &mode)
     return MediaFileUtils::OpenFile(realPath, mode);
 }
 
+static int32_t OpenDatabaseDFX(const string &uri, const string &mode)
+{
+    string betaId = uri.substr(uri.find_last_of("/") + 1);
+    string realPath = "/data/storage/el2/log/logpack/media_library_" + betaId + ".db.zip";
+    int32_t fileFd = MediaFileUtils::OpenFile(realPath, mode);
+    MEDIA_INFO_LOG("MediaFileUtils::OpenFile fileFd = %{public}d", fileFd);
+    CHECK_AND_RETURN_RET_LOG(fileFd >= 0, fileFd, "open filefd %{public}d, errno %{public}d", fileFd, errno);
+    return fileFd;
+}
+
 static bool IsDocumentUri(const std::string &uriString)
 {
     Uri uri(uriString);
@@ -823,6 +833,8 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
         return ThumbnailService::GetInstance()->GetKeyFrameThumbnailFd(uriString, true);
     } else if (IsDocumentUri(uriString)) {
         return OpenDocument(uriString, mode);
+    } else if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_DB_DFX) {
+        return OpenDatabaseDFX(uriString, mode);
     }
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromUri(uriString);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI, "Failed to obtain path from Database");

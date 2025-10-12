@@ -401,6 +401,9 @@ private:
     EXPORT static napi_value JSApplyChanges(napi_env env, napi_callback_info info);
     EXPORT static napi_value GetPhotoPickerComponentDefaultAlbumName(napi_env env, napi_callback_info info);
 
+    EXPORT static napi_value PhotoAccessGetDatabaseDFX(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessRemoveDatabaseDFX(napi_env env, napi_callback_info info);
+
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
     void UnregisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
@@ -571,6 +574,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t orderStyle = 0;
     std::string bundleName;
     bool canSupportedCompatibleDuplicate = false;
+    std::unordered_map<std::string, std::string> databaseDFXMap;
 };
 
 struct MediaLibraryInitContext : public NapiError  {
