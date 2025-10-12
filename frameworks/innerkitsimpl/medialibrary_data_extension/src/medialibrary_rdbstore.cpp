@@ -5460,14 +5460,14 @@ static void AddAlbumOrderBackTable(RdbStore &store)
     MEDIA_INFO_LOG("create album_order_back table end");
 }
 
-static void AddImageFaceDetail(RdbStore &store)
+static void AddImageFaceDetail(RdbStore &store, int32_t version)
 {
     MEDIA_INFO_LOG("start to add image face detail");
     const vector<string> sqls = {
         "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + FACE_EYE_CLOSE + " REAL",
         "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + FACE_DETAIL_VERSION + " TEXT",
     };
-    ExecSqls(sqls, store);
+    ExecSqlsWithDfx(sqls, store, version);
 }
 
 static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
@@ -5480,7 +5480,7 @@ static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_IMAGE_FACE_DETAIL &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_IMAGE_FACE_DETAIL, true)) {
-        AddImageFaceDetail(store);
+        AddImageFaceDetail(store, VERSION_ADD_IMAGE_FACE_DETAIL);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_IMAGE_FACE_DETAIL, true);
     }
 }
