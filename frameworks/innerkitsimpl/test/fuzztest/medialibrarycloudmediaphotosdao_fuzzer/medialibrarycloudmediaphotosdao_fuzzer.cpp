@@ -32,6 +32,7 @@
 #include "medialibrary_db_const.h"
 #include "photo_map_column.h"
 #include "medialibrary_kvstore_manager.h"
+#include "hi_audit.h"
 
 namespace OHOS {
 using namespace std;
