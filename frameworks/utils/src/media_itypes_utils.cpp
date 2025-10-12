@@ -62,7 +62,6 @@ bool WriteStrVecToStream(std::ostringstream &oss, const std::vector<std::string>
 bool WriteMapVecToStream(std::ostringstream &oss,
                          const std::vector<std::unordered_map<std::string, std::string>> &mapVec)
 {
-    // write vector size
     size_t len = mapVec.size();
     if (!WriteBasicTypeToStream(oss, len)) {
         return false;
@@ -123,7 +122,6 @@ bool ReadStreamToStrVec(std::istringstream &iss, std::vector<std::string> &strVe
 bool ReadStreamToMapVec(std::istringstream &iss,
                         std::vector<std::unordered_map<std::string, std::string>> &mapVec)
 {
-    // Get vec length
     size_t len;
     if (!ReadStreamToBasicType(iss, len)) {
         return false;

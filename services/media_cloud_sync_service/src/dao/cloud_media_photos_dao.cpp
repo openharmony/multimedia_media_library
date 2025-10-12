@@ -51,6 +51,7 @@
 #include "cloud_media_dao_utils.h"
 #include "media_file_utils.h"
 #include "cloud_media_context.h"
+#include "hi_audit.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -1794,7 +1795,10 @@ int32_t CloudMediaPhotosDao::DeleteLocalByCloudId(
         "Failed to DeleteLocalByCloudId, ret: %{public}d, deletedRows: %{public}d.",
         ret,
         deletedRows);
- 
+    AuditLog auditLog = { true, "USER BEHAVIOR", "DELETE", "io", 1, "running", "ok" };
+    auditLog.size = deletedRows;
+    auditLog.id = cloudId;
+    HiAudit::GetInstance().Write(auditLog);
     return ret;
 }
  
