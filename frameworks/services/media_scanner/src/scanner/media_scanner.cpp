@@ -283,7 +283,7 @@ int32_t MediaScannerObj::Commit()
     auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
         AccurateRefresh::SCAN_FILE_BUSSINESS_NAME);
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
-        uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_, true, assetRefresh);
+        uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_, true, assetRefresh, needUpdateAssetName_);
         if (!isSkipAlbumUpdate_) {
             assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
                 NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
@@ -531,11 +531,14 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
         }
         return E_SCANNED;
     }
-
+    bool needUpdateAssetName = false;
     if (data_->GetFileId() == FILE_ID_DEFAULT) {
         data_->SetFileName(ScannerUtils::GetFileNameFromUri(path_));
+        needUpdateAssetName = true;
     }
     data_->SetFileTitle(ScannerUtils::GetFileTitle(data_->GetFileName()));
+    // title and display_name are obtained from db, do not to be updated again.
+    needUpdateAssetName_ = needUpdateAssetName;
 
     // statinfo
     data_->SetFileSize(statInfo.st_size);
