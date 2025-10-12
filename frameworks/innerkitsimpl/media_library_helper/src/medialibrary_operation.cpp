@@ -166,6 +166,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PTP_OPERATION, OperationObject::PTP_OPERATION },
         { PTP_ALBUM_OPERATION, OperationObject::PTP_ALBUM_OPERATION },
         { CUSTOM_RECORDS_OPERATION, OperationObject::CUSTOM_RECORDS_OPERATION},
+        { MEDIA_FILEOPRN_OPEN_DB_DFX, OperationObject::FILESYSTEM_DB_DFX},
     };
     return oprnObjMap;
 }

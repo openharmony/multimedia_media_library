@@ -96,6 +96,8 @@
 #include "cancel_batch_download_cloud_resources_vo.h"
 #include "get_batch_download_cloud_resources_status_vo.h"
 #include "get_batch_download_cloud_resources_count_vo.h"
+#include "get_database_dfx_vo.h"
+#include "remove_database_dfx_vo.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -525,6 +527,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CAMERA_INNER_ADD_IMAGE),
         &MediaAssetsControllerService::CameraInnerAddImage
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::GET_DATABASE_DFX),
+        &MediaAssetsControllerService::GetDatabaseDFX
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_DATABASE_DFX),
+        &MediaAssetsControllerService::RemoveDatabaseDFX
     },
 };
 
@@ -2582,5 +2592,48 @@ int32_t MediaAssetsControllerService::HeifTranscodingCheck(MessageParcel &data, 
 
     ret = MediaAssetsService::GetInstance().CanSupportedCompatibleDuplicate(reqBody.bundleName, respBody);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::GetDatabaseDFX(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::GetDatabaseDFX enter");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_DATABASE_DFX);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    GetDatabaseDFXReqBody reqBody;
+    GetDatabaseDFXRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("GetDatabaseDFX ReadRequestBody Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().GetDatabaseDFX(reqBody.betaId, respBody);
+    MEDIA_INFO_LOG("fileName: %{public}s, fileSize: %{public}s byte", respBody.fileName.c_str(),
+        respBody.fileSize.c_str());
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("failed to get DatabaseDFX, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+}
+
+int32_t MediaAssetsControllerService::RemoveDatabaseDFX(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::RemoveDatabaseDFX enter");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_DATABASE_DFX);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    RemoveDatabaseDFXReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("RemoveDatabaseDFX ReadRequestBody Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().RemoveDatabaseDFX(reqBody.betaId);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("failed to remove DatabaseDFX, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 } // namespace OHOS::Media

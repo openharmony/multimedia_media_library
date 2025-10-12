@@ -294,6 +294,8 @@ const std::string BUNDLE_NAME = "com.ohos.medialibrary.medialibrarydata";
 
 constexpr int64_t AGING_TIME = 30LL * 60 * 60 * 24 * 1000;
 
+const std::string MEDIA_DATA_DFX_BETA_ID = "beta_id";
+const std::string MEDIA_DATA_DFX_FILE_FD = "file_fd";
 const std::string MEDIA_DATA_DB_ID = "file_id";
 const std::string MEDIA_DATA_DB_URI = "uri";
 const std::string MEDIA_DATA_DB_FILE_PATH = "data";

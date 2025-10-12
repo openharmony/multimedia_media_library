@@ -43,6 +43,7 @@
 #undef private
 #include "userfilemgr_uri.h"
 #include "data_secondary_directory_uri.h"
+#include "zip_util.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -2405,6 +2406,27 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, RestoreInvalidHDCCloudDataPos_test_001
 
     auto ret = dataManager->RestoreInvalidHDCCloudDataPos();
     EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, Data_Manager_GetDatabaseDFX_Test_001, TestSize.Level0)
+{
+    std::string betaId = "beta123";
+    std::string fileName;
+    std::string fileSize;
+    const std::string destFilePath ="/data/storage/el2/log/logpack/media_library_" + betaId + ".db.zip";
+    zipFile compressZip = Media::ZipUtil::CreateZipFile(destFilePath);
+    Media::ZipUtil::CloseZipFile(compressZip);
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    int32_t result = dataManager->GetDatabaseDFX(betaId, fileName, fileSize);
+    EXPECT_EQ(result, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, Data_Manager_RemoveDatabaseDFX_Test_001, TestSize.Level0)
+{
+    std::string betaId = "beta123";
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    int32_t result = dataManager->RemoveDatabaseDFX(betaId);
+    EXPECT_EQ(result, E_SUCCESS);
 }
 } // namespace Media
 } // namespace OHOS
