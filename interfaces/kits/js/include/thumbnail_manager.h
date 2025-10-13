@@ -177,8 +177,8 @@ public:
     void RemovePhotoRequest(const std::string &requestId);
     EXPORT static std::unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, const Size &size,
         const std::string &path);
-    EXPORT static napi_ref QueryThumbnailData(napi_env env, const std::string &uriStr, const int &type,
-        const std::string &path);
+    EXPORT static bool QueryThumbnailDataBuffer(const std::string &uriStr, const int &type, const std::string &path,
+        std::vector<uint8_t> &buffer);
     EXPORT static std::unique_ptr<PixelMap> QueryKeyFrameThumbnail(const std::string &uriStr, const int32_t &beginStamp,
         const int32_t &type, const std::string &path);
     void DeleteRequestIdFromMap(const std::string &requestId);

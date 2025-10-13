@@ -207,6 +207,7 @@ struct FileAssetAsyncContext : public NapiError {
     std::string networkId;
     std::string analysisData;
     std::shared_ptr<PixelMap> pixelmap;
+    std::vector<uint8_t> buffer;
 
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];
