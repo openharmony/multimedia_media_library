@@ -1193,7 +1193,6 @@ bool UpgradeRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb
     portraitAlbumInfo.userOperation = GetInt32Val(GALLERY_USER_OPERATION, resultSet);
     portraitAlbumInfo.renameOperation = GetInt32Val(GALLERY_RENAME_OPERATION, resultSet);
     std::string oldRelationshipId = GetStringVal(GALLERY_RELATIONSHIP, resultSet);
-
     if (oldRelationshipId != std::to_string(INDEX_ME)) {
         auto it = RELATIONSHIP_MAP.find(oldRelationshipId);
         if (it != RELATIONSHIP_MAP.end()) {
