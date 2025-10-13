@@ -637,7 +637,7 @@ void PopulateExtractedAVMetadataTwo(
     strTemp = resultMap.at(AV_KEY_GLTF_OFFSET);
     if ((!strTemp.empty()) && (strTemp != "-1")) {
         MEDIA_DEBUG_LOG("PopulateExtractedAVMetadataTwo get AV_KEY_GLTF_OFFSET success");
-        data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::D3GS));
+        data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS));
     }
 }
 
