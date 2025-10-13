@@ -367,7 +367,7 @@ HWTEST_F(ShootingModeAlbumTest, AlbumNameToShootingModeAlbumType_Test_002, TestS
     EXPECT_EQ(result.size(), 4);
 
     result = ShootingModeAlbum::GetShootingModeAlbumOfAsset(
-        static_cast<int>(PhotoSubType::D3GS), "image/x-adobe-dng", 0, "1", "1");
+        static_cast<int>(PhotoSubType::SPATIAL_3DGS), "image/x-adobe-dng", 0, "1", "1");
     EXPECT_EQ(result.size(), 4);
 }
 

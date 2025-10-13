@@ -55,7 +55,7 @@ void ShootingModeAlbum::Get3DGSAlbumPredicates(T& predicates, const bool hiddenS
     PhotoQueryFilter::Config config {};
     config.hiddenConfig = hiddenState ? PhotoQueryFilter::ConfigType::INCLUDE : PhotoQueryFilter::ConfigType::EXCLUDE;
     PhotoQueryFilter::ModifyPredicate(config, predicates);
-    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::D3GS));
+    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS));
 }
 
 template <class T>
@@ -182,7 +182,7 @@ vector<ShootingModeAlbumType> ShootingModeAlbum::GetShootingModeAlbumOfAsset(int
     if (photoSubType == static_cast<int32_t>(PhotoSubType::BURST)) {
         result.push_back(ShootingModeAlbumType::BURST_MODE_ALBUM);
     }
-    if (photoSubType == static_cast<int32_t>(PhotoSubType::D3GS)) {
+    if (photoSubType == static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS)) {
         result.push_back(ShootingModeAlbumType::MP4_3DGS_ALBUM);
     }
     if (mimetype == "image/x-adobe-dng") {
