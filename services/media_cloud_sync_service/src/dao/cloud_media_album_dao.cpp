@@ -354,7 +354,6 @@ int32_t CloudMediaAlbumDao::UpdateCloudAlbum(PhotoAlbumDto &record, const std::s
 
 int32_t CloudMediaAlbumDao::OnDeleteAlbums(std::vector<std::string> &failedAlbumIds)
 {
-    MEDIA_INFO_LOG("enter OnDeleteAlbums");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "OnDeleteAlbums Failed to get rdbStore.");
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
