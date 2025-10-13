@@ -362,7 +362,7 @@ export struct PhotoPickerComponent {
       itemInfo.height = wantParam['height'] as number;
       itemInfo.size = wantParam['size'] as number;
       itemInfo.duration = wantParam['duration'] as number;
-      itemInfo.photoSubtype = wantParam['subtype'] as number;
+      itemInfo.photoSubType = wantParam['subtype'] as number;
       itemInfo.dynamicRangeType = wantParam['dynamicRangeType'] as number;
       itemInfo.orientation = wantParam['imageOrientation'] as number;
       let result: boolean = this.onItemClicked(itemInfo, clickType);
