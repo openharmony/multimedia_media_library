@@ -205,7 +205,7 @@ int32_t PortraitAlbumUtils::GetAlbumIdsByType(std::shared_ptr<NativeRdb::RdbStor
     int32_t albumType, int32_t albumSubtype, std::vector<std::string>& albumIds)
 {
     albumIds.clear();
-
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "rdbStore is nullptr");
     std::string querySql = "SELECT album_id FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
         ANALYSIS_COL_ALBUM_TYPE + " = " + std::to_string(albumType) + " AND " +
         ANALYSIS_COL_ALBUM_SUBTYPE + " = " + std::to_string(albumSubtype);
