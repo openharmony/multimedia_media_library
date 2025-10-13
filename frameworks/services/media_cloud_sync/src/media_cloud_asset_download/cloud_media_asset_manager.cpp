@@ -1020,11 +1020,9 @@ int32_t CloudMediaAssetManager::StartBatchDownloadCloudResources(StartBatchDownl
     UpdateAddTaskStatus(invalidFileIds,
         CloudMediaTaskDownloadCloudAssetCode::ADD_DOWNLOAD_ASSET_NOT_EXIST, respBody.uriStatusMap);
 
-    if (insertCount > 0) {
-        MEDIA_INFO_LOG("BatchSelectFileDownload Start LaunchBatchDownloadProcessor");
-        BackgroundCloudBatchSelectedFileProcessor::SetBatchDownloadAddedFlag(true);
-        BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor(); // 触发启动检查
-    }
+    MEDIA_INFO_LOG("BatchSelectFileDownload Start LaunchBatchDownloadProcessor");
+    BackgroundCloudBatchSelectedFileProcessor::SetBatchDownloadAddedFlag(true);
+    BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor(); // 触发启动检查
     return OHOS::Media::E_OK;
 }
 
