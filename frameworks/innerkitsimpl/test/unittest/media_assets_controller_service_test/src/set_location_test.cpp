@@ -106,6 +106,18 @@ static void InsertAssetIntoPhotosTable(const std::string &filePath)
         "1280, 960, 0, '1' )"); // cam, pic, shootingmode = 1
 }
 
+static void InsertAsset()
+{
+    std::string insertSql = R"S(INSERT INTO Photos(data, size, title, display_name, media_type, position, is_temp,
+        time_pending, hidden, date_trashed, transcode_time, trans_code_file_size, exist_compatible_duplicate)
+        VALUES ('/storage/cloud/files/Photo/665/test.heic', 7879, 'test',
+        'test.heic', 1, 0, 0, 0, 0, 0, 1501838589870, 348113, 1))S";
+    int32_t ret = g_rdbStore->ExecuteSql(insertSql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Execute sql %{public}s failed", insertSql.c_str());
+    }
+}
+
 HWTEST_F(SetLocationTest, SetLocationTest_Test_001, TestSize.Level0)
 {
     bool createDirRes = MediaFileUtils::CreateDirectory("/data/local/tmp");
@@ -155,4 +167,55 @@ HWTEST_F(SetLocationTest, SetLocationTest_Test_001, TestSize.Level0)
     EXPECT_EQ(longitude, reqBody.longitude);
 }
 
+HWTEST_F(SetLocationTest, SetLocationTest_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start SetLocationTest_Test_002");
+    system("mkdir -p /storage/cloud/files/Photo/665/");
+    system("touch /storage/cloud/files/Photo/665/test.heic");
+    system("mkdir -p /storage/cloud/files/.editData/Photo/665/test.heic");
+    system("touch /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");
+    InsertAsset();
+    std::string filePath = "/storage/cloud/files/Photo/665/test.heic";
+    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.EqualTo(MediaColumn::MEDIA_FILE_PATH, filePath);
+    std::vector<std::string> columns = { PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE,
+        MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_TRANSCODE_TIME,
+        PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE };
+    shared_ptr<NativeRdb::ResultSet> resSet = MediaLibraryRdbStore::Query(rdbPredicates, columns);
+    EXPECT_NE(resSet, nullptr);
+    EXPECT_EQ(resSet->GoToNextRow(), NativeRdb::E_OK);
+    std::string mediaFilePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resSet);
+    EXPECT_EQ(mediaFilePath, filePath);
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resSet);
+    ASSERT_GT(fileId, 0);
+
+    AssetChangeReqBody reqBody;
+    reqBody.fileId = fileId;
+    EXPECT_GT(reqBody.fileId, 0);
+    reqBody.path = filePath;
+    reqBody.latitude = 10;
+    reqBody.longitude = 10;
+    MessageParcel data;
+    MessageParcel reply;
+    reqBody.Marshalling(data);
+    auto service = make_shared<MediaAssetsControllerService>();
+    service->AssetChangeSetLocation(data, reply);
+    IPC::MediaRespVo<IPC::MediaEmptyObjVo> resp;
+    bool isValid = resp.Unmarshalling(reply);
+    ASSERT_EQ(isValid, true);
+    EXPECT_EQ(resp.GetErrCode(), E_OK);
+    resSet = MediaLibraryRdbStore::Query(rdbPredicates, columns);
+    EXPECT_NE(resSet, nullptr);
+    EXPECT_EQ(resSet->GoToNextRow(), NativeRdb::E_OK);
+    double latitude = GetDoubleVal(PhotoColumn::PHOTO_LATITUDE, resSet);
+    double longitude = GetDoubleVal(PhotoColumn::PHOTO_LONGITUDE, resSet);
+    EXPECT_EQ(latitude, reqBody.latitude);
+    EXPECT_EQ(longitude, reqBody.longitude);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANSCODE_TIME, resSet), 0);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resSet), 0);
+    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resSet), 0);
+
+    system("rm -rf /storage/cloud/files/Photo/665/test.heic");
+    system("rm -rf /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");
+}
 }  // namespace OHOS::Media

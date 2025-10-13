@@ -17,7 +17,11 @@
 
 #include "medialibrary_fuse_test.h"
 
-#include "app_mgr_client.h"
+#include <cstdio>
+#include <cstdlib>
+#include <unistd.h>
+#include <fstream>
+
 #include "media_fuse_daemon.h"
 #include "media_fuse_manager.h"
 #include "medialibrary_unittest_utils.h"
@@ -59,9 +63,7 @@
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_object_utils.h"
 #include "parameter.h"
-#include "singleton.h"
-#define FUSE_USE_VERSION 34
-#include <fuse.h>
+#include "heif_transcoding_check_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -72,13 +74,13 @@ using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 using namespace OHOS::RdbDataShareAdapter;
 using namespace OHOS::Security::AccessToken;
-using namespace OHOS::AppExecFwk;
 namespace OHOS {
 namespace Media {
 
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 static const char* PARAM_PRODUCT_MODEL = "const.product.model";
 static constexpr int32_t PARAM_PRODUCT_MODEL_LENGTH = 512;
+static constexpr int32_t TEST_UID = 60000;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 unordered_map<string, bool> fuseTestPermsMap = {
@@ -335,6 +337,113 @@ int32_t CreatePhotoApi10(int mediaType, const string &displayName)
     return ret;
 }
 
+static int32_t GetFileMtimeTest(const string &filePath, time_t &mtime)
+{
+    MEDIA_INFO_LOG("run GetFileMtime_Test start,mtime %{public}" PRId64, mtime);
+    struct stat statInfo {};
+    if (stat(filePath.c_str(), &statInfo) != 0) {
+        MEDIA_ERR_LOG("Get file mtime failed, path = %{private}s", filePath.c_str());
+        return E_ERR;
+    }
+    mtime = statInfo.st_mtime;
+    MEDIA_INFO_LOG("run GetFileMtime_Test end,mtime %{public}" PRId64, mtime);
+    return E_OK;
+}
+
+void CreatAndPush()
+{
+    system("mkdir -p /storage/cloud/files/Photo/666");
+    system("touch /storage/cloud/files/Photo/666/heif.heic");
+    system("mkdir -p /storage/cloud/files/.editData/Photo/666/heif.heic");
+    system("touch /storage/cloud/files/.editData/Photo/666/heif.heic/transcode.jpg");
+    time_t mtime = 0;
+    GetFileMtimeTest("/storage/cloud/files/Photo/666/heif.heic", mtime);
+    
+    MEDIA_INFO_LOG("Test images pushed successfully");
+}
+
+void SetTestTables()
+{
+    std::string createTableSql = R"S(
+        CREATE TABLE IF NOT EXISTS Photos (
+            file_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data TEXT NOT NULL,
+            size BIGINT,
+            title TEXT,
+            display_name TEXT,
+            media_type INT,
+            position INT DEFAULT 1,
+            is_temp INT DEFAULT 0,
+            time_pending BIGINT DEFAULT 0,
+            hidden INT DEFAULT 0,
+            date_trashed BIGINT DEFAULT 0,
+            transcode_time BIGINT DEFAULT 0,
+            trans_code_file_size BIGINT NOT NULL DEFAULT 0,
+            storage_path TEXT,
+            file_source_type INT DEFAULT 0
+        )
+    )S";
+
+    int32_t dbRet = g_rdbStore->ExecuteSql(createTableSql);
+    EXPECT_EQ(dbRet, NativeRdb::E_OK);
+    MEDIA_INFO_LOG("Create table result: %{public}d", dbRet);
+}
+
+static void InsertHeifAsset()
+{
+    std::string insertSql = R"S(INSERT INTO Photos(file_id, data, size, title, display_name, media_type, position,
+        is_temp, time_pending, hidden, date_trashed, transcode_time, trans_code_file_size, exist_compatible_duplicate)
+        VALUES (666, '/storage/cloud/files/Photo/666/heif.heic',  7879, 'heif', 'heif.heic', 1, 0, 0, 0, 0, 0,
+        1501838589870, 348113, 1))S";
+    int32_t dbRet = g_rdbStore->ExecuteSql(insertSql);
+    EXPECT_EQ(dbRet, NativeRdb::E_OK);
+    MEDIA_INFO_LOG("db is %{public}d", dbRet);
+
+    std::string selectSql = R"S(select data, date_trashed, hidden from Photos where file_id = "666" and
+        date_trashed = "0" and hidden = "0")S";
+    int32_t dbRet1 = g_rdbStore->ExecuteSql(selectSql);
+    EXPECT_EQ(dbRet1, NativeRdb::E_OK);
+    MEDIA_INFO_LOG("db is %{public}d", dbRet1);
+
+    if (dbRet != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Execute sql %{public}s failed", insertSql.c_str());
+    }
+}
+
+static int32_t QueryPhotoIdByDisplayName(const string& displayName)
+{
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_NAME, displayName);
+    queryCmd.SetDataSharePred(predicates);
+    vector<string> columns = { MediaColumn::MEDIA_ID };
+    auto resultSet = g_rdbStore->Query(queryCmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Read moving photo query photo id by display name failed");
+        return -1;
+    }
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    return fileId;
+}
+
+static int32_t QueryTransCodeInfoByID(const int32_t fileId, std::shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    queryCmd.SetDataSharePred(predicates);
+    vector<string> columns = { PhotoColumn::PHOTO_TRANSCODE_TIME, PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE,
+        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE };
+    resultSet = g_rdbStore->Query(queryCmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Read moving photo query photo id by display name failed");
+        return -1;
+    }
+    return 0;
+}
+
 int TestInsert(DataShareValuesBucket &dataShareValue)
 {
     dataShareValue.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
@@ -481,6 +590,176 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_005, TestSize.Level1)
     EXPECT_EQ(err, E_OK);
 }
 
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_GetTranscodeUri_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_GetTranscodeUri_test_001");
+
+    CreatAndPush();
+    InsertHeifAsset();
+    std::string bundleName = "fuse_test_bundleName";
+    MediaLibraryBundleManager::GetInstance()->GetBundleNameByUID(TEST_UID, bundleName);
+
+    std::string testPath = "/Photo/666/";
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+
+    int resultFd = -1;
+    int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_RDONLY, resultFd);
+    EXPECT_EQ(doOpenErr, E_OK)
+        << "DoOpen failed (err: " << doOpenErr << "), check MediaPrivacyManager::Open";
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_openfile_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_openfile_test_001");
+    HeifTranscodingCheckUtils::InitCheckList();
+    CreatAndPush();
+    InsertHeifAsset();
+    std::string bundleName = "fuse_test_bundleName";
+    MediaLibraryBundleManager::GetInstance()->GetBundleNameByUID(TEST_UID, bundleName);
+
+    std::string testPath = "/Photo/666/";
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+
+    int resultFd = -1;
+    int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_RDONLY, resultFd);
+    EXPECT_EQ(doOpenErr, E_OK)
+        << "DoOpen failed (err: " << doOpenErr << "), check MediaPrivacyManager::Open";
+    EXPECT_GE(resultFd, 0)
+        << "File descriptor invalid (fd: " << resultFd << "), check OpenOriginFd/OpenFilterProxyFd";
+    HeifTranscodingCheckUtils::UnsubscribeCotaUpdatedEvent();
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_HasTransCodeFile_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_HasTransCodeFile_test_001");
+    HeifTranscodingCheckUtils::InitCheckList();
+    CreatAndPush();
+    CleanTestTables();
+    SetTestTables();
+    std::string insertSql = R"S(INSERT INTO Photos(file_id, data, size, title, display_name, media_type, position,
+        is_temp, time_pending, hidden, date_trashed, transcode_time, trans_code_file_size)
+        VALUES (666, '/storage/cloud/files/Photo/666/heif.heic',  7879, 'heif', 'heif.heic', 1, 0, 0, 0, 0, 0,
+        1501838589870, 348113))S";
+    int32_t dbRet = g_rdbStore->ExecuteSql(insertSql);
+    EXPECT_EQ(dbRet, NativeRdb::E_OK) << "delet suc, insert suc";
+
+    std::string bundleName = "fuse_test_bundleName";
+    MediaLibraryBundleManager::GetInstance()->GetBundleNameByUID(TEST_UID, bundleName);
+
+    std::string testPath = "/Photo/666/";
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+    fuseTestPermsMap[PERM_WRITE_IMAGEVIDEO] = true;
+    int flags = O_RDWR;
+
+    int resultFd = -1;
+    int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), flags, resultFd);
+    EXPECT_EQ(doOpenErr, E_OK)
+        << "DoOpen failed (err: " << doOpenErr << "), check MediaPrivacyManager::Open";
+    EXPECT_GE(resultFd, 0)
+        << "File descriptor invalid (fd: " << resultFd << "), check OpenOriginFd/OpenFilterProxyFd";
+    HeifTranscodingCheckUtils::UnsubscribeCotaUpdatedEvent();
+    SetTables();
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_GetCompatibleModeFromFileId_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_GetCompatibleModeFromFileId_test_001");
+    HeifTranscodingCheckUtils::InitCheckList();
+    CreatAndPush();
+    CleanTestTables();
+    SetTestTables();
+    std::string insertSql = R"S(INSERT INTO Photos(file_id, data, size, title, display_name, media_type, position,
+        is_temp, time_pending, hidden, date_trashed, transcode_time, trans_code_file_size)
+        VALUES (666, '/storage/cloud/files/Photo/666/heif.heic',  7879, 'heif', 'heif.heic', 1, 0, 0, 0, 0, 0,
+        1501838589870, 348113))S";
+    int32_t dbRet = g_rdbStore->ExecuteSql(insertSql);
+    EXPECT_EQ(dbRet, NativeRdb::E_OK) << "delet suc, insert suc";
+
+    std::string bundleName = "fuse_test_bundleName";
+    MediaLibraryBundleManager::GetInstance()->GetBundleNameByUID(TEST_UID, bundleName);
+
+    std::string testPath = "/Photo/666/";
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+
+    int resultFd = -1;
+    int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_RDONLY, resultFd);
+    EXPECT_EQ(doOpenErr, E_OK)
+        << "DoOpen failed (err: " << doOpenErr << "), check MediaPrivacyManager::Open";
+    HeifTranscodingCheckUtils::UnsubscribeCotaUpdatedEvent();
+    SetTables();
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_GetTranscodeUri_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_GetTranscodeUri_test_002");
+
+    HeifTranscodingCheckUtils::InitCheckList();
+    CreatAndPush();
+
+    std::string insertSql = R"S(INSERT INTO Photos(file_id, data, size, title, display_name, media_type, position,
+        is_temp, time_pending, hidden, date_trashed, transcode_time, trans_code_file_size, exist_compatible_duplicate)
+        VALUES (666, '/storage/cloud/files/Photo/666/heif.heic',  7879, 'heif', 'heif.heic', 1, 0, 0, 0, 0, 0,
+        1501838589870, 348113, 0))S";
+    int32_t dbRet = g_rdbStore->ExecuteSql(insertSql);
+    EXPECT_EQ(dbRet, NativeRdb::E_OK);
+
+    std::string bundleName = "fuse_test_bundleName";
+    MediaLibraryBundleManager::GetInstance()->GetBundleNameByUID(TEST_UID, bundleName);
+
+    std::string testPath = "/Photo/666/";
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+
+    int resultFd = -1;
+    int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_RDONLY, resultFd);
+    EXPECT_EQ(doOpenErr, E_OK)
+        << "DoOpen failed (err: " << doOpenErr << ")";
+    HeifTranscodingCheckUtils::UnsubscribeCotaUpdatedEvent();
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_GetTranscodeUri_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_GetTranscodeUri_test_003");
+    HeifTranscodingCheckUtils::InitCheckList();
+    CreatAndPush();
+    std::string insertSql = R"S(INSERT INTO Photos(file_id, data, size, title, display_name, media_type, position,
+        is_temp, time_pending, hidden, date_trashed, transcode_time, trans_code_file_size, exist_compatible_duplicate)
+        VALUES (666, '1/heif.heic',  7879, 'heif', 'heif.heic', 1, 0, 0, 0, 0, 0,
+        1501838589870, 348113, 1))S";
+    int32_t dbRet = g_rdbStore->ExecuteSql(insertSql);
+    EXPECT_EQ(dbRet, NativeRdb::E_OK);
+    MEDIA_INFO_LOG("db is %{public}d", dbRet);
+
+    std::string bundleName = "fuse_test_bundleName";
+    MediaLibraryBundleManager::GetInstance()->GetBundleNameByUID(TEST_UID, bundleName);
+
+    std::string testPath = "/Photo/666/";
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+
+    int resultFd = -1;
+    int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_RDONLY, resultFd);
+    EXPECT_EQ(doOpenErr, E_ERR)
+        << "DoOpen suc (err: " << doOpenErr << ")";
+    HeifTranscodingCheckUtils::UnsubscribeCotaUpdatedEvent();
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_GetTranscodeUri_test_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_GetTranscodeUri_test_004");
+    HeifTranscodingCheckUtils::InitCheckList();
+    InsertHeifAsset();
+    std::string bundleName = "fuse_test_bundleName";
+    MediaLibraryBundleManager::GetInstance()->GetBundleNameByUID(TEST_UID, bundleName);
+
+    std::string testPath = "/Photo/666/";
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+
+    int resultFd = -1;
+    int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_RDONLY, resultFd);
+    EXPECT_EQ(doOpenErr, E_ERR)
+        << "DoOpen failed (err: " << doOpenErr << "), check MediaPrivacyManager::Open";
+    HeifTranscodingCheckUtils::UnsubscribeCotaUpdatedEvent();
+}
+
 HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_close_test_001");
@@ -520,6 +799,52 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_002, TestSize.Level1
     int fd = -1;
     int32_t err = MediaFuseManager::GetInstance().DoRelease(path.c_str(), fd);
     EXPECT_EQ(err, E_ERR);
+}
+
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_close_test_003");
+    HeifTranscodingCheckUtils::InitCheckList();
+    CreatAndPush();
+    InsertHeifAsset();
+    std::string bundleName = "fuse_test_bundleName";
+    MediaLibraryBundleManager::GetInstance()->GetBundleNameByUID(TEST_UID, bundleName);
+
+    std::string testPath = "/Photo/666/";
+    fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = true;
+
+    int32_t fileId = QueryPhotoIdByDisplayName("heif.heic");
+    ASSERT_GT(fileId, 0);
+
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
+    ASSERT_EQ(QueryTransCodeInfoByID(fileId, resultSet), 0);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANSCODE_TIME, resultSet), 1501838589870);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet), 348113);
+    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resultSet), 1);
+
+    int resultFd = -1;
+    int32_t doOpenErr = MediaFuseManager::GetInstance().DoOpen(testPath.c_str(), O_WRONLY, resultFd);
+    EXPECT_EQ(doOpenErr, E_OK)
+        << "DoOpen failed (err: " << doOpenErr << "), check MediaPrivacyManager::Open";
+    MEDIA_INFO_LOG("fd %{public}d", resultFd);
+
+    sleep(10);
+    char data = 'A';
+    int ret = write(resultFd, &data, 1);
+    MEDIA_INFO_LOG("ret: %{public}d", ret);
+
+    
+    int32_t err = MediaFuseManager::GetInstance().DoRelease(testPath.c_str(), resultFd);
+    EXPECT_EQ(err, E_OK);
+
+    ASSERT_EQ(QueryTransCodeInfoByID(fileId, resultSet), 0);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANSCODE_TIME, resultSet), 0);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet), 0);
+    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resultSet), 0);
+
+    HeifTranscodingCheckUtils::UnsubscribeCotaUpdatedEvent();
+    MEDIA_INFO_LOG("end tdd MediaLibrary_fuse_close_test_003");
 }
 
 // Test database operation failures

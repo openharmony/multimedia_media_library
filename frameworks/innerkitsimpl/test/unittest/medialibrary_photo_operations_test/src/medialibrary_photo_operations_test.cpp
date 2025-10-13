@@ -820,6 +820,23 @@ int64_t GetPhotoLastVisitTime(int32_t fileId)
     }
 }
 
+static int32_t QueryTransCodeInfoByID(const int32_t fileId, std::shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    queryCmd.SetDataSharePred(predicates);
+    vector<string> columns = { PhotoColumn::PHOTO_TRANSCODE_TIME, PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE,
+        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE };
+    resultSet = g_rdbStore->Query(queryCmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Read moving photo query photo id by display name failed");
+        return -1;
+    }
+    return 0;
+}
+
 static int32_t QueryPhotoIdByDisplayName(const string& displayName)
 {
     MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
@@ -920,6 +937,18 @@ static int64_t QueryAlbumDateModifiedById(int32_t albumId)
         return 0;
     }
     return datemodified;
+}
+
+static void InsertAsset()
+{
+    std::string insertSql = R"S(INSERT INTO Photos(data, size, title, display_name, media_type, position, is_temp,
+        time_pending, hidden, date_trashed, transcode_time, trans_code_file_size, exist_compatible_duplicate)
+        VALUES ('/storage/cloud/files/Photo/665/test.heic', 7879, 'test',
+        'test.heic', 1, 0, 0, 0, 0, 0, 1501838589870, 348113, 1))S";
+    int32_t ret = g_rdbStore->ExecuteSql(insertSql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Execute sql %{public}s failed", insertSql.c_str());
+    }
 }
 
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
@@ -3860,6 +3889,27 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_09, TestS
     EXPECT_EQ(ret, 0);
 }
 
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_010, TestSize.Level2)
+{
+    system("mkdir -p /storage/cloud/files/Photo/665/");
+    system("touch /storage/cloud/files/Photo/665/test.heic");
+    system("mkdir -p /storage/cloud/files/.editData/Photo/665/test.heic");
+    system("touch /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");
+
+    InsertAsset();
+    int32_t fileId = QueryPhotoIdByDisplayName("test.heic");
+    ASSERT_GT(fileId, 0);
+
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
+    ASSERT_EQ(QueryTransCodeInfoByID(fileId, resultSet), 0);
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::MEDIA_ID, 1);
+    int32_t ret = MediaLibraryAssetOperations::DeletePermanently(rbdPredicates, true);
+    EXPECT_EQ(ret, 0);
+    system("rm -rf /storage/cloud/files/Photo/665/test.heic");
+    system("rm -rf /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");
+}
+
 HWTEST_F(MediaLibraryPhotoOperationsTest, getAllDuplicateAssets_test, TestSize.Level2)
 {
     int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg", true);
@@ -4065,6 +4115,71 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_moving_photo_video_re
     int32_t ready = 0;
     EXPECT_EQ(resultSet->GetInt(0, ready), NativeRdb::E_OK);
     EXPECT_EQ(ready, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_get_transcode_path_001, TestSize.Level2)
+{
+    string photoPath = "/storage/cloud/files/Photo/1/photo.heif";
+    EXPECT_EQ(MediaLibraryAssetOperations::GetTransCodePath(photoPath),
+        "/storage/cloud/files/.editData/Photo/1/photo.heif/transcode.jpg");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_get_transcode_path_002, TestSize.Level2)
+{
+    string photoPath = "";
+    EXPECT_EQ(MediaLibraryAssetOperations::GetTransCodePath(photoPath), "");
+}
+//test error case
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_transCode_info_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_delete_transCode_info_test_001");
+    system("mkdir -p /storage/cloud/files/Photo/665/");
+    system("touch /storage/cloud/files/Photo/665/test.heic");
+    system("mkdir -p /storage/cloud/files/.editData/Photo/665/test.heic");
+    system("touch /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");
+    InsertAsset();
+    int32_t fileId = QueryPhotoIdByDisplayName("test.heic");
+    ASSERT_GT(fileId, 0);
+    string filePath = "/storage/data/test_invalid.jpg";
+    string funcName = "DeleteTransCodeInfoTest";
+    MediaLibraryAssetOperations::DeleteTransCodeInfo(filePath, to_string(fileId), funcName);
+    filePath = GetFilePath(fileId);
+    EXPECT_FALSE(filePath.empty());
+    fileId = -1;
+    MediaLibraryAssetOperations::DeleteTransCodeInfo(filePath, to_string(fileId), funcName);
+    system("rm -rf /storage/cloud/files/Photo/665/test.heic");
+    system("rm -rf /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");
+    MEDIA_INFO_LOG("end tdd photo_oprn_delete_transCode_info_test_001");
+}
+//test normal case
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_transCode_info_test_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_delete_transCode_info_test_003");
+    system("mkdir -p /storage/cloud/files/Photo/665/");
+    system("touch /storage/cloud/files/Photo/665/test.heic");
+    system("mkdir -p /storage/cloud/files/.editData/Photo/665/test.heic");
+    system("touch /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");
+    InsertAsset();
+    int32_t fileId = QueryPhotoIdByDisplayName("test.heic");
+    ASSERT_GT(fileId, 0);
+
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
+    ASSERT_EQ(QueryTransCodeInfoByID(fileId, resultSet), 0);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANSCODE_TIME, resultSet), 1501838589870);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet), 348113);
+    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resultSet), 1);
+
+    string filePath = "/storage/cloud/files/Photo/665/test.heic";
+    string funcName = "DeleteTransCodeInfoTest";
+    MediaLibraryAssetOperations::DeleteTransCodeInfo(filePath, to_string(fileId), funcName);
+
+    ASSERT_EQ(QueryTransCodeInfoByID(fileId, resultSet), 0);
+    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_TRANSCODE_TIME, resultSet), 0);
+    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet), 0);
+    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resultSet), 0);
+    system("rm -rf /storage/cloud/files/Photo/665/test.heic");
+    system("rm -rf /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");
+    MEDIA_INFO_LOG("end tdd photo_oprn_delete_transCode_info_test_003");
 }
 } // namespace Media
 } // namespace OHOS
