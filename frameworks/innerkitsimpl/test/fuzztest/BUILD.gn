@@ -50,6 +50,7 @@ group("media_library_fuzztest") {
     "medialibraryextensionregisterobserver_fuzzer:MediaLibraryExtensionRegisterObserverFuzzTest",
     "medialibraryextensionunregisterobserver_fuzzer:MediaLibraryExtensionUnregisterObserverFuzzTest",
     "medialibraryextensionupdate_fuzzer:MediaLibraryExtensionUpdateFuzzTest",
+    "medialibraryfileparseinterface_fuzzer:MediaLibraryFileParseInterfaceFuzzTest",
     "medialibrarymediaalbumscontrollerservice_fuzzer:MediaLibraryMediaAlbumsControllerServiceFuzzTest",
     "medialibrarymediaassetscontrollerservice_fuzzer:MediaLibraryMediaAssetsControllerServiceFuzzTest",
     "medialibrarymediaphotoassetproxy_fuzzer:MediaLibraryMediaPhotoAssetProxyFuzzTest",

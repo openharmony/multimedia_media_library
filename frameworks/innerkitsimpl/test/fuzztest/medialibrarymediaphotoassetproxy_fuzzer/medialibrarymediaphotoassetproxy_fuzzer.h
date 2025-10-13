@@ -26,7 +26,9 @@
 #include <iomanip>
 
 #include "photo_proxy.h"
+#define private public
 #include "media_photo_asset_proxy.h"
+#undef private
 
 namespace OHOS {
 namespace Media {
@@ -161,7 +163,12 @@ public:
 
     int32_t GetShootingMode() override
     {
-        return 0;
+        return cameraShotType_;
+    }
+
+    void SetShootingMode(int32_t cameraShotType)
+    {
+        cameraShotType_ = cameraShotType;
     }
 
     std::string GetBurstKey() override
@@ -191,6 +198,7 @@ public:
 private:
     void *fileDataAddr_ = nullptr;
     int32_t fileSize_ = 0;
+    int32_t cameraShotType_ = 0;
     std::string title_;
     std::string photoId_;
     PhotoFormat photoFormat_;
@@ -210,9 +218,9 @@ const std::vector<CameraShotType> CameraShotType_FUZZER_LISTS = {
 const std::vector<PhotoFormat> PhotoFormat_FUZZER_LISTS = {
     PhotoFormat::RGBA,
     PhotoFormat::JPG,
-    PhotoFormat::MP4,
     PhotoFormat::HEIF,
     PhotoFormat::YUV,
+    PhotoFormat::DNG,
 };
 
 const std::vector<PhotoQuality> PhotoQuality_FUZZER_LISTS = {

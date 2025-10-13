@@ -17,17 +17,19 @@
 
 #include <cstdint>
 #include <memory>
+#include <fstream>
 #include <string>
 #include <fuzzer/FuzzedDataProvider.h>
 
-#define private public
-#include "media_photo_asset_proxy.h"
-#undef private
-
 #include "ability_context_impl.h"
+#include "access_token.h"
+#include "accesstoken_kit.h"
+#include "nativetoken_kit.h"
+#include "token_setproc.h"
 #include "datashare_predicates.h"
 #include "iservice_registry.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
@@ -41,9 +43,14 @@
 namespace OHOS {
 using namespace std;
 using namespace DataShare;
+using namespace Security::AccessToken;
+static const int32_t NUM_BYTES = 10;
 static const int32_t MAX_PHOTO_QUALITY_FUZZER_LISTS = 1;
-static const int32_t MAX_CAMERA_SHOT_TYPE_FUZZER_LISTS = 3;
-static const int32_t MAX_PHOTO_FORMAT_FUZZER_LISTS = 3;
+static const int32_t MAX_CAMERA_SHOT_TYPE_FUZZER_LISTS = 4;
+static const int32_t MAX_PHOTO_FORMAT_FUZZER_LISTS = 4;
+static const int32_t MAX_SUB_TYPE = 6;
+static const int32_t MAX_BYTE_VALUE = 256;
+static const int32_t SEED_SIZE = 1024;
 constexpr int FUZZ_STORAGE_MANAGER_MANAGER_ID = 5003;
 std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
@@ -65,6 +72,12 @@ static inline Media::PhotoQuality FuzzPhotoQuality()
 {
     uint8_t data = provider->ConsumeIntegralInRange<uint8_t>(0, MAX_PHOTO_QUALITY_FUZZER_LISTS);
     return Media::PhotoQuality_FUZZER_LISTS[data];
+}
+
+static inline Media::PhotoSubType FuzzPhotoSubType()
+{
+    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_SUB_TYPE);
+    return static_cast<Media::PhotoSubType>(value);
 }
 
 void CreateDataHelper(int32_t systemAbilityId)
@@ -102,12 +115,15 @@ static sptr<Media::PhotoProxyFuzzTest> FuzzPhotoAssetProxy()
     }
     photoProxyFuzzTest->SetFormat(FuzzPhotoFormat());
     photoProxyFuzzTest->SetPhotoQuality(FuzzPhotoQuality());
+    photoProxyFuzzTest->SetShootingMode(static_cast<int32_t>(FuzzCameraShotType()));
+    photoProxyFuzzTest->SetBurstKey(provider->ConsumeBytesAsString(NUM_BYTES));
 
     return photoProxyFuzzTest;
 }
 
 static void MediaLibraryMediaPhotoAssetProxyTest()
 {
+    MEDIA_INFO_LOG("MediaLibraryMediaPhotoAssetProxyTest start");
     if (sDataShareHelper_ == nullptr) {
         CreateDataHelper(FUZZ_STORAGE_MANAGER_MANAGER_ID);
     }
@@ -119,6 +135,19 @@ static void MediaLibraryMediaPhotoAssetProxyTest()
     photoAssetProxy->AddPhotoProxy((sptr<Media::PhotoProxy>&)photoProxyFuzzTest);
     photoAssetProxy->GetVideoFd();
     photoAssetProxy->NotifyVideoSaveFinished();
+    photoAssetProxy->GetFileAsset();
+
+    int32_t fileId = provider->ConsumeIntegral<int32_t>();
+    int32_t subType = static_cast<int32_t>(FuzzPhotoSubType());
+    photoAssetProxy->SaveLowQualityPhoto(sDataShareHelper_, photoProxyFuzzTest, fileId, subType);
+    
+    uint8_t *data = new uint8_t();
+    uint32_t size = sizeof(uint8_t);
+    int fd = provider->ConsumeIntegral<int32_t>();
+    photoAssetProxy->SetShootingModeAndGpsInfo(data, size, (sptr<Media::PhotoProxy>&)photoProxyFuzzTest, fd);
+    delete data;
+    data = nullptr;
+    MEDIA_INFO_LOG("MediaLibraryMediaPhotoAssetProxyTest end");
 }
 
 void SetTables()
@@ -154,6 +183,95 @@ static void RdbStoreInit()
     SetTables();
 }
 
+std::vector<OHOS::Security::AccessToken::PermissionStateFull> DefinePermissionStates()
+{
+    return {
+        {
+            .permissionName = "ohos.permission.SHORT_TERM_WRITE_IMAGEVIDEO",
+            .isGeneral = true,
+            .resDeviceID = { "local" },
+            .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },
+            .grantFlags = { 1 }
+        },
+        {
+            .permissionName = "ohos.permission.READ_IMAGEVIDEO",
+            .isGeneral = true,
+            .resDeviceID = { "local" },
+            .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },
+            .grantFlags = { 1 }
+        },
+        {
+            .permissionName = "ohos.permission.WRITE_IMAGEVIDEO",
+            .isGeneral = true,
+            .resDeviceID = { "local" },
+            .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },
+            .grantFlags = { 1 }
+        },
+        {
+            .permissionName = "ohos.permission.READ_MEDIA",
+            .isGeneral = true,
+            .resDeviceID = { "local" },
+            .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },
+            .grantFlags = { 1 }
+        },
+        {
+            .permissionName = "ohos.permission.WRITE_MEDIA",
+            .isGeneral = true,
+            .resDeviceID = { "local" },
+            .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },
+            .grantFlags = { 1 }
+        }
+    };
+}
+
+static void SetHapPermission()
+{
+    MEDIA_INFO_LOG("enter SetHapPermission");
+    OHOS::Security::AccessToken::HapInfoParams info = {
+        .userID = 100,
+        .bundleName = "com.ohos.test.medialibrary",
+        .instIndex = 0,
+        .appIDDesc = "com.ohos.test.medialibrary",
+        .isSystemApp = true
+    };
+
+    OHOS::Security::AccessToken::HapPolicyParams policy = {
+        .apl = Security::AccessToken::APL_SYSTEM_BASIC,
+        .domain = "test.domain.medialibrary",
+        .permList = { },
+        .permStateList = DefinePermissionStates()
+    };
+    OHOS::Security::AccessToken::AccessTokenIDEx tokenIdEx = { 0 };
+    tokenIdEx = OHOS::Security::AccessToken::AccessTokenKit::AllocHapToken(info, policy);
+    int ret = SetSelfTokenID(tokenIdEx.tokenIDEx);
+    if (ret != 0) {
+        MEDIA_INFO_LOG("Set hap token failed, err: %{public}d", ret);
+    }
+}
+
+static int32_t AddSeed()
+{
+    char *seedData = new char[OHOS::SEED_SIZE];
+    for (int i = 0; i < OHOS::SEED_SIZE; i++) {
+        seedData[i] = static_cast<char>(i % MAX_BYTE_VALUE);
+    }
+
+    const char* filename = "corpus/seed.txt";
+    std::ofstream file(filename, std::ios::binary | std::ios::trunc);
+    if (!file) {
+        MEDIA_ERR_LOG("Cannot open file filename:%{public}s", filename);
+        delete[] seedData;
+        seedData = nullptr;
+        return Media::E_ERR;
+    }
+    file.write(seedData, OHOS::SEED_SIZE);
+    file.close();
+    delete[] seedData;
+    seedData = nullptr;
+    MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
+    return Media::E_OK;
+}
+
 static inline void ClearKvStore()
 {
     Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
@@ -162,6 +280,8 @@ static inline void ClearKvStore()
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 {
+    OHOS::SetHapPermission();
+    OHOS::AddSeed();
     OHOS::RdbStoreInit();
     return 0;
 }

@@ -1,0 +1,782 @@
+diff --git a/frameworks/innerkitsimpl/test/fuzztest/BUILD.gn b/frameworks/innerkitsimpl/test/fuzztest/BUILD.gn
+index 39512307f90e15c54c1ec09c713871aeb68bd700..b33bdfdf6ffd01ba3238c7732376618faff69b93 100644
+--- a/frameworks/innerkitsimpl/test/fuzztest/BUILD.gn
++++ b/frameworks/innerkitsimpl/test/fuzztest/BUILD.gn
+@@ -50,6 +50,7 @@ group("media_library_fuzztest") {
+     "medialibraryextensionregisterobserver_fuzzer:MediaLibraryExtensionRegisterObserverFuzzTest",
+     "medialibraryextensionunregisterobserver_fuzzer:MediaLibraryExtensionUnregisterObserverFuzzTest",
+     "medialibraryextensionupdate_fuzzer:MediaLibraryExtensionUpdateFuzzTest",
++    "medialibraryfileparseinterface_fuzzer:MediaLibraryFileParseInterfaceFuzzTest",
+     "medialibrarymediaalbumscontrollerservice_fuzzer:MediaLibraryMediaAlbumsControllerServiceFuzzTest",
+     "medialibrarymediaassetscontrollerservice_fuzzer:MediaLibraryMediaAssetsControllerServiceFuzzTest",
+     "medialibrarymediaphotoassetproxy_fuzzer:MediaLibraryMediaPhotoAssetProxyFuzzTest",
+diff --git a/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/BUILD.gn b/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/BUILD.gn
+new file mode 100644
+index 0000000000000000000000000000000000000000..d10b63ef8eba23555de521016494031c9df2d09a
+--- /dev/null
++++ b/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/BUILD.gn
+@@ -0,0 +1,74 @@
++# Copyright (c) 2025 Huawei Device Co., Ltd.
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++import("//build/test.gni")
++import("//foundation/multimedia/media_library/media_library.gni")
++
++ohos_fuzztest("MediaLibraryFileParseInterfaceFuzzTest") {
++  module_out_path = "media_library/media_library"
++  fuzz_config_file = "."
++
++  include_dirs = [
++    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
++    "${MEDIALIB_SERVICES_PATH}/media_mtp/include",
++  ]
++
++  sources = [
++    "./medialibraryfileparseinterface_fuzzer.cpp"
++  ]
++
++  deps = [
++    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
++    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
++  ]
++
++  external_deps = [
++    "ability_base:configuration",
++    "ability_base:want",
++    "ability_base:zuri",
++    "ability_runtime:ability_context_native",
++    "ability_runtime:ability_manager",
++    "ability_runtime:abilitykit_native",
++    "ability_runtime:app_context",
++    "ability_runtime:app_manager",
++    "ability_runtime:dataobs_manager",
++    "ability_runtime:runtime",
++    "ability_runtime:ani_base_context",
++    "ability_runtime:napi_base_context",
++    "access_token:libaccesstoken_sdk",
++    "access_token:libprivacy_sdk",
++    "access_token:libtokenid_sdk",
++    "app_file_service:fileuri_native",
++    "bundle_framework:appexecfwk_core",
++    "c_utils:utils",
++    "data_share:datashare_common",
++    "data_share:datashare_consumer",
++    "dfs_service:cloudsync_kit_inner",
++    "drivers_interface_usb:usbfn_mtp_idl_headers",
++    "hilog:libhilog",
++    "image_framework:image",
++    "image_framework:image_source",
++    "image_framework:image_native",
++    "image_framework:ohimage",
++    "ipc:ipc_single",
++    "kv_store:distributeddata_inner",
++    "napi:ace_napi",
++    "player_framework:media_client",
++    "player_framework:video_editor",
++    "relational_store:native_rdb",
++    "relational_store:rdb_data_share_adapter",
++    "resource_management:librawfile",
++    "runtime_core:ani",
++    "samgr:samgr_proxy",
++  ]
++}
+diff --git a/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/corpus/init b/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/corpus/init
+new file mode 100644
+index 0000000000000000000000000000000000000000..7ade8a0faafeaedba7241e7d4a97b8e1f9691932
+--- /dev/null
++++ b/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/corpus/init
+@@ -0,0 +1,16 @@
++/*
++ * Copyright (c) 2025 Huawei Device Co., Ltd.
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++FUZZ
+\ No newline at end of file
+diff --git a/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/medialibraryfileparseinterface_fuzzer.cpp b/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/medialibraryfileparseinterface_fuzzer.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..be26a8ec44de3c06c4188d0ba8eede9ab4a5cba3
+--- /dev/null
++++ b/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/medialibraryfileparseinterface_fuzzer.cpp
+@@ -0,0 +1,331 @@
++/*
++ * Copyright (c) 2025 Huawei Device Co., Ltd.
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "medialibraryfileparseinterface_fuzzer.h"
++
++#include <cstdint>
++#include <memory>
++#include <fstream>
++#include <string>
++#include <fuzzer/FuzzedDataProvider.h>
++
++#define private public
++#define protected public
++#include "media_file_utils.h"
++#include "medialibrary_asset_operations.h"
++#include "moving_photo_file_utils.h"
++#include "metadata_extractor.h"
++#include "media_privacy_manager.h"
++#include "mtp_media_library.h"
++#undef private
++#undef protected
++
++#include <ani.h>
++#include "avmetadatahelper.h"
++#include "ability_context_impl.h"
++#include "datashare_predicates.h"
++#include "iservice_registry.h"
++#include "media_log.h"
++#include "medialibrary_command.h"
++#include "medialibrary_data_manager.h"
++#include "medialibrary_errno.h"
++#include "medialibrary_unistore.h"
++#include "medialibrary_unistore_manager.h"
++#include "rdb_store.h"
++#include "rdb_utils.h"
++#include "userfile_manager_types.h"
++#include "values_bucket.h"
++#include "system_ability_definition.h"
++#include "userfilemgr_uri.h"
++#include "medialibrary_kvstore_manager.h"
++#include "fetch_result.h"
++#include "medialibrary_photo_operations.h"
++#include "result_set_utils.h"
++#include "media_library_extend_manager.h"
++
++namespace OHOS {
++namespace Media {
++using namespace std;
++using namespace DataShare;
++static const int32_t DEFAULT_HIDE_SENTITIVE_TYPE = -1;
++static const int32_t NUM_BYTES = 1;
++static const int32_t NUM_1 = 1;
++static const int32_t NUM_16 = 16;
++static const int32_t MXA_SCENE = 2;
++static const int32_t MAX_SENSITIVE_TYPE = 3;
++static const int32_t MAX_BYTE_VALUE = 256;
++static const int32_t SEED_SIZE = 1024;
++const string PHOTOS_TABLE = "Photos";
++std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
++FuzzedDataProvider *provider = nullptr;
++
++static inline Scene FuzzScene()
++{
++    int32_t data = provider->ConsumeIntegralInRange(0, MXA_SCENE);
++    return static_cast<Scene>(data);
++}
++
++static inline HideSensitiveType FuzzHideSensitiveType()
++{
++    int32_t data = provider->ConsumeIntegralInRange<int32_t>(0, MAX_SENSITIVE_TYPE);
++    return static_cast<HideSensitiveType>(data);
++}
++
++unique_ptr<FileAsset> QueryPhotoAsset(const string &columnName, const string &value)
++{
++    string querySql = "SELECT * FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
++        columnName + "='" + value + "';";
++
++    MEDIA_DEBUG_LOG("querySql: %{public}s", querySql.c_str());
++    auto resultSet = g_rdbStore->QuerySql(querySql);
++    if (resultSet == nullptr) {
++        MEDIA_ERR_LOG("Get resultSet failed");
++        return nullptr;
++    }
++
++    int32_t resultSetCount = 0;
++    int32_t ret = resultSet->GetRowCount(resultSetCount);
++    if (ret != NativeRdb::E_OK || resultSetCount <= 0) {
++        MEDIA_ERR_LOG("resultSet row count is 0");
++        return nullptr;
++    }
++
++    shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>();
++    if (fetchFileResult == nullptr) {
++        MEDIA_ERR_LOG("Get fetchFileResult failed");
++        return nullptr;
++    }
++    auto fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, 0);
++    if (fileAsset == nullptr || fileAsset->GetId() < 0) {
++        return nullptr;
++    }
++    return fileAsset;
++}
++
++string GetFilePath(int fileId)
++{
++    if (fileId < 0) {
++        MEDIA_ERR_LOG("this file id %{private}d is invalid", fileId);
++        return "";
++    }
++
++    vector<string> columns = { Media::PhotoColumn::MEDIA_FILE_PATH };
++    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO, Media::OperationType::QUERY,
++        Media::MediaLibraryApi::API_10);
++    cmd.GetAbsRdbPredicates()->EqualTo(Media::PhotoColumn::MEDIA_ID, to_string(fileId));
++    if (g_rdbStore == nullptr) {
++        MEDIA_ERR_LOG("can not get rdbstore");
++        return "";
++    }
++    auto resultSet = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->Query(cmd, columns);
++    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
++        MEDIA_ERR_LOG("Can not get file Path");
++        return "";
++    }
++    string path = Media::GetStringVal(Media::PhotoColumn::MEDIA_FILE_PATH, resultSet);
++    return path;
++}
++
++inline int32_t CreatePhotoApi10(int mediaType, const string &displayName)
++{
++    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
++        MediaLibraryApi::API_10);
++    NativeRdb::ValuesBucket values;
++    values.PutString(MediaColumn::MEDIA_NAME, displayName);
++    values.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
++    cmd.SetValueBucket(values);
++    return MediaLibraryPhotoOperations::Create(cmd);
++}
++
++static void MediaFileUtilsTest()
++{
++    MEDIA_INFO_LOG("MediaFileUtilsTest start");
++    std::string srcFile = ROOT_MEDIA_DIR + to_string(provider->ConsumeIntegralInRange<uint32_t>(NUM_1, NUM_16))
++        + "/" + "srctest.jpg";
++    if (!MediaFileUtils::IsFileExists(srcFile)) {
++        MediaFileUtils::CreateFile(srcFile);
++    }
++    std::string dstFile = ROOT_MEDIA_DIR + to_string(provider->ConsumeIntegralInRange<uint32_t>(NUM_1, NUM_16))
++        + "/" + "dsttest.jpg";
++    std::string extension = "jpg";
++    MediaFileUtils::ConvertFormatCopy(srcFile, dstFile, extension);
++    
++    string path = ROOT_MEDIA_DIR + to_string(provider->ConsumeIntegralInRange<uint32_t>(NUM_1, NUM_16))
++        + "/" + "test.mp4";
++    if (!MediaFileUtils::IsFileExists(path)) {
++        MediaFileUtils::CreateFile(path);
++    }
++    MediaFileUtils::CheckMovingPhotoVideo(path);
++    MEDIA_INFO_LOG("MediaFileUtilsTest end");
++}
++
++static void SetUserCommentTets()
++{
++    MEDIA_INFO_LOG("SetUserCommentTets start");
++    DataShareValuesBucket values;
++    string userComment = provider->ConsumeBytesAsString(NUM_BYTES);
++    values.Put(PhotoColumn::PHOTO_USER_COMMENT, userComment);
++    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
++        MediaLibraryApi::API_10);
++    NativeRdb::ValuesBucket rdbValue = RdbDataShareAdapter::RdbUtils::ToValuesBucket(values);
++    cmd.SetValueBucket(rdbValue);
++
++    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg");
++    shared_ptr<FileAsset> fileAsset = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
++    if (fileAsset == nullptr) {
++        MEDIA_ERR_LOG("Can not get fileAsset");
++        return;
++    }
++    MediaLibraryAssetOperations::SetUserComment(cmd, fileAsset);
++    MEDIA_INFO_LOG("SetUserCommentTets end");
++}
++
++static void MovingPhotoFileUtilsTest()
++{
++    MEDIA_INFO_LOG("MovingPhotoFileUtilsTest start");
++    int32_t fileid = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "test.mp4");
++    std::string videoPath = GetFilePath(fileid);
++    if (!MediaFileUtils::IsFileExists(videoPath)) {
++        MediaFileUtils::CreateFile(videoPath);
++    }
++    uint32_t frameIndex = 0;
++    uint64_t coverPosition = 0;
++    int32_t scene = FuzzScene();
++    MovingPhotoFileUtils::GetCoverPosition(videoPath, frameIndex, coverPosition, scene);
++
++    int64_t time = provider->ConsumeIntegral<int64_t>();
++    int32_t fd = open(videoPath.c_str(), O_RDONLY);
++    MovingPhotoFileUtils::GetFrameIndex(time, fd);
++    close(fd);
++    MEDIA_INFO_LOG("MovingPhotoFileUtilsTest end");
++}
++
++static void ExtractAVMetadataTest()
++{
++    MEDIA_INFO_LOG("ExtractAVMetadataTest start");
++    std::unique_ptr<Metadata> data = make_unique<Metadata>();
++    std::variant<int32_t, std::string, int64_t, double> variantData = ROOT_MEDIA_DIR + "test.jpg";
++    std::string path = std::get<std::string>(variantData);
++    if (!MediaFileUtils::IsFileExists(path)) {
++        MediaFileUtils::CreateFile(path);
++    }
++    data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
++    data->SetFilePath(variantData);
++    int32_t scene = FuzzScene();
++
++    MetadataExtractor::ExtractAVMetadata(data, scene);
++    MEDIA_INFO_LOG("ExtractAVMetadataTest end");
++}
++
++static void MediaPrivacyManagerTest()
++{
++    MEDIA_INFO_LOG("MediaPrivacyManagerTest start");
++    std::string path = ROOT_MEDIA_DIR + "test.jpg";
++    std::string mode = "r";
++    std::string fileId = to_string(provider->ConsumeIntegral<int32_t>());
++    int32_t type = provider->ConsumeBool() ? DEFAULT_HIDE_SENTITIVE_TYPE :
++        static_cast<int32_t>(FuzzHideSensitiveType());
++    MediaPrivacyManager mgr(path, mode, fileId, type);
++    mgr.Open();
++    MEDIA_INFO_LOG("MediaPrivacyManagerTest end");
++}
++
++void SetTables()
++{
++    vector<string> createTableSqlList = {
++        Media::PhotoColumn::CREATE_PHOTO_TABLE,
++    };
++    for (auto &createTableSql : createTableSqlList) {
++        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
++        if (ret != NativeRdb::E_OK) {
++            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
++            return;
++        }
++        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
++    }
++}
++
++static void Init()
++{
++    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
++    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
++    abilityContextImpl->SetStageContext(stageContext);
++    int32_t sceneCode = 0;
++    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
++        abilityContextImpl, sceneCode);
++    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
++
++    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
++    if (rdbStore == nullptr) {
++        return;
++    }
++    g_rdbStore = rdbStore;
++    SetTables();
++}
++
++static int32_t AddSeed()
++{
++    char *seedData = new char[SEED_SIZE];
++    for (int i = 0; i < SEED_SIZE; i++) {
++        seedData[i] = static_cast<char>(i % MAX_BYTE_VALUE);
++    }
++
++    const char* filename = "corpus/seed.txt";
++    std::ofstream file(filename, std::ios::binary | std::ios::trunc);
++    if (!file) {
++        MEDIA_ERR_LOG("Cannot open file filename:%{public}s", filename);
++        delete[] seedData;
++        seedData = nullptr;
++        return Media::E_ERR;
++    }
++    file.write(seedData, SEED_SIZE);
++    file.close();
++    delete[] seedData;
++    seedData = nullptr;
++    MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
++    return Media::E_OK;
++}
++
++static inline void ClearKvStore()
++{
++    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
++}
++} // namespace Media
++} // namespace OHOS
++
++extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
++{
++    OHOS::Media::AddSeed();
++    OHOS::Media::Init();
++    return 0;
++}
++
++/* Fuzzer entry point */
++extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
++{
++    /* Run your code on data */
++    FuzzedDataProvider fdp(data, size);
++    OHOS::Media::provider = &fdp;
++    if (data == nullptr) {
++        return 0;
++    }
++    OHOS::Media::MediaFileUtilsTest();
++    OHOS::Media::SetUserCommentTets();
++    OHOS::Media::MovingPhotoFileUtilsTest();
++    OHOS::Media::ExtractAVMetadataTest();
++    OHOS::Media::MediaPrivacyManagerTest();
++    OHOS::Media::ClearKvStore();
++    return 0;
++}
+\ No newline at end of file
+diff --git a/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/medialibraryfileparseinterface_fuzzer.h b/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/medialibraryfileparseinterface_fuzzer.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a25fd5cc23ee499ff7509d4d197d34d613ff5a0
+--- /dev/null
++++ b/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/medialibraryfileparseinterface_fuzzer.h
+@@ -0,0 +1,21 @@
++/*
++ * Copyright (c) 2025 Huawei Device Co., Ltd.
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef MEDIALIBRARY_FILE_PARSE_INTERFACE_FUZZER_H
++#define MEDIALIBRARY_FILE_PARSE_INTERFACE_FUZZER_H
++
++#define FUZZ_PROJECT_NAME "medialibraryfileparseinterface_fuzzer"
++
++#endif
+\ No newline at end of file
+diff --git a/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/project.xml b/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/project.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..ac512adc948016c985c7243f424baece30898ede
+--- /dev/null
++++ b/frameworks/innerkitsimpl/test/fuzztest/medialibraryfileparseinterface_fuzzer/project.xml
+@@ -0,0 +1,25 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Copyright (c) 2025 Huawei Device Co., Ltd.
++  Licensed under the Apache License, Version 2.0 (the "License");
++  you may not use this file except in compliance with the License.
++  You may obtain a copy of the License at
++
++      http://www.apache.org/licenses/LICENSE-2.0
++
++  Unless required by applicable law or agreed to in writing, software
++  distributed under the License is distributed on an "AS IS" BASIS,
++  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++  See the License for the specific language governing permissions and
++  limitations under the License.
++
++-->
++<fuzz_config>
++  <fuzztest>
++    <!-- maximum length of a test input -->
++    <max_len>128</max_len>
++    <!-- maximum total time in seconds to run the fuzzer -->
++    <max_total_time>300</max_total_time>
++    <!-- memory usage limit in Mb -->
++    <rss_limit_mb>4096</rss_limit_mb>
++  </fuzztest>
++</fuzz_config>
+diff --git a/frameworks/innerkitsimpl/test/fuzztest/medialibrarymediaphotoassetproxy_fuzzer/BUILD.gn b/frameworks/innerkitsimpl/test/fuzztest/medialibrarymediaphotoassetproxy_fuzzer/BUILD.gn
+index bf2d909b4651a0cbc5fea51e2b661fb8095baacc..5ddfaf883409c4d8aee698cd7aa8fa7db7942b09 100644
+--- a/frameworks/innerkitsimpl/test/fuzztest/medialibrarymediaphotoassetproxy_fuzzer/BUILD.gn
++++ b/frameworks/innerkitsimpl/test/fuzztest/medialibrarymediaphotoassetproxy_fuzzer/BUILD.gn
+@@ -34,7 +34,6 @@ ohos_fuzztest("MediaLibraryMediaPhotoAssetProxyFuzzTest") {
+     "ability_base:configuration",
+     "ability_base:want",
+     "ability_base:zuri",
+-    "ability_runtime:ability_connect_callback_stub",
+     "ability_runtime:ability_context_native",
+     "ability_runtime:ability_manager",
+     "ability_runtime:abilitykit_native",
+@@ -42,6 +41,11 @@ ohos_fuzztest("MediaLibraryMediaPhotoAssetProxyFuzzTest") {
+     "ability_runtime:app_manager",
+     "ability_runtime:dataobs_manager",
+     "ability_runtime:runtime",
++    "access_token:libaccesstoken_sdk",
++    "access_token:libnativetoken_shared",
++    "access_token:libtokensetproc_shared",
++    "access_token:libprivacy_sdk",
++    "access_token:libtokenid_sdk",
+     "bundle_framework:appexecfwk_core",
+     "c_utils:utils",
+     "data_share:datashare_common",
+diff --git a/frameworks/innerkitsimpl/test/fuzztest/medialibrarymediaphotoassetproxy_fuzzer/medialibrarymediaphotoassetproxy_fuzzer.cpp b/frameworks/innerkitsimpl/test/fuzztest/medialibrarymediaphotoassetproxy_fuzzer/medialibrarymediaphotoassetproxy_fuzzer.cpp
+index 7199298a6eefa71e8b2efd6efd580def96e34f69..2b7201f200217ef3288e14b8d9792e886c2662e6 100644
+--- a/frameworks/innerkitsimpl/test/fuzztest/medialibrarymediaphotoassetproxy_fuzzer/medialibrarymediaphotoassetproxy_fuzzer.cpp
++++ b/frameworks/innerkitsimpl/test/fuzztest/medialibrarymediaphotoassetproxy_fuzzer/medialibrarymediaphotoassetproxy_fuzzer.cpp
+@@ -17,17 +17,19 @@
+ 
+ #include <cstdint>
+ #include <memory>
++#include <fstream>
+ #include <string>
+ #include <fuzzer/FuzzedDataProvider.h>
+ 
+-#define private public
+-#include "media_photo_asset_proxy.h"
+-#undef private
+-
+ #include "ability_context_impl.h"
++#include "access_token.h"
++#include "accesstoken_kit.h"
++#include "nativetoken_kit.h"
++#include "token_setproc.h"
+ #include "datashare_predicates.h"
+ #include "iservice_registry.h"
+ #include "media_log.h"
++#include "medialibrary_errno.h"
+ #include "medialibrary_command.h"
+ #include "medialibrary_data_manager.h"
+ #include "medialibrary_errno.h"
+@@ -41,9 +43,14 @@
+ namespace OHOS {
+ using namespace std;
+ using namespace DataShare;
++using namespace Security::AccessToken;
++static const int32_t NUM_BYTES = 10;
+ static const int32_t MAX_PHOTO_QUALITY_FUZZER_LISTS = 1;
+-static const int32_t MAX_CAMERA_SHOT_TYPE_FUZZER_LISTS = 3;
+-static const int32_t MAX_PHOTO_FORMAT_FUZZER_LISTS = 3;
++static const int32_t MAX_CAMERA_SHOT_TYPE_FUZZER_LISTS = 4;
++static const int32_t MAX_PHOTO_FORMAT_FUZZER_LISTS = 4;
++static const int32_t MAX_SUB_TYPE = 6;
++static const int32_t MAX_BYTE_VALUE = 256;
++static const int32_t SEED_SIZE = 1024;
+ constexpr int FUZZ_STORAGE_MANAGER_MANAGER_ID = 5003;
+ std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
+ std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
+@@ -67,6 +74,12 @@ static inline Media::PhotoQuality FuzzPhotoQuality()
+     return Media::PhotoQuality_FUZZER_LISTS[data];
+ }
+ 
++static inline Media::PhotoSubType FuzzPhotoSubType()
++{
++    int32_t value = provider->ConsumeIntegralInRange<int32_t>(0, MAX_SUB_TYPE);
++    return static_cast<Media::PhotoSubType>(value);
++}
++
+ void CreateDataHelper(int32_t systemAbilityId)
+ {
+     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+@@ -102,12 +115,15 @@ static sptr<Media::PhotoProxyFuzzTest> FuzzPhotoAssetProxy()
+     }
+     photoProxyFuzzTest->SetFormat(FuzzPhotoFormat());
+     photoProxyFuzzTest->SetPhotoQuality(FuzzPhotoQuality());
++    photoProxyFuzzTest->SetShootingMode(static_cast<int32_t>(FuzzCameraShotType()));
++    photoProxyFuzzTest->SetBurstKey(provider->ConsumeBytesAsString(NUM_BYTES));
+ 
+     return photoProxyFuzzTest;
+ }
+ 
+ static void MediaLibraryMediaPhotoAssetProxyTest()
+ {
++    MEDIA_INFO_LOG("MediaLibraryMediaPhotoAssetProxyTest start");
+     if (sDataShareHelper_ == nullptr) {
+         CreateDataHelper(FUZZ_STORAGE_MANAGER_MANAGER_ID);
+     }
+@@ -119,6 +135,19 @@ static void MediaLibraryMediaPhotoAssetProxyTest()
+     photoAssetProxy->AddPhotoProxy((sptr<Media::PhotoProxy>&)photoProxyFuzzTest);
+     photoAssetProxy->GetVideoFd();
+     photoAssetProxy->NotifyVideoSaveFinished();
++    photoAssetProxy->GetFileAsset();
++
++    int32_t fileId = provider->ConsumeIntegral<int32_t>();
++    int32_t subType = static_cast<int32_t>(FuzzPhotoSubType());
++    photoAssetProxy->SaveLowQualityPhoto(sDataShareHelper_, photoProxyFuzzTest, fileId, subType);
++    
++    uint8_t *data = new uint8_t();
++    uint32_t size = sizeof(uint8_t);
++    int fd = provider->ConsumeIntegral<int32_t>();
++    photoAssetProxy->SetShootingModeAndGpsInfo(data, size, (sptr<Media::PhotoProxy>&)photoProxyFuzzTest, fd);
++    delete data;
++    data = nullptr;
++    MEDIA_INFO_LOG("MediaLibraryMediaPhotoAssetProxyTest end");
+ }
+ 
+ void SetTables()
+@@ -154,6 +183,95 @@ static void RdbStoreInit()
+     SetTables();
+ }
+ 
++std::vector<OHOS::Security::AccessToken::PermissionStateFull> DefinePermissionStates()
++{
++    return {
++        {
++            .permissionName = "ohos.permission.SHORT_TERM_WRITE_IMAGEVIDEO",
++            .isGeneral = true,
++            .resDeviceID = { "local" },
++            .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },
++            .grantFlags = { 1 }
++        },
++        {
++            .permissionName = "ohos.permission.READ_IMAGEVIDEO",
++            .isGeneral = true,
++            .resDeviceID = { "local" },
++            .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },
++            .grantFlags = { 1 }
++        },
++        {
++            .permissionName = "ohos.permission.WRITE_IMAGEVIDEO",
++            .isGeneral = true,
++            .resDeviceID = { "local" },
++            .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },
++            .grantFlags = { 1 }
++        },
++        {
++            .permissionName = "ohos.permission.READ_MEDIA",
++            .isGeneral = true,
++            .resDeviceID = { "local" },
++            .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },
++            .grantFlags = { 1 }
++        },
++        {
++            .permissionName = "ohos.permission.WRITE_MEDIA",
++            .isGeneral = true,
++            .resDeviceID = { "local" },
++            .grantStatus = { OHOS::Security::AccessToken::PermissionState::PERMISSION_GRANTED },
++            .grantFlags = { 1 }
++        }
++    };
++}
++
++static void SetHapPermission()
++{
++    MEDIA_INFO_LOG("enter SetHapPermission");
++    OHOS::Security::AccessToken::HapInfoParams info = {
++        .userID = 100,
++        .bundleName = "com.ohos.test.medialibrary",
++        .instIndex = 0,
++        .appIDDesc = "com.ohos.test.medialibrary",
++        .isSystemApp = true
++    };
++ 
++    OHOS::Security::AccessToken::HapPolicyParams policy = {
++        .apl = Security::AccessToken::APL_SYSTEM_BASIC,
++        .domain = "test.domain.medialibrary",
++        .permList = { },
++        .permStateList = DefinePermissionStates()
++    };
++    OHOS::Security::AccessToken::AccessTokenIDEx tokenIdEx = { 0 };
++    tokenIdEx = OHOS::Security::AccessToken::AccessTokenKit::AllocHapToken(info, policy);
++    int ret = SetSelfTokenID(tokenIdEx.tokenIDEx);
++    if (ret != 0) {
++        MEDIA_INFO_LOG("Set hap token failed, err: %{public}d", ret);
++    }
++}
++
++static int32_t AddSeed()
++{
++    char *seedData = new char[OHOS::SEED_SIZE];
++    for (int i = 0; i < OHOS::SEED_SIZE; i++) {
++        seedData[i] = static_cast<char>(i % MAX_BYTE_VALUE);
++    }
++
++    const char* filename = "corpus/seed.txt";
++    std::ofstream file(filename, std::ios::binary | std::ios::trunc);
++    if (!file) {
++        MEDIA_ERR_LOG("Cannot open file filename:%{public}s", filename);
++        delete[] seedData;
++        seedData = nullptr;
++        return Media::E_ERR;
++    }
++    file.write(seedData, OHOS::SEED_SIZE);
++    file.close();
++    delete[] seedData;
++    seedData = nullptr;
++    MEDIA_INFO_LOG("seedData has been successfully written to file filename:%{public}s", filename);
++    return Media::E_OK;
++}
++
+ static inline void ClearKvStore()
+ {
+     Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
+@@ -162,6 +280,8 @@ static inline void ClearKvStore()
+ 
+ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
+ {
++    OHOS::SetHapPermission();
++    OHOS::AddSeed();
+     OHOS::RdbStoreInit();
+     return 0;
+ }
+diff --git a/frameworks/innerkitsimpl/test/fuzztest/medialibrarymediaphotoassetproxy_fuzzer/medialibrarymediaphotoassetproxy_fuzzer.h b/frameworks/innerkitsimpl/test/fuzztest/medialibrarymediaphotoassetproxy_fuzzer/medialibrarymediaphotoassetproxy_fuzzer.h
+index d66998970d4f0614741aa2f18d023253d7c099b7..61d91f25bb61aa88733f5d53a426cc73550c7494 100644
+--- a/frameworks/innerkitsimpl/test/fuzztest/medialibrarymediaphotoassetproxy_fuzzer/medialibrarymediaphotoassetproxy_fuzzer.h
++++ b/frameworks/innerkitsimpl/test/fuzztest/medialibrarymediaphotoassetproxy_fuzzer/medialibrarymediaphotoassetproxy_fuzzer.h
+@@ -26,7 +26,9 @@
+ #include <iomanip>
+ 
+ #include "photo_proxy.h"
++#define private public
+ #include "media_photo_asset_proxy.h"
++#undef private
+ 
+ namespace OHOS {
+ namespace Media {
+@@ -161,7 +163,12 @@ public:
+ 
+     int32_t GetShootingMode() override
+     {
+-        return 0;
++        return cameraShotType_;
++    }
++
++    void SetShootingMode(int32_t cameraShotType)
++    {
++        cameraShotType_ = cameraShotType;
+     }
+ 
+     std::string GetBurstKey() override
+@@ -191,6 +198,7 @@ public:
+ private:
+     void *fileDataAddr_ = nullptr;
+     int32_t fileSize_ = 0;
++    int32_t cameraShotType_ = 0;
+     std::string title_;
+     std::string photoId_;
+     PhotoFormat photoFormat_;
+@@ -210,9 +218,9 @@ const std::vector<CameraShotType> CameraShotType_FUZZER_LISTS = {
+ const std::vector<PhotoFormat> PhotoFormat_FUZZER_LISTS = {
+     PhotoFormat::RGBA,
+     PhotoFormat::JPG,
+-    PhotoFormat::MP4,
+     PhotoFormat::HEIF,
+     PhotoFormat::YUV,
++    PhotoFormat::DNG,
+ };
+ 
+ const std::vector<PhotoQuality> PhotoQuality_FUZZER_LISTS = {
