@@ -109,6 +109,7 @@ public:
     int32_t localThumbState{-1};
     std::string localOriginalAssetCloudId;
     int32_t localExifRotate{-1};
+    std::string localDisplayName;
 
 public:  // basic function
     std::string ToString() const;
