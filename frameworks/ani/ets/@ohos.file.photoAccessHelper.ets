@@ -46,7 +46,7 @@ class MediaLibraryAniError extends BusinessError {
 }
 
 export namespace photoAccessHelper {
-  loadLibrary("photo_access_helper_ani");
+  loadLibraryWithPermissionCheck("photo_access_helper_ani", "@ohos.file.photoAccessHelper");
   native function getPhotoAccessHelperInner(context: Context): PhotoAccessHelper;
   native function getPhotoAccessHelperWithUserIdInner(context: Context, userId: int): PhotoAccessHelper;
 
