@@ -90,7 +90,7 @@ const std::vector<std::string> positionTypeEnum {
 };
 
 const std::vector<std::string> photoSubTypeEnum {
-    "DEFAULT", "SCREENSHOT", "CAMERA", "MOVING_PHOTO", "BURST", "D3GS"
+    "DEFAULT", "SCREENSHOT", "CAMERA", "MOVING_PHOTO", "BURST", "SPATIAL_3DGS"
 };
 
 const std::vector<std::string> photoPermissionTypeEnum {
