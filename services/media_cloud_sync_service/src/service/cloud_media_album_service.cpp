@@ -86,7 +86,7 @@ int32_t CloudMediaAlbumService::OnFetchRecords(
             continue;
         }
         if (!album.lPath.empty()) {
-            MEDIA_INFO_LOG("OnFetchRecords add to new record");
+            MEDIA_DEBUG_LOG("OnFetchRecords add to new record");
             lpathRecords.emplace_back(album);
             continue;
         }
