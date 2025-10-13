@@ -43,7 +43,7 @@ int32_t CloudMediaSyncUtils::FillPhotosDto(
     CloudSync::PhotosDto &photosDto, const std::string &path, const int32_t &orientation,
     const int32_t exifRotate, const int32_t &thumbState)
 {
-    MEDIA_INFO_LOG("FillPhotosDto enter %{public}s", path.c_str());
+    MEDIA_DEBUG_LOG("FillPhotosDto enter %{public}s", path.c_str());
     bool isRotation = orientation != ROTATE_ANGLE_0 || exifRotate > static_cast<int32_t>(ExifRotateType::TOP_LEFT);
     std::string thumbSuffix = isRotation ? THUMBNAIL_THUMB_EX_SUFFIX : THUMBNAIL_THUMB_SUFFIX;
     std::string lcdSuffix = isRotation ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX;
@@ -69,7 +69,7 @@ int32_t CloudMediaSyncUtils::FillPhotosDto(
     CloudMediaFileUtils::GetFileSizeV2(lcdLocalPath, lcdFileSize);
     dtoLcd.size = static_cast<int64_t>(lcdFileSize);
     photosDto.attachment["lcd"] = dtoLcd;
-    MEDIA_INFO_LOG("FillPhotosDto end %{public}s", path.c_str());
+    MEDIA_DEBUG_LOG("FillPhotosDto end %{public}s", path.c_str());
     return E_OK;
 }
 
