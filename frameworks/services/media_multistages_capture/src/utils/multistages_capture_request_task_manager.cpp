@@ -84,6 +84,18 @@ int32_t MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(c
     return photo->requestCount;
 }
 
+bool MultiStagesCaptureRequestTaskManager::ClearnPhotoInProcessRequestCount(const string &photoId)
+{
+    unique_lock<mutex> lock(mutex_);
+    if (photoId.empty() || photoIdInProcess_.find(photoId) == photoIdInProcess_.end()) {
+        return false;
+    }
+    shared_ptr<LowQualityPhotoInfo> photo = photoIdInProcess_.at(photoId);
+    photo->requestCount = 0;
+    photoIdInProcess_[photoId] = photo;
+    return true;
+}
+
 bool MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(const string &photoId)
 {
     unique_lock<mutex> lock(mutex_);
