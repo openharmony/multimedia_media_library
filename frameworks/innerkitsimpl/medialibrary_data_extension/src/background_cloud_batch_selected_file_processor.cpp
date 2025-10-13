@@ -637,14 +637,9 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedRunningCallba
     downloadLock.unlock();
     MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback, percent: %{public}d", percent);
     CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s", fileId.c_str());
-    if (downloadResult_[fileId] != BatchDownloadStatus::SKIP_UPDATE_DB) { // 更新任务表 减少写表
-        int32_t retDB = UpdateDBProgressInfoForFileId(fileId, percent, -1,
-            static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_DOWNLOADING));
-        MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback UpdateDBProgress, ret: %{public}d", retDB);
-        downloadLock.lock();
-        downloadResult_[fileId] = BatchDownloadStatus::SKIP_UPDATE_DB; // 下载过程只更新一次
-        downloadLock.unlock();
-    }
+    int32_t retDB = UpdateDBProgressInfoForFileId(fileId, percent, -1,
+        static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_DOWNLOADING));
+    MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback UpdateDBProgress, ret: %{public}d", retDB);
     // 检查点 批量下载 通知应用 notify type 0 进度
     int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
         DownloadAssetsNotifyType::DOWNLOAD_PROGRESS, std::stoi(fileId), percent);
