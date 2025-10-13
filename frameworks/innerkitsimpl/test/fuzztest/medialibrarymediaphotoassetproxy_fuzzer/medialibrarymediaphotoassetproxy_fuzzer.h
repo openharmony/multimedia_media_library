@@ -218,9 +218,9 @@ const std::vector<CameraShotType> CameraShotType_FUZZER_LISTS = {
 const std::vector<PhotoFormat> PhotoFormat_FUZZER_LISTS = {
     PhotoFormat::RGBA,
     PhotoFormat::JPG,
+    PhotoFormat::MP4,
     PhotoFormat::HEIF,
     PhotoFormat::YUV,
-    PhotoFormat::DNG,
 };
 
 const std::vector<PhotoQuality> PhotoQuality_FUZZER_LISTS = {
