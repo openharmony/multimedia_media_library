@@ -46,7 +46,7 @@ using namespace DataShare;
 using namespace Security::AccessToken;
 static const int32_t NUM_BYTES = 10;
 static const int32_t MAX_PHOTO_QUALITY_FUZZER_LISTS = 1;
-static const int32_t MAX_CAMERA_SHOT_TYPE_FUZZER_LISTS = 4;
+static const int32_t MAX_CAMERA_SHOT_TYPE_FUZZER_LISTS = 3;
 static const int32_t MAX_PHOTO_FORMAT_FUZZER_LISTS = 4;
 static const int32_t MAX_SUB_TYPE = 6;
 static const int32_t MAX_BYTE_VALUE = 256;
