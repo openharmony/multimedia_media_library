@@ -144,7 +144,7 @@ void Video3DgsOperation::UpdateVideoSubtype(const CheckedVideoInfo &photoInfo)
     data->SetFileName(MediaFileUtils::GetFileName(photoInfo.path));
     data->SetFileMediaType(MEDIA_TYPE_VIDEO);
     MetadataExtractor::ExtractAVMetadata(data);
-    if (data->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::D3GS)) {
+    if (data->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS)) {
         MEDIA_DEBUG_LOG("The video is not 3DGS, file_id=%{public}d", photoInfo.fileId);
         return;
     }
@@ -154,7 +154,7 @@ void Video3DgsOperation::UpdateVideoSubtype(const CheckedVideoInfo &photoInfo)
     predicates.EqualTo(MediaColumn::MEDIA_ID, photoInfo.fileId);
 
     ValuesBucket values;
-    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::D3GS));
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS));
     values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
 
     int32_t updateCount = 0;
