@@ -82,6 +82,7 @@ constexpr int32_t E_INNER_FAIL =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 3
 constexpr int32_t E_DFX_TASK_IS_EXIST    =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 39);
 constexpr int32_t E_DFX_DB_TOO_LARGE     =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 40);
 constexpr int32_t E_BACK_UP_DB_FAIL      =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 41);
+constexpr int32_t E_DFX_TASK_NOT_EXIST   =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 42);
 constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
 
 // medialibary directory and file type control { 2000, 2099 }

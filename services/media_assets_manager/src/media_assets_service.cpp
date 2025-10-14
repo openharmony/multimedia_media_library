@@ -1690,7 +1690,7 @@ int32_t MediaAssetsService::CanSupportedCompatibleDuplicate(const std::string &b
 static int32_t WriteDFXTaskSet(const string& betaId)
 {
     std::lock_guard<std::mutex> lock(DFXTaskMutex);
-    CHECK_AND_RETURN_RET(DFXTaskSet.count(betaId) == 0, E_FAIL);
+    CHECK_AND_RETURN_RET(DFXTaskSet.count(betaId) == 0, E_DFX_TASK_IS_EXIST);
     DFXTaskSet.insert(betaId);
     return E_SUCCESS;
 }
@@ -1698,7 +1698,7 @@ static int32_t WriteDFXTaskSet(const string& betaId)
 static int32_t EraseDFXTaskSet(const string& betaId)
 {
     std::lock_guard<std::mutex> lock(DFXTaskMutex);
-    CHECK_AND_RETURN_RET(DFXTaskSet.count(betaId) != 0, E_FAIL);
+    CHECK_AND_RETURN_RET(DFXTaskSet.count(betaId) != 0, E_DFX_TASK_NOT_EXIST);
     DFXTaskSet.erase(betaId);
     return E_SUCCESS;
 }
@@ -1707,17 +1707,18 @@ int32_t MediaAssetsService::GetDatabaseDFX(const string &betaId, GetDatabaseDFXR
 {
     MEDIA_INFO_LOG("MediaAssetsService::GetDatabaseDFX enter");
     int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
-    CHECK_AND_RETURN_RET_LOG(WriteDFXTaskSet(betaId) == E_SUCCESS, E_DFX_TASK_IS_EXIST,
-        "Get Database DFX Task is exist, betaId = %{public}s", betaId.c_str());
+    int32_t status = WriteDFXTaskSet(betaId);
+    CHECK_AND_RETURN_RET_LOG(status == E_SUCCESS, status, "Get Database DFX Task is exist, betaId = %{public}s",
+        betaId.c_str());
     auto dataManager = MediaLibraryDataManager::GetInstance();
-
-    std::string fileName = "test.txt";
-    std::string fileSize = "123";
     CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_FAIL, "dataManager is nullptr");
+
+    std::string fileName = "";
+    std::string fileSize = "";
     int32_t ret = dataManager->GetDatabaseDFX(betaId, fileName, fileSize);
     if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("failed to get databaseDFX, errCode = %{public}d", ret);
-        CHECK_AND_RETURN_RET_LOG(EraseDFXTaskSet(betaId) == E_SUCCESS, E_FAIL, "failed to erase DFX task");
+        CHECK_AND_PRINT_LOG(EraseDFXTaskSet(betaId) == E_SUCCESS, "failed to erase DFX task");
         return ret;
     }
     respBody.fileName = fileName;
@@ -1735,8 +1736,9 @@ int32_t MediaAssetsService::RemoveDatabaseDFX(const string &betaId)
     auto dataManager = MediaLibraryDataManager::GetInstance();
     CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_FAIL, "dataManager is nullptr");
     int32_t ret = dataManager->RemoveDatabaseDFX(betaId);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "MediaAssetsService::RemoveDatabaseDFX failed");
-    CHECK_AND_RETURN_RET_LOG(EraseDFXTaskSet(betaId) == E_SUCCESS, E_FAIL, "failed to erase DFX task");
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "failed to remove databaseDFX, errCode = %{public}d", ret);
+    int32_t status = EraseDFXTaskSet(betaId);
+    CHECK_AND_RETURN_RET_LOG(status == E_SUCCESS, status, "failed to erase DFX task");
     return E_SUCCESS;
 }
 } // namespace OHOS::Media
