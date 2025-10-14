@@ -12888,9 +12888,9 @@ static void JSGetDatabaseDFXExecute(napi_env env, void* data)
             NAPI_ERR_LOG("failed to open db.zip, errCode = %{public}d", fileFd);
             return;
         }
-        context->databaseDFXMap["FIEL_FD"] = std::to_string(fileFd);
+        context->databaseDFXMap["FILE_FD"] = std::to_string(fileFd);
         context->databaseDFXMap["FILE_NAME"] = respBody.fileName;
-        context->databaseDFXMap["FIEL_SIZE"] = respBody.fileSize;
+        context->databaseDFXMap["FILE_SIZE"] = respBody.fileSize;
     }
 }
 
