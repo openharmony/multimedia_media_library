@@ -748,6 +748,9 @@ static void FillFileInfo(FileInfo& fileInfo, const std::unique_ptr<Metadata>& da
     fileInfo.shootingMode = data->GetShootingMode();
     fileInfo.frontCamera = data->GetFrontCamera();
     fileInfo.movingPhotoEffectMode = 0;
+    if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS)) {
+        fileInfo.subtype = static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS);
+    }
 }
 
 NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
@@ -757,10 +760,8 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     value.PutString(MediaColumn::MEDIA_FILE_PATH, fileInfo.filePath);
     value.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
     value.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
-    int32_t subType = fileInfo.isLivePhoto ? static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)
+    fileInfo.subtype = fileInfo.isLivePhoto ? static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)
                                            : static_cast<int32_t>(PhotoSubType::DEFAULT);
-    value.PutInt(PhotoColumn::PHOTO_SUBTYPE, subType);
-    fileInfo.subtype = subType;
     value.PutString(MediaColumn::MEDIA_PACKAGE_NAME, restoreTaskInfo.packageName);
     value.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, restoreTaskInfo.bundleName);
     value.PutString(MediaColumn::MEDIA_OWNER_APPID, restoreTaskInfo.appId);
@@ -769,6 +770,8 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     data->SetFileName(fileInfo.fileName);
     data->SetFileMediaType(fileInfo.mediaType);
     FillMetadata(data);
+    FillFileInfo(fileInfo, data);
+    value.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileInfo.subtype);
     value.Put(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());
     value.Put(PhotoColumn::PHOTO_DETAIL_TIME, data->GetDetailTime());
     value.Put(PhotoColumn::PHOTO_DATE_YEAR, data->GetDateYear());
@@ -799,7 +802,6 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     value.PutInt(PhotoColumn::PHOTO_HDR_MODE, data->GetHdrMode());
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, data->GetUserComment());
     value.PutInt(PhotoColumn::PHOTO_QUALITY, 0);
-    FillFileInfo(fileInfo, data);
     return value;
 }
 
