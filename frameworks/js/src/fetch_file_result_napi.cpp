@@ -1027,6 +1027,33 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
     return result;
 }
 
+void GetCountFromObject(FetchFileResultNapi* obj, int32_t &count)
+{
+    switch (obj->GetFetchResType()) {
+        case FetchResType::TYPE_FILE:
+            count = obj->GetFetchFileResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_ALBUM:
+            count = obj->GetFetchAlbumResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_PHOTOALBUM:
+            count = obj->GetFetchPhotoAlbumResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_SMARTALBUM:
+            count = obj->GetFetchSmartAlbumResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_CUSTOMRECORD:
+            count = obj->GetFetchCustomRecordResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_ALBUMORDER:
+            count = obj->GetFetchAlbumOrderResultObject()->GetCount();
+            break;
+        default:
+            NAPI_ERR_LOG("unsupported FetchResType");
+            break;
+    }
+}
+
 napi_value FetchFileResultNapi::ProcessValidContext(
     napi_env env, unique_ptr<FetchFileResultAsyncContext> &asyncContext, napi_value argv[], napi_value &result)
 {
@@ -1037,7 +1064,7 @@ napi_value FetchFileResultNapi::ProcessValidContext(
         napi_get_value_int32(env, argv[PARAM0], &(asyncContext->offset));
     } else {
         NAPI_ERR_LOG("Invalid offset type: %{public}d", type);
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse memberKeys failed");
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid offset type");
         return nullptr;
     }
     // Parse length parameter
@@ -1046,11 +1073,14 @@ napi_value FetchFileResultNapi::ProcessValidContext(
         napi_get_value_int32(env, argv[PARAM1], &(asyncContext->length));
     } else {
         NAPI_ERR_LOG("Invalid length type: %{public}d", type);
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse memberKeys failed");
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid length type");
         return nullptr;
     }
-    if (asyncContext->offset < 0 || asyncContext->length <= 0) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse memberKeys failed");
+    int32_t total_count = 0;
+    GetCountFromObject(asyncContext->objectInfo, total_count);
+    if (asyncContext->offset < 0 || asyncContext->length <= 0 ||
+        (asyncContext->offset + asyncContext->length) > total_count) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Index exceeds range of objects");
         return nullptr;
     }
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
