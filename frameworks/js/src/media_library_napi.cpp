@@ -10508,6 +10508,19 @@ napi_value MediaLibraryNapi::CreateAssetsForAppWithAlbum(napi_env env, napi_call
         PhotoAccessAgentCreateAssetsExecute, JSCreateAssetCompleteCallback);
 }
 
+bool MediaLibraryNapi::isSucceedSetting(napi_env env, napi_value &members, napi_value jsResult, std::string &inputKey,
+    FileAssetNapi* obj)
+{
+    if (jsResult == nullptr) {
+        return false;
+    }
+    if (napi_set_named_property(env, members, inputKey.c_str(), jsResult) != napi_ok) {
+        napi_throw_error(env, nullptr, "Failed to set property");
+        return false;
+    }
+    return true;
+}
+
 napi_value MediaLibraryNapi::ProcessSingleAsset(napi_env env, napi_value asset, std::vector<std::string>& inputKeys)
 {
     FileAssetNapi *obj = nullptr;
@@ -10516,19 +10529,24 @@ napi_value MediaLibraryNapi::ProcessSingleAsset(napi_env env, napi_value asset, 
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse args in array failed");
     }
     napi_value members;
-    status = napi_create_object(env, &members);
-    if (status != napi_ok) {
+    if (napi_create_object(env, &members) != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to create members");
         return nullptr;
     }
     for (auto &inputKey : inputKeys) {
-        if (obj->fileAssetPtr->GetMemberMap().count(inputKey) == 0) {
-            // no exist throw error
-            NapiError::ThrowError(env, JS_E_FILE_KEY);
-            return nullptr;
-        }
         napi_value jsResult = nullptr;
         napi_get_undefined(env, &jsResult);
+        if (DATE_TRANSITION_MAP.count(inputKey) != 0) {
+            jsResult = FileAssetNapi::HandleDateTransitionKey(env, DATE_TRANSITION_MAP.at(inputKey), obj->fileAssetPtr);
+            if (!isSucceedSetting(env, members, jsResult, inputKey, obj)) {
+                return nullptr;
+            }
+            continue;
+        }
+        if (obj->fileAssetPtr->GetMemberMap().count(inputKey) == 0) {
+            NapiError::ThrowError(env, JS_E_INPUT_INVALID);
+            return nullptr;
+        }
         if (FileAssetNapi::IsSpecialKey(inputKey)) {
             jsResult = FileAssetNapi::HandleGettingSpecialKey(env, inputKey, obj->fileAssetPtr);
         } else if (inputKey == PhotoColumn::PHOTO_DETAIL_TIME) {
@@ -10546,8 +10564,7 @@ napi_value MediaLibraryNapi::ProcessSingleAsset(napi_env env, napi_value asset, 
                 return nullptr;
             }
         }
-        status = napi_set_named_property(env, members, inputKey.c_str(), jsResult);
-        if (status != napi_ok) {
+        if (!isSucceedSetting(env, members, jsResult, inputKey, obj)) {
             napi_throw_error(env, nullptr, "Failed to set property");
             return nullptr;
         }
@@ -10563,19 +10580,18 @@ napi_value MediaLibraryNapi::PhotoAccessHelperGetAssetMemberBatch(napi_env env, 
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
     }
-    napi_status status;
     size_t argc = 2;
     napi_value args[2];     // args[0]: assets, args[1]: members
-    status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
-    if (status != napi_ok) {
+    if (napi_get_cb_info(env, info, &argc, args, NULL, NULL) != napi_ok) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse args failed");
         return nullptr;
     }
     std::vector<napi_value> fileAssetArray;
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, args[0], fileAssetArray));
     std::vector<std::string> inputKeys;
-    if (MediaLibraryNapiUtils::GetStringArray(env, args[1], inputKeys) != napi_ok) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse memberKeys failed");
+    if (MediaLibraryNapiUtils::GetStringArray(env, args[1], inputKeys) != napi_ok || inputKeys.empty() ||
+        fileAssetArray.empty()) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "invalid input parameter");
         return nullptr;
     }
     for (auto& inputKey: inputKeys) {
@@ -10584,8 +10600,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperGetAssetMemberBatch(napi_env env, 
         }
     }
     napi_value resultArray;
-    status = napi_create_array_with_length(env, fileAssetArray.size(), &resultArray);
-    if (status != napi_ok) {
+    if (napi_create_array_with_length(env, fileAssetArray.size(), &resultArray) != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to create array");
         return nullptr;
     }
@@ -10594,8 +10609,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperGetAssetMemberBatch(napi_env env, 
         if (!membersObj) {
             return nullptr;
         }
-        status = napi_set_element(env, resultArray, i, membersObj);
-        if (status != napi_ok) {
+        if (napi_set_element(env, resultArray, i, membersObj) != napi_ok) {
             return nullptr;
         }
     }
