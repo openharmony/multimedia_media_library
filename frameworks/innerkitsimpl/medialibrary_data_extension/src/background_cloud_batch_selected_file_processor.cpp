@@ -67,10 +67,6 @@ using namespace Notification;
 static const double ABLE_STOP_DOWNLOAD_STORAGE_FREE_RATIO = 0.05;
 static const double ABLE_RESTORE_DOWNLOAD_STORAGE_FREE_RATIO = 0.10;
 
-#ifdef HAS_THERMAL_MANAGER_PART
-static const int32_t ABLE_STOP_DOWNLOAD_TEMP = 43;
-static const int32_t ABLE_RESTORE_DOWNLOAD_TEMP = 39;
-#endif
 #ifdef HAS_BATTERY_MANAGER_PART
 static const int32_t ABLE_STOP_DOWNLOAD_POWER = 20;
 static const int32_t ABLE_RESTORE_DOWNLOAD_POWER = 30;
