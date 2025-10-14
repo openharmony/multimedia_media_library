@@ -133,7 +133,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::VideoFaileProcAsync(Asy
             break;
         }
         default:
-            MultiStagesCaptureRequestTaskManager::ClearnPhotoInProcessRequestCount(taskData->videoId_);
+            MultiStagesCaptureRequestTaskManager::ClearPhotoInProcessRequestCount(taskData->videoId_);
             break;
     }
 
