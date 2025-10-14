@@ -35,7 +35,7 @@ public:
     static int32_t QueryVideoCount(int32_t startFileId);
     static std::vector<CheckedVideoInfo> QueryVideoInfo(int32_t startFileId);
     static void HandleVideoInfos(const std::vector<CheckedVideoInfo> &photoInfos, int32_t &curFileId);
-    static void UpdateVideoSubtype(const CheckedVideoInfo &photoInfo);
+    static bool UpdateVideoSubtype(const CheckedVideoInfo &photoInfo);
 
 private:
     static std::atomic<bool> isContinue_;
