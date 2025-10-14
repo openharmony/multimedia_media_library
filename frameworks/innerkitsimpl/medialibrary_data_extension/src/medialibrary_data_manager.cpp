@@ -3708,11 +3708,12 @@ int32_t MediaLibraryDataManager::GetDatabaseDFX(const std::string &betaId, std::
     CHECK_AND_RETURN_RET_LOG(errCode == 0, E_BACK_UP_DB_FAIL, "rdb backup fail: %{public}d", errCode);
     
     CHECK_AND_RETURN_RET_LOG(GetZipFile(tempFileName, destFileName) == E_OK, E_FILE_OPER_FAIL, "failed to get zipFile");
-    CHECK_AND_WARN_LOG(MediaFileUtils::DeleteFile(destFileName), "failed to delete temp DBfile, path = %{private}s",
+    CHECK_AND_WARN_LOG(MediaFileUtils::DeleteFile(tempFileName), "failed to delete temp DBfile, path = %{private}s",
         tempFileName.c_str());
     long long totalFileSize = GetDatabaseFileSize(destFileName);
     long long err = static_cast<long long>(E_FAIL);
     CHECK_AND_RETURN_RET_LOG(totalFileSize != err, E_FILE_OPER_FAIL, "failed to get DBfile size");
+
     fileSize = std::to_string(totalFileSize);
     if (totalFileSize > MAX_DFX_DB_FILE_SIZE_TYPE) {
         MEDIA_ERR_LOG("DB file too large, file size is %{public}s byte, file name is %{public}s",
@@ -3728,7 +3729,6 @@ int32_t MediaLibraryDataManager::RemoveDatabaseDFX(const std::string &betaId)
     MEDIA_INFO_LOG("MediaLibraryDataManager::RemoveDatabaseDFX enter");
     CHECK_AND_RETURN_RET_LOG(CheckBetaMachine(), E_CHECK_SYSTEMAPP_FAIL, "only can be called by beta mechine");
     const std::string filePath = DFX_DB_FILE_PATH + "media_library_" + betaId + ".db.zip";
-    CHECK_AND_RETURN_RET(MediaFileUtils::IsFileExists(filePath), E_SUCCESS);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(filePath), E_FILE_OPER_FAIL,
         "failed to delete DFX database file, path: %{private}s", filePath.c_str());
     return E_SUCCESS;
