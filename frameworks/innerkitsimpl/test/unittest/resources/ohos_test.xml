@@ -59,6 +59,7 @@
             <option name="push" value="thumbnail_testfile/HasHdrNoRotate.jpg -> /storage/media/local/files/Photo/1" src="res"/>
             <option name="push" value="thumbnail_testfile/NoHdrHasRotate.jpg -> /storage/media/local/files/Photo/1" src="res"/>
             <option name="push" value="thumbnail_testfile/HasHdrHasRotate.jpg -> /storage/media/local/files/Photo/1" src="res"/>
+            <option name="push" value="thumbnail_testfile/HDR_picture.jpg -> /storage/media/local/files/Photo/1" src="res"/>
         </preparer>
         <cleaner>
             <option name="shell" value="rm -rf /data/test/*"/>
