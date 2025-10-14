@@ -56,6 +56,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_album/beauty_score_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/portrait_album/clone_restore_portrait_album.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/portrait_album/clone_restore_portrait_base.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/portrait_album/portrait_album_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_album/search_index_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_album/video_face_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/analysis_data/clone_restore_analysis_data.cpp",
