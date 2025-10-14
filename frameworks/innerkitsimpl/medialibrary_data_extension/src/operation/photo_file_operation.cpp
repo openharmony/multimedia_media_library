@@ -22,6 +22,7 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_utils.h"
+#include "medialibrary_tracer.h"
 #include "userfile_manager_types.h"
 #include "media_file_utils.h"
 #include "moving_photo_file_utils.h"
@@ -592,9 +593,11 @@ int32_t PhotoFileOperation::ConvertFormatPhotoExtraData(const std::string &srcPa
     return E_OK;
 }
 
-static int32_t DoTranscodeFailedDfx(const std::string &errMsg, const TranscodeErrorType &type, int32_t ret)
+static int32_t DoTranscodeFailedDfx(const std::string &errMsg, const TranscodeErrorType &type, int32_t ret,
+    const std::string &filePath = "")
 {
     MEDIA_ERR_LOG("%{public}s", errMsg.c_str());
+    CHECK_AND_EXECUTE(filePath.empty(), MediaFileUtils::DeleteFile(filePath));
     auto dfxManager = DfxManager::GetInstance();
     CHECK_AND_RETURN_RET_LOG(dfxManager != nullptr, ret, "DfxManager::GetInstance() returned nullptr");
     dfxManager->HandleTranscodeFailed(type);
@@ -617,10 +620,14 @@ int32_t PhotoFileOperation::CreateTmpCompatibleDup(const std::string &srcPath, s
             DoTranscodeFailedDfx("Create editDataFolder fail", INNER_FAILED, E_INNER_FAIL));
     }
 
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateTmpCompatibleDup");
+
     auto targetPath = std::move(editDataFolder) + duplicate;
     CHECK_AND_RETURN_RET(MediaFileUtils::ConvertFormatCopy(sourcePhotoInfo.filePath, targetPath, extension),
-        DoTranscodeFailedDfx("ConvertFormatCopy fail", CODEC_FAILED, E_INNER_FAIL));
+        DoTranscodeFailedDfx("ConvertFormatCopy fail", CODEC_FAILED, E_INNER_FAIL, targetPath));
 
+    tracer.Finish();
     CHECK_AND_RETURN_RET(MediaFileUtils::GetFileSize(targetPath, size),
         DoTranscodeFailedDfx("GetFileSize fail", INNER_FAILED, E_INNER_FAIL));
     return E_OK;
