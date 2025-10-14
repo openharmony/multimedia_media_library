@@ -532,6 +532,33 @@ int32_t MediaAssetsService::SetAppLink(const int32_t fileId, const string appLin
     return MediaLibraryPhotoOperations::UpdateAppLink(cmd);
 }
 
+int32_t MediaAssetsService::SubmitMetadataChanged(const int32_t fileId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+
+    NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY));
+
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId))
+        ->And()
+        ->NotEqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL))
+        ->And()
+        ->BeginWrap()
+        ->EqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_SYNCED))
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_SDIRTY))
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_TDIRTY))
+        ->EndWrap();
+    
+    int32_t updateRows = -1;
+    int32_t ret = rdbStore->Update(updateRows, values, predicates);
+    MEDIA_INFO_LOG("SubmitMetadataChanged executed ret: %{public}d, updateRows: %{public}d", ret, updateRows);
+    return ret;
+}
+
 int32_t MediaAssetsService::SetSupportedWatermarkType(const int32_t fileId, const int32_t watermarkType)
 {
     MediaLibraryCommand cmd(
@@ -548,7 +575,11 @@ int32_t MediaAssetsService::SetSupportedWatermarkType(const int32_t fileId, cons
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    return MediaLibraryPhotoOperations::UpdateSupportedWatermarkType(cmd);
+    int32_t updateRows = MediaLibraryPhotoOperations::UpdateSupportedWatermarkType(cmd);
+    CHECK_AND_RETURN_RET_LOG(updateRows > 0, updateRows,
+        "UpdateSupportedWatermarkType failed. updateRows: %{public}d", updateRows);
+    SubmitMetadataChanged(fileId);
+    return updateRows;
 }
 
 int32_t MediaAssetsService::SetCompositeDisplayMode(const int32_t fileId, const int32_t compositeDisplayMode)
