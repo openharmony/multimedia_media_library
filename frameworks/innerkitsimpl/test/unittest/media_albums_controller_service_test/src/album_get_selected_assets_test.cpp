@@ -189,7 +189,7 @@ static bool InsertTabAnalysisVlm(int fileId)
     std::string insertSql = "INSERT INTO tab_analysis_affective "
                             "(file_id, valence, arousal) "
                             "VALUES(" +
-                            std::to_string(fileId) + ", 0.5, 0.1)";
+                            std::to_string(fileId) + ", 0, 9)";
     return ExecutionSql(insertSql);
 }
 
