@@ -24,6 +24,7 @@
 #include "multistages_capture_manager.h"
 #include "medialibrary_object_utils.h"
 #include "result_set_utils.h"
+#include "multistages_capture_request_task_manager.h"
 
 using namespace std;
 using namespace OHOS::CameraStandard;
@@ -132,6 +133,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::VideoFaileProcAsync(Asy
             break;
         }
         default:
+            MultiStagesCaptureRequestTaskManager::ClearPhotoInProcessRequestCount(taskData->videoId_);
             break;
     }
 
