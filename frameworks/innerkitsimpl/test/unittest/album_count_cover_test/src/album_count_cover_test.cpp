@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "fetch_result.h"
+#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_album_operations.h"
@@ -422,25 +423,54 @@ unique_ptr<FileAsset> CreateVideoAsset(const string &displayName, bool isFreshAl
     return QueryFileAssetInfo(fileId);
 }
 
-int32_t TrashFileAsset(const unique_ptr<FileAsset> &fileAsset, bool trashState)
+int32_t TrashFileAsset(const unique_ptr<FileAsset> &fileAsset)
 {
     DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileAsset->GetUri());
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, MediaFileUri::GetPhotoId(fileAsset->GetUri()));
     DataShareValuesBucket values;
-    values.Put(MediaColumn::MEDIA_DATE_TRASHED, trashState ? MediaFileUtils::UTCTimeSeconds() : 0);
+    values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
 
     int32_t changedRows;
-    if (trashState) {
-        MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::TRASH_PHOTO, MediaLibraryApi::API_10);
-        changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
-    } else {
-        MediaLibraryCommand cmd(
-            OperationObject::PHOTO_ALBUM, OperationType::ALBUM_RECOVER_ASSETS, MediaLibraryApi::API_10);
-        changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::TRASH_PHOTO, MediaLibraryApi::API_10);
+    changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
+
+    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.EqualTo(PhotoColumn::MEDIA_ID, MediaFileUri::GetPhotoId(fileAsset->GetUri()));
+    auto resultSet = g_rdbStore->Query(rdbPredicates, {});
+    int64_t dateTrashed;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        dateTrashed = get<int64_t>(ResultSetUtils::GetValFromColumn("date_trashed", resultSet, TYPE_INT64));
     }
-    EXPECT_EQ(changedRows, 1);
-    MEDIA_ERR_LOG("Expect result %{public}d of TrashFileAsset, left: %{public}d, right: %{public}d",
-        changedRows == 1, changedRows, 1);
+    resultSet->Close();
+    EXPECT_NE(dateTrashed, 0);
+    MEDIA_ERR_LOG("Expect date_trashed after TrashFileAsset, left: %{public} " PRId64 ", right: %{public}d",
+        dateTrashed, 0);
+    return changedRows;
+}
+
+int32_t RecoverFileAsset(const unique_ptr<FileAsset> &fileAsset)
+{
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, MediaFileUri::GetPhotoId(fileAsset->GetUri()));
+    DataShareValuesBucket values;
+    values.Put(MediaColumn::MEDIA_DATE_TRASHED, 0);
+
+    int32_t changedRows;
+    MediaLibraryCommand cmd(
+        OperationObject::PHOTO_ALBUM, OperationType::ALBUM_RECOVER_ASSETS, MediaLibraryApi::API_10);
+    changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
+
+    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.EqualTo(PhotoColumn::MEDIA_ID, MediaFileUri::GetPhotoId(fileAsset->GetUri()));
+    auto resultSet = g_rdbStore->Query(rdbPredicates, {});
+    int64_t dateTrashed;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        dateTrashed = get<int64_t>(ResultSetUtils::GetValFromColumn("date_trashed", resultSet, TYPE_INT64));
+    }
+    resultSet->Close();
+    EXPECT_EQ(dateTrashed, 0);
+    MEDIA_ERR_LOG("Expect date_trashed after RecoverFileAsset, left: %{public} " PRId64 ", right: %{public}d",
+        dateTrashed, 0);
     return changedRows;
 }
 
@@ -448,7 +478,7 @@ int32_t HideFileAsset(const unique_ptr<FileAsset> &fileAsset, bool hiddenState)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::HIDE, MediaLibraryApi::API_10);
     DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileAsset->GetUri());
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, MediaFileUri::GetPhotoId(fileAsset->GetUri()));
     DataShareValuesBucket values;
     values.Put(MediaColumn::MEDIA_HIDDEN, hiddenState ? 1 : 0);
     int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
@@ -529,10 +559,10 @@ int32_t AlbumRemoveAssets(unique_ptr<PhotoAlbum> &album, unique_ptr<FileAsset> &
     MediaLibraryCommand cmd((Uri(URI_QUERY_PHOTO_MAP)));
     DataSharePredicates predicates;
     predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(album->GetAlbumId()));
-    predicates.EqualTo(MediaColumn::MEDIA_ID, fileAsset->GetUri());
+    predicates.EqualTo(MediaColumn::MEDIA_ID, MediaFileUri::GetPhotoId(fileAsset->GetUri()));
     int32_t changedRows = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_EQ(changedRows, 1);
-    MEDIA_ERR_LOG("Expect result %{public}d of AlbumAddAssets, left: %{public}d, right: %{public}d",
+    MEDIA_ERR_LOG("Expect result %{public}d of AlbumRemoveAssets, left: %{public}d, right: %{public}d",
         changedRows == 1, changedRows, 1);
     return changedRows;
 }
@@ -616,8 +646,8 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_001, TestSize.Level2)
     MEDIA_INFO_LOG("Test album remove assets end");
 
     MEDIA_INFO_LOG("Test trash asset begin");
-    TrashFileAsset(fileAsset, true);
-    TrashFileAsset(fileAsset, false);
+    TrashFileAsset(fileAsset);
+    RecoverFileAsset(fileAsset);
     MEDIA_INFO_LOG("Test trash asset end");
 
     MEDIA_INFO_LOG("Test hide asset begin");
@@ -636,7 +666,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_001, TestSize.Level2)
     BatchFavoriteFileAsset(fileAssetUriArray, false);
     MEDIA_INFO_LOG("Test batchFavorite asset end");
 
-    TrashFileAsset(fileAsset, true);
+    TrashFileAsset(fileAsset);
     DeletePermanentlyFileAsset(fileAsset->GetId());
 
     MEDIA_ERR_LOG("album_count_cover_001 end");
@@ -717,7 +747,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level2)
     auto fileAsset = CreateImageAsset("Test_Trash_Image_001.jpg");
     ASSERT_NE(fileAsset, nullptr);
 
-    TrashFileAsset(fileAsset, true);
+    TrashFileAsset(fileAsset);
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
 
     // 3. Create another photo, and then trash it. The cover of trash album should be updated.
@@ -726,16 +756,16 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level2)
     auto fileAsset2 = CreateImageAsset("Test_Create_Image_002.jpg");
     ASSERT_NE(fileAsset2, nullptr);
 
-    TrashFileAsset(fileAsset2, true);
+    TrashFileAsset(fileAsset2);
     AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
 
     // 4. Un-trash the cover photo, the count & cover of trash album should be updated.
     MEDIA_INFO_LOG("Step: un-trash the cover photo");
-    TrashFileAsset(fileAsset2, false);
+    TrashFileAsset(fileAsset2);
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
 
     // 5. Delete a photo permanently.
-    TrashFileAsset(fileAsset2, true);
+    TrashFileAsset(fileAsset2);
     AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
     MEDIA_INFO_LOG("Step: delete a photo permanently");
     DeletePermanentlyFileAsset(fileAsset2->GetId());
@@ -744,7 +774,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level2)
 
     // 6. Un-trash all photos, the count & cover of trash album should be reset.
     MEDIA_INFO_LOG("Step: un-trash all photos");
-    TrashFileAsset(fileAsset, false);
+    RecoverFileAsset(fileAsset);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
     MEDIA_INFO_LOG("album_count_cover_003 end");
 }
@@ -802,13 +832,13 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level2)
 
     // 6. Trash a photo.
     MEDIA_INFO_LOG("Step: Trash a photo");
-    TrashFileAsset(fileAsset2, true);
+    TrashFileAsset(fileAsset2);
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
     AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
 
     // 7. Un-trash a photo.
     MEDIA_INFO_LOG("Step: Un-trash a photo");
-    TrashFileAsset(fileAsset2, false);
+    RecoverFileAsset(fileAsset2);
     AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
     MEDIA_INFO_LOG("album_count_cover_004 end");
@@ -867,13 +897,13 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level2)
 
     // 6. Trash a photo.
     MEDIA_INFO_LOG("Step: Trash a photo");
-    TrashFileAsset(fileAsset2, true);
+    TrashFileAsset(fileAsset2);
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
     AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
 
     // 7. Un-trash a photo.
     MEDIA_INFO_LOG("Step: Un-trash a photo");
-    TrashFileAsset(fileAsset2, false);
+    RecoverFileAsset(fileAsset2);
     AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
     MEDIA_INFO_LOG("album_count_cover_007 end");
