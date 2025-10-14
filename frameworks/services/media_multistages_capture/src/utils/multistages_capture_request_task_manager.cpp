@@ -84,7 +84,7 @@ int32_t MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(c
     return photo->requestCount;
 }
 
-bool MultiStagesCaptureRequestTaskManager::ClearnPhotoInProcessRequestCount(const string &photoId)
+bool MultiStagesCaptureRequestTaskManager::ClearPhotoInProcessRequestCount(const string &photoId)
 {
     unique_lock<mutex> lock(mutex_);
     if (photoId.empty() || photoIdInProcess_.find(photoId) == photoIdInProcess_.end()) {

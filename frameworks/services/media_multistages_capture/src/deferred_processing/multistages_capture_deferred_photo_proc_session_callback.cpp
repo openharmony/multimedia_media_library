@@ -173,11 +173,11 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &i
                 return;
             }
             NotifyIfTempFile(resultSet, true);
-            MultiStagesCaptureRequestTaskManager::ClearnPhotoInProcessRequestCount(imageId);
+            MultiStagesCaptureRequestTaskManager::ClearPhotoInProcessRequestCount(imageId);
             break;
         }
         default:
-            MultiStagesCaptureRequestTaskManager::ClearnPhotoInProcessRequestCount(imageId);
+            MultiStagesCaptureRequestTaskManager::ClearPhotoInProcessRequestCount(imageId);
             break;
     }
 
