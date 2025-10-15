@@ -233,7 +233,6 @@ int32_t CloudMediaPhotosService::PullUpdate(const CloudMediaPullDataDto &pullDat
 
     refreshAlbums.emplace(pullData.localOwnerAlbumId);
     ExtractEditDataCamera(pullData);
-    CloudMediaSyncUtils::RemoveTransCodePath(pullData.localPath);
     if (mtimeChanged && (updateCount != stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT])) {
         this->ClearLocalData(pullData, fdirtyData);
     }
@@ -617,6 +616,7 @@ static void SetPullDataFromPhotosPo(CloudMediaPullDataDto &pullData, const Photo
     pullData.attributesSubtype = photo.subtype.value_or(0);
     pullData.attributesMovingPhotoEffectMode = photo.movingPhotoEffectMode.value_or(0);
     pullData.attributesOriginalSubtype = photo.originalSubtype.value_or(0);
+    pullData.localDisplayName = photo.displayName.value_or("");
 }
 
 int32_t CloudMediaPhotosService::OnFetchRecords(const std::vector<std::string> &cloudIds,
