@@ -38,6 +38,7 @@ private:
     int32_t AddStoryChosenOfGalleryMedia(NativeRdb::RdbStore &store);
     int32_t CreateRelativeAlbumOfGalleryAlbum(NativeRdb::RdbStore &store);
     int32_t AddRelativeBucketIdColumn(NativeRdb::RdbStore &store);
+    int32_t AddUserDisplayLevelIntoMergeTag(NativeRdb::RdbStore &store);
 
 private:
     // Note: The column photo_quality's default value is 0.
@@ -77,6 +78,38 @@ private:
         "SELECT relativeBucketId, lPath FROM gallery_album "
         "WHERE COALESCE(relativeBucketId, '') <> '' GROUP BY relativeBucketId;";
 
+    const std::string UPDATE_USER_DISPLAY_LEVEL_SQL = R"(
+        UPDATE merge_tag
+        SET user_display_level = 1
+        WHERE group_tag IN (
+            SELECT DISTINCT t.group_tag
+            FROM (
+                SELECT
+                    merge_face.hash,
+                    merge_tag.tag_id,
+                    merge_tag.group_tag,
+                    merge_tag.user_operation,
+                    merge_tag.is_hidden,
+                    merge_tag.tag_name
+                FROM
+                    merge_face
+                JOIN merge_tag ON
+                    (merge_face.tag_id = merge_tag.tag_id
+                        and merge_tag.album_type = 0)
+            ) t
+            GROUP BY
+                t.group_tag
+            HAVING
+                (((t.tag_name is NOT NULL
+                    AND t.tag_name != '')
+                OR t.user_operation = 1
+                OR t.user_operation = 2
+                OR (t.user_operation = 0
+                    AND count(DISTINCT t.hash) >= 5))
+                AND count(DISTINCT t.hash) > 0)
+                AND (t.is_hidden != -3)
+        )
+    )";
 private:
     DbUpgradeUtils dbUpgradeUtils_;
 };

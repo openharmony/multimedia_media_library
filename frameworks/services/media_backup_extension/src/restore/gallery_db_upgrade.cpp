@@ -50,6 +50,7 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     this->AddStoryChosenOfGalleryMedia(store);
     this->CreateRelativeAlbumOfGalleryAlbum(store);
     this->AddRelativeBucketIdColumn(store);
+    this->AddUserDisplayLevelIntoMergeTag(store);
     return NativeRdb::E_OK;
 }
 
@@ -222,6 +223,33 @@ int32_t GalleryDbUpgrade::AddRelativeBucketIdColumn(NativeRdb::RdbStore &store)
         "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
 
     MEDIA_INFO_LOG("Add and update relative_bucket_id column for gallery_cover_cache table success");
+    return ret;
+}
+
+/**
+ * @brief Add user_display_level column to merge_tag table and set values based on group_tag query.
+ */
+int32_t GalleryDbUpgrade::AddUserDisplayLevelIntoMergeTag(NativeRdb::RdbStore &store)
+{
+    bool cond = this->dbUpgradeUtils_.IsColumnExists(store, "merge_tag", "user_display_level");
+    CHECK_AND_RETURN_RET(!cond, NativeRdb::E_OK);
+
+    std::string sqlAddColumn = "ALTER TABLE merge_tag ADD COLUMN user_display_level INTEGER DEFAULT -1;";
+    int32_t ret = store.ExecuteSql(sqlAddColumn);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Media_Restore: GalleryDbUpgrade::AddUserDisplayLevelIntoMergeTag add column failed,"
+        "ret=%{public}d, sql=%{public}s",
+        ret,
+        sqlAddColumn.c_str());
+
+    ret = store.ExecuteSql(this->UPDATE_USER_DISPLAY_LEVEL_SQL);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Media_Restore: GalleryDbUpgrade::AddUserDisplayLevelIntoMergeTag update values failed,"
+        "ret=%{public}d, sql=%{public}s",
+        ret,
+        this->UPDATE_USER_DISPLAY_LEVEL_SQL.c_str());
+
+    MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddUserDisplayLevelIntoMergeTag success");
     return ret;
 }
 }  // namespace DataTransfer

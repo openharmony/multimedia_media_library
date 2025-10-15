@@ -551,6 +551,8 @@ struct PortraitAlbumInfo {
     std::string groupTagOld;
     std::string groupTagNew;
     std::string tagName;
+    std::string relationship;
+    int32_t userDisplayLevel {-1};
 };
 
 struct FaceInfo {
