@@ -1157,7 +1157,7 @@ vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset
 
     std::string querySql = "SELECT " + GALLERY_MERGE_TAG_TAG_ID + ", " + GALLERY_GROUP_TAG + ", " +
         GALLERY_TAG_NAME + ", " + GALLERY_USER_OPERATION + ", " + GALLERY_RENAME_OPERATION + ", " +
-        GALLERY_RELATIONSHIP + " FROM " + (IsCloudRestoreSatisfied() ?
+        GALLERY_RELATIONSHIP + ", user_display_level FROM " + (IsCloudRestoreSatisfied() ?
         GALLERY_PORTRAIT_ALBUM_TABLE_WITH_CLOUD : GALLERY_PORTRAIT_ALBUM_TABLE);
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
@@ -1192,6 +1192,7 @@ bool UpgradeRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb
     portraitAlbumInfo.tagName = GetStringVal(GALLERY_TAG_NAME, resultSet);
     portraitAlbumInfo.userOperation = GetInt32Val(GALLERY_USER_OPERATION, resultSet);
     portraitAlbumInfo.renameOperation = GetInt32Val(GALLERY_RENAME_OPERATION, resultSet);
+    portraitAlbumInfo.userDisplayLevel = GetInt32Val(GALLERY_USER_DISPLAY_LEVEL, resultSet);
     std::string oldRelationshipId = GetStringVal(GALLERY_RELATIONSHIP, resultSet);
     if (oldRelationshipId != std::to_string(INDEX_ME)) {
         auto it = RELATIONSHIP_MAP.find(oldRelationshipId);
@@ -1269,7 +1270,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const PortraitAlbumInfo &
         values.PutString("relationship", portraitAlbumInfo.relationship);
         values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
         values.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
-        values.PutInt(USER_DISPLAY_LEVEL, PortraitPages::FIRST_PAGE);
+        values.PutInt(USER_DISPLAY_LEVEL, portraitAlbumInfo.userDisplayLevel);
         values.PutInt(IS_LOCAL, IS_LOCAL_TRUE);
     } else {
         values.PutString(TAG_VERSION, E_VERSION); // updated by analysis service
