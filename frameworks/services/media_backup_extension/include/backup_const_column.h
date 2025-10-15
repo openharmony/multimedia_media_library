@@ -34,6 +34,7 @@ const std::string GALLERY_GROUP_TAG = "merge_tag.group_tag";
 const std::string GALLERY_TAG_NAME = "merge_tag.tag_name";
 const std::string GALLERY_USER_OPERATION = "merge_tag.user_operation";
 const std::string GALLERY_RENAME_OPERATION = "merge_tag.rename_operation";
+const std::string GALLERY_USER_DISPLAY_LEVEL = "merge_tag.user_display_level";
 const std::string GALLERY_SCALE_X = "merge_face.scale_x";
 const std::string GALLERY_SCALE_Y = "merge_face.scale_y";
 const std::string GALLERY_SCALE_WIDTH = "merge_face.scale_width";
