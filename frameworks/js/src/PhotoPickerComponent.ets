@@ -205,7 +205,10 @@ export struct PhotoPickerComponent {
   
   onSetSelectMode(data: Map<string, unknown> | any) {
     this.proxy?.send({
-      selectMode: data?.get('SET_SELECT_MODE') as SelectMode
+      selectMode: data?.get('SET_SELECT_MODE') as SelectMode,
+      maxSelectNumber: data?.get('MAX_SELECT_NUMBER') as number,
+      maxPhotoSelectNumber: data?.get('MAX_PHOTO_SELECT_NUMBER') as number,
+      maxVideoSelectNumber: data?.get('MAX_VIDEO_SELECT_NUMBER') as number
     });
     console.info('PhotoPickerComponent onChanged: SET_SELECT_MODE');
   }
@@ -845,6 +848,9 @@ export class PickerController {
 
       if (updatablePickerOptions.selectMode !== undefined) {
         this.setSelectMode(updatablePickerOptions.selectMode);
+        this.setMaxSelectNumber(updatablePickerOptions.maxSelectNumber);
+        this.setMaxPhotoSelectNumber(updatablePickerOptions.maxPhotoSelectNumber);
+        this.setMaxVideoSelectNumber(updatablePickerOptions.maxVideoSelectNumber);
       }
 
       if (updatablePickerOptions.singleSelectionMode !== undefined) {

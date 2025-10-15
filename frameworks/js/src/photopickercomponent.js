@@ -264,7 +264,12 @@ export class PhotoPickerComponent extends ViewPU {
     }
 
     onSetSelectMode(o) {
-        this.proxy.send({ selectMode: null == o ? void 0 : o.get('SET_SELECT_MODE') });
+        this.proxy.send({ 
+            selectMode: null == o ? void 0 : o.get('SET_SELECT_MODE'),
+            maxSelectNumber: null == o ? void 0 : o.get('MAX_SELECT_NUMBER'),
+            maxPhotoSelectNumber: null == o ? void 0 : o.get('MAX_PHOTO_SELECT_NUMBER'),
+            maxVideoSelectNumber: null == o ? void 0 : o.get('MAX_VIDEO_SELECT_NUMBER') 
+        });
         console.info('PhotoPickerComponent onChanged: SET_SELECT_MODE');
     }
 
@@ -857,6 +862,9 @@ let PickerController = class {
     
         if (updatablePickerOptions.selectMode !== undefined) {
           this._setSelectMode(updatablePickerOptions.selectMode);
+          this._setMaxSelectNumber(updatablePickerOptions.maxSelectNumber);
+          this._setMaxPhotoSelectNumber(updatablePickerOptions.maxPhotoSelectNumber);
+          this._setMaxVideoSelectNumber(updatablePickerOptions.maxVideoSelectNumber);
         }
     
         if (updatablePickerOptions.singleSelectionMode !== undefined) {
