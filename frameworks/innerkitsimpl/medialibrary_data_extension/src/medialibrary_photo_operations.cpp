@@ -4125,8 +4125,8 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::AddFiltersToPhoto");
-    MEDIA_INFO_LOG("MultistagesCapture inputPath: %{public}s, outputPath: %{public}s, editdata: %{public}s",
-        inputPath.c_str(), outputPath.c_str(), editdata.c_str());
+    MEDIA_INFO_LOG("MultistagesCapture inputPath: %{public}s, outputPath: %{public}s",
+        MediaFileUtils::DesensitizePath(inputPath).c_str(), MediaFileUtils::DesensitizePath(outputPath).c_str());
     std::string info = editdata;
     size_t lastSlash = outputPath.rfind('/');
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
