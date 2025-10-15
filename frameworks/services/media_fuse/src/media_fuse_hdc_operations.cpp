@@ -576,6 +576,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaFuseHdcOperations::QueryAlbumPhotos(c
     photoPred.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
     photoPred.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
     photoPred.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    photoPred.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     std::vector<std::string> positions = {to_string(1), to_string(3)};
     photoPred.And()->In(PhotoColumn::PHOTO_POSITION, positions);
     photoPred.GroupBy({ MediaColumn::MEDIA_NAME });
