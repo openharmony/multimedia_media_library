@@ -55,7 +55,6 @@ using ChangeType = AAFwk::ChangeInfo::ChangeType;
 // LCOV_EXCL_START
 int32_t CloudMediaAlbumDao::HandleLPathAndAlbumType(PhotoAlbumDto &record)
 {
-    MEDIA_DEBUG_LOG("HandleLPathAndAlbumType enter");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "HandleLPathAndAlbumType Failed to get rdbStore.");
     std::unordered_map<std::string, std::string> localAlbumMap = this->GetLocalAlbumMap();
