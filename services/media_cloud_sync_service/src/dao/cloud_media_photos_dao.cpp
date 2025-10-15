@@ -397,11 +397,20 @@ NativeRdb::AbsRdbPredicates CloudMediaPhotosDao::GetUpdateRecordCondition(const 
     return predicates;
 }
 
-void UpDateTransCode(NativeRdb::ValuesBucket &values)
+void UpdateTransCode(const CloudMediaPullDataDto &pullData, NativeRdb::ValuesBucket &values, bool mtimeChanged)
 {
-    values.PutLong(PhotoColumn::PHOTO_TRANSCODE_TIME, 0);
-    values.PutLong(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, 0);
-    values.PutLong(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, 0);
+    if (MediaFileUtils::GetExtensionFromPath(pullData.localDisplayName) != "heif" &&
+        MediaFileUtils::GetExtensionFromPath(pullData.localDisplayName) != "heic") {
+        MEDIA_INFO_LOG("cloudId: %{public}s Display name is not heif", pullData.cloudId.c_str());
+        return;
+    }
+
+    if (mtimeChanged) {
+        CloudMediaSyncUtils::RemoveTransCodePath(pullData.localPath);
+        values.PutLong(PhotoColumn::PHOTO_TRANSCODE_TIME, 0);
+        values.PutLong(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, 0);
+        values.PutLong(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, 0);
+    }
     return;
 }
 
@@ -440,7 +449,7 @@ int32_t CloudMediaPhotosDao::UpdateRecordToDatabase(const CloudMediaPullDataDto 
         values.Delete(PhotoColumn::PHOTO_DIRTY);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     }
-    UpDateTransCode(values);
+    UpdateTransCode(pullData, values, mtimeChanged);
     NativeRdb::AbsRdbPredicates predicates = this->GetUpdateRecordCondition(pullData.cloudId);
     int32_t changedRows = DEFAULT_VALUE;
     int32_t ret = this->UpdateProxy(changedRows, values, predicates, pullData.cloudId, photoRefresh);
