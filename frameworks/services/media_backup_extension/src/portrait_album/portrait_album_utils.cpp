@@ -56,10 +56,6 @@ int32_t PortraitAlbumUtils::DeletePortraitAlbumData(std::shared_ptr<NativeRdb::R
     ret = DeleteFaceTagData(rdbStore);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to delete face tag data");
 
-    // Delete image face data
-    ret = DeleteImageFaceData(rdbStore);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to delete image face data");
-
     // Update analysis total face status
     ret = UpdateAnalysisTotalFaceStatus(rdbStore);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to update analysis total face status");
@@ -68,6 +64,9 @@ int32_t PortraitAlbumUtils::DeletePortraitAlbumData(std::shared_ptr<NativeRdb::R
     ret = UpdateAnalysisSearchIndexCvStatus(rdbStore);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to update analysis search index cv status");
 
+    // Delete image face data
+    ret = DeleteImageFaceData(rdbStore);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to delete image face data");
     return E_OK;
 }
 
@@ -153,7 +152,7 @@ int32_t PortraitAlbumUtils::UpdateAnalysisTotalFaceStatus(std::shared_ptr<Native
     std::string fileIdFilterClause = std::string("(") + "SELECT " + IMAGE_FACE_COL_FILE_ID + " FROM " +
         VISION_IMAGE_FACE_TABLE + " UNION" + " SELECT " + VIDEO_FACE_COL_FILE_ID + " FROM " +
         VISION_VIDEO_FACE_TABLE + ")";
-    std::string fileIdCondition = IMAGE_FACE_COL_FILE_ID + " IN " + fileIdFilterClause + " AND status = 1";
+    std::string fileIdCondition = IMAGE_FACE_COL_FILE_ID + " IN " + fileIdFilterClause + " AND status >= 0";
 
     std::unique_ptr<NativeRdb::AbsRdbPredicates> totalTablePredicates =
         std::make_unique<NativeRdb::AbsRdbPredicates>(VISION_TOTAL_TABLE);
@@ -181,7 +180,7 @@ int32_t PortraitAlbumUtils::UpdateAnalysisSearchIndexCvStatus(std::shared_ptr<Na
     std::string fileIdFilterClause = std::string("(") + "SELECT " + IMAGE_FACE_COL_FILE_ID + " FROM " +
         VISION_IMAGE_FACE_TABLE + " UNION" + " SELECT " + VIDEO_FACE_COL_FILE_ID + " FROM " +
         VISION_VIDEO_FACE_TABLE + ")";
-    std::string fileIdCondition = IMAGE_FACE_COL_FILE_ID + " IN " + fileIdFilterClause + " AND status = 1";
+    std::string fileIdCondition = IMAGE_FACE_COL_FILE_ID + " IN " + fileIdFilterClause + " AND status >= 0";
 
     std::unique_ptr<NativeRdb::AbsRdbPredicates> searchIndexTablePredicates =
         std::make_unique<NativeRdb::AbsRdbPredicates>(ANALYSIS_SEARCH_INDEX_TABLE);
