@@ -3479,6 +3479,27 @@ export namespace photoAccessHelper {
       });
     }
 
+    static deleteAssetsToTrashWithUris(context: Context, assets: Array<string>): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            MediaAssetChangeRequest.deleteAssetsSync(context, assets);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code.toInt(), err.message));
+          }
+        });
+      });
+    }
+
     getWriteCacheHandler(): Promise<int> {
       return new Promise<int>((resolve: (v: int) => void, reject: RejectString) : void => {
         let cb = (): int | MediaLibraryAniError => {
