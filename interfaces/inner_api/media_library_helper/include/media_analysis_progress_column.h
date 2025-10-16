@@ -42,6 +42,21 @@ const std::string TOTAL_PROGRESS = "total_progress";
 const std::string CREATED_TIME = "created_time";
 const std::string UPDATED_TIME = "updated_time";
 
+const std::string EXTRA_QUOTA_INDEX_BUILD_CNT = "extra_quota_index_build_cnt";
+const std::string EXTRA_QUOTA_INDEX_UPDATE_CNT = "extra_quota_index_update_cnt";
+const std::string EXTRA_QUOTA_INDEX_DELETE_CNT = "extra_quota_index_delete_cnt";
+const std::string EXTRA_QUOTA_OCR_CNT = "extra_quota_ocr_cnt";
+const std::string EXTRA_QUOTA_SHARED_BACKBONE_CNT = "extra_quota_shared_backbone_cnt";
+const std::string EXTRA_QUOTA_MODIFY_TIME = "extra_quota_modify_time";
+
+const std::string BASE_QUOTA_INDEX_BUILD_CNT = "base_quota_index_build_cnt";
+const std::string BASE_QUOTA_INDEX_UPDATE_CNT = "base_quota_index_update_cnt";
+const std::string BASE_QUOTA_INDEX_DELETE_CNT = "base_quota_index_delete_cnt";
+const std::string BASE_QUOTA_OCR_CNT = "base_quota_ocr_cnt";
+const std::string BASE_QUOTA_SHARED_BACKBONE_CNT = "base_quota_shared_backbone_cnt";
+const std::string BASE_QUOTA_LABEL_CNT = "base_quota_label_cnt";
+const std::string BASE_QUOTA_MODIFY_TIME = "base_quota_modify_time";
+
 const std::string URI_PROGRESS_TABLE = "datashare:///media/" + TAB_ANALYSIS_PROGRESS_TABLE;
 } // namespace Media
 } // namespace OHOS
