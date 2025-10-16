@@ -694,7 +694,6 @@ int32_t CloudMediaPhotosService::OnDentryFileInsert(
 
 int32_t CloudMediaPhotosService::GetRetryRecords(std::vector<std::string> &cloudIds)
 {
-    MEDIA_INFO_LOG("CloudMediaPhotosService::GetRetryRecords enter");
     int32_t ret = this->photosDao_.GetRetryRecords(cloudIds);
     MEDIA_INFO_LOG("CloudMediaPhotosService::GetRetryRecords end, "
                    "ret: %{public}d, size: %{public}zu",
