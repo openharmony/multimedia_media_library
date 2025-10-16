@@ -5470,6 +5470,28 @@ static void AddImageFaceDetail(RdbStore &store, int32_t version)
     ExecSqlsWithDfx(sqls, store, version);
 }
 
+static void AddAnalysisProgressColumns(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        ADD_EXTRA_QUOTA_INDEX_BUILD_CNT_COLUMN,
+        ADD_EXTRA_QUOTA_INDEX_UPDATE_CNT_COLUMN,
+        ADD_EXTRA_QUOTA_INDEX_DELETE_CNT_COLUMN,
+        ADD_EXTRA_QUOTA_OCR_CNT_COLUMN,
+        ADD_EXTRA_QUOTA_SHARED_BACKBONE_CNT_COLUMN,
+        ADD_EXTRA_QUOTA_MODIFY_TIME_COLUMN,
+        ADD_BASE_QUOTA_INDEX_BUILD_CNT_COLUMN,
+        ADD_BASE_QUOTA_INDEX_UPDATE_CNT_COLUMN,
+        ADD_BASE_QUOTA_INDEX_DELETE_CNT_COLUMN,
+        ADD_BASE_QUOTA_OCR_CNT_COLUMN,
+        ADD_BASE_QUOTA_SHARED_BACKBONE_CNT_COLUMN,
+        ADD_BASE_QUOTA_LABEL_CNT_COLUMN,
+        ADD_BASE_QUOTA_MODIFY_TIME_COLUMN,
+    };
+    MEDIA_INFO_LOG("start add analysis progress columns");
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("end add analysis progress columns");
+}
+
 static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_TAB_OLD_ALBUM &&
@@ -5482,6 +5504,12 @@ static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_IMAGE_FACE_DETAIL, true)) {
         AddImageFaceDetail(store, VERSION_ADD_IMAGE_FACE_DETAIL);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_IMAGE_FACE_DETAIL, true);
+    }
+
+    if (oldVersion < VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS, true)) {
+        AddAnalysisProgressColumns(store, VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS, true);
     }
 }
 
