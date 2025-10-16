@@ -279,6 +279,7 @@ CloudMediaAssetDownloadOperation::DownloadFileData CloudMediaAssetDownloadOperat
 
 void CloudMediaAssetDownloadOperation::StartFileCacheFailed()
 {
+    MEDIA_INFO_LOG("enter StartFileCacheFailed");
     SetTaskStatus(Status::PAUSE_FOR_CLOUD_ERROR);
     downloadId_ = DOWNLOAD_ID_DEFAULT;
     if (isCache_) {
