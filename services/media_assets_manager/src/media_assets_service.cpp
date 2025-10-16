@@ -816,6 +816,20 @@ static void ConvertToString(const vector<int32_t> &fileIds, std::vector<std::str
     }
 }
 
+int32_t MediaAssetsService::UpdateExistedTasksTitle(int32_t fileId)
+{
+    MEDIA_INFO_LOG("UpdateExistedTasksTitle In fileId: %{public}d", fileId);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "UpdateExistedTasksTitle Failed to get rdbStore.");
+    const std::string UPDATE_DISPLAY_NAME_IN_DOWNLOADTASK = "UPDATE " + DownloadResourcesColumn::TABLE +
+        " SET " + DownloadResourcesColumn::MEDIA_NAME + "=" + "(SELECT " + MediaColumn::MEDIA_NAME + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::MEDIA_ID + "=" +
+        std::to_string(fileId) + ")  WHERE " + DownloadResourcesColumn::MEDIA_ID + "=" + std::to_string(fileId);
+    int32_t ret = rdbStore->ExecuteSql(UPDATE_DISPLAY_NAME_IN_DOWNLOADTASK);
+    MEDIA_INFO_LOG("UpdateExistedTasksTitle End ret: %{public}d", ret);
+    return ret;
+}
+
 int32_t MediaAssetsService::SetAssetTitle(int32_t fileId, const std::string &title)
 {
     MEDIA_INFO_LOG("SetAssetTitle fileId: %{public}d, title: %{public}s.", fileId, title.c_str());
@@ -831,7 +845,9 @@ int32_t MediaAssetsService::SetAssetTitle(int32_t fileId, const std::string &tit
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicate, cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
-    return MediaLibraryPhotoOperations::Update(cmd);
+    int32_t ret = MediaLibraryPhotoOperations::Update(cmd);
+    UpdateExistedTasksTitle(fileId);
+    return ret;
 }
 
 int32_t MediaAssetsService::SetAssetPending(int32_t fileId, int32_t pending)
