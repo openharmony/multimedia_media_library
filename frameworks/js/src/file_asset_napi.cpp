@@ -405,6 +405,7 @@ napi_value FileAssetNapi::AttachCreateFileAsset(napi_env env, std::shared_ptr<Fi
 napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &iAsset)
 {
     if (iAsset == nullptr) {
+        NAPI_ERR_LOG("CreateFileAsset iAsset is null");
         return nullptr;
     }
 
