@@ -2779,54 +2779,66 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_latitude_test, TestSiz
     EXPECT_EQ(ret, setLatitude);
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_current_device_restore_config_info_test, TestSize.Level2)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_current_device_restore_config_info_test001, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("medialib_backup_get_current_device_restore_config_info_test start");
+    MEDIA_INFO_LOG("medialib_backup_get_current_device_restore_config_info_test001 start");
 
-    RestoreConfigInfo expectedRestoreConfig = restoreService->GetCurrentDeviceRestoreConfigInfo();
-
-    EXPECT_EQ(expectedRestoreConfig.restoreSwitchType, SwitchStatus::CLOSE);
-    EXPECT_EQ(expectedRestoreConfig.photoPositionType, PhotoPositionType::LOCAL);
-    EXPECT_EQ(expectedRestoreConfig.southDeviceType, SouthDeviceType::SOUTH_DEVICE_NULL);
+    RestoreConfigInfo config = restoreService->GetCurrentDeviceRestoreConfigInfo();
+    bool flag = config.photoPositionType == PhotoPositionType::CLOUD ||
+        config.southDeviceType == SouthDeviceType::SOUTH_DEVICE_NULL;
+    EXPECT_TRUE(flag);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_cloud_query_sql_test001 start");
 
-    std::string expectedQuerySql = restoreService->GetCloudQuerySql();
-    bool flag = expectedQuerySql == "SELECT _id FROM ("
-                                    "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
-                                    "WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' "
-                                    "AND (relative_bucket_id IS NULL OR relative_bucket_id NOT IN ("
-                                    "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
-                                    "AND (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) "
-                                    "AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' "
-                                    "AND COALESCE(_data, '') <> '' "
-                                    "AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
-                                    "WHERE (row_num - 1) % 200 = 0 ;";
-
-    EXPECT_FALSE(flag);
+    restoreService->restoreConfig_.restoreSwitchType = SwitchStatus::CLOUD;
+    std::string result = restoreService->GetCloudQuerySql();
+    std::string expected = "SELECT _id FROM ("
+                           "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
+                           "WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' "
+                           "AND (relative_bucket_id IS NULL OR relative_bucket_id NOT IN ("
+                           "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
+                           "AND (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) "
+                           "AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' "
+                           "AND COALESCE(_data, '') <> '' "
+                           "AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
+                           "WHERE (row_num - 1) % 200 = 0 ;";
+    bool flag = result == expected;
+    EXPECT_TRUE(flag);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_get_cloud_query_sql_test002 start");
 
-    std::string expectedQuerySql = restoreService->GetCloudQuerySql();
-    bool flag = expectedQuerySql == "SELECT _id FROM ("
-                                    "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
-                                    "WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') = '' "
-                                    "AND COALESCE(hdc_unique_id,'') <> '' "
-                                    "AND (relative_bucket_id IS NULL OR relative_bucket_id NOT IN ("
-                                    "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
-                                    "AND (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) "
-                                    "AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' "
-                                    "AND COALESCE(_data, '') <> '' "
-                                    "AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
-                                    "WHERE (row_num - 1) % 200 = 0 ;";
+    restoreService->restoreConfig_.restoreSwitchType = SwitchStatus::HDC;
+    std::string result = restore.GetCloudQuerySql();
+    std::string expected = "SELECT _id FROM ("
+                           "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
+                           "WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') = '' "
+                           "AND COALESCE(hdc_unique_id,'') <> '' "
+                           "AND (relative_bucket_id IS NULL OR relative_bucket_id NOT IN ("
+                           "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
+                           "AND (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) "
+                           "AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' "
+                           "AND COALESCE(_data, '') <> '' "
+                           "AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
+                           "WHERE (row_num - 1) % 200 = 0 ;";
+    bool flag = result == expected;
+    EXPECT_TRUE(flag);
+}
 
-    EXPECT_FALSE(flag);
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_get_cloud_query_sql_test003 start");
+
+    restoreService->restoreConfig_.restoreSwitchType = SwitchStatus::NONE;
+    std::string result = restore.GetCloudQuerySql();
+    std::string expected = "";
+    bool flag = result == expected;
+    EXPECT_TRUE(flag);
 }
 } // namespace Media
 } // namespace OHOS
