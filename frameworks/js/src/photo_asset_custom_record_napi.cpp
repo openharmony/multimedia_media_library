@@ -104,6 +104,7 @@ napi_value PhotoAssetCustomRecordNapi::CreateCustomRecordNapi(napi_env env,
     unique_ptr<PhotoAssetCustomRecord> &cRecord)
 {
     if (cRecord == nullptr) {
+        NAPI_ERR_LOG("CreateCustomRecordNapi cRecord is null");
         return nullptr;
     }
 
