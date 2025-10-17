@@ -65,6 +65,21 @@ typedef struct {
     std::string cachePath;
 } ExternalInfo;
 
+struct TransCodeExifInfo {
+    std::string orientation;
+    std::string userComment;
+    double latitude;
+    double longitude;
+    TransCodeExifInfo() : orientation("1"), userComment(""),
+        latitude(0.0), longitude(0.0) {};
+};
+
+enum ExifType {
+    EXIF_ORIENTATION,
+    EXIF_USER_COMMENT,
+    EXIF_GPS,
+};
+
 class MediaLibraryAssetOperations {
 public:
     static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
@@ -103,6 +118,8 @@ public:
     EXPORT static int32_t DeleteTranscodePhotos(const std::string &filePath);
     EXPORT static void DeleteTransCodeInfo(const std::string &filePath, const std::string &fileId,
         const std::string functionName);
+    EXPORT static void ModifyTransCodeFileExif(const ExifType type, const std::string &path,
+        const TransCodeExifInfo &exifInfo, const std::string &functionName);
     EXPORT static std::string GetTransCodePath(const string &path);
     EXPORT static std::string GetEditDataDirPath(const std::string &path);
     static std::shared_ptr<FileAsset> GetAssetFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
