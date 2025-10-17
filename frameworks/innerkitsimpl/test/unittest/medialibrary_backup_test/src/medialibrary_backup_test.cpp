@@ -2814,7 +2814,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test002, Te
     MEDIA_INFO_LOG("medialib_backup_get_cloud_query_sql_test002 start");
 
     restoreService->restoreConfig_.restoreSwitchType = SwitchStatus::HDC;
-    std::string result = restore.GetCloudQuerySql();
+    std::string result = restoreService->GetCloudQuerySql();
     std::string expected = "SELECT _id FROM ("
                            "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
                            "WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') = '' "
@@ -2835,7 +2835,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_query_sql_test003, Te
     MEDIA_INFO_LOG("medialib_backup_get_cloud_query_sql_test003 start");
 
     restoreService->restoreConfig_.restoreSwitchType = SwitchStatus::NONE;
-    std::string result = restore.GetCloudQuerySql();
+    std::string result = restoreService->GetCloudQuerySql();
     std::string expected = "";
     bool flag = result == expected;
     EXPECT_TRUE(flag);

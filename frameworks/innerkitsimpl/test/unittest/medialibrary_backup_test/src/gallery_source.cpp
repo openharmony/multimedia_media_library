@@ -230,25 +230,25 @@ void GallerySource::InitGalleryMediaThree()
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(18, 16, ") +
         "'/storage/emulated/0/A/media/Rocket/test/a_media_normal_video.mp4', 10865209, 1708600079, 1708600079," +
         "'a_media_normal_video', 'NULL', 'a_media_normal_video.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
-        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/a_media_normal_video.mp4', \
-        0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/a_media_normal_video.mp4', " +
+        "0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(19, 17, ") +
         "'/storage/emulated/0/A/media/Rocket/test/a_media_favorite.mp4', 10865209, 1708600079, 1708600079," +
         "'a_media_favorite', 'NULL', 'a_media_favorite.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, 1, " +
-        "1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/a_media_favorite.mp4', 0, NULL, 0, "+
+        "1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/a_media_favorite.mp4', 0, NULL, 0, " +
         "1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(20, 18, ") +
         "'/storage/emulated/0/A/media/Baidu/a_media_favorite_baidu.mp4', 10865209, 1708600079, 1708600079," +
         "'a_media_favorite_baidu', 'NULL', 'a_media_favorite_baidu.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640," +
-        "1, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Baidu/a_media_favorite_baidu.mp4', \
-        0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
+        "1, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Baidu/a_media_favorite_baidu.mp4', " +
+        "0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(21, 19, ") +
         "'/storage/emulated/0/A/media/Baidu/a_media_normal_image.jpg', 418436, 1708602162000, 1708602162," +
         "'a_media_normal_image', 'NULL', 'a_media_normal_image.jpg', 0, -1960413976, 0, 1, 65537, 2000, 3556, NULL, " +
-        "1264692236, 1708602162000, 0, 0, '/storage/emulated/0/A/media/Baidu/a_media_normal_image.jpg', 0, NULL, 0, "+
+        "1264692236, 1708602162000, 0, 0, '/storage/emulated/0/A/media/Baidu/a_media_normal_image.jpg', 0, NULL, 0, " +
         "1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(22, 20, \
@@ -287,19 +287,19 @@ void GallerySource::InitGalleryMediaFour()
     galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(27, 25, '/" +
         GetDUALBundleName() + " Share/" + GetDUALBundleName() + "Share1.jpg', 418436, 1708602162000, 1708602162, '" +
         GetDUALBundleName() + "Share1', 'NULL', '" + GetDUALBundleName() +
-        "Share1.jpg', 0, -1960413976, 0, 1, 65537, 2000, 3556, NULL, 3, 1708602162000, 0, 0, 'Share1.jpg', \
-        0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
+        "Share1.jpg', 0, -1960413976, 0, 1, 65537, 2000, 3556, NULL, 3, 1708602162000, 0, 0, 'Share1.jpg', " +
+        "0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(28, 26, '/DCIM/Camera/camera2.jpg', \
         418436, 1708602162000, 1708602162,'camera2', 'NULL', 'camera2.jpg', 0, -1960413976, 0, 1, 65537, \
         2000, 3556, NULL, 3, 1708602162000, 0, 0, '/DCIM/Camera/camera2.jpg', 0, NULL, 0, \
-        1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
-        "0, 0, NULL, NULL, NULL)");
+        1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, \
+        0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(29, 27, '/Screenshots/screenshots2.jpg', \
         418436, 1708602162000, 1708602162,'screenshots2', 'NULL', 'screenshots2.jpg', 0, -1960413976, 0, 1, 65537, \
         2000, 3556, NULL, 3, 1708602162000, 0, 0, '/Screenshots/screenshots2.jpg', 0, NULL, 0, \
-        1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
-        "0, 0, NULL, NULL, NULL)");
+        1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, \
+        0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(30, 28, '/Screenrecorder/screenrecorder2.mp4', \
         418436, 1708602162000, 1708602162,'screenrecorder2', 'NULL', 'screenrecorder2.mp4', 0, \
         -1960413976, 0, 1, 65537, 2000, 3556, NULL, 3, 1708602162000, 0, 0, '/Screenrecorder/screenrecorder2.mp4', \
@@ -315,25 +315,25 @@ void GallerySource::InitGalleryMediaFour()
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(32, 55950, ") +
         "'/storage/emulated/0/Pictures/NULL/NULL_1.jpg', 216446, 1722851511, 1717550867," +
         "'NULL_1', NULL, 'NULL_1.jpg', 0, 991881755, 0, 1, 65537, 1860, 1200, NULL, " +
-        "500954022, 1643958981000, 0, 0, '/storage/emulated/0/Pictures/NULL/NULL_1.jpg', 0, '5659', 0, "+
+        "500954022, 1643958981000, 0, 0, '/storage/emulated/0/Pictures/NULL/NULL_1.jpg', 0, '5659', 0, " +
         "1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(33, 55979, ") +
         "'/storage/emulated/0/Pictures/B/B_1.jpg', 4567535, 1722913178, 1715679284," +
         "'B_1', NULL, 'B_1.jpg', 0, -1608790897, 0, 1, 65537, 5184, 3456, NULL, " +
-        "-586242982, 1434362029810, 0, 0, '/storage/emulated/0/Pictures/B/B_1.jpg', 0, '1c05', 0, "+
+        "-586242982, 1434362029810, 0, 0, '/storage/emulated/0/Pictures/B/B_1.jpg', 0, '1c05', 0, " +
         "1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(34, 57139, ") +
         "'/storage/emulated/0/Pictures/B/B_2.jpg', 4369271, 1723044589, 1720179455," +
         "'B_2', NULL, 'B_2.jpg', 0, -1035207676, 0, 1, 65537, 5184, 3456, NULL, " +
-        "-370356529, 1434363463590, 0, 0, '/storage/emulated/0/Pictures/B/B_2.jpg', 0, '23f2', 0, "+
+        "-370356529, 1434363463590, 0, 0, '/storage/emulated/0/Pictures/B/B_2.jpg', 0, '23f2', 0, " +
         "1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(35, 57063, ") +
         "'/storage/emulated/0/Pictures/Y/Y_1.jpg', 2971707, 1723044589, 1720190486," +
         "'Y_1', NULL, 'Y_1.jpg', 0, -1035207678, 0, 1, 65537, 3968, 2976, NULL, " +
-        "-370356531, 1491269475663, 0, 0, '/storage/emulated/0/Pictures/Y/Y_1.jpg', 0, '3275', 0, "+
+        "-370356531, 1491269475663, 0, 0, '/storage/emulated/0/Pictures/Y/Y_1.jpg', 0, '3275', 0, " +
         "1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
 }
@@ -344,14 +344,14 @@ void GallerySource::InitGalleryMediaFive()
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(36, 30, ") +
         "'/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4', 10865209, 1708600079, 1708600079," +
         "'duplicate_data', 'NULL', 'duplicate_data.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
-        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4', \
-        0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4', " +
+        "0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(37, 31, ") +
         "'/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4', 10865209, 1708600079, 1708600079," +
         "'duplicate_data', 'NULL', 'duplicate_data.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
-        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4', \
-        0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4', " +
+        "0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
 }
 
@@ -361,22 +361,22 @@ void GallerySource::InitGalleryMediaSix()
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(38, 32, ") +
         "'/storage/emulated/0/A/media/Rocket/test/DUPLICATE_DATA_CASE.mp4', 10865209, 1708600079, 1708600079," +
         "'DUPLICATE_DATA_CASE', 'NULL', 'DUPLICATE_DATA_CASE.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
-        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/DUPLICATE_DATA_CASE.mp4', \
-        0, NULL, 0, 1495970415377, 1495970415377, '2025:04:16 17:00:00', NULL, NULL, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/DUPLICATE_DATA_CASE.mp4', " +
+        "0, NULL, 0, 1495970415377, 1495970415377, '2025:04:16 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(39, 33, ") +
         "'/storage/emulated/0/A/media/Rocket/test/duplicate_data_case.mp4', 10865209, 1708600079, 1708600079," +
         "'duplicate_data_case', 'NULL', 'duplicate_data_case.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
-        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/duplicate_data_case.mp4', \
-        0, NULL, 0, 1495970415377, 1495970415377, '2025:04:16 17:00:00', NULL, NULL, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/duplicate_data_case.mp4', " +
+        "0, NULL, 0, 1495970415377, 1495970415377, '2025:04:16 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
 
     // NULL storage_id
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(40, 34, ") +
         "'/storage/emulated/0/A/media/Rocket/test/null_storage_id.mp4', 10865209, 1708600079, 1708600079," +
         "'null_storage_id', 'NULL', 'null_storage_id.mp4', 0, -1122816831, 52221, 3, NULL, 352, 640, " +
-        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/null_storage_id.mp4', \
-        0, NULL, 0, 1495970415377, 1495970415377, '2025:04:16 17:00:00', NULL, NULL, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/null_storage_id.mp4', " +
+        "0, NULL, 0, 1495970415377, 1495970415377, '2025:04:16 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
 }
 
