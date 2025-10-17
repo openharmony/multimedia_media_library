@@ -18,6 +18,9 @@
 #include "clone_restore_highlight_test.h"
 #include "clone_highlight_source.h"
 #include "media_file_utils.h"
+#include "vision_db_sqls.h"
+#include "vision_db_sqls_more.h"
+#include "story_db_sqls.h"
 
 #define private public
 #define protected public
@@ -28,6 +31,7 @@
 #include "media_column.h"
 #include "media_log.h"
 #include "medialibrary_rdb_utils.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "story_album_column.h"
@@ -43,18 +47,33 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-const vector<string> CLEAR_SQLS = {
-    "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
-    "DELETE FROM " + ANALYSIS_ALBUM_TABLE,
-    "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE,
-    "DELETE FROM " + HIGHLIGHT_ALBUM_TABLE,
-    "DELETE FROM " + HIGHLIGHT_COVER_INFO_TABLE,
-    "DELETE FROM " + HIGHLIGHT_PLAY_INFO_TABLE,
-    "DELETE FROM " + ANALYSIS_ASSET_SD_MAP_TABLE,
-    "DELETE FROM " + ANALYSIS_ALBUM_ASSET_MAP_TABLE,
-    "DELETE FROM " + VISION_LABEL_TABLE,
-    "DELETE FROM " + VISION_RECOMMENDATION_TABLE,
-    "DELETE FROM " + VISION_SALIENCY_TABLE,
+
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+    CREATE_ANALYSIS_ALBUM_MAP,
+    CREATE_HIGHLIGHT_ALBUM_TABLE,
+    CREATE_HIGHLIGHT_COVER_INFO_TABLE,
+    CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
+    CREATE_ANALYSIS_ASSET_SD_MAP_TABLE,
+    CREATE_ANALYSIS_ALBUM_ASET_MAP_TABLE,
+    CREATE_TAB_ANALYSIS_LABEL,
+    CREATE_TAB_ANALYSIS_RECOMMENDATION,
+    CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
+};
+
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    ANALYSIS_ALBUM_TABLE,
+    ANALYSIS_PHOTO_MAP_TABLE,
+    HIGHLIGHT_ALBUM_TABLE,
+    HIGHLIGHT_COVER_INFO_TABLE,
+    HIGHLIGHT_PLAY_INFO_TABLE,
+    ANALYSIS_ASSET_SD_MAP_TABLE,
+    ANALYSIS_ALBUM_ASSET_MAP_TABLE,
+    VISION_LABEL_TABLE,
+    VISION_RECOMMENDATION_TABLE,
+    VISION_SALIENCY_TABLE,
 };
 
 const string TEST_BACKUP_PATH = "/data/test/backup/db";
@@ -65,7 +84,6 @@ const int32_t TEST_ID = 1;
 const int32_t TEST_NEW_ID = 2;
 const int32_t TEST_NUM = 3;
 const int32_t INVALID_COUNT = -1;
-const std::string PHOTO_URI_PREFIX = "file://media/Photo/";
 const std::string HIGHLIGHT_ASSET_URI_PREFIX = "file://media/highlight/video/";
 const std::unordered_map<int32_t, PhotoInfo> PHOTO_INFO_MAP = {
     { TEST_ID, PhotoInfo({ TEST_NEW_ID, MediaType::MEDIA_TYPE_IMAGE, "test.jpg", "/Photo/1/test.jpg" }) },
@@ -92,7 +110,7 @@ void ExecuteRdbSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> 
 void ClearHighlightData()
 {
     MEDIA_INFO_LOG("Start clear data");
-    ExecuteRdbSqls(newRdbStore->GetRaw(), CLEAR_SQLS);
+    MediaLibraryUnitTestUtils::CleanTestTables(newRdbStore, testTables);
     if (cloneRestoreHighlight) {
         cloneRestoreHighlight->analysisInfos_.clear();
         cloneRestoreHighlight->highlightInfos_.clear();
@@ -117,11 +135,11 @@ void Init(CloneHighlightSource &cloneHighlightSource, const string &path, const 
 
 void CloneRestoreHighlightTest::SetUpTestCase(void)
 {
-    MEDIA_INFO_LOG("Start Init");
+    MEDIA_INFO_LOG("Start CloneRestoreHighlightTest Init");
     MediaLibraryUnitTestUtils::Init();
     newRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(newRdbStore, nullptr);
-    MEDIA_INFO_LOG("Start init restoreService");
+    MediaLibraryUnitTestUtils::CreateTestTables(newRdbStore, createTableSqlLists);
     cloneRestoreHighlight = make_unique<CloneRestoreHighlight>();
     cloneRestoreHighlight->mediaLibraryRdb_ = newRdbStore->GetRaw(); // destination database
     cloneRestoreCVAnalysis = make_unique<CloneRestoreCVAnalysis>();
@@ -131,13 +149,17 @@ void CloneRestoreHighlightTest::SetUpTestCase(void)
 void CloneRestoreHighlightTest::TearDownTestCase(void)
 {
     MEDIA_INFO_LOG("TearDownTestCase");
-    ClearHighlightData();
+    MediaLibraryUnitTestUtils::CleanTestTables(newRdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     cloneRestoreHighlight->mediaLibraryRdb_ = nullptr;
     cloneRestoreCVAnalysis->mediaLibraryRdb_ = nullptr;
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
-void CloneRestoreHighlightTest::SetUp() {}
+void CloneRestoreHighlightTest::SetUp()
+{
+    ClearHighlightData();
+}
 
 void CloneRestoreHighlightTest::TearDown(void) {}
 
@@ -182,7 +204,6 @@ void InsertIntoHighlightAlbumInfo(CloneRestoreHighlight::HighlightAlbumInfo &hig
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_albums_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_restore_albums_test_001 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE,
         HIGHLIGHT_ALBUM_TABLE, HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE };
@@ -209,7 +230,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_albums_test_
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_maps_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_restore_maps_test_001 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE,
         HIGHLIGHT_ALBUM_TABLE };
@@ -237,7 +257,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_maps_test_00
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_values_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_update_values_test_001 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE,
         HIGHLIGHT_ALBUM_TABLE };
@@ -265,7 +284,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_values_test_0
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_001 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE };
     cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
@@ -299,7 +317,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_002 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE };
     cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
@@ -331,7 +348,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_003 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE };
     cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
@@ -363,7 +379,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_004 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE };
     cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
@@ -397,7 +412,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_005 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE };
     cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
@@ -430,7 +444,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_album_id_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_get_new_highlight_album_id_test_001 start");
-    ClearHighlightData();
     int32_t oldId = 1;
     CloneRestoreHighlight::HighlightAlbumInfo testInfo;
     testInfo.highlightIdOld = make_optional<int32_t>(oldId);
@@ -443,7 +456,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_al
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_photo_id_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_get_new_highlight_photo_id_test_001 start");
-    ClearHighlightData();
     cloneRestoreHighlight->photoInfoMap_ = PHOTO_INFO_MAP;
     int32_t newId = cloneRestoreHighlight->GetNewHighlightPhotoId(TEST_ID);
     EXPECT_EQ(newId, TEST_NEW_ID);
@@ -452,7 +464,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_ph
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_photo_id_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_get_new_highlight_photo_id_test_002 start");
-    ClearHighlightData();
     cloneRestoreHighlight->photoInfoMap_ = PHOTO_INFO_MAP;
     int32_t newId = cloneRestoreHighlight->GetNewHighlightPhotoId(TEST_NEW_ID);
     EXPECT_EQ(newId, 0);
@@ -461,7 +472,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_ph
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_photo_uri_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_get_new_highlight_photo_uri_test_001 start");
-    ClearHighlightData();
     cloneRestoreHighlight->photoInfoMap_ = PHOTO_INFO_MAP;
     string newUri = cloneRestoreHighlight->GetNewHighlightPhotoUri(TEST_ID);
     EXPECT_FALSE(newUri.empty());
@@ -470,7 +480,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_ph
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_photo_uri_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_get_new_highlight_photo_uri_test_002 start");
-    ClearHighlightData();
     cloneRestoreHighlight->photoInfoMap_ = PHOTO_INFO_MAP;
     string newUri = cloneRestoreHighlight->GetNewHighlightPhotoUri(TEST_NEW_ID);
     EXPECT_TRUE(newUri.empty());
@@ -479,7 +488,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_ph
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_is_clone_highlight_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_is_clone_highlight_test_001 start");
-    ClearHighlightData();
     cloneRestoreHighlight->isCloneHighlight_ = false;
     bool isClone = cloneRestoreHighlight->IsCloneHighlight();
     EXPECT_EQ(isClone, false);
@@ -488,7 +496,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_is_clone_highlight_t
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_deduplicate_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_deduplicate_test_001 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, HIGHLIGHT_ALBUM_TABLE };
     cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
@@ -522,7 +529,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_deduplicate_test_001
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_test_001 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_ALBUM_TABLE,
         HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE, ANALYSIS_ASSET_SD_MAP_TABLE,
@@ -560,7 +566,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_test_001, TestSize.L
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_cv_analysis_test_001 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_ALBUM_TABLE,
         HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE, ANALYSIS_ASSET_SD_MAP_TABLE,
@@ -586,7 +591,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_001, TestSize
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_cv_analysis_test_002 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_ALBUM_TABLE,
         HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE, ANALYSIS_ASSET_SD_MAP_TABLE,
@@ -617,7 +621,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_002, TestSize
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_cv_analysis_test_004 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_ALBUM_TABLE,
         HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE, ANALYSIS_ASSET_SD_MAP_TABLE,
@@ -663,7 +666,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_004, TestSize
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_cv_analysis_test_006 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_ALBUM_TABLE,
         HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE, ANALYSIS_ASSET_SD_MAP_TABLE,
@@ -716,7 +718,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_006, TestSize
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_restore_highlight_albums_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_restore_highlight_albums_test_001 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_ALBUM_TABLE,
         HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE, ANALYSIS_ASSET_SD_MAP_TABLE,
@@ -739,7 +740,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_restore_highlight_albums_test_
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_restore_analysis_tables_data_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_restore_analysis_tables_data_test_001 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, VISION_TOTAL_TABLE, VISION_RECOMMENDATION_TABLE };
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
@@ -760,7 +760,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_restore_analysis_tables_data_t
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_restore_analysis_tables_data_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_restore_analysis_tables_data_test_002 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, VISION_TOTAL_TABLE, VISION_SALIENCY_TABLE };
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
@@ -781,7 +780,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_restore_analysis_tables_data_t
 HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_preprocess_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_preprocess_test_001 start");
-    ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList;
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
