@@ -112,7 +112,7 @@ private:
         )
     )";
     const std::string SQL_GALLERY_MEDIA_TABLE_ADD_HDC_UNIQUE_ID_COLUMN = "\
-        ALTER TABLE gallery_media ADD COLUMN hdc_unique_id INTEGER DEFAULT 0;"
+        ALTER TABLE gallery_media ADD COLUMN hdc_unique_id INT DEFAULT 0;";
 private:
     DbUpgradeUtils dbUpgradeUtils_;
 };
