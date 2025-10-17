@@ -33,8 +33,8 @@ void GalleryMediaDao::SetGalleryRdb(std::shared_ptr<NativeRdb::RdbStore> gallery
 std::shared_ptr<NativeRdb::ResultSet> GalleryMediaDao::GetGalleryMedia(
     int32_t minId, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
 {
-    int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
-    int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
+    int32_t shouldIncludeSdFlag = shouldIncludeSd ? 1 : 0;
+    int32_t hasLowQualityImageFlag = hasLowQualityImage ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {minId, hasLowQualityImageFlag, shouldIncludeSdFlag, pageSize};
     CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, nullptr, "Media_Restore: galleryRdb_ is null.");
     return this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE, params);
@@ -47,8 +47,8 @@ std::shared_ptr<NativeRdb::ResultSet> GalleryMediaDao::GetCloudGalleryMedia(
     int32_t minId, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
 {
     CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, nullptr, "Media_Restore: galleryRdb_ is null.");
-    int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
-    int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
+    int32_t shouldIncludeSdFlag = shouldIncludeSd ? 1 : 0;
+    int32_t hasLowQualityImageFlag = hasLowQualityImage ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {minId, hasLowQualityImageFlag, shouldIncludeSdFlag, pageSize};
     return this->galleryRdb_->QuerySql(this->SQL_GALLERY_CLOUD_QUERY_FOR_RESTORE, params);
 }
@@ -60,8 +60,8 @@ std::shared_ptr<NativeRdb::ResultSet> GalleryMediaDao::GetHdcGalleryMedia(
     int32_t minId, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
 {
     CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, nullptr, "Media_Restore: galleryRdb_ is null.");
-    int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
-    int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
+    int32_t shouldIncludeSdFlag = shouldIncludeSd ? 1 : 0;
+    int32_t hasLowQualityImageFlag = hasLowQualityImage ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {minId, hasLowQualityImageFlag, shouldIncludeSdFlag, pageSize};
     return this->galleryRdb_->QuerySql(this->SQL_GALLERY_HDC_QUERY_FOR_RESTORE, params);
 }
@@ -71,8 +71,8 @@ std::shared_ptr<NativeRdb::ResultSet> GalleryMediaDao::GetHdcGalleryMedia(
  */
 int32_t GalleryMediaDao::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQualityImage)
 {
-    int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
-    int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
+    int32_t shouldIncludeSdFlag = shouldIncludeSd ? 1 : 0;
+    int32_t hasLowQualityImageFlag = hasLowQualityImage ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag};
     CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
 
@@ -93,8 +93,8 @@ int32_t GalleryMediaDao::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQ
 int32_t GalleryMediaDao::GetCloudMetaCount(bool shouldIncludeSd, bool hasLowQualityImage)
 {
     CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Cloud_meta_Restore: galleryRdb_ is null.");
-    int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
-    int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
+    int32_t shouldIncludeSdFlag = shouldIncludeSd ? 1 : 0;
+    int32_t hasLowQualityImageFlag = hasLowQualityImage ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag};
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_CLOUD_META_QUERY_COUNT, params);
     CHECK_AND_RETURN_RET(resultSet != nullptr, 0);
@@ -113,8 +113,8 @@ int32_t GalleryMediaDao::GetCloudMetaCount(bool shouldIncludeSd, bool hasLowQual
 int32_t GalleryMediaDao::GetHdcMetaCount(bool shouldIncludeSd, bool hasLowQualityImage)
 {
     CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Hdc_meta_Restore: galleryRdb_ is null.");
-    int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
-    int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
+    int32_t shouldIncludeSdFlag = shouldIncludeSd ? 1 : 0;
+    int32_t hasLowQualityImageFlag = hasLowQualityImage ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag};
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_HDC_META_QUERY_COUNT, params);
     CHECK_AND_RETURN_RET(resultSet != nullptr, 0);
@@ -133,7 +133,7 @@ int32_t GalleryMediaDao::GetHdcMetaCount(bool shouldIncludeSd, bool hasLowQualit
  */
 int32_t GalleryMediaDao::GetNoNeedMigrateCount(bool shouldIncludeSd)
 {
-    int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
+    int32_t shouldIncludeSdFlag = shouldIncludeSd ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {shouldIncludeSdFlag};
     CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_NO_NEED_MIGRATE_COUNT, params);

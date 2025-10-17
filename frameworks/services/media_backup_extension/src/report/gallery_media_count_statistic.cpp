@@ -148,8 +148,8 @@ int32_t GalleryMediaCountStatistic::GetGalleryMediaAllRestoreCount(SearchConditi
     int32_t favoriteType = searchCondition.GetFavoriteType();
     int32_t burstType = searchCondition.GetBurstType();
     bool hasLowQualityImage = this->HasLowQualityImage();
-    int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
-    int32_t shouldIncludeSdFlag = this->shouldIncludeSd_ == true ? 1 : 0;
+    int32_t hasLowQualityImageFlag = hasLowQualityImage ? 1 : 0;
+    int32_t shouldIncludeSdFlag = this->shouldIncludeSd_ ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag,
         shouldIncludeSdFlag,
         mediaType,
@@ -384,9 +384,11 @@ int32_t GalleryMediaCountStatistic::QueryGalleryAppTwinDataCount()
     return BackupDatabaseUtils::QueryInt(galleryRdb_, sql, CUSTOM_COUNT);
 }
 
-int32_t GalleryMediaCountStatistic::QueryGalleryOnlyHDCDataCount()
+int32_t GalleryMediaCountStatistic::QueryGalleryOnlyHDCDataCount(SearchCondition searchCondition)
 {
-    return BackupDatabaseUtils::QueryInt(galleryRdb_, SQL_ONLY_HDC_META_QUERY_COUNT, CUSTOM_COUNT);
+    int32_t mediaType = searchCondition.GetMediaType();
+    std::vector<NativeRdb::ValueObject> params = {mediaType, mediaType};
+    return this->GetCount(this->SQL_ONLY_HDC_META_QUERY_COUNT, params);
 }
 
 int32_t GalleryMediaCountStatistic::QueryGallerySizeUnnormalDataCount()
@@ -707,7 +709,9 @@ AlbumMediaStatisticInfo GalleryMediaCountStatistic::GetOnlyHDCInfo()
     info.taskId = this->taskId_;
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     // build the statistic info.
-    info.totalCount = this->QueryGalleryOnlyHDCDataCount();
+    info.totalCount = this->QueryGalleryOnlyHDCDataCount(SearchCondition());
+    info.imageCount = this->QueryGalleryOnlyHDCDataCount(SearchCondition().SetMediaType(DUAL_MEDIA_TYPE_IMAGE));
+    info.videoCount = this->QueryGalleryOnlyHDCDataCount(SearchCondition().SetMediaType(DUAL_MEDIA_TYPE_VIDEO));
     // build the album name.
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
