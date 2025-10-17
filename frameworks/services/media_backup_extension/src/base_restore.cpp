@@ -649,6 +649,16 @@ double BaseRestore::GetDataLatitude(const FileInfo &fileInfo, std::unique_ptr<Me
     return data->GetLatitude();
 }
 
+void BaseRestore::Set3DgsSubtype(FileInfo &info, NativeRdb::ValuesBucket &value,
+    std::unique_ptr<Metadata> &data)
+{
+    if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS)) {
+        info.subtype = data->GetPhotoSubType();
+        value.Delete(PhotoColumn::PHOTO_SUBTYPE);
+        value.PutInt(PhotoColumn::PHOTO_SUBTYPE, info.subtype);
+    }
+}
+
 void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
     std::unique_ptr<Metadata> data = make_unique<Metadata>();
@@ -694,6 +704,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     }
     fileInfo.dateAdded = dateAdded;
     SetCoverPosition(fileInfo, value);
+    Set3DgsSubtype(fileInfo, value, data);
 }
 
 void BaseRestore::CreateDir(std::string &dir)

@@ -176,6 +176,8 @@ protected:
     void InsertFileDuration(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
         FileInfo &fileInfo);
     void SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value);
+    void Set3DgsSubtype(FileInfo &info, NativeRdb::ValuesBucket &value,
+        std::unique_ptr<Metadata> &data);
     void AddToPhotoInfoMap(std::vector<FileInfo> &fileInfos);
     void InsertDateTime(NativeRdb::ValuesBucket &value, FileInfo &fileInfo);
     virtual bool HasExThumbnail(const FileInfo &info);
