@@ -237,6 +237,9 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, scanResult.shootingMode);
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, scanResult.shootingModeTag);
         values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, scanResult.frontCamera);
+        if (scanResult.subType == static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS)) {
+            values.PutInt(PhotoColumn::PHOTO_SUBTYPE, scanResult.subType);
+        }
     }
     int32_t changedRows = -1;
     int32_t ret = photoRefresh->Update(changedRows, values, predicates);
