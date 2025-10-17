@@ -230,7 +230,6 @@ int32_t CloudMediaDataControllerService::CheckAndFixAlbum(MessageParcel &data, M
 
 int32_t CloudMediaDataControllerService::QueryData(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("QueryData enter");
     QueryDataReqBody req;
     QueryDataRespBody resp;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, req);
