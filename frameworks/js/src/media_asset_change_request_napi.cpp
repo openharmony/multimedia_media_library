@@ -16,6 +16,7 @@
 #define MLOG_TAG "MediaAssetChangeRequestNapi"
 
 #include "media_asset_change_request_napi.h"
+#include "media_library_napi.h"
 
 #include <fcntl.h>
 #include <functional>
@@ -1227,7 +1228,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetHasAppLink(napi_env env, napi_callb
         MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, hasAppLink) == napi_ok,
         "Failed to parse has appLink");
     CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
-    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckHasAppLink(hasAppLink),
+    CHECK_ARGS_WITH_MEG(env, MediaFileUtils::CheckHasAppLink(hasAppLink), JS_E_PARAM_INVALID,
         "Failed to check hasAppLink");
 
     auto changeRequest = asyncContext->objectInfo;
@@ -1250,7 +1251,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetAppLink(napi_env env, napi_callback
         MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, appLink) == napi_ok,
         "Failed to parse appLink");
     CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "String of args is invalid");
-    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckAppLink(appLink) == E_OK,
+    CHECK_ARGS_WITH_MEG(env, MediaFileUtils::CheckAppLink(appLink) == E_OK, JS_E_PARAM_INVALID,
         "Failed to check appLink");
 
     auto changeRequest = asyncContext->objectInfo;
