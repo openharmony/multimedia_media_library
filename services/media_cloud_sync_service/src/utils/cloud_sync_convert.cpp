@@ -461,7 +461,6 @@ int32_t CloudSyncConvert::CompensateBasicCloudId(const CloudMediaPullDataDto &da
 int32_t CloudSyncConvert::CompensateBasicDescription(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string description = data.basicDescription;
-    CHECK_AND_RETURN_RET_WARN_LOG(!description.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find basic::description.");
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, description);
     return E_OK;
 }
