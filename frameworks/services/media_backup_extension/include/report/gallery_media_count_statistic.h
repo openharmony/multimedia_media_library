@@ -56,7 +56,7 @@ private:
     int32_t QueryGallerySdCardCount(SearchCondition searchCondition);
     bool HasLowQualityImage();
     int32_t QueryGalleryAppTwinDataCount();
-    int32_t QueryGalleryOnlyHDCDataCount();
+    int32_t QueryGalleryOnlyHDCDataCount(SearchCondition searchCondition);
     int32_t QueryGallerySizeUnnormalDataCount();
     int32_t QueryAlbumAllVideoCount(SearchCondition searchCondition);
     std::vector<AlbumStatisticInfo> QueryAlbumCountByName(
