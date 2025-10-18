@@ -26,6 +26,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
+#include "location_db_sqls.h"
 #include "uri.h"
 
 using namespace std;
@@ -33,48 +34,41 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-static std::atomic<int> num{ 0 };
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
-void ClearData()
-{
-    DataShare::DataSharePredicates predicates;
-    Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
-    MediaLibraryCommand geoKnowledgeCmd(geoKnowledgeUri);
-    Uri geoDictionaryUri(URI_GEO_DICTIONARY);
-    MediaLibraryCommand geoDictionaryCmd(geoDictionaryUri);
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    EXPECT_NE(dataManager, nullptr);
-    dataManager->Delete(geoKnowledgeCmd, predicates);
-    dataManager->Delete(geoDictionaryCmd, predicates);
-    string clearPhotos = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    EXPECT_NE(rdbStore, nullptr);
-    auto ret = rdbStore->ExecuteSql(clearPhotos);
-    EXPECT_EQ(ret, NativeRdb::E_OK);
-    num = 0;
-}
+static std::atomic<int> num{ 0 };
+static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+
+static std::vector<std::string> createTableSqlLists = {
+    CREATE_GEO_KNOWLEDGE_TABLE,
+    CREATE_GEO_DICTIONARY_TABLE,
+    PhotoColumn::CREATE_PHOTO_TABLE,
+};
+
+static std::vector<std::string> testTables = {
+    GEO_KNOWLEDGE_TABLE,
+    GEO_DICTIONARY_TABLE,
+    PhotoColumn::PHOTOS_TABLE,
+};
 
 void MediaLibraryLocationTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("Location_Test::Start");
     MediaLibraryUnitTestUtils::Init();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
 }
 
 void MediaLibraryLocationTest::TearDownTestCase(void)
 {
-    ClearData();
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     MEDIA_INFO_LOG("Location_Test::End");
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryLocationTest::SetUp(void)
 {
-    MediaLibraryUnitTestUtils::CleanTestFiles();
-    MediaLibraryUnitTestUtils::CleanBundlePermission();
-    MediaLibraryUnitTestUtils::InitRootDirs();
-    MediaLibraryUnitTestUtils::Init();
-    ClearData();
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
 }
 
 void MediaLibraryLocationTest::TearDown(void) {}

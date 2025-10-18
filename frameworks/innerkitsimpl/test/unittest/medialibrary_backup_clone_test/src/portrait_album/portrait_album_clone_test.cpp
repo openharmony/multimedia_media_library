@@ -19,6 +19,8 @@
 
 #include "vision_column.h"
 #include "vision_photo_map_column.h"
+#include "vision_db_sqls_more.h"
+#include "vision_db_sqls.h"
 #define private public
 #define protected public
 #include "clone_restore_portrait_album.h"
@@ -28,6 +30,7 @@
 #include "userfile_manager_types.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 #include "backup_const.h"
 #include "clone_restore.h"
 #include "media_log.h"
@@ -47,53 +50,48 @@ static const string TEST_BACKUP_DB_PATH = TEST_BACKUP_PATH + TEST_DB_PATH;
 static shared_ptr<MediaLibraryRdbStore> newRdbStore = nullptr;
 static unique_ptr<CloneRestorePortrait> cloneRestorePortrait = nullptr;
 
-const vector<string> CLEAR_SQLS = {
-    "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
-    "DELETE FROM " + ANALYSIS_ALBUM_TABLE,
-    "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE,
-    "DELETE FROM " + VISION_FACE_TAG_TABLE,
-    "DELETE FROM " + VISION_IMAGE_FACE_TABLE,
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+    CREATE_ANALYSIS_ALBUM_MAP,
+    CREATE_TAB_FACE_TAG,
+    CREATE_TAB_IMAGE_FACE,
 };
 
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    ANALYSIS_ALBUM_TABLE,
+    ANALYSIS_PHOTO_MAP_TABLE,
+    VISION_FACE_TAG_TABLE,
+    VISION_IMAGE_FACE_TABLE,
+};
 const int32_t EXPECTED_MAP_ALBUM = 201;
 const int32_t EXPECTED_MAP_ASSET = 101;
 
-static void ExecuteSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> &sqls)
-{
-    for (const auto &sql : sqls) {
-        int32_t errCode = store->ExecuteSql(sql);
-        if (errCode == E_OK) {
-            continue;
-        }
-        MEDIA_ERR_LOG("Execute %{public}s failed: %{public}d", sql.c_str(), errCode);
-    }
-}
-
-void ClearPortraitData()
-{
-    MEDIA_INFO_LOG("Start clear portrait album data");
-    ExecuteSqls(newRdbStore->GetRaw(), CLEAR_SQLS);
-    MEDIA_INFO_LOG("End clear portrait album data");
-}
-
 void PortraitAlbumCloneTest::SetUpTestCase(void)
 {
-    MEDIA_INFO_LOG("Start Init");
+    MEDIA_INFO_LOG("Start PortraitAlbumCloneTest::Init");
     MediaLibraryUnitTestUtils::Init();
     newRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(newRdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(newRdbStore, createTableSqlLists);
     cloneRestorePortrait = make_unique<CloneRestorePortrait>();
 }
 
 void PortraitAlbumCloneTest::TearDownTestCase(void)
 {
-    MEDIA_INFO_LOG("TearDownTestCase");
-    ClearPortraitData();
+    MEDIA_INFO_LOG("PortraitAlbumCloneTest::TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(newRdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     cloneRestorePortrait = nullptr;
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
-void PortraitAlbumCloneTest::SetUp() {}
+void PortraitAlbumCloneTest::SetUp()
+{
+    MEDIA_INFO_LOG("enter PortraitAlbumCloneTest::SetUp");
+    MediaLibraryUnitTestUtils::CleanTestTables(newRdbStore, testTables);
+}
 
 void PortraitAlbumCloneTest::TearDown() {}
 
@@ -255,7 +253,6 @@ void PortraitAlbumCloneTest::VerifyPortraitClusteringRestore(const std::shared_p
 HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_album_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_portrait_album_test_001");
-    ClearPortraitData();
     PortraitAlbumSource portraitAlbumSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, PhotoColumn::PHOTOS_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
@@ -270,7 +267,6 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_albu
 HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_clustering_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_portrait_clustering_test_001");
-    ClearPortraitData();
     PortraitAlbumSource portraitAlbumSource;
     vector<string> tableList = { VISION_FACE_TAG_TABLE, PhotoColumn::PHOTOS_TABLE,
         ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
@@ -286,7 +282,6 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_portrait_clus
 HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_image_face_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_image_face_test_001");
-    ClearPortraitData();
     PortraitAlbumSource portraitAlbumSource;
     vector<string> tableList = { VISION_IMAGE_FACE_TABLE };
     Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
@@ -304,7 +299,6 @@ HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_image_face_te
 HWTEST_F(PortraitAlbumCloneTest, medialibrary_backup_clone_restore_photo_map_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_photo_map_test_001");
-    ClearPortraitData();
     PortraitAlbumSource portraitAlbumSource;
     vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(portraitAlbumSource, TEST_BACKUP_DB_PATH, tableList);
