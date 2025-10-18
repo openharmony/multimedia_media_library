@@ -106,6 +106,7 @@ int32_t CloudMediaScanService::ScanShootingMode(const string& path, CloudMediaSc
     result.shootingMode = data->GetShootingMode();
     result.shootingModeTag = data->GetShootingModeTag();
     result.frontCamera = data->GetFrontCamera();
+    result.subType = data->GetPhotoSubType();
     result.scanSuccess = true;
     return E_OK;
 }
@@ -127,7 +128,7 @@ void CloudMediaScanService::UpdateAndNotifyShootingModeAlbumIfNeeded(
     const CloudMediaScanService::ScanResult& scanResult)
 {
     vector<ShootingModeAlbumType> albumTypes = ShootingModeAlbum::GetShootingModeAlbumOfAsset(
-        -1, "", -1, scanResult.frontCamera, scanResult.shootingMode);
+        scanResult.subType, "", -1, scanResult.frontCamera, scanResult.shootingMode);
 
     vector<string> albumIdsToUpdate;
     for (const auto& type : albumTypes) {
