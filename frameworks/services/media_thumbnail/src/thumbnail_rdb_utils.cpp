@@ -27,6 +27,32 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 
+const std::string SQL_REPAIR_EXIF_ROTATE_WITH_REGENERATE_THUMBNAIL = "\
+    UPDATE Photos \
+    SET \
+        exif_rotate = ?, \
+        thumbnail_ready = 2, \
+        lcd_visit_time = 0, \
+        meta_date_modified = strftime('%s000', 'now'), \
+        dirty = CASE \
+            WHEN dirty IN (0, 2, 6, 8) THEN ? \
+            ELSE dirty \
+        END \
+    WHERE file_id = ? \
+    ;";
+
+const std::string SQL_REPAIR_EXIF_ROTATE_WITHOUT_REGENERATE_THUMBNAIL = "\
+    UPDATE Photos \
+    SET \
+        exif_rotate = ?, \
+        meta_date_modified = strftime('%s000', 'now'), \
+        dirty = CASE \
+            WHEN dirty IN (0, 2, 6, 8) THEN ? \
+            ELSE dirty \
+        END \
+    WHERE file_id = ? \
+    ;";
+
 using HandleFunc = void(*)(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
 const std::unordered_map<std::string, HandleFunc> ThumbnailRdbUtils::RESULT_SET_HANDLER = {
     {MEDIA_DATA_DB_ID, HandleId},
@@ -331,27 +357,28 @@ int32_t ThumbnailRdbUtils::UpdateRdbStoreById(ThumbRdbOpt &opts, const string &i
     return E_OK;
 }
 
-int32_t ThumbnailRdbUtils::UpdateExifRotateAndDirty(const ThumbnailData &data, DirtyType dirtyType)
+int32_t ThumbnailRdbUtils::UpdateExifRotateAndDirty(const ThumbnailData &data, DirtyType dirtyType,
+    bool needRegenerateThumbnail)
 {
     CHECK_AND_RETURN_RET_LOG(dirtyType == DirtyType::TYPE_FDIRTY || dirtyType == DirtyType::TYPE_MDIRTY,
         E_ERR, "Not support update this type dirty, type:%{public}d", dirtyType);
 
-    string dirtyStr = std::to_string(static_cast<int32_t>(dirtyType));
-    std::string updateSql =
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE +
-        " SET " +
-            PhotoColumn::PHOTO_EXIF_ROTATE + " = " + to_string(data.exifRotate) + ", " +
-            PhotoColumn::PHOTO_META_DATE_MODIFIED + " = " + to_string(MediaFileUtils::UTCTimeMilliSeconds()) + ", " +
-            PhotoColumn::PHOTO_DIRTY + " = CASE " +
-                " WHEN " + PhotoColumn::PHOTO_DIRTY + " IN (0, 2, 6, 8) THEN " + dirtyStr +
-                " ELSE " + PhotoColumn::PHOTO_DIRTY +
-            " END " +
-        " WHERE " + MediaColumn::MEDIA_ID + " = " + data.id;
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh =
         std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
     CHECK_AND_RETURN_RET_LOG(assetRefresh != nullptr, E_ERR, "Create assetRefresh failed");
 
-    int32_t ret = assetRefresh->ExecuteSql(updateSql, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+    std::vector<NativeRdb::ValueObject> bindArgs = {
+        data.exifRotate, static_cast<int32_t>(dirtyType), data.id,
+    };
+    int32_t ret = 0;
+    if (needRegenerateThumbnail) {
+        ret = assetRefresh->ExecuteSql(SQL_REPAIR_EXIF_ROTATE_WITH_REGENERATE_THUMBNAIL,
+            bindArgs, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+    } else {
+        ret = assetRefresh->ExecuteSql(SQL_REPAIR_EXIF_ROTATE_WITHOUT_REGENERATE_THUMBNAIL,
+            bindArgs, AccurateRefresh::RdbOperation::RDB_OPERATION_UPDATE);
+    }
+
     CHECK_AND_RETURN_RET_LOG(ret == AccurateRefresh::ACCURATE_REFRESH_RET_OK,
         E_ERR, "Failed to Update, ret: %{public}d", ret);
     assetRefresh->Notify();

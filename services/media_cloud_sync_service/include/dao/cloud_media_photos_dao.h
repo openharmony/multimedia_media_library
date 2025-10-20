@@ -203,7 +203,6 @@ private:
                 thumbnail_ready >= 3 AND \
                 lcd_visit_time >= 2 AND \
                 LENGTH(COALESCE(user_comment,'')) <= 1024 AND \
-                exif_rotate > 0 AND \
                 date_trashed = 0 AND \
                 time_pending = 0 AND \
                 COALESCE(is_temp, 0) = 0 AND \
@@ -266,7 +265,6 @@ private:
                 (dirty = 3 OR dirty = 8) AND \
                 thumbnail_ready >= 3 AND \
                 lcd_visit_time >= 2 AND \
-                exif_rotate > 0 AND\
                 cloud_id <> '' AND \
                 cloud_id IS NOT NULL AND \
                 cloud_id NOT IN ({0}) \
