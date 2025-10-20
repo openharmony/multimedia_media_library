@@ -2195,10 +2195,19 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientation(MediaLibraryCommand &cmd,
         RevertOrientation(fileAsset, currentOrientation);
         return rowId;
     }
-
-    if (orientationUpdated && fileAsset->GetExistCompatibleDuplicate() != 0) {
-        MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
-            to_string(fileAsset->GetId()), __func__);
+    if (orientationUpdated) {
+        ValuesBucket &values = cmd.GetValueBucket();
+        ValueObject valueObject;
+        CHECK_AND_RETURN_RET(values.GetObject(PhotoColumn::PHOTO_ORIENTATION, valueObject), rowId);
+        int32_t cmdOrientation;
+        valueObject.GetInt(cmdOrientation);
+        auto transCodeOrientation = ORIENTATION_MAP.find(cmdOrientation);
+        CHECK_AND_RETURN_RET_LOG(transCodeOrientation != ORIENTATION_MAP.end(), rowId,
+            "transCodeOrientation value is invalid.");
+        TransCodeExifInfo transCodeExifInfo;
+        transCodeExifInfo.orientation = std::to_string(transCodeOrientation->second);
+        MediaLibraryAssetOperations::ModifyTransCodeFileExif(ExifType::EXIF_ORIENTATION,
+            fileAsset->GetFilePath(), transCodeExifInfo, __func__);
     }
     return rowId;
 }
@@ -2233,10 +2242,6 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     if (cmd.GetOprnType() == OperationType::SET_USER_COMMENT) {
         errCode = SetUserComment(cmd, fileAsset);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Edit user comment errCode = %{private}d", errCode);
-        if (fileAsset->GetExistCompatibleDuplicate() != 0) {
-            MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
-                to_string(fileAsset->GetId()), __func__);
-        }
     }
     HandleUpdateIndex(cmd, to_string(fileAsset->GetId()));
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());

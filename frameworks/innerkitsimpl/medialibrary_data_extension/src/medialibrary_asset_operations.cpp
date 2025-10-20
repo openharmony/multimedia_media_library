@@ -117,6 +117,7 @@ constexpr int32_t MAX_PROCESS_NUM = 200;
 constexpr int64_t INVALID_SIZE = 0;
 constexpr int64_t SHARE_UID = 5520;
 static const std::string ANALYSIS_FILE_PATH = "/storage/cloud/files/highlight/music";
+const double TIMER_MULTIPLIER = 60.0;
 
 struct DeletedFilesParams {
     vector<string> ids;
@@ -1472,6 +1473,10 @@ int32_t MediaLibraryAssetOperations::SetUserComment(MediaLibraryCommand &cmd,
     CHECK_AND_RETURN_RET_LOG(err == 0, E_OK, "Image does not exist user comment in exif, no need to modify");
     err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_USER_COMMENT, newUserComment, filePath);
     CHECK_AND_PRINT_LOG(err == 0, "Modify image property user comment failed");
+    TransCodeExifInfo transCodeExifInfo;
+    transCodeExifInfo.userComment = newUserComment;
+    MediaLibraryAssetOperations::ModifyTransCodeFileExif(ExifType::EXIF_USER_COMMENT,
+        filePath, transCodeExifInfo, __func__);
     return E_OK;
 }
 
@@ -3620,6 +3625,81 @@ void MediaLibraryAssetOperations::DeleteTransCodeInfo(const std::string &filePat
     CHECK_AND_RETURN_LOG(result == NativeRdb::E_OK && rowId > 0,
         "Update TransCodePhoto failed. Result %{public}d, in function %{public}s:", result, functionName.c_str());
     MEDIA_INFO_LOG("Successfully delete transcode info, in function %{public}s:", functionName.c_str());
+    return;
+}
+
+string LocationValueToString(double value)
+{
+    string result = "";
+    double positiveValue = value;
+    if (value < 0.0) {
+        positiveValue = 0.0 - value;
+    }
+
+    int degrees = static_cast<int32_t>(positiveValue);
+    result = result + to_string(degrees) + ", ";
+    positiveValue -= static_cast<double>(degrees);
+    positiveValue *= TIMER_MULTIPLIER;
+    int minutes = static_cast<int32_t>(positiveValue);
+    result = result + to_string(minutes) + ", ";
+    positiveValue -= static_cast<double>(minutes);
+    positiveValue *= TIMER_MULTIPLIER;
+    result = result + to_string(positiveValue);
+    return result;
+}
+
+void MediaLibraryAssetOperations::ModifyTransCodeFileExif(const ExifType type, const std::string &path,
+    const TransCodeExifInfo &exifInfo, const std::string &functionName)
+{
+    string transCodePath = PhotoFileUtils::GetTransCodePath(path);
+    MEDIA_DEBUG_LOG("transCodePath path is %{public}s", transCodePath.c_str());
+    if (!MediaFileUtils::IsFileExists(transCodePath)) {
+        MEDIA_DEBUG_LOG("transCodePath path is not exists.");
+        return;
+    }
+    uint32_t err = 0;
+    SourceOptions opts;
+    string extension = MediaFileUtils::GetExtensionFromPath(transCodePath);
+    opts.formatHint = "image/" + extension;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(transCodePath, opts, err);
+    bool cond = (err != 0 || imageSource == nullptr);
+    CHECK_AND_RETURN_LOG(!cond, "Failed to obtain image source, err = %{public}d", err);
+    switch (type) {
+        case ExifType::EXIF_USER_COMMENT: {
+            err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_USER_COMMENT,
+                exifInfo.userComment, transCodePath);
+            CHECK_AND_PRINT_LOG(err == 0, "modify transCode file property user comment failed");
+            break;
+        }
+        case ExifType::EXIF_ORIENTATION: {
+            err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_ORIENTATION,
+                exifInfo.orientation, transCodePath);
+            CHECK_AND_PRINT_LOG(err == 0, "modify transCode file property orientation failed");
+            break;
+        }
+        case ExifType::EXIF_GPS: {
+            uint32_t ret = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE,
+                LocationValueToString(exifInfo.longitude), path);
+            CHECK_AND_PRINT_LOG(ret == E_OK, "modify transCode file property longitude failed");
+
+            ret = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF,
+                exifInfo.longitude > 0.0 ? "E" : "W", path);
+            CHECK_AND_PRINT_LOG(ret == E_OK, "modify transCode file property longitude ref failed");
+
+            ret = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_GPS_LATITUDE,
+                LocationValueToString(exifInfo.latitude), path);
+            CHECK_AND_PRINT_LOG(ret == E_OK, "modify transCode file property latitude failed");
+
+            ret = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF,
+                exifInfo.latitude > 0.0 ? "N" : "S", path);
+            CHECK_AND_PRINT_LOG(ret == E_OK, "modify transCode file property latitude ref failed");
+            break;
+        }
+        default:
+            MEDIA_ERR_LOG("No such exif type");
+            return;
+    }
+    MEDIA_INFO_LOG("Successfully modify transcode file exif, in function %{public}s:", functionName.c_str());
     return;
 }
 } // namespace Media
