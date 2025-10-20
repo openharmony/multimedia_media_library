@@ -2680,9 +2680,6 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     }
 #endif
 
-    if (this->isInvalidateThumb && isThumbnailExist) {
-        IsCoverContentChange(fileId);
-    }
     return E_OK;
 }
 
