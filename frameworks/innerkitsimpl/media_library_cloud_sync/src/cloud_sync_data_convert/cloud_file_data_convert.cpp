@@ -613,7 +613,8 @@ int32_t CloudFileDataConvert::HandleAttachments(
 {
     bool needUseExDir;
     if (upLoadRecord.mediaType == MEDIA_TYPE_IMAGE) {
-        needUseExDir = upLoadRecord.exifRotate > static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+        needUseExDir = upLoadRecord.exifRotate == 0 ?
+            upLoadRecord.orientation != 0 : upLoadRecord.exifRotate > static_cast<int32_t>(ExifRotateType::TOP_LEFT);
     } else {
         needUseExDir = false;
     }

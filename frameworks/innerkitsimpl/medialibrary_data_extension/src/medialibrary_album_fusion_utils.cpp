@@ -120,6 +120,7 @@ static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {MediaColumn::MEDIA_PARENT_ID, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_META_DATE_MODIFIED, ResultSetDataType::TYPE_INT64},
     {PhotoColumn::PHOTO_ORIENTATION, ResultSetDataType::TYPE_INT32},
+    {PhotoColumn::PHOTO_EXIF_ROTATE, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_LATITUDE, ResultSetDataType::TYPE_DOUBLE},
     {PhotoColumn::PHOTO_LONGITUDE, ResultSetDataType::TYPE_DOUBLE},
     {PhotoColumn::PHOTO_HEIGHT, ResultSetDataType::TYPE_INT32},
