@@ -828,6 +828,7 @@ bool MediaFileUtils::ConvertFormatCopy(const std::string &srcFile, const std::st
 
     if (!DecodeEncodeSaveAsset(srcFd.Get(), dstFd.Get(), extension)) {
         MEDIA_ERR_LOG("DecodeEncodeSaveAsset failed");
+        DeleteFile(normalizedDstPath);
         return false;
     }
 
