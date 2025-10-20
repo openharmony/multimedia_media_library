@@ -115,6 +115,7 @@ public:
     int32_t CreateAsset(CreateAssetDto &dto);
     int32_t CreateAssetForApp(CreateAssetDto &dto);
     int32_t CreateAssetForAppWithAlbum(CreateAssetDto &dto);
+    int32_t UpdateExistedTasksTitle(int32_t fileId);
     int32_t SetAssetTitle(int32_t fileId, const std::string &title);
     int32_t SetAssetPending(int32_t fileId, int32_t pending);
     int32_t SetAssetsFavorite(const std::vector<int32_t> &fileIds, int32_t favorite);
