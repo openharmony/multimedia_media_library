@@ -32,7 +32,6 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_transaction.h"
-#include "media_analysis_helper.h"
 #include "photo_album_restore.h"
 #include "photos_dao.h"
 #include "photos_restore.h"
@@ -1846,14 +1845,5 @@ void UpgradeRestore::BatchDeleteEmptyAlbums(const std::vector<int32_t> &batchAlb
     BackupDatabaseUtils::Delete(deletePredicates, deleteRows, mediaLibraryRdb_);
 }
 
-void UpgradeRestore::RestoreSearchIndex()
-{
-    int64_t doIndexStartTime = MediaFileUtils::UTCTimeMilliSeconds();
-    std::vector<std::string> fileIds;
-    MediaAnalysisHelper::StartMediaAnalysisServiceSync(
-        IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX_FULL, fileIds);
-    int64_t doIndexEndTime = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("TimeCost: doIndex cost: %{public}" PRId64, doIndexEndTime - doIndexStartTime);
-}
 } // namespace Media
 } // namespace OHOS
