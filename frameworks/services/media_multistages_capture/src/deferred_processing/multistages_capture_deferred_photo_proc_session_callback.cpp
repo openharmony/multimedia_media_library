@@ -95,15 +95,15 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(
     watch->Notify(notifyUri, NOTIFY_UPDATE);
 }
 
-int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(const string &photoId)
+int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(const int32_t &fileId)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("UpdatePhotoQuality " + photoId);
+    tracer.Start("UpdatePhotoQuality " + std::to_string(fileId));
     MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     NativeRdb::ValuesBucket updateValues;
     updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
     updateCmd.SetValueBucket(updateValues);
-    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
     int32_t updatePhotoQualityResult = DatabaseAdapter::Update(updateCmd);
     return updatePhotoQualityResult;
 }
@@ -144,34 +144,25 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const
     }
 }
 
-std::shared_ptr<NativeRdb::ResultSet> QueryPhotoData(const std::string &imageId)
-{
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = PhotoColumn::PHOTO_ID + " = ? ";
-    vector<string> whereArgs { imageId };
-    cmd.GetAbsRdbPredicates()->SetWhereClause(where);
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
-    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP,
-        PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_DATE_TRASHED };
-    return DatabaseAdapter::Query(cmd, columns);
-}
-
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &imageId, const DpsErrorCode error)
 {
+    MEDIA_ERR_LOG("error %{public}d, photoid: %{public}s", static_cast<int32_t>(error), imageId.c_str());
     switch (error) {
         case ERROR_SESSION_SYNC_NEEDED:
             MultiStagesPhotoCaptureManager::GetInstance().SyncWithDeferredProcSession();
             break;
         case ERROR_IMAGE_PROC_INVALID_PHOTO_ID:
         case ERROR_IMAGE_PROC_FAILED: {
+            auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(imageId);
+            int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
             MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
-            UpdatePhotoQuality(imageId);
+            UpdatePhotoQuality(fileId);
+            MultiStagesCaptureDao().UpdatePhotoDirtyNew(fileId);
             MEDIA_ERR_LOG("error %{public}d, photoid: %{public}s", static_cast<int32_t>(error), imageId.c_str());
             break;
         }
         case ERROR_IMAGE_PROC_ABNORMAL: {
-            auto resultSet = QueryPhotoData(imageId);
+            auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(imageId);
             if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
                 MEDIA_INFO_LOG("result set is empty.");
                 return;
@@ -279,7 +270,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
     MEDIA_INFO_LOG("MultistagesCapture yuv photoid: %{public}s, cloudImageEnhanceFlag: %{public}u enter",
         imageId.c_str(), cloudImageEnhanceFlag);
     tracer.Start("Query");
-    auto resultSet = QueryPhotoData(imageId);
+    auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(imageId);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         tracer.Finish();
         MEDIA_INFO_LOG("result set is empty.");
@@ -395,7 +386,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
     MEDIA_INFO_LOG("photoid: %{public}s, bytes: %{public}ld, cloudImageEnhanceFlag: %{public}u enter",
         imageId.c_str(), bytes, cloudImageEnhanceFlag);
     tracer.Start("Query");
-    auto resultSet = QueryPhotoData(imageId);
+    auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(imageId);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         tracer.Finish();
         MEDIA_INFO_LOG("result set is empty");
