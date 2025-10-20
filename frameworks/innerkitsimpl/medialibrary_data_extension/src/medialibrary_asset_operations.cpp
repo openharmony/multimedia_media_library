@@ -96,6 +96,7 @@
 #include "photo_map_code_operation.h"
 #include "media_file_manager_temp_file_aging_task.h"
 #include "preferences_helper.h"
+#include "file_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -3281,6 +3282,7 @@ int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<Fil
     MEDIA_INFO_LOG("Delete Photo displayName is %{public}s", displayName.c_str());
     MEDIA_DEBUG_LOG("Delete Photo path is %{public}s", filePath.c_str());
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
+    FileUtils::DeleteTempVideoFile(filePath);
     bool res = MediaFileUtils::DeleteFile(filePath);
     CHECK_AND_RETURN_RET_LOG(res, E_HAS_FS_ERROR, "Delete photo file failed, errno: %{public}d", errno);
 
@@ -3362,6 +3364,8 @@ static int32_t DeleteMovingPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
     int32_t originalSubType = fileAsset->GetOriginalSubType();
     if (MovingPhotoFileUtils::IsMovingPhoto(subType, effectMode, originalSubType)) {
         string path = fileAsset->GetPath();
+        int32_t id = fileAsset->GetId();
+        MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(std::to_string(id), path, subType, false);
         string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
         if (!MediaFileUtils::DeleteFile(videoPath)) {
             MEDIA_INFO_LOG("delete video path is %{public}s, errno: %{public}d",
