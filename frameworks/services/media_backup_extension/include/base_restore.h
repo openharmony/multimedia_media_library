@@ -191,6 +191,7 @@ protected:
     void SetParameterForRestore();
     void StopParameterForRestore();
     void UpdateHdrMode(std::vector<FileInfo> &fileInfos);
+    void RestoreSearchIndex();
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};
