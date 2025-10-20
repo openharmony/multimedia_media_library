@@ -236,8 +236,8 @@ void GallerySource::InitGalleryMediaThree()
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(19, 17, ") +
         "'/storage/emulated/0/A/media/Rocket/test/a_media_favorite.mp4', 10865209, 1708600079, 1708600079," +
         "'a_media_favorite', 'NULL', 'a_media_favorite.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, 1, " +
-        "1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/a_media_favorite.mp4', 0, NULL, 0, " +
-        "1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
+        "1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/a_media_favorite.mp4', 0, NULL, " +
+        "0, 1495970415377, 1495970415377, '2024:09:06 17:00:00', NULL, NULL, " +
         "0, 0, NULL, NULL, NULL)");
     galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(20, 18, ") +
         "'/storage/emulated/0/A/media/Baidu/a_media_favorite_baidu.mp4', 10865209, 1708600079, 1708600079," +
