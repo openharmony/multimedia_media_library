@@ -244,9 +244,23 @@ HWTEST_F(ThumbnailRdbUtilsTest, UpdateExifRotateAndDirty_Test_001, TestSize.Leve
     data.id = to_string(id);
     data.exifRotate = 1;
     vector<ThumbnailData> datas { data };
-    auto ret = ThumbnailRdbUtils::UpdateExifRotateAndDirty(data, DirtyType::TYPE_MDIRTY);
+    auto ret = ThumbnailRdbUtils::UpdateExifRotateAndDirty(data, DirtyType::TYPE_MDIRTY, true);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("UpdateExifRotateAndDirty_Test_001 end");
+}
+
+HWTEST_F(ThumbnailRdbUtilsTest, UpdateExifRotateAndDirty_Test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdateExifRotateAndDirty_Test_002");
+    ThumbRdbOpt opts;
+    opts.store = rdbStore;
+    ThumbnailData data;
+    data.id = to_string(id);
+    data.exifRotate = 1;
+    vector<ThumbnailData> datas { data };
+    auto ret = ThumbnailRdbUtils::UpdateExifRotateAndDirty(data, DirtyType::TYPE_MDIRTY, false);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("UpdateExifRotateAndDirty_Test_002 end");
 }
 
 HWTEST_F(ThumbnailRdbUtilsTest, UpdateRdbStoreById_Test_001, TestSize.Level1)

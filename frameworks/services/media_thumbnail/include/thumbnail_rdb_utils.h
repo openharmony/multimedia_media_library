@@ -48,7 +48,8 @@ public:
     static void ParseInt64Result(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int index, int64_t &data);
 
     static bool QueryLocalNoExifRotateInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos);
-    static int32_t UpdateExifRotateAndDirty(const ThumbnailData &data, DirtyType dirtyType);
+    static int32_t UpdateExifRotateAndDirty(const ThumbnailData &data, DirtyType dirtyType,
+        bool needRegenerateThumbnail);
     static int32_t UpdateRdbStoreById(ThumbRdbOpt &opts, const std::string &id, const NativeRdb::ValuesBucket &values);
 
 private:
