@@ -1909,6 +1909,7 @@ static void SetFileAssetByIdV10(int32_t id, const string &networkId, const strin
     fileAsset->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     fileAsset->SetTimePending(UNCREATE_FILE_TIMEPENDING);
     fileAsset->SetUserId(context->userId);
+    CHECK_NULL_PTR_RETURN_VOID(fileAsset, "SetFileAssetByIdV10: fileAsset is nullptr");
     context->fileAsset = move(fileAsset);
 }
 
@@ -1931,6 +1932,7 @@ static void PhotoAccessSetFileAssetByIdV10(int32_t id, const string &networkId, 
     fileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     fileAsset->SetTimePending(UNCREATE_FILE_TIMEPENDING);
     fileAsset->SetUserId(context->userId);
+    CHECK_NULL_PTR_RETURN_VOID(fileAsset, "PhotoAccessSetFileAssetByIdV10: fileAsset is nullptr");
     context->fileAsset = move(fileAsset);
 }
 
@@ -2007,6 +2009,7 @@ static void JSCreateAssetInCallback(napi_env env, MediaLibraryAsyncContext *cont
     unique_ptr<JSAsyncContextOutput> &jsContext)
 {
     napi_value jsFileAsset = nullptr;
+    CHECK_NULL_PTR_RETURN_VOID(context, "JSCreateAssetInCallback context is nullptr");
     if (context->fileAsset == nullptr) {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
             "Obtain file asset failed");
@@ -4978,6 +4981,7 @@ static void GetStoreMediaAssetUri(MediaLibraryAsyncContext *context, string &uri
 static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
 {
     string realPath;
+    CHECK_NULL_PTR_RETURN_VOID(context, "JSGetStoreMediaAssetExecute context is nullptr");
     if (!PathToRealPath(context->storeMediaSrc, realPath)) {
         NAPI_ERR_LOG("src path is not exist, %{public}d", errno);
         context->error = JS_ERR_NO_SUCH_FILE;

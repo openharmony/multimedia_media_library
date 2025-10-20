@@ -552,7 +552,10 @@ static void GetNapiResFromAsset(napi_env env, FetchFileResultAsyncContext *conte
     unique_ptr<JSAsyncContextOutput> &jsContext)
 {
     napi_value jsAsset;
+    CHECK_NULL_PTR_RETURN_VOID(context, "GetNapiResFromAsset async context is nullptr");
     switch (context->objectPtr->fetchResType_) {
+        NAPI_INFO_LOG("GetNapiResFromAsset fetchResType: %{public}d",
+            static_cast<int32_t>(context->objectPtr->fetchResType_));
         case FetchResType::TYPE_FILE:
             if (context->fileAsset != nullptr && context->objectPtr->fetchFileResult_ != nullptr) {
                 context->fileAsset->SetUserId(context->objectPtr->fetchFileResult_->GetUserId());
@@ -572,11 +575,9 @@ static void GetNapiResFromAsset(napi_env env, FetchFileResultAsyncContext *conte
             jsAsset = SmartAlbumNapi::CreateSmartAlbumNapi(env, context->smartAlbumAsset);
             break;
         case FetchResType::TYPE_CUSTOMRECORD:
-            CHECK_NULL_PTR_RETURN_VOID(context, "async context is nullptr");
             jsAsset = PhotoAssetCustomRecordNapi::CreateCustomRecordNapi(env, context->customRecordAsset);
             break;
         case FetchResType::TYPE_ALBUMORDER:
-            CHECK_NULL_PTR_RETURN_VOID(context, "async context is nullptr");
             jsAsset = AlbumOrderNapi::CreateAlbumOrderNapi(env, context->albumOrder);
             break;
         default:
