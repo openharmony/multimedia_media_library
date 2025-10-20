@@ -26,6 +26,7 @@
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_mock_tocken.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
@@ -40,7 +41,9 @@ using namespace std;
 using namespace testing::ext;
 
 static shared_ptr<MediaLibraryRdbStore> rdbStore;
-static std::atomic<int> num{ 0 };
+static std::atomic<int> num{0};
+static uint64_t g_shellToken = 0;
+static MediaLibraryMockHapToken* mockToken = nullptr;
 
 static constexpr int64_t SEC_TO_MSEC = 1e3;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
@@ -289,6 +292,16 @@ void BackgroundCloudBatchSelectedFileProcessorTest::SetUpTestCase()
     MEDIA_INFO_LOG("BackgroundCloudBatchSelectedFileProcessorTest SetUpTestCase");
 
     MediaLibraryUnitTestUtils::Init();
+    g_shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
+ 
+    vector<string> perms;
+    perms.push_back("ohos.permission.GET_NETWORK_INFO");
+    // mock  tokenID
+    mockToken = new MediaLibraryMockHapToken("com.ohos.medialibrary.medialibrarydata", perms);
+    for (auto &perm : perms) {
+        MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
+    }
     rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(rdbStore, nullptr);
 }
@@ -300,6 +313,14 @@ void BackgroundCloudBatchSelectedFileProcessorTest::TearDownTestCase()
     BackgroundCloudBatchSelectedFileProcessor::currentDownloadIdFileInfoMap_.clear();
     BackgroundCloudBatchSelectedFileProcessor::downloadResult_.clear();
     BackgroundCloudBatchSelectedFileProcessor::downloadFileIdAndCount_.clear();
+    if (mockToken != nullptr) {
+    delete mockToken;
+    mockToken = nullptr;
+    }
+ 
+    MediaLibraryMockTokenUtils::ResetToken();
+    SetSelfTokenID(g_shellToken);
+    EXPECT_EQ(g_shellToken, IPCSkeleton::GetSelfTokenID());
     std::this_thread::sleep_for(chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
@@ -848,6 +869,7 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_AutoResumeAction
     BackgroundCloudBatchSelectedFileProcessor::SetBatchDownloadProcessRunningStatus(true);
     BackgroundCloudBatchSelectedFileProcessor::StopBatchDownloadResourcesTimer(false);
     BackgroundCloudBatchSelectedFileProcessor::LaunchAutoResumeBatchDownloadProcessor();
+    BackgroundCloudBatchSelectedFileProcessor::AutoResumeAction();
     int32_t waitingCount = QueryTasksCountByStatus(Media::BatchDownloadStatusType::TYPE_WAITING);
     EXPECT_EQ(waitingCount, 10);
     MEDIA_INFO_LOG("Bcbsfpt_AutoResumeAction_Test_001 End");
