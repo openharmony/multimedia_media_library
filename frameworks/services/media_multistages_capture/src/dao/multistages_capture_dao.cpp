@@ -45,7 +45,7 @@ int32_t MultiStagesCaptureDao::UpdatePhotoDirtyNew(const int32_t fileId)
     return isDirtyResult;
 }
 
-std::shared_ptr<NativeRdb::ResultSet> MultiStagesCaptureRequestTaskManager::QueryPhotoDataById(
+std::shared_ptr<NativeRdb::ResultSet> MultiStagesCaptureDao::QueryPhotoDataById(
     const std::string &imageId)
 {
     int32_t fileId = MultiStagesCaptureRequestTaskManager::GetProcessingFileId(imageId);
