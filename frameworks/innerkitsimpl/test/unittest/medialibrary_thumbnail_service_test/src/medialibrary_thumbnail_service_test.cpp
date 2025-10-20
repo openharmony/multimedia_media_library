@@ -1458,7 +1458,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_TrySavePict
     thumbData.dateModified = "data_modified";
     string tempOutputPath = "path";
     auto ret = IThumbnailHelper::TrySavePicture(thumbData, true, tempOutputPath);
-    EXPECT_NE(ret, true);
+    EXPECT_EQ(ret, false);
 }
 
 void executeFunction(std::shared_ptr<ThumbnailTaskData> &data)
