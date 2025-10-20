@@ -209,7 +209,6 @@ private:
                 COALESCE(is_temp, 0) = 0 AND \
                 file_id NOT IN ({0}) \
             ORDER BY size ASC \
-            LIMIT ?  \
         ) \
         SELECT DATA.*, \
             PhotoAlbum.cloud_id AS album_cloud_id, \
@@ -217,6 +216,9 @@ private:
         FROM DATA \
             LEFT JOIN PhotoAlbum \
             ON DATA.owner_album_id = PhotoAlbum.album_id \
+        WHERE \
+            COALESCE(PhotoAlbum.dirty, 0) <> 1 \
+        LIMIT ? \
         ;";
     const std::string SQL_PHOTOS_GET_COPY_RECORDS = "\
         WITH DATA AS \
