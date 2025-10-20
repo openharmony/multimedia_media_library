@@ -45,7 +45,8 @@ int32_t MultiStagesCaptureDao::UpdatePhotoDirtyNew(const int32_t fileId)
     return isDirtyResult;
 }
 
-std::shared_ptr<NativeRdb::ResultSet> MultiStagesCaptureRequestTaskManager::QueryPhotoDataById(const std::string &imageId)
+std::shared_ptr<NativeRdb::ResultSet> MultiStagesCaptureRequestTaskManager::QueryPhotoDataById(
+    const std::string &imageId)
 {
     int32_t fileId = MultiStagesCaptureRequestTaskManager::GetProcessingFileId(imageId);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
@@ -53,7 +54,7 @@ std::shared_ptr<NativeRdb::ResultSet> MultiStagesCaptureRequestTaskManager::Quer
         MEDIA_WARN_LOG("get fileId from fileId2PhotoId_ failed");
         cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, imageId);
     } else {
-       cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+        cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
     }
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
         PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP,
