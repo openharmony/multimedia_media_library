@@ -46,7 +46,7 @@ public:
     void SetProcessImageDoneCallback(const ProcessDoneHandler &func);
 
 private:
-    EXPORT int32_t UpdatePhotoQuality(const std::string &photoId);
+    EXPORT int32_t UpdatePhotoQuality(const int32_t &fileId);
     EXPORT void UpdatePhotoQuality(const int32_t &fileId, NativeRdb::ValuesBucket &updateValues);
     EXPORT void UpdateCEAvailable(const int32_t &fileId, uint32_t cloudImageEnhanceFlag,
         NativeRdb::ValuesBucket &updateValues, int32_t modifyType = 0);
