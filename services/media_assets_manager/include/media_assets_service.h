@@ -180,6 +180,7 @@ public:
     int32_t RemoveDatabaseDFX(const std::string &betaId);
 
 private:
+    int32_t SubmitMetadataChanged(const int32_t fileId);
     MediaAssetsRdbOperations rdbOperation_;
 };
 } // namespace OHOS::Media
