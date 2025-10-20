@@ -51,6 +51,7 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     this->CreateRelativeAlbumOfGalleryAlbum(store);
     this->AddRelativeBucketIdColumn(store);
     this->AddUserDisplayLevelIntoMergeTag(store);
+    this->AddHdcUniqueIdIntoGalleryMedia(store);
     return NativeRdb::E_OK;
 }
 
@@ -250,6 +251,25 @@ int32_t GalleryDbUpgrade::AddUserDisplayLevelIntoMergeTag(NativeRdb::RdbStore &s
         this->UPDATE_USER_DISPLAY_LEVEL_SQL.c_str());
 
     MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddUserDisplayLevelIntoMergeTag success");
+    return ret;
+}
+
+/**
+ * @brief Upgrade gallery_media table in gallery.db.
+ */
+int32_t GalleryDbUpgrade::AddHdcUniqueIdIntoGalleryMedia(NativeRdb::RdbStore &store)
+{
+    bool cond = this->dbUpgradeUtils_.IsColumnExists(store, "gallery_media", "hdc_unique_id");
+    CHECK_AND_RETURN_RET(!cond, NativeRdb::E_OK);
+    std::string sql = this->SQL_GALLERY_MEDIA_TABLE_ADD_HDC_UNIQUE_ID_COLUMN;
+    int32_t ret = store.ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Media_Restore: GalleryDbUpgrade::AddHdcUniqueIdIntoGalleryMedia failed,"
+        "ret=%{public}d, sql=%{public}s",
+        ret,
+        sql.c_str());
+
+    MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddHdcUniqueIdIntoGalleryMedia success");
     return ret;
 }
 }  // namespace DataTransfer
