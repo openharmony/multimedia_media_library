@@ -905,6 +905,8 @@ function parsePhotoPickerSelectOption(args) {
       config.type = select;
       config.parameters.uri = select;
       config.parameters.maxSelectCount = option.maxSelectNumber;
+      config.parameters.maxPhotoSelectNumber = option.maxPhotoSelectNumber;
+      config.parameters.maxVideoSelectNumber = option.maxVideoSelectNumber;
     }
     if (option.MIMEType && PHOTO_VIEW_MIME_TYPE_MAP.has(option.MIMEType)) {
       config.parameters.filterMediaType = PHOTO_VIEW_MIME_TYPE_MAP.get(option.MIMEType);
@@ -1058,6 +1060,8 @@ function FileSizeFilterArray() {
 function BaseSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
+  this.maxPhotoSelectNumber = -1;
+  this.maxVideoSelectNumber = -1;
   this.isSearchSupported = true;
   this.isPhotoTakingSupported = true;
   this.isPreviewForSingleSelectionSupported = true;
