@@ -29,6 +29,7 @@
 #include "cloud_sync_utils.h"
 #include "directory_ex.h"
 #include "extension_context.h"
+#include "media_analysis_helper.h"
 #include "media_column.h"
 #include "media_log.h"
 #include "media_file_utils.h"
@@ -2280,6 +2281,16 @@ void BaseRestore::UpdateHdrMode(std::vector<FileInfo> &fileInfos)
         int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, values, predicates);
         CHECK_AND_RETURN_LOG(changeRows >= 0 && ret == E_OK, "failed to update columns");
     }
+}
+
+void BaseRestore::RestoreSearchIndex()
+{
+    int64_t doIndexStartTime = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<std::string> fileIds;
+    MediaAnalysisHelper::StartMediaAnalysisServiceSync(
+        IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX_FULL, fileIds);
+    int64_t doIndexEndTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: doIndex cost: %{public}" PRId64, doIndexEndTime - doIndexStartTime);
 }
 } // namespace Media
 } // namespace OHOS

@@ -145,7 +145,6 @@ protected:
     std::vector<int32_t> GetLocalPhotoMinIds();
     void SetOrientationAndExifRotate(FileInfo &info, NativeRdb::ValuesBucket &value,
         std::unique_ptr<Metadata> &data) override;
-    void RestoreSearchIndex();
 
 protected:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
