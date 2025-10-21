@@ -41,7 +41,7 @@ int32_t MultiStagesCaptureDao::UpdatePhotoDirtyNew(const int32_t fileId)
     updateValuesDirty.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
     updateCmd.SetValueBucket(updateValuesDirty);
     auto isDirtyResult = DatabaseAdapter::Update(updateCmd);
-    CHECK_AND_PRINT_LOG(isDirtyResult > 0, "update dirty flag fail, fileId: %{public}d", fileId);
+    CHECK_AND_PRINT_LOG(isDirtyResult != E_OK, "update dirty flag fail, fileId: %{public}d", fileId);
     return isDirtyResult;
 }
 
