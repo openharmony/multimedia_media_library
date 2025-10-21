@@ -128,6 +128,8 @@ int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Pic
     }
     size_t sizeHeic = -1;
     size_t pos = sourcePath.find_last_of('.');
+    CHECK_AND_RETURN_RET_LOG(pos != string::npos, -1,
+        "Failed to parse the sourcePath: %{public}s", sourcePath.c_str());
     string pathPos = sourcePath.substr(0, pos);
     string pathHeic = pathPos + ".heic";
     MediaFileUtils::GetFileSize(pathHeic, sizeHeic);
