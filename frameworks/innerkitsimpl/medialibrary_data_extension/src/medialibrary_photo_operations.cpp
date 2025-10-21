@@ -2648,6 +2648,7 @@ static int32_t UpdateMimeType(const int32_t &fileId, const std::string mimeType)
 static void GetModityExtensionPath(std::string &path, std::string &modifyFilePath, const std::string &extension)
 {
     size_t pos = path.find_last_of('.');
+    CHECK_AND_RETURN_LOG(pos != string::npos, "Failed to parse the path");
     modifyFilePath = path.substr(0, pos) + extension;
 }
 
