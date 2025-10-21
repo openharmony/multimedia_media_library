@@ -56,6 +56,7 @@
 #include "dfx_refresh_manager.h"
 #include "media_file_utils.h"
 #include "refresh_business_name.h"
+#include "media_old_albums_column.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -1133,6 +1134,17 @@ int32_t MediaAlbumsService::GetAlbumsByIds(GetAlbumsByIdsDto &getAlbumsByIdsDto,
     }
 
     return E_OK;
+}
+
+std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::GetClonedAlbumUris(GetClonedAlbumUrisDto &dto)
+{
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
+    NativeRdb::RdbPredicates predicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, TabOldAlbumsColumn::OLD_ALBUM_TABLE);
+    auto resultSet = PhotoMapOperations::QueryPhotoAssets(predicates, dto.columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to query album assets");
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+    return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 }
 
 int32_t MediaAlbumsService::GetPhotoAlbumObject(
