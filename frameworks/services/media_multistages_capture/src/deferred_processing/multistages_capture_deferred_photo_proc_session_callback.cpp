@@ -340,6 +340,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateHighQualityPictur
     updateCmd.SetValueBucket(updateValues);
     updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
     int32_t updatePhotoResult = DatabaseAdapter::Update(updateCmd);
+    MultiStagesCaptureDao().UpdatePhotoDirtyNew(fileId);
     CHECK_AND_RETURN_LOG(updatePhotoResult >= 0, "UpdateHighQualityPictureInfo fail, fileId: %{public}d", fileId);
 }
 
