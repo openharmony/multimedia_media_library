@@ -475,6 +475,10 @@ struct FileInfo {
     bool needUpdate {false};
     int32_t storyChosen {0};
     bool isLivePhoto {false};
+    std::string inode;
+    std::string storagePath;
+    int32_t fileSourceType {0};
+    bool isSameFileSourceTypeMatched {true};
 };
 
 struct AlbumInfo {
