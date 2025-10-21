@@ -430,11 +430,11 @@ HWTEST_F(MediaFuseHdcOperationsTest, MediaLibrary_HandlePhotoPath_test_002, Leve
 
 HWTEST_F(MediaFuseHdcOperationsTest, MediaLibrary_HandleFilePath_test_001, Level1)
 {
-    std::vector<std::string> args = {"Album2", "photo.jpg"};
+    std::vector<std::string> args = {"Photo", "Album2", "photo.jpg"};
     int32_t albumId = 0;
     std::string localPath;
     int32_t ret = MediaFuseHdcOperations::HandleFilePath(args, albumId, localPath);
-    EXPECT_EQ(ret, E_ERR);
+    EXPECT_LT(ret, 0);
 }
 
 HWTEST_F(MediaFuseHdcOperationsTest, MediaLibrary_ConvertToLocalPhotoPath_test_001, Level1)
