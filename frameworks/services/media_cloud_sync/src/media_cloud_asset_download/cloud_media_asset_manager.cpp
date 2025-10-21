@@ -883,7 +883,9 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia(CloudMediaRetainTy
         CHECK_AND_PRINT_LOG(ret == OHOS::Media::E_OK, "hdc force retain. ret %{public}d.", ret);
     }
     if (CloudSyncHelper::GetInstance()->IsSyncSwitchOpen()) {
+        MEDIA_INFO_LOG("cloud sync manager start reset cursor");
         FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor(true);
+        MEDIA_INFO_LOG("cloud sync manager end reset cursor");
     }
     SetSouthDeviceSyncSwitchStatus(CloudSyncStatus::SYNC_SWITCHED_OFF);
 

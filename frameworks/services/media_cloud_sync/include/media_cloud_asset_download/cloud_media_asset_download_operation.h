@@ -34,6 +34,7 @@
 #include "medialibrary_command.h"
 #include "medialibrary_rdbstore.h"
 #include "net_connect_observer.h"
+#include "safe_map.h"
 
 namespace OHOS {
 namespace Media {
@@ -54,7 +55,7 @@ class CloudMediaAssetDownloadOperation {
 public:
     struct DownloadFileData {
         std::vector<std::string> pathVec;
-        std::map<std::string, int64_t> fileDownloadMap;
+        SafeMap<std::string, int64_t> fileDownloadMap;
         std::vector<std::string> batchFileIdNeedDownload;
         int64_t batchSizeNeedDownload = 0;
         int64_t batchCountNeedDownload = 0;
@@ -104,7 +105,7 @@ public:
 
 private:
     void ClearData(DownloadFileData &data);
-    bool IsDataEmpty(const DownloadFileData &data);
+    bool IsDataEmpty(DownloadFileData &data);
     EXPORT int32_t DoRelativedRegister();
     int32_t SetDeathRecipient();
     bool IsProperFgTemperature();

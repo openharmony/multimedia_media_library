@@ -853,7 +853,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     ret = operation->DoRecoverExecute();
     EXPECT_EQ(ret, E_ERR);
 
-    operation->dataForDownload_.fileDownloadMap["test001.jpg"] = 1024;
+    operation->dataForDownload_.fileDownloadMap.EnsureInsert("test001.jpg", 1024);
     ret = operation->DoRecoverExecute();
     EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_004 End");
@@ -869,7 +869,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     operation->taskStatus_ = CloudMediaAssetTaskStatus::PAUSED;
     ret = operation->ManualActiveRecoverTask(static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_GENTLE));
     EXPECT_EQ(ret, E_OK);
-    operation->dataForDownload_.fileDownloadMap["test001.jpg"] = 1024;
+    operation->dataForDownload_.fileDownloadMap.EnsureInsert("test001.jpg", 1024);
     ret = operation->ManualActiveRecoverTask(static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE));
     EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_005 End");
@@ -892,7 +892,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     ret = operation->PassiveStatusRecoverTask(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
     EXPECT_EQ(ret, E_OK);
     operation->taskStatus_ = CloudMediaAssetTaskStatus::PAUSED;
-    operation->dataForDownload_.fileDownloadMap["test001.jpg"] = 1024;
+    operation->dataForDownload_.fileDownloadMap.EnsureInsert("test001.jpg", 1024);
     operation->pauseCause_ = CloudMediaTaskPauseCause::WIFI_UNAVAILABLE;
     operation->downloadType_ = CloudMediaDownloadType::DOWNLOAD_FORCE;
     ret = operation->PassiveStatusRecoverTask(CloudMediaTaskRecoverCause::NETWORK_NORMAL);
@@ -931,7 +931,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
 {
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_008 Start");
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation = CloudMediaAssetDownloadOperation::GetInstance();
-    operation->dataForDownload_.fileDownloadMap["test001.jpg"] = 1024;
+    operation->dataForDownload_.fileDownloadMap.EnsureInsert("test001.jpg", 1024);
     operation->downloadType_ = CloudMediaDownloadType::DOWNLOAD_GENTLE;
     operation->isBgDownloadPermission_ = true;
     int32_t ret = operation->PassiveStatusRecover();
