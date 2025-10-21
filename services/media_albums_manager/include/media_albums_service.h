@@ -52,6 +52,8 @@
 #include "get_albums_by_ids_dto.h"
 #include "get_photo_album_object_dto.h"
 #include "get_photo_album_object_vo.h"
+#include "get_cloned_album_uris_dto.h"
+#include "get_cloned_album_uris_vo.h"
 
 namespace OHOS::Media {
 class MediaAlbumsService {
@@ -100,6 +102,7 @@ public:
     int32_t SetPortraitRelationship(const int32_t albumId, const std::string& relationship, const int32_t isMe);
     int32_t GetPortraitRelationship(const int32_t albumId, GetRelationshipRespBody& respBody);
     int32_t ChangeRequestSetHighlightAttribute(ChangeRequestSetHighlightAttributeDto &dto);
+    std::shared_ptr<DataShare::DataShareResultSet> GetClonedAlbumUris(GetClonedAlbumUrisDto &dto);
 
 private:
     int32_t SetPortraitAlbumName(const ChangeRequestSetAlbumNameDto& dto);
