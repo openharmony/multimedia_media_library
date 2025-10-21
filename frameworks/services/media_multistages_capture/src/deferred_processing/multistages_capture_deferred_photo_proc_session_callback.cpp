@@ -154,6 +154,10 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &i
         case ERROR_IMAGE_PROC_INVALID_PHOTO_ID:
         case ERROR_IMAGE_PROC_FAILED: {
             auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(imageId);
+            if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+                MEDIA_INFO_LOG("result set is empty.");
+                return;
+            }
             int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
             MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
             UpdatePhotoQuality(fileId);
