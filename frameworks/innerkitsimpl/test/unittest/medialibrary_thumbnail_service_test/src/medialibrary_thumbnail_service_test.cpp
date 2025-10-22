@@ -489,7 +489,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_022, T
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::LCD;
     auto res = IThumbnailHelper::GenMonthAndYearAstcData(data, type);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_023, TestSize.Level1)
