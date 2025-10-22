@@ -17,6 +17,7 @@
 
 #include "media_log.h"
 #include "multistages_capture_request_task_manager.h"
+#include "medialibrary_errno.h"
 
 using namespace std;
 
@@ -48,6 +49,7 @@ void MultiStagesCaptureRequestTaskManager::UpdatePhotoInProgress(const string &p
         return;
     }
     shared_ptr<LowQualityPhotoInfo> photo = photoIdInProcess_.at(photoId);
+    CHECK_AND_RETURN_LOG((photo != nullptr), "UpdatePhotoInProgress failed, photo is nullptr");
     photo->state = (photo->state == PhotoState::NORMAL) ? PhotoState::TRASHED : PhotoState::NORMAL;
     photoIdInProcess_[photoId] = photo;
 }
@@ -79,6 +81,7 @@ int32_t MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(c
     }
 
     shared_ptr<LowQualityPhotoInfo> photo = photoIdInProcess_.at(photoId);
+    CHECK_AND_RETURN_RET_LOG((photo != nullptr), 0, "UpdatePhotoInProcessRequestCount failed, photo is nullptr");
     photo->requestCount += (int32_t) requestType;
     photoIdInProcess_[photoId] = photo;
     return photo->requestCount;
@@ -91,6 +94,7 @@ bool MultiStagesCaptureRequestTaskManager::ClearPhotoInProcessRequestCount(const
         return false;
     }
     shared_ptr<LowQualityPhotoInfo> photo = photoIdInProcess_.at(photoId);
+    CHECK_AND_RETURN_RET_LOG((photo != nullptr), false, "ClearPhotoInProcessRequestCount failed, photo is nullptr");
     photo->requestCount = 0;
     photoIdInProcess_[photoId] = photo;
     return true;
@@ -113,6 +117,18 @@ std::string MultiStagesCaptureRequestTaskManager::GetProcessingPhotoId(int32_t f
         return "";
     }
     return fileId2PhotoId_[fileId];
+}
+
+int32_t MultiStagesCaptureRequestTaskManager::GetProcessingFileId(const std::string &photoId)
+{
+    unique_lock<mutex> lock(mutex_);
+    for (auto iter = fileId2PhotoId_.begin(); iter != fileId2PhotoId_.end(); ++iter) {
+        if (iter->second == photoId) {
+            return iter->first;
+        }
+    }
+    MEDIA_INFO_LOG("photo id (%{public}s) not in progress.", photoId.c_str());
+    return E_ERR;
 }
 
 } // Media

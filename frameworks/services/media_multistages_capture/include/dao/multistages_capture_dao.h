@@ -18,10 +18,13 @@
 
 #include <string>
 
+#include "rdb_store.h"
+
 namespace OHOS::Media {
 class MultiStagesCaptureDao {
 public:
     int32_t UpdatePhotoDirtyNew(const int32_t fileId);
+    std::shared_ptr<NativeRdb::ResultSet> QueryPhotoDataById(const std::string &imageId);
 };
 }  // namespace OHOS::Media
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTI_STAGES_CAPTURE_DAO_H
