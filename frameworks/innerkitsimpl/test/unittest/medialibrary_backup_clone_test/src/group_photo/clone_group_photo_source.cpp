@@ -139,6 +139,7 @@ void CloneGroupPhotoSource::InsertAnalysisPhotoMap(std::shared_ptr<NativeRdb::Rd
     rdbPtr->ExecuteSql(INSERT_ANALYSIS_PHOTO_MAP + VALUES_BEGIN + "1, 2, 2" + VALUES_END);
     rdbPtr->ExecuteSql(INSERT_ANALYSIS_PHOTO_MAP + VALUES_BEGIN + "2, 1, 1" + VALUES_END);
     rdbPtr->ExecuteSql(INSERT_ANALYSIS_PHOTO_MAP + VALUES_BEGIN + "2, 2, 2" + VALUES_END);
+    rdbPtr->ExecuteSql(INSERT_ANALYSIS_PHOTO_MAP + VALUES_BEGIN + "3, 1, 1" + VALUES_END);
 }
 
 }
