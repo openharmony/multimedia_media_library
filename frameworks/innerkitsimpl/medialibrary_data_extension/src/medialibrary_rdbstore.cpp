@@ -5492,6 +5492,17 @@ static void AddAnalysisProgressColumns(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("end add analysis progress columns");
 }
 
+static void CreateBatchDownloadRecords(RdbStore &store, int32_t version)
+{
+    MEDIA_INFO_LOG("create batchdownload records begin");
+    const vector<string> executeSqlStrs = {
+        DownloadResourcesColumn::CREATE_TABLE,
+        DownloadResourcesColumn::INDEX_DRTR_ID_STATUS,
+    };
+    ExecSqlsWithDfx(executeSqlStrs, store, version);
+    MEDIA_INFO_LOG("create batchdownload records end");
+}
+
 static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_TAB_OLD_ALBUM &&
@@ -5510,6 +5521,12 @@ static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS, true)) {
         AddAnalysisProgressColumns(store, VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_TAB_ANALYSIS_PROGRESS_COLUMNS, true);
+    }
+    
+    if (oldVersion < VERSION_ADD_BATCH_DOWNLOAD &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_BATCH_DOWNLOAD, true)) {
+        CreateBatchDownloadRecords(store, VERSION_ADD_BATCH_DOWNLOAD);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_BATCH_DOWNLOAD, true);
     }
 }
 
