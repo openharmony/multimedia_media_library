@@ -115,7 +115,6 @@ void MediaLibraryCustomRestoreTest::TearDownTestCase(void)
         MediaLibraryUnitTestUtils::Init();
     }
 
-    system("rm -rf /storage/cloud/files/*");
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
@@ -136,6 +135,16 @@ void MediaLibraryCustomRestoreTest::SetUp()
 
 void MediaLibraryCustomRestoreTest::TearDown(void) {}
 
+HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("custom_restore_test_001 Start");
+    CustomRestore customRestore("/Share", "test", true);
+    std::string dbPath = "com.test.share.instantshare_1760778333022_db/media_info.db";
+    auto result = customRestore.Restore();
+    EXPECT_NE(result, E_OK);
+    MEDIA_INFO_LOG("custom_restore_test_001 End");
+}
+
 HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("custom_restore_test_002 Start");
@@ -143,15 +152,6 @@ HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_test_002, TestSize.Level0
     auto result = customRestore.Restore();
     EXPECT_NE(result, E_OK);
     MEDIA_INFO_LOG("custom_restore_test_002 End");
-}
-
-HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_test_004, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("custom_restore_test_004 Start");
-    CustomRestore customRestore("/Share", "test", true);
-    auto result = customRestore.Restore();
-    EXPECT_NE(result, E_OK);
-    MEDIA_INFO_LOG("custom_restore_test_004 End");
 }
 
 HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_stop_test, TestSize.Level0)

@@ -1523,6 +1523,7 @@ int32_t MediaAssetsService::GetUrisByOldUrisInner(GetUrisByOldUrisInnerDto& getU
 int32_t MediaAssetsService::Restore(const RestoreDto &dto)
 {
     NativeRdb::ValuesBucket values;
+    values.PutString("dbPath", dto.dbPath);
     values.PutString("albumLpath", dto.albumLpath);
     values.PutString("keyPath", dto.keyPath);
     values.PutString("isDeduplication", dto.isDeduplication ? "true" : "false");
