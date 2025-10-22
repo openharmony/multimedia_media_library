@@ -473,7 +473,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_020, T
     ThumbnailData data;
     data.isLocalFile = false;
     auto res = IThumbnailHelper::GenThumbnailEx(opts, data);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_021, TestSize.Level1)
