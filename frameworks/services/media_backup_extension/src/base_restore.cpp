@@ -846,8 +846,13 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
     BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
     
     if (sceneCode == I_PHONE_CLONE_RESTORE && fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        string movSrcPath = fileInfo.filePath.substr(0, fileInfo.filePath.find_last_of(".")) + ".MOV";
-        string movTargetPath = localPath.substr(0, localPath.find_last_of(".")) + ".mp4";
+        size_t destPos = fileInfo.filePath.find_last_of(".");
+        CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, false, "fileInfo.filePath not contain '.'");
+        string movSrcPath = fileInfo.filePath.substr(0, destPos) + ".MOV";
+
+        destPos = localPath.find_last_of(".");
+        CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, false, "localPath not contain '.'");
+        string movTargetPath = localPath.substr(0, destPos) + ".mp4";
         
         errCode = BackupFileUtils::MoveFile(movSrcPath, movTargetPath, sceneCode);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, false,
