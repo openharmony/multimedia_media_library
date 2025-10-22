@@ -23,7 +23,7 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
-constexpr int32_t DOWNLOAD_SELECTED_INTERVAL = 5 * 1000;  // 5 seconds
+constexpr int32_t DOWNLOAD_SELECTED_INTERVAL = 2 * 1000;  // 2 seconds
 
 class BackgroundCloudBatchSelectedFileProcessor {
 public:

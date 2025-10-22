@@ -309,6 +309,7 @@ void BackgroundCloudBatchSelectedFileProcessor::DownloadSelectedBatchResources()
         MEDIA_INFO_LOG("-- BatchSelectFileDownload AutoStop Stop process --");
         return;
     }
+    RemoveFinishedResult();
     ControlDownloadLimit();
     std::string resultStr;
     GetCurrentRoundInDownloadingFileIdList(resultStr);
@@ -343,7 +344,6 @@ void BackgroundCloudBatchSelectedFileProcessor::DownloadSelectedBatchResources()
         pendingURIs.size(), GetDownloadQueueSizeWithLock());
     // 组装5个任务并开始
     AddTasksAndStarted(pendingURIs);
-    RemoveFinishedResult();
     // 滑动后处理
     MEDIA_INFO_LOG("-- BatchSelectFileDownload Start downloading batch Round END --");
 }
@@ -715,6 +715,9 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallbac
         int32_t ret = UpdateDBProgressInfoForFileId(fileId, percent, -1,
             static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL));
         MEDIA_INFO_LOG("BatchSelectFileDownload FailedCallback UpdateDBProgress, ret: %{public}d", ret);
+        downloadLock.lock();
+        downloadFileIdAndCount_.erase(fileId);
+        downloadLock.unlock();
         // 检查点 批量下载 通知应用 notify type 2 失败
         CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s",
             fileId.c_str());
@@ -747,6 +750,7 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedStoppedCallba
     downloadResult_[fileId] = BatchDownloadStatus::STOPPED;
     currentDownloadIdFileInfoMap_.erase(progress.downloadId);
     downloadFileIdAndCount_.erase(fileId);
+    downloadResult_.erase(fileId);
     downloadLock.unlock();
     MEDIA_ERR_LOG("download stopped, uri: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
     // 更新任务表
