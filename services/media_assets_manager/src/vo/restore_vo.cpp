@@ -21,11 +21,11 @@ namespace OHOS::Media {
 
 bool RestoreReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    return ITypesUtil::Unmarshal(parcel, albumLpath, keyPath, bundleName, appName, appId, isDeduplication);
+    return ITypesUtil::Unmarshal(parcel, dbPath, albumLpath, keyPath, bundleName, appName, appId, isDeduplication);
 }
 
 bool RestoreReqBody::Marshalling(MessageParcel &parcel) const
 {
-    return ITypesUtil::Marshal(parcel, albumLpath, keyPath, bundleName, appName, appId, isDeduplication);
+    return ITypesUtil::Marshal(parcel, dbPath, albumLpath, keyPath, bundleName, appName, appId, isDeduplication);
 }
 }  // namespace OHOS::Media

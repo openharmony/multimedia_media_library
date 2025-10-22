@@ -4456,6 +4456,7 @@ int32_t MediaLibraryPhotoOperations::ProcessCustomRestore(MediaLibraryCommand& c
     string bundleName;
     string appName;
     string appId;
+    string dbPath;
     CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "albumLpath", albumLpath),
         E_INVALID_VALUES, "Failed to get albumLpath: %{public}s", albumLpath.c_str());
     CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "keyPath", keyPath),
@@ -4470,8 +4471,10 @@ int32_t MediaLibraryPhotoOperations::ProcessCustomRestore(MediaLibraryCommand& c
     CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, "appName", appName),
         E_INVALID_VALUES, "Failed to get appName: %{public}s", appName.c_str());
     GetStringFromValuesBucket(values, "appId", appId);
+    GetStringFromValuesBucket(values, "dbPath", dbPath);
 
-    RestoreTaskInfo restoreTaskInfo = {.albumLpath = albumLpath,
+    RestoreTaskInfo restoreTaskInfo = {.dbPath = dbPath,
+        .albumLpath = albumLpath,
         .keyPath = keyPath,
         .isDeduplication = isDeduplication == "true",
         .bundleName = bundleName,

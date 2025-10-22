@@ -21,6 +21,7 @@
 namespace OHOS::Media {
 class RestoreDto {
 public:
+    std::string dbPath;
     std::string albumLpath;
     std::string keyPath;
     std::string bundleName;
