@@ -727,6 +727,7 @@ static void FillFrameIndex(std::shared_ptr<AVMetadataHelper> &avMetadataHelper,
     CHECK_AND_RETURN_LOG(err == E_OK, "Failed to get frame index, err: %{public}d", err);
     data->SetFrameIndex(static_cast<int32_t>(frameIndex));
 }
+// LCOV_EXCL_STOP
 
 int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, int32_t scene)
 {
@@ -785,6 +786,7 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
     return E_OK;
 }
 
+// LCOV_EXCL_START
 int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> &data,
     bool isCameraShotMovingPhoto)
 {
