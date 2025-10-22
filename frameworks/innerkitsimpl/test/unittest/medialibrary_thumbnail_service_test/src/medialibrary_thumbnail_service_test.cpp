@@ -481,7 +481,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_021, T
     ThumbRdbOpt opts;
     ThumbnailData data;
     auto res = IThumbnailHelper::GenThumbnailEx(opts, data);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_022, TestSize.Level1)
