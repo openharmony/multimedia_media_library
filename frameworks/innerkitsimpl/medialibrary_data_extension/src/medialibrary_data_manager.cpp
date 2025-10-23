@@ -2131,6 +2131,7 @@ static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibrar
     shared_ptr<NativeRdb::ResultSet> resultSet)
 {
     int32_t count = 0;
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "resultSet is nullptr");
     int32_t retCount = resultSet->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(retCount == E_SUCCESS && count >= 0, E_ERR, "Failed to GetRowCount");
     if (count == 0) {
