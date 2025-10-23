@@ -10527,6 +10527,22 @@ bool MediaLibraryNapi::isSucceedSetting(napi_env env, napi_value &members, napi_
     return true;
 }
 
+static void checkKeyInEnum(napi_env env, std::string inputKey) {
+    static const std::unordered_set<std::string> enumValues = []() {
+        std::unordered_set<std::string> values;
+        values.reserve(IMAGEVIDEOKEY_ENUM_PROPERTIES.size());
+        for (const auto& pair : IMAGEVIDEOKEY_ENUM_PROPERTIES) {
+            values.insert(pair.second);
+        }
+        return values;
+    } ();
+    if (enumValues.find(inputKey) != enumValues.end()) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+    } else {
+        NapiError::ThrowError(env, JS_E_INPUT_INVALID);
+    }
+}
+
 napi_value MediaLibraryNapi::ProcessSingleAsset(napi_env env, napi_value asset, std::vector<std::string>& inputKeys)
 {
     FileAssetNapi *obj = nullptr;
@@ -10550,7 +10566,7 @@ napi_value MediaLibraryNapi::ProcessSingleAsset(napi_env env, napi_value asset, 
             continue;
         }
         if (obj->fileAssetPtr->GetMemberMap().count(inputKey) == 0) {
-            NapiError::ThrowError(env, JS_E_INPUT_INVALID);
+            checkKeyInEnum(env, inputKey);
             return nullptr;
         }
         if (FileAssetNapi::IsSpecialKey(inputKey)) {
