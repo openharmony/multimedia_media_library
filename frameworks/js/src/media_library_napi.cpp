@@ -959,6 +959,17 @@ static napi_value CreateNumberEnumProperty(napi_env env, vector<string> properti
     return result;
 }
 
+static napi_value CreateNumberEnumPropertyByMap(napi_env env, vector<pair<string, int32_t>> properties, napi_ref &ref)
+{
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_create_object(env, &result));
+    for (size_t i = 0; i < properties.size(); i++) {
+        NAPI_CALL(env, AddIntegerNamedProperty(env, result, properties[i].first, properties[i].second));
+    }
+    NAPI_CALL(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &ref));
+    return result;
+}
+
 static napi_status AddStringNamedProperty(napi_env env, napi_value object,
     const string &name, string enumValue)
 {
@@ -9794,7 +9805,7 @@ napi_value MediaLibraryNapi::CreatePositionTypeEnum(napi_env env)
 
 napi_value MediaLibraryNapi::CreatePhotoSubTypeEnum(napi_env env)
 {
-    return CreateNumberEnumProperty(env, photoSubTypeEnum, sPhotoSubType_);
+    return CreateNumberEnumPropertyByMap(env, PHOTO_SUB_TYPE_ENUM_PROPERTIES, sPhotoSubType_);
 }
 
 napi_value MediaLibraryNapi::CreatePhotoPermissionTypeEnum(napi_env env)
