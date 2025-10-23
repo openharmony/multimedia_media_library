@@ -67,6 +67,7 @@ constexpr int32_t JS_E_NAMETOOLONG    = UFM_JS_ERR(UFM_SYSCAP_BASE, 36);
 constexpr int32_t JS_E_INPUT_INVALID = UFM_JS_ERR(MEDIA_LIBRARY_ERR_CODE, 104);
 constexpr int32_t JS_E_INIT_FAIL = UFM_JS_ERR(MEDIA_LIBRARY_ERR_CODE, 107);
 constexpr int32_t JS_E_PARAM_INVALID = UFM_JS_ERR(MEDIA_LIBRARY_ERR_CODE, 151);
+constexpr int32_t JS_E_OPR_TYPE_NOT_SUPPORT = UFM_JS_ERR(MEDIA_LIBRARY_ERR_CODE, 201);
 constexpr int32_t JS_E_INNER_FAIL = UFM_JS_ERR(MEDIA_LIBRARY_ERR_CODE, 301);
 // trans server errorCode to js Error code
 const std::unordered_map<int, int> trans2JsError = {
@@ -101,6 +102,7 @@ const std::unordered_map<int, std::string> jsErrMap = {
     { JS_E_PARAM_INVALID,       "invalid parameter" },
     { JS_E_INNER_FAIL,          "medialibrary inner fail" },
     { JS_E_INPUT_INVALID,       "invalid input parameter" },
+    { JS_E_OPR_TYPE_NOT_SUPPORT, "operation type not support"}
 };
 
 const std::unordered_map<int32_t, int32_t> ClientErrTable {

@@ -12,41 +12,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "get_database_dfx_vo.h"
+#include "acquire_debug_database_vo.h"
 
 #include "media_log.h"
 
 namespace OHOS::Media {
 
-bool GetDatabaseDFXReqBody::Unmarshalling(MessageParcel &parcel)
+bool AcquireDebugDatabaseReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool status = parcel.ReadString(this->betaId);
-    CHECK_AND_RETURN_RET_LOG(status, status, "Read betaId failed");
+    bool status = parcel.ReadString(this->betaIssueId);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.ReadString(this->betaScenario);
+    CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 
-bool GetDatabaseDFXReqBody::Marshalling(MessageParcel &parcel) const
+bool AcquireDebugDatabaseReqBody::Marshalling(MessageParcel &parcel) const
 {
-    bool status = parcel.WriteString(this->betaId);
-    CHECK_AND_RETURN_RET_LOG(status, status, "Write betaId failed");
+    bool status = parcel.WriteString(this->betaIssueId);
+    CHECK_AND_RETURN_RET(status, status);
+    status = parcel.WriteString(this->betaScenario);
+    CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 
-bool GetDatabaseDFXRespBody::Unmarshalling(MessageParcel &parcel)
+bool AcquireDebugDatabaseRespBody::Unmarshalling(MessageParcel &parcel)
 {
     bool status = parcel.ReadString(this->fileName);
-    CHECK_AND_RETURN_RET_LOG(status, status, "Read fileName failed");
+    CHECK_AND_RETURN_RET(status, status);
     status = parcel.ReadString(this->fileSize);
-    CHECK_AND_RETURN_RET_LOG(status, status, "Read fileSize failed");
+    CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 
-bool GetDatabaseDFXRespBody::Marshalling(MessageParcel &parcel) const
+bool AcquireDebugDatabaseRespBody::Marshalling(MessageParcel &parcel) const
 {
     bool status = parcel.WriteString(this->fileName);
-    CHECK_AND_RETURN_RET_LOG(status, status, "Write fileName failed");
+    CHECK_AND_RETURN_RET(status, status);
     status = parcel.WriteString(this->fileSize);
-    CHECK_AND_RETURN_RET_LOG(status, status, "Write fileSize failed");
+    CHECK_AND_RETURN_RET(status, status);
     return true;
 }
 }  // namespace OHOS::Media

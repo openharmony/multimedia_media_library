@@ -31,6 +31,7 @@
 #include "tokenid_kit.h"
 #include "bundle_mgr_proxy.h"
 #include "bundle_info.h"
+#include "parameters.h"
 
 namespace OHOS {
 namespace Media {
@@ -515,6 +516,12 @@ bool PermissionUtils::CheckCallerPermission(const vector<string> &perms)
 uint32_t PermissionUtils::GetTokenId()
 {
     return IPCSkeleton::GetCallingTokenID();
+}
+
+bool PermissionUtils::IsBetaVersion()
+{
+    std::string versionType = system::GetParameter(CONST_LOGSYSTEM_VERSIONTYPE, "unknown");
+    return versionType == "beta";
 }
 
 bool PermissionUtils::IsSystemApp()

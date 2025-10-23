@@ -183,16 +183,18 @@ HWTEST_F(MediaLibraryObjectTest, medialib_OpenFile_test_001, TestSize.Level1)
 HWTEST_F(MediaLibraryObjectTest, medialib_OpenFile_test_002, TestSize.Level1)
 {
     MediaLibraryUnitTestUtils::InitUnistore();
-    string path = "/data/storage/el2/log/logpack/media_library_21.db.zip";
+    string destDir = "/data/storage/el2/log/logpack";
+    string path = destDir + "/media_library_21.db.zip";
+    MediaFileUtils::CreateDirectory(destDir);
     MediaFileUtils::CreateAsset(path);
 
     string mode = "r";
-    string uriString = "file://media/open_db_dfx/21";
+    string uriString = "file://media/open_debug_db/21";
     Uri uri(uriString);
     MediaLibraryCommand cmd(uri, OperationType::OPEN);
     int32_t ret = MediaLibraryObjectUtils::OpenFile(cmd, mode);
     EXPECT_GT(ret, 0);
-    MediaFileUtils::DeleteFile(path);
+    MediaFileUtils::DeleteDir(destDir);
     ret = MediaLibraryObjectUtils::OpenFile(cmd, mode);
     EXPECT_LT(ret, 0);
     MediaLibraryUnistoreManager::GetInstance().Stop();
