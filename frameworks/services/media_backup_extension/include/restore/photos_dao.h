@@ -32,6 +32,7 @@ public:
         int32_t cleanFlag {0};
         int32_t position {0};
         int32_t subtype {0};
+        int32_t fileSourceType {0};
         bool IsValid()
         {
             return !data.empty() || fileId != 0;
