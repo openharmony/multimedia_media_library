@@ -409,9 +409,9 @@ CloneRestoreConfigInfo CloneRestore::GetCurrentDeviceCloneConfigInfo()
     CloneRestoreConfigInfo cloneConfigInfo;
     cloneConfigInfo.switchStatus = SettingsDataManager::GetPhotosSyncSwitchStatus();
     bool isSyncSwitchStatusValid = (cloneConfigInfo.switchStatus != SwitchStatus::NONE);
-    bool isDeviceIdValid = true;
-    if (cloneConfigInfo.switchStatus == SwitchStatus::HDC &&
-        !(isDeviceIdValid = SettingsDataManager::GetHdcDeviceId(cloneConfigInfo.deviceId))) {
+    bool isDeviceIdValid = (cloneConfigInfo.switchStatus == SwitchStatus::HDC ?
+        SettingsDataManager::GetHdcDeviceId(cloneConfigInfo.deviceId) : true);
+    if (!isDeviceIdValid) {
         MEDIA_ERR_LOG("fail to get deviceId of current device");
         cloneConfigInfo.switchStatus = SwitchStatus::NONE;
         cloneConfigInfo.deviceId = "";
