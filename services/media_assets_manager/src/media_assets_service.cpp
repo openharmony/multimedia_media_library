@@ -1687,58 +1687,49 @@ int32_t MediaAssetsService::CanSupportedCompatibleDuplicate(const std::string &b
     return E_OK;
 }
 
-static int32_t WriteDFXTaskSet(const string& betaId)
+static int32_t WriteBetaDebugTaskSet(const string& betaIssueId)
 {
     std::lock_guard<std::mutex> lock(DFXTaskMutex);
-    CHECK_AND_RETURN_RET(DFXTaskSet.count(betaId) == 0, E_DFX_TASK_IS_EXIST);
-    DFXTaskSet.insert(betaId);
+    CHECK_AND_RETURN_RET(DFXTaskSet.count(betaIssueId) == 0, E_ACQ_BETA_TASK_FAIL);
+    DFXTaskSet.insert(betaIssueId);
     return E_SUCCESS;
 }
 
-static int32_t EraseDFXTaskSet(const string& betaId)
+static int32_t EraseBetaDebugTaskSet(const string& betaIssueId)
 {
     std::lock_guard<std::mutex> lock(DFXTaskMutex);
-    CHECK_AND_RETURN_RET(DFXTaskSet.count(betaId) != 0, E_DFX_TASK_NOT_EXIST);
-    DFXTaskSet.erase(betaId);
+    CHECK_AND_RETURN_RET(DFXTaskSet.count(betaIssueId) != 0, E_ACQ_BETA_TASK_FAIL);
+    DFXTaskSet.erase(betaIssueId);
     return E_SUCCESS;
 }
 
-int32_t MediaAssetsService::GetDatabaseDFX(const string &betaId, GetDatabaseDFXRespBody &respBody)
+int32_t MediaAssetsService::AcquireDebugDatabase(const string &betaIssueId, const std::string &betaScenario,
+    AcquireDebugDatabaseRespBody &respBody)
 {
-    MEDIA_INFO_LOG("MediaAssetsService::GetDatabaseDFX enter");
-    int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
-    int32_t status = WriteDFXTaskSet(betaId);
-    CHECK_AND_RETURN_RET_LOG(status == E_SUCCESS, status, "Get Database DFX Task is exist, betaId = %{public}s",
-        betaId.c_str());
+    MEDIA_INFO_LOG("MediaAssetsService::AcquireDebugDatabase start");
+    int32_t status = WriteBetaDebugTaskSet(betaIssueId);
+    CHECK_AND_RETURN_RET_LOG(status == E_SUCCESS, status, "Acquire atabase task is exist, betaIssueId = %{public}s",
+        betaIssueId.c_str());
     auto dataManager = MediaLibraryDataManager::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_FAIL, "dataManager is nullptr");
+    CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_INNER_FAIL, "dataManager is nullptr");
 
-    std::string fileName = "";
-    std::string fileSize = "";
-    int32_t ret = dataManager->GetDatabaseDFX(betaId, fileName, fileSize);
-    if (ret != E_SUCCESS) {
-        MEDIA_ERR_LOG("failed to get databaseDFX, errCode = %{public}d", ret);
-        CHECK_AND_PRINT_LOG(EraseDFXTaskSet(betaId) == E_SUCCESS, "failed to erase DFX task");
-        return ret;
-    }
+    std::string fileName;
+    std::string fileSize;
+    int32_t ret = dataManager->AcquireDebugDatabase(betaIssueId, betaScenario, fileName, fileSize);
+    CHECK_AND_PRINT_LOG(EraseBetaDebugTaskSet(betaIssueId) == E_SUCCESS, "Failed to erase beta task");
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to acquire debug database, errCode = %{public}d", ret);
     respBody.fileName = fileName;
     respBody.fileSize = fileSize;
-
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("Get %{public}s bytes DatabaseFile success, cost %{public}s ms", fileSize.c_str(),
-        std::to_string(end -begin).c_str());
     return E_SUCCESS;
 }
 
-int32_t MediaAssetsService::RemoveDatabaseDFX(const string &betaId)
+int32_t MediaAssetsService::ReleaseDebugDatabase(const string &betaIssueId)
 {
-    MEDIA_INFO_LOG("MediaAssetsService::RemoveDatabaseDFX enter");
+    MEDIA_INFO_LOG("MediaAssetsService::ReleaseDebugDatabase start");
     auto dataManager = MediaLibraryDataManager::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_FAIL, "dataManager is nullptr");
-    int32_t ret = dataManager->RemoveDatabaseDFX(betaId);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "failed to remove databaseDFX, errCode = %{public}d", ret);
-    int32_t status = EraseDFXTaskSet(betaId);
-    CHECK_AND_RETURN_RET_LOG(status == E_SUCCESS, status, "failed to erase DFX task");
+    CHECK_AND_RETURN_RET_LOG(dataManager != nullptr, E_INNER_FAIL, "dataManager is nullptr");
+    int32_t ret = dataManager->ReleaseDebugDatabase(betaIssueId);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to release debug database");
     return E_SUCCESS;
 }
 } // namespace OHOS::Media

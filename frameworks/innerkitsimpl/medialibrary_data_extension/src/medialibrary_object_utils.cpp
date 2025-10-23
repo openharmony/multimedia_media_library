@@ -776,13 +776,14 @@ static int32_t OpenDocument(const string &uri, const string &mode)
     return MediaFileUtils::OpenFile(realPath, mode);
 }
 
-static int32_t OpenDatabaseDFX(const string &uri, const string &mode)
+static int32_t OpenDebugDatabase(const string &uri, const string &mode)
 {
-    string betaId = uri.substr(uri.find_last_of("/") + 1);
-    string realPath = "/data/storage/el2/log/logpack/media_library_" + betaId + ".db.zip";
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsSystemApp(), E_CHECK_SYSTEMAPP_FAIL, "Caller not systemapp");
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsBetaVersion(), E_BETA_VERSION_FAIL, "Caller not beta version");
+    string betaIssueId = uri.substr(uri.find_last_of("/") + 1);
+    string realPath = "/data/storage/el2/log/logpack/media_library_" + betaIssueId + ".db.zip";
     int32_t fileFd = MediaFileUtils::OpenFile(realPath, mode);
-    MEDIA_INFO_LOG("MediaFileUtils::OpenFile fileFd = %{public}d", fileFd);
-    CHECK_AND_RETURN_RET_LOG(fileFd >= 0, fileFd, "open filefd %{public}d, errno %{public}d", fileFd, errno);
+    CHECK_AND_RETURN_RET_LOG(fileFd >= 0, E_OPR_DEBUG_DB_FAIL, "Failed to open debug db, errno %{public}d", errno);
     return fileFd;
 }
 
@@ -833,8 +834,8 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
         return ThumbnailService::GetInstance()->GetKeyFrameThumbnailFd(uriString, true);
     } else if (IsDocumentUri(uriString)) {
         return OpenDocument(uriString, mode);
-    } else if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_DB_DFX) {
-        return OpenDatabaseDFX(uriString, mode);
+    } else if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_DEBUG_DB) {
+        return OpenDebugDatabase(uriString, mode);
     }
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromUri(uriString);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI, "Failed to obtain path from Database");
