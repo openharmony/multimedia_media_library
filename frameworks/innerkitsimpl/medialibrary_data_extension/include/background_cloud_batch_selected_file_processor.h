@@ -57,6 +57,8 @@ public:
     EXPORT static void AutoStopAction(BatchDownloadAutoPauseReasonType &autoPauseReason);
     EXPORT static void AutoResumeAction();
     EXPORT static void NotifyRefreshProgressInfo();
+    EXPORT static void TriggerAutoResumeBatchDownloadResourceCheck();
+    EXPORT static void TriggerAutoStopBatchDownloadResourceCheck();
 
     enum BatchDownloadStatus : int32_t {
         INIT = 0,
