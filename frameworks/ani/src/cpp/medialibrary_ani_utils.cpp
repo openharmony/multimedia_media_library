@@ -66,14 +66,14 @@ struct AniArrayOperator {
 static ani_status InitAniArrayOperator(ani_env *env, AniArrayOperator &arrayOperator)
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
-    static const std::string className = "escompat.Array";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &(arrayOperator.cls)), "Can't find escompat.Array.");
+    static const std::string className = "std.core.Array";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &(arrayOperator.cls)), "Can't find std.core.Array.");
 
     CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "<ctor>", "i:", &(arrayOperator.ctorMethod)),
-        "Can't find method <ctor> in escompat.Array.");
+        "Can't find method <ctor> in std.core.Array.");
 
     CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "$_set", "iY:",
-        &(arrayOperator.setMethod)), "Can't find method $_set in escompat.Array.");
+        &(arrayOperator.setMethod)), "Can't find method $_set in std.core.Array.");
     return ANI_OK;
 }
 
@@ -82,12 +82,12 @@ ani_boolean MediaLibraryAniUtils::IsArray(ani_env *env, ani_object object)
     CHECK_COND_RET(env != nullptr, ANI_FALSE, "env is nullptr");
     ani_boolean isArray = ANI_FALSE;
     ani_class cls {};
-    static const std::string className = "escompat.Array";
-    CHECK_COND_RET(ANI_OK == env->FindClass(className.c_str(), &cls), isArray, "Can't find escompat.Array.");
+    static const std::string className = "std.core.Array";
+    CHECK_COND_RET(ANI_OK == env->FindClass(className.c_str(), &cls), isArray, "Can't find std.core.Array.");
 
     ani_static_method isArrayMethod {};
     CHECK_COND_RET(ANI_OK == env->Class_FindStaticMethod(cls, "isArray", nullptr, &isArrayMethod), isArray,
-        "Can't find method isArray in escompat.Array.");
+        "Can't find method isArray in std.core.Array.");
 
     CHECK_COND_RET(ANI_OK == env->Class_CallStaticMethod_Boolean(cls, isArrayMethod, &isArray, object),
         isArray, "Call method isArray failed.");
@@ -626,16 +626,16 @@ ani_status MediaLibraryAniUtils::MakeAniArray(ani_env* env, uint32_t size, ani_o
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(size < std::numeric_limits<int>::max(), ANI_ERROR, "size is too large");
     ani_class cls {};
-    static const std::string className = "escompat.Array";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Array");
+    static const std::string className = "std.core.Array";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Array");
 
     ani_method arrayConstructor {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "i:", &arrayConstructor),
-        "Can't find method <ctor> in escompat.Array");
+        "Can't find method <ctor> in std.core.Array");
 
     CHECK_STATUS_RET(env->Object_New(cls, arrayConstructor, &aniArray, size), "New aniArray failed");
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "iY:", &setMethod),
-        "Can't find method $_set in escompat.Array.");
+        "Can't find method $_set in std.core.Array.");
     return ANI_OK;
 }
 

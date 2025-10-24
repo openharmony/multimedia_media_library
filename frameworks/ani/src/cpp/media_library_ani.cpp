@@ -518,19 +518,19 @@ static ani_status SetValueArray(ani_env *env, const char *fieldStr, const std::l
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_class cls {};
-    static const std::string className = "escompat.Array";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find escompat.Array");
+    static const std::string className = "std.core.Array";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find std.core.Array");
 
     ani_method arrayConstructor {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "i:", &arrayConstructor),
-        "Can't find method <ctor> in escompat.Array");
+        "Can't find method <ctor> in std.core.Array");
 
     ani_object aniArray {};
     CHECK_STATUS_RET(env->Object_New(cls, arrayConstructor, &aniArray, list.size()), "New aniArray failed");
 
     ani_method setMethod {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "iY:", &setMethod),
-        "Can't find method $_set in escompat.Array.");
+        "Can't find method $_set in std.core.Array.");
 
     ani_int elementIndex = 0;
     for (auto uri : list) {
