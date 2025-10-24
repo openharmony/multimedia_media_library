@@ -20,6 +20,7 @@
 #include "datashare_abs_result_set.h"
 #include "datashare_predicates.h"
 #include "file_uri.h"
+#include "ipc_skeleton.h"
 #include "iservice_registry.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -721,6 +722,15 @@ int32_t MediaLibraryExtendManager::GetUrisFromFusePaths(const std::vector<std::s
         }
     }
     return E_SUCCESS;
+}
+
+int32_t MediaLibraryExtendManager::CheckCloudDownloadPermission(uint32_t tokenId,
+    const std::vector<std::string> &uris, std::vector<bool> &result, const std::vector<uint32_t> &flags)
+{
+    uint64_t tokenIdEx = IPCSkeleton::GetCallingFullTokenID();
+    CHECK_AND_RETURN_RET_LOG(TokenIdKit::IsSystemAppByFullTokenID(tokenIdEx),
+        E_ERR, "only invoke by systemapp");
+    return CheckPhotoUriPermission(tokenId, uris, result, flags);
 }
 } // namespace Media
 } // namespace OHOS
