@@ -96,7 +96,7 @@ public:
             Photos.height,Photos.hidden,Photos.is_auto,Photos.is_favorite,Photos.lcd_size,Photos.media_type, \
             Photos.mime_type,Photos.moving_photo_effect_mode,Photos.orientation,Photos.original_subtype, \
             Photos.photo_quality,Photos.position,Photos.shooting_mode_tag,Photos.size,Photos.subtype, \
-            Photos.thumb_size,Photos.thumbnail_ready,Photos.title,Photos.width," + 
+            Photos.thumb_size,Photos.thumbnail_ready,Photos.title,Photos.width," +
             SQL_PORTRAIT_ALBUM_COLUM_TOTAL_SCORE + " AS total_score \
         FROM " + SQL_PORTRAIT_ALBUM_TABLE_JOIN + " \
         WHERE " + SQL_PORTRAIT_ALBUM_CONDITION + " \
