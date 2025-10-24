@@ -218,6 +218,10 @@ int32_t PortraitAlbumUtils::GetAlbumIdsByType(std::shared_ptr<NativeRdb::RdbStor
         if (resultSet->GetColumnIndex("album_id", columnIndex) == NativeRdb::E_OK) {
             resultSet->GetInt(columnIndex, albumId);
             albumIds.push_back(std::to_string(albumId));
+        } else {
+            MEDIA_ERR_LOG("Get column index for album_id failed");
+            resultSet->Close();
+            return E_ERR;
         }
     }
 
