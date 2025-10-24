@@ -426,7 +426,7 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetSelec
     double maxScore = 250;
     double minScore = 0;
     if (!dto.filter.empty()) {
-        CHECK_AND_RETURN_RET_LOG(nlohmann::json::accept(dto.filter), nullptr, 
+        CHECK_AND_RETURN_RET_LOG(nlohmann::json::accept(dto.filter), nullptr,
             "failed to verify the filter format");
         nlohmann::json filterJson = nlohmann::json::parse(dto.filter.c_str());
         std::string fileId = filterJson["currentFileId"];

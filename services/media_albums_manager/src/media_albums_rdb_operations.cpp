@@ -39,6 +39,7 @@
 #include "dfx_refresh_manager.h"
 #include "refresh_business_name.h"
 #include "vision_affective_column.h"
+#include "portrait_album_dao.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
