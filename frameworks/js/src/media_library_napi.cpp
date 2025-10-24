@@ -9710,12 +9710,18 @@ static void PhotoAccessGetAlbumsByOldUrisExecute(napi_env env, void *data)
 
         if (it == processing.end()) {
             processing.emplace_back(row);
-        } else if (it->album_subtype != row.album_subtype) {
-            processing.emplace_back(row);
-        } else if (row.clone_sequence > it->clone_sequence) {
-            *it = row;
+        } else {
+            char itSubtype = (it->album_subtype >= TabOldAlbumsColumn::IsPhotoOrAnalysis && it->album_subtype < TabOldAlbumsColumn::MaxValue) ? TabOldAlbumsColumn::IS_ANALYSIS_TABLE : TabOldAlbumsColumn::IS_PHOTOS_TABLE;
+            char rowSubtype = (row.album_subtype >= TabOldAlbumsColumn::IsPhotoOrAnalysis && row.album_subtype < TabOldAlbumsColumn::MaxValue) ? TabOldAlbumsColumn::IS_ANALYSIS_TABLE : TabOldAlbumsColumn::IS_PHOTOS_TABLE;
+        
+            if (itSubtype != rowSubtype) {
+                processing.emplace_back(row);
+            } else if (row.clone_sequence > it->clone_sequence) {
+                *it = row;
+            }
         }
     }
+    resultSet->Close();
     context->uriAlbumMap = prepareMapping(processing, oldAlbumData);
 }
 
