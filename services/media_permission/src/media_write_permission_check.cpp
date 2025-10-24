@@ -32,6 +32,7 @@ static const int32_t GRANT_PERMISSION_CALLING_UID = 5523; // foundation调用方
 static const int32_t ROOT_UID = 0;
 static const int32_t HDC_SHELL_UID = 2000;
 static const int32_t SANDBOX_UID = 3076;
+static const int32_t CLOUDSERVICE_UID = 1009;
 static const std::unordered_map<int32_t, bool> SAVE_COMPONENT_VERIFICATION = {
     { static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET), true },
     { static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_CREATE_ASSET), true },
@@ -115,8 +116,8 @@ int32_t GrantWritePermCheck::CheckPermission(uint32_t businessCode, const Permis
         MEDIA_INFO_LOG("Not grant operation");
         return E_PERMISSION_DENIED;
     }
-    if (getCallingUidPtr() == GRANT_PERMISSION_CALLING_UID ||
-        getCallingUidPtr() == ROOT_UID || getCallingUidPtr() == SANDBOX_UID) {
+    int32_t uid = getCallingUidPtr();
+    if (uid == GRANT_PERMISSION_CALLING_UID || uid == ROOT_UID || uid == SANDBOX_UID || uid == CLOUDSERVICE_UID) {
         MEDIA_INFO_LOG("GrantWritePermCheck callingUid check success");
         return E_SUCCESS;
     }

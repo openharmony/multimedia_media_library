@@ -12,19 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef OHOS_MEDIALIBRARY_PERMISSION_POLICY_TYPE_H
-#define OHOS_MEDIALIBRARY_PERMISSION_POLICY_TYPE_H
+#ifndef OHOS_MEDIALIBRARY_SYSTEM_INNERAPI_PERMISSION_CHECK_H
+#define OHOS_MEDIALIBRARY_SYSTEM_INNERAPI_PERMISSION_CHECK_H
+
+#include "media_permission_check.h"
 
 namespace OHOS::Media {
-enum PermissionType {
-    SYSTEMAPI_PERM,
-    PRIVATE_PERM,
-    READ_PERM,
-    WRITE_PERM,
-    CLOUDFILE_SYNC,
-    CLOUD_READ,
-    CLOUD_WRITE,
-    SYSTEMINNERAPI_PERM,
+class SystemInnerApiPermissionCheck : public PermissionCheck {
+public:
+    int32_t CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data) override;
 };
 } // namespace OHOS::Media
-#endif  // OHOS_MEDIALIBRARY_PERMISSION_POLICY_TYPE_H
+#endif  // OHOS_MEDIALIBRARY_SYSTEM_INNERAPI_PERMISSION_CHECK_H
