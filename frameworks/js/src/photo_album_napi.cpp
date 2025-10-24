@@ -1873,14 +1873,26 @@ static napi_value checkArgsGetSelectedPhotoAssets(
         bool succ;
         size_t ignore;
         tie(succ, tmp, ignore) = MediaLibraryNapiUtils::ToUTF8String(env, context->argv[PARAM1]);
-        if (succ) {
-            context->filter = string(tmp.get());
-        } else {
-            return result;
-        }
+        CHECK_COND_RET(succ, nullptr, "parse ARGS_TWO fail");
+        context->filter = string(tmp.get());
+        size_t maxFilterSize = 255;
+        CHECK_COND_RET(context->filter.size() <= maxFilterSize, nullptr, "ARGS_TWO length beyond limit");
+        CHECK_COND_RET(nlohmann::json::accept(context->filter), nullptr, "failed to verify the filter format");
+        nlohmann::json filterJson = nlohmann::json::parse(context->filter.c_str());
+        std::string fileId = "currentFileId";
+        size_t sizeLimit = 1;
+        bool cond = filterJson.size() == sizeLimit && filterJson.contains(fileId)
+            && filterJson[fileId].is_number_integer();
+        CHECK_COND_RET(cond, nullptr, "ARGS_TWO must be a JSON object with exactly one key : currentFileId "
+            "and the value of currentFileId is integer");
     }
  
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_RET(photoAlbum != nullptr, nullptr, "failed to parse album");
+    bool isPortraitAlbum =
+        photoAlbum->IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType());
+    CHECK_COND_RET(isPortraitAlbum, nullptr, "this is not portrait album");
+    
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(
         env, context->fetchColumn, PhotoColumn::IsPhotoColumn, NapiAssetType::TYPE_PHOTO));
  
