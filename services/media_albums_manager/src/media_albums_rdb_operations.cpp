@@ -152,9 +152,9 @@ shared_ptr<NativeRdb::ResultSet> MediaAlbumsRdbOperations::RemoveAssetsGetAlbumI
 
 int32_t MediaAlbumsRdbOperations::GetSelectedPortraitAlbumPredicatesByEmotion(AlbumGetSelectedAssetsDto &dto)
 {
-    string column = "( CASE WHEN " + VISION_AFFECTIVE_TABLE + "." + VALENCE + " >= 0.5 AND " + VISION_AFFECTIVE_TABLE +
-                    "." + AROUSAL + " = 0.1 THEN 1 WHEN " + VISION_AFFECTIVE_TABLE + "." + VALENCE + " = 0.1 OR " +
-                    VISION_AFFECTIVE_TABLE + "." + AROUSAL + " >= 0.5 THEN -1 ELSE 0 END ) * 1000 + " +
+    string column = "( CASE WHEN " + VISION_AFFECTIVE_TABLE + "." + VALENCE + " >= 0 AND " + VISION_AFFECTIVE_TABLE +
+                    "." + AROUSAL + " = 9 THEN 1 WHEN " + VISION_AFFECTIVE_TABLE + "." + VALENCE + " = -1 OR " +
+                    VISION_AFFECTIVE_TABLE + "." + AROUSAL + " <= 5 THEN -1 ELSE 0 END ) * 1000 + " +
                     VISION_IMAGE_FACE_TABLE + "." + FACE_AESTHETICS_SCORE + " AS total_score";
     dto.columns.push_back(column);
  
