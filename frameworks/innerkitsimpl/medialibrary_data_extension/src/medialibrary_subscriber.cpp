@@ -234,7 +234,8 @@ MedialibrarySubscriber::~MedialibrarySubscriber()
 
 void CloudMediaAssetUnlimitObserver::OnChange(const ChangeInfo &changeInfo)
 {
-    CHECK_AND_RETURN(subscriber_ != nullptr);
+    auto subscriber = subscriber_.lock();
+    CHECK_AND_RETURN(subscriber != nullptr);
 
     std::list<Uri> uris = changeInfo.uris_;
     for (auto &uri : uris) {
@@ -270,7 +271,8 @@ bool MedialibrarySubscriber::Subscribe(void)
     options.enabled_ = true;
     subscriber->cloudHelper_ = DataShare::DataShareHelper::Creator(CLOUD_DATASHARE_URI, options);
     CHECK_AND_RETURN_RET_LOG(subscriber->cloudHelper_ != nullptr, E_ERR, "cloudHelper_ is null.");
-    subscriber->CloudMediaAssetUnlimitObserver_ = std::make_shared<CloudMediaAssetUnlimitObserver>(subscriber);
+    std::weak_ptr<MedialibrarySubscriber> subscriberWeakPtr(subscriber);
+    subscriber->CloudMediaAssetUnlimitObserver_ = std::make_shared<CloudMediaAssetUnlimitObserver>(subscriberWeakPtr);
     CHECK_AND_RETURN_RET_LOG(subscriber->CloudMediaAssetUnlimitObserver_ != nullptr, ret,
         "CloudMediaAssetUnlimitObserver_ is null.");
     // observer more than 50, failed to register
