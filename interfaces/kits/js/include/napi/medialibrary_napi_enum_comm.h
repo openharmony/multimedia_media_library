@@ -190,6 +190,15 @@ const std::vector<std::string> downloadAssetsNotifyTypeEnum {
     "DOWNLOAD_AUTO_RESUMED", "DOWNLOAD_REFRESHED"
 };
 
+const std::vector<std::pair<std::string, int32_t>> PHOTO_SUB_TYPE_ENUM_PROPERTIES = {
+    std::make_pair("DEFAULT",       static_cast<int32_t>(PhotoSubType::DEFAULT)),
+    std::make_pair("SCREENSHOT",    static_cast<int32_t>(PhotoSubType::SCREENSHOT)),
+    std::make_pair("CAMERA",        static_cast<int32_t>(PhotoSubType::CAMERA)),
+    std::make_pair("MOVING_PHOTO",  static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)),
+    std::make_pair("BURST",         static_cast<int32_t>(PhotoSubType::BURST)),
+    std::make_pair("SPATIAL_3DGS",  static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS))
+};
+
 const std::vector<std::pair<std::string, std::string>> FILE_KEY_ENUM_PROPERTIES = {
     std::make_pair("ID",                        MEDIA_DATA_DB_ID),
     std::make_pair("RELATIVE_PATH",             MEDIA_DATA_DB_RELATIVE_PATH),
