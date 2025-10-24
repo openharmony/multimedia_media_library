@@ -41,7 +41,6 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> MoveAssetsGetAlbumInfo(const ChangeRequestMoveAssetsDto &moveAssetsDto);
     std::shared_ptr<NativeRdb::ResultSet> AddAssetsGetAlbumInfo(const ChangeRequestAddAssetsDto &addAssetsDto);
     std::shared_ptr<NativeRdb::ResultSet> RemoveAssetsGetAlbumInfo(const ChangeRequestRemoveAssetsDto &removeAssetsDto);
-    std::shared_ptr<DataShare::DataShareResultSet> GetSelectedAssets(AlbumGetSelectedAssetsDto &dto);
     std::shared_ptr<DataShare::DataShareResultSet> GetSelectedAssets(const AlbumGetSelectedAssetsDto &dto);
     double GetAssetScore(const AlbumGetSelectedAssetsDto &dto, int fileId);
     double GetLimitScore(const AlbumGetSelectedAssetsDto &dto);
