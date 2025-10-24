@@ -177,6 +177,18 @@ public:
      * @return container converted to URI
      */
     EXPORT int32_t GetUrisFromFusePaths(const std::vector<std::string> paths, std::vector<std::string> &uris);
+
+    /**
+     * @brief Check cloud download Permission
+     *
+     * @param tokenId a parameter for input, indicating the expected app's tokenId to check
+     * @param uris a parameter for input, indicating the source of URIs expected to check
+     * @param result a parameter for output, indicating the check result (permission granted or not)
+     * @param flags a parameter for input, indicating the expected type of permission check
+     * @return If the check is successful, return 0; otherwise, return -1 for failure.
+     */
+    EXPORT int32_t CheckCloudDownloadPermission(uint32_t tokenId,
+        const std::vector<string> &uris, std::vector<bool> &result, const std::vector<uint32_t> &flags);
 private:
 
     int32_t userId_;

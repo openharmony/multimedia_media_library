@@ -608,6 +608,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_private_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_read_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_system_api_permission_check.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_system_innerapi_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_write_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_cloudfile_sync_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_db_permission_check.cpp",
