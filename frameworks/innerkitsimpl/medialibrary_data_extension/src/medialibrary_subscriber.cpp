@@ -247,7 +247,7 @@ void CloudMediaAssetUnlimitObserver::OnChange(const ChangeInfo &changeInfo)
             isUnlimitedTrafficStatusOn);
         if (isUnlimitedTrafficStatusOn) {
             BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck();
-        } 
+        }
         if (!CommonEventUtils::IsWifiConnected() && !isUnlimitedTrafficStatusOn) {
             BackgroundCloudBatchSelectedFileProcessor::TriggerAutoStopBatchDownloadResourceCheck(); // 批量下载立即停止
         }
