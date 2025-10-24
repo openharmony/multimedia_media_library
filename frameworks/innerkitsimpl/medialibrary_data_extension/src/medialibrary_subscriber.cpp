@@ -234,9 +234,7 @@ MedialibrarySubscriber::~MedialibrarySubscriber()
 
 void CloudMediaAssetUnlimitObserver::OnChange(const ChangeInfo &changeInfo)
 {
-    bool cond = (subscriber_ == nullptr);
-    CHECK_AND_RETURN(!cond);
-    // CHECK_AND_RETURN_INFO_LOG(!CommonEventUtils::IsWifiConnected(), "wifi is connection.");
+    CHECK_AND_RETURN(subscriber_ != nullptr);
 
     std::list<Uri> uris = changeInfo.uris_;
     for (auto &uri : uris) {
