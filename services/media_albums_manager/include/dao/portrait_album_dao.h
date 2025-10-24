@@ -90,13 +90,13 @@ public:
 
     // get assets that meet the conditions
     const std::string SQL_PORTRAIT_ALBUM_GET_SELECTED_ASSETS = "\
-        SELECT Photos.burst_key,Photos.ce_available,Photos.cover_position,Photos.data,Photos.date_added, \
-            Photos.date_day,Photos.date_modified,Photos.date_taken,Photos.date_trashed,Photos.detail_time, \
-            Photos.display_name,Photos.duration,Photos.dynamic_range_type,Photos.file_id,Photos.front_camera, \
-            Photos.height,Photos.hidden,Photos.is_auto,Photos.is_favorite,Photos.lcd_size,Photos.media_type, \
-            Photos.mime_type,Photos.moving_photo_effect_mode,Photos.orientation,Photos.original_subtype, \
-            Photos.photo_quality,Photos.position,Photos.shooting_mode_tag,Photos.size,Photos.subtype, \
-            Photos.thumb_size,Photos.thumbnail_ready,Photos.title,Photos.width, " +
+        SELECT Photos.burst_key, Photos.ce_available, Photos.cover_position, Photos.data, Photos.date_added, \
+            Photos.date_day, Photos.date_modified, Photos.date_taken, Photos.date_trashed, Photos.detail_time, \
+            Photos.display_name, Photos.duration, Photos.dynamic_range_type, Photos.file_id, Photos.front_camera, \
+            Photos.height, Photos.hidden, Photos.is_auto, Photos.is_favorite, Photos.lcd_size, Photos.media_type, \
+            Photos.mime_type, Photos.moving_photo_effect_mode, Photos.orientation, Photos.original_subtype, \
+            Photos.photo_quality,Photos.position, Photos.shooting_mode_tag, Photos.size, Photos.subtype, \
+            Photos.thumb_size, Photos.thumbnail_ready, Photos.title, Photos.width, " +
             SQL_PORTRAIT_ALBUM_COLUM_TOTAL_SCORE + " AS total_score \
         FROM " + SQL_PORTRAIT_ALBUM_TABLE_JOIN + " \
         WHERE " + SQL_PORTRAIT_ALBUM_CONDITION + " \
