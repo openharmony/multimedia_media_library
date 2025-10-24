@@ -49,12 +49,12 @@ class MedialibrarySubscriber;
 
 class CloudMediaAssetUnlimitObserver : public DataShare::DataShareObserver {
 public:
-    CloudMediaAssetUnlimitObserver(std::shared_ptr<MedialibrarySubscriber> subscriber) : subscriber_(subscriber) {}
+    CloudMediaAssetUnlimitObserver(std::weak_ptr<MedialibrarySubscriber> subscriber) : subscriber_(subscriber) {}
     ~CloudMediaAssetUnlimitObserver() {}
     void OnChange(const ChangeInfo &changeInfo) override;
 
 private:
-    std::shared_ptr<MedialibrarySubscriber> subscriber_ = nullptr;
+    std::weak_ptr<MedialibrarySubscriber> subscriber_;
 };
 
 class EXPORT MedialibrarySubscriber : public EventFwk::CommonEventSubscriber {
@@ -121,7 +121,6 @@ private:
     EXPORT std::string GetDataCloneDescriptionJsonPath();
     EXPORT bool GetCloneTimestamp(const std::string &path, int64_t &cloneTimestamp);
     EXPORT void WalCheckPointAsync();
-    EXPORT void TriggerBatchDownloadResource();
     EXPORT void HandleBatchDownloadWhenNetChange();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
