@@ -108,6 +108,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/controller",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dto",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dao",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/vo",
   ]
 

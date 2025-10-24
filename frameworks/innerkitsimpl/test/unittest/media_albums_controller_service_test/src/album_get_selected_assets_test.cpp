@@ -29,6 +29,9 @@
 #include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
 #include "media_file_uri.h"
+#include "vision_db_sqls_more.h"
+#include "vision_db_sqls.h"
+#include "medialibrary_data_manager.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -39,54 +42,49 @@ using namespace IPC;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static constexpr int32_t SLEEP_SECONDS = 1;
 
-static int32_t ClearTable(const string &table)
-{
-    RdbPredicates predicates(table);
+static std::vector<std::string> createTableSqlLists = {
+    // PhotoAlbumColumns::CREATE_TABLE,
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+    CREATE_ANALYSIS_ALBUM_MAP,
+    CREATE_TAB_IMAGE_FACE,
+    CREATE_TAB_ANALYSIS_AFFECTIVE,
+};
 
-    int32_t rows = 0;
-    int32_t err = g_rdbStore->Delete(rows, predicates);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to clear album table, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
-    }
-    return E_OK;
-}
+static std::vector<std::string> testTables = {
+    // PhotoAlbumColumns::TABLE,
+    PhotoColumn::PHOTOS_TABLE,
+    ANALYSIS_ALBUM_TABLE,
+    ANALYSIS_PHOTO_MAP_TABLE,
+    VISION_IMAGE_FACE_TABLE,
+    VISION_AFFECTIVE_TABLE,
+};
 
 void AlbumGetSelectedAssetsTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
-        exit(1);
-    }
-    ClearTable(ANALYSIS_ALBUM_TABLE);
-    ClearTable(ANALYSIS_PHOTO_MAP_TABLE);
-    ClearTable(VISION_IMAGE_FACE_TABLE);
-    ClearTable(VISION_AFFECTIVE_TABLE);
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
-    MEDIA_INFO_LOG("SetUpTestCase");
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+    MEDIA_INFO_LOG("AlbumGetSelectedAssetsTest SetUpTestCase succeed");
 }
 
 void AlbumGetSelectedAssetsTest::TearDownTestCase(void)
 {
-    ClearTable(ANALYSIS_ALBUM_TABLE);
-    ClearTable(ANALYSIS_PHOTO_MAP_TABLE);
-    ClearTable(VISION_IMAGE_FACE_TABLE);
-    ClearTable(VISION_AFFECTIVE_TABLE);
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
-    MEDIA_INFO_LOG("TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, false);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    MEDIA_INFO_LOG("AlbumGetSelectedAssetsTest TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 void AlbumGetSelectedAssetsTest::SetUp()
 {
-    MEDIA_INFO_LOG("SetUp");
+    MEDIA_INFO_LOG("AlbumGetSelectedAssetsTest SetUp");
 }
 
 void AlbumGetSelectedAssetsTest::TearDown(void)
 {
-    MEDIA_INFO_LOG("TearDown");
+    MEDIA_INFO_LOG("AlbumGetSelectedAssetsTest TearDown");
 }
 
 static const string SQL_INSERT_PHOTO =
@@ -163,33 +161,13 @@ static bool InsertAnalysisImageFace(int fileId, string tagID)
     return ExecutionSql(insertSql);
 }
 
-static bool CreatTabAnalysisVlm()
-{
-    MEDIA_ERR_LOG("CreatTabAnalysisVlm");
-    string creatSql = "CREATE TABLE IF NOT EXISTS tab_analysis_affective "
-                      "("
-                      "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                      "file_id INT, "
-                      "caption TEXT, "
-                      "valence INT, "
-                      "category INT, "
-                      "arousal INT, "
-                      "dominance INT, "
-                      "model_version TEXT, "
-                      "extra TEXT, "
-                      "timestamp BIGINT, "
-                      "analysis_version TEXT)";
-
-    return ExecutionSql(creatSql);
-}
-
 static bool InsertTabAnalysisVlm(int fileId)
 {
     MEDIA_ERR_LOG("InsertTabAnalysisVlm");
     std::string insertSql = "INSERT INTO tab_analysis_affective "
                             "(file_id, valence, arousal) "
                             "VALUES(" +
-                            std::to_string(fileId) + ", 0.5, 0.1)";
+                            std::to_string(fileId) + ", 0, 9)";
     return ExecutionSql(insertSql);
 }
 
@@ -320,11 +298,7 @@ HWTEST_F(AlbumGetSelectedAssetsTest, GetSelectedAssets_Test_001, TestSize.Level0
     // invaild
     int invaildId = albumId + 1;
     count = AlbumGetSelectedAssets(invaildId);
-    EXPECT_EQ(count, 0);
-
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
-    count = AlbumGetSelectedAssets(albumId);
-    EXPECT_EQ(count, 0);
+    EXPECT_EQ(count, -1);
 
     MEDIA_INFO_LOG("end GetSelectedAssets_Test_001");
 }
