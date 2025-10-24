@@ -1639,7 +1639,7 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
 
 void UpgradeRestore::RestoreAnalysisAlbum()
 {
-    std::string querySql = "SELECT count(1) AS count FROM merge_tag";
+    std::string querySql = "SELECT count(1) AS count FROM merge_tag WHERE user_display_level = 1";
     int32_t totalPortraitAlbumNumber = BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
     if (totalPortraitAlbumNumber > 0) {
         int32_t ret = PortraitAlbumUtils::DeleteExistingAlbumData(mediaLibraryRdb_, AlbumDeleteType::ALL);
