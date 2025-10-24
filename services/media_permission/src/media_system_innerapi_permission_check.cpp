@@ -12,19 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef OHOS_MEDIALIBRARY_PERMISSION_POLICY_TYPE_H
-#define OHOS_MEDIALIBRARY_PERMISSION_POLICY_TYPE_H
+#define MLOG_TAG "MediaPermissionCheck"
+#include <string>
+#include "media_system_innerapi_permission_check.h"
+
+using namespace std;
 
 namespace OHOS::Media {
-enum PermissionType {
-    SYSTEMAPI_PERM,
-    PRIVATE_PERM,
-    READ_PERM,
-    WRITE_PERM,
-    CLOUDFILE_SYNC,
-    CLOUD_READ,
-    CLOUD_WRITE,
-    SYSTEMINNERAPI_PERM,
-};
+int32_t SystemInnerApiPermissionCheck::CheckPermission(uint32_t businessCode, const PermissionHeaderReq &data)
+{
+    MEDIA_INFO_LOG("SystemApiPermissionCheck enter, API code=%{public}d", businessCode);
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsNativeSAApp(), -E_CHECK_SYSTEMAPP_FAIL, "Not system sa!");
+    return E_SUCCESS;
+}
 } // namespace OHOS::Media
-#endif  // OHOS_MEDIALIBRARY_PERMISSION_POLICY_TYPE_H

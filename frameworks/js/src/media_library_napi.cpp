@@ -959,6 +959,17 @@ static napi_value CreateNumberEnumProperty(napi_env env, vector<string> properti
     return result;
 }
 
+static napi_value CreateNumberEnumPropertyByMap(napi_env env, vector<pair<string, int32_t>> properties, napi_ref &ref)
+{
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_create_object(env, &result));
+    for (size_t i = 0; i < properties.size(); i++) {
+        NAPI_CALL(env, AddIntegerNamedProperty(env, result, properties[i].first, properties[i].second));
+    }
+    NAPI_CALL(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &ref));
+    return result;
+}
+
 static napi_status AddStringNamedProperty(napi_env env, napi_value object,
     const string &name, string enumValue)
 {
@@ -9710,12 +9721,18 @@ static void PhotoAccessGetAlbumsByOldUrisExecute(napi_env env, void *data)
 
         if (it == processing.end()) {
             processing.emplace_back(row);
-        } else if (it->album_subtype != row.album_subtype) {
-            processing.emplace_back(row);
-        } else if (row.clone_sequence > it->clone_sequence) {
-            *it = row;
+        } else {
+            char itSubtype = (it->album_subtype >= TabOldAlbumsColumn::IsPhotoOrAnalysis && it->album_subtype < TabOldAlbumsColumn::MaxValue) ? TabOldAlbumsColumn::IS_ANALYSIS_TABLE : TabOldAlbumsColumn::IS_PHOTOS_TABLE;
+            char rowSubtype = (row.album_subtype >= TabOldAlbumsColumn::IsPhotoOrAnalysis && row.album_subtype < TabOldAlbumsColumn::MaxValue) ? TabOldAlbumsColumn::IS_ANALYSIS_TABLE : TabOldAlbumsColumn::IS_PHOTOS_TABLE;
+        
+            if (itSubtype != rowSubtype) {
+                processing.emplace_back(row);
+            } else if (row.clone_sequence > it->clone_sequence) {
+                *it = row;
+            }
         }
     }
+    resultSet->Close();
     context->uriAlbumMap = prepareMapping(processing, oldAlbumData);
 }
 
@@ -9794,7 +9811,7 @@ napi_value MediaLibraryNapi::CreatePositionTypeEnum(napi_env env)
 
 napi_value MediaLibraryNapi::CreatePhotoSubTypeEnum(napi_env env)
 {
-    return CreateNumberEnumProperty(env, photoSubTypeEnum, sPhotoSubType_);
+    return CreateNumberEnumPropertyByMap(env, PHOTO_SUB_TYPE_ENUM_PROPERTIES, sPhotoSubType_);
 }
 
 napi_value MediaLibraryNapi::CreatePhotoPermissionTypeEnum(napi_env env)
@@ -10527,6 +10544,22 @@ bool MediaLibraryNapi::isSucceedSetting(napi_env env, napi_value &members, napi_
     return true;
 }
 
+static void checkKeyInEnum(napi_env env, std::string inputKey) {
+    static const std::unordered_set<std::string> enumValues = []() {
+        std::unordered_set<std::string> values;
+        values.reserve(IMAGEVIDEOKEY_ENUM_PROPERTIES.size());
+        for (const auto& pair : IMAGEVIDEOKEY_ENUM_PROPERTIES) {
+            values.insert(pair.second);
+        }
+        return values;
+    } ();
+    if (enumValues.find(inputKey) != enumValues.end()) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
+    } else {
+        NapiError::ThrowError(env, JS_E_INPUT_INVALID);
+    }
+}
+
 napi_value MediaLibraryNapi::ProcessSingleAsset(napi_env env, napi_value asset, std::vector<std::string>& inputKeys)
 {
     FileAssetNapi *obj = nullptr;
@@ -10550,7 +10583,7 @@ napi_value MediaLibraryNapi::ProcessSingleAsset(napi_env env, napi_value asset, 
             continue;
         }
         if (obj->fileAssetPtr->GetMemberMap().count(inputKey) == 0) {
-            NapiError::ThrowError(env, JS_E_INPUT_INVALID);
+            checkKeyInEnum(env, inputKey);
             return nullptr;
         }
         if (FileAssetNapi::IsSpecialKey(inputKey)) {

@@ -141,10 +141,9 @@ const std::string CREATE_TAB_ANALYSIS_AFFECTIVE = "CREATE TABLE IF NOT EXISTS " 
     " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     FILE_ID + " INT, " +
-    EMOTION_CATEGORY + " INT, " +
-    VALENCE + " REAL, " +
-    AROUSAL + " REAL, " +
-    DOMINANCE + " REAL, " +
+    EMOTION_CATEGORY + " TEXT, " +
+    VALENCE + " INT, " +
+    AROUSAL + " INT, " +
     MODEL_VERSION + " TEXT, " +
     MODEL_NAME + " TEXT, " +
     EXTRA + " TEXT, " +
