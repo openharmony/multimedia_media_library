@@ -272,9 +272,9 @@ HWTEST_F(SetUserCommentTest, SetUserCommentTest_Test_002, TestSize.Level0)
     EXPECT_EQ(comment, userComment);
 
     ASSERT_EQ(QueryTransCodeInfoByID(fileId, resultSet), 0);
-    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANSCODE_TIME, resultSet), 0);
-    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet), 0);
-    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resultSet), 0);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANSCODE_TIME, resultSet), 1501838589870);
+    EXPECT_EQ(GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet), 348113);
+    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, resultSet), 1);
 
     system("rm -rf /storage/cloud/files/Photo/665/test.heic");
     system("rm -rf /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");
