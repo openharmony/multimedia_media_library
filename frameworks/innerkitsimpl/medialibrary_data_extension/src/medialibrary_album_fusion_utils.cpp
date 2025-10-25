@@ -1482,6 +1482,7 @@ void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(
         if (lastSlashIndex != std::string::npos) {
             lPath = lPath.substr(0, lastSlashIndex + 1) + newAlbumName;
         }
+        values.Delete(PhotoAlbumColumns::ALBUM_BUNDLE_NAME);
     } else if (albumType == PhotoAlbumType::USER) {
         lPath = "/Pictures/Users/" + newAlbumName;
     }

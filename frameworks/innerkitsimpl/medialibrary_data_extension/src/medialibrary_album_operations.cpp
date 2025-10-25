@@ -1168,9 +1168,9 @@ static int32_t GetAlbumTypeFromOldAlbum(const shared_ptr<MediaLibraryRdbStore>& 
         "SELECT album_type FROM PhotoAlbum WHERE album_id = " + to_string(oldAlbumId);
     int32_t oldAlbumType = -1;
     shared_ptr<NativeRdb::ResultSet> queryTypeResultSet = rdbStore->QuerySql(QUERY_ALBUM_TYPE_TO_RENAME);
-    CHECK_AND_PRINT_LOG(queryIdsResultSet != nullptr, "Query album type to rename album failed");
-    if (queryIdsResultSet->GoToNextRow() == NativeRdb::E_OK) {
-        oldAlbumType = GetInt32Val("album_type", queryIdsResultSet);
+    CHECK_AND_PRINT_LOG(queryTypeResultSet != nullptr, "Query album type to rename album failed");
+    if (queryTypeResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        oldAlbumType = GetInt32Val("album_type", queryTypeResultSet);
     }
     return oldAlbumType;
 }
