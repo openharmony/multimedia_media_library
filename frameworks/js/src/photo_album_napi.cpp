@@ -1879,12 +1879,13 @@ static napi_value checkArgsGetSelectedPhotoAssets(
         CHECK_COND_RET(context->filter.size() <= maxFilterSize, nullptr, "ARGS_TWO length beyond limit");
         CHECK_COND_RET(nlohmann::json::accept(context->filter), nullptr, "failed to verify the filter format");
         nlohmann::json filterJson = nlohmann::json::parse(context->filter.c_str());
-        std::string fileId = "currentFileId";
+        std::string key = "currentFileId";
         size_t sizeLimit = 1;
-        bool cond = filterJson.size() == sizeLimit && filterJson.contains(fileId)
-            && filterJson[fileId].is_number_integer();
-        CHECK_COND_RET(cond, nullptr, "ARGS_TWO must be a JSON object with exactly one key : currentFileId "
-            "and the value of currentFileId is integer");
+        bool cond = filterJson.size() == sizeLimit && filterJson.contains(key);
+        CHECK_COND_RET(cond, nullptr, "ARGS_TWO must be a JSON object with exactly one key : currentFileId");
+        std::string value = filterJson[key];
+        CHECK_COND_RET(MediaFileUtils::IsValidInteger(value), nullptr,
+            "key : currentFileId must be a integer");
     }
  
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
