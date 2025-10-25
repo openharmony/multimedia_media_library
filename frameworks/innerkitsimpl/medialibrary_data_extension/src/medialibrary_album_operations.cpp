@@ -651,7 +651,7 @@ int32_t IsAllUserOrSourcePhotoAlbum(std::shared_ptr<MediaLibraryRdbStore> rdbSto
     queryPredicates.EndWrap();
     queryPredicates.Or();
     queryPredicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
-    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC))
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC));
     queryPredicates.EndWrap();
     queryPredicates.EndWrap();
 
