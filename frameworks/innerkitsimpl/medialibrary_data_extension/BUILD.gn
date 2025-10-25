@@ -576,6 +576,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_photo_album_object_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/set_photo_album_order_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_albums_lpath_by_ids_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_cloned_album_uris_vo.cpp",
   ]
 
   media_albums_manager_dto_source = [
@@ -600,6 +601,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_set_highlight_attribute_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_albums_by_ids_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_photo_album_object_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_cloned_album_uris_dto.cpp",
   ]
 
   media_permission_check_source = [
