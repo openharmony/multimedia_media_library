@@ -357,6 +357,8 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_GetStorageFreeRa
     double freeRatio = 1024;
     bool ret;
     ret = BackgroundCloudBatchSelectedFileProcessor::GetStorageFreeRatio(freeRatio);
+    BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck();
+    BackgroundCloudBatchSelectedFileProcessor::TriggerAutoStopBatchDownloadResourceCheck();
     BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition();
     BatchDownloadAutoPauseReasonType autoPauseReason;
     BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(autoPauseReason);

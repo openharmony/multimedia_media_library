@@ -867,7 +867,7 @@ void BackgroundCloudBatchSelectedFileProcessor::StartBatchDownloadResourcesTimer
     CHECK_AND_PRINT_LOG(ret == Utils::TIMER_ERR_OK,
         "Failed to start BatchDownloadResources cloud files timer, err: %{public}d", ret);
     batchDownloadResourcesStartTimerId_ = batchDownloadResourceTimer_.Register(DownloadSelectedBatchResources,
-        downloadSelectedInterval_); // 5s 定时轮询任务
+        downloadSelectedInterval_); // 2s 定时轮询任务
     MEDIA_INFO_LOG("BatchSelectFileDownload StartBatchDownloadResourcesTimer END");
 }
 
@@ -1058,6 +1058,30 @@ void BackgroundCloudBatchSelectedFileProcessor::AutoResumeAction()
     int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
         DownloadAssetsNotifyType::DOWNLOAD_AUTO_RESUME, -1, -1);
     MEDIA_INFO_LOG("BatchSelectFileDownload StartNotify DOWNLOAD_AUTO_RESUME ret: %{public}d", ret);
+}
+
+void BackgroundCloudBatchSelectedFileProcessor::TriggerAutoStopBatchDownloadResourceCheck()
+{
+    MEDIA_DEBUG_LOG("BatchSelectFileDownload Inmediately AutoStop check downloading: %{public}d",
+        BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus());
+    if (BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()
+        && BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag()
+        && BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning()) { // 在运行停止且有添加任务
+        MEDIA_INFO_LOG("BatchSelectFileDownload Inmediately AutoStop Processor");
+        CHECK_AND_RETURN_LOG(!StopProcessConditionCheck(),
+            "BatchSelectFileDownload AutoStop satisfy, skip start download process"); // 立即自动停止
+    }
+}
+
+void BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck()
+{
+    MEDIA_DEBUG_LOG("BatchSelectFileDownload Timely check downloading: %{public}d",
+        BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus());
+    if (!BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()
+        && BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag()) { // 停止且有添加任务且可恢复状态
+        MEDIA_INFO_LOG("BatchSelectFileDownload Timely Check AutoResume Processor");
+        BackgroundCloudBatchSelectedFileProcessor::LaunchAutoResumeBatchDownloadProcessor(); // 自动恢复
+    }
 }
 
 // 自动恢复使用
