@@ -125,7 +125,7 @@ int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, s
 
 int32_t CloudMediaPhotosService::IsMtimeChanged(const CloudMediaPullDataDto &pullData, bool &changed)
 {
-    if (!pullData.localDateModified.empty() && pullData.attributesEditedTimeMs != -1) {
+    if (!pullData.localDateModified.empty() && pullData.attributesEditedTimeMs > 0) {
         std::string cloudDateModified = std::to_string(pullData.attributesEditedTimeMs);
         MEDIA_INFO_LOG("localDateModified: %{public}s, attributesEditedTimeMs: %{public}s",
             pullData.localDateModified.c_str(),
