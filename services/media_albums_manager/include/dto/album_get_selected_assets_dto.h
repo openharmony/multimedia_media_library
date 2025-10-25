@@ -25,6 +25,8 @@ public:
     std::vector<std::string> columns;
     int32_t albumId;
     std::string filter;
+    double maxScore;
+    double minScore;
  
     static AlbumGetSelectedAssetsDto Create(const AlbumGetSelectedAssetsReqBody &req);
 };
