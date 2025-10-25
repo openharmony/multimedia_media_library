@@ -1177,7 +1177,8 @@ std::vector<NativeRdb::ValueObject> CloneRestoreHighlight::GetHighlightDuplicate
 {
     std::vector<NativeRdb::ValueObject> changeIds = {};
     CHECK_AND_RETURN_RET((info.clusterType.has_value() && info.clusterSubType.has_value() &&
-        info.clusterCondition.has_value() && info.highlightVersion.has_value() && info.albumIdOld.has_value()),
+        info.clusterCondition.has_value() && info.highlightVersion.has_value() && info.albumIdOld.has_value() &&
+        info.minDateAdded.has_value() && info.maxDateAdded.has_value()),
         changeIds);
     CHECK_AND_RETURN_RET((!info.highlightStatus.has_value() || info.highlightStatus.value() > 0), changeIds);
 
@@ -1191,11 +1192,11 @@ std::vector<NativeRdb::ValueObject> CloneRestoreHighlight::GetHighlightDuplicate
 
     const std::string QUERY_SQL = "SELECT t.id, t.album_id, t.ai_album_id "
         "FROM tab_highlight_album AS t INNER JOIN AnalysisAlbum AS a "
-        "ON t.album_id = a.album_id WHERE t.cluster_type = ? AND t.cluster_sub_type = ? AND t.cluster_condition = ? "
-        "AND a.album_name = ? AND t.highlight_status <> ?";
+        "ON t.album_id = a.album_id WHERE t.cluster_type = ? AND t.cluster_sub_type = ? AND "
+        "t.highlight_status <> ? AND (t.cluster_condition = ? OR (t.min_date_added = ? AND t.max_date_added = ?))";
     std::vector<NativeRdb::ValueObject> params = {
-        info.clusterType.value(), info.clusterSubType.value(), info.clusterCondition.value(), duplicateAlbumName,
-        HIGHLIGHT_STATUS_DELETE
+        info.clusterType.value(), info.clusterSubType.value(), HIGHLIGHT_STATUS_DELETE, info.clusterCondition.value(),
+        info.minDateAdded.value(), info.maxDateAdded.value()
     };
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, QUERY_SQL, params);
 
