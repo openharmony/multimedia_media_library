@@ -98,7 +98,8 @@ constexpr int32_t STORE_PORTRAIT_SECOND_PAGE_MIN_COUNT = 1;
 constexpr int32_t ANALYSIS_STATUS_TO_REFRESH = 1;
 constexpr int32_t NO_FIRST_PAGE_SINGLE_PORTRAIT = -2;
 constexpr int32_t NO_FIRST_PAGE_SINGLE_PORTRAIT_MANUAL = 2;
-const std::string ALBUM_LPATH_PREFIX = "/Pictures/Users/";
+const std::string USER_ALBUM_LPATH_PREFIX = "/Pictures/Users/";
+const std::string SOURCE_ALBUM_LPATH_PREFIX = "/Pictures/";
 const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
 const std::string ME_RELATIONSHIP = "me";
 const std::string RETAIL_MODE_KEY = "const.dfx.enable_retail";
@@ -337,7 +338,7 @@ static void PrepareUserAlbum(const string &albumName, ValuesBucket &values)
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutInt(PhotoAlbumColumns::ALBUM_IS_LOCAL, 1); // local album is 1.
     values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, ALBUM_PRIORITY_DEFAULT);
-    values.PutString(PhotoAlbumColumns::ALBUM_LPATH, ALBUM_LPATH_PREFIX + albumName);
+    values.PutString(PhotoAlbumColumns::ALBUM_LPATH, USER_ALBUM_LPATH_PREFIX + albumName);
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
 }
 
@@ -386,7 +387,7 @@ int DoCreatePhotoAlbum(const string &albumName, const string &relativePath, cons
 
 static int32_t QueryExistingAlbumByLpath(const string& albumName, bool& isDeleted, bool& isSameName)
 {
-    const string lpath = ALBUM_LPATH_PREFIX + albumName;
+    const string lpath = USER_ALBUM_LPATH_PREFIX + albumName;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "fail to get rdbstore, lpath is: %{public}s", lpath.c_str());
 
@@ -639,13 +640,19 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     return rowId;
 }
 
-int32_t IsAllUserPhotoAlbum(std::shared_ptr<MediaLibraryRdbStore> rdbStore, RdbPredicates &predicates)
+int32_t IsAllUserOrSourcePhotoAlbum(std::shared_ptr<MediaLibraryRdbStore> rdbStore, RdbPredicates &predicates)
 {
     vector<string> albumIds = predicates.GetWhereArgs();
     RdbPredicates queryPredicates(PhotoAlbumColumns::TABLE);
     queryPredicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
+    queryPredicates.BeginWrap();
     queryPredicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
     queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
+    queryPredicates.EndWrap();
+    queryPredicates.Or();
+    queryPredicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC))
+    queryPredicates.EndWrap();
     queryPredicates.EndWrap();
 
     vector<string> columns = {PhotoAlbumColumns::ALBUM_ID};
@@ -674,9 +681,9 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "DeletePhotoAlbum failed. rdbStore is null");
 
-    int32_t ret = IsAllUserPhotoAlbum(rdbStore, predicates);
+    int32_t ret = IsAllUserOrSourcePhotoAlbum(rdbStore, predicates);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("deleted Album is all not userAlbum type");
+        MEDIA_ERR_LOG("deleted Album is all not userAlbum type or sourceAlbum type");
         return E_INVALID_URI;
     }
 
@@ -1001,9 +1008,10 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryC
  *     - negative integer if a conflict is found or error occurs and needs to abort
  */
 static int32_t CheckConflictsWithExistingAlbum(const string &newAlbumName,
-    const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+    const shared_ptr<MediaLibraryRdbStore>& rdbStore, const int32_t oldAlbumType)
 {
-    const std::string newLPath = ALBUM_LPATH_PREFIX + newAlbumName;
+    const std::string newLPath = oldAlbumType == PhotoAlbumType::SOURCE ?
+        SOURCE_ALBUM_LPATH_PREFIX + newAlbumName : USER_ALBUM_LPATH_PREFIX + newAlbumName;
 
     // Check if non-deleted album with same name exists
     std::string sql = "SELECT * FROM PhotoAlbum WHERE album_name = ? AND dirty <> ?";
@@ -1035,6 +1043,40 @@ static int32_t CheckConflictsWithExistingAlbum(const string &newAlbumName,
             return E_ERR;
         }
     }
+
+    if (oldAlbumType != PhotoAlbumType::SOURCE) {
+        MEDIA_INFO_LOG("CheckConflictsWithExistingAlbum not source album, no need to check album plugin");
+        return E_OK;
+    }
+    std::string albumPluginlPathSql = "SELECT * FROM album_plugin WHERE LOWER(lpath) = LOWER(?)";
+    resultSetAlbum = rdbStore->QueryByStep(albumPluginlPathSql, { newLPath });
+    CHECK_AND_RETURN_RET_LOG(resultSetAlbum != nullptr, E_ERR, "Query albums with same lpath in album plugin failed");
+    CHECK_AND_RETURN_RET_LOG(resultSetAlbum->GetRowCount(rowCount) == NativeRdb::E_OK, E_ERR,
+        "Get albums with same lpath in album plugin row count failed");
+    if (rowCount > 0) {
+        MEDIA_ERR_LOG("same lpath exists in album plugin");
+        return E_ERR;
+    }
+
+    std::string albumPluginAlbumNameSql =
+        "SELECT * FROM album_plugin WHERE LOWER(album_name) = LOWER(?) OR LOWER(album_name_en) = LOWER(?)";
+    resultSetAlbum = rdbStore->QueryByStep(albumPluginAlbumNameSql, { newAlbumName });
+    CHECK_AND_RETURN_RET_LOG(resultSetAlbum != nullptr, E_ERR, "Query albums with same name in album plugin failed");
+    CHECK_AND_RETURN_RET_LOG(resultSetAlbum->GetRowCount(rowCount) == NativeRdb::E_OK, E_ERR,
+        "Get albums with same name in album plugin row count failed");
+    if (rowCount > 0) {
+        MEDIA_ERR_LOG("same name exists in album plugin");
+        return E_ERR;
+    }
+    return E_OK;
+}
+
+static int32_t DeleteEmptySourceAlbum(const shared_ptr<MediaLibraryRdbStore>& rdbStore)
+{
+    MEDIA_INFO_LOG("DeleteEmptySourceAlbum start");
+    std::string deleteSql = "DELETE FROM PhotoAlbum WHERE count = 0 AND album_type = 2048 AND album_subtype = 2049 AND album_id <> 9 AND album_id <> 10";
+    int32_t ret = rdbStore->ExecuteSql(deleteSql);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "Delete epty source album failed");
     return E_OK;
 }
 
@@ -1043,7 +1085,8 @@ static bool BuildNewNameValuesBucket(const shared_ptr<MediaLibraryRdbStore>& rdb
 {
     const std::string QUERY_OLD_ALBUM_INFO =
         "SELECT * FROM PhotoAlbum WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId) +
-        " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::USER);
+        " AND (" + PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::USER) + "OR" +
+        PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SOURCE) + ")";
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_OLD_ALBUM_INFO);
     CHECK_AND_RETURN_RET_LOG(TryToGoToFirstRow(resultSet), false,
         "Rename user album failed. Query old album info failed");
@@ -1118,6 +1161,20 @@ static vector<string> GetAssetIdsFromOldAlbum(const shared_ptr<MediaLibraryRdbSt
     return fileIds;
 }
 
+static int32_t GetAlbumTypeFromOldAlbum(const shared_ptr<MediaLibraryRdbStore>& rdbStore,
+    int32_t oldAlbumId)
+{
+    const std::string QUERY_ALBUM_TYPE_TO_RENAME =
+        "SELECT album_type FROM PhotoAlbum WHERE album_id = " + to_string(oldAlbumId);
+    int32_t oldAlbumType = -1;
+    shared_ptr<NativeRdb::ResultSet> queryTypeResultSet = rdbStore->QuerySql(QUERY_ALBUM_TYPE_TO_RENAME);
+    CHECK_AND_PRINT_LOG(queryIdsResultSet != nullptr, "Query album type to rename album failed");
+    if (queryIdsResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        oldAlbumType = GetInt32Val("album_type", queryIdsResultSet);
+    }
+    return oldAlbumType;
+}
+
 // Set album name: delete old and build a new one
 static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
 {
@@ -1130,6 +1187,7 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     MEDIA_INFO_LOG("Start to set user album name of id %{public}d", oldAlbumId);
 
     vector<string> fileIdsInAlbum = GetAssetIdsFromOldAlbum(rdbStore, oldAlbumId);
+    int32_t oldAlbumType = GetAlbumTypeFromOldAlbum(rdbStore, oldAlbumId);
 
     bool argInvalid { false };
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
@@ -1146,7 +1204,11 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     }
     std::function<int(void)> trySetUserAlbumName = [&]()->int {
         newAlbumId = -1;
-        int32_t ret = CheckConflictsWithExistingAlbum(newAlbumName, rdbStore);
+        int32_t ret = DeleteEmptySourceAlbum(rdbStore);
+        if (ret < 0) {
+            MEDIA_ERR_LOG("Delete empty source album failed");
+        }
+        ret = CheckConflictsWithExistingAlbum(newAlbumName, rdbStore, oldAlbumType);
         if (ret < 0) {
             MEDIA_ERR_LOG("New name conflicts with existing album");
             argInvalid = true;

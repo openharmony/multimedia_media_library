@@ -445,7 +445,8 @@ int32_t MediaAlbumsControllerService::ChangeRequestSetAlbumName(MessageParcel &d
     cond = (PhotoAlbum::IsUserPhotoAlbum(albumType, albumSubtype) ||
         PhotoAlbum::IsSmartPortraitPhotoAlbum(albumType, albumSubtype) ||
         PhotoAlbum::IsSmartGroupPhotoAlbum(albumType, albumSubtype) ||
-        PhotoAlbum::IsHighlightAlbum(albumType, albumSubtype)) && cond;
+        PhotoAlbum::IsHighlightAlbum(albumType, albumSubtype) ||
+        PhotoAlbum::IsSourceAlbum(albumType, albumSubtype)) && cond;
     cond = cond && !reqBody.albumName.empty() && !reqBody.albumId.empty() &&
         MediaLibraryDataManagerUtils::IsNumber(reqBody.albumId);
     if (!cond) {
