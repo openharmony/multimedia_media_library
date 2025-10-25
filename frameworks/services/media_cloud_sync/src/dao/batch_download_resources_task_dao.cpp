@@ -243,6 +243,7 @@ int32_t BatchDownloadResourcesTaskDao::UpdateStatusFailedToWaiting(const std::ve
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS,
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_WAITING));
+    valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_PERCENT, -1);
     std::vector<std::string> whereArgs = {
         to_string(static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL))};
     int32_t changedRows = -1;
@@ -478,6 +479,9 @@ int32_t BatchDownloadResourcesTaskDao::UpdateExistedTasksStatus(
     MEDIA_INFO_LOG("UpdateExistedTasksStatus query whereClause: %{public}s", whereClause.c_str());
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS, status);
+    if (status == static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_WAITING)) {
+        valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_PERCENT, -1);
+    }
     if (isUpdateTimeStamp) {
         valuesBucket.PutLong(DownloadResourcesColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
         valuesBucket.PutLong(DownloadResourcesColumn::MEDIA_DATE_FINISH, 0);
