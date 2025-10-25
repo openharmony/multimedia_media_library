@@ -1473,7 +1473,19 @@ void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(
         ParsingAndFillValue(values, columnName, columnType, resultSet);
     }
 
-    std::string lPath = "/Pictures/Users/" + newAlbumName;
+    std::string lPath = "";
+    int32_t albumType = -1;
+    GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_LPATH, lPath);
+    GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_TYPE, albumType);
+    if (albumType == PhotoAlbumType::SOURCE) {
+        size_t lastSlashIndex = lPath.find_last_of("/\\");
+        if (lastSlashIndex != std::string::npos) {
+            lPath = lPath.substr(0, lastSlashIndex + 1) + newAlbumName;
+        }
+    } else if (albumType == PhotoAlbumType::USER) {
+        lPath = "/Pictures/Users/" + newAlbumName;
+    }
+
     values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, 1);
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lPath);
     values.Delete(PhotoAlbumColumns::ALBUM_NAME);
