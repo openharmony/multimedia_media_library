@@ -224,7 +224,35 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
         isScreenOff_, isCharging_, batteryCapacity_, newTemperatureLevel_, isWifiConnected_);
 }
 
-MedialibrarySubscriber::~MedialibrarySubscriber() = default;
+MedialibrarySubscriber::~MedialibrarySubscriber()
+{
+    if (cloudHelper_ != nullptr && CloudMediaAssetUnlimitObserver_ != nullptr) {
+        cloudHelper_->UnregisterObserverExt(Uri(CLOUD_URI), CloudMediaAssetUnlimitObserver_);
+        cloudHelper_ = nullptr;
+    }
+}
+
+void CloudMediaAssetUnlimitObserver::OnChange(const ChangeInfo &changeInfo)
+{
+    auto subscriber = subscriber_.lock();
+    CHECK_AND_RETURN(subscriber != nullptr);
+
+    std::list<Uri> uris = changeInfo.uris_;
+    for (auto &uri : uris) {
+        bool cond = (uri.ToString() != CLOUD_URI || changeInfo.changeType_ != DataShareObserver::ChangeType::OTHER);
+        CHECK_AND_RETURN_INFO_LOG(!cond, "Current uri is not suitable for task.");
+
+        bool isUnlimitedTrafficStatusOn = CloudSyncUtils::IsUnlimitedTrafficStatusOn();
+        MEDIA_INFO_LOG("CloudMediaAssetUnlimitObserver OnChange, isUnlimitedTrafficStatusOn: %{public}d.",
+            isUnlimitedTrafficStatusOn);
+        if (isUnlimitedTrafficStatusOn) {
+            BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck();
+        }
+        if (!CommonEventUtils::IsWifiConnected() && !isUnlimitedTrafficStatusOn) {
+            BackgroundCloudBatchSelectedFileProcessor::TriggerAutoStopBatchDownloadResourceCheck(); // 批量下载立即停止
+        }
+    }
+}
 
 bool MedialibrarySubscriber::Subscribe(void)
 {
@@ -237,7 +265,19 @@ bool MedialibrarySubscriber::Subscribe(void)
     EventFwk::CommonEventSubscribeInfo subscribeInfo(matchingSkills);
 
     std::shared_ptr<MedialibrarySubscriber> subscriber = std::make_shared<MedialibrarySubscriber>(subscribeInfo);
-    return EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber);
+    bool ret = EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber);
+
+    CreateOptions options;
+    options.enabled_ = true;
+    subscriber->cloudHelper_ = DataShare::DataShareHelper::Creator(CLOUD_DATASHARE_URI, options);
+    CHECK_AND_RETURN_RET_LOG(subscriber->cloudHelper_ != nullptr, E_ERR, "cloudHelper_ is null.");
+    std::weak_ptr<MedialibrarySubscriber> subscriberWeakPtr(subscriber);
+    subscriber->CloudMediaAssetUnlimitObserver_ = std::make_shared<CloudMediaAssetUnlimitObserver>(subscriberWeakPtr);
+    CHECK_AND_RETURN_RET_LOG(subscriber->CloudMediaAssetUnlimitObserver_ != nullptr, ret,
+        "CloudMediaAssetUnlimitObserver_ is null.");
+    // observer more than 50, failed to register
+    subscriber->cloudHelper_->RegisterObserverExt(Uri(CLOUD_URI), subscriber->CloudMediaAssetUnlimitObserver_, true);
+    return ret;
 }
 
 static bool IsBetaVersion()
@@ -948,22 +988,10 @@ void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleNam
     MediaLibraryDataManager::GetInstance()->RevertPendingByPackage(bundleName);
 }
 
-
-void MedialibrarySubscriber::TriggerBatchDownloadResource()
-{
-    MEDIA_DEBUG_LOG("BatchSelectFileDownload MedialibrarySubscriber Timely check downloading: %{public}d",
-        BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus());
-    if (!BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()
-        && BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag()) { // 停止且有添加任务且可恢复状态
-        MEDIA_INFO_LOG("BatchSelectFileDownload MedialibrarySubscriber Timely Check AutoResume Processor");
-        BackgroundCloudBatchSelectedFileProcessor::LaunchAutoResumeBatchDownloadProcessor(); // 自动恢复
-    }
-}
-
 void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    TriggerBatchDownloadResource();
+    BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck();
     MEDIA_INFO_LOG("UpdateBackgroundTimer TriggerBatchDownloadResource after");
     if (BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()) {
         // 触发了批量下载 后台下载可以暂不触发

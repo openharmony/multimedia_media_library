@@ -71,8 +71,6 @@ std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetDownloadOperati
 static const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_HOT = 3;
 static const int32_t BATCH_DOWNLOAD_CLOUD_FILE = 10;
 static constexpr int CLOUD_MANAGER_MANAGER_ID = 5204;
-static const std::string CLOUD_DATASHARE_URI = "datashareproxy://generic.cloudstorage";
-static const std::string CLOUD_URI = CLOUD_DATASHARE_URI + "/cloud_sp?key=useMobileNetworkData";
 static const int64_t DOWNLOAD_ID_DEFAULT = -1;
 static const std::string TOTAL_COUNT = "COUNT(1)";
 static const std::string TOTAL_SIZE = "SUM(size)";

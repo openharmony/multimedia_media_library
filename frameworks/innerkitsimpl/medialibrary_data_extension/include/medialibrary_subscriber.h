@@ -25,6 +25,9 @@
 #include "matching_skills.h"
 #include "medialibrary_async_worker.h"
 #include "media_background_task_factory.h"
+#include "datashare_helper.h"
+#include "datashare_observer.h"
+#include "cloud_sync_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -37,6 +40,21 @@ enum class StatusEventType {
     BATTERY_CHANGED,
     THERMAL_LEVEL_CHANGED,
     TIME_TICK
+};
+
+static const std::string CLOUD_DATASHARE_URI = "datashareproxy://com.huawei.hmos.clouddrive";
+static const std::string CLOUD_URI = CLOUD_DATASHARE_URI + "/cloud_sp?key=useMobileNetworkData";
+
+class MedialibrarySubscriber;
+
+class CloudMediaAssetUnlimitObserver : public DataShare::DataShareObserver {
+public:
+    CloudMediaAssetUnlimitObserver(std::weak_ptr<MedialibrarySubscriber> subscriber) : subscriber_(subscriber) {}
+    ~CloudMediaAssetUnlimitObserver() {}
+    void OnChange(const ChangeInfo &changeInfo) override;
+
+private:
+    std::weak_ptr<MedialibrarySubscriber> subscriber_;
 };
 
 class EXPORT MedialibrarySubscriber : public EventFwk::CommonEventSubscriber {
@@ -67,6 +85,8 @@ public:
     EXPORT static bool IsCurrentStatusOn();
     EXPORT static void RefreshCellularNetStatus();
 private:
+    std::shared_ptr<DataShare::DataShareHelper> cloudHelper_;
+    std::shared_ptr<CloudMediaAssetUnlimitObserver> CloudMediaAssetUnlimitObserver_;
     static const std::vector<std::string> events_;
     bool isScreenOff_ {false};
     bool isCharging_ {false};
@@ -101,7 +121,6 @@ private:
     EXPORT std::string GetDataCloneDescriptionJsonPath();
     EXPORT bool GetCloneTimestamp(const std::string &path, int64_t &cloneTimestamp);
     EXPORT void WalCheckPointAsync();
-    EXPORT void TriggerBatchDownloadResource();
     EXPORT void HandleBatchDownloadWhenNetChange();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
