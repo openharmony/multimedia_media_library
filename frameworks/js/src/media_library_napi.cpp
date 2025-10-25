@@ -120,6 +120,7 @@
 #include "result_set_napi.h"
 #include "heif_transcoding_check_vo.h"
 #include "media_old_albums_column.h"
+#include "get_cloned_album_uris_vo.h"
 
 #include "get_database_dfx_vo.h"
 #include "remove_database_dfx_vo.h"
@@ -9540,6 +9541,8 @@ static void JSGetAlbumsByOldUrisCompleteCallback(napi_env env, napi_status statu
         jsContext->data = mapNapiValue;
         jsContext->status = true;
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+    } else {
+        context->HandleError(env, jsContext->error);
     }
 
     GetOldAlbumUriQueryResult(env, context, jsContext);
@@ -9685,35 +9688,17 @@ static std::map<std::string, std::string> prepareMapping(const std::vector<TabOl
     return result;
 }
 
-static void PhotoAccessGetAlbumsByOldUrisExecute(napi_env env, void *data)
+static std::vector<TabOldAlbumsColumn::RawData> ProcessOldAlbumResultSet(std::shared_ptr<DataShare::DataShareResultSet> resultSet)
 {
-    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext *>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
-    std::vector<std::string> InputAlbumId = ExtractIDAlbumOldUris(context->albumUris);
-    std::vector<std::pair<std::string, std::string>> oldAlbumData = ExtractUriAndIDFromOldUris(context->albumUris);
-
-    int errCode = 0;
-    DataSharePredicates predicates;
-    Uri uri(QUERY_TAB_OLD_ALBUMS);
-    std::vector<std::string> columns= { TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::OLD_ALBUM_ID, TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::ALBUM_ID, TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::ALBUM_TYPE, TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::ALBUM_SUBTYPE, TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::CLONE_SEQUENCE};
-    predicates.In(TabOldAlbumsColumn::OLD_ALBUM_ID, InputAlbumId);
-    predicates.OrderByDesc(TabOldAlbumsColumn::CLONE_SEQUENCE);
-    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
-
-    if (resultSet == nullptr) {
-        NAPI_ERR_LOG("QueryOldAlbumsTable: ResultSet is nullptr: %{public}d", errCode);
-        return;
-    }
-
     std::vector<TabOldAlbumsColumn::RawData> processing;
+
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         TabOldAlbumsColumn::RawData row;
-        row.old_album_id = GetInt32Val (TabOldAlbumsColumn::OLD_ALBUM_ID, resultSet);
-        row.album_id = GetInt32Val (TabOldAlbumsColumn::ALBUM_ID, resultSet);
-        row.album_type = GetInt32Val (TabOldAlbumsColumn::ALBUM_TYPE, resultSet);
-        row.album_subtype = GetInt32Val (TabOldAlbumsColumn::ALBUM_SUBTYPE, resultSet);
-        row.clone_sequence = GetInt32Val (TabOldAlbumsColumn::CLONE_SEQUENCE, resultSet);
+        row.old_album_id = GetInt32Val(TabOldAlbumsColumn::OLD_ALBUM_ID, resultSet);
+        row.album_id = GetInt32Val(TabOldAlbumsColumn::ALBUM_ID, resultSet);
+        row.album_type = GetInt32Val(TabOldAlbumsColumn::ALBUM_TYPE, resultSet);
+        row.album_subtype = GetInt32Val(TabOldAlbumsColumn::ALBUM_SUBTYPE, resultSet);
+        row.clone_sequence = GetInt32Val(TabOldAlbumsColumn::CLONE_SEQUENCE, resultSet);
 
         auto it = std::find_if(processing.begin(), processing.end(), [&row](const auto &elem) {
             return row.old_album_id == elem.old_album_id;
@@ -9722,9 +9707,11 @@ static void PhotoAccessGetAlbumsByOldUrisExecute(napi_env env, void *data)
         if (it == processing.end()) {
             processing.emplace_back(row);
         } else {
-            char itSubtype = (it->album_subtype >= TabOldAlbumsColumn::IsPhotoOrAnalysis && it->album_subtype < TabOldAlbumsColumn::MaxValue) ? TabOldAlbumsColumn::IS_ANALYSIS_TABLE : TabOldAlbumsColumn::IS_PHOTOS_TABLE;
-            char rowSubtype = (row.album_subtype >= TabOldAlbumsColumn::IsPhotoOrAnalysis && row.album_subtype < TabOldAlbumsColumn::MaxValue) ? TabOldAlbumsColumn::IS_ANALYSIS_TABLE : TabOldAlbumsColumn::IS_PHOTOS_TABLE;
-        
+            char itSubtype = (it->album_subtype >= TabOldAlbumsColumn::IsPhotoOrAnalysis && it->album_subtype < TabOldAlbumsColumn::MaxValue)
+                ? TabOldAlbumsColumn::IS_ANALYSIS_TABLE : TabOldAlbumsColumn::IS_PHOTOS_TABLE;
+            char rowSubtype = (row.album_subtype >= TabOldAlbumsColumn::IsPhotoOrAnalysis && row.album_subtype < TabOldAlbumsColumn::MaxValue)
+                ? TabOldAlbumsColumn::IS_ANALYSIS_TABLE : TabOldAlbumsColumn::IS_PHOTOS_TABLE;
+
             if (itSubtype != rowSubtype) {
                 processing.emplace_back(row);
             } else if (row.clone_sequence > it->clone_sequence) {
@@ -9732,7 +9719,42 @@ static void PhotoAccessGetAlbumsByOldUrisExecute(napi_env env, void *data)
             }
         }
     }
-    resultSet->Close();
+    return processing;
+}
+
+static void PhotoAccessGetAlbumsByOldUrisExecute(napi_env env, void *data)
+{
+    MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    std::vector<std::string> InputAlbumId = ExtractIDAlbumOldUris(context->albumUris);
+    std::vector<std::pair<std::string, std::string>> oldAlbumData = ExtractUriAndIDFromOldUris(context->albumUris);
+
+    DataSharePredicates predicates;
+    std::vector<std::string> columns= { TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::OLD_ALBUM_ID, TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::ALBUM_ID, TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::ALBUM_TYPE, TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::ALBUM_SUBTYPE, TabOldAlbumsColumn::OLD_ALBUM_TABLE + '.' + TabOldAlbumsColumn::CLONE_SEQUENCE};
+    predicates.In(TabOldAlbumsColumn::OLD_ALBUM_ID, InputAlbumId);
+    predicates.OrderByDesc(TabOldAlbumsColumn::CLONE_SEQUENCE);
+
+    int errCode = 0;
+    GetClonedAlbumUrisReqBody reqBody;
+    reqBody.predicates = predicates;
+    reqBody.columns = columns;
+    GetClonedAlbumUrisRespBody respBody;
+    context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::GET_CLONED_ALBUM_URIS);
+    errCode = IPC::UserDefineIPCClient().SetUserId(context->userId).Call(context->businessCode, reqBody, respBody);
+    if (errCode != 0) {
+        context->SaveError(errCode);
+        NAPI_ERR_LOG("UserDefineIPCClient Call failed, errCode: %{public}d.", errCode);
+        return;
+    }
+
+    if (respBody.resultSet == nullptr) {
+        NAPI_ERR_LOG("QueryOldAlbumsTable: ResultSet is nullptr: %{public}d", errCode);
+        return;
+    }
+    std::vector<TabOldAlbumsColumn::RawData> processing = ProcessOldAlbumResultSet(respBody.resultSet);
+ 
+    respBody.resultSet->Close();
     context->uriAlbumMap = prepareMapping(processing, oldAlbumData);
 }
 
