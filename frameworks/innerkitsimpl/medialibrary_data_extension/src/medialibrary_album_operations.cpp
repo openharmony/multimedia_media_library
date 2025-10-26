@@ -1075,7 +1075,7 @@ static int32_t CheckConflictsWithExistingAlbum(const string &newAlbumName,
         MEDIA_INFO_LOG("CheckConflictsWithExistingAlbum not source album, no need to check album plugin");
         return E_OK;
     }
-    CHECK_AND_RETURN_RET_LOG(CheckConflictsWithAlbumPlugin(newAlbumName, newLPath, rdbStore) == E_OK, E_ERR
+    CHECK_AND_RETURN_RET_LOG(CheckConflictsWithAlbumPlugin(newAlbumName, newLPath, rdbStore) == NativeRdb::E_OK, E_ERR,
         "same lpath or name in album plugin");
     return E_OK;
 }
