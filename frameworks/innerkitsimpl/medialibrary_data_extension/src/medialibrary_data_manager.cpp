@@ -139,6 +139,7 @@
 #include "zip_util.h"
 #include "photo_custom_restore_operation.h"
 #include "vision_db_sqls.h"
+#include "vision_column.h"
 #include "cloud_media_asset_uri.h"
 #include "album_operation_uri.h"
 #include "custom_record_operations.h"
@@ -190,10 +191,8 @@ static const std::string COLUMN_OLD_FILE_ID = "old_file_id";
 static const std::string NO_DELETE_DISK_DATA_INDEX = "no_delete_disk_data_index";
 static const std::string NO_UPDATE_EDITDATA_SIZE = "no_update_editdata_size";
 static const std::string UPDATE_EDITDATA_SIZE_COUNT = "update_editdata_size_count";
-static const long long MAX_DFX_DB_FILE_SIZE_TYPE = 3LL * 1024 * 1024 * 1024;
-static const std::string KEY_HIVIEW_VERSION_TYPE = "const.logsystem.versiontype";
-static const std::string DFX_DB_FILE_PATH = "/data/storage/el2/log/logpack/";
-
+static const std::string BETA_DEBUG_DB_FILE_PATH = "/data/storage/el2/log/logpack/";
+static constexpr int64_t MAX_DEBUG_DB_FILE_SIZE_BYTE = 3LL * 1024 * 1024 * 1024;
 static int32_t g_updateBurstMaxId = 0;
 static int32_t g_updateHdrModeId = -1;
 
@@ -3662,76 +3661,129 @@ int32_t MediaLibraryDataManager::RestoreInvalidPosData()
     return ret;
 }
 
-static long long GetDatabaseFileSize(const std::string &destFileName)
+static int32_t BackupDebugDatabase(const std::string &path)
+{
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_OPR_DEBUG_DB_FAIL, "RdbStore is nullptr");
+    int32_t errCode = rdbStore->Backup(path);
+    CHECK_AND_RETURN_RET(errCode == 0, E_BACK_UP_DB_FAIL);
+    return E_SUCCESS;
+}
+
+static int64_t GetDatabaseFileSize(const std::string &destFileName)
 {
     struct stat statInfo {};
-    CHECK_AND_RETURN_RET(stat(destFileName.c_str(), &statInfo) == 0, static_cast<long long>(E_FAIL));
+    CHECK_AND_RETURN_RET(stat(destFileName.c_str(), &statInfo) == 0, static_cast<int64_t>(E_OPR_DEBUG_DB_FAIL));
     return statInfo.st_size;
 }
 
 static int32_t GetZipFile(const std::string &srcPath, const std::string &destPath)
 {
-    int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
     std::string zipFileName = srcPath;
     zipFile compressZip = Media::ZipUtil::CreateZipFile(destPath);
-    CHECK_AND_RETURN_RET_LOG(compressZip != nullptr, E_FILE_OPER_FAIL, "failed to open zip file");
+    CHECK_AND_RETURN_RET_LOG(compressZip != nullptr, E_OPR_DEBUG_DB_FAIL, "Failed to open zipFile");
     int32_t errCode = Media::ZipUtil::AddFileInZip(compressZip, zipFileName, Media::KEEP_NONE_PARENT_PATH);
-    CHECK_AND_RETURN_RET_LOG(errCode == 0, E_FILE_OPER_FAIL, "AddFileInZip failed, errCode = %{public}d", errCode);
+    CHECK_AND_RETURN_RET_LOG(errCode == 0, E_OPR_DEBUG_DB_FAIL, "AddFileInZip failed, errCode = %{public}d", errCode);
     Media::ZipUtil::CloseZipFile(compressZip);
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("Zip db file success, cost %{public}ld ms", static_cast<long>(end - begin));
     return E_SUCCESS;
 }
 
-static bool CheckBetaMachine()
+static int32_t DropAnalysisTables(shared_ptr<NativeRdb::RdbStore> &store)
 {
-    std::string versionType = system::GetParameter(KEY_HIVIEW_VERSION_TYPE, "unknown");
-    return versionType.find("beta") != std::string::npos;
+    MEDIA_INFO_LOG("Start drop analysis tables");
+    int32_t err = store->ExecuteSql("DROP TRIGGER IF EXISTS delete_vision_trigger");
+    CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Fail to execute drop vision_trigger");
+    for (const auto &tableName : VISION_HIGHLIGHT_TABLES) {
+        string sql = "DROP TABLE IF EXISTS" + tableName;
+        err = store->ExecuteSql(sql);
+        CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Fail to execute: %{private}s", sql.c_str());
+    }
+    return E_SUCCESS;
 }
 
-int32_t MediaLibraryDataManager::GetDatabaseDFX(const std::string &betaId, std::string &fileName, std::string &fileSize)
+static int32_t DebugDatabaseFilter(const std::string &path, const std::string &name)
 {
-    MEDIA_INFO_LOG("MediaLibraryDataManager::GetDatabaseDFX enter");
-    CHECK_AND_RETURN_RET_LOG(CheckBetaMachine(), E_CHECK_SYSTEMAPP_FAIL, "API only can be called by beta mechine");
-    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
-    const std::string filePath = DFX_DB_FILE_PATH;
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(filePath) || MediaFileUtils::CreateDirectory(filePath),
-        E_FILE_OPER_FAIL, "Create dir failed, dir = %{private}s", filePath.c_str());
-    fileName = "media_library_" + betaId + ".db.zip";
-    const std::string destFileName = filePath + fileName;
-    if (MediaFileUtils::IsFileExists(destFileName)) {
-        MediaFileUtils::DeleteFile(destFileName);
-        MEDIA_WARN_LOG("same betaID File is exist, has been deleted, destFile = %{private}s", destFileName.c_str());
+    MediaLibraryDataCallBack rdbDataCallBack;
+    NativeRdb::RdbStoreConfig config("");
+    std::string filePath = path + name;
+    config.SetName(name);
+    config.SetPath(filePath);
+    int32_t errCode;
+    shared_ptr<NativeRdb::RdbStore> store = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
+    CHECK_AND_RETURN_RET_LOG(store != nullptr && errCode == E_OK, errCode, "DatabaseDFXFilter: fail to get rdb");
+    errCode = DropAnalysisTables(store);
+    return errCode;
+}
+
+static int32_t DeleteTempDatabaseFile(const std::string &tempFilePath)
+{
+    const vector<std::string> fileExtension = {"-compare", "-dwr", "-shm", "-wal"};
+    for (const auto &ext : fileExtension) {
+        string tempFile = tempFilePath + ext;
+        MediaFileUtils::DeleteFile(tempFile);
     }
-    std::string tempFileName = filePath + "media_library_temp.db";
-    int32_t errCode = rdbStore->Backup(tempFileName);
-    CHECK_AND_RETURN_RET_LOG(errCode == 0, E_BACK_UP_DB_FAIL, "rdb backup fail: %{public}d", errCode);
+    return E_SUCCESS;
+}
+
+static int64_t HandleDebugDatabaseUpload(const string &filePath, const string &tempName, const string &destName)
+{
+    string tempFile = filePath + tempName;
+    string destFile = filePath + destName;
+    CHECK_AND_RETURN_RET_LOG(GetZipFile(tempFile, destFile) == E_OK, E_OPR_DEBUG_DB_FAIL, "Fail to zip DBFile");
+    int64_t totalSize = GetDatabaseFileSize(destFile);
+    if (totalSize > MAX_DEBUG_DB_FILE_SIZE_BYTE) {
+        MEDIA_WARN_LOG("%{public}s exceed 3GB, size:%{public}s b", destName.c_str(), std::to_string(totalSize).c_str());
+        MediaFileUtils::DeleteFile(destFile);
+        int32_t errCode = DebugDatabaseFilter(filePath, tempName);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_OPR_DEBUG_DB_FAIL, "Init Rdb fail, errCode: %{public}d", errCode);
+        CHECK_AND_RETURN_RET_LOG(GetZipFile(tempFile, destFile) == E_OK, E_OPR_DEBUG_DB_FAIL, "Fail to zip DBFile");
+        errCode = DeleteTempDatabaseFile(tempFile);
+        CHECK_AND_WARN_LOG(errCode == E_SUCCESS, "Failed to delete temp Database file");
+        totalSize = GetDatabaseFileSize(destFile);
+    }
+    MediaFileUtils::DeleteFile(tempFile);
+    return totalSize;
+}
+
+int32_t MediaLibraryDataManager::AcquireDebugDatabase(const string &betaIssueId, const string &betaScenario,
+    string &fileName, string &fileSize)
+{
+    MEDIA_INFO_LOG("MediaLibraryDataManager::AcquireDebugDatabase start");
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryDataManager::AcquireDebugDatabase");
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsBetaVersion(), E_BETA_VERSION_FAIL, "Caller not beta version");
     
-    CHECK_AND_RETURN_RET_LOG(GetZipFile(tempFileName, destFileName) == E_OK, E_FILE_OPER_FAIL, "failed to get zipFile");
-    CHECK_AND_WARN_LOG(MediaFileUtils::DeleteFile(tempFileName), "failed to delete temp DBfile, path = %{private}s",
-        tempFileName.c_str());
-    long long totalFileSize = GetDatabaseFileSize(destFileName);
-    long long err = static_cast<long long>(E_FAIL);
-    CHECK_AND_RETURN_RET_LOG(totalFileSize != err, E_FILE_OPER_FAIL, "failed to get DBfile size");
-
-    fileSize = std::to_string(totalFileSize);
-    if (totalFileSize > MAX_DFX_DB_FILE_SIZE_TYPE) {
-        MEDIA_ERR_LOG("DB file too large, file size is %{public}s byte, file name is %{public}s",
-            fileSize.c_str(), fileName.c_str());
-        MediaFileUtils::DeleteFile(destFileName);
-        return E_DFX_DB_TOO_LARGE;
+    const std::string filePath = BETA_DEBUG_DB_FILE_PATH;
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(filePath) || MediaFileUtils::CreateDirectory(filePath),
+        E_OPR_DEBUG_DB_FAIL, "Create dir failed, dir = %{private}s", filePath.c_str());
+    fileName = "media_library_" + betaIssueId + ".db.zip";
+    const std::string destFile = filePath + fileName;
+    if (MediaFileUtils::IsFileExists(destFile)) {
+        MediaFileUtils::DeleteFile(destFile);
+        MEDIA_WARN_LOG("Same betaIssueId File has been deleted, destFile = %{private}s", destFile.c_str());
     }
+    std::string tempFileName = "media_library_temp_" + betaIssueId + ".db";
+    std::string tempFile = filePath + tempFileName;
+
+    tracer.Start("BackupDebugDatabase");
+    int32_t errCode = BackupDebugDatabase(tempFile);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "Rdb backup fail: %{public}d", errCode);
+
+    //数据库上传 故障路径 betaScenario = 1024_1041_1018
+    tracer.Start("HandleDebugDatabaseUpload");
+    int64_t ret = HandleDebugDatabaseUpload(filePath, tempFileName, fileName);
+    CHECK_AND_RETURN_RET_LOG(ret != E_OPR_DEBUG_DB_FAIL, static_cast<int32_t>(ret), "Failed to handle debug database");
+    fileSize = std::to_string(ret);
     return E_SUCCESS;
 }
 
-int32_t MediaLibraryDataManager::RemoveDatabaseDFX(const std::string &betaId)
+int32_t MediaLibraryDataManager::ReleaseDebugDatabase(const std::string &betaIssueId)
 {
-    MEDIA_INFO_LOG("MediaLibraryDataManager::RemoveDatabaseDFX enter");
-    CHECK_AND_RETURN_RET_LOG(CheckBetaMachine(), E_CHECK_SYSTEMAPP_FAIL, "only can be called by beta mechine");
-    const std::string filePath = DFX_DB_FILE_PATH + "media_library_" + betaId + ".db.zip";
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(filePath), E_FILE_OPER_FAIL,
-        "failed to delete DFX database file, path: %{private}s", filePath.c_str());
+    MEDIA_INFO_LOG("MediaLibraryDataManager::ReleaseDebugDatabase start");
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsBetaVersion(), E_BETA_VERSION_FAIL, "Caller not beta version");
+    const std::string filePath = BETA_DEBUG_DB_FILE_PATH + "media_library_" + betaIssueId + ".db.zip";
+    CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(filePath), "Failed to release database file, path: %{private}s",
+        filePath.c_str());
     return E_SUCCESS;
 }
 }  // namespace Media
