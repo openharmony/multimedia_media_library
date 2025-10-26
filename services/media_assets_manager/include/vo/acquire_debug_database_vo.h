@@ -13,20 +13,30 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_ASSETS_MANAGER_REMOVE_GETDATABASE_DFX_VO_H
-#define OHOS_MEDIA_ASSETS_MANAGER_REMOVE_GETDATABASE_DFX_VO_H
+#ifndef OHOS_MEDIA_ASSETS_MANAGER_ACQUIRE_DEBUG_DATABASE_VO_H
+#define OHOS_MEDIA_ASSETS_MANAGER_ACQUIRE_DEBUG_DATABASE_VO_H
 
 #include "i_media_parcelable.h"
 
 #include <string>
 
 namespace OHOS::Media {
-class RemoveDatabaseDFXReqBody : public IPC::IMediaParcelable {
+class AcquireDebugDatabaseReqBody : public IPC::IMediaParcelable {
 public:
-    std::string betaId;
+    std::string betaIssueId;
+    std::string betaScenario;
+
+    bool Unmarshalling(MessageParcel &parcel) override;
+    bool Marshalling(MessageParcel &parcel) const override;
+};
+
+class AcquireDebugDatabaseRespBody : public IPC::IMediaParcelable {
+public:
+    std::string fileName;
+    std::string fileSize;
 
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
 };
 }  // namespace OHOS::Media
-#endif  // OHOS_MEDIA_ASSETS_MANAGER_REMOVE_GETDATABASE_DFX_VO_H
+#endif  // OHOS_MEDIA_ASSETS_MANAGER_ACQUIRE_DEBUG_DATABASE_VO_H

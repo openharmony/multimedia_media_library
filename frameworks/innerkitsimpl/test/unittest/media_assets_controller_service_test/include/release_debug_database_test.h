@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef REMOVE_DATABASE_DFX_TEST_H
-#define REMOVE_DATABASE_DFX_TEST_H
+#ifndef RELEASE_DEBUG_DATABASE_TEST_H
+#define RELEASE_DEBUG_DATABASE_TEST_H
 
 #include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-class RemoveDatabaseDFXTest : public testing::Test {
+class ReleaseDebugDatabaseTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -29,4 +29,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // REMOVE_DATABASE_DFX_TEST_H
+#endif // RELEASE_DEBUG_DATABASE_TEST_H

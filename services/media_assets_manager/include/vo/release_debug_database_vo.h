@@ -12,19 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "remove_database_dfx_vo.h"
 
-#include "media_log.h"
+#ifndef OHOS_MEDIA_ASSETS_MANAGER_RELEASE_DEBUG_DATABASE_VO_H
+#define OHOS_MEDIA_ASSETS_MANAGER_RELEASE_DEBUG_DATABASE_VO_H
+
+#include "i_media_parcelable.h"
+
+#include <string>
 
 namespace OHOS::Media {
+class ReleaseDebugDatabaseReqBody : public IPC::IMediaParcelable {
+public:
+    std::string betaIssueId;
 
-bool RemoveDatabaseDFXReqBody::Unmarshalling(MessageParcel &parcel)
-{
-    return parcel.ReadString(this->betaId);
-}
-
-bool RemoveDatabaseDFXReqBody::Marshalling(MessageParcel &parcel) const
-{
-    return parcel.WriteString(this->betaId);
-}
+    bool Unmarshalling(MessageParcel &parcel) override;
+    bool Marshalling(MessageParcel &parcel) const override;
+};
 }  // namespace OHOS::Media
+#endif  // OHOS_MEDIA_ASSETS_MANAGER_RELEASE_DEBUG_DATABASE_VO_H
