@@ -1001,7 +1001,7 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryC
 }
 
 static int32_t CheckConflictsWithAlbumPlugin(const string &newAlbumName, const string &newLPath,
-    const shared_ptr<MediaLibraryRdbStore>& rdbStore, const int32_t oldAlbumType)
+    const shared_ptr<MediaLibraryRdbStore>& rdbStore)
 {
     int32_t rowCount = 0;
     std::string albumPluginlPathSql = "SELECT * FROM album_plugin WHERE LOWER(lpath) = LOWER(?)";
