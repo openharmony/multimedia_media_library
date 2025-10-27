@@ -282,6 +282,23 @@ void MediaAssetChangeRequestNapi::RecordChangeOperation(AssetChangeOperation cha
     assetChangeOperations_.push_back(changeOperation);
 }
 
+void MediaAssetChangeRequestNapi::RecordChangeOperationForPicker(AssetChangeOperation changeOperation)
+{
+    if ((changeOperation == AssetChangeOperation::GET_WRITE_CACHE_HANDLER ||
+            changeOperation == AssetChangeOperation::ADD_RESOURCE_FOR_PICKER ||
+            changeOperation == AssetChangeOperation::ADD_FILTERS) &&
+        Contains(AssetChangeOperation::CREATE_FROM_SCRATCH)) {
+        assetChangeOperations_.insert(assetChangeOperations_.begin() + 1, changeOperation);
+        return;
+    }
+    if (changeOperation == AssetChangeOperation::ADD_RESOURCE_FOR_PICKER &&
+        Contains(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE)) {
+        assetChangeOperations_.insert(assetChangeOperations_.begin(), changeOperation);
+        return;
+    }
+    assetChangeOperations_.push_back(changeOperation);
+}
+
 bool MediaAssetChangeRequestNapi::Contains(AssetChangeOperation changeOperation) const
 {
     return std::find(assetChangeOperations_.begin(), assetChangeOperations_.end(), changeOperation) !=
@@ -370,7 +387,8 @@ bool MediaAssetChangeRequestNapi::CheckMovingPhotoWriteOperation()
     }
 
     bool containsAddResource = Contains(AssetChangeOperation::ADD_RESOURCE);
-    if (!containsAddResource) {
+    bool containsAddResourceForPicker = Contains(AssetChangeOperation::ADD_RESOURCE_FOR_PICKER);
+    if (!containsAddResource && !containsAddResourceForPicker) {
         return true;
     }
 
@@ -381,9 +399,15 @@ bool MediaAssetChangeRequestNapi::CheckMovingPhotoWriteOperation()
 
     int addResourceTimes =
         std::count(assetChangeOperations_.begin(), assetChangeOperations_.end(), AssetChangeOperation::ADD_RESOURCE);
+    int addResourceForPickerTimes =
+        std::count(assetChangeOperations_.begin(), assetChangeOperations_.end(),
+            AssetChangeOperation::ADD_RESOURCE_FOR_PICKER);
     bool isImageExist = ContainsResource(ResourceType::IMAGE_RESOURCE);
     bool isVideoExist = ContainsResource(ResourceType::VIDEO_RESOURCE);
-    return addResourceTimes == 2 && isImageExist && isVideoExist; // must add resource 2 times with image and video
+    // must add resource 2 times with image and video
+    int movingPhotoAddResourceTimes = 2;
+    return (addResourceTimes == movingPhotoAddResourceTimes && isImageExist && isVideoExist) ||
+        (addResourceForPickerTimes == movingPhotoAddResourceTimes && isImageExist && isVideoExist);
 }
 
 bool MediaAssetChangeRequestNapi::CheckChangeOperations(napi_env env)
@@ -1708,6 +1732,35 @@ napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResource(napi_env env
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResourceForPicker(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("AddMovingPhotoVideoResourceForPicker");
+
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) == napi_ok,
+        "Failed to get object info");
+    auto changeRequest = asyncContext->objectInfo;
+
+    napi_valuetype valueType;
+    napi_value value = asyncContext->argv[PARAM1];
+    CHECK_COND_WITH_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, "Failed to get napi type");
+
+    // addResource by file uri
+    CHECK_COND(env, ParseFileUri(env, value, MediaType::MEDIA_TYPE_VIDEO, asyncContext), OHOS_INVALID_PARAM_CODE);
+    if (!MediaFileUtils::CheckMovingPhotoVideo(asyncContext->realPath)) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check video resource of moving photo");
+        return nullptr;
+    }
+    changeRequest->movingPhotoVideoRealPath_ = asyncContext->realPath;
+    changeRequest->movingPhotoVideoResourceMode_ = AddResourceMode::FILE_URI;
+
+    changeRequest->RecordChangeOperationForPicker(AssetChangeOperation::ADD_RESOURCE_FOR_PICKER);
+    changeRequest->addResourceTypes_.push_back(ResourceType::VIDEO_RESOURCE);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 napi_value MediaAssetChangeRequestNapi::JSAddResource(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
@@ -1784,7 +1837,7 @@ napi_value MediaAssetChangeRequestNapi::JSAddResourceForPicker(napi_env env, nap
         resourceType) == napi_ok, "Failed to get resourceType");
     CHECK_COND(env, CheckWriteOperation(env, changeRequest, GetResourceType(resourceType)), JS_E_OPERATION_NOT_SUPPORT);
     if (changeRequest->IsMovingPhoto() && resourceType == static_cast<int32_t>(ResourceType::VIDEO_RESOURCE)) {
-        return AddMovingPhotoVideoResource(env, info);
+        return AddMovingPhotoVideoResourceForPicker(env, info);
     }
     CHECK_COND_WITH_MESSAGE(env, resourceType == static_cast<int32_t>(fileAsset->GetMediaType()) ||
         resourceType == static_cast<int32_t>(ResourceType::PHOTO_PROXY), "Failed to check resourceType");
