@@ -279,8 +279,8 @@ static int32_t AlbumGetSelectedAssets(int32_t albumId)
         MEDIA_ERR_LOG("ResultSet GetRowCount failed, errCode=%{public}d", errCode);
         return -1;
     }
-}
     return count;
+}
 
 HWTEST_F(AlbumGetSelectedAssetsTest, GetSelectedAssets_Test_001, TestSize.Level0)
 {
