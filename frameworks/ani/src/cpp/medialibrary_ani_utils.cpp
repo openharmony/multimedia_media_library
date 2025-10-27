@@ -72,7 +72,7 @@ static ani_status InitAniArrayOperator(ani_env *env, AniArrayOperator &arrayOper
     CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "<ctor>", "i:", &(arrayOperator.ctorMethod)),
         "Can't find method <ctor> in escompat.Array.");
 
-    CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "$_set", "iC{std.core.Object}:",
+    CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "$_set", "iY:",
         &(arrayOperator.setMethod)), "Can't find method $_set in escompat.Array.");
     return ANI_OK;
 }
@@ -460,7 +460,7 @@ ani_status MediaLibraryAniUtils::GetUint32Array(ani_env *env, ani_object arg, st
 
     for (int i = 0; i < length; i++) {
         ani_ref value;
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &value, (ani_int)i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:Y", &value, (ani_int)i),
             "Call method $_get failed.");
 
         uint32_t uValue = 0;
@@ -483,7 +483,7 @@ ani_status MediaLibraryAniUtils::GetInt32Array(ani_env *env, ani_object arg, std
 
     for (int i = 0; i < length; i++) {
         ani_ref ref;
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &ref, (ani_int)i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:Y", &ref, (ani_int)i),
             "Call method $_get failed.");
 
         int32_t value = 0;
@@ -542,7 +542,7 @@ ani_status MediaLibraryAniUtils::GetStringArray(ani_env *env, ani_object arg, st
 
     for (int i = 0; i < length; i++) {
         ani_ref value {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &value, (ani_int)i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:Y", &value, (ani_int)i),
             "Call method $_get failed.");
 
         std::string sValue;
@@ -583,7 +583,7 @@ ani_status MediaLibraryAniUtils::GetObjectArray(ani_env *env, ani_object arg, st
 
     for (ani_int i = 0; i < length; i++) {
         ani_ref value {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &value, i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:Y", &value, i),
             "Call method $_get failed.");
         array.emplace_back(static_cast<ani_object>(value));
     }
@@ -606,7 +606,7 @@ ani_status MediaLibraryAniUtils::ToAniMap(ani_env *env, const std::map<std::stri
 
     ani_method setMethod {};
     CHECK_STATUS_RET(
-        env->Class_FindMethod(cls, "set", "C{std.core.Object}C{std.core.Object}:C{std.core.Map}", &setMethod),
+        env->Class_FindMethod(cls, "set", "YY:C{std.core.Map}", &setMethod),
         "Can't find method set in std.core.Map");
 
     for (const auto &[key, value] : map) {
@@ -634,7 +634,7 @@ ani_status MediaLibraryAniUtils::MakeAniArray(ani_env* env, uint32_t size, ani_o
         "Can't find method <ctor> in escompat.Array");
 
     CHECK_STATUS_RET(env->Object_New(cls, arrayConstructor, &aniArray, size), "New aniArray failed");
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "iC{std.core.Object}:", &setMethod),
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "iY:", &setMethod),
         "Can't find method $_set in escompat.Array.");
     return ANI_OK;
 }
@@ -651,7 +651,7 @@ ani_status MediaLibraryAniUtils::GetAniValueArray(ani_env *env, ani_object arg, 
 
     for (ani_int i = 0; i < length; i++) {
         ani_ref asset {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &asset, i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:Y", &asset, i),
             "Call method $_get failed.");
         array.push_back(static_cast<ani_object>(asset));
     }
@@ -839,7 +839,7 @@ ani_status MediaLibraryAniUtils::GetUriArrayFromAssets(ani_env *env, ani_object 
 
     for (ani_int i = 0; i < length; i++) {
         ani_ref asset {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &asset, i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:Y", &asset, i),
             "Call method $_get failed.");
 
         FileAssetAni *obj = FileAssetAni::Unwrap(env, static_cast<ani_object>(asset));
@@ -870,7 +870,7 @@ ani_status MediaLibraryAniUtils::GetArrayFromAssets(ani_env *env, ani_object arg
 
     for (ani_int i = 0; i < length; i++) {
         ani_ref asset {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &asset, i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:Y", &asset, i),
             "Call method $_get failed.");
 
         FileAssetAni *obj = FileAssetAni::Unwrap(env, static_cast<ani_object>(asset));
@@ -967,7 +967,7 @@ ani_status MediaLibraryAniUtils::GetPhotoAlbumAniArray(ani_env *env, ani_object 
 
     for (int i = 0; i < length; i++) {
         ani_ref value {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:C{std.core.Object}", &value, (ani_int)i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "i:Y", &value, (ani_int)i),
             "Call method $_get failed.");
 
         array.emplace_back(PhotoAlbumAni::UnwrapPhotoAlbumObject(env, (ani_object)value));
@@ -1908,7 +1908,7 @@ ani_status MediaLibraryAniUtils::ParseAssetIdArray(ani_env *env, ani_object phot
     idArray.clear();
     for (ani_int i = 0; i < length; i++) {
         ani_ref asset {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(photoAssets, "$_get", "i:C{std.core.Object}", &asset, i),
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(photoAssets, "$_get", "i:Y", &asset, i),
             "Call method $_get failed.");
 
         FileAssetAni *obj = FileAssetAni::Unwrap(env, static_cast<ani_object>(asset));
@@ -2470,7 +2470,7 @@ ani_status MediaLibraryAniUtils::VariantMapToAniMap(ani_env *env, const VarMap &
 
     ani_method setMethod {};
     CHECK_STATUS_RET(
-        env->Class_FindMethod(cls, "set", "C{std.core.Object}C{std.core.Object}:C{std.core.Map}", &setMethod),
+        env->Class_FindMethod(cls, "set", "YY:C{std.core.Map}", &setMethod),
         "Can't find method set in std.core.Map");
 
     ani_ref setResult {};
