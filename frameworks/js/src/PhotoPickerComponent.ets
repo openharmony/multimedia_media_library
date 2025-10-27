@@ -102,9 +102,16 @@ export struct PhotoPickerComponent {
       console.info('PhotoPickerComponent onChanged: SAVE_REPLACE_PHOTO_ASSETS');
     } else if (data?.has('SET_BADGE_CONFIGS')) {
       this.onChangedBadgeConfigs(data);
+    } else if(data?.has('UPDATE_CONFIG')){
+      this.onUpdateConfig(data);
     } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
+  }
+
+  private onUpdateConfig(data?: Map<string, Object>) {
+    this.proxy.send({ updateConfig: data?.get('UPDATE_CONFIG') as UpdatablePickerOptions });
+    console.info('PhotoPickerComponent onChanged: UPDATE_CONFIG');
   }
 
   private onSetMaxSelectCount(data?: Map<string, Object>): void {
@@ -461,8 +468,8 @@ export struct PhotoPickerComponent {
     if (PHOTO_VIEW_MIME_TYPE_MAP.has(filterType)) {
       filterType = PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType);
     } else {
-      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*);
-      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*);
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*');
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*');
     }
     console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(filterType));
     return filterType;
@@ -677,6 +684,16 @@ export class PickerController {
     }
   }
 
+  updatePickerOptions(updateConfig: UpdatablePickerOptions): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (e !== undefined) {
+        this.data = new Map([['UPDATE_CONFIG', updateConfig]]);
+        console.info('PhotoPickerComponent UPDATE_CONFIG ' + JSON.stringify(updateConfig));
+      }
+      resolve();
+    });
+  }
+
   setPhotoBrowserItem(uri: string, photoBrowserRange?: PhotoBrowserRange) {
     let photoBrowserRangeInfo: PhotoBrowserRangeInfo = new PhotoBrowserRangeInfo();
     photoBrowserRangeInfo.uri = uri;
@@ -824,6 +841,22 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   preselectedInfos?: Array<PreselectedInfo>;
 }
 
+export class UpdatablePickerOptions {
+  MIMEType?: photoAccessHelper.PhotoViewMIMETypes;
+  mimeTypeFilter?: photoAccessHelper.MimeTypeFilter;
+  maxSelectNumber?: number;
+  maxPhotoSelectNumber?: number;
+  maxVideoSelectNumber?: number;
+  selectMode?: SelectMode;
+  singleSelectionMode?: photoAccessHelper.SingleSelectionMode;
+  isRepeatSelectSupported?: boolean;
+  preselectedUris?: Array<string>;
+  checkBoxColor?: string;
+  checkboxTextColor?: string;
+  backgroundColor?: string;
+  photoBrowserBackgroundColorMode?: PickerColorMode
+}
+
 export class BaseItemInfo {
   uri?: string;
   mimeType?: string;
@@ -961,4 +994,10 @@ export enum BadgeOptionType {
   SET_DATA = 1,
   ADD_DATA = 2,
   DELETE_DATA = 3
+}
+
+export enum SingleSelectMode {
+  BROWSER_MODE = 0,
+  SELECT_MODE = 1,
+  BROWSER_AND_SELECT_MODE = 2
 }

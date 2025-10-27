@@ -170,10 +170,17 @@ export class PhotoPickerComponent extends ViewPU {
             this.onSaveTrustedPhotoAssets(o);
             console.info('PhotoPickerComponent onChanged: SAVE_REPLACE_PHOTO_ASSETS');
         } else if (null == o ? void 0 : o.has('SET_BADGE_CONFIGS')) {
-           this.onChangedBadgeConfigs(o);
+            this.onChangedBadgeConfigs(o);
+        } else if (null == o ? void 0 : o.has('UPDATE_CONFIG')) {
+            this.onUpdateConfig(o);
         } else {
             console.info('PhotoPickerComponent onChanged: other case');
         }
+    }
+
+    onUpdateConfig(o) {
+        this.proxy.send({ updateConfig: null == o ? void 0 : o.get('UPDATE_CONFIG') });
+        console.info('PhotoPickerComponent onChanged: UPDATE_CONFIG');
     }
 
     onSetMaxSelectCount(o) {
@@ -715,6 +722,13 @@ let PickerController = class {
         }
     }
 
+    async updatePickerOptions(e) {
+        if (e !== undefined) {
+            this.data = new Map([['UPDATE_CONFIG', e]]);
+            console.info('PhotoPickerComponent UPDATE_CONFIG ' + JSON.stringify(e));
+        }
+    }
+    
     setPhotoBrowserItem(e, o) {
         let l = new PhotoBrowserRangeInfo;
         l.uri = e;
@@ -840,6 +854,9 @@ let PickerController = class {
 PickerController = __decorate([Observed], PickerController);
 
 export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
+}
+
+export class UpdatablePickerOptions {    
 }
 
 export class BaseItemInfo {
@@ -978,4 +995,4 @@ export var BadgeOptionType;
 
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
     MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement,
-    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig };
+    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig, UpdatablePickerOptions };
