@@ -140,8 +140,8 @@ static bool InsertAnalysisAlbum(string albumName, string groupTag)
 {
     // std::string insertSql = "INSERT INTO AnalysisAlbum (album_name, album_subtype, group_tag) VALUES "
     //                         "('"+ albumName + "', 4096, '" + groupTag + "')";
-    std::string insertSql = "INSERT INTO AnalysisAlbum (album_name, album_subtype, group_tag) VALUES ('test01', 4096, "
-                            "'ser_1755057945560169000')";
+    std::string insertSql = "INSERT INTO AnalysisAlbum (album_name, album_subtype, group_tag, tag_id) VALUES ('test01', 4102, "
+                            "'ser_1755057945560169000', 'ser_1755057945560169000')";
     return ExecutionSql(insertSql);
 }
 
