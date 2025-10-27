@@ -2318,7 +2318,6 @@ void CloneRestore::RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhoto
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, fileInfos, SourceType::PHOTOS) == E_OK,
         AddToPhotosFailedOffsets(offset));
 
-    RestoreHdrMode(fileInfos);
     MEDIA_INFO_LOG("singleCloud end restore photo, offset: %{public}d", offset);
 }
 
