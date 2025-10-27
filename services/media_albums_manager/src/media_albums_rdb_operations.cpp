@@ -167,7 +167,7 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsRdbOperations::GetSele
             break;
         }
     }
-    std::vector<NativeRdb::ValueObject> params = {dto.albumId, dto.albumId, dto.minScore, dto.maxScore, limit};
+    std::vector<NativeRdb::ValueObject> params = {dto.albumId, dto.minScore, dto.maxScore, limit};
  
     auto startTime = MediaFileUtils::UTCTimeMilliSeconds();
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -188,7 +188,7 @@ double MediaAlbumsRdbOperations::GetAssetScore(const AlbumGetSelectedAssetsDto &
     std::shared_ptr<OHOS::Media::PortraitAlbumDao> dao = std::make_shared<OHOS::Media::PortraitAlbumDao>();
     std::string sql = dao->SQL_PORTRAIT_ALBUM_GET_ASSET_SCORE;
  
-    std::vector<NativeRdb::ValueObject> params = {dto.albumId, dto.albumId, fileId};
+    std::vector<NativeRdb::ValueObject> params = {dto.albumId, fileId};
  
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, 0, "rdbStore is nullptr!");
@@ -205,7 +205,7 @@ double MediaAlbumsRdbOperations::GetLimitScore(const AlbumGetSelectedAssetsDto &
     std::shared_ptr<OHOS::Media::PortraitAlbumDao> dao = std::make_shared<OHOS::Media::PortraitAlbumDao>();
     std::string sql = dao->SQL_PORTRAIT_ALBUM_GET_LIMIT_SCORE;
  
-    std::vector<NativeRdb::ValueObject> params = {dto.albumId, dto.albumId};
+    std::vector<NativeRdb::ValueObject> params = {dto.albumId};
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     double maxScore = 250;
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, maxScore, "rdbStore is nullptr!");
