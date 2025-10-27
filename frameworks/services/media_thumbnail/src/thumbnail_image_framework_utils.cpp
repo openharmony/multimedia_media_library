@@ -310,7 +310,7 @@ bool ThumbnailImageFrameWorkUtils::IsPictureValid(const std::shared_ptr<Picture>
 
 bool ThumbnailImageFrameWorkUtils::IsPixelMapValid(const std::shared_ptr<PixelMap>& pixelMap)
 {
-    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "Picture is null");
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "PixelMap is null");
     auto width = pixelMap->GetWidth();
     auto height = pixelMap->GetHeight();
     CHECK_AND_RETURN_RET_LOG(width > 0 && height > 0, false,

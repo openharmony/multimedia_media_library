@@ -235,11 +235,9 @@ bool ThumbnailUtils::ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, 
 bool ThumbnailUtils::CenterScaleEx(std::shared_ptr<PixelMap> &dataSource, const Size &desiredSize,
     const std::string path)
 {
-    if (dataSource->GetHeight() * dataSource->GetWidth() == 0) {
-        MEDIA_ERR_LOG("Invalid source size, ScalePixelMapEx failed, path: %{public}s",
-            DfxUtils::GetSafePath(path).c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPixelMapValid(dataSource),
+        false, "Invalid PixelMap! path: %{public}s.", DfxUtils::GetSafePath(path).c_str());
+
     float sourceScale = static_cast<float>(dataSource->GetHeight()) / static_cast<float>(dataSource->GetWidth());
     float scale = 1.0f;
     if (sourceScale <= 1.0f) {
