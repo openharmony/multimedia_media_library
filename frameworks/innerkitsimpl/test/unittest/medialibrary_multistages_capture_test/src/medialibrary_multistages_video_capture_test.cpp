@@ -320,6 +320,23 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_add_video_with_error_0
     MEDIA_INFO_LOG("manager_add_video_with_error_002 End");
 }
 
+HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_add_video_with_error_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_add_video_with_error_004 Start");
+ 
+    int32_t fileId = 22345678;
+    string filePath;
+    string videoId = "202510241536";
+ 
+    MultiStagesVideoCaptureManager &instance = MultiStagesVideoCaptureManager::GetInstance();
+    VideoInfo videoInfo = {fileId, VideoCount::SINGLE, filePath, "", ""};
+    instance.AddVideo(videoId, to_string(fileId), videoInfo);
+ 
+    EXPECT_EQ(MultiStagesVideoCaptureManager::videoInfoMap_.count(videoId), 0);
+ 
+    MEDIA_INFO_LOG("manager_add_video_with_error_004 End");
+}
+
 HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_remove_video_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("manager_remove_video_001 Start");
@@ -575,6 +592,48 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_remove_video_004, Test
     instance.RemoveVideo(videoId, filePath, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO), false);
     EXPECT_EQ(MediaFileUtils::IsFileExists(filePath), true);
     MEDIA_INFO_LOG("manager_remove_video_004 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_save_camera_video_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_save_camera_video_001 Start");
+ 
+    int32_t fileId = PrepareVideoData();
+    string filePath = GetFilePath(fileId);
+    string videoId = "202510241541";
+    PrepareBaseVideoFile(filePath);
+ 
+    SaveCameraPhotoDto dto;
+    dto.fileId = fileId;
+    dto.photoSubType = static_cast<int32_t>(PhotoSubType::CINEMATIC_VIDEO);
+    dto.supportedWatermarkType = 1;
+    dto.cameraShotKey = "cameraKey";
+ 
+    MultiStagesVideoCaptureManager &instance = MultiStagesVideoCaptureManager::GetInstance();
+    int32_t ret = instance.SaveCameraVideo(dto);
+    EXPECT_GT(ret, 0);
+ 
+    MEDIA_INFO_LOG("manager_save_camera_video_001 End");
+}
+ 
+HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_save_camera_video_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_save_camera_video_002 Start");
+ 
+    int32_t fileId = PrepareVideoData();
+    string filePath = GetFilePath(fileId);
+    string videoId = "202510241541";
+    PrepareBaseVideoFile(filePath);
+ 
+    SaveCameraPhotoDto dto;
+    dto.fileId = fileId;
+    dto.photoSubType = static_cast<int32_t>(PhotoSubType::SCREENSHOT);
+ 
+    MultiStagesVideoCaptureManager &instance = MultiStagesVideoCaptureManager::GetInstance();
+    int32_t ret = instance.SaveCameraVideo(dto);
+    EXPECT_GT(ret, 0);
+ 
+    MEDIA_INFO_LOG("manager_save_camera_video_002 End");
 }
 } // Media
 } // OHOS
