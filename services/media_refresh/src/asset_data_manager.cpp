@@ -420,9 +420,6 @@ void AssetDataManager::UpdatePendingInfo(PhotoAssetChangeData &changeData, Pendi
     if (pendingInfo.end_ != INVALID_INT64_VALUE && changeData.infoAfterChange_.timestamp_ == INVALID_INT64_VALUE) {
         changeData.infoAfterChange_.timestamp_ = pendingInfo.end_;
     }
-    ACCURATE_DEBUG("start[%{public}" PRId64 "], end[%{public}" PRId64 "], pendingInfo[%{public}" PRId64 \
-        ", %{public}" PRId64 "]", changeData.infoBeforeChange_.timestamp_, changeData.infoAfterChange_.timestamp_,
-        pendingInfo.start_, pendingInfo.end_);
 }
 
 } // namespace Media
