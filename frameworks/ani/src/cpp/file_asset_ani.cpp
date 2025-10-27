@@ -2050,7 +2050,6 @@ static ani_status GetPhotoRequestOption(ani_env *env, ani_object object,
     const std::string size = "size";
     ani_object sizeObj;
     CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, object, size, sizeObj), "Failed to check empty size!");
-    ANI_INFO_LOG("sizeObj: %{public}p", sizeObj);
     if (MediaLibraryAniUtils::IsUndefined(env, sizeObj) == ANI_FALSE) {
         ani_int heightValue = 0;
         ani_int widthValue = 0;
