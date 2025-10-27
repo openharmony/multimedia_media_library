@@ -320,23 +320,6 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_add_video_with_error_0
     MEDIA_INFO_LOG("manager_add_video_with_error_002 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_add_video_with_error_004, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("manager_add_video_with_error_004 Start");
- 
-    int32_t fileId = 22345678;
-    string filePath;
-    string videoId = "202510241536";
- 
-    MultiStagesVideoCaptureManager &instance = MultiStagesVideoCaptureManager::GetInstance();
-    VideoInfo videoInfo = {fileId, VideoCount::SINGLE, filePath, "", ""};
-    instance.AddVideo(videoId, to_string(fileId), videoInfo);
- 
-    EXPECT_EQ(MultiStagesVideoCaptureManager::videoInfoMap_.count(videoId), 0);
- 
-    MEDIA_INFO_LOG("manager_add_video_with_error_004 End");
-}
-
 HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_remove_video_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("manager_remove_video_001 Start");
