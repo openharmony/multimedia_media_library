@@ -100,7 +100,7 @@ static const string SQL_INSERT_PHOTO =
 
 static void InsertAssetIntoPhotosTable(const string &data, const string &title, int32_t albumId)
 {
-    MEDIA_ERR_LOG("InsertAssetIntoPhotosTable");
+    MEDIA_INFO_LOG("InsertAssetIntoPhotosTable");
     // data, size, title, display_name, media_type,position
     // owner_package, package_name, date_added, date_modified, date_taken, duration, is_favorite, date_trashed, hidden
     // height, width, edit_time, position, shooting_mode, owner_album_id, sync_status, clean_flag, hidden, time_pending,
@@ -114,7 +114,7 @@ static void InsertAssetIntoPhotosTable(const string &data, const string &title, 
 static shared_ptr<NativeRdb::ResultSet> QueryAsset(
     const string &table, const string &key, const string &value, const vector<string> &columns)
 {
-    MEDIA_ERR_LOG("QueryAsset");
+    MEDIA_INFO_LOG("QueryAsset");
     RdbPredicates rdbPredicates(table);
     rdbPredicates.EqualTo(key, value);
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicates, columns);
@@ -132,7 +132,7 @@ static bool ExecutionSql(const std::string &sql)
         MEDIA_ERR_LOG("Execute sql %{public}s failed", sql.c_str());
         return false;
     }
-    MEDIA_ERR_LOG("Execute sql %{public}s success", sql.c_str());
+    MEDIA_INFO_LOG("Execute sql %{public}s success", sql.c_str());
     return true;
 }
 
@@ -140,14 +140,14 @@ static bool InsertAnalysisAlbum(string albumName, string groupTag)
 {
     // std::string insertSql = "INSERT INTO AnalysisAlbum (album_name, album_subtype, group_tag) VALUES "
     //                         "('"+ albumName + "', 4096, '" + groupTag + "')";
-    std::string insertSql = "INSERT INTO AnalysisAlbum (album_name, album_subtype, group_tag) VALUES ('test01', 4096, "
-                            "'ser_1755057945560169000')";
+    std::string insertSql = "INSERT INTO AnalysisAlbum (album_name, album_subtype, group_tag, tag_id) "
+        "VALUES ('test01', 4102, 'ser_1755057945560169000', 'ser_1755057945560169000')";
     return ExecutionSql(insertSql);
 }
 
 static bool InsertAnalysisPhotoMap(int mediaId, int fileId)
 {
-    MEDIA_ERR_LOG("InsertAnalysisPhotoMap");
+    MEDIA_INFO_LOG("InsertAnalysisPhotoMap");
     std::string insertSql = "insert into AnalysisPhotoMap(map_album, map_asset) values(" + std::to_string(mediaId) +
                             ", " + std::to_string(fileId) + ")";
     return ExecutionSql(insertSql);
@@ -155,7 +155,7 @@ static bool InsertAnalysisPhotoMap(int mediaId, int fileId)
 
 static bool InsertAnalysisImageFace(int fileId, string tagID)
 {
-    MEDIA_ERR_LOG("InsertAnalysisImageFace");
+    MEDIA_INFO_LOG("InsertAnalysisImageFace");
     std::string insertSql = "insert into tab_analysis_image_face(file_id, tag_id, aesthetics_score) values(" +
                             std::to_string(fileId) + ", '" + tagID + "', 60)";
     return ExecutionSql(insertSql);
@@ -163,7 +163,7 @@ static bool InsertAnalysisImageFace(int fileId, string tagID)
 
 static bool InsertTabAnalysisVlm(int fileId)
 {
-    MEDIA_ERR_LOG("InsertTabAnalysisVlm");
+    MEDIA_INFO_LOG("InsertTabAnalysisVlm");
     std::string insertSql = "INSERT INTO tab_analysis_affective "
                             "(file_id, valence, arousal) "
                             "VALUES(" +
@@ -205,7 +205,7 @@ static bool AlbumGetSelectedAssetsPrepare(int32_t &albumId)
     if (albumId <= 0) {
         return false;
     }
-    MEDIA_ERR_LOG("albumId = %{public}d", albumId);
+    MEDIA_INFO_LOG("albumId = %{public}d", albumId);
 
     string title = "cam_pic";
     string data = "/storage/cloud/files/Photo/9/IMG_1748505946_009.jpg";
@@ -221,7 +221,7 @@ static bool AlbumGetSelectedAssetsPrepare(int32_t &albumId)
     }
 
     int32_t fileId = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
-    MEDIA_ERR_LOG("albumId = %{public}d", fileId);
+    MEDIA_INFO_LOG("fileId = %{public}d", fileId);
     ret = InsertAnalysisPhotoMap(albumId, fileId);
     if (!ret) {
         return false;

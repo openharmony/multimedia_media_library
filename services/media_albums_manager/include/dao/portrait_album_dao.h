@@ -61,15 +61,21 @@ public:
         Photos \
         INNER JOIN AnalysisPhotoMap ON ( \
             Photos.file_id = AnalysisPhotoMap.map_asset \
-            AND AnalysisPhotoMap.map_album = ? \
+        ) \
+        INNER JOIN AnalysisAlbum ON ( \
+            AnalysisAlbum.album_id = AnalysisPhotoMap.map_album \
+        ) \
+        INNER JOIN ( \
+            SELECT group_tag \
+            FROM AnalysisAlbum \
+            WHERE album_id = ? \
+        ) ag ON ( \
+            ag.group_tag = AnalysisAlbum.group_tag \
         ) \
         INNER JOIN tab_analysis_image_face ON ( \
             tab_analysis_image_face.file_id = Photos.file_id \
-            AND tab_analysis_image_face.tag_id = ( \
-                SELECT group_tag \
-                FROM AnalysisAlbum \
-                WHERE album_id = ? \
-            ) \
+            AND tab_analysis_image_face.tag_id = AnalysisAlbum.tag_id \
+            AND tab_analysis_image_face.tag_id LIKE 'ser%' \
         ) \
         LEFT OUTER JOIN tab_analysis_affective ON ( \
             tab_analysis_affective.file_id = Photos.file_id \
