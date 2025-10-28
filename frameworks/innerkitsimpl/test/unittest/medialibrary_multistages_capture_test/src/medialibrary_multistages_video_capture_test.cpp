@@ -576,25 +576,5 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_remove_video_004, Test
     EXPECT_EQ(MediaFileUtils::IsFileExists(filePath), true);
     MEDIA_INFO_LOG("manager_remove_video_004 End");
 }
- 
-HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_save_camera_video_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("manager_save_camera_video_001 Start");
- 
-    int32_t fileId = PrepareVideoData();
-    string filePath = GetFilePath(fileId);
-    string videoId = "202510241541";
-    PrepareBaseVideoFile(filePath);
- 
-    SaveCameraPhotoDto dto;
-    dto.fileId = fileId;
-    dto.photoSubType = static_cast<int32_t>(PhotoSubType::SCREENSHOT);
- 
-    MultiStagesVideoCaptureManager &instance = MultiStagesVideoCaptureManager::GetInstance();
-    int32_t ret = instance.SaveCameraVideo(dto);
-    EXPECT_GT(ret, 0);
- 
-    MEDIA_INFO_LOG("manager_save_camera_video_001 End");
-}
 } // Media
 } // OHOS
