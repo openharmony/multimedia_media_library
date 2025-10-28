@@ -278,7 +278,7 @@ int32_t CloudMediaAssetManager::RecoverDownloadCloudAsset(const CloudMediaTaskRe
     bool cond = (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE);
     CHECK_AND_RETURN_RET(!cond, E_ERR);
 
-    operation_->ResetDownloadTryTime();
+    CHECK_AND_EXECUTE(cause != CloudMediaTaskRecoverCause::NETWORK_NORMAL, operation_->ResetDownloadTryTime());
     MEDIA_INFO_LOG("enter RecoverDownloadCloudAsset, RecoverCause: %{public}d", static_cast<int32_t>(cause));
     CHECK_AND_RETURN_RET_LOG(operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::DOWNLOADING, OHOS::Media::E_OK,
         "The task status is download, no need to recover.");
