@@ -794,7 +794,7 @@ int MediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
 {
     NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
     // Transfer Server error to napi error code
-    unordered_set<int32_t> innerFailErrorSet = {
+    static const unordered_set<int32_t> innerFailErrorSet = {
         E_INNER_CONVERT_FORMAT,
         E_INNER_FAIL,
         E_OPR_DEBUG_DB_FAIL,
@@ -1925,6 +1925,21 @@ bool MediaLibraryNapiUtils::IsSystemApp()
 {
     static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
     return isSys;
+}
+
+bool MediaLibraryNapiUtils::IsNumber(const std::string &str)
+{
+    if (str.empty()) {
+        NAPI_ERR_LOG("IsNumber input is empty ");
+        return false;
+    }
+
+    for (const char &c : str) {
+        if (isdigit(c) == 0) {
+            return false;
+        }
+    }
+    return true;
 }
 
 NapiScopeHandler::NapiScopeHandler(napi_env env): env_(env)
