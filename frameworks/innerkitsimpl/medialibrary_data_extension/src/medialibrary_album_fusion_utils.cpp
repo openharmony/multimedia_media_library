@@ -559,11 +559,13 @@ struct MediaAssetCopyInfo {
     bool isCopyDateAdded;
     bool isCopyCeAvailable;
     bool isCopyPackageName;
+    bool isCopyOwnerPackage;
     MediaAssetCopyInfo(const std::string& targetPath, bool isCopyThumbnail, int32_t ownerAlbumId,
         const std::string& displayName = "", bool isCopyDateAdded = true, bool isCopyCeAvailable = false,
-        bool isCopyPackageName = true) : targetPath(targetPath), isCopyThumbnail(isCopyThumbnail),
-        ownerAlbumId(ownerAlbumId), displayName(displayName), isCopyDateAdded(isCopyDateAdded),
-        isCopyCeAvailable(isCopyCeAvailable), isCopyPackageName(isCopyPackageName) {}
+        bool isCopyPackageName = true, bool isCopyOwnerPackage = true) : targetPath(targetPath),
+        isCopyThumbnail(isCopyThumbnail), ownerAlbumId(ownerAlbumId), displayName(displayName),
+        isCopyDateAdded(isCopyDateAdded), isCopyCeAvailable(isCopyCeAvailable), isCopyPackageName(isCopyPackageName),
+        isCopyOwnerPackage(isCopyOwnerPackage) {}
 };
 
 static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& resultSet,
@@ -616,6 +618,16 @@ static string GetPackageName()
     return PermissionUtils::GetPackageNameByBundleName(clientBundle);
 }
 
+static string GetOwnerPackage()
+{
+    string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    if (clientBundle.empty()) {
+        MEDIA_ERR_LOG("GetClientBundleName failed");
+        return "";
+    }
+    return clientBundle;
+}
+
 static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     NativeRdb::ValuesBucket &values, shared_ptr<NativeRdb::ResultSet> &resultSet, const MediaAssetCopyInfo &copyInfo)
 {
@@ -657,6 +669,9 @@ static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStor
     if (!copyInfo.isCopyPackageName) {
         values.Delete(MediaColumn::MEDIA_PACKAGE_NAME);
         values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, GetPackageName());
+    }
+    if (!copyInfo.isCopyOwnerPackage) {
+        values.Put(MediaColumn::MEDIA_OWNER_PACKAGE, GetOwnerPackage());
     }
     HandleLowQualityAssetValuesBucket(resultSet, values);
     HandleTempFileAssetValuesBucket(resultSet, values);
@@ -894,7 +909,7 @@ static int32_t CopyLocalSingleFileSync(shared_ptr<AccurateRefresh::AssetAccurate
         return E_ERR;
     }
 
-    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName, false, true, false);
+    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName, false, true, false, false);
     tracer.Start("CopyMateData");
     NativeRdb::ValuesBucket values;
     err = BuildInsertValuesBucket(upgradeStore, values, resultSet, copyInfo);
@@ -918,7 +933,7 @@ static int32_t CopyLocalSingleFileSync(shared_ptr<AccurateRefresh::AssetAccurate
             "ownerAlbumId: %{public}d, ret = %{public}d", assetId, (long long)newAssetId, ownerAlbumId, err);
         return E_OK;
     }
-    
+
     err = PhotoFileOperation().CopyThumbnail(resultSet, targetPath, newAssetId);
     if (err != E_OK && GenerateThumbnail(newAssetId, targetPath, resultSet, true) != E_SUCCESS) {
         MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(upgradeStore, newAssetId);
@@ -2305,7 +2320,7 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(bool isBackg
         RefreshAllAlbums();
         isNeedRefreshAlbum = false;
     }
-    
+
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
     return E_OK;
