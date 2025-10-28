@@ -115,8 +115,8 @@ static AssetHandler* CreateAssetHandler(ani_env *env, unique_ptr<MediaAssetManag
     AssetHandler *assetHandler =
         new AssetHandler(etsVm, context->photoId, context->requestId, context->photoUri, handler, func);
     CHECK_COND_RET(assetHandler != nullptr, nullptr, "assetHandler is null");
-    ANI_DEBUG_LOG("[AssetHandler create] photoId: %{public}s, requestId: %{public}s, uri: %{public}s, %{public}p",
-        context->photoId.c_str(), context->requestId.c_str(), context->photoUri.c_str(), assetHandler);
+    ANI_DEBUG_LOG("[AssetHandler create] photoId: %{public}s, requestId: %{public}s, uri: %{public}s",
+        context->photoId.c_str(), context->requestId.c_str(), context->photoUri.c_str());
     return assetHandler;
 }
 
@@ -243,8 +243,8 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, ani_env *env,
     CHECK_COND_RET(assetHandler != nullptr, nullptr, "assetHandler is null");
     assetHandler->photoQuality = context->photoQuality;
     assetHandler->needsExtraInfo = context->needsExtraInfo;
-    ANI_INFO_LOG("Add %{public}d, %{public}s, %{public}s, %{public}p", notifyMode,
-        MediaFileUtils::DesensitizeUri(context->photoUri).c_str(), context->requestId.c_str(), assetHandler);
+    ANI_INFO_LOG("Add %{public}d, %{public}s, %{public}s", notifyMode,
+        MediaFileUtils::DesensitizeUri(context->photoUri).c_str(), context->requestId.c_str());
 
     switch (notifyMode) {
         case NotifyMode::FAST_NOTIFY: {
@@ -973,7 +973,6 @@ void MediaAssetManagerAni::OnDataPrepared(ani_env *env, AssetHandler *assetHandl
         return;
     }
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
-    ANI_INFO_LOG("delete assetHandler: %{public}p", assetHandler);
     DeleteAssetHandlerSafe(assetHandler, env);
 }
 
@@ -1006,7 +1005,6 @@ void CallPreparedCallbackAfterProgress(ani_env *env, ProgressHandler *progressHa
         }
     }
     dataHandler->EtsOnDataPrepared(env, aniValueOfMedia, aniValueOfInfoMap);
-    ANI_INFO_LOG("delete assetHandler: %{public}p", assetHandler);
     DeleteProcessHandlerSafe(progressHandler, env);
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     DeleteAssetHandlerSafe(assetHandler, env);
