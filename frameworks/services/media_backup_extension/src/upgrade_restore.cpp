@@ -1642,10 +1642,9 @@ void UpgradeRestore::RestoreAnalysisAlbum()
     int32_t cloudFlag = IsCloudRestoreSatisfied() ? 1 : 0;
     int32_t shouldIncludeSdFlag = shouldIncludeSd_ ? 1 : 0;
     int32_t hasLowQualityImageFlag = hasLowQualityImage_ ? 1 : 0;
-    std::vector<NativeRdb::ValueObject> params = {cloudFlag,hasLowQualityImageFlag, shouldIncludeSdFlag};
-    std::string querySql = "SELECT count(1) AS count FROM merge_tag WHERE user_display_level = 1";
-    std::string querySqls = IsCloudRestoreSatisfied() ? querySql : querySql +
-        "EXISTS (SELECT 1 FROM merge_face INNER JOIN gallery_media ON merge_face.hash = gallery_media.hash \
+    std::vector<NativeRdb::ValueObject> params = {cloudFlag, hasLowQualityImageFlag, shouldIncludeSdFlag};
+    std::string querySql = "SELECT count(1) AS count FROM merge_tag WHERE user_display_level = 1 AND \
+        EXISTS (SELECT 1 FROM merge_face INNER JOIN gallery_media ON merge_face.hash = gallery_media.hash \
         WHERE merge_face.tag_id = merge_tag.tag_id AND (1 = ? OR local_media_id != -1) AND \
         (relative_bucket_id IS NULL OR \
         relative_bucket_id NOT IN ( \
@@ -1659,7 +1658,7 @@ void UpgradeRestore::RestoreAnalysisAlbum()
         COALESCE(_data, '') <> '' AND \
         (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537)))";
 
-    int32_t totalPortraitAlbumNumber = BackupDatabaseUtils::QueryInt(galleryRdb_, querySqls, CUSTOM_COUNT, params);
+    int32_t totalPortraitAlbumNumber = BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT, params);
     if (totalPortraitAlbumNumber > 0) {
         int32_t ret = PortraitAlbumUtils::DeleteExistingAlbumData(mediaLibraryRdb_, AlbumDeleteType::ALL);
         CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to delete portrait album data");
