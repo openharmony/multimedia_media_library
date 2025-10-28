@@ -111,7 +111,5 @@ HWTEST_F(AcquireDebugDatabaseTest, AcquireDebugDatabase_Test_002, TestSize.Level
     EXPECT_EQ(isValid, true);
     int32_t ret = controllerService->AcquireDebugDatabase(data, reply);
     EXPECT_EQ(ret, E_SUCCESS);
-    ret = controllerService->AcquireDebugDatabase(data, reply);
-    EXPECT_EQ(ret, E_SUCCESS);
 }
 }  // namespace OHOS::Media

@@ -123,9 +123,9 @@
 #include "heif_transcoding_check_vo.h"
 #include "media_old_albums_column.h"
 #include "get_cloned_album_uris_vo.h"
-
 #include "acquire_debug_database_vo.h"
 #include "release_debug_database_vo.h"
+#include "userfilemgr_uri.h"
 
 #include "parcel.h"
 #include "medialibrary_notify_utils.h"
@@ -134,7 +134,6 @@
 #include "vision_video_label_column.h"
 #include "vision_label_column.h"
 #include "vision_image_face_column.h"
-#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -12929,7 +12928,7 @@ static napi_value ParseArgsAcquireDebugDatabase(napi_env env, napi_callback_info
     }
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_THREE;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) == napi_ok,
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
         JS_E_PARAM_INVALID);
 
     std::string betaIssueId;
@@ -12937,7 +12936,7 @@ static napi_value ParseArgsAcquireDebugDatabase(napi_env env, napi_callback_info
     CHECK_ARGS_WITH_MEG(env,
         MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], betaIssueId) == napi_ok,
         JS_E_PARAM_INVALID, "Failed to parse betaIssueId");
-    CHECK_ARGS_WITH_MEG(env, !betaIssueId.empty(), JS_E_PARAM_INVALID, "betaIssueId is empty");
+    CHECK_ARGS_WITH_MEG(env, MediaLibraryNapiUtils::IsNumber(betaIssueId), JS_E_PARAM_INVALID, "betaIssueId is empty");
     CHECK_ARGS_WITH_MEG(env,
         MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], betaScenario) == napi_ok,
         JS_E_PARAM_INVALID, "Failed to parse betaScenario");
@@ -12976,7 +12975,7 @@ static void JSAcquireDebugDatabaseExecute(napi_env env, void* data)
     string uri = ML_FILE_URI_PREFIX + "/" + MEDIA_FILEOPRN_OPEN_DEBUG_DB + "/" + betaIssueId;
     Uri openFileUri(uri);
     int32_t fileFd = UserFileClient::OpenFile(openFileUri, "r");
-    if (fileFd < 0 || fileFd > 1023) {
+    if (fileFd < 0) {
         context->SaveError(fileFd);
         return;
     }
@@ -13073,10 +13072,10 @@ static napi_value ParseArgsReleaseDebugDatabase(napi_env env, napi_callback_info
     CHECK_ARGS_WITH_MEG(env,
         MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], betaIssueId) == napi_ok,
         JS_E_PARAM_INVALID, "Failed to parse betaIssueId");
-    CHECK_ARGS_WITH_MEG(env, !betaIssueId.empty(), JS_E_PARAM_INVALID, "betaIssueId is empty");
+    CHECK_ARGS_WITH_MEG(env, MediaLibraryNapiUtils::IsNumber(betaIssueId), JS_E_PARAM_INVALID, "betaIssueId is empty");
     CHECK_ARGS_WITH_MEG(env, MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[ARGS_ONE], fileFd) != nullptr,
         JS_E_PARAM_INVALID, "Failed to parse fileFd");
-    CHECK_ARGS_WITH_MEG(env, fileFd >= 0 && fileFd <= 1023, JS_E_PARAM_INVALID, "fileFd is invalid");
+    CHECK_ARGS_WITH_MEG(env, fileFd >= 0, JS_E_PARAM_INVALID, "fileFd is invalid");
     context->valuesBucket.Put(MEDIA_DATA_BETA_ISSUE_ID, betaIssueId);
     context->valuesBucket.Put(MEDIA_DATA_BETA_DEBUG_DB_FD, fileFd);
 
@@ -13085,7 +13084,7 @@ static napi_value ParseArgsReleaseDebugDatabase(napi_env env, napi_callback_info
     return result;
 }
 
-static void JSRelaseDebugDatabaseExecute(napi_env env, void* data)
+static void JSReleaseDebugDatabaseExecute(napi_env env, void* data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSReleaseDebugDatabaseExecute");
@@ -13094,9 +13093,9 @@ static void JSRelaseDebugDatabaseExecute(napi_env env, void* data)
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_IF_EQUAL(context != nullptr, "asyncContext is nullptr");
     std::string betaIssueId = context->valuesBucket.Get(MEDIA_DATA_BETA_ISSUE_ID, isValid);
-    CHECK_IF_EQUAL(isValid, "JSRelaseDebugDatabaseExecute betaIssueId is empty");
+    CHECK_IF_EQUAL(isValid, "JSReleaseDebugDatabaseExecute betaIssueId is empty");
     int32_t fileFd = context->valuesBucket.Get(MEDIA_DATA_BETA_DEBUG_DB_FD, isValid);
-    CHECK_IF_EQUAL(isValid, "JSRelaseDebugDatabaseExecute fileFd is empty");
+    CHECK_IF_EQUAL(isValid, "JSReleaseDebugDatabaseExecute fileFd is empty");
     int32_t errCode = close(fileFd);
     CHECK_AND_PRINT_LOG(errCode == 0, "Failed to close fileFd, errCode: %{public}d", errCode);
 
@@ -13104,7 +13103,7 @@ static void JSRelaseDebugDatabaseExecute(napi_env env, void* data)
     reqBody.betaIssueId = betaIssueId;
     errCode = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody);
     if (errCode != E_OK) {
-        context->SaveError(JS_E_INNER_FAIL);
+        context->SaveError(errCode);
     }
 }
 
@@ -13147,7 +13146,7 @@ napi_value MediaLibraryNapi::PhotoAccessReleaseDebugDatabase(napi_env env, napi_
 
     SetUserIdFromObjectInfo(asyncContext);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ReleaseDebugDatabase", 
-        JSRelaseDebugDatabaseExecute, JSReleaseDebugDatabaseCallbackComplete);
+        JSReleaseDebugDatabaseExecute, JSReleaseDebugDatabaseCallbackComplete);
 }
 } // namespace Media
 } // namespace OHOS
