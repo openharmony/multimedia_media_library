@@ -105,6 +105,7 @@ public:
     size_t GetMovingPhotoVideoSize() const;
     std::string GetCacheMovingPhotoVideoName() const;
     void RecordChangeOperation(AssetChangeOperation changeOperation);
+    void RecordChangeOperationForPicker(AssetChangeOperation changeOperation);
     uint32_t FetchAddCacheFileId();
     void SetCacheFileName(std::string& fileName);
     void SetCacheMovingPhotoVideoName(std::string& fileName);
@@ -143,6 +144,7 @@ private:
     EXPORT static napi_value JSGetWriteCacheHandler(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSAddResource(napi_env env, napi_callback_info info);
     EXPORT static napi_value AddMovingPhotoVideoResource(napi_env env, napi_callback_info info);
+    EXPORT static napi_value AddMovingPhotoVideoResourceForPicker(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetEffectMode(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetLocation(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetCameraShotKey(napi_env env, napi_callback_info info);
