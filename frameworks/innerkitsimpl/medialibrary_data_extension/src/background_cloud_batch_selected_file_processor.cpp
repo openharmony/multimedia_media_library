@@ -630,10 +630,16 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedRunningCallba
         fileId.c_str(), to_string(progress.downloadId).c_str());
     CHECK_AND_RETURN_WARN_LOG(progress.totalSize != 0, "invaild fileId: %{public}s, downloadId: %{public}" PRId64,
         fileId.c_str(), progress.downloadId);
+    downloadLock.unlock();
     int32_t percent = (100 * progress.downloadedSize) / progress.totalSize;
+    int32_t percentDB = 0;
+    QueryPercentOnTaskStart(fileId, percentDB);
+    MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback, fileId: %{public}s, percent: %{public}d,"
+        "percentDB: %{public}d", fileId.c_str(), percent, percentDB);
+    CHECK_AND_RETURN_LOG(percentDB <= percent, "skip write percent fileId: %{public}s", fileId.c_str());
+    downloadLock.lock();
     currentDownloadIdFileInfoMap_[progress.downloadId].percent = percent;
     downloadLock.unlock();
-    MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback, percent: %{public}d", percent);
     CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s", fileId.c_str());
     int32_t retDB = UpdateDBProgressInfoForFileId(fileId, percent, -1,
         static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_DOWNLOADING));
@@ -758,6 +764,11 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedStoppedCallba
         "downloadId: %{public}" PRId64, fileId.c_str(), progress.downloadId);
     int32_t percent = (100 * progress.downloadedSize) / progress.totalSize;
     MEDIA_INFO_LOG("BatchSelectFileDownload StoppedCallback, percent: %{public}d", percent);
+    int32_t percentDB = 0;
+    QueryPercentOnTaskStart(fileId, percentDB);
+    MEDIA_INFO_LOG("BatchSelectFileDownload StoppedCallback, fileId: %{public}s, percent: %{public}d,"
+        "percentDB: %{public}d", fileId.c_str(), percent, percentDB);
+    CHECK_AND_RETURN_LOG(percentDB <= percent, "skip write percent fileId: %{public}s", fileId.c_str());
     int32_t ret = UpdateDBProgressInfoForFileId(fileId, percent, -1, -1);
     MEDIA_INFO_LOG("BatchSelectFileDownload StoppedCallback UpdateDBProgress, ret: %{public}d", ret);
 }
