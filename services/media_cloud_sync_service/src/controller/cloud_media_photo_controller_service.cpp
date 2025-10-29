@@ -76,7 +76,6 @@ int32_t CloudMediaPhotoControllerService::OnFetchRecords(MessageParcel &data, Me
 
 int32_t CloudMediaPhotoControllerService::OnDentryFileInsert(MessageParcel &data, MessageParcel &reply)
 {
-    MEDIA_INFO_LOG("OnDentryFileInsert enter");
     OnDentryFileReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
