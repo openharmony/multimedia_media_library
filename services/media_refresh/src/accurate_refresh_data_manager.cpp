@@ -325,6 +325,21 @@ vector<ChangeData> AccurateRefreshDataManager<ChangeInfo, ChangeData>::GetChange
 }
 
 template <typename ChangeInfo, typename ChangeData>
+int32_t AccurateRefreshDataManager<ChangeInfo, ChangeData>::GetChangeDataByKey(const int32_t key,
+    ChangeData &changeData, bool isCheckUpdate)
+{
+    if (changeDatas_.find(key) == changeDatas_.end()) {
+        MEDIA_WARN_LOG("no change data found by key: %{public}d", key);
+        return ACCURATE_REFRESH_CHANGE_DATA_EMPTY;
+    }
+    if (isCheckUpdate) {
+        CheckUpdateDataForMultiThread(changeDatas_[key]);
+    }
+    changeData = changeDatas_[key];
+    return ACCURATE_REFRESH_RET_OK;
+}
+
+template <typename ChangeInfo, typename ChangeData>
 void AccurateRefreshDataManager<ChangeInfo, ChangeData>::SetTransaction(std::shared_ptr<TransactionOperations> trans)
 {
     trans_ = trans;

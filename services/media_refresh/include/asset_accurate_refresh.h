@@ -68,6 +68,7 @@ public:
 
     // notify assest change infos based on init datas and modified datas.
     int32_t Notify();
+    int32_t NotifyYuvReady(const int32_t fileId);
 
     // 根据传递的assetChangeDatas进行通知，不需要dataManager_处理
     int32_t Notify(const std::vector<PhotoAssetChangeData> &assetChangeDatas);

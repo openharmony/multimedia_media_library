@@ -68,6 +68,7 @@ enum AssetRefreshOperation {
     ASSET_OPERATION_UNHIDDEN,
 
     ASSET_OPERATION_RECHECK,
+    ASSET_OPERATION_YUV_READY,
 };
  
 enum AlbumRefreshOperation {

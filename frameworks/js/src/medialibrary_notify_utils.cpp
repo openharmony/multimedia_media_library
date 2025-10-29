@@ -80,6 +80,7 @@ const std::map<Notification::NotifyType, NotifyChangeType> MediaLibraryNotifyUti
     { Notification::NotifyType::NOTIFY_ALBUM_ADD, NotifyChangeType::NOTIFY_CHANGE_ADD },
     { Notification::NotifyType::NOTIFY_ALBUM_UPDATE, NotifyChangeType::NOTIFY_CHANGE_UPDATE },
     { Notification::NotifyType::NOTIFY_ALBUM_REMOVE, NotifyChangeType::NOTIFY_CHANGE_REMOVE },
+    { Notification::NotifyType::NOTIFY_ASSET_YUV_READY, NotifyChangeType::NOTIFY_CHANGE_YUV_READY },
 };
 
 const std::unordered_map<int32_t, int32_t> ERROR_MAP = {
