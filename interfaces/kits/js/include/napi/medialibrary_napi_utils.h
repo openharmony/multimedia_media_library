@@ -508,6 +508,7 @@ public:
         const bool hiddenOnly);
     EXPORT static bool IsFeaturedSinglePortraitAlbum(std::string albumName, DataShare::DataSharePredicates &predicates);
     EXPORT static bool IsSystemApp();
+    static bool IsNumber(const std::string &str);
     static std::string GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
         const std::string &propertyName);
     EXPORT static std::string ParseResultSet2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,

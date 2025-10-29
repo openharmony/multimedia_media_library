@@ -720,6 +720,8 @@ static uint32_t GetFlagFromMode(const string &mode)
 int MediaDataShareExtAbility::CheckPermissionForOpenFile(const Uri &uri,
     MediaLibraryCommand &command, string &unifyMode)
 {
+    auto object = command.GetOprnObject();
+    CHECK_AND_RETURN_RET(object != OperationObject::FILESYSTEM_DEBUG_DB, static_cast<int>(E_SUCCESS));
     PermParam permParam = {
         .isWrite = false,
         .isOpenFile = true,
