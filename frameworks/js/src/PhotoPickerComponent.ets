@@ -365,6 +365,7 @@ export struct PhotoPickerComponent {
       itemInfo.photoSubtype = wantParam['subtype'] as number;
       itemInfo.dynamicRangeType = wantParam['dynamicRangeType'] as number;
       itemInfo.orientation = wantParam['imageOrientation'] as number;
+      itemInfo.videoMode = wantParam['videoMode'] as number;
       let result: boolean = this.onItemClicked(itemInfo, clickType);
       console.info('PhotoPickerComponent onReceive: onItemClicked = ' + clickType);
       if (this.proxy) {
