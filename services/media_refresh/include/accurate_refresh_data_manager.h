@@ -45,6 +45,7 @@ public:
     virtual int32_t PostProcessModifiedDatas(const std::vector<int32_t> &keys) = 0;
     // 根据isCheckUpdate在数据获取时进行一次刷新处理，解决多线程问题
     std::vector<ChangeData> GetChangeDatas(bool isCheckUpdate = false);
+    int32_t GetChangeDataByKey(const int32_t key, ChangeData &changeData, bool isCheckUpdate = false);
     virtual std::vector<int32_t> GetInitKeys() = 0;
     void SetTransaction(std::shared_ptr<TransactionOperations> trans);
     std::shared_ptr<TransactionOperations> GetTransaction();
