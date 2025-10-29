@@ -32,7 +32,7 @@ bool IsNotifyUpdateForHiddenAlbum(const AlbumChangeInfo& beforeChangeInfo, const
         true : false;
 }
 
-static void AddInfosToNewNotify()
+void AlbumChangeNotifyExecution::AddInfosToNewNotify()
 {
     for (auto &item : notifyInfos_) {
         NotifyInfoInner notifyInfo;
@@ -52,7 +52,7 @@ static void AddInfosToNewNotify()
     }
 }
 
-static void InsertNotifyInfoForAdd(const AlbumChangeData& changeData)
+void AlbumChangeNotifyExecution::InsertNotifyInfoForAdd(const AlbumChangeData& changeData)
 {
     InsertNotifyInfo(ALBUM_OPERATION_ADD, changeData);
     if (IsNotifyUpdateForHiddenAlbum(changeData.infoBeforeChange_, changeData.infoAfterChange_)) {
