@@ -297,10 +297,7 @@ std::string MediaFileUri::GetFilePath()
     Uri uri(queryUri);
     /* query and check */
     auto resultSet = dataShareHelper->Query(uri, predicates, columns, &error);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query failed, resultSet is nullptr.");
-        return "";
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, "", "Query failed, resultSet is nullptr.");
     int32_t ret = error.GetCode();
     if (ret != 0) {
         MEDIA_ERR_LOG("data share query err %{public}d", ret);
