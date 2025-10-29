@@ -3754,7 +3754,7 @@ int32_t MediaLibraryDataManager::AcquireDebugDatabase(const string &betaIssueId,
     CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsBetaVersion(), E_BETA_VERSION_FAIL, "Caller not beta version");
     
     const std::string filePath = BETA_DEBUG_DB_FILE_PATH;
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(filePath) || MediaFileUtils::CreateDirectory(filePath),
+    CHECK_AND_RETURN_RET_LOG(access(filePath.c_str(), F_OK) == 0 || MediaFileUtils::CreateDirectory(filePath),
         E_OPR_DEBUG_DB_FAIL, "Create dir failed, dir = %{private}s", filePath.c_str());
     fileName = "media_library_" + betaIssueId + ".db.zip";
     const std::string destFile = filePath + fileName;

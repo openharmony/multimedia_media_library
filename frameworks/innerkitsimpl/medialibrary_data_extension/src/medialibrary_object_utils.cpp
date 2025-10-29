@@ -776,11 +776,23 @@ static int32_t OpenDocument(const string &uri, const string &mode)
     return MediaFileUtils::OpenFile(realPath, mode);
 }
 
+static bool IsNumber(const string &betaIssueId)
+{
+    CHECK_AND_RETURN_RET_LOG(!betaIssueId.empty(), false, "betaIssueId is empty");
+    for (const char &c : betaIssueId) {
+        CHECK_AND_RETURN_RET(isdigit(c) != 0, false);
+    }
+    return true;
+}
+
 static int32_t OpenDebugDatabase(const string &uri, const string &mode)
 {
     CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsSystemApp(), E_CHECK_SYSTEMAPP_FAIL, "Caller not systemapp");
     CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsBetaVersion(), E_BETA_VERSION_FAIL, "Caller not beta version");
-    string betaIssueId = uri.substr(uri.find_last_of("/") + 1);
+    size_t pos = uri.find_last_of("/");
+    CHECK_AND_RETURN_RET_LOG(pos != string::npos, E_OPR_DEBUG_DB_FAIL, "uri not contain '/' ");
+    string betaIssueId = uri.substr(pos + 1);
+    CHECK_AND_RETURN_RET_LOG(IsNumber(betaIssueId), E_ACQ_BETA_TASK_FAIL, "betaIssueId is invalid");
     string realPath = "/data/storage/el2/log/logpack/media_library_" + betaIssueId + ".db.zip";
     int32_t fileFd = MediaFileUtils::OpenFile(realPath, mode);
     CHECK_AND_RETURN_RET_LOG(fileFd >= 0, E_OPR_DEBUG_DB_FAIL, "Failed to open debug db, errno %{public}d", errno);
