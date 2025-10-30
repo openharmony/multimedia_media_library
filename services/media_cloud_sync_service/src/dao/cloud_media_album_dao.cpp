@@ -224,7 +224,6 @@ int32_t CloudMediaAlbumDao::InsertCloudByCloudId(PhotoAlbumDto &record,
 
 std::tuple<std::shared_ptr<NativeRdb::ResultSet>, int> CloudMediaAlbumDao::QueryLocalMatchAlbum(std::string &cloudId)
 {
-    MEDIA_INFO_LOG("QueryLocalMatchAlbum enter");
     std::tuple<std::shared_ptr<NativeRdb::ResultSet>, int> defaultValue = {nullptr, 0};
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, defaultValue, "QueryLocalMatchAlbum Failed to get rdbStore.");
