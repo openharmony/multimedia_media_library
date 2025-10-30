@@ -1894,7 +1894,7 @@ static napi_value checkArgsGetSelectedPhotoAssets(
         photoAlbum->IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType());
     CHECK_COND_RET(isPortraitAlbum, nullptr, "this is not portrait album");
     
-    for(std::string colum: context->fetchColumn){
+    for (std::string colum : context->fetchColumn) {
         CHECK_COND_RET(PhotoColumn::IsPhotoColumn(colum), nullptr, "column not in Photos table");
     }
  
