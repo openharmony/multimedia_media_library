@@ -1881,8 +1881,11 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationAllExif(
     string exifStr = fileAsset->GetAllExif();
     if (!exifStr.empty() && nlohmann::json::accept(exifStr)) {
         nlohmann::json exifJson = nlohmann::json::parse(exifStr, nullptr, false);
+        CHECK_AND_RETURN_RET_LOG(!exifJson.is_discarded(), E_INVALID_VALUES, "JSON parse error");
         exifJson["Orientation"] = imageSourceOrientation->second;
         exifStr = exifJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        CHECK_AND_RETURN_RET_LOG(!exifStr.empty(), E_INVALID_VALUES,
+            "JSON dump error, failed to convert JSON to string");
         values.PutString(PhotoColumn::PHOTO_ALL_EXIF, exifStr);
     }
 
