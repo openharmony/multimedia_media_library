@@ -302,6 +302,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("APPLINK",                   PhotoColumn::PHOTO_APPLINK),
     std::make_pair("EXIST_COMPATIBLE_DUPLICATE", PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE),
     std::make_pair("HDR_MODE",                  PhotoColumn::PHOTO_HDR_MODE),
+    std::make_pair("CLOUD_ID",                  PhotoColumn::PHOTO_CLOUD_ID),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
