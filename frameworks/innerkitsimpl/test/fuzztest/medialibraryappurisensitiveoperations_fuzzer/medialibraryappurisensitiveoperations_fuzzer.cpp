@@ -168,7 +168,7 @@ static void UpdateSensitiveTypeFuzzer()
     predicates.EqualTo(Media::AppUriSensitiveColumn::ID, ID);
     predicates.EqualTo(Media::AppUriSensitiveColumn::URI_TYPE, FuzzUriType());
     std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, {});
-    CHECK_AND_RETURN_LOG(resultSet != nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK, "failed to query");
+    CHECK_AND_RETURN_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, "failed to query");
 
     int sensitiveType = FuzzHideSensitiveType();
     Media::MediaLibraryAppUriSensitiveOperations::UpdateSensitiveType(resultSet, sensitiveType);
@@ -182,7 +182,7 @@ static void UpdateSensitiveTypeAndForceHideSensitiveFuzzer()
     predicates.EqualTo(Media::AppUriSensitiveColumn::ID, ID);
     predicates.EqualTo(Media::AppUriSensitiveColumn::URI_TYPE, FuzzUriType());
     std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, {});
-    CHECK_AND_RETURN_LOG(resultSet != nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK, "failed to query");
+    CHECK_AND_RETURN_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, "failed to query");
 
     int sensitiveType = FuzzHideSensitiveType();
     OHOS::NativeRdb::ValuesBucket values;

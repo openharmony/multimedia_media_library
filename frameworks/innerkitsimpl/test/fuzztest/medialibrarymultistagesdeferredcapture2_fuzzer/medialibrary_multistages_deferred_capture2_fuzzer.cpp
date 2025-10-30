@@ -148,7 +148,7 @@ static void MultistagesCaptureDeferredPhotoProcSessionCallbackTest()
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_ID, photoId);
     std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, {});
-    CHECK_AND_RETURN_LOG(resultSet != nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK, "failed to query");
+    CHECK_AND_RETURN_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, "failed to query");
     callback->NotifyIfTempFile(resultSet, provider->ConsumeBool());
     callback->UpdateHighQualityPictureInfo(fileId, provider->ConsumeBool(),
         static_cast<int32_t>(FuzzFirstStageModifyType()));
