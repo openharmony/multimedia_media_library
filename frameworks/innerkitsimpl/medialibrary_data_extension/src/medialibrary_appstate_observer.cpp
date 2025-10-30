@@ -47,6 +47,7 @@ sptr<IAppMgr> MedialibraryAppStateObserverManager::GetAppManagerInstance()
 
 void MedialibraryAppStateObserverManager::SubscribeAppState()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     MEDIA_INFO_LOG("SubscribeAppState");
     sptr<IAppMgr> appManager = GetAppManagerInstance();
     CHECK_AND_RETURN_LOG(appManager != nullptr, "GetAppManagerInstance failed");
