@@ -108,6 +108,8 @@ public:
         const std::vector<std::string> &userAlbumIds = {});
     EXPORT static void UpdateSourceAlbumHiddenState(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &sourceAlbumIds = {});
+    EXPORT static void UpdateCommonAlbumHiddenState(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const std::vector<std::string> &albumIds = {});
 
     // Update count, cover_uri, hidden_count, hidden_cover of albums.
     // Only update albums related with specified uri assets.

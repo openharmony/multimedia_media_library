@@ -46,6 +46,8 @@ const map<std::string, ResultSetDataType> AlbumChangeInfo::albumInfoCloumnTypes_
     { PhotoAlbumColumns::COVER_URI_SOURCE, TYPE_INT32 },
     { PhotoAlbumColumns::ALBUMS_ORDER, TYPE_INT32 },
     { PhotoAlbumColumns::ORDER_SECTION, TYPE_INT32},
+    { PhotoAlbumColumns::ALBUM_CLOUD_ID, TYPE_STRING },
+    { PhotoAlbumColumns::ALBUM_IS_LOCAL, TYPE_INT32 }
 };
 
 const vector<std::string> AlbumChangeInfo::albumInfoColumns_ = []() {
@@ -104,6 +106,10 @@ vector<AlbumChangeInfo> AlbumChangeInfo::GetInfoFromResult(
             resultSet, GetDataType(PhotoAlbumColumns::ORDER_SECTION)));
         albumChangeInfo.albumsOrder_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUMS_ORDER,
             resultSet, GetDataType(PhotoAlbumColumns::ALBUMS_ORDER)));
+        albumChangeInfo.cloudId_ = get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_CLOUD_ID,
+            resultSet, GetDataType(PhotoAlbumColumns::ALBUM_CLOUD_ID)));
+        albumChangeInfo.isLocal_ = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_IS_LOCAL,
+            resultSet, GetDataType(PhotoAlbumColumns::ALBUM_IS_LOCAL)));
         albumChangeInfos.push_back(albumChangeInfo);
     }
 
@@ -122,7 +128,8 @@ string AlbumChangeInfo::ToString(bool isDetail) const
         ss << ", isCoverChange_: " << isCoverChange_ << ", isHiddenCoverChange_: " << isHiddenCoverChange_;
         ss << ", coverDateTime_: " << coverDateTime_ << ", hiddenCoverDateTime_: " << hiddenCoverDateTime_;
         ss << ", dirty_: " << dirty_ << ", coverUriSource_: " << coverUriSource_;
-        ss << ", albumsOrder_: " << albumsOrder_ << ", orderSection_ " << orderSection_;
+        ss << ", albumsOrder_: " << albumsOrder_ << ", orderSection_: " << orderSection_ << ", lpath_: " << lpath_;
+        ss << ", isLocal_: " << isLocal_ << ", cloudId_: " << cloudId_;
         if (isCoverChange_) {
             ss << ", cover info: " << coverInfo_.ToString().c_str();
         }
