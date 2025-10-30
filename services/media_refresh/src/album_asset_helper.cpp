@@ -129,7 +129,7 @@ bool AlbumAssetHelper::CalAlbumRefreshInfo(std::function<bool(AlbumRefreshInfo &
         albumRefreshTimestamp = AlbumAccurateRefreshManager::GetInstance().GetRefreshTimestamp(albumId, isHidden);
     }
     auto action = AlbumAccurateRefreshManager::GetInstance().GetRefreshAction(albumRefreshTimestamp, assetTimestamp);
-    ACCURATE_DEBUG("set force refresh[%{public}d, %{public}d] albumRefreshTimestamp: %{public}s, "
+    MEDIA_DEBUG_LOG("set force refresh[%{public}d, %{public}d] albumRefreshTimestamp: %{public}s, "
         "assetTimestamp: %{public}s, action: %{public}d", albumId, isHidden, albumRefreshTimestamp.ToString().c_str(),
         assetTimestamp.ToString().c_str(), action);
     if (action == AssetRefreshAlbumAction::ACCURATE_REFRESH) {

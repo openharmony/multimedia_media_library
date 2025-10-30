@@ -2344,8 +2344,8 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<MediaLibra
     UpdateAnalysisAlbumInternal(rdbStore, albumIds);
 }
 
-static void UpdateCommonAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &albumIds = {})
+void MediaLibraryRdbUtils::UpdateCommonAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const vector<string> &albumIds)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateCommonAlbumHiddenState");
