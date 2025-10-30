@@ -1697,6 +1697,7 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
 
     vector<string> notifyUris = predicates.GetWhereArgs();
+    MEDIA_INFO_LOG("Hide %{public}zu Photos, hiddenState: %{public}d", notifyUris.size(), hiddenState);
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
     if (hiddenState != 0) {
         MediaLibraryPhotoOperations::UpdateSourcePath(predicates.GetWhereArgs());

@@ -32,14 +32,39 @@ bool IsNotifyUpdateForHiddenAlbum(const AlbumChangeInfo& beforeChangeInfo, const
         true : false;
 }
 
+void AlbumChangeNotifyExecution::AddInfosToNewNotify()
+{
+    for (auto &item : notifyInfos_) {
+        NotifyInfoInner notifyInfo;
+        notifyInfo.tableType = NotifyTableType::PHOTO_ALBUM;
+        notifyInfo.operationType = item.first;
+        NotifyLevel level;
+        notifyInfo.notifyLevel = level;
+        auto &changeDatas = item.second;
+        for (auto &changeData : changeDatas) {
+            notifyInfo.infos.push_back(changeData);
+            ACCURATE_INFO("notify PHOTO_ALBUM info: operationType(0x%{public}x), level(%{public}d), info(%{public}s)",
+                static_cast<int32_t>(item.first),
+                static_cast<int32_t>(notifyInfo.notifyLevel.priority), changeData.ToString().c_str());
+        }
+        // 调用发送通知接口
+        Notification::MediaLibraryNotifyNew::AddItem(notifyInfo);
+    }
+}
+
+void AlbumChangeNotifyExecution::InsertNotifyInfoForAdd(const AlbumChangeData& changeData)
+{
+    InsertNotifyInfo(ALBUM_OPERATION_ADD, changeData);
+    if (IsNotifyUpdateForHiddenAlbum(changeData.infoBeforeChange_, changeData.infoAfterChange_)) {
+        InsertNotifyInfo(ALBUM_OPERATION_UPDATE_HIDDEN, changeData);
+    }
+}
+
 void AlbumChangeNotifyExecution::Notify(vector<AlbumChangeData> changeDatas)
 {
     for (auto &changeData : changeDatas) {
         if (changeData.operation_ == RDB_OPERATION_ADD) {
-            InsertNotifyInfo(ALBUM_OPERATION_ADD, changeData);
-            if (IsNotifyUpdateForHiddenAlbum(changeData.infoBeforeChange_, changeData.infoAfterChange_)) {
-                InsertNotifyInfo(ALBUM_OPERATION_UPDATE_HIDDEN, changeData);
-            }
+            InsertNotifyInfoForAdd(changeData);
         } else if (changeData.operation_ == RDB_OPERATION_REMOVE) {
             InsertNotifyInfo(ALBUM_OPERATION_REMOVE, changeData);
         } else if (changeData.operation_ == RDB_OPERATION_UPDATE) {
@@ -63,6 +88,15 @@ void AlbumChangeNotifyExecution::Notify(vector<AlbumChangeData> changeDatas)
                 InsertNotifyInfo(ALBUM_OPERATION_REMOVE, changeData);
                 continue;
             }
+
+            // 相册新增逻辑
+            bool isCreate = changeData.infoBeforeChange_.dirty_ == static_cast<int32_t>(DirtyType::TYPE_DELETED) &&
+                changeData.infoAfterChange_.dirty_ != static_cast<int32_t>(DirtyType::TYPE_DELETED);
+            if (isCreate) {
+                InsertNotifyInfoForAdd(changeData);
+                continue;
+            }
+
             if (changeData.IsAlbumHiddenInfoChange()) {
                 InsertNotifyInfo(ALBUM_OPERATION_UPDATE_HIDDEN, changeData);
             }
@@ -71,23 +105,7 @@ void AlbumChangeNotifyExecution::Notify(vector<AlbumChangeData> changeDatas)
             }
         }
     }
-
-    for (auto &item : notifyInfos_) {
-        NotifyInfoInner notifyInfo;
-        notifyInfo.tableType = NotifyTableType::PHOTO_ALBUM;
-        notifyInfo.operationType = item.first;
-        NotifyLevel level;
-        notifyInfo.notifyLevel = level;
-        auto &changeDatas = item.second;
-        for (auto &changeData : changeDatas) {
-            notifyInfo.infos.push_back(changeData);
-            ACCURATE_INFO("notify PHOTO_ALBUM info: operationType(0x%{public}x), level(%{public}d), info(%{public}s)",
-                static_cast<int32_t>(item.first),
-                static_cast<int32_t>(notifyInfo.notifyLevel.priority), changeData.ToString().c_str());
-        }
-        // 调用发送通知接口
-        Notification::MediaLibraryNotifyNew::AddItem(notifyInfo);
-    }
+    AddInfosToNewNotify();
 }
 
 void AlbumChangeNotifyExecution::InsertNotifyInfo(AlbumRefreshOperation operation, const AlbumChangeData &changeData)
