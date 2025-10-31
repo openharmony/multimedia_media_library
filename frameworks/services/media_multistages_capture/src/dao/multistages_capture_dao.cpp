@@ -26,6 +26,8 @@
 #include "media_log.h"
 #include "multistages_capture_request_task_manager.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_asset_operations.h"
+#include "file_asset.h"
 
 namespace OHOS::Media {
 int32_t MultiStagesCaptureDao::UpdatePhotoDirtyNew(const int32_t fileId)
@@ -48,9 +50,10 @@ int32_t MultiStagesCaptureDao::UpdatePhotoDirtyNew(const int32_t fileId)
 std::shared_ptr<NativeRdb::ResultSet> MultiStagesCaptureDao::QueryPhotoDataById(
     const std::string &imageId)
 {
-    int32_t fileId = MultiStagesCaptureRequestTaskManager::GetProcessingFileId(imageId);
+    int32_t fileId = -1;
+    int32_t ret = MultiStagesCaptureRequestTaskManager::GetProcessingFileId(imageId, fileId);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    if (fileId == E_ERR) {
+    if (fileId == E_ERR || fileId == -1) {
         MEDIA_WARN_LOG("get fileId from fileId2PhotoId_ failed");
         cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, imageId);
     } else {
@@ -60,6 +63,25 @@ std::shared_ptr<NativeRdb::ResultSet> MultiStagesCaptureDao::QueryPhotoDataById(
         PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP,
         PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_DATE_TRASHED };
     return DatabaseAdapter::Query(cmd, columns);
+}
+
+std::shared_ptr<FileAsset> MultiStagesCaptureDao::QueryVideoDataById(const std::string &videoId)
+{
+    int32_t fileId = -1;
+    int32_t ret = MultiStagesCaptureRequestTaskManager::GetProcessingFileId(videoId, fileId);
+    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
+        PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_POSITION, PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
+    auto resultSet = DatabaseAdapter::Query(cmd, columns);
+    std::shared_ptr<FileAsset> fileAsset;
+    if (fileId == E_ERR || fileId == -1) {
+        MEDIA_WARN_LOG("get fileId from fileId2PhotoId_ failed");
+        fileAsset = MediaLibraryAssetOperations::GetFileAssetFromDb(
+            PhotoColumn::PHOTO_ID, videoId, OperationObject::FILESYSTEM_PHOTO, columns);
+    } else {
+        fileAsset = MediaLibraryAssetOperations::GetFileAssetFromDb(
+            PhotoColumn::MEDIA_ID, std::to_string(fileId), OperationObject::FILESYSTEM_PHOTO, columns);
+    }
+    return fileAsset;
 }
 
 }  // namespace OHOS::Media
