@@ -119,12 +119,13 @@ std::string MultiStagesCaptureRequestTaskManager::GetProcessingPhotoId(int32_t f
     return fileId2PhotoId_[fileId];
 }
 
-int32_t MultiStagesCaptureRequestTaskManager::GetProcessingFileId(const std::string &photoId)
+int32_t MultiStagesCaptureRequestTaskManager::GetProcessingFileId(const std::string &photoId, int32_t &fileId)
 {
     unique_lock<mutex> lock(mutex_);
     for (auto iter = fileId2PhotoId_.begin(); iter != fileId2PhotoId_.end(); ++iter) {
         if (iter->second == photoId) {
-            return iter->first;
+            fileId = iter->first;
+            return E_OK;
         }
     }
     MEDIA_INFO_LOG("photo id (%{public}s) not in progress.", photoId.c_str());

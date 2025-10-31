@@ -25,6 +25,7 @@
 #include "medialibrary_object_utils.h"
 #include "result_set_utils.h"
 #include "multistages_capture_request_task_manager.h"
+#include "multistages_capture_dao.h"
 
 using namespace std;
 using namespace OHOS::CameraStandard;
