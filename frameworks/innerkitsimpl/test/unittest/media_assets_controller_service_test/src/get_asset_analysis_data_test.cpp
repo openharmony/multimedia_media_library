@@ -32,6 +32,7 @@
 #include "mimetype_utils.h"
 #include "parameter_utils.h"
 #include "vision_total_column.h"
+#include "vision_db_sqls.h"
 #include "vision_aesthetics_score_column.h"
 
 namespace OHOS::Media {
@@ -47,13 +48,15 @@ static std::string Quote(const std::string &str)
     return "'" + str + "'";
 }
 
-static void ClearTable(const string &table)
-{
-    int32_t rows = 0;
-    RdbPredicates predicates(table);
-    int32_t errCode = g_rdbStore->Delete(rows, predicates);
-    CHECK_AND_RETURN_LOG(errCode == E_OK, "g_rdbStore->Delete errCode:%{public}d", errCode);
-}
+static std::vector<std::string> createTableSqlLists = {
+    CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
+    PhotoColumn::CREATE_PHOTO_TABLE,
+};
+
+static std::vector<std::string> testTables = {
+    VISION_TOTAL_TABLE,
+    PhotoColumn::PHOTOS_TABLE,
+};
 
 static void ClearAssetsFile()
 {
@@ -182,14 +185,12 @@ void GetAssetAnalysisDataTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
-        exit(1);
-    }
-
+    ASSERT_NE(g_rdbStore, nullptr);
+    // clear table  if existed
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
     ClearAssetsFile();
-    ClearTable(VISION_TOTAL_TABLE);
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
+
     InsertAsset("GetAssetAnalysisData_Test.jpg");
     InsertAnalysisTotal(GetAssetId("GetAssetAnalysisData_Test.jpg"));
     MEDIA_INFO_LOG("SetUpTestCase");
@@ -198,21 +199,14 @@ void GetAssetAnalysisDataTest::SetUpTestCase(void)
 void GetAssetAnalysisDataTest::TearDownTestCase(void)
 {
     ClearAssetsFile();
-    ClearTable(VISION_TOTAL_TABLE);
-    ClearTable(PhotoColumn::PHOTOS_TABLE);
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
     MEDIA_INFO_LOG("TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
-void GetAssetAnalysisDataTest::SetUp()
-{
-    MEDIA_INFO_LOG("SetUp");
-}
+void GetAssetAnalysisDataTest::SetUp() {}
 
-void GetAssetAnalysisDataTest::TearDown(void)
-{
-    MEDIA_INFO_LOG("TearDown");
-}
+void GetAssetAnalysisDataTest::TearDown(void) {}
 
 int32_t GetAssetAnalysisData(int32_t fileId, int32_t analysisType, bool analysisTotal)
 {
