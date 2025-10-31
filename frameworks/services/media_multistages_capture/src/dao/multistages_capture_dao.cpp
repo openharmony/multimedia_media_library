@@ -69,9 +69,9 @@ std::shared_ptr<FileAsset> MultiStagesCaptureDao::QueryVideoDataById(const std::
 {
     int32_t fileId = -1;
     int32_t ret = MultiStagesCaptureRequestTaskManager::GetProcessingFileId(videoId, fileId);
-    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_POSITION, PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
-    auto resultSet = DatabaseAdapter::Query(cmd, columns);
+    std::vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_NAME,
+        PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_POSITION,
+        PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP};
     std::shared_ptr<FileAsset> fileAsset;
     if (fileId == E_ERR || fileId == -1) {
         MEDIA_WARN_LOG("get fileId from fileId2PhotoId_ failed");
