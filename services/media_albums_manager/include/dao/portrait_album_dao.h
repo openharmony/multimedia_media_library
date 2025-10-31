@@ -59,11 +59,12 @@ public:
     //talbe join
     const std::string SQL_PORTRAIT_ALBUM_TABLE_JOIN = "\
         Photos \
-        INNER JOIN AnalysisPhotoMap ON ( \
-            Photos.file_id = AnalysisPhotoMap.map_asset \
+        INNER JOIN tab_analysis_image_face ON ( \
+            tab_analysis_image_face.file_id = Photos.file_id \
         ) \
         INNER JOIN AnalysisAlbum ON ( \
-            AnalysisAlbum.album_id = AnalysisPhotoMap.map_album \
+            tab_analysis_image_face.tag_id = AnalysisAlbum.tag_id \
+            AND tab_analysis_image_face.tag_id LIKE 'ser%' \
         ) \
         INNER JOIN ( \
             SELECT group_tag \
@@ -71,11 +72,6 @@ public:
             WHERE album_id = ? \
         ) ag ON ( \
             ag.group_tag = AnalysisAlbum.group_tag \
-        ) \
-        INNER JOIN tab_analysis_image_face ON ( \
-            tab_analysis_image_face.file_id = Photos.file_id \
-            AND tab_analysis_image_face.tag_id = AnalysisAlbum.tag_id \
-            AND tab_analysis_image_face.tag_id LIKE 'ser%' \
         ) \
         LEFT OUTER JOIN tab_analysis_affective ON ( \
             tab_analysis_affective.file_id = Photos.file_id \
@@ -116,7 +112,7 @@ public:
     const std::string SQL_PORTRAIT_ALBUM_GET_LIMIT_SCORE = "\
         SELECT * FROM ( \
             SELECT \
-                RANK() OVER (ORDER BY " + SQL_PORTRAIT_ALBUM_COLUM_TOTAL_SCORE + " DESC ) AS rank, \
+                ROW_NUMBER() OVER (ORDER BY " + SQL_PORTRAIT_ALBUM_COLUM_TOTAL_SCORE + " DESC ) AS rank, \
                 Photos.file_id, \
                 COUNT(1) OVER () AS count, \
                 " + SQL_PORTRAIT_ALBUM_COLUM_TOTAL_SCORE + " AS total_score \

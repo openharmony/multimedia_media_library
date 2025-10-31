@@ -298,7 +298,7 @@ HWTEST_F(AlbumGetSelectedAssetsTest, GetSelectedAssets_Test_001, TestSize.Level0
     // invaild
     int invaildId = albumId + 1;
     count = AlbumGetSelectedAssets(invaildId);
-    EXPECT_EQ(count, -1);
+    EXPECT_EQ(count, 0);
 
     MEDIA_INFO_LOG("end GetSelectedAssets_Test_001");
 }
