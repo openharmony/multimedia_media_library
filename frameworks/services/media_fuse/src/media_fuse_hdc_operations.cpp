@@ -45,6 +45,8 @@ static constexpr mode_t FILE_PERMISSION = 0664;
 static constexpr off_t DIR_DEFAULT_SIZE = 3440;
 static constexpr int64_t MILLISECONDS_THRESHOLD = 1000000000000LL;
 static constexpr int64_t MILLISECONDS_PER_SECOND = 1000LL;
+static constexpr int32_t PHOTO_POSITION_ONE = 1;
+static constexpr int32_t PHOTO_POSITION_THREE = 3;
 
 time_t MediaFuseHdcOperations::GetAlbumMTime(const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
 {
@@ -110,7 +112,7 @@ int32_t MediaFuseHdcOperations::GetPathFromDisplayname(
     rdbPredicate.And()->EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
     rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    std::vector<std::string> positions = {to_string(1), to_string(3)};
+    std::vector<std::string> positions = {to_string(PHOTO_POSITION_ONE), to_string(PHOTO_POSITION_THREE)};
     rdbPredicate.And()->In(PhotoColumn::PHOTO_POSITION, positions);
     std::vector<std::string> columns;
     columns.push_back(MediaColumn::MEDIA_FILE_PATH);
@@ -222,6 +224,10 @@ int32_t MediaFuseHdcOperations::HandleMovingPhoto(std::string &filePath, std::st
     NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
     rdbPredicate.EqualTo(MediaColumn::MEDIA_TITLE, title);
     rdbPredicate.And()->EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    std::vector<std::string> positions = {to_string(PHOTO_POSITION_ONE), to_string(PHOTO_POSITION_THREE)};
+    rdbPredicate.And()->In(PhotoColumn::PHOTO_POSITION, positions);
     std::vector<std::string> columns = {
         PhotoColumn::MEDIA_NAME,
         PhotoColumn::PHOTO_SUBTYPE,
@@ -577,7 +583,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaFuseHdcOperations::QueryAlbumPhotos(c
     photoPred.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
     photoPred.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     photoPred.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    std::vector<std::string> positions = {to_string(1), to_string(3)};
+    std::vector<std::string> positions = {to_string(PHOTO_POSITION_ONE), to_string(PHOTO_POSITION_THREE)};
     photoPred.And()->In(PhotoColumn::PHOTO_POSITION, positions);
     photoPred.GroupBy({ MediaColumn::MEDIA_NAME });
     std::vector<std::string> columns = {
