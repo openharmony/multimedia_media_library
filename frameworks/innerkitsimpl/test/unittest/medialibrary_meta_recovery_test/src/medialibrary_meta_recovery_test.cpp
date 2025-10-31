@@ -35,7 +35,7 @@
 #include "medialibrary_photo_operations.h"
 #include "media_file_uri.h"
 #include "photo_file_utils.h"
-
+#include "medialibrary_db_const_sqls.h"
 #define private public
 #include "medialibrary_meta_recovery.h"
 #undef private
@@ -57,9 +57,25 @@ namespace Media {
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
+static std::vector<std::string> createTableSqlLists = {
+    PhotoAlbumColumns::CREATE_TABLE,
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    CREATE_MEDIA_TABLE,
+};
+
+static std::vector<std::string> testTables = {
+    PhotoAlbumColumns::TABLE,
+    PhotoColumn::PHOTOS_TABLE,
+    MEDIALIBRARY_TABLE,
+};
+
 void MediaLibraryMetaRecoveryUnitTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
+
     vector<string> perms;
     perms.push_back("ohos.permission.MEDIA_LOCATION");
     perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
@@ -73,18 +89,12 @@ void MediaLibraryMetaRecoveryUnitTest::TearDownTestCase(void)
 {
     ClearPhotoApi10();
     MediaLibraryUnitTestUtils::CleanTestFiles();
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 // SetUp:Execute before each test case
-void MediaLibraryMetaRecoveryUnitTest::SetUp(void)
-{
-//    MediaLibraryUnitTestUtils::CleanTestFiles();
-    MediaLibraryUnitTestUtils::CleanBundlePermission();
-    MediaLibraryUnitTestUtils::InitRootDirs();
-    MediaLibraryUnitTestUtils::Init();
-    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-}
+void MediaLibraryMetaRecoveryUnitTest::SetUp(void) {}
 
 void MediaLibraryMetaRecoveryUnitTest::TearDown(void) {}
 
@@ -237,13 +247,15 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_DeleteMetaDataByPath_Tes
     int ret = E_OK;
     string photoPath = "/storage/cloud/files/Photo/test_file.jpg";
     string photoMetaPath = "/storage/cloud/files/.meta/Photo/test_file.jpg.json";
-    EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(photoMetaPath.c_str()), true);
+    MediaFileUtils::CreateDirectory("/storage/cloud/files/.meta/Photo");
+    MediaFileUtils::CreateFile(photoMetaPath);
     ret = MediaLibraryMetaRecovery::GetInstance().DeleteMetaDataByPath(photoPath);
     EXPECT_EQ(ret, E_OK);
 
     photoPath = "/storage/cloud/files/test_file.jpg";
     ret = MediaLibraryMetaRecovery::GetInstance().DeleteMetaDataByPath(photoPath);
     EXPECT_EQ(ret, E_INVALID_PATH);
+    remove(photoMetaPath.c_str());
 }
 
 HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_SetRdbRebuiltStatus_Test_001, TestSize.Level1)
