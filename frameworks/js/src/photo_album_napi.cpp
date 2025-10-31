@@ -1884,8 +1884,8 @@ static napi_value checkArgsGetSelectedPhotoAssets(
         bool cond = filterJson.size() == sizeLimit && filterJson.contains(key);
         CHECK_COND_RET(cond, nullptr, "ARGS_TWO must be a JSON object with exactly one key : currentFileId");
         std::string value = filterJson[key];
-        CHECK_COND_RET(MediaFileUtils::IsValidInteger(value), nullptr,
-            "key : currentFileId must be a integer");
+        bool isVaildInteger = !value.empty() && std::all_of(value.begin(), value.end(), ::isdigit);
+        CHECK_COND_RET(isVaildInteger, nullptr, "key : currentFileId must be a integer");
     }
  
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
@@ -1894,8 +1894,9 @@ static napi_value checkArgsGetSelectedPhotoAssets(
         photoAlbum->IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType());
     CHECK_COND_RET(isPortraitAlbum, nullptr, "this is not portrait album");
     
-    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(
-        env, context->fetchColumn, PhotoColumn::IsPhotoColumn, NapiAssetType::TYPE_PHOTO));
+    for (std::string colum : context->fetchColumn) {
+        CHECK_COND_RET(PhotoColumn::IsPhotoColumn(colum), nullptr, "column not in Photos table");
+    }
  
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), NAPI_INVALID_PARAMETER_ERROR);
     return result;
