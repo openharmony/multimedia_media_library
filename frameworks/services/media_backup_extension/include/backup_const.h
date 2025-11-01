@@ -478,7 +478,8 @@ struct FileInfo {
     std::string inode;
     std::string storagePath;
     int32_t fileSourceType {0};
-    bool isSameFileSourceTypeMatched {true};
+    bool isStoragePathExistInDb {false};
+    bool isCloudPathExistInDb {false};
 };
 
 struct AlbumInfo {
