@@ -896,6 +896,7 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(const unorde
     value.PutInt(PhotoColumn::PHOTO_HDR_MODE, data->GetHdrMode());
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, data->GetUserComment());
     value.PutInt(PhotoColumn::PHOTO_QUALITY, 0);
+    value.PutInt(PhotoColumn::PHOTO_VIDEO_MODE, data->GetVideoMode());
     return value;
 }
 

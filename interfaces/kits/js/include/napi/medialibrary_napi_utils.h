@@ -332,6 +332,7 @@ public:
             {PhotoColumn::MOVING_PHOTO_EFFECT_MODE, {TYPE_INT32, "movingPhotoEffectMode"}},
             {PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, {TYPE_INT32, "dynamicRangeType"}},
             {PhotoColumn::PHOTO_HDR_MODE, {TYPE_INT32, "hdrMode"}},
+            {PhotoColumn::PHOTO_VIDEO_MODE, {TYPE_INT32, "videoMode"}},
             {PhotoColumn::PHOTO_THUMBNAIL_READY, {TYPE_INT64, "thumbnailModifiedMs"}},
             {PhotoColumn::PHOTO_LCD_SIZE, {TYPE_STRING, "lcdSize"}},
             {PhotoColumn::PHOTO_THUMB_SIZE, {TYPE_STRING, "thmSize"}},

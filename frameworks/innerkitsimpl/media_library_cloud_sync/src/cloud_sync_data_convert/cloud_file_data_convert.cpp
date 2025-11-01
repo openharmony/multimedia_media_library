@@ -209,6 +209,7 @@ int32_t CloudFileDataConvert::HandleUniqueFileds(
     map[PhotoColumn::PHOTO_SHOOTING_MODE_TAG] = MDKRecordField(upLoadRecord.shootingModeTag);
     map[PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE] = MDKRecordField(upLoadRecord.dynamicRangeType);
     map[PhotoColumn::PHOTO_HDR_MODE] = MDKRecordField(upLoadRecord.hdrMode);
+    map[PhotoColumn::PHOTO_VIDEO_MODE] = MDKRecordField(upLoadRecord.videoMode);
     map[PhotoColumn::PHOTO_FRONT_CAMERA] = MDKRecordField(upLoadRecord.frontCamera);
     map[PhotoColumn::PHOTO_EDIT_TIME] = MDKRecordField(upLoadRecord.editTime);
     map[PhotoColumn::PHOTO_ORIGINAL_SUBTYPE] = MDKRecordField(upLoadRecord.originalSubtype);
@@ -986,6 +987,7 @@ void CloudFileDataConvert::ConvertAttributes(MDKRecordPhotosData &data, OnFetchP
     onFetchPhotoVo.originalSubtype = data.GetOriginalSubType().value_or(0);
     onFetchPhotoVo.dynamicRangeType = data.GetDynamicRangeType().value_or(0);
     onFetchPhotoVo.hdrMode = data.GetHdrMode().value_or(0);
+    onFetchPhotoVo.videoMode = data.GetVideoMode().value_or(-1);
     onFetchPhotoVo.movingPhotoEffectMode = data.GetMovingPhotoEffectMode().value_or(0);
     onFetchPhotoVo.editTime = data.GetEditTime().value_or(0);
     onFetchPhotoVo.coverPosition = data.GetCoverPosition().value_or(0);

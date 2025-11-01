@@ -4694,6 +4694,16 @@ static void AddAffective(RdbStore &store, int32_t version)
     MEDIA_INFO_LOG("End add affective");
 }
 
+static void AddVideoMode(RdbStore &store, int32_t version)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_VIDEO_MODE +
+            " INT NOT NULL DEFAULT -1",
+    };
+    ExecSqlsWithDfx(sqls, store, version);
+    MEDIA_INFO_LOG("Add VideoMode column end");
+}
+
 static void AddDetailTimeToPhotos(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -5527,6 +5537,13 @@ static void UpgradeExtensionPart11(RdbStore &store, int32_t oldVersion)
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_BATCH_DOWNLOAD, true)) {
         CreateBatchDownloadRecords(store, VERSION_ADD_BATCH_DOWNLOAD);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_BATCH_DOWNLOAD, true);
+    }
+
+    if (oldVersion < VERSION_VIDEO_MODE &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_VIDEO_MODE, true)) {
+        MEDIA_INFO_LOG("AddVideoMode start");
+        AddVideoMode(store, VERSION_VIDEO_MODE);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_VIDEO_MODE, true);
     }
 }
 

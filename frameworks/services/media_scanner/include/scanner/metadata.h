@@ -188,6 +188,9 @@ public:
     EXPORT void SetFileSourceType(const VariantData &fileSourceType);
     EXPORT int32_t GetFileSourceType() const;
 
+    EXPORT void SetVideoMode(const VariantData &videoMode);
+    EXPORT int32_t GetVideoMode() const;
+
     EXPORT void Init();
     void InitV2();
 
@@ -284,6 +287,8 @@ private:
     int32_t stageVideoTaskStatus_;
 
     int32_t fileSourceType_;
+
+    int32_t videoMode_;
 };
 } // namespace Media
 } // namespace OHOS
