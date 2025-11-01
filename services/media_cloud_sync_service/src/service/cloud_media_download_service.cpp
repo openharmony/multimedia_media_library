@@ -17,6 +17,7 @@
 
 #include "cloud_media_download_service.h"
 
+#include "background_cloud_batch_selected_file_processor.h"
 #include "cover_position_parser.h"
 #include "directory_ex.h"
 #include "parameters.h"
@@ -460,6 +461,7 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         this->ResetAssetModifyTime(assetData);
     }
 
+    UpdateBatchDownloadTask(photo);
     ret = FixDownloadAssetExifRotate(photo, assetData);
     if (ret != E_OK) {
         MEDIA_INFO_LOG("HandlePhoto Failed to fix exif rotate %{public}s",
@@ -476,6 +478,14 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         return;
     }
     MEDIA_INFO_LOG("[OnDownloadAsset] Delete transCode file Success!");
+}
+
+void CloudMediaDownloadService::UpdateBatchDownloadTask(const ORM::PhotosPo &photo)
+{
+    int32_t fileId = photo.fileId.value_or(-1);
+    CHECK_AND_RETURN(fileId != -1);
+    MEDIA_INFO_LOG("Successfully download asset[%{public}d] by single task, need to handle batch task.", fileId);
+    BackgroundCloudBatchSelectedFileProcessor::UpdateDBStatusInfoForSingleDownloadCompletely(fileId);
 }
 
 int32_t CloudMediaDownloadService::FixDownloadAssetExifRotate(
