@@ -34,6 +34,8 @@ public:  // getter & setter
     virtual std::string GetTraceId() const = 0;
     virtual void SetUserId(const int32_t &userId) = 0;
     virtual void SetCloudType(const int32_t cloudType) = 0;
+    virtual void SetCloudSpaceFull(bool isCloudSpaceFull) = 0;
+    virtual bool IsCloudSpaceFull() = 0;
 
 public:
     virtual int32_t GetCheckRecords(const std::vector<std::string> &cloudIds,
