@@ -53,7 +53,7 @@ std::shared_ptr<NativeRdb::ResultSet> MultiStagesCaptureDao::QueryPhotoDataById(
     int32_t fileId = -1;
     int32_t ret = MultiStagesCaptureRequestTaskManager::GetProcessingFileId(imageId, fileId);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    if (fileId == E_ERR || fileId == -1) {
+    if (ret == E_ERR || fileId == -1) {
         MEDIA_WARN_LOG("get fileId from fileId2PhotoId_ failed");
         cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, imageId);
     } else {
@@ -73,7 +73,7 @@ std::shared_ptr<FileAsset> MultiStagesCaptureDao::QueryVideoDataById(const std::
         PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_POSITION,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP};
     std::shared_ptr<FileAsset> fileAsset;
-    if (fileId == E_ERR || fileId == -1) {
+    if (ret == E_ERR || fileId == -1) {
         MEDIA_WARN_LOG("get fileId from fileId2PhotoId_ failed");
         fileAsset = MediaLibraryAssetOperations::GetFileAssetFromDb(
             PhotoColumn::PHOTO_ID, videoId, OperationObject::FILESYSTEM_PHOTO, columns);
