@@ -83,6 +83,7 @@ group("test") {
     "unittest/medialibrary_uri_test:unittest",
     "unittest/medialibrary_utils_test:unittest",
     "unittest/medialibrary_vision_test:unittest",
+    "unittest/medialibrary_video_mode_test:unittest",
     "unittest/medialibrary_visitor_db_test:unittest",
     "unittest/mediascanner_test:unittest",
     "unittest/moving_photo_impl_test:unittest",

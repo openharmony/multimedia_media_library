@@ -313,6 +313,7 @@ private:
     EXPORT static napi_value CreateHideSensitiveTypeEnum(napi_env env);
     EXPORT static napi_value CreateDynamicRangeTypeEnum(napi_env env);
     EXPORT static napi_value CreateHdrModeEnum(napi_env env);
+    EXPORT static napi_value CreateVideoModeEnum(napi_env env);
 
     EXPORT static napi_value GetPhotoAccessHelper(napi_env env, napi_callback_info info);
     EXPORT static napi_value StartPhotoPicker(napi_env env, napi_callback_info info);
@@ -480,6 +481,7 @@ private:
     static thread_local napi_ref sCompositeDisplayModeEnumRef_;
     static thread_local napi_ref sSupportedImageFormatEnumRef_;
     static thread_local napi_ref sHdrModeRef_;
+    static thread_local napi_ref sVideoModeRef_;
 
     static std::mutex sOnOffMutex_;
 };

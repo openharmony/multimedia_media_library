@@ -527,6 +527,14 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetCloudInsertValues(const int32_t 
     return values;
 }
 
+void BaseRestore::InsertVideoMode(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
+{
+    MEDIA_INFO_LOG("BaseRestore::InsertVideoMode");
+    int32_t videoMode = metadata->GetVideoMode();
+    MEDIA_INFO_LOG("InsertVideoMode videoMode=%{public}d", videoMode);
+    value.PutInt(PhotoColumn::PHOTO_VIDEO_MODE, videoMode);
+}
+
 static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
 {
     int64_t dateAdded = metadata->GetFileDateAdded();
@@ -706,6 +714,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     fileInfo.dateAdded = dateAdded;
     SetCoverPosition(fileInfo, value);
     Set3DgsSubtype(fileInfo, value, data);
+    InsertVideoMode(data, value);
 }
 
 void BaseRestore::CreateDir(std::string &dir)

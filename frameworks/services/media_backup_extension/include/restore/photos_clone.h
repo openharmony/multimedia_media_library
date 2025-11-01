@@ -60,6 +60,12 @@ public:
         return this->photosDao_.FindSameFile(fileInfo, maxFileId);
     }
 
+    int32_t GetMaxFileId()
+    {
+        int32_t maxFileId = this->photosBasicInfo_.maxFileId;
+        return maxFileId;
+    }
+    
     std::shared_ptr<NativeRdb::ResultSet> GetPhotosInPhotoMap(int32_t offset, int32_t pageSize);
     std::shared_ptr<NativeRdb::ResultSet> GetCloudPhotosInPhotoMap(int32_t offset, int32_t pageSize);
     std::shared_ptr<NativeRdb::ResultSet> GetPhotosNotInPhotoMap(int32_t offset, int32_t pageSize);

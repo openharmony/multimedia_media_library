@@ -111,6 +111,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { CustomRecordsColumns::LCD_JUMP_COUNT, TYPE_INT32 },
         { PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, TYPE_INT32 },
         { PhotoColumn::PHOTO_EXIF_ROTATE, TYPE_INT32 },
+        { PhotoColumn::PHOTO_VIDEO_MODE, TYPE_INT32 },
     };
     return RESULT_TYPE_MAP;
 }

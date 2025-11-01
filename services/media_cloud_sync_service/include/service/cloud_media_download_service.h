@@ -31,6 +31,9 @@
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaDownloadService {
 public:
+    std::string GetDisplayName(const PhotosPo &photosPo);
+    int32_t GetFileId(const PhotosPo &photosPo);
+    void UpdateVideoMode(std::vector<PhotosPo> &photosPoVec);
     int32_t GetDownloadThmNum(const int32_t type, int32_t &totalNum);
     int32_t GetDownloadThms(const DownloadThumbnailQueryDto &queryDto, std::vector<PhotosDto> &photosDtos);
     std::vector<PhotosDto> GetDownloadThmsByUri(const std::vector<int32_t> &fileIds, const int32_t type);
