@@ -1868,7 +1868,9 @@ static napi_value checkArgsGetSelectedPhotoAssets(
         MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
         NAPI_INVALID_PARAMETER_ERROR);
  
-    if (context->argc == ARGS_TWO) {
+    napi_valuetype valueType = napi_undefined;
+    if (context->argc == ARGS_TWO && napi_typeof(env, context->argv[PARAM1], &valueType) == napi_ok &&
+        valueType == napi_string) {
         unique_ptr<char[]> tmp;
         bool succ;
         size_t ignore;
