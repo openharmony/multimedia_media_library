@@ -60,6 +60,8 @@ public:
     EXPORT static void TriggerAutoResumeBatchDownloadResourceCheck();
     EXPORT static void TriggerAutoStopBatchDownloadResourceCheck();
 
+    EXPORT static void UpdateDBStatusInfoForSingleDownloadCompletely(int32_t fileId);
+
     enum BatchDownloadStatus : int32_t {
         INIT = 0,
         SUCCESS,

@@ -578,6 +578,8 @@ HWTEST_F(BackgroundCloudBatchSelectedFileProcessorTest, Bcbsfpt_UpdateDBProgress
     fileIdStr = "";
     ret= BackgroundCloudBatchSelectedFileProcessor::UpdateDBProgressInfoForFileId(fileIdStr, 20, 0, 1);
     EXPECT_NE(ret, 0);
+    int32_t fileId = 2; // 2 fileId for single task
+    BackgroundCloudBatchSelectedFileProcessor::UpdateDBStatusInfoForSingleDownloadCompletely(fileId);
     MEDIA_INFO_LOG("Bcbsfpt_UpdateDBProgressInfoForFileId_001 End");
 }
 
