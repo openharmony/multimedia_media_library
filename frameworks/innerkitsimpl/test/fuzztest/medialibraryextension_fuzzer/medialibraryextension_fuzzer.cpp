@@ -103,7 +103,10 @@ static inline Uri FuzzUri()
 
 static inline DataSharePredicates FuzzDataSharePredicates()
 {
-    return DataSharePredicates(FuzzVectorOperationItem());
+    DataSharePredicates predicates(FuzzVectorOperationItem());
+    predicates.SetSettingMode(SettingMode::QUERY_LANGUAGE);
+    predicates.SetWhereArgs(FuzzVectorString());
+    return predicates;
 }
 
 static inline DataShareValuesBucket FuzzDataShareValuesBucket()
