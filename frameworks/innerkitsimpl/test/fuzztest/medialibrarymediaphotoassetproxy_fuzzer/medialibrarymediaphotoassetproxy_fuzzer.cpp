@@ -126,6 +126,7 @@ static void MediaLibraryMediaPhotoAssetProxyTest()
     MEDIA_INFO_LOG("MediaLibraryMediaPhotoAssetProxyTest start");
     if (sDataShareHelper_ == nullptr) {
         CreateDataHelper(FUZZ_STORAGE_MANAGER_MANAGER_ID);
+        CHECK_AND_RETURN_LOG(sDataShareHelper_ != nullptr, "CreateDataHelper failed");
     }
     shared_ptr<Media::PhotoAssetProxy> photoAssetProxy = Init();
     if (photoAssetProxy == nullptr) {
