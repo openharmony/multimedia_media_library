@@ -97,6 +97,7 @@
 #include "media_file_manager_temp_file_aging_task.h"
 #include "preferences_helper.h"
 #include "file_utils.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1477,7 +1478,7 @@ int32_t MediaLibraryAssetOperations::SetUserComment(MediaLibraryCommand &cmd,
     CHECK_AND_PRINT_LOG(err == 0, "Modify image property user comment failed");
     TransCodeExifInfo transCodeExifInfo;
     transCodeExifInfo.userComment = newUserComment;
-    MediaLibraryAssetOperations::ModifyTransCodeFileExif(ExifType::EXIF_USER_COMMENT,
+    MediaLibraryTranscodeDataAgingOperation::ModifyTransCodeFileExif(ExifType::EXIF_USER_COMMENT,
         filePath, transCodeExifInfo, __func__);
     return E_OK;
 }
@@ -1722,45 +1723,6 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     return fd;
 }
 
-int32_t MediaLibraryAssetOperations::SetTranscodeUriToFileAsset(std::shared_ptr<FileAsset> &fileAsset,
-    const std::string &mode, const bool isHeif)
-{
-    CHECK_AND_RETURN_RET_INFO_LOG(IPCSkeleton::GetCallingUid() != SHARE_UID, E_INNER_FAIL, "share support heif");
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INNER_FAIL, "fileAsset is nullptr");
-
-    if (MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName()) != "heif" &&
-        MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName()) != "heic") {
-        MEDIA_INFO_LOG("Display name is not heif, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    }
-    CHECK_AND_RETURN_RET_LOG(!isHeif, E_INNER_FAIL, "Is support heif uri:%{public}s", fileAsset->GetUri().c_str());
-    CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
-        "mode is not read only, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    auto mediaLibraryBundleManager = MediaLibraryBundleManager::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(mediaLibraryBundleManager != nullptr, E_INVALID_VALUES,
-        "MediaLibraryBundleManager::GetInstance() returned nullptr");
-    string clientBundle = mediaLibraryBundleManager->GetClientBundleName();
-    CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(clientBundle),
-        E_INNER_FAIL, "clientBundle support heif, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    CHECK_AND_RETURN_RET_LOG(fileAsset->GetExistCompatibleDuplicate(), E_INNER_FAIL,
-        "SetTranscodeUriToFileAsset compatible duplicate is not exist, fileAsset uri: %{public}s",
-        fileAsset->GetUri().c_str());
-    string path = MediaLibraryAssetOperations::GetEditDataDirPath(fileAsset->GetPath());
-    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INNER_FAIL,
-        "Get edit data dir path failed, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    string newPath = path + "/transcode.jpg";
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists((newPath)), E_INNER_FAIL, "transcode.jpg is not exist");
-    fileAsset->SetPath(newPath);
-    return E_OK;
-}
-
-void MediaLibraryAssetOperations::DoTranscodeDfx(const int32_t &type)
-{
-    MEDIA_INFO_LOG("medialibrary open transcode file success");
-    auto dfxManager = DfxManager::GetInstance();
-    CHECK_AND_RETURN_LOG(dfxManager != nullptr, "DfxManager::GetInstance() returned nullptr");
-    dfxManager->HandleTranscodeAccessTime(ACCESS_MEDIALIB);
-}
-
 int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync)
 {
     if (fileAsset == nullptr) {
@@ -1930,15 +1892,6 @@ string MediaLibraryAssetOperations::GetEditDataCameraPath(const string &path)
         return "";
     }
     return parentPath + "/editdata_camera";
-}
-
-string MediaLibraryAssetOperations::GetTransCodePath(const string &path)
-{
-    string parentPath = GetEditDataDirPath(path);
-    if (parentPath.empty()) {
-        return "";
-    }
-    return parentPath + "/transcode.jpg";
 }
 
 string MediaLibraryAssetOperations::GetAssetCacheDir()
@@ -3467,7 +3420,7 @@ static int32_t DeleteLocalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
     }
     if (position == BOTH_LOCAL_CLOUD_PHOTO_POSITION) {
         if (fileAsset->GetExistCompatibleDuplicate() != 0) {
-            MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
+            MediaLibraryTranscodeDataAgingOperation::DeleteTransCodeInfo(fileAsset->GetFilePath(),
                 to_string(fileAsset->GetId()), __func__);
         }
         subFileAssetVector.push_back(fileAsset);
@@ -3589,120 +3542,6 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     }
     NotifyPhotoAlbum(std::vector<int32_t>(changedAlbumIds.begin(), changedAlbumIds.end()), assetRefresh);
     return E_OK;
-}
-
-int32_t MediaLibraryAssetOperations::DeleteTranscodePhotos(const std::string &filePath)
-{
-    CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INNER_FAIL, "filePath is empty");
-
-    auto editPath = GetEditDataDirPath(filePath);
-    CHECK_AND_RETURN_RET_LOG(!editPath.empty(), E_INNER_FAIL, "editPath is empty");
-
-    auto transcodeFile = editPath + "/transcode.jpg";
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(transcodeFile), E_OK, "Transcode photo is not exists");
-
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(transcodeFile), E_INNER_FAIL,
-        "Failed to delete transcode photo");
-    MEDIA_INFO_LOG("Successfully deleted transcode photo, path: %{public}s", transcodeFile.c_str());
-    return E_OK;
-}
-
-void MediaLibraryAssetOperations::DeleteTransCodeInfo(const std::string &filePath, const std::string &fileId,
-    const std::string functionName)
-{
-    auto ret = DeleteTranscodePhotos(filePath);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to delete transcode photo, in function %{public}s:",
-        functionName.c_str());
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is null, in function %{public}s:", functionName.c_str());
-    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
-    ValuesBucket updateValues;
-    updateValues.PutLong(PhotoColumn::PHOTO_TRANSCODE_TIME, 0);
-    updateValues.PutLong(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, 0);
-    updateValues.PutLong(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, 0);
-    updateCmd.SetValueBucket(updateValues);
-    int32_t rowId = 0;
-    int32_t result = rdbStore->Update(updateCmd, rowId);
-    CHECK_AND_RETURN_LOG(result == NativeRdb::E_OK && rowId > 0,
-        "Update TransCodePhoto failed. Result %{public}d, in function %{public}s:", result, functionName.c_str());
-    MEDIA_INFO_LOG("Successfully delete transcode info, in function %{public}s:", functionName.c_str());
-    return;
-}
-
-string LocationValueToString(double value)
-{
-    string result = "";
-    double positiveValue = value;
-    if (value < 0.0) {
-        positiveValue = 0.0 - value;
-    }
-
-    int degrees = static_cast<int32_t>(positiveValue);
-    result = result + to_string(degrees) + ", ";
-    positiveValue -= static_cast<double>(degrees);
-    positiveValue *= TIMER_MULTIPLIER;
-    int minutes = static_cast<int32_t>(positiveValue);
-    result = result + to_string(minutes) + ", ";
-    positiveValue -= static_cast<double>(minutes);
-    positiveValue *= TIMER_MULTIPLIER;
-    result = result + to_string(positiveValue);
-    return result;
-}
-
-void MediaLibraryAssetOperations::ModifyTransCodeFileExif(const ExifType type, const std::string &path,
-    const TransCodeExifInfo &exifInfo, const std::string &functionName)
-{
-    string transCodePath = PhotoFileUtils::GetTransCodePath(path);
-    MEDIA_DEBUG_LOG("transCodePath path is %{public}s", transCodePath.c_str());
-    if (!MediaFileUtils::IsFileExists(transCodePath)) {
-        MEDIA_DEBUG_LOG("transCodePath path is not exists.");
-        return;
-    }
-    uint32_t err = 0;
-    SourceOptions opts;
-    string extension = MediaFileUtils::GetExtensionFromPath(transCodePath);
-    opts.formatHint = "image/" + extension;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(transCodePath, opts, err);
-    bool cond = (err != 0 || imageSource == nullptr);
-    CHECK_AND_RETURN_LOG(!cond, "Failed to obtain image source, err = %{public}d", err);
-    switch (type) {
-        case ExifType::EXIF_USER_COMMENT: {
-            err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_USER_COMMENT,
-                exifInfo.userComment, transCodePath);
-            CHECK_AND_PRINT_LOG(err == 0, "modify transCode file property user comment failed");
-            break;
-        }
-        case ExifType::EXIF_ORIENTATION: {
-            err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_ORIENTATION,
-                exifInfo.orientation, transCodePath);
-            CHECK_AND_PRINT_LOG(err == 0, "modify transCode file property orientation failed");
-            break;
-        }
-        case ExifType::EXIF_GPS: {
-            uint32_t ret = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE,
-                LocationValueToString(exifInfo.longitude), path);
-            CHECK_AND_PRINT_LOG(ret == E_OK, "modify transCode file property longitude failed");
-
-            ret = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF,
-                exifInfo.longitude > 0.0 ? "E" : "W", path);
-            CHECK_AND_PRINT_LOG(ret == E_OK, "modify transCode file property longitude ref failed");
-
-            ret = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_GPS_LATITUDE,
-                LocationValueToString(exifInfo.latitude), path);
-            CHECK_AND_PRINT_LOG(ret == E_OK, "modify transCode file property latitude failed");
-
-            ret = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF,
-                exifInfo.latitude > 0.0 ? "N" : "S", path);
-            CHECK_AND_PRINT_LOG(ret == E_OK, "modify transCode file property latitude ref failed");
-            break;
-        }
-        default:
-            MEDIA_ERR_LOG("No such exif type");
-            return;
-    }
-    MEDIA_INFO_LOG("Successfully modify transcode file exif, in function %{public}s:", functionName.c_str());
-    return;
 }
 } // namespace Media
 } // namespace OHOS

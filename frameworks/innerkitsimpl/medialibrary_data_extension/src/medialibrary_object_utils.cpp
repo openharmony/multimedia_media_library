@@ -62,6 +62,7 @@
 #include "post_event_utils.h"
 #include "userfilemgr_uri.h"
 #include "dfx_utils.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -856,13 +857,13 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
         return E_IS_PENDING_ERROR;
     }
     bool isHeif = cmd.GetQuerySetParam(PHOTO_TRANSCODE_OPERATION) == OPRN_TRANSCODE_HEIF;
-    int32_t err = MediaLibraryAssetOperations::SetTranscodeUriToFileAsset(fileAsset, mode, isHeif);
+    int32_t err = MediaLibraryTranscodeDataAgingOperation::SetTranscodeUriToFileAsset(fileAsset, mode, isHeif);
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
     int32_t fd = OpenAsset(path, mode, fileId, type);
     CHECK_AND_RETURN_RET_LOG(fd >= 0, E_HAS_FS_ERROR, "open file fd %{private}d, errno %{private}d", fd, errno);
     if (err == 0) {
-        MediaLibraryAssetOperations::DoTranscodeDfx(ACCESS_MEDIALIB);
+        MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(ACCESS_MEDIALIB);
     }
     if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos) {
         auto watch = MediaLibraryInotify::GetInstance();
