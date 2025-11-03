@@ -124,6 +124,8 @@ public:
     EXPORT static std::string GetEditDataDirPath(const std::string &path);
     static std::shared_ptr<FileAsset> GetAssetFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::vector<std::string> &columns);
+    EXPORT static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
+        OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
     static int32_t SetTranscodeUriToFileAsset(std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
         const bool isHeif);
     static void DoTranscodeDfx(const int32_t &type);
@@ -132,8 +134,6 @@ public:
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
 protected:
-    static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
-        OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(NativeRdb::AbsPredicates &predicates,
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
     EXPORT static int32_t GetFileAssetVectorFromDb(NativeRdb::AbsPredicates &predicates, OperationObject oprnObject,
