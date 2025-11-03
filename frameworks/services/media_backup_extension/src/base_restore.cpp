@@ -92,7 +92,7 @@ static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)
     for (auto &obj : jsonObj) {
         bool cond = (!obj.contains("type") || obj.at("type") != "appTwinDataRestoreState" || !obj.contains("detail"));
         CHECK_AND_CONTINUE(!cond);
-
+        CHECK_AND_CONTINUE(obj.at("detail").is_string());
         std::string curMode = obj.at("detail");
         if (curMode == "0" || curMode == "1" || curMode == "2" || curMode == "3") {
             restoreMode = std::stoi(curMode);
@@ -120,13 +120,12 @@ void BaseRestore::GetAccountValid()
     CHECK_AND_RETURN_LOG(!json_arr.is_discarded(), "cloud account parse failed.");
 
     for (const auto& item : json_arr) {
-        if (!item.contains("type") || !item.contains("detail") || item["type"] != "dualAccountId") {
-            continue;
-        } else {
-            oldId = item["detail"];
-            MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
-            break;
-        }
+        bool checkContain = item.contains("type") && item.contains("detail");
+        bool checkType = item["type"].is_string() && item["detail"].is_string() && item["type"] == "dualAccountId";
+        CHECK_AND_CONTINUE(checkContain && checkType);
+        oldId = item["detail"];
+        MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
+        break;
     }
     std::pair<bool, OHOS::AccountSA::OhosAccountInfo> ret =
         OHOS::AccountSA::OhosAccountKits::GetInstance().QueryOhosAccountInfo();
@@ -158,6 +157,7 @@ void BaseRestore::GetSourceDeviceInfo()
     for (const auto& item : jsonArray) {
         bool cond = (!item.contains("type") || !item.contains("detail"));
         CHECK_AND_CONTINUE(!cond);
+        CHECK_AND_CONTINUE(item["type"].is_string() && item["detail"].is_string());
         CHECK_AND_EXECUTE(item["type"] != "dualOdid", albumOdid_ = item["detail"]);
         if (item["type"] == "dualDeviceSoftName") {
             dualDeviceSoftName_ = item["detail"];
@@ -175,8 +175,9 @@ bool BaseRestore::IsRestorePhoto()
     CHECK_AND_RETURN_RET_LOG(!jsonArray.is_discarded(), true, "IsRestorePhoto parse restoreInfo_ fail.");
 
     for (const auto& item : jsonArray) {
-        bool cond = (!item.contains("type") || !item.contains("detail") || item["type"] != STAT_KEY_BACKUP_INFO);
-        CHECK_AND_CONTINUE(!cond);
+        bool checkContain = item.contains("type") && item.contains("detail");
+        bool checkType = item["type"].is_string() && item["detail"].is_string() && item["type"] == STAT_KEY_BACKUP_INFO;
+        CHECK_AND_CONTINUE(checkContain && checkType);
         for (const auto& backupInfo : item["detail"]) {
             bool conds = (backupInfo == STAT_TYPE_PHOTO || backupInfo == STAT_TYPE_VIDEO||
                 backupInfo == STAT_TYPE_GALLERY_DATA);
