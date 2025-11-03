@@ -1,0 +1,604 @@
+diff --git a/frameworks/innerkitsimpl/media_library_helper/src/media_photo_asset_proxy.cpp b/frameworks/innerkitsimpl/media_library_helper/src/media_photo_asset_proxy.cpp
+index 0b3bdd746d5240930818bc6f98eca9a38c5a8379..bc976d175471ff40df598cb0718fad84fc3fb118 100644
+--- a/frameworks/innerkitsimpl/media_library_helper/src/media_photo_asset_proxy.cpp
++++ b/frameworks/innerkitsimpl/media_library_helper/src/media_photo_asset_proxy.cpp
+@@ -193,8 +193,8 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
+     Uri createUri(uri);
+     fileId_ = dataShareHelper_->InsertExt(createUri, values, uri_);
+     CHECK_AND_RETURN_LOG(fileId_ >= 0, "Failed to create Asset, insert database error!");
+-    MEDIA_INFO_LOG(
+-        "MultistagesCapture Success, photoId: %{public}s, fileId: %{public}d, uri: %{public}s, burstKey: %{public}s "
++    MEDIA_ERR_LOG(
++        "QCC MultistagesCapture Success, photoId: %{public}s, fileId: %{public}d, uri: %{public}s, burstKey: %{public}s "
+         "ceAvailable: %{public}u", photoProxy->GetPhotoId().c_str(), fileId_, uri_.c_str(),
+         photoProxy->GetBurstKey().c_str(), photoProxy->GetCloudImageEnhanceFlag());
+ }
+@@ -272,13 +272,13 @@ int PhotoAssetProxy::SaveImage(int fd, const string &uri, const string &photoId,
+     tracer.Start("SaveImage");
+     CHECK_AND_RETURN_RET_LOG(fd > 0, E_ERR, "invalid fd");
+     if (isHighQualityPhotoExist(uri)) {
+-        MEDIA_INFO_LOG("high quality photo exists, discard low quality photo. photoId: %{public}s", photoId.c_str());
++        MEDIA_ERR_LOG("QCC high quality photo exists, discard low quality photo. photoId: %{public}s", photoId.c_str());
+         return E_OK;
+     }
+ 
+     int ret = write(fd, output, writeSize);
+     CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "write err %{public}d", errno);
+-    MEDIA_INFO_LOG("Save Low Quality file Success, photoId: %{public}s, size: %{public}zu, ret: %{public}d",
++    MEDIA_ERR_LOG("QCC Save Low Quality file Success, photoId: %{public}s, size: %{public}zu, ret: %{public}d",
+         photoId.c_str(), writeSize, ret);
+     return E_OK;
+ }
+@@ -322,7 +322,7 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
+         delete[] buffer;
+         return E_ERR;
+     }
+-    MEDIA_INFO_LOG("pack pixelMap success, packedSize: %{public}" PRId64, packedSize);
++    MEDIA_ERR_LOG("QCC pack pixelMap success, packedSize: %{public}" PRId64, packedSize);
+ 
+     auto ret = SaveImage(fd, uri, photoProxy->GetPhotoId(), buffer, packedSize);
+     SetShootingModeAndGpsInfo(buffer, packedSize, photoProxy, fd);
+@@ -363,7 +363,7 @@ void PhotoAssetProxy::SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t si
+     ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF, latitude > 0.0 ? "N" : "S", fd);
+     tracer.Finish();
+     CHECK_AND_PRINT_LOG(ret == E_OK, "modify image property latitude ref fail %{public}d", ret);
+-    MEDIA_INFO_LOG("Success.");
++    MEDIA_ERR_LOG("QCC Success.");
+ }
+  
+ std::string PhotoAssetProxy::LocationValueToString(double value)
+@@ -402,7 +402,7 @@ int32_t PhotoAssetProxy::AddProcessImage(shared_ptr<DataShare::DataShareHelper>
+ 
+     uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CAMERA_INNER_ADD_IMAGE);
+     int32_t ret = IPC::UserInnerIPCClient().SetDataShareHelper(dataShareHelper).Call(businessCode, reqBody);
+-    MEDIA_INFO_LOG("MultistagesCapture photoId: %{public}s, fileId: %{public}d, ret: %{public}d",
++    MEDIA_ERR_LOG("QCC MultistagesCapture photoId: %{public}s, fileId: %{public}d, ret: %{public}d",
+         photoProxy->GetPhotoId().c_str(), fileId, ret);
+     return ret;
+ }
+@@ -439,7 +439,7 @@ void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHel
+ {
+     MediaLibraryTracer tracer;
+     tracer.Start("DealWithLowQualityPhoto");
+-    MEDIA_INFO_LOG("start photoId: %{public}s format: %{public}d, quality: %{public}d",
++    MEDIA_ERR_LOG("QCC start photoId: %{public}s format: %{public}d, quality: %{public}d",
+         photoProxy->GetPhotoId().c_str(), photoProxy->GetFormat(), photoProxy->GetPhotoQuality());
+ 
+     PhotoFormat photoFormat = photoProxy->GetFormat();
+@@ -448,13 +448,13 @@ void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHel
+     } else if (photoFormat == PhotoFormat::DNG) {
+         auto ret = SaveImage(fd, uri, photoProxy->GetPhotoId(), photoProxy->GetFileDataAddr(),
+             photoProxy->GetFileSize());
+-        MEDIA_INFO_LOG("direct save dng file, ret: %{public}d", ret);
++        MEDIA_ERR_LOG("QCC direct save dng file, ret: %{public}d", ret);
+     } else {
+         SaveImage(fd, uri, photoProxy->GetPhotoId(), photoProxy->GetFileDataAddr(), photoProxy->GetFileSize());
+     }
+     photoProxy->Release();
+     CloseFd(dataShareHelper, uri, fd);
+-    MEDIA_INFO_LOG("end");
++    MMEDIA_ERR_LOG("QCC end");
+ }
+ 
+ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
+@@ -463,7 +463,7 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
+     CHECK_AND_RETURN_LOG(!cond, "input param invalid, photo proxy is nullptr");
+     MediaLibraryTracer tracer;
+     tracer.Start("PhotoAssetProxy::AddPhotoProxy " + photoProxy->GetPhotoId());
+-    MEDIA_INFO_LOG("MultistagesCapture, photoId: %{public}s", photoProxy->GetPhotoId().c_str());
++    MEDIA_ERR_LOG("QCC MultistagesCapture, photoId: %{public}s", photoProxy->GetPhotoId().c_str());
+     tracer.Start("PhotoAssetProxy CreatePhotoAsset");
+     CreatePhotoAsset(photoProxy);
+     CHECK_AND_RETURN_INFO_LOG(cameraShotType_ != CameraShotType::VIDEO, "MultistagesCapture exit for VIDEO");
+@@ -474,7 +474,7 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
+     }
+     if (photoProxy->GetFormat() == PhotoFormat::YUV) {
+         photoProxy->Release();
+-        MEDIA_INFO_LOG("MultistagesCapture exit for YUV");
++        MEDIA_ERR_LOG("QCC MultistagesCapture exit for YUV");
+         tracer.Finish();
+         return;
+     }
+@@ -484,7 +484,7 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
+     int fd = dataShareHelper_->OpenFile(openUri, MEDIA_FILEMODE_READWRITE);
+     CHECK_AND_RETURN_LOG(fd >= 0, "fd.Get() < 0 fd %{public}d status %{public}d", fd, errno);
+     DealWithLowQualityPhoto(dataShareHelper_, fd, uri_, photoProxy);
+-    MEDIA_INFO_LOG("MultistagesCapture exit");
++    MEDIA_ERR_LOG("QCC MultistagesCapture exit");
+ }
+ 
+ int32_t PhotoAssetProxy::GetVideoFd()
+@@ -495,14 +495,14 @@ int32_t PhotoAssetProxy::GetVideoFd()
+     MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, CREATE_MOVING_PHOTO_VIDEO);
+     Uri openVideoUri(videoUri);
+     int32_t fd = dataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READWRITE);
+-    MEDIA_INFO_LOG("GetVideoFd enter, video path: %{public}s, fd: %{public}d", videoUri.c_str(), fd);
++    MEDIA_ERR_LOG("QCC GetVideoFd enter, video path: %{public}s, fd: %{public}d", videoUri.c_str(), fd);
+     return fd;
+ }
+ 
+ void PhotoAssetProxy::NotifyVideoSaveFinished()
+ {
+     if (cameraShotType_ == CameraShotType::VIDEO) {
+-        MEDIA_INFO_LOG("NotifyVideoSaveFinished exit, cameraShotType: %{public}d.",
++        MEDIA_ERR_LOG("QCC NotifyVideoSaveFinished exit, cameraShotType: %{public}d.",
+             static_cast<int32_t>(cameraShotType_));
+         return;
+     }
+@@ -514,7 +514,7 @@ void PhotoAssetProxy::NotifyVideoSaveFinished()
+     valuesBucket.Put(PhotoColumn::MEDIA_ID, fileId_);
+     valuesBucket.Put(NOTIFY_VIDEO_SAVE_FINISHED, uri_);
+     dataShareHelper_->Insert(uri, valuesBucket);
+-    MEDIA_INFO_LOG("video save finished %{public}s", uri_.c_str());
++    MEDIA_ERR_LOG("QCC video save finished %{public}s", uri_.c_str());
+ }
+ } // Media
+ } // OHOS
+\ No newline at end of file
+diff --git a/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_photo_operations.cpp b/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_photo_operations.cpp
+index 0d9ad9705faefd2b1d72976c9aca6aee95211c63..b24898cc662bb65f9cf2caca3c93e2c35c683678 100644
+--- a/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_photo_operations.cpp
++++ b/frameworks/innerkitsimpl/medialibrary_data_extension/src/medialibrary_photo_operations.cpp
+@@ -1328,7 +1328,7 @@ static void UpdateValuesBucketForExt(MediaLibraryCommand &cmd, ValuesBucket &val
+         PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey)) {
+         values.Put(PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey);
+     }
+-    MEDIA_INFO_LOG("MultistagesCapture, supportedWatermarkType: %{public}d, cameraShotKey: %{public}s",
++    MEDIA_ERR_LOG("QCC MultistagesCapture, supportedWatermarkType: %{public}d, cameraShotKey: %{public}s",
+         supportedWatermarkType, cameraShotKey.c_str());
+ }
+ 
+@@ -1546,7 +1546,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
+         MEDIA_ERR_LOG("MultistagesCapture, get fileId fail");
+         return 0;
+     }
+-    MEDIA_INFO_LOG("MultistagesCapture, start save fileId: %{public}s", fileId.c_str());
++    MEDIA_ERR_LOG("QCC MultistagesCapture, start save fileId: %{public}s", fileId.c_str());
+     tracer.Start("MediaLibraryPhotoOperations::UpdateIsTempAndDirty");
+ 
+     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
+@@ -1585,7 +1585,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
+         }
+     }
+     tracer.Finish();
+-    MEDIA_INFO_LOG("MultistagesCapture Success, fileId: %{public}s, ret: %{public}d, needScanStr: %{public}s",
++    MEDIA_ERR_LOG("QCC MultistagesCapture Success, fileId: %{public}s, ret: %{public}d, needScanStr: %{public}s",
+         fileId.c_str(), ret, needScanStr.c_str());
+     return ret;
+ }
+@@ -3412,14 +3412,14 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
+         return E_FILE_EXIST;
+     }
+ 
+-    MEDIA_INFO_LOG("photoId: %{public}s", photoId.c_str());
++    MEDIA_ERR_LOG("QCC photoId: %{public}s", photoId.c_str());
+     auto pictureManagerThread = PictureManagerThread::GetInstance();
+     bool isTakeEffect = false;
+     CHECK_AND_EXECUTE(pictureManagerThread == nullptr,
+         picture = pictureManagerThread->GetDataWithImageId(photoId,
+         isHighQualityPicture, isTakeEffect, isCleanImmediately));
+     CHECK_AND_RETURN_RET_LOG(picture != nullptr, E_FILE_EXIST, "picture is not exists!");
+-    MEDIA_INFO_LOG("photoId: %{public}s, picture use: %{public}d, picture point to addr: %{public}s",
++    MEDIA_ERR_LOG("QCC photoId: %{public}s, picture use: %{public}d, picture point to addr: %{public}s",
+         photoId.c_str(), static_cast<int32_t>(picture.use_count()),
+         std::to_string(reinterpret_cast<long long>(picture.get())).c_str());
+     return E_OK;
+@@ -3435,7 +3435,7 @@ int32_t MediaLibraryPhotoOperations::GetTakeEffect(std::shared_ptr<Media::Pictur
+             isTakeEffect, false);
+     }
+     CHECK_AND_RETURN_RET_LOG(picture != nullptr, E_FILE_EXIST, "picture is not exists!");
+-    MEDIA_INFO_LOG("get takeEffect: %{public}d", isTakeEffect);
++    MEDIA_ERR_LOG("QCC get takeEffect: %{public}d", isTakeEffect);
+     if (isTakeEffect) {
+         return E_ERR;
+     }
+@@ -3538,7 +3538,7 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
+ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId,
+     const int32_t getPicRet, PhotoExtInfo &photoExtInfo, std::shared_ptr<Media::Picture> &resultPicture)
+ {
+-    MEDIA_INFO_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
++    MEDIA_ERR_LOG("QCC savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
+     CHECK_AND_RETURN_RET_LOG(getPicRet == E_OK && photoExtInfo.picture != nullptr, E_FILE_EXIST,
+         "Failed to get picture");
+ 
+@@ -3641,7 +3641,7 @@ int32_t SaveTempMovingPhotoVideo(const string &assetPath)
+             assetTempPath.c_str(), assetSavePath.c_str());
+         return E_OK;
+     }
+-    MEDIA_ERR_LOG("File exists, assetSavePath: %{public}s.", assetSavePath.c_str());
++    MEDIA_ERR_LOG("QCC File exists, assetSavePath: %{public}s.", assetSavePath.c_str());
+     return E_ERR;
+ }
+ 
+@@ -3695,14 +3695,14 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string
+         index = editData.find(FILTERS_FIELD);
+         CHECK_AND_RETURN_RET_LOG(index != std::string::npos, E_ERR, "can not find Video filters field.");
+         if (editData[index + START_DISTANCE] == FILTERS_END && isSaveVideo) {
+-            MEDIA_INFO_LOG("MovingPhoto video only supports filter now.");
++            MEDIA_ERR_LOG("QCC MovingPhoto video only supports filter now.");
+             CHECK_AND_RETURN_RET_LOG(SaveTempMovingPhotoVideo(assetPath) == E_OK, E_HAS_FS_ERROR,
+                 "Failed to save temp movingphoto video, path = %{public}s", assetPath.c_str());
+             return CopyVideoFile(assetPath, true);
+         } else if (editData[index + START_DISTANCE] == FILTERS_END && !isSaveVideo) {
+             return CopyVideoFile(assetPath, false);
+         }
+-        MEDIA_INFO_LOG("AddFiltersToVideoExecute after EraseStickerField, editData = %{public}s", editData.c_str());
++        MEDIA_ERR_LOG("QCC AddFiltersToVideoExecute after EraseStickerField, editData = %{public}s", editData.c_str());
+         CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(assetPath, true) == E_OK, E_HAS_FS_ERROR,
+             "Failed to save source video, path = %{public}s", assetPath.c_str());
+         VideoCompositionCallbackImpl::AddCompositionTask(assetPath, editData, isNeedScan);
+@@ -3834,7 +3834,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
+ 
+ int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(const string& assetPath, const bool& isTemp)
+ {
+-    MEDIA_INFO_LOG("Moving photo SaveSourceVideoFile begin, assetPath: %{public}s",
++    MEDIA_ERR_LOG("QCC Moving photo SaveSourceVideoFile begin, assetPath: %{public}s",
+         DfxUtils::GetSafePath(assetPath).c_str());
+     string sourceImagePath = GetEditDataSourcePath(assetPath);
+     CHECK_AND_RETURN_RET_LOG(!sourceImagePath.empty(), E_INVALID_PATH, "Can not get source image path");
+@@ -4134,7 +4134,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
+ {
+     MediaLibraryTracer tracer;
+     tracer.Start("MediaLibraryPhotoOperations::AddFiltersToPhoto");
+-    MEDIA_INFO_LOG("MultistagesCapture inputPath: %{public}s, outputPath: %{public}s",
++    MEDIA_ERR_LOG("QCC MultistagesCapture inputPath: %{public}s, outputPath: %{public}s",
+         MediaFileUtils::DesensitizePath(inputPath).c_str(), MediaFileUtils::DesensitizePath(outputPath).c_str());
+     std::string info = editdata;
+     size_t lastSlash = outputPath.rfind('/');
+@@ -4155,7 +4155,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
+ 
+     string editDataPath = GetEditDataPath(outputPath);
+     if (MediaFileUtils::IsFileExists(editDataPath)) {
+-        MEDIA_INFO_LOG("Editdata path: %{private}s exists, cannot add filters to photo", editDataPath.c_str());
++        MEDIA_ERR_LOG("QCC Editdata path: %{private}s exists, cannot add filters to photo", editDataPath.c_str());
+         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
+             "Failed to delete temp filters file, errno: %{public}d", errno);
+         return E_OK;
+@@ -4168,7 +4168,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
+             "Failed to delete temp filters file, errno: %{public}d", errno);
+         return ret;
+     }
+-    MEDIA_INFO_LOG("MultistagesCapture finish");
++    MEDIA_ERR_LOG("QCC MultistagesCapture finish");
+     return E_OK;
+ }
+ 
+diff --git a/frameworks/js/src/media_asset_manager_napi.cpp b/frameworks/js/src/media_asset_manager_napi.cpp
+index 36561588b2252f01ed1900bebf379a70daf994b8..0d5c7dae06595acab50da713efe621ea6c312360 100644
+--- a/frameworks/js/src/media_asset_manager_napi.cpp
++++ b/frameworks/js/src/media_asset_manager_napi.cpp
+@@ -278,7 +278,7 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
+         asyncContext->photoUri, mediaAssetDataHandler, threadSafeFunc);
+     assetHandler->photoQuality = asyncContext->photoQuality;
+     assetHandler->needsExtraInfo = asyncContext->needsExtraInfo;
+-    NAPI_INFO_LOG("Add %{public}d, %{public}s, %{public}s", notifyMode,
++    NAPI_ERR_LOG("QCC Add %{public}d, %{public}s, %{public}s", notifyMode,
+         MediaFileUtils::DesensitizeUri(asyncContext->photoUri).c_str(), asyncContext->requestId.c_str());
+ 
+     switch (notifyMode) {
+@@ -355,10 +355,10 @@ static MultiStagesCapturePhotoStatus QueryViaSandBox(int fileId,
+         int currentPhotoQuality = HIGH_QUALITY_IMAGE;
+         resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
+         if (currentPhotoQuality == LOW_QUALITY_IMAGE) {
+-            NAPI_INFO_LOG("query photo status : lowQuality");
++            NAPI_ERR_LOG("QCC query photo status : lowQuality");
+             return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
+         }
+-        NAPI_INFO_LOG("query photo status quality: %{public}d", currentPhotoQuality);
++        NAPI_ERR_LOG("QCC query photo status quality: %{public}d", currentPhotoQuality);
+         return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+     } else {
+         return MultiStagesCapturePhotoStatus::QUERY_INNER_FAIL;
+@@ -385,10 +385,10 @@ MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId
+     }
+     photoId = respBody.photoId;
+     if (respBody.photoQuality == LOW_QUALITY_IMAGE) {
+-        NAPI_INFO_LOG("query photo status : lowQuality");
++        NAPI_ERR_LOG("QCC query photo status : lowQuality");
+         return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
+     }
+-    NAPI_INFO_LOG("query photo status quality: %{public}d", respBody.photoQuality);
++    NAPI_ERR_LOG("QCC query photo status quality: %{public}d", respBody.photoQuality);
+     return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+ }
+ 
+@@ -878,7 +878,7 @@ static int32_t GetPhotoSubtype(napi_env env, napi_value photoAssetArg)
+ 
+ napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback_info info)
+ {
+-    NAPI_INFO_LOG("Begin JSRequestImageData");
++    NAPI_ERR_LOG("QCC Begin JSRequestImageData");
+     if (env == nullptr || info == nullptr) {
+         NAPI_ERR_LOG("JSRequestImageData js arg invalid");
+         NapiError::ThrowError(env, JS_INNER_FAIL, "JSRequestImageData js arg invalid");
+@@ -919,7 +919,7 @@ napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback
+ 
+ napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_info info)
+ {
+-    NAPI_INFO_LOG("Begin JSRequestImage");
++    NAPI_ERR_LOG("QCC Begin JSRequestImage");
+     if (env == nullptr || info == nullptr) {
+         NAPI_ERR_LOG("JSRequestImage js arg invalid");
+         NapiError::ThrowError(env, JS_INNER_FAIL, "JSRequestImage js arg invalid");
+@@ -1083,7 +1083,7 @@ napi_value MediaAssetManagerNapi::JSRequestVideoFile(napi_env env, napi_callback
+ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
+ {
+     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
+-    NAPI_INFO_LOG("OnHandleRequestImage mode: %{public}d.", static_cast<int32_t>(asyncContext->deliveryMode));
++    NAPI_ERR_LOG("QCC OnHandleRequestImage mode: %{public}d.", static_cast<int32_t>(asyncContext->deliveryMode));
+     MultiStagesCapturePhotoStatus status = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+     switch (asyncContext->deliveryMode) {
+         case DeliveryMode::FAST:
+diff --git a/frameworks/js/src/media_library_napi.cpp b/frameworks/js/src/media_library_napi.cpp
+index 10cefba399665627644e64685e86ea410f531cfb..e79edddf490428d6f384c9c2a807e5c4ed3e7a42 100644
+--- a/frameworks/js/src/media_library_napi.cpp
++++ b/frameworks/js/src/media_library_napi.cpp
+@@ -2080,7 +2080,7 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
+                                                    context->work, *jsContext);
+     }
+ 
+-    NAPI_INFO_LOG("End create asset.");
++    NAPI_ERR_LOG("QCC End create asset.");
+     delete context;
+ }
+ 
+@@ -10104,7 +10104,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperCreatePhotoAsset(napi_env env, nap
+     MediaLibraryTracer tracer;
+     tracer.Start("PhotoAccessHelperCreatePhotoAsset");
+ 
+-    NAPI_INFO_LOG("enter");
++    NAPI_ERR_LOG("QCC enter");
+ 
+     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+diff --git a/frameworks/services/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_photo_proc_session_callback.cpp b/frameworks/services/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_photo_proc_session_callback.cpp
+index 3791ca67bb8383ff0f909d3872e9368c8c13821f..5ad45e1e1a90fd8e6e211229bcd67f077787d86b 100644
+--- a/frameworks/services/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_photo_proc_session_callback.cpp
++++ b/frameworks/services/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_photo_proc_session_callback.cpp
+@@ -119,26 +119,26 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(cons
+ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const int32_t& fileId,
+     uint32_t cloudImageEnhanceFlag, NativeRdb::ValuesBucket &updateValues, int32_t modifyType)
+ {
+-    MEDIA_INFO_LOG("fileId: %{public}d, modify type is %{public}d", fileId, modifyType);
++    MEDIA_ERR_LOG("QCC fileId: %{public}d, modify type is %{public}d", fileId, modifyType);
+ 
+     int32_t ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT);
+     if (modifyType == static_cast<int32_t>(FirstStageModifyType::EDITED)) {
+-        MEDIA_INFO_LOG("fileId: %{public}d edited", fileId);
++        MEDIA_ERR_LOG("QCC fileId: %{public}d edited", fileId);
+         ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::EDIT);
+     } else if (modifyType == static_cast<int32_t>(FirstStageModifyType::TRASHED)) {
+-        MEDIA_INFO_LOG("fileId: %{public}d trashed", fileId);
++        MEDIA_ERR_LOG("QCC fileId: %{public}d trashed", fileId);
+         ceAvailable = static_cast<int32_t>(CloudEnhancementAvailableType::TRASH);
+     }
+ 
+     if (cloudImageEnhanceFlag & AUTO_ENHANCEMENT) {
+-        MEDIA_INFO_LOG("fileId: %{public}d is AUTO_ENHANCEMENT", fileId);
++        MEDIA_ERR_LOG("QCC fileId: %{public}d is AUTO_ENHANCEMENT", fileId);
+         updateValues.PutInt(PhotoColumn::PHOTO_IS_AUTO, static_cast<int32_t>(CloudEnhancementIsAutoType::AUTO));
+         updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+     } else if (cloudImageEnhanceFlag & MANUAL_ENHANCEMENT) {
+-        MEDIA_INFO_LOG("fileId: %{public}d is MANUAL_ENHANCEMENT", fileId);
++        MEDIA_ERR_LOG("QCC fileId: %{public}d is MANUAL_ENHANCEMENT", fileId);
+         updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+     } else {
+-        MEDIA_INFO_LOG("fileId: %{public}d doesn't support enhancement", fileId);
++        MEDIA_ERR_LOG("QCC fileId: %{public}d doesn't support enhancement", fileId);
+         updateValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
+             static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT));
+     }
+@@ -146,7 +146,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const
+ 
+ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &imageId, const DpsErrorCode error)
+ {
+-    MEDIA_ERR_LOG("error %{public}d, photoid: %{public}s", static_cast<int32_t>(error), imageId.c_str());
++    MEDIA_ERR_LOG("QCC error %{public}d, photoid: %{public}s", static_cast<int32_t>(error), imageId.c_str());
+     switch (error) {
+         case ERROR_SESSION_SYNC_NEEDED:
+             MultiStagesPhotoCaptureManager::GetInstance().SyncWithDeferredProcSession();
+@@ -155,7 +155,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &i
+         case ERROR_IMAGE_PROC_FAILED: {
+             auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(imageId);
+             if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+-                MEDIA_INFO_LOG("result set is empty.");
++                MEDIA_ERR_LOG("QCC result set is empty.");
+                 return;
+             }
+             int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+@@ -168,7 +168,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &i
+         case ERROR_IMAGE_PROC_ABNORMAL: {
+             auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(imageId);
+             if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+-                MEDIA_INFO_LOG("result set is empty.");
++                MEDIA_ERR_LOG("QCC result set is empty.");
+                 return;
+             }
+             NotifyIfTempFile(resultSet, true);
+@@ -243,7 +243,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
+     if (isMovingPhoto) {
+         MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(fileId);
+     }
+-    MEDIA_INFO_LOG("MultistagesCapture yuv success photoid: %{public}s, fileid: %{public}d",
++    MEDIA_ERR_LOG("QCC MultistagesCapture yuv success photoid: %{public}s, fileid: %{public}d",
+         imageId.c_str(), fileId);
+ }
+ 
+@@ -271,13 +271,13 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
+         return;
+     }
+     // 1. 分段式拍照已经处理完成，保存全质量图
+-    MEDIA_INFO_LOG("MultistagesCapture yuv photoid: %{public}s, cloudImageEnhanceFlag: %{public}u enter",
++    MEDIA_ERR_LOG("QCC MultistagesCapture yuv photoid: %{public}s, cloudImageEnhanceFlag: %{public}u enter",
+         imageId.c_str(), cloudImageEnhanceFlag);
+     tracer.Start("Query");
+     auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(imageId);
+     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+         tracer.Finish();
+-        MEDIA_INFO_LOG("result set is empty.");
++        MEDIA_ERR_LOG("QCC result set is empty.");
+         // 高质量图先上来，直接保存
+         MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false, false);
+         MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(imageId);
+@@ -295,7 +295,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
+         (isTrashed ? static_cast<int32_t>(FirstStageModifyType::TRASHED) :
+             static_cast<int32_t>(FirstStageModifyType::NOT_MODIFIED));
+     if (isTemp) {
+-        MEDIA_INFO_LOG("MultistagesCapture, this picture is temp.");
++        MEDIA_ERR_LOG("QCC MultistagesCapture, this picture is temp.");
+         MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false, false);
+         UpdateHighQualityPictureInfo(fileId, cloudImageEnhanceFlag, modifyType);
+         MultiStagesCaptureDao().UpdatePhotoDirtyNew(fileId);
+@@ -323,7 +323,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::GetCommandByImageId(con
+ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateHighQualityPictureInfo(const int32_t &fileId,
+     uint32_t cloudImageEnhanceFlag, int32_t modifyType)
+ {
+-    MEDIA_INFO_LOG("UpdateHighQualityPictureInfo enter, fileId: %{public}d, "
++    MEDIA_ERR_LOG("QCC UpdateHighQualityPictureInfo enter, fileId: %{public}d, "
+                    "cloudImageEnhanceFlag: %{public}u, modifyType: %{public}d",
+                    fileId, cloudImageEnhanceFlag, modifyType);
+     NativeRdb::ValuesBucket updateValues;
+@@ -331,7 +331,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateHighQualityPictur
+     UpdatePhotoQuality(fileId, updateValues);
+     // 3. update cloud enhancement avaiable
+     if (cloudImageEnhanceFlag) {
+-        MEDIA_INFO_LOG("UpdateHighQualityPictureInfo UpdateCEAvailable enter");
++        MEDIA_ERR_LOG("QCC UpdateHighQualityPictureInfo UpdateCEAvailable enter");
+         UpdateCEAvailable(fileId, cloudImageEnhanceFlag, updateValues, modifyType);
+     }
+ 
+@@ -347,12 +347,12 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateHighQualityPictur
+ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityImage(const std::string &imageId,
+     std::shared_ptr<PictureIntf> pictureIntf)
+ {
+-    MEDIA_INFO_LOG("MultistagesCapture photoid: %{public}s", imageId.c_str());
++    MEDIA_ERR_LOG("QCC MultistagesCapture photoid: %{public}s", imageId.c_str());
+     std::shared_ptr<Media::Picture> picture = GetPictureFromPictureIntf(pictureIntf);
+     if (picture != nullptr && picture->GetMainPixel() != nullptr) {
+-        MEDIA_INFO_LOG("MultistagesCapture picture is not null");
++        MEDIA_ERR_LOG("QCC MultistagesCapture picture is not null");
+     } else {
+-        MEDIA_INFO_LOG("MultistagesCapture picture is null");
++        MEDIA_ERR_LOG("QCC MultistagesCapture picture is null");
+         return;
+     }
+     MediaLibraryTracer tracer;
+@@ -365,7 +365,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityIma
+     auto resultSet = DatabaseAdapter::Query(cmd, columns);
+     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+         tracer.Finish();
+-        MEDIA_INFO_LOG("MultistagesCapture result set is empty");
++        MEDIA_ERR_LOG("QCC MultistagesCapture result set is empty");
+         return;
+     }
+     tracer.Finish();
+@@ -374,7 +374,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityIma
+     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
+     resultSet->Close();
+     MultiStagesPhotoCaptureManager::GetInstance().DealLowQualityPicture(photoId, std::move(picture), isEdited);
+-    MEDIA_INFO_LOG("MultistagesCapture save low quality image end");
++    MEDIA_ERR_LOG("QCC MultistagesCapture save low quality image end");
+ }
+ 
+ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(const string &imageId, const uint8_t *addr,
+@@ -387,13 +387,13 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
+     tracer.Start("OnProcessImageDone with addr " + imageId);
+ 
+     // 1. 分段式拍照已经处理完成，保存全质量图
+-    MEDIA_INFO_LOG("photoid: %{public}s, bytes: %{public}ld, cloudImageEnhanceFlag: %{public}u enter",
++    MEDIA_ERR_LOG("QCC photoid: %{public}s, bytes: %{public}ld, cloudImageEnhanceFlag: %{public}u enter",
+         imageId.c_str(), bytes, cloudImageEnhanceFlag);
+     tracer.Start("Query");
+     auto resultSet = MultiStagesCaptureDao().QueryPhotoDataById(imageId);
+     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+         tracer.Finish();
+-        MEDIA_INFO_LOG("result set is empty");
++        MEDIA_ERR_LOG("QCC result set is empty");
+         MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(imageId);
+         // When subTyoe query failed, default mediaType is Image
+         MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR),
+@@ -414,7 +414,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
+         static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE);
+     int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhoto(isEdited, data, addr, bytes, fileId);
+     if (ret != E_OK) {
+-        MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
++        MEDIA_ERR_LOG("QCC Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
+         MultiStagesCaptureDfxResult::Report(imageId,
+             static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL), mediaType);
+         return;
+@@ -437,7 +437,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
+         MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(fileId);
+     }
+     CallProcessImageDone(true, imageId);
+-    MEDIA_INFO_LOG("success photoid: %{public}s", imageId.c_str());
++    MEDIA_ERR_LOG("QCC success photoid: %{public}s", imageId.c_str());
+ }
+ 
+ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnStateChanged(const DpsStatusCode state)
+diff --git a/frameworks/services/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_video_proc_session_callback.cpp b/frameworks/services/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_video_proc_session_callback.cpp
+index c661289e660ec930f7dd500833b46f14ff8bbd2a..08e24c404211dc1759bbc2f6e60a027857c577e5 100644
+--- a/frameworks/services/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_video_proc_session_callback.cpp
++++ b/frameworks/services/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_video_proc_session_callback.cpp
+@@ -64,7 +64,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
+     const sptr<IPCFileDescriptor> ipcFd)
+ {
+     CHECK_AND_RETURN_LOG(!videoId.empty(), "OnProcessVideoDone, videoId is empty");
+-    MEDIA_INFO_LOG("OnProcessVideoDone, videoId: %{public}s", videoId.c_str());
++    MEDIA_ERR_LOG("QCC OnProcessVideoDone, videoId: %{public}s", videoId.c_str());
+ 
+     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+     string where = PhotoColumn::PHOTO_ID + " = ? ";
+@@ -75,7 +75,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
+         PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_POSITION, PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
+     auto resultSet = DatabaseAdapter::Query(cmd, columns);
+     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+-        MEDIA_INFO_LOG("result set is empty");
++        MEDIA_ERR_LOG("QCC result set is empty");
+         MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(videoId);
+         // When subType query failed, default mediaType is Video
+         MultiStagesCaptureDfxResult::Report(videoId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR),
+@@ -112,14 +112,14 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
+         static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS), mediaType);
+ 
+     MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(videoId, false);
+-    MEDIA_INFO_LOG("OnProcessVideoDone, success videoid: %{public}s", videoId.c_str());
++    MEDIA_ERR_LOG("QCC OnProcessVideoDone, success videoid: %{public}s", videoId.c_str());
+ }
+ 
+ void MultiStagesCaptureDeferredVideoProcSessionCallback::VideoFaileProcAsync(AsyncTaskData *data)
+ {
+     auto *taskData = static_cast<VideoFaileProcTaskData *>(data);
+     CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is null");
+-    MEDIA_INFO_LOG("Enter OnError, errorCode: %{public}d", taskData->errorCode_);
++    MEDIA_ERR_LOG("QCC OnError, errorCode: %{public}d", taskData->errorCode_);
+     switch (taskData->errorCode_) {
+         case ERROR_SESSION_SYNC_NEEDED:
+             MultiStagesVideoCaptureManager::GetInstance().SyncWithDeferredVideoProcSession();
+@@ -159,7 +159,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::AsyncOnErrorProc(const
+         make_shared<MediaLibraryAsyncTask>(VideoFaileProcAsync, taskData);
+     CHECK_AND_RETURN_LOG(asyncTask != nullptr, "Can not get asyncWorker");
+ 
+-    MEDIA_INFO_LOG("AsyncOnErrorProc add task success");
++    MEDIA_ERR_LOG("QCC AsyncOnErrorProc add task success");
+     asyncWorker->AddTask(asyncTask, false);
+ }
+ 
+diff --git a/frameworks/services/media_multistages_capture/src/multistages_video_capture_manager.cpp b/frameworks/services/media_multistages_capture/src/multistages_video_capture_manager.cpp
+index 586b7deda484ab66e1358aad99cd8641f8ec8819..85c054667d48d4d47c029fb44cfcc8f38fe955d9 100644
+--- a/frameworks/services/media_multistages_capture/src/multistages_video_capture_manager.cpp
++++ b/frameworks/services/media_multistages_capture/src/multistages_video_capture_manager.cpp
+@@ -296,12 +296,12 @@ int32_t MultiStagesVideoCaptureManager::SaveCameraVideo(const SaveCameraPhotoDto
+ {
+     MediaLibraryTracer tracer;
+     tracer.Start("MultiStagesVideoCaptureManager::SaveCameraVideo");
+-    MEDIA_INFO_LOG("MultistagesCapture, start save fileId: %{public}d", dto.fileId);
++    MEDIA_ERR_LOG("QCC MultistagesCapture, start save fileId: %{public}d", dto.fileId);
+ 
+     int32_t ret = UpdateIsTempAndDirty(dto.fileId, dto.photoSubType);
+     CHECK_AND_RETURN_RET_LOG(!(dto.path.empty()), E_ERR, "path is empty.");
+     MediaLibraryAssetOperations::ScanFile(dto.path, false, true, true, dto.fileId);
+-    MEDIA_INFO_LOG("MultistagesCapture Success, fileId: %{public}d, ret: %{public}d", dto.fileId, ret);
++    MEDIA_ERR_LOG("QCC MultistagesCapture Success, fileId: %{public}d, ret: %{public}d", dto.fileId, ret);
+     return ret;
+ }
+ } // Media

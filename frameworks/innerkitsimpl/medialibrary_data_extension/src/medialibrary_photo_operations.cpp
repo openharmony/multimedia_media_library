@@ -1328,7 +1328,7 @@ static void UpdateValuesBucketForExt(MediaLibraryCommand &cmd, ValuesBucket &val
         PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey)) {
         values.Put(PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey);
     }
-    MEDIA_INFO_LOG("MultistagesCapture, supportedWatermarkType: %{public}d, cameraShotKey: %{public}s",
+    MEDIA_ERR_LOG("MultistagesCapture, supportedWatermarkType: %{public}d, cameraShotKey: %{public}s",
         supportedWatermarkType, cameraShotKey.c_str());
 }
 
@@ -1546,7 +1546,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("MultistagesCapture, get fileId fail");
         return 0;
     }
-    MEDIA_INFO_LOG("MultistagesCapture, start save fileId: %{public}s", fileId.c_str());
+    MEDIA_ERR_LOG("MultistagesCapture, start save fileId: %{public}s", fileId.c_str());
     tracer.Start("MediaLibraryPhotoOperations::UpdateIsTempAndDirty");
 
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
@@ -1585,7 +1585,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         }
     }
     tracer.Finish();
-    MEDIA_INFO_LOG("MultistagesCapture Success, fileId: %{public}s, ret: %{public}d, needScanStr: %{public}s",
+    MEDIA_ERR_LOG("MultistagesCapture Success, fileId: %{public}s, ret: %{public}d, needScanStr: %{public}s",
         fileId.c_str(), ret, needScanStr.c_str());
     return ret;
 }
@@ -3416,14 +3416,14 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
         return E_FILE_EXIST;
     }
 
-    MEDIA_INFO_LOG("photoId: %{public}s", photoId.c_str());
+    MEDIA_ERR_LOG("photoId: %{public}s", photoId.c_str());
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     bool isTakeEffect = false;
     CHECK_AND_EXECUTE(pictureManagerThread == nullptr,
         picture = pictureManagerThread->GetDataWithImageId(photoId,
         isHighQualityPicture, isTakeEffect, isCleanImmediately));
     CHECK_AND_RETURN_RET_LOG(picture != nullptr, E_FILE_EXIST, "picture is not exists!");
-    MEDIA_INFO_LOG("photoId: %{public}s, picture use: %{public}d, picture point to addr: %{public}s",
+    MEDIA_ERR_LOG("photoId: %{public}s, picture use: %{public}d, picture point to addr: %{public}s",
         photoId.c_str(), static_cast<int32_t>(picture.use_count()),
         std::to_string(reinterpret_cast<long long>(picture.get())).c_str());
     return E_OK;
@@ -3439,7 +3439,7 @@ int32_t MediaLibraryPhotoOperations::GetTakeEffect(std::shared_ptr<Media::Pictur
             isTakeEffect, false);
     }
     CHECK_AND_RETURN_RET_LOG(picture != nullptr, E_FILE_EXIST, "picture is not exists!");
-    MEDIA_INFO_LOG("get takeEffect: %{public}d", isTakeEffect);
+    MEDIA_ERR_LOG("get takeEffect: %{public}d", isTakeEffect);
     if (isTakeEffect) {
         return E_ERR;
     }
@@ -3542,7 +3542,7 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
 int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId,
     const int32_t getPicRet, PhotoExtInfo &photoExtInfo, std::shared_ptr<Media::Picture> &resultPicture)
 {
-    MEDIA_INFO_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
+    MEDIA_ERR_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
     CHECK_AND_RETURN_RET_LOG(getPicRet == E_OK && photoExtInfo.picture != nullptr, E_FILE_EXIST,
         "Failed to get picture");
 
@@ -3699,14 +3699,14 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string 
         index = editData.find(FILTERS_FIELD);
         CHECK_AND_RETURN_RET_LOG(index != std::string::npos, E_ERR, "can not find Video filters field.");
         if (editData[index + START_DISTANCE] == FILTERS_END && isSaveVideo) {
-            MEDIA_INFO_LOG("MovingPhoto video only supports filter now.");
+            MEDIA_ERR_LOG("MovingPhoto video only supports filter now.");
             CHECK_AND_RETURN_RET_LOG(SaveTempMovingPhotoVideo(assetPath) == E_OK, E_HAS_FS_ERROR,
                 "Failed to save temp movingphoto video, path = %{public}s", assetPath.c_str());
             return CopyVideoFile(assetPath, true);
         } else if (editData[index + START_DISTANCE] == FILTERS_END && !isSaveVideo) {
             return CopyVideoFile(assetPath, false);
         }
-        MEDIA_INFO_LOG("AddFiltersToVideoExecute after EraseStickerField, editData = %{public}s", editData.c_str());
+        MEDIA_ERR_LOG("AddFiltersToVideoExecute after EraseStickerField, editData = %{public}s", editData.c_str());
         CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(assetPath, true) == E_OK, E_HAS_FS_ERROR,
             "Failed to save source video, path = %{public}s", assetPath.c_str());
         VideoCompositionCallbackImpl::AddCompositionTask(assetPath, editData, isNeedScan);
@@ -3838,7 +3838,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
 
 int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(const string& assetPath, const bool& isTemp)
 {
-    MEDIA_INFO_LOG("Moving photo SaveSourceVideoFile begin, assetPath: %{public}s",
+    MEDIA_ERR_LOG("Moving photo SaveSourceVideoFile begin, assetPath: %{public}s",
         DfxUtils::GetSafePath(assetPath).c_str());
     string sourceImagePath = GetEditDataSourcePath(assetPath);
     CHECK_AND_RETURN_RET_LOG(!sourceImagePath.empty(), E_INVALID_PATH, "Can not get source image path");
@@ -4138,7 +4138,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::AddFiltersToPhoto");
-    MEDIA_INFO_LOG("MultistagesCapture inputPath: %{public}s, outputPath: %{public}s",
+    MEDIA_ERR_LOG("MultistagesCapture inputPath: %{public}s, outputPath: %{public}s",
         MediaFileUtils::DesensitizePath(inputPath).c_str(), MediaFileUtils::DesensitizePath(outputPath).c_str());
     std::string info = editdata;
     size_t lastSlash = outputPath.rfind('/');
@@ -4159,7 +4159,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
 
     string editDataPath = GetEditDataPath(outputPath);
     if (MediaFileUtils::IsFileExists(editDataPath)) {
-        MEDIA_INFO_LOG("Editdata path: %{private}s exists, cannot add filters to photo", editDataPath.c_str());
+        MEDIA_ERR_LOG("Editdata path: %{private}s exists, cannot add filters to photo", editDataPath.c_str());
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
             "Failed to delete temp filters file, errno: %{public}d", errno);
         return E_OK;
@@ -4172,7 +4172,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
             "Failed to delete temp filters file, errno: %{public}d", errno);
         return ret;
     }
-    MEDIA_INFO_LOG("MultistagesCapture finish");
+    MEDIA_ERR_LOG("MultistagesCapture finish");
     return E_OK;
 }
 
