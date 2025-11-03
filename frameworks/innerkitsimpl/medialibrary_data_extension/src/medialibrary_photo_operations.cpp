@@ -4193,7 +4193,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
 int32_t MediaLibraryPhotoOperations::ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto,
     bool isMovingPhotoEffectMode, const std::string &path)
 {
-    MEDIA_INFO_LOG("ProcessMultistagesVideo path:%{public}s, isEdited: %{public}d, isMovingPhoto: %{public}d",
+    MEDIA_ERR_LOG("ProcessMultistagesVideo path:%{public}s, isEdited: %{public}d, isMovingPhoto: %{public}d",
         DfxUtils::GetSafePath(path).c_str(), isEdited, isMovingPhoto);
     CHECK_AND_RETURN_RET(!isMovingPhoto, FileUtils::SaveMovingPhotoVideo(path, isEdited, isMovingPhotoEffectMode));
     return FileUtils::SaveVideo(path, isEdited);

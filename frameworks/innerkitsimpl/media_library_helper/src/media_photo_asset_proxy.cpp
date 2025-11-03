@@ -72,7 +72,7 @@ PhotoAssetProxy::PhotoAssetProxy(shared_ptr<DataShare::DataShareHelper> dataShar
     } else {
         subType_ = itr->second;
     }
-    MEDIA_INFO_LOG("init success, shottype: %{public}d, callingUid: %{public}d, userid: %{public}d",
+    MEDIA_ERR_LOG("init success, shottype: %{public}d, callingUid: %{public}d, userid: %{public}d",
         static_cast<int32_t>(cameraShotType), callingUid, userId);
 }
 
