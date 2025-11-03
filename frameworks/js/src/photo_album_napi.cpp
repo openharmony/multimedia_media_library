@@ -1869,8 +1869,8 @@ static napi_value checkArgsGetSelectedPhotoAssets(
         NAPI_INVALID_PARAMETER_ERROR);
  
     napi_valuetype valueType = napi_undefined;
-    if (context->argc == ARGS_TWO && napi_typeof(env, context->argv[PARAM1], &valueType) == napi_ok &&
-        valueType == napi_string) {
+    CHECK_COND_RET(napi_typeof(env, context->argv[PARAM1], &valueType) == napi_ok, nullptr, "get param type fail");
+    if (context->argc == ARGS_TWO && valueType == napi_string) {
         unique_ptr<char[]> tmp;
         bool succ;
         size_t ignore;
