@@ -324,8 +324,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateHighQualityPictur
     uint32_t cloudImageEnhanceFlag, int32_t modifyType)
 {
     MEDIA_ERR_LOG("UpdateHighQualityPictureInfo enter, fileId: %{public}d, "
-        "cloudImageEnhanceFlag: %{public}u, modifyType: %{public}d",
-        fileId, cloudImageEnhanceFlag, modifyType);
+        "cloudImageEnhanceFlag: %{public}u, modifyType: %{public}d", fileId, cloudImageEnhanceFlag, modifyType);
     NativeRdb::ValuesBucket updateValues;
     // 2. 更新数据库 photoQuality 到高质量
     UpdatePhotoQuality(fileId, updateValues);
