@@ -600,7 +600,7 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
         tempPath = filePath;
         filePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
     }
-    if (flags & (O_CREAT | O_WRONLY)) {
+    if (static_cast<uint>(flags) & (O_CREAT | O_WRONLY)) {
         if (isMovingPhoto) {
             filePath = tempPath;
             displayName = MediaFuseHdcOperations::JpgToMp4(displayName);
@@ -619,6 +619,7 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
     string localPath;
     res = MediaFuseHdcOperations::ConvertToLocalPhotoPath(filePath, localPath);
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "ConvertToLocalPhotoPath failed");
+    CHECK_AND_RETURN_RET_LOG(!localPath.empty(), E_ERR, "localPath is empty");
     fd = open(localPath.c_str(), flags);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open failed, localPath=%{private}s, errno=%{public}d", localPath.c_str(), -errno);
