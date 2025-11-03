@@ -207,6 +207,16 @@ int32_t CloudSyncConvert::CompensateAttHdrMode(
     return E_OK;
 }
 
+int32_t CloudSyncConvert::CompensateAttVideoMode(
+    const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
+{
+    int32_t videoMode = data.attributesVideoMode;
+    CHECK_AND_RETURN_RET_WARN_LOG(
+        videoMode != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::videoMode.");
+    values.PutInt(PhotoColumn::PHOTO_VIDEO_MODE, videoMode);
+    return E_OK;
+}
+
 int32_t CloudSyncConvert::CompensateAttFrontCamera(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string frontCamera = data.attributesFrontCamera;
@@ -567,6 +577,7 @@ int32_t CloudSyncConvert::ExtractAttributeValue(const CloudMediaPullDataDto &dat
     CompensateAttShootingModeTag(data, values);
     CompensateAttDynamicRangeType(data, values);
     CompensateAttHdrMode(data, values);
+    CompensateAttVideoMode(data, values);
     CompensateAttFrontCamera(data, values);
     CompensateAttEditTime(data, values);
     CompensateAttOriginalSubtype(data, values);

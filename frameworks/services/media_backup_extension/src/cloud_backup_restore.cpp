@@ -153,8 +153,8 @@ void CloudBackupRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::Val
 
     // [special type]live photo
     SetCoverPosition(fileInfo, value);
-
     Set3DgsSubtype(fileInfo, value, data);
+    BaseRestore::InsertVideoMode(data, value);
 }
 
 void CloudBackupRestore::SetSize(const std::unique_ptr<Metadata> &data, FileInfo &info,

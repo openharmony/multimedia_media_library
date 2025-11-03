@@ -33,6 +33,7 @@
 #include "tab_old_photos_restore.h"
 #include "geo_knowledge_restore.h"
 #include "highlight_restore.h"
+#include "medialibrary_rdbstore.h"
 
 namespace OHOS {
 namespace Media {
@@ -54,6 +55,7 @@ public:
     void StartBackupEx(std::string& backupExInfo);
     void Release(ReleaseScene releaseScene);
     std::string restoreInfo_;
+    void InsertVideoMode(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value);
 
 protected:
     int32_t Init(void);

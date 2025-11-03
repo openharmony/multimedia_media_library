@@ -64,6 +64,7 @@ bool OnFetchPhotosVo::MarshallingAttributesInfo(Parcel &parcel) const
     parcel.WriteInt32(this->originalSubtype);
     parcel.WriteInt32(this->dynamicRangeType);
     parcel.WriteInt32(this->hdrMode);
+    parcel.WriteInt32(this->videoMode);
     parcel.WriteInt32(this->movingPhotoEffectMode);
     parcel.WriteInt32(this->supportedWatermarkType);
     parcel.WriteInt32(this->strongAssociation);
@@ -128,6 +129,7 @@ bool OnFetchPhotosVo::ReadAttributesInfo(Parcel &parcel)
     parcel.ReadInt32(this->originalSubtype);
     parcel.ReadInt32(this->dynamicRangeType);
     parcel.ReadInt32(this->hdrMode);
+    parcel.ReadInt32(this->videoMode);
     parcel.ReadInt32(this->movingPhotoEffectMode);
     parcel.ReadInt32(this->supportedWatermarkType);
     parcel.ReadInt32(this->strongAssociation);
@@ -229,7 +231,8 @@ void OnFetchPhotosVo::GetAttributesInfo(std::stringstream &ss) const
        << "\"isFavorite\": \"" << isFavorite << "\","
        << "\"isRecycle\": \"" << isRecycle << "\","
        << "\"description\": \"" << description << "\","
-       << "\"DeviceName\": \"" << source << "\",";
+       << "\"DeviceName\": \"" << source << "\","
+       << "\"videoMode\": \"" << videoMode << "\",";
     return;
 }
 
