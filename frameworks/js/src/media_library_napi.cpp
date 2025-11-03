@@ -11965,6 +11965,43 @@ static void getPhotoPickerContextRecoveryInfo(napi_env env, napi_status status, 
     }
 }
 
+static void getPhotoPickerSelectUris(napi_env env, napi_value result, MediaLibraryAsyncContext* context)
+{
+    const vector<string> &uris = context->pickerCallBack->uris;
+    napi_value jsUris = nullptr;
+    napi_create_array_with_length(env, uris.size(), &jsUris);
+    napi_value jsUri = nullptr;
+    for (size_t i = 0; i < uris.size(); i++) {
+        CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, uris[i].c_str(),
+            NAPI_AUTO_LENGTH, &jsUri), JS_INNER_FAIL);
+        if ((jsUri == nullptr) || (napi_set_element(env, jsUris, i, jsUri) != napi_ok)) {
+            NAPI_ERR_LOG("failed to set uri array");
+            break;
+        }
+    }
+    if (napi_set_named_property(env, result, "uris", jsUris) != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property uris failed");
+    }
+}
+
+static void getPhotoPickerMovingPhotoBadgeStates(napi_env env, napi_value result, MediaLibraryAsyncContext* context)
+{
+    const vector<int32_t> &movingPhotoBadgeStates = context->pickerCallBack->movingPhotoBadgeStates;
+    napi_value jsMovingPhotoBadgeStates = nullptr;
+    napi_create_array_with_length(env, movingPhotoBadgeStates.size(), &jsMovingPhotoBadgeStates);
+    napi_value jsMovingPhotoBadgeState = nullptr;
+    for (size_t i = 0; i < movingPhotoBadgeStates.size(); i++) {
+        CHECK_ARGS_RET_VOID(env, napi_create_int32(env, movingPhotoBadgeStates[i], &jsMovingPhotoBadgeState), JS_INNER_FAIL);
+        if ((jsMovingPhotoBadgeState == nullptr) || (napi_set_element(env, jsMovingPhotoBadgeStates, i, jsMovingPhotoBadgeState) != napi_ok)) {
+            NAPI_ERR_LOG("failed to set jsMovingPhotoBadgeState array");
+            break;
+        }
+    }
+    if (napi_set_named_property(env, result, "movingPhotoBadgeStates", jsMovingPhotoBadgeStates) != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property movingPhotoBadgeStates failed");
+    }
+}
+
 static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status status, void *data)
 {
     NAPI_INFO_LOG("StartPhotoPickerAsyncCallbackComplete start");
@@ -11983,21 +12020,8 @@ static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status stat
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property resultCode failed");
     }
-    const vector<string> &uris = context->pickerCallBack->uris;
-    napi_value jsUris = nullptr;
-    napi_create_array_with_length(env, uris.size(), &jsUris);
-    napi_value jsUri = nullptr;
-    for (size_t i = 0; i < uris.size(); i++) {
-        CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, uris[i].c_str(),
-            NAPI_AUTO_LENGTH, &jsUri), JS_INNER_FAIL);
-        if ((jsUri == nullptr) || (napi_set_element(env, jsUris, i, jsUri) != napi_ok)) {
-            NAPI_ERR_LOG("failed to set uri array");
-            break;
-        }
-    }
-    if (napi_set_named_property(env, result, "uris", jsUris) != napi_ok) {
-        NAPI_ERR_LOG("napi_set_named_property uris failed");
-    }
+    getPhotoPickerSelectUris(env, result, context);
+    getPhotoPickerMovingPhotoBadgeStates(env, result, context);
     napi_value isOrigin = nullptr;
     napi_get_boolean(env, context->pickerCallBack->isOrigin, &isOrigin);
     status = napi_set_named_property(env, result, "isOrigin", isOrigin);
