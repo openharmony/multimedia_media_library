@@ -3627,10 +3627,10 @@ void MediaLibraryDataManager::AgingTmpCompatibleDuplicatesThread()
         CHECK_AND_BREAK(isAgingDup_.load());
     }
     HeifAgingStatistics heifAgingStatistics;
-    heifAgingStatistics.transcodeFileNum = totalCount;
-    heifAgingStatistics.transcodeTotalSize = totalSize;
-    heifAgingStatistics.agingFileNum = dealCnt;
-    heifAgingStatistics.agingTotalSize = dealSize;
+    heifAgingStatistics.transcodeFileNum = static_cast<uint32_t>(totalCount);
+    heifAgingStatistics.transcodeTotalSize = static_cast<uint64_t>(totalSize);
+    heifAgingStatistics.agingFileNum = static_cast<uint32_t>(dealCnt);
+    heifAgingStatistics.agingTotalSize = static_cast<uint64_t>(dealSize);
     DfxReporter::reportHeifAgingStatistics(heifAgingStatistics);
 }
 
