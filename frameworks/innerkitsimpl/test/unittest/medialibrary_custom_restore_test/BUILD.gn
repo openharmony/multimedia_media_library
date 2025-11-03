@@ -43,6 +43,7 @@ ohos_unittest("medialibrary_custom_restore_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_rdb_utils.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/medialibrary_custom_restore_notify.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_custom_restore_operation.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_video_mode_operation.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
     "../get_self_permissions/src/get_self_permissions.cpp",

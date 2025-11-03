@@ -122,6 +122,10 @@ const std::vector<std::string> hdrModeEnum {
     "DEFAULT", "HDR_ISO_SINGLE", "HDR_ISO_DUAL", "HDR_CUVA", "HDR_VIVID_SINGLE", "HDR_VIVID_DUAL"
 };
 
+const std::vector<std::string> videoModeEnum{
+    "DEFAULT", "NOT_LOG_VIDEO", "LOG_VIDEO"
+};
+
 const std::vector<std::string> movingPhotoEffectModeEnum {
     "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE", "CINEMA_GRAPH"
 };
@@ -303,6 +307,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("EXIST_COMPATIBLE_DUPLICATE", PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE),
     std::make_pair("HDR_MODE",                  PhotoColumn::PHOTO_HDR_MODE),
     std::make_pair("CLOUD_ID",                  PhotoColumn::PHOTO_CLOUD_ID),
+    std::make_pair("VIDEO_MODE",                PhotoColumn::PHOTO_VIDEO_MODE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

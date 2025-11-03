@@ -300,6 +300,7 @@ thread_local napi_ref MediaLibraryNapi::sStrongAssociationTypeEnumRef_ = nullptr
 thread_local napi_ref MediaLibraryNapi::sCompositeDisplayModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sSupportedImageFormatEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHdrModeRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sVideoModeRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -530,6 +531,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("CompositeDisplayMode", CreateCompositeDisplayModeEnum(env)),
         DECLARE_NAPI_PROPERTY("SupportedImageFormat", CreateSupportedImageFormatEnum(env)),
         DECLARE_NAPI_PROPERTY("HdrMode", CreateHdrModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("VideoMode", CreateVideoModeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -8649,6 +8651,11 @@ napi_value MediaLibraryNapi::CreateVideoEnhancementTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateHdrModeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, hdrModeEnum, sHdrModeRef_);
+}
+
+napi_value MediaLibraryNapi::CreateVideoModeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, videoModeEnum, sVideoModeRef_);
 }
 
 napi_value MediaLibraryNapi::CreateMovingPhotoEffectModeEnum(napi_env env)

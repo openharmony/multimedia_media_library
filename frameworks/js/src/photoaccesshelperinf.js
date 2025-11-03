@@ -1214,4 +1214,5 @@ export default {
   CloudMediaDownloadResourcesStatus: photoAccessHelper.CloudMediaDownloadResourcesStatus,
   CloudAssetDownloadNotifyType: photoAccessHelper.CloudAssetDownloadNotifyType,
   CloudAssetDownloadCode: photoAccessHelper.CloudAssetDownloadCode,
+  VideoMode: photoAccessHelper.VideoMode,
 };

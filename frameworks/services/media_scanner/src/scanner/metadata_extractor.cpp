@@ -34,6 +34,10 @@
 #include "shooting_mode_column.h"
 #include "moving_photo_file_utils.h"
 #include "directory_ex.h"
+#include "result_set_utils.h"
+#include "medialibrary_unistore_manager.h"
+#include "photo_video_mode_operation.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -475,6 +479,7 @@ static std::string ExtractVideoShootingMode(const std::string &genreJson)
 void PopulateExtractedAVMetadataOne(const std::unordered_map<int32_t, std::string> &resultMap,
     std::unique_ptr<Metadata> &data)
 {
+    MEDIA_INFO_LOG("PopulateExtractedAVMetadataOne start");
     int32_t intTempMeta;
 
     string strTemp = resultMap.at(AV_KEY_ALBUM);
@@ -543,6 +548,7 @@ std::string ParseDetailTime(const string &timeStr, const string &format)
 void PopulateAVMetadataDateTaken(
     const std::unordered_map<int32_t, std::string> &resultMap, std::unique_ptr<Metadata> &data)
 {
+    MEDIA_INFO_LOG(" PopulateAVMetadataDateTaken start");
     // first take utc time
     string timeStr = resultMap.at(AV_KEY_DATE_TIME_ISO8601);
     int64_t dateTaken = convertUTCTimeInformat(timeStr, "%Y-%m-%dT%H:%M:%S");
@@ -583,6 +589,7 @@ void PopulateAVMetadataDateTaken(
 void PopulateAVMetadataDetailTime(
     const std::unordered_map<int32_t, std::string> &resultMap, std::unique_ptr<Metadata> &data)
 {
+    MEDIA_INFO_LOG("PopulateExtractedAVMetadataTwo start");
     string timeStr = resultMap.at(AV_KEY_DATE_TIME_ISO8601);
     const string zeroTime = "1970-01-01T00:00:00.000000Z";
     if (timeStr != zeroTime) {
@@ -610,6 +617,7 @@ void PopulateAVMetadataDetailTime(
 void PopulateExtractedAVMetadataTwo(
     const std::unordered_map<int32_t, std::string> &resultMap, std::unique_ptr<Metadata> &data)
 {
+    MEDIA_INFO_LOG("PopulateExtractedAVMetadataTwo start");
     int32_t intTempMeta{0};
     string strTemp = resultMap.at(AV_KEY_VIDEO_ORIENTATION);
     if (!strTemp.empty()) {
@@ -698,6 +706,7 @@ static void ParseMovingPhotoCoverPosition(std::shared_ptr<Meta> &meta, std::uniq
 void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &resultMap,
     std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data)
 {
+    MEDIA_INFO_LOG("MetadataExtractor::FillExtractedMetadata start");
     PopulateExtractedAVMetadataOne(resultMap, data);
     PopulateExtractedAVMetadataTwo(resultMap, data);
     PopulateAVMetadataDateTaken(resultMap, data);
@@ -727,23 +736,74 @@ static void FillFrameIndex(std::shared_ptr<AVMetadataHelper> &avMetadataHelper,
     CHECK_AND_RETURN_LOG(err == E_OK, "Failed to get frame index, err: %{public}d", err);
     data->SetFrameIndex(static_cast<int32_t>(frameIndex));
 }
-// LCOV_EXCL_STOP
 
-int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, int32_t scene)
+static bool CanConvertToInt32(const std::string &str)
+{
+    std::istringstream iss(str);
+    int32_t num = 0;
+    iss >> num;
+    return iss.eof() && !iss.fail();
+}
+ 
+static int32_t GetTransfertype(const std::string transfertypeStr)
+{
+    int32_t transfertype = 0;
+    if (CanConvertToInt32(transfertypeStr)) {
+        transfertype = static_cast<int32_t>(std::stoi(transfertypeStr));
+    }
+    return transfertype;
+}
+
+int32_t MetadataExtractor::ExtractAVLogMetadata(std::shared_ptr<Meta> &meta)
+{
+    int32_t videoMode = 0;
+    static const int huaweiTransfertype = 2;
+    CHECK_AND_RETURN_RET_LOG(meta != nullptr, E_ERR, "meta is nullptr");
+    Meta logMeta = *meta;
+    auto iter = logMeta.Find("transfer_characteristics");
+    if (iter == logMeta.end()) {
+        return videoMode;
+    }
+    string transfertypeStr;
+    logMeta.GetData("transfer_characteristics", transfertypeStr);
+    MEDIA_INFO_LOG("transfertype =%{public}s", transfertypeStr.c_str());
+    int32_t transfertype = GetTransfertype(transfertypeStr);
+    if (transfertype == huaweiTransfertype) {
+        auto iterHw = logMeta.Find("customInfo");
+        if (iterHw == logMeta.end()) {
+            return videoMode;
+        }
+        shared_ptr<Meta> customInfoMeta;
+        logMeta.GetData("customInfo", customInfoMeta);
+        Meta customInfo = *customInfoMeta;
+        auto iterCus = customInfo.Find("com.openharmony.video.sei.h_log");
+        if (iterCus != customInfo.end()) {
+            videoMode = static_cast<int32_t>(VideoMode::LOG_VIDEO);
+        }
+    }
+    MEDIA_INFO_LOG("ExtractAVLogMetadata videoMode=%{public}d", videoMode);
+    return videoMode;
+}
+ 
+void MetadataExtractor::ExtractVideoMode(int32_t fileId, std::unique_ptr<Metadata> &data, std::shared_ptr<Meta> &meta)
+{
+    const int32_t NOT_EXTRAC = -1;
+    CHECK_AND_RETURN_LOG(fileId != 0, "AV metadata fileId is 0");
+    int32_t videoMode = data->GetVideoMode();
+    MEDIA_INFO_LOG("ExtractAVMetadata videoMode = %{public}d", videoMode);
+    if (videoMode != static_cast<int32_t>(VideoMode::DEFAULT)) {
+        MEDIA_INFO_LOG("video has scannered");
+        return;
+    }
+    int32_t extVideoMode = ExtractAVLogMetadata(meta);
+    data->SetVideoMode(extVideoMode);
+    MEDIA_INFO_LOG("ExtractVideoMode extVideoMode = %{public}d", extVideoMode);
+}
+
+int32_t MetadataExtractor::BuildMetaData(
+    std::shared_ptr<AVMetadataHelper> &avMetadataHelper, std::unique_ptr<Metadata> &data)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("ExtractAVMetadata");
-
-    tracer.Start("CreateAVMetadataHelper");
-    std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
-    tracer.Finish();
-    CHECK_AND_RETURN_RET_LOG(avMetadataHelper != nullptr, E_AVMETADATA, "AV metadata helper is null");
-
-    // notify media_service clone event.
-    if (scene == Scene::AV_META_SCENE_CLONE) {
-        avMetadataHelper->SetScene(static_cast<Scene>(scene));
-    }
-
     string filePath = data->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_AVMETADATA, "AV metadata file path is empty");
     std::string realFilePath;
@@ -753,7 +813,6 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
     }
     int32_t fd = open(realFilePath.c_str(), O_RDONLY);
     CHECK_AND_RETURN_RET_LOG(fd > 0, E_SYSCALL, "Open file descriptor failed, errno = %{public}d", errno);
-
     struct stat64 st;
     if (fstat64(fd, &st) != 0) {
         MEDIA_ERR_LOG("Get file state failed for the given fd");
@@ -780,13 +839,34 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
             FillFrameIndex(avMetadataHelper, data);
         }
     }
-
+    int32_t fileId = data->GetFileId();
+    if (fileId != FILE_ID_DEFAULT) {
+        ExtractVideoMode(fileId, data, meta);
+        (void)close(fd);
+        return E_OK;
+    }
+    int32_t extVideoMode = ExtractAVLogMetadata(meta);
+    data->SetVideoMode(extVideoMode);
     (void)close(fd);
-
     return E_OK;
 }
 
-// LCOV_EXCL_START
+int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, int32_t scene)
+{
+    MediaLibraryTracer tracer;
+
+    tracer.Start("CreateAVMetadataHelper");
+    std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    tracer.Finish();
+    CHECK_AND_RETURN_RET_LOG(avMetadataHelper != nullptr, E_AVMETADATA, "AV metadata helper is null");
+
+    // notify media_service clone event.
+    if (scene == Scene::AV_META_SCENE_CLONE) {
+        avMetadataHelper->SetScene(static_cast<Scene>(scene));
+    }
+    return BuildMetaData(avMetadataHelper, data);
+}
+
 int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> &data,
     bool isCameraShotMovingPhoto)
 {
@@ -838,8 +918,10 @@ int32_t MetadataExtractor::Extract(std::unique_ptr<Metadata> &data, bool isCamer
 {
     if (data->GetFileMediaType() == MEDIA_TYPE_IMAGE) {
         int32_t ret = ExtractImageMetadata(data);
+        data->SetVideoMode(0);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to extract image metadata");
         if (IsMovingPhoto(data)) {
+            data->SetVideoMode(0);
             return CombineMovingPhotoMetadata(data, isCameraShotMovingPhoto);
         }
         return ret;

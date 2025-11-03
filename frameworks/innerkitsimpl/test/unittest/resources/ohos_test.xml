@@ -48,6 +48,15 @@
             <option name="shell" value="rm -rf /data/test/.*"/>
         </cleaner>
     </target>
+    <target name="medialibrary_video_mode_test">
+        <preparer>
+            <option name="push" value="thumbnail_testfile/hw_log.mp4 -> /storage/cloud/files/photo/1" src="res"/>
+        </preparer>
+        <cleaner>
+            <option name="shell" value="rm -rf /storage/cloud/files/photo/1"/>
+        </cleaner>
+ 
+    </target>
     <target name="medialibrary_thumbnail_service_test">
         <preparer>
             <option name="push" value="thumbnail_testfile/CreateImageThumbnailTest_001.jpg -> /data/CreateImageThumbnailTest_001.jpg" src="res"/>

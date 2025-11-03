@@ -1355,7 +1355,8 @@ export namespace photoAccessHelper {
     OWNER_ALBUM_ID = 'owner_album_id',
     IS_RECENT_SHOW = 'is_recent_show',
     MEDIA_SUFFIX = 'media_suffix',
-    SUM_SIZE = 'sum(size)'
+    SUM_SIZE = 'sum(size)',
+    VIDEO_MODE = 'video_mode',
   }
 
   export enum AlbumKeys {
