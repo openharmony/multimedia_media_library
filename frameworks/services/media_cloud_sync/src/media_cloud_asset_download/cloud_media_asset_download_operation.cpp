@@ -86,7 +86,7 @@ static const int32_t INDEX_ONE = 1;
 static const int32_t INDEX_TWO = 2;
 static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.1;
 static const std::string STORAGE_PATH = "/data/storage/el2/database/";
-static const uint32_t MAX_DOWNLOAD_TRY_TIMES = 3 * BATCH_DOWNLOAD_CLOUD_FILE;
+static const uint32_t MAX_DOWNLOAD_TRY_TIMES = 3;
 
 static const std::map<Status, std::vector<int32_t>> STATUS_MAP = {
     { Status::FORCE_DOWNLOADING, {0, 0, 0} },
@@ -665,7 +665,8 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
     SubmitBatchDownloadAgain();
 }
 
-void CloudMediaAssetDownloadOperation::MoveDownloadFileToCache(const DownloadProgressObj& progress)
+void CloudMediaAssetDownloadOperation::MoveDownloadFileToCache(const DownloadProgressObj& progress,
+    const bool tryDownload)
 {
     std::lock_guard<std::mutex> lock(callbackMutex_);
     int64_t downloadSize = 0;
@@ -683,6 +684,10 @@ void CloudMediaAssetDownloadOperation::MoveDownloadFileToCache(const DownloadPro
     cacheForDownload_.fileDownloadMap.EnsureInsert(progress.path, downloadSize);
     dataForDownload_.fileDownloadMap.Erase(progress.path);
     MEDIA_INFO_LOG("success, path: %{public}s.", MediaFileUtils::DesensitizeUri(progress.path).c_str());
+    if (IsDataEmpty(dataForDownload_) && tryDownload) {
+        downloadTryTime_++;
+        MEDIA_INFO_LOG("try to download, downloadTryTime_: %{public}u", downloadTryTime_);
+    }
     SubmitBatchDownloadAgain();
 }
 
@@ -726,8 +731,7 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
             if (!IsNetworkAvailable() || downloadTryTime_ >= MAX_DOWNLOAD_TRY_TIMES) {
                 PauseDownloadTask(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
             }
-            downloadTryTime_++;
-            MoveDownloadFileToCache(progress);
+            MoveDownloadFileToCache(progress, true);
             break;
         }
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::LOCAL_STORAGE_FULL): {

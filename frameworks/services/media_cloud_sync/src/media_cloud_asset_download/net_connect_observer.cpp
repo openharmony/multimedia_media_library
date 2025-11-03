@@ -63,6 +63,7 @@ int32_t NetConnectObserver::NetCapabilitiesChange(sptr<NetHandle> &netHandle, co
     } else {
         MEDIA_INFO_LOG("other net connected");
         SetNetConnStatus(NetConnStatus::NO_NETWORK);
+        CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
     }
     return E_OK;
 }
@@ -71,10 +72,7 @@ int32_t NetConnectObserver::NetLost(sptr<NetHandle> &netHandle)
 {
     MEDIA_INFO_LOG("net lost");
     SetNetConnStatus(NetConnStatus::NO_NETWORK);
-    int32_t taskStatus = CloudMediaAssetManager::GetInstance().GetTaskStatus();
-    if (taskStatus == static_cast<int32_t>(CloudMediaAssetTaskStatus::PAUSED)) {
-        CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
-    }
+    CloudMediaAssetManager::GetInstance().PauseDownloadCloudAsset(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
     return E_OK;
 }
 } // namespace Media
