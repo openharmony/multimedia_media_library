@@ -843,6 +843,12 @@ const CompleteButtonText = {
   TEXT_ADD: 2,
 };
 
+const MovingPhotoBadgeStateType = {
+  NOT_MOVING_PHOTO: 0,
+  MOVING_PHOTO_ENABLED: 1,
+  MOVING_PHOTO_DISABLED: 2,
+};
+
 const ERRCODE_MAP = new Map([
   [ErrCode.INVALID_ARGS, 'Invalid argument'],
   [ErrCode.RESULT_ERROR, 'Unknown error'],
@@ -928,6 +934,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.photoViewMimeTypeFileSizeFilters = option.photoViewMimeTypeFileSizeFilters;
     config.parameters.combinedMediaTypeFilter = option.combinedMediaTypeFilter;
     config.parameters.isPc = deviceinfo.deviceType === '2in1';
+    config.parameters.isMovingPhotoBadgeShown = option.isMovingPhotoBadgeShown;
   }
 
   return config;
@@ -961,9 +968,10 @@ function getPhotoPickerSelectResult(args) {
     let uris = args.uris;
     let isOrigin = args.isOrigin;
     let contextRecoveryInfo = args.contextRecoveryInfo;
-    selectResult.data = new PhotoSelectResult(uris, isOrigin, contextRecoveryInfo);
+    let movingPhotoBadgeStates = args.movingPhotoBadgeStates;
+    selectResult.data = new PhotoSelectResult(uris, isOrigin, contextRecoveryInfo, movingPhotoBadgeStates);
   } else if (args.resultCode === -1) {
-    selectResult.data = new PhotoSelectResult([], undefined, undefined);
+    selectResult.data = new PhotoSelectResult([], undefined, undefined, undefined);
   } else {
     selectResult.error = getErr(ErrCode.RESULT_ERROR);
   }
@@ -1062,6 +1070,7 @@ function BaseSelectOptions() {
   this.isPhotoTakingSupported = true;
   this.isPreviewForSingleSelectionSupported = true;
   this.singleSelectionMode = SingleSelectionMode.BROWSER_MODE;
+  this.isMovingPhotoBadgeShown = false;
 }
 
 function PhotoSelectOptions() {
@@ -1075,10 +1084,11 @@ function PhotoSelectOptions() {
   this.userId = -1;
 }
 
-function PhotoSelectResult(uris, isOriginalPhoto, contextRecoveryInfo) {
+function PhotoSelectResult(uris, isOriginalPhoto, contextRecoveryInfo, movingPhotoBadgeStates) {
   this.photoUris = uris;
   this.isOriginalPhoto = isOriginalPhoto;
   this.contextRecoveryInfo = contextRecoveryInfo;
+  this.movingPhotoBadgeStates = movingPhotoBadgeStates;
 }
 
 function PhotoViewPicker() {
@@ -1214,5 +1224,6 @@ export default {
   CloudMediaDownloadResourcesStatus: photoAccessHelper.CloudMediaDownloadResourcesStatus,
   CloudAssetDownloadNotifyType: photoAccessHelper.CloudAssetDownloadNotifyType,
   CloudAssetDownloadCode: photoAccessHelper.CloudAssetDownloadCode,
+  MovingPhotoBadgeStateType: MovingPhotoBadgeStateType,
   VideoMode: photoAccessHelper.VideoMode,
 };
