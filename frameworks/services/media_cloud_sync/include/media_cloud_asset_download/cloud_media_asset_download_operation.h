@@ -123,7 +123,7 @@ private:
     EXPORT int32_t DoRecoverExecute();
     EXPORT int32_t PassiveStatusRecover();
     EXPORT int32_t SubmitBatchDownloadAgain();
-    void MoveDownloadFileToCache(const DownloadProgressObj &progress);
+    void MoveDownloadFileToCache(const DownloadProgressObj &progress, const bool tryDownload = false);
     void MoveDownloadFileToNotFound(const DownloadProgressObj &progress);
     int32_t RegisterNetObserver();
     bool IsWifiConnected();
