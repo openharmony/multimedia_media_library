@@ -437,8 +437,10 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetSelec
         maxScore = this->rdbOperation_.GetAssetScore(dto, curFileId);
     }
     minScore = this->rdbOperation_.GetLimitScore(dto);
-    CHECK_AND_RETURN_RET_LOG(minScore < maxScore,
-        make_shared<DataShare::DataShareResultSet>(), "AlbumGetSelectedAssets minScore >= maxScore");
+    if (minScore >= maxScore) {
+        MEDIA_ERR_LOG("AlbumGetSelectedAssets minScore >= maxScore");
+        return std::make_shared<DataShare::DataShareResultSet>();
+    }
     dto.minScore = minScore;
     dto.maxScore = maxScore;
     return this->rdbOperation_.GetSelectedAssets(dto);
