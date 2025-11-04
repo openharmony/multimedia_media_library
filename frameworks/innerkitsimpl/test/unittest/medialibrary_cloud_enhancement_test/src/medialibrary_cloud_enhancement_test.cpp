@@ -1967,9 +1967,9 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_is_auto_task_enabled_002, Tes
     MEDIA_INFO_LOG("manager_is_auto_task_enabled_002 End");
 }
  
-HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_cancel_all_auto__operation_001, TestSize.Level1)
+HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_cancel_all_auto_operation_001, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("manager_handle_cancel_all_auto__operation_001 Start");
+    MEDIA_INFO_LOG("manager_handle_cancel_all_auto_operation_001 Start");
  
     EnhancementManager &instance = EnhancementManager::GetInstance();
     int32_t fileId = PrepareHighQualityPhoto(TESTING_PHOTO_ID, TESTING_DISPLAYNAME);
@@ -1982,7 +1982,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_cancel_all_auto__opera
     ret = instance.HandleCancelAllAutoOperation();
     EXPECT_EQ(ret, E_OK);
  
-    MEDIA_INFO_LOG("manager_handle_cancel_all_auto__operation_001 End");
+    MEDIA_INFO_LOG("manager_handle_cancel_all_auto_operation_001 End");
 }
 #endif
 } // namespace Media
