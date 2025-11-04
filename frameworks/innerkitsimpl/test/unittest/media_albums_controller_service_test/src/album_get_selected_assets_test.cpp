@@ -272,12 +272,12 @@ static int32_t AlbumGetSelectedAssets(int32_t albumId)
         MEDIA_ERR_LOG("respBody.resultSet is nullptr");
         return -1;
     }
-    int count = -1;
+    int count = 0;
 
     auto errCode = respBody.resultSet->GetRowCount(count);
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("ResultSet GetRowCount failed, errCode=%{public}d", errCode);
-        return -1;
+        return count;
     }
     return count;
 }
