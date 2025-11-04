@@ -1517,6 +1517,7 @@ int32_t CloudMediaPhotosDao::UpdateFdirtyVersion(
     NativeRdb::ValuesBucket valuesBucket;
     valuesBucket.PutLong(PhotoColumn::PHOTO_CLOUD_VERSION, record.version);
     valuesBucket.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_SYNCED));
+    valuesBucket.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
     /**
      * fdirty -> synced: only if no change in meta_date_modified.
      * Fix me: if date_modified unchanged, update fdirty -> mdirty
@@ -2002,6 +2003,7 @@ int32_t CloudMediaPhotosDao::RepushDuplicatedPhoto(const PhotosDto &photo)
     int32_t changeRows;
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(Media::DirtyType::TYPE_FDIRTY));
+    values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
     std::string whereClause = MediaColumn::MEDIA_ID + " = ?";
     std::vector<std::string> whereArgs = {std::to_string(photo.fileId)};
     int32_t ret = UpdatePhoto(whereClause, whereArgs, values, changeRows);
