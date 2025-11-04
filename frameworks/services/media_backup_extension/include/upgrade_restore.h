@@ -22,6 +22,7 @@
 #include "backup_database_helper.h"
 #include "base_restore.h"
 #include "burst_key_generator.h"
+#include "classify_restore.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
 #include "ocr_restore.h"
@@ -169,6 +170,7 @@ protected:
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
     BackupDatabaseHelper backupDatabaseHelper_;
+    ClassifyRestore classifyRestore_;
     OCRRestore ocrRestore_;
     std::vector<int> galleryFailedOffsets_;
     std::vector<int> externalFailedOffsets_;
