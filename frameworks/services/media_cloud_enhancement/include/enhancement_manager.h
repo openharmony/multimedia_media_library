@@ -114,10 +114,10 @@ private:
     EXPORT void GenerateCancelOperationPredicates(int32_t fileId, NativeRdb::RdbPredicates &servicePredicates);
     sptr<PhotosAutoOptionObserver> photosAutoOptionObserver_ = nullptr;
     sptr<PhotosWaterMarkObserver> photosWaterMarkObserver_ = nullptr;
-    bool IsAutoTaskEnabled();
+    EXPORT bool IsAutoTaskEnabled();
     EXPORT int32_t HandleCancelAllAutoOperation();
     void ResetProcessingAutoToSupport();
-    bool IsAddOperationEnabled(int32_t triggerMode);
+    EXPORT bool IsAddOperationEnabled(int32_t triggerMode);
     int32_t DoChangeDisplayModeFile(int32_t fileId, const string &filePath);
     int32_t CompositePhotoSetOperation(int32_t fileId, CompositePhotoOperation operation);
 #endif
