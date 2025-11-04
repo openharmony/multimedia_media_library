@@ -377,8 +377,16 @@ static int32_t GetTotalBackupFileCount()
     }
 
     filesystem::path dir(META_RECOVERY_META_PATH);
-    for (const auto& entry : filesystem::recursive_directory_iterator(dir)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".json") {
+    std::error_code ec;
+    auto iter = filesystem::recursive_directory_iterator(dir, ec);
+    CHECK_AND_RETURN_RET_LOG(ec, count, "Iterator creation failed: %{public}s", ec.message().c_str());
+    for (; iter != filesystem::recursive_directory_iterator(); iter.increment(ec)) {
+        if (ec) {
+            MEDIA_ERR_LOG("Iteration error: %{public}s", ec.message().c_str());
+            ec.clear(); // 清除错误，尝试继续处理其他文件
+            continue;
+        }
+        if (iter->is_regular_file() && iter->path().extension() == ".json") {
             ++count;
         }
     }
