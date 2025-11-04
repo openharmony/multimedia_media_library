@@ -496,6 +496,7 @@ struct PickerCallBack {
     std::string displayName;
     int32_t recommendationType;
     int32_t selectedRecommendationType;
+    vector<int32_t> movingPhotoBadgeStates;
 };
 
 constexpr int32_t DEFAULT_PRIVATEALBUMTYPE = 3;
