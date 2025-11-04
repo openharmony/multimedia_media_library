@@ -72,6 +72,8 @@ public:
     static bool IsUserAlbumPath(const std::string &lpath);
     static bool CanUpdateExifRotateOnly(int32_t mediaType, int32_t oldExifRotate, int32_t newExifRotate);
     static int32_t GetExifRotate(int32_t mediaType, const std::string &path);
+    static bool IsCloudEnhancementSupported();
+    static void SyncDealWithCompositePhoto(const std::string &assetDataPath, int32_t photoId);
 };
 } // namespace OHOS::Media::CloudSync
 #endif // OHOS_CLOUD_MEDIA_SYNC_UTILS_H
