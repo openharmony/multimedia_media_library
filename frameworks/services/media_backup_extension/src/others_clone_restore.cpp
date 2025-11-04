@@ -118,7 +118,7 @@ OthersCloneRestore::OthersCloneRestore(int32_t sceneCode, const std::string &med
             return;
         }
         for (auto &obj : jsonObj) {
-            if (obj.contains(PHONE_TYPE) && obj.at(PHONE_TYPE) == PHONE_DEVICE_TYPE) {
+            if (obj.contains(PHONE_TYPE) && obj.at(PHONE_TYPE) == PHONE_DEVICE_TYPE && obj.contains(PHONE_DETAIL)) {
                 clonePhoneName_ = obj.at(PHONE_DETAIL);
             }
         }
