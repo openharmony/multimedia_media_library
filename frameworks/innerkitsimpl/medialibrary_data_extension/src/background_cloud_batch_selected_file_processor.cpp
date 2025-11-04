@@ -232,6 +232,18 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudBatchSelectedFileProcessor:
     return uniStore->QuerySql(sql);
 }
 
+void BackgroundCloudBatchSelectedFileProcessor::UpdateDBStatusInfoForSingleDownloadCompletely(int32_t fileId)
+{
+    std::string fileIdStr = std::to_string(fileId);
+    int32_t ret = UpdateDBProgressInfoForFileId(fileIdStr, 100, MediaFileUtils::UTCTimeSeconds(),
+        static_cast<int32_t>(OHOS::Media::BatchDownloadStatusType::TYPE_SUCCESS));
+    MEDIA_INFO_LOG("BatchSelectFileDownload Single Download UpdateDBProgressInfo, fileId: %{public}d,"
+        " ret: %{public}d", fileId, ret);
+    ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FINISH,
+        fileId, 100); // 100 finish
+    MEDIA_INFO_LOG("BatchSelectFileDownload Single Success NotifyDownloadProgressInfo, ret: %{public}d", ret);
+}
+
 void BackgroundCloudBatchSelectedFileProcessor::UpdateDBProgressStatusInfoForBatch(vector<int32_t> fileIds,
     int32_t status)
 {
@@ -595,6 +607,10 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::UpdateDBProgressInfoForFileId
     if (percent != -1) {
         valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_PERCENT, percent);
     }
+    if (status == static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_SUCCESS)) {
+        valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON,
+            static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_DEFAULT));
+    }
     CHECK_AND_RETURN_RET_INFO_LOG(valuesBucket.Size() != 0, E_OK, "nothing to update!");
     std::string whereClause = DownloadResourcesColumn::MEDIA_ID +  " = ? AND " +
         DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS+ " != ?";
@@ -605,6 +621,13 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::UpdateDBProgressInfoForFileId
     MEDIA_INFO_LOG("UpdateDBProgressInfoForFileId after update ret: %{public}d, changedRows %{public}d",
         ret, changedRows);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_RDB, "UpdateDBProgressInfoForFileId Failed");
+
+    if (status == static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_SUCCESS)) {
+        unique_lock<mutex> downloadLock(downloadResultMutex_);
+        downloadFileIdAndCount_.erase(fileIdStr);
+        downloadResult_.erase(fileIdStr);
+        downloadLock.unlock();
+    }
     return E_OK;
 }
 
