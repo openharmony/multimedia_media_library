@@ -361,37 +361,26 @@ static PixelMapPtr CreateThumbnailByAshmem(UniqueFd &uniqueFd, const Size &size)
     return pixel;
 }
 
-static napi_value DecodeThumbnailData(napi_env env, const UniqueFd &uniqueFd, const Size &size)
+static bool DecodeThumbnailDataBuffer(const UniqueFd &uniqueFd, std::vector<uint8_t> &buffer)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("DecodeThumbnailData");
- 
-    napi_value result = nullptr;
-    off_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
-    if (fileLen < 0) {
-        NAPI_ERR_LOG("Failed to get file size");
-        return result;
+    tracer.Start("DecodeThumbnailDataBuffer");
+
+    struct stat statBuf;
+    auto statRes = fstat(uniqueFd.Get(), &statBuf);
+    if (statRes != 0) {
+        NAPI_ERR_LOG("Failed to get stat, errno:%{public}d", errno);
+        return false;
     }
-    off_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
-    if (ret < 0) {
-        NAPI_ERR_LOG("Failed to reset file offset");
-        return result;
+
+    auto dataSize = statBuf.st_size;
+    buffer.resize(dataSize);
+    ssize_t readBytes = read(uniqueFd.Get(), buffer.data(), dataSize);
+    if (readBytes != dataSize) {
+        NAPI_ERR_LOG("Read file failed, errno:%{public}d", errno);
+        return false;
     }
- 
-    void* arrayBufferData = nullptr;
-    napi_value arrayBuffer;
-    if (napi_create_arraybuffer(env, fileLen, &arrayBufferData, &arrayBuffer) != napi_ok) {
-        NAPI_ERR_LOG("failed to create napi arraybuffer");
-        return result;
-    }
- 
-    ssize_t readBytes = read(uniqueFd.Get(), arrayBufferData, fileLen);
-    if (readBytes != fileLen) {
-        NAPI_ERR_LOG("read file failed");
-        return result;
-    }
- 
-    return arrayBuffer;
+    return true;
 }
 
 static PixelMapPtr DecodeThumbnail(const UniqueFd &uniqueFd, const Size &size)
@@ -482,14 +471,14 @@ static int32_t GetKeyFramePixelMapFromServer(const string &uriStr, const string 
     return UserFileClient::OpenFile(openUri, "R");
 }
 
-napi_ref ThumbnailManager::QueryThumbnailData(napi_env env, const string &uriStr, const int &type, const string &path)
+bool ThumbnailManager::QueryThumbnailDataBuffer(const string &uriStr, const int &type, const string &path,
+    std::vector<uint8_t> &buffer)
 {
     const int32_t KEY_LCD = 1;
     const int32_t KEY_THM = 2;
     MediaLibraryTracer tracer;
-    tracer.Start("QueryThumbnailData uri:" + uriStr);
- 
-    napi_ref result = nullptr;
+    tracer.Start("QueryThumbnailDataBuffer uri:" + uriStr);
+
     ThumbnailType thumbnailType = ThumbnailType::LCD;
     if (type == KEY_LCD) {
         thumbnailType = ThumbnailType::LCD;
@@ -503,15 +492,12 @@ napi_ref ThumbnailManager::QueryThumbnailData(napi_env env, const string &uriStr
     if (uniqueFd.Get() == E_ERR) {
         uniqueFd = UniqueFd(GetArrayBufferFromServer(uriStr, path, type));
         if (uniqueFd.Get() < 0) {
-            NAPI_ERR_LOG("queryThumbData is null, errCode is %{public}d", uniqueFd.Get());
-            return result;
+            NAPI_ERR_LOG("QueryThumbData is null, errCode is %{public}d", uniqueFd.Get());
+            return false;
         }
     }
     tracer.Finish();
-    napi_ref g_ref;
-    const int32_t NUM = 1;
-    napi_create_reference(env, DecodeThumbnailData(env, uniqueFd, size), NUM, &g_ref);
-    return g_ref;
+    return DecodeThumbnailDataBuffer(uniqueFd, buffer);
 }
 
 unique_ptr<PixelMap> ThumbnailManager::QueryThumbnail(const string &uriStr, const Size &size, const string &path)

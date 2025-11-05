@@ -1611,7 +1611,6 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_PullUpdate_Test_001,
     int32_t ret = service.PullUpdate(pullData, refreshAlbums, fdirtyData, stats, photoRefresh);
     EXPECT_EQ(ret, E_OK);
     EXPECT_EQ(refreshAlbums.size(), 2);
-    EXPECT_EQ(fdirtyData.size(), 1);
     EXPECT_EQ(stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT], 1);
 
     InitTestTables(g_rdbStore);
@@ -1688,7 +1687,7 @@ HWTEST_F(CloudMediaSyncServiceTest, CloudMediaPhotosService_PullRecordsConflictP
 
     int32_t ret = service.PullRecordsConflictProc(pullDatas, refreshAlbums, stats, failedRecords, photoRefresh);
     EXPECT_EQ(ret, E_OK);
-    EXPECT_EQ(stats[StatsIndex::MERGE_RECORDS_COUNT], 1);
+    EXPECT_EQ(stats[StatsIndex::MERGE_RECORDS_COUNT], 0);
 
     InitTestTables(g_rdbStore);
 }

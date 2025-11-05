@@ -59,6 +59,7 @@ public:
     std::optional<std::string> shootingModeTag;       // PhotoColumn::PHOTO_SHOOTING_MODE_TAG;
     std::optional<int32_t> dynamicRangeType;          // PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE;
     std::optional<int32_t> hdrMode;                   // PhotoColumn::PHOTO_HDR_MODE;
+    std::optional<int32_t> videoMode;                 // PhotoColumn::PHOTO_VIDEO_MODE;
     std::optional<std::string> frontCamera;           // PhotoColumn::PHOTO_FRONT_CAMERA;
     std::optional<std::string> detailTime;            // PhotoColumn::PHOTO_DETAIL_TIME;
     std::optional<int64_t> editTime;                  // PhotoColumn::PHOTO_EDIT_TIME;
@@ -79,6 +80,9 @@ public:
     std::optional<std::string> recordType;            // PhotoColumn::PHOTO_CLOUD_ID
     std::optional<std::string> recordId;              // PhotoColumn::PHOTO_CLOUD_ID
     std::optional<bool> isNew;
+    std::optional<int64_t> lcdVisitTime;              // PhotoColumn::PHOTO_LCD_VISIT_TIME
+    std::optional<int64_t> thumbnailReady;            // PhotoColumn::PHOTO_THUMBNAIL_READY
+    std::optional<int64_t> timePending;               // PhotoColumn::MEDIA_TIME_PENDING
 
     /* keep cloud_id at the last; so RecordToValueBucket can skip it*/
     std::optional<int32_t> fileId;       //  MediaColumn::MEDIA_ID;
@@ -90,6 +94,8 @@ public:
 
     /* Photo Map */
     std::vector<std::string> removeAlbumCloudId;
+
+    std::unordered_map<std::string, std::string> attributes;
 
 private:
     void GetAlbumInfo(std::stringstream &ss) const

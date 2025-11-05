@@ -660,22 +660,22 @@ static napi_status ParseArgsStartBatchDownloadCloudResources(napi_env env, napi_
     vector<string> uris;
     CHECK_STATUS_RET(MediaLibraryNapiUtils::GetStringArray(env, context->argv[ARGS_ZERO], uris), "Failed to get uris");
     if (uris.size() > BATCH_DOWNLOAD_LIMIT) { // not allow add more than 500 a batch
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to start batch download, more than 500 piece!");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to start batch download, more than 500 piece!");
         return napi_invalid_arg;
     }
     for (const auto &uri : uris) {
         if (!MediaFileUtils::StartsWith(uri, PhotoColumn::PHOTO_URI_PREFIX)) {
-            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check uri format, not a photo uri!");
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check uri format, not a photo uri!");
             return napi_invalid_arg;
         }
         string fileId = MediaFileUtils::GetIdFromUri(uri);
         if (fileId.empty() || !all_of(fileId.begin(), fileId.end(), ::isdigit)) {
-            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check uri format, not valid photo uri!");
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check uri format, not valid photo uri!");
             return napi_invalid_arg;
         }
     }
     if (uris.empty()) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed parse uri, no valid photo uri!");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed parse uri, no valid photo uri!");
         return napi_invalid_arg;
     }
     context->startBatchDownloadUris = uris;
@@ -757,17 +757,17 @@ static napi_status ParseArgsResumeBatchDownloadCloudResources(napi_env env, napi
     MediaLibraryNapiUtils::GetStringArray(env, context->argv[ARGS_ZERO], uris); // 接受null
     for (const auto &uri : uris) {
         if (!MediaFileUtils::StartsWith(uri, PhotoColumn::PHOTO_URI_PREFIX)) {
-            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check uri format, not a photo uri!");
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check uri format, not a photo uri!");
             return napi_invalid_arg;
         }
         string fileId = MediaFileUtils::GetIdFromUri(uri);
         if (fileId.empty() || !all_of(fileId.begin(), fileId.end(), ::isdigit)) {
-            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check uri format, not valid photo uri!");
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check uri format, not valid photo uri!");
             return napi_invalid_arg;
         }
     }
     if (uris.size() > BATCH_DOWNLOAD_LIMIT) { // not allow add more than 500 a batch
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to resume batch download, more than 500 piece!");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to resume batch download, more than 500 piece!");
         return napi_invalid_arg;
     }
     context->resumeBatchDownloadUris = uris;
@@ -847,17 +847,17 @@ static napi_status ParseArgsPauseDownloadCloudResources(napi_env env, napi_callb
     MediaLibraryNapiUtils::GetStringArray(env, context->argv[ARGS_ZERO], uris); // 接受null
     for (const auto &uri : uris) {
         if (!MediaFileUtils::StartsWith(uri, PhotoColumn::PHOTO_URI_PREFIX)) {
-            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check uri format, not a photo uri!");
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check uri format, not a photo uri!");
             return napi_invalid_arg;
         }
         string fileId = MediaFileUtils::GetIdFromUri(uri);
         if (fileId.empty() || !all_of(fileId.begin(), fileId.end(), ::isdigit)) {
-            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check uri format, not valid photo uri!");
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check uri format, not valid photo uri!");
             return napi_invalid_arg;
         }
     }
     if (uris.size() > BATCH_DOWNLOAD_LIMIT) { // not allow add more than 500 a batch
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to pause batch download, more than 500 piece!");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to pause batch download, more than 500 piece!");
         return napi_invalid_arg;
     }
     context->pauseBatchDownloadUris = uris;
@@ -937,17 +937,17 @@ static napi_status ParseArgsCancelDownloadCloudResources(napi_env env, napi_call
     MediaLibraryNapiUtils::GetStringArray(env, context->argv[ARGS_ZERO], uris); // 接受null
     for (const auto &uri : uris) {
         if (!MediaFileUtils::StartsWith(uri, PhotoColumn::PHOTO_URI_PREFIX)) {
-            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check uri format, not a photo uri!");
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check uri format, not a photo uri!");
             return napi_invalid_arg;
         }
         string fileId = MediaFileUtils::GetIdFromUri(uri);
         if (fileId.empty() || !all_of(fileId.begin(), fileId.end(), ::isdigit)) {
-            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check uri format, not valid photo uri!");
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to check uri format, not valid photo uri!");
             return napi_invalid_arg;
         }
     }
     if (uris.size() > BATCH_DOWNLOAD_LIMIT) { // not allow add more than 500 a batch
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to cancel batch download, more than 500 piece!");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Failed to cancel batch download, more than 500 piece!");
         return napi_invalid_arg;
     }
     context->cancelBatchDownloadUris = uris;
@@ -1215,12 +1215,12 @@ static napi_value CheckUnregisterCallbackArgs(napi_env env, napi_callback_info i
     GET_JS_ARGS(env, info, context->argc, context->argv, thisVar);
 
     if (context->argc > ARGS_ONE) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requires parameters.");
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "requires parameters.");
         return nullptr;
     }
 
     if (thisVar == nullptr || context->argv[PARAM0] == nullptr) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE);
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID);
         return nullptr;
     }
     return thisVar;
@@ -1247,7 +1247,7 @@ napi_value CloudMediaAssetManagerNapi::JsBatchDownloadUnRegisterCallback(napi_en
     napi_ref cbOffRef = nullptr;
     if (context->argc == ARGS_ONE) {
         if (napi_typeof(env, context->argv[PARAM0], &valueType) != napi_ok || valueType != napi_function) {
-            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE);
+            NapiError::ThrowError(env, JS_E_PARAM_INVALID);
             return undefinedResult;
         }
         const int32_t refCount = 1;
@@ -1278,7 +1278,7 @@ int32_t CloudMediaAssetManagerNapi::AddClientObserver(napi_env env, napi_ref ref
     napi_status status = napi_get_reference_value(env, ref, &callback);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
-        return OHOS_INVALID_PARAM_CODE;
+        return JS_E_PARAM_INVALID;
     }
 
     bool hasRegister = false;
@@ -1288,7 +1288,7 @@ int32_t CloudMediaAssetManagerNapi::AddClientObserver(napi_env env, napi_ref ref
         status = napi_get_reference_value(env, observer->ref_, &onCallback);
         if (status != napi_ok) {
             NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
-            return OHOS_INVALID_PARAM_CODE;
+            return JS_E_PARAM_INVALID;
         }
         napi_strict_equals(env, callback, onCallback, &hasRegister);
         if (hasRegister) {
@@ -1357,7 +1357,7 @@ int32_t CloudMediaAssetManagerNapi::RemoveClientObserver(napi_env env, napi_ref 
     napi_status status = napi_get_reference_value(env, ref, &offCallback);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
-        return OHOS_INVALID_PARAM_CODE;
+        return JS_E_PARAM_INVALID;
     }
 
     bool hasRegister = false;
@@ -1366,7 +1366,7 @@ int32_t CloudMediaAssetManagerNapi::RemoveClientObserver(napi_env env, napi_ref 
         status = napi_get_reference_value(env, (*iter)->ref_, &onCallback);
         if (status != napi_ok) {
             NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
-            return OHOS_INVALID_PARAM_CODE;
+            return JS_E_PARAM_INVALID;
         }
         napi_strict_equals(env, offCallback, onCallback, &hasRegister);
         if (!hasRegister) {

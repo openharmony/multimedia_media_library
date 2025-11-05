@@ -20,6 +20,7 @@ namespace OHOS::Media {
 RestoreDto RestoreDto::Create(const RestoreReqBody &req)
 {
     RestoreDto dto;
+    dto.dbPath = req.dbPath;
     dto.albumLpath = req.albumLpath;
     dto.keyPath = req.keyPath;
     dto.bundleName = req.bundleName;

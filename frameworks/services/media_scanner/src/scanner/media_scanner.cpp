@@ -16,7 +16,7 @@
 #define MLOG_TAG "Scanner"
 
 #include "media_scanner.h"
-
+#include "photo_video_mode_operation.h"
 #include "directory_ex.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -40,6 +40,8 @@
 #include "medialibrary_photo_operations.h"
 #include "refresh_business_name.h"
 #include "scanner_map_code_utils.h"
+#include "metadata_extractor.h"
+
 namespace OHOS {
 namespace Media {
 using namespace std;
@@ -280,10 +282,9 @@ int32_t MediaScannerObj::Commit()
     string tableName;
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
-    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(
-        AccurateRefresh::SCAN_FILE_BUSSINESS_NAME);
+    auto assetRefresh = make_shared<AccurateRefresh::AssetAccurateRefresh>(AccurateRefresh::SCAN_FILE_BUSSINESS_NAME);
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
-        uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_, true, assetRefresh);
+        uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_, true, assetRefresh, needUpdateAssetName_);
         if (!isSkipAlbumUpdate_) {
             assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM |
                 NotifyAlbumType::USER_ALBUM | NotifyAlbumType::SOURCE_ALBUM));
@@ -308,16 +309,12 @@ int32_t MediaScannerObj::Commit()
             watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
         }
     }
-
     int32_t fileId = data_->GetFileId();
+    int32_t videoMode = data_->GetVideoMode();
+    PhotoVideoModeOperation::UpdatePhotosVideoMode(videoMode, fileId);
     int32_t ret = MediaLibraryPhotoOperations::CalSingleEditDataSize(std::to_string(fileId));
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("CalSingleEditDataSize failed for ID: %{public}d (ret code: %{public}d)",
-            fileId, ret);
-    }
-
+    CHECK_AND_PRINT_LOG(ret == E_OK, "CalSingleEditDataSize failed ID: %{public}d (ret code: %{public}d)", fileId, ret);
     assetRefresh->Notify();
-    // notify change
     mediaScannerDb_->NotifyDatabaseChange(data_->GetFileMediaType());
     data_ = nullptr;
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
@@ -326,7 +323,6 @@ int32_t MediaScannerObj::Commit()
     if (duration > 400) {
         MEDIA_HILOG(HILOG_IMPL, LOG_INFO, "Process duration: %" PRId64 " milliseconds", duration);
     }
-
     return E_OK;
 }
 
@@ -531,11 +527,14 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
         }
         return E_SCANNED;
     }
-
+    bool needUpdateAssetName = false;
     if (data_->GetFileId() == FILE_ID_DEFAULT) {
         data_->SetFileName(ScannerUtils::GetFileNameFromUri(path_));
+        needUpdateAssetName = true;
     }
     data_->SetFileTitle(ScannerUtils::GetFileTitle(data_->GetFileName()));
+    // title and display_name are obtained from db, do not to be updated again.
+    needUpdateAssetName_ = needUpdateAssetName;
 
     // statinfo
     data_->SetFileSize(statInfo.st_size);

@@ -62,6 +62,7 @@ declare_args() {
   media_library_feature_device_manager = false
   media_library_feature_user_file_service = false
   media_library_feature_device_security_level = false
+  media_library_feature_hicollie_enable = false
 }
 
 if (defined(global_parts_info) &&
@@ -77,4 +78,9 @@ if (defined(global_parts_info) &&
 if (defined(global_parts_info) &&
     defined(global_parts_info.security_device_security_level)) {
     media_library_feature_device_security_leve = true
+}
+
+if (defined(global_parts_info) &&
+    defined(global_parts_info.hiviewdfx_hicollie)) {
+    media_library_feature_hicollie_enable = true
 }

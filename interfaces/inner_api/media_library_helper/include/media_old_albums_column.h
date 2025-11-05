@@ -41,6 +41,10 @@ namespace TabOldAlbumsColumn {
     static const std::string ALBUM_SUBTYPE = "album_subtype";
     static const std::string CLONE_SEQUENCE = "clone_sequence";
     static const char IS_ANALYSIS_TABLE = '4';
+    static const char IS_PHOTOS_TABLE = '2';
+    static const int32_t IsPhotoOrAnalysis = 4000;
+    static const int32_t MaxValue = 5000;
+    
 
     struct RawData {
         int32_t old_album_id;

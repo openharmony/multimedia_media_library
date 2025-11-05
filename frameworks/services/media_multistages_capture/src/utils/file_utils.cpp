@@ -39,7 +39,10 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
+const std::string MIME_TYPE_HEIF = "image/heif";
+const std::string MIME_TYPE_HEIC = "image/heic";
 const uint8_t PACKOPTION_QUALITY = 90;
+const uint8_t PACKOPTION_QUALITY_HEIF = 95;
 FileUtils::FileUtils() {}
 
 FileUtils::~FileUtils() {}
@@ -125,6 +128,8 @@ int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Pic
     }
     size_t sizeHeic = -1;
     size_t pos = sourcePath.find_last_of('.');
+    CHECK_AND_RETURN_RET_LOG(pos != string::npos, -1,
+        "Failed to parse the sourcePath: %{public}s", sourcePath.c_str());
     string pathPos = sourcePath.substr(0, pos);
     string pathHeic = pathPos + ".heic";
     MediaFileUtils::GetFileSize(pathHeic, sizeHeic);
@@ -153,7 +158,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
 {
     MediaLibraryTracer tracer;
     tracer.Start("FileUtils::DealPicture");
-    MEDIA_INFO_LOG("DealPicture, path: %{public}s, mime_type: %{public}s",
+    MEDIA_ERR_LOG("DealPicture, path: %{public}s, mime_type: %{public}s",
         MediaFileUtils::DesensitizePath(path).c_str(), mime_type.c_str());
     if (picture == nullptr) {
         MEDIA_ERR_LOG("picture is nullptr.");
@@ -161,11 +166,15 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     }
     Media::ImagePacker imagePacker;
     Media::PackOption packOption;
-    packOption.format = mime_type;
+    packOption.format = (mime_type == MIME_TYPE_HEIC) ? MIME_TYPE_HEIF : mime_type;
     packOption.needsPackProperties = true;
     packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
     packOption.isEditScene = false;
-    packOption.quality = PACKOPTION_QUALITY;
+    if (packOption.format == MIME_TYPE_HEIF) {
+        packOption.quality = PACKOPTION_QUALITY_HEIF;
+    } else {
+        packOption.quality = PACKOPTION_QUALITY;
+    }
     size_t lastSlash = path.rfind('/');
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && path.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", path.c_str());
@@ -179,7 +188,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     imagePacker.FinalizePacking();
     size_t size = -1;
     MediaFileUtils::GetFileSize(tempOutputPath, size);
-    MEDIA_INFO_LOG("SavePicture end size: %{public}zu", size);
+    MEDIA_ERR_LOG("SavePicture end size: %{public}zu", size);
     if (size == 0) {
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
             "Failed to delete temp filters file, errno: %{public}d", errno);
@@ -188,7 +197,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     ret = rename(tempOutputPath.c_str(), path.c_str());
     CHECK_AND_PRINT_LOG(ret == E_SUCCESS, "Failed rename errno: %{public}d", errno);
     if (MediaFileUtils::IsFileExists(tempOutputPath)) {
-        MEDIA_INFO_LOG("file: %{public}s exists and needs to be deleted", tempOutputPath.c_str());
+        MEDIA_ERR_LOG("file: %{public}s exists and needs to be deleted", tempOutputPath.c_str());
         if (!MediaFileUtils::DeleteFile(tempOutputPath)) {
             MEDIA_ERR_LOG("delete file: %{public}s failed", tempOutputPath.c_str());
         }

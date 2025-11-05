@@ -20,6 +20,7 @@
 #include "ipc_skeleton.h"
 #include "media_log.h"
 #include "medialibrary_unistore_manager.h"
+#include "media_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -65,7 +66,8 @@ static void GenerateSql(const std::unordered_map<std::string, uint32_t> &infoMap
         sql += "WHEN " + fileId + " THEN " + std::to_string(count) + " ";
         fileIdList += fileId + ",";
     }
-    sql += "ELSE 0 END, " + visitTime + " = strftime('%s000', 'now') WHERE file_id IN (";
+    sql += "ELSE 0 END, " + visitTime + " = " + std::to_string(MediaFileUtils::UTCTimeMilliSeconds()) +
+        " WHERE file_id IN (";
     fileIdList.pop_back();
     sql += fileIdList + ")";
 }

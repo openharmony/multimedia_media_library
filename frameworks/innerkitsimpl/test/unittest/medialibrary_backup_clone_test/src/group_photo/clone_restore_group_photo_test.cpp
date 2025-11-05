@@ -16,7 +16,8 @@
 #define MLOG_TAG "CloneRestoreGroupPhotoTest"
 
 #include "clone_restore_group_photo_test.h"
-
+#include "vision_db_sqls.h"
+#include "vision_db_sqls_more.h"
 #define private public
 #define protected public
 #include "clone_group_photo_source.h"
@@ -25,6 +26,7 @@
 #include "userfile_manager_types.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
 #include "backup_const.h"
 #include "clone_restore.h"
 #include "media_log.h"
@@ -46,29 +48,21 @@ const std::unordered_map<int32_t, PhotoInfo> PHOTO_INFO_MAP = {
 };
 
 const std::unordered_map<int32_t, PhotoInfo> PHOTO_INFO_MAP_NO_DATA = {};
-
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore = nullptr;
 static unique_ptr<CloneRestore> restoreService = nullptr;
 static CloneGroupPhotoSource cloneSource;
-
-const vector<string> CLEAR_SQLS = {
-    "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
-    "DELETE FROM " + ANALYSIS_ALBUM_TABLE,
-    "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE,
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+    CREATE_ANALYSIS_ALBUM_MAP,
 };
 
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    ANALYSIS_ALBUM_TABLE,
+    ANALYSIS_PHOTO_MAP_TABLE,
+};
 const int32_t EXPECTED_GROUP_ALBUM_COUNT = 2;
-
-static void ExecuteSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> &sqls)
-{
-    for (const auto &sql : sqls) {
-        int32_t errCode = store->ExecuteSql(sql);
-        if (errCode == E_OK) {
-            continue;
-        }
-        MEDIA_ERR_LOG("Execute %{public}s failed: %{public}d", sql.c_str(), errCode);
-    }
-}
 
 static void InsertPhotoInNewDb(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
 {
@@ -106,7 +100,7 @@ static void PreProcessInNewDb(std::shared_ptr<Media::MediaLibraryRdbStore> media
 static void ClearGroupPhotoData(std::shared_ptr<NativeRdb::RdbStore>& mediaRdbPtr)
 {
     MEDIA_INFO_LOG("Start clear data");
-    ExecuteSqls(mediaRdbPtr, CLEAR_SQLS);
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
     MEDIA_INFO_LOG("End clear data");
 }
 
@@ -194,10 +188,11 @@ void CloneRestoreGroupPhotoTest::VerifyGroupPhotoAlbumWithoutData(const std::sha
 
 void CloneRestoreGroupPhotoTest::SetUpTestCase(void)
 {
-    MEDIA_INFO_LOG("Start Init");
+    MEDIA_INFO_LOG("Start CloneRestoreGroupPhotoTest::Init");
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
     MEDIA_INFO_LOG("Start init restoreService");
     restoreService = make_unique<CloneRestore>();
     restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw(); // destination database
@@ -205,24 +200,24 @@ void CloneRestoreGroupPhotoTest::SetUpTestCase(void)
 
 void CloneRestoreGroupPhotoTest::TearDownTestCase(void)
 {
-    MEDIA_INFO_LOG("TearDownTestCase");
-    std::shared_ptr<NativeRdb::RdbStore> rdbPtr = g_rdbStore->GetRaw();
-    ClearGroupPhotoData(rdbPtr);
+    MEDIA_INFO_LOG("CloneRestoreGroupPhotoTest::TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     restoreService->mediaLibraryRdb_ = nullptr;
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
-void CloneRestoreGroupPhotoTest::SetUp() {}
+void CloneRestoreGroupPhotoTest::SetUp()
+{
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
+}
 
 void CloneRestoreGroupPhotoTest::TearDown(void) {}
 
 HWTEST_F(CloneRestoreGroupPhotoTest, medialibrary_backup_clone_restore_group_photo_album_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_group_photo_album_test_001");
-
-    EXPECT_NE(g_rdbStore, nullptr);
-    std::shared_ptr<NativeRdb::RdbStore> rdbPtr = g_rdbStore->GetRaw();
-    ClearGroupPhotoData(rdbPtr);
     vector<string> tableList = {PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE};
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     PreProcessInNewDb(g_rdbStore);
@@ -248,7 +243,6 @@ HWTEST_F(CloneRestoreGroupPhotoTest, medialibrary_backup_clone_restore_group_pho
     restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
     restoreService->photoInfoMap_ = PHOTO_INFO_MAP_NO_DATA;
     restoreService->RestoreGroupPhoto();
-
     VerifyGroupPhotoAlbumWithoutData(restoreService->mediaLibraryRdb_);
 }
 }

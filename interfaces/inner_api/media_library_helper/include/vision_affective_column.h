@@ -25,7 +25,6 @@ const std::string MODEL_VERSION = "model_version";
 const std::string VALENCE = "valence";
 const std::string EMOTION_CATEGORY = "category";
 const std::string AROUSAL = "arousal";
-const std::string DOMINANCE = "dominance";
 const std::string EXTRA = "extra";
 const std::string CREATE_TIMESTAMP = "timestamp";
 } // namespace Media

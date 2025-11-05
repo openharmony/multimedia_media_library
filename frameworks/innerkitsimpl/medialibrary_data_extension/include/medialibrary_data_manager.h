@@ -123,13 +123,13 @@ public:
     EXPORT int32_t UpdateDirtyForCloudClone(int32_t version);
     EXPORT int32_t ClearDirtyHdcData();
     EXPORT int32_t UpdateMediaSizeFromStorage();
-    EXPORT void AgingTmpCompatibleDuplicates();
-    EXPORT void InterruptAgingTmpCompatibleDuplicates();
-    EXPORT int32_t AgingTmpCompatibleDuplicate(int32_t fileId, const std::string &filePath);
     EXPORT int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesBucket &value,
                 const DataShare::DataSharePredicates &predicates);
     EXPORT int32_t RestoreInvalidPosData();
     EXPORT int32_t RestoreInvalidHDCCloudDataPos();
+    EXPORT int32_t AcquireDebugDatabase(const std::string &betaIssueId, const std::string &betaScenario,
+        std::string &fileName, std::string &fileSzie);
+    EXPORT int32_t ReleaseDebugDatabase(const std::string &betaIssueId);
 private:
     int32_t InitMediaLibraryRdbStore();
     int32_t UpdateDirtyHdcDataStatus();
@@ -161,7 +161,6 @@ private:
     int32_t SolveInsertCmdSub(MediaLibraryCommand &cmd);
     void HandleOtherInitOperations();
     void InitRefreshAlbum();
-    void AgingTmpCompatibleDuplicatesThread();
     int32_t ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
         const NativeRdb::ValuesBucket &value, const DataShare::DataSharePredicates &predicates);
     void SubscriberPowerConsumptionDetection();

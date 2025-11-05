@@ -258,16 +258,26 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, IsExCloudThumbnail_test_001, TestSize.L
     MEDIA_INFO_LOG("IsExCloudThumbnail_test_001 end");
 }
 
-HWTEST_F(MediaLibraryThumbnailUtilsTest, HandleImageExifRotate_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsExCloudThumbnail_test_002, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("HandleImageExifRotate_test_001");
+    MEDIA_INFO_LOG("IsExCloudThumbnail_test_002");
     ThumbnailData data;
-    data.mediaType = MediaType::MEDIA_TYPE_IMAGE;
-    data.exifRotate = 0;
+    data.exifRotate = 1;
     data.orientation = 0;
-    ThumbnailUtils::HandleImageExifRotate(data);
-    EXPECT_EQ(data.exifRotate, static_cast<int32_t>(ExifRotateType::TOP_LEFT));
-    MEDIA_INFO_LOG("HandleImageExifRotate_test_001 end");
+    auto ret = ThumbnailUtils::IsExCloudThumbnail(data);
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("IsExCloudThumbnail_test_001 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsExCloudThumbnail_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsExCloudThumbnail_test_003");
+    ThumbnailData data;
+    data.exifRotate = 2;
+    data.orientation = 0;
+    auto ret = ThumbnailUtils::IsExCloudThumbnail(data);
+    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("IsExCloudThumbnail_test_003 end");
 }
 
 HWTEST_F(MediaLibraryThumbnailUtilsTest, NeedRotateThumbnail_test_001, TestSize.Level0)
@@ -279,13 +289,98 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, NeedRotateThumbnail_test_001, TestSize.
     MEDIA_INFO_LOG("NeedRotateThumbnail_test_001 end");
 }
 
-HWTEST_F(MediaLibraryThumbnailUtilsTest, IsImageWithExifRotate_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailUtilsTest, NeedRotateThumbnail_test_002, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("IsImageWithExifRotate_test_001");
+    MEDIA_INFO_LOG("NeedRotateThumbnail_test_002");
     ThumbnailData data;
-    auto ret = ThumbnailUtils::IsImageWithExifRotate(data);
+    data.mediaType = 1;
+    data.exifRotate = 2;
+    data.orientation = 0;
+    data.lastLoadSource = SourceState::LOCAL_THUMB;
+    auto ret = ThumbnailUtils::NeedRotateThumbnail(data);
     EXPECT_EQ(ret, false);
-    MEDIA_INFO_LOG("IsImageWithExifRotate_test_001 end");
+    MEDIA_INFO_LOG("NeedRotateThumbnail_test_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, NeedRotateThumbnail_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("NeedRotateThumbnail_test_003");
+    ThumbnailData data;
+    data.mediaType = 1;
+    data.exifRotate = 2;
+    data.orientation = 0;
+    data.lastLoadSource = SourceState::LOCAL_ORIGIN;
+    auto ret = ThumbnailUtils::NeedRotateThumbnail(data);
+    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("NeedRotateThumbnail_test_003 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsImageWithRotate_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsImageWithRotate_test_001");
+    ThumbnailData data;
+    auto ret = ThumbnailUtils::IsImageWithRotate(data);
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("IsImageWithRotate_test_001 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsImageWithRotate_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsImageWithRotate_test_002");
+    ThumbnailData data;
+    data.mediaType = 2;
+    data.exifRotate = 2;
+    auto ret = ThumbnailUtils::IsImageWithRotate(data);
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("IsImageWithRotate_test_002 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsImageWithRotate_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsImageWithRotate_test_003");
+    ThumbnailData data;
+    data.mediaType = 1;
+    data.exifRotate = 1;
+    data.orientation = 0;
+    auto ret = ThumbnailUtils::IsImageWithRotate(data);
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("IsImageWithRotate_test_003 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsImageWithRotate_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsImageWithRotate_test_004");
+    ThumbnailData data;
+    data.mediaType = 1;
+    data.exifRotate = 0;
+    data.orientation = 0;
+    auto ret = ThumbnailUtils::IsImageWithRotate(data);
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("IsImageWithRotate_test_004 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsImageWithRotate_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsImageWithRotate_test_005");
+    ThumbnailData data;
+    data.mediaType = 1;
+    data.exifRotate = 2;
+    data.orientation = 0;
+    auto ret = ThumbnailUtils::IsImageWithRotate(data);
+    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("IsImageWithRotate_test_005 end");
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsImageWithRotate_test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("IsImageWithRotate_test_005");
+    ThumbnailData data;
+    data.mediaType = 1;
+    data.exifRotate = 0;
+    data.orientation = 90;
+    auto ret = ThumbnailUtils::IsImageWithRotate(data);
+    EXPECT_EQ(ret, true);
+    MEDIA_INFO_LOG("IsImageWithRotate_test_005 end");
 }
 
 HWTEST_F(MediaLibraryThumbnailUtilsTest, IsUseRotatedSource_test_001, TestSize.Level0)

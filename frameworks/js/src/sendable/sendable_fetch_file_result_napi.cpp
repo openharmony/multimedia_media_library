@@ -381,8 +381,10 @@ static void GetNapiResFromAsset(napi_env env, FetchFileResultSendableAsyncContex
     napi_value jsAsset = nullptr;
     switch (context->objectPtr->fetchResType_) {
         case FetchResType::TYPE_FILE:
-            context->fileAsset->SetUserId(context->objectPtr->fetchFileResult_->GetUserId());
-            jsAsset = SendableFileAssetNapi::CreateFileAsset(env, context->fileAsset);
+            if (context->fileAsset != nullptr && context->objectPtr->fetchFileResult_ != nullptr) {
+                context->fileAsset->SetUserId(context->objectPtr->fetchFileResult_->GetUserId());
+                jsAsset = SendableFileAssetNapi::CreateFileAsset(env, context->fileAsset);
+            }
             break;
         case FetchResType::TYPE_ALBUM:
             jsAsset = AlbumNapi::CreateAlbumNapi(env, context->albumAsset);

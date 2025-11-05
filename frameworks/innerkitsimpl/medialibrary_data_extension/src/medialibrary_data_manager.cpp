@@ -17,6 +17,10 @@
 
 #include "medialibrary_data_manager.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <cstdlib>
 #include <future>
 #include <shared_mutex>
@@ -135,6 +139,7 @@
 #include "zip_util.h"
 #include "photo_custom_restore_operation.h"
 #include "vision_db_sqls.h"
+#include "vision_column.h"
 #include "cloud_media_asset_uri.h"
 #include "album_operation_uri.h"
 #include "custom_record_operations.h"
@@ -186,7 +191,8 @@ static const std::string COLUMN_OLD_FILE_ID = "old_file_id";
 static const std::string NO_DELETE_DISK_DATA_INDEX = "no_delete_disk_data_index";
 static const std::string NO_UPDATE_EDITDATA_SIZE = "no_update_editdata_size";
 static const std::string UPDATE_EDITDATA_SIZE_COUNT = "update_editdata_size_count";
-
+static const std::string BETA_DEBUG_DB_FILE_PATH = "/data/storage/el2/log/logpack/";
+static constexpr int64_t MAX_DEBUG_DB_FILE_SIZE_BYTE = 3LL * 1024 * 1024 * 1024;
 static int32_t g_updateBurstMaxId = 0;
 static int32_t g_updateHdrModeId = -1;
 
@@ -545,12 +551,24 @@ static void UpdateBurstModeAlbumIndex(const shared_ptr<MediaLibraryRdbStore>& st
         PhotoColumn::DROP_BURST_MODE_ALBUM_INDEX,
         PhotoColumn::CREATE_PHOTO_BURST_MODE_ALBUM_INDEX,
     };
-    for (int i = 0; i < sqls.size(); i++) {
+    for (size_t i = 0; i < sqls.size(); i++) {
         int ret = store->ExecuteSql(sqls[i]);
         RdbUpgradeUtils::AddUpgradeDfxMessages(version, i, ret);
         CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Execute sql failed");
     }
     MEDIA_INFO_LOG("End Update burst mode album index");
+}
+
+static void Update3DGSAlbumInternal(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("Start to Update 3DGS mode album");
+    vector<string> albumIdsStr;
+    int32_t albumId = -1;
+    CHECK_AND_RETURN_LOG(MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(
+        ShootingModeAlbumType::MP4_3DGS_ALBUM, albumId), "Failed to query 3DGS album id");
+    albumIdsStr.push_back(to_string(albumId));
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(store, albumIdsStr);
+    MEDIA_INFO_LOG("End Update 3DGS mode album");
 }
 
 static void AddHistoryPanoramaModeAlbumData(const shared_ptr<MediaLibraryRdbStore>& store)
@@ -750,20 +768,30 @@ void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_ADD_3DGS_MODE &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_ADD_3DGS_MODE, false)) {
         UpdateBurstModeAlbumIndex(rdbStore, VERSION_ADD_3DGS_MODE);
-        vector<string> albumIdsStr;
-        int32_t albumId = -1;
-        MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(ShootingModeAlbumType::MP4_3DGS_ALBUM, albumId);
-        albumIdsStr.push_back(to_string(albumId));
-        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
+        Update3DGSAlbumInternal(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_3DGS_MODE);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_ADD_3DGS_MODE, false);
     }
-    
+
     if (oldVersion < VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME &&
         !RdbUpgradeUtils::HasUpgraded(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, false)) {
         MediaLibraryRdbStore::UpdateIndexHiddenTime(rdbStore, VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
         rdbStore->SetOldVersion(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPGRADE_IDX_SCHPT_HIDDEN_TIME, false);
+    }
+
+    if (oldVersion < VERSION_UPDATE_BURST_MODE_ALBUM_INDEX &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX, false)) {
+        UpdateBurstModeAlbumIndex(rdbStore, VERSION_UPDATE_BURST_MODE_ALBUM_INDEX);
+        rdbStore->SetOldVersion(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPDATE_BURST_MODE_ALBUM_INDEX, false);
+    }
+
+    if (oldVersion < VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED, false)) {
+        MediaLibraryRdbStore::UpdateIndexDateAdded(rdbStore, VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED);
+        rdbStore->SetOldVersion(VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED, false);
     }
 }
 
@@ -2102,6 +2130,7 @@ static int32_t UpdateBurstPhoto(const bool isCover, const shared_ptr<MediaLibrar
     shared_ptr<NativeRdb::ResultSet> resultSet)
 {
     int32_t count = 0;
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "resultSet is nullptr");
     int32_t retCount = resultSet->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(retCount == E_SUCCESS && count >= 0, E_ERR, "Failed to GetRowCount");
     if (count == 0) {
@@ -3539,87 +3568,6 @@ static int32_t GetExpiredCount(const std::shared_ptr<MediaLibraryRdbStore> &rdbS
     return GetInt32Val("expired_count", resultSet);
 }
 
-int32_t MediaLibraryDataManager::AgingTmpCompatibleDuplicate(int32_t fileId, const std::string &filePath)
-{
-    CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INNER_FAIL, "[HeifDup] filePath is empty");
-    auto result = MediaLibraryAssetOperations::DeleteTranscodePhotos(filePath);
-    CHECK_AND_RETURN_RET_LOG(result == E_OK, result, "[HeifDup] Failed to delete transcode photo");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_INNER_FAIL, "[HeifDup] Failed to get rdbStore.");
-
-    const std::string updateSql = R"(Update Photos SET transcode_time = 0, trans_code_file_size = 0,
-        exist_compatible_duplicate = 0 where file_id =)" + std::to_string(fileId);
-    result = rdbStore->ExecuteSql(updateSql);
-    CHECK_AND_RETURN_RET_LOG(result == NativeRdb::E_OK, E_INNER_FAIL, "[HeifDup] Failed to update rdb");
-    return result;
-}
-
-void MediaLibraryDataManager::AgingTmpCompatibleDuplicatesThread()
-{
-    constexpr int64_t transcodeTimeThreshold = 24 * 60 * 60 * 1000;  // 24 hours in milliseconds
-    constexpr int32_t batchSize = 100; // Number of photos to process in each batch
-    const std::string querySql = R"(SELECT file_id, data, trans_code_file_size FROM Photos
-        WHERE transcode_time > 0 and transcode_time < ? LIMIT ?)";
-
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "[HeifDup] Failed to get rdbStore");
-
-    // transcode_time < current_Time - 24 hours
-    int64_t threshold = MediaFileUtils::UTCTimeMilliSeconds() - transcodeTimeThreshold;
-    int32_t expiredCount = GetExpiredCount(rdbStore, threshold);
-    CHECK_AND_RETURN_INFO_LOG(expiredCount > 0, "[HeifDup] No duplicate transcode photos to delete");
-
-    int32_t totalCount = 0;
-    int64_t totalSize = 0;
-    CHECK_AND_RETURN(GetExistsDupSize(rdbStore, totalCount, totalSize) == E_OK);
-
-    int dealCnt = 0;
-    int64_t dealSize = 0;
-    int32_t queryTimes = static_cast<int32_t>(ceil(static_cast<double>(expiredCount) / batchSize));
-    for (int32_t i = 0; i < queryTimes; i++) {
-        std::vector<NativeRdb::ValueObject> params = { threshold, batchSize };
-        auto resultSet = rdbStore->QuerySql(querySql, params);
-        CHECK_AND_RETURN_INFO_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
-            "[HeifDup] Have no transcode photos to delete.");
-
-        do {
-            int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-            std::string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-            auto ret = AgingTmpCompatibleDuplicate(id, std::move(path));
-            CHECK_AND_CONTINUE(ret == E_OK);
-
-            int64_t size = GetInt64Val(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, resultSet);
-            dealCnt++;
-            dealSize += size;
-            MEDIA_INFO_LOG("[HeifDup] expired: %{public}d, aged: %{public}d", expiredCount, dealCnt);
-        } while (resultSet->GoToNextRow() == NativeRdb::E_OK && isAgingDup_.load());
-
-        CHECK_AND_EXECUTE(resultSet == nullptr, resultSet->Close());
-        CHECK_AND_BREAK(isAgingDup_.load());
-    }
-    HeifAgingStatistics heifAgingStatistics;
-    heifAgingStatistics.transcodeFileNum = totalCount;
-    heifAgingStatistics.transcodeTotalSize = totalSize;
-    heifAgingStatistics.agingFileNum = dealCnt;
-    heifAgingStatistics.agingTotalSize = dealSize;
-    DfxReporter::reportHeifAgingStatistics(heifAgingStatistics);
-}
-
-void MediaLibraryDataManager::AgingTmpCompatibleDuplicates()
-{
-    MEDIA_INFO_LOG("[HeifDup] Start to delete transcode photos in background thread.");
-    CHECK_AND_RETURN_INFO_LOG(!isAgingDup_.load(), "[HeifDup] AgingTmpCompatibleDuplicatesThread is running.");
-    isAgingDup_.store(true);
-    std::thread([&] { AgingTmpCompatibleDuplicatesThread(); }).detach();
-}
-
-void MediaLibraryDataManager::InterruptAgingTmpCompatibleDuplicates()
-{
-    CHECK_AND_RETURN_INFO_LOG(isAgingDup_.load(), "[HeifDup] AgingTmpCompatibleDuplicatesThread is not running.");
-    isAgingDup_.store(false);
-    MEDIA_INFO_LOG("[HeifDup] Interrupt delete transcode photos is called.");
-}
-
 int32_t MediaLibraryDataManager::RestoreInvalidPosData()
 {
     MEDIA_INFO_LOG("MediaLibraryDataManager::RestoreInvalidPosData Start");
@@ -3630,6 +3578,132 @@ int32_t MediaLibraryDataManager::RestoreInvalidPosData()
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Execute sql failed");
     MEDIA_INFO_LOG("MediaLibraryDataManager::RestoreInvalidPosData End");
     return ret;
+}
+
+static int32_t BackupDebugDatabase(const std::string &path)
+{
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_OPR_DEBUG_DB_FAIL, "RdbStore is nullptr");
+    int32_t errCode = rdbStore->Backup(path);
+    CHECK_AND_RETURN_RET(errCode == 0, E_BACK_UP_DB_FAIL);
+    return E_SUCCESS;
+}
+
+static int64_t GetDatabaseFileSize(const std::string &destFileName)
+{
+    struct stat statInfo {};
+    CHECK_AND_RETURN_RET(stat(destFileName.c_str(), &statInfo) == 0, static_cast<int64_t>(E_OPR_DEBUG_DB_FAIL));
+    return statInfo.st_size;
+}
+
+static int32_t GetZipFile(const std::string &srcPath, const std::string &destPath)
+{
+    std::string zipFileName = srcPath;
+    zipFile compressZip = Media::ZipUtil::CreateZipFile(destPath);
+    CHECK_AND_RETURN_RET_LOG(compressZip != nullptr, E_OPR_DEBUG_DB_FAIL, "Failed to open zipFile");
+    int32_t errCode = Media::ZipUtil::AddFileInZip(compressZip, zipFileName, Media::KEEP_NONE_PARENT_PATH);
+    CHECK_AND_RETURN_RET_LOG(errCode == 0, E_OPR_DEBUG_DB_FAIL, "AddFileInZip failed, errCode = %{public}d", errCode);
+    Media::ZipUtil::CloseZipFile(compressZip);
+    return E_SUCCESS;
+}
+
+static int32_t DropAnalysisTables(shared_ptr<NativeRdb::RdbStore> &store)
+{
+    MEDIA_INFO_LOG("Start drop analysis tables");
+    int32_t err = store->ExecuteSql("DROP TRIGGER IF EXISTS delete_vision_trigger");
+    CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Fail to execute drop vision_trigger");
+    for (const auto &tableName : VISION_HIGHLIGHT_TABLES) {
+        string sql = "DROP TABLE IF EXISTS" + tableName;
+        err = store->ExecuteSql(sql);
+        CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Fail to execute: %{private}s", sql.c_str());
+    }
+    return E_SUCCESS;
+}
+
+static int32_t DebugDatabaseFilter(const std::string &path, const std::string &name)
+{
+    MediaLibraryDataCallBack rdbDataCallBack;
+    NativeRdb::RdbStoreConfig config("");
+    std::string filePath = path + name;
+    config.SetName(name);
+    config.SetPath(filePath);
+    int32_t errCode;
+    shared_ptr<NativeRdb::RdbStore> store = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
+    CHECK_AND_RETURN_RET_LOG(store != nullptr && errCode == E_OK, errCode, "DatabaseDFXFilter: fail to get rdb");
+    errCode = DropAnalysisTables(store);
+    return errCode;
+}
+
+static int32_t DeleteTempDatabaseFile(const std::string &tempFilePath)
+{
+    const vector<std::string> fileExtension = {"-compare", "-dwr", "-shm", "-wal"};
+    for (const auto &ext : fileExtension) {
+        string tempFile = tempFilePath + ext;
+        MediaFileUtils::DeleteFile(tempFile);
+    }
+    return E_SUCCESS;
+}
+
+static int64_t HandleDebugDatabaseUpload(const string &filePath, const string &tempName, const string &destName)
+{
+    string tempFile = filePath + tempName;
+    string destFile = filePath + destName;
+    CHECK_AND_RETURN_RET_LOG(GetZipFile(tempFile, destFile) == E_OK, E_OPR_DEBUG_DB_FAIL, "Fail to zip DBFile");
+    int64_t totalSize = GetDatabaseFileSize(destFile);
+    if (totalSize > MAX_DEBUG_DB_FILE_SIZE_BYTE) {
+        MEDIA_WARN_LOG("%{public}s exceed 3GB, size:%{public}s b", destName.c_str(), std::to_string(totalSize).c_str());
+        MediaFileUtils::DeleteFile(destFile);
+        int32_t errCode = DebugDatabaseFilter(filePath, tempName);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_OPR_DEBUG_DB_FAIL, "Init Rdb fail, errCode: %{public}d", errCode);
+        CHECK_AND_RETURN_RET_LOG(GetZipFile(tempFile, destFile) == E_OK, E_OPR_DEBUG_DB_FAIL, "Fail to zip DBFile");
+        errCode = DeleteTempDatabaseFile(tempFile);
+        CHECK_AND_WARN_LOG(errCode == E_SUCCESS, "Failed to delete temp Database file");
+        totalSize = GetDatabaseFileSize(destFile);
+    }
+    MediaFileUtils::DeleteFile(tempFile);
+    return totalSize;
+}
+
+int32_t MediaLibraryDataManager::AcquireDebugDatabase(const string &betaIssueId, const string &betaScenario,
+    string &fileName, string &fileSize)
+{
+    MEDIA_INFO_LOG("MediaLibraryDataManager::AcquireDebugDatabase start");
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryDataManager::AcquireDebugDatabase");
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsBetaVersion(), E_BETA_VERSION_FAIL, "Caller not beta version");
+    
+    const std::string filePath = BETA_DEBUG_DB_FILE_PATH;
+    CHECK_AND_RETURN_RET_LOG(access(filePath.c_str(), F_OK) == 0 || MediaFileUtils::CreateDirectory(filePath),
+        E_OPR_DEBUG_DB_FAIL, "Create dir failed, dir = %{private}s", filePath.c_str());
+    fileName = "media_library_" + betaIssueId + ".db.zip";
+    const std::string destFile = filePath + fileName;
+    if (MediaFileUtils::IsFileExists(destFile)) {
+        MediaFileUtils::DeleteFile(destFile);
+        MEDIA_WARN_LOG("Same betaIssueId File has been deleted, destFile = %{private}s", destFile.c_str());
+    }
+    std::string tempFileName = "media_library_temp_" + betaIssueId + ".db";
+    std::string tempFile = filePath + tempFileName;
+
+    tracer.Start("BackupDebugDatabase");
+    int32_t errCode = BackupDebugDatabase(tempFile);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "Rdb backup fail: %{public}d", errCode);
+
+    //数据库上传 故障路径 betaScenario = 1024_1041_1018
+    tracer.Start("HandleDebugDatabaseUpload");
+    int64_t ret = HandleDebugDatabaseUpload(filePath, tempFileName, fileName);
+    CHECK_AND_RETURN_RET_LOG(ret != E_OPR_DEBUG_DB_FAIL, static_cast<int32_t>(ret), "Failed to handle debug database");
+    fileSize = std::to_string(ret);
+    return E_SUCCESS;
+}
+
+int32_t MediaLibraryDataManager::ReleaseDebugDatabase(const std::string &betaIssueId)
+{
+    MEDIA_INFO_LOG("MediaLibraryDataManager::ReleaseDebugDatabase start");
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsBetaVersion(), E_BETA_VERSION_FAIL, "Caller not beta version");
+    const std::string filePath = BETA_DEBUG_DB_FILE_PATH + "media_library_" + betaIssueId + ".db.zip";
+    CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(filePath), "Failed to release database file, path: %{private}s",
+        filePath.c_str());
+    return E_SUCCESS;
 }
 }  // namespace Media
 }  // namespace OHOS

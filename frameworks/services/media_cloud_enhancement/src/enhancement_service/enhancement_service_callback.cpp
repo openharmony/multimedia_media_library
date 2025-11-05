@@ -155,7 +155,7 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
     }
 
     int err = UpdateCloudEnhancementPhotoInfo(info->fileId, assetRefresh);
-    CHECK_AND_PRINT_LOG(ret == E_OK, "fail to update composite enhancement photo info");
+    CHECK_AND_PRINT_LOG(err == E_OK, "fail to update composite enhancement photo info");
 
     MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(
         info->filePath, to_string(info->fileId), MediaLibraryApi::API_10);
@@ -163,7 +163,7 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
 }
 
 int32_t EnhancementServiceCallback::UpdateCloudEnhancementPhotoInfo(int32_t fileId,
-    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh);
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
@@ -175,7 +175,7 @@ int32_t EnhancementServiceCallback::UpdateCloudEnhancementPhotoInfo(int32_t file
         static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
 
     int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, predicates, assetRefresh);
-    CHECK_AND_PRINT_LOG(ret == E_OK, "update enhancement photo info failed. ret:%{public}d, fileId:%{public}s",
+    CHECK_AND_PRINT_LOG(ret == E_OK, "update source photo info failed. ret: %{public}d, fileId: %{public}d",
         ret, fileId);
 
     return E_OK;

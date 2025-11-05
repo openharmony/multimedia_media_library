@@ -34,6 +34,13 @@ namespace Media {
 
 int32_t ThumbnailGenerationPostProcess::PostProcess(ThumbnailData& data, const ThumbRdbOpt& opts)
 {
+    ValueObject valueObject;
+    bool hasLcdVisitTime = data.rdbUpdateCache.GetObject(PhotoColumn::PHOTO_LCD_VISIT_TIME, valueObject);
+    CHECK_AND_RETURN_RET_INFO_LOG(hasLcdVisitTime, false, "Do not cache lcd_visit_time value");
+    int32_t lcdVisitTime;
+    valueObject.GetInt(lcdVisitTime);
+    MEDIA_INFO_LOG("lcdVisitTime value is: %{public}d", lcdVisitTime);
+    
     CHECK_AND_RETURN_RET(!data.rdbUpdateCache.IsEmpty(), E_OK);
     bool hasGeneratedThumb = HasGeneratedThumb(data);
     MEDIA_INFO_LOG("HasGeneratedThumb: %{public}d id: %{public}s, path: %{public}s",

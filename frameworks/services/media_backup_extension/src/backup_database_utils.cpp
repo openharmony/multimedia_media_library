@@ -383,7 +383,7 @@ void BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(std::shared_ptr<NativeRdb:
 bool BackupDatabaseUtils::SetTagIdNew(PortraitAlbumInfo &portraitAlbumInfo,
     std::unordered_map<std::string, std::string> &tagIdMap)
 {
-    portraitAlbumInfo.tagIdNew = TAG_ID_PREFIX + std::to_string(MediaFileUtils::UTCTimeNanoSeconds());
+    portraitAlbumInfo.tagIdNew = portraitAlbumInfo.tagIdOld;
     tagIdMap[portraitAlbumInfo.tagIdOld] = portraitAlbumInfo.tagIdNew;
     return true;
 }
@@ -1244,5 +1244,6 @@ bool BackupDatabaseUtils::ClearConfigInfo(const std::shared_ptr<NativeRdb::RdbSt
     MEDIA_INFO_LOG("succeed to clear ConfigInfo");
     return true;
 }
+
 } // namespace Media
 } // namespace OHOS

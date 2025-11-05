@@ -183,12 +183,17 @@ int32_t CloudAlbumDataConvert::FillRecordId(
 void CloudAlbumDataConvert::HandleEmptyShow(std::shared_ptr<MDKRecord> record,
     std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotoAlbumVo &albumData)
 {
-    if (record->GetRecordId() == DEFAULT_HIDE_ALBUM_CLOUDID) {
-        std::map<std::string, MDKRecordField> map = data["properties"];
-        map["emptyShow"] = MDKRecordField("1");
-        data["properties"] = MDKRecordField(map);
-        record->SetRecordData(data);
-    }
+    bool isValid = type_ == PHOTO_ALBUM_CREATE;
+    isValid = isValid && this->IsCloudSpaceFull();
+    isValid = isValid || record->GetRecordId() == DEFAULT_HIDE_ALBUM_CLOUDID;
+    CHECK_AND_RETURN(isValid);
+    std::map<std::string, MDKRecordField> map = data["properties"];
+    map["emptyShow"] = MDKRecordField("1");
+    data["properties"] = MDKRecordField(map);
+    record->SetRecordData(data);
+    MEDIA_INFO_LOG("HandleEmptyShow, cloud_id: %{public}s, isCloudSpaceFull: %{public}d",
+        record->GetRecordId().c_str(),
+        this->IsCloudSpaceFull());
 }
 
 int32_t CloudAlbumDataConvert::ConvertToDoubleScreenshot(
@@ -202,7 +207,7 @@ int32_t CloudAlbumDataConvert::ConvertToDoubleScreenshot(
         return E_MEDIA_CLOUD_ARGS_INVAILD;
     }
 
-    MEDIA_INFO_LOG("ConvertToDoubleScreenshot lpath:%{public}s, recordId:%{pubilc}s", lPath.c_str(), recordId.c_str());
+    MEDIA_INFO_LOG("ConvertToDoubleScreenshot lpath:%{public}s, recordId:%{public}s", lPath.c_str(), recordId.c_str());
     if (lPath == DEFAULT_SCREENSHOT_LPATH_EN) {
         data["albumName"] = MDKRecordField(SCREEN_SHOT_AND_RECORDER_EN);
     }
@@ -283,7 +288,6 @@ int32_t CloudAlbumDataConvert::ConvertToOnCreateRecord(
     return E_OK;
 }
 
-
 int32_t CloudAlbumDataConvert::BuildModifyRecord(
     const std::string &cloudId, const MDKRecordOperResult &result, OnMdirtyAlbumRecord &record)
 {
@@ -293,5 +297,15 @@ int32_t CloudAlbumDataConvert::BuildModifyRecord(
     record.serverErrorCode = result.GetDKError().serverErrorCode;
     ConvertErrorTypeDetails(result, record.errorDetails);
     return E_OK;
+}
+
+bool CloudAlbumDataConvert::IsCloudSpaceFull()
+{
+    return this->isCloudSpaceFull_;
+}
+
+void CloudAlbumDataConvert::SetCloudSpaceFull(bool isCloudSpaceFull)
+{
+    this->isCloudSpaceFull_ = isCloudSpaceFull;
 }
 }  // namespace OHOS::Media::CloudSync

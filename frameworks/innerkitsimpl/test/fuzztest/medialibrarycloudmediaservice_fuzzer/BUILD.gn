@@ -24,9 +24,13 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
     "${MEDIALIB_SERVICES_PATH}/inner_api/native/cloud_sync",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync/include",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
   ]
 
   sources = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_video_mode_operation.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/media_scanner_db.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/metadata.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_album_dao.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_common_dao.cpp",
     "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_data_dao.cpp",
@@ -58,6 +62,8 @@ ohos_fuzztest("MediaLibraryCloudMediaServiceFuzzTest") {
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_photo_capture_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/multistages_capture_request_task_manager.cpp",
     "${MEDIALIB_UTILS_PATH}/src/cover_position_parser.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/hi_audit.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/zip_util.cpp",
     "./medialibrarycloudmediaservice_fuzzer.cpp",
   ]
 

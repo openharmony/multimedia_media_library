@@ -128,6 +128,7 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> te
     {9, {{CLOUD_READ}, {CLOUD_WRITE}}},
     {0, {{READ_PERM}, {WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_OPEN), {{READ_PERM, WRITE_PERM}}},  // openfile api
+    {11, {{SYSTEMINNERAPI_PERM}}},
 };
 static int32_t GetTestPermissionPolicy(uint32_t code, std::vector<std::vector<PermissionType>> &permissionPolicy)
 {
@@ -218,7 +219,7 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_005, TestSize.Level0
     PermissionHeaderReq data;
     std::unordered_map<std::string, std::string> headerMap;
     EXPECT_EQ(PreparePermissionParam(businessCode, -1, false, headerMap, data), E_SUCCESS);
-    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_OK);
+    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), -E_CHECK_SYSTEMAPP_FAIL);
 
     // check db bypass
     uint32_t tokenId = PermissionUtils::GetTokenId();
@@ -229,7 +230,7 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_005, TestSize.Level0
     businessCode = 5;
     data = PermissionHeaderReq();
     EXPECT_EQ(PreparePermissionParam(businessCode, -1, true, headerMap, data), E_SUCCESS);
-    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_OK);
+    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_PERMISSION_DB_BYPASS);
     MEDIA_INFO_LOG("MediaPermissionCheckTest_005 end");
 }
 
@@ -240,7 +241,7 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_006, TestSize.Level0
     PermissionHeaderReq data;
     std::unordered_map<std::string, std::string> headerMap;
     EXPECT_EQ(PreparePermissionParam(businessCode, -1, false, headerMap, data), E_SUCCESS);
-    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_OK);
+    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), -E_CHECK_SYSTEMAPP_FAIL);
     MEDIA_INFO_LOG("MediaPermissionCheckTest_006 end");
 }
 
@@ -435,6 +436,16 @@ HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_018, TestSize.Level0
     EXPECT_EQ(PreparePermissionParam(businessCode, -1, false, headerMap, data), E_SUCCESS);
     EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_PERMISSION_DENIED);
     MEDIA_INFO_LOG("MediaPermissionCheckTest_018 end");
+}
+
+HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_019, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaPermissionCheckTest_019 begin");
+    uint32_t businessCode = 11;
+    PermissionHeaderReq data;
+    std::unordered_map<std::string, std::string> headerMap;
+    EXPECT_EQ(PreparePermissionParam(businessCode, -1, false, headerMap, data), E_SUCCESS);
+    EXPECT_EQ(PermissionCheck::VerifyPermissions(businessCode, data), E_SUCCESS);
 }
 
 HWTEST_F(MediaPermissionCheckTest, MediaPermissionCheckTest_OPENFILE, TestSize.Level0)

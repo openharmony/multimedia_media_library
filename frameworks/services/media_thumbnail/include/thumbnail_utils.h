@@ -119,9 +119,8 @@ public:
     EXPORT static void DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
     EXPORT static void BatchDropThumbnailSize(const ThumbnailDataBatch& dataBatch);
     EXPORT static bool IsExCloudThumbnail(const ThumbnailData &data);
-    EXPORT static void HandleImageExifRotate(ThumbnailData &data);
     EXPORT static bool NeedRotateThumbnail(const ThumbnailData &data);
-    EXPORT static bool IsImageWithExifRotate(const ThumbnailData &data);
+    EXPORT static bool IsImageWithRotate(const ThumbnailData &data);
     EXPORT static bool IsUseRotatedSource(const ThumbnailData &data);
     EXPORT static void PostProcPixelMapSource(ThumbnailData &data);
     EXPORT static void PostProcPictureSource(ThumbnailData &data);
