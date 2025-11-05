@@ -82,8 +82,8 @@ public:
     EXPORT void CleanDownloadTasksTable();
 
 private:
-    CloudMediaAssetManager() {}
-    ~CloudMediaAssetManager() {}
+    CloudMediaAssetManager();
+    ~CloudMediaAssetManager();
     CloudMediaAssetManager(const CloudMediaAssetManager &manager) = delete;
     const CloudMediaAssetManager &operator=(const CloudMediaAssetManager &manager) = delete;
 
