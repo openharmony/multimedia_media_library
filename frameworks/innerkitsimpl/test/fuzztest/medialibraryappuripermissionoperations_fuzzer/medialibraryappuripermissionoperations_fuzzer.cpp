@@ -196,7 +196,7 @@ static void UpdatePermissionTypeFuzzer()
     }
     predicates.EqualTo(Media::AppUriPermissionColumn::PERMISSION_TYPE, FuzzPermissionType());
     std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, {});
-    CHECK_AND_RETURN_LOG(resultSet != nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK, "failed to query");
+    CHECK_AND_RETURN_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, "failed to query");
 
     int permissionType = FuzzPermissionType();
     std::shared_ptr<Media::TransactionOperations> trans;

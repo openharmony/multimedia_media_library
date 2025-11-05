@@ -76,7 +76,7 @@ void CustomRestore::InitDataShareHelper()
     }
 }
 
-int32_t CustomRestore::Restore()
+int32_t CustomRestore::Restore(std::string dbPath)
 {
     MEDIA_DEBUG_LOG("CustomRestore Restore");
     if (sDataShareHelper_ == nullptr) {
@@ -89,6 +89,7 @@ int32_t CustomRestore::Restore()
     CHECK_AND_RETURN_RET_LOG(!appName_.empty(), E_INVALID_VALUES, "appName is empty.");
 
     RestoreReqBody reqBody;
+    reqBody.dbPath = dbPath;
     reqBody.albumLpath = albumLpath_;
     reqBody.keyPath = keyPath_;
     reqBody.bundleName = bundleName_;

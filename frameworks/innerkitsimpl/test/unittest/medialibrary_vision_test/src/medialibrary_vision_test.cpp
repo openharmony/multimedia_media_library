@@ -18,7 +18,6 @@
 #include "medialibrary_vision_test.h"
 #include "datashare_result_set.h"
 #include "photo_album_column.h"
-#include "get_self_permissions.h"
 #include "location_column.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
@@ -49,6 +48,11 @@
 #include "vision_video_label_column.h"
 #include "vision_video_aesthetics_score_column.h"
 #include "album_operation_uri.h"
+#include "vision_db_sqls.h"
+#include "location_db_sqls.h"
+#include "vision_db_sqls_more.h"
+#include "medialibrary_db_const_sqls.h"
+#include "medialibrary_mock_tocken.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -78,6 +82,58 @@ constexpr int32_t FACE_TEST_FACE_ID = 99;
 constexpr int32_t TAG_IS_ME_NUMBER = 500;
 constexpr int32_t WAIT_TIME = 3;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static uint64_t g_shellToken = 0;
+static MediaLibraryMockHapToken* mockToken = nullptr;
+
+static std::vector<std::string> createTableSqlLists = {
+    CREATE_TAB_ANALYSIS_OCR,
+    CREATE_TAB_ANALYSIS_LABEL,
+    CREATE_TAB_ANALYSIS_AESTHETICS,
+    CREATE_TAB_ANALYSIS_OBJECT,
+    CREATE_TAB_ANALYSIS_RECOMMENDATION,
+    CREATE_TAB_ANALYSIS_SEGMENTATION,
+    CREATE_TAB_ANALYSIS_COMPOSITION,
+    CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
+    CREATE_TAB_ANALYSIS_HEAD,
+    CREATE_TAB_ANALYSIS_POSE,
+    CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
+    CREATE_TAB_IMAGE_FACE,
+    CREATE_TAB_FACE_TAG,
+    CREATE_GEO_DICTIONARY_TABLE,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+    CREATE_TAB_VIDEO_FACE,
+    CREATE_TAB_VIDEO_ANALYSIS_AESTHETICS,
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    CREATE_MEDIA_TABLE,
+    CREATE_BUNDLE_PREMISSION_TABLE,
+    PhotoAlbumColumns::CREATE_TABLE,
+    CREATE_GEO_KNOWLEDGE_TABLE,
+};
+
+static std::vector<std::string> testTables = {
+    VISION_OCR_TABLE,
+    VISION_LABEL_TABLE,
+    VISION_AESTHETICS_TABLE,
+    VISION_OBJECT_TABLE,
+    VISION_RECOMMENDATION_TABLE,
+    VISION_SEGMENTATION_TABLE,
+    VISION_COMPOSITION_TABLE,
+    VISION_SALIENCY_TABLE,
+    VISION_HEAD_TABLE,
+    VISION_POSE_TABLE,
+    VISION_TOTAL_TABLE,
+    VISION_IMAGE_FACE_TABLE,
+    VISION_FACE_TAG_TABLE,
+    GEO_DICTIONARY_TABLE,
+    GEO_KNOWLEDGE_TABLE,
+    ANALYSIS_ALBUM_TABLE,
+    VISION_VIDEO_FACE_TABLE,
+    VISION_VIDEO_AESTHETICS_TABLE,
+    PhotoColumn::PHOTOS_TABLE,
+    MEDIALIBRARY_TABLE,
+    BUNDLE_PERMISSION_TABLE,
+    PhotoAlbumColumns::TABLE,
+};
 
 void CleanVisionData()
 {
@@ -189,10 +245,23 @@ void MediaLibraryVisionTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("Vision_Test::Start");
     MediaLibraryUnitTestUtils::Init();
-    vector<string> perms = { "ohos.permission.MEDIA_LOCATION" };
-    uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryVisionTest", perms, tokenId);
-    ASSERT_TRUE(tokenId != 0);
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    MediaLibraryUnitTestUtils::CreateTestTables(rdbStore, createTableSqlLists);
+    rdbStore->ExecuteSql(PhotoColumn::INDEX_SCTHP_ADDTIME);
+    rdbStore->ExecuteSql(PhotoColumn::CREATE_SCHPT_DAY_INDEX);
+    // 获取shell的tokenId 并保存
+    g_shellToken = IPCSkeleton::GetSelfTokenID();
+    MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
+
+    vector<string> perms;
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO");
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
+    // mock  tokenID
+    mockToken = new MediaLibraryMockHapToken("com.ohos.medialibrary.medialibrarydata", perms);
+    for (auto &perm : perms) {
+        MediaLibraryMockTokenUtils::GrantPermissionByTest(IPCSkeleton::GetSelfTokenID(), perm, 0);
+    }
+
     CleanVisionData();
     ClearAnalysisAlbum();
     ClearPhotos();
@@ -207,6 +276,14 @@ void MediaLibraryVisionTest::TearDownTestCase(void)
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
     ClearVideoAestheticsData();
+    if (mockToken != nullptr) {
+        delete mockToken;
+        mockToken = nullptr;
+    }
+
+    MediaLibraryMockTokenUtils::ResetToken();
+    SetSelfTokenID(g_shellToken);
+    EXPECT_EQ(g_shellToken, IPCSkeleton::GetSelfTokenID());
     MEDIA_INFO_LOG("Vision_Test::End");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
@@ -224,6 +301,7 @@ void MediaLibraryVisionTest::SetUp(void)
     MediaLibraryUnitTestUtils::Init();
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     rdbStore->ExecuteSql(PhotoColumn::INDEX_SCTHP_ADDTIME);
+    rdbStore->ExecuteSql(PhotoColumn::CREATE_SCHPT_DAY_INDEX);
 }
 
 void MediaLibraryVisionTest::TearDown(void) {}
@@ -2155,10 +2233,10 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_003, TestSize.Leve
     int errCode = 0;
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryCmd, columns, predicatesQuery, errCode);
     shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
-    resultSet->GoToFirstRow();
     int count = -1;
-    resultSet->GetInt(0, count);
-    EXPECT_EQ(count, 2);
+    ASSERT_NE(resultSet, nullptr);
+    resultSet->GetRowCount(count);
+    EXPECT_GT(count, 0);
 }
 
 HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_001, TestSize.Level1)

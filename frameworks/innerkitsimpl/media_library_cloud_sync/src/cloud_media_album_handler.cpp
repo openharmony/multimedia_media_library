@@ -175,6 +175,8 @@ int32_t CloudMediaAlbumHandler::GetCreatedRecords(std::vector<MDKRecord> &record
     }
     std::vector<CloudMdkRecordPhotoAlbumVo> createdRecord = respBody.GetPhotoAlbumRecords();
     CloudAlbumDataConvert dataConvertor{CloudAlbumOperationType::PHOTO_ALBUM_CREATE};
+    // Set CloudSpaceFull flag to CloudAlbumDataConvert
+    dataConvertor.SetCloudSpaceFull(this->IsCloudSpaceFull());
     std::map<std::string, MDKRecordField> data;
     for (auto it = createdRecord.begin(); it != createdRecord.end(); ++it) {
         std::shared_ptr<MDKRecord> dkRecord = dataConvertor.ConvertToMdkRecord(*it);
@@ -406,5 +408,15 @@ int32_t CloudMediaAlbumHandler::OnCompleteCheck()
     return IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
         .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}})
         .Post(operationCode);
+}
+
+void CloudMediaAlbumHandler::SetCloudSpaceFull(bool isCloudSpaceFull)
+{
+    this->isCloudSpaceFull_ = isCloudSpaceFull;
+}
+
+bool CloudMediaAlbumHandler::IsCloudSpaceFull()
+{
+    return this->isCloudSpaceFull_;
 }
 }  // namespace OHOS::Media::CloudSync

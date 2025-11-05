@@ -127,6 +127,7 @@ const std::string PhotoColumn::PHOTO_REAL_LCD_VISIT_TIME = "real_lcd_visit_time"
 const std::string PhotoColumn::PHOTO_VISIT_COUNT = "visit_count";
 const std::string PhotoColumn::PHOTO_LCD_VISIT_COUNT = "lcd_visit_count";
 const std::string PhotoColumn::PHOTO_FILE_SOURCE_TYPE = "file_source_type";
+const std::string PhotoColumn::PHOTO_VIDEO_MODE = "video_mode";
 const std::string PhotoColumn::PHOTO_IS_RECENT_SHOW = "is_recent_show";
 const std::string PhotoColumn::PHOTO_HAS_APPLINK = "has_applink";
 const std::string PhotoColumn::PHOTO_APPLINK = "applink";
@@ -312,7 +313,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_SOUTH_DEVICE_TYPE + " INT NOT NULL DEFAULT 0, " +
     PHOTO_COMPOSITE_DISPLAY_STATUS + " INT NOT NULL DEFAULT 0, " +
     PHOTO_FILE_SOURCE_TYPE + " INT NOT NULL DEFAULT 0, " +
-    PHOTO_HDR_MODE + " INT NOT NULL DEFAULT 0 " +
+    PHOTO_HDR_MODE + " INT NOT NULL DEFAULT 0, " +
+    PHOTO_VIDEO_MODE + " INT NOT NULL DEFAULT -1 " +
     ") ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
@@ -431,7 +433,8 @@ const std::string PhotoColumn::INDEX_SCHPT_ALBUM =
 const std::string PhotoColumn::INDEX_SCTHP_PHOTO_DATEADDED =
     BaseColumn::CreateIndex() + PHOTO_SCHPT_PHOTO_DATEADDED_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN + "," +
-    MEDIA_TIME_PENDING + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + MEDIA_DATE_ADDED + " DESC);";
+    MEDIA_TIME_PENDING + "," + PHOTO_IS_TEMP + "," + PHOTO_BURST_COVER_LEVEL + "," + MEDIA_DATE_ADDED + " DESC, " +
+    PHOTO_THUMBNAIL_VISIBLE + ");";
 
 const std::string PhotoColumn::INDEX_LATITUDE =
     BaseColumn::CreateIndex() + LATITUDE_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_LATITUDE + ");";

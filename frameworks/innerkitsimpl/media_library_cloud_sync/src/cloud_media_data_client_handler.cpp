@@ -46,6 +46,7 @@
 #include "get_download_thm_by_uri_vo.h"
 #include "media_file_utils.h"
 #include "media_operate_result_vo.h"
+#include "query_data_vo.h"
 
 namespace OHOS::Media::CloudSync {
 // LCOV_EXCL_START
@@ -476,6 +477,41 @@ int32_t CloudMediaDataClientHandler::SubmitCloudSyncPreparedDataTask()
             .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}}).Post(operationCode);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to SubmitCloudSyncPreparedDataTask, ret: %{public}d", ret);
+    }
+    return ret;
+}
+
+int32_t CloudMediaDataClientHandler::CheckAndFixAlbum()
+{
+    MEDIA_INFO_LOG("CloudMediaDataClientHandler::CheckAndFixAlbum begin");
+    uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_CHECK_AND_FIX_ALBUM);
+    int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
+            .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}}).Post(operationCode);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to CheckAndFixAlbum, ret: %{public}d", ret);
+    }
+    return ret;
+}
+
+int32_t CloudMediaDataClientHandler::QueryData(const DataShare::DataSharePredicates &predicates,
+                                               const std::vector<std::string> &columnNames,
+                                               const std::string &tableName,
+                                               std::vector<std::unordered_map<std::string, std::string>> &results)
+{
+    MEDIA_INFO_LOG("enter CloudMediaDataClientHandler::QueryData");
+    QueryDataReqBody reqBody;
+    QueryDataRespBody respBody;
+    reqBody.predicates = predicates;
+    reqBody.columnNames = columnNames;
+    reqBody.tableName = tableName;
+    uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_QUERY_DATA);
+    int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_)
+            .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}}).Post(operationCode, reqBody, respBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to QueryData, ret: %{public}d", ret);
+    } else {
+        results = respBody.queryResults;
+        MEDIA_INFO_LOG("QueryData Client result: %{public}s", respBody.ToString().c_str());
     }
     return ret;
 }

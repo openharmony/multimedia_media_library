@@ -125,7 +125,7 @@ int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, s
 
 int32_t CloudMediaPhotosService::IsMtimeChanged(const CloudMediaPullDataDto &pullData, bool &changed)
 {
-    if (!pullData.localDateModified.empty() && pullData.attributesEditedTimeMs != -1) {
+    if (!pullData.localDateModified.empty() && pullData.attributesEditedTimeMs > 0) {
         std::string cloudDateModified = std::to_string(pullData.attributesEditedTimeMs);
         MEDIA_INFO_LOG("localDateModified: %{public}s, attributesEditedTimeMs: %{public}s",
             pullData.localDateModified.c_str(),
@@ -233,7 +233,6 @@ int32_t CloudMediaPhotosService::PullUpdate(const CloudMediaPullDataDto &pullDat
 
     refreshAlbums.emplace(pullData.localOwnerAlbumId);
     ExtractEditDataCamera(pullData);
-    CloudMediaSyncUtils::RemoveTransCodePath(pullData.localPath);
     if (mtimeChanged && (updateCount != stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT])) {
         this->ClearLocalData(pullData, fdirtyData);
     }
@@ -617,6 +616,7 @@ static void SetPullDataFromPhotosPo(CloudMediaPullDataDto &pullData, const Photo
     pullData.attributesSubtype = photo.subtype.value_or(0);
     pullData.attributesMovingPhotoEffectMode = photo.movingPhotoEffectMode.value_or(0);
     pullData.attributesOriginalSubtype = photo.originalSubtype.value_or(0);
+    pullData.localDisplayName = photo.displayName.value_or("");
 }
 
 int32_t CloudMediaPhotosService::OnFetchRecords(const std::vector<std::string> &cloudIds,
@@ -694,7 +694,6 @@ int32_t CloudMediaPhotosService::OnDentryFileInsert(
 
 int32_t CloudMediaPhotosService::GetRetryRecords(std::vector<std::string> &cloudIds)
 {
-    MEDIA_INFO_LOG("CloudMediaPhotosService::GetRetryRecords enter");
     int32_t ret = this->photosDao_.GetRetryRecords(cloudIds);
     MEDIA_INFO_LOG("CloudMediaPhotosService::GetRetryRecords end, "
                    "ret: %{public}d, size: %{public}zu",

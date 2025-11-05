@@ -391,6 +391,7 @@ bool ParameterUtils::CheckPhotoUri(const string &uri)
 int32_t ParameterUtils::CheckRestore(const RestoreReqBody &reqBody)
 {
     CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsNativeSAApp(), E_CHECK_NATIVE_SA_FAIL, "caller is not native SA.");
+    CHECK_AND_RETURN_RET_LOG(reqBody.dbPath.find("..") == string::npos, E_INVALID_PATH, "dbPath is crossing.");
     CHECK_AND_RETURN_RET_LOG(!reqBody.albumLpath.empty(), E_INVALID_VALUES, "albumLpath is empty.");
     CHECK_AND_RETURN_RET_LOG(reqBody.albumLpath.find("..") == string::npos, E_INVALID_PATH, "albumLpath is crossing.");
     CHECK_AND_RETURN_RET_LOG(!reqBody.keyPath.empty(), E_INVALID_VALUES, "keyPath is empty.");

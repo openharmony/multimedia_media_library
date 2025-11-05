@@ -45,6 +45,7 @@ public:
     std::string shootingModeTag;
     int32_t dynamicRangeType;
     int32_t hdrMode;
+    int32_t videoMode;
     std::string frontCamera;
     int64_t editTime;
     int32_t originalSubtype;

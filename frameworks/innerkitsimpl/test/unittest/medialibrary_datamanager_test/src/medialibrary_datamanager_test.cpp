@@ -26,6 +26,9 @@
 #include "medialibrary_mock_tocken.h"
 #include "medialibrary_uripermission_operations.h"
 #include "uri.h"
+#include "vision_db_sqls.h"
+#include "vision_db_sqls_more.h"
+#include "medialibrary_db_const_sqls.h"
 #include "vision_column.h"
 #include "photo_album_column.h"
 #include "vision_face_tag_column.h"
@@ -55,6 +58,24 @@ static constexpr int32_t ALBUM_IS_REMOVED = 1;
 static uint64_t g_shellToken = 0;
 static MediaLibraryMockHapToken* mockToken = nullptr;
 
+static std::vector<std::string> createTableSqlLists = {
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoAlbumColumns::CREATE_TABLE,
+    CREATE_TAB_IMAGE_FACE,
+    CREATE_ANALYSIS_ALBUM_MAP,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
+    CREATE_MEDIA_TABLE,
+};
+
+static std::vector<std::string> testTables = {
+    PhotoColumn::PHOTOS_TABLE,
+    PhotoAlbumColumns::TABLE,
+    VISION_IMAGE_FACE_TABLE,
+    ANALYSIS_PHOTO_MAP_TABLE,
+    ANALYSIS_ALBUM_TABLE,
+    MEDIALIBRARY_TABLE,
+};
+
 namespace {
     shared_ptr<FileAsset> g_pictures = nullptr;
     shared_ptr<FileAsset> g_download = nullptr;
@@ -77,6 +98,8 @@ void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
     MediaLibraryUnitTestUtils::Init();
     g_shellToken = IPCSkeleton::GetSelfTokenID();
     MediaLibraryMockTokenUtils::RestoreShellToken(g_shellToken);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    MediaLibraryUnitTestUtils::CreateTestTables(rdbStore, createTableSqlLists);
 
     vector<string> perms;
     perms.push_back("ohos.permission.MEDIA_LOCATION");
@@ -89,6 +112,8 @@ void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
 
 void MediaLibraryDataManagerUnitTest::TearDownTestCase(void)
 {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    MediaLibraryUnitTestUtils::CleanTestTables(rdbStore, testTables);
     MediaLibraryUnitTestUtils::CleanTestFiles();
     if (mockToken != nullptr) {
         delete mockToken;

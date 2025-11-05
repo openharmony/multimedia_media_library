@@ -61,7 +61,8 @@ Metadata::Metadata()
     frontcamera_(FILE_FRONT_CAMERA_DEFAULT),
     detailTime_(FILE_DETAIL_TIME_DEFAULT), burstCoverLevel_(BURST_COVER_LEVEL_DEFAULT),
     stageVideoTaskStatus_(STAGE_VIDEO_TASK_STATUS),
-    fileSourceType_(FILE_FILE_SOURCE_TYPE_DEFAULT)
+    fileSourceType_(FILE_FILE_SOURCE_TYPE_DEFAULT),
+    videoMode_(FILE_VIDEO_MODE_DEFAULT)
 {
     Init();
 }
@@ -80,6 +81,8 @@ void Metadata::InitV2()
         &Metadata::SetStageVideoTaskStatus);
     memberFuncMap_[PhotoColumn::PHOTO_FILE_SOURCE_TYPE] = make_pair(ResultSetDataType::TYPE_INT32,
         &Metadata::SetFileSourceType);
+    memberFuncMap_[PhotoColumn::PHOTO_VIDEO_MODE] = make_pair(ResultSetDataType::TYPE_INT32,
+        &Metadata::SetVideoMode);
 }
 
 void Metadata::Init()
@@ -665,5 +668,14 @@ int32_t Metadata::GetFileSourceType() const
     return fileSourceType_;
 }
 
+void Metadata::SetVideoMode(const VariantData &videoMode)
+{
+    videoMode_ = std::get<int32_t>(videoMode);
+}
+
+int32_t Metadata::GetVideoMode() const
+{
+    return videoMode_;
+}
 } // namespace Media
 } // namespace OHOS

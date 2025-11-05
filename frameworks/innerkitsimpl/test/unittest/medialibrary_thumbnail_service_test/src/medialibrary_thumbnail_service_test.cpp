@@ -473,7 +473,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_020, T
     ThumbnailData data;
     data.isLocalFile = false;
     auto res = IThumbnailHelper::GenThumbnailEx(opts, data);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_021, TestSize.Level1)
@@ -481,7 +481,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_021, T
     ThumbRdbOpt opts;
     ThumbnailData data;
     auto res = IThumbnailHelper::GenThumbnailEx(opts, data);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_022, TestSize.Level1)
@@ -489,7 +489,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_022, T
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::LCD;
     auto res = IThumbnailHelper::GenMonthAndYearAstcData(data, type);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_023, TestSize.Level1)
@@ -497,7 +497,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_023, T
     ThumbRdbOpt opts;
     ThumbnailData data;
     auto res = IThumbnailHelper::DoCreateThumbnail(opts, data);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_024, TestSize.Level1)
@@ -506,7 +506,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_024, T
     ThumbnailData data;
     data.isLocalFile = false;
     auto res = IThumbnailHelper::IsCreateThumbnailExSuccess(opts, data);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_025, TestSize.Level1)
@@ -1273,7 +1273,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_031, Te
     opts.store = storePtr;
     int32_t err = E_ERR;
     auto res = ThumbnailUtils::UpdateLcdReadyStatus(opts, data, err, LcdReady::GENERATE_LCD_COMPLETED);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_036, TestSize.Level1)
@@ -1439,7 +1439,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_049, Te
     Size size;
     unique_ptr<PixelMap> pixelMap;
     auto res = ThumbnailUtils::ResizeImage(data, size, pixelMap);
-    EXPECT_EQ(res, false);
+    EXPECT_NE(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_TrySavePixelMap_test, TestSize.Level0)
@@ -1458,7 +1458,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_TrySavePict
     thumbData.dateModified = "data_modified";
     string tempOutputPath = "path";
     auto ret = IThumbnailHelper::TrySavePicture(thumbData, true, tempOutputPath);
-    EXPECT_NE(ret, true);
+    EXPECT_EQ(ret, false);
 }
 
 void executeFunction(std::shared_ptr<ThumbnailTaskData> &data)

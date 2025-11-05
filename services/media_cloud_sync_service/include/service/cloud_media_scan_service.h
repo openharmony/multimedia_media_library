@@ -29,6 +29,7 @@ public:
         std::string shootingMode;
         std::string shootingModeTag;
         std::string frontCamera;
+        int32_t subType;
     };
 
 public:

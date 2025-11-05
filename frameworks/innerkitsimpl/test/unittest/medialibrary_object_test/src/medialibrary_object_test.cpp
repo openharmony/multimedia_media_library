@@ -180,6 +180,23 @@ HWTEST_F(MediaLibraryObjectTest, medialib_OpenFile_test_001, TestSize.Level1)
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
+HWTEST_F(MediaLibraryObjectTest, medialib_OpenFile_test_002, TestSize.Level1)
+{
+    MediaLibraryUnitTestUtils::InitUnistore();
+    string destDir = "/data/storage/el2/log/logpack";
+    string path = destDir + "/media_library_21.db.zip";
+    MediaFileUtils::CreateDirectory(destDir);
+    MediaFileUtils::CreateAsset(path);
+
+    string mode = "r";
+    string uriString = "file://media/open_debug_db/21";
+    Uri uri(uriString);
+    MediaLibraryCommand cmd(uri, OperationType::OPEN);
+    int32_t ret = MediaLibraryObjectUtils::OpenFile(cmd, mode);
+    EXPECT_GT(ret, E_CHECK_SYSTEMAPP_FAIL);
+    MediaLibraryUnistoreManager::GetInstance().Stop();
+}
+
 HWTEST_F(MediaLibraryObjectTest, medialib_CloseFile_test_001, TestSize.Level1)
 {
     Uri uri("//data/test");

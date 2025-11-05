@@ -206,6 +206,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DATE_TAKEN_MS",             MEDIA_DATA_DB_DATE_TAKEN_MS),
     std::make_pair("DETAIL_TIME",               PhotoColumn::PHOTO_DETAIL_TIME),
     std::make_pair("ORIENTATION",               PhotoColumn::PHOTO_ORIENTATION),
+    std::make_pair("EXIF_ROTATE",               PhotoColumn::PHOTO_EXIF_ROTATE),
     std::make_pair("FAVORITE",                  MediaColumn::MEDIA_IS_FAV),
     std::make_pair("MEDIA_TYPE",                MediaColumn::MEDIA_TYPE),
     std::make_pair("DATE_TRASHED",              MediaColumn::MEDIA_DATE_TRASHED),
@@ -235,6 +236,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("OWNER_ALBUM_ID",            PhotoColumn::PHOTO_OWNER_ALBUM_ID),
     std::make_pair("THUMBNAIL_VISIBLE",         PhotoColumn::PHOTO_THUMBNAIL_VISIBLE),
     std::make_pair("SUPPORTED_WATERMARK_TYPE",  PhotoColumn::SUPPORTED_WATERMARK_TYPE),
+    std::make_pair("CLOUD_ID",                  PhotoColumn::PHOTO_CLOUD_ID),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

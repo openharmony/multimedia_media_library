@@ -41,6 +41,7 @@ public:
     EXPORT static int32_t SendDownloadProgressInfoNotification(const sptr<AAFwk::IDataAbilityObserver> &dataObserver,
         const std::shared_ptr<AAFwk::ChangeInfo> &changeInfo);
     EXPORT static std::shared_ptr<AssetManagerNotifyInfo> UnmarshalAssetManagerNotify(Parcel &parcel);
+    EXPORT static void UpdateNotificationProp();
 
 private:
     EXPORT bool WriteToChangeInfo(const std::shared_ptr<MediaChangeInfo> &mediaChangeInfo,

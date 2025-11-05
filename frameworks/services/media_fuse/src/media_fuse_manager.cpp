@@ -53,6 +53,7 @@
 #include "medialibrary_ptp_operations.h"
 #include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -415,10 +416,12 @@ static int32_t HasTransCodeFile(const string &filePath, const string &fileId)
         return E_ERR;
     }
     int32_t compatibleMode = 0;
-    if (!GetCompatibleModeFromFileId(compatibleMode, fileId)) {
+    if (GetCompatibleModeFromFileId(compatibleMode, fileId) != E_SUCCESS) {
         MEDIA_ERR_LOG("Get compatible mode failed, fileId: %{public}s", fileId.c_str());
         return E_ERR;
     }
+    CHECK_AND_RETURN_RET_LOG(compatibleMode != 0, E_INNER_FAIL,
+        "Is not have transcode file, filePath: %{private}s", filePath.c_str());
     return E_OK;
 }
 
@@ -481,7 +484,7 @@ int32_t MediaFuseManager::DoRelease(const char *path, const int &fd)
             return E_ERR;
         }
         if (oldMtime != newMtime) {
-            MediaLibraryAssetOperations::DeleteTransCodeInfo(filePath, fileId, __func__);
+            MediaLibraryTranscodeDataAgingOperation::DeleteTransCodeInfo(filePath, fileId, __func__);
         }
     }
     close(fd);
@@ -598,7 +601,7 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
         tempPath = filePath;
         filePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
     }
-    if (flags & (O_CREAT | O_WRONLY)) {
+    if (static_cast<uint>(flags) & (O_CREAT | O_WRONLY)) {
         if (isMovingPhoto) {
             filePath = tempPath;
             displayName = MediaFuseHdcOperations::JpgToMp4(displayName);
@@ -617,6 +620,7 @@ int32_t MediaFuseManager::DoHdcOpen(const char *path, int flags, int &fd)
     string localPath;
     res = MediaFuseHdcOperations::ConvertToLocalPhotoPath(filePath, localPath);
     CHECK_AND_RETURN_RET_LOG(res == E_SUCCESS, E_ERR, "ConvertToLocalPhotoPath failed");
+    CHECK_AND_RETURN_RET_LOG(!localPath.empty(), E_ERR, "localPath is empty");
     fd = open(localPath.c_str(), flags);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open failed, localPath=%{private}s, errno=%{public}d", localPath.c_str(), -errno);
@@ -671,18 +675,22 @@ int32_t MediaFuseManager::DoHdcRelease(const char *path, const int32_t &fd)
     }
 
     string target = path;
-    if (MEDIA_CREATE_WRITE_MAP.find(target) != MEDIA_CREATE_WRITE_MAP.end()) {
-        if (MEDIA_CREATE_WRITE_MAP[target]) {
-            int32_t res = MediaFuseHdcOperations::ScanFileByPath(target);
-            MEDIA_CREATE_WRITE_MAP.erase(target);
-            return res;
-        } else {
-            MEDIA_ERR_LOG("DoHdcCreate failed.");
-            MEDIA_CREATE_WRITE_MAP.erase(target);
-            return E_ERR;
-        }
+    if (MEDIA_CREATE_WRITE_MAP.find(target) == MEDIA_CREATE_WRITE_MAP.end()) {
+        MEDIA_INFO_LOG("not found, path=%{private}s, try do release.", path);
+        int32_t ret = DoRelease(path, static_cast<int>(fd));
+        CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_ERR, "do release fail");
+        return E_SUCCESS;
     }
-    return E_SUCCESS;
+
+    if (MEDIA_CREATE_WRITE_MAP[target]) {
+        int32_t res = MediaFuseHdcOperations::ScanFileByPath(target);
+        MEDIA_CREATE_WRITE_MAP.erase(target);
+        return res;
+    } else {
+        MEDIA_ERR_LOG("DoHdcCreate failed.");
+        MEDIA_CREATE_WRITE_MAP.erase(target);
+        return E_ERR;
+    }
 }
 
 int32_t MediaFuseManager::DoHdcUnlink(const char *path)

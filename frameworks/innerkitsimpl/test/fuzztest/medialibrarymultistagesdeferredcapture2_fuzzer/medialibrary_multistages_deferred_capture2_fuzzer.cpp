@@ -39,6 +39,7 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+static const int32_t IS_TEMP = 0;
 static const int32_t NUM_BYTES = 1;
 static const int32_t MAX_DATA = 1;
 static const int32_t MAX_PHOTO_QUALITY = 1;
@@ -88,7 +89,7 @@ static int32_t InsertAsset(string photoId)
         return E_ERR;
     }
     NativeRdb::ValuesBucket values;
-    values.PutInt(Media::PhotoColumn::PHOTO_IS_TEMP, provider->ConsumeBool());
+    values.PutInt(Media::PhotoColumn::PHOTO_IS_TEMP, IS_TEMP);
     values.PutInt(Media::PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(FuzzMultiStagesPhotoQuality()));
     values.PutInt(Media::MediaColumn::MEDIA_TYPE, FuzzMediaType());
     values.PutLong(Media::PhotoColumn::PHOTO_EDIT_TIME, provider->ConsumeIntegral<int64_t>());
@@ -148,7 +149,7 @@ static void MultistagesCaptureDeferredPhotoProcSessionCallbackTest()
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_ID, photoId);
     std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, {});
-    CHECK_AND_RETURN_LOG(resultSet != nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK, "failed to query");
+    CHECK_AND_RETURN_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, "failed to query");
     callback->NotifyIfTempFile(resultSet, provider->ConsumeBool());
     callback->UpdateHighQualityPictureInfo(fileId, provider->ConsumeBool(),
         static_cast<int32_t>(FuzzFirstStageModifyType()));

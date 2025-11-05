@@ -57,6 +57,7 @@ void CloudMediaPullDataDto::GetAttributesInfo(std::stringstream &ss) const
        << "\"attributesShootingModeTag\": \"" << attributesShootingModeTag << "\","
        << "\"attributesDynamicRangeType\": " << attributesDynamicRangeType << ","
        << "\"attributesHdrMode\": " << attributesHdrMode << ","
+       << "\"attributesVideoMode\": " << attributesVideoMode << ","
        << "\"attributesFrontCamera\": " << attributesFrontCamera << ","
        << "\"attributesEditTime\": " << attributesEditTime << ","
        << "\"attributesOriginalSubtype\": " << attributesOriginalSubtype << ","

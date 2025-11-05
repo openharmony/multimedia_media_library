@@ -126,6 +126,20 @@ static FileInfo FuzzFileInfo()
     return fileInfo;
 }
 
+static unordered_map<string, TimeInfo> FuzzTimeInfoMap(size_t mapSize)
+{
+    unordered_map<string, TimeInfo> timeInfoMap;
+    for (size_t i = 0; i < mapSize; i++) {
+        TimeInfo timeInfo;
+        timeInfo.dateAdded = provider->ConsumeIntegral<int64_t>();
+        timeInfo.dateTaken = provider->ConsumeIntegral<int64_t>();
+        timeInfo.detailTime = provider->ConsumeBytesAsString(NUM_BYTES);
+        std::string fileName = provider->ConsumeBytesAsString(NUM_BYTES);
+        timeInfoMap.insert({fileName, timeInfo});
+    }
+    return timeInfoMap;
+}
+
 static void PhotoCustomRestoreOperationTest()
 {
     MEDIA_INFO_LOG("PhotoCustomRestoreOperationTest enter");
@@ -143,16 +157,17 @@ static void PhotoCustomRestoreOperationTest()
     operation.ReleaseCustomRestoreTask(restoreTaskInfo);
     operation.ReportCustomRestoreTask(restoreTaskInfo);
 
-    vector<string> files = { provider->ConsumeBytesAsString(NUM_BYTES) };
-    int32_t notifyType  = FuzzNotifyType();
-    operation.HandleBatchCustomRestore(restoreTaskInfo, notifyType, files);
+    vector<string> files = {provider->ConsumeBytesAsString(NUM_BYTES)};
+    int32_t notifyType = FuzzNotifyType();
+    unordered_map<string, TimeInfo> timeInfoMap = FuzzTimeInfoMap(files.size());
+    operation.HandleBatchCustomRestore(timeInfoMap, restoreTaskInfo, notifyType, files);
 
     int32_t fileNum = provider->ConsumeIntegral<int32_t>();
     operation.ApplyEfficiencyQuota(fileNum);
     operation.InitRestoreTask(restoreTaskInfo, fileNum);
 
     UniqueNumber uniqueNumber = FuzzUniqueNumber();
-    operation.HandleCustomRestore(restoreTaskInfo, files, provider->ConsumeBool(), uniqueNumber);
+    operation.HandleCustomRestore(timeInfoMap, restoreTaskInfo, files, provider->ConsumeBool(), uniqueNumber);
 
     FileInfo fileInfo = FuzzFileInfo();
     operation.UpdatePhotoAlbum(restoreTaskInfo, fileInfo);
@@ -169,7 +184,7 @@ static void PhotoCustomRestoreOperationTest()
     operation.GetAssetRootDir(mediaType, result);
 
     int32_t sameFileNum = provider->ConsumeIntegral<int32_t>();
-    operation.BatchInsert(restoreTaskInfo, fileInfos, sameFileNum, provider->ConsumeBool());
+    operation.BatchInsert(timeInfoMap, restoreTaskInfo, fileInfos, sameFileNum, provider->ConsumeBool());
     operation.QueryAlbumId(restoreTaskInfo);
     operation.InitPhotoCache(restoreTaskInfo);
 

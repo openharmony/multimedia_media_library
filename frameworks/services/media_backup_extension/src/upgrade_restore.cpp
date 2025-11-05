@@ -43,6 +43,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
+#include "portrait_album_utils.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -170,6 +171,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     geoKnowledgeRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     highlightRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
+    ocrRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -377,8 +379,12 @@ void UpgradeRestore::RestoreSmartAlbums()
     int64_t startRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
     RestoreHighlightAlbums();
     int64_t endRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("TimeCost: RestoreGeo cost: %{public}" PRId64 ", RestoreHighlight cost: %{public}" PRId64,
-        startRestoreHighlight - startRestoreGeo, endRestoreHighlight - startRestoreHighlight);
+    ocrRestore_.RestoreOCR(photoInfoMap_);
+    int64_t endRestoreOCR = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: RestoreGeo cost: %{public}" PRId64 ", RestoreHighlight cost: %{public}" PRId64
+        " RestoreOCR cost: %{public}" PRId64,
+        startRestoreHighlight - startRestoreGeo, endRestoreHighlight - startRestoreHighlight,
+        endRestoreOCR - endRestoreHighlight);
     MEDIA_INFO_LOG("RestoreSmartAlbums end");
 }
 
@@ -489,6 +495,7 @@ void UpgradeRestore::RestorePhoto()
         MEDIA_INFO_LOG("restore mode no need to del gallery db");
     }
     ProcessBurstPhotos();
+    RestoreSearchIndex();
     StopParameterForRestore();
     StopParameterForClone();
 }
@@ -717,7 +724,6 @@ void UpgradeRestore::RestoreBatchForCloud(int32_t minId)
     int64_t startInsertPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, infos, SourceType::GALLERY) == E_OK,
         AddToGalleryFailedOffsets(minId));
-    UpdateHdrMode(infos);
     int64_t startUpdateAnalysisTotal = MediaFileUtils::UTCTimeMilliSeconds();
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
@@ -1155,8 +1161,8 @@ vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset
     result.reserve(QUERY_COUNT);
 
     std::string querySql = "SELECT " + GALLERY_MERGE_TAG_TAG_ID + ", " + GALLERY_GROUP_TAG + ", " +
-        GALLERY_TAG_NAME + ", " + GALLERY_USER_OPERATION + ", " + GALLERY_RENAME_OPERATION +
-        " FROM " + (IsCloudRestoreSatisfied() ?
+        GALLERY_TAG_NAME + ", " + GALLERY_USER_OPERATION + ", " + GALLERY_RENAME_OPERATION + ", " +
+        GALLERY_RELATIONSHIP + ", user_display_level FROM " + (IsCloudRestoreSatisfied() ?
         GALLERY_PORTRAIT_ALBUM_TABLE_WITH_CLOUD : GALLERY_PORTRAIT_ALBUM_TABLE);
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
@@ -1191,6 +1197,14 @@ bool UpgradeRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb
     portraitAlbumInfo.tagName = GetStringVal(GALLERY_TAG_NAME, resultSet);
     portraitAlbumInfo.userOperation = GetInt32Val(GALLERY_USER_OPERATION, resultSet);
     portraitAlbumInfo.renameOperation = GetInt32Val(GALLERY_RENAME_OPERATION, resultSet);
+    portraitAlbumInfo.userDisplayLevel = GetInt32Val(GALLERY_USER_DISPLAY_LEVEL, resultSet);
+    std::string oldRelationshipId = GetStringVal(GALLERY_RELATIONSHIP, resultSet);
+    if (oldRelationshipId != std::to_string(INDEX_ME)) {
+        auto it = RELATIONSHIP_MAP.find(oldRelationshipId);
+        if (it != RELATIONSHIP_MAP.end()) {
+            portraitAlbumInfo.relationship = it->second;
+        }
+    }
     return true;
 }
 
@@ -1258,9 +1272,10 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const PortraitAlbumInfo &
         values.PutString(GROUP_TAG, portraitAlbumInfo.groupTagOld);
         values.PutInt(USER_OPERATION, portraitAlbumInfo.userOperation);
         values.PutInt(RENAME_OPERATION, RENAME_OPERATION_RENAMED);
+        values.PutString("relationship", portraitAlbumInfo.relationship);
         values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
         values.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
-        values.PutInt(USER_DISPLAY_LEVEL, PortraitPages::FIRST_PAGE);
+        values.PutInt(USER_DISPLAY_LEVEL, portraitAlbumInfo.userDisplayLevel);
         values.PutInt(IS_LOCAL, IS_LOCAL_TRUE);
     } else {
         values.PutString(TAG_VERSION, E_VERSION); // updated by analysis service
@@ -1303,7 +1318,6 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
         " WHERE "
         " COALESCE(gm.recycleFlag, 0) NOT IN (?, ?, ?, ?, ?) "
         " AND COALESCE(gm.albumId, '') NOT IN (SELECT albumId FROM gallery_album WHERE hide = 1) "
-        " AND (mt.tag_name IS NOT NULL AND mt.tag_name != '') "
         " GROUP BY mf.hash, mf.face_id "
         " HAVING gm._id IN (" + selection + ")";
     std::vector<NativeRdb::ValueObject> params = { RECYCLE_FLAG_LOCAL, RECYCLE_FLAG_UNSYNCED, RECYCLE_FLAG_SYNCED,
@@ -1623,6 +1637,31 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
 
 void UpgradeRestore::RestoreAnalysisAlbum()
 {
+    int32_t cloudFlag = IsCloudRestoreSatisfied() ? 1 : 0;
+    int32_t shouldIncludeSdFlag = shouldIncludeSd_ ? 1 : 0;
+    int32_t hasLowQualityImageFlag = hasLowQualityImage_ ? 1 : 0;
+    std::vector<NativeRdb::ValueObject> params = {cloudFlag, hasLowQualityImageFlag, shouldIncludeSdFlag};
+    std::string querySql = "SELECT count(1) AS count FROM merge_tag WHERE user_display_level = 1 AND \
+        EXISTS (SELECT 1 FROM merge_face INNER JOIN gallery_media ON merge_face.hash = gallery_media.hash \
+        WHERE merge_face.tag_id = merge_tag.tag_id AND (1 = ? OR local_media_id != -1) AND \
+        (relative_bucket_id IS NULL OR \
+        relative_bucket_id NOT IN ( \
+        SELECT DISTINCT relative_bucket_id \
+        FROM garbage_album \
+        WHERE type = 1 \
+        ) \
+        ) AND \
+        (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
+        _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+        COALESCE(_data, '') <> '' AND \
+        (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537)))";
+
+    int32_t totalPortraitAlbumNumber = BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT, params);
+    if (totalPortraitAlbumNumber > 0) {
+        int32_t ret = PortraitAlbumUtils::DeleteExistingAlbumData(mediaLibraryRdb_, AlbumDeleteType::ALL);
+        CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to delete portrait album data");
+    }
+
     RestoreFromGalleryPortraitAlbum();
 }
 
@@ -1822,5 +1861,6 @@ void UpgradeRestore::BatchDeleteEmptyAlbums(const std::vector<int32_t> &batchAlb
     deletePredicates.SetWhereArgs(whereArgs);
     BackupDatabaseUtils::Delete(deletePredicates, deleteRows, mediaLibraryRdb_);
 }
+
 } // namespace Media
 } // namespace OHOS

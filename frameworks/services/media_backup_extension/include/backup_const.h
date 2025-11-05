@@ -475,6 +475,11 @@ struct FileInfo {
     bool needUpdate {false};
     int32_t storyChosen {0};
     bool isLivePhoto {false};
+    std::string inode;
+    std::string storagePath;
+    int32_t fileSourceType {0};
+    bool isStoragePathExistInDb {false};
+    bool isCloudPathExistInDb {false};
 };
 
 struct AlbumInfo {
@@ -551,6 +556,8 @@ struct PortraitAlbumInfo {
     std::string groupTagOld;
     std::string groupTagNew;
     std::string tagName;
+    std::string relationship;
+    int32_t userDisplayLevel {-1};
 };
 
 struct FaceInfo {
@@ -659,7 +666,8 @@ struct ImageFaceTbl {
     std::optional<double> faceClarity;
     std::optional<double> faceLuminance;
     std::optional<double> faceSaturation;
-    std::optional<int32_t> faceEyeClose;
+    std::optional<double> faceEyeClose;
+    std::optional<std::string> faceDetailVersion;
     std::optional<double> faceExpression;
     std::optional<std::string> preferredGrade;
     std::optional<double> jointBeautyBounderX;

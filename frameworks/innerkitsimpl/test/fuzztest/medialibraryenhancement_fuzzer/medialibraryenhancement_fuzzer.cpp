@@ -467,7 +467,7 @@ static void EnhancementServiceAdpterTest()
 static void EnhancementServiceCallbackTest()
 {
     Media::EnhancementServiceCallback::OnServiceReconnected();
-    auto assetRefresh = std::make_shared<AccurateRefresh::AssetAccurateRefresh>();
+    auto assetRefresh = std::make_shared<Media::AccurateRefresh::AssetAccurateRefresh>();
 
     string photoId = provider->ConsumeBytesAsString(NUM_BYTES);
     MediaEnhance::MediaEnhanceBundleHandle* bundle = FuzzMediaEnhanceBundle(photoId);

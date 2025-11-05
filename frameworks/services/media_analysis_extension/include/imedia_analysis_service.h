@@ -34,7 +34,8 @@ public:
         START_FOREGROUND_OCR = 38,
         START_FOREGROUND_INDEX = 39,
         PORTRAIT_DISPLAY_CHANGE = 40,
-        ALBUM_UPDATE_INDEX_TASK = 41,
+        START_FOREGROUND_INDEX_FULL = 43,
+        ALBUM_UPDATE_INDEX_TASK = 44,
     };
 public:
     DECLARE_INTERFACE_DESCRIPTOR(u"Multimedia.MediaAnalyseService.API");
