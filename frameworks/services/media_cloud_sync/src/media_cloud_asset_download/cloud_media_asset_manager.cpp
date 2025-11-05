@@ -618,7 +618,7 @@ int32_t CloudMediaAssetManager::BackupAlbumOrderInfo()
         values.emplace_back(value);
         rowCount++;
     }
-    if(rowCount != 0){
+    if(rowCount != 0) {
         int32_t ret = rdbStore->ExecuteSql(SQL_DELETE_ALL_ALBUM_ORDER_BACK);
     }
     int64_t insertNum = 0;
