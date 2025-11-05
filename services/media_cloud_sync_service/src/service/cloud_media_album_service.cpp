@@ -86,7 +86,7 @@ int32_t CloudMediaAlbumService::OnFetchRecords(
             continue;
         }
         if (!album.lPath.empty()) {
-            MEDIA_INFO_LOG("OnFetchRecords add to new record");
+            MEDIA_DEBUG_LOG("OnFetchRecords add to new record");
             lpathRecords.emplace_back(album);
             continue;
         }
@@ -561,7 +561,9 @@ int32_t CloudMediaAlbumService::OnCompletePull(const MediaOperateResult &optRet)
 
 int32_t CloudMediaAlbumService::OnCompletePush()
 {
-    return this->albumDao_.ClearAlbumFailedRecords();
+    int32_t ret = this->albumDao_.ClearAlbumFailedRecords();
+    ret = this->albumDao_.ReportAbnormalLocalRecords();
+    return ret;
 }
 
 int32_t CloudMediaAlbumService::OnCompleteCheck()

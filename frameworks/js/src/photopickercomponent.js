@@ -53,6 +53,7 @@ export class PhotoPickerComponent extends ViewPU {
         this.onExceedMaxSelected = void 0;
         this.onCurrentAlbumDeleted = void 0;
         this.onVideoPlayStateChanged = void 0;
+        this.onMovingPhotoBadgeStateChanged = void 0;
         this.badgeConfig = void 0;
         this.batchBadgeConfigSize = 1000;
         this.maxBadgeConfigSize = 200000;
@@ -77,6 +78,7 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onExceedMaxSelected && (this.onExceedMaxSelected = e.onExceedMaxSelected);
         void 0 !== e.onCurrentAlbumDeleted && (this.onCurrentAlbumDeleted = e.onCurrentAlbumDeleted);
         void 0 !== e.onVideoPlayStateChanged && (this.onVideoPlayStateChanged = e.onVideoPlayStateChanged);
+        void 0 !== e.onMovingPhotoBadgeStateChanged && (this.onMovingPhotoBadgeStateChanged = e.onMovingPhotoBadgeStateChanged);
         void 0 !== e.pickerOptions?.badgeConfig && (this.badgeConfig = e.pickerOptions?.badgeConfig);
         this.__pickerController.set(e.pickerController);
         if (this.badgeConfig && this.badgeConfig.uris !== undefined) {
@@ -170,10 +172,17 @@ export class PhotoPickerComponent extends ViewPU {
             this.onSaveTrustedPhotoAssets(o);
             console.info('PhotoPickerComponent onChanged: SAVE_REPLACE_PHOTO_ASSETS');
         } else if (null == o ? void 0 : o.has('SET_BADGE_CONFIGS')) {
-           this.onChangedBadgeConfigs(o);
+            this.onChangedBadgeConfigs(o);
+        } else if (null == o ? void 0 : o.has('UPDATE_CONFIG')) {
+            this.onUpdateConfig(o);
         } else {
             console.info('PhotoPickerComponent onChanged: other case');
         }
+    }
+
+    onUpdateConfig(o) {
+        this.proxy.send({ updateConfig: null == o ? void 0 : o.get('UPDATE_CONFIG') });
+        console.info('PhotoPickerComponent onChanged: UPDATE_CONFIG');
     }
 
     onSetMaxSelectCount(o) {
@@ -296,7 +305,8 @@ export class PhotoPickerComponent extends ViewPU {
                     uiComponentColorMode: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.uiComponentColorMode,
                     combinedMediaTypeFilter: null === (f = this.pickerOptions) || void 0 === f ? void 0 : f.combinedMediaTypeFilter,
                     pickerIndex: null === (y = this.pickerOptions) || void 0 === y ? void 0 : y.pickerIndex,
-                    preselectedInfos: null === (g = this.pickerOptions) || void 0 === g ? void 0 : g.preselectedInfos
+                    preselectedInfos: null === (g = this.pickerOptions) || void 0 === g ? void 0 : g.preselectedInfos,
+                    isMovingPhotoBadgeShown:  null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.isMovingPhotoBadgeShown,
                 }
             });
             SecurityUIExtensionComponent.height('100%');
@@ -353,6 +363,8 @@ export class PhotoPickerComponent extends ViewPU {
             this.handleVideoPlayStateChanged(e);
         } else if ('onBadgeConfigSend' === o) {
             this.handleBadgeConfigSend(e);
+        } else if ('onMovingPhotoBadgeStateChange' === o) {
+            this.handleOnMovingPhotoBadgeStateChange(e);
         } else {
             this.handleOtherOnReceive(e);
             console.info('PhotoPickerComponent onReceive: other case');
@@ -374,6 +386,14 @@ export class PhotoPickerComponent extends ViewPU {
         }
         if (index >= Math.ceil(this.badgeConfig.uris.length / this.batchBadgeConfigSize)) {
             this.badgeConfigIsSending = false;
+        }
+    }
+
+    handleOnMovingPhotoBadgeStateChange(e) {
+        let uri = e.uri;
+        let enabledMovingPhotoBadge = e.enabledMovingPhotoBadge;
+        if (uri && enabledMovingPhotoBadge !== undefined && this.onMovingPhotoBadgeStateChanged) {
+            this.onMovingPhotoBadgeStateChanged(uri, enabledMovingPhotoBadge);
         }
     }
 
@@ -422,10 +442,11 @@ export class PhotoPickerComponent extends ViewPU {
             i.height = e.height;
             i.size = e.size;
             i.duration = e.duration;
-            i.photoSubtype = e.subtype;
+            i.photoSubType = e.subtype;
             i.dynamicRangeType = e.dynamicRangeType;
             i.orientation = e.imageOrientation;
-            i.videoMode = e.videoMode
+            i.videoMode = e.videoMode;
+            i.movingPhotoBadgeState = e.movingPhotoBadgeState;
             let r = this.onItemClicked(i, o);
             console.info('PhotoPickerComponent onReceive: onItemClicked = ' + o);
             if (this.proxy) {
@@ -716,6 +737,13 @@ let PickerController = class {
         }
     }
 
+    async updatePickerOptions(e) {
+        if (e !== undefined) {
+            this.data = new Map([['UPDATE_CONFIG', e]]);
+            console.info('PhotoPickerComponent UPDATE_CONFIG ' + JSON.stringify(e));
+        }
+    }
+    
     setPhotoBrowserItem(e, o) {
         let l = new PhotoBrowserRangeInfo;
         l.uri = e;
@@ -841,6 +869,9 @@ let PickerController = class {
 PickerController = __decorate([Observed], PickerController);
 
 export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
+}
+
+export class UpdatablePickerOptions {    
 }
 
 export class BaseItemInfo {
@@ -977,6 +1008,14 @@ export var BadgeOptionType;
     e[e.DELETE_DATA = 3] = 'DELETE_DATA';
 }(BadgeOptionType || (BadgeOptionType = {}));
 
+export var MovingPhotoBadgeStateType;
+!function(e) {
+    e[e.SET_DATA = 0] = 'NOT_MOVING_PHOTO';
+    e[e.ADD_DATA = 1] = 'MOVING_PHOTO_ENABLED';
+    e[e.DELETE_DATA = 2] = 'MOVING_PHOTO_DISABLED';
+}(MovingPhotoBadgeStateType || (MovingPhotoBadgeStateType = {}));
+
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
     MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement,
-    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig };
+    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio, BadgeOptionType, BadgeType, BadgeConfig, UpdatablePickerOptions, MovingPhotoBadgeStateType };
+

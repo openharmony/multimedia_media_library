@@ -44,6 +44,7 @@ const std::string PERM_WRITE_DOCUMENT = "ohos.permission.WRITE_DOCUMENT";
 const std::string PERM_MANAGE_PRIVATE_PHOTOS = "ohos.permission.MANAGE_PRIVATE_PHOTOS";
 const std::string PERM_SHORT_TERM_WRITE_IMAGEVIDEO = "ohos.permission.SHORT_TERM_WRITE_IMAGEVIDEO";
 const std::string PERM_INTERACT_ACROSS_LOCAL_ACCOUNTS = "ohos.permission.INTERACT_ACROSS_LOCAL_ACCOUNTS";
+const std::string CONST_LOGSYSTEM_VERSIONTYPE = "const.logsystem.versiontype";
 const std::string E_POLICY = "E";
 constexpr int SHORT_TERM_PERMISSION_DURATION_300S = 300;
 
@@ -74,6 +75,7 @@ public:
     static void GetClientBundle(const int uid, std::string &bundleName);
     static void GetPackageName(const int uid, std::string &packageName);
     static uint32_t GetTokenId();
+    static bool IsBetaVersion();
     static bool IsSystemApp();
     static bool IsNativeSAApp();
     static bool IsRootShell();

@@ -76,10 +76,6 @@ bool ProcessJsonOperation(json& listJson, const std::string& fieldName, int opTy
             } else {
                 if (listJson[fieldName].is_array()) {
                     MEDIA_INFO_LOG("Field %{public}s already exists and is an array", fieldName.c_str());
-                    return true;
-                } else {
-                    MEDIA_ERR_LOG("Field %{public}s exists but is not an array, skip add", fieldName.c_str());
-                    return false;
                 }
             }
             break;
@@ -90,24 +86,32 @@ bool ProcessJsonOperation(json& listJson, const std::string& fieldName, int opTy
                 return true;
             } else {
                 MEDIA_INFO_LOG("Field %{public}s does not exist or is not an array, skip remove", fieldName.c_str());
-                return false;
             }
             break;
         case REMOVE_LISTSTRATEGY:
             if (listJson.contains("listStrategy") && listJson["listStrategy"].is_string()) {
                 listJson.erase("listStrategy");
+                MEDIA_INFO_LOG("string field %{public}s removed", fieldName.c_str());
                 return true;
-            }
+            } else {
+                MEDIA_INFO_LOG("Field %{public}s does not exist or is not a string, skip remove", fieldName.c_str());
+                }
             break;
         case ADD_LISTSTRATEGY:
-            if (!listJson.contains("list_strategy")) {
-                listJson["list_strategy"] = "whiteList";
+            if (!listJson.contains("listStrategy")) {
+                listJson["listStrategy"] = "whiteList";
+                MEDIA_INFO_LOG("Field %{public}s added as string", fieldName.c_str());
                 return true;
+            } else {
+                if (listJson[fieldName].is_string()) {
+                MEDIA_INFO_LOG("Field %{public}s already exists and is an string", fieldName.c_str());
+                } else {
+                    MEDIA_INFO_LOG("Field %{public}s already exists and is not a string", fieldName.c_str());
+                }
             }
             break;
         default:
             MEDIA_ERR_LOG("Unknown opType: %d", opType);
-            return false;
     }
     return false;
 }
@@ -281,7 +285,7 @@ HWTEST_F(HeifTranscodingCheckUtilsTest, InitCheckList_test_003, TestSize.Level1)
     EXPECT_EQ(ret, true);
     auto ret1 = HeifTranscodingCheckUtils::InitCheckList();
     auto ret2 = JsonFieldOperation(filePath, fieldName, ADD_LISTSTRATEGY);
-    EXPECT_EQ(ret2, false);
+    EXPECT_EQ(ret2, true);
     EXPECT_EQ(ret1, E_FAIL);
     MEDIA_INFO_LOG("end tdd InitCheckList_test_003");
 }

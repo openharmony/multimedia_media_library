@@ -880,7 +880,7 @@ static DataShare::DataSharePredicates GetPredicatesHelper(SendableFileAssetAsync
 static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("JSGetThumbnailExecute");
+    tracer.Start("JSGetAnalysisDataExecute");
     if (ANALYSIS_SOURCE_INFO_MAP.find(context->analysisType) == ANALYSIS_SOURCE_INFO_MAP.end()) {
         NAPI_ERR_LOG("Invalid analysisType");
         return;

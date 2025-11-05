@@ -169,6 +169,7 @@ public:
     static const std::string PHOTO_HAS_APPLINK EXPORT;
     static const std::string PHOTO_APPLINK EXPORT;
     static const std::string PHOTO_SOUTH_DEVICE_TYPE EXPORT;
+    static const std::string PHOTO_VIDEO_MODE EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;

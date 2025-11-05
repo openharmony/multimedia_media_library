@@ -21,6 +21,7 @@
 #include "get_self_permissions.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_unistore_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
@@ -30,6 +31,9 @@
 #include "story_play_info_column.h"
 #include "user_photography_info_column.h"
 #include "vision_album_column.h"
+#include "vision_column_comm.h"
+#include "vision_column.h"
+#include "story_db_sqls.h"
 #include "uri.h"
 
 using namespace std;
@@ -37,42 +41,41 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-void ClearStoryData()
-{
-    DataShare::DataSharePredicates predicates;
-    Uri storyAlbumUri(URI_HIGHLIGHT_ALBUM);
-    MediaLibraryCommand storyAlbumCmd(storyAlbumUri);
-    Uri storyCoverUri(URI_HIGHLIGHT_COVER_INFO);
-    MediaLibraryCommand storyCoverCmd(storyCoverUri);
-    Uri storyPlayUri(URI_HIGHLIGHT_PLAY_INFO);
-    MediaLibraryCommand storyPlayCmd(storyPlayUri);
-    Uri userPhotoGraphyUri(URI_USER_PHOTOGRAPHY_INFO);
-    MediaLibraryCommand userPhotoGraphyCmd(userPhotoGraphyUri);
-    MediaLibraryDataManager::GetInstance()->Delete(storyAlbumCmd, predicates);
-    MediaLibraryDataManager::GetInstance()->Delete(storyCoverCmd, predicates);
-    MediaLibraryDataManager::GetInstance()->Delete(storyPlayCmd, predicates);
-    MediaLibraryDataManager::GetInstance()->Delete(userPhotoGraphyCmd, predicates);
-}
+
+static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+static std::vector<std::string> createTableSqlLists = {
+    CREATE_HIGHLIGHT_ALBUM_TABLE,
+    CREATE_HIGHLIGHT_COVER_INFO_TABLE,
+    CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
+    CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
+};
+
+static std::vector<std::string> testTables = {
+    HIGHLIGHT_ALBUM_TABLE,
+    HIGHLIGHT_COVER_INFO_TABLE,
+    HIGHLIGHT_PLAY_INFO_TABLE,
+    USER_PHOTOGRAPHY_INFO_TABLE,
+};
 
 void MediaLibraryStoryTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("Story_Test::Start");
     MediaLibraryUnitTestUtils::Init();
+    g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    ASSERT_NE(g_rdbStore, nullptr);
+    MediaLibraryUnitTestUtils::CreateTestTables(g_rdbStore, createTableSqlLists);
 }
 
 void MediaLibraryStoryTest::TearDownTestCase(void)
 {
-    ClearStoryData();
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables, true);
+    MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     MEDIA_INFO_LOG("Story_Test::End");
 }
 
 void MediaLibraryStoryTest::SetUp(void)
 {
-    MediaLibraryUnitTestUtils::CleanTestFiles();
-    MediaLibraryUnitTestUtils::CleanBundlePermission();
-    MediaLibraryUnitTestUtils::InitRootDirs();
-    MediaLibraryUnitTestUtils::Init();
-    ClearStoryData();
+    MediaLibraryUnitTestUtils::CleanTestTables(g_rdbStore, testTables);
 }
 
 void MediaLibraryStoryTest::TearDown(void) {}

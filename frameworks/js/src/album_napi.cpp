@@ -173,6 +173,7 @@ napi_value AlbumNapi::AlbumNapiConstructor(napi_env env, napi_callback_info info
 napi_value AlbumNapi::CreateAlbumNapi(napi_env env, unique_ptr<AlbumAsset> &albumData)
 {
     if (albumData == nullptr) {
+        NAPI_ERR_LOG("CreateAlbumNapi albumData is null");
         return nullptr;
     }
 

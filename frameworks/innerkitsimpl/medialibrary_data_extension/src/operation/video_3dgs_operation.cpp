@@ -31,8 +31,10 @@
 #include "scanner_utils.h"
 #include "values_bucket.h"
 #include "medialibrary_type_const.h"
+#include "photo_album_column.h"
 #include "preferences.h"
 #include "preferences_helper.h"
+#include "medialibrary_notify.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_tracer.h"
 
@@ -71,7 +73,6 @@ void Video3DgsOperation::Stop()
 
 void Video3DgsOperation::Update3DgsType()
 {
-    MEDIA_INFO_LOG("start handle 3DGS video!");
     isContinue_.store(true);
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t errCode = E_OK;
@@ -79,8 +80,8 @@ void Video3DgsOperation::Update3DgsType()
         NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
     CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     int32_t curFileId = prefs->GetInt(ORIGIN_3DGS_NUMBER, 0);
-    MEDIA_INFO_LOG("start file id: %{public}d", curFileId);
-    while (MedialibrarySubscriber::IsCurrentStatusOn() && isContinue_.load() && QueryVideoCount(curFileId) > 0) {
+    while (MedialibrarySubscriber::IsCurrentStatusOn() && isContinue_.load()) {
+        CHECK_AND_RETURN_LOG(QueryVideoCount(curFileId) > 0, "No 3DGS video need to handle");
         MEDIA_INFO_LOG("handle 3DGS video curFileId: %{public}d", curFileId);
         std::vector<CheckedVideoInfo> photoInfos = QueryVideoInfo(curFileId);
         HandleVideoInfos(photoInfos, curFileId);
@@ -127,43 +128,72 @@ std::vector<CheckedVideoInfo> Video3DgsOperation::QueryVideoInfo(int32_t startFi
     return photoInfos;
 }
 
+static void NotifyAnalysisAlbum(const vector<string>& changedAlbumIds)
+{
+    if (changedAlbumIds.size() <= 0) {
+        return;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+    for (const string& albumId : changedAlbumIds) {
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+            PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, albumId), NotifyType::NOTIFY_UPDATE);
+    }
+}
+
 void Video3DgsOperation::HandleVideoInfos(const std::vector<CheckedVideoInfo> &photoInfos, int32_t &curFileId)
 {
+    bool hasUpdate3DGS = false;
     for (const CheckedVideoInfo &photoInfo : photoInfos) {
         CHECK_AND_BREAK_INFO_LOG(MedialibrarySubscriber::IsCurrentStatusOn() && isContinue_.load(),
             "current status is off, break");
         curFileId = photoInfo.fileId;
-        UpdateVideoSubtype(photoInfo);
+        if (UpdateVideoSubtype(photoInfo)) {
+            hasUpdate3DGS = true;
+        }
+    }
+
+    if (hasUpdate3DGS) {
+        vector<string> albumIdsStr;
+        int32_t albumId;
+        CHECK_AND_RETURN_LOG(MediaLibraryRdbUtils::QueryShootingModeAlbumIdByType(
+            ShootingModeAlbumType::MP4_3DGS_ALBUM, albumId), "Failed to query 3DGS album id");
+        albumIdsStr.push_back(to_string(albumId));
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
+        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIdsStr);
+        NotifyAnalysisAlbum(albumIdsStr);
     }
 }
 
-void Video3DgsOperation::UpdateVideoSubtype(const CheckedVideoInfo &photoInfo)
+bool Video3DgsOperation::UpdateVideoSubtype(const CheckedVideoInfo &photoInfo)
 {
     std::unique_ptr<Metadata> data = make_unique<Metadata>();
     data->SetFilePath(photoInfo.path);
     data->SetFileName(MediaFileUtils::GetFileName(photoInfo.path));
     data->SetFileMediaType(MEDIA_TYPE_VIDEO);
     MetadataExtractor::ExtractAVMetadata(data);
-    if (data->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::D3GS)) {
+    if (data->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS)) {
         MEDIA_DEBUG_LOG("The video is not 3DGS, file_id=%{public}d", photoInfo.fileId);
-        return;
+        return false;
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is nullptr");
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, photoInfo.fileId);
 
     ValuesBucket values;
-    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::D3GS));
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS));
     values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
 
     int32_t updateCount = 0;
     int32_t err = rdbStore->Update(updateCount, values, predicates);
 
-    CHECK_AND_RETURN_LOG(err == NativeRdb::E_OK,
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, false,
         "Update video subtype failed, file_id=%{public}d, err=%{public}d", photoInfo.fileId, err);
 
     MEDIA_INFO_LOG("Update video subtype success, file_id=%{public}d, updated_rows=%{public}d", photoInfo.fileId,
         updateCount);
+    return updateCount > 0;
 }
 }  // namespace OHOS::Media

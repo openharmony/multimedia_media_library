@@ -552,7 +552,10 @@ static void GetNapiResFromAsset(napi_env env, FetchFileResultAsyncContext *conte
     unique_ptr<JSAsyncContextOutput> &jsContext)
 {
     napi_value jsAsset;
+    CHECK_NULL_PTR_RETURN_VOID(context, "GetNapiResFromAsset async context is nullptr");
     switch (context->objectPtr->fetchResType_) {
+        NAPI_INFO_LOG("GetNapiResFromAsset fetchResType: %{public}d",
+            static_cast<int32_t>(context->objectPtr->fetchResType_));
         case FetchResType::TYPE_FILE:
             if (context->fileAsset != nullptr && context->objectPtr->fetchFileResult_ != nullptr) {
                 context->fileAsset->SetUserId(context->objectPtr->fetchFileResult_->GetUserId());
@@ -572,11 +575,9 @@ static void GetNapiResFromAsset(napi_env env, FetchFileResultAsyncContext *conte
             jsAsset = SmartAlbumNapi::CreateSmartAlbumNapi(env, context->smartAlbumAsset);
             break;
         case FetchResType::TYPE_CUSTOMRECORD:
-            CHECK_NULL_PTR_RETURN_VOID(context, "async context is nullptr");
             jsAsset = PhotoAssetCustomRecordNapi::CreateCustomRecordNapi(env, context->customRecordAsset);
             break;
         case FetchResType::TYPE_ALBUMORDER:
-            CHECK_NULL_PTR_RETURN_VOID(context, "async context is nullptr");
             jsAsset = AlbumOrderNapi::CreateAlbumOrderNapi(env, context->albumOrder);
             break;
         default:
@@ -1027,6 +1028,33 @@ napi_value FetchFileResultNapi::JSGetAllObject(napi_env env, napi_callback_info 
     return result;
 }
 
+void GetCountFromObject(FetchFileResultNapi* obj, int32_t &count)
+{
+    switch (obj->GetFetchResType()) {
+        case FetchResType::TYPE_FILE:
+            count = obj->GetFetchFileResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_ALBUM:
+            count = obj->GetFetchAlbumResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_PHOTOALBUM:
+            count = obj->GetFetchPhotoAlbumResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_SMARTALBUM:
+            count = obj->GetFetchSmartAlbumResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_CUSTOMRECORD:
+            count = obj->GetFetchCustomRecordResultObject()->GetCount();
+            break;
+        case FetchResType::TYPE_ALBUMORDER:
+            count = obj->GetFetchAlbumOrderResultObject()->GetCount();
+            break;
+        default:
+            NAPI_ERR_LOG("unsupported FetchResType");
+            break;
+    }
+}
+
 napi_value FetchFileResultNapi::ProcessValidContext(
     napi_env env, unique_ptr<FetchFileResultAsyncContext> &asyncContext, napi_value argv[], napi_value &result)
 {
@@ -1037,7 +1065,7 @@ napi_value FetchFileResultNapi::ProcessValidContext(
         napi_get_value_int32(env, argv[PARAM0], &(asyncContext->offset));
     } else {
         NAPI_ERR_LOG("Invalid offset type: %{public}d", type);
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse memberKeys failed");
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid offset type");
         return nullptr;
     }
     // Parse length parameter
@@ -1046,11 +1074,14 @@ napi_value FetchFileResultNapi::ProcessValidContext(
         napi_get_value_int32(env, argv[PARAM1], &(asyncContext->length));
     } else {
         NAPI_ERR_LOG("Invalid length type: %{public}d", type);
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse memberKeys failed");
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid length type");
         return nullptr;
     }
-    if (asyncContext->offset < 0 || asyncContext->length <= 0) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Parse memberKeys failed");
+    int32_t total_count = 0;
+    GetCountFromObject(asyncContext->objectInfo, total_count);
+    if (asyncContext->offset < 0 || asyncContext->length <= 0 ||
+        (asyncContext->offset + asyncContext->length) > total_count) {
+        NapiError::ThrowError(env, JS_E_PARAM_INVALID, "Index exceeds range of objects");
         return nullptr;
     }
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);

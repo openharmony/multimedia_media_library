@@ -31,6 +31,8 @@ public:
 
 private:
     void InsertNotifyInfo(Notification::AlbumRefreshOperation operation, const AlbumChangeData &changeData);
+    void InsertNotifyInfoForAdd(const AlbumChangeData& changeData);
+    void AddInfosToNewNotify();
 
 private:
     std::map<Notification::AlbumRefreshOperation, std::vector<AlbumChangeData>> notifyInfos_;

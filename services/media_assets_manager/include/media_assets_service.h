@@ -74,6 +74,7 @@
 #include "cancel_batch_download_cloud_resources_vo.h"
 #include "get_batch_download_cloud_resources_status_vo.h"
 #include "get_batch_download_cloud_resources_count_vo.h"
+#include "acquire_debug_database_vo.h"
 
 namespace OHOS::Media {
 class MediaAssetsService {
@@ -114,6 +115,7 @@ public:
     int32_t CreateAsset(CreateAssetDto &dto);
     int32_t CreateAssetForApp(CreateAssetDto &dto);
     int32_t CreateAssetForAppWithAlbum(CreateAssetDto &dto);
+    int32_t UpdateExistedTasksTitle(int32_t fileId);
     int32_t SetAssetTitle(int32_t fileId, const std::string &title);
     int32_t SetAssetPending(int32_t fileId, int32_t pending);
     int32_t SetAssetsFavorite(const std::vector<int32_t> &fileIds, int32_t favorite);
@@ -175,8 +177,12 @@ public:
     int32_t GetUriFromFilePath(const std::string &tempPath, GetUriFromFilePathRespBody &respBody);
     int32_t CanSupportedCompatibleDuplicate(const std::string &bundleName, HeifTranscodingCheckRespBody &respBody);
     int32_t SetCompositeDisplayMode(const int32_t fileId, const int32_t compositeDisplayMode);
+    int32_t AcquireDebugDatabase(const std::string &betaIssueId, const std::string &betaScenario,
+        AcquireDebugDatabaseRespBody &respBody);
+    int32_t ReleaseDebugDatabase(const std::string &betaIssueId);
 
 private:
+    int32_t SubmitMetadataChanged(const int32_t fileId);
     MediaAssetsRdbOperations rdbOperation_;
 };
 } // namespace OHOS::Media

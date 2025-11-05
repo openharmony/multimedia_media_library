@@ -64,6 +64,7 @@ public:
     std::string attributesShootingModeTag;        /* shooting_mode_tag */
     int32_t attributesDynamicRangeType{-1};       /* dynamic_range_type */
     int32_t attributesHdrMode{-1};                /* hdr_mode */
+    int32_t attributesVideoMode{-1};              /* video_mode */
     std::string attributesFrontCamera;            /* front_camera */
     int64_t attributesEditTime{-1};               /* edit_time */
     int32_t attributesOriginalSubtype{-1};        /* original_subtype */
@@ -109,6 +110,7 @@ public:
     int32_t localThumbState{-1};
     std::string localOriginalAssetCloudId;
     int32_t localExifRotate{-1};
+    std::string localDisplayName;
 
 public:  // basic function
     std::string ToString() const;

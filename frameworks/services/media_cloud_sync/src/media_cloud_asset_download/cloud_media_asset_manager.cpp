@@ -278,7 +278,7 @@ int32_t CloudMediaAssetManager::RecoverDownloadCloudAsset(const CloudMediaTaskRe
     bool cond = (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE);
     CHECK_AND_RETURN_RET(!cond, E_ERR);
 
-    operation_->ResetDownloadTryTime();
+    CHECK_AND_EXECUTE(cause != CloudMediaTaskRecoverCause::NETWORK_NORMAL, operation_->ResetDownloadTryTime());
     MEDIA_INFO_LOG("enter RecoverDownloadCloudAsset, RecoverCause: %{public}d", static_cast<int32_t>(cause));
     CHECK_AND_RETURN_RET_LOG(operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::DOWNLOADING, OHOS::Media::E_OK,
         "The task status is download, no need to recover.");
@@ -883,7 +883,9 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia(CloudMediaRetainTy
         CHECK_AND_PRINT_LOG(ret == OHOS::Media::E_OK, "hdc force retain. ret %{public}d.", ret);
     }
     if (CloudSyncHelper::GetInstance()->IsSyncSwitchOpen()) {
+        MEDIA_INFO_LOG("cloud sync manager start reset cursor");
         FileManagement::CloudSync::CloudSyncManager::GetInstance().ResetCursor(true);
+        MEDIA_INFO_LOG("cloud sync manager end reset cursor");
     }
     SetSouthDeviceSyncSwitchStatus(CloudSyncStatus::SYNC_SWITCHED_OFF);
 
@@ -1020,11 +1022,9 @@ int32_t CloudMediaAssetManager::StartBatchDownloadCloudResources(StartBatchDownl
     UpdateAddTaskStatus(invalidFileIds,
         CloudMediaTaskDownloadCloudAssetCode::ADD_DOWNLOAD_ASSET_NOT_EXIST, respBody.uriStatusMap);
 
-    if (insertCount > 0) {
-        MEDIA_INFO_LOG("BatchSelectFileDownload Start LaunchBatchDownloadProcessor");
-        BackgroundCloudBatchSelectedFileProcessor::SetBatchDownloadAddedFlag(true);
-        BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor(); // 触发启动检查
-    }
+    MEDIA_INFO_LOG("BatchSelectFileDownload Start LaunchBatchDownloadProcessor");
+    BackgroundCloudBatchSelectedFileProcessor::SetBatchDownloadAddedFlag(true);
+    BackgroundCloudBatchSelectedFileProcessor::LaunchBatchDownloadProcessor(); // 触发启动检查
     return OHOS::Media::E_OK;
 }
 

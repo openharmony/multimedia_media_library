@@ -285,4 +285,18 @@ int32_t CloudMediaDataHandler::OnCompleteCheck()
     CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnCompleteCheck();
 }
+
+void CloudMediaDataHandler::SetCloudSpaceFull(bool isCloudSpaceFull)
+{
+    CHECK_AND_RETURN_LOG(
+        this->dataHandler_ != nullptr, "No data handler found! tableName: %{public}s", this->tableName_.c_str());
+    this->dataHandler_->SetCloudSpaceFull(isCloudSpaceFull);
+}
+
+bool CloudMediaDataHandler::IsCloudSpaceFull()
+{
+    CHECK_AND_RETURN_RET_LOG(
+        this->dataHandler_ != nullptr, false, "No data handler found! tableName: %{public}s", this->tableName_.c_str());
+    return this->dataHandler_->IsCloudSpaceFull();
+}
 }  // namespace OHOS::Media::CloudSync

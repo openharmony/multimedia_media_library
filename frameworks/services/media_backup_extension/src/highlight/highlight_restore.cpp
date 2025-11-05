@@ -130,10 +130,10 @@ bool HighlightRestore::HasSameHighlightAlbum(HighlightAlbumInfo &info)
     const std::string QUERY_SQL = "SELECT highlight.id, highlight.album_id, highlight.ai_album_id FROM "
         "tab_highlight_album highlight "
         "LEFT JOIN AnalysisAlbum album ON highlight.album_id = album.album_id "
-        "WHERE highlight.cluster_type = ? AND highlight.cluster_sub_type = ? AND highlight.cluster_condition = ? "
-        "AND album.album_name = ? AND highlight.highlight_status = 1";
+        "WHERE highlight.cluster_type = ? AND highlight.cluster_sub_type = ? AND highlight.highlight_status = 1 AND "
+        "(highlight.cluster_condition = ? OR (highlight.min_date_added = ? AND highlight.max_date_added = ?))";
     std::vector<NativeRdb::ValueObject> params = {
-        info.clusterType, info.clusterSubType, info.clusterCondition, info.albumName
+        info.clusterType, info.clusterSubType, info.clusterCondition, info.minDateAdded, info.maxDateAdded
     };
     std::shared_ptr<NativeRdb::ResultSet> resultSet =
         BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, QUERY_SQL, params);

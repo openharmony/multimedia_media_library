@@ -409,9 +409,9 @@ CloneRestoreConfigInfo CloneRestore::GetCurrentDeviceCloneConfigInfo()
     CloneRestoreConfigInfo cloneConfigInfo;
     cloneConfigInfo.switchStatus = SettingsDataManager::GetPhotosSyncSwitchStatus();
     bool isSyncSwitchStatusValid = (cloneConfigInfo.switchStatus != SwitchStatus::NONE);
-    bool isDeviceIdValid = true;
-    if (cloneConfigInfo.switchStatus == SwitchStatus::HDC &&
-        !(isDeviceIdValid = SettingsDataManager::GetHdcDeviceId(cloneConfigInfo.deviceId))) {
+    bool isDeviceIdValid = (cloneConfigInfo.switchStatus == SwitchStatus::HDC ?
+        SettingsDataManager::GetHdcDeviceId(cloneConfigInfo.deviceId) : true);
+    if (!isDeviceIdValid) {
         MEDIA_ERR_LOG("fail to get deviceId of current device");
         cloneConfigInfo.switchStatus = SwitchStatus::NONE;
         cloneConfigInfo.deviceId = "";
@@ -473,6 +473,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
     }
     HandleRestData();
+    RestoreSearchIndex();
     StopParameterForRestore();
     StopParameterForClone();
     CloseAllKvStore();
@@ -2317,7 +2318,6 @@ void CloneRestore::RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhoto
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, fileInfos, SourceType::PHOTOS) == E_OK,
         AddToPhotosFailedOffsets(offset));
 
-    RestoreHdrMode(fileInfos);
     MEDIA_INFO_LOG("singleCloud end restore photo, offset: %{public}d", offset);
 }
 

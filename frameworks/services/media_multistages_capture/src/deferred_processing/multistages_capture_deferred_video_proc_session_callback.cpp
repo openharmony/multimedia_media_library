@@ -24,6 +24,7 @@
 #include "multistages_capture_manager.h"
 #include "medialibrary_object_utils.h"
 #include "result_set_utils.h"
+#include "multistages_capture_request_task_manager.h"
 
 using namespace std;
 using namespace OHOS::CameraStandard;
@@ -63,7 +64,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
     const sptr<IPCFileDescriptor> ipcFd)
 {
     CHECK_AND_RETURN_LOG(!videoId.empty(), "OnProcessVideoDone, videoId is empty");
-    MEDIA_INFO_LOG("OnProcessVideoDone, videoId: %{public}s", videoId.c_str());
+    MEDIA_ERR_LOG("OnProcessVideoDone, videoId: %{public}s", videoId.c_str());
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
     string where = PhotoColumn::PHOTO_ID + " = ? ";
@@ -74,7 +75,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
         PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_POSITION, PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-        MEDIA_INFO_LOG("result set is empty");
+        MEDIA_ERR_LOG("result set is empty");
         MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(videoId);
         // When subType query failed, default mediaType is Video
         MultiStagesCaptureDfxResult::Report(videoId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR),
@@ -111,14 +112,14 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
         static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS), mediaType);
 
     MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(videoId, false);
-    MEDIA_INFO_LOG("OnProcessVideoDone, success videoid: %{public}s", videoId.c_str());
+    MEDIA_ERR_LOG("OnProcessVideoDone, success videoid: %{public}s", videoId.c_str());
 }
 
 void MultiStagesCaptureDeferredVideoProcSessionCallback::VideoFaileProcAsync(AsyncTaskData *data)
 {
     auto *taskData = static_cast<VideoFaileProcTaskData *>(data);
     CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is null");
-    MEDIA_INFO_LOG("Enter OnError, errorCode: %{public}d", taskData->errorCode_);
+    MEDIA_ERR_LOG("OnError, errorCode: %{public}d", taskData->errorCode_);
     switch (taskData->errorCode_) {
         case ERROR_SESSION_SYNC_NEEDED:
             MultiStagesVideoCaptureManager::GetInstance().SyncWithDeferredVideoProcSession();
@@ -132,6 +133,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::VideoFaileProcAsync(Asy
             break;
         }
         default:
+            MultiStagesCaptureRequestTaskManager::ClearPhotoInProcessRequestCount(taskData->videoId_);
             break;
     }
 
@@ -157,7 +159,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::AsyncOnErrorProc(const 
         make_shared<MediaLibraryAsyncTask>(VideoFaileProcAsync, taskData);
     CHECK_AND_RETURN_LOG(asyncTask != nullptr, "Can not get asyncWorker");
 
-    MEDIA_INFO_LOG("AsyncOnErrorProc add task success");
+    MEDIA_ERR_LOG("AsyncOnErrorProc add task success");
     asyncWorker->AddTask(asyncTask, false);
 }
 

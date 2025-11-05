@@ -18,6 +18,7 @@
 
 #include "media_cloud_sync_backgroud_task.h"
 #include "media_file_manager_temp_file_aging_task.h"
+#include "media_video_mode_task.h"
 #include "medialibrary_subscriber.h"
 #include "media_log.h"
 
@@ -27,6 +28,7 @@ MediaBackgroundTaskFactory::MediaBackgroundTaskFactory()
     this->tasks_ = {
         std::make_shared<MediaCloudSyncBackgroundTask>(),
         std::make_shared<MediaFileManagerTempFileAgingTask>(),
+        std::make_shared<MediaVideoModeTask>(),
     };
 }
 
@@ -45,6 +47,7 @@ void MediaBackgroundTaskFactory::Execute()
     for (auto &task : this->tasks_) {
         CHECK_AND_CONTINUE_ERR_LOG(task != nullptr, "task is null");
         CHECK_AND_RETURN_INFO_LOG(this->Accept(), "check accept failed");
+        
         task->Execute();
     }
     return;

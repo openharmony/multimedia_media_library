@@ -150,9 +150,22 @@ int32_t HeifTranscodingCheckUtils::ReadCheckList()
         return E_FAIL;
     }
 
-    json checkListJson;
-    jFile >> checkListJson;
+    std::stringstream buffer;
+    buffer << jFile.rdbuf();
+    std::string jStr = buffer.str();
+    nlohmann::json checkListJson;
     jFile.close();
+    if (!jStr.empty() && nlohmann::json::accept(jStr)) {
+        checkListJson = nlohmann::json::parse(jStr, nullptr, false);
+        if (checkListJson.is_discarded()) {
+            MEDIA_ERR_LOG("JSON parse error");
+            return E_FAIL;
+        }
+    } else {
+        MEDIA_ERR_LOG("Failed to get json, Error: %{public}s", std::strerror(errno));
+        return E_FAIL;
+    }
+
     ClearCheckList();
 
     if (!checkListJson.contains(LIST_STRATEGY) || !checkListJson[LIST_STRATEGY].is_string()) {
