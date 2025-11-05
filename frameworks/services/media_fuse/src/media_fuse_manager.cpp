@@ -53,6 +53,7 @@
 #include "medialibrary_ptp_operations.h"
 #include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -483,7 +484,7 @@ int32_t MediaFuseManager::DoRelease(const char *path, const int &fd)
             return E_ERR;
         }
         if (oldMtime != newMtime) {
-            MediaLibraryAssetOperations::DeleteTransCodeInfo(filePath, fileId, __func__);
+            MediaLibraryTranscodeDataAgingOperation::DeleteTransCodeInfo(filePath, fileId, __func__);
         }
     }
     close(fd);

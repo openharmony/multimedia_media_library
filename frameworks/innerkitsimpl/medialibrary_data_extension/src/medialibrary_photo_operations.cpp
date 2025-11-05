@@ -100,6 +100,7 @@
 #include "refresh_business_name.h"
 #include "medialibrary_bundle_manager.h"
 #include "cloud_media_dao_utils.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -641,7 +642,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     int32_t type = -1;
     GetType(uri, type);
     MEDIA_DEBUG_LOG("After spliting, uri is %{public}s, type is %{public}d", uri.c_str(), type);
-    int32_t err = SetTranscodeUriToFileAsset(fileAsset, mode, isHeif);
+    int32_t err = MediaLibraryTranscodeDataAgingOperation::SetTranscodeUriToFileAsset(fileAsset, mode, isHeif);
     int32_t ret = E_ERR;
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         ret = OpenAsset(fileAsset, mode, MediaLibraryApi::API_10, isMovingPhotoVideo, type);
@@ -649,7 +650,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         ret = OpenAsset(fileAsset, mode, cmd.GetApi(), type);
     }
     if (err == 0 && ret >= 0) {
-        MediaLibraryAssetOperations::DoTranscodeDfx(ACCESS_MEDIALIB);
+        MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(ACCESS_MEDIALIB);
     }
     return ret;
 }
@@ -2210,7 +2211,7 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientation(MediaLibraryCommand &cmd,
             "transCodeOrientation value is invalid.");
         TransCodeExifInfo transCodeExifInfo;
         transCodeExifInfo.orientation = std::to_string(transCodeOrientation->second);
-        MediaLibraryAssetOperations::ModifyTransCodeFileExif(ExifType::EXIF_ORIENTATION,
+        MediaLibraryTranscodeDataAgingOperation::ModifyTransCodeFileExif(ExifType::EXIF_ORIENTATION,
             fileAsset->GetFilePath(), transCodeExifInfo, __func__);
     }
     return rowId;
@@ -2824,7 +2825,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d",
         fileAsset->GetId());
     if (fileAsset->GetMediaType() == MEDIA_TYPE_IMAGE && fileAsset->GetExistCompatibleDuplicate() != 0) {
-        MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
+        MediaLibraryTranscodeDataAgingOperation::DeleteTransCodeInfo(fileAsset->GetFilePath(),
             to_string(fileAsset->GetId()), __func__);
     }
     UpdateAlbumDateModified(fileAsset->GetOwnerAlbumId());
@@ -3815,7 +3816,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
         CHECK_AND_RETURN_RET(PhotoEditingRecord::GetInstance()->StartCommitEdit(id), E_IS_IN_REVERT);
         int32_t errCode = SubmitEditCacheExecute(cmd, fileAsset, cachePath, isWriteGpsAdvanced);
         if (fileAsset->GetExistCompatibleDuplicate() != 0) {
-            MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
+            MediaLibraryTranscodeDataAgingOperation::DeleteTransCodeInfo(fileAsset->GetFilePath(),
                 to_string(fileAsset->GetId()), __func__);
         }
         PhotoEditingRecord::GetInstance()->EndCommitEdit(id);

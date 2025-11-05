@@ -90,6 +90,7 @@
 #include "cloud_enhancement_checker.h"
 #endif
 #include "map_code_upload_checker.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 using namespace OHOS::AAFwk;
 
@@ -799,12 +800,12 @@ static void PeriodicAnalyzePhotosData()
 
 void MedialibrarySubscriber::AgingTmpCompatibleDuplicates(bool isAge)
 {
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    CHECK_AND_RETURN_LOG(dataManager != nullptr, "dataManager is nullptr");
+    auto dataAging = MediaLibraryTranscodeDataAgingOperation::GetInstance();
+    CHECK_AND_RETURN_LOG(dataAging != nullptr, "dataAging is nullptr");
     if (isAge) {
-        dataManager->AgingTmpCompatibleDuplicates();
+        dataAging->AgingTmpCompatibleDuplicates();
     } else {
-        dataManager->InterruptAgingTmpCompatibleDuplicates();
+        dataAging->InterruptAgingTmpCompatibleDuplicates();
     }
 }
 

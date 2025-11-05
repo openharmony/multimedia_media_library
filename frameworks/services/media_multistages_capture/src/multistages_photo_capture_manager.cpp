@@ -40,6 +40,7 @@
 #include "request_policy.h"
 #include "result_set_utils.h"
 #include "userfilemgr_uri.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 using namespace std;
 #ifdef ABILITY_CAMERA_SUPPORT
@@ -266,7 +267,7 @@ static int32_t WriteGpsInfoAndUpdateDb(const std::string &path, const int32_t &f
     TransCodeExifInfo transCodeExifInfo;
     transCodeExifInfo.latitude = latitude;
     transCodeExifInfo.longitude = longitude;
-    MediaLibraryAssetOperations::ModifyTransCodeFileExif(ExifType::EXIF_GPS,
+    MediaLibraryTranscodeDataAgingOperation::ModifyTransCodeFileExif(ExifType::EXIF_GPS,
         path, transCodeExifInfo, __func__);
     return E_OK;
 }
