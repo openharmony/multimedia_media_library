@@ -741,6 +741,16 @@ static void FillSouthDeviceType(const shared_ptr<MediaLibraryRdbStore>& rdbStore
     MEDIA_INFO_LOG("Update south_device_type for %{public}d photos in cloud space, ret: %{public}d", changedRows, ret);
 }
 
+void HandleUpgradeRdbAsyncPart5(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX &&
+        !RdbUpgradeUtils::HasUpgraded(VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX, false)) {
+        MediaLibraryRdbStore::AddVideoFaceTagIdIndex(rdbStore, VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX);
+        rdbStore->SetOldVersion(VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX);
+        RdbUpgradeUtils::SetUpgradeStatus(VERSION_CREATE_VIDEO_FACE_TAG_ID_INDEX, false);
+    }
+}
+
 void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_INDEX_FOR_PHOTO_SORT_IN_ALBUM &&
@@ -793,6 +803,8 @@ void HandleUpgradeRdbAsyncPart4(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED);
         RdbUpgradeUtils::SetUpgradeStatus(VERSION_UPGRADE_IDX_SCHPT_DATE_ADDED, false);
     }
+    HandleUpgradeRdbAsyncPart5(rdbStore, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 void HandleUpgradeRdbAsyncPart3(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
