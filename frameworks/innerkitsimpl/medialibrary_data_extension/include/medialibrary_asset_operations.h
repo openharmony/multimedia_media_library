@@ -115,20 +115,11 @@ public:
         int32_t &value);
     EXPORT static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         std::string &value);
-    EXPORT static int32_t DeleteTranscodePhotos(const std::string &filePath);
-    EXPORT static void DeleteTransCodeInfo(const std::string &filePath, const std::string &fileId,
-        const std::string functionName);
-    EXPORT static void ModifyTransCodeFileExif(const ExifType type, const std::string &path,
-        const TransCodeExifInfo &exifInfo, const std::string &functionName);
-    EXPORT static std::string GetTransCodePath(const string &path);
     EXPORT static std::string GetEditDataDirPath(const std::string &path);
     static std::shared_ptr<FileAsset> GetAssetFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::vector<std::string> &columns);
     EXPORT static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
-    static int32_t SetTranscodeUriToFileAsset(std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
-        const bool isHeif);
-    static void DoTranscodeDfx(const int32_t &type);
     EXPORT static int32_t DealWithBatchDownloadingFiles(std::vector<shared_ptr<FileAsset>> &subFileAssetVector);
     EXPORT static int32_t DealWithBatchDownloadingFilesById(std::vector<std::string> &fileIds);
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,

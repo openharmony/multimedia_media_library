@@ -64,6 +64,7 @@
 #include "medialibrary_app_uri_permission_operations.h"
 #include "medialibrary_urisensitive_operations.h"
 #include "medialibrary_uripermission_operations.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -515,7 +516,7 @@ int32_t MediaAssetsRdbOperations::RevertToOrigin(const int32_t &fileId)
 
     int32_t errCode = MediaLibraryPhotoOperations::DoRevertEdit(fileAsset);
     if (fileAsset->GetExistCompatibleDuplicate() != 0) {
-        MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
+        MediaLibraryTranscodeDataAgingOperation::DeleteTransCodeInfo(fileAsset->GetFilePath(),
             to_string(fileId), __func__);
     }
     PhotoEditingRecord::GetInstance()->EndRevert(fileId);

@@ -54,6 +54,7 @@
 #define private public
 #include "picture_data_operations.h"
 #undef private
+#include "medialibrary_transcode_data_aging_operation.h"
 
 namespace OHOS {
 namespace Media {
@@ -4120,14 +4121,14 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_moving_photo_video_re
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_get_transcode_path_001, TestSize.Level2)
 {
     string photoPath = "/storage/cloud/files/Photo/1/photo.heif";
-    EXPECT_EQ(MediaLibraryAssetOperations::GetTransCodePath(photoPath),
+    EXPECT_EQ(MediaLibraryTranscodeDataAgingOperation::GetTransCodePath(photoPath),
         "/storage/cloud/files/.editData/Photo/1/photo.heif/transcode.jpg");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_get_transcode_path_002, TestSize.Level2)
 {
     string photoPath = "";
-    EXPECT_EQ(MediaLibraryAssetOperations::GetTransCodePath(photoPath), "");
+    EXPECT_EQ(MediaLibraryTranscodeDataAgingOperation::GetTransCodePath(photoPath), "");
 }
 //test error case
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_transCode_info_test_001, TestSize.Level2)
@@ -4142,11 +4143,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_transCode_info_test_
     ASSERT_GT(fileId, 0);
     string filePath = "/storage/data/test_invalid.jpg";
     string funcName = "DeleteTransCodeInfoTest";
-    MediaLibraryAssetOperations::DeleteTransCodeInfo(filePath, to_string(fileId), funcName);
+    MediaLibraryTranscodeDataAgingOperation::DeleteTransCodeInfo(filePath, to_string(fileId), funcName);
     filePath = GetFilePath(fileId);
     EXPECT_FALSE(filePath.empty());
     fileId = -1;
-    MediaLibraryAssetOperations::DeleteTransCodeInfo(filePath, to_string(fileId), funcName);
+    MediaLibraryTranscodeDataAgingOperation::DeleteTransCodeInfo(filePath, to_string(fileId), funcName);
     system("rm -rf /storage/cloud/files/Photo/665/test.heic");
     system("rm -rf /storage/cloud/files/.editData/Photo/665/test.heic/transcode.jpg");
     MEDIA_INFO_LOG("end tdd photo_oprn_delete_transCode_info_test_001");
@@ -4171,7 +4172,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_transCode_info_test_
 
     string filePath = "/storage/cloud/files/Photo/665/test.heic";
     string funcName = "DeleteTransCodeInfoTest";
-    MediaLibraryAssetOperations::DeleteTransCodeInfo(filePath, to_string(fileId), funcName);
+    MediaLibraryTranscodeDataAgingOperation::DeleteTransCodeInfo(filePath, to_string(fileId), funcName);
 
     ASSERT_EQ(QueryTransCodeInfoByID(fileId, resultSet), 0);
     EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_TRANSCODE_TIME, resultSet), 0);
