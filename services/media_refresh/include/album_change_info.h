@@ -67,6 +67,8 @@ public:
     int32_t coverUriSource_ = 0;
     int32_t albumsOrder_ = INVALID_INT32_VALUE;
     int32_t orderSection_ = INVALID_INT32_VALUE;
+    std::string cloudId_ = EMPTY_STR;
+    int32_t isLocal_ = INVALID_INT32_VALUE;
 
     NativeRdb::ValuesBucket GetUpdateValues(const AlbumChangeInfo &oldAlbumInfo, NotifyType &type);
     std::string ToString(bool isDetail = false) const;
