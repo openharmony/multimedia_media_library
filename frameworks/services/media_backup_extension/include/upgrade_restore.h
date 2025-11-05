@@ -24,6 +24,7 @@
 #include "burst_key_generator.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
+#include "ocr_restore.h"
 #include "photos_restore.h"
 
 namespace OHOS {
@@ -168,6 +169,7 @@ protected:
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
     BackupDatabaseHelper backupDatabaseHelper_;
+    OCRRestore ocrRestore_;
     std::vector<int> galleryFailedOffsets_;
     std::vector<int> externalFailedOffsets_;
     ffrt::mutex galleryFailedMutex_;

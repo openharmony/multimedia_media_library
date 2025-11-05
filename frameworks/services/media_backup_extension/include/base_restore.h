@@ -33,6 +33,7 @@
 #include "tab_old_photos_restore.h"
 #include "geo_knowledge_restore.h"
 #include "highlight_restore.h"
+#include "medialibrary_rdbstore.h"
 
 namespace OHOS {
 namespace Media {
@@ -54,6 +55,7 @@ public:
     void StartBackupEx(std::string& backupExInfo);
     void Release(ReleaseScene releaseScene);
     std::string restoreInfo_;
+    void InsertVideoMode(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value);
 
 protected:
     int32_t Init(void);
@@ -176,8 +178,10 @@ protected:
     void InsertFileDuration(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
         FileInfo &fileInfo);
     void SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value);
+    void Set3DgsSubtype(FileInfo &info, NativeRdb::ValuesBucket &value,
+        std::unique_ptr<Metadata> &data);
     void AddToPhotoInfoMap(std::vector<FileInfo> &fileInfos);
-    void InsertDetailTime(NativeRdb::ValuesBucket &value, FileInfo &fileInfo);
+    void InsertDateTime(NativeRdb::ValuesBucket &value, FileInfo &fileInfo);
     virtual bool HasExThumbnail(const FileInfo &info);
     bool WaitSouthDeviceExitTimeout();
     std::string GetBackupExInfo();
@@ -189,6 +193,7 @@ protected:
     void SetParameterForRestore();
     void StopParameterForRestore();
     void UpdateHdrMode(std::vector<FileInfo> &fileInfos);
+    void RestoreSearchIndex();
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};

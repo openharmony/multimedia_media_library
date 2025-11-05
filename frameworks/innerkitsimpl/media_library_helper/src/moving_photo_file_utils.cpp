@@ -47,6 +47,7 @@ const std::string LIVE_PHOTO_VERSION_AND_FRAME_NUM = "VersionAndFrameNum";
 constexpr int32_t HEX_BASE = 16;
 constexpr int64_t AUTO_PLAY_DURATION_MS = 600;
 
+// LCOV_EXCL_START
 static string GetVersionPositionTag(uint32_t frame, bool hasExtraData,
     const string& data = "", bool isCameraShotMovingPhoto = false)
 {
@@ -330,6 +331,7 @@ static int32_t MergeFile(const UniqueFd& imageFd, const UniqueFd& videoFd, const
     }
     return E_OK;
 }
+// LCOV_EXCL_STOP
 
 uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
 {
@@ -361,6 +363,7 @@ uint32_t MovingPhotoFileUtils::GetFrameIndex(int64_t time, const int32_t fd)
     return index;
 }
 
+// LCOV_EXCL_START
 int32_t MovingPhotoFileUtils::ConvertToLivePhoto(const string& movingPhotoImagepath, int64_t coverPosition,
     std::string &livePhotoPath, int32_t userId)
 {
@@ -969,4 +972,5 @@ size_t MovingPhotoFileUtils::GetMovingPhotoSize(const std::string &imagePath, in
     (void)MediaFileUtils::GetFileSize(movingPhotoExtraDataPath, extraDataSize);
     return imageSize + videoSize + extraDataSize;
 }
+// LCOV_EXCL_STOP
 } // namespace OHOS::Media

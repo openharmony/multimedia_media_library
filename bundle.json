@@ -51,6 +51,7 @@
           "file_api",
           "graphic_2d",
           "graphic_surface",
+          "hicollie",
           "hilog",
           "hisysevent",
           "hitrace",

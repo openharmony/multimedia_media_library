@@ -31,8 +31,6 @@ using Uri = OHOS::Uri;
 
 namespace OHOS {
 namespace Media {
-static const std::string CLOUD_DATASHARE_URI = "datashareproxy://generic.cloudstorage/cloud_sp?";
-static const std::string CLOUD_URI = CLOUD_DATASHARE_URI + "key=useMobileNetworkData";
 
 void CloudMediaAssetObserver::OnChange(const ChangeInfo &changeInfo)
 {

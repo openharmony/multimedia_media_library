@@ -17,6 +17,7 @@
 #include "medialibrary_napi_utils.h"
 
 #include <cctype>
+#include <charconv>
 #include "basic/result_set.h"
 #include "datashare_predicates.h"
 #include "location_column.h"
@@ -74,7 +75,6 @@ static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP
     {ANALYSIS_OCR, OCR_TEXT_MSG}
 };
 static const uint8_t BINARY_FEATURE_END_FLAG = 0x01;
-const size_t MAX_INT = 2147483648;
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
@@ -341,9 +341,10 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
         NAPI_ERR_LOG("intercepted fileId is empty");
         return ERROR;
     }
-    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)
-        && static_cast<size_t>(stoll(fileIdStr)) < MAX_INT) {
-        return std::stoi(fileIdStr);
+    int32_t value = 0;
+    auto [ptr, ec] = std::from_chars(fileIdStr.data(), fileIdStr.data() + fileIdStr.size(), value);
+    if (ec == std::errc{} && ptr == fileIdStr.data() + fileIdStr.size()) {
+        return value;
     }
 
     NAPI_ERR_LOG("asset fileId is invalid");
@@ -793,13 +794,21 @@ int MediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
 {
     NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
     // Transfer Server error to napi error code
+    static const unordered_set<int32_t> innerFailErrorSet = {
+        E_INNER_CONVERT_FORMAT,
+        E_INNER_FAIL,
+        E_OPR_DEBUG_DB_FAIL,
+        E_BACK_UP_DB_FAIL
+    };
     if (error <= E_COMMON_START && error >= E_COMMON_END) {
         if (error == -E_CHECK_SYSTEMAPP_FAIL) {
             error = E_CHECK_SYSTEMAPP_FAIL;
-        } else if (error == E_PARAM_CONVERT_FORMAT) {
+        } else if (error == E_PARAM_CONVERT_FORMAT || error == E_ACQ_BETA_TASK_FAIL) {
             error = JS_E_PARAM_INVALID;
-        } else if (error == E_INNER_CONVERT_FORMAT || error == E_INNER_FAIL) {
+        } else if (innerFailErrorSet.find(error) != innerFailErrorSet.end()) {
             error = JS_E_INNER_FAIL;
+        } else if (error == E_BETA_VERSION_FAIL) {
+            error = JS_E_OPR_TYPE_NOT_SUPPORT;
         } else {
             error = JS_INNER_FAIL;
         }
@@ -1307,8 +1316,6 @@ int32_t MediaLibraryNapiUtils::GetSourceAlbumPredicates(const int32_t albumId, D
     predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
-    predicates.NotEqualTo(PhotoColumn::PHOTO_FILE_SOURCE_TYPE,
-        to_string(static_cast<int32_t>(FileSourceTypes::TEMP_FILE_MANAGER)));
     return E_SUCCESS;
 }
 
@@ -1918,6 +1925,21 @@ bool MediaLibraryNapiUtils::IsSystemApp()
 {
     static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
     return isSys;
+}
+
+bool MediaLibraryNapiUtils::IsNumber(const std::string &str)
+{
+    if (str.empty()) {
+        NAPI_ERR_LOG("IsNumber input is empty ");
+        return false;
+    }
+
+    for (const char &c : str) {
+        if (isdigit(c) == 0) {
+            return false;
+        }
+    }
+    return true;
 }
 
 NapiScopeHandler::NapiScopeHandler(napi_env env): env_(env)

@@ -56,6 +56,7 @@
 #include "dfx_refresh_manager.h"
 #include "media_file_utils.h"
 #include "refresh_business_name.h"
+#include "media_old_albums_column.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -422,6 +423,26 @@ int32_t MediaAlbumsService::AlbumRecoverAssets(const AlbumRecoverAssetsDto& reco
 std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::AlbumGetSelectedAssets(
     AlbumGetSelectedAssetsDto &dto)
 {
+    int curFileId;
+    double maxScore = 250;
+    double minScore = 0;
+    if (!dto.filter.empty()) {
+        CHECK_AND_RETURN_RET_LOG(nlohmann::json::accept(dto.filter), nullptr,
+            "failed to verify the filter format");
+        nlohmann::json filterJson = nlohmann::json::parse(dto.filter.c_str());
+        std::string fileId = filterJson["currentFileId"];
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsValidInteger(fileId), nullptr,
+            "AlbumGetSelectedAssets get score fail");
+        curFileId = std::stoi(fileId);
+        maxScore = this->rdbOperation_.GetAssetScore(dto, curFileId);
+    }
+    minScore = this->rdbOperation_.GetLimitScore(dto);
+    if (minScore >= maxScore) {
+        MEDIA_ERR_LOG("AlbumGetSelectedAssets minScore >= maxScore");
+        return std::make_shared<DataShare::DataShareResultSet>();
+    }
+    dto.minScore = minScore;
+    dto.maxScore = maxScore;
     return this->rdbOperation_.GetSelectedAssets(dto);
 }
 
@@ -1133,6 +1154,17 @@ int32_t MediaAlbumsService::GetAlbumsByIds(GetAlbumsByIdsDto &getAlbumsByIdsDto,
     }
 
     return E_OK;
+}
+
+std::shared_ptr<DataShare::DataShareResultSet> MediaAlbumsService::GetClonedAlbumUris(GetClonedAlbumUrisDto &dto)
+{
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(dto.columns);
+    NativeRdb::RdbPredicates predicates =
+        RdbDataShareAdapter::RdbUtils::ToPredicates(dto.predicates, TabOldAlbumsColumn::OLD_ALBUM_TABLE);
+    auto resultSet = PhotoMapOperations::QueryPhotoAssets(predicates, dto.columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet, nullptr, "Failed to query album assets");
+    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(resultSet);
+    return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 }
 
 int32_t MediaAlbumsService::GetPhotoAlbumObject(

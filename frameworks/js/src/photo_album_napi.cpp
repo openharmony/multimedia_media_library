@@ -1204,7 +1204,7 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
         }
         context->isSystemApi = true;
         // sort by hidden time desc if is hidden asset
-        context->predicates.OrderByDesc(PhotoColumn::PHOTO_HIDDEN_TIME);
+        context->predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
     }
 
     napi_value result = nullptr;
@@ -1867,22 +1867,40 @@ static napi_value checkArgsGetSelectedPhotoAssets(
     CHECK_ARGS(env,
         MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
         NAPI_INVALID_PARAMETER_ERROR);
- 
+
     if (context->argc == ARGS_TWO) {
-        unique_ptr<char[]> tmp;
-        bool succ;
-        size_t ignore;
-        tie(succ, tmp, ignore) = MediaLibraryNapiUtils::ToUTF8String(env, context->argv[PARAM1]);
-        if (succ) {
+        napi_valuetype valueType = napi_undefined;
+        CHECK_COND_RET(napi_typeof(env, context->argv[PARAM1], &valueType) == napi_ok, nullptr, "get param type fail");
+        if (valueType == napi_string) {
+            unique_ptr<char[]> tmp;
+            bool succ;
+            size_t ignore;
+            tie(succ, tmp, ignore) = MediaLibraryNapiUtils::ToUTF8String(env, context->argv[PARAM1]);
+            CHECK_COND_RET(succ, nullptr, "parse ARGS_TWO fail");
             context->filter = string(tmp.get());
-        } else {
-            return result;
+            size_t maxFilterSize = 255;
+            CHECK_COND_RET(context->filter.size() <= maxFilterSize, nullptr, "ARGS_TWO length beyond limit");
+            CHECK_COND_RET(nlohmann::json::accept(context->filter), nullptr, "failed to verify the filter format");
+            nlohmann::json filterJson = nlohmann::json::parse(context->filter.c_str());
+            std::string key = "currentFileId";
+            size_t sizeLimit = 1;
+            bool cond = filterJson.size() == sizeLimit && filterJson.contains(key);
+            CHECK_COND_RET(cond, nullptr, "ARGS_TWO must be a JSON object with exactly one key : currentFileId");
+            std::string value = filterJson[key];
+            bool isVaildInteger = !value.empty() && std::all_of(value.begin(), value.end(), ::isdigit);
+            CHECK_COND_RET(isVaildInteger, nullptr, "key : currentFileId must be a integer");
         }
     }
  
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
-    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(
-        env, context->fetchColumn, PhotoColumn::IsPhotoColumn, NapiAssetType::TYPE_PHOTO));
+    CHECK_COND_RET(photoAlbum != nullptr, nullptr, "failed to parse album");
+    bool isPortraitAlbum =
+        photoAlbum->IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType());
+    CHECK_COND_RET(isPortraitAlbum, nullptr, "this is not portrait album");
+    
+    for (std::string colum : context->fetchColumn) {
+        CHECK_COND_RET(PhotoColumn::IsPhotoColumn(colum), nullptr, "column not in Photos table");
+    }
  
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), NAPI_INVALID_PARAMETER_ERROR);
     return result;

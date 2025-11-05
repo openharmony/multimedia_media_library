@@ -374,6 +374,8 @@ bool AlbumChangeData::IsAlbumInfoChange()
         (infoBeforeChange_.lpath_ != infoAfterChange_.lpath_) ||
         (infoBeforeChange_.albumName_ != infoAfterChange_.albumName_) ||
         (infoBeforeChange_.albumsOrder_ != infoAfterChange_.albumsOrder_) ||
+        (infoBeforeChange_.albumSubType_ != infoAfterChange_.albumSubType_) ||
+        (infoBeforeChange_.albumType_ != infoAfterChange_.albumType_) ||
         (infoBeforeChange_.orderSection_ != infoAfterChange_.orderSection_);
 }
  

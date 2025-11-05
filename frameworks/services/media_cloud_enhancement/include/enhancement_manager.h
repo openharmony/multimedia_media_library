@@ -94,7 +94,8 @@ public:
     EXPORT bool SyncCleanCompositePhoto(const std::string &photoPath);
     EXPORT bool SyncDealWithCompositePhoto(const std::string &photoPath);
     EXPORT int32_t SyncDealWithCompositeDisplayStatus(int32_t fileId, const std::string &photoPath, bool exchange);
-    EXPORT int32_t UpdateCompositeDisplayStatus(int32_t fileId, const int32_t &compositeDisplayStatus);
+    EXPORT int32_t UpdateCompositeDisplayStatus(int32_t fileId, int32_t compositeDisplayStatus,
+        int32_t ceAvailable = 0);
     EXPORT std::optional<std::tuple<std::string, int32_t, int32_t>> QueryCompositePhotoInfo(int32_t fileId);
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
@@ -113,10 +114,10 @@ private:
     EXPORT void GenerateCancelOperationPredicates(int32_t fileId, NativeRdb::RdbPredicates &servicePredicates);
     sptr<PhotosAutoOptionObserver> photosAutoOptionObserver_ = nullptr;
     sptr<PhotosWaterMarkObserver> photosWaterMarkObserver_ = nullptr;
-    bool IsAutoTaskEnabled();
+    EXPORT bool IsAutoTaskEnabled();
     EXPORT int32_t HandleCancelAllAutoOperation();
     void ResetProcessingAutoToSupport();
-    bool IsAddOperationEnabled(int32_t triggerMode);
+    EXPORT bool IsAddOperationEnabled(int32_t triggerMode);
     int32_t DoChangeDisplayModeFile(int32_t fileId, const string &filePath);
     int32_t CompositePhotoSetOperation(int32_t fileId, CompositePhotoOperation operation);
 #endif

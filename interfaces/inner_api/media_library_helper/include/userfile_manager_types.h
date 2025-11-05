@@ -151,7 +151,7 @@ enum class PhotoSubType : int32_t {
     CAMERA,
     MOVING_PHOTO,
     BURST,
-    D3GS = 7,
+    SPATIAL_3DGS = 7,
     SUBTYPE_END
 };
 
@@ -186,6 +186,12 @@ enum class PhotoPositionType : int32_t {
     LOCAL = 1,
     CLOUD = 2,
     LOCAL_AND_CLOUD = 3
+};
+
+enum class VideoMode : int32_t {
+    DEFAULT = -1,
+    NOT_LOG_VIDEO = 0,
+    LOG_VIDEO = 1
 };
 
 enum class PhotoThumbStatusType : int32_t {

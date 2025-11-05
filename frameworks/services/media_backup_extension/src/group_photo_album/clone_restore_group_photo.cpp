@@ -380,6 +380,7 @@ void CloneRestoreGroupPhoto::RestoreMapsBatch()
 
 int32_t CloneRestoreGroupPhoto::RestoreMaps()
 {
+    int64_t startCloneTime = MediaFileUtils::UTCTimeMilliSeconds();
     isMapOrder_ = IsMapColumnOrderExist();
     const std::string QUERY_TOTAL_COUNT_SQL = "SELECT count(1) AS count FROM AnalysisPhotoMap AS map "
         " INNER JOIN AnalysisAlbum AS a ON map.map_album = a.album_id "
@@ -388,6 +389,9 @@ int32_t CloneRestoreGroupPhoto::RestoreMaps()
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         RestoreMapsBatch();
     }
+    int64_t endCloneTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_DEBUG_LOG("Restore maps timecost of group photo album is %{public}" PRId64 "ms",
+        endCloneTime - startCloneTime);
     return E_OK;
 }
 
@@ -439,7 +443,8 @@ bool CloneRestoreGroupPhoto::IsExistPortraitDataInOldDb()
 {
     int index;
     int32_t value = -1;
-    const std::string querySql = "SELECT COUNT(1) FROM AnalysisAlbum WHERE album_type = 4096 AND album_subtype = 4102";
+    std::string querySql = "SELECT COUNT(1) FROM AnalysisAlbum WHERE album_type = 4096 AND album_subtype = 4102";
+    AppendExtraWhereClause(querySql);
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "query analysis portrait album err!");
     int32_t ret = resultSet->GoToFirstRow();

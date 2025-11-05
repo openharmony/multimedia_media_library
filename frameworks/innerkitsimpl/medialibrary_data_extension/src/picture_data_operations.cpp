@@ -364,7 +364,7 @@ int32_t PictureDataOperations::AddSavePictureTask(sptr<PicturePair>& picturePair
 int32_t PictureDataOperations::GetPendingTaskSize()
 {
     lock_guard<mutex> lock(pictureMapMutex_);
-    MEDIA_INFO_LOG("GetPendingTaskSize, lowQualityPictureMap: %{public}d, highQualityPictureMap: %{public}d",
+    MEDIA_ERR_LOG("GetPendingTaskSize, lowQualityPictureMap: %{public}d, highQualityPictureMap: %{public}d",
         static_cast<int32_t>(lowQualityPictureMap_.size()), static_cast<int32_t>(highQualityPictureMap_.size()));
     return lowQualityPictureMap_.size() + highQualityPictureMap_.size();
 }

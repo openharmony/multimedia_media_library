@@ -43,6 +43,7 @@ bool CloudMdkRecordPhotosVo::MarshallingBasicInfo(Parcel &parcel) const
     parcel.WriteString(shootingModeTag);
     parcel.WriteInt32(dynamicRangeType);
     parcel.WriteInt32(hdrMode);
+    parcel.WriteInt32(videoMode);
     parcel.WriteString(frontCamera);
     parcel.WriteInt64(editTime);
     parcel.WriteInt32(originalSubtype);  //
@@ -106,6 +107,7 @@ bool CloudMdkRecordPhotosVo::ReadBasicInfo(Parcel &parcel)
     parcel.ReadString(shootingModeTag);
     parcel.ReadInt32(dynamicRangeType);
     parcel.ReadInt32(hdrMode);
+    parcel.ReadInt32(videoMode);
     parcel.ReadString(frontCamera);
     parcel.ReadInt64(editTime);
     parcel.ReadInt32(originalSubtype);
@@ -221,6 +223,7 @@ void CloudMdkRecordPhotosVo::GetAttributesInfo(std::stringstream &ss) const
        << "\"shootingModeTag\": \"" << shootingModeTag << "\","
        << "\"dynamicRangeType\": " << dynamicRangeType << ","
        << "\"hdrMode\": " << hdrMode << ","
+       << "\"videoMode\": " << videoMode << ","
        << "\"frontCamera\": \"" << frontCamera << "\","
        << "\"coverPosition\": " << coverPosition << ","
        << "\"isRectificationCover\": " << isRectificationCover << ","

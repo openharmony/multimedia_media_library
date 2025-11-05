@@ -55,7 +55,6 @@ using ChangeType = AAFwk::ChangeInfo::ChangeType;
 // LCOV_EXCL_START
 int32_t CloudMediaAlbumDao::HandleLPathAndAlbumType(PhotoAlbumDto &record)
 {
-    MEDIA_INFO_LOG("HandleLPathAndAlbumType enter");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "HandleLPathAndAlbumType Failed to get rdbStore.");
     std::unordered_map<std::string, std::string> localAlbumMap = this->GetLocalAlbumMap();
@@ -225,7 +224,6 @@ int32_t CloudMediaAlbumDao::InsertCloudByCloudId(PhotoAlbumDto &record,
 
 std::tuple<std::shared_ptr<NativeRdb::ResultSet>, int> CloudMediaAlbumDao::QueryLocalMatchAlbum(std::string &cloudId)
 {
-    MEDIA_INFO_LOG("QueryLocalMatchAlbum enter");
     std::tuple<std::shared_ptr<NativeRdb::ResultSet>, int> defaultValue = {nullptr, 0};
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, defaultValue, "QueryLocalMatchAlbum Failed to get rdbStore.");
@@ -354,7 +352,6 @@ int32_t CloudMediaAlbumDao::UpdateCloudAlbum(PhotoAlbumDto &record, const std::s
 
 int32_t CloudMediaAlbumDao::OnDeleteAlbums(std::vector<std::string> &failedAlbumIds)
 {
-    MEDIA_INFO_LOG("enter OnDeleteAlbums");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "OnDeleteAlbums Failed to get rdbStore.");
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
@@ -1014,6 +1011,44 @@ int32_t CloudMediaAlbumDao::ClearAlbumFailedRecords()
     return E_OK;
 }
 
+int32_t CloudMediaAlbumDao::ReportAbnormalLocalRecords()
+{
+    NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_POSITION, to_string(static_cast<int32_t>(POSITION_LOCAL)))
+        ->And()->EqualTo(PhotoColumn::MEDIA_DATE_TRASHED, "0");
+    if (!albumCreateFailSet_.empty()) {
+        predicates.And()->NotIn(PhotoColumn::MEDIA_ID, albumCreateFailSet_);
+    }
+    predicates.OrderByDesc(PhotoColumn::MEDIA_ID);
+    const int32_t LIMIT_SIZE = 20;
+    predicates.Limit(LIMIT_SIZE);
+    vector<string> queryColums = {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::PHOTO_DIRTY,
+        PhotoColumn::PHOTO_LCD_VISIT_TIME,
+        PhotoColumn::PHOTO_THUMBNAIL_READY,
+        PhotoColumn::MEDIA_TIME_PENDING,
+    };
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "GetCheckRecords Failed to get rdbStore.");
+    auto resultSet = rdbStore->Query(predicates, queryColums);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "resultset is null");
+    std::vector<PhotosPo> resultList;
+    int32_t ret = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords(resultList);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "GetCheckRecords Failed to query, ret:  %{public}d", ret);
+    for (auto &record : resultList) {
+        int32_t fileId = record.fileId.value_or(-1);
+        int32_t dirty = record.dirty.value_or(-1);
+        int64_t lcdVisitTime = record.lcdVisitTime.value_or(-1);
+        int64_t thumbnailReady = record.thumbnailReady.value_or(-1);
+        int64_t timePending = record.timePending.value_or(-1);
+        MEDIA_INFO_LOG(
+            "abnormal file id is %{public}d, other info is %{public}d, %{public}lld, %{public}lld, %{public}lld",
+            fileId, dirty, timePending, lcdVisitTime, thumbnailReady);
+    }
+    return E_OK;
+}
+
 std::unordered_map<std::string, MediaAlbumPluginRowData> CloudMediaAlbumDao::QueryWhiteList()
 {
     std::unordered_map<std::string, MediaAlbumPluginRowData> whiteListMap;
@@ -1061,7 +1096,7 @@ std::unordered_map<std::string, MediaAlbumPluginRowData> CloudMediaAlbumDao::Que
 
 std::unordered_map<std::string, std::string> CloudMediaAlbumDao::GetLocalAlbumMap()
 {
-    MEDIA_INFO_LOG("GetLocalAlbumMap start init");
+    MEDIA_DEBUG_LOG("GetLocalAlbumMap start init");
     std::unordered_map<std::string, std::string> localAlbumMap;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, localAlbumMap, "GetLocalAlbumMap Failed to get rdbStore.");

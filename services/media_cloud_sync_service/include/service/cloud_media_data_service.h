@@ -30,6 +30,7 @@
 #include "cloud_media_data_service_processor.h"
 #include "cloud_media_common_dao.h"
 #include "cloud_media_define.h"
+#include "query_data_vo.h"
 
 namespace OHOS::Media::CloudSync {
 class EXPORT CloudMediaDataService {
@@ -50,6 +51,10 @@ public:
     std::vector<uint64_t> GetFilePosStat();
     std::vector<uint64_t> GetCloudThmStat();
     int32_t GetDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat);
+
+    int32_t CheckAndFixAlbum();
+    int32_t QueryData(const DataShare::DataSharePredicates &predicates, const std::vector<std::string> &columnNames,
+                      const std::string &tableName, std::vector<std::unordered_map<std::string, std::string>> &results);
 
 private:
     enum {

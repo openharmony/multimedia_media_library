@@ -27,6 +27,7 @@ ohos_fuzztest("MediaLibraryMediaAlbumsControllerServiceFuzzTest") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/controller",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dto",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dao",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/vo",
   ]
 

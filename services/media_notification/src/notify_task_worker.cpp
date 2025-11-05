@@ -18,6 +18,7 @@
 #include "notify_task_worker.h"
 
 #include "media_log.h"
+#include "media_notification_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "result_set_utils.h"
 #include "userfilemgr_uri.h"
@@ -175,6 +176,7 @@ void NotifyTaskWorker::HandleNotifyTaskPeriod()
         HandleNotifyTask();
         noTaskTims_ = 0;
     }
+    NotificationUtils::UpdateNotificationProp();
     MEDIA_INFO_LOG("end notify worker");
 }
 

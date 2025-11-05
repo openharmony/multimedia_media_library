@@ -62,6 +62,7 @@
 #include "post_event_utils.h"
 #include "userfilemgr_uri.h"
 #include "dfx_utils.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -776,6 +777,29 @@ static int32_t OpenDocument(const string &uri, const string &mode)
     return MediaFileUtils::OpenFile(realPath, mode);
 }
 
+static bool IsNumber(const string &betaIssueId)
+{
+    CHECK_AND_RETURN_RET_LOG(!betaIssueId.empty(), false, "betaIssueId is empty");
+    for (const char &c : betaIssueId) {
+        CHECK_AND_RETURN_RET(isdigit(c) != 0, false);
+    }
+    return true;
+}
+
+static int32_t OpenDebugDatabase(const string &uri, const string &mode)
+{
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsSystemApp(), E_CHECK_SYSTEMAPP_FAIL, "Caller not systemapp");
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsBetaVersion(), E_BETA_VERSION_FAIL, "Caller not beta version");
+    size_t pos = uri.find_last_of("/");
+    CHECK_AND_RETURN_RET_LOG(pos != string::npos, E_OPR_DEBUG_DB_FAIL, "uri not contain '/' ");
+    string betaIssueId = uri.substr(pos + 1);
+    CHECK_AND_RETURN_RET_LOG(IsNumber(betaIssueId), E_ACQ_BETA_TASK_FAIL, "betaIssueId is invalid");
+    string realPath = "/data/storage/el2/log/logpack/media_library_" + betaIssueId + ".db.zip";
+    int32_t fileFd = MediaFileUtils::OpenFile(realPath, mode);
+    CHECK_AND_RETURN_RET_LOG(fileFd >= 0, E_OPR_DEBUG_DB_FAIL, "Failed to open debug db, errno %{public}d", errno);
+    return fileFd;
+}
+
 static bool IsDocumentUri(const std::string &uriString)
 {
     Uri uri(uriString);
@@ -823,6 +847,8 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
         return ThumbnailService::GetInstance()->GetKeyFrameThumbnailFd(uriString, true);
     } else if (IsDocumentUri(uriString)) {
         return OpenDocument(uriString, mode);
+    } else if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_DEBUG_DB) {
+        return OpenDebugDatabase(uriString, mode);
     }
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromUri(uriString);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI, "Failed to obtain path from Database");
@@ -831,13 +857,13 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
         return E_IS_PENDING_ERROR;
     }
     bool isHeif = cmd.GetQuerySetParam(PHOTO_TRANSCODE_OPERATION) == OPRN_TRANSCODE_HEIF;
-    int32_t err = MediaLibraryAssetOperations::SetTranscodeUriToFileAsset(fileAsset, mode, isHeif);
+    int32_t err = MediaLibraryTranscodeDataAgingOperation::SetTranscodeUriToFileAsset(fileAsset, mode, isHeif);
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
     int32_t fd = OpenAsset(path, mode, fileId, type);
     CHECK_AND_RETURN_RET_LOG(fd >= 0, E_HAS_FS_ERROR, "open file fd %{private}d, errno %{private}d", fd, errno);
     if (err == 0) {
-        MediaLibraryAssetOperations::DoTranscodeDfx(ACCESS_MEDIALIB);
+        MediaLibraryTranscodeDataAgingOperation::DoTranscodeDfx(ACCESS_MEDIALIB);
     }
     if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos) {
         auto watch = MediaLibraryInotify::GetInstance();

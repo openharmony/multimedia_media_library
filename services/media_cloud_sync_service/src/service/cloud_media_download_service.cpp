@@ -17,6 +17,7 @@
 
 #include "cloud_media_download_service.h"
 
+#include "background_cloud_batch_selected_file_processor.h"
 #include "cover_position_parser.h"
 #include "directory_ex.h"
 #include "parameters.h"
@@ -37,6 +38,11 @@
 #include "exif_rotate_utils.h"
 #include "media_gallery_sync_notify.h"
 #include "enhancement_manager.h"
+#include "dfx_utils.h"
+#include "photo_video_mode_operation.h"
+#include "metadata_extractor.h"
+#include "medialibrary_unistore_manager.h"
+#include "result_set_utils.h"
 
 namespace OHOS::Media::CloudSync {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
@@ -399,6 +405,69 @@ int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetDa
     return ret;
 }
 
+std::string CloudMediaDownloadService::GetDisplayName(const PhotosPo &photosPo)
+{
+    std::string photoDisplayName = "";
+    if (photosPo.displayName.has_value()) {
+        photoDisplayName = photosPo.displayName.value();
+        MEDIA_INFO_LOG("CloudMediaDownloadService::GetDisplayName photoDisplayName=%{public}s",
+                       photoDisplayName.c_str());
+    } else {
+        MEDIA_INFO_LOG("no CloudMediaDownloadService::GetDisplayName photoDisplayName");
+    }
+    return photoDisplayName;
+}
+ 
+int32_t CloudMediaDownloadService::GetFileId(const PhotosPo &photosPo)
+{
+    MEDIA_INFO_LOG("CloudMediaDownloadService::GetFileId start");
+    int32_t photoFileId = 0;
+    if (photosPo.displayName.has_value()) {
+        photoFileId = photosPo.fileId.value();
+        MEDIA_INFO_LOG("CloudMediaDownloadService::GetFileId photoFileId=%{public}d", photoFileId);
+    } else {
+        MEDIA_INFO_LOG("no CloudMediaDownloadService::GetFileId photoFileId");
+    }
+    return photoFileId;
+}
+ 
+void CloudMediaDownloadService::UpdateVideoMode(std::vector<PhotosPo> &photosPoVec)
+{
+    for (auto &photosPo : photosPoVec) {
+        int32_t mediaTypePhoto = photosPo.mediaType.value_or(0);
+        if (mediaTypePhoto != static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+            MEDIA_INFO_LOG("photosPo is not video");
+            continue;
+        }
+        int32_t fileId = GetFileId(photosPo);
+        std::string queryVideoSql = "SELECT video_mode FROM Photos WHERE file_id = " + std::to_string(fileId);
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_LOG(rdbStore != nullptr, "RdbStore is null!");
+        std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(queryVideoSql);
+        CHECK_AND_RETURN_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
+            "UpdateVideoMode resultSet is nullptr or empty.");
+        int32_t videoMode = GetInt32Val(PhotoColumn::PHOTO_VIDEO_MODE, resultSet);
+        if (videoMode != static_cast<int32_t>(VideoMode::DEFAULT)) {
+            MEDIA_INFO_LOG("photosPo has scannered");
+            continue;
+        }
+        string logVideoPath = photosPo.data.value_or("");
+        unique_ptr<Metadata> videoModeData = make_unique<Metadata>();
+        videoModeData->SetFilePath(logVideoPath);
+        int32_t err = MetadataExtractor::ExtractAVMetadata(videoModeData);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("Failed to extract metadata for photosPo: %{public}s",
+                DfxUtils::GetSafePath(logVideoPath).c_str());
+            continue;
+        }
+        int32_t videoModeUpdate = videoModeData->GetVideoMode();
+        MEDIA_INFO_LOG("photosPo videoMode=%{public}d", videoModeUpdate);
+        auto photoRet = PhotoVideoModeOperation::UpdatePhotosVideoMode(videoModeUpdate, fileId);
+        CHECK_AND_RETURN_LOG(photoRet == NativeRdb::E_OK,
+            "UpdatePhotosVideoMod photostab failed, error id: %{public}d", photoRet);
+    }
+}
+
 int32_t CloudMediaDownloadService::OnDownloadAsset(
     const std::vector<std::string> &cloudIds, std::vector<MediaOperateResultDto> &result)
 {
@@ -414,6 +483,7 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
         cloudIds.size(),
         photosPoVec.size());
     // Update
+    UpdateVideoMode(photosPoVec);
     OnDownloadAssetData assetData;
     for (auto &photosPo : photosPoVec) {
         assetData = this->GetOnDownloadAssetData(photosPo);
@@ -460,6 +530,7 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         this->ResetAssetModifyTime(assetData);
     }
 
+    UpdateBatchDownloadTask(photo);
     ret = FixDownloadAssetExifRotate(photo, assetData);
     if (ret != E_OK) {
         MEDIA_INFO_LOG("HandlePhoto Failed to fix exif rotate %{public}s",
@@ -476,6 +547,14 @@ void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownlo
         return;
     }
     MEDIA_INFO_LOG("[OnDownloadAsset] Delete transCode file Success!");
+}
+
+void CloudMediaDownloadService::UpdateBatchDownloadTask(const ORM::PhotosPo &photo)
+{
+    int32_t fileId = photo.fileId.value_or(-1);
+    CHECK_AND_RETURN(fileId != -1);
+    MEDIA_INFO_LOG("Successfully download asset[%{public}d] by single task, need to handle batch task.", fileId);
+    BackgroundCloudBatchSelectedFileProcessor::UpdateDBStatusInfoForSingleDownloadCompletely(fileId);
 }
 
 int32_t CloudMediaDownloadService::FixDownloadAssetExifRotate(

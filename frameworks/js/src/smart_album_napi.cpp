@@ -154,6 +154,7 @@ napi_value SmartAlbumNapi::SmartAlbumNapiConstructor(napi_env env, napi_callback
 napi_value SmartAlbumNapi::CreateSmartAlbumNapi(napi_env env, unique_ptr<SmartAlbumAsset> &albumData)
 {
     if (albumData == nullptr) {
+        NAPI_ERR_LOG("CreateSmartAlbumNapi albumData is null");
         return nullptr;
     }
 

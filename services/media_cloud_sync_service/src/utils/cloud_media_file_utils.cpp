@@ -49,7 +49,7 @@ bool CloudMediaFileUtils::GetParentPathAndFilename(
 
 bool CloudMediaFileUtils::GetFileSizeV2(const std::string &filePath, size_t &size)
 {
-    MEDIA_WARN_LOG("GetFileSize enter: %{public}s", filePath.c_str());
+    MEDIA_DEBUG_LOG("GetFileSize enter: %{public}s", filePath.c_str());
     struct stat statbuf;
     if (stat(filePath.c_str(), &statbuf) == -1) {
         MEDIA_WARN_LOG("GetFileSize Failed, errno: %{public}d, path: %{public}s", errno, filePath.c_str());
@@ -62,7 +62,7 @@ bool CloudMediaFileUtils::GetFileSizeV2(const std::string &filePath, size_t &siz
         return false;
     }
     size = static_cast<size_t>(statbuf.st_size);
-    MEDIA_WARN_LOG("GetFileSize end: %{public}s", filePath.c_str());
+    MEDIA_DEBUG_LOG("GetFileSize end: %{public}s", filePath.c_str());
     return true;
 }
 

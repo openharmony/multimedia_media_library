@@ -34,6 +34,11 @@
 #include "moving_photo_file_utils.h"
 #include "parameters.h"
 #include "result_set_utils.h"
+#include "query_data_vo.h"
+#include "photos_po.h"
+#include "photos_po_writer.h"
+#include "photo_album_po.h"
+#include "photo_album_po_writer.h"
 
 namespace OHOS::Media::CloudSync {
 int32_t CloudMediaDataService::UpdateDirty(const std::string &cloudId, const int32_t dirtyType)
@@ -194,6 +199,40 @@ int32_t CloudMediaDataService::UpdateLocalFileDirty(const std::vector<std::strin
         }
         ret = this->dataDao_.UpdateLocalFileDirty(cloudId);
         MEDIA_INFO_LOG("UpdateLocalFileDirty update cloudId: %{public}s, ret: %{public}d", cloudId.c_str(), ret);
+    }
+    return ret;
+}
+
+int32_t CloudMediaDataService::CheckAndFixAlbum()
+{
+    MEDIA_INFO_LOG("CheckAndFixAlbum enter");
+    int32_t ret = this->dataDao_.CheckAndDeleteAlbum();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to CheckAndDeleteAlbum, ret = %{public}d", ret);
+    ret = this->dataDao_.CheckAndUpdateAlbum();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to CheckAndUpdateAlbum, ret = %{public}d", ret);
+    return E_OK;
+}
+
+int32_t CloudMediaDataService::QueryData(const DataShare::DataSharePredicates &predicates,
+    const std::vector<std::string> &columnNames, const std::string &tableName,
+    std::vector<std::unordered_map<std::string, std::string>> &results)
+{
+    int32_t ret;
+    if (tableName == PhotoColumn::PHOTOS_TABLE) {
+        std::vector<PhotosPo> photoInfos;
+        ret = this->dataDao_.QueryDataFromPhotos(predicates, columnNames, photoInfos);
+        for (PhotosPo &photoPo : photoInfos) {
+            results.emplace_back(PhotosPoWriter(photoPo).ToMap(false));
+        }
+    } else if (tableName == PhotoAlbumColumns::TABLE) {
+        std::vector<PhotoAlbumPo> photoAlbumInfos;
+        ret = this->dataDao_.QueryDataFromPhotoAlbums(predicates, columnNames, photoAlbumInfos);
+        for (PhotoAlbumPo &photoAlbumPo : photoAlbumInfos) {
+            results.emplace_back(PhotoAlbumPoWriter(photoAlbumPo).ToMap(false));
+        }
+    } else {
+        MEDIA_INFO_LOG("Invalid tableName in QueryData");
+        return E_ERR;
     }
     return ret;
 }

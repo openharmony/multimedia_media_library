@@ -16,9 +16,14 @@
 #ifndef MEDIALIBRARY_VISION_COLUMN_H
 #define MEDIALIBRARY_VISION_COLUMN_H
 
+#include <vector>
+
 #include "media_column.h"
 #include "userfile_manager_types.h"
 #include "userfilemgr_uri.h"
+#include "story_play_info_column.h"
+#include "story_cover_info_column.h"
+#include "story_album_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -41,10 +46,30 @@ const std::string VISION_VIDEO_FACE_TABLE = "tab_analysis_video_face";
 const std::string VISION_ANALYSIS_ALBUM_TOTAL_TABLE = "tab_analysis_album_total";
 const std::string VISION_FACE_TAG_TABLE = "tab_analysis_face_tag";
 const std::string VISION_AFFECTIVE_TABLE = "tab_analysis_affective";
+const std::string SEARCH_TOTAL_TABLE = "tab_analysis_search_index";
 const std::string ANALYSIS_ALBUM_TABLE = "AnalysisAlbum";
 const std::string ANALYSIS_PHOTO_MAP_TABLE = "AnalysisPhotoMap";
 const std::string ANALYSIS_ASSET_SD_MAP_TABLE = "tab_analysis_asset_sd_map";
 const std::string ANALYSIS_ALBUM_ASSET_MAP_TABLE = "tab_analysis_album_asset_map";
+const std::vector<std::string> VISION_HIGHLIGHT_TABLES = {
+    VISION_SALIENCY_TABLE,
+    VISION_OBJECT_TABLE,
+    VISION_RECOMMENDATION_TABLE,
+    VISION_SEGMENTATION_TABLE,
+    VISION_COMPOSITION_TABLE,
+    VISION_POSE_TABLE,
+    VISION_OCR_TABLE,
+    VISION_LABEL_TABLE,
+    SEARCH_TOTAL_TABLE,
+    VISION_AESTHETICS_TABLE,
+    HIGHLIGHT_PLAY_INFO_TABLE,
+    HIGHLIGHT_COVER_INFO_TABLE,
+    HIGHLIGHT_ALBUM_TABLE,
+    VISION_IMAGE_FACE_TABLE,
+    VISION_FACE_TAG_TABLE,
+    VISION_HEAD_TABLE,
+    VISION_TOTAL_TABLE,
+};
 // fake column for merge album
 const std::string TARGET_ALBUM_ID = "target_album_id";
 

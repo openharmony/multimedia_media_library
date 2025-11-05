@@ -120,6 +120,7 @@ static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {MediaColumn::MEDIA_PARENT_ID, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_META_DATE_MODIFIED, ResultSetDataType::TYPE_INT64},
     {PhotoColumn::PHOTO_ORIENTATION, ResultSetDataType::TYPE_INT32},
+    {PhotoColumn::PHOTO_EXIF_ROTATE, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_LATITUDE, ResultSetDataType::TYPE_DOUBLE},
     {PhotoColumn::PHOTO_LONGITUDE, ResultSetDataType::TYPE_DOUBLE},
     {PhotoColumn::PHOTO_HEIGHT, ResultSetDataType::TYPE_INT32},
@@ -146,6 +147,7 @@ static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {PhotoColumn::PHOTO_MEDIA_SUFFIX, ResultSetDataType::TYPE_STRING},
     {PhotoColumn::PHOTO_IS_RECENT_SHOW, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_FILE_SOURCE_TYPE, ResultSetDataType::TYPE_INT32},
+    {PhotoColumn::PHOTO_VIDEO_MODE, ResultSetDataType::TYPE_INT32},
 };
 
 static unordered_map<string, ResultSetDataType> thumbnailColumnTypeMap = {
@@ -558,11 +560,13 @@ struct MediaAssetCopyInfo {
     bool isCopyDateAdded;
     bool isCopyCeAvailable;
     bool isCopyPackageName;
+    bool isCopyOwnerPackage;
     MediaAssetCopyInfo(const std::string& targetPath, bool isCopyThumbnail, int32_t ownerAlbumId,
         const std::string& displayName = "", bool isCopyDateAdded = true, bool isCopyCeAvailable = false,
-        bool isCopyPackageName = true) : targetPath(targetPath), isCopyThumbnail(isCopyThumbnail),
-        ownerAlbumId(ownerAlbumId), displayName(displayName), isCopyDateAdded(isCopyDateAdded),
-        isCopyCeAvailable(isCopyCeAvailable), isCopyPackageName(isCopyPackageName) {}
+        bool isCopyPackageName = true, bool isCopyOwnerPackage = true) : targetPath(targetPath),
+        isCopyThumbnail(isCopyThumbnail), ownerAlbumId(ownerAlbumId), displayName(displayName),
+        isCopyDateAdded(isCopyDateAdded), isCopyCeAvailable(isCopyCeAvailable), isCopyPackageName(isCopyPackageName),
+        isCopyOwnerPackage(isCopyOwnerPackage) {}
 };
 
 static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& resultSet,
@@ -615,6 +619,16 @@ static string GetPackageName()
     return PermissionUtils::GetPackageNameByBundleName(clientBundle);
 }
 
+static string GetOwnerPackage()
+{
+    string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    if (clientBundle.empty()) {
+        MEDIA_ERR_LOG("GetClientBundleName failed");
+        return "";
+    }
+    return clientBundle;
+}
+
 static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     NativeRdb::ValuesBucket &values, shared_ptr<NativeRdb::ResultSet> &resultSet, const MediaAssetCopyInfo &copyInfo)
 {
@@ -656,6 +670,9 @@ static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStor
     if (!copyInfo.isCopyPackageName) {
         values.Delete(MediaColumn::MEDIA_PACKAGE_NAME);
         values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, GetPackageName());
+    }
+    if (!copyInfo.isCopyOwnerPackage) {
+        values.Put(MediaColumn::MEDIA_OWNER_PACKAGE, GetOwnerPackage());
     }
     HandleLowQualityAssetValuesBucket(resultSet, values);
     HandleTempFileAssetValuesBucket(resultSet, values);
@@ -893,7 +910,7 @@ static int32_t CopyLocalSingleFileSync(shared_ptr<AccurateRefresh::AssetAccurate
         return E_ERR;
     }
 
-    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName, false, true, false);
+    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName, false, true, false, false);
     tracer.Start("CopyMateData");
     NativeRdb::ValuesBucket values;
     err = BuildInsertValuesBucket(upgradeStore, values, resultSet, copyInfo);
@@ -917,7 +934,7 @@ static int32_t CopyLocalSingleFileSync(shared_ptr<AccurateRefresh::AssetAccurate
             "ownerAlbumId: %{public}d, ret = %{public}d", assetId, (long long)newAssetId, ownerAlbumId, err);
         return E_OK;
     }
-    
+
     err = PhotoFileOperation().CopyThumbnail(resultSet, targetPath, newAssetId);
     if (err != E_OK && GenerateThumbnail(newAssetId, targetPath, resultSet, true) != E_SUCCESS) {
         MediaLibraryRdbUtils::UpdateThumbnailRelatedDataToDefault(upgradeStore, newAssetId);
@@ -1472,7 +1489,20 @@ void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(
         ParsingAndFillValue(values, columnName, columnType, resultSet);
     }
 
-    std::string lPath = "/Pictures/Users/" + newAlbumName;
+    std::string lPath = "";
+    int32_t albumType = -1;
+    GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_LPATH, lPath);
+    GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_TYPE, albumType);
+    if (albumType == PhotoAlbumType::SOURCE) {
+        size_t lastSlashIndex = lPath.find_last_of("/\\");
+        if (lastSlashIndex != std::string::npos) {
+            lPath = lPath.substr(0, lastSlashIndex + 1) + newAlbumName;
+        }
+        values.Delete(PhotoAlbumColumns::ALBUM_BUNDLE_NAME);
+    } else if (albumType == PhotoAlbumType::USER) {
+        lPath = "/Pictures/Users/" + newAlbumName;
+    }
+
     values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, 1);
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lPath);
     values.Delete(PhotoAlbumColumns::ALBUM_NAME);
@@ -2291,7 +2321,7 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData(bool isBackg
         RefreshAllAlbums();
         isNeedRefreshAlbum = false;
     }
-    
+
     MEDIA_INFO_LOG("DATA_CLEAN:Clean invalid cloud album and dirty data, cost %{public}ld",
         (long)(MediaFileUtils::UTCTimeMilliSeconds() - beginTime));
     return E_OK;

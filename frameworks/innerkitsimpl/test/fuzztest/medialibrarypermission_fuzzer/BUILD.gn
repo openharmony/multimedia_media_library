@@ -37,6 +37,7 @@ ohos_fuzztest("MediaLibraryPermissionFuzzTest") {
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_private_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_read_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_system_api_permission_check.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_system_innerapi_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_write_permission_check.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_deprecated_perm_usage.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/pemission_common.cpp",

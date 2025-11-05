@@ -67,10 +67,6 @@ using namespace Notification;
 static const double ABLE_STOP_DOWNLOAD_STORAGE_FREE_RATIO = 0.05;
 static const double ABLE_RESTORE_DOWNLOAD_STORAGE_FREE_RATIO = 0.10;
 
-#ifdef HAS_THERMAL_MANAGER_PART
-static const int32_t ABLE_STOP_DOWNLOAD_TEMP = 43;
-static const int32_t ABLE_RESTORE_DOWNLOAD_TEMP = 39;
-#endif
 #ifdef HAS_BATTERY_MANAGER_PART
 static const int32_t ABLE_STOP_DOWNLOAD_POWER = 20;
 static const int32_t ABLE_RESTORE_DOWNLOAD_POWER = 30;
@@ -236,6 +232,18 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudBatchSelectedFileProcessor:
     return uniStore->QuerySql(sql);
 }
 
+void BackgroundCloudBatchSelectedFileProcessor::UpdateDBStatusInfoForSingleDownloadCompletely(int32_t fileId)
+{
+    std::string fileIdStr = std::to_string(fileId);
+    int32_t ret = UpdateDBProgressInfoForFileId(fileIdStr, 100, MediaFileUtils::UTCTimeSeconds(),
+        static_cast<int32_t>(OHOS::Media::BatchDownloadStatusType::TYPE_SUCCESS));
+    MEDIA_INFO_LOG("BatchSelectFileDownload Single Download UpdateDBProgressInfo, fileId: %{public}d,"
+        " ret: %{public}d", fileId, ret);
+    ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FINISH,
+        fileId, 100); // 100 finish
+    MEDIA_INFO_LOG("BatchSelectFileDownload Single Success NotifyDownloadProgressInfo, ret: %{public}d", ret);
+}
+
 void BackgroundCloudBatchSelectedFileProcessor::UpdateDBProgressStatusInfoForBatch(vector<int32_t> fileIds,
     int32_t status)
 {
@@ -245,6 +253,9 @@ void BackgroundCloudBatchSelectedFileProcessor::UpdateDBProgressStatusInfoForBat
             int32_t ret = UpdateDBProgressInfoForFileId(fileIdStr, 100, MediaFileUtils::UTCTimeSeconds(), status);
             MEDIA_INFO_LOG("BatchSelectFileDownload already download UpdateDBProgressInfo, fileId: %{public}d,"
                 " ret: %{public}d", fileId, ret);
+            ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FINISH,
+                fileId, 100); // 100 finish
+            MEDIA_INFO_LOG("BatchSelectFileDownload Already Success NotifyDownloadProgressInfo, ret: %{public}d", ret);
         }
     } else if (status == static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL)) {
         for (int32_t fileId : fileIds) {
@@ -252,6 +263,11 @@ void BackgroundCloudBatchSelectedFileProcessor::UpdateDBProgressStatusInfoForBat
             int32_t ret = UpdateDBProgressInfoForFileId(fileIdStr, -1, -1, status);
             MEDIA_INFO_LOG("BatchSelectFileDownload exception download UpdateDBProgressInfo, fileId: %{public}d,"
                 " ret: %{public}d", fileId, ret);
+            int32_t percentDB = 0;
+            QueryPercentOnTaskStart(fileIdStr, percentDB);
+            ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(DownloadAssetsNotifyType::DOWNLOAD_FAILED,
+                fileId, percentDB);
+            MEDIA_INFO_LOG("BatchSelectFileDownload Already Failed NotifyDownloadProgressInfo, ret: %{public}d", ret);
         }
     }
 }
@@ -305,6 +321,7 @@ void BackgroundCloudBatchSelectedFileProcessor::DownloadSelectedBatchResources()
         MEDIA_INFO_LOG("-- BatchSelectFileDownload AutoStop Stop process --");
         return;
     }
+    RemoveFinishedResult();
     ControlDownloadLimit();
     std::string resultStr;
     GetCurrentRoundInDownloadingFileIdList(resultStr);
@@ -339,7 +356,6 @@ void BackgroundCloudBatchSelectedFileProcessor::DownloadSelectedBatchResources()
         pendingURIs.size(), GetDownloadQueueSizeWithLock());
     // 组装5个任务并开始
     AddTasksAndStarted(pendingURIs);
-    RemoveFinishedResult();
     // 滑动后处理
     MEDIA_INFO_LOG("-- BatchSelectFileDownload Start downloading batch Round END --");
 }
@@ -348,15 +364,17 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::AddTasksAndStarted(vector<std
 {
     CHECK_AND_RETURN_RET_LOG(GetDownloadQueueSizeWithLock() < batchDownloadQueueLimitNum_, E_OK,
         "BatchSelectFileDownload Queue is full tasks still running"); // 队列满 暂不添加
-    MEDIA_INFO_LOG("BatchSelectFileDownload AddTasksAndStarted not full can add task");
+    int32_t canAddCount = batchDownloadQueueLimitNum_ - GetDownloadQueueSizeWithLock();
+    MEDIA_INFO_LOG("BatchSelectFileDownload AddTasksAndStarted not full can add task %{public}d", canAddCount);
     for (std::string &uri : pendingURIs) { // 队列空 加到队列满或者 uri都加完
-        int32_t ret = AddSelectedBatchDownloadTask(uri);
-        CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to add download task! err: %{public}d", ret);
-        downloadLatestFinished_.store(false); // 开始下载
-        if (GetDownloadQueueSizeWithLock() >= batchDownloadQueueLimitNum_) { // 队列满
+        if (canAddCount <= 0) { // 队列满
             MEDIA_INFO_LOG("BatchSelectFileDownload AddTasksAndStarted Queue Is Full");
             return E_OK;
         }
+        int32_t ret = AddSelectedBatchDownloadTask(uri);
+        CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to add download task! err: %{public}d", ret);
+        canAddCount--;
+        downloadLatestFinished_.store(false); // 开始下载
     }
     return E_OK;
 }
@@ -589,6 +607,10 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::UpdateDBProgressInfoForFileId
     if (percent != -1) {
         valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_PERCENT, percent);
     }
+    if (status == static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_SUCCESS)) {
+        valuesBucket.PutInt(DownloadResourcesColumn::MEDIA_AUTO_PAUSE_REASON,
+            static_cast<int32_t>(BatchDownloadAutoPauseReasonType::TYPE_DEFAULT));
+    }
     CHECK_AND_RETURN_RET_INFO_LOG(valuesBucket.Size() != 0, E_OK, "nothing to update!");
     std::string whereClause = DownloadResourcesColumn::MEDIA_ID +  " = ? AND " +
         DownloadResourcesColumn::MEDIA_DOWNLOAD_STATUS+ " != ?";
@@ -599,6 +621,13 @@ int32_t BackgroundCloudBatchSelectedFileProcessor::UpdateDBProgressInfoForFileId
     MEDIA_INFO_LOG("UpdateDBProgressInfoForFileId after update ret: %{public}d, changedRows %{public}d",
         ret, changedRows);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_RDB, "UpdateDBProgressInfoForFileId Failed");
+
+    if (status == static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_SUCCESS)) {
+        unique_lock<mutex> downloadLock(downloadResultMutex_);
+        downloadFileIdAndCount_.erase(fileIdStr);
+        downloadResult_.erase(fileIdStr);
+        downloadLock.unlock();
+    }
     return E_OK;
 }
 
@@ -624,23 +653,24 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedRunningCallba
         fileId.c_str(), to_string(progress.downloadId).c_str());
     CHECK_AND_RETURN_WARN_LOG(progress.totalSize != 0, "invaild fileId: %{public}s, downloadId: %{public}" PRId64,
         fileId.c_str(), progress.downloadId);
+    downloadLock.unlock();
     int32_t percent = (100 * progress.downloadedSize) / progress.totalSize;
+    int32_t percentDB = 0;
+    QueryPercentOnTaskStart(fileId, percentDB);
+    MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback, fileId: %{public}s, percent: %{public}d,"
+        "percentDB: %{public}d", fileId.c_str(), percent, percentDB);
+    CHECK_AND_RETURN_LOG(percentDB <= percent, "skip write percent fileId: %{public}s", fileId.c_str());
+    downloadLock.lock();
     currentDownloadIdFileInfoMap_[progress.downloadId].percent = percent;
     downloadLock.unlock();
-    MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback, percent: %{public}d", percent);
-    // 检查点 批量下载 通知应用 notify type 0 进度
     CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s", fileId.c_str());
+    int32_t retDB = UpdateDBProgressInfoForFileId(fileId, percent, -1,
+        static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_DOWNLOADING));
+    MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback UpdateDBProgress, ret: %{public}d", retDB);
+    // 检查点 批量下载 通知应用 notify type 0 进度
     int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
         DownloadAssetsNotifyType::DOWNLOAD_PROGRESS, std::stoi(fileId), percent);
     MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback NotifyDownloadProgressInfo, ret: %{public}d", ret);
-    CHECK_AND_RETURN(downloadResult_[fileId] != BatchDownloadStatus::SKIP_UPDATE_DB); // 减少写表
-    // 更新任务表
-    ret = UpdateDBProgressInfoForFileId(fileId, percent, -1,
-        static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_DOWNLOADING));
-    downloadLock.lock();
-    downloadResult_[fileId] = BatchDownloadStatus::SKIP_UPDATE_DB; // 下载过程只更新一次
-    downloadLock.unlock();
-    MEDIA_INFO_LOG("BatchSelectFileDownload RunningCallback UpdateDBProgress, ret: %{public}d", ret);
 }
 
 void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedSuccessCallback(const DownloadProgressObj& progress)
@@ -714,6 +744,9 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedFailedCallbac
         int32_t ret = UpdateDBProgressInfoForFileId(fileId, percent, -1,
             static_cast<int32_t>(Media::BatchDownloadStatusType::TYPE_FAIL));
         MEDIA_INFO_LOG("BatchSelectFileDownload FailedCallback UpdateDBProgress, ret: %{public}d", ret);
+        downloadLock.lock();
+        downloadFileIdAndCount_.erase(fileId);
+        downloadLock.unlock();
         // 检查点 批量下载 通知应用 notify type 2 失败
         CHECK_AND_RETURN_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), "Error fileId: %{public}s",
             fileId.c_str());
@@ -746,6 +779,7 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedStoppedCallba
     downloadResult_[fileId] = BatchDownloadStatus::STOPPED;
     currentDownloadIdFileInfoMap_.erase(progress.downloadId);
     downloadFileIdAndCount_.erase(fileId);
+    downloadResult_.erase(fileId);
     downloadLock.unlock();
     MEDIA_ERR_LOG("download stopped, uri: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
     // 更新任务表
@@ -753,6 +787,11 @@ void BackgroundCloudBatchSelectedFileProcessor::HandleBatchSelectedStoppedCallba
         "downloadId: %{public}" PRId64, fileId.c_str(), progress.downloadId);
     int32_t percent = (100 * progress.downloadedSize) / progress.totalSize;
     MEDIA_INFO_LOG("BatchSelectFileDownload StoppedCallback, percent: %{public}d", percent);
+    int32_t percentDB = 0;
+    QueryPercentOnTaskStart(fileId, percentDB);
+    MEDIA_INFO_LOG("BatchSelectFileDownload StoppedCallback, fileId: %{public}s, percent: %{public}d,"
+        "percentDB: %{public}d", fileId.c_str(), percent, percentDB);
+    CHECK_AND_RETURN_LOG(percentDB <= percent, "skip write percent fileId: %{public}s", fileId.c_str());
     int32_t ret = UpdateDBProgressInfoForFileId(fileId, percent, -1, -1);
     MEDIA_INFO_LOG("BatchSelectFileDownload StoppedCallback UpdateDBProgress, ret: %{public}d", ret);
 }
@@ -862,7 +901,7 @@ void BackgroundCloudBatchSelectedFileProcessor::StartBatchDownloadResourcesTimer
     CHECK_AND_PRINT_LOG(ret == Utils::TIMER_ERR_OK,
         "Failed to start BatchDownloadResources cloud files timer, err: %{public}d", ret);
     batchDownloadResourcesStartTimerId_ = batchDownloadResourceTimer_.Register(DownloadSelectedBatchResources,
-        downloadSelectedInterval_); // 5s 定时轮询任务
+        downloadSelectedInterval_); // 2s 定时轮询任务
     MEDIA_INFO_LOG("BatchSelectFileDownload StartBatchDownloadResourcesTimer END");
 }
 
@@ -894,12 +933,19 @@ void BackgroundCloudBatchSelectedFileProcessor::SetBatchDownloadProcessRunningSt
 
 bool BackgroundCloudBatchSelectedFileProcessor::StopProcessConditionCheck()
 {
-    BatchDownloadAutoPauseReasonType autoPauseReason = BatchDownloadAutoPauseReasonType::TYPE_DEFAULT;
-    if (BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(autoPauseReason)) {
-        AutoStopAction(autoPauseReason);
-        return true;
+    int32_t num = QueryBatchSelectedResourceFilesNum();
+    if (num == 0) {
+        MEDIA_INFO_LOG("BatchSelectFileDownload no task to stop");
+        return false;
     }
-    return false;
+    
+    BatchDownloadAutoPauseReasonType autoPauseReason = BatchDownloadAutoPauseReasonType::TYPE_DEFAULT;
+    if (!BackgroundCloudBatchSelectedFileProcessor::CanAutoStopCondition(autoPauseReason)) {
+        MEDIA_INFO_LOG("BatchSelectFileDownload check result: keep downloading");
+        return false;
+    }
+    AutoStopAction(autoPauseReason);
+    return true;
 }
 
 // 全量设置自动暂停
@@ -1024,16 +1070,16 @@ void BackgroundCloudBatchSelectedFileProcessor::AutoStopAction(BatchDownloadAuto
     unique_lock<std::mutex> lock(autoActionMutex_);
     MEDIA_INFO_LOG("BatchSelectFileDownload AutoStopAction cause: %{public}d", static_cast<int32_t>(autoPauseReason));
     // 检查点 批量下载 通知应用 notify type 4 自动暂停
-    int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
-        DownloadAssetsNotifyType::DOWNLOAD_AUTO_PAUSE, -1, -1,
-        static_cast<int32_t>(autoPauseReason));
-    MEDIA_INFO_LOG("BatchSelectFileDownload StartNotify DOWNLOAD_AUTO_PAUSE ret: %{public}d", ret);
     MEDIA_INFO_LOG("BatchSelectFileDownload autoPause START");
     StopAllDownloadingTask(false);
     // updateDB
     UpdateAllAutoPauseDownloadResourcesInfo(autoPauseReason);
     MEDIA_INFO_LOG("BatchSelectFileDownload autoPause END");
     TriggerStopBatchDownloadProcessor(false);
+    int32_t ret = NotificationMerging::ProcessNotifyDownloadProgressInfo(
+        DownloadAssetsNotifyType::DOWNLOAD_AUTO_PAUSE, -1, -1,
+        static_cast<int32_t>(autoPauseReason));
+    MEDIA_INFO_LOG("BatchSelectFileDownload StartNotify DOWNLOAD_AUTO_PAUSE ret: %{public}d", ret);
 }
 
 void BackgroundCloudBatchSelectedFileProcessor::AutoResumeAction()
@@ -1048,13 +1094,38 @@ void BackgroundCloudBatchSelectedFileProcessor::AutoResumeAction()
     MEDIA_INFO_LOG("BatchSelectFileDownload StartNotify DOWNLOAD_AUTO_RESUME ret: %{public}d", ret);
 }
 
+void BackgroundCloudBatchSelectedFileProcessor::TriggerAutoStopBatchDownloadResourceCheck()
+{
+    MEDIA_DEBUG_LOG("BatchSelectFileDownload Inmediately AutoStop check downloading: %{public}d",
+        BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus());
+    if (BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()
+        && BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag()
+        && BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning()) { // 在运行停止且有添加任务
+        MEDIA_INFO_LOG("BatchSelectFileDownload Inmediately AutoStop Processor");
+        CHECK_AND_RETURN_LOG(!StopProcessConditionCheck(),
+            "BatchSelectFileDownload AutoStop satisfy, skip start download process"); // 立即自动停止
+    }
+}
+
+void BackgroundCloudBatchSelectedFileProcessor::TriggerAutoResumeBatchDownloadResourceCheck()
+{
+    MEDIA_DEBUG_LOG("BatchSelectFileDownload Timely check downloading: %{public}d",
+        BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus());
+    if (!BackgroundCloudBatchSelectedFileProcessor::IsBatchDownloadProcessRunningStatus()
+        && BackgroundCloudBatchSelectedFileProcessor::GetBatchDownloadAddedFlag()) { // 停止且有添加任务且可恢复状态
+        MEDIA_INFO_LOG("BatchSelectFileDownload Timely Check AutoResume Processor");
+        BackgroundCloudBatchSelectedFileProcessor::LaunchAutoResumeBatchDownloadProcessor(); // 自动恢复
+    }
+}
+
 // 自动恢复使用
 void BackgroundCloudBatchSelectedFileProcessor::LaunchAutoResumeBatchDownloadProcessor()
 {
     bool isProcessRunning = IsBatchDownloadProcessRunningStatus();
     if (!isProcessRunning) { // 未运行状态
         if (BackgroundCloudBatchSelectedFileProcessor::HaveBatchDownloadForAutoResumeTask() &&
-            !BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning()) { // 有任务 无timer在运行 启动
+            !BackgroundCloudBatchSelectedFileProcessor::IsStartTimerRunning() &&
+            BackgroundCloudBatchSelectedFileProcessor::CanAutoRestoreCondition()) { // 有任务 无timer在运行 启动
             MEDIA_INFO_LOG("LaunchAutoResumeBatchDownloadProcessor Start Timer");
             AutoResumeAction();
             BackgroundCloudBatchSelectedFileProcessor::StartBatchDownloadResourcesTimer();

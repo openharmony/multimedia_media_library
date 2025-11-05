@@ -27,6 +27,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "result_set_utils.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 namespace OHOS::Media {
 using namespace testing::ext;
@@ -221,11 +222,11 @@ HWTEST_F(CreateTemporaryCompatibleDuplicateTest, AgingTmpCompatibleDup_Test_001,
     int32_t fileId = QueryFileIdByDisplayName("test.heic");
     ASSERT_GT(fileId, 0);
 
-    auto manager = MediaLibraryDataManager::GetInstance();
-    ASSERT_NE(manager, nullptr);
-    manager->AgingTmpCompatibleDuplicates();
+    auto dataAging = MediaLibraryTranscodeDataAgingOperation::GetInstance();
+    ASSERT_NE(dataAging, nullptr);
+    dataAging->AgingTmpCompatibleDuplicates();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
-    manager->InterruptAgingTmpCompatibleDuplicates();
+    dataAging->InterruptAgingTmpCompatibleDuplicates();
     ASSERT_GT(fileId, 0);
 }
 } // namespace OHOS::Media

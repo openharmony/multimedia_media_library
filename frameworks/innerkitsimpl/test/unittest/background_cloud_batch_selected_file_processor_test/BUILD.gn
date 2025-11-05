@@ -29,6 +29,7 @@ ohos_unittest("background_cloud_batch_selected_file_processor_test") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/media_cloud_asset_download",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/dao",
     "../get_self_permissions/include",
+    "../medialibrary_unittest_utils/include",
     "./include",
   ]
 
@@ -38,6 +39,7 @@ ohos_unittest("background_cloud_batch_selected_file_processor_test") {
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/background_cloud_batch_selected_file_processor_test.cpp",
     "./src/mock_cloud_sync_utils.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_mock_tocken.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
@@ -52,6 +54,9 @@ ohos_unittest("background_cloud_batch_selected_file_processor_test") {
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
     "bundle_framework:appexecfwk_core",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken",
+    "access_token:libtoken_setproc",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",

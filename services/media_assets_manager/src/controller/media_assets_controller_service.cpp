@@ -96,6 +96,8 @@
 #include "cancel_batch_download_cloud_resources_vo.h"
 #include "get_batch_download_cloud_resources_status_vo.h"
 #include "get_batch_download_cloud_resources_count_vo.h"
+#include "acquire_debug_database_vo.h"
+#include "release_debug_database_vo.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -525,6 +527,14 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::CAMERA_INNER_ADD_IMAGE),
         &MediaAssetsControllerService::CameraInnerAddImage
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::ACQUIRE_DEBUG_DATABASE),
+        &MediaAssetsControllerService::AcquireDebugDatabase
+    },
+    {
+        static_cast<uint32_t>(MediaLibraryBusinessCode::RELEASE_DEBUG_DATABASE),
+        &MediaAssetsControllerService::ReleaseDebugDatabase
     },
 };
 
@@ -2582,5 +2592,46 @@ int32_t MediaAssetsControllerService::HeifTranscodingCheck(MessageParcel &data, 
 
     ret = MediaAssetsService::GetInstance().CanSupportedCompatibleDuplicate(reqBody.bundleName, respBody);
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody, ret);
+}
+
+int32_t MediaAssetsControllerService::AcquireDebugDatabase(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::AcquireDebugDatabase start");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::ACQUIRE_DEBUG_DATABASE);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    AcquireDebugDatabaseReqBody reqBody;
+    AcquireDebugDatabaseRespBody respBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("AcquireDebugDatabase ReadRequestBody Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().AcquireDebugDatabase(reqBody.betaIssueId, reqBody.betaScenario, respBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::AcquireDebugDatabase fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
+}
+
+int32_t MediaAssetsControllerService::ReleaseDebugDatabase(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("MediaAssetsControllerService::ReleaseDebugDatabase start");
+    uint32_t operationCode = static_cast<uint32_t>(MediaLibraryBusinessCode::RELEASE_DEBUG_DATABASE);
+    int64_t timeout = DfxTimer::GetOperationCodeTimeout(operationCode);
+    DfxTimer dfxTimer(operationCode, timeout, true);
+    ReleaseDebugDatabaseReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ReleaseDebugDatabase ReadRequestBody Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = MediaAssetsService::GetInstance().ReleaseDebugDatabase(reqBody.betaIssueId);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaAssetsControllerService::ReleaseDebugDatabase fail, ret: %{public}d", ret);
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 } // namespace OHOS::Media

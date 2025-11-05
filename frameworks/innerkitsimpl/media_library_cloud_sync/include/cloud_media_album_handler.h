@@ -39,6 +39,8 @@ public:  // getter & setter
     std::string GetTraceId() const override;
     void SetUserId(const int32_t &userId) override;
     void SetCloudType(const int32_t cloudType) override;
+    void SetCloudSpaceFull(bool isCloudSpaceFull) override;
+    bool IsCloudSpaceFull() override;
 
 public:
     int32_t GetCheckRecords(const std::vector<std::string> &cloudIds,
@@ -68,6 +70,7 @@ private:
     std::string traceId_;
     int32_t userId_;
     int32_t cloudType_;
+    bool isCloudSpaceFull_;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_ALBUM_HANDLER_H

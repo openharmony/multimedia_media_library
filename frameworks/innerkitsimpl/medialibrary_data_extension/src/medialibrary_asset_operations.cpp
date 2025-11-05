@@ -96,6 +96,8 @@
 #include "photo_map_code_operation.h"
 #include "media_file_manager_temp_file_aging_task.h"
 #include "preferences_helper.h"
+#include "file_utils.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -117,6 +119,7 @@ constexpr int32_t MAX_PROCESS_NUM = 200;
 constexpr int64_t INVALID_SIZE = 0;
 constexpr int64_t SHARE_UID = 5520;
 static const std::string ANALYSIS_FILE_PATH = "/storage/cloud/files/highlight/music";
+const double TIMER_MULTIPLIER = 60.0;
 
 struct DeletedFilesParams {
     vector<string> ids;
@@ -221,6 +224,7 @@ const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_IS_AUTO, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_MEDIA_SUFFIX, MEMBER_TYPE_STRING },
     { PhotoColumn::STAGE_VIDEO_TASK_STATUS, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_VIDEO_MODE, MEMBER_TYPE_INT32 },
 };
 
 const std::unordered_map<std::string, int>& GetFileAssetMemberMap()
@@ -1209,7 +1213,7 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<Transaction
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
-    MEDIA_INFO_LOG("insert success, rowId = %{public}d", (int)outRowId);
+    MEDIA_ERR_LOG("insert success, rowId = %{public}d", (int)outRowId);
     auto fileId = outRowId;
     ValuesBucket valuesBucket = GetOwnerPermissionBucket(cmd, fileId, callingUid);
     int64_t tmpOutRowId = -1;
@@ -1219,7 +1223,7 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<Transaction
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
-    MEDIA_INFO_LOG("insert uripermission success, rowId = %{public}d", (int)tmpOutRowId);
+    MEDIA_ERR_LOG("insert uripermission success, rowId = %{public}d", (int)tmpOutRowId);
     return static_cast<int32_t>(outRowId);
 }
 
@@ -1472,6 +1476,10 @@ int32_t MediaLibraryAssetOperations::SetUserComment(MediaLibraryCommand &cmd,
     CHECK_AND_RETURN_RET_LOG(err == 0, E_OK, "Image does not exist user comment in exif, no need to modify");
     err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_USER_COMMENT, newUserComment, filePath);
     CHECK_AND_PRINT_LOG(err == 0, "Modify image property user comment failed");
+    TransCodeExifInfo transCodeExifInfo;
+    transCodeExifInfo.userComment = newUserComment;
+    MediaLibraryTranscodeDataAgingOperation::ModifyTransCodeFileExif(ExifType::EXIF_USER_COMMENT,
+        filePath, transCodeExifInfo, __func__);
     return E_OK;
 }
 
@@ -1715,45 +1723,6 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     return fd;
 }
 
-int32_t MediaLibraryAssetOperations::SetTranscodeUriToFileAsset(std::shared_ptr<FileAsset> &fileAsset,
-    const std::string &mode, const bool isHeif)
-{
-    CHECK_AND_RETURN_RET_INFO_LOG(IPCSkeleton::GetCallingUid() != SHARE_UID, E_INNER_FAIL, "share support heif");
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INNER_FAIL, "fileAsset is nullptr");
-
-    if (MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName()) != "heif" &&
-        MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName()) != "heic") {
-        MEDIA_INFO_LOG("Display name is not heif, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    }
-    CHECK_AND_RETURN_RET_LOG(!isHeif, E_INNER_FAIL, "Is support heif uri:%{public}s", fileAsset->GetUri().c_str());
-    CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
-        "mode is not read only, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    auto mediaLibraryBundleManager = MediaLibraryBundleManager::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(mediaLibraryBundleManager != nullptr, E_INVALID_VALUES,
-        "MediaLibraryBundleManager::GetInstance() returned nullptr");
-    string clientBundle = mediaLibraryBundleManager->GetClientBundleName();
-    CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(clientBundle),
-        E_INNER_FAIL, "clientBundle support heif, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    CHECK_AND_RETURN_RET_LOG(fileAsset->GetExistCompatibleDuplicate(), E_INNER_FAIL,
-        "SetTranscodeUriToFileAsset compatible duplicate is not exist, fileAsset uri: %{public}s",
-        fileAsset->GetUri().c_str());
-    string path = MediaLibraryAssetOperations::GetEditDataDirPath(fileAsset->GetPath());
-    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INNER_FAIL,
-        "Get edit data dir path failed, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    string newPath = path + "/transcode.jpg";
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists((newPath)), E_INNER_FAIL, "transcode.jpg is not exist");
-    fileAsset->SetPath(newPath);
-    return E_OK;
-}
-
-void MediaLibraryAssetOperations::DoTranscodeDfx(const int32_t &type)
-{
-    MEDIA_INFO_LOG("medialibrary open transcode file success");
-    auto dfxManager = DfxManager::GetInstance();
-    CHECK_AND_RETURN_LOG(dfxManager != nullptr, "DfxManager::GetInstance() returned nullptr");
-    dfxManager->HandleTranscodeAccessTime(ACCESS_MEDIALIB);
-}
-
 int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync)
 {
     if (fileAsset == nullptr) {
@@ -1802,20 +1771,10 @@ int32_t MediaLibraryAssetOperations::OpenHighlightCover(MediaLibraryCommand &cmd
     string path = MediaFileUtils::GetHighlightPath(uriStr);
     CHECK_AND_RETURN_RET_LOG(path.length() != 0, E_INVALID_URI,
         "Open highlight cover invalid uri : %{public}s", uriStr.c_str());
-    string uriString = cmd.GetUri().ToString();
-
-    shared_ptr<FileAsset> fileAsset = MediaLibraryObjectUtils::GetFileAssetFromUri(uriString);
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI, "Failed to obtain path from Database");
+    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
     fileAsset->SetPath(path);
     fileAsset->SetUri(uriStr);
-    bool isHeif = cmd.GetQuerySetParam(PHOTO_TRANSCODE_OPERATION) == OPRN_TRANSCODE_HEIF;
-
-    int32_t err = SetTranscodeUriToFileAsset(fileAsset, mode, isHeif);
-    int32_t ret = OpenAsset(fileAsset, mode, cmd.GetApi(), false);
-    if (err == E_OK && ret >= 0) {
-        DoTranscodeDfx(ACCESS_MEDIALIB);
-    }
-    return ret;
+    return OpenAsset(fileAsset, mode, cmd.GetApi(), false);
 }
 
 int32_t MediaLibraryAssetOperations::OpenHighlightVideo(MediaLibraryCommand &cmd, const string &mode)
@@ -1933,15 +1892,6 @@ string MediaLibraryAssetOperations::GetEditDataCameraPath(const string &path)
         return "";
     }
     return parentPath + "/editdata_camera";
-}
-
-string MediaLibraryAssetOperations::GetTransCodePath(const string &path)
-{
-    string parentPath = GetEditDataDirPath(path);
-    if (parentPath.empty()) {
-        return "";
-    }
-    return parentPath + "/transcode.jpg";
 }
 
 string MediaLibraryAssetOperations::GetAssetCacheDir()
@@ -2685,9 +2635,6 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     }
 #endif
 
-    if (this->isInvalidateThumb && isThumbnailExist) {
-        IsCoverContentChange(fileId);
-    }
     return E_OK;
 }
 
@@ -3274,7 +3221,6 @@ static void NotifyPhotoAlbum(const vector<int32_t> &changedAlbumIds,
     }
     assetRefresh->RefreshAlbum(static_cast<NotifyAlbumType>(NotifyAlbumType::SYS_ALBUM | NotifyAlbumType::USER_ALBUM |
         NotifyAlbumType::SOURCE_ALBUM));
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
     assetRefresh->Notify();
 }
 
@@ -3290,6 +3236,7 @@ int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<Fil
     MEDIA_INFO_LOG("Delete Photo displayName is %{public}s", displayName.c_str());
     MEDIA_DEBUG_LOG("Delete Photo path is %{public}s", filePath.c_str());
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
+    FileUtils::DeleteTempVideoFile(filePath);
     bool res = MediaFileUtils::DeleteFile(filePath);
     CHECK_AND_RETURN_RET_LOG(res, E_HAS_FS_ERROR, "Delete photo file failed, errno: %{public}d", errno);
 
@@ -3371,6 +3318,8 @@ static int32_t DeleteMovingPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
     int32_t originalSubType = fileAsset->GetOriginalSubType();
     if (MovingPhotoFileUtils::IsMovingPhoto(subType, effectMode, originalSubType)) {
         string path = fileAsset->GetPath();
+        int32_t id = fileAsset->GetId();
+        MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(std::to_string(id), path, subType, false);
         string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
         if (!MediaFileUtils::DeleteFile(videoPath)) {
             MEDIA_INFO_LOG("delete video path is %{public}s, errno: %{public}d",
@@ -3471,7 +3420,7 @@ static int32_t DeleteLocalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
     }
     if (position == BOTH_LOCAL_CLOUD_PHOTO_POSITION) {
         if (fileAsset->GetExistCompatibleDuplicate() != 0) {
-            MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
+            MediaLibraryTranscodeDataAgingOperation::DeleteTransCodeInfo(fileAsset->GetFilePath(),
                 to_string(fileAsset->GetId()), __func__);
         }
         subFileAssetVector.push_back(fileAsset);
@@ -3531,6 +3480,17 @@ int32_t MediaLibraryAssetOperations::DealWithBatchDownloadingFiles(vector<shared
     return DealWithBatchDownloadingFilesById(needStopDownloadFileIds);
 }
 
+static void GetAnalysisAlbumIdsOfAssets(const vector<shared_ptr<FileAsset>> fileAssetVector, set<string>& albumIds)
+{
+    vector<string> assetIds;
+    for (auto& fileAssetPtr : fileAssetVector) {
+        CHECK_AND_CONTINUE(fileAssetPtr != nullptr);
+        assetIds.push_back(std::to_string(fileAssetPtr->GetId()));
+    }
+    MediaLibraryRdbUtils::QueryAnalysisAlbumIdOfAssets(assetIds, albumIds);
+    MEDIA_INFO_LOG("Number of Analysis Album is %{public}zu", albumIds.size());
+}
+
 int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predicates, const bool isAging,
     std::shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
@@ -3550,21 +3510,11 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     }
 
     vector<string> columns = {
-        PhotoColumn::PHOTO_CLOUD_ID,
-        MediaColumn::MEDIA_SIZE,
-        MediaColumn::MEDIA_DATE_MODIFIED,
-        MediaColumn::MEDIA_FILE_PATH,
-        MediaColumn::MEDIA_NAME,
-        MediaColumn::MEDIA_ID,
-        PhotoColumn::PHOTO_POSITION,
-        PhotoColumn::PHOTO_BURST_KEY,
-        MediaColumn::MEDIA_TYPE,
-        PhotoColumn::PHOTO_SUBTYPE,
-        PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
-        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
-        PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::PHOTO_OWNER_ALBUM_ID,
-        PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
+        PhotoColumn::PHOTO_CLOUD_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
+        MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_NAME, MediaColumn::MEDIA_ID,
+        PhotoColumn::PHOTO_POSITION, PhotoColumn::PHOTO_BURST_KEY, MediaColumn::MEDIA_TYPE,
+        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
+        PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE,
     };
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     vector<shared_ptr<FileAsset>> fileAssetVector;
@@ -3574,6 +3524,8 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     if (resultSet != nullptr) {
         resultSet->Close();
     }
+    set<string> analysisAlbumIds;
+    GetAnalysisAlbumIdsOfAssets(fileAssetVector, analysisAlbumIds);
     for (auto& fileAssetPtr : fileAssetVector) {
         DeleteLocalPhotoPermanently(fileAssetPtr, subFileAssetVector, assetRefresh);
         changedAlbumIds.insert(fileAssetPtr->GetOwnerAlbumId());
@@ -3583,47 +3535,13 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     DealWithBatchDownloadingFiles(fileAssetVector);
     //delete both local and cloud image
     DeleteLocalAndCloudPhotos(subFileAssetVector);
+    vector<string> albumIds(analysisAlbumIds.begin(), analysisAlbumIds.end());
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (albumIds.size() > 0 && rdbStore != nullptr) {
+        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIds);
+    }
     NotifyPhotoAlbum(std::vector<int32_t>(changedAlbumIds.begin(), changedAlbumIds.end()), assetRefresh);
     return E_OK;
-}
-
-int32_t MediaLibraryAssetOperations::DeleteTranscodePhotos(const std::string &filePath)
-{
-    CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INNER_FAIL, "filePath is empty");
-
-    auto editPath = GetEditDataDirPath(filePath);
-    CHECK_AND_RETURN_RET_LOG(!editPath.empty(), E_INNER_FAIL, "editPath is empty");
-
-    auto transcodeFile = editPath + "/transcode.jpg";
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(transcodeFile), E_OK, "Transcode photo is not exists");
-
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(transcodeFile), E_INNER_FAIL,
-        "Failed to delete transcode photo");
-    MEDIA_INFO_LOG("Successfully deleted transcode photo, path: %{public}s", transcodeFile.c_str());
-    return E_OK;
-}
-
-void MediaLibraryAssetOperations::DeleteTransCodeInfo(const std::string &filePath, const std::string &fileId,
-    const std::string functionName)
-{
-    auto ret = DeleteTranscodePhotos(filePath);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to delete transcode photo, in function %{public}s:",
-        functionName.c_str());
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is null, in function %{public}s:", functionName.c_str());
-    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
-    ValuesBucket updateValues;
-    updateValues.PutLong(PhotoColumn::PHOTO_TRANSCODE_TIME, 0);
-    updateValues.PutLong(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, 0);
-    updateValues.PutLong(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, 0);
-    updateCmd.SetValueBucket(updateValues);
-    int32_t rowId = 0;
-    int32_t result = rdbStore->Update(updateCmd, rowId);
-    CHECK_AND_RETURN_LOG(result == NativeRdb::E_OK && rowId > 0,
-        "Update TransCodePhoto failed. Result %{public}d, in function %{public}s:", result, functionName.c_str());
-    MEDIA_INFO_LOG("Successfully delete transcode info, in function %{public}s:", functionName.c_str());
-    return;
 }
 } // namespace Media
 } // namespace OHOS
