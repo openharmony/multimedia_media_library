@@ -66,6 +66,12 @@ int32_t TabOldAlbumsClone::CloneAlbums(const std::vector<std::string> &sourceTab
     int32_t cloneSequence = GetNextCloneSequence();
     MEDIA_INFO_LOG("Using clone sequence %{public}d for all albums in this clone operation", cloneSequence);
 
+    // Clean up the tab_old_albums table before cloning
+    int32_t cleanupResult = CleanupTable();
+    if (cleanupResult != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to clean up tab_old_albums table: %{public}d", cleanupResult);
+    }
+
     int32_t finalResult = NativeRdb::E_OK;
     for (const auto &sourceTable : sourceTables) {
         int32_t result = CloneAlbumsFromTable(sourceTable, cloneSequence);
@@ -165,6 +171,24 @@ int32_t TabOldAlbumsClone::GetNextCloneSequence()
 
     int32_t maxSequence = GetInt32Val(ALBUM_CLONE_SEQUENCE_COL, resultSet);
     return maxSequence + INITIAL_CLONE_SEQUENCE;
+}
+
+int32_t TabOldAlbumsClone::CleanupTable()
+{
+    if (destRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Destination RdbStore is null");
+        return E_INVALID_ARGUMENTS;
+    }
+
+    std::string deleteQuery = "DELETE FROM " + TAB_OLD_ALBUMS;
+    int32_t result = destRdb_->ExecuteSql(deleteQuery);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to clean up tab_old_albums table: %{public}d", result);
+        return result;
+    }
+
+    MEDIA_INFO_LOG("Successfully cleaned up tab_old_albums table");
+    return NativeRdb::E_OK;
 }
 
 bool TabOldAlbumsClone::ValidateAlbumMapTbl(const AlbumMapTbl& albumMapTbl)
