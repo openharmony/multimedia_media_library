@@ -408,6 +408,16 @@ void MediaLibraryRdbStore::UpdateIndexDateAdded(const shared_ptr<MediaLibraryRdb
     MEDIA_INFO_LOG("end update idx_schpt_date_added_new");
 }
 
+void MediaLibraryRdbStore::AddVideoFaceTagIdIndex(const shared_ptr<MediaLibraryRdbStore> store, int32_t version)
+{
+    const vector<string> sqls = {
+        CREATE_VIDEO_FACE_TAG_ID_INDEX,
+    };
+    MEDIA_INFO_LOG("start add video_face_tag_id_index");
+    ExecSqlsWithDfx(sqls, *store->GetRaw().get(), version);
+    MEDIA_INFO_LOG("end add video_face_tag_id_index");
+}
+
 void MediaLibraryRdbStore::UpdateBurstDirty(const shared_ptr<MediaLibraryRdbStore> store)
 {
     const vector<string> sqls = {
@@ -1879,6 +1889,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_IMAGE_FACE_INDEX,
     CREATE_IMAGE_FACE_TAG_ID_INDEX,
     CREATE_VIDEO_FACE_INDEX,
+    CREATE_VIDEO_FACE_TAG_ID_INDEX,
     CREATE_OBJECT_INDEX,
     CREATE_RECOMMENDATION_INDEX,
     CREATE_COMPOSITION_INDEX,
