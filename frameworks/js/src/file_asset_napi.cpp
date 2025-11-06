@@ -5468,7 +5468,7 @@ static void GetEditDataString(char* editDataBuffer, string& result)
 
     nlohmann::json editDataJson = nlohmann::json::parse(editDataStr);
     if (editDataJson.contains(COMPATIBLE_FORMAT) && editDataJson.contains(FORMAT_VERSION) &&
-        editDataJson.contains(EDIT_DATA) && editDataJson.contains(APP_ID)) {
+        editDataJson.contains(EDIT_DATA) && editDataJson.contains(APP_ID) && editDataJson[EDIT_DATA].is_string()) {
         // edit data saved by media change request
         result = editDataJson.at(EDIT_DATA);
     } else {
