@@ -7327,6 +7327,57 @@ static std::string GetTotalCount()
     return to_string(totalCount);
 }
 
+static void ParseFaceAnalysisResultSet(MediaLibraryAsyncContext* context,
+    const shared_ptr<DataShare::DataShareResultSet>& resultSet, const string& curTotalCount, int errCode)
+{
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet is nullptr");
+        return;
+    }
+    if (resultSet->GoToNextRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        nlohmann::json jsonObj;
+        jsonObj["cvFinishedCount"] = 0;
+        jsonObj["geoFinishedCount"] = 0;
+        jsonObj["searchFinishedCount"] = 0;
+        jsonObj["totalCount"] = curTotalCount;
+        context->analysisProgress = jsonObj.dump();
+        NAPI_ERR_LOG("GetFaceAnalysisProgress failed, errCode is %{public}d, json is %{public}s", errCode,
+            context->analysisProgress.c_str());
+        return;
+    }
+    string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(resultSet, HIGHLIGHT_ANALYSIS_PROGRESS);
+    if (retJson == "" || !nlohmann::json::accept(retJson)) {
+        resultSet->Close();
+        NAPI_ERR_LOG("retJson is empty or invalid");
+        return;
+    }
+    nlohmann::json curJsonObj = nlohmann::json::parse(retJson);
+    if (!curJsonObj.contains("totalCount") || !curJsonObj["totalCount"].is_number()) {
+        NAPI_ERR_LOG("retJson do not contain totalCount");
+        resultSet->Close();
+        return;
+    }
+
+    int preTotalCount = 0;
+    try {
+        preTotalCount = curJsonObj["totalCount"].get<int>();
+    } catch (const nlohmann::json::exception& e) {
+        NAPI_ERR_LOG("Failed to get totalCount as int: %s", e.what());
+        resultSet->Close();
+        return;
+    }
+
+    if (to_string(preTotalCount) != curTotalCount) {
+        NAPI_ERR_LOG("preTotalCount != curTotalCount, curTotalCount is %{public}s, preTotalCount is %{public}d",
+            curTotalCount.c_str(), preTotalCount);
+        curJsonObj["totalCount"] = curTotalCount;
+    }
+    context->analysisProgress = curJsonObj.dump();
+    NAPI_INFO_LOG("GoToNextRow successfully and json is %{public}s", context->analysisProgress.c_str());
+    resultSet->Close();
+}
+
 static void GetFaceAnalysisProgress(MediaLibraryAsyncContext* context)
 {
     string curTotalCount = GetTotalCount();
@@ -7345,39 +7396,8 @@ static void GetFaceAnalysisProgress(MediaLibraryAsyncContext* context)
         }
         NAPI_ERR_LOG("Get Face Analysis Progress failed! errCode is = %{public}d", errCode);
     }
-    shared_ptr<DataShare::DataShareResultSet> ret = respBody.resultSet;
-    if (ret == nullptr) {
-        NAPI_ERR_LOG("ret is nullptr");
-        return;
-    }
-    if (ret->GoToNextRow() != NativeRdb::E_OK) {
-        ret->Close();
-        nlohmann::json jsonObj;
-        jsonObj["cvFinishedCount"] = 0;
-        jsonObj["geoFinishedCount"] = 0;
-        jsonObj["searchFinishedCount"] = 0;
-        jsonObj["totalCount"] = curTotalCount;
-        context->analysisProgress = jsonObj.dump();
-        NAPI_ERR_LOG("GetFaceAnalysisProgress failed, errCode is %{public}d, json is %{public}s", errCode,
-            context->analysisProgress.c_str());
-        return;
-    }
-    string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(ret, HIGHLIGHT_ANALYSIS_PROGRESS);
-    if (retJson == "" || !nlohmann::json::accept(retJson)) {
-        ret->Close();
-        NAPI_ERR_LOG("retJson is empty or invalid");
-        return;
-    }
-    nlohmann::json curJsonObj = nlohmann::json::parse(retJson);
-    int preTotalCount = curJsonObj["totalCount"];
-    if (to_string(preTotalCount) != curTotalCount) {
-        NAPI_ERR_LOG("preTotalCount != curTotalCount, curTotalCount is %{public}s, preTotalCount is %{public}d",
-            curTotalCount.c_str(), preTotalCount);
-        curJsonObj["totalCount"] = curTotalCount;
-    }
-    context->analysisProgress = curJsonObj.dump();
-    NAPI_INFO_LOG("GoToNextRow successfully and json is %{public}s", context->analysisProgress.c_str());
-    ret->Close();
+    shared_ptr<DataShare::DataShareResultSet> resultSet = respBody.resultSet;
+    ParseFaceAnalysisResultSet(context, resultSet, curTotalCount, errCode);
 }
 
 static void GetHighlightAnalysisProgress(MediaLibraryAsyncContext* context)
