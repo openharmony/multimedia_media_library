@@ -348,7 +348,7 @@ void CloudSyncConvert::CompensateTimeInfo(const CloudMediaPullDataDto &data, Nat
         MEDIA_ERR_LOG("invalid propertiesFirstUpdateTime: %{public}s, cloudId: %{public}s",
             data.propertiesFirstUpdateTime.c_str(),
             data.cloudId.c_str());
-        dateAdded = 0;
+        dateAdded = data.basicCreatedTime;
     }
     dateAdded = PhotoFileUtils::NormalizeTimestamp(dateAdded, MediaFileUtils::UTCTimeMilliSeconds());
     values.Put(PhotoColumn::MEDIA_DATE_ADDED, dateAdded);
