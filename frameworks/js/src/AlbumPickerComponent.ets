@@ -60,9 +60,10 @@ private onChanged(): void {
     this.proxy.send({ 'fontSize': data?.get('SET_FONT_SIZE') as number | string });
     console.info('AlbumPickerComponent onChanged: SET_FONT_SIZE');
   }
+}
 
 private handleOnReceive(wantParam: Record<string, Object>): void {
-  let dataType = wantParam.dataType. as string;
+  let dataType = wantParam?.dataType as string;
   if (dataType === 'selectAlbum') {
     if (this.onAlbumClick) {
       let albumInfo: AlbumInfo = new AlbumInfo();
@@ -73,6 +74,9 @@ private handleOnReceive(wantParam: Record<string, Object>): void {
   } else if (dataType === 'emptyAreaClick') {
     if (this.onEmptyAreaClick) {
       this.onEmptyAreaClick();
+
+
+      
     }
   } else {
     console.info('AlbumPickerComponent onReceive: other case');
