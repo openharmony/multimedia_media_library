@@ -45,7 +45,7 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS::Media {
-static constexpr int32_t HIGHLIGHT_DELETED = -2;
+static constexpr int32_t HIGHLIGHT_DELETED = -3;
 const std::string ALBUM_LPATH_PREFIX = "/Pictures/Users/";
 static const string GROUP_TAG = "group_tag";
 
