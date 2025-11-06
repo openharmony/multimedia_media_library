@@ -41,6 +41,7 @@
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
 #include "ohos_account_kits.h"
+#include "photo_file_utils.h"
 #include "photos_dao.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
@@ -2128,9 +2129,12 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
         return false;
     }
 
-    fileInfo.dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
-    fileInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
-    fileInfo.dateTaken = GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet);
+    fileInfo.dateAdded = PhotoFileUtils::NormalizeTimestamp(
+        GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet), MediaFileUtils::UTCTimeMilliSeconds());
+    fileInfo.dateModified = PhotoFileUtils::NormalizeTimestamp(
+        GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet), fileInfo.dateAdded);
+    fileInfo.dateTaken = PhotoFileUtils::NormalizeTimestamp(
+        GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet), min(fileInfo.dateAdded, fileInfo.dateModified));
     fileInfo.thumbnailReady = GetInt64Val(PhotoColumn::PHOTO_THUMBNAIL_READY, resultSet);
     fileInfo.lcdVisitTime = GetInt32Val(PhotoColumn::PHOTO_LCD_VISIT_TIME, resultSet);
     fileInfo.position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
