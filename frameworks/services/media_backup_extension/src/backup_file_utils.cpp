@@ -867,7 +867,15 @@ bool BackupFileUtils::GetAccountValid(const int32_t sceneCode, const std::string
     CHECK_AND_RETURN_RET_LOG(!json_arr.is_discarded(), false, "cloud account parse failed.");
 
     for (const auto& item : json_arr) {
-        if (!item.contains("type") || !item.contains("detail") || item["type"] != "dualAccountId") {
+        if (!item.contains("type") || !item.contains("detail")) {
+            continue;
+        }
+        if (!item["type"].is_string() || !item["detail"].is_string()) {
+            continue;
+        }
+        std::string type = item["type"];
+        std::string detail = item["detail"];
+        if (type != "dualAccountId") {
             continue;
         } else {
             oldId = item["detail"];
