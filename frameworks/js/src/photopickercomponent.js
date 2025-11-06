@@ -445,6 +445,7 @@ export class PhotoPickerComponent extends ViewPU {
             i.photoSubType = e.subtype;
             i.dynamicRangeType = e.dynamicRangeType;
             i.orientation = e.imageOrientation;
+            i.videoMode = e.videoMode;
             i.movingPhotoBadgeState = e.movingPhotoBadgeState;
             let r = this.onItemClicked(i, o);
             console.info('PhotoPickerComponent onReceive: onItemClicked = ' + o);
