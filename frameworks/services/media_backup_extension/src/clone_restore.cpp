@@ -349,6 +349,8 @@ void CloneRestore::ParseDstDeviceBackupInfo()
     for (const auto& item : jsonArray) {
         bool cond = (!item.contains("type") || !item.contains("detail"));
         CHECK_AND_CONTINUE(!cond);
+        cond = (!item["type"].is_string() || !item["detail"].is_string());
+        CHECK_AND_CONTINUE(!cond);
         if (item["type"] == "compatibility_info") {
             compatibilityInfoStr = item["detail"];
             break;
@@ -573,9 +575,11 @@ void CloneRestore::GetAccountValid()
     nlohmann::json jsonArr = nlohmann::json::parse(restoreInfo_, nullptr, false);
     CHECK_AND_RETURN_LOG(!jsonArr.is_discarded(), "cloud account parse failed");
     for (const auto& item : jsonArr) {
-        bool cond = (!item.contains("type") || !item.contains("detail") || item["type"] != "singleAccountId");
+        bool cond = (!item.contains("type") || !item.contains("detail"));
         CHECK_AND_CONTINUE(!cond);
-        oldId = item["detail"];
+        cond = (!item["type"].is_string() ||  item["type"] != "singleAccountId");
+        CHECK_AND_CONTINUE(!cond);
+        oldId = item["detail"].is_string() ? item["detail"] : "";
         MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
         break;
     }
