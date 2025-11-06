@@ -178,7 +178,7 @@ int32_t VideoCompositionCallbackImpl::CallStartComposite(const std::string& sour
         MEDIA_ERR_LOG("Open failed for outputFileFd file, errno: %{public}d", errno);
         return E_ERR;
     }
-    
+
     InitCallbackImpl(callBack, inputFileFd, outputFileFd, videoPath, absSourceVideoPath, assetPath, isNeedScan);
 
     auto compositionOptions = std::make_shared<CompositionOptions>(outputFileFd, callBack);
@@ -245,7 +245,8 @@ void VideoCompositionCallbackImpl::EraseWatermarkTag(std::string& editData)
         nlohmann::json filters = data[IMAGE_EFFECT][FILTERS_FIELD];
         nlohmann::json newFilters;
         for (const auto& filter : filters) {
-            if (!filter.contains(FILTER_CATEGORY) || filter[FILTER_CATEGORY] != BORDER_WATERMARK) {
+            if (!filter.contains(FILTER_CATEGORY) ||
+                (filter[FILTER_CATEGORY].is_string() && filter[FILTER_CATEGORY] != BORDER_WATERMARK)) {
                 newFilters.push_back(filter);
             }
         }
