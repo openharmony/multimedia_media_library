@@ -64,7 +64,8 @@ private:
         FROM Photos \
         WHERE \
             media_type IN (1, 2) AND \
-            position != 2 \
+            position != 2 AND \
+            file_source_type != 3 \
         GROUP BY media_type \
         UNION \
         SELECT \
