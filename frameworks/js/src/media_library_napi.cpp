@@ -3563,9 +3563,9 @@ static void JSGetAssetsByOldUrisCompleteCallback(napi_env env, napi_status statu
         jsContext->data = mapNapiValue;
         jsContext->status = true;
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+        GetOldUriQueryResult(env, context, jsContext);
     }
 
-    GetOldUriQueryResult(env, context, jsContext);
     tracer.Finish();
 
     if (context->work != nullptr) {
@@ -9575,11 +9575,11 @@ static void JSGetAlbumsByOldUrisCompleteCallback(napi_env env, napi_status statu
         jsContext->data = mapNapiValue;
         jsContext->status = true;
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_E_INNER_FAIL);
+        GetOldAlbumUriQueryResult(env, context, jsContext);
     } else {
         context->HandleError(env, jsContext->error);
     }
 
-    GetOldAlbumUriQueryResult(env, context, jsContext);
     tracer.Finish();
 
     if (context->work != nullptr) {
