@@ -17,7 +17,7 @@
 #include "media_fuse_manager.h"
 
 #include <fcntl.h>
-#define FUSE_USE_VERSION 34
+#define FUSE_USE_VERSION FUSE_MAKE_VERSION(3, 17)
 #include <fuse.h>
 #include <sys/utsname.h>
 #include "dfx_const.h"
