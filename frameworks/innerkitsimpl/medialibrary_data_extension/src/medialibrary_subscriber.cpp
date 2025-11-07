@@ -877,6 +877,7 @@ void MedialibrarySubscriber::DoBackgroundOperationStepTwo()
     PhotoDayMonthYearOperation::RepairDateTime();
     MapCodeUploadChecker::RepairNoMapCodePhoto();
     backgroundTaskFactory_.Execute();
+    CloudEnhancementChecker::RecognizeCloudEnhancementPhotosByDisplayName();
 }
 
 static void PauseBackgroundDownloadCloudMedia()
