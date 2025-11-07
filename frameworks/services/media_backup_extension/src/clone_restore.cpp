@@ -269,7 +269,7 @@ bool CloneRestore::UpdateConfigInfo()
         return ret;
     };
     auto ret = trans.RetryTrans(func, true);
-    UpgradeRestoreTaskReport().SetSceneCode(ConfigInfoSceneId::CLONE_RESTORE).SetTaskId(taskId_)
+    UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
         .Report("UpdateConfigInfo", "",
                 "sceneId: " + std::to_string(static_cast<int>(ConfigInfoSceneId::CLONE_RESTORE)) +
                 ", deviceId: " + srcCloneRestoreConfigInfo_.deviceId +
