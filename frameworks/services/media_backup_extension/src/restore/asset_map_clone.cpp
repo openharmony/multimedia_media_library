@@ -22,6 +22,8 @@
 #include "result_set_utils.h"
  
 namespace OHOS::Media {
+
+const std::string TAB_CLONED_OLD_PHOTOS_TABLE = "tab_cloned_old_photos";
  
 AssetMapClone::AssetMapClone(
     const std::shared_ptr<NativeRdb::RdbStore>& sourceRdb,
@@ -129,7 +131,7 @@ void AssetMapClone::ParseAssetMapResultSet(
 std::optional<int32_t> AssetMapClone::GetLastCloneSequence()
 {
     std::string querySql = "SELECT " + ASSET_MAP_COL_CLONE_SEQUENCE +
-                          " FROM " + TAB_OLD_PHOTOS +
+                          " FROM " + TAB_CLONED_OLD_PHOTOS_TABLE +
                           " ORDER BY " + ASSET_MAP_COL_CLONE_SEQUENCE + " DESC LIMIT 1";
  
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(destRdb_, querySql);
@@ -183,7 +185,7 @@ void AssetMapClone::BatchInsertAssetMaps(const std::vector<AssetMapTbl>& assetMa
     }
  
     int64_t changedRows = 0;
-    int32_t ret = BatchInsertWithRetry(TAB_OLD_PHOTOS, valuesBucketsToInsert, changedRows);
+    int32_t ret = BatchInsertWithRetry(TAB_CLONED_OLD_PHOTOS_TABLE, valuesBucketsToInsert, changedRows);
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to batch insert asset maps");
  
     migrateNum_ += changedRows;
