@@ -550,6 +550,13 @@ static bool HasWritePermission()
     return result == PermissionState::PERMISSION_GRANTED;
 }
 
+static bool HasAccessMedialibThumbDbPermission()
+{
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int result = AccessTokenKit::VerifyAccessToken(tokenCaller, PERM_ACCESS_MEDIALIB_THUMB_DB);
+    return result == PermissionState::PERMISSION_GRANTED;
+}
+
 static bool CheckMovingPhotoCreationArgs(MediaAssetChangeRequestAsyncContext& context)
 {
     bool isValid = false;
@@ -1196,7 +1203,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetVideoEnhancementAttr(napi_env env, 
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) == napi_ok,
         "Failed to get object info");
-    
+
     int32_t videoEnhancementType;
     string photoId;
     MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[0], videoEnhancementType);
@@ -1778,7 +1785,8 @@ napi_value MediaAssetChangeRequestNapi::JSAddResourceForPicker(napi_env env, nap
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         RETURN_NAPI_UNDEFINED(env);
     }
-    
+    CHECK_COND(env, HasAccessMedialibThumbDbPermission(), OHOS_PERMISSION_DENIED_CODE);
+
     int32_t resourceType = static_cast<int32_t>(ResourceType::INVALID_RESOURCE);
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM0],
         resourceType) == napi_ok, "Failed to get resourceType");
@@ -1786,17 +1794,22 @@ napi_value MediaAssetChangeRequestNapi::JSAddResourceForPicker(napi_env env, nap
     if (changeRequest->IsMovingPhoto() && resourceType == static_cast<int32_t>(ResourceType::VIDEO_RESOURCE)) {
         return AddMovingPhotoVideoResource(env, info);
     }
-    CHECK_COND_WITH_MESSAGE(env, resourceType == static_cast<int32_t>(fileAsset->GetMediaType()) ||
-        resourceType == static_cast<int32_t>(ResourceType::PHOTO_PROXY), "Failed to check resourceType");
+    CHECK_COND_WITH_MESSAGE(env, resourceType == static_cast<int32_t>(fileAsset->GetMediaType()),
+        "Failed to check resourceType");
 
     napi_valuetype valueType;
     napi_value value = asyncContext->argv[PARAM1];
     CHECK_COND_WITH_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, "Failed to get napi type");
-    
+
     // addResource by file uri
     CHECK_COND(env, ParseFileUri(env, value, fileAsset->GetMediaType(), asyncContext), OHOS_INVALID_PARAM_CODE);
     changeRequest->realPath_ = asyncContext->realPath;
     changeRequest->addResourceMode_ = AddResourceMode::FILE_URI;
+
+    bool isValid = false;
+    string displayName = changeRequest->creationValuesBucket_.Get(MEDIA_DATA_DB_NAME, isValid);
+    changeRequest->creationValuesBucket_.Put(MEDIA_DATA_DB_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
+    changeRequest->creationValuesBucket_.Put(ASSET_EXTENTION, MediaFileUtils::GetExtensionFromPath(displayName));
 
     changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_RESOURCE_FOR_PICKER);
     changeRequest->addResourceTypes_.push_back(GetResourceType(resourceType));
