@@ -1201,7 +1201,8 @@ static ValuesBucket GetOwnerPermissionBucket(MediaLibraryCommand &cmd, int64_t f
 }
 
 int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<TransactionOperations> trans,
-    MediaLibraryCommand &cmd, const FileAsset &fileAsset)
+    MediaLibraryCommand &cmd, const FileAsset &fileAsset,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     // All values inserted in this function are the base property for files
     if (trans == nullptr) {
@@ -1220,9 +1221,14 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<Transaction
     FillAssetInfo(cmd, fileAsset);
 
     int64_t outRowId = -1;
-    int32_t errCode = trans->Insert(cmd, outRowId);
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
+    int32_t ret = NativeRdb::E_OK;
+    if (assetRefresh) {
+        ret = assetRefresh->Insert(cmd, outRowId);
+    } else {
+        ret = trans->Insert(cmd, outRowId);
+    }
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Insert into db failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
     MEDIA_ERR_LOG("insert success, rowId = %{public}d", (int)outRowId);
@@ -1230,7 +1236,7 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<Transaction
     ValuesBucket valuesBucket = GetOwnerPermissionBucket(cmd, fileId, callingUid);
     int64_t tmpOutRowId = -1;
     MediaLibraryCommand cmdPermission(Uri(MEDIALIBRARY_GRANT_URIPERM_URI), valuesBucket);
-    errCode = trans->Insert(cmdPermission, tmpOutRowId);
+    auto errCode = trans->Insert(cmdPermission, tmpOutRowId);
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
