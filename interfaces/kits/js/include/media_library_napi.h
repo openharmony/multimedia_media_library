@@ -313,6 +313,7 @@ private:
     EXPORT static napi_value CreateHideSensitiveTypeEnum(napi_env env);
     EXPORT static napi_value CreateDynamicRangeTypeEnum(napi_env env);
     EXPORT static napi_value CreateHdrModeEnum(napi_env env);
+    EXPORT static napi_value CreateVideoModeEnum(napi_env env);
 
     EXPORT static napi_value GetPhotoAccessHelper(napi_env env, napi_callback_info info);
     EXPORT static napi_value StartPhotoPicker(napi_env env, napi_callback_info info);
@@ -404,8 +405,8 @@ private:
     EXPORT static napi_value JSApplyChanges(napi_env env, napi_callback_info info);
     EXPORT static napi_value GetPhotoPickerComponentDefaultAlbumName(napi_env env, napi_callback_info info);
 
-    EXPORT static napi_value PhotoAccessGetDatabaseDFX(napi_env env, napi_callback_info info);
-    EXPORT static napi_value PhotoAccessRemoveDatabaseDFX(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessAcquireDebugDatabase(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessReleaseDebugDatabase(napi_env env, napi_callback_info info);
 
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
@@ -480,6 +481,7 @@ private:
     static thread_local napi_ref sCompositeDisplayModeEnumRef_;
     static thread_local napi_ref sSupportedImageFormatEnumRef_;
     static thread_local napi_ref sHdrModeRef_;
+    static thread_local napi_ref sVideoModeRef_;
 
     static std::mutex sOnOffMutex_;
 };
@@ -494,6 +496,7 @@ struct PickerCallBack {
     std::string displayName;
     int32_t recommendationType;
     int32_t selectedRecommendationType;
+    vector<int32_t> movingPhotoBadgeStates;
 };
 
 constexpr int32_t DEFAULT_PRIVATEALBUMTYPE = 3;
@@ -579,7 +582,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t orderStyle = 0;
     std::string bundleName;
     bool canSupportedCompatibleDuplicate = false;
-    std::unordered_map<std::string, std::string> databaseDFXMap;
+    std::unordered_map<std::string, std::string> debugDatabaseMap;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

@@ -138,8 +138,8 @@ static void MtpFileObserverTest()
     mtpFileObserver->AddFileInotify(path, realPath, context);
     mtpFileObserver->AddPathToWatchMap(path);
     mtpFileObserver->StopFileInotify();
-    int sleepTime = 10;
-    std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
+    int sleepTime = 1;
+    std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
 }
 
 

@@ -13,29 +13,29 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_ASSETS_MANAGER_GET_GETDATABASE_DFX_VO_H
-#define OHOS_MEDIA_ASSETS_MANAGER_GET_GETDATABASE_DFX_VO_H
+#ifndef OHOS_MEDIA_ALBUMS_MANAGER_GET_CLONED_ALBUM_URIS_VO_H
+#define OHOS_MEDIA_ALBUMS_MANAGER_GET_CLONED_ALBUM_URIS_VO_H
 
+#include "datashare_predicates.h"
+#include "datashare_result_set.h"
 #include "i_media_parcelable.h"
 
-#include <string>
-
 namespace OHOS::Media {
-class GetDatabaseDFXReqBody : public IPC::IMediaParcelable {
+class GetClonedAlbumUrisReqBody : public IPC::IMediaParcelable {
 public:
-    std::string betaId;
+    DataShare::DataSharePredicates predicates;
+    std::vector<std::string> columns;
 
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
 };
 
-class GetDatabaseDFXRespBody : public IPC::IMediaParcelable {
+class GetClonedAlbumUrisRespBody : public IPC::IMediaParcelable {
 public:
-    std::string fileName;
-    std::string fileSize;
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
 
     bool Unmarshalling(MessageParcel &parcel) override;
     bool Marshalling(MessageParcel &parcel) const override;
 };
 }  // namespace OHOS::Media
-#endif  // OHOS_MEDIA_ASSETS_MANAGER_GET_GETDATABASE_DFX_VO_H
+#endif  // OHOS_MEDIA_ALBUMS_MANAGER_GET_CLONED_ALBUM_URIS_VO_H

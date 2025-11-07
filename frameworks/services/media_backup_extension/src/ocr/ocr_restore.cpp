@@ -24,8 +24,8 @@
 namespace OHOS::Media {
 const int32_t PAGE_SIZE = 200;
 
-void OCRRestore::Init(int32_t sceneCode, std::string taskId, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
-    std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
+void OCRRestore::Init(int32_t sceneCode, const std::string &taskId,
+    std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     sceneCode_ = sceneCode;
     taskId_ = taskId;
@@ -41,10 +41,11 @@ void OCRRestore::RestoreOCR(const std::unordered_map<int32_t, PhotoInfo> &photoI
 
 void OCRRestore::UpdateOcrInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const GalleryOCRInfo &ocrInfo)
 {
+    const std::string versionPrefix = "backup";
     NativeRdb::ValuesBucket value;
     value.PutInt("file_id", ocrInfo.photoInfo.fileIdNew);
     value.PutString("ocr_text", ocrInfo.ocrText);
-    value.PutString("ocr_version", std::to_string(ocrInfo.ocrVersion));
+    value.PutString("ocr_version", versionPrefix + std::to_string(ocrInfo.ocrVersion));
     value.PutInt("width", ocrInfo.width);
     value.PutInt("height", ocrInfo.height);
     values.push_back(value);

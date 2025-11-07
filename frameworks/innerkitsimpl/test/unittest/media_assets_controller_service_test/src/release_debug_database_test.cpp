@@ -15,7 +15,7 @@
 
 #define MLOG_TAG "MediaAssetsControllerServiceTest"
 
-#include "get_database_dfx_test.h"
+#include "release_debug_database_test.h"
 
 #include <string>
 #include <vector>
@@ -27,7 +27,7 @@
 #undef protected
 
 #include "medialibrary_data_manager.h"
-#include "get_database_dfx_vo.h"
+#include "release_debug_database_vo.h"
 #include "media_assets_service.h"
 #include "user_define_ipc_client.h"
 #include "medialibrary_rdbstore.h"
@@ -57,66 +57,57 @@ static int32_t ClearTable(const string &table)
     return E_OK;
 }
 
-void GetDatabaseDFXTest::SetUpTestCase(void)
+void ReleaseDebugDatabaseTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
     controllerService = make_shared<MediaAssetsControllerService>();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
+        MEDIA_ERR_LOG("Start ReleaseDebugDatabaseTest failed, can not get g_rdbStore");
         exit(1);
     }
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     MEDIA_INFO_LOG("SetUpTestCase");
 }
 
-void GetDatabaseDFXTest::TearDownTestCase(void)
+void ReleaseDebugDatabaseTest::TearDownTestCase(void)
 {
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     MEDIA_INFO_LOG("TearDownTestCase");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
-void GetDatabaseDFXTest::SetUp()
+void ReleaseDebugDatabaseTest::SetUp()
 {
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
     MEDIA_INFO_LOG("SetUp");
 }
 
-void GetDatabaseDFXTest::TearDown(void)
+void ReleaseDebugDatabaseTest::TearDown(void)
 {
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
     MEDIA_INFO_LOG("TearDown");
 }
 
-HWTEST_F(GetDatabaseDFXTest, GetDatabaseDFX_Test_001, TestSize.Level0)
+HWTEST_F(ReleaseDebugDatabaseTest, ReleaseDebugDatabase_Test_001, TestSize.Level0)
 {
     MessageParcel data;
     MessageParcel reply;
 
-    int32_t ret = controllerService->GetDatabaseDFX(data, reply);
-    EXPECT_NE(ret, E_OK);
+    int32_t ret = controllerService->ReleaseDebugDatabase(data, reply);
+    EXPECT_NE(ret, E_SUCCESS);
 }
 
-HWTEST_F(GetDatabaseDFXTest, GetDatabaseDFX_Test_002, TestSize.Level0)
+HWTEST_F(ReleaseDebugDatabaseTest, ReleaseDebugDatabase_Test_002, TestSize.Level0)
 {
-    // 测试调用成功
     MessageParcel data;
     MessageParcel reply;
-    GetDatabaseDFXReqBody reqBody;
-    reqBody.betaId = "123";
+    ReleaseDebugDatabaseReqBody reqBody;
+    std::string betaIssueId = "123456789";
+    reqBody.betaIssueId = betaIssueId;
     bool isValid = reqBody.Marshalling(data);
-    EXPECT_EQ(isValid, true);
-    int32_t ret = controllerService->GetDatabaseDFX(data, reply);
+    int32_t ret = controllerService->ReleaseDebugDatabase(data, reply);
     EXPECT_EQ(ret, E_SUCCESS);
-
-    // 覆盖重复任务分支
-    MessageParcel data1;
-    MessageParcel reply1;
-    reqBody.betaId = "123";
-    isValid = reqBody.Marshalling(data1);
-    ret = controllerService->GetDatabaseDFX(data1, reply1);
-    EXPECT_EQ(ret, E_DFX_TASK_IS_EXIST);
 }
 }  // namespace OHOS::Media

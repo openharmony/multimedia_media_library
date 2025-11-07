@@ -235,11 +235,9 @@ bool ThumbnailUtils::ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, 
 bool ThumbnailUtils::CenterScaleEx(std::shared_ptr<PixelMap> &dataSource, const Size &desiredSize,
     const std::string path)
 {
-    if (dataSource->GetHeight() * dataSource->GetWidth() == 0) {
-        MEDIA_ERR_LOG("Invalid source size, ScalePixelMapEx failed, path: %{public}s",
-            DfxUtils::GetSafePath(path).c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPixelMapValid(dataSource),
+        false, "Invalid PixelMap! path: %{public}s.", DfxUtils::GetSafePath(path).c_str());
+
     float sourceScale = static_cast<float>(dataSource->GetHeight()) / static_cast<float>(dataSource->GetWidth());
     float scale = 1.0f;
     if (sourceScale <= 1.0f) {
@@ -845,6 +843,8 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
         MEDIA_DATA_DB_POSITION,
         MEDIA_DATA_DB_DATE_TAKEN,
         MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_ORIENTATION,
+        PhotoColumn::PHOTO_EXIF_ROTATE,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN);
@@ -1032,7 +1032,11 @@ void ThumbnailUtils::PostProcPixelMapSource(ThumbnailData &data)
             std::shared_ptr<PixelMap> copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
             data.source.SetPixelMapEx(copySource);
         }
-        ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, data.exifRotate);
+        int32_t exifRotate = data.exifRotate;
+        if (exifRotate == 0 && data.orientation != 0) {
+            ExifRotateUtils::ConvertOrientationToExifRotate(data.orientation, exifRotate);
+        }
+        ThumbnailImageFrameWorkUtils::FlipAndRotatePixelMap(pixelMap, exifRotate);
     }
 
     // PixelMap has been rotated, fix the exif orientation to zero degree.
@@ -1055,7 +1059,11 @@ void ThumbnailUtils::PostProcPictureSource(ThumbnailData &data)
             std::shared_ptr<Picture> copySource = ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
             data.source.SetPictureEx(copySource);
         }
-        ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, data.exifRotate);
+        int32_t exifRotate = data.exifRotate;
+        if (exifRotate == 0 && data.orientation != 0) {
+            ExifRotateUtils::ConvertOrientationToExifRotate(data.orientation, exifRotate);
+        }
+        ThumbnailImageFrameWorkUtils::FlipAndRotatePicture(picture, exifRotate);
     }
 }
 
@@ -1952,25 +1960,21 @@ void ThumbnailUtils::BatchDropThumbnailSize(const ThumbnailDataBatch& dataBatch)
 
 bool ThumbnailUtils::IsExCloudThumbnail(const ThumbnailData& data)
 {
-    return ((data.exifRotate != 0 && data.exifRotate != static_cast<int32_t>(ExifRotateType::TOP_LEFT)) ||
-        data.orientation != 0);
-}
-
-void ThumbnailUtils::HandleImageExifRotate(ThumbnailData &data)
-{
-    CHECK_AND_RETURN(data.exifRotate == 0 && data.mediaType == MediaType::MEDIA_TYPE_IMAGE);
-    ExifRotateUtils::ConvertOrientationToExifRotate(data.orientation, data.exifRotate);
+    return data.exifRotate > static_cast<int32_t>(ExifRotateType::TOP_LEFT) || data.orientation != 0;
 }
 
 bool ThumbnailUtils::NeedRotateThumbnail(const ThumbnailData& data)
 {
-    return IsImageWithExifRotate(data) && !IsUseRotatedSource(data);
+    return IsImageWithRotate(data) && !IsUseRotatedSource(data);
 }
 
-bool ThumbnailUtils::IsImageWithExifRotate(const ThumbnailData& data)
+bool ThumbnailUtils::IsImageWithRotate(const ThumbnailData& data)
 {
-    return data.mediaType == MediaType::MEDIA_TYPE_IMAGE &&
-        data.exifRotate != 0 && data.exifRotate != static_cast<int32_t>(ExifRotateType::TOP_LEFT);
+    if (data.mediaType != MediaType::MEDIA_TYPE_IMAGE) {
+        return false;
+    }
+    return data.exifRotate == 0 ? data.orientation != 0 :
+        data.exifRotate > static_cast<int32_t>(ExifRotateType::TOP_LEFT);
 }
 
 bool ThumbnailUtils::IsUseRotatedSource(const ThumbnailData& data)

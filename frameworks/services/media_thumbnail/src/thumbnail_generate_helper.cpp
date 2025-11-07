@@ -159,7 +159,6 @@ void CreateAstcBackgroundTask(std::shared_ptr<ThumbnailTaskData> &data)
         IThumbnailHelper::CreateThumbnail(data);
     } else {
         thumbnailData.needGenerateExThumbnail = false;
-        ThumbnailUtils::HandleImageExifRotate(thumbnailData);
         thumbnailData.loaderOpts.loadingStates = ThumbnailUtils::IsExCloudThumbnail(thumbnailData) ?
             SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES : SourceLoader::CLOUD_SOURCE_LOADING_STATES;
         ThumbnailUtils::IsExCloudThumbnail(thumbnailData) ?
@@ -208,7 +207,6 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool
     ThumbnailUtils::RecordStartGenerateStats(data.stats, GenerateScene::CLOUD, LoadSourceType::LOCAL_PHOTO);
     int err = 0;
     ThumbnailUtils::QueryThumbnailDataFromFileId(opts, opts.fileId, data, err);
-    ThumbnailUtils::HandleImageExifRotate(data);
     if (err != E_OK) {
         MEDIA_ERR_LOG("QueryThumbnailDataFromFileId failed, path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
@@ -268,7 +266,6 @@ int32_t ThumbnailGenerateHelper::RegenerateThumbnailFromCloud(ThumbRdbOpt &opts)
     data.isRegenerateStage = true;
     data.createLowQulityLcd = true;
     data.loaderOpts.loadingStates = SourceLoader::CLOUD_ORIGIN_SOURCE_LOADING_STATES;
-    CHECK_AND_EXECUTE(data.isLocalFile, ThumbnailUtils::HandleImageExifRotate(data));
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
         opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     return E_OK;
@@ -284,13 +281,8 @@ int32_t ThumbnailGenerateHelper::CreateAstcMthAndYear(ThumbRdbOpt &opts)
         return err;
     }
 
-    if (data.isLocalFile) {
-        data.loaderOpts.loadingStates = data.exifRotate == 0 ?
-            SourceLoader::LOCAL_SOURCE_LOADING_STATES : SourceLoader::LOCAL_THUMB_SOURCE_LOADING_STATES;
-    } else {
-        ThumbnailUtils::HandleImageExifRotate(data);
-        data.loaderOpts.loadingStates = SourceLoader::CLOUD_SOURCE_LOADING_STATES;
-    }
+    data.loaderOpts.loadingStates = data.isLocalFile ?
+        SourceLoader::LOCAL_THUMB_SOURCE_LOADING_STATES : SourceLoader::CLOUD_SOURCE_LOADING_STATES;
     data.needGenerateExThumbnail = false;
     if (!IThumbnailHelper::DoCreateAstcMthAndYear(opts, data)) {
         return E_ERR;
@@ -371,7 +363,6 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
         }
 
         info.needGenerateExThumbnail = false;
-        ThumbnailUtils::HandleImageExifRotate(info);
         if (ThumbnailUtils::IsExCloudThumbnail(info)) {
             info.loaderOpts.loadingStates = SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
             IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstcEx, opts, info, requestId);
@@ -919,7 +910,6 @@ int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts, b
         opts.row = infos[i].id;
         ThumbnailUtils::RecordStartGenerateStats(infos[i].stats, GenerateScene::UPGRADE, LoadSourceType::LOCAL_PHOTO);
         infos[i].loaderOpts.loadingStates = SourceLoader::UPGRADE_SOURCE_LOADING_STATES;
-        CHECK_AND_EXECUTE(infos[i].isLocalFile, ThumbnailUtils::HandleImageExifRotate(infos[i]));
         IThumbnailHelper::AddThumbnailGenerateTask(UpgradeThumbnailBackgroundTask,
             opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     }
@@ -978,29 +968,35 @@ void RepairExifRotateBackgroundTask(std::shared_ptr<ThumbnailTaskData> &data)
         "ExifRotate is not zero or photo is not local, id:%{public}s, position:%{public}d, exifRotate:%{public}d",
         thumbnailData.id.c_str(), thumbnailData.position, thumbnailData.exifRotate);
 
+    bool needRegenerateThumbnail = false;
     DirtyType dirtyType = DirtyType::TYPE_MDIRTY;
     thumbnailData.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
-    thumbnailData.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    thumbnailData.loaderOpts.loadingStates = SourceLoader::UPGRADE_SOURCE_LOADING_STATES;
     ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::REPAIR,
         LoadSourceType::LOCAL_PHOTO);
     if (thumbnailData.mediaType == MediaType::MEDIA_TYPE_IMAGE) {
         MediaImageFrameWorkUtils::GetExifRotate(thumbnailData.path, thumbnailData.exifRotate);
         if (thumbnailData.exifRotate != static_cast<int32_t>(ExifRotateType::TOP_LEFT)) {
-            MediaAssetsRdbOperations::DeleteFromVisionTables(thumbnailData.id);
-            ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, thumbnailData);
-            IThumbnailHelper::CreateLcdAndThumbnail(data);
+            needRegenerateThumbnail = true;
         }
     } else {
         MediaPlayerFrameWorkUtils::GetExifRotate(thumbnailData.path, thumbnailData.exifRotate);
         if (ExifRotateUtils::IsExifRotateWithFlip(thumbnailData.exifRotate)) {
-            MediaAssetsRdbOperations::DeleteFromVisionTables(thumbnailData.id);
-            ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, thumbnailData);
-            IThumbnailHelper::CreateLcdAndThumbnail(data);
+            needRegenerateThumbnail = true;
             dirtyType = DirtyType::TYPE_FDIRTY;
         }
     }
-    CHECK_AND_EXECUTE(!thumbnailData.needUpdateDb,
-        ThumbnailRdbUtils::UpdateExifRotateAndDirty(thumbnailData, dirtyType));
+
+    if (needRegenerateThumbnail) {
+        CHECK_AND_RETURN_LOG(ThumbnailRdbUtils::UpdateExifRotateAndDirty(thumbnailData, dirtyType, true) == E_OK,
+            "Failed to UpdateExifRotateAndDirty, id:%{public}s", thumbnailData.id.c_str());
+        ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, thumbnailData);
+        MediaAssetsRdbOperations::DeleteFromVisionTables(thumbnailData.id);
+        IThumbnailHelper::CreateLcdAndThumbnail(data);
+    } else {
+        CHECK_AND_RETURN_LOG(ThumbnailRdbUtils::UpdateExifRotateAndDirty(thumbnailData, dirtyType, false) == E_OK,
+            "Failed to UpdateExifRotateAndDirty, id:%{public}s", thumbnailData.id.c_str());
+    }
     MEDIA_INFO_LOG("Repair photo exif rotate, id:%{public}s, path:%{public}s, exifRotate:%{public}d",
         thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str(), thumbnailData.exifRotate);
 }

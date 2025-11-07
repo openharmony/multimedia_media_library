@@ -108,6 +108,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/controller",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dto",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dao",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/vo",
   ]
 
@@ -208,6 +209,10 @@ config("media_data_extension_public_config") {
 
 ohos_shared_library("medialibrary_data_extension") {
   install_enable = true
+
+  media_video_mode_source = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_video_mode_operation.cpp",
+  ]
 
   media_scan_source = [
     "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/media_scan_executor.cpp",
@@ -508,8 +513,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/start_batch_download_cloud_resources_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_batch_download_cloud_resources_status_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_batch_download_cloud_resources_count_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/get_database_dfx_vo.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/remove_database_dfx_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/acquire_debug_database_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/release_debug_database_vo.cpp",
   ]
 
   media_assets_manager_dto_source = [
@@ -575,6 +580,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_photo_album_object_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/set_photo_album_order_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_albums_lpath_by_ids_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/get_cloned_album_uris_vo.cpp",
   ]
 
   media_albums_manager_dto_source = [
@@ -599,6 +605,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/change_request_set_highlight_attribute_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_albums_by_ids_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_photo_album_object_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/dto/get_cloned_album_uris_dto.cpp",
   ]
 
   media_permission_check_source = [
@@ -608,6 +615,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_private_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_read_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_system_api_permission_check.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_system_innerapi_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_write_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_cloudfile_sync_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_db_permission_check.cpp",
@@ -618,6 +626,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources_backround_task = [
     "src/background/media_background_task_factory.cpp",
     "src/background/media_file_manager_temp_file_aging_task.cpp",
+    "src/background/media_video_mode_task.cpp",
   ]
 
   sources = [
@@ -695,6 +704,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/operation/display_name_info.cpp",
     "src/operation/duplicate_photo_operation.cpp",
     "src/operation/medialibrary_custom_restore_notify.cpp",
+    "src/operation/medialibrary_transcode_data_aging_operation.cpp",
     "src/operation/photo_album_copy_meta_data_operation.cpp",
     "src/operation/photo_asset_copy_operation.cpp",
     "src/operation/photo_burst_operation.cpp",
@@ -789,6 +799,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += accurate_refresh_source
   sources += accurate_refresh_server_source
   sources += sources_backround_task
+  sources += media_video_mode_source
 
   if (media_library_feature_cloud_enhancement) {
     media_cloud_enhancement_source = [

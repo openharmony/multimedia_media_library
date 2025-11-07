@@ -96,6 +96,8 @@
 #include "photo_map_code_operation.h"
 #include "media_file_manager_temp_file_aging_task.h"
 #include "preferences_helper.h"
+#include "file_utils.h"
+#include "medialibrary_transcode_data_aging_operation.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -117,6 +119,7 @@ constexpr int32_t MAX_PROCESS_NUM = 200;
 constexpr int64_t INVALID_SIZE = 0;
 constexpr int64_t SHARE_UID = 5520;
 static const std::string ANALYSIS_FILE_PATH = "/storage/cloud/files/highlight/music";
+const double TIMER_MULTIPLIER = 60.0;
 
 struct DeletedFilesParams {
     vector<string> ids;
@@ -221,6 +224,7 @@ const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_IS_AUTO, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_MEDIA_SUFFIX, MEMBER_TYPE_STRING },
     { PhotoColumn::STAGE_VIDEO_TASK_STATUS, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_VIDEO_MODE, MEMBER_TYPE_INT32 },
 };
 
 const std::unordered_map<std::string, int>& GetFileAssetMemberMap()
@@ -455,6 +459,17 @@ static void DeleteFileManagerTempFileAgingXml()
         "Failed to delete file manager temp file aging xml, errCode: %{public}d", errCode);
 }
 
+static void ResetFileIdProgressData()
+{
+    const string taskProgressXml = "/data/storage/el2/base/preferences/task_progress.xml";
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(taskProgressXml, errCode);
+    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
+    prefs->PutInt("recognize_ce_photos_file_id_progress", 0);
+    prefs->FlushSync();
+}
+
 int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cmd)
 {
     auto valuesBucket = cmd.GetValueBucket();
@@ -491,6 +506,7 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     CHECK_AND_PRINT_LOG(MediaFileUtils::CreateDirectory(photoThumbsPath),
         "Create dir %{public}s failed", photoThumbsPath.c_str());
     DeleteFileManagerTempFileAgingXml();
+    ResetFileIdProgressData();
     return E_OK;
 }
 
@@ -1185,7 +1201,8 @@ static ValuesBucket GetOwnerPermissionBucket(MediaLibraryCommand &cmd, int64_t f
 }
 
 int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<TransactionOperations> trans,
-    MediaLibraryCommand &cmd, const FileAsset &fileAsset)
+    MediaLibraryCommand &cmd, const FileAsset &fileAsset,
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     // All values inserted in this function are the base property for files
     if (trans == nullptr) {
@@ -1204,22 +1221,27 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<Transaction
     FillAssetInfo(cmd, fileAsset);
 
     int64_t outRowId = -1;
-    int32_t errCode = trans->Insert(cmd, outRowId);
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
+    int32_t ret = NativeRdb::E_OK;
+    if (assetRefresh) {
+        ret = assetRefresh->Insert(cmd, outRowId);
+    } else {
+        ret = trans->Insert(cmd, outRowId);
+    }
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Insert into db failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-    MEDIA_INFO_LOG("insert success, rowId = %{public}d", (int)outRowId);
+    MEDIA_ERR_LOG("insert success, rowId = %{public}d", (int)outRowId);
     auto fileId = outRowId;
     ValuesBucket valuesBucket = GetOwnerPermissionBucket(cmd, fileId, callingUid);
     int64_t tmpOutRowId = -1;
     MediaLibraryCommand cmdPermission(Uri(MEDIALIBRARY_GRANT_URIPERM_URI), valuesBucket);
-    errCode = trans->Insert(cmdPermission, tmpOutRowId);
+    auto errCode = trans->Insert(cmdPermission, tmpOutRowId);
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
-    MEDIA_INFO_LOG("insert uripermission success, rowId = %{public}d", (int)tmpOutRowId);
+    MEDIA_ERR_LOG("insert uripermission success, rowId = %{public}d", (int)tmpOutRowId);
     return static_cast<int32_t>(outRowId);
 }
 
@@ -1472,6 +1494,10 @@ int32_t MediaLibraryAssetOperations::SetUserComment(MediaLibraryCommand &cmd,
     CHECK_AND_RETURN_RET_LOG(err == 0, E_OK, "Image does not exist user comment in exif, no need to modify");
     err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_USER_COMMENT, newUserComment, filePath);
     CHECK_AND_PRINT_LOG(err == 0, "Modify image property user comment failed");
+    TransCodeExifInfo transCodeExifInfo;
+    transCodeExifInfo.userComment = newUserComment;
+    MediaLibraryTranscodeDataAgingOperation::ModifyTransCodeFileExif(ExifType::EXIF_USER_COMMENT,
+        filePath, transCodeExifInfo, __func__);
     return E_OK;
 }
 
@@ -1715,45 +1741,6 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     return fd;
 }
 
-int32_t MediaLibraryAssetOperations::SetTranscodeUriToFileAsset(std::shared_ptr<FileAsset> &fileAsset,
-    const std::string &mode, const bool isHeif)
-{
-    CHECK_AND_RETURN_RET_INFO_LOG(IPCSkeleton::GetCallingUid() != SHARE_UID, E_INNER_FAIL, "share support heif");
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INNER_FAIL, "fileAsset is nullptr");
-
-    if (MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName()) != "heif" &&
-        MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName()) != "heic") {
-        MEDIA_INFO_LOG("Display name is not heif, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    }
-    CHECK_AND_RETURN_RET_LOG(!isHeif, E_INNER_FAIL, "Is support heif uri:%{public}s", fileAsset->GetUri().c_str());
-    CHECK_AND_RETURN_RET_LOG(mode == MEDIA_FILEMODE_READONLY, E_INNER_FAIL,
-        "mode is not read only, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    auto mediaLibraryBundleManager = MediaLibraryBundleManager::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(mediaLibraryBundleManager != nullptr, E_INVALID_VALUES,
-        "MediaLibraryBundleManager::GetInstance() returned nullptr");
-    string clientBundle = mediaLibraryBundleManager->GetClientBundleName();
-    CHECK_AND_RETURN_RET_LOG(HeifTranscodingCheckUtils::CanSupportedCompatibleDuplicate(clientBundle),
-        E_INNER_FAIL, "clientBundle support heif, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    CHECK_AND_RETURN_RET_LOG(fileAsset->GetExistCompatibleDuplicate(), E_INNER_FAIL,
-        "SetTranscodeUriToFileAsset compatible duplicate is not exist, fileAsset uri: %{public}s",
-        fileAsset->GetUri().c_str());
-    string path = MediaLibraryAssetOperations::GetEditDataDirPath(fileAsset->GetPath());
-    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INNER_FAIL,
-        "Get edit data dir path failed, fileAsset uri: %{public}s", fileAsset->GetUri().c_str());
-    string newPath = path + "/transcode.jpg";
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists((newPath)), E_INNER_FAIL, "transcode.jpg is not exist");
-    fileAsset->SetPath(newPath);
-    return E_OK;
-}
-
-void MediaLibraryAssetOperations::DoTranscodeDfx(const int32_t &type)
-{
-    MEDIA_INFO_LOG("medialibrary open transcode file success");
-    auto dfxManager = DfxManager::GetInstance();
-    CHECK_AND_RETURN_LOG(dfxManager != nullptr, "DfxManager::GetInstance() returned nullptr");
-    dfxManager->HandleTranscodeAccessTime(ACCESS_MEDIALIB);
-}
-
 int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync)
 {
     if (fileAsset == nullptr) {
@@ -1923,15 +1910,6 @@ string MediaLibraryAssetOperations::GetEditDataCameraPath(const string &path)
         return "";
     }
     return parentPath + "/editdata_camera";
-}
-
-string MediaLibraryAssetOperations::GetTransCodePath(const string &path)
-{
-    string parentPath = GetEditDataDirPath(path);
-    if (parentPath.empty()) {
-        return "";
-    }
-    return parentPath + "/transcode.jpg";
 }
 
 string MediaLibraryAssetOperations::GetAssetCacheDir()
@@ -2675,9 +2653,6 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     }
 #endif
 
-    if (this->isInvalidateThumb && isThumbnailExist) {
-        IsCoverContentChange(fileId);
-    }
     return E_OK;
 }
 
@@ -3279,6 +3254,7 @@ int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<Fil
     MEDIA_INFO_LOG("Delete Photo displayName is %{public}s", displayName.c_str());
     MEDIA_DEBUG_LOG("Delete Photo path is %{public}s", filePath.c_str());
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
+    FileUtils::DeleteTempVideoFile(filePath);
     bool res = MediaFileUtils::DeleteFile(filePath);
     CHECK_AND_RETURN_RET_LOG(res, E_HAS_FS_ERROR, "Delete photo file failed, errno: %{public}d", errno);
 
@@ -3360,6 +3336,8 @@ static int32_t DeleteMovingPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
     int32_t originalSubType = fileAsset->GetOriginalSubType();
     if (MovingPhotoFileUtils::IsMovingPhoto(subType, effectMode, originalSubType)) {
         string path = fileAsset->GetPath();
+        int32_t id = fileAsset->GetId();
+        MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(std::to_string(id), path, subType, false);
         string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
         if (!MediaFileUtils::DeleteFile(videoPath)) {
             MEDIA_INFO_LOG("delete video path is %{public}s, errno: %{public}d",
@@ -3460,7 +3438,7 @@ static int32_t DeleteLocalPhotoPermanently(shared_ptr<FileAsset> &fileAsset,
     }
     if (position == BOTH_LOCAL_CLOUD_PHOTO_POSITION) {
         if (fileAsset->GetExistCompatibleDuplicate() != 0) {
-            MediaLibraryAssetOperations::DeleteTransCodeInfo(fileAsset->GetFilePath(),
+            MediaLibraryTranscodeDataAgingOperation::DeleteTransCodeInfo(fileAsset->GetFilePath(),
                 to_string(fileAsset->GetId()), __func__);
         }
         subFileAssetVector.push_back(fileAsset);
@@ -3582,45 +3560,6 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
     }
     NotifyPhotoAlbum(std::vector<int32_t>(changedAlbumIds.begin(), changedAlbumIds.end()), assetRefresh);
     return E_OK;
-}
-
-int32_t MediaLibraryAssetOperations::DeleteTranscodePhotos(const std::string &filePath)
-{
-    CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INNER_FAIL, "filePath is empty");
-
-    auto editPath = GetEditDataDirPath(filePath);
-    CHECK_AND_RETURN_RET_LOG(!editPath.empty(), E_INNER_FAIL, "editPath is empty");
-
-    auto transcodeFile = editPath + "/transcode.jpg";
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(transcodeFile), E_OK, "Transcode photo is not exists");
-
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(transcodeFile), E_INNER_FAIL,
-        "Failed to delete transcode photo");
-    MEDIA_INFO_LOG("Successfully deleted transcode photo, path: %{public}s", transcodeFile.c_str());
-    return E_OK;
-}
-
-void MediaLibraryAssetOperations::DeleteTransCodeInfo(const std::string &filePath, const std::string &fileId,
-    const std::string functionName)
-{
-    auto ret = DeleteTranscodePhotos(filePath);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to delete transcode photo, in function %{public}s:",
-        functionName.c_str());
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is null, in function %{public}s:", functionName.c_str());
-    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, fileId);
-    ValuesBucket updateValues;
-    updateValues.PutLong(PhotoColumn::PHOTO_TRANSCODE_TIME, 0);
-    updateValues.PutLong(PhotoColumn::PHOTO_TRANS_CODE_FILE_SIZE, 0);
-    updateValues.PutLong(PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE, 0);
-    updateCmd.SetValueBucket(updateValues);
-    int32_t rowId = 0;
-    int32_t result = rdbStore->Update(updateCmd, rowId);
-    CHECK_AND_RETURN_LOG(result == NativeRdb::E_OK && rowId > 0,
-        "Update TransCodePhoto failed. Result %{public}d, in function %{public}s:", result, functionName.c_str());
-    MEDIA_INFO_LOG("Successfully delete transcode info, in function %{public}s:", functionName.c_str());
-    return;
 }
 } // namespace Media
 } // namespace OHOS

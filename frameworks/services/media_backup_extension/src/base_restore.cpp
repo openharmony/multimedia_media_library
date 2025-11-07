@@ -29,6 +29,7 @@
 #include "cloud_sync_utils.h"
 #include "directory_ex.h"
 #include "extension_context.h"
+#include "media_analysis_helper.h"
 #include "media_column.h"
 #include "media_log.h"
 #include "media_file_utils.h"
@@ -91,7 +92,7 @@ static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)
     for (auto &obj : jsonObj) {
         bool cond = (!obj.contains("type") || obj.at("type") != "appTwinDataRestoreState" || !obj.contains("detail"));
         CHECK_AND_CONTINUE(!cond);
-
+        CHECK_AND_CONTINUE(obj.at("detail").is_string());
         std::string curMode = obj.at("detail");
         if (curMode == "0" || curMode == "1" || curMode == "2" || curMode == "3") {
             restoreMode = std::stoi(curMode);
@@ -119,13 +120,12 @@ void BaseRestore::GetAccountValid()
     CHECK_AND_RETURN_LOG(!json_arr.is_discarded(), "cloud account parse failed.");
 
     for (const auto& item : json_arr) {
-        if (!item.contains("type") || !item.contains("detail") || item["type"] != "dualAccountId") {
-            continue;
-        } else {
-            oldId = item["detail"];
-            MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
-            break;
-        }
+        bool checkContain = item.contains("type") && item.contains("detail");
+        bool checkType = item["type"].is_string() && item["detail"].is_string() && item["type"] == "dualAccountId";
+        CHECK_AND_CONTINUE(checkContain && checkType);
+        oldId = item["detail"];
+        MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
+        break;
     }
     std::pair<bool, OHOS::AccountSA::OhosAccountInfo> ret =
         OHOS::AccountSA::OhosAccountKits::GetInstance().QueryOhosAccountInfo();
@@ -157,6 +157,7 @@ void BaseRestore::GetSourceDeviceInfo()
     for (const auto& item : jsonArray) {
         bool cond = (!item.contains("type") || !item.contains("detail"));
         CHECK_AND_CONTINUE(!cond);
+        CHECK_AND_CONTINUE(item["type"].is_string() && item["detail"].is_string());
         CHECK_AND_EXECUTE(item["type"] != "dualOdid", albumOdid_ = item["detail"]);
         if (item["type"] == "dualDeviceSoftName") {
             dualDeviceSoftName_ = item["detail"];
@@ -174,8 +175,9 @@ bool BaseRestore::IsRestorePhoto()
     CHECK_AND_RETURN_RET_LOG(!jsonArray.is_discarded(), true, "IsRestorePhoto parse restoreInfo_ fail.");
 
     for (const auto& item : jsonArray) {
-        bool cond = (!item.contains("type") || !item.contains("detail") || item["type"] != STAT_KEY_BACKUP_INFO);
-        CHECK_AND_CONTINUE(!cond);
+        bool checkContain = item.contains("type") && item.contains("detail");
+        bool checkType = item["type"].is_string() && item["detail"].is_string() && item["type"] == STAT_KEY_BACKUP_INFO;
+        CHECK_AND_CONTINUE(checkContain && checkType);
         for (const auto& backupInfo : item["detail"]) {
             bool conds = (backupInfo == STAT_TYPE_PHOTO || backupInfo == STAT_TYPE_VIDEO||
                 backupInfo == STAT_TYPE_GALLERY_DATA);
@@ -526,6 +528,14 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetCloudInsertValues(const int32_t 
     return values;
 }
 
+void BaseRestore::InsertVideoMode(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
+{
+    MEDIA_INFO_LOG("BaseRestore::InsertVideoMode");
+    int32_t videoMode = metadata->GetVideoMode();
+    MEDIA_INFO_LOG("InsertVideoMode videoMode=%{public}d", videoMode);
+    value.PutInt(PhotoColumn::PHOTO_VIDEO_MODE, videoMode);
+}
+
 static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
 {
     int64_t dateAdded = metadata->GetFileDateAdded();
@@ -649,6 +659,16 @@ double BaseRestore::GetDataLatitude(const FileInfo &fileInfo, std::unique_ptr<Me
     return data->GetLatitude();
 }
 
+void BaseRestore::Set3DgsSubtype(FileInfo &info, NativeRdb::ValuesBucket &value,
+    std::unique_ptr<Metadata> &data)
+{
+    if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS)) {
+        info.subtype = data->GetPhotoSubType();
+        value.Delete(PhotoColumn::PHOTO_SUBTYPE);
+        value.PutInt(PhotoColumn::PHOTO_SUBTYPE, info.subtype);
+    }
+}
+
 void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
     std::unique_ptr<Metadata> data = make_unique<Metadata>();
@@ -694,6 +714,8 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     }
     fileInfo.dateAdded = dateAdded;
     SetCoverPosition(fileInfo, value);
+    Set3DgsSubtype(fileInfo, value, data);
+    InsertVideoMode(data, value);
 }
 
 void BaseRestore::CreateDir(std::string &dir)
@@ -834,8 +856,13 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
     BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
     
     if (sceneCode == I_PHONE_CLONE_RESTORE && fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        string movSrcPath = fileInfo.filePath.substr(0, fileInfo.filePath.find_last_of(".")) + ".MOV";
-        string movTargetPath = localPath.substr(0, localPath.find_last_of(".")) + ".mp4";
+        size_t destPos = fileInfo.filePath.find_last_of(".");
+        CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, false, "fileInfo.filePath not contain '.'");
+        string movSrcPath = fileInfo.filePath.substr(0, destPos) + ".MOV";
+
+        destPos = localPath.find_last_of(".");
+        CHECK_AND_RETURN_RET_LOG(destPos != std::string::npos, false, "localPath not contain '.'");
+        string movTargetPath = localPath.substr(0, destPos) + ".mp4";
         
         errCode = BackupFileUtils::MoveFile(movSrcPath, movTargetPath, sceneCode);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, false,
@@ -2269,6 +2296,16 @@ void BaseRestore::UpdateHdrMode(std::vector<FileInfo> &fileInfos)
         int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, values, predicates);
         CHECK_AND_RETURN_LOG(changeRows >= 0 && ret == E_OK, "failed to update columns");
     }
+}
+
+void BaseRestore::RestoreSearchIndex()
+{
+    int64_t doIndexStartTime = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<std::string> fileIds;
+    MediaAnalysisHelper::StartMediaAnalysisServiceSync(
+        IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX_FULL, fileIds);
+    int64_t doIndexEndTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: doIndex cost: %{public}" PRId64, doIndexEndTime - doIndexStartTime);
 }
 } // namespace Media
 } // namespace OHOS

@@ -120,6 +120,7 @@ static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {MediaColumn::MEDIA_PARENT_ID, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_META_DATE_MODIFIED, ResultSetDataType::TYPE_INT64},
     {PhotoColumn::PHOTO_ORIENTATION, ResultSetDataType::TYPE_INT32},
+    {PhotoColumn::PHOTO_EXIF_ROTATE, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_LATITUDE, ResultSetDataType::TYPE_DOUBLE},
     {PhotoColumn::PHOTO_LONGITUDE, ResultSetDataType::TYPE_DOUBLE},
     {PhotoColumn::PHOTO_HEIGHT, ResultSetDataType::TYPE_INT32},
@@ -146,6 +147,7 @@ static unordered_map<string, ResultSetDataType> commonColumnTypeMap = {
     {PhotoColumn::PHOTO_MEDIA_SUFFIX, ResultSetDataType::TYPE_STRING},
     {PhotoColumn::PHOTO_IS_RECENT_SHOW, ResultSetDataType::TYPE_INT32},
     {PhotoColumn::PHOTO_FILE_SOURCE_TYPE, ResultSetDataType::TYPE_INT32},
+    {PhotoColumn::PHOTO_VIDEO_MODE, ResultSetDataType::TYPE_INT32},
 };
 
 static unordered_map<string, ResultSetDataType> thumbnailColumnTypeMap = {
@@ -1487,7 +1489,20 @@ void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(
         ParsingAndFillValue(values, columnName, columnType, resultSet);
     }
 
-    std::string lPath = "/Pictures/Users/" + newAlbumName;
+    std::string lPath = "";
+    int32_t albumType = -1;
+    GetStringValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_LPATH, lPath);
+    GetIntValueFromResultSet(resultSet, PhotoAlbumColumns::ALBUM_TYPE, albumType);
+    if (albumType == PhotoAlbumType::SOURCE) {
+        size_t lastSlashIndex = lPath.find_last_of("/\\");
+        if (lastSlashIndex != std::string::npos) {
+            lPath = lPath.substr(0, lastSlashIndex + 1) + newAlbumName;
+        }
+        values.Delete(PhotoAlbumColumns::ALBUM_BUNDLE_NAME);
+    } else if (albumType == PhotoAlbumType::USER) {
+        lPath = "/Pictures/Users/" + newAlbumName;
+    }
+
     values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, 1);
     values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lPath);
     values.Delete(PhotoAlbumColumns::ALBUM_NAME);

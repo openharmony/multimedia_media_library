@@ -13,20 +13,31 @@
  * limitations under the License.
  */
 
-#ifndef REMOVE_DATABASE_DFX_TEST_H
-#define REMOVE_DATABASE_DFX_TEST_H
+#ifndef PHOTO_CUSTOM_RESTORE_OPERATION_TEST_H
+#define PHOTO_CUSTOM_RESTORE_OPERATION_TEST_H
 
 #include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-class RemoveDatabaseDFXTest : public testing::Test {
+
+class PhotoCustomRestoreOperationTest : public testing::Test {
 public:
+    // input testsuit setup step，setup invoked before all testcases
     static void SetUpTestCase(void);
+    // input testsuit teardown step，teardown invoked after all testcases
     static void TearDownTestCase(void);
+    // input testcase setup step，setup invoked before each testcases
     void SetUp();
+    // input testcase teardown step，teardown invoked after each testcases
     void TearDown();
+
+private:
+    static void SetTables();
+    static void ClearTables();
+    static int32_t ExecSqls(const std::vector<std::string> &sqls);
 };
-} // namespace Media
-} // namespace OHOS
-#endif // REMOVE_DATABASE_DFX_TEST_H
+
+}  // namespace Media
+}  // namespace OHOS
+#endif  // PHOTO_CUSTOM_RESTORE_OPERATION_TEST_H

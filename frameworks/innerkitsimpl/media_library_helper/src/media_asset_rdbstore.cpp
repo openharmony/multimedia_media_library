@@ -326,9 +326,9 @@ static void PrintPredicatesInfo(const NativeRdb::RdbPredicates& predicates, cons
         }
         argsInfo += arg;
     }
-    MEDIA_DEBUG_LOG("PhotosApp Predicates Statement is %{public}s",
+    MEDIA_DEBUG_LOG("PhotosApp Predicates Statement is %{private}s",
         RdbSqlUtils::BuildQueryString(predicates, columns).c_str());
-    MEDIA_DEBUG_LOG("PhotosApp Predicates Args are %{public}s", argsInfo.c_str());
+    MEDIA_DEBUG_LOG("PhotosApp Predicates Args are %{private}s", argsInfo.c_str());
 }
 
 std::shared_ptr<NativeRdb::ResultSet> MediaAssetRdbStore::QueryRdb(

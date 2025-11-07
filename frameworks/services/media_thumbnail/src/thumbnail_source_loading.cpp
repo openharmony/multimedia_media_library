@@ -442,7 +442,7 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
     }
     tracer.Finish();
 
-    if (data_.isLocalFile && data_.exifRotate == 0 && IsLoadingOriginalSource()) {
+    if (data_.exifRotate < 0 && IsLoadingOriginalSource()) {
         data_.exifRotate = static_cast<int32_t>(ExifRotateType::TOP_LEFT);
         CHECK_AND_WARN_LOG(MediaImageFrameWorkUtils::GetExifRotate(imageSource, data_.exifRotate) == E_OK,
             "SourceLoader Failed to get exif rotate, path: %{public}s", DfxUtils::GetSafePath(data_.path).c_str());
@@ -499,7 +499,7 @@ bool SourceLoader::CreateSourceFromOriginalPhotoPicture()
         isCreateSource = CreateSourceWithWholeOriginalPicture();
     }
     CHECK_AND_RETURN_RET_LOG(isCreateSource, false, "Create source failed");
-    CHECK_AND_EXECUTE(!(data_.exifRotate == 0 && exifRotate > 0), data_.exifRotate = exifRotate);
+    CHECK_AND_EXECUTE(!(data_.exifRotate < 0 && exifRotate > 0), data_.exifRotate = exifRotate);
     data_.lastLoadSource = SourceState::LOCAL_ORIGIN;
     return true;
 }
@@ -658,7 +658,7 @@ bool SourceLoader::IsFinal()
 
 std::string LocalThumbSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
-    CHECK_AND_RETURN_RET_WARN_LOG(!(ThumbnailUtils::IsImageWithExifRotate(data) && data.needGenerateExThumbnail),
+    CHECK_AND_RETURN_RET_WARN_LOG(!(ThumbnailUtils::IsImageWithRotate(data) && data.needGenerateExThumbnail),
         "", "Need generate Ex thumbnail, can not use rotated thumbnail");
     CHECK_AND_RETURN_RET_WARN_LOG(data.loaderOpts.decodeInThumbSize, "", "Can not use thumb");
     std::string tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
@@ -678,7 +678,7 @@ bool LocalThumbSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 
 std::string LocalLcdSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
-    CHECK_AND_RETURN_RET_WARN_LOG(!(ThumbnailUtils::IsImageWithExifRotate(data) && data.needGenerateExThumbnail),
+    CHECK_AND_RETURN_RET_WARN_LOG(!(ThumbnailUtils::IsImageWithRotate(data) && data.needGenerateExThumbnail),
         "", "Need generate Ex thumbnail, can not use rotated thumbnail");
     std::string tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
     if (!IsLocalSourceAvailable(tmpPath)) {

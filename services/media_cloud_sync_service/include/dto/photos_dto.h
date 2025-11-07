@@ -72,6 +72,7 @@ public:
     int32_t rotation;
     int64_t version;
     bool isSuccess;
+    int32_t videoMode;
 
     std::map<std::string, CloudFileDataDto> attachment;
 

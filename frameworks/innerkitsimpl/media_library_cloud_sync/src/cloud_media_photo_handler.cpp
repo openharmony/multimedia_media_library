@@ -575,4 +575,14 @@ int32_t CloudMediaPhotoHandler::ReportFailure(const ReportFailureReqBody &reqBod
         .SetHeader({{PhotoColumn::CLOUD_TYPE, to_string(cloudType_)}})
         .Post(operationCode, reqBody);
 }
+
+void CloudMediaPhotoHandler::SetCloudSpaceFull(bool isCloudSpaceFull)
+{
+    return;
+}
+
+bool CloudMediaPhotoHandler::IsCloudSpaceFull()
+{
+    return false;
+}
 }  // namespace OHOS::Media::CloudSync

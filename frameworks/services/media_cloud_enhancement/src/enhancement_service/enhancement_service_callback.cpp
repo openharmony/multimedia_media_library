@@ -132,30 +132,26 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
         }
     }
 
-    int32_t ret = 0;
-    if (MediaFileUtils::IsFileExists(editDataCameraPath)) {
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::MoveFile(editDataSourcePath, editDataSourceBackPath), E_ERR,
-            "Fail to move %{public}s to %{public}s", editDataSourcePath.c_str(), editDataSourceBackPath.c_str());
-        ret = FileUtils::SaveImage(editDataSourcePath, (void*)(buffer.get()), static_cast<size_t>(task.bytes));
-        MEDIA_INFO_LOG("Save cloud enhancement image, path: %{public}s", editDataSourcePath.c_str());
-    } else {
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::MoveFile(info->filePath, editDataSourceBackPath), E_ERR,
-            "Fail to move %{public}s to %{public}s", info->filePath.c_str(), editDataSourceBackPath.c_str());
-        ret = FileUtils::SaveImage(info->filePath, (void*)(buffer.get()), static_cast<size_t>(task.bytes));
-        MEDIA_INFO_LOG("Save cloud enhancement image, path: %{public}s", info->filePath.c_str());
-    }
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "save cloud enhancement image failed. ret=%{public}d, errno=%{public}d",
+    string primarySourcePath = MediaFileUtils::IsFileExists(editDataCameraPath) ? editDataSourcePath : info->filePath;
+    MEDIA_INFO_LOG("Save cloud enhancement image, path: %{public}s", primarySourcePath.c_str());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::MoveFile(primarySourcePath, editDataSourceBackPath), E_ERR,
+        "Fail to move %{public}s to %{public}s", primarySourcePath.c_str(), editDataSourceBackPath.c_str());
+    int32_t ret = FileUtils::SaveImage(primarySourcePath, (void*)(buffer.get()), static_cast<size_t>(task.bytes));
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "save cloud enhancement photo failed. ret=%{public}d, errno=%{public}d",
         ret, errno);
-        
+
     if (MediaFileUtils::IsFileExists(editDataCameraPath)) {
         string extension = MediaFileUtils::GetExtensionFromPath(info->filePath);
         string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
-        MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(info->fileId,
+        ret = MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(info->fileId,
             info->filePath, editDataCameraPath, mimeType);
+        MEDIA_INFO_LOG("save cloud enhancement photo with editDataCamera, ret: %{public}d", ret);
+        CHECK_AND_EXECUTE(ret == E_OK, CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileSafe(editDataSourcePath,
+            info->filePath), E_ERR, "Fail to copy editdata_source to file_path"));
     }
 
     int err = UpdateCloudEnhancementPhotoInfo(info->fileId, assetRefresh);
-    CHECK_AND_PRINT_LOG(ret == E_OK, "fail to update composite enhancement photo info");
+    CHECK_AND_PRINT_LOG(err == E_OK, "fail to update composite enhancement photo info");
 
     MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(
         info->filePath, to_string(info->fileId), MediaLibraryApi::API_10);
@@ -163,7 +159,7 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
 }
 
 int32_t EnhancementServiceCallback::UpdateCloudEnhancementPhotoInfo(int32_t fileId,
-    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh);
+    shared_ptr<AccurateRefresh::AssetAccurateRefresh> assetRefresh)
 {
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
@@ -175,7 +171,7 @@ int32_t EnhancementServiceCallback::UpdateCloudEnhancementPhotoInfo(int32_t file
         static_cast<int32_t>(CompositeDisplayStatus::ENHANCED));
 
     int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, predicates, assetRefresh);
-    CHECK_AND_PRINT_LOG(ret == E_OK, "update enhancement photo info failed. ret:%{public}d, fileId:%{public}s",
+    CHECK_AND_PRINT_LOG(ret == E_OK, "update source photo info failed. ret: %{public}d, fileId: %{public}d",
         ret, fileId);
 
     return E_OK;

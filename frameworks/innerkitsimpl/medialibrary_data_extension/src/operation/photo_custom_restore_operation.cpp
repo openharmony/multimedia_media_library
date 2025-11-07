@@ -20,6 +20,7 @@
 #include <dlfcn.h>
 #include <thread>
 
+#include "custom_restore_const.h"
 #include "dfx_reporter.h"
 #include "directory_ex.h"
 #include "ffrt.h"
@@ -141,12 +142,74 @@ PhotoCustomRestoreOperation &PhotoCustomRestoreOperation::AddTask(RestoreTaskInf
     return *this;
 }
 
+unordered_map<string, TimeInfo> PhotoCustomRestoreOperation::QueryMediaInfo(
+    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, {}, "rdbstore is nullptr");
+
+    const std::vector<NativeRdb::ValueObject> bindArgs = {BASE_FILE_NUM};
+    const std::string sql = "SELECT"
+                            "  file_name,"
+                            "  date_taken,"
+                            "  detail_time "
+                            "FROM"
+                            "  media_info "
+                            "ORDER BY"
+                            "  date_added ASC "
+                            "  LIMIT ?;";
+
+    auto resultSet = rdbStore->QuerySql(sql, bindArgs);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, {}, "resultSet is null");
+
+    unordered_map<string, TimeInfo> timeInfoMap;
+    int64_t nowTime = MediaFileUtils::UTCTimeMilliSeconds();
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string fileName = GetStringVal(SHARE_RESTORE_MEDIA_INFO_FILE_NAME, resultSet);
+        int64_t dateTaken = GetInt64Val(SHARE_RESTORE_MEDIA_INFO_DATE_TAKEN, resultSet);
+        std::string detailTime = GetStringVal(SHARE_RESTORE_MEDIA_INFO_DETAIL_TIME, resultSet);
+        timeInfoMap.insert({fileName, {nowTime, dateTaken, detailTime}});
+        nowTime++;
+    }
+    resultSet->Close();
+    return timeInfoMap;
+}
+
+unordered_map<string, TimeInfo> PhotoCustomRestoreOperation::GetTimeInfoMap(RestoreTaskInfo &restoreTaskInfo)
+{
+    if (restoreTaskInfo.dbPath.empty()) {
+        MEDIA_ERR_LOG("dbPath not exists, dbPath: %{public}s", restoreTaskInfo.dbPath.c_str());
+        return {};
+    }
+    const std::string dbPath = CUSTOM_RESTORE_DIR + "/" + restoreTaskInfo.dbPath;
+    const std::string dbName = MediaFileUtils::GetFileName(dbPath);
+    if (dbName.empty() || access(dbPath.c_str(), F_OK) != 0) {
+        MEDIA_ERR_LOG("db not exists, dbPath: %{public}s", restoreTaskInfo.dbPath.c_str());
+        return {};
+    }
+    NativeRdb::RdbStoreConfig config(dbName);
+    config.SetPath(dbPath);
+    config.SetBundleName(restoreTaskInfo.bundleName);
+    config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
+    config.SetWalLimitSize(SHARE_RESTORE_DB_WAL_LIMIT_SIZE);
+
+    int32_t err;
+    ShareRestoreRdbCallback cb;
+    std::shared_ptr<NativeRdb::RdbStore> rdbStore =
+        NativeRdb::RdbHelper::GetRdbStore(config, SHARE_RESTORE_DB_VERSION, cb, err);
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("GetRdbStore failed, dbPath: %{public}s, err: %{public}d", restoreTaskInfo.dbPath.c_str(), err);
+        return {};
+    }
+    return QueryMediaInfo(rdbStore);
+}
+
 void PhotoCustomRestoreOperation::DoCustomRestore(RestoreTaskInfo &restoreTaskInfo)
 {
     ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_RESTORE_THREAD_NUM);
     vector<string> files;
     GetDirFiles(restoreTaskInfo.sourceDir, files);
     InitRestoreTask(restoreTaskInfo, files.size());
+    const unordered_map<string, TimeInfo> timeInfoMap = GetTimeInfoMap(restoreTaskInfo);
     bool isFirstRestoreSuccess = false;
     int32_t firstRestoreIndex = 0;
     int32_t total = static_cast<int32_t>(files.size());
@@ -157,7 +220,8 @@ void PhotoCustomRestoreOperation::DoCustomRestore(RestoreTaskInfo &restoreTaskIn
             break;
         }
         if (index == 0 || !isFirstRestoreSuccess) {
-            isFirstRestoreSuccess = HandleFirstRestoreFile(restoreTaskInfo, files, index, firstRestoreIndex);
+            isFirstRestoreSuccess =
+                HandleFirstRestoreFile(timeInfoMap, restoreTaskInfo, files, index, firstRestoreIndex);
             if (!isFirstRestoreSuccess && index == lastIndex) {
                 break;
             }
@@ -177,8 +241,8 @@ void PhotoCustomRestoreOperation::DoCustomRestore(RestoreTaskInfo &restoreTaskIn
             int32_t notifyType = index == lastIndex ? NOTIFY_LAST : NOTIFY_PROGRESS;
             vector<string> subFiles(files.begin() + beginOffset, files.begin() + index + 1);
             ffrt::submit(
-                [this, &restoreTaskInfo, notifyType, subFiles]() {
-                    HandleBatchCustomRestore(restoreTaskInfo, notifyType, subFiles);
+                [this, &timeInfoMap, &restoreTaskInfo, notifyType, subFiles = std::move(subFiles)]() {
+                    HandleBatchCustomRestore(timeInfoMap, restoreTaskInfo, notifyType, std::move(subFiles));
                 },
                 {},
                 {},
@@ -194,6 +258,12 @@ void PhotoCustomRestoreOperation::PhotoCustomRestoreOperation::ReleaseCustomRest
 {
     photoCache_.clear();
     CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteDir(restoreTaskInfo.sourceDir), "delete dir failed.");
+
+    if (!restoreTaskInfo.dbPath.empty()) {
+        std::string dbPath = CUSTOM_RESTORE_DIR + "/" + restoreTaskInfo.dbPath;
+        std::string dbDir = MediaFileUtils::GetParentPath(dbPath);
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteDir(dbDir), "delete db dir failed.");
+    }
     ReportCustomRestoreTask(restoreTaskInfo);
     if (IsCancelTask(restoreTaskInfo)) {
         CancelTaskFinish(restoreTaskInfo);
@@ -222,12 +292,12 @@ void PhotoCustomRestoreOperation::ReportCustomRestoreTask(RestoreTaskInfo &resto
     DfxReporter::ReportCustomRestoreFusion(point);
 }
 
-bool PhotoCustomRestoreOperation::HandleFirstRestoreFile(
-    RestoreTaskInfo &restoreTaskInfo, vector<string> &files, int32_t index, int32_t &firstRestoreIndex)
+bool PhotoCustomRestoreOperation::HandleFirstRestoreFile(const unordered_map<string, TimeInfo> &timeInfoMap,
+    RestoreTaskInfo &restoreTaskInfo, const vector<string> &files, int32_t index, int32_t &firstRestoreIndex)
 {
     vector<string> subFiles(files.begin() + index, files.begin() + index + 1);
     UniqueNumber uniqueNumber;
-    int32_t errCode = HandleCustomRestore(restoreTaskInfo, subFiles, true, uniqueNumber);
+    int32_t errCode = HandleCustomRestore(timeInfoMap, restoreTaskInfo, subFiles, true, uniqueNumber);
     bool isFirstRestoreSuccess = errCode == E_OK;
     int32_t lastIndex = static_cast<int32_t>(files.size() - 1);
     if (!isFirstRestoreSuccess && index == lastIndex) {
@@ -243,15 +313,15 @@ bool PhotoCustomRestoreOperation::HandleFirstRestoreFile(
     return isFirstRestoreSuccess;
 }
 
-void PhotoCustomRestoreOperation::HandleBatchCustomRestore(
-    RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, vector<string> subFiles)
+void PhotoCustomRestoreOperation::HandleBatchCustomRestore(const unordered_map<string, TimeInfo> &timeInfoMap,
+    RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, const vector<string> &subFiles)
 {
     if (IsCancelTask(restoreTaskInfo)) {
         return;
     }
     int32_t fileNum = static_cast<int32_t>(subFiles.size());
     UniqueNumber uniqueNumber;
-    int32_t errCode = HandleCustomRestore(restoreTaskInfo, subFiles, false, uniqueNumber);
+    int32_t errCode = HandleCustomRestore(timeInfoMap, restoreTaskInfo, subFiles, false, uniqueNumber);
     SendNotifyMessage(restoreTaskInfo, notifyType, errCode, fileNum, uniqueNumber);
 }
 
@@ -311,12 +381,12 @@ static void UpdateAndNotifyShootingModeAlbumIfNeeded(const vector<FileInfo>& fil
     }
 }
 
-int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
-    RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst,
-    UniqueNumber &uniqueNumber)
+int32_t PhotoCustomRestoreOperation::HandleCustomRestore(const unordered_map<string, TimeInfo> &timeInfoMap,
+    RestoreTaskInfo &restoreTaskInfo, const vector<string> &filePathVector, bool isFirst, UniqueNumber &uniqueNumber)
 {
     MEDIA_INFO_LOG("HandleCustomRestore begin. size: %{public}d, isFirst: %{public}d",
-        static_cast<int32_t>(filePathVector.size()), isFirst ? 1 : 0);
+        static_cast<int32_t>(filePathVector.size()),
+        isFirst ? 1 : 0);
     vector<FileInfo> restoreFiles = GetFileInfos(filePathVector, uniqueNumber);
     int32_t errCode = UpdateUniqueNumber(uniqueNumber);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "UpdateUniqueNumber failed. errCode: %{public}d", errCode);
@@ -327,7 +397,8 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
         return E_ERR;
     }
     int32_t sameFileNum = 0;
-    vector<FileInfo> insertRestoreFiles = BatchInsert(restoreTaskInfo, destRestoreFiles, sameFileNum, isFirst);
+    vector<FileInfo> insertRestoreFiles =
+        BatchInsert(timeInfoMap, restoreTaskInfo, destRestoreFiles, sameFileNum, isFirst);
     int32_t successFileNum = RenameFiles(insertRestoreFiles);
     AccurateRefresh::AssetAccurateRefresh assetRefresh(AccurateRefresh::CUSTOM_RESTORE_BUSSINESS_NAME);
     errCode = BatchUpdateTimePending(insertRestoreFiles, assetRefresh);
@@ -542,13 +613,13 @@ void PhotoCustomRestoreOperation::GetAssetRootDir(int32_t mediaType, string &roo
     }
 }
 
-vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
+vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(const unordered_map<string, TimeInfo> &timeInfoMap,
     RestoreTaskInfo &restoreTaskInfo, vector<FileInfo> &restoreFiles, int32_t &sameFileNum, bool isFirst)
 {
     vector<FileInfo> insertFiles;
     vector<NativeRdb::ValuesBucket> values;
     for (auto &fileInfo : restoreFiles) {
-        NativeRdb::ValuesBucket value = GetInsertValue(restoreTaskInfo, fileInfo);
+        NativeRdb::ValuesBucket value = GetInsertValue(timeInfoMap, restoreTaskInfo, fileInfo);
         if (!IsDuplication(restoreTaskInfo, fileInfo)) {
             values.push_back(value);
             insertFiles.push_back(fileInfo);
@@ -556,8 +627,8 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
     }
     sameFileNum = static_cast<int32_t>(restoreFiles.size() - insertFiles.size());
     sameNum_.fetch_add(sameFileNum);
-    MEDIA_INFO_LOG("BatchInsert values size: %{public}d, sameNum:%{public}d",
-        static_cast<int32_t>(values.size()), sameFileNum);
+    MEDIA_INFO_LOG(
+        "BatchInsert values size: %{public}d, sameNum:%{public}d", static_cast<int32_t>(values.size()), sameFileNum);
     if (values.size() == 0) {
         return insertFiles;
     }
@@ -566,8 +637,11 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
     TransactionOperations trans{__func__};
     std::function<int(void)> func = [&]() -> int {
         errCode = trans.BatchInsert(rowNum, PhotoColumn::PHOTOS_TABLE, values);
-        CHECK_AND_PRINT_LOG(errCode == E_OK, "BatchInsert failed, errCode: %{public}d,"
-            " rowNum: %{public}" PRId64, errCode, rowNum);
+        CHECK_AND_PRINT_LOG(errCode == E_OK,
+            "BatchInsert failed, errCode: %{public}d,"
+            " rowNum: %{public}" PRId64,
+            errCode,
+            rowNum);
         return errCode;
     };
     // If not the first batch of data, retry 10 times
@@ -753,7 +827,37 @@ static void FillFileInfo(FileInfo& fileInfo, const std::unique_ptr<Metadata>& da
     }
 }
 
-NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
+void PhotoCustomRestoreOperation::SetTimeInfo(
+    const std::unique_ptr<Metadata> &data, FileInfo &info, NativeRdb::ValuesBucket &value)
+{
+    int64_t dateModified =
+        PhotoFileUtils::NormalizeTimestamp(data->GetFileDateModified(), MediaFileUtils::UTCTimeMilliSeconds());
+    int64_t dateAdded = PhotoFileUtils::NormalizeTimestamp(data->GetFileDateAdded(), dateModified);
+    int64_t dateTaken = PhotoFileUtils::NormalizeTimestamp(data->GetDateTaken(), min(dateAdded, dateModified));
+
+    value.Put(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
+    value.Put(MediaColumn::MEDIA_DATE_MODIFIED, dateModified);
+    value.Put(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
+
+    std::string detailTime = data->GetDetailTime();
+    const auto timestamp = PhotoFileUtils::ParseTimestampFromDetailTime(detailTime);
+    if (timestamp <= MIN_MILSEC_TIMESTAMP || timestamp >= MAX_MILSEC_TIMESTAMP ||
+        abs(dateTaken - timestamp) >= MAX_TIMESTAMP_DIFF) {
+        MEDIA_ERR_LOG("invalid detailTime: %{public}s, dateTaken: %{public}lld",
+            detailTime.c_str(),
+            static_cast<long long>(dateTaken));
+        detailTime = MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+    }
+
+    value.Put(PhotoColumn::PHOTO_DETAIL_TIME, detailTime);
+
+    const auto [dateYear, dateMonth, dateDay] = PhotoFileUtils::ExtractYearMonthDay(detailTime);
+    value.Put(PhotoColumn::PHOTO_DATE_YEAR, dateYear);
+    value.Put(PhotoColumn::PHOTO_DATE_MONTH, dateMonth);
+    value.Put(PhotoColumn::PHOTO_DATE_DAY, dateDay);
+}
+
+NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(const unordered_map<string, TimeInfo> &timeInfoMap,
     RestoreTaskInfo &restoreTaskInfo, FileInfo &fileInfo)
 {
     NativeRdb::ValuesBucket value;
@@ -766,27 +870,17 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     value.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, restoreTaskInfo.bundleName);
     value.PutString(MediaColumn::MEDIA_OWNER_APPID, restoreTaskInfo.appId);
     std::unique_ptr<Metadata> data = make_unique<Metadata>();
-    data->SetFilePath(fileInfo.originFilePath);
-    data->SetFileName(fileInfo.fileName);
-    data->SetFileMediaType(fileInfo.mediaType);
-    FillMetadata(data);
+    FillMetadata(timeInfoMap, fileInfo, data);
+    // [time info]date_taken, date_modified, date_added, detail_time, date_year, date_month, date_day
+    SetTimeInfo(data, fileInfo, value);
     FillFileInfo(fileInfo, data);
     value.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileInfo.subtype);
-    value.Put(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());
-    value.Put(PhotoColumn::PHOTO_DETAIL_TIME, data->GetDetailTime());
-    value.Put(PhotoColumn::PHOTO_DATE_YEAR, data->GetDateYear());
-    value.Put(PhotoColumn::PHOTO_DATE_MONTH, data->GetDateMonth());
-    value.Put(PhotoColumn::PHOTO_DATE_DAY, data->GetDateDay());
-    value.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
     value.PutInt(PhotoColumn::PHOTO_EXIF_ROTATE, data->GetExifRotate());
-    value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
     value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
     value.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, data->GetFileExtension());
     value.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.mediaType);
-    value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
     value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
-    value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
     value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, -1);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
@@ -802,13 +896,15 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     value.PutInt(PhotoColumn::PHOTO_HDR_MODE, data->GetHdrMode());
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, data->GetUserComment());
     value.PutInt(PhotoColumn::PHOTO_QUALITY, 0);
+    value.PutInt(PhotoColumn::PHOTO_VIDEO_MODE, data->GetVideoMode());
     return value;
 }
 
-vector<FileInfo> PhotoCustomRestoreOperation::GetFileInfos(vector<string> &filePathVector, UniqueNumber &uniqueNumber)
+vector<FileInfo> PhotoCustomRestoreOperation::GetFileInfos(
+    const vector<string> &filePathVector, UniqueNumber &uniqueNumber)
 {
     vector<FileInfo> restoreFiles;
-    for (auto &filePath : filePathVector) {
+    for (const auto &filePath : filePathVector) {
         FileInfo fileInfo;
         fileInfo.fileName = MediaFileUtils::GetFileName(filePath);
         fileInfo.displayName = fileInfo.fileName;
@@ -837,8 +933,18 @@ vector<FileInfo> PhotoCustomRestoreOperation::GetFileInfos(vector<string> &fileP
     return restoreFiles;
 }
 
-int32_t PhotoCustomRestoreOperation::FillMetadata(std::unique_ptr<Metadata> &data)
+int32_t PhotoCustomRestoreOperation::FillMetadata(
+    const unordered_map<string, TimeInfo> &timeInfoMap, const FileInfo &fileInfo, std::unique_ptr<Metadata> &data)
 {
+    data->SetFilePath(fileInfo.originFilePath);
+    data->SetFileName(fileInfo.fileName);
+    data->SetFileMediaType(fileInfo.mediaType);
+    if (timeInfoMap.find(fileInfo.fileName) != timeInfoMap.end()) {
+        auto timeInfo = timeInfoMap.at(fileInfo.fileName);
+        data->SetFileDateAdded(timeInfo.dateAdded);
+        data->SetDateTaken(timeInfo.dateTaken);
+        data->SetDetailTime(timeInfo.detailTime);
+    }
     int32_t err = GetFileMetadata(data);
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get file metadata");

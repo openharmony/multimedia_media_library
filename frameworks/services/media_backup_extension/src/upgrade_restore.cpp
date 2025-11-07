@@ -32,7 +32,6 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_transaction.h"
-#include "media_analysis_helper.h"
 #include "photo_album_restore.h"
 #include "photos_dao.h"
 #include "photos_restore.h"
@@ -173,6 +172,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     geoKnowledgeRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     highlightRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     ocrRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
+    classifyRestore_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->galleryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -382,10 +382,12 @@ void UpgradeRestore::RestoreSmartAlbums()
     int64_t endRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
     ocrRestore_.RestoreOCR(photoInfoMap_);
     int64_t endRestoreOCR = MediaFileUtils::UTCTimeMilliSeconds();
+    classifyRestore_.RestoreClassify(photoInfoMap_);
+    int64_t endRestoreClassify = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("TimeCost: RestoreGeo cost: %{public}" PRId64 ", RestoreHighlight cost: %{public}" PRId64
-        " RestoreOCR cost: %{public}" PRId64,
+        " RestoreOCR cost: %{public}" PRId64 ", RestoreClassify cost: %{public}" PRId64,
         startRestoreHighlight - startRestoreGeo, endRestoreHighlight - startRestoreHighlight,
-        endRestoreOCR - endRestoreHighlight);
+        endRestoreOCR - endRestoreHighlight, endRestoreClassify - endRestoreOCR);
     MEDIA_INFO_LOG("RestoreSmartAlbums end");
 }
 
@@ -725,7 +727,6 @@ void UpgradeRestore::RestoreBatchForCloud(int32_t minId)
     int64_t startInsertPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, infos, SourceType::GALLERY) == E_OK,
         AddToGalleryFailedOffsets(minId));
-    UpdateHdrMode(infos);
     int64_t startUpdateAnalysisTotal = MediaFileUtils::UTCTimeMilliSeconds();
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
@@ -1639,8 +1640,26 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
 
 void UpgradeRestore::RestoreAnalysisAlbum()
 {
-    std::string querySql = "SELECT count(1) AS count FROM merge_tag";
-    int32_t totalPortraitAlbumNumber = BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
+    int32_t cloudFlag = IsCloudRestoreSatisfied() ? 1 : 0;
+    int32_t shouldIncludeSdFlag = shouldIncludeSd_ ? 1 : 0;
+    int32_t hasLowQualityImageFlag = hasLowQualityImage_ ? 1 : 0;
+    std::vector<NativeRdb::ValueObject> params = {cloudFlag, hasLowQualityImageFlag, shouldIncludeSdFlag};
+    std::string querySql = "SELECT count(1) AS count FROM merge_tag WHERE user_display_level = 1 AND \
+        EXISTS (SELECT 1 FROM merge_face INNER JOIN gallery_media ON merge_face.hash = gallery_media.hash \
+        WHERE merge_face.tag_id = merge_tag.tag_id AND (1 = ? OR local_media_id != -1) AND \
+        (relative_bucket_id IS NULL OR \
+        relative_bucket_id NOT IN ( \
+        SELECT DISTINCT relative_bucket_id \
+        FROM garbage_album \
+        WHERE type = 1 \
+        ) \
+        ) AND \
+        (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
+        _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+        COALESCE(_data, '') <> '' AND \
+        (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537)))";
+
+    int32_t totalPortraitAlbumNumber = BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT, params);
     if (totalPortraitAlbumNumber > 0) {
         int32_t ret = PortraitAlbumUtils::DeleteExistingAlbumData(mediaLibraryRdb_, AlbumDeleteType::ALL);
         CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to delete portrait album data");
@@ -1846,14 +1865,5 @@ void UpgradeRestore::BatchDeleteEmptyAlbums(const std::vector<int32_t> &batchAlb
     BackupDatabaseUtils::Delete(deletePredicates, deleteRows, mediaLibraryRdb_);
 }
 
-void UpgradeRestore::RestoreSearchIndex()
-{
-    int64_t doIndexStartTime = MediaFileUtils::UTCTimeMilliSeconds();
-    std::vector<std::string> fileIds;
-    MediaAnalysisHelper::StartMediaAnalysisServiceSync(
-        IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX_FULL, fileIds);
-    int64_t doIndexEndTime = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("TimeCost: doIndex cost: %{public}" PRId64, doIndexEndTime - doIndexStartTime);
-}
 } // namespace Media
 } // namespace OHOS

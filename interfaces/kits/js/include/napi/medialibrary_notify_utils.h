@@ -32,7 +32,6 @@ enum NotifyChangeType {
     NOTIFY_CHANGE_ADD,
     NOTIFY_CHANGE_UPDATE,
     NOTIFY_CHANGE_REMOVE,
-    NOTIFY_CHANGE_BATCH_DOWNLOAD_PROGRESS,
 };
 
 class RegisterNotifyType {

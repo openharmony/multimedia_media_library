@@ -207,6 +207,16 @@ int32_t CloudSyncConvert::CompensateAttHdrMode(
     return E_OK;
 }
 
+int32_t CloudSyncConvert::CompensateAttVideoMode(
+    const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
+{
+    int32_t videoMode = data.attributesVideoMode;
+    CHECK_AND_RETURN_RET_WARN_LOG(
+        videoMode != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::videoMode.");
+    values.PutInt(PhotoColumn::PHOTO_VIDEO_MODE, videoMode);
+    return E_OK;
+}
+
 int32_t CloudSyncConvert::CompensateAttFrontCamera(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string frontCamera = data.attributesFrontCamera;
@@ -338,7 +348,7 @@ void CloudSyncConvert::CompensateTimeInfo(const CloudMediaPullDataDto &data, Nat
         MEDIA_ERR_LOG("invalid propertiesFirstUpdateTime: %{public}s, cloudId: %{public}s",
             data.propertiesFirstUpdateTime.c_str(),
             data.cloudId.c_str());
-        dateAdded = 0;
+        dateAdded = data.basicCreatedTime;
     }
     dateAdded = PhotoFileUtils::NormalizeTimestamp(dateAdded, MediaFileUtils::UTCTimeMilliSeconds());
     values.Put(PhotoColumn::MEDIA_DATE_ADDED, dateAdded);
@@ -461,7 +471,6 @@ int32_t CloudSyncConvert::CompensateBasicCloudId(const CloudMediaPullDataDto &da
 int32_t CloudSyncConvert::CompensateBasicDescription(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string description = data.basicDescription;
-    CHECK_AND_RETURN_RET_WARN_LOG(!description.empty(), E_CLOUDSYNC_INVAL_ARG, "Cannot find basic::description.");
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, description);
     return E_OK;
 }
@@ -568,6 +577,7 @@ int32_t CloudSyncConvert::ExtractAttributeValue(const CloudMediaPullDataDto &dat
     CompensateAttShootingModeTag(data, values);
     CompensateAttDynamicRangeType(data, values);
     CompensateAttHdrMode(data, values);
+    CompensateAttVideoMode(data, values);
     CompensateAttFrontCamera(data, values);
     CompensateAttEditTime(data, values);
     CompensateAttOriginalSubtype(data, values);

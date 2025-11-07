@@ -109,7 +109,8 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_ADD_ASSET_VISIT_COUNT), {{}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CREATE_ASSET), {{WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CANCEL_PHOTO_URI_PERMISSION), {{WRITE_PERM}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GRANT_PHOTO_URI_PERMISSION), {{SYSTEMAPI_PERM, WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GRANT_PHOTO_URI_PERMISSION),
+        {{SYSTEMINNERAPI_PERM, WRITE_PERM}, {SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_PHOTO_URI_PERMISSION), {{READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_CHECK_AUDIO_URI_PERMISSION), {{READ_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_GET_URIS_BY_OLD_URIS), {{}}},
@@ -160,8 +161,8 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::ASSET_CHANGE_SET_COMPOSITE_DISPLAY_MODE),
         {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CAMERA_INNER_ADD_IMAGE), {{}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_DATABASE_DFX), {{SYSTEMAPI_PERM, READ_PERM}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_DATABASE_DFX), {{SYSTEMAPI_PERM, READ_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::ACQUIRE_DEBUG_DATABASE), {{SYSTEMAPI_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::RELEASE_DEBUG_DATABASE), {{SYSTEMAPI_PERM}}},
 };
 
 static std::unordered_set<uint32_t> mediaAssetsPermissionDbBypass = {

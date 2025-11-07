@@ -262,17 +262,12 @@ static void GetDismissAssetsPredicates(NativeRdb::RdbPredicates &rdbPredicate, v
 int32_t DoDismissAssets(int32_t subtype, const string &albumId, const vector<string> &assetIds)
 {
     int32_t deleteRow = 0;
-    int32_t secondDeleteRow = 0;
     if (subtype == PhotoAlbumSubType::GROUP_PHOTO) {
-        NativeRdb::RdbPredicates rdbPredicate { VISION_IMAGE_FACE_TABLE };
-        rdbPredicate.In(MediaColumn::MEDIA_ID, assetIds);
-        deleteRow = MediaLibraryRdbStore::Delete(rdbPredicate);
-
         NativeRdb::RdbPredicates mapTablePredicate { ANALYSIS_PHOTO_MAP_TABLE };
         mapTablePredicate.EqualTo(MAP_ALBUM, albumId);
         mapTablePredicate.And()->In(MAP_ASSET, assetIds);
-        secondDeleteRow = MediaLibraryRdbStore::Delete(mapTablePredicate);
-        if (deleteRow != 0 && secondDeleteRow != 0 && MediaLibraryDataManagerUtils::IsNumber(albumId)) {
+        deleteRow = MediaLibraryRdbStore::Delete(mapTablePredicate);
+        if (deleteRow != 0 && MediaLibraryDataManagerUtils::IsNumber(albumId)) {
             MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
                 MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), {albumId});
         }

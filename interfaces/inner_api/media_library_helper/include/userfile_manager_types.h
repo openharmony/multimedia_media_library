@@ -188,6 +188,12 @@ enum class PhotoPositionType : int32_t {
     LOCAL_AND_CLOUD = 3
 };
 
+enum class VideoMode : int32_t {
+    DEFAULT = -1,
+    NOT_LOG_VIDEO = 0,
+    LOG_VIDEO = 1
+};
+
 enum class PhotoThumbStatusType : int32_t {
     DOWNLOADED = 0,
     NOT_DOWNLOADED = 3

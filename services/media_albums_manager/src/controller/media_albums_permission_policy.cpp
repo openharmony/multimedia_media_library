@@ -85,6 +85,7 @@ static std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> me
     {static_cast<uint32_t>(MediaLibraryBusinessCode::INNER_PAH_QUERY_PHOTO_ALBUMS), { {READ_PERM} }},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CHANGE_REQUEST_SET_HIGHLIGHT_ATTRIBUTE),
         { {SYSTEMAPI_PERM, WRITE_PERM} }},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::GET_CLONED_ALBUM_URIS), { {SYSTEMAPI_PERM, READ_PERM} }},
 };
 
 static std::unordered_set<uint32_t> mediaAlbumsPermissionDbBypass = {

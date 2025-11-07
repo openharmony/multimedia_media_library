@@ -122,6 +122,10 @@ const std::vector<std::string> hdrModeEnum {
     "DEFAULT", "HDR_ISO_SINGLE", "HDR_ISO_DUAL", "HDR_CUVA", "HDR_VIVID_SINGLE", "HDR_VIVID_DUAL"
 };
 
+const std::vector<std::string> videoModeEnum{
+    "DEFAULT", "NOT_LOG_VIDEO", "LOG_VIDEO"
+};
+
 const std::vector<std::string> movingPhotoEffectModeEnum {
     "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE", "CINEMA_GRAPH"
 };
@@ -188,6 +192,15 @@ const std::vector<std::string> downloadCloudAssetCodeEnum {
 const std::vector<std::string> downloadAssetsNotifyTypeEnum {
     "DOWNLOAD_PROGRESS", "DOWNLOAD_FINISHED", "DOWNLOAD_FAILED", "DOWNLOAD_ASSET_DELETED", "DOWNLOAD_AUTO_PAUSED",
     "DOWNLOAD_AUTO_RESUMED", "DOWNLOAD_REFRESHED"
+};
+
+const std::vector<std::pair<std::string, int32_t>> PHOTO_SUB_TYPE_ENUM_PROPERTIES = {
+    std::make_pair("DEFAULT",       static_cast<int32_t>(PhotoSubType::DEFAULT)),
+    std::make_pair("SCREENSHOT",    static_cast<int32_t>(PhotoSubType::SCREENSHOT)),
+    std::make_pair("CAMERA",        static_cast<int32_t>(PhotoSubType::CAMERA)),
+    std::make_pair("MOVING_PHOTO",  static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)),
+    std::make_pair("BURST",         static_cast<int32_t>(PhotoSubType::BURST)),
+    std::make_pair("SPATIAL_3DGS",  static_cast<int32_t>(PhotoSubType::SPATIAL_3DGS))
 };
 
 const std::vector<std::pair<std::string, std::string>> FILE_KEY_ENUM_PROPERTIES = {
@@ -293,6 +306,8 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("APPLINK",                   PhotoColumn::PHOTO_APPLINK),
     std::make_pair("EXIST_COMPATIBLE_DUPLICATE", PhotoColumn::PHOTO_EXIST_COMPATIBLE_DUPLICATE),
     std::make_pair("HDR_MODE",                  PhotoColumn::PHOTO_HDR_MODE),
+    std::make_pair("CLOUD_ID",                  PhotoColumn::PHOTO_CLOUD_ID),
+    std::make_pair("VIDEO_MODE",                PhotoColumn::PHOTO_VIDEO_MODE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
