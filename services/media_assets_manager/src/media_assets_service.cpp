@@ -1326,7 +1326,7 @@ shared_ptr<NativeRdb::ResultSet> MediaAssetsService::GetCloudEnhancementPair(con
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     return EnhancementManager::GetInstance().HandleGetPairOperation(cmd);
 #else
-    return E_ERR;
+    return nullptr;
 #endif
 }
 

@@ -2939,9 +2939,9 @@ static bool SetCompositeDisplayModeExecute(MediaAssetChangeRequestAsyncContext &
     int32_t changedRows = IPC::UserDefineIPCClient().SetHeader(headerMap).Call(businessCode, reqBody);
     if (changedRows < 0) {
         if (changedRows == -1) {
-            context.error = OHOS_INVALID_PARAM_CODE;
+            context.error = JS_E_PARAM_INVALID;
         } else {
-            context.SaveError(changedRows);
+            context.error = JS_E_INNER_FAIL;
         }
         NAPI_ERR_LOG("Failed to update composite_display_mode of asset, err: %{public}d", changedRows);
         return false;

@@ -41,7 +41,6 @@
 #include "cloud_media_sync_const.h"
 #include "cloud_media_operation_code.h"
 #include "cloud_media_dfx_service.h"
-#include "enhancement_manager.h"
 #include "background_cloud_batch_selected_file_processor.h"
 
 using ChangeType = OHOS::AAFwk::ChangeInfo::ChangeType;
@@ -182,7 +181,7 @@ int32_t CloudMediaPhotosService::ClearLocalData(const CloudMediaPullDataDto &pul
         CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
         CloudMediaSyncUtils::RemoveEditDataPath(pullData.localPath);
         // for cloud enhancement composite photo
-        if (EnhancementManager::GetInstance().IsCloudEnhancementSupposed() &&
+        if (CloudMediaSyncUtils::IsCloudEnhancementSupported() &&
             PhotoFileUtils::IsEditDataSourceBackExists(pullData.localPath)) {
             CloudMediaSyncUtils::BackUpEditDataSourcePath(pullData.localPath);
         }

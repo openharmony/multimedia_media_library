@@ -35,6 +35,9 @@
 #include "thumbnail_const.h"
 #include "moving_photo_file_utils.h"
 #include "cloud_media_uri_utils.h"
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
+#include "enhancement_manager.h"
+#endif
 
 using namespace std;
 
@@ -526,5 +529,33 @@ int32_t CloudMediaSyncUtils::GetExifRotate(int32_t mediaType, const std::string 
         MediaPlayerFrameWorkUtils::GetExifRotate(path, exifRotate);
     }
     return exifRotate;
+}
+
+bool CloudMediaSyncUtils::IsCloudEnhancementSupported()
+{
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    return true;
+#else
+    return false;
+#endif
+}
+
+void CloudMediaSyncUtils::SyncDealWithCompositePhoto(const std::string &assetDataPath, int32_t photoId)
+{
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    string photoCloudPath = CloudMediaSyncUtils::RestoreCloudPath(assetDataPath);
+    if (PhotoFileUtils::IsEditDataSourceBackExists(photoCloudPath)) {
+        bool exchange = EnhancementManager::GetInstance().SyncCleanCompositePhoto(photoCloudPath);
+        auto [compositeDisplayStatus, ceAvailable] =
+            EnhancementManager::GetInstance().SyncDealWithCompositeDisplayStatus(photoId, photoCloudPath, exchange);
+        int32_t updateRet = EnhancementManager::GetInstance().UpdateCompositeDisplayStatus(
+            photoId, compositeDisplayStatus, ceAvailable);
+        CHECK_AND_PRINT_LOG(updateRet == E_OK, "fail to update composite display status of fileId: %{public}d",
+            photoId);
+    } else {
+        CHECK_AND_PRINT_LOG(EnhancementManager::GetInstance().SyncClearNormalPhoto(photoId),
+            "fail to clear normal photo, fileId: %{public}d", photoId);
+    }
+#endif
 }
 }  // namespace OHOS::Media::CloudSync
