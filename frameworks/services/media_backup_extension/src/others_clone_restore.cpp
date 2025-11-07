@@ -777,7 +777,7 @@ void OthersCloneRestore::UpdateFileTimeInfo(FileInfo &fileInfo, CloneDbInfo *dbI
     fileInfo.dateModified = static_cast<int64_t>(dateModified);
     fileInfo.dateTaken = static_cast<int64_t>(dateTaken);
 
-    BackupFileUtils::ModifyFile(fileInfo.filePath, fileInfo.dateModified / MSEC_TO_SEC);
+    BackupFileUtils::UpdateModifyTimeInMsec(fileInfo.filePath, fileInfo.dateModified);
 }
 
 void OthersCloneRestore::UpDateFileModifiedTime(FileInfo &fileInfo)
