@@ -49,6 +49,7 @@ public:
     static std::string GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
         const std::string &path);
     static void ModifyFile(const std::string path, int64_t modifiedTime);
+    static int32_t UpdateModifyTimeInMsec(const std::string &path, int64_t localMtimeInMsec);
     static std::string GetFileNameFromPath(const string &path);
     static std::string GetFileTitle(const string &displayName);
     static int32_t IsFileValid(std::string &filePath, int32_t sceneCode,

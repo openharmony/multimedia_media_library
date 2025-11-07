@@ -396,6 +396,25 @@ void BackupFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
     }
 }
 
+int32_t BackupFileUtils::UpdateModifyTimeInMsec(const string &path, int64_t localMtimeInMsec)
+{
+    CHECK_AND_RETURN_RET_LOG(localMtimeInMsec >= 0, E_FAIL, "ModifyTime %{public}" PRId64 "< 0, path: %{public}s",
+        localMtimeInMsec, GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str());
+    CHECK_AND_RETURN_RET_LOG(access(path.c_str(), F_OK) == 0, E_FILE_EXIST, "File not exist, path: %{public}s",
+        GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str());
+    
+    struct timeVal times[2];
+    // set atime
+    times[0].tv_sec = static_cast<time_t>(localMtimeInMsec / MSEC_TO_SEC);
+    times[0].tv_usec = static_cast<suseconds_t>((localMtimeInMsec % MSEC_TO_SEC) * MSEC_TO_SEC);
+    // set mtime
+    times[1] = times[0];
+
+    CHECK_AND_RETURN_RET_LOG(utimes(path.c_str(), times) >= 0, errno, "utimes failed %{public}d, path: %{public}s",
+        errno, GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str());
+    return E_OK;
+}
+
 string BackupFileUtils::GetFileNameFromPath(const string &path)
 {
     size_t pos = GetLastSlashPosFromPath(path);
