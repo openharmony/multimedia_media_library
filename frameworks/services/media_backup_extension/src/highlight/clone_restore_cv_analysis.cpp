@@ -197,7 +197,7 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, CloneR
     CHECK_AND_RETURN(newPlayInfo.contains("effectline") && newPlayInfo["effectline"].is_object() &&
         newPlayInfo["effectline"].contains("effectline") && newPlayInfo["effectline"]["effectline"].is_array());
     nlohmann::json &effectlineInfoArray = newPlayInfo["effectline"]["effectline"];
-    for (size_t effectlineIndex = 0; effectlineIndex < effectlineInfoArray.size(); effectlineIndex ++ ) {
+    for (size_t effectlineIndex = 0; effectlineIndex < effectlineInfoArray.size(); effectlineIndex++) {
         ProcessEffectVideoUri(effectlineInfoArray, effectlineIndex, cloneHighlight);
         ProcessTransitionVideoUri(effectlineInfoArray, effectlineIndex, cloneHighlight);
         ParseEffectlineFileData(effectlineInfoArray, effectlineIndex, cloneHighlight);
