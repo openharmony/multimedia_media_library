@@ -51,6 +51,8 @@ const std::string SQL_PHOTOS_TABLE_QUERY_VIDEO_COUNT = "SELECT"
                                                         "WHERE"
                                                         " media_type = 2"
                                                         " AND subtype = 0"
+                                                        " AND mime_type = 'video/mp4'"
+                                                        " AND position != 2"
                                                         " AND file_id > ?;";
 
 const std::string SQL_PHOTOS_TABLE_QUERY_DEFAULT_SUBTYPE_VIDEO = "SELECT"
@@ -61,6 +63,8 @@ const std::string SQL_PHOTOS_TABLE_QUERY_DEFAULT_SUBTYPE_VIDEO = "SELECT"
                                                                  "WHERE"
                                                                  " media_type = 2"
                                                                  " AND subtype = 0"
+                                                                 " AND mime_type = 'video/mp4'"
+                                                                 " AND position != 2"
                                                                  " AND file_id > ?"
                                                                  " LIMIT ?;";
 
