@@ -689,12 +689,15 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_006, TestSize
         }
     })";
     nlohmann::json newPlayInfo1 = nlohmann::json::parse(oldPlayInfo1, nullptr, false);
-    std::string oldEffectVideoUri = newPlayInfo1["effectline"]["effectline"][0]["effectVideoUri"];
-    EXPECT_TRUE(MediaFileUtils::StartsWith(oldEffectVideoUri, PHOTO_URI_PREFIX));
-    cloneRestoreCVAnalysis->ParseEffectline(newPlayInfo1, 0, restoreHighlight);
-    oldEffectVideoUri = newPlayInfo1["effectline"]["effectline"][1]["effectVideoUri"];
-    cloneRestoreCVAnalysis->ParseEffectline(newPlayInfo1, 1, restoreHighlight);
-    EXPECT_TRUE(MediaFileUtils::StartsWith(oldEffectVideoUri, HIGHLIGHT_ASSET_URI_PREFIX));
+    std::string oldEffectVideoUri0 = newPlayInfo1["effectline"]["effectline"][0]["effectVideoUri"];
+    std::string oldEffectVideoUri1 = newPlayInfo1["effectline"]["effectline"][1]["effectVideoUri"];
+    EXPECT_TRUE(MediaFileUtils::StartsWith(oldEffectVideoUri0, PHOTO_URI_PREFIX));
+    EXPECT_TRUE(MediaFileUtils::StartsWith(oldEffectVideoUri1, HIGHLIGHT_ASSET_URI_PREFIX));
+    cloneRestoreCVAnalysis->ParseEffectline(newPlayInfo1, restoreHighlight);
+    MEDIA_INFO_LOG("newPlayInfo1: %{public}s",
+        newPlayInfo1.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace).c_str());
+    std::string newEffectVideoUri1 = newPlayInfo1["effectline"]["effectline"][1]["effectVideoUri"];
+    EXPECT_FALSE(MediaFileUtils::StartsWith(newEffectVideoUri1, HIGHLIGHT_ASSET_URI_PREFIX)); // invalid effectVideoUri
 
     std::string oldPlayInfo2 = R"({
         "effectline": {
@@ -707,8 +710,8 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_006, TestSize
         ]
     })";
     nlohmann::json newPlayInfo2 = nlohmann::json::parse(oldPlayInfo2, nullptr, false);
-    cloneRestoreCVAnalysis->ParseTimeline(newPlayInfo2, 0, restoreHighlight);
-    cloneRestoreCVAnalysis->ParseEffectlineFileData(newPlayInfo2, 0, restoreHighlight);
+    cloneRestoreCVAnalysis->ParseTimeline(newPlayInfo2, restoreHighlight);
+    cloneRestoreCVAnalysis->ParseEffectline(newPlayInfo2, restoreHighlight);
     EXPECT_TRUE(newPlayInfo2["effectline"]["effectline"][0].contains("fileId"));
     EXPECT_TRUE(newPlayInfo2["effectline"]["effectline"][0].contains("fileUri"));
 
