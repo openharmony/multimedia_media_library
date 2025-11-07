@@ -105,7 +105,7 @@ public:
             AND total_score >= ? \
             AND total_score <= ? \
         ORDER BY total_score DESC, \
-        ORDER BY Photos.file_id \
+            Photos.file_id \
         LIMIT ? \
         OFFSET 0";
 
