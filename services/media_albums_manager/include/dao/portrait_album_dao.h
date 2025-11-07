@@ -103,8 +103,9 @@ public:
         FROM " + SQL_PORTRAIT_ALBUM_TABLE_JOIN + " \
         WHERE " + SQL_PORTRAIT_ALBUM_CONDITION + " \
             AND total_score >= ? \
-            AND total_score < ? \
-        ORDER BY total_score DESC \
+            AND total_score <= ? \
+        ORDER BY total_score DESC, \
+            Photos.file_id \
         LIMIT ? \
         OFFSET 0";
 
