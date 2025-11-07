@@ -94,6 +94,7 @@ void InsertSystemAlbums()
             return;
         }
     }
+    return;
 }
 
 int32_t ClearTable(const string &table)
