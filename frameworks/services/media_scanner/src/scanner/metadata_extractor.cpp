@@ -679,6 +679,7 @@ static void ParseMovingPhotoCoverPosition(std::shared_ptr<Meta> &meta, std::uniq
 {
     shared_ptr<Meta> customMeta = make_shared<Meta>();
     bool isValid = meta->GetData(PHOTO_DATA_VIDEO_CUSTOM_INFO, customMeta);
+    CHECK_AND_RETURN_LOG(customMeta != nullptr, "customMeta is nullptr");
     if (!isValid) {
         MEDIA_INFO_LOG("Video of moving photo does not contain customInfo");
         return ParseLivePhotoCoverPosition(data);
