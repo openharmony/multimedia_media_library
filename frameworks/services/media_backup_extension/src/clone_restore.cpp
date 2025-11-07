@@ -1109,6 +1109,7 @@ int32_t CloneRestore::MovePicture(FileInfo &fileInfo)
         "Move photo file failed, filePath = %{public}s, deleteOriginalFile = %{public}d",
         BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
         deleteOriginalFile);
+    MediaFileUtils::UpdateModifyTimeInMsec(localPath, fileInfo.dateModified);
     return E_OK;
 }
 
