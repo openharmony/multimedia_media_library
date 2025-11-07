@@ -217,6 +217,7 @@ public:
     EXPORT static bool IsDirExists(const std::string &path);
     EXPORT static int32_t CheckAppLink(const std::string &link);
     EXPORT static bool CheckHasAppLink(int32_t hasAppLink);
+    EXPORT static int32_t UpdateModifyTimeInMsec(const std::string &localPath, int64_t localMtimeInMsec);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
