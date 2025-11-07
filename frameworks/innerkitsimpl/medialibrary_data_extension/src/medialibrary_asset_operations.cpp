@@ -459,6 +459,17 @@ static void DeleteFileManagerTempFileAgingXml()
         "Failed to delete file manager temp file aging xml, errCode: %{public}d", errCode);
 }
 
+static void ResetFileIdProgressData()
+{
+    const string taskProgressXml = "/data/storage/el2/base/preferences/task_progress.xml";
+    int32_t errCode = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(taskProgressXml, errCode);
+    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
+    prefs->PutInt("recognize_ce_photos_file_id_progress", 0);
+    prefs->FlushSync();
+}
+
 int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cmd)
 {
     auto valuesBucket = cmd.GetValueBucket();
@@ -495,6 +506,7 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     CHECK_AND_PRINT_LOG(MediaFileUtils::CreateDirectory(photoThumbsPath),
         "Create dir %{public}s failed", photoThumbsPath.c_str());
     DeleteFileManagerTempFileAgingXml();
+    ResetFileIdProgressData();
     return E_OK;
 }
 

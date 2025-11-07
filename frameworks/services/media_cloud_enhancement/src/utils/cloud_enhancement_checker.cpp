@@ -25,6 +25,8 @@
 #include "medialibrary_rdbstore.h"
 #include "enhancement_database_operations.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_subscriber.h"
+#include "medialibrary_rdb_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -84,5 +86,77 @@ void CloudEnhancementChecker::AddPermissionForCloudEnhancement()
     } while (resultSet->GoToNextRow() == E_OK);
     MEDIA_INFO_LOG("end add permission for cloud enhancement photo!");
 }
+
+static int BuildFileIdPredicatesForBatch(int currentFileId, int maxFileId, RdbPredicates& predicates)
+{
+    const int batchSize = 1000;
+    int32_t startId = currentFileId;
+    int32_t endId = std::min(startId + batchSize, maxFileId);
+    predicates.GreaterThan(MediaColumn::MEDIA_ID, startId);
+    predicates.LessThanOrEqualTo(MediaColumn::MEDIA_ID, endId);
+    return endId;
+}
+
+static int QueryMaxFileId()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "get rdb store failed");
+    string queryMaxSql = "SELECT Max(file_id) FROM " + PhotoColumn::PHOTOS_TABLE;
+    auto resultSet = rdbStore->QuerySql(queryMaxSql);
+    CHECK_AND_RETURN_RET_LOG(TryToGoToFirstRow(resultSet), E_ERR, "Query max file_id failed");
+    int32_t maxFileId = -1;
+    maxFileId = GetInt32Val("Max(file_id)", resultSet);
+    return maxFileId;
+}
+
+void CloudEnhancementChecker::RecognizeCloudEnhancementPhotosByDisplayName()
+{
+    MEDIA_INFO_LOG("start to recognize cloud enhancement photos by display name");
+    int32_t errCode = E_OK;
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "get rdb store failed");
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
+    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
+    const string fileIdProgressKeyName = "recognize_ce_photos_file_id_progress";
+    int32_t currentFileId = prefs->GetInt(fileIdProgressKeyName, 0);
+    int maxFileId = QueryMaxFileId();
+    bool needRefreshAlbum = false;
+    CHECK_AND_RETURN_LOG(maxFileId > 0, "query max file id failed");
+    MEDIA_INFO_LOG("start from file id: %{public}d, max file id is %{public}d", currentFileId, maxFileId);
+
+    while (currentFileId < maxFileId && MedialibrarySubscriber::IsCurrentStatusOn()) {
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        int batchEndId = BuildFileIdPredicatesForBatch(currentFileId, maxFileId, predicates);
+        predicates.EqualTo(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
+            static_cast<int32_t>(StrongAssociationType::NORMAL));
+        const string enhancedSuffix = "%_enhanced";
+        predicates.Like(MediaColumn::MEDIA_TITLE, enhancedSuffix);
+        ValuesBucket values;
+        values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
+            static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT));
+        values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
+        int updatedRow = -1;
+        int ret = rdbStore->Update(updatedRow, values, predicates);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("update cloud enhancement attribute failed, errCode: %{public}d", ret);
+            break;
+        }
+        currentFileId = batchEndId;
+        prefs->PutInt(fileIdProgressKeyName, currentFileId);
+        prefs->FlushSync();
+        if (updatedRow > 0) {
+            needRefreshAlbum = true;
+        }
+    }
+
+    if (needRefreshAlbum) {
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore,
+            {to_string(static_cast<int32_t>(PhotoAlbumSubType::CLOUD_ENHANCEMENT))});
+    }
+    MEDIA_INFO_LOG("end recognize cloud enhancement photos by display name. File id progress: %{public}d",
+        currentFileId);
+}
+
 }  // namespace Media
 }  // namespace OHOS
